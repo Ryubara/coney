@@ -217,3 +217,21 @@ TEST_CASE("the language option takes one of the five codes", "[options]") {
     CHECK(!parse(std::array<std::string_view, 1>{"--language"}).has_value());
     CHECK(!parse(std::array<std::string_view, 4>{"--language", "en", "--language", "fr"}).has_value());
 }
+
+TEST_CASE("the character viewer takes a name or defaults to Rembrandt, and a clip with the anim option", "[options]") {
+    auto named =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--view-character", "warr_ty_cv", "--anim", "408"});
+    REQUIRE(named.has_value());
+    CHECK(named->viewCharacter.value_or("") == "warr_ty_cv");
+    CHECK(named->animClip.value_or("") == "408");
+    // Without a name, or with another option next, the default.
+    auto bare = parse(std::array<std::string_view, 5>{"--disc", "x", "--view-character", "--frames", "3"});
+    REQUIRE(bare.has_value());
+    CHECK(bare->viewCharacter.value_or("") == coney::kDefaultViewCharacter);
+    CHECK(bare->frameLimit == 3);
+    CHECK(!parse(std::array<std::string_view, 1>{"--view-character"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 4>{"--disc", "x", "--anim", "walk"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 5>{"--disc", "x", "--view-character", "--view-world", "level2"})
+               .has_value());
+    CHECK(coney::usageText().find("--view-character [NAME]") != std::string_view::npos);
+}

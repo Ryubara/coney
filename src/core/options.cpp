@@ -19,7 +19,7 @@ constexpr std::string_view kUsage =
     "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE]\n"
-    "             [--view-world NAME]\n"
+    "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -33,6 +33,10 @@ constexpr std::string_view kUsage =
     "                     with the font sheet FONT (such as big_font); needs --disc\n"
     "  --language CODE    the language of the UI strings: en, es, fr, it or de (default en)\n"
     "  --view-world NAME  fly through a level's streamed scenery: level2, level2s, objarena; needs --disc\n"
+    "  --view-character [NAME]\n"
+    "                     show a character playing a clip: a model name such as warr_re_cv (the default,\n"
+    "                     Rembrandt); needs --disc\n"
+    "  --anim CLIP        the clip --view-character plays: an anim id or a clip name\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
     "  --input-script FILE\n"
@@ -85,8 +89,30 @@ std::expected<void, Error> takeValue(std::span<const std::string_view> args, std
     return {};
 }
 
+// Refuses the character viewer's options in combinations that cannot work: part of checkCombinations().
+std::expected<void, Error> checkCharacterViewer(const Options& options) {
+    if (options.animClip.has_value() && !options.viewCharacter.has_value()) {
+        return invalidArgument("--anim needs --view-character: it names the clip the character plays");
+    }
+    if (!options.viewCharacter.has_value()) {
+        return {};
+    }
+    if (!options.discPath.has_value()) {
+        return invalidArgument("--view-character needs --disc to say where the game's files are");
+    }
+    if (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value() ||
+        options.viewText.has_value() || options.viewWorld.has_value()) {
+        return invalidArgument(
+            "--view-character cannot be combined with --load, --view-txd, --view-sheet, --view-text or --view-world");
+    }
+    return {};
+}
+
 // Refuses options that cannot work together, once the whole command line is read.
 std::expected<void, Error> checkCombinations(const Options& options) {
+    if (auto character = checkCharacterViewer(options); !character) {
+        return character;
+    }
     if (!options.loads.empty() && !options.discPath.has_value()) {
         return invalidArgument("--load needs --disc to say where the game's files are");
     }
@@ -177,6 +203,17 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--view-world") {
             if (auto value = takeValue(args, i, options.viewWorld, "--view-world", "a level or world name"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--view-character") {
+            // The name is optional: without one (the end, or another option next) the viewer shows Rembrandt.
+            if (options.viewCharacter.has_value()) {
+                return invalidArgument("--view-character given twice");
+            }
+            const bool named = i + 1 < args.size() && !args[i + 1].empty() && !args[i + 1].starts_with("--");
+            options.viewCharacter = named ? std::string(args[++i]) : std::string(kDefaultViewCharacter);
+        } else if (arg == "--anim") {
+            if (auto value = takeValue(args, i, options.animClip, "--anim", "an anim id or a clip name"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--input-script") {

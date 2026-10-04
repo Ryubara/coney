@@ -1,0 +1,9 @@
+# Drives the character viewer's orbit camera as a player would, with partial stick deflections: circle right at 60 %,
+# then up a little at 25 % while moving in at 35 %, then a short full push left; circle (L) plays the next clip.
+0 stick right 60 0
+40 stick right 0 25
+40 stick left 0 35
+55 stick left 0 0
+55 stick right -100 -15
+65 stick right 0 0
+70 tap circle

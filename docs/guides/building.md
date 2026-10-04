@@ -95,21 +95,24 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and eleven smoke tests of the `coney` executable itself: it starts
+`ctest` runs the Catch2 unit tests (`coney_tests`) and twelve smoke tests of the `coney` executable itself: it starts
 and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
-`--view-text` or `--view-world` without `--disc`, refuses a disc that does not exist, plays a synthetic input script
-(`tests/support/menu_input.txt`) and refuses one that does not exist; with `CONEY_DISC` set when CMake configures, a
-twelfth runs `coney --disc` to the main menu (`coney.reaches_main_menu`). The unit tests build their disc images,
-archives, RenderWare texture dictionaries, streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU
-(the librw tests run librw on its NULL device). Eight tests check your own disc: every texture dictionary; every
-sprite sheet, font and the sheet table; every streamed world with the atomics of its parts (`[world]`, about a
-second); every level's worlds streamed under a scripted camera path, with the streaming's invariants checked every
-frame (`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run through the game's own Lua
-scripts (`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); the front end's
-scripts (the preloads, `global.lua`, `level100.lua` and the menu callbacks) run in the script system with no error and
-no missing binding (`[scripts]`); and the start-up path from the legal screen to the main menu, through quick rumble
-and story to the level request and back, driven by a scripted pad (`[frontend]`). They run only when the environment
-variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
+`--view-text`, `--view-world` or `--view-character` without `--disc`, refuses a disc that does not exist, plays a
+synthetic input script (`tests/support/menu_input.txt`) and refuses one that does not exist; with `CONEY_DISC` set when
+CMake configures, two more run `coney --disc` to the main menu (`coney.reaches_main_menu`) and play Rembrandt's clips in
+the character viewer under a scripted orbit (`coney.views_character`, `tests/support/character_orbit.txt`). The unit
+tests build their disc images, archives, RenderWare texture dictionaries, streamed worlds and PS2 geometry byte by byte;
+none needs the game or a GPU (the librw tests run librw on its NULL device). Ten tests check your own disc: every
+texture dictionary; every sprite sheet, font and the sheet table; every streamed world with the atomics of its parts
+(`[world]`, about a second); every level's worlds streamed under a scripted camera path, with the streaming's invariants
+checked every frame (`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run through the
+game's own Lua scripts (`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); the
+front end's scripts (the preloads, `global.lua`, `level100.lua` and the menu callbacks) run in the script system with no
+error and no missing binding (`[scripts]`); the start-up path from the legal screen to the main menu, through quick
+rumble and story to the level request and back, driven by a scripted pad (`[frontend]`); every animation clip in the
+WAD, parsed and sampled (`[anim]`, about 7 seconds); and every Character List record with its model, textures, character
+data and clips, skinned (`[characters]`). They run only when the environment variable `CONEY_DISC` names the disc, are
+reported as skipped otherwise, and print counts only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
@@ -127,7 +130,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
-      [--view-world NAME]
+      [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -274,11 +277,41 @@ With `--headless` the streaming, visibility and draw distance run exactly as in 
 is how a test drives it. Game time runs on the fixed 1/30 s step, so a script gives the same parts in the same frames
 every time.
 
+### The character viewer {#the-character-viewer}
+
+`--view-character [NAME]` loads a character by its model name, as the Character List names it, and plays one of its
+clips on the skinned model in place, on the fixed 1/30 s step
+([Characters](../research/characters.md#coneys-implementation)). Without a name it shows Rembrandt (`warr_re_cv`).
+`--anim CLIP` picks the clip by anim id (a number, such as `408`, Rembrandt's walk) or by name (such as `gen_walk`);
+without it the viewer plays id 408, or the character's first clip when 408 is not set. Clips loop. There is no level,
+movement or follow camera; the character stands in a slate-blue void, and Coney prints a summary when it stops (counts
+only).
+
+The orbit camera looks at the character's middle and is driven by pad 1. These controls are Coney's own; analog
+sticks move in proportion to how far they are pushed:
+
+| Pad | Keyboard | Does |
+| --- | --- | --- |
+| right stick, d-pad | arrow keys | orbit left and right, look from higher or lower |
+| left stick (up / down) | W / S | move in and out |
+| R1 / L1 | E / Q | move in / out |
+| circle | L | play the next clip |
+| square | J | play the previous clip |
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character warr_ty_cv --anim gen_walk
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --frames 90 --input-script tests/support/character_orbit.txt --screenshot ../../scratch/rembrandt.png
+```
+
+A script drives it like a player, with partial deflections: `stick right 60 0` orbits at 60 % of the full rate,
+`stick left 0 35` moves in at 35 %.
+
 ### Controls {#controls}
 
 In a window, Coney reads the keyboard and any gamepad SDL3 recognises, and turns them into the PS2 pad the game
 expects ([Front end](../research/frontend.md#coneys-implementation)). The legal screen ignores input, as in the
-original; the menus and [the world viewer](#the-world-viewer) read port 1.
+original; the menus, [the world viewer](#the-world-viewer) and [the character viewer](#the-character-viewer) read port 1.
 
 | PS2 pad | Gamepad (SDL3 names) | Keyboard (port 1) |
 | --- | --- | --- |

@@ -36,6 +36,7 @@
 #include "graphics/font.h"
 #include "gui/global_strings.h"
 #include "gui/text_layout.h"
+#include "platform/character_viewer_mode.h"
 #include "platform/render_engine.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
@@ -234,6 +235,7 @@ int main(int argc, char** argv) {
     // The world viewer's memory budget: the original's Sector Pool, at its retail size.
     coney::world::SectorBudget sectorBudget(coney::world::kSectorPoolSize);
     std::unique_ptr<coney::platform::WorldViewerMode> worldViewer;
+    std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
             return 2; // parseOptions refuses --view-txd without --disc, so this is never reached
@@ -290,6 +292,18 @@ int main(int argc, char** argv) {
         }
         worldViewer = std::move(*viewerMode);
         modes.push(*worldViewer);
+    } else if (const std::optional<std::string> viewCharacter = options->viewCharacter; viewCharacter) {
+        if (!wad) {
+            return 2; // parseOptions refuses --view-character without --disc, so this is never reached
+        }
+        auto viewerMode = coney::platform::CharacterViewerMode::create(
+            renderer, *wad, *viewCharacter, options->animClip.value_or(std::string{}), printText);
+        if (!viewerMode) {
+            std::fprintf(stderr, "coney: %s: %s\n", viewCharacter->c_str(), viewerMode.error().message.c_str());
+            return 1;
+        }
+        characterViewer = std::move(*viewerMode);
+        modes.push(*characterViewer);
     } else if (wad) {
         // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
         // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first; the level
@@ -335,6 +349,9 @@ int main(int argc, char** argv) {
     modes.runUntilEmpty(timer, [&window] { return !window || window->pumpEvents(); }, frameLimit);
     if (worldViewer) {
         printText(worldViewer->summary());
+    }
+    if (characterViewer) {
+        printText(characterViewer->summary());
     }
 
     // Report the screenshot: where it went and a summary that says whether anything was drawn.

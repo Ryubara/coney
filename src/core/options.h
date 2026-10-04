@@ -41,6 +41,12 @@ struct Options {
     /// `--view-world`: a level or streamed world whose scenery the world viewer streams and shows (`level2`, `level2s`,
     /// `objarena`). Requires discPath; cannot be combined with `--load`, `--view-txd`, `--view-sheet` or `--view-text`.
     std::optional<std::string> viewWorld;
+    /// `--view-character`: a character (a model name of the Character List, such as `warr_re_cv`) the character
+    /// viewer shows; kDefaultViewCharacter when the option is given without a name. Requires discPath; cannot be
+    /// combined with `--load` or the other viewers.
+    std::optional<std::string> viewCharacter;
+    /// `--anim`: the clip the character viewer plays, an anim id or a clip name. Requires viewCharacter.
+    std::optional<std::string> animClip;
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;
@@ -53,6 +59,9 @@ struct Options {
     /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
     Language language = Language::English;
 };
+
+/// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).
+inline constexpr std::string_view kDefaultViewCharacter = "warr_re_cv";
 
 /// Largest accepted `--frames` value: about 4.6 hours at 60 Hz, far beyond any test, and well inside `int`.
 inline constexpr int kMaxFrameLimit = 1'000'000;
