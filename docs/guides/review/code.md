@@ -42,6 +42,9 @@ The test: could someone write their own version of this subsystem from the code 
 
 - [ ] **Doc comments.** Every public type and function has a `///` (or a docstring) saying what it is for, what it
   returns and how it fails.
+- [ ] **Every other function is introduced.** Helpers, private members and long lambdas have a short comment above
+  them; a long function has a comment before each step. Comments are brief unless the subject needs more
+  ([Conventions](../conventions.md#comments-and-orig)).
 - [ ] **Why comments.** Every non-obvious line says why, not what. Look at magic numbers, offsets, padding and
   ordering; each has a reason written next to it.
 - [ ] **`@orig` tags.** Each function that reimplements an original one carries

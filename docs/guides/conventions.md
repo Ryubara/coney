@@ -144,15 +144,26 @@ nothing in Coney reads from a DVD drive directly.
 ## Comments and @orig {#comments-and-orig}
 
 Coney's comments are written for someone who will hand-write their own version of the subsystem from our code and
-docs alone. That sets four rules.
+docs alone, and for a reviewer reading a diff without the docs open. That sets these rules.
 
 1. **Every public type and function has a doc comment** (`///`), saying what it is for, what it returns and how it
    fails. A reader should be able to use it without opening the `.cpp`.
-2. **Every non-obvious line explains why**, not what. `// Seek to 0x10` repeats the code; `// The 12 bytes after the
+2. **Every other function has a comment above it too**: private members, helpers in an anonymous namespace, static
+   functions, and lambdas longer than a few lines. One line saying what it does and why it exists is usually enough
+   (`// Reads one chunk and runs its handlers: the loop body both loaders share.`). Skip it only where the name
+   says everything (a getter, a one-line forwarder). A definition in a `.cpp` whose declaration already carries the
+   doc comment needs none; don't repeat it.
+3. **A long function is signposted**: a short comment before each step of a function that does several things, so a
+   reviewer can follow it without holding the whole of it in their head.
+4. **Tests say what they prove**: the `TEST_CASE` name states the behaviour, and a fixture or a hand-built byte
+   layout gets a comment saying what it stands for.
+5. **Short by default.** Most comments are one or two lines. Write longer only where the subject needs it: an
+   invariant, a format quirk, a deliberate difference from the original. Never narrate the code line by line.
+6. **Every non-obvious line explains why**, not what. `// Seek to 0x10` repeats the code; `// The 12 bytes after the
    count are padding: the entries start at 0x10` tells the reader something the code can't.
-3. **The doc comment links the research page** that describes the behaviour, by its path in the repository
+7. **The doc comment links the research page** that describes the behaviour, by its path in the repository
    (`docs/research/formats/wad-dir.md`), which works both in an editor and on GitHub.
-4. **No commented-out code.** Git keeps the history; dead code in comments only makes the reader wonder whether it
+8. **No commented-out code.** Git keeps the history; dead code in comments only makes the reader wonder whether it
    matters.
 
 ### The @orig tag

@@ -34,8 +34,10 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
 - C++23 within MSVC 19.38+, GCC 13+, Clang 17+, Xcode 16+; clang-format (`.clang-format`) decides layout; no
   exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants `CONEY_ASSERT`.
 - Reimplemented code cites the original: `@orig 0x<addr> <Name> (<File>.cpp)`, plus a link to its research page.
-- A doc comment on every public type and function; comments explain *why*. Keep the engine's test mode possible
-  (fixed timestep, seeded randomness, scripted input): never assume real time, a display or a human.
+- A doc comment on every public type and function, and a short comment above every other function (helpers,
+  private members, long lambdas) and before each step of a long one; comments explain *why*, briefly. Keep the
+  engine's test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display
+  or a human.
 - Tests for everything testable without the game. Details: `docs/guides/conventions.md`.
 
 ## Documentation
