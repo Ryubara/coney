@@ -1,0 +1,27 @@
+{
+  "areas": {
+    "build": "CMake, presets, dependency pins and toolchain setup",
+    "ci": "GitHub Actions workflows and pre-commit configuration",
+    "core": "engine core: memory, chunk system, task engine, utilities (src/core)",
+    "fileio": "disc and WAD access, file systems and streaming (src/fileio)",
+    "graphics": "rendering through librw: models, textures, effects (src/graphics)",
+    "audio": "sound, music and speech playback (src/audio)",
+    "platform": "SDL3 and OS glue: windowing, input, timing (src/platform)",
+    "tools": "C++ asset tools and the coney_tools Python package",
+    "research": "the research pages under docs/research and, once it exists, the research database",
+    "agents": "AGENTS.md, the CLAUDE.md and GEMINI.md pointers and other agent instructions",
+    "tests": "test-only changes",
+    "legal": "LICENSE, LEGAL.md and other licensing or provenance files",
+    "docs": "project-wide documentation: README, guides and the docs site"
+  },
+  "verbs": [
+    "Add",
+    "Fix",
+    "Update",
+    "Remove",
+    "Rebuild",
+    "Rework",
+    "Improve",
+    "Document"
+  ]
+}

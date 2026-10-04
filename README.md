@@ -1,0 +1,43 @@
+# Coney
+
+An open-source reimplementation of *The Warriors* (PS2, 2005) for Windows, Linux and macOS.
+
+Status: early research. Nothing playable yet.
+
+> [!IMPORTANT]
+> Coney contains no game data. You need your own copy of the game to use it. See [LEGAL.md](LEGAL.md).
+
+## What Coney is
+
+Coney aims to run the whole of *The Warriors* natively on Windows, Linux and macOS, from a disc you own. It is a
+functional reimplementation: new C++ code that behaves like the original, not a decompilation and not a port of the
+original code. It is built clean room. Analysts study the original game and write down what they learn, and engine
+code is written from those notes alone. The rules are in [LEGAL.md](LEGAL.md).
+
+## Documentation
+
+The documentation is a MkDocs site built from `docs/`. To build it locally:
+
+```sh
+py -m venv .venv
+.venv/Scripts/pip install -r requirements-docs.txt
+.venv/Scripts/python -m mkdocs build --strict
+```
+
+On Linux and macOS use `python3` and `.venv/bin/` instead. `mkdocs serve` previews the site while you edit.
+
+- [`docs/research/`](docs/research/) holds what is known about the game: formats, engine behaviour, addresses.
+- [`docs/guides/`](docs/guides/) holds how-to guides for working on the project.
+
+## Contributing
+
+Contributions are welcome, from people and from AI agents, under the same rules. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) before you start; it covers setup, commit format and pull requests.
+Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). [AGENTS.md](AGENTS.md) holds the
+instructions for AI agents. Report security problems as described in [SECURITY.md](SECURITY.md).
+
+## Licence
+
+Code is licensed GPL-3.0-or-later (see [LICENSE](LICENSE)). Documentation in `docs/` is licensed CC-BY-SA-4.0 (see
+[docs/LICENSE](docs/LICENSE)). "The Warriors", Rockstar Games and Take-Two Interactive are trademarks of their
+respective owners; Coney is not affiliated with or endorsed by them.

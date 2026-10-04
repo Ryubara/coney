@@ -1,0 +1,142 @@
+# Build and test the engine on every supported OS and compiler, under the sanitizers and clang-tidy, and check the
+# formatting. Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+name: build
+
+on:
+  push:
+    branches: [main, "release/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Linux Clang is 19, not Ubuntu 24.04's default 18: libstdc++ declares std::expected only when __cpp_concepts is at
+# least 202002L, which Clang first reports in version 19, so Clang 18 cannot compile Coney's use of std::expected.
+# clang-tools-19 brings clang-scan-deps-19, which CMake needs to scan C++23 sources for modules when using Clang.
+jobs:
+  build:
+    name: build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-msvc
+            os: windows-2022
+          - name: linux-gcc-13
+            os: ubuntu-24.04
+            cc: gcc-13
+            cxx: g++-13
+            compiler-packages: gcc-13 g++-13
+          - name: linux-clang-19
+            os: ubuntu-24.04
+            cc: clang-19
+            cxx: clang++-19
+            compiler-packages: clang-19 clang-tools-19
+          - name: macos-appleclang
+            os: macos-15          # Xcode 16 is the image's default
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up the MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: x64
+      - name: Install Ninja, the compiler and SDL3's build packages
+        if: runner.os == 'Linux'
+        env:
+          COMPILER_PACKAGES: ${{ matrix.compiler-packages }}
+        run: |
+          sudo apt-get update
+          # shellcheck disable=SC2086 # the package list is meant to split into words
+          sudo apt-get install -y ninja-build $COMPILER_PACKAGES libx11-dev libxext-dev libxrandr-dev \
+            libxcursor-dev libxi-dev libxss-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev \
+            libdbus-1-dev libudev-dev
+      - name: Install Ninja
+        if: runner.os == 'macOS'
+        run: brew install ninja
+      - name: Cache the fetched dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/ci/_deps
+          key: deps-ci-${{ matrix.name }}-${{ hashFiles('cmake/deps.cmake') }}
+      - run: cmake --preset ci
+      - run: cmake --build --preset ci
+      - run: ctest --preset ci
+
+  sanitizers:
+    name: sanitizers (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-clang-19
+            os: ubuntu-24.04
+            cc: clang-19
+            cxx: clang++-19
+          - name: macos-appleclang
+            os: macos-15
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Ninja, clang-19, clang-scan-deps, llvm-symbolizer and SDL3's build packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang-19 clang-tools-19 llvm-19 libx11-dev libxext-dev \
+            libxrandr-dev libxcursor-dev libxi-dev libxss-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev \
+            libgl1-mesa-dev libdbus-1-dev libudev-dev
+          # Clang's sanitizer runtime needs llvm-symbolizer to name the frames in a leak report; without names the
+          # suppressions in tests/lsan.supp cannot match, and librw's known leak would fail the tests.
+          echo "ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-19/bin/llvm-symbolizer" >> "$GITHUB_ENV"
+      - name: Install Ninja
+        if: runner.os == 'macOS'
+        run: brew install ninja
+      - name: Cache the fetched dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/asan/_deps
+          key: deps-asan-${{ matrix.name }}-${{ hashFiles('cmake/deps.cmake') }}
+      - run: cmake --preset asan
+      - run: cmake --build --preset asan
+      - run: ctest --preset asan
+
+  clang-tidy:
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang-19
+      CXX: clang++-19
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Ninja, clang-19, clang-scan-deps, clang-tidy-19 and SDL3's build packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang-19 clang-tools-19 clang-tidy-19 libx11-dev libxext-dev \
+            libxrandr-dev libxcursor-dev libxi-dev libxss-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev \
+            libgl1-mesa-dev libdbus-1-dev libudev-dev
+      - name: Cache the fetched dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/ci/_deps
+          key: deps-ci-clang-tidy-${{ hashFiles('cmake/deps.cmake') }}
+      - run: cmake --preset ci
+      - run: cmake --build --preset ci
+      # Coney's own sources only (src/ and tests/), never the fetched dependencies under _deps/.
+      - run: run-clang-tidy-19 -p build/ci -quiet '^(?!.*_deps).*/(src|tests)/'
+
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uvx pre-commit run --all-files --show-diff-on-failure

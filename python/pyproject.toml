@@ -1,0 +1,30 @@
+[project]
+name = "coney-tools"
+version = "0.1.0"
+description = "Coney's own automation: local configuration and repository checks, later the WAD and emulator tools"
+requires-python = ">=3.12"
+license = "GPL-3.0-or-later"
+dependencies = []
+
+[project.scripts]
+coney-tools = "coney_tools.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "PTH", "SIM", "RUF"]
+
+[tool.mypy]
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

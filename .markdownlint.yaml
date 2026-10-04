@@ -1,0 +1,9 @@
+default: true
+MD007:
+  indent: 4    # Python-Markdown (MkDocs) nests a list only when it is indented four spaces
+MD013:
+  line_length: 120
+  tables: false
+  code_blocks: false
+MD033: false   # MkDocs Material uses inline HTML (attribute lists, admonition markup)
+MD046: false   # admonitions indent their bodies, which markdownlint reads as indented code

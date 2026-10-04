@@ -1,0 +1,28 @@
+# Checks that only make sense on a pull request: its title must follow the commit title rules (AGENTS.md, "Commits
+# and GitHub"; areas and verbs in .github/commit-conventions.json), because it becomes the title of the merged commit. Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+name: pr
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  title:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      # A title is attacker-controlled, so it reaches the checker only through an environment variable and stdin,
+      # never expanded into the script's text. check-title exits 0 (pass), 1 (refused) or 2
+      # (.github/commit-conventions.json unusable); both failures fail the job.
+      - name: Check the title against the commit conventions
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | uv run --project python coney-tools repo check-title -

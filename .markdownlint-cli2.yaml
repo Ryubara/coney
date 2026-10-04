@@ -1,0 +1,5 @@
+# Which files markdownlint-cli2 reads; the rules are in .markdownlint.yaml. Run locally with:
+#   npx --yes markdownlint-cli2 "**/*.md" "#.venv" "#site" "#python/.venv" "#build"
+gitignore: true    # skip everything .gitignore keeps out of the repository (tool installs, game files, caches)
+ignores:
+  - "CODE_OF_CONDUCT.md"     # the Contributor Covenant's text, kept as published

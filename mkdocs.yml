@@ -1,0 +1,76 @@
+site_name: Coney
+site_description: An open-source reimplementation of The Warriors (PS2, 2005) for Windows, Linux and macOS.
+docs_dir: docs
+strict: true
+# A page left out of the nav is a warning, which --strict turns into a failure: every page must be reachable.
+validation:
+  nav:
+    omitted_files: warn
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: amber
+      toggle: { icon: material/brightness-4, name: Light mode }
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: amber
+      toggle: { icon: material/brightness-7, name: Dark mode }
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+nav:
+  - Home: index.md
+  - Research:
+      - Overview: research/overview.md
+      - Compiler & code conventions: research/compiler.md
+      - Name hashing (CRC-32): research/name-hash.md
+      - File formats:
+          - WARRIORS.DIR / .WAD: research/formats/wad-dir.md
+  - Guides:
+      - Building and testing: guides/building.md
+      - Local workspace: guides/workspace.md
+      - Conventions: guides/conventions.md
+      - Research workflow: guides/research-workflow.md
+      - Ghidra + ghidra-mcp: guides/ghidra.md
+      - Writing these docs: guides/writing-docs.md
+      - Reviews:
+          - guides/review/index.md
+          - Code: guides/review/code.md
+          - Research: guides/review/research.md
+          - Commits: guides/review/commits.md

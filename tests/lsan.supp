@@ -1,0 +1,8 @@
+# LeakSanitizer suppressions for the asan test preset (CMakePresets.json sets LSAN_OPTIONS to this file).
+#
+# librw allocates a default object pipeline for each of its d3d8, d3d9, xbox and wdgl drivers when
+# rw::Engine::start() opens them (driverOpen -> makeDefaultPipeline), and its driver close never frees them:
+# 248 bytes in 4 allocations, the same every run. Coney shuts librw down in full (render_engine.cpp), so the
+# leak is librw's. Only that symbol is suppressed, so a leak in Coney's own code still fails the tests.
+# Suppressions match symbol names, so with Clang llvm-symbolizer must be reachable (CI sets ASAN_SYMBOLIZER_PATH).
+leak:makeDefaultPipeline

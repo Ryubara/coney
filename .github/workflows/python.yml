@@ -1,0 +1,33 @@
+# Lint, type-check and test the coney_tools package, then run its repository checks, on all three OSes.
+# Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+name: python
+
+on:
+  push:
+    branches: [main, "release/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: python (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-15]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --project python
+      - run: uv run --project python ruff check python
+      - run: uv run --project python ruff format --check python
+      - run: uv run --project python mypy python/src python/tests
+      - run: uv run --project python pytest python/tests
+      - run: uv run --project python coney-tools repo check

@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+option(CONEY_WARNINGS_AS_ERRORS "Fail the build on any compiler warning (CI turns this on)" OFF)
+option(CONEY_SANITIZERS "Build Coney's own targets with ASan and UBSan (GCC and Clang only)" OFF)
+
+# Settings every Coney target gets. Applied per target, never globally, so dependencies keep their own flags.
+function(coney_target_defaults target)
+    target_compile_features(${target} PUBLIC cxx_std_23)
+    set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
+        if(CONEY_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE /WX)
+        endif()
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+        if(CONEY_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE -Werror)
+        endif()
+        if(CONEY_SANITIZERS)
+            target_compile_options(${target} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer
+                                                     -fno-sanitize-recover=all)
+            target_link_options(${target} PRIVATE -fsanitize=address,undefined)
+        endif()
+    endif()
+endfunction()
