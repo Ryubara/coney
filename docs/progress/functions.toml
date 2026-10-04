@@ -277,6 +277,11 @@ subsystem = "Graphics"
 size = 160
 
 [[function]]
+address = 0x00192688
+name = "AtomicPlugin_StreamRead"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x00195238
 name = "RwDevice::GuiToOverlay"
 subsystem = "Graphics"
@@ -293,3 +298,8 @@ address = 0x00197168
 name = "Instance_Render"
 subsystem = "Graphics"
 size = 328
+
+[[function]]
+address = 0x00198e20
+name = "SectorPlugin_StreamRead"
+subsystem = "Graphics"

@@ -98,10 +98,11 @@ other.
 `ctest` runs the Catch2 unit tests (`coney_tests`) and nine smoke tests of the `coney` executable itself: it starts
 and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd` or `--view-sheet` without
 `--disc`, refuses a disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and
-refuses one that does not exist. The unit tests build their disc images, archives and RenderWare texture
-dictionaries byte by byte; none needs the game or a GPU (the texture tests run librw on its NULL device). Two tests
-check your own disc, one every texture dictionary and one every sprite sheet and the sheet table; they run only when
-the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
+refuses one that does not exist. The unit tests build their disc images, archives, RenderWare texture dictionaries,
+streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU (the librw tests run librw on its NULL
+device). Three tests check your own disc: every texture dictionary, every sprite sheet and the sheet table, and every
+streamed world with the atomics of its parts (`[world]`, about a second). They run only when the environment variable
+`CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"

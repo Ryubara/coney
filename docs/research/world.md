@@ -2,7 +2,8 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims: PCSX2 was
 not running when this page was written. The disc-side checks (2026-10-04) read the NTSC-U disc's WAD with throwaway
-scripts outside the repository and are reported as names, counts and sizes only.
+scripts outside the repository and are reported as names, counts and sizes only; those marked "Coney's disc test" come
+from `coney_tests "[world]"` (`tests/platform/disc_world_test.cpp`), which anyone can run on their own disc.
 
 ## Purpose
 
@@ -178,6 +179,11 @@ streams hold 11,664. All atomics read with RenderWare's PS2 native geometry (`0x
 right-to-render pipeline ids (plugin 3, extra data `0x30082`/`0x30083` on atomics, `0x30084`, `0x30086`, `0x30088` on
 materials).
 
+**Native data struct size:** inside each part atomic's native data section (`0x510`), the struct section's header
+gives a size larger than the `0x510` section that holds it (for example 878 bytes in a 422-byte section). RenderWare's
+reader, like librw's, skips that header without using the size; Coney does the same. Why it is larger is not known
+(Coney's disc test reads every atomic this way).
+
 **347 part files are never loaded:** parts numbered above `partCount` (31,046,766 bytes). The loader only asks for
 parts that sectors name, and no sector names them; they look like leftovers of earlier builds (inferred).
 
@@ -188,15 +194,48 @@ Every atomic gets 16 bytes (offset in `0x0050cd98`; registered by `0x001927d8`);
 
 | Offset | Stream | Default | Meaning | Evidence |
 | --- | --- | --- | --- | --- |
-| `+0x00` | float | 1.0 | uploaded to VU memory by the game's four custom PS2 pipelines (`0x004252c8`, `0x00426430`, `0x004275d0`, `0x00428410`) | confirmed (code); meaning speculative |
-| `+0x04` | float | 1.0 | uploaded next to `+0x00` | confirmed (code); meaning speculative |
+| `+0x00` | float | 1.0 | uploaded to VU memory by the game's four custom PS2 pipelines (`0x004252c8`, `0x00426430`, `0x004275d0`, `0x00428410`); **the scale of the packed 16-bit vertex positions** ([PS2 world geometry](#ps2-world-geometry)) | upload confirmed (code); scale confirmed (runtime) by Coney's disc test; that the microcode applies it this way inferred |
+| `+0x04` | float | 1.0 | uploaded next to `+0x00`; not the position scale | confirmed (code); meaning speculative (texture coordinates) |
 | `+0x08` | u32 | 0 | read by `0x004290d8` | confirmed (code); meaning unknown |
 | `+0x0c` | | 0 | not streamed: the game object that owns the atomic (getter `0x00192870`, used by the object renderers) | confirmed (code); meaning inferred |
 
 **Disc check (corroboration):** in the streamed worlds' atomics the two floats are always powers of two from 2⁻⁸ to
-2⁻¹⁵ (for example 2⁻¹⁰ and 2⁻¹¹), and `+0x08` is always 0. Powers of two fed to a vertex program read like
-dequantisation scales for packed vertex data (texture coordinates and positions, speculative). They matter only if
-Coney decodes the PS2 native geometry itself; see [Open questions](#open-questions).
+2⁻¹⁵ (for example 2⁻¹⁰ and 2⁻¹¹), and `+0x08` is always 0.
+
+**Coney's disc test, confirmed (runtime) for the disc data:** with each atomic's packed positions multiplied by
+`+0x00` and placed at its sector's origin, all 7,563,801 vertices of the 5,315 atomics lie in their sector's box
+(1 % margin), and for **all 5,315 atomics the vertices' own bounds are the sector's box**, every face within 1 % of the
+box's largest side. Unscaled, 136 vertices lie in the box. In the 4,708 atomics whose two floats differ, scaling by
+`+0x04` never gives the box (0 of 4,708; the floats are equal in the other 607). So `+0x00` is the position scale.
+The atomic's own bounding sphere in the geometry header is in the same scaled units (seen on one atomic). `+0x04` is
+plausibly the texture-coordinate scale (speculative: scaled by it, second-set coordinates fall in 0 to 1 for 93 % of
+`level2s`'s vertices, first-set ones show tiling values).
+
+### PS2 world geometry {#ps2-world-geometry}
+
+Every part atomic's geometry is RenderWare PS2 native geometry: the mesh plugin (`0x50E`) gives each mesh's vertex
+count and material, and the native data (`0x510`) holds, per mesh, a DMA chain for vector unit 1 (VU1). The chains are
+built for the game's own pipelines, right to render plugin 3 with data `0x30083` (5,314 atomics) or `0x30082`
+(1 atomic), and their layout is not RenderWare's default one. From Coney's disc test (confirmed (runtime) for the disc
+data: all 5,315 atomics, 181,150 batches decode this way; what the microcode does with it is inferred):
+
+- **Tags:** reference tags whose address counts 16-byte units from the chain's start (the vertex data sits after the
+  chain's `ret` tag), and `cnt`/`ret` tags whose upper two words carry VIF commands.
+- **Batches:** `STCYCL 4, 1`, then up to four `UNPACK`s to VU addresses 0 to 3, interleaved four quadwords a vertex:
+  position `V4_16` (signed: x, y, z and an unused fourth word), texture coordinates `V4_16` (two sets) or `V2_16`
+  (one set), prelighting colour `V4_8` unsigned, normal `V4_8` signed. Then `ITOP n` and a microprogram start
+  (`MSCALF` for the first batch, `MSCNT` after); `FLUSH` at the end.
+- **ITOP is the batch's vertex count.** Each `UNPACK` may write a few more vectors than that, as padding: positions to
+  an even count, the byte formats to whole quadwords. With ITOP the batches add up to every mesh's count in the mesh
+  plugin (all meshes).
+- **Strips across batches:** the meshes are triangle strips, and every batch after the first starts with the last two
+  vertices of the batch before (all batches on the disc).
+- **Scale:** positions are the 16-bit integers times the atomic plugin's `+0x00`, in the atomic's frame, which the
+  loader places at the sector plugin's origin ([Atomic plugin 0x3F0](#atomic-plugin)).
+
+Triangles: decoded and joined, the strips give 2,869,406 non-degenerate triangles against 2,870,179 in the geometry
+headers (5,155 of 5,315 atomics equal), and 4,887,946 distinct vertices against 4,943,282. The difference is inferred
+to be vertices that became identical when packed to 16 bits, which merges them and turns their triangles degenerate.
 
 ### The world object (0x2188 bytes) {#world-object}
 
@@ -366,17 +405,39 @@ front to back (inferred).
 
 ## Coney's implementation
 
-Not yet implemented.
+Reading and decoding exist (2026-10-04); the manifest, streaming, placement in a scene and drawing do not.
 
-What the implementer needs:
+- **`src/world/world_streams.h`** reads the layout of a world stream (`inspectWorldStream`: part count, dictionary,
+  every atomic sector with its box and `0x3F1` data) and of a part file (`inspectPartFile`), and checks each atomic
+  section for librw (`inspectAtomicSection`). **librw has no RpWorld stream reader at all**, so the BSP is walked here;
+  the sectors hold no geometry, so nothing else of the world is needed. The two plugin readers are `@orig`-tagged.
+- **`src/graphics/ps2_world_mesh.h`** decodes a mesh's DMA chain ([PS2 world geometry](#ps2-world-geometry)).
+- **`src/platform/world_atomic.h`**: `attachWorldPlugins()` (run by `RenderEngine::start` between librw's init and
+  open) registers librw's mesh, native data and right-to-render plugins, the `0x3F0` atomic plugin (so the scales stay
+  with the atomic), and **a rights callback for plugin id 3** that gives atomics with pipeline `0x30082`/`0x30083`
+  Coney's PS2 `ObjPipeline`, whose uninstance step decodes the chains into plain librw geometry (positions scaled by
+  `+0x00`, texture coordinates by `+0x04`, colours, normals, triangles from the strips). `WorldAtomic::read` reads one
+  part atomic: librw's atomic reader is written for clumps (it takes the geometry from a clump's geometry list), but a
+  part atomic carries its geometry inside, so the geometry is read on its own and the atomic is then read from its
+  struct and extension. `WorldAtomic::unpack()` uninstances it and hands it to the default (GL3) pipeline.
 
-- **Readers** for the three files: the manifest; the world stream with a librw world reader (section `0x0B`) that
-  keeps the `0x3F1` sector data (20 bytes: index, part, origin); the part file (skip 16 bytes, texture dictionary,
-  count, `{u32 index, atomic}` pairs) with the `0x3F0` atomic data (two floats and a word). Unknown extensions can be
-  skipped; these two must not be.
+What librw does with these atomics on its own (from librw's source): it **reads** the geometry and keeps each mesh's
+DMA chain untouched, but it **cannot decode** it. Its PS2 uninstance code expects RenderWare's default layout,
+positions as `V3_32` and texture coordinates as `V2_32` inline after their `UNPACK`; here they are `V4_16`, by
+reference, interleaved and scaled. With its asserts off (Coney's build) it would print "unexpected unpack" and copy the
+wrong bytes. And the GL3 renderer cannot draw PS2 native geometry at all. So the smallest fix is the pipeline above,
+registered from Coney's code; librw needs no patch.
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[world]"` reads 159 worlds (16,074 atomic sectors,
+5,315 with an atomic) and 1,564 parts; all 5,315 atomics pass the checks, decode and read with librw (0 failed), each
+naming a sector of its own part, and all 5,315 unpack into plain geometry that lies in its sector's box once placed by
+its frame. Results in [Atomic plugin](#atomic-plugin) and [PS2 world geometry](#ps2-world-geometry).
+
+What the implementer still needs:
+
+- **The manifest reader**, and the world's and each part's texture dictionary kept while the part is loaded.
 - **Texture lookup**: the world's and each part's dictionary are loaded without being made current, so materials find
   their textures through the [global lookup](graphics.md#texture-lookup) across every loaded dictionary.
-- **Placement**: each part atomic gets a frame translated to its sector's origin.
 - **Streaming** with the behaviour of [Choosing what to stream](#streaming): one decision a frame, nearest missing
   sector first (visible ones first), farthest unseen part out when memory is short, a five-unit hysteresis, never the
   last part. Coney can read synchronously at first, but the test mode needs the decisions to be deterministic, so
@@ -388,8 +449,7 @@ What the implementer needs:
 - **Rendering** in the order of [A frame](#a-frame): the level world, `s` world sectors (back-face culling), opaque
   objects, `d` world sectors, water, translucent objects; a one-second fade-in per newly loaded atomic; the
   draw-distance adjustment; frustum, PVS and occluder culling (PVS and occluders can come later: they only save work).
-- **Disc test**: every world and part on the disc parses (159 worlds, 1,564 used parts, 5,315 atomics), with the
-  counts in [Disc counts](#disc-counts).
+- **Disc test** for the manifests (159, sizes as in [Manifest](#manifest)); the worlds and parts are covered.
 
 ## Disc counts {#disc-counts}
 
@@ -502,11 +562,10 @@ Some pairs are byte-identical (`level91`/`level97`, `level119`/`level120`).
 
 ## Open questions
 
-- **Can librw draw the part atomics?** They are PS2 native geometry built for the game's own pipelines (right-to-render
-  plugin 3, `0x30082`-`0x30088`), and the pipelines upload the two `0x3F0` floats to the vector unit. Whether librw's
-  PS2 native-geometry reader decodes this vertex layout correctly, and whether the floats are dequantisation scales
-  it must apply, is not checked. A first test: read one part with librw and compare its decoded vertex range with
-  the sector's box.
+- **What `0x3F0` `+0x04` scales** (texture coordinates, speculative), and the material pipelines `0x30084`,
+  `0x30086`, `0x30088`: what they change in drawing (the materials carry MatFX dual-texture data, plugin `0x120`).
+- **The two atomic pipelines `0x30082` and `0x30083`:** only one atomic uses `0x30082`; how the two differ.
+- **The native data struct size** that exceeds its section ([Part file](#part-file)).
 - **`0x3F0` `+0x08`** (always 0 in the worlds) and `0x004290d8`, its only reader.
 - **World `+0x04`** (answered): nothing sets it to a value `>= 0`. The only writes found are the constructor's and
   the finished unload's -1 (`0x00410308`, `0x004115d0`); every other function of `WorldPS2.cpp` and the world

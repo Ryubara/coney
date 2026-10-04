@@ -16,6 +16,7 @@
 
 #include "core/assert.h"
 #include "platform/sprite_sheets.h"
+#include "platform/world_atomic.h"
 
 namespace coney::platform {
 
@@ -81,6 +82,8 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     if (!rw::Engine::init()) {
         return startFailure("librw Engine::init", false);
     }
+    // Plugins are registered between init and open, as librw requires: the streamed world's (platform/world_atomic.h).
+    attachWorldPlugins();
     rw::EngineOpenParams params{};
     params.window = reinterpret_cast<SDL_Window**>(&engine->m_sdlWindow);
     params.fullscreen = 0;

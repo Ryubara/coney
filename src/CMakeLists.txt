@@ -22,11 +22,13 @@ add_library(coney_core STATIC
     gamemodes/sheet_viewer_mode.cpp
     graphics/frame_stats.cpp
     graphics/overlay_camera.cpp
+    graphics/ps2_world_mesh.cpp
     graphics/particle_page.cpp
     graphics/rw_stream.cpp
     graphics/screen.cpp
     graphics/sprite_batch.cpp
-    graphics/texture_grid.cpp)
+    graphics/texture_grid.cpp
+    world/world_streams.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_subdirectory(platform)

@@ -193,7 +193,7 @@ PDS pipelines (id `0x131`, `0x00461340`, then seven pipeline registrations throu
 | Id | Attached to | Stream data | Read by | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x3F1` | world sector (32 bytes of plugin data, offset in `0x0050ced0`) | 20 bytes: streamed-sector index, part number, origin of the sector's atomic | `0x00198e20` | confirmed (code); see [The streamed world](world.md#sector-plugin) |
-| `0x3F0` | atomic (16 bytes, offset in `0x0050cd98`) | 12 bytes: two floats for the game's PS2 pipelines, one word | `0x00192688` | confirmed (code); meaning of the values open, see [The streamed world](world.md#atomic-plugin) |
+| `0x3F0` | atomic (16 bytes, offset in `0x0050cd98`) | 12 bytes: two floats for the game's PS2 pipelines, one word | `0x00192688` | confirmed (code); the first float scales the packed positions (disc check), see [The streamed world](world.md#atomic-plugin) |
 
 **Disc check (corroboration):** RenderWare extension chunks in the WAD with the `0x1C02000A` stamp: `0x110` (PS2
 sky mipmap value) 148,835; `0x11E` 102,149; `0x3F0` 34,857 (all 12 bytes); `0x120` 19,059; `0x3F1` 16,138 (all
@@ -490,8 +490,9 @@ What is still to do:
   per resource; texture lookup by name across all loaded dictionaries, newest first (check the order), no file
   fallback.
 - PS2 native textures: 4- and 8-bit palettised, 32-bit palettes, power-of-two sizes up to 512; check alpha scaling.
-- Readers for the game's plugin data `0x3F0` (atomic, 12 bytes) and `0x3F1` (sector, 20 bytes): the streamed world
-  needs both ([The streamed world](world.md#coneys-implementation)).
+- Drawing the streamed world: the readers for `0x3F0` and `0x3F1` and the decoder of the world atomics' PS2 geometry
+  exist, and a part atomic is placed at its sector's origin ([The streamed world](world.md#coneys-implementation));
+  streaming and rendering do not.
 - The 16:9 option: a 16:9 logical screen shape, the overlay view-window scale 1.1 and the `_w` legal screens.
 
 TODO for the analysts, found while implementing:
@@ -512,7 +513,8 @@ TODO for the analysts, found while implementing:
 - **Mode flag `0x02`.** Read as PAL from the 24.5 frames-a-second threshold and the `_euro` screen; nothing that sets
   it has been found (speculative).
 - **What the game plugins hold** (answered for `0x3F1`): see [The streamed world](world.md#sector-plugin). For `0x3F0`
-  the two floats feed the game's PS2 pipelines; what they mean is open ([The streamed world](world.md#open-questions)).
+  the first float scales the packed vertex positions; what the second scales is open
+  ([The streamed world](world.md#atomic-plugin)).
 - **The overlay world** (`ResourceManager + 0x9034`) rendered before the sprites. The sort order of the queued
   PTanks is answered on [GUI](gui.md#draw-order): ascending key; that the 2D key is the creation depth is inferred.
 - **librw and PS2 alpha:** does librw's PS2 native texture reader scale palette alpha from 0-128 to 0-255?

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Everything that talks to SDL3 or librw, as a library so the tests can use it too (with the headless renderer).
 add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_viewer_mode.cpp
-                                  window.cpp)
+                                  window.cpp world_atomic.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 coney_target_defaults(coney_platform)

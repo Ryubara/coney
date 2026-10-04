@@ -19,15 +19,19 @@ add_executable(coney_tests
     graphics/frame_stats_test.cpp
     graphics/overlay_camera_test.cpp
     graphics/particle_page_test.cpp
+    graphics/ps2_world_mesh_test.cpp
     graphics/rw_stream_test.cpp
     graphics/screen_test.cpp
     graphics/sprite_batch_test.cpp
     graphics/texture_grid_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_textures_test.cpp
+    platform/disc_world_test.cpp
     platform/sdl_input_test.cpp
     platform/sprite_sheets_test.cpp
-    platform/texture_dictionary_test.cpp)
+    platform/texture_dictionary_test.cpp
+    platform/world_atomic_test.cpp
+    world/world_streams_test.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
