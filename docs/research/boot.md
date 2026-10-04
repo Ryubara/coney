@@ -1,6 +1,7 @@
 # Boot and the main loop
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). The few runtime claims
+(which clock mode a level runs in, the player camera's type) were read in PCSX2 2.9.94 over PINE and say so.
 
 ## Purpose
 
@@ -173,19 +174,44 @@ milliseconds used for freezes come from the global `Timer`'s slot `+0x30`. Confi
   advances by `+0x4c × +0x50 × 294,912,000` ticks converted to an integer, which is exactly `0x960000` (1/30 s) at
   scale 1.0, and the unscaled clock by `0x960000`.
 - **Real time** (`+0x54 == 0`): unless paused, read the real clock; game time advances by the elapsed ticks since
-  `+0x20` times the scale, **clamped to `0xb40000` ticks (40 ms) only when player 0's camera exists and is not in
-  state 4** (`0x0011f9b0(0)`, camera slot `+0x1e8`); with no camera there is no clamp. The unscaled clock advances by
-  the unclamped, unscaled elapsed time; both bases are set to now. What camera state 4 is, is open.
+  `+0x20` times the scale, **clamped to `0xb40000` ticks (40 ms) only when player 0's camera exists and is not a
+  scene camera** (`0x0011f9b0(0)`; camera slot `+0x1e8` returns the camera's *type*, and 4 is the scene camera);
+  with no camera there is no clamp. The unscaled clock advances by the unclamped, unscaled elapsed time; both bases
+  are set to now. So during a scripted scene (and the in-engine movies, which create a type-4 camera,
+  `0x0042a938`) game time follows the real clock without a cap.
+- **Camera types**, confirmed (code) at the camera factory `0x0011e1b0(type, ...)` (`Camera/Cam_ICamera.cpp`) and the
+  classes' slot `+0x1e8`: type 4 allocates with the tag `Cam_Scene` and builds a camera whose slot `+0x1e8`
+  (`0x004dc5a8`) returns 4; the other cases are 0 (tag `Cam_Fixed`), 1 (`Cam_Locked`), 0x10 (`Cam_3rdPerson`), and 2, 3,
+  5, 7, 8, 0xc and 0xd, which use constructor functions without a tag. In a Quick Rumble fight the player camera
+  (`0x005d9150` → vtable `0x00535d50`) is type 2, its slot `+0x1e8` (`0x004db698`) returning 2: confirmed (runtime),
+  PCSX2 2.9.94, memory read over PINE.
 - **Paused**: neither clock moves in either mode, and `TogglePause` resynchronises both bases when it unpauses, so the
   paused time is skipped. Pausing also refreshes the input state of every player who has one (`0x00146078`).
 - **Freeze** (`0x00145ea8(timer, ms, minMs)`, used by the GUI's `<FREEZE ms>` tag with `minMs` = 2000,
   [GUI](gui.md)): if not paused, pause and set `+0x60` = now + `ms`, `+0x64` = now + `minMs`. While paused with a
-  freeze set, each `Update` unpauses when `+0x60` has passed; otherwise, unless `0x001cae58(0x00619570)` holds it,
+  freeze set, each `Update` unpauses when `+0x60` has passed; otherwise, unless the caption system shows a
+  "kind 2" caption (`0x001cae58(0x00619570)`, below),
   it unpauses when any player with a pad releases the button with mask `0x40` after `+0x64` (`0x00144ba8`: pressed
   last frame, not this one), or at once when no player has a pad.
 - Finally `+0x48` and `+0x38` are recomputed (ticks / 294,912), paused or not.
 
 Mode 1's `Enter` sets `+0x5c` = 1 (paused) and `+0x60` = 0 ([Level loading](level-loading.md#initlevel)).
+
+**Which clock mode runs when.** Mode 8 switches the clock to the fixed step in its `Update` (`0x0015c858`) and its
+`Resume` (`0x0015c6f8`), and to real time in its `Suspend` (`0x0015c780`) and `Exit` (`0x0015c6c8`); mode 1
+(gameplay) never switches it. So **a level runs on real time, clamped to 40 ms**, and the front end on the fixed
+step. Confirmed (code) at those addresses; confirmed (runtime), PCSX2 2.9.94: in a Quick Rumble fight the mode stack
+(`0x005e66a0`, top index `0x0050c784` = 1) holds modes 8 and 1, and `GameTimer` (`0x00b8f980`) has `+0x54` = 0, scale
+1.0, not paused. Mode 0xb's `Update` (`0x0015d160`), which switches the fixed step on every frame, was not on the stack
+in that fight.
+
+**The caption system** at `0x00619570` (`0x001ca950`-`0x001cb400`) shows the subtitles of a movie (`0x001cad38`,
+from `0x0042a938`; during the intro movie it held the name `l1_in_sub`) and other captions. Each caption record
+starts with a kind (0-6, larger values become 3); setting a caption (`0x001cb010`) sets `+0x58` to 1 only for kind
+2, which is drawn centred, at 1.2 times the text size, in red (`0xff1a1a86`), and `0x001cae58` returns `+0x58`.
+Confirmed (code) at `0x001cb010`, `0x001cae58`. So a kind-2 caption keeps a frozen game frozen until its time runs
+out: the player cannot skip it with the button. Read at runtime (PCSX2 2.9.94): `+0x58` was 0 in the intro movie and
+in a fight. The single-step request `+0x58` of `GameTimer` (a different object) has no writer found.
 
 ## Behaviour
 
@@ -356,7 +382,9 @@ files they belong to.
 **Timing:** game logic steps 1/30 s per frame, and the RenderWare PS2 driver's vertical-blank handler shows a new
 frame at most every second vertical blank (the limit 2 is set at start-up), so the game runs at 30 frames a second
 (29.97 on NTSC) and slows down rather than skipping when a frame takes longer. Confirmed (code); the details are on
-[Graphics](graphics.md#frame-rate).
+[Graphics](graphics.md#frame-rate). This holds for mode 0xb's frame; in a Quick Rumble fight the stack held modes 8
+and 1, not 0xb, and the clock ran on real time with the 40 ms clamp ([Timers](#timers), confirmed (runtime)).
+Which levels, if any, run mode 0xb is open.
 
 ### Shutdown
 
@@ -392,8 +420,10 @@ TODO for the analysts, found while implementing:
   (answered): the pause stops both clocks in both modes and the base is resynchronised on unpause, so Coney's
   behaviour is right; in real-time mode the scale multiplies the elapsed time before the 40 ms clamp, and the
   unscaled clock at `+0x30` ignores it ([Timers](#timers)). One difference remains for the implementer: the original
-  applies the 40 ms clamp only while player 0's camera exists and is not in state 4, so on screens without a
-  camera real time is unclamped.
+  applies the 40 ms clamp only while player 0's camera exists and is not a scene camera (type 4), so on screens
+  without a camera and in scripted scenes real time is unclamped. And a level runs on real time, not on the fixed
+  step ([Timers](#timers)); Coney's fixed step is its own choice there (it keeps test mode deterministic), and its
+  limit is that slow frames slow the game down where the original catches up by up to 40 ms a frame.
 - What `dt` a mode sees on its first update (the value of its timestamp at `+0x00` after a push).
 - The `@orig` tags cite the game-mode functions and `GameTimer::Update` with file `(unknown)` (answered as far as the
   executable allows): no string names these files, so `(unknown)` stays; their directories are `GameModes/` and
@@ -405,8 +435,10 @@ TODO for the analysts, found while implementing:
 
 - Which mode is which: modes 0xa, 0xc, 0xd, 0xe, 0x10, 0x11, 0x13 and 0x14 have no role yet. The start-up path
   (5, 6, 8, 0x12, 1) is on [Start-up and the front end](frontend.md#mode-flow).
-- What camera state 4 is, which lifts the 40 ms clamp in real-time mode.
+- What camera state 4 is (answered): the camera's type, 4 being the scene camera ([Timers](#timers)).
 - Is `main` in `Core/ChunkSystem.cpp` or in an unnamed `Core/` file?
 - The memory system's page (answered): [Memory](memory.md).
-- What `0x001cae58(0x00619570)` is, which keeps a frozen `GameTimer` frozen, and who sets the single-step request
-  `+0x58`.
+- What `0x001cae58(0x00619570)` is (answered): "a kind-2 caption is showing" ([Timers](#timers)). Still open: who
+  sets the single-step request `GameTimer + 0x58` (no writer found; a debug feature, speculative), and what the
+  untagged camera types 2, 3, 5, 7, 8, 0xc and 0xd are (candidates: the files `Cam_Follow.cpp`, `Cam_Mini.cpp`,
+  `Cam_Mug.cpp`, `Cam_Power.cpp`; type 2 is the fight camera).

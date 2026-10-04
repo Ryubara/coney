@@ -1,8 +1,9 @@
 # Level loading
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims: PCSX2 was
-not running when this page was written. The disc-side checks (2026-10-04) read the NTSC-U disc's WAD with throwaway
-scripts outside the repository and are reported as names, counts and sizes only.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Its one runtime figure (the
+`Sector Pool`'s size) comes from [Memory](memory.md#sizes-at-runtime), PCSX2 2.9.94. The disc-side checks (2026-10-04)
+read the NTSC-U disc's WAD with throwaway scripts outside the repository and are reported as names, counts and sizes
+only.
 
 ## Purpose
 
@@ -58,7 +59,7 @@ the pool tree: [Memory](memory.md).
 
 | Pool | Kind | Created by | Size | Holds |
 | --- | --- | --- | --- | --- |
-| `Sector Pool` (`0x006eb9c8`) | heap, in the global heap | `0x0040d688`, at start-up | the largest free block of the global heap minus 128 KB | everything below |
+| `Sector Pool` (`0x006eb9c8`) | heap, in the global heap | `0x0040d688`, at start-up | the largest free block of the global heap minus 128 KB: 17,217,536 bytes on a retail boot ([Memory](memory.md#sizes-at-runtime)) | everything below |
 | `Sector Pool 2` (`0x006eb9cc`) | heap, in the global heap | `0x0040d688` | what is left minus 128 KB, at least 4 KB | nothing: unused ([Memory](memory.md#the-pool-tree)) |
 | `Global Data Pool` | clump, in the `Sector Pool` | `0x0040d900`, at start-up | 101 % of `warriors.glr` | the game-wide lists (sounds, music, characters, objects, particle pages, animations, dependencies), for the whole game |
 | `World Level Pool` | clump, in the `Sector Pool` | `0x0040dbb8`, per level | 103 % of `<level>.lev`, at least 256 KB | the [level file](#the-level-file) |
@@ -329,5 +330,7 @@ What the implementer still needs:
   `<level>_strings.lua`, `<level>main.lua`).
 - **The resource manager** (packs, the dependency list, the time stamps behind "least recently used", its seven
   lists) needs its own page.
-- **Runtime confirmation** with PCSX2: the size of the `Sector Pool` on a retail boot, and the order of file
-  requests during a level start (a breakpoint on the file manager's request function).
+- **Runtime confirmation** with PCSX2: the size of the `Sector Pool` on a retail boot (answered: 17,217,536 bytes,
+  with its use at the menu and in a level on [Memory](memory.md#sizes-at-runtime)); still open: the order of file
+  requests during a level start (needs a breakpoint on the file manager's request function, which PINE does not
+  offer).

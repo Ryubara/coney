@@ -1,8 +1,8 @@
 # GUI: widgets, sprite sheets and text
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims. The
-disc-side checks (2026-10-04) walked every chunk container of the NTSC-U WAD and are reported as counts and layouts
-only.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Runtime claims (sprite
+colours, draw-order keys) were read from the running game in PCSX2 2.9.94 over PINE and say so. The disc-side checks
+(2026-10-04) walked every chunk container of the NTSC-U WAD and are reported as counts and layouts only.
 
 ## Purpose
 
@@ -113,7 +113,16 @@ last one used (round robin; 255 = none free) and fills it (`0x001828e0`). Confir
 | `+0x38` | format: 0 position and size, 1 adds a 2D rotation, 2 a full matrix |
 | `+0x3c` | where the atomic lives: 0 drawn directly by its owner, 1 the 3D overlay world (`ResourceManager + 0x9038`), 2 the 2D overlay world (`+0x9034`) |
 | `+0x42` | viewport, `0xff` = all |
+| `+0x44` / `+0x48` | the PTank's position array and its stride (16) |
+| `+0x4c` / `+0x50` | colour array and stride (4) |
+| `+0x54` / `+0x58` | texture-rectangle array and stride (16) |
+| `+0x6c` / `+0x70` | size array and stride (8) |
 | `+0x74` | the largest sprite count seen |
+
+The array rows are confirmed (code) at the accessors `0x00182d80`-`0x00182db8` and confirmed (runtime), PCSX2
+2.9.94: the slots sit at `ResourceManager + 0x189c` (`0x01fd009c` on a retail boot), and on the main menu slot 3
+(`part_page0`) has capacity 1,024, slot 6 (`big_font`) 2,048, both with format 0 and `+0x3c` = 2. The arrays keep
+the last frame's sprites after the count at `+0x1c` is reset, which is how they were read.
 
 The PTank flag names, inferred from RenderWare 3.7's `rpPTANKDFLAG*` values: `0x10000000` array, `0x80` two texture
 coordinates per sprite, `0x02` colour, `0x01` position, `0x04` size, `0x20` 2D rotation, `0x08` matrix.
@@ -138,6 +147,17 @@ What `Instance_AddSprite` (`0x00182de0`) copies into the PTank. Confirmed (code)
 
 A sprite past the capacity is dropped (the call returns 0). An instance that is not in use or not resident ignores
 sprites.
+
+### Sprite colours {#sprite-colours}
+
+**Sprite colours are RenderWare's 0-255, with 255 full intensity and opaque**, not the GS's 128. Confirmed
+(runtime), PCSX2 2.9.94, from the colour arrays of the batches on the main menu: the `big_font` text is `(178, 178,
+178, 255)` for the selected item and `(170, 43, 43, 255)` for the others, each preceded by its drop shadow `(0, 0,
+0, 128)`; the Quick Rumble background picture is `(93, 106, 49, 254)`. The legal screen draws with `(255, 255, 255,
+255)` (confirmed (code) at `0x0015a0b8`, [Graphics](graphics.md#first-screen)). The shadow's alpha × 128 / 255 is
+therefore a half-transparent shadow (128 of 255 for a fully opaque widget), not a conversion to the GS range. On
+PCSX2's screen the grey and the red text come out at the same 70 % of these values, as does the legal picture's white
+at full colour, which fits one scale for all three (the cause of the 70 % is open, [Graphics](graphics.md#open-questions)).
 
 ### Widgets
 
@@ -234,9 +254,21 @@ The queue holds `{instance, key}` pairs (`ResourceManager + 0xca4`, pointers at 
 sorted with the C library's `qsort` and the comparator `0x00184890`: **ascending key**, so the smallest key is drawn
 first and the largest ends on top (Z test is off). Confirmed (code). The key, set by `0x00197000`: for an instance in
 the 2D overlay world (`+0x3c` = 2) a float read from the atomic at `+0x28`; otherwise the squared distance from the
-player camera to the atomic minus the square of a radius. Confirmed (code) for the reads; that the 2D key is the
-depth given at creation (`+0x20`, placed in the atomic's frame) is inferred, and with it the order: `menu_system`
-(8,500) under `big_font` text (9,000) under the 10,000 and 11,000 sheets (speculative until checked on screen).
+player camera to the atomic minus the square of a radius. Confirmed (code) for the reads. **The 2D key is the depth
+given at creation** (`+0x20`): confirmed (runtime), PCSX2 2.9.94, reading the queue (`ResourceManager + 0xca4`,
+`{instance, key}` pairs, still in memory after the pass empties the count) and the instances:
+
+| Screen | Queued instances (queue order) and keys | Drawn (ascending) |
+| --- | --- | --- |
+| main menu | `part_page0` 10,000; `big_font` 9,000 | text, then the button glyphs |
+| Quick Rumble menus | slot 60 (a one-sprite sheet, CRC `0x349348bd`: the background picture) 8,000; `part_page0` 10,000; `big_font` 9,000 | background, text, glyphs |
+| in a fight | `part_page1` -1.21e8; `lighting` -1.00e8; `part_page1` -1.21e8; `part_page0` 10,000; `big_font` 9,000 | the 3D-overlay batches (`+0x3c` = 1, distance keys) first, then text, then glyphs |
+
+Each 2D key equals the float at the instance's `+0x20`. The keys of instances in the 3D overlay world are negative:
+-120,999,792 for the two `part_page1` batches (depth 11,000) and -99,999,792 for `lighting` (depth 10,000), which
+is the squared camera distance (208, the same for all three) minus the square of the creation depth, so the radius
+the key subtracts is the depth (inferred from the numbers). They always come before the 2D ones.
+`menu_system` (8,500) was not on these screens.
 
 ### Text {#text}
 
@@ -397,8 +429,11 @@ as `BOBJ`, `YOBJ`, `ROBJ`, and the tags with no effect yet), no string empty.
 
 TODO for the analysts, found while implementing:
 
-- **Sprite colours:** are the colours `Instance_AddSprite` copies in the GS range (128 = full intensity and opaque,
-  as the shadow's alpha × 128/255 suggests) or in RenderWare's 0-255? Coney takes 0-255 (255 opaque) for now.
+- **Sprite colours** (answered, 2026-10-04): 0-255 with 255 opaque ([Sprite colours](#sprite-colours)), as Coney
+  takes them; nothing to change.
+- **Draw order** (answered): the 2D key is the creation depth ([Draw order](#draw-order)), as Coney's `OverlayPass`
+  defaults to; nothing to change. Note that instances of the 3D overlay world, when they come, sort before every 2D
+  batch because their keys are negative.
 - Names for the batch functions: the `@orig` tags call `0x00184890` `ResourceMgr_CompareOverlayKeys` and
   `0x00185cc8` `ResourceMgr_EmptyInstances` until the research database names them.
 - Names for the sheet functions: the `@orig` tags call them `ChunkLoaded_ParticlePage` (`0x00181b20`),
@@ -442,8 +477,8 @@ What the implementer still needs:
 
 ## Open questions
 
-- **The 2D sort key**: confirm that the overlay key is the creation depth, and the resulting order, with a PCSX2
-  capture of a menu.
+- **The 2D sort key** (answered): the creation depth; see [Draw order](#draw-order).
+- **The sheet `0x349348bd`** behind the Quick Rumble menus: its resource name (not one of the names tried).
 - **`firstGlyph` of `part_page0` (94) and `part_page1` (20)**: which text uses them, and the two explicit-base call
   sites in `Font_Measure`/`Font_Draw`.
 - **`<MONEYFONT>`**: the glyph base it sets (`0xd0100` for font 6, `0xb` for font 3) looks like a packed value; how

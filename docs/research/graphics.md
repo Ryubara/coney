@@ -1,8 +1,9 @@
 # Graphics device, frame and textures
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims: PCSX2 was
-not running when this page was written, so the frame rate below is settled from the code. The disc-side checks were
-run on the NTSC-U disc (2026-10-04) and are reported as counts only.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Runtime claims were made
+in PCSX2 2.9.94 (memory reads and writes over PINE, and PCSX2's own screenshots measured in scratch, never kept in
+the repository); each says so where it is made. The disc-side checks were run on the NTSC-U disc (2026-10-04) and
+are reported as counts only.
 
 ## Purpose
 
@@ -61,7 +62,7 @@ Names are ours.
 | `0x0050cdb4`, `0x0050cdb8` | the device (both set by `0x00194488`) | confirmed (code) |
 | `0x0050cdb0` | vertical blanks per displayed frame: **2** | confirmed (code), read by `0x00194aec` |
 | `0x0050cdac` | `0x1c0000`: size of the PS2 DMA packet buffer handed to the driver (`0x0048e210`) | confirmed (code); meaning inferred |
-| `0x0050b208` | aspect of the overlay camera's view window, 1.3333 (4:3) | confirmed (code); meaning inferred |
+| `0x0050b208` | aspect of the overlay camera's view window. Its static value 1.3333 is overwritten when the device starts (`0x00194634`) and when the mode changes (`0x00194e28`): **1.45** for interlaced 4:3 (the default), 1.6667 for 16:9 (with the scale below 1.1), 1.59 for progressive | confirmed (code) at those addresses; confirmed (runtime), PCSX2 2.9.94: `0x3fb9999a` (1.45) at the front end and in a fight |
 | `0x0050b20c` | overlay view-window scale: 1.0 (4:3) or 1.1 (16:9) | confirmed (code) |
 | `0x0050b6f8` | "cameras set up this frame" flag, set by `0x001448c8` in slot `+0x28`, cleared by `Present` | confirmed (code) |
 | `0x005fd260`... | static colour table built by `0x0017ae38` (black at `0x005fd260`, white at `0x005fd268`, ...) | confirmed (code) |
@@ -219,10 +220,10 @@ textures, 20,582 of them distinct. Every one parsed.
 - Filter mode: 18,431 linear-mip-linear (`6`), 2,151 linear (`2`). Addressing: 20,559 wrap/wrap, 23 clamp/clamp.
 - The five older streams stamped `0x1803FFFF` ([WAD contents](formats/wad-contents.md#renderware)) were not counted.
 
-**Evidence:** inferred (data), counts as stated. PS2 colours put full intensity and opaque alpha at 128, not 255: the
-game itself scales an alpha by 128 / 255 when it builds a sprite (`0x001a2690`, confirmed (code)). Whether librw's
-PS2 texture reader expands palette alpha from 0-128 to 0-255 needs checking before the first textured frame
-(speculative).
+**Evidence:** inferred (data), counts as stated. In the textures' palettes PS2 colours put opaque alpha at 128, not
+255; librw scales it to 0-255 when it converts a raster ([Coney's implementation](#coneys-implementation)). Sprite
+*vertex* colours are a different matter: they are 0-255 with 255 opaque, and the 128 / 255 that `0x001a2690` applies
+is the drop shadow's half alpha, not a conversion ([GUI](gui.md#sprite-colours)).
 
 ### Particle pages (sprite sheets) {#particle-pages}
 
@@ -271,7 +272,9 @@ What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code)
 1. **Cameras** (`0x001562c8`): device slot `+0x28` with the player-1 camera's view window, near and far clip and fog
    distance and its matrix. That sets the main camera, each viewport's camera (fog distance = far clip × fog start)
    and the overlay cameras: view offset 0, view window `(0x0050b20c × 0x0050b208 × 0.5, 0x0050b20c × 0.5)` =
-   (0.6667, 0.5), near 0.5, far 10,000,000, identity matrix. Then slot `+0x38` **clears the frame buffer and Z** to
+   **(0.725, 0.5)** in the default interlaced 4:3 mode, near 0.5, far 10,000,000, identity matrix (confirmed
+   (runtime), PCSX2 2.9.94: the overlay camera's `RwCamera` at `0x00a5bea0` holds view window 0.725 × 0.5 at `+0x68`,
+   near 0.5 at `+0x80`, far 10,000,000 at `+0x84`). Then slot `+0x38` **clears the frame buffer and Z** to
    the background colour.
 2. Simulation runs; then slot `+0x18` flushes the render queue before the world update (why there: inferred, so that
    streaming does not free data the GPU still reads).
@@ -309,13 +312,17 @@ vertical blank.** Confirmed (code):
 - The CPU cannot run ahead: submitting the next frame's packet buffer (`0x0048c508`) waits until the previous one
   has gone, so the game loop is held to the flip rate.
 
-So a frame is shown for at least two vertical blanks. A frame that takes longer is shown at the first vertical
-blank after it is ready (three blanks, 20 frames a second), while game time still advances by the fixed 1/30 s: the
-game slows down rather than skipping. One exception: `0x00159468(0)` sets a 33 ms limit (`0x00596d9c`); if that much
-time has passed since the last flip when the flip token is reached, the DMA handler flips at once without waiting
-for a vertical blank (it tears rather than drops to 20). `0x00159468(1)` sets 65,535 ms, which turns this off. Mode
-8 turns it off when it resumes (`0x0015c6f8`); mode 1 turns it off when it is suspended or left and chooses per frame
-in its `Update` (`0x00158728`, from a screen-effect state). Why the game allows tearing there is not known.
+So a frame is shown for at least two vertical blanks. **Evidence** for the rate at runtime: confirmed (runtime), PCSX2
+2.9.94 at full speed: its on-screen counters show 30 frames for 60 vertical blanks a second on the front end and in a
+fight (a coarse check; the counters at `0x005970f9`/`0x0059708b` were not watched). A frame that takes longer is shown
+at the first vertical blank after it is ready (three blanks, 20 frames a second). Where the game clock is on its fixed
+step (the front end, mode 8), game time still advances by 1/30 s and the game slows down rather than skipping; in a
+level (mode 1) the clock runs on real time clamped to 40 ms ([Boot](boot.md#timers)), so a slow frame advances game time
+by its real length. One exception: `0x00159468(0)` sets a 33 ms limit (`0x00596d9c`); if that much time has passed since
+the last flip when the flip token is reached, the DMA handler flips at once without waiting for a vertical blank (it
+tears rather than drops to 20). `0x00159468(1)` sets 65,535 ms, which turns this off. Mode 8 turns it off when it
+resumes (`0x0015c6f8`); mode 1 turns it off when it is suspended or left and chooses per frame in its `Update`
+(`0x00158728`, from a screen-effect state). Why the game allows tearing there is not known.
 
 For Coney: present once per fixed step of 1/30 s. With a 60 Hz display that is a swap interval of 2; the engine's
 test mode needs no display at all.
@@ -382,9 +389,21 @@ Y = 0.5 - y
 depth = 1.1                  # in front of the overlay camera
 ```
 
-Widths go through slot `+0x98` (× W / H). The overlay camera has a perspective view window of (0.6667, 0.5) and an
-identity matrix, so on the screen `x` = 0 and 1 land at about 1.3 % and 98.7 % of the width and `y` = 0 and 1 at
-about 4.5 % and 95.5 % of the height: a built-in safe-area margin (computed from the constants above, inferred).
+Widths go through slot `+0x98` (× W / H). Overlay sprites sit at `z` = -1.1 (seen in the batches' position arrays at
+runtime), and the overlay camera has a perspective view window of **(0.725, 0.5)** in the default mode ([A
+frame](#a-frame)) and an identity matrix, so a point projects to
+
+```text
+screen x (fraction of the width)  = 0.5 + X / (2 × 1.1 × 0.725)      # 0.5 + X / 1.595
+screen y (fraction of the height) = 0.5 - Y / (2 × 1.1 × 0.5)        # 0.5 - Y / 1.1
+```
+
+and GUI `x` = 0 and 1 land at about **5.2 % and 94.8 %** of the width, `y` = 0 and 1 at about 4.5 % and 95.5 % of
+the height: a built-in safe-area margin of about 5 % on every side. **Evidence:** confirmed (runtime), PCSX2 2.9.94:
+on the main menu the button glyph's sprite in the `part_page0` batch sits at overlay `(-0.6945, -0.3700, -1.1)`
+(read from the batch's position array); the formula puts it at 6.46 % across and 83.6 % down, and PCSX2's screenshot
+shows the glyph centred at 6.45 % and 83.5 %. With the static 1.3333 (view window 0.6667) it would land at 2.7 %
+across, which the screen rules out.
 
 **Screen quads.** Device slots `+0xe0`/`+0xe8` build four RwIm2D vertices for a destination rectangle in pixels, with
 texture coordinates from a source rectangle in texels plus half a texel, and draw them as two triangles (indices
@@ -405,21 +424,44 @@ After the three start-up movies, `main` pushes modes 8, 6 and 5, so **mode 5 run
    each for 16:9 (`legal_screen_w`, `legal_screen_w_sp`, ...); with flag `0x02` set and English it uses
    `legal_screen_euro`. The **WAD file name is the decimal CRC-32 of that resource name** (`"%u"`, `0x0054efc8`).
 3. It loads that resource through the resource manager and waits for it, servicing the file manager. For each of the
-   two display buffers it clears the overlay camera to opaque black, draws the page's first sprite, sized from the
-   overlay camera's near clip times a per-mode factor (centred: inferred), and shows the raster. Then it releases the resource.
+   two display buffers it clears the overlay camera to opaque black, draws the page's first sprite (placement
+   below), and shows the raster. Then it releases the resource.
 4. `Update` (`0x00159ae0`) draws nothing and presents nothing: it ticks the timer, reads the pads and leaves once
    5,000 ms have passed. The display keeps showing the last flipped buffer.
 
 The scale factors (horizontal, vertical) by mode flags, confirmed (code): interlaced 4:3 (1.55, 1.35), interlaced
 16:9 (1.9, 1.45), progressive 4:3 (1.35, 1.19), progressive 16:9 (1.6, 1.25), neither flag (1.0, 1.0) or with 16:9
-(1.45, 1.19). How these combine with the sprite's placement to fill the screen exactly is not worked out (see
-[Open questions](#open-questions)).
+(1.45, 1.19).
+
+**Placement.** The sprite record (`0x0015a0b8`-`0x0015a154`, confirmed (code)) has position `(0, 0, -d)`, where `d`
+is the overlay camera wrapper's slot `+0xa8` getter (its near clip, 0.5, inferred from the getters' order; the
+value cancels out below), size `(fx × d × (u1 - u0), fy × d × (v1 - v0))` with `(fx, fy)` the factors above and
+`(u0, v0, u1, v1)` the page's first rectangle, and colour `(255, 255, 255, 255)` (four `0xff` bytes). A batch sprite
+is centred on its position and its size is the full width and height, so the picture covers, as a fraction of the
+screen,
+
+```text
+width  = fx × (u1 - u0) / (2 × viewWindowX)     # 1.55 × 0.99902 / 1.45 = 1.068 in interlaced 4:3
+height = fy × (v1 - v0) / (2 × viewWindowY)     # 1.35 × 0.74902 / 1.0  = 1.011
+```
+
+centred: about **683 × 453 logical pixels on the 640 × 448 screen**, so the picture slightly overfills it. About
+3.2 % of the image width (16 texels of 512) is cut off on the left and on the right and 0.5 % (2 texels of 384) at
+the top and the bottom, and the 4:3 image is shown about 5.6 % wider than its own shape. The factors are matched to
+the overlay camera's per-mode aspect (`0x0050b208`): 1.55 / 1.45 here.
+
+**Evidence:** confirmed (runtime), PCSX2 2.9.94. The clear colour was patched to blue (`0x00159e40`, `mov.s f14, f15`)
+and the two factors halved (`0x0015a03c`, `0x0015a048`) before mode 5 ran, so the picture's edges show: PCSX2's
+screenshot has the picture centred, covering 0.534 of the width and 0.5075 of the height, against 0.5340 and 0.5056
+from the formula with half factors (within the screenshot's one-pixel resolution). Unpatched, the picture fills the
+screen to its edges with the image's margins cut as above (the text block scales by 2.0 about the centre between
+the two captures). The device flags read 1 (interlaced 4:3), the overlay camera's view window 0.725 × 0.5.
 
 **Disc check (corroboration):** all eleven names exist in `WARRIORS.DIR` under their decimal CRC. `legal_screen`
 (CRC-32 863681355) is entry 3,480: 263,680 bytes, one resource of two chunks, a `0x2A` texture dictionary holding one
 512 × 512 8-bit palettised texture and a `0x4C` particle page with one rectangle (the top 512 × 384). So the faithful
-first screen is that image, scaled to fill a black 640 × 448 screen, held for five seconds; then mode 6 (memory card
-checks) and mode 8 take over.
+first screen is that image, scaled to slightly overfill a black 640 × 448 screen ([Placement](#first-screen)), held for
+five seconds; then mode 6 (memory card checks) and mode 8 take over.
 
 This naming scheme names the whole first block of the WAD: see [WAD contents](formats/wad-contents.md#names).
 
@@ -448,7 +490,8 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   and `+0x98` as [2D drawing](#2d-drawing) gives them (`guiToOverlay`, `guiWidthToOverlay`), and the overlay camera's
   perspective projection with its view window (0.6667, 0.5) × the view scale, which takes a point or a size of
   overlay-camera space to logical pixels (`project`, `projectSize`; `unproject` for Coney's tools). GUI 0 and 1 land
-  at 1.3 % and 98.7 % across and 4.5 % and 95.5 % down, the margin the page computes; a test pins it. Coney computes
+  at 1.3 % and 98.7 % across and 4.5 % and 95.5 % down; a test pins it. **This differs from the original**, whose
+  view window is 0.725 × 0.5 in the default mode (TODO below). Coney computes
   the projection itself rather than rendering through a librw camera, and draws the result as 2D quads.
 - `TextureDictionary` (`src/platform/texture_dictionary.h`) reads a dictionary with librw after
   `graphics::inspectTexDictionary` has checked the stream, and converts it to RGBA images (any backend) or to OpenGL
@@ -472,10 +515,10 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   the last frame. The legal screen (`--view-txd 863681355`) shows correctly.
 - **The first screen** is mode 5 ([Front end](frontend.md#coneys-implementation)): `coney --disc <disc>` loads
   `legal_screen` through the chunk system (its `0x2A` dictionary and its `0x4C` sprite sheet,
-  [GUI](gui.md#coneys-implementation)) and draws the sheet's first rectangle, the top 512 × 384 of the texture, over
-  the whole logical screen on black for 5,000 ms. **Coney's choice:** the picture fills the logical screen exactly;
-  the original sizes it from the overlay camera's near clip and the per-mode factors, whose result is not worked out
-  (TODO below). On the NTSC-U disc it shows correctly and gives way to the idle mode after frame 150.
+  [GUI](gui.md#coneys-implementation)) and draws the sheet's first rectangle, the top 512 × 384 of the texture, over the
+  whole logical screen on black for 5,000 ms. **Coney's choice:** the picture fills the logical screen exactly; the
+  original overfills it slightly, 1.068 × 1.011 of the screen, centred (TODO below). On the NTSC-U disc it shows
+  correctly and gives way to the idle mode after frame 150.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc]"` with `CONEY_DISC` set reads 20,314
 dictionaries (from 3,016 chunk containers, 1,911 sector atomics files and 159 world streams) holding 42,211 textures;
@@ -498,21 +541,28 @@ What is still to do:
   ([The streamed world](world.md#coneys-implementation)); the level world, PVS and occluders do not.
 - The 16:9 option: a 16:9 logical screen shape, the overlay view-window scale 1.1 and the `_w` legal screens.
 
-TODO for the analysts, found while implementing:
+TODO for the implementers, from the runtime answers (2026-10-04):
 
-- **Legal-screen placement:** how the near clip and the factors (1.55, 1.35) turn into the sprite's position and
-  size, and so whether the picture fills the screen (Coney's choice) or leaves a border. Taken at face value with the
-  overlay camera's view window, the factors give a picture narrower in proportion than the screen, which would
-  distort a 4:3 image, so something in the reading is missing.
+- **The overlay camera's view window differs from Coney's choice.** `OverlayCamera` (`src/graphics/overlay_camera.h`)
+  uses 0.6667 × 0.5 (scale × 1.3333 × 0.5), from the static value of `0x0050b208`; the device overwrites it, and in
+  the default interlaced 4:3 mode the view window is **0.725 × 0.5** ([2D drawing](#2d-drawing)). GUI 0 and 1 then
+  land at 5.2 % and 94.8 % across, not 1.3 % and 98.7 %; the test that pins the margin needs the new numbers. 16:9
+  is 1.6667 × 0.5 × 1.1, progressive 1.59 × 0.5.
+- **The legal screen overfills the screen, unlike Coney's choice.** Coney stretches the picture to the logical
+  screen exactly; the original covers 1.068 × 1.011 of it, centred ([Placement](#first-screen)), cutting about 16
+  texels off each side and 2 off the top and bottom. Computing it from the factors and the view window, as the
+  original does, gives the right result in the other modes too.
+- **The legal screen's colour is white** (255, 255, 255, 255), as Coney draws it (confirmed (code) at `0x0015a0b8`).
+
+Still for the analysts:
+
 - **Names for device slots `+0x90` and `+0x98`:** the `@orig` tags call them `RwDevice::GuiToOverlay`
   (`0x00195238`) and `RwDevice::GuiWidthToOverlay` (`0x00195330`) until the research database names them.
-- **The legal screen's colour:** what colour `StartupScreen_Draw` gives its sprite; Coney draws it white (unchanged).
 
 ## Open questions
 
-- **Exact legal-screen placement.** The sprite's position and size come from the overlay camera's near clip and the
-  per-mode factors; whether the image fills the screen exactly, or leaves borders, is not worked out. A PCSX2
-  screenshot of the legal screen would settle it.
+- **Exact legal-screen placement** (answered): it overfills the screen by 6.8 % across and 1.1 % down, centred
+  ([Placement](#first-screen)).
 - **Mode flag `0x02`.** Read as PAL from the 24.5 frames-a-second threshold and the `_euro` screen; nothing that sets
   it has been found (speculative).
 - **What the game plugins hold** (answered for `0x3F1`): see [The streamed world](world.md#sector-plugin). For `0x3F0`
@@ -524,5 +574,10 @@ TODO for the analysts, found while implementing:
 - **Texture dictionary list order** for name lookups (newest first is RenderWare's usual behaviour; not read here).
 - **The remaining slots**: `+0xf0` (`0x001931f8`, not a defined function in our Ghidra project), `+0x148`
   (`0x004dee48`), `+0x180` (`0x004e3820`), and the byte `+0x448`.
-- **Runtime confirmation** of the two-vertical-blank flip with PCSX2 (a watch on the vertical-blank count
-  `0x005970f9` and the flip-pending flag `0x0059708b` while the game runs).
+- **Runtime confirmation** of the two-vertical-blank flip (partly answered): PCSX2 shows 30 frames for 60 vertical
+  blanks ([Presenting](#frame-rate)); a watch on `0x005970f9` and `0x0059708b` through a slow frame (to see the
+  20-a-second and the tearing cases) is still to do.
+- **Display brightness.** In PCSX2's screenshots the white of the legal image and of `big_font` text both come out
+  at about 178 of 255 (and the menu's grey and red text at the same 70 % of their vertex colours), so the whole
+  picture is about 70 % bright. Whether that is in the textures, in the GS output circuit (`PMODE`) or in PCSX2's
+  capture is not known (speculative); the GS registers cannot be read over PINE.

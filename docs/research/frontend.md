@@ -1,8 +1,8 @@
 # Start-up and the front end
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims: PCSX2 was
-not running when this page was written. The disc-side checks (2026-10-04) read the NTSC-U disc's WAD and are reported
-as names, counts and layouts only.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). One runtime observation (the
+boot sequence with an unformatted card, below) was made in PCSX2 2.9.94 and says so. The disc-side checks (2026-10-04)
+read the NTSC-U disc's WAD and are reported as names, counts and layouts only.
 
 ## Purpose
 
@@ -186,6 +186,13 @@ so modes 8 and 6 have not been entered when mode 5 runs first.
    save system and the box are done. `Exit` (`0x0015c2c0`) frees the buffer, sets the boot flag to 2 and, because the
    mode below is 8, clears mode 8's `+0x28`. Confirmed (code) for the calls; what each dialog says is in the string
    table and not traced here.
+
+   **At runtime with an unformatted card** in slot 1 (PCSX2 2.9.94, a blank card file, no button pressed; one
+   screenshot a second): the legal screen for 4 to 5 seconds, then a white message on black, "Checking memory card
+   ... in MEMORY CARD slot 1. Do not remove ...", for about 4 seconds, then a notice over the legal screen's
+   picture (without its text) that the game autosaves, then the picture alone as the title screen loads. **No dialog
+   asked for an answer** before the title screen; the profile manager later offered `CREATE NEW PROFILE` and
+   `RELOAD PROFILES`. Confirmed (runtime) for that card state only.
 3. **Mode 8 enters.** `Enter` (`0x0015c688`) sets `+0x28` = 1, takes `GameTimer` and calls its own `Resume`
    (`0x0015c6f8`), which turns off the flip-without-vsync limit (`0x00159468(1)`), switches to the fixed step and,
    because `+0x28` is set and no level is chosen, calls `LevelFlow_StartFrontEnd` (`0x0015c4b0`):
@@ -478,9 +485,8 @@ What the implementer still needs:
 
 ## Open questions
 
-- **Mode 6 at boot** with no memory card, an empty card and a card with a save: which dialogs appear, with which
-  strings, and whether the player must answer one before the front end loads. A PCSX2 run with each card state would
-  settle it.
+- **Mode 6 at boot** (answered for an unformatted card: no dialog, see [the flow](#mode-flow)): still open with no
+  card, a formatted card without a save and a card with a save.
 - **Rumble mode**: what `PM_Mode`'s code 1 does, and how `Menu.fadeToRMI` and the Rumble mode interface follow.
 - **Global string ids**: the text behind `0x76`, `0x78`, `0x79`, `0x8a`, `0x1f` and the memory-card ids needs a
   decoder for `config_strings_*.lua` (the entries' order in the `GSTRING.HUD` table gives the id; a string that

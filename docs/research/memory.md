@@ -1,8 +1,7 @@
 # Memory
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims: PCSX2 was
-not running when this page was written, so every size that depends on what was allocated before it (the `Sector
-Pool` above all) is given as a rule, not a number.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and, for the runtime sizes
+in [Sizes at runtime](#sizes-at-runtime), the game running under PCSX2 2.9.94 (memory read over PINE).
 
 ## Purpose
 
@@ -197,13 +196,49 @@ world part's, a resource's), and the heap's free space is the game's memory budg
 
 **Sizes.** The arena and every fixed size above are exact. The `Sector Pool` is not a constant: it is what the
 global heap has left at step 21, minus 128 KB. Subtracting only the fixed sizes listed above gives an upper bound of
-26,049,684 − 167,936 − 2,027,520 − 324,704 (`IPhysics`) − 216,588 (`ObjectAttribs`) − 131,072 = 23,181,864 bytes
-(inferred); the real value is lower by the smaller allocations of steps 4 to 20 and needs a runtime read. Because
-`Sector Pool` is sized from the largest free block and leaves 128 KB of it, `Sector Pool 2` is sized from what is
-then the largest free block, normally that same 128 KB remainder (minus the heap's own object), so it ends up at its
-4 KB minimum unless an earlier free block was bigger (inferred). Nothing reads `0x006eb9cc`, and no code pushes the
-pool, so **`Sector Pool 2` is unused** (confirmed (code) for the global: its only references are the two writes in
-`0x0040d688`; inferred that nothing reaches it through the registry lookups).
+26,049,684 − 167,936 − 2,027,520 − 324,704 (`IPhysics`) − 216,588 (`ObjectAttribs`) − 131,072 = 23,181,864 bytes;
+the smaller allocations of steps 4 to 20 take about 6 MB more, and on a retail boot the pool is **17,217,536 bytes**
+([Sizes at runtime](#sizes-at-runtime)). Because `Sector Pool` is sized from the largest free block and leaves 128 KB
+of it, `Sector Pool 2` is sized from what is then the largest free block, normally that same 128 KB remainder (minus
+the heap's own object), so it ends up at its 4 KB minimum, which is what a retail boot shows. Nothing reads
+`0x006eb9cc`, and no code pushes the pool, so **`Sector Pool 2` is unused** (confirmed (code) for the global: its only
+references are the two writes in `0x0040d688`; inferred that nothing reaches it through the registry lookups).
+
+### Sizes at runtime {#sizes-at-runtime}
+
+Read from the pool objects of [Globals](#globals) and the heaps' descriptors ([MemoryPoolHeap](#heaps): `+0x40`
+usable, `+0x48` in use) and from the registry records (`+0x18`/`+0x1c`, first and last byte), in the NTSC-U game.
+**Evidence:** confirmed (runtime), PCSX2 2.9.94, memory read over PINE at three points: during the start-up movies
+(after step 21), on the main menu (front-end level loaded) and in a Quick Rumble fight in the Fight Pen (`level102`,
+its worlds `level102s-sec.w` and `level102d-sec.w` in the registry).
+
+| Pool | Object | Block | Size (bytes) | Usable (heap descriptor `+0x40`) |
+| --- | --- | --- | --- | --- |
+| `All System` / `Global Memory` heap | `0x00715b70` | `0x00715b80` | 26,049,668 (`0x018d7c84`, the arena minus 16) | 26,048,516 |
+| `Filter Pool` | `0x00760c00` | `0x00761000` | 167,936 (`0x29000`) | |
+| `Level Dynamic & LUA Pool` | `0x00760fa0` | `0x00bbc000` | 2,027,520 (`0x1ef000`) | 2,026,496 |
+| **`Sector Pool`** | `0x00760f80` | `0x00f62000` | **17,217,536 (`0x0106b800`)** | 17,216,512 |
+| `Sector Pool 2` | `0x00760f70` | `0x01fcd800` | 4,096 (its minimum) | |
+
+The objects themselves sit in the global heap; the `Debug Heap` is `0x00760ff0` and the registry's root record
+`0x0078a400`. The `ResourceManager` is the next thing after `Sector Pool 2`, at `0x01fce800`, and the global heap
+has 329,764 bytes free once the front end is up (usable minus in use, the same in the fight).
+
+Use over time:
+
+| When | `Sector Pool` in use | free | `0x005147d0` (free after the last level load) | `Level Dynamic & LUA` in use |
+| --- | --- | --- | --- | --- |
+| start-up movies | 4,437,632 | 12,778,880 | 15,259,008 | |
+| main menu (front-end level) | 5,387,744 | 11,828,768 | 12,207,264 | 902,120 |
+| Quick Rumble fight, `level102` | 9,064,800 | 8,151,712 | 12,087,072 | 1,071,160 |
+
+So about half the `Sector Pool` is free in a small arena; the streamed story levels, which add `Sectors<i>` clumps,
+were not measured. In the fight the registry shows, inside the `Sector Pool`: `Global Data Pool` 641,842 bytes,
+`World Level Pool` 262,144 (its 256 KB minimum: `level102.lev` is small), the world clumps `level102s-sec.w`
+485,812 and `level102d-sec.w` 265,236, a `generic-header` clump of 2,126,704, and dozens of resource clumps
+named by the decimal CRC-32 of their resource ([Chunk system](chunk-system.md#loading-a-grouped-container)), from
+a few kilobytes to a few hundred kilobytes. The heap stack was 3 deep at the start-up movies (`Global Memory`,
+`Level Dynamic & LUA Pool`, `Sector Pool`) and 2 deep in the fight; its capacity stays as inferred below.
 
 ### The heap stack
 
@@ -346,9 +381,9 @@ parts), so the original's eviction only shows with a smaller budget; Coney's dis
 
 ## Open questions
 
-- **The `Sector Pool`'s size** on a retail boot, and the largest free block at the start of each level: a PCSX2 read
-  of the heap's descriptor (`+0x40`, `+0x48` of the block at `*0x006eb9c8 + 4`) after step 21 and after
-  `LoadLevel` would give them.
+- **The `Sector Pool`'s size** (answered): 17,217,536 bytes on a retail NTSC-U boot; use at the menu and in a level
+  is in [Sizes at runtime](#sizes-at-runtime). Still open: the use in a streamed story level, and the largest free
+  block (as opposed to the free total) at a level start.
 - **How much fragmentation matters**: whether `LargestFreeBlock` and `FreeBytes` differ enough in play to change
   an eviction. A runtime log of both at each `ResourceManager_MakeRoom` call would tell.
 - **`MemoryFilter.cpp`**: what the filter class does; `Filter Memory` is a plain `MemoryPoolHeap`.

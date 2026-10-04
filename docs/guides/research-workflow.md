@@ -72,10 +72,10 @@ Examples (the current pages have no runtime observation yet, so that level is sh
 - **Confirmed (code).** [WARRIORS.DIR](../research/formats/wad-dir.md): the index's constructor at `0x00149160`
   reads the entry count, seeks to `0x10`, allocates `count * 12` bytes and reads the entry table. The claim names
   the address where anyone with the executable can check it.
-- **Confirmed (runtime).** No research page records a PCSX2 observation yet. When one does, it reads like this
-  template (illustrative only; the placeholders are not findings):
-  `**Evidence:** confirmed (runtime), PCSX2 <version>: breakpoint at 0x<address> while <what the game was doing>;
-  <register or memory location> held <value>.`
+- **Confirmed (runtime).** [Memory](../research/memory.md#sizes-at-runtime): the `Sector Pool` is 17,217,536 bytes,
+  read in PCSX2 2.9.94 over PINE from the pool object the page documents (`0x00760f80`, block size at `+0x0c`) on
+  a retail boot, with the moments of the reads (start-up movies, main menu, a fight in `level102`). The claim says
+  what was read, where, when and in which emulator version, so anyone can repeat it.
 - **Inferred.** [Compiler](../research/compiler.md): the vtables use 8-byte `{delta, fn}` slots, the GCC 2.x
   layout, which points to GCC 2.95.x. The layout is confirmed; the compiler version is a conclusion drawn from it,
   and the page says the exact version is not confirmed.
@@ -141,11 +141,41 @@ is seeded from them when it arrives.
 - **Ghidra with ghidra-mcp.** Static analysis of `SLUS_212.15`, with the Emotion Engine processor extension; the
   ghidra-mcp server lets analyst agents drive it. Setup: [Ghidra + ghidra-mcp](ghidra.md). The Ghidra project holds
   the game's code, so it stays on your machine and is never committed.
-- **PCSX2.** For runtime evidence: breakpoints, memory reads and watches on the game as it runs. A bridge in
-  `coney_tools` (`coney-tools emu`) is planned, so that runtime checks can be scripted and repeated.
+- **PCSX2.** For runtime evidence: memory reads and writes on the game as it runs. A bridge in `coney_tools`
+  (`coney-tools emu`) is planned, so that runtime checks can be scripted and repeated; until then, see
+  [Driving PCSX2](#driving-pcsx2).
 - **Capture analysis.** Recording what the game sends to the graphics hardware or the sound processor and studying
   the capture. It is a later fallback, for questions that the code and the debugger answer badly (exact rendering
   state, timing). Captures contain game data: they stay in your scratch folder and never enter the repository.
+
+### Driving PCSX2 {#driving-pcsx2}
+
+How the first runtime pass (2026-10-04, official portable PCSX2 2.9.94) was done; it needs nothing but PCSX2, its
+PINE server and the `pcsx2` MCP server (or any PINE client).
+
+- **Set-up.** Enable PINE in `inis/PCSX2.ini` (`[EmuCore]` `EnablePINE = true`, `PINESlot = 28011`) before launching.
+  Start `pcsx2-qt.exe -fastboot -- <iso>` in the background. In our run PCSX2 2.9.94 failed to open the ISO whose path
+  holds commas and parentheses ("Requested filename ... does not exist"); an NTFS hard link with a plain name in your
+  scratch folder (`New-Item -ItemType HardLink`) boots fine and copies nothing.
+- **What PINE gives.** Memory reads and writes, game info and save/load state slots. No breakpoints, registers,
+  pause or frame capture. PCSX2 serves one PINE client at a time, so a second client (a script of your own) blocks
+  while the MCP server is connected.
+- **Input and hotkeys.** Keyboard events sent to the PCSX2 window (Win32 `keybd_event` after `SetForegroundWindow`)
+  reach both the pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick) and the
+  hotkeys in `[Hotkeys]`: **Space pauses**, F8 saves a screenshot to `snaps/` (aspect-corrected, 1240 × 930 for the
+  game's 640 × 448), F4 toggles the frame limiter. Hold a pad key for about 300 ms so that a 30 Hz game sees it.
+  Leave the frame limiter on: with it off, real-time waits (the legal screen's 5 s) pass in a blink.
+- **Catching a moment.** Load a state, press Space to pause, make the memory writes, then send Space followed by a
+  run of F8 presses (one a second, or faster) and look at the screenshots afterwards. Data drawn in one frame
+  usually survives in memory until reused: a sprite batch's arrays keep the last frame's sprites after its count is
+  reset, which is how the draw-order keys and colours were read.
+- **Patching code to see something.** A code write lands before the recompiler first compiles the block if the
+  function has not run yet; the legal screen's placement was measured by patching its clear colour to blue and
+  halving its size factors, and the start-up movies were skipped by making their skip check (`0x0042a820`) return 1.
+  Say on the page which patch a claim depends on.
+- **Hygiene.** Save states, screenshots and logs contain game data: keep them in your scratch folder (move the
+  `.p2s` files out of `pcsx2/sstates/` afterwards) and close PCSX2 when done. Screenshots are measured, never
+  committed; a claim quotes the numbers.
 
 ## Writing up a finding
 
