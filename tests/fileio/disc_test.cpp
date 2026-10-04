@@ -87,7 +87,7 @@ TEST_CASE("a missing path is refused", "[disc]") {
 TEST_CASE("an ISO image with a damaged root directory is refused", "[disc]") {
     auto image = Bytes().append(coney::test::buildIso({{"A.BIN;1", payload(4, 1)}}));
     // Make the first directory record claim a length too short to be a record.
-    image.patchU32(18 * 2048, 0x00000010);
+    image.patchU32(std::size_t{18} * 2048, 0x00000010);
     coney::io::MemoryStream stream(image.span());
     auto files = coney::io::readIsoRoot(stream);
     REQUIRE_FALSE(files.has_value());

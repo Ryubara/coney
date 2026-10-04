@@ -24,8 +24,8 @@ class FileStream final : public Stream {
     [[nodiscard]] static std::expected<FileStream, Error> open(const std::filesystem::path& path, std::uint64_t offset,
                                                                std::uint64_t length);
 
-    FileStream(FileStream&&) = default;
-    FileStream& operator=(FileStream&&) = default;
+    FileStream(FileStream&&) noexcept = default;
+    FileStream& operator=(FileStream&&) noexcept = default;
     ~FileStream() override = default;
 
     [[nodiscard]] std::expected<void, Error> read(std::span<std::byte> destination) override;

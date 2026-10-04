@@ -158,7 +158,7 @@ inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> fil
     }
 
     Bytes image;
-    image.padTo(16 * kSector);
+    image.padTo(std::size_t{16} * kSector);
     const std::size_t pvd = image.size();
     image.u8(1).text("CD001").u8(1);
     image.padTo(pvd + 128);
@@ -168,9 +168,9 @@ inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> fil
     Bytes root;
     record(root, kRootSector, kSector, 2, std::string_view("\0", 1));
     image.append(root.span());
-    image.padTo(kRootSector * kSector);
+    image.padTo(std::size_t{kRootSector} * kSector);
     image.append(dir.span());
-    image.padTo(kFirstFileSector * kSector);
+    image.padTo(std::size_t{kFirstFileSector} * kSector);
     for (const IsoFixtureFile& file : files) {
         image.append(file.data);
         image.padTo((image.size() + kSector - 1) / kSector * kSector);

@@ -125,6 +125,10 @@ TEST_CASE("the run loop stops at the frame limit or when the frame hook says so"
     GameTimer timer;
     CHECK(stack.runUntilEmpty(timer, {}, 4) == 4);
     int hooks = 0;
-    CHECK(stack.runUntilEmpty(timer, [&hooks] { return ++hooks < 3; }, std::nullopt) == 2);
+    const auto hook = [&hooks] {
+        ++hooks;
+        return hooks < 3;
+    };
+    CHECK(stack.runUntilEmpty(timer, hook, std::nullopt) == 2);
     CHECK(stack.size() == 1);
 }
