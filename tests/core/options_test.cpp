@@ -16,6 +16,7 @@ using coney::ErrorCode;
 using coney::parseOptions;
 
 namespace {
+// Parses a fixed list of arguments, sparing each test the span conversion.
 template <std::size_t N> auto parse(const std::array<std::string_view, N>& args) {
     return parseOptions(std::span<const std::string_view>(args));
 }

@@ -22,11 +22,13 @@ namespace {
 
 /// A synthetic disc image with three WAD entries: a flat container, a pack and some text.
 std::vector<std::byte> buildDisc() {
+    // A flat container: a Level Header and a Camera Animation, which the default table retags as a Null Pointer.
     Bytes flat;
     flat.header(2, 32, 0, 0);
     flat.header(0x17, 16, 0, 0).fill(16, 1);
     flat.header(0x0E, 16, 0, 0).fill(16, 2);
 
+    // A pack of two groups, one chunk in the first and two in the second.
     Bytes pack;
     pack.header(2, 0, 0, coney::chunk::kPackageMarker);
     pack.header(1, 16, 0, 0x1234).header(0x2A, 16, 0, 0x1234).fill(16, 3);
@@ -35,6 +37,7 @@ std::vector<std::byte> buildDisc() {
     Bytes text;
     text.text("-- not a container\n");
 
+    // Lay the three out in a WAD on 2048-byte boundaries and index them in WARRIORS.DIR.
     Bytes wad;
     Bytes dir;
     dir.header(3, 0, 0, 0);

@@ -9,6 +9,7 @@ from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_conf
 
 
 def make_repo(tmp_path: Path, local: str | None) -> Path:
+    """A made-up checkout with `local` as its coney.local.toml, or none when `local` is None."""
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     if local is not None:
         (tmp_path / "coney.local.toml").write_text(local, encoding="utf-8")

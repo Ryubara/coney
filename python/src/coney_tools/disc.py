@@ -41,11 +41,13 @@ class _Slice(io.RawIOBase):
         return self._pos
 
     def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
+        """Move within the slice; a position before its start clamps to 0, one past its end reads nothing."""
         base = {io.SEEK_SET: 0, io.SEEK_CUR: self._pos, io.SEEK_END: self._length}[whence]
         self._pos = max(0, base + offset)
         return self._pos
 
     def readinto(self, buffer: bytearray | memoryview) -> int:  # type: ignore[override]
+        """Fill `buffer` from the slice, never past its end; returns the bytes read (0 at the end)."""
         want = min(len(buffer), max(0, self._length - self._pos))
         if want == 0:
             return 0
@@ -56,6 +58,7 @@ class _Slice(io.RawIOBase):
         return len(data)
 
     def close(self) -> None:
+        """Close the underlying file too: each slice owns the handle `Disc.open` opened for it."""
         self._handle.close()
         super().close()
 

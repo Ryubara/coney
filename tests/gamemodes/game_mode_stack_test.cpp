@@ -39,8 +39,8 @@ class LoggingMode final : public GameMode {
     void resume() override { m_log.push_back(m_name + ".resume"); }
     void suspend() override { m_log.push_back(m_name + ".suspend"); }
 
-    GameMode* pushOnFirstUpdate = nullptr;
-    std::vector<double> seconds;
+    GameMode* pushOnFirstUpdate = nullptr; ///< Pushed onto the stack during the next update, then cleared.
+    std::vector<double> seconds;           ///< The step each update was given.
 
   private:
     std::string m_name;

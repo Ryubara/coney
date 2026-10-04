@@ -16,6 +16,7 @@ std::unexpected<Error> at(std::string_view where, const Error& error) {
     return fail(error.code, std::format("{}: {}", where, error.message));
 }
 
+/// Reads the 16-byte header at the start of a flat or grouped container; both loaders begin with it.
 std::expected<ContainerHeader, Error> readContainerHeader(io::Stream& stream) {
     if (stream.remaining() < kHeaderSize) {
         return fail(ErrorCode::Truncated, std::format("the container header needs {} bytes but only {} remain",
@@ -45,6 +46,7 @@ std::expected<void, Error> loadChunk(io::Stream& stream, const ChunkHandlerTable
                                      LoadReport& report) {
     const std::uint64_t headerOffset = stream.tell();
     const std::size_t chunkIndex = report.chunks.size();
+    // Names the chunk in an error message; with the header once it has been read and checked.
     const auto where = [&](const ChunkHeader* header) {
         if (header == nullptr) {
             return std::format("chunk {} at offset {:#x}", chunkIndex, headerOffset);
@@ -52,6 +54,8 @@ std::expected<void, Error> loadChunk(io::Stream& stream, const ChunkHandlerTable
         return std::format("chunk {} at offset {:#x} (type {:#04x} {}, {} bytes)", chunkIndex, headerOffset,
                            header->type, chunkTypeName(header->type), header->size);
     };
+
+    // Read and check the header before touching the data.
     if (stream.remaining() < kHeaderSize) {
         return at(where(nullptr), Error{ErrorCode::Truncated, "the chunk header is cut off"});
     }
@@ -72,6 +76,7 @@ std::expected<void, Error> loadChunk(io::Stream& stream, const ChunkHandlerTable
                                                           header.size - stream.remaining())});
     }
 
+    // Hand the data to the type's stream reader, or push it raw.
     const ChunkHandlers& handlers = table.handlers(header.type);
     const bool byHandler = static_cast<bool>(handlers.readFromStream);
     if (byHandler) {
@@ -100,6 +105,7 @@ std::expected<void, Error> loadChunk(io::Stream& stream, const ChunkHandlerTable
     }
     report.chunks.push_back(ChunkRecord{header, byHandler});
 
+    // Let the type's handler turn what is now on the stacks into an object.
     if (handlers.onLoaded) {
         if (auto loaded = handlers.onLoaded(stacks, header.type); !loaded) {
             return at(where(&header), loaded.error());
@@ -174,6 +180,7 @@ std::expected<LoadReport, Error> loadGroupedContainer(io::Stream& stream, const 
         if (stream.remaining() < kHeaderSize) {
             return at(where, Error{ErrorCode::Truncated, "the group header is cut off"});
         }
+        // Each group: its header, the zero-id terminator check, then its chunks.
         GroupHeader group;
         group.chunkCount = stream.readU32Le().value(); // the size check covers all four reads
         group.unknown1 = stream.readU32Le().value();

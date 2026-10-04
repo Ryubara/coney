@@ -35,9 +35,9 @@ class ElfError(ConfigError):
 class Section:
     """A section with file contents: where it is loaded and where its bytes are in the file."""
 
-    address: int
-    offset: int
-    size: int
+    address: int  # virtual address it is loaded at
+    offset: int  # file offset of its bytes
+    size: int  # bytes
 
 
 @dataclass(frozen=True)
@@ -67,6 +67,7 @@ class Elf:
 
 def read_elf(data: bytes) -> Elf:
     """Parse the ELF header and section headers of `data`. Raises ElfError when it is not a 32-bit LE MIPS ELF."""
+    # The ELF header: magic, class and byte order (e_ident[4], [5]), machine (+18), section headers (+32, +46).
     if len(data) < 52 or data[:4] != _ELF_MAGIC:
         raise ElfError("not an ELF file")
     if data[4] != 1 or data[5] != 1:
@@ -77,6 +78,7 @@ def read_elf(data: bytes) -> Elf:
     shentsize, shnum, shstrndx = struct.unpack_from("<HHH", data, 46)
     if shoff == 0 or shnum == 0 or shentsize < 40 or shoff + shnum * shentsize > len(data) or shstrndx >= shnum:
         raise ElfError("no usable section headers (the size estimate needs .text and .data by name)")
+    # Each section header is ten words; the name string table is the section numbered shstrndx, at its sh_offset.
     headers = [struct.unpack_from("<10I", data, shoff + i * shentsize) for i in range(shnum)]
     names_offset = headers[shstrndx][4]
     sections = {}
@@ -90,7 +92,7 @@ def read_elf(data: bytes) -> Elf:
             raise ElfError(f"section {name} runs past the end of the file")
         sections[name] = Section(address, offset, size)
     elf = Elf(data, sections)
-    elf.section(".text")
+    elf.section(".text")  # fail here, not in the first caller, when there is no .text
     return elf
 
 

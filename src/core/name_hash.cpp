@@ -23,6 +23,7 @@ constexpr std::array<std::uint32_t, 256> makeTable() {
 
 constexpr std::array<std::uint32_t, 256> kTable = makeTable();
 
+// Feeds one byte into a running CRC: the table-driven step both crc32 overloads share.
 std::uint32_t update(std::uint32_t crc, std::uint8_t byte) { return kTable[(crc ^ byte) & 0xFFU] ^ (crc >> 8); }
 
 } // namespace

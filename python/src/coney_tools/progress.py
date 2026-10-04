@@ -202,6 +202,7 @@ class Progress:
 
 
 def _share(part: int, whole: int) -> dict[str, Any]:
+    """`part` of `whole` as the bytes/total/percent fields of the JSON summary."""
     return {"bytes": part, "total": whole, "percent": round(100.0 * part / whole, 3) if whole else 0.0}
 
 
@@ -209,6 +210,7 @@ def _share(part: int, whole: int) -> dict[str, Any]:
 
 
 def _read_toml(path: Path) -> dict[str, Any]:
+    """Parse a TOML file, turning every failure into a ProgressError that names it."""
     try:
         with path.open("rb") as handle:
             return tomllib.load(handle)
@@ -219,18 +221,21 @@ def _read_toml(path: Path) -> dict[str, Any]:
 
 
 def _int(path: Path, where: str, value: object) -> int:
+    """`value` if it is a non-negative integer (not a bool); otherwise a ProgressError naming `where`."""
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         raise ProgressError(f"{path}: {where} must be a non-negative integer, got {value!r}")
     return value
 
 
 def _str(path: Path, where: str, value: object) -> str:
+    """`value` if it is a non-empty string; otherwise a ProgressError naming `where`."""
     if not isinstance(value, str) or not value:
         raise ProgressError(f"{path}: {where} must be a non-empty string, got {value!r}")
     return value
 
 
 def _ranges(path: Path, where: str, value: object) -> tuple[Range, ...]:
+    """A list of `[start, end]` pairs as Ranges; each must be non-empty."""
     if not isinstance(value, list):
         raise ProgressError(f"{path}: {where}.ranges must be a list of [start, end] pairs")
     result = []
@@ -245,6 +250,7 @@ def _ranges(path: Path, where: str, value: object) -> tuple[Range, ...]:
 
 
 def _tables(path: Path, data: dict[str, Any], key: str) -> list[dict[str, Any]]:
+    """The array of tables `[[key]]` of `data`; none is an empty list."""
     value = data.get(key, [])
     if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
         raise ProgressError(f"{path}: {key} must be an array of tables ([[{key}]])")
@@ -289,6 +295,8 @@ def load_totals(path: Path) -> Totals:
             )
         )
 
+    # Cross-checks: unique names, no two ranges overlapping, every range inside .text, and no more subsystem bytes
+    # than game code.
     names = [s.name for s in subsystems]
     if UNATTRIBUTED in names or len(set(names)) != len(names):
         raise ProgressError(f"{path}: subsystem names must be unique and not {UNATTRIBUTED!r}")
@@ -357,6 +365,7 @@ def parse_milestones(roadmap: str) -> list[Milestone]:
 
 def check(totals: Totals, functions: list[Function], tags: list[OrigTag]) -> list[str]:
     """Problems with functions.toml, alone and against the `@orig` tags; an empty list means consistent."""
+    # functions.toml on its own: no duplicates, each in the subsystem the source map gives, sizes that fit.
     problems = []
     seen: dict[int, Function] = {}
     for f in functions:
@@ -376,6 +385,7 @@ def check(totals: Totals, functions: list[Function], tags: list[OrigTag]) -> lis
         if f.address + (f.size or 0) > after.address:
             problems.append(f"functions.toml: {f.address:#010x} {f.name}: its size runs into {after.address:#010x}")
 
+    # Against the source: every tag listed under the same name, and every listed function tagged.
     tagged: dict[int, OrigTag] = {}
     for tag in tags:
         tagged.setdefault(tag.address, tag)

@@ -24,11 +24,11 @@ enum class ContainerKind : std::uint8_t {
 
 /// The result of loading one WAD entry through the chunk system.
 struct EntryLoad {
-    ContainerKind kind = ContainerKind::Flat;
-    bool packageMarker = false;      ///< The container header carries kPackageMarker.
-    chunk::LoadReport report;        ///< What was read.
-    chunk::ChunkStacks stacks;       ///< What the handlers left on the stacks.
-    std::uint64_t trailingBytes = 0; ///< Bytes of the entry after the container.
+    ContainerKind kind = ContainerKind::Flat; ///< How the entry parsed.
+    bool packageMarker = false;               ///< The container header carries kPackageMarker.
+    chunk::LoadReport report;                 ///< What was read.
+    chunk::ChunkStacks stacks;                ///< What the handlers left on the stacks.
+    std::uint64_t trailingBytes = 0;          ///< Bytes of the entry after the container.
 };
 
 /// Loads one WAD entry through the chunk system with `table`. An entry whose header carries the package marker is
@@ -66,7 +66,7 @@ class LoadEntryMode final : public GameMode {
     const chunk::ChunkHandlerTable& m_table;
     std::vector<std::string> m_requests;
     std::function<void(std::string_view)> m_print;
-    std::size_t m_next = 0;
+    std::size_t m_next = 0; ///< Index of the next request in m_requests.
     int m_failures = 0;
 };
 

@@ -29,6 +29,7 @@ std::expected<const WadEntry*, Error> Wad::lookup(std::string_view nameOrHash) c
     if (nameOrHash.empty()) {
         return fail(ErrorCode::InvalidArgument, "an entry needs a name or a 0x hash");
     }
+    // A hash: parse it strictly, then look it up as stored, without the name prefix.
     if (nameOrHash.starts_with("0x") || nameOrHash.starts_with("0X")) {
         const std::string_view digits = nameOrHash.substr(2);
         const bool allHex = !digits.empty() && digits.size() <= 8 && std::ranges::all_of(digits, [](char c) {
@@ -44,6 +45,7 @@ std::expected<const WadEntry*, Error> Wad::lookup(std::string_view nameOrHash) c
         }
         return fail(ErrorCode::NotFound, std::format("no WAD entry has the hash {:#010x}", hash));
     }
+    // Anything else is a file name.
     if (const WadEntry* entry = m_index.find(nameOrHash)) {
         return entry;
     }

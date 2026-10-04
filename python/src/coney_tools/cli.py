@@ -60,6 +60,7 @@ def _repo_check_title(file: str) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """Build the parser for every group and command; each group's commands are registered by its own helper."""
     parser = argparse.ArgumentParser(prog="coney-tools", description="Coney's own automation.")
     parser.add_argument("--version", action="version", version=f"coney-tools {version('coney-tools')}")
     groups = parser.add_subparsers(dest="group", required=True)
@@ -113,6 +114,7 @@ def _add_progress_commands(groups: Any) -> None:
 
 
 def _run_progress(args: argparse.Namespace) -> int:
+    """Dispatch a `progress` command."""
     if args.command == "show":
         return progress_cli.run_show(args.json)
     if args.command == "update":
@@ -121,6 +123,7 @@ def _run_progress(args: argparse.Namespace) -> int:
 
 
 def _run_wad(args: argparse.Namespace) -> int:
+    """Dispatch a `wad` command."""
     if args.command == "info":
         return wad_cli.run_info(args.disc, args.names)
     if args.command == "list":

@@ -16,6 +16,7 @@ using coney::test::TempDir;
 
 namespace {
 
+// `size` bytes counting up from `seed`, so a read from the wrong offset shows as a mismatch.
 std::vector<std::byte> payload(std::size_t size, std::uint8_t seed) {
     Bytes bytes;
     for (std::size_t i = 0; i < size; ++i) {

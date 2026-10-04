@@ -68,11 +68,12 @@ class Disc {
   private:
     /// Where a root file's bytes are on the host.
     struct Location {
-        std::filesystem::path hostFile;
-        std::uint64_t offset = 0;
+        std::filesystem::path hostFile; ///< The file itself in a folder, or the whole image.
+        std::uint64_t offset = 0;       ///< Where the file starts in hostFile: 0 in a folder.
         std::uint64_t size = 0;
     };
 
+    /// The location of the root file `name`, matched by cleanDiscName(); nullptr when there is none.
     [[nodiscard]] const Location* find(std::string_view name) const;
 
     std::filesystem::path m_path;

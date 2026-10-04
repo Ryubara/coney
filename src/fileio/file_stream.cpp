@@ -35,6 +35,7 @@ std::expected<void, Error> FileStream::read(std::span<std::byte> destination) {
     if (destination.empty()) {
         return {};
     }
+    // Clear the error flags a short read at the end of the file may have set: while they are set, seekg does nothing.
     m_file.clear();
     m_file.seekg(static_cast<std::streamoff>(m_offset + m_position));
     m_file.read(reinterpret_cast<char*>(destination.data()), static_cast<std::streamsize>(destination.size()));

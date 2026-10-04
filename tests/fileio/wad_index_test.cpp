@@ -46,17 +46,18 @@ TEST_CASE("WARRIORS.DIR parses and finds entries by name and hash", "[wad_index]
 
 TEST_CASE("a WARRIORS.DIR whose size disagrees with its count is refused", "[wad_index]") {
     Bytes shortDir = twoEntryDir();
-    shortDir.patchU32(0, 3);
+    shortDir.patchU32(0, 3); // claims a third entry the file does not hold
     auto truncated = WadIndex::parse(shortDir.span());
     REQUIRE_FALSE(truncated.has_value());
     CHECK(truncated.error().code == ErrorCode::Truncated);
 
     Bytes longDir = twoEntryDir();
-    longDir.patchU32(0, 1);
+    longDir.patchU32(0, 1); // claims one entry but holds two
     auto extra = WadIndex::parse(longDir.span());
     REQUIRE_FALSE(extra.has_value());
     CHECK(extra.error().code == ErrorCode::Invalid);
 
+    // A count whose expected size would overflow 32 bits, and a file shorter than the header.
     Bytes huge;
     huge.header(0xFFFFFFFFU, 0, 0, 0);
     CHECK_FALSE(WadIndex::parse(huge.span()).has_value());
@@ -65,7 +66,7 @@ TEST_CASE("a WARRIORS.DIR whose size disagrees with its count is refused", "[wad
 
 TEST_CASE("an entry past the end of the WAD is refused", "[wad_index]") {
     const Bytes dir = twoEntryDir();
-    auto index = WadIndex::parse(dir.span(), 2059);
+    auto index = WadIndex::parse(dir.span(), 2059); // level1.lev ends at 2060
     REQUIRE_FALSE(index.has_value());
     CHECK(index.error().code == ErrorCode::Invalid);
 }

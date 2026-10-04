@@ -10,6 +10,7 @@ from coney_tools.cli import main
 
 
 def test_version(capsys: pytest.CaptureFixture[str]) -> None:
+    """`--version` prints the package version and exits 0."""
     with pytest.raises(SystemExit) as exit_info:
         main(["--version"])
     assert exit_info.value.code == 0
@@ -46,6 +47,7 @@ def test_repo_check_fails_with_exit_1(tmp_path: Path, monkeypatch: pytest.Monkey
 
 
 def title_checkout(tmp_path: Path) -> Path:
+    """A made-up checkout whose title rules allow only the area `docs` and the verb `Add`."""
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     (tmp_path / ".github").mkdir()
     (tmp_path / ".github" / "commit-conventions.json").write_text(

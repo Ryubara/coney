@@ -10,6 +10,7 @@ namespace coney::platform {
 
 namespace {
 
+// The error for a librw start-up step that refused; librw gives no reason of its own.
 std::unexpected<Error> librwFailure(const char* step) {
     return std::unexpected(Error{ErrorCode::PlatformFailure, std::string("librw ") + step + " failed"});
 }

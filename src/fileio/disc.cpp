@@ -23,6 +23,7 @@ constexpr std::size_t kRootRecordOffset = 156;
 constexpr std::size_t kMinRecordLength = 34;
 constexpr std::uint8_t kDirectoryFlag = 2;
 
+// The little-endian 16-bit value at `bytes[at]`; callers have already checked the bounds.
 std::uint16_t loadU16Le(std::span<const std::byte> bytes, std::size_t at) {
     return static_cast<std::uint16_t>(static_cast<unsigned>(bytes[at]) | (static_cast<unsigned>(bytes[at + 1]) << 8));
 }
@@ -43,6 +44,7 @@ std::string cleanDiscName(std::string_view name) {
 }
 
 std::expected<std::vector<IsoFile>, Error> readIsoRoot(Stream& image) {
+    // Read the primary volume descriptor and check it is one, with the only block size we support.
     std::array<std::byte, kIsoSectorSize> pvd{};
     if (auto moved = image.seek(kPvdSector * kIsoSectorSize); !moved) {
         return fail(ErrorCode::Invalid, "not an ISO 9660 image (too small to hold a volume descriptor)");
@@ -61,6 +63,7 @@ std::expected<std::vector<IsoFile>, Error> readIsoRoot(Stream& image) {
     if (loadU16Le(pvd, kBlockSizeOffset) != kIsoSectorSize) {
         return fail(ErrorCode::Invalid, "unsupported ISO logical block size (only 2048-byte sectors)");
     }
+    // Find the root directory's extent and read all of it.
     const auto root = std::span<const std::byte>(pvd).subspan(kRootRecordOffset, kMinRecordLength);
     const std::uint32_t rootExtent = loadU32Le(root.subspan(2, 4));
     const std::uint32_t rootSize = loadU32Le(root.subspan(10, 4));
@@ -77,6 +80,7 @@ std::expected<std::vector<IsoFile>, Error> readIsoRoot(Stream& image) {
         return std::unexpected(std::move(done.error()));
     }
 
+    // Walk its records, keeping the files.
     std::vector<IsoFile> files;
     std::size_t pos = 0;
     while (pos < directory.size()) {
@@ -116,6 +120,7 @@ std::expected<Disc, Error> Disc::open(const std::filesystem::path& path) {
     Disc disc;
     disc.m_path = path;
     std::error_code ec;
+    // A folder: every regular file directly inside it is a root file.
     if (std::filesystem::is_directory(path, ec)) {
         // increment(ec) rather than a range-for: the iterator's operator++ reports errors by throwing.
         for (std::filesystem::directory_iterator it(path, ec), end; !ec && it != end; it.increment(ec)) {
@@ -135,6 +140,7 @@ std::expected<Disc, Error> Disc::open(const std::filesystem::path& path) {
         }
         return disc;
     }
+    // Otherwise it must be an ISO image: list its root directory and map each file to its byte range in the image.
     if (!std::filesystem::is_regular_file(path, ec)) {
         return fail(ErrorCode::NotFound,
                     std::format("{}: not a folder or an ISO image (does it exist?)", path.string()));

@@ -39,6 +39,7 @@ std::expected<EntryLoad, Error> loadWadEntry(const io::Wad& wad, const io::WadEn
     if (!stream) {
         return std::unexpected(std::move(stream.error()));
     }
+    // Peek at the container header's fourth word for the package marker.
     bool marker = false;
     if (stream->size() >= chunk::kHeaderSize) {
         std::array<std::byte, chunk::kHeaderSize> header{};
@@ -50,6 +51,7 @@ std::expected<EntryLoad, Error> loadWadEntry(const io::Wad& wad, const io::WadEn
     if (marker) {
         return loadAs(*stream, ContainerKind::Grouped, table);
     }
+    // No marker: try flat first, then grouped, and report the flat failure if both fail.
     auto flat = loadAs(*stream, ContainerKind::Flat, table);
     if (flat) {
         return flat;
@@ -62,6 +64,7 @@ std::expected<EntryLoad, Error> loadWadEntry(const io::Wad& wad, const io::WadEn
 
 std::string describeLoad(const EntryLoad& load) {
     const chunk::LoadReport& report = load.report;
+    // Total the chunks per type; a std::map keeps the lines in type order.
     struct TypeTotal {
         std::uint64_t chunks = 0;
         std::uint64_t bytes = 0;
@@ -77,6 +80,7 @@ std::string describeLoad(const EntryLoad& load) {
         dataBytes += record.header.size;
     }
 
+    // One line for the container, one per chunk type, one for what is left on the stacks.
     std::string text;
     if (load.kind == ContainerKind::Grouped) {
         text += std::format("  grouped container{}: {} groups (header count {}{}), {} chunks, {} bytes of chunk data\n",
@@ -101,6 +105,7 @@ LoadEntryMode::LoadEntryMode(const io::Wad& wad, const chunk::ChunkHandlerTable&
                              std::vector<std::string> requests, std::function<void(std::string_view)> print)
     : m_wad(wad), m_table(table), m_requests(std::move(requests)), m_print(std::move(print)) {}
 
+// One request per frame: look it up, load it, print its summary or its error; leave after the last.
 ModeResult LoadEntryMode::update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) {
     if (m_next < m_requests.size()) {
         const std::string& request = m_requests[m_next++];

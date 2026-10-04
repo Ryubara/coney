@@ -16,7 +16,7 @@ using coney::test::Bytes;
 
 TEST_CASE("Reader reads little-endian values and stops at the end", "[reader]") {
     Bytes bytes;
-    bytes.u8(0x01).u16(0x0302).u32(0x07060504).u32(0x3F800000);
+    bytes.u8(0x01).u16(0x0302).u32(0x07060504).u32(0x3F800000); // 0x3F800000 is 1.0 as an IEEE 754 single
     Reader reader(bytes.span());
     CHECK(reader.readU8() == 0x01);
     CHECK(reader.readU16Le() == 0x0302);

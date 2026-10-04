@@ -25,6 +25,7 @@ class RenderEngine {
     ~RenderEngine();
 
   private:
+    // Only start() makes one, once librw is running.
     RenderEngine() = default;
 
     /// Runs librw's stop, close and term, if this object still owns the running engine.

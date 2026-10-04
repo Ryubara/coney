@@ -21,6 +21,7 @@ GOOD = "# CLAUDE.md\n\nRead `AGENTS.md`.\n\n" + IMPORT_LINE + "\n"
 
 
 def write(root: Path, claude: str | None = GOOD, gemini: str | None = GOOD.replace("CLAUDE", "GEMINI")) -> Path:
+    """Write the pointer files into `root`; None leaves that one out."""
     for name, text in (("CLAUDE.md", claude), ("GEMINI.md", gemini)):
         if text is not None:
             (root / name).write_text(text, encoding="utf-8")
@@ -92,6 +93,7 @@ def test_every_broken_rule_is_reported() -> None:
 
 
 def write_rules(root: Path, data: object) -> Path:
+    """Write `data` as the commit conventions file of `root`."""
     (root / ".github").mkdir()
     (root / ".github" / "commit-conventions.json").write_text(json.dumps(data), encoding="utf-8")
     return root

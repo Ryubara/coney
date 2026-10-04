@@ -59,6 +59,7 @@ def badge_url(label: str, part: int, whole: int) -> str:
 
 
 def _summary_rows(progress: Progress, roadmap_link: str) -> list[str]:
+    """The summary table shared by the README and the docs page; `roadmap_link` is relative to each."""
     totals = progress.totals
     game = totals.game_bytes
     done = progress.reimplemented_bytes
@@ -78,6 +79,7 @@ def _summary_rows(progress: Progress, roadmap_link: str) -> list[str]:
 
 
 def _badges(progress: Progress) -> str:
+    """The two shields.io badges, reimplemented and researched."""
     game = progress.totals.game_bytes
     reimplemented = badge_url("reimplemented", progress.reimplemented_bytes, game)
     researched = badge_url("researched", progress.totals.researched_bytes, game)
@@ -88,6 +90,7 @@ def _badges(progress: Progress) -> str:
 
 
 def _current(progress: Progress, roadmap_link: str) -> str:
+    """The "Working on: ..." line naming the milestones in progress; empty when there are none."""
     current = [m for m in progress.milestones if m.status == "in progress"]
     if not current:
         return ""
@@ -109,6 +112,7 @@ def render_readme(progress: Progress) -> str:
 
 
 def _subsystem_table(progress: Progress) -> list[str]:
+    """One row per subsystem, then unattributed code; a subsystem with no placed bytes shows n/a."""
     lines = [
         "| Subsystem | Reimplemented | Share | Functions | Code (bytes) |",
         "| --- | --- | --- | --- | --- |",
@@ -123,6 +127,7 @@ def _subsystem_table(progress: Progress) -> list[str]:
 
 
 def _coverage_table(progress: Progress) -> list[str]:
+    """The source map's coverage categories as shares of `.text`."""
     text = progress.totals.text.size
     lines = ["| Category | Share of `.text` | | Bytes |", "| --- | --- | --- | --- |"]
     for c in progress.totals.coverage:
@@ -131,6 +136,7 @@ def _coverage_table(progress: Progress) -> list[str]:
 
 
 def _middleware_table(progress: Progress) -> list[str]:
+    """The middleware Coney replaces, with its share of `.text`."""
     text = progress.totals.text.size
     lines = ["| Library | Share of `.text` | Bytes | Replaced by |", "| --- | --- | --- | --- |"]
     for m in progress.totals.middleware:
@@ -139,6 +145,7 @@ def _middleware_table(progress: Progress) -> list[str]:
 
 
 def _function_table(progress: Progress) -> list[str]:
+    """Every reimplemented function in address order, or "None yet."."""
     if not progress.functions:
         return ["None yet."]
     lines = ["| Address | Original name | Subsystem | Bytes |", "| --- | --- | --- | --- |"]

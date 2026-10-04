@@ -13,6 +13,7 @@ from coney_tools.wad_cli import open_disc
 
 
 def _report_problems(problems: list[str]) -> None:
+    """Print each problem on its own line."""
     for problem in problems:
         print(f"problem: {problem}")
 
@@ -42,6 +43,7 @@ def run_show(as_json: bool) -> int:
 
 
 def _normalise(text: str) -> str:
+    """`text` with LF line endings, so a CRLF checkout compares equal to the generated block."""
     return text.replace("\r\n", "\n")
 
 
@@ -94,6 +96,7 @@ def set_size(text: str, address: int, size: int) -> str:
             if re.match(r"^\s*size\s*=", lines[j]):
                 lines[j] = f"size = {size}"
                 return "\n".join(lines)
+        # No size yet: add one after the block's last line that is neither blank nor a comment.
         last = max(j for j in range(start, end) if lines[j].strip() and not lines[j].lstrip().startswith("#"))
         lines.insert(last + 1, f"size = {size}")
         return "\n".join(lines)
@@ -116,6 +119,7 @@ def run_sizes(disc_arg: str | None, fill: bool) -> int:
     with disc.open(wad.ELF_FILE) as handle:
         executable = elf.read_elf(handle.read())
     starts = elf.function_starts(executable)
+    # Edit with LF and write back with the file's own line endings, as run_update does.
     text = path.read_bytes().decode("utf-8")
     newline = "\r\n" if "\r\n" in text else "\n"
     text = text.replace("\r\n", "\n")

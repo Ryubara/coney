@@ -12,9 +12,9 @@ namespace coney::platform {
 
 /// What the window should look like when it opens.
 struct WindowDesc {
-    std::string_view title = "Coney";
-    int width = 1280;
-    int height = 720;
+    std::string_view title = "Coney"; ///< The title bar text.
+    int width = 1280;                 ///< Client area width in pixels.
+    int height = 720;                 ///< Client area height in pixels.
 };
 
 /// Initialises SDL's video subsystem and owns one window. Move-only; destroying it closes the window and shuts SDL
@@ -35,6 +35,7 @@ class Window {
     [[nodiscard]] bool pumpEvents();
 
   private:
+    // Only open() makes one, taking ownership of the SDL_Window it created.
     explicit Window(void* handle);
 
     /// Destroys the window and shuts SDL down, if this object still owns them.

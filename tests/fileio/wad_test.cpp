@@ -32,6 +32,7 @@ Bytes twoEntryDir() {
 TEST_CASE("Wad opens a disc folder, looks entries up and reads them", "[wad]") {
     TempDir folder;
     folder.write("WARRIORS.DIR", twoEntryDir().span());
+    // The archive the index describes: global.lua's 5 bytes at 0, level1.lev's 12 at 2048.
     Bytes wadData;
     wadData.text("hello").padTo(2048).u32(1).u32(2).u32(3);
     folder.write("WARRIORS.WAD", wadData.span());

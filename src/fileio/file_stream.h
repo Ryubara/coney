@@ -28,12 +28,14 @@ class FileStream final : public Stream {
     FileStream& operator=(FileStream&&) noexcept = default;
     ~FileStream() override = default;
 
+    // The Stream interface; its doc comments give the contracts.
     [[nodiscard]] std::expected<void, Error> read(std::span<std::byte> destination) override;
     [[nodiscard]] std::expected<void, Error> seek(std::uint64_t position) override;
     [[nodiscard]] std::uint64_t tell() const override { return m_position; }
     [[nodiscard]] std::uint64_t size() const override { return m_length; }
 
   private:
+    // Only open() makes one, once it has checked the range against the file.
     FileStream(std::ifstream file, std::uint64_t offset, std::uint64_t length)
         : m_file(std::move(file)), m_offset(offset), m_length(length) {}
 

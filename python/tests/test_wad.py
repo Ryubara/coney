@@ -12,11 +12,13 @@ from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.disc import SECTOR, Disc
 
+# The made-up archive: three named files, then an unnamed fourth (hash 0xDEADBEEF) whose bytes mention gamma.txt.
 FILES = {"alpha.lua": b"\x1bLua-made-up-alpha", "beta.dat": b"\x01\x00\x00\x00beta", "gamma.txt": b"gamma text"}
 HIDDEN = b"\x02\x00\x00\x00 refers to gamma.txt"
 
 
 def h(name: str) -> int:
+    """The name hash of a bare file name, written out independently of `wad.name_hash`."""
     return zlib.crc32(("./ee_files/" + name).encode())
 
 
@@ -32,6 +34,7 @@ def build_archive() -> tuple[bytes, bytes, list[tuple[str, int]]]:
 
 
 def make_folder(root: Path) -> Path:
+    """A disc folder holding the made-up archive and executable."""
     directory, wad_bytes, _ = build_archive()
     root.mkdir()
     (root / "WARRIORS.DIR").write_bytes(directory)
@@ -42,6 +45,7 @@ def make_folder(root: Path) -> Path:
 
 
 def dir_record(name: bytes, extent: int, size: int, flags: int = 0) -> bytes:
+    """One ECMA-119 directory record, padded to an even length, with both-endian extent and size."""
     length = 33 + len(name) + (len(name) + 1) % 2
     record = bytearray(length)
     record[0] = length
@@ -85,6 +89,7 @@ def make_iso(path: Path, files: dict[str, bytes], pad_directory: bool = False) -
 
 
 def make_iso_disc(path: Path) -> Path:
+    """An ISO image holding the made-up archive and executable."""
     directory, wad_bytes, _ = build_archive()
     return make_iso(
         path,
@@ -115,6 +120,7 @@ def test_name_hash_lowercases() -> None:
 
 
 def test_parse_dir() -> None:
+    """Entries come out in file order with their hashes, offsets and sizes."""
     directory, wad_bytes, _ = build_archive()
     entries = wad.parse_dir(directory, len(wad_bytes))
     assert [e.hash for e in entries][:3] == [h(n) for n in FILES]
@@ -183,6 +189,7 @@ def test_iso_reader_rejects_other_files(tmp_path: Path) -> None:
 
 
 def test_disc_missing_file(tmp_path: Path) -> None:
+    """Opening a file the disc root lacks raises a ConfigError naming it."""
     disc = Disc(make_iso(tmp_path / "t.iso", {"A.BIN": b"a"}))
     with pytest.raises(ConfigError, match=r"no WARRIORS\.DIR"):
         disc.open("WARRIORS.DIR")
@@ -193,6 +200,7 @@ def test_disc_missing_file(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("kind", ["folder", "iso"])
 def test_info_and_list(kind: str, tmp_path: Path, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """`wad info` and `wad list` give the same results from a folder and from an ISO image."""
     disc = make_folder(tmp_path / "d") if kind == "folder" else make_iso_disc(tmp_path / "d.iso")
     names = tmp_path / "names.txt"
     names.write_text("alpha.lua\n", encoding="utf-8")
@@ -244,6 +252,7 @@ def test_malformed_dir_is_exit_2(tmp_path: Path, repo: Path, capsys: pytest.Capt
 
 
 def test_extract_names_and_only(tmp_path: Path, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Extracted files take a known name or `<hash>.bin`; `--only` takes hashes and names."""
     disc = make_folder(tmp_path / "d")
     names = tmp_path / "names.txt"
     names.write_text("alpha.lua\n", encoding="utf-8")

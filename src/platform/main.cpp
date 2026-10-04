@@ -26,6 +26,7 @@
 
 namespace {
 
+// Writes `text` to stdout by its size and flushes, so each line shows at once even when stdout is a pipe.
 void printText(std::string_view text) {
     std::fwrite(text.data(), 1, text.size(), stdout);
     std::fflush(stdout);
@@ -34,6 +35,7 @@ void printText(std::string_view text) {
 } // namespace
 
 int main(int argc, char** argv) {
+    // Parse the command line; exit 2 on a usage error, as command-line tools do.
     const std::vector<std::string_view> args(argv + 1, argv + argc);
     auto options = coney::parseOptions(args);
     if (!options) {

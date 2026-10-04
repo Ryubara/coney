@@ -18,7 +18,7 @@
 
 namespace coney::test {
 
-/// Builds a little-endian byte buffer.
+/// Builds a little-endian byte buffer. Every method appends (or patches) and returns the builder, so calls chain.
 class Bytes {
   public:
     Bytes& u8(std::uint8_t value) {
@@ -39,10 +39,12 @@ class Bytes {
     Bytes& header(std::uint32_t a, std::uint32_t b, std::uint32_t c, std::uint32_t d) {
         return u32(a).u32(b).u32(c).u32(d);
     }
+    /// Appends `count` copies of `value`.
     Bytes& fill(std::size_t count, std::uint8_t value) {
         m_data.insert(m_data.end(), count, static_cast<std::byte>(value));
         return *this;
     }
+    /// Appends the characters as bytes, with no terminator.
     Bytes& text(std::string_view chars) {
         for (const char c : chars) {
             u8(static_cast<std::uint8_t>(c));
@@ -80,6 +82,7 @@ class Bytes {
 /// test.
 class TempDir {
   public:
+    // A counter plus a random number, retried until unused, so parallel test processes never share a folder.
     TempDir() {
         static int counter = 0;
         const auto base = std::filesystem::temp_directory_path();
@@ -130,6 +133,7 @@ inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> fil
     constexpr std::uint32_t kRootSector = 18;
     constexpr std::uint32_t kFirstFileSector = 20;
 
+    // Appends one ECMA-119 directory record, laid out at the offsets readIsoRoot() reads.
     auto record = [](Bytes& dir, std::uint32_t extent, std::uint32_t size, std::uint8_t flags, std::string_view name) {
         const auto nameLength = static_cast<std::uint8_t>(name.size());
         auto length = static_cast<std::uint8_t>(33 + nameLength);
@@ -147,6 +151,7 @@ inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> fil
         dir.padTo(start + length);
     };
 
+    // The root directory: ".", "..", a subdirectory the reader must skip, then one record per file.
     Bytes dir;
     record(dir, kRootSector, kSector, 2, std::string_view("\0", 1));
     record(dir, kRootSector, kSector, 2, "\x01");
@@ -157,6 +162,7 @@ inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> fil
         sector += static_cast<std::uint32_t>((file.data.size() + kSector - 1) / kSector);
     }
 
+    // The image: 16 empty system-area sectors, the descriptor, the root directory, then the files' data.
     Bytes image;
     image.padTo(std::size_t{16} * kSector);
     const std::size_t pvd = image.size();

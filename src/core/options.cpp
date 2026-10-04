@@ -24,10 +24,12 @@ constexpr std::string_view kUsage =
     "  --frames N     stop after N frames (1 to 1000000); used by tests and CI\n"
     "  --help         show this text and exit\n";
 
+// Shorthand for the one error code every option mistake uses.
 std::unexpected<Error> invalidArgument(std::string message) {
     return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)});
 }
 
+// True for a non-empty string of ASCII digits only; no sign, spaces or locale digits.
 bool isAllDigits(std::string_view text) {
     return !text.empty() && std::ranges::all_of(text, [](char c) { return c >= '0' && c <= '9'; });
 }

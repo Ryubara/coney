@@ -60,6 +60,7 @@ class MemoryStream final : public Stream {
     /// Reads `data`, which must outlive the stream.
     explicit MemoryStream(std::span<const std::byte> data) : m_data(data) {}
 
+    // The Stream interface; its doc comments give the contracts.
     [[nodiscard]] std::expected<void, Error> read(std::span<std::byte> destination) override;
     [[nodiscard]] std::expected<void, Error> seek(std::uint64_t position) override;
     [[nodiscard]] std::uint64_t tell() const override { return m_position; }
@@ -83,17 +84,19 @@ class SubStream final : public Stream {
     SubStream& operator=(SubStream&&) = delete;
     ~SubStream() override = default;
 
+    // The Stream interface; positions are relative to the start of the window.
     [[nodiscard]] std::expected<void, Error> read(std::span<std::byte> destination) override;
     [[nodiscard]] std::expected<void, Error> seek(std::uint64_t position) override;
     [[nodiscard]] std::uint64_t tell() const override { return m_position; }
     [[nodiscard]] std::uint64_t size() const override { return m_length; }
 
   private:
+    // Only open() makes one, once it has checked that `length` bytes remain in the parent.
     SubStream(Stream& parent, std::uint64_t base, std::uint64_t length)
         : m_parent(&parent), m_base(base), m_length(length) {}
 
     Stream* m_parent;
-    std::uint64_t m_base;
+    std::uint64_t m_base; ///< The parent's position at offset 0 of the window.
     std::uint64_t m_length;
     std::uint64_t m_position = 0;
 };

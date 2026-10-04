@@ -11,6 +11,7 @@ namespace coney::io {
 
 namespace {
 
+// The error every read past the end gives, naming what was wanted and where.
 std::unexpected<Error> truncated(std::size_t wanted, std::size_t position, std::size_t remaining) {
     return fail(ErrorCode::Truncated,
                 std::format("needed {} bytes at offset {} but only {} remain", wanted, position, remaining));

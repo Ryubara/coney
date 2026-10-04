@@ -43,6 +43,7 @@ TITLE_RULES_FILE = ".github/commit-conventions.json"
 TITLE_MAX = 72
 BREAKING = "(BREAKING)"
 
+#: `area: Verb` and at least one more word; the area and verb are then checked against the rules file.
 _TITLE_FORM = re.compile(r"^(?P<area>[^\s:]+): (?P<verb>\S+) \S")
 
 

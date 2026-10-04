@@ -8,6 +8,7 @@ namespace coney::chunk {
 
 namespace {
 
+// Formats a chunk type for an error message: "0x17 (Level Header)", or just the number for a type with no name.
 std::string typeLabel(std::uint32_t type) {
     const std::string_view name = chunkTypeName(type);
     return name.empty() ? std::format("{:#04x}", type) : std::format("{:#04x} ({})", type, name);

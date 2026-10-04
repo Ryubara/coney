@@ -9,7 +9,7 @@ from coney_tools import wad
 from coney_tools.config import ConfigError, find_repo_root, load_config
 from coney_tools.disc import Disc
 
-_TOP_KINDS = 20
+_TOP_KINDS = 20  # kinds `wad info` lists before summing up the rest
 
 
 class OutputClosedError(Exception):

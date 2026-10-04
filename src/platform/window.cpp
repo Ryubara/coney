@@ -10,8 +10,10 @@ namespace coney::platform {
 
 namespace {
 
+// Recovers the SDL type the header keeps opaque.
 SDL_Window* asSdl(void* handle) { return static_cast<SDL_Window*>(handle); }
 
+// The error for an SDL call that failed, carrying SDL's own error text.
 std::unexpected<Error> sdlFailure(std::string_view what) {
     return std::unexpected(Error{ErrorCode::PlatformFailure, std::string(what) + " failed: " + SDL_GetError()});
 }

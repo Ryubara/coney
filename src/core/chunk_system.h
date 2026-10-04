@@ -26,8 +26,8 @@ using ReadFromStream =
 
 /// The two handlers one chunk type may have; either may be empty.
 struct ChunkHandlers {
-    OnLoaded onLoaded;
-    ReadFromStream readFromStream;
+    OnLoaded onLoaded;             ///< Runs after the chunk is loaded; empty for none.
+    ReadFromStream readFromStream; ///< Reads the chunk in place of the raw read; empty to read it raw.
 };
 
 /// The handlers of every chunk type, indexed by type: the original's chunk type table without its names (those are

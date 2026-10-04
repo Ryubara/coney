@@ -33,12 +33,14 @@ Bytes& chunk(Bytes& bytes, std::uint32_t type, std::uint32_t size, std::uint8_t 
     return bytes.fill(size, fill);
 }
 
+// An object a handler can push, carrying a value the test checks.
 struct TestObject final : LoadedObject {
     explicit TestObject(int v) : value(v) {}
     [[nodiscard]] std::string_view describe() const override { return "test object"; }
     int value;
 };
 
+// A second object type, for checking that popObject<T>() refuses the wrong one.
 struct OtherObject final : LoadedObject {
     [[nodiscard]] std::string_view describe() const override { return "other object"; }
 };
@@ -56,6 +58,7 @@ TEST_CASE("every chunk type has its table name", "[chunk_system]") {
 }
 
 TEST_CASE("a flat container's chunks are pushed raw in file order", "[chunk_system]") {
+    // Three chunks of 16, 0 and 32 bytes; the header's id (0x99) and the first chunk's id (7) are kept for checking.
     Bytes bytes;
     bytes.header(3, 48, 0, 0x99);
     chunk(bytes, 0x04, 16, 0xAA, 7);
@@ -137,6 +140,7 @@ TEST_CASE("an on-loaded handler pops the chunks before it and pushes an object",
                                               return {};
                                           },
                                           {}});
+    // Instance, definition, then the list whose handler pops both: the order the handler expects.
     Bytes good;
     good.header(3, 0, 0, 0);
     chunk(good, 0x22, 16, 0);
@@ -178,6 +182,7 @@ TEST_CASE("a stream reader sees only its chunk and the rest is skipped", "[chunk
                                               stacks.pushChunk(ChunkData{0x41, header.id, {}, nullptr});
                                               return {};
                                           }});
+    // A 64-byte chunk for the reader, then a raw chunk whose bytes show the reader did not eat into it.
     Bytes bytes;
     bytes.header(2, 0, 0, 0);
     chunk(bytes, 0x47, 64, 0x11, 5);
@@ -210,7 +215,7 @@ TEST_CASE("malformed flat containers fail without reading past the end", "[chunk
 
     SECTION("a header cut short") {
         Bytes bytes;
-        bytes.u32(1).u32(0);
+        bytes.u32(1).u32(0); // 8 of the header's 16 bytes
         MemoryStream stream(bytes.span());
         CHECK(coney::chunk::loadContainer(stream, table, stacks).error().code == ErrorCode::Truncated);
     }
@@ -252,6 +257,7 @@ TEST_CASE("malformed flat containers fail without reading past the end", "[chunk
 }
 
 TEST_CASE("a grouped container loads every group onto one pair of stacks", "[chunk_system]") {
+    // A pack of up to three groups: two chunks in resource 0xAAAA, one in 0xBBBB, then a zero group.
     Bytes bytes;
     bytes.header(3, 0, 0, coney::chunk::kPackageMarker);
     bytes.header(2, 32, 0, 0xAAAA);
@@ -288,6 +294,7 @@ TEST_CASE("a grouped container may end after its count without a zero group", "[
 
 TEST_CASE("malformed grouped containers fail with the group named", "[chunk_system]") {
     ChunkStacks stacks;
+    // A good first group, then a second whose chunk count cannot fit in what is left.
     Bytes bytes;
     bytes.header(2, 0, 0, 0);
     bytes.header(1, 16, 0, 0x1);

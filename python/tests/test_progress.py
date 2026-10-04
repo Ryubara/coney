@@ -12,6 +12,8 @@ from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.progress_cli import set_size
 
+# A made-up .text of 0x1000 bytes: 0xC00 of game code (two subsystems of 0x200, one with no ranges, the rest
+# unattributed) and 0x400 of middleware at the end.
 TOTALS = """
 [text]
 start = 0x1000
@@ -63,6 +65,7 @@ ROADMAP = """# Roadmap
 | [End](#end) | not started |
 """
 
+# A README or docs page with an empty progress block between hand-written text.
 BLOCK = f"before\n\n{progress_render.MARKER_START}\nold\n{progress_render.MARKER_END}\n\nafter\n"
 
 
@@ -81,6 +84,7 @@ def make_checkout(root: Path, functions: str = "", tags: str = "") -> Path:
     return root
 
 
+# One function of 0x80 bytes in Alpha, and the header that tags it.
 ONE_FUNCTION = '[[function]]\naddress = 0x00001010\nname = "Thing::Do"\nsubsystem = "Alpha"\nsize = 0x80\n'
 ONE_TAG = "/// Does the thing.\n/// @orig 0x00001010 Thing::Do (Thing.cpp)\nvoid doThing();\n"
 
@@ -98,6 +102,7 @@ def test_bar_fills_in_eighths() -> None:
 
 
 def test_percent_and_badge() -> None:
+    """Percentages show one decimal, "<0.1%" or "n/a"; badges escape `-` and `%` and colour by share."""
     assert progress_render.percent(0, 100) == "0.0%"
     assert progress_render.percent(1, 100_000) == "<0.1%"
     assert progress_render.percent(1, 0) == "n/a"
@@ -118,6 +123,7 @@ def test_replace_block_needs_markers() -> None:
 
 
 def test_totals_and_subsystem_of(tmp_path: Path) -> None:
+    """The totals add up from the coverage table, and an address maps to its subsystem, unattributed or none."""
     totals = progress.load_totals(make_checkout(tmp_path) / progress.TOTALS_FILE)
     assert totals.game_bytes == 0xC00
     assert totals.researched_bytes == 0x400
@@ -167,6 +173,7 @@ def test_tags_and_entries_must_match(tmp_path: Path) -> None:
 
 
 def test_entry_without_tag_and_bad_entries(tmp_path: Path) -> None:
+    """A wrong subsystem, an overlapping or odd size, middleware and a missing tag are each reported."""
     functions = (
         ONE_FUNCTION.replace('"Alpha"', '"Beta"')
         + '[[function]]\naddress = 0x1050\nname = "Overlap"\nsubsystem = "Alpha"\nsize = 6\n'
@@ -184,6 +191,7 @@ def test_entry_without_tag_and_bad_entries(tmp_path: Path) -> None:
 
 
 def test_update_then_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """`--check` finds stale blocks, `update` fills them, and a changed input makes them stale again."""
     monkeypatch.chdir(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG))
     assert main(["progress", "update", "--check"]) == 1
     assert "stale: README.md, docs/progress/index.md" in capsys.readouterr().out
@@ -222,6 +230,7 @@ def test_update_refuses_inconsistent_inputs(
 
 
 def test_show_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """`show --json` reports the shares, milestones and subsystems computed from the inputs."""
     monkeypatch.chdir(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG))
     assert main(["progress", "show", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
@@ -258,6 +267,7 @@ NOP = 0
 
 
 def jal(target: int) -> int:
+    """A `jal target` instruction word."""
     return (3 << 26) | ((target >> 2) & 0x03FFFFFF)
 
 
@@ -270,6 +280,8 @@ def make_elf(text_words: list[int], data_words: list[int], text_address: int = 0
     data_offset = text_offset + len(text)
     names_offset = data_offset + len(data)
     shoff = names_offset + len(names)
+    # ELF header: ELFCLASS32, little-endian, version 1; an executable for MIPS with four section headers at shoff,
+    # the last (.shstrtab) naming them.
     header = b"\x7fELF" + bytes([1, 1, 1]) + bytes(9)
     header += struct.pack("<HHIIIIIHHHHHH", 2, 8, 1, text_address, 0, shoff, 0, 52, 32, 0, 40, 4, 3)
     sections = struct.pack("<10I", *([0] * 10))
@@ -286,6 +298,7 @@ DATA = [0x1020, 0x1024, 0x12345678]  # 0x1024 is not 8-byte aligned and is ignor
 
 
 def test_function_starts_and_spans() -> None:
+    """Starts come from `jal` targets and aligned .data pointers; a span runs to the next start or the end of .text."""
     executable = elf.read_elf(make_elf(TEXT, DATA))
     starts = elf.function_starts(executable)
     assert starts == [0x1010, 0x1020]
@@ -295,6 +308,7 @@ def test_function_starts_and_spans() -> None:
 
 
 def test_check_size_bounds() -> None:
+    """A size between the code length and the span passes; past the span is an error, short of the code a warning."""
     executable = elf.read_elf(make_elf(TEXT, DATA))
     starts = elf.function_starts(executable)
     assert elf.check_size(executable, 0x1010, 16, starts).errors == ()

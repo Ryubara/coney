@@ -12,11 +12,13 @@ namespace coney::io {
 
 namespace {
 
+// The error for a read or skip past the end of a stream, shared by every stream so the messages match.
 std::unexpected<Error> pastEnd(std::uint64_t wanted, std::uint64_t position, std::uint64_t remaining) {
     return fail(ErrorCode::Truncated,
                 std::format("needed {} bytes at offset {} but only {} remain", wanted, position, remaining));
 }
 
+// The error for a seek past the end of a stream.
 std::unexpected<Error> seekPastEnd(std::uint64_t position, std::uint64_t size) {
     return fail(ErrorCode::Truncated,
                 std::format("cannot seek to offset {}: the stream is {} bytes long", position, size));

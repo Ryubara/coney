@@ -24,9 +24,9 @@ WAD_FILE = "WARRIORS.WAD"
 ELF_FILE = "SLUS_212.15"
 #: The prefix the game puts before a file's name before hashing it.
 NAME_PREFIX = "./ee_files/"
-_HEADER = 16
-_ENTRY = 12
-_CHUNK = 8 << 20
+_HEADER = 16  # WARRIORS.DIR's header: the entry count, then 12 bytes of padding
+_ENTRY = 12  # one entry: offset, size, name hash
+_CHUNK = 8 << 20  # bytes per read when streaming an entry
 
 
 def name_hash(path: str) -> int:
@@ -41,10 +41,10 @@ def name_hash(path: str) -> int:
 class WadEntry:
     """One WARRIORS.DIR entry: where the data is in WARRIORS.WAD and the hash of its name."""
 
-    index: int
-    offset: int
-    size: int
-    hash: int
+    index: int  # position in WARRIORS.DIR
+    offset: int  # byte offset into WARRIORS.WAD
+    size: int  # bytes
+    hash: int  # name_hash of `./ee_files/<name>`
 
 
 def parse_dir(data: bytes, wad_size: int | None = None) -> list[WadEntry]:
@@ -181,6 +181,7 @@ def extract(
     written = []
     with disc.open(WAD_FILE) as wad:
         for entry in entries:
+            # Named before the `wanted` filter, so an entry gets the same file name with or without --only.
             name = entry_filename(entry, names, used)
             if wanted is not None and entry.index not in wanted:
                 continue
