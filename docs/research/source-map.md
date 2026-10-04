@@ -84,11 +84,11 @@ The top-level directories in `.text` order (from the path strings' order, inferr
 | `Animation` | `0x00104630`-`0x0010d758` | 135 | |
 | `Audio` | `0x0010edd0`-`0x001167b8` | 257 | |
 | `Camera` | `0x0011e1b0`-`0x0013b118` | 196 | |
-| `Core` | `0x00144180`-`0x00144a08` | 11 | holds `main`; see [For the next steps](#for-the-next-steps) |
+| `Core` | `0x00143ea0`-`0x00144a08` | 22 | starts with the CRC unit (no path string); holds `main`; see [For the next steps](#for-the-next-steps) |
 | `Debug` | none | 0 | `DebugStream.cpp` has no anchor; probably in `0x00144a08`-`0x001483e8` |
-| `Device/ps2` | `0x001483e8`-`0x0014d528` | 130 | |
+| `Device/ps2` | `0x00145790`-`0x0014d528` | 173 | starts at `DS_PS2Device`'s virtual `Init`; holds `GameTimer` (no path string); see [For the next steps](#for-the-next-steps) |
 | `FileIO` | `0x001541e0`-`0x00155b30` | 40 | |
-| `GameModes` | `0x00156dd8`-`0x00162598` | 194 | about 8 more TUs with no path string sit between `Gm_MemoryCard.cpp` and `Gm_XboxSaveSystem.cpp` (stubs `0x0015cac0` to `0x0015f540`) |
+| `GameModes` | `0x00155b30`-`0x00162598` | 221 | starts with mode 0xd's and the game-mode base's units (no path strings); about 8 more TUs with no path string sit between `Gm_MemoryCard.cpp` and `Gm_XboxSaveSystem.cpp` (stubs `0x0015cac0` to `0x0015f540`) |
 | `Graphics` | `0x0016e388`-`0x0019c5e8` | 605 | |
 | `GUI` | `0x001a1f10`-`0x002176b8` | 1,662 | |
 | `Human` | `0x0021c7c8`-`0x00273fa0` | 1,075 | the next 711 KB, up to Lua, is probably more `Human/` (AI behaviour names fill its rodata) but has no anchor |
@@ -143,7 +143,7 @@ compiled out, or reaches the string some other way); its code lies somewhere bet
 
 | File | Attributed range | Functions | Static-init stub | Anchors (allocation tags they pass) |
 | --- | --- | --- | --- | --- |
-| `ChunkSystem.cpp` | `0x00144180`-`0x001446d0` | 4 | `0x001449e8` | `0x00144180`; `0x00144398` |
+| `ChunkSystem.cpp` | `0x001440a0`-`0x001446d0` | 9 | `0x001449e8` | `0x00144180`; `0x00144398` |
 
 ### Debug
 
@@ -434,16 +434,16 @@ Bytes of `.text` (4,154,744) and functions (13,789), each counted once, in the f
 | Category | Functions | Bytes | Share of `.text` |
 | --- | --- | --- | --- |
 | Anchors: file confirmed (code) | 302 | 208,296 | 5.0% |
-| File inferred (steps 4 to 6) | 1,747 | 423,528 | 10.2% |
-| Directory inferred (step 7) | 4,314 | 1,059,744 | 25.5% |
+| File inferred (steps 4 to 6) | 1,752 | 423,752 | 10.2% |
+| Directory inferred (step 7) | 4,390 | 1,076,384 | 25.9% |
 | Lua 4.0.1 and tolua | 543 | 94,808 | 2.3% |
 | Other middleware and crt0 (C/C++ runtime, SCE, RenderWare, Bink) | 2,016 | 717,520 | 17.3% |
 | Game link-once code (templates, inlines) | 603 | 115,808 | 2.8% |
-| Unknown | 4,264 | 1,535,032 | 36.9% |
+| Unknown | 4,183 | 1,518,168 | 36.5% |
 
-So 15.2% of `.text` is tied to a named file, 40.7% to at least a directory, and 19.6% is middleware or runtime. Of
+So 15.2% of `.text` is tied to a named file, 41.1% to at least a directory, and 19.6% is middleware or runtime. Of
 the file-level share, 5.1% comes from extending files to their static-init stubs (step 6); without it the attributed
-ranges in the tables cover 418,760 bytes (10.1%). RenderWare alone is 376,960 bytes (9.1%).
+ranges in the tables cover 418,984 bytes (10.1%). RenderWare alone is 376,960 bytes (9.1%).
 
 Most of the unknown share is in a few large stretches between anchored files:
 
@@ -454,7 +454,7 @@ Most of the unknown share is in a few large stretches between anchored files:
 | `0x00386f58`-`0x00397a48` | 68 KB | `StringTable/` and `TaskEngine/ObjectTaskManager.cpp` | unknown |
 | `0x00341a68`-`0x00350688` | 60 KB | `Physics/physics.cpp` and `RayCast/CollisionMesh.cpp` | the rest of `Physics/` (rodata between them lists `MATERIAL_*` names); inferred |
 | `0x00162598`-`0x0016e388` | 49 KB | `GameModes/Initialize.cpp` and `Graphics/Animations.cpp` | unknown |
-| `0x0013b118`-`0x00144180` | 37 KB | `Camera/Cam_Power.cpp` and `Core/ChunkSystem.cpp` | more `Camera/` and `Core/` |
+| `0x0013b118`-`0x00143ea0` | 35 KB | `Camera/Cam_Power.cpp` and the CRC unit that starts `Core/` | more `Camera/` (camera code runs up to it, e.g. `0x00143c78`) |
 
 The full anchor list and every attributed function are reproducible with the [method](#method).
 
@@ -469,15 +469,27 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   `0x0042b020`, called first in `main`, is the C++ runtime's `__main` (it runs the global constructors).
 - **Chunk system:** [Chunk system](chunk-system.md), with all 84 chunk types and their handlers. In the type table
   `0x0050b2e0`, field `a` (`+4`) is the "on loaded" handler and field `b` (`+8`) reads the chunk from the stream
-  itself. The CRC helpers before `ChunkSystem.cpp` (`0x00143f68`-`0x00144050`) belong to the unit that ends at the
-  stub `0x00144080`.
+  itself. The CRC helpers before `ChunkSystem.cpp` form a unit of their own, `0x00143ea0`-`0x001440a0` (table
+  builder, buffer and string CRCs, and a static initialiser that fills the table at `0x005d91e0`), ended by the stub
+  `0x00144080`. It comes after the last camera code and holds none, so it is taken as the first unit of `Core/`
+  (inferred); no string names it. `ChunkSystem.cpp` then starts right after the stub, with the chunk stack helpers
+  (`0x001440a0`-`0x00144180`, inferred: they work on the stack the anchored loaders use).
 - **File I/O:** [File I/O](file-io.md): the device's file systems (`DS_PS2Device.cpp`, `DS_PS2FileSys.cpp`), the WAD
   index (`DVDWadIndexPS2.cpp`), `FS_MemoryFile.cpp` and `StreamManager.cpp` (the buffered reader and the
   `FileManager` request queue). The WAD-opening code at `0x0040c5e0`-`0x0040c688` is game code, so tolua ends
   before it. The IOP sound bank path `cdrom0:\IOP\BFW.SND;1` is opened from `Device/ps2/sound/msaudiodevice.cpp`
   (`0x0014bbd8`).
-- **Memory:** `Memory/` at `0x00338420`-`0x0033b1a0`; `Memory/WarriorsMemory.cpp` (`0x0033afe0`) sets up the
+- **Memory:** [Memory](memory.md). `Memory/` at `0x00338420`-`0x0033b1a0`, followed by the heaps' block allocator
+  (`0x0033b1a0`-`~0x0033c288`, no path string); `Memory/WarriorsMemory.cpp` (`0x0033afe0`) sets up the
   `Level Dynamic & LUA Memory` heap.
+- **Units without path strings near the boot path** (inferred from stubs and link order; details on
+  [Boot](boot.md#original-structure)): mode 0xd's unit (`0x00155b30`-`0x00155ed8`, stub `0x00155eb8`) and the
+  game-mode base's (`0x00155ed8`-`~0x00156d20`) open `GameModes/`, whose files link in alphabetical order;
+  `GameTimer` (`0x00145940`-`0x00145fa0`) sits among `DS_PS2Device`'s methods and the pad code, in `Device/ps2/`,
+  with no stub between `0x001449e8` and `DS_PS2Device.cpp`'s `0x001485a8`; the two texture chunk readers
+  (`0x001906e8`, `0x00190770`) close the stretch after `Graphics/Texture.cpp`, probably `Graphics/WarTexture.cpp`
+  (speculative; [Chunk system](chunk-system.md#open-questions)); `Stream_SkipBytes` (`0x00154440`) is the last
+  function of `FileIO/FS_MemoryFile.cpp`.
 - **Level loading:** [Level loading](level-loading.md) and [The streamed world](world.md).
   `World/ps2/WorldManagerPS2.cpp` (`0x0040d688`: `Sector Pool`; `0x0040d900`: `warriors.glr`, `Global Data`;
   `0x0040dbb8`: `%s.lev`; `0x0040f8a0`: the streaming update) and `World/ps2/WorldPS2.cpp` (`0x00410648`:

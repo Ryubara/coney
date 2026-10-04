@@ -19,15 +19,13 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 0.2%](https://img.shields.io/badge/reimplemented-0.2%25-red) ![Researched: 50.6%](https://img.shields.io/badge/researched-50.6%25-yellow)
+![Reimplemented: 0.3%](https://img.shields.io/badge/reimplemented-0.3%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.2% of the game's own code (8,096 of 3,342,408 bytes, 39 functions) |
-| **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,568 bytes) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.3% of the game's own code (9,048 of 3,342,408 bytes, 39 functions) |
+| **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
-
-1 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -52,11 +50,11 @@ at the top of the repository's `README.md`.
 | `Animation` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 37,160 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 31,208 |
 | `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 118,632 |
-| `Core` | `████████████▌░░░░░░░` | 62.3% | 4 | 2,184 |
+| `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% | 3 | 20,800 |
+| `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 4 | 32,152 |
 | `FileIO` | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 1 | 6,480 |
-| `GameModes` | `█░░░░░░░░░░░░░░░░░░░` | 5.1% | 9 | 47,040 |
+| `GameModes` | `▉░░░░░░░░░░░░░░░░░░░` | 4.6% | 9 | 51,816 |
 | `Graphics` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 14 | 189,024 |
 | `GUI` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
@@ -73,17 +71,17 @@ at the top of the repository's `README.md`.
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 8 | 1,541,616 |
+| Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,524,752 |
 
 ## Research coverage
 
 | Category | Share of `.text` | | Bytes |
 | --- | --- | --- | --- |
 | File confirmed (code): anchors | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 208,296 |
-| File inferred | `██░░░░░░░░░░░░░░░░░░` | 10.2% | 423,528 |
-| Directory inferred | `█████▏░░░░░░░░░░░░░░` | 25.5% | 1,059,744 |
+| File inferred | `██░░░░░░░░░░░░░░░░░░` | 10.2% | 423,752 |
+| Directory inferred | `█████▏░░░░░░░░░░░░░░` | 25.9% | 1,076,384 |
 | Game link-once code (templates, inlines) | `▌░░░░░░░░░░░░░░░░░░░` | 2.8% | 115,808 |
-| Unknown | `███████▍░░░░░░░░░░░░` | 36.9% | 1,535,032 |
+| Unknown | `███████▎░░░░░░░░░░░░` | 36.5% | 1,518,168 |
 | Middleware: Lua 4.0.1 and tolua | `▌░░░░░░░░░░░░░░░░░░░` | 2.3% | 94,808 |
 | Middleware: C/C++ runtimes, SCE, RenderWare, Bink, crt0 | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 717,520 |
 
@@ -99,18 +97,18 @@ at the top of the repository's `README.md`.
 
 | Address | Original name | Subsystem | Bytes |
 | --- | --- | --- | --- |
-| `0x00143f68` | `Crc32_Hash` | `unattributed` | 112 |
-| `0x00143fd8` | `Crc32_Lowercase` | `unattributed` | 120 |
-| `0x001440a0` | `ChunkSystem_PopObject` | `unattributed` | 40 |
-| `0x001440c8` | `ChunkSystem_PushObject` | `unattributed` | 40 |
-| `0x001440f0` | `ChunkSystem_PeekChunkType` | `unattributed` | 48 |
-| `0x00144120` | `ChunkSystem_PopChunk` | `unattributed` | 40 |
-| `0x00144148` | `ChunkSystem_PushChunk` | `unattributed` | 56 |
+| `0x00143f68` | `Crc32_Hash` | `Core` | 112 |
+| `0x00143fd8` | `Crc32_Lowercase` | `Core` | 120 |
+| `0x001440a0` | `ChunkSystem_PopObject` | `Core` | 40 |
+| `0x001440c8` | `ChunkSystem_PushObject` | `Core` | 40 |
+| `0x001440f0` | `ChunkSystem_PeekChunkType` | `Core` | 48 |
+| `0x00144120` | `ChunkSystem_PopChunk` | `Core` | 40 |
+| `0x00144148` | `ChunkSystem_PushChunk` | `Core` | 56 |
 | `0x00144180` | `ChunkSystem_LoadContainer` | `Core` | 456 |
 | `0x00144348` | `ChunkSystem_SetHandlers` | `Core` | 40 |
 | `0x00144370` | `ChunkSystem_RetagAsNullPointer` | `Core` | 40 |
 | `0x00144398` | `ChunkSystem_LoadGroupedContainer` | `Core` | 824 |
-| `0x00145a10` | `GameTimer::Update` | `unattributed` | not filled in |
+| `0x00145a10` | `GameTimer::Update` | `Device/ps2` | 952 |
 | `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |

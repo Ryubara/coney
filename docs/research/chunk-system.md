@@ -19,7 +19,8 @@ it builds. Handlers are found through a table indexed by chunk type.
 
 `c:/Warriors/Source/Core/ChunkSystem.cpp`. The static-initialiser stub at `0x00144080` ends the translation unit
 before it, so the file starts at `0x001440a0` (the stack helpers) and runs at least to `0x001446d0` (inferred). The
-CRC helpers at `0x00143f68`-`0x00144050` belong to that earlier unit, whose name is unknown. Names are ours.
+CRC helpers at `0x00143f68`-`0x00144050` belong to that earlier unit, the first of `Core/`, whose file name is unknown
+([Open questions](#open-questions)). Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -365,9 +366,12 @@ TODO for the analysts, found while implementing:
   constructor (`0x0040d900`, `warriors.glr`) read flat. The world files are not chunk containers at all
   ([The streamed world](world.md)). Coney's choice by the package marker finds the same 881 packs (see the
   classifier above).
-- Names for the two texture chunk readers: Coney's `@orig` tags call them `ChunkReader_TextureDictionaryTid`
-  (`0x001906e8`) and `ChunkReader_RenderwareTextureDic` (`0x00190770`), after their chunk types, until the research
-  database gives them names.
+- Names for the two texture chunk readers (answered): no string names them, so the names Coney's `@orig` tags use,
+  `ChunkReader_TextureDictionaryTid` (`0x001906e8`) and `ChunkReader_RenderwareTextureDic` (`0x00190770`), after
+  their chunk types, are the research names too (the local Ghidra project carries them). Their file: they are the
+  last two functions before `Graphics/WaterEffect.cpp` (`0x00190810`), after `Graphics/Texture.cpp`'s anchors, with
+  no static-initialiser stub between; `Graphics/WarTexture.cpp`, whose path string sits between those two files'
+  in `.rodata` and has no code reference, is the likeliest unit (speculative). Cite them as `(Graphics/unknown)`.
 
 ## Open questions
 
@@ -376,4 +380,8 @@ TODO for the analysts, found while implementing:
   other entries are 26 world streams and a pack ([above](#container-layout)).
 - Why 147 container-like entries parse neither flat nor grouped.
 - The `GroupHeader`'s second and third words.
-- Which file holds the CRC helpers (`0x00143f68`-`0x00144050`), the unit that ends at the stub `0x00144080`.
+- Which file holds the CRC helpers (partly answered): they are a unit of their own, `0x00143ea0`-`0x001440a0`: a
+  table builder (`0x00143ea0`), a buffer CRC (`0x00143f00`), the two string hashes, and a static initialiser
+  (`0x00144050`) that fills the one global table at `0x005d91e0` before `main`; the stub `0x00144080` ends it. It
+  follows the last camera code and precedes `Core/ChunkSystem.cpp`, and is no camera code, so it is the first unit of
+  `Core/` (inferred). No string names the file; cite it as `(Core/unknown)`.

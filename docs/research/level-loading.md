@@ -32,8 +32,8 @@ Names are ours unless they come from a path or tag string.
 | `0x0015fe90` | `InitLevel` | `GameModes/InitLevel.cpp` | the whole level start, below | confirmed (code) |
 | `0x001607b8` | `UnloadLevel(keepLevelFile)` | `GameModes/` | the reverse | confirmed (code) |
 | `0x0040d688` | `WorldManager_CreatePools` | `World/ps2/WorldManagerPS2.cpp` | `Sector Pool`, `Sector Pool 2` | confirmed (code) |
-| `0x0040d900` | `WorldManager::WorldManager` | same | `Global Data` heap, `warriors.glr` | confirmed (code) |
-| `0x0040dbb8` | `WorldManager::LoadLevel(name, headerOnly)` | same | the level heap, the worlds, the `.lev` | confirmed (code) |
+| `0x0040d900` | `WorldManager::WorldManager` | same | `Global Data Pool` clump, `warriors.glr` | confirmed (code) |
+| `0x0040dbb8` | `WorldManager::LoadLevel(name, headerOnly)` | same | the `World Level Pool` clump, the worlds, the `.lev` | confirmed (code) |
 | `0x0040e2d8` | `WorldManager_Preload(radius, budgetMs, value, pack)` | same | the blocking preload | confirmed (code) |
 | `0x0040f8a0` | `WorldManager_Update` | same (inferred) | the per-frame streaming decision ([The streamed world](world.md#streaming)) | confirmed (code) |
 | `0x0040e8d8` | `WorldManager_Render(viewport)` | same | the world part of a frame ([The streamed world](world.md#a-frame)) | confirmed (code) |
@@ -51,25 +51,27 @@ Names are ours unless they come from a path or tag string.
 ### Memory {#memory}
 
 The PS2 has 32 MB, and a level's data is far larger than that ([Disc counts](world.md#disc-counts)). Everything a
-level loads lives in one big heap created at start-up. Confirmed (code) for the creation and the sizes; heap names are
-the original's tag strings.
+level loads lives in one big heap created at start-up, the `Sector Pool`, as **clumps**: bump allocators that each
+take one block of the pool and are freed as a whole. Confirmed (code) for the creation, the kinds and the sizes;
+names are the original's tag and registration strings. How heaps, clumps and the heap stack work, and the rest of
+the pool tree: [Memory](memory.md).
 
-| Heap | Created by | Size | Holds |
-| --- | --- | --- | --- |
-| `Sector Pool` (`0x006eb9c8`) | `0x0040d688`, at start-up | the largest free block of the global heap minus 128 KB | everything below |
-| `Sector Pool 2` (`0x006eb9cc`) | `0x0040d688` | what is left minus 128 KB, at least 4 KB | not traced |
-| `Global Data` | `0x0040d900`, at start-up, in the `Sector Pool` | 101 % of `warriors.glr` | the game-wide lists (sounds, music, characters, objects, particle pages, animations, dependencies), for the whole game |
-| `World Level Pool` | `0x0040dbb8`, per level, in the `Sector Pool` | 103 % of `<level>.lev`, at least 256 KB | the [level file](#the-level-file) |
-| one heap per world, named after it | `0x00410648`, per level | the manifest's world heap size | the world's texture dictionary and BSP ([The streamed world](world.md#loading-a-world)) |
-| `Sectors<i>`, one per loaded part | `0x004110c0`, while playing | the manifest's part heap size | one part's textures and atomics |
-| resources | the resource manager | per resource | props, characters, animations from packs (`Graphics/ResourceMgr.cpp`, not yet on a page) |
-| `Level Dynamic & LUA Pool` | at start-up ([Boot](boot.md#initialisation-order)) | 2,027,520 bytes | the Lua state and temporary objects such as the stream wrappers the loaders create |
+| Pool | Kind | Created by | Size | Holds |
+| --- | --- | --- | --- | --- |
+| `Sector Pool` (`0x006eb9c8`) | heap, in the global heap | `0x0040d688`, at start-up | the largest free block of the global heap minus 128 KB | everything below |
+| `Sector Pool 2` (`0x006eb9cc`) | heap, in the global heap | `0x0040d688` | what is left minus 128 KB, at least 4 KB | nothing: unused ([Memory](memory.md#the-pool-tree)) |
+| `Global Data Pool` | clump, in the `Sector Pool` | `0x0040d900`, at start-up | 101 % of `warriors.glr` | the game-wide lists (sounds, music, characters, objects, particle pages, animations, dependencies), for the whole game |
+| `World Level Pool` | clump, in the `Sector Pool` | `0x0040dbb8`, per level | 103 % of `<level>.lev`, at least 256 KB | the [level file](#the-level-file) |
+| one per world, named after it | clump, in the `Sector Pool` | `0x00410648`, per level | the manifest's world heap size | the world's texture dictionary and BSP ([The streamed world](world.md#loading-a-world)) |
+| `Sectors<i>`, one per loaded part | clump, in the `Sector Pool` | `0x004110c0`, while playing | the manifest's part heap size | one part's textures and atomics |
+| one per resource group, named after the resource | clump, in the `Sector Pool` | the resource manager (`0x00186e88`) | the group's size | props, characters, animations from packs (`Graphics/ResourceMgr.cpp`, not yet on a page) |
+| `Level Dynamic & LUA Pool` | heap, in the global heap | at start-up ([Boot](boot.md#initialisation-order)) | 2,027,520 bytes | the Lua state, every STL container, the clumps' own 0x18-byte objects and temporary objects such as the stream wrappers the loaders create |
 
-Before a world or a part gets its heap, the resource manager is asked to make room
+Before a world or a part gets its clump, the resource manager is asked to make room
 (`ResourceManager_MakeRoom`, `0x00187d28`): it repeatedly frees the resource with the oldest time stamp that nothing
-holds, across its seven resource lists, until the heap it allocates from has a free block of the size asked
-(confirmed (code); that this heap is the `Sector Pool` is inferred: the check would mean nothing otherwise). So
-scenery and props compete for one pool.
+holds, across its seven resource lists, until the `Sector Pool`'s largest free block is at least the size asked.
+Confirmed (code): the resource manager's pool is the `Sector Pool` (`0x0040f850` returns `0x006eb9c8`). So scenery
+and props compete for one pool.
 
 Part files are read asynchronously into the file manager's 384 KB `File Stream Buffer`
 ([File I/O](file-io.md#filemanager)) and parsed from there (`0x004114d8`, confirmed (code)). **Disc check
@@ -147,7 +149,7 @@ names), `0x07` a vertex buffer, `0x52` a "checked" bit set cleared on load. Size
 | `+0x2c` | a preload is running |
 | `+0x34` | "nothing more to load" latch of the streaming update |
 | `+0x38` | the `World Level Pool` |
-| `+0x3c` | the `Global Data` heap |
+| `+0x3c` | the `Global Data Pool` clump |
 | `+0x40` | the level object |
 | `+0x44` | the `s` world (the only world for a single-world level) |
 | `+0x48` | the `d` world, or null |
@@ -292,8 +294,9 @@ What the implementer needs:
 - **The preload** as the first frame's precondition: load the section's pack, then stream world parts until the
   update reports no more work within the camera's draw distance. With synchronous reads Coney can simply load every
   part within the radius; the time budget only matters on a disc.
-- **Memory**: one pool for scenery and resources, and the "make room" eviction, are optional for a PC, but the order
-  of loading must stay deterministic for the test mode.
+- **Memory**: one budget for scenery and resources, and the "make room" eviction, decide what is resident and so what
+  pops in; a PC build can raise the budget, but should model it, and the order of loading must stay deterministic
+  for the test mode ([Memory](memory.md#what-a-reimplementation-must-keep)).
 - **Unload** that frees everything a level made and recreates the Lua state.
 - **A disc test**: every `.lev` loads through the chunk system (64 files, 18 chunks each), and every world loads
   ([The streamed world](world.md#disc-counts)).
@@ -305,7 +308,8 @@ What the implementer needs:
   `CfgLevelName` calls (Lua 4.0 bytecode) would tell.
 - **The level world** (`+0x0c`, one sector, a few dozen triangles, drawn first with culling off): what is it?
 - **Who draws the sky, cloud and shadow models**, and the glow dictionary's users.
-- **`Sector Pool 2`**: what is allocated in it.
+- **`Sector Pool 2`** (answered): nothing; it is created at its 4 KB minimum in practice and never read
+  ([Memory](memory.md#the-pool-tree)).
 - **The script entry** (script system slot `+0x24`): which `.lua` files a level runs (`<level>.lua`,
   `<level>_strings.lua`, `<level>main.lua`).
 - **The resource manager** (packs, the dependency list, the time stamps behind "least recently used", its seven

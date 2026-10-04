@@ -18,43 +18,43 @@
 [[function]]
 address = 0x00143f68
 name = "Crc32_Hash"
-subsystem = "unattributed"
+subsystem = "Core"
 size = 112
 
 [[function]]
 address = 0x00143fd8
 name = "Crc32_Lowercase"
-subsystem = "unattributed"
+subsystem = "Core"
 size = 120
 
 [[function]]
 address = 0x001440a0
 name = "ChunkSystem_PopObject"
-subsystem = "unattributed"
+subsystem = "Core"
 size = 40
 
 [[function]]
 address = 0x001440c8
 name = "ChunkSystem_PushObject"
-subsystem = "unattributed"
+subsystem = "Core"
 size = 40
 
 [[function]]
 address = 0x001440f0
 name = "ChunkSystem_PeekChunkType"
-subsystem = "unattributed"
+subsystem = "Core"
 size = 48
 
 [[function]]
 address = 0x00144120
 name = "ChunkSystem_PopChunk"
-subsystem = "unattributed"
+subsystem = "Core"
 size = 40
 
 [[function]]
 address = 0x00144148
 name = "ChunkSystem_PushChunk"
-subsystem = "unattributed"
+subsystem = "Core"
 size = 56
 
 [[function]]
@@ -84,7 +84,8 @@ size = 824
 [[function]]
 address = 0x00145a10
 name = "GameTimer::Update"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
+size = 952
 
 [[function]]
 address = 0x00148aa0

@@ -172,13 +172,30 @@ A request is 0x54 bytes, confirmed (code) at `0x00154d50`:
 | --- | --- |
 | `+0x04` | owns the data (1 when it allocated it) |
 | `+0x08` | data |
-| `+0x0c` | size: the highest position written |
+| `+0x0c` | size: what `GetSize` returns; raised by `Write` past it |
 | `+0x10` | capacity |
 | `+0x14` | position |
 
-`0x001541e0(capacity)` allocates the data (tag `unsigned char`, align 16); `0x00154268(buffer, capacity, size)` wraps
-an existing buffer without owning it. `Read` and `Write` copy and advance with no bounds check; `Write` raises the
-size; `Seek`, `Tell`, `GetSize` and `GetData` are field accesses. Confirmed (code).
+Its functions, all in `FileIO/FS_MemoryFile.cpp` (names ours, in the `FS_MemoryFile::` style of the class tag),
+confirmed (code):
+
+| Address | Name | Slot | Behaviour |
+| --- | --- | --- | --- |
+| `0x001541e0` | `FS_MemoryFile(capacity)` | | allocates `capacity` bytes from the current pool (tag `unsigned char`, align 16); size = capacity = `capacity`, position 0, owns the data |
+| `0x00154268` | `FS_MemoryFile(buffer, size, capacity)` | | wraps an existing buffer without owning it |
+| `0x00154290` | `~FS_MemoryFile` | `+0x08` | frees owned data into the current pool ([Memory](memory.md#the-heap-stack)) |
+| `0x00154320` | `Read(dst, n)` | `+0x50` | copies from data + position, advances |
+| `0x00154370` | `Write(src, n)` | `+0x58` | copies to data + position, advances, raises the size |
+| `0x001543c8` | `Seek(position)` | `+0x60` | sets the position |
+| `0x001543d0` | `Tell()` | `+0x68` | the position |
+| `0x001543d8` | `GetSize()` | `+0x70` | the size |
+| `0x001543e0` | `Release()` | `+0x78` | frees owned data; data = null |
+| `0x00154438` | `GetData()` | `+0x88` | the data pointer |
+
+None checks bounds. A file made with a capacity starts with its size equal to that capacity, not 0. The last
+function of the file, `0x00154440` (`Stream_SkipBytes(file, n)`), is not a method: it skips `n` bytes of any file by
+reading them into a 256-byte stack buffer through slot `+0x50`, 256 at a time (confirmed (code); its file inferred
+from its position, the source map's last function of `FS_MemoryFile.cpp`).
 
 ## Behaviour
 
@@ -331,8 +348,9 @@ Not done yet: the file-system interface (`Exists`, `GetSize`, `Open` by name for
 `BufferedStream` and the asynchronous `FileManager` queue. None is needed until a subsystem loads files by itself.
 
 TODO for the analysts, found while implementing: the `FS_MemoryFile` functions have no names on this page, so
-Coney's equivalents carry no `@orig` tag; `Stream_SkipBytes` is cited with file `(unknown)`. The WAD opener at
-`0x0040c5e0` is named `Wad_Open` here (our name; no string names it). It opens `cdrom0:\WARRIORS.DIR;1` through
+Coney's equivalents carry no `@orig` tag; `Stream_SkipBytes` is cited with file `(unknown)` (answered: the names and
+`Stream_SkipBytes`'s file, `FileIO/FS_MemoryFile.cpp` (inferred), are in [FS_MemoryFile](#fs_memoryfile)). The WAD
+opener at `0x0040c5e0` is named `Wad_Open` here (our name; no string names it). It opens `cdrom0:\WARRIORS.DIR;1` through
 `0x00149040` and `WARRIORS.WAD` through `0x001500a8`, and its strings sit just before `WorldLevel.cpp`'s
 (`"WorldLevel"`, `"%s.lev"`), so it is probably the first unit of `World/` (inferred); cite it as
 `@orig 0x0040c5e0 Wad_Open (World/unknown)`.

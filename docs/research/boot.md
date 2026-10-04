@@ -26,22 +26,36 @@ being the main loop is not: it is a save-system call that reads a QA file from t
 | `0x001446d0` | `main` | `Core/` (file unknown) | boot sequence, then runs the game-mode stack | confirmed (code) |
 | `0x00160df8` | `Game_InitializeSubsystems` | `GameModes/Initialize.cpp` | creates every subsystem, in the order below | confirmed (code) |
 | `0x00145790` | `DS_PS2Device_Init` | `Device/ps2/DS_PS2Device.cpp` (class) | IOP, memory, pads, renderer, file systems | confirmed (code) |
-| `0x0033afe0` | | `Memory/WarriorsMemory.cpp` | game heaps | confirmed (code) |
-| `0x0015e5e8` | `GameModeStack_Push` | `GameModes/` (base file) | push a mode | confirmed (code) |
+| `0x0033afe0` | `WarriorsMemory_Init` | `Memory/WarriorsMemory.cpp` | the game's own pools ([Memory](memory.md)) | confirmed (code) |
+| `0x0015e5e8` | `GameModeStack_Push` | `GameModes/` (file unknown, see below) | push a mode | confirmed (code) |
 | `0x0015e650` | `GameModeStack_Pop` | `GameModes/` | pop the top mode | confirmed (code) |
 | `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes/` | **the main loop** | confirmed (code) |
 | `0x0015e718` | `GameModeStack_Top` | `GameModes/` | top mode or null | confirmed (code) |
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes/` | id of the top mode, 0 when empty | confirmed (code) |
-| `0x00155ed8` | `GameMode::GameMode` | `GameModes/` | base constructor | confirmed (code) |
+| `0x00155ed8` | `GameMode::GameMode` | `GameModes/` (file unknown, see below) | base constructor | confirmed (code) |
 | `0x0015d160` | `Gm_InGame::Update` (our name) | `GameModes/` (unnamed file) | one in-game frame | confirmed (code) |
-| `0x00145a10` | `GameTimer::Update` | `Core/` region | game clock with a fixed-step mode | confirmed (code) |
+| `0x00145a10` | `GameTimer::Update` | `Device/ps2/` (file unknown, see below) | game clock with a fixed-step mode and freezes | confirmed (code) |
 | `0x0041f960` | `W_PS2SaveSystem_ReadBugstarFile` | `Warriors/W_PS2SaveSystem.cpp` | the `0x00515024` virtual call | confirmed (code) |
 
 `main` sits between `Core/ChunkSystem.cpp`'s functions and the static-initialiser stub at `0x001449e8`, with no stub
 in between, so it was most likely compiled as part of `ChunkSystem.cpp` (inferred; an unnamed `Core/` file without
 global constructors would also fit).
-The game-mode base class's functions (`0x00155b30`-`0x00156d20`) lie between `FileIO/StreamManager.cpp`'s stub
-(`0x00155b10`) and `GameModes/Gm_Error.cpp`: a `GameModes/` file with no path string (inferred).
+Three more units have no path string; static-initialiser stubs and link order place them (all inferred, see
+[Source map](source-map.md#for-the-next-steps)):
+
+- **Mode 0xd and the game-mode base.** After `FileIO/StreamManager.cpp`'s stub (`0x00155b10`) come two units of
+  `GameModes/`: mode 0xd's (`0x00155b30`-`0x00155ed8`, ended by the stub `0x00155eb8` whose initialiser builds the
+  mode 0xd object), then the base class's (`0x00155ed8`-`~0x00156d20`, no global constructors, so no stub), then
+  `Gm_Error.cpp`. The files of `GameModes/` link in alphabetical order (`Gm_Error`, `Gm_MemoryCard`,
+  `Gm_XboxSaveSystem`, `InitLevel`, `Initialize`), so both names sort before `Gm_Error.cpp`.
+- **The game-mode stack** (`0x0015e5e8`-`0x0015e838`) starts right after the profile-manager mode's stub
+  (`0x0015e5c8`) and before mode 0x11's `Enter` (`0x0015e8b0`), in the unit that ends with mode 0x11's stub
+  `0x0015f180`, or in a constructor-less unit of its own just before it.
+- **`GameTimer`** (`0x00145940`-`0x00145fa0`) lies between `DS_PS2Device`'s own virtual methods (`Init`
+  `0x00145790`, slot `+0x88` `0x001458b0`) and the pad code that runs to `Device/ps2/DS_PS2Device.cpp`'s anchors, with
+  no stub from `0x001449e8` to `DS_PS2Device.cpp`'s stub `0x001485a8`. So it is `Device/ps2/` code (the `Timer` it
+  wraps is too, `0x00148f60`), in `DS_PS2Device.cpp` itself or a constructor-less unit before it; no string names
+  the file.
 
 ## Data
 
@@ -92,8 +106,8 @@ Derived modes put their own fields from `+0x20`. Virtual slots (GCC 2 layout, 8-
 | `+0x38` | `Update()`: run one frame; return non-zero to stay, 0 to be popped | pure virtual | confirmed (code) at `0x0015e6b8` |
 
 The stack itself is an array of 4-byte mode pointers at `0x005e66a0` with the index of the top entry at
-`0x0050c784` (initially -1, empty). No bound check is made on push (the array's size is not known; 16 entries fit
-before the next known global, inferred).
+`0x0050c784` (initially -1, empty). No bound check is made on push (the array's size is not known; the next global in
+`.bss` is mode 0x11's object at `0x005e66d0`, so at most 12 entries fit, inferred).
 
 The modes, each a static object built by a static constructor (or a constructor function) and identified by its id:
 
@@ -107,7 +121,7 @@ The modes, each a static object built by a static constructor (or a constructor 
 | 0xa | `0x005e6550` | `0x005386e8` | `0x0015dbb8` | `GameModes/` | | confirmed (code) id |
 | 0xb | `0x005e5df8` | `0x00538658` | `0x0015cf70` | `GameModes/` | **in-game**: runs the game world on `GameTimer` | confirmed (code); role inferred |
 | 0xc | `0x005e5dc0` | `0x00538610` | `0x0015cae0` | `GameModes/` | | confirmed (code) id |
-| 0xd | `0x005e53a0` | `0x00538360` | `0x00155b30` | `GameModes/` (base file) | | confirmed (code) id |
+| 0xd | `0x005e53a0` | `0x00538360` | `0x00155b30` | `GameModes/` (own unit, before the base class's) | | confirmed (code) id |
 | 0xe | (ctor `0x00157e48`) | `0x00538438` | `0x00157e88` | `GameModes/` | | confirmed (code) id |
 | 0xf | `0x005e5560` (ctor `0x00156d20`) | `0x005383f0` | `0x00156dd8` | `Gm_Error.cpp` | error screen (disc error, controller removed) | confirmed (code) |
 | 0x10 | (ctor `0x0015d4f8`) | `0x005386a0` | `0x0015d648` | `GameModes/` | | confirmed (code) id |
@@ -125,16 +139,53 @@ Both timers count the EE's cycle counter (COP0 `Count`, 294.912 MHz) into a 64-b
 difference since the last read and handling wrap-around (`0x00148fd8`). Confirmed (code). Conversions: milliseconds
 = ticks / 294,912 (`0x004dcdd8`); seconds = ticks × 3.390842e-9 (`0x004dcf00`). Confirmed (code).
 
-`GameTimer` (`0x00145940`, vtable `0x00537bc0`) wraps a `Timer` at `+0x08` and keeps game time at `+0x30` (64-bit
-ticks). Its `Update` (`0x00145a10`) has two modes, chosen by the flag at `+0x54` (set by `0x00145f60(timer, 1)`,
-cleared by `0x00145f60(timer, 0)`, which also resynchronises the real-time base):
+`GameTimer` (constructor `0x00145940`, vtable `0x00537bc0`, 0x68 bytes from the allocation in
+`Game_InitializeSubsystems`) wraps a `Timer` and keeps two clocks: **game time** at `+0x40`, which modes and
+everything else read, and an unscaled clock at `+0x30`. Layout, confirmed (code) at `0x00145980` (reset),
+`0x00145a10` and the accessors:
 
-- **Fixed step** (`+0x54 == 1`): unless paused, game time advances by exactly `0x960000` ticks (1/30 s) per update.
-  The float at `+0x4c` is 1/30 (`0x3d088889`) and `+0x50` is a time scale of 1.0. Confirmed (code).
-- **Real time** (`+0x54 == 0`): game time advances by the real elapsed time, clamped to `0xb40000` ticks (40 ms)
-  per update unless the player's camera is in state 4. Confirmed (code); what camera state 4 is, is open.
+| Offset | Size | Meaning |
+| --- | --- | --- |
+| `+0x00` | 4 | vtable |
+| `+0x08` | 0x18 | the embedded `Timer` (real time) |
+| `+0x20` | 8 | real-time ticks at the last update, for game time |
+| `+0x28` | 8 | real-time ticks at the last update, for the unscaled clock |
+| `+0x30` | 8 | unscaled clock, in ticks |
+| `+0x38` | 4 | `+0x30` in milliseconds |
+| `+0x40` | 8 | **game time**, in ticks |
+| `+0x48` | 4 | game time in milliseconds |
+| `+0x4c` | 4 | float: the fixed step in seconds, 1/30 (`0x3d088889`) |
+| `+0x50` | 4 | float: time scale, 1.0 |
+| `+0x54` | 4 | 1 = fixed step, 0 = real time (`0x00145f60(timer, on)`; turning it off resynchronises `+0x20`) |
+| `+0x58` | 4 | single-step request: one fixed step even while paused (who sets it is not traced) |
+| `+0x5c` | 4 | paused |
+| `+0x60` | 4 | freeze end, in real-time milliseconds; 0 = none |
+| `+0x64` | 4 | freeze minimum: before it, a button press cannot end the freeze |
 
-`+0x48` holds the game time in milliseconds after each update. Confirmed (code).
+Virtual slots: `+0x08` destructor, `+0x10` `Update`, `+0x18` `TogglePause` (`0x00145dc8`), `+0x20` `IsPaused`
+(`+0x5c`), `+0x28` `Ticks` (`+0x40`), `+0x30` `Milliseconds` (`+0x48`), `+0x38` seconds (milliseconds × 0.001),
+`+0x40` ticks since a given tick count, `+0x48` the same in milliseconds, `+0x50` in seconds. The real-time
+milliseconds used for freezes come from the global `Timer`'s slot `+0x30`. Confirmed (code).
+
+`Update` (`0x00145a10`, 952 bytes: the clock, plus the freeze handling below), confirmed (code):
+
+- **Fixed step** (`+0x54 == 1`): unless paused (or when `+0x58` asks for one step, which it then clears), game time
+  advances by `+0x4c × +0x50 × 294,912,000` ticks converted to an integer, which is exactly `0x960000` (1/30 s) at
+  scale 1.0, and the unscaled clock by `0x960000`.
+- **Real time** (`+0x54 == 0`): unless paused, read the real clock; game time advances by the elapsed ticks since
+  `+0x20` times the scale, **clamped to `0xb40000` ticks (40 ms) only when player 0's camera exists and is not in
+  state 4** (`0x0011f9b0(0)`, camera slot `+0x1e8`); with no camera there is no clamp. The unscaled clock advances by
+  the unclamped, unscaled elapsed time; both bases are set to now. What camera state 4 is, is open.
+- **Paused**: neither clock moves in either mode, and `TogglePause` resynchronises both bases when it unpauses, so the
+  paused time is skipped. Pausing also refreshes the input state of every player who has one (`0x00146078`).
+- **Freeze** (`0x00145ea8(timer, ms, minMs)`, used by the GUI's `<FREEZE ms>` tag with `minMs` = 2000,
+  [GUI](gui.md)): if not paused, pause and set `+0x60` = now + `ms`, `+0x64` = now + `minMs`. While paused with a
+  freeze set, each `Update` unpauses when `+0x60` has passed; otherwise, unless `0x001cae58(0x00619570)` holds it,
+  it unpauses when any player with a pad releases the button with mask `0x40` after `+0x64` (`0x00144ba8`: pressed
+  last frame, not this one), or at once when no player has a pad.
+- Finally `+0x48` and `+0x38` are recomputed (ticks / 294,912), paused or not.
+
+Mode 1's `Enter` sets `+0x5c` = 1 (paused) and `+0x60` = 0 ([Level loading](level-loading.md#initlevel)).
 
 ## Behaviour
 
@@ -231,10 +282,11 @@ manager's current pool at the time. Confirmed (code) for the order and sizes; ro
 3. Slot `+0x68`: empty.
 4. **Memory**: set the memory-manager global (`0x0033afc8`), then its `Init` (slot `+0xb0`, `0x00338e10`). The arena is
    one `malloc` of `0x018d7c94` bytes (26,049,684; `0x00148828`, which also fills 2 KB at `0x01fef800` with `0xcd`).
-   Pools created, in order: `All System` (the arena), `System Memory Pool`, `Filter Memory` (`0x29000` bytes),
-   `Global Memory` (the rest; the default heap afterwards), `Debug Pool` (1 KB on retail: a second, debug-only arena
-   is asked for and is absent), a free list of 512 registered pools, `Debug Heap` and `Filter Pool`. Confirmed (code)
-   for names and sizes; the memory system's own page is still to be written.
+   Pools created, in order: `All System` (a clump over the arena), `System Memory Pool` (a heap over the rest of it,
+   registered as `Global Memory` and the default target of every allocation afterwards), `Filter Memory` /
+   `Filter Pool` (`0x29000` bytes, RenderWare's scratch pool), `Debug Pool` / `Debug Heap` (1 KB on retail: a second,
+   debug-only arena is asked for and is absent) and a free list of 512 registered pools. Confirmed (code) for names
+   and sizes; the whole tree, the allocators and the heap stack: [Memory](memory.md).
 5. Slot `+0xa0` (`0x001488f8`): **pads** (`scePadInit`, two port opens, eight 0x140-byte pad records starting near
    `0x005de4c0`; the library calls are identified by `libpad`'s position, inferred) and audio device setup (`0x0010f618`).
 6. **Renderer**: `0x00194488(0, 0)` creates the RenderWare device (`Renderware`, 0x460 bytes) in 4:3, interlaced
@@ -336,12 +388,18 @@ Written from this page:
 
 TODO for the analysts, found while implementing:
 
-- Whether `GameTimer` honours its pause in real-time mode, and what the time scale at `+0x50` does there; Coney
-  stops the clock in both modes.
+- Whether `GameTimer` honours its pause in real-time mode, and what the time scale at `+0x50` does there
+  (answered): the pause stops both clocks in both modes and the base is resynchronised on unpause, so Coney's
+  behaviour is right; in real-time mode the scale multiplies the elapsed time before the 40 ms clamp, and the
+  unscaled clock at `+0x30` ignores it ([Timers](#timers)). One difference remains for the implementer: the original
+  applies the 40 ms clamp only while player 0's camera exists and is not in state 4, so on screens without a
+  camera real time is unclamped.
 - What `dt` a mode sees on its first update (the value of its timestamp at `+0x00` after a push).
-- The `@orig` tags cite the game-mode functions and `GameTimer::Update` with file `(unknown)`: the base game-mode
-  file and the timer's file have no name yet. `coney-tools progress sizes --fill` gives `GameTimer::Update` a span of
-  952 bytes, which looks too large for what this page describes, so its size is left out of the tracker for now.
+- The `@orig` tags cite the game-mode functions and `GameTimer::Update` with file `(unknown)` (answered as far as the
+  executable allows): no string names these files, so `(unknown)` stays; their directories are `GameModes/` and
+  `Device/ps2/` ([Original structure](#original-structure)). The 952 bytes `coney-tools progress sizes --fill`
+  gives `GameTimer::Update` are right: the function is `0x00145a10`-`0x00145dc8` and also handles freezes and the
+  pads that end them ([Timers](#timers)); the tracker now counts them.
 
 ## Open questions
 
@@ -349,5 +407,6 @@ TODO for the analysts, found while implementing:
   (5, 6, 8, 0x12, 1) is on [Start-up and the front end](frontend.md#mode-flow).
 - What camera state 4 is, which lifts the 40 ms clamp in real-time mode.
 - Is `main` in `Core/ChunkSystem.cpp` or in an unnamed `Core/` file?
-- The memory system (`Memory/`) needs its own page: pools, clumps, the heap stack used by `main` (slots `+0xb8`
-  push and `+0xc0` pop) and the allocator's tag arguments.
+- The memory system's page (answered): [Memory](memory.md).
+- What `0x001cae58(0x00619570)` is, which keeps a frozen `GameTimer` frozen, and who sets the single-step request
+  `+0x58`.

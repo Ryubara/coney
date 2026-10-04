@@ -27,13 +27,13 @@ bytes = 208296
 key = "inferred-file"
 label = "File inferred"
 kind = "researched"
-bytes = 423528
+bytes = 423752
 
 [[coverage]]
 key = "directory"
 label = "Directory inferred"
 kind = "researched"
-bytes = 1059744
+bytes = 1076384
 
 [[coverage]]
 key = "link-once"
@@ -45,7 +45,7 @@ bytes = 115808
 key = "unknown"
 label = "Unknown"
 kind = "game"
-bytes = 1535032
+bytes = 1518168
 
 [[coverage]]
 key = "lua-tolua"
@@ -79,7 +79,7 @@ ranges = [[0x0011e1b0, 0x0013b118]]
 
 [[subsystem]]
 name = "Core"
-ranges = [[0x00144180, 0x00144a08]]
+ranges = [[0x00143ea0, 0x00144a08]]
 
 [[subsystem]]
 name = "Debug"
@@ -87,7 +87,7 @@ ranges = []
 
 [[subsystem]]
 name = "Device/ps2"
-ranges = [[0x001483e8, 0x0014d528]]
+ranges = [[0x00145790, 0x0014d528]]
 
 [[subsystem]]
 name = "FileIO"
@@ -95,7 +95,7 @@ ranges = [[0x001541e0, 0x00155b30]]
 
 [[subsystem]]
 name = "GameModes"
-ranges = [[0x00156dd8, 0x00162598]]
+ranges = [[0x00155b30, 0x00162598]]
 
 [[subsystem]]
 name = "Graphics"

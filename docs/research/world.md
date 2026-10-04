@@ -28,13 +28,13 @@ calls them the **`s` world** and the **`d` world**.
 | --- | --- | --- | --- |
 | `0x00410308` | `World::World` | constructor of the 0x2188-byte world object | confirmed (code) |
 | `0x00410e08` | `World_ReadManifest(world, name)` | reads `<name>_sec.mem` | confirmed (code) |
-| `0x00410648` | `World_LoadStream(world, name)` | reads `<name>_sec.wld` into its own heap | confirmed (code) |
+| `0x00410648` | `World_LoadStream(world, name)` | reads `<name>_sec.wld` into its own clump | confirmed (code) |
 | `0x00410a50` | `World_ReadStream(world, rwStream)` | part count, texture dictionary, RenderWare world, callbacks | confirmed (code) |
 | `0x00411010` | `World_RegisterSector` | per-sector callback at load: index the sector by its plugin data | confirmed (code) |
 | `0x00412310` | `World_RequestPart(world, sector)` | starts the asynchronous read of the sector's part | confirmed (code) |
 | `0x004114d8` | `World_PartLoaded` (file-manager callback) | wraps the read buffer in a RenderWare stream and calls `0x004110c0` | confirmed (code) |
 | `0x004110c0` | `World_ReadPart(world, rwStream)` | reads one `<name>_ms<i>.sec` | confirmed (code) |
-| `0x004115d0` | `World_UnloadPart(world, part)` | destroys a part's atomics, dictionary and heap | confirmed (code) |
+| `0x004115d0` | `World_UnloadPart(world, part)` | destroys a part's atomics, dictionary and clump | confirmed (code) |
 | `0x004118b8` | `WorldSector_ReleaseAtomic` | one sector's atomic | confirmed (code) |
 | `0x004101f0` | `World_CameraDistanceSq(bbox)` | squared distance from the nearest camera to a sector box | confirmed (code) |
 | `0x00411eb0` | `World_FindPartToLoad` | nearest sector without its atomic | confirmed (code) |
@@ -45,7 +45,7 @@ calls them the **`s` world** and the **`d` world**.
 | `0x00411b20` | `World_CollectSector` (the world's sector render callback) | queues a sector whose atomic is loaded | confirmed (code) |
 | `0x00411990` | `World_RenderSectorAtomic(atomic, fadeEnd)` | fade-in, lights, default atomic render | confirmed (code) |
 | `0x004123e8` | `World_ResetVisibility` | clears the visible bits, sets the PVS view point | confirmed (code); file inferred |
-| `0x00410b70` | `World_Unload` | every part, the world, its dictionary and heap | confirmed (code) |
+| `0x00410b70` | `World_Unload` | every part, the world, its dictionary and clump | confirmed (code) |
 | `0x0040f8a0` | `WorldManager_Update` | the streaming decision, once a frame | confirmed (code); file inferred |
 | `0x0040e8d8` | `WorldManager_Render(viewport)` | the world part of a viewport's frame | confirmed (code) |
 | `0x00198e20` | sector plugin `0x3F1` stream reader | 20 bytes into the sector's plugin data | confirmed (code) |
@@ -205,8 +205,8 @@ Built by `0x00410308`, confirmed (code) for the offsets; the names are ours.
 | Offset | Meaning |
 | --- | --- |
 | `+0x0000` | part being read, -1 when none (set by `0x00412310`, cleared by `0x004114d8`) |
-| `+0x0004` | -1 after a part is unloaded; the world manager treats `>= 0` as busy (who sets it is not traced) |
-| `+0x0008` | heap the part heap is created in (the `Sector Pool`) |
+| `+0x0004` | -1, set by the constructor and again when a part's unload completes (`0x004115d0`); the world manager treats `>= 0` as busy, but no other value is ever written (inferred, see [Open questions](#open-questions)) |
+| `+0x0008` | pool the part clumps are created in (the `Sector Pool`) |
 | `+0x000c` | sector whose part is being read |
 | `+0x0010` | set when the last search fell back to sectors nobody sees |
 | `+0x0014` | sector found by the last search (`0x00411eb0`), read by `0x00411880` |
@@ -214,9 +214,9 @@ Built by `0x00410308`, confirmed (code) for the offsets; the names are ours.
 | `+0x0038` | sector table: 560 pointers, indexed by the streamed-sector index |
 | `+0x08f8` | visible bits: 18 words, 576 bits, by streamed-sector index |
 | `+0x0940` | per part: a vector of its sectors (140 entries of 16 bytes, part number as index) |
-| `+0x1200` | per part: a 0x1c-byte record (140 entries, part number as index): `+0x04` texture dictionary, `+0x08` parent heap, `+0x0c` part heap, `+0x10` file size, `+0x14` heap size (after a load: the bytes the part really used) |
+| `+0x1200` | per part: a 0x1c-byte record (140 entries, part number as index): `+0x04` texture dictionary, `+0x08` parent pool, `+0x0c` part clump, `+0x10` file size, `+0x14` heap size (after a load: the bytes the part really used) |
 | `+0x2150` | result of the PVS view-point update |
-| `+0x2154` | the world's heap |
+| `+0x2154` | the world's clump |
 | `+0x2158` | the world's texture dictionary |
 | `+0x215c` | the `RpWorld` |
 | `+0x2160` | world has PVS data |
@@ -241,7 +241,8 @@ tables from the data.
    resources that nothing holds until the `Sector Pool`'s largest free block is big enough (confirmed (code) for
    the loop; "least recently used" inferred from the time stamps it compares). If it cannot make room, the world is
    not loaded.
-3. Create a heap of `worldHeapSize` bytes named after the world in the `Sector Pool` (`0x006eb9c8`), make it current,
+3. Create a clump ([Memory](memory.md#clump-behaviour)) of `worldHeapSize` bytes named after the world in the
+   `Sector Pool` (`0x006eb9c8`), make it current,
    and read the whole world stream synchronously through a RenderWare stream over the file ([World stream](#world-stream)).
 4. With no manifest, also measure every part file.
 
@@ -276,13 +277,16 @@ summarised:
 (code); an off-by-one in the original, inferred).
 
 When the read finishes, the file manager calls `World_PartLoaded` (`0x004114d8`), which wraps the read buffer in a
-RenderWare memory stream and reads the part into a new heap, `Sectors<i>`, of the part's heap size, created in the
+RenderWare memory stream and reads the part into a new clump, `Sectors<i>`, of the part's heap size, created in the
 `Sector Pool` (`0x004110c0`, [Part file](#part-file)). Afterwards the part record's heap size is replaced by what the
 part really used. Then `+0x00` = -1.
 
 **Unloading a part** (`0x004115d0`): for each sector of the part, `0x004118b8` sets the state to 3 and, unless the
 atomic is still in use, detaches and destroys the atomic and its frame and sets the state to 4. If every sector
-reached 4, the part's texture dictionary and heap are destroyed. Otherwise the unload is retried on a later frame.
+reached 4, the part's texture dictionary is destroyed, world `+0x04` is set to -1, and the part's clump is checked
+empty, unregistered and given back to the `Sector Pool`. Otherwise the unload is retried on a later frame. While the
+atomics are destroyed the clump counts frees, the only place where a clump's individual frees matter
+([Memory](memory.md#clump-behaviour)); confirmed (code).
 
 ### Camera distance {#camera-distance}
 
@@ -378,8 +382,9 @@ What the implementer needs:
   last part. Coney can read synchronously at first, but the test mode needs the decisions to be deterministic, so
   "now" and file completion must come from the engine's clock and file layer, not the wall clock.
 - **Memory**: Coney has no 32 MB limit, but the eviction order is visible to the player (what pops in where), so a
-  budget that mimics the original's `Sector Pool` is worth having as an option; tables sized from the data, not 560
-  sectors and 140 parts.
+  budget that mimics the original's `Sector Pool` is worth having as an option
+  ([Memory](memory.md#what-a-reimplementation-must-keep)); tables sized from the data, not 560 sectors and 140
+  parts.
 - **Rendering** in the order of [A frame](#a-frame): the level world, `s` world sectors (back-face culling), opaque
   objects, `d` world sectors, water, translucent objects; a one-second fade-in per newly loaded atomic; the
   draw-distance adjustment; frustum, PVS and occluder culling (PVS and occluders can come later: they only save work).
@@ -503,7 +508,12 @@ Some pairs are byte-identical (`level91`/`level97`, `level119`/`level120`).
   it must apply, is not checked. A first test: read one part with librw and compare its decoded vertex range with
   the sector's box.
 - **`0x3F0` `+0x08`** (always 0 in the worlds) and `0x004290d8`, its only reader.
-- **World `+0x04`**: who sets it to a value `>= 0`, which makes the world manager wait.
+- **World `+0x04`** (answered): nothing sets it to a value `>= 0`. The only writes found are the constructor's and
+  the finished unload's -1 (`0x00410308`, `0x004115d0`); every other function of `WorldPS2.cpp` and the world
+  manager's update and loaders were searched for a store to `+0x04` (inferred: a write from outside `World/` is not
+  ruled out, but the world objects are private to the world manager). The busy test on it is dead code in practice;
+  it looks like the remains of an "unload in progress" index that the retrying unload no longer needs
+  (speculative).
 - **`0x005147c8`**, the "nearest wanted thing within 75" flag, and the 32 bytes at world `+0x18`: their readers.
 - **`level70`**: 593 streamed sectors overflow the 560-entry table. Is the level reachable?
 - **The water effect** (`Graphics/WaterEffect.cpp`), the third streamer: its file (named `%u` from a CRC) and drawing.
