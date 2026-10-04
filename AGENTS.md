@@ -21,7 +21,9 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
 ## Rules (never broken)
 
 - **No game data** anywhere in the repo, issues, fixtures or CI: no executables, BIOS, assets, extracted files or
-  dumps. Tests use synthetic fixtures; disc-backed checks print counts and hashes only.
+  dumps. Tests use synthetic fixtures; disc-backed checks print counts and hashes only. Exception: curated
+  reference lists (names, ids, values, our own short descriptions; never assets, images, game text or script
+  source), per `LEGAL.md`.
 - **Clean room:** only analysts read decompiler output or disassembly, and they write `docs/research/` pages that
   cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed.
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
