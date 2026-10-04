@@ -34,8 +34,8 @@ void SpriteBatch::render(RenderDevice& device, const OverlayCamera& camera) cons
         }
         const LogicalPoint centre = camera.project(sprite.position);
         const LogicalPoint size = camera.projectSize(sprite.width, sprite.height, sprite.position.z);
-        quads.push_back(LogicalQuad{centre.x - size.x / 2, centre.y - size.y / 2, size.x, size.y, sprite.uv,
-                                    sprite.colour});
+        quads.push_back(
+            LogicalQuad{centre.x - size.x / 2, centre.y - size.y / 2, size.x, size.y, sprite.uv, sprite.colour});
     }
     device.drawQuads(m_sheet.texture.get(), quads);
 }

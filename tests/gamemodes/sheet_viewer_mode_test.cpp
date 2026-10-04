@@ -21,8 +21,7 @@ using coney::test::RecordingDevice;
 TEST_CASE("the sheet viewer draws every rectangle as a sprite inside the logical screen", "[sheet_viewer]") {
     auto texture = std::make_shared<FakeTexture>(128, 64);
     SpriteSheet sheet;
-    sheet.page.rects = {UvRect{0.0F, 0.0F, 0.5F, 1.0F}, UvRect{0.5F, 0.0F, 1.0F, 0.5F},
-                        UvRect{0.5F, 0.5F, 1.0F, 1.0F}};
+    sheet.page.rects = {UvRect{0.0F, 0.0F, 0.5F, 1.0F}, UvRect{0.5F, 0.0F, 1.0F, 0.5F}, UvRect{0.5F, 0.5F, 1.0F, 1.0F}};
     sheet.texture = texture;
     RecordingDevice device;
     SheetViewerMode viewer(device, sheet);
