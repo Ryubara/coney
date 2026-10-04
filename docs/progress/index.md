@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.5% of the game's own code (17,200 of 3,342,408 bytes, 57 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.5% of the game's own code (17,200 of 3,342,408 bytes, 69 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
-12 reimplemented function(s) have no size yet and add no bytes.
+24 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -68,7 +68,7 @@ at the top of the repository's `README.md`.
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 23,816 |
+| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 12 | 23,816 |
 | `WorldObjects` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 18,648 |
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
@@ -156,6 +156,18 @@ at the top of the repository's `README.md`.
 | `0x0019eea0` | `GlobalString_Set` | `unattributed` | 64 |
 | `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
+| `0x0040e2d8` | `WorldManager_Preload` | `World` | not filled in |
+| `0x0040f8a0` | `WorldManager_Update` | `World` | not filled in |
+| `0x004101f0` | `World_CameraDistanceSq` | `World` | not filled in |
+| `0x00410e08` | `World_ReadManifest` | `World` | not filled in |
+| `0x00411010` | `World_RegisterSector` | `World` | not filled in |
+| `0x00411880` | `World_PendingDistance` | `World` | not filled in |
+| `0x00411b20` | `World_CollectSector` | `World` | not filled in |
+| `0x00411d10` | `World_FindVisibleSectors` | `World` | not filled in |
+| `0x00411eb0` | `World_FindPartToLoad` | `World` | not filled in |
+| `0x004120a8` | `World_FindPartToUnload` | `World` | not filled in |
+| `0x00412310` | `World_RequestPart` | `World` | not filled in |
+| `0x004123e8` | `World_ResetVisibility` | `World` | not filled in |
 <!-- progress:end -->
 
 ## How it is measured

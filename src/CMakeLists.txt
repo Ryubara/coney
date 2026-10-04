@@ -37,6 +37,12 @@ add_library(coney_core STATIC
     scripting/lua_chunk.cpp
     scripting/lua_value.cpp
     scripting/lua_vm.cpp
+    world/debug_camera.cpp
+    world/sector_budget.cpp
+    world/streamed_world.cpp
+    world/view_frustum.cpp
+    world/world_manifest.cpp
+    world/world_streamer.cpp
     world/world_streams.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

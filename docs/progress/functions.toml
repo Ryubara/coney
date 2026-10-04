@@ -344,3 +344,63 @@ size = 5664
 address = 0x0035e5d0
 name = "CfgHUDMessage"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x0040e2d8
+name = "WorldManager_Preload"
+subsystem = "World"
+
+[[function]]
+address = 0x0040f8a0
+name = "WorldManager_Update"
+subsystem = "World"
+
+[[function]]
+address = 0x004101f0
+name = "World_CameraDistanceSq"
+subsystem = "World"
+
+[[function]]
+address = 0x00410e08
+name = "World_ReadManifest"
+subsystem = "World"
+
+[[function]]
+address = 0x00411010
+name = "World_RegisterSector"
+subsystem = "World"
+
+[[function]]
+address = 0x00411880
+name = "World_PendingDistance"
+subsystem = "World"
+
+[[function]]
+address = 0x00411b20
+name = "World_CollectSector"
+subsystem = "World"
+
+[[function]]
+address = 0x00411d10
+name = "World_FindVisibleSectors"
+subsystem = "World"
+
+[[function]]
+address = 0x00411eb0
+name = "World_FindPartToLoad"
+subsystem = "World"
+
+[[function]]
+address = 0x004120a8
+name = "World_FindPartToUnload"
+subsystem = "World"
+
+[[function]]
+address = 0x00412310
+name = "World_RequestPart"
+subsystem = "World"
+
+[[function]]
+address = 0x004123e8
+name = "World_ResetVisibility"
+subsystem = "World"
