@@ -53,8 +53,12 @@ add_library(coney_core STATIC
     gui/widget.cpp
     scripting/config_strings.cpp
     scripting/lua_chunk.cpp
+    scripting/lua_libraries.cpp
     scripting/lua_value.cpp
     scripting/lua_vm.cpp
+    scripting/script_bindings.cpp
+    scripting/script_system.cpp
+    warriors/level_table.cpp
     world/debug_camera.cpp
     world/level_object.cpp
     world/sector_budget.cpp

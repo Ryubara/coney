@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/lua_vm.h"
 
+#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <system_error>
 #include <utility>
 
 #include "core/assert.h"
@@ -75,8 +78,11 @@ constexpr std::uint32_t kBBits = 9;
 constexpr std::int64_t kMaxArgS = ((std::int64_t{1} << 26) - 1) >> 1;
 // The B operand of CALL that asks for every result.
 constexpr std::uint32_t kMultipleResults = 255;
-// How many list items one SETLIST stores at most; its A operand counts blocks of this size.
-constexpr std::uint32_t kFieldsPerFlush = 64;
+// How many list items one SETLIST stores at most; its A operand counts blocks of this size. The game's build flushes
+// every 62 items, not stock Lua 4.0's 64 (`luaV_execute`, 0x00334478, multiplies A by 0x3e; the largest B on the disc
+// is 62): with 64, every list item past the 62nd lands at the wrong index (docs/research/scripting.md, "Notes for
+// implementers").
+constexpr std::uint32_t kFieldsPerFlush = 62;
 
 // The operands of one instruction.
 struct Instruction {
@@ -130,6 +136,18 @@ std::optional<bool> lessThan(const Value& x, const Value& y) {
     return std::nullopt;
 }
 
+// A value as an arithmetic operand: a number, or a string that reads as one (Lua 4.0 converts numeric strings in
+// arithmetic, as `tonumber` does).
+std::optional<double> arithmeticOperand(const Value& value) {
+    if (const std::optional<double> number = value.number()) {
+        return number;
+    }
+    if (const std::optional<std::string_view> text = value.string()) {
+        return parseLuaNumber(*text);
+    }
+    return std::nullopt;
+}
+
 // Applies an arithmetic instruction to two numbers.
 double arithmetic(Op op, double x, double y) {
     switch (op) {
@@ -158,6 +176,18 @@ void setKnownKey(Table& table, const Value& key, Value value) {
 class Frame {
   public:
     std::vector<Value> stack;
+    // Where GETGLOBAL pushed an unset global, and its name: a later call of that slot names the global it calls.
+    std::vector<std::pair<std::size_t, const std::string*>> unsetGlobals;
+
+    // The name of the unset global last pushed into stack slot `slot`; null when none was.
+    [[nodiscard]] const std::string* unsetGlobalAt(std::size_t slot) const {
+        for (auto it = unsetGlobals.rbegin(); it != unsetGlobals.rend(); ++it) {
+            if (it->first == slot) {
+                return it->second;
+            }
+        }
+        return nullptr;
+    }
 
     // True when at least `n` values are on the stack.
     [[nodiscard]] bool has(std::size_t n) const { return stack.size() >= n; }
@@ -205,11 +235,15 @@ std::expected<std::vector<Value>, Error> LuaVm::call(const Value& function, std:
 std::expected<std::vector<Value>, Error> LuaVm::callNested(const Value& function, std::span<const Value> args) {
     if (function.isNil() && m_options.nilCallsAreNoOps) {
         ++m_nilCalls;
+        ++m_nilCallsByName[m_calleeName];
         return std::vector<Value>{};
     }
     const std::shared_ptr<const Function>& target = function.function();
     if (!target) {
-        return fail(ErrorCode::Invalid, std::format("Lua: attempt to call a {} value", typeName(function)));
+        // Name the likely culprit: calling nil is nearly always a global that is not set (a binding Coney lacks).
+        const std::string hint =
+            function.isNil() && !m_calleeName.empty() ? std::format(" (global `{}`)", m_calleeName) : std::string();
+        return fail(ErrorCode::Invalid, std::format("Lua: attempt to call a {} value{}", typeName(function), hint));
     }
     if (m_depth >= m_options.maxCallDepth) {
         return fail(ErrorCode::Invalid, "Lua: calls nested too deeply");
@@ -288,6 +322,12 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
                 return underflow();
             }
             const Value function = frame.stack[in.a];
+            // Name the callee when it is an unset global, for the nil-call count and the error message.
+            if (const std::string* name = function.isNil() ? frame.unsetGlobalAt(in.a) : nullptr; name != nullptr) {
+                m_calleeName = *name;
+            } else {
+                m_calleeName.clear();
+            }
             const std::vector<Value> callArgs(frame.stack.begin() + in.a + 1, frame.stack.end());
             auto results = callNested(function, callArgs);
             if (!results) {
@@ -355,6 +395,9 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
                 return error("string constant out of range");
             }
             frame.stack.push_back(m_globals->field(*name));
+            if (frame.stack.back().isNil()) {
+                frame.unsetGlobals.emplace_back(frame.stack.size() - 1, name);
+            }
             break;
         }
         case Op::GetTable:
@@ -424,7 +467,7 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             frame.drop(in.b);
             break;
         }
-        case Op::SetList: { // the top b values into the table below them, at a × 64 + 1 onwards
+        case Op::SetList: { // the top b values into the table below them, at a × 62 + 1 onwards
             if (!frame.has(in.b + 1)) {
                 return underflow();
             }
@@ -466,8 +509,8 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             }
             const Value y = frame.pop();
             const Value x = frame.pop();
-            const std::optional<double> xn = x.number();
-            const std::optional<double> yn = y.number();
+            const std::optional<double> xn = arithmeticOperand(x);
+            const std::optional<double> yn = arithmeticOperand(y);
             if (!xn || !yn) {
                 return error(std::format("arithmetic on a {} and a {}", typeName(x), typeName(y)));
             }
@@ -478,7 +521,7 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             if (!frame.has(1)) {
                 return underflow();
             }
-            const std::optional<double> n = frame.fromTop(1).number();
+            const std::optional<double> n = arithmeticOperand(frame.fromTop(1));
             if (!n) {
                 return error(std::format("arithmetic on a {}", typeName(frame.fromTop(1))));
             }
@@ -508,7 +551,7 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             if (!frame.has(1)) {
                 return underflow();
             }
-            const std::optional<double> n = frame.fromTop(1).number();
+            const std::optional<double> n = arithmeticOperand(frame.fromTop(1));
             if (!n) {
                 return error(std::format("arithmetic on a {}", typeName(frame.fromTop(1))));
             }
@@ -661,6 +704,32 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             return error(std::format("unknown opcode {}", static_cast<int>(in.op)));
         }
     }
+}
+
+std::optional<double> parseLuaNumber(std::string_view text) {
+    // Lua 4.0's rule: optional spaces, a decimal number as C's strtod reads it, optional spaces, nothing else.
+    // std::from_chars reads neither a leading "+" nor spaces, so both are handled here.
+    const auto isSpace = [](char c) { return c == ' ' || (c >= '\t' && c <= '\r'); };
+    while (!text.empty() && isSpace(text.front())) {
+        text.remove_prefix(1);
+    }
+    while (!text.empty() && isSpace(text.back())) {
+        text.remove_suffix(1);
+    }
+    bool negative = false;
+    if (!text.empty() && (text.front() == '-' || text.front() == '+')) {
+        negative = text.front() == '-';
+        text.remove_prefix(1);
+    }
+    if (text.empty() || text.front() == '-' || text.front() == '+') {
+        return std::nullopt;
+    }
+    double number = 0.0;
+    const auto parsed = std::from_chars(text.data(), text.data() + text.size(), number);
+    if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size()) {
+        return std::nullopt;
+    }
+    return negative ? -number : number;
 }
 
 std::expected<std::shared_ptr<const LuaProto>, Error> loadLuaChunk(std::span<const std::byte> data) {

@@ -337,10 +337,82 @@ the camera over and gives it back. The bindings these calls reach are below.
   `level100.lua` in that same state, with numbers from `GetLanguage`, `GetPlatform`, `GetCurrentLevelIndex`,
   `GetLevelId` and `UM_IsLevelComplete` (nil for false).
 
+## Coney's implementation
+
+The script system and the front end's scripts run in Coney (2026-10-04), written from this page; the Lua 4.0 virtual
+machine underneath is [Front end](frontend.md#coneys-implementation)'s.
+
+- **`ScriptSystem`** (`src/scripting/script_system.h`): one Lua state, made by `create()` (the libraries in the
+  original's order, string, base, math; then the bindings; then `_ERRORMESSAGE` and `_ALERT` as functions that do
+  nothing) and made again by the level flow's unload. `runFile` runs a WAD script by name, `runFiles` a list,
+  `enterLevel` runs `global.lua` and then `<level>.lua`, `call` finds a function by dotted name (`Menu.onStart`; a `:`
+  passes the table as `self`) and calls it, `schedule`/`flushScheduled` keep the schedule of named calls with up to two
+  number arguments, and `update` runs the calls that are due and the update function (with the step in ms). The
+  original's errors leave no trace; Coney writes each to its log (`script error: <script>: <message>`) and counts it.
+- **The libraries** (`src/scripting/lua_libraries.h`): the 33 base functions with the four compatibility names and
+  `_VERSION`, the string library (12 names with Lua's patterns) and the math library (23 functions, `PI`), written anew
+  from the public Lua 4.0 library.
+- **The bindings** (`src/scripting/script_bindings.h`): one table, by name, saying for each whether it is **real**
+  (does its job: the getters and script-system bindings of the tables above, `CfgLevelName`, the five string bindings,
+  `ShowProfileManager`, `MenuLoadLevel`, `ScreenQueueEffect`), **routed** (handed to a Coney stand-in that logs it:
+  `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`) or a **stub** (returns its documented default:
+  nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn` and `CameraCreateLocked`, false for
+  `SceneIsPreloaded` and `UM_IsTypeDirty`). The configuration stubs (the `Cfg*` bindings, `CfgObj`, sound, unlockables
+  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 27 real, 5 routed and 111
+  stubs (73 of them recording): every binding the front-end path calls, and no more.
+- **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
+  `GetLevelId` and the level flow (record 0 is `level100`).
+- **The front end** runs the preloads at the legal screen and `global.lua` and `level100.lua` in the same state when the
+  level flow starts the front end, then calls `Menu.onStart` ([Front end](frontend.md#coneys-implementation)).
+
+Coney's choices, where the page is silent or Coney differs:
+
+- A call of an unset global (a binding Coney does not list; the original registers all 956) is skipped as a no-op
+  returning nothing, and logged once by name, instead of stopping the script.
+- Scheduled calls due at the same time run in the order they were scheduled; a call scheduled during `update` waits for
+  the next update, even with a delay of 0. There is no garbage collection to force (Coney's VM counts references), and
+  the 32-character limit on the parts of a dotted name is not applied.
+- `CfgLevelName`'s argument order: the scripts pass 18 arguments, the index, four names, the level number, then twelve
+  numbers. Coney maps the index, the level name (`+0x14`), the second name (`+0x24`), the world name (`+0x39`), the
+  fourth name (`+0x49`) and the level number (`+0x04`) by the disc's data (record 0 is `level100` with number 100; the
+  world name equals the level name in every record with packs), and keeps the twelve numbers in order (inferred).
+- `random(a, b)`: whole numbers in `[a, b]` from Coney's own deterministic generator; the math library's `random` uses
+  another one of Coney's, never the C library's. The trigonometry works in degrees, as stock Lua 4.0 does.
+- `tolua`, `M_Vector4` and `M_Quat` are empty tables and `NilHandle` and `NilSoundHandle` are 0, below the first handle
+  a stub gives out.
+- `preLoadFile` runs its file at once (Coney's reads are synchronous) and ignores its callback.
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][scripts]"` with `CONEY_DISC` set runs the four
+preloads, `global.lua`, `level100.lua`, `Menu.onStart` and the menu callbacks (`fadeToRMI`, `launchRMI`,
+`cancelRumbleMode`, `playMovie`, `startGame`, `onFinish`) in one state: no script error and no call of a missing
+binding. The preloads add 25 globals and the level entry 193 more, as at run time (1,034 → 1,059 → 1,252); the level
+table holds 111 records; `CfgObj` is called 1,371 times; 9,273 configuration calls are recorded; 388 HUD strings are
+set. `Menu.startGame` asks for `level99` (`runNextMission(1)`), and after the unload `global.lua` and `level100.lua` run
+again in the fresh state without the preloads, also without errors (a Coney observation for the front end, not a check
+of the original).
+
 ## Open questions
 
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
-  `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them?
+  `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,
+  `global.lua` and `level100.lua` run without errors in Coney's fresh state.)
 - `IntroScene` and the scene system (`SuperRunScene`): how a scripted scene takes the camera and the player's control
   and gives them back.
 - `RegisterUpdate`, and what `preLoadFile`'s completion routine (`0x00356d00`) does with the callback name.
+- **`CfgLevelName`'s arguments:** which of the twelve numbers after the level number fills which field (`+0x08`
+  sections, `+0x0c`, the three flags at `+0x0d`, `+0x10`, `+0x6c`-`+0x80`), and why the scripts pass 18 arguments where
+  the writer (`0x0041f118`) is described with 17 values. The section count does not simply equal the number of
+  `<level>_<k>.pak` files for any one argument (25 of 63 levels with packs match the seventh).
+- **`CfgObj` count:** the page counts 1,279 `CfgObj` calls in `config_preload3.lua`; running it calls the binding 1,371
+  times. Static call sites against calls made (loops, or functions called twice)?
+- **Degrees or radians:** does this build's math library keep Lua 4.0's degrees (Coney's assumption)?
+- **`random`'s generator** (`0x00386488`, state `0x006eb880`), and what `random(a, b)` returns (whole numbers?).
+- **`NilHandle` and `NilSoundHandle`:** their values.
+- **`PadSetHandler`'s arguments:** this page gives `(pad, button, name)`, [Front end](frontend.md#input) gives
+  `(button, player, "function")`. Coney implements neither yet: `PadSetHandler` is a stub that ignores its
+  arguments, since the front-end path needs no Lua pad handler.
+- **Names:** the `@orig` tags call the script system's slots `ScriptSystem::Update`, `EnterLevel`, `RunFile`,
+  `RunFiles`, `FindFunction`, `Call`, `Schedule`, `ScheduleArg1`, `ScheduleArg2`, `FlushScheduled` and
+  `SetUpdateFunction`, the binding wrapper `0x0036eef8` `ShowProfileManager_Binding`, `0x0041f118`
+  `W_GameState_SetLevelRecord`, `0x00160d78` `MenuLoadLevel_Choose`, `0x0015c7b0` `LevelFlow_ChooseLevel` and
+  `0x0020a268` `PM_Mode::HandleCommand`, until the research database names them.

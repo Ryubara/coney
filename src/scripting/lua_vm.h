@@ -4,7 +4,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <map>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -33,8 +35,8 @@ struct LuaVmOptions {
 /// interpreter. It is Coney's own implementation of the Lua 4.0 instruction set (the public language's, not the
 /// game's code), written so the game's `.lua` files run unchanged.
 ///
-/// Limits, all Coney's: no tag methods (indexing a non-table, arithmetic on a non-number and ordering mixed types
-/// fail with ErrorCode::Invalid; numeric strings are not converted for arithmetic); no garbage collector, so tables
+/// Limits, all Coney's: no tag methods (indexing a non-table, arithmetic on a value that is neither a number nor a
+/// numeric string, and ordering mixed types fail with ErrorCode::Invalid); no garbage collector, so tables
 /// that refer to each other in a cycle are never freed (the configuration scripts build none); and no standard library
 /// unless a caller registers it.
 ///
@@ -45,6 +47,8 @@ class LuaVm {
 
     /// The table of globals.
     [[nodiscard]] Table& globals() { return *m_globals; }
+    /// The table of globals as a value a script can hold (`globals()` in Lua).
+    [[nodiscard]] const std::shared_ptr<Table>& globalsTable() const { return m_globals; }
     /// The global `name`; nil when unset.
     [[nodiscard]] Value global(std::string_view name) const { return m_globals->field(name); }
     /// Sets the global `name`.
@@ -64,8 +68,13 @@ class LuaVm {
 
     /// Calls of nil skipped under LuaVmOptions::nilCallsAreNoOps.
     [[nodiscard]] std::uint64_t nilCalls() const { return m_nilCalls; }
+    /// The skipped calls of nil by the name of the unset global called (a binding Coney lacks, nearly always); an
+    /// empty name collects calls of a nil that did not come from a global.
+    [[nodiscard]] const std::map<std::string, std::uint64_t>& nilCallsByName() const { return m_nilCallsByName; }
     /// Instructions executed so far.
     [[nodiscard]] std::uint64_t instructions() const { return m_instructions; }
+    /// Whether a run() or call() is in progress (a binding is asking).
+    [[nodiscard]] bool running() const { return m_depth > 0; }
 
   private:
     // Calls `function` one level deeper than the current call; the caller adjusts the results.
@@ -79,7 +88,13 @@ class LuaVm {
     std::uint64_t m_instructions = 0;
     std::uint64_t m_budgetStart = 0; // m_instructions when the outermost run() or call() began
     int m_depth = 0;                 // calls in progress, including bindings that run scripts themselves
+    std::string m_calleeName;        // the unset global the CALL being made calls; empty otherwise
+    std::map<std::string, std::uint64_t> m_nilCallsByName;
 };
+
+/// A string read as a number the way Lua 4.0 converts one (arithmetic operands, `tonumber`): optional spaces around a
+/// decimal number in C's notation (`12`, `-3.5`, `1e3`); nothing for anything else.
+[[nodiscard]] std::optional<double> parseLuaNumber(std::string_view text);
 
 /// Parses a chunk (parseLuaChunk()) into a form LuaVm::run() takes.
 [[nodiscard]] std::expected<std::shared_ptr<const LuaProto>, Error> loadLuaChunk(std::span<const std::byte> data);

@@ -13,13 +13,15 @@
 #include "fileio/wad.h"
 #include "gui/global_strings.h"
 #include "scripting/lua_vm.h"
+#include "scripting/script_system.h"
 
 namespace coney::script {
 
-/// What `GetPlatform()` returns to the scripts. The language files choose between two wordings of about twenty strings
-/// by `Platform == 2`; the other branch matches the menus' "triangle for back" that docs/research/frontend.md#input
-/// reads from `config_strings_en.lua`. Coney's choice until the binding's value on the PS2 is researched: 0.
-inline constexpr double kPlatformValue = 0.0;
+/// What `GetPlatform()` returns to the scripts: always 1 on the PS2 (`0x00357998`,
+/// docs/research/scripting.md#bindings-whose-results-the-front-end-needs). The language files choose between two
+/// wordings of about twenty strings by `Platform == 2`; 1 takes the PS2's ("PRESS THE START BUTTON", triangle for
+/// back).
+inline constexpr double kPlatformValue = 1.0;
 
 /// Registers the string bindings in `vm`, each storing its `(id, text)` arguments in `strings`: `CfgHUDMessage` into
 /// StringTable::Hud, and `CfgCrimeMessage`, `CfgTutorialMessage`, `CfgWarriorCommand` and `CfgAnnounceMessage` into
@@ -27,9 +29,6 @@ inline constexpr double kPlatformValue = 0.0;
 /// with ErrorCode::Invalid. `strings` must outlive `vm`.
 /// @orig 0x0035e5d0 CfgHUDMessage (unknown)
 void addStringBindings(LuaVm& vm, gui::GlobalStrings& strings);
-
-/// Reads a script by file name, such as `config_strings_en.lua`, for the string load.
-using ScriptSource = std::function<std::expected<std::vector<std::byte>, Error>(std::string_view name)>;
 
 /// Counts from a string load, for logs and the disc check.
 struct StringLoadReport {

@@ -219,3 +219,73 @@ TEST_CASE("table iteration follows insertion order and skips removed entries", "
     CHECK(numberOf(table.get(Value(-0.0))) == 4.0);
     CHECK(!table.set(Value(), Value(1.0)).has_value());
 }
+
+TEST_CASE("a table constructor of more than 62 items flushes every 62, as the game's build does", "[lua_vm]") {
+    // L = {1, 2, ..., 70}: the compiler flushes the first 62 items with SETLIST 0 and the last 8 with SETLIST 1, which
+    // stores them from index 1 × 62 + 1 = 63 (stock Lua 4.0 would use 64 and leave 63 and 64 empty).
+    LuaFunctionSpec main;
+    main.strings = {"L"};
+    main.code.push_back(luaU(LuaOp::CreateTable, 70));
+    for (std::int32_t i = 1; i <= 62; ++i) {
+        main.code.push_back(luaS(LuaOp::PushInt, i));
+    }
+    main.code.push_back(luaAB(LuaOp::SetList, 0, 62));
+    for (std::int32_t i = 63; i <= 70; ++i) {
+        main.code.push_back(luaS(LuaOp::PushInt, i));
+    }
+    main.code.push_back(luaAB(LuaOp::SetList, 1, 8));
+    main.code.push_back(luaU(LuaOp::SetGlobal, 0));
+    main.code.push_back(luaU(LuaOp::End, 0));
+    LuaVm vm;
+    REQUIRE(runSpec(vm, main).has_value());
+    const std::shared_ptr<Table> list = vm.global("L").table();
+    REQUIRE(list);
+    CHECK(list->size() == 70);
+    for (int i = 1; i <= 70; ++i) {
+        INFO("index " << i);
+        CHECK(numberOf(list->get(Value(static_cast<double>(i)))) == static_cast<double>(i));
+    }
+    CHECK(list->get(Value(71.0)).isNil());
+}
+
+TEST_CASE("arithmetic converts numeric strings, as Lua 4.0 does", "[lua_vm]") {
+    // R = "40" + 2; S = -" 3 "
+    LuaFunctionSpec main;
+    main.strings = {"40", "R", " 3 ", "S", "x"};
+    main.code = {luaU(LuaOp::PushString, 0), luaS(LuaOp::PushInt, 2),    luaU(LuaOp::Add, 0),
+                 luaU(LuaOp::SetGlobal, 1),  luaU(LuaOp::PushString, 2), luaU(LuaOp::Minus, 0),
+                 luaU(LuaOp::SetGlobal, 3),  luaU(LuaOp::End, 0)};
+    LuaVm vm;
+    REQUIRE(runSpec(vm, main).has_value());
+    CHECK(numberOf(vm.global("R")) == 42.0);
+    CHECK(numberOf(vm.global("S")) == -3.0);
+    CHECK(coney::script::parseLuaNumber("1e3") == 1000.0);
+    CHECK(!coney::script::parseLuaNumber("12abc").has_value());
+    CHECK(!coney::script::parseLuaNumber("").has_value());
+}
+
+TEST_CASE("a call of an unset global names it, in the error and in the skipped-call count", "[lua_vm]") {
+    // Known(Unset); Missing(1)  -- Unset is read first, but it is Missing that is called.
+    LuaFunctionSpec main;
+    main.strings = {"Known", "Unset", "Missing"};
+    main.code = {luaU(LuaOp::GetGlobal, 0), luaU(LuaOp::GetGlobal, 1), luaAB(LuaOp::Call, 0, 0),
+                 luaU(LuaOp::GetGlobal, 2), luaS(LuaOp::PushInt, 1),   luaAB(LuaOp::Call, 0, 0),
+                 luaU(LuaOp::End, 0)};
+    LuaVm strict;
+    strict.registerFunction("Known", [](std::span<const Value>) -> std::expected<std::vector<Value>, Error> {
+        return std::vector<Value>{};
+    });
+    auto failed = runSpec(strict, main);
+    REQUIRE(!failed.has_value());
+    CHECK(failed.error().message.find("`Missing`") != std::string::npos);
+
+    LuaVmOptions lenientOptions;
+    lenientOptions.nilCallsAreNoOps = true;
+    LuaVm lenient(lenientOptions);
+    lenient.registerFunction("Known", [](std::span<const Value>) -> std::expected<std::vector<Value>, Error> {
+        return std::vector<Value>{};
+    });
+    REQUIRE(runSpec(lenient, main).has_value());
+    CHECK(lenient.nilCallsByName().size() == 1);
+    CHECK(lenient.nilCallsByName().count("Missing") == 1);
+}

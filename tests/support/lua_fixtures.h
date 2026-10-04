@@ -39,6 +39,7 @@ enum class LuaOp : std::uint8_t {
     Add = 23,
     Mult = 26,
     Concat = 29,
+    Minus = 30,
     Not = 31,
     JmpNe = 32,
     JmpLt = 34,
@@ -103,6 +104,63 @@ inline void luaFunction(Bytes& out, const LuaFunctionSpec& spec) {
         out.u32(word);
     }
 }
+
+/// Writes one function's code a statement at a time, keeping count of the stack so CALL and SETTABLE get the right
+/// operands. Enough for the short synthetic scripts the script-system tests run.
+class LuaAsm {
+  public:
+    /// The index of string constant `text`, added on first use.
+    std::uint32_t constant(const std::string& text) {
+        for (std::uint32_t i = 0; i < spec.strings.size(); ++i) {
+            if (spec.strings[i] == text) {
+                return i;
+            }
+        }
+        spec.strings.push_back(text);
+        return static_cast<std::uint32_t>(spec.strings.size() - 1);
+    }
+    /// Pushes the global `name`.
+    LuaAsm& getGlobal(const std::string& name) { return emit(luaU(LuaOp::GetGlobal, constant(name)), 1); }
+    /// Pops the top into the global `name`.
+    LuaAsm& setGlobal(const std::string& name) { return emit(luaU(LuaOp::SetGlobal, constant(name)), -1); }
+    /// Pushes a string.
+    LuaAsm& pushString(const std::string& text) { return emit(luaU(LuaOp::PushString, constant(text)), 1); }
+    /// Pushes a whole number.
+    LuaAsm& pushInt(std::int32_t value) { return emit(luaS(LuaOp::PushInt, value), 1); }
+    /// Pops the field `name` of the table on the top, pushing its value.
+    LuaAsm& getField(const std::string& name) { return emit(luaU(LuaOp::GetDotted, constant(name)), 0); }
+    /// Pushes a new table.
+    LuaAsm& newTable() { return emit(luaU(LuaOp::CreateTable, 0), 1); }
+    /// Pops two numbers and pushes their sum.
+    LuaAsm& add() { return emit(luaU(LuaOp::Add, 0), -1); }
+    /// Pushes nested function `index` as a closure with no upvalues.
+    LuaAsm& closure(std::uint32_t index) { return emit(luaAB(LuaOp::Closure, index, 0), 1); }
+    /// With a table, a key and a value pushed, sets table[key] = value and pops all three.
+    LuaAsm& setTable() { return emit(luaAB(LuaOp::SetTable, 3, 3), -3); }
+    /// Calls the function pushed before the top `args` values, keeping `results` results.
+    LuaAsm& call(std::uint32_t args, std::uint32_t results = 0) {
+        const auto base = static_cast<std::uint32_t>(m_depth) - args - 1;
+        spec.code.push_back(luaAB(LuaOp::Call, base, results));
+        m_depth = static_cast<int>(base + results);
+        return *this;
+    }
+    /// Ends the function and returns it.
+    LuaFunctionSpec end() {
+        spec.code.push_back(luaU(LuaOp::End, 0));
+        return spec;
+    }
+
+    LuaFunctionSpec spec; ///< The function being written; add nested functions to spec.protos.
+
+  private:
+    // Appends `word`, which changes the stack depth by `change`.
+    LuaAsm& emit(std::uint32_t word, int change) {
+        spec.code.push_back(word);
+        m_depth += change;
+        return *this;
+    }
+    int m_depth = 0;
+};
 
 /// A complete chunk: the header of the game's layout (little-endian, 4-byte ints, 8-byte numbers), the test number and
 /// the main function.

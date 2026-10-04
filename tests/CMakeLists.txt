@@ -50,9 +50,14 @@ add_executable(coney_tests
     raycast/collision_mesh_test.cpp
     raycast/disc_collision_test.cpp
     scripting/config_strings_test.cpp
+    scripting/disc_script_system_test.cpp
     scripting/disc_strings_test.cpp
     scripting/lua_chunk_test.cpp
+    scripting/lua_libraries_test.cpp
     scripting/lua_vm_test.cpp
+    scripting/script_bindings_test.cpp
+    scripting/script_system_test.cpp
+    warriors/level_table_test.cpp
     world/debug_camera_test.cpp
     world/level_object_test.cpp
     world/streamed_world_test.cpp
