@@ -31,8 +31,9 @@ Everything Coney loads comes out of `WARRIORS.WAD`, so the first job is to read 
   ([guide](guides/coney-tools.md), [WARRIORS.DIR / .WAD](research/formats/wad-dir.md)).
 - Recover as many entry names as possible (414 of 10,701 so far).
 - A survey of every entry type: what each is, how many there are, which ones RenderWare or Lua already explain.
-- A map of the executable: which functions belong to which of the original's source files, from the file paths its
-  assertion messages carry. It tells every later analyst where to look.
+- Done: a map of the executable, placing the original's source files and the middleware in `.text` (15% of it tied
+  to a named file, 41% to a directory, 20% middleware), and pointing at `main`, the chunk system and file I/O
+  ([Source map](research/source-map.md)).
 
 **Done when** the tool extracts a disc, every entry type has a research page or a stub, and the source-file map is
 published.

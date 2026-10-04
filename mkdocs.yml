@@ -59,6 +59,7 @@ nav:
   - Roadmap: roadmap.md
   - Research:
       - Overview: research/overview.md
+      - Source map: research/source-map.md
       - Compiler & code conventions: research/compiler.md
       - Name hashing (CRC-32): research/name-hash.md
       - File formats:

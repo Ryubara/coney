@@ -26,7 +26,8 @@ Date: 2026-10-04. Disc: `Warriors, The (USA) (En,Fr,De,Es,It).iso` (4,295,917,56
   No GCC RTTI type-name strings found → likely `-fno-rtti`. Exact GCC version still to confirm (prologue/codegen idioms).
 * SCE SDK 3.0.0 (`PsIIlibkernl3000`, `PsIIlibgraph3000`).
 * **152 source paths embedded** (`c:/Warriors/Source/<Subsystem>/<File>.cpp`, from asserts/debug strings).
-  This gives the original source tree and file names, so functions can be grouped into their real translation units.
+  This gives the original source tree and file names, so functions can be grouped into their real translation units:
+  the [source map](source-map.md) does this for all 153 paths (152 `.cpp` plus one `.inl`) and the middleware.
   Subsystems: Animation, Audio, Camera, Core (ChunkSystem), Debug, Device/ps2 (fileio, memorycard, sound, Shell),
   FileIO, GameModes, Graphics (+ Devices/Renderware, OverlayEffects), GUI (+ RumbleModeGUI, ProfileManagementGUI),
   Human (+ pathfinding, cns), Memory, Physics, RayCast, Scene, Scripting, StringTable, TaskEngine, Utils, World(+ps2),
@@ -64,7 +65,7 @@ Entry content by leading bytes (counts of 10,701):
 ## Implications for Coney
 
 1. Lua scripts carry much of the mission/game logic → decompile bytecode instead of MIPS for that part.
-2. Source file list → Ghidra can be organised by TU from assert-string xrefs.
+2. Source file list → Ghidra can be organised by TU from assert-string xrefs (done: [Source map](source-map.md)).
 3. Asset pipeline: write a WAD extractor + chunk-format docs early; RW streams can be loaded by **librw** on PC.
 4. VU microcode/DVP overlays do not need decompiling — replaced by librw's PC renderer.
 
