@@ -421,9 +421,40 @@ This naming scheme names the whole first block of the WAD: see [WAD contents](fo
 
 ## Coney's implementation
 
-Not yet implemented.
+First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
 
-What the implementer needs:
+- `RenderEngine` (`src/platform/render_engine.h`) starts librw, built for its GL3 platform with SDL3. librw's GL3
+  device creates the window and an OpenGL 3.3 core context itself, so the engine owns the window and the event loop
+  gets a non-owning `Window`. A run-time NULL backend (`--headless`) installs librw's NULL device instead, for CI and
+  tests: no window, no GPU. It implements `graphics::RenderDevice` (begin a frame cleared to a colour, present),
+  which game modes call as the original's modes call the device; the idle mode clears and presents every frame.
+  There are no device cameras, logical 640 × 448 screen or 30 Hz present yet: one camera covers the window, and the
+  present waits for every vertical blank (librw's GL3 device sets a swap interval of 1, not the 2 of
+  [the frame rate](#frame-rate)).
+- `TextureDictionary` (`src/platform/texture_dictionary.h`) reads a dictionary with librw after
+  `graphics::inspectTexDictionary` has checked the stream, and converts it to RGBA images (any backend) or to OpenGL
+  textures (`Raster::convertTexToCurrentPlatform`). The chunk readers for `0x0B` and `0x2A` push it as `0x0B`
+  ([Chunk system](chunk-system.md#coneys-implementation)); sector atomics files and world streams are read at their
+  fixed offsets by `loadTextureDictionaries`. Dictionaries are not kept per resource and there is no lookup by name
+  yet.
+- **Alpha:** librw's PS2 reader scales alpha by 255/128 when it converts a raster to an image (palette entries and
+  32-bit texels alike), so 128 becomes 255; that answers the open question below, and a unit test pins it.
+- **librw and the game's data:** librw recomputes each PS2 texture's GS layout and asserts that the stream agrees;
+  some of the game's textures disagree (the palette's place), so librw is built without its asserts and keeps the
+  stream's values. Its reader also copies as many bytes as the stream's header says into buffers it sized itself; for
+  five textures on the disc (tiny 4-bit ones, such as a 2 × 2) the stream's sizes are larger and the copy would
+  overrun the heap, so Coney leaves those textures out of their dictionaries (`skippedTextures()`).
+- `coney --disc <disc> --view-txd <entry>` draws an entry's textures in a grid with RwIm2D quads, nearest filtering,
+  Z off and source-alpha blending, as the device's screen quads do ([2D drawing](#2d-drawing)); `--screenshot` saves
+  the last frame. The legal screen (`--view-txd 863681355`) shows correctly.
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc]"` with `CONEY_DISC` set reads 20,314
+dictionaries (from 3,016 chunk containers, 1,911 sector atomics files and 159 world streams) holding 42,211 textures;
+42,206 are read and converted to RGBA images, the 5 above are left out, no entry fails. By format: 32,333 `PAL8`,
+9,132 `PAL4`, 209 `PAL8` with mipmaps and 532 `PAL4` with mipmaps, all with 32-bit palettes and raster layout version
+2.
+
+What is still to do:
 
 - A device object that owns librw's engine start-up (with the HAnim, Skin, MatFX and world plugins; PTank for
   sprites), a 640 × 448 logical screen scaled to the window, and the cameras of [the device object](#device-object):

@@ -139,3 +139,15 @@ address = 0x0015e748
 name = "GameModeStack_TopId"
 subsystem = "GameModes"
 size = 72
+
+[[function]]
+address = 0x001906e8
+name = "ChunkReader_TextureDictionaryTid"
+subsystem = "Graphics"
+size = 136
+
+[[function]]
+address = 0x00190770
+name = "ChunkReader_RenderwareTextureDic"
+subsystem = "Graphics"
+size = 160

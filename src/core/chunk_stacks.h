@@ -86,6 +86,11 @@ class ChunkStacks {
         return std::unique_ptr<T>(static_cast<T*>(top.release()));
     }
 
+    /// Removes every chunk of `type` from the chunk stack, wherever it is, and returns them bottom first; the other
+    /// chunks keep their order. Not part of the original, whose handlers only pop from the top: Coney's tools use it to
+    /// collect what a load built (the texture dictionaries of an entry, for the viewer) once the load is over.
+    [[nodiscard]] std::vector<ChunkData> takeChunks(std::uint32_t type);
+
     /// The chunk stack, bottom first.
     [[nodiscard]] std::span<const ChunkData> chunks() const { return m_chunks; }
     /// The object stack, bottom first.

@@ -14,7 +14,10 @@ add_library(coney_core STATIC
     fileio/wad.cpp
     fileio/wad_index.cpp
     gamemodes/game_mode_stack.cpp
-    gamemodes/load_entry_mode.cpp)
+    gamemodes/load_entry_mode.cpp
+    graphics/frame_stats.cpp
+    graphics/rw_stream.cpp
+    graphics/texture_grid.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_subdirectory(platform)

@@ -14,8 +14,11 @@ inline constexpr std::uint32_t kChunkTypeCount = 0x54;
 inline constexpr std::uint32_t kHeaderSize = 16;
 
 /// Chunk types the reimplemented handlers refer to. The full list of names is chunkTypeName().
+inline constexpr std::uint32_t kTextureDictionaryTid =
+    0x0B; ///< A RenderWare texture dictionary; also the result type of 0x2A.
 inline constexpr std::uint32_t kCameraAnimation = 0x0E;
 inline constexpr std::uint32_t kNullPointer = 0x14; ///< An untyped "pointer" result (docs/research/chunk-system.md).
+inline constexpr std::uint32_t kRenderwareTextureDic = 0x2A; ///< A RenderWare texture dictionary, read as 0x0B.
 inline constexpr std::uint32_t kGbhScript = 0x30;
 
 /// The fourth word of a pack's container header: crc32("package") (docs/research/formats/wad-contents.md).

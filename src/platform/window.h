@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include <expected>
 #include <string_view>
-
-#include "core/error.h"
 
 // No SDL type appears in this header, so code that holds a Window stays platform-neutral and never includes SDL.
 
@@ -17,32 +14,23 @@ struct WindowDesc {
     int height = 720;                 ///< Client area height in pixels.
 };
 
-/// Initialises SDL's video subsystem and owns one window. Move-only; destroying it closes the window and shuts SDL
-/// down. Only one Window should exist at a time, because its destructor shuts all of SDL down.
+/// The game's window, as the main loop sees it: a source of events.
+///
+/// A Window does not own the operating-system window. librw's GL3 device creates it (it must set the OpenGL attributes
+/// before the window exists and create the context with it) and destroys it when the engine stops, so the window
+/// lives exactly as long as the RenderEngine that opened it (render_engine.h), which hands out this view. A Window is
+/// a cheap copyable handle and must not be used after that engine is gone.
 class Window {
   public:
-    /// Initialises SDL video and opens a resizable window. Fails with ErrorCode::PlatformFailure, carrying SDL's own
-    /// error text, when SDL cannot start (SDL_Init undoes its own partial start) or cannot create the window (SDL is
-    /// then shut down again).
-    [[nodiscard]] static std::expected<Window, Error> open(const WindowDesc& desc);
+    /// Views the SDL_Window `handle`, which must not be null (checked by CONEY_ASSERT).
+    explicit Window(void* handle);
 
-    Window(Window&& other) noexcept;
-    Window& operator=(Window&& other) noexcept;
-    Window(const Window&) = delete;
-    Window& operator=(const Window&) = delete;
-    ~Window();
-
-    /// Handles every pending OS event. Returns false once the user has asked to quit.
+    /// Handles every pending OS event. Returns false once the user has asked to quit: closed the window or pressed
+    /// Escape.
     [[nodiscard]] bool pumpEvents();
 
   private:
-    // Only open() makes one, taking ownership of the SDL_Window it created.
-    explicit Window(void* handle);
-
-    /// Destroys the window and shuts SDL down, if this object still owns them.
-    void close() noexcept;
-
-    void* m_handle = nullptr; // SDL_Window*, kept opaque here; null after a move, so only one object cleans up
+    void* m_handle; // SDL_Window*, kept opaque here
 };
 
 } // namespace coney::platform

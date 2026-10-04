@@ -15,14 +15,18 @@ namespace {
 
 // The text usageText() returns (see its doc comment in options.h).
 constexpr std::string_view kUsage =
-    "Usage: coney [--disc PATH] [--load ENTRY]... [--frames N] [--help]\n"
+    "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--frames N] [--screenshot PATH]\n"
+    "             [--headless] [--help]\n"
     "\n"
-    "  --disc PATH    the game's disc: a mounted disc, a folder of its files or an ISO image\n"
-    "  --load ENTRY   load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
-    "                 through the chunk system and print a summary; repeatable; needs --disc;\n"
-    "                 runs without a window and exits when every entry is loaded\n"
-    "  --frames N     stop after N frames (1 to 1000000); used by tests and CI\n"
-    "  --help         show this text and exit\n";
+    "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
+    "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
+    "                     through the chunk system and print a summary; repeatable; needs --disc;\n"
+    "                     runs without a window and exits when every entry is loaded\n"
+    "  --view-txd ENTRY   show the textures of a WAD entry's texture dictionaries; needs --disc\n"
+    "  --frames N         stop after N frames (1 to 1000000); used by tests and CI\n"
+    "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
+    "  --headless         run with no window and no GPU (nothing is drawn)\n"
+    "  --help             show this text and exit\n";
 
 // Shorthand for the one error code every option mistake uses.
 std::unexpected<Error> invalidArgument(std::string message) {
@@ -52,6 +56,43 @@ std::expected<int, Error> parseFrameLimit(std::string_view text) {
         return badValue();
     }
     return value;
+}
+
+// Stores the value after a single-valued option (`--view-txd`, `--screenshot`) in `slot`, moving `i` past it. Refuses
+// a repeat, as --frames does, and a missing or empty value, which `needs` describes.
+std::expected<void, Error> takeValue(std::span<const std::string_view> args, std::size_t& i,
+                                     std::optional<std::string>& slot, std::string_view option,
+                                     std::string_view needs) {
+    if (slot.has_value()) {
+        return invalidArgument(std::format("{} given twice", option));
+    }
+    if (i + 1 == args.size() || args[i + 1].empty()) {
+        return invalidArgument(std::format("{} needs {}", option, needs));
+    }
+    slot = std::string(args[++i]);
+    return {};
+}
+
+// Refuses options that cannot work together, once the whole command line is read.
+std::expected<void, Error> checkCombinations(const Options& options) {
+    if (!options.loads.empty() && !options.discPath.has_value()) {
+        return invalidArgument("--load needs --disc to say where the game's files are");
+    }
+    if (options.viewTxd.has_value() && !options.discPath.has_value()) {
+        return invalidArgument("--view-txd needs --disc to say where the game's files are");
+    }
+    if (options.viewTxd.has_value() && !options.loads.empty()) {
+        return invalidArgument("--view-txd and --load cannot be combined: --load runs without a window");
+    }
+    if (options.screenshotPath.has_value()) {
+        if (!options.frameLimit.has_value()) {
+            return invalidArgument("--screenshot needs --frames N: the screenshot is of the last frame");
+        }
+        if (options.headless || !options.loads.empty()) {
+            return invalidArgument("--screenshot needs a window, so it cannot be combined with --headless or --load");
+        }
+    }
+    return {};
 }
 
 } // namespace
@@ -90,13 +131,27 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument("--load needs an entry name or a 0x hash");
             }
             options.loads.emplace_back(args[++i]);
+        } else if (arg == "--headless") {
+            options.headless = true;
+        } else if (arg == "--view-txd") {
+            if (auto value = takeValue(args, i, options.viewTxd, "--view-txd", "an entry name or a 0x hash"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--screenshot") {
+            if (auto value = takeValue(args, i, options.screenshotPath, "--screenshot", "the path of a PNG file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else {
             // Unknown options and stray positionals alike: a typo ignored silently would run something else.
             return invalidArgument(std::format("unknown argument \"{}\"", arg));
         }
     }
-    if (!options.loads.empty() && !options.discPath.has_value() && !options.showHelp) {
-        return invalidArgument("--load needs --disc to say where the game's files are");
+    if (options.showHelp) {
+        return options; // --help wins over every other mistake: the user is asking how to get it right
+    }
+    if (auto combined = checkCombinations(options); !combined) {
+        return std::unexpected(std::move(combined.error()));
     }
     return options;
 }

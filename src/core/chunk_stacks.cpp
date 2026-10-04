@@ -53,4 +53,15 @@ std::expected<std::unique_ptr<LoadedObject>, Error> ChunkStacks::popAnyObject() 
     return top;
 }
 
+std::vector<ChunkData> ChunkStacks::takeChunks(std::uint32_t type) {
+    std::vector<ChunkData> taken;
+    std::vector<ChunkData> kept;
+    kept.reserve(m_chunks.size());
+    for (ChunkData& chunk : m_chunks) {
+        (chunk.type == type ? taken : kept).push_back(std::move(chunk));
+    }
+    m_chunks = std::move(kept);
+    return taken;
+}
+
 } // namespace coney::chunk

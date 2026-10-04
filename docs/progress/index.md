@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% of the game's own code (3,032 of 3,342,408 bytes, 21 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% of the game's own code (3,328 of 3,342,408 bytes, 23 functions) |
 | **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,296 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
@@ -57,7 +57,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% | 3 | 20,800 |
 | `FileIO` | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 1 | 6,480 |
 | `GameModes` | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% | 5 | 47,040 |
-| `Graphics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 189,024 |
+| `Graphics` | `▏░░░░░░░░░░░░░░░░░░░` | 0.2% | 2 | 189,024 |
 | `GUI` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
@@ -120,6 +120,8 @@ at the top of the repository's `README.md`.
 | `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes` | 96 |
 | `0x0015e718` | `GameModeStack_Top` | `GameModes` | 48 |
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
+| `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
+| `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 <!-- progress:end -->
 
 ## How it is measured

@@ -23,6 +23,14 @@ struct Options {
     /// `--load`, in the order given: WAD entries to load through the chunk system, each a name or a `0x` hash.
     /// Requires discPath.
     std::vector<std::string> loads;
+    /// `--headless`: no window and librw's NULL renderer, so nothing needs a display or a GPU. CI runs this way.
+    bool headless = false;
+    /// `--view-txd`: a WAD entry (a name or a `0x` hash) whose texture dictionaries the viewer shows. Requires
+    /// discPath; cannot be combined with `--load`.
+    std::optional<std::string> viewTxd;
+    /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
+    /// `--load`).
+    std::optional<std::string> screenshotPath;
 };
 
 /// Largest accepted `--frames` value: about 4.6 hours at 60 Hz, far beyond any test, and well inside `int`.

@@ -113,3 +113,41 @@ TEST_CASE("the usage text documents the disc options", "[options]") {
     CHECK(coney::usageText().find("--disc") != std::string_view::npos);
     CHECK(coney::usageText().find("--load") != std::string_view::npos);
 }
+
+TEST_CASE("giving --headless, --view-txd and --screenshot sets them", "[options]") {
+    auto viewer = parse(std::array<std::string_view, 8>{"--disc", "H:\\", "--view-txd", "0x1234", "--frames", "3",
+                                                        "--screenshot", "out.png"});
+    REQUIRE(viewer.has_value());
+    CHECK(viewer->viewTxd == "0x1234");
+    CHECK(viewer->screenshotPath == "out.png");
+    CHECK_FALSE(viewer->headless);
+    auto headless = parse(std::array<std::string_view, 3>{"--headless", "--frames", "1"});
+    REQUIRE(headless.has_value());
+    CHECK(headless->headless);
+}
+
+TEST_CASE("the viewer and screenshot options refuse what cannot work", "[options]") {
+    // --view-txd needs --disc and a value, once, and does not go with --load.
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--view-txd", "a"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--view-txd"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--view-txd", "a", "--view-txd", "b"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--view-txd", "a", "--load", "b"}).has_value());
+    // --screenshot needs --frames and a window.
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--screenshot", "a.png"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 5>{"--screenshot", "a.png", "--frames", "1", "--headless"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--screenshot"}).has_value());
+}
+
+TEST_CASE("--help wins over options that do not go together", "[options]") {
+    auto result = parse(std::array<std::string_view, 3>{"--view-txd", "a", "--help"});
+    REQUIRE(result.has_value());
+    CHECK(result->showHelp);
+}
+
+TEST_CASE("the usage text documents the viewer options", "[options]") {
+    CHECK(coney::usageText().find("--view-txd") != std::string_view::npos);
+    CHECK(coney::usageText().find("--screenshot") != std::string_view::npos);
+    CHECK(coney::usageText().find("--headless") != std::string_view::npos);
+}

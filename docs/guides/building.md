@@ -20,6 +20,11 @@ The C++ dependencies (SDL3, librw, Catch2) are not installed by hand: CMake down
 at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access and takes a few
 minutes; later builds reuse the copies under `build/<preset>/_deps/`.
 
+librw is built for its OpenGL 3 platform with SDL3 creating the window and the context, so the build also needs the
+OpenGL headers and libraries: part of the system on Windows and macOS, `libgl1-mesa-dev` on Linux (in the package
+list below). CMake hands librw the SDL3 it fetched rather than one installed on the machine; how, and why librw's own
+asserts are off, is explained in `cmake/deps.cmake`.
+
 Clang 17 and 18 are supported by the language rules but not on Linux with libstdc++: libstdc++ only declares
 `std::expected` when the compiler reports full C++20 concepts support, which Clang first does in version 19. Use
 Clang 19 or newer there.
@@ -50,7 +55,8 @@ sudo apt-get install cmake ninja-build g++-13 \
   libwayland-dev libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev
 ```
 
-The second and third lines are what SDL3 needs to build its X11 and Wayland video drivers. For Clang, install
+The second and third lines are what SDL3 needs to build its X11 and Wayland video drivers; `libgl1-mesa-dev` is
+also what librw's OpenGL renderer links against. For Clang, install
 `clang-19 clang-tools-19` in place of `g++-13`; `clang-tools-19` brings `clang-scan-deps`, which CMake runs on C++23
 sources when the compiler is Clang. Pick the compiler with `CC` and `CXX` before the first configure:
 
@@ -89,28 +95,40 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and five smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, refuses a bad argument, refuses `--load` without `--disc` and refuses a
-disc that does not exist. The unit tests build their disc images and archives byte by byte; none needs the game.
+`ctest` runs the Catch2 unit tests (`coney_tests`) and six smoke tests of the `coney` executable itself: it starts
+and stops headless, prints its help, refuses a bad argument, refuses `--load` or `--view-txd` without `--disc` and
+refuses a disc that does not exist. The unit tests build their disc images, archives and RenderWare texture
+dictionaries byte by byte; none needs the game or a GPU (the texture tests run librw on its NULL device). One test
+checks every texture dictionary on your own disc; it runs only when the environment variable `CONEY_DISC` names the
+disc, is reported as skipped otherwise, and prints counts only:
+
+```sh
+CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
+```
 
 ## Run Coney {#run-coney}
 
-The executable is `build/<preset>/src/platform/coney` (`coney.exe` on Windows). Run with no arguments, it opens an
-empty window and runs until you close it. Underneath, the game-mode stack runs on a fixed 1/30 s step with an idle
-mode at its bottom; there is nothing to see yet.
+The executable is `build/<preset>/src/platform/coney` (`coney.exe` on Windows). Run with no arguments, it opens a
+window and runs until you close it (or press Escape). Underneath, the game-mode stack runs on a fixed 1/30 s step
+with an idle mode at its bottom, which clears the window to a dark slate and presents it every frame.
 
 ```text
-coney [--disc PATH] [--load ENTRY]... [--frames N] [--help]
+coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--frames N] [--screenshot PATH] [--headless] [--help]
 ```
 
-`--frames N` stops after N frames, which is how tests and scripts run it. To run it with no display at all, as CI
-does, select SDL's dummy video driver:
+Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
+OpenGL ES). `--frames N` stops after N frames, which is how tests and scripts run it. `--headless` runs with no window
+and librw's NULL renderer, so it needs neither a display nor a GPU; this is how CI runs it:
 
 ```sh
-SDL_VIDEO_DRIVER=dummy build/dev/src/platform/coney --frames 3
+build/dev/src/platform/coney --headless --frames 3
 ```
 
-In PowerShell, set the variable first with `$env:SDL_VIDEO_DRIVER = "dummy"`.
+Without `--headless`, a machine with no display or no OpenGL fails at start-up with SDL's reason and exit code 1.
+
+`--screenshot PATH` saves the last frame (the one `--frames N` stops at) as a PNG and prints how many of its pixels
+differ from the background and a hash of the frame, so a script can check that something was drawn without keeping
+the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place).
 
 ### Loading entries from your disc
 
@@ -141,7 +159,25 @@ The summary gives the container's shape (flat, or grouped for a pack of resource
 bytes per [chunk type](../research/chunk-system.md#chunk-type-table), and what the chunk handlers left on the
 loader's stacks. It prints counts and sizes only, never the data. An entry that is not a chunk container (Lua
 bytecode, text, sound banks) is reported as such. Coney exits with 0 when every entry loaded, 1 when any could not
-be found or parsed, and 2 for a bad command line.
+be found or parsed, and 2 for a bad command line. With `--load`, the two RenderWare texture dictionary chunk types
+(`0x0B` and `0x2A`) are read by their stream handlers through librw, on its NULL renderer.
+
+### Viewing texture dictionaries
+
+`--view-txd ENTRY` opens the window and shows every texture of a WAD entry's texture dictionaries, laid out in a grid
+that fills the window, each scaled to its cell without changing its shape and drawn with its transparency over a
+grey background. `ENTRY` is named as for `--load`. The entry may be a chunk container holding texture dictionary
+chunks (a standalone resource, a pack or a level), or a world sector atomics file, whose stream starts with a
+(usually empty) dictionary. Coney prints how many dictionaries and textures it found, with each texture's size and
+format, then runs until the window closes or `--frames N` is reached.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-txd 863681355 --frames 3 --screenshot ../../scratch/legal.png
+```
+
+That entry is the legal screen, the first image the game shows ([Graphics](../research/graphics.md#first-screen)).
+The textures are the PS2's palettised formats, converted by librw: palettes are expanded and the PS2's alpha range
+(128 is opaque) is scaled to 0-255.
 
 ## Sanitizers
 

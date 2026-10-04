@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -305,4 +306,22 @@ TEST_CASE("malformed grouped containers fail with the group named", "[chunk_syst
     REQUIRE_FALSE(result.has_value());
     CHECK(result.error().code == ErrorCode::Truncated);
     CHECK(result.error().message.find("group 1") != std::string::npos);
+}
+
+TEST_CASE("takeChunks removes every chunk of a type and keeps the others in order", "[chunk_system]") {
+    ChunkStacks stacks;
+    for (const std::uint32_t type : {0x0BU, 0x17U, 0x0BU, 0x4CU}) {
+        ChunkData chunk;
+        chunk.type = type;
+        chunk.id = static_cast<std::uint32_t>(stacks.chunks().size());
+        stacks.pushChunk(std::move(chunk));
+    }
+    auto taken = stacks.takeChunks(0x0B);
+    REQUIRE(taken.size() == 2);
+    CHECK(taken[0].id == 0);
+    CHECK(taken[1].id == 2);
+    REQUIRE(stacks.chunks().size() == 2);
+    CHECK(stacks.chunks()[0].type == 0x17);
+    CHECK(stacks.chunks()[1].type == 0x4C);
+    CHECK(stacks.takeChunks(0x0B).empty());
 }
