@@ -46,8 +46,8 @@ On Ubuntu 24.04 (other distributions have the same packages under similar names)
 
 ```sh
 sudo apt-get install cmake ninja-build g++-13 \
-  libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev libwayland-dev \
-  libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev
+  libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+  libwayland-dev libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev
 ```
 
 The second and third lines are what SDL3 needs to build its X11 and Wayland video drivers. For Clang, install
