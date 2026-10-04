@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 add_executable(coney_tests
+    camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
     core/game_timer_test.cpp
     core/input_script_test.cpp

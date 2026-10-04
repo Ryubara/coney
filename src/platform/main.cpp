@@ -231,8 +231,8 @@ int main(int argc, char** argv) {
     std::optional<coney::platform::TextureViewerMode> viewer;
     std::optional<coney::SheetViewerMode> sheetViewer;
     std::optional<coney::TextViewerMode> textViewer;
-    // The world viewer's memory budget: the original's Sector Pool, at Coney's estimate of its size.
-    coney::world::SectorBudget sectorBudget(coney::world::kSectorPoolUpperBound);
+    // The world viewer's memory budget: the original's Sector Pool, at its retail size.
+    coney::world::SectorBudget sectorBudget(coney::world::kSectorPoolSize);
     std::unique_ptr<coney::platform::WorldViewerMode> worldViewer;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {

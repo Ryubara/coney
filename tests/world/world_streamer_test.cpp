@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <set>
 #include <utility>
 #include <vector>
@@ -14,6 +15,8 @@
 #include "core/error.h"
 #include "support/streaming_fixtures.h"
 #include "world/sector_budget.h"
+#include "world/streamed_world.h"
+#include "world/world_streams.h"
 
 using Catch::Approx;
 using coney::test::rowManifest;
@@ -158,11 +161,65 @@ TEST_CASE("the preload streams until what is missing lies beyond its radius", "[
     SectorBudget budget(1000);
     RecordingStore store;
     const std::array<Vec3, 1> camera{Vec3{5.0F, 5.0F, 5.0F}};
-    // Radius 25: parts 1 to 3 come in (their sectors at most 17 away); part 4's is 26 away and the preload stops.
+    // Radius 25: parts 1 to 3 come in (their sectors at most 17 away). The check after each pass reads the last
+    // search, which found the sector just loaded, so part 4 (26 away) is loaded too before the preload sees that what
+    // it went for lies beyond the radius, and stops: one part past the radius, as the original's loop does.
     const coney::world::PreloadResult result = coney::world::preloadWorlds(worlds, camera, 25.0F, budget, store, 0);
-    CHECK(result.loaded == 3);
-    CHECK(world.part(4).state == coney::world::PartState::Unloaded);
+    CHECK(result.loaded == 4);
+    CHECK(world.part(4).state == coney::world::PartState::Loaded);
+    CHECK(world.part(5).state == coney::world::PartState::Unloaded);
+    // No new search: the pending distance is still that of part 4's sector, although it is loaded now.
     CHECK(coney::world::nearestPendingDistance(worlds, camera) == Approx(std::sqrt(25.0F * 25.0F + 50.0F)));
+}
+
+TEST_CASE("the unload margin is added to the squared distance", "[world_streamer]") {
+    // Three sectors around a camera at the origin (y and z from -1 to 1, so each adds 1 + 1 to a squared distance):
+    // A (part 1) at x 21..22, B (part 2) at x 20..30, C (part 3, never unloaded) far away. A is loaded and the
+    // budget holds one part, so B does not fit.
+    coney::world::WorldStream layout;
+    layout.partCount = 3;
+    const auto add = [&layout](float x0, float x1, std::int32_t index, std::uint32_t part) {
+        coney::world::WorldSector sector;
+        sector.box = coney::world::Box{{x0, -1.0F, -1.0F}, {x1, 1.0F, 1.0F}};
+        sector.plugin = coney::world::SectorPluginData{.streamedIndex = index, .part = part, .origin = {}};
+        layout.sectors.push_back(sector);
+    };
+    add(21.0F, 22.0F, 0, 1);
+    add(20.0F, 30.0F, 1, 2);
+    add(500.0F, 510.0F, 2, 3);
+    StreamedWorld world = StreamedWorld::create("margin", layout, rowManifest({100, 100, 100})).value();
+    std::array<StreamedWorld*, 1> worlds{&world};
+    SectorBudget budget(100);
+    REQUIRE(budget.reserve(100));
+    world.markPartLoaded(1, 0);
+    RecordingStore store;
+    // B is wanted at 20² + 2 = 402 squared; A is at 21² + 2 = 443, more than 402 + 5, so A goes. In plain units A is
+    // only 21.05 against B's 20.05, within 5.0, and would stay.
+    const std::array<Vec3, 1> camera{Vec3{0.0F, 0.0F, 0.0F}};
+    const coney::world::StreamStep step = coney::world::updateStreaming(worlds, camera, 300.0F, budget, store, 0);
+    CHECK(step.result == StreamResult::Unloaded);
+    CHECK(step.part == 1);
+}
+
+TEST_CASE("nothing missing reads as FLT_MAX, not infinity", "[world_streamer]") {
+    StreamedWorld world = fiveParts();
+    std::array<StreamedWorld*, 1> worlds{&world};
+    const std::array<Vec3, 1> camera{Vec3{5.0F, 5.0F, 5.0F}};
+    // No search yet.
+    CHECK(coney::world::nearestPendingDistance(worlds, camera) == std::numeric_limits<float>::max());
+    SectorBudget budget(1000);
+    RecordingStore store;
+    while (coney::world::updateStreaming(worlds, camera, 300.0F, budget, store, 0).result == StreamResult::Loaded) {
+    }
+    CHECK(coney::world::nearestPendingDistance(worlds, camera) == std::numeric_limits<float>::max());
+    // With nothing missing the draw distance grows to its ceiling.
+    const float grown = coney::world::adjustDrawDistance(100.0F, {.pending = coney::world::kNoPendingDistance,
+                                                                  .farClip = 115.0F,
+                                                                  .seconds = 0.1F,
+                                                                  .frameRate = 30.0F,
+                                                                  .viewports = 1,
+                                                                  .lowRateMode = false});
+    CHECK(grown == Approx(101.05F));
 }
 
 TEST_CASE("the draw distance follows the missing scenery within its limits", "[world_streamer]") {

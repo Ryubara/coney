@@ -23,6 +23,7 @@
 #include <SDL3/SDL_stdinc.h>
 #include <catch2/catch_test_macros.hpp>
 
+#include "camera/camera_lens.h"
 #include "core/game_timer.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
@@ -102,9 +103,9 @@ void streamLevel(const coney::io::Wad& wad, const std::string& level, std::uint6
     }
     ++totals.levels;
     // Size the budget: the default, or the worlds' heaps (measured with a generous first load) plus the extra.
-    std::uint64_t capacity = coney::world::kSectorPoolUpperBound;
+    std::uint64_t capacity = coney::world::kSectorPoolSize;
     if (extraBudget > 0) {
-        coney::world::SectorBudget probe(coney::world::kSectorPoolUpperBound);
+        coney::world::SectorBudget probe(coney::world::kSectorPoolSize);
         auto measured = coney::platform::WorldSet::load(wad, *names, probe, false);
         if (!measured) {
             ++totals.loadFailures;
@@ -136,7 +137,10 @@ void streamLevel(const coney::io::Wad& wad, const std::string& level, std::uint6
                 {(box.min.x + box.max.x) * 0.5F, (box.min.y + box.max.y) * 0.5F, (box.min.z + box.max.z) * 0.5F});
         }
     }
-    float drawDistance = 300.0F;
+    // The player camera: its far clip caps the draw distance, its view window shapes the visibility pass.
+    const coney::camera::CameraLens& lens = coney::camera::kPlayerCameraLens;
+    const coney::camera::ViewWindow window = coney::camera::viewWindow(lens);
+    float drawDistance = lens.farClip;
     std::uint64_t frame = 0;
     for (const coney::world::Vec3& stop : path) {
         for (int repeat = 0; repeat < 3; ++repeat, ++frame) {
@@ -170,7 +174,8 @@ void streamLevel(const coney::io::Wad& wad, const std::string& level, std::uint6
                     }
                     nearest = std::min(nearest, coney::world::cameraDistanceSq(world.sectors()[sector].box, cameras));
                 }
-                if (!(std::sqrt(nearest) > step.distance + coney::world::kUnloadMargin)) {
+                // The margin is added to the squared distance of the wanted sector, as the original does.
+                if (!(nearest > step.distance * step.distance + coney::world::kUnloadMargin)) {
                     violation(totals, std::format("{}: a part within the margin was freed", level));
                 }
                 break;
@@ -189,14 +194,15 @@ void streamLevel(const coney::io::Wad& wad, const std::string& level, std::uint6
             drawDistance = coney::world::adjustDrawDistance(
                 drawDistance,
                 coney::world::DrawDistanceInputs{.pending = coney::world::nearestPendingDistance(worlds, cameras),
-                                                 .farClip = 300.0F,
+                                                 .farClip = lens.farClip,
                                                  .seconds = 1.0F / 30.0F,
                                                  .frameRate = 30.0F,
                                                  .viewports = 1,
                                                  .lowRateMode = false});
             coney::world::CameraPose pose;
             pose.position = stop;
-            const coney::world::ViewFrustum frustum(pose, 0.6667F, 0.5F, 0.5F, drawDistance);
+            const coney::world::ViewFrustum frustum(pose, window.halfWidth, window.halfHeight, lens.nearClip,
+                                                    drawDistance);
             for (coney::world::StreamedWorld* world : worlds) {
                 world->findVisibleSectors(frustum, true);
             }

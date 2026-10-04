@@ -67,7 +67,38 @@ struct WorldTotals {
     std::uint64_t distinctVertices = 0;               // vertices of the unpacked geometry (identical ones shared)
     std::uint64_t headerVertices = 0;                 // vertices the geometry headers announce
     std::map<std::uint64_t, std::uint64_t> pipelines; // right-to-render data -> atomics
+    std::uint64_t planes = 0;                         // BSP planes
+    std::uint64_t planesLeftBelow = 0;                // ... whose left subtree lies below the right on the axis
 };
+
+// The union of the sector boxes below `node` of `world`'s BSP; `depth` bounds the recursion on damaged data.
+coney::world::Box subtreeBox(const coney::world::WorldStream& world, coney::world::BspChild node, int depth) {
+    if (node.leaf || depth > 64) {
+        return node.leaf && node.index < world.sectors.size() ? world.sectors[node.index].box : coney::world::Box{};
+    }
+    const coney::world::BspPlane& plane = world.planes.at(node.index);
+    const coney::world::Box a = subtreeBox(world, plane.left, depth + 1);
+    const coney::world::Box b = subtreeBox(world, plane.right, depth + 1);
+    return coney::world::Box{{std::min(a.min.x, b.min.x), std::min(a.min.y, b.min.y), std::min(a.min.z, b.min.z)},
+                             {std::max(a.max.x, b.max.x), std::max(a.max.y, b.max.y), std::max(a.max.z, b.max.z)}};
+}
+
+// Counts the planes of `world`'s BSP whose left subtree's centre lies below the right subtree's on the plane's axis:
+// the side Coney's back-to-front walk (StreamedWorld::collectSectors) takes the left child to be.
+void checkBsp(const coney::world::WorldStream& world, WorldTotals& totals) {
+    const auto centre = [](const coney::world::Box& box, std::uint32_t axis) {
+        const std::array<float, 3> lo{box.min.x, box.min.y, box.min.z};
+        const std::array<float, 3> hi{box.max.x, box.max.y, box.max.z};
+        return (lo.at(axis) + hi.at(axis)) * 0.5F;
+    };
+    for (const coney::world::BspPlane& plane : world.planes) {
+        ++totals.planes;
+        const std::uint32_t axis = std::min<std::uint32_t>(plane.axis, 2);
+        if (centre(subtreeBox(world, plane.left, 0), axis) < centre(subtreeBox(world, plane.right, 0), axis)) {
+            ++totals.planesLeftBelow;
+        }
+    }
+}
 
 // A sector with an atomic: its box and its plugin data.
 struct StreamedSector {
@@ -269,6 +300,7 @@ TEST_CASE("every streamed world's part atomics decode and land in their sectors"
             std::printf("  world failed: %s\n", world.error().message.c_str());
             continue;
         }
+        checkBsp(*world, totals);
         std::map<std::uint32_t, StreamedSector> byIndex;
         for (const coney::world::WorldSector& sector : world->sectors) {
             ++totals.sectors;
@@ -322,7 +354,11 @@ TEST_CASE("every streamed world's part atomics decode and land in their sectors"
                 static_cast<unsigned long long>(totals.distinctVertices),
                 static_cast<unsigned long long>(totals.headerVertices));
 
+    std::printf("BSP planes: %llu, left subtree below the right on the plane's axis: %llu\n",
+                static_cast<unsigned long long>(totals.planes),
+                static_cast<unsigned long long>(totals.planesLeftBelow));
     CHECK(totals.worldFailures == 0);
+    CHECK(totals.planesLeftBelow == totals.planes);
     CHECK(totals.partFailures == 0);
     CHECK(totals.failed == 0);
     CHECK(totals.unpacked == totals.decoded);

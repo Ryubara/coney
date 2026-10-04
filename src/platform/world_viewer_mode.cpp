@@ -18,11 +18,6 @@ namespace coney::platform {
 
 namespace {
 
-// The view window's half height: Coney's choice (about 53 degrees from top to bottom); the width follows the window.
-constexpr float kHalfHeight = 0.5F;
-// The near clip: Coney's choice, the overlay camera's 0.5 (docs/research/graphics.md#a-frame).
-constexpr float kNearClip = 0.5F;
-
 // Game time in milliseconds from GameTimer ticks.
 std::uint64_t millisecondsOf(std::uint64_t ticks) { return ticks / (GameTimer::kTicksPerSecond / 1000); }
 
@@ -83,12 +78,16 @@ WorldViewerMode::WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet>
       m_print(std::move(print)) {}
 
 WorldView WorldViewerMode::view() const {
+    // The player camera's view window on the 4:3 picture; a window of another shape keeps its height and widens or
+    // narrows (a Coney choice: the original's picture is always the television's).
+    const camera::ViewWindow window = camera::viewWindow(camera::kPlayerCameraLens);
     const graphics::Extent size = m_engine.frameSize();
-    const float aspect = size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 1.0F;
+    const float aspect =
+        size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 4.0F / 3.0F;
     return WorldView{.pose = m_camera.pose(),
-                     .halfWidth = kHalfHeight * aspect,
-                     .halfHeight = kHalfHeight,
-                     .nearClip = kNearClip,
+                     .halfWidth = window.halfHeight * aspect,
+                     .halfHeight = window.halfHeight,
+                     .nearClip = camera::kPlayerCameraLens.nearClip,
                      .drawDistance = m_drawDistance};
 }
 
@@ -147,7 +146,7 @@ ModeResult WorldViewerMode::update(GameModeStack& stack, const FrameTime& frame)
     // The draw distance follows the nearest missing scenery; Coney's fixed step is always 30 frames a second.
     m_drawDistance = world::adjustDrawDistance(
         m_drawDistance, world::DrawDistanceInputs{.pending = world::nearestPendingDistance(m_set->worlds(), cameras),
-                                                  .farClip = kFarClip,
+                                                  .farClip = camera::kPlayerCameraLens.farClip,
                                                   .seconds = seconds,
                                                   .frameRate = 30.0F,
                                                   .viewports = 1,

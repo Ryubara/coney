@@ -2,6 +2,7 @@
 #include "world/streamed_world.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
 #include <limits>
@@ -48,6 +49,9 @@ std::expected<StreamedWorld, Error> StreamedWorld::create(std::string name, cons
     }
     StreamedWorld world;
     world.m_name = std::move(name);
+    world.m_planes = layout.planes;
+    world.m_root = layout.root;
+    world.m_leafSectors.assign(layout.sectors.size(), -1);
     world.m_parts.resize(manifest.parts.size());
     for (std::size_t i = 0; i < manifest.parts.size(); ++i) {
         world.m_parts[i].sizes = manifest.parts[i];
@@ -80,6 +84,7 @@ std::expected<StreamedWorld, Error> StreamedWorld::create(std::string name, cons
             return fail(ErrorCode::Invalid, std::format("{}: streamed index {} is used twice", world.m_name, index));
         }
         filled[index] = true;
+        world.m_leafSectors[static_cast<std::size_t>(&sector - layout.sectors.data())] = plugin.streamedIndex;
         world.m_sectors[index] = StreamedSector{.box = sector.box,
                                                 .origin = plugin.origin,
                                                 .part = plugin.part,
@@ -134,7 +139,7 @@ std::optional<std::uint32_t> StreamedWorld::findSectorToLoad(std::span<const Vec
 float StreamedWorld::pendingDistance(std::span<const Vec3> cameras) const {
     const std::optional<std::uint32_t> found = m_lastFound;
     if (!found) {
-        return kInfinity;
+        return kNoPendingDistance;
     }
     return std::sqrt(cameraDistanceSq(m_sectors[*found].box, cameras));
 }
@@ -185,20 +190,48 @@ void StreamedWorld::findVisibleSectors(const ViewFrustum& frustum, bool firstVie
     }
 }
 
-std::vector<std::uint32_t> StreamedWorld::collectSectors(std::span<const Vec3> cameras) const {
-    std::vector<std::pair<float, std::uint32_t>> ordered;
-    for (std::uint32_t k = 0; k < m_sectors.size(); ++k) {
+std::vector<std::uint32_t> StreamedWorld::collectSectors(Vec3 viewpoint) const {
+    std::vector<std::uint32_t> collected;
+    // Appends the sector of layout leaf `leaf` when it is to be drawn, as World_CollectSector does.
+    const auto collect = [this, &collected](std::uint32_t leaf) {
+        if (leaf >= m_leafSectors.size() || m_leafSectors[leaf] < 0) {
+            return;
+        }
+        const auto k = static_cast<std::uint32_t>(m_leafSectors[leaf]);
         if (m_sectors[k].visible && m_sectors[k].loaded) {
-            ordered.emplace_back(cameraDistanceSq(m_sectors[k].box, cameras), k);
+            collected.push_back(k);
+        }
+    };
+    if (m_planes.empty()) {
+        // No BSP to walk: the only sector, or a synthetic layout in stream order.
+        for (std::uint32_t leaf = 0; leaf < m_leafSectors.size(); ++leaf) {
+            collect(leaf);
+        }
+    } else {
+        // Back to front: at each plane the far side first, then the side the viewpoint is on. A stack visits the far
+        // child first by pushing it last; a node count bounds the walk.
+        const std::array<float, 3> eye{viewpoint.x, viewpoint.y, viewpoint.z};
+        std::vector<BspChild> pending{m_root};
+        std::size_t budget = m_planes.size() + m_leafSectors.size();
+        while (!pending.empty() && budget-- > 0) {
+            const BspChild node = pending.back();
+            pending.pop_back();
+            if (node.leaf) {
+                collect(node.index);
+                continue;
+            }
+            if (node.index >= m_planes.size()) {
+                continue;
+            }
+            const BspPlane& plane = m_planes[node.index];
+            const bool onLeft = eye.at(std::min<std::size_t>(plane.axis, 2)) < plane.value;
+            pending.push_back(onLeft ? plane.left : plane.right); // near side, visited second
+            pending.push_back(onLeft ? plane.right : plane.left); // far side, visited first
         }
     }
-    std::ranges::sort(ordered);
-    std::vector<std::uint32_t> result;
-    result.reserve(ordered.size());
-    for (const auto& entry : ordered) {
-        result.push_back(entry.second);
-    }
-    return result;
+    // The original draws its list from the end: last collected first.
+    std::ranges::reverse(collected);
+    return collected;
 }
 
 void StreamedWorld::markPartLoaded(std::uint32_t number, std::uint64_t nowMs) {

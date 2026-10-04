@@ -372,12 +372,13 @@ recommended above, and the world streamer asks it for room before every world an
 `ResourceManager_MakeRoom` asks the heap ([The streamed world](world.md#coneys-implementation)). There are no
 resources yet, so a request either fits or the streamer frees a world part.
 
-**Coney's choice** for its size until a runtime read: the upper bound above, 23,181,864 bytes
-(`kSectorPoolUpperBound`). The world viewer charges it, in the original's order, with the `Global Data Pool` (101 %
-of `warriors.glr`), the `World Level Pool` (103 % of `<level>.lev`, at least 256 KB), each world's heap and each loaded
-part's heap, all from the manifest. Per-level ownership is the world set's: destroying it frees every part and world
-and gives their bytes back. With this size every level's worlds and parts fit at once (17.4 MB at most for worlds and
-parts), so the original's eviction only shows with a smaller budget; Coney's disc test forces it with one.
+Its size is the retail boot's, 17,217,536 bytes (`kSectorPoolSize`, [Sizes at runtime](#sizes-at-runtime)). The
+world viewer charges it, in the original's order, with the `Global Data Pool` (101 % of `warriors.glr`), the
+`World Level Pool` (103 % of `<level>.lev`, at least 256 KB), each world's heap and each loaded part's heap, all from
+the manifest. Per-level ownership is the world set's: destroying it frees every part and world and gives their bytes
+back. At this size the largest levels' worlds and parts no longer fit at once (17.4 MB at most for worlds and parts
+alone), so the original's eviction shows in ordinary play: Coney's disc test, streaming every level's worlds on their
+own, frees 43 parts and is short of room in 435 of 15,945 frames.
 
 ## Open questions
 

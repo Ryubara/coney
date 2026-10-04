@@ -246,9 +246,10 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --view-text part_page0
 both of its worlds (`level2s` and `level2d`), a single world such as `level2s`, or `objarena`. The worlds' layouts and
 textures load first, then the parts around the camera before the first frame (the original's preload), and from then
 on one part is read or freed per frame as you move. New scenery fades in over a second; the view's far end follows
-the nearest scenery not yet loaded, with fog in the background colour. There is no level file, collision, objects or
-sky yet, so the scenery floats in a slate-blue void. Coney prints one line for each part read or freed and a summary
-when it stops (counts only).
+the nearest scenery not yet loaded, up to the player camera's far clip of 115, with fog in the background colour,
+white until a level script sets one. The camera looks through the player camera's lens (65°, near clip 0.1). There
+is no level file, collision, objects or sky yet, so the scenery fades into white. Coney prints one line for each part
+read or freed and a summary when it stops (counts only).
 
 The camera starts above the middle of the first part and is driven by pad 1. These controls are Coney's own; the
 original's cameras follow the player:

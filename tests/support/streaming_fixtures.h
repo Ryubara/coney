@@ -15,7 +15,8 @@
 namespace coney::test {
 
 /// A world layout of sectors in a row: the i-th entry is a box spanning x 10i to 10i + 10 (y and z 0 to 10), with the
-/// given streamed index and part (an index of -1 is a sector without an atomic).
+/// given streamed index and part (an index of -1 is a sector without an atomic). Its BSP is a chain of planes across x
+/// at 10, 20, ...: plane i has sector i on its left and plane i + 1 (or the last sector) on its right.
 inline world::WorldStream rowOfSectors(std::initializer_list<std::pair<std::int32_t, std::uint32_t>> sectors,
                                        std::uint32_t partCount) {
     world::WorldStream layout;
@@ -32,6 +33,16 @@ inline world::WorldStream rowOfSectors(std::initializer_list<std::pair<std::int3
         layout.sectors.push_back(sector);
         x += 10.0F;
     }
+    const auto count = static_cast<std::uint32_t>(layout.sectors.size());
+    for (std::uint32_t i = 0; i + 1 < count; ++i) {
+        const bool lastPlane = i + 2 == count;
+        layout.planes.push_back(world::BspPlane{.axis = 0,
+                                                .value = 10.0F * static_cast<float>(i + 1),
+                                                .left = world::BspChild{.leaf = true, .index = i},
+                                                .right = world::BspChild{.leaf = lastPlane, .index = i + 1}});
+    }
+    layout.planeSectors = static_cast<std::uint32_t>(layout.planes.size());
+    layout.root = world::BspChild{.leaf = layout.planes.empty(), .index = 0};
     return layout;
 }
 

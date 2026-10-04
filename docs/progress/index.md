@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 115 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 116 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
-31 reimplemented function(s) have no size yet and add no bytes.
+32 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -68,7 +68,7 @@ at the top of the repository's `README.md`.
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 19 | 23,816 |
+| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 20 | 23,816 |
 | `WorldObjects` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 18,648 |
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
@@ -195,6 +195,7 @@ at the top of the repository's `README.md`.
 | `0x00209da8` | `PM_Mode::Init` | `GUI` | 944 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
+| `0x0040e100` | `WorldManager_NearestPendingDistance` | `World` | not filled in |
 | `0x0040e2d8` | `WorldManager_Preload` | `World` | not filled in |
 | `0x0040e8d8` | `WorldManager_Render` | `World` | not filled in |
 | `0x0040f8a0` | `WorldManager_Update` | `World` | not filled in |

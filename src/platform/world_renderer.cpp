@@ -94,11 +94,10 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const Worl
     rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
 
     // 5. The level world: not loaded yet. 6. The `s` world. 7. Objects: none yet. 8. The `d` world, the same way.
-    const std::array<world::Vec3, 1> cameras{view.pose.position};
     const std::span<world::StreamedWorld* const> worlds = set.worlds();
     for (std::size_t w = 0; w < worlds.size(); ++w) {
         const std::vector<world::StreamedSector>& sectors = worlds[w]->sectors();
-        for (const std::uint32_t sector : worlds[w]->collectSectors(cameras)) {
+        for (const std::uint32_t sector : worlds[w]->collectSectors(view.pose.position)) {
             if (rw::Atomic* atomic = set.atomic(w, sector); atomic != nullptr) {
                 renderSectorAtomic(atomic, sectors[sector].fadeEndMs, nowMs);
                 ++m_drawn;

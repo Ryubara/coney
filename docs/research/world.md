@@ -566,9 +566,14 @@ registered from Coney's code; librw needs no patch.
   `0x004123e8`, `0x00411d10` and `0x00411b20`. The two quirks are kept and marked in the code: the squared distance
   compared with the plain draw distance, and part `n` never unloaded. A consequence of the metric shows in the tests:
   a camera inside a sector is as near to the neighbour across the closest face, and the lower index wins the tie.
+  `pendingDistance` is `FLT_MAX` when the last search found nothing. `collectSectors` walks the world's BSP back to
+  front from the viewport camera (the far side of each plane first) and returns the sectors last collected first, as
+  the original draws its list; the reader keeps the BSP's planes for it (`world_streams.h`, `BspPlane`).
 - `world_streamer.h`: `updateStreaming` (`WorldManager_Update`) makes one decision a frame across the `s` and `d`
   worlds through a `PartStore`; `requestPart` (`0x00412310`); `preloadWorlds` (`WorldManager_Preload`, radius = the
-  draw distance); `adjustDrawDistance` (step 3 of [A frame](#a-frame)).
+  draw distance); `adjustDrawDistance` (step 3 of [A frame](#a-frame)). The 5.0 unload margin is added to the wanted
+  sector's squared distance, and `nearestPendingDistance` (`0x0040e100`) reads the last searches without searching
+  again, so the preload loads one part past its radius before it stops, as the original does.
 - `sector_budget.h`: `SectorBudget`, the `Sector Pool` as a number ([Memory](memory.md#coneys-implementation)).
 - `view_frustum.h`, `debug_camera.h`: the visibility pass's frustum test (Coney tests each sector's box, having no BSP
   walk) and the viewer's free-fly camera.
@@ -584,11 +589,15 @@ registered from Coney's code; librw needs no patch.
   and searches only that one, so Coney clears the current dictionary, as the game never leaves one set. No file is
   read and no stand-in made for a missing name.
 - `world_renderer.h`: `WorldManager_Render` as far as it goes: the camera at the draw distance with fog from half of
-  it in the background colour, then the `s` world's collected sectors and the `d` world's, Z test and write, back faces
-  culled, each atomic through `World_RenderSectorAtomic` (material alpha for the one-second fade, then librw's render).
+  it in the background colour, then the `s` world's collected sectors and the `d` world's in the BSP's drawing order,
+  Z test and write, back faces culled, each atomic through `World_RenderSectorAtomic` (material alpha for the
+  one-second fade, then librw's render).
 - `world_viewer_mode.h`: the mode behind `--view-world`. Per frame: camera, one streaming decision (from the last
   frame's visibility), draw distance, visibility pass, draw. Game time, so `--frames` and `--input-script` give the
-  same run every time.
+  same run every time. The camera is Coney's free-flying debug camera, looking through the player camera's lens
+  (`src/camera/camera_lens.h`: 65°, view window (0.637, 0.478), near clip 0.1, far clip 115 as the draw distance's
+  ceiling). The documented clip planes keep the debug view useful: the draw distance still follows the missing
+  scenery, and 115 is far enough to see down a street; beyond it the fog's colour takes over.
 
 **Seen in the viewer** (screenshots of `level2`, `level14`, `level51`, `level83`, `level100` and `objarena`, checked by
 eye; none kept):
@@ -602,36 +611,32 @@ eye; none kept):
 - **Prelighting is dark**: over all of `level2s`'s vertices the colour channels average about 14 of 255 and rarely
   pass 128; alpha is always 255. Coney doubles red, green and blue (clamped) when it unpacks, reading 0x80 as full
   brightness as the GS does when it modulates a texel by a vertex colour (**Coney's choice**, inferred from the GS).
-  Even so the scenery is dark without the game's LightManager, so the viewer adds one ambient light of 0.25
-  (**Coney's choice**, a stand-in until the LightManager exists).
+  The viewer lights the scenery with the LightManager's default world ambient, 0.157 ([Lighting](#lighting)), as a
+  level is lit before its script runs.
 - **Winding and culling**: in `level2s`, `level2d` and `level51s` 99.6 % of the triangles face the way their vertex
   normals point (153,453 against 525); with back-face culling, the faces that go are the backs of one-sided backdrop
   façades seen from outside the play area, as expected.
 - Billboards and signs read left to right: the image is not mirrored.
 
-**Coney's choices** (marked in the code): the `Sector Pool`'s size is the memory page's upper bound, 23,181,864
-bytes, charged with the `Global Data Pool` (101 % of `warriors.glr`), the `World Level Pool` (103 % of `<level>.lev`,
-at least 256 KB) and then the worlds and parts by their manifest heap sizes; a part's recorded heap size stays the
-manifest's (the original replaces it with what the part used); reads are synchronous; a part that fails to read is
-marked failed and not asked for again; freeing happens only when a wanted part does not fit; the 5.0 margin compares
-plain distances (**the original: squared**, [Choosing what to stream](#streaming)); `pendingDistance` is +infinity
-when the last search found nothing (**the original: `FLT_MAX`**; the same in effect); the preload's "nearest missing
-sector" (`0x0040e100`) is a fresh search (**the original reuses the last search**); the fade uses game time; the
-camera's own far clip is 300, its near clip 0.5, its view window 0.5 high and as wide as the window's shape (**the
-original: 115, 0.1 and a 65° view, (0.637, 0.478)**, [The player camera](#player-camera)); the background and fog
-colour is a slate blue (**the original: the level script's `SetFogColor`, white by default**, [Fog](#fog)); collected
-sectors are drawn nearest first, sorted by the camera metric (**the original: last collected first**,
-[Visibility](#visibility)); the viewer starts above the middle of the first world's
-part 1, looking along +z.
+**Coney's choices** (marked in the code): a part's recorded heap size stays the manifest's (the original replaces it
+with what the part used); reads are synchronous; a part that fails to read is marked failed and not asked for again;
+freeing happens only when a wanted part does not fit; the fade uses game time; a window that is not 4:3 keeps the
+player camera's view-window height; the viewer starts above the middle of the first world's part 1, looking along
++z. The choices the research contradicted (2026-10-04) now follow the original: the `Sector Pool` is 17,217,536 bytes
+([Memory](memory.md#sizes-at-runtime)), the unload margin is added to squared distances, the preload reads the last
+search, `pendingDistance` is `FLT_MAX`, the camera's far clip is 115 with near 0.1 and a 65° view, the background and
+fog colour is white, the ambient 0.157, and collected sectors are drawn last collected first in the BSP's order.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[world_streaming]"` streams all 80 levels' worlds
 (79 pairs and `objarena`) under a camera that visits the centre of every streamed sector, three frames each (15,945
-frames): 1,564 parts read, every used part at least once, none failed, none freed: with the default budget every
-level's worlds and parts fit at once (largest peak 17,428,516 bytes for the worlds and parts alone). Most atomics
-resident at once: 598. With the budget cut to the worlds plus 2 MB, `level51`, `level83` and `level54` stream with
-682 parts freed, 711 read and 533 frames short of room, peak 3,753,423 bytes; in both runs no frame breaks an
-invariant (budget never exceeded and equal to what is loaded, every loaded part's atomics present, no freed part seen
-last frame, the last part never freed, the margin always kept).
+frames), with the player camera's lens and the retail `Sector Pool` (charged with the worlds and parts only): 1,605
+part reads, 43 parts freed, 435 frames short of room, every used part read at least once, none failed. Most atomics
+resident at once: 598; budget peak 17,168,058 bytes. With the budget cut to the worlds plus 2 MB, `level51`,
+`level83` and `level54` stream with 723 parts freed, 752 read and 451 frames short of room, peak 3,753,423 bytes; in
+both runs no frame breaks an invariant (budget never exceeded and equal to what is loaded, every loaded part's atomics
+present, no freed part seen last frame, the last part never freed, the margin always kept). `coney_tests
+"[disc][world]"` also checks the BSP: in all 15,915 planes of the 159 worlds the left subtree lies below the right
+one on the plane's axis, the side `collectSectors` takes it to be.
 
 **The implementer's questions, answered** (2026-10-04, from code; the contradictions are marked in the paragraph
 above):

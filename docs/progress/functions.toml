@@ -580,6 +580,11 @@ name = "CfgHUDMessage"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x0040e100
+name = "WorldManager_NearestPendingDistance"
+subsystem = "World"
+
+[[function]]
 address = 0x0040e2d8
 name = "WorldManager_Preload"
 subsystem = "World"

@@ -42,10 +42,10 @@ class SectorBudget {
     std::uint64_t m_peak = 0;
 };
 
-/// **Coney's choice** for the `Sector Pool`'s size until a runtime read gives the real one: the upper bound the memory
-/// page derives from the fixed allocations made before it (26,049,684 − 167,936 − 2,027,520 − 324,704 − 216,588 −
-/// 131,072 bytes). The real pool is somewhat smaller (docs/research/memory.md#the-pool-tree, open question).
-inline constexpr std::uint64_t kSectorPoolUpperBound = 23'181'864;
+/// The `Sector Pool`'s size on a retail NTSC-U boot: 17,217,536 bytes (confirmed at runtime,
+/// docs/research/memory.md#sizes-at-runtime). The original sizes it from the global heap's largest free block, so this
+/// is what that block was on the retail disc, not a constant of the code.
+inline constexpr std::uint64_t kSectorPoolSize = 17'217'536;
 
 /// The `Global Data Pool` clump made at start-up for `warriors.glr`: 101 % of its size
 /// (docs/research/level-loading.md#memory).

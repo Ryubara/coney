@@ -75,7 +75,7 @@ TEST_CASE("the search prefers visible sectors, within reach by the original's sq
         world->markPartLoaded(part, 0);
     }
     CHECK_FALSE(world->findSectorToLoad(camera, 500.0F).has_value());
-    CHECK(std::isinf(world->pendingDistance(camera)));
+    CHECK(world->pendingDistance(camera) == coney::world::kNoPendingDistance);
 }
 
 TEST_CASE("a failed part is not searched for again", "[streamed_world]") {
@@ -118,7 +118,7 @@ TEST_CASE("a part with a visible sector is not unloaded", "[streamed_world]") {
     CHECK(candidate.part == 1); // part 2 is seen and part 3 is the last
 }
 
-TEST_CASE("only visible, loaded sectors are collected, nearest first", "[streamed_world]") {
+TEST_CASE("only visible, loaded sectors are collected, in the BSP's front-to-back order", "[streamed_world]") {
     auto world =
         StreamedWorld::create("test", rowOfSectors({{0, 1}, {1, 1}, {2, 2}, {3, 3}}, 3), rowManifest({1, 1, 1}));
     REQUIRE(world.has_value());
@@ -130,8 +130,14 @@ TEST_CASE("only visible, loaded sectors are collected, nearest first", "[streame
     pose.forward = Vec3{-1.0F, 0.0F, 0.0F};
     pose.right = Vec3{0.0F, 0.0F, -1.0F};
     world->findVisibleSectors(coney::world::ViewFrustum(pose, 1.0F, 1.0F, 0.5F, 500.0F), true);
-    const std::array<Vec3, 1> camera{pose.position};
-    CHECK(world->collectSectors(camera) == std::vector<std::uint32_t>{3, 1, 0}); // sector 2's part is not loaded
+    // Collected back to front by the BSP (0, 1, 3 from x = 100), drawn last collected first; sector 2's part is not
+    // loaded.
+    CHECK(world->collectSectors(pose.position) == std::vector<std::uint32_t>{3, 1, 0});
+    // From the other end of the row the walk turns round at every plane.
+    CHECK(world->collectSectors(Vec3{-50.0F, 5.0F, 5.0F}) == std::vector<std::uint32_t>{0, 1, 3});
+    // From inside sector 1: sector 0 (beyond x 10) is walked first, then the far end (beyond x 20), sector 1 last, so
+    // it is drawn first. The BSP's order, not the distance's: sector 3 comes before the nearer sector 0.
+    CHECK(world->collectSectors(Vec3{15.0F, 5.0F, 5.0F}) == std::vector<std::uint32_t>{1, 3, 0});
 }
 
 TEST_CASE("a new atomic fades in over one second", "[streamed_world]") {

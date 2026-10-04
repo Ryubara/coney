@@ -2,7 +2,9 @@
 #include "world/world_streams.h"
 
 #include <algorithm>
+#include <bit>
 #include <format>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -167,24 +169,43 @@ std::expected<WorldSector, Error> readAtomicSector(const Section& sector) {
     return result;
 }
 
-// Walks the BSP below `root` (a plane or atomic sector section) left child first, collecting the atomic sectors.
-// Iterative, with a stack of sections still to visit; `maxNodes` bounds the walk so damaged data cannot make it loop.
+// Walks the BSP below `root` (a plane or atomic sector section) left child first, collecting the atomic sectors and
+// the plane sectors with their children. Iterative, with a stack of sections still to visit, each with the slot of
+// its parent it fills; `maxNodes` bounds the walk so damaged data cannot make it loop.
 std::expected<void, Error> walkSectors(const Section& root, std::uint32_t maxNodes, WorldStream& world) {
-    std::vector<Section> pending{root};
+    // A section still to visit and where its index goes: the root, or a parent plane's left or right child.
+    struct Pending {
+        Section section;
+        std::optional<std::uint32_t> parent;
+        bool left = false;
+    };
+    std::vector<Pending> pending{Pending{.section = root, .parent = std::nullopt, .left = false}};
     std::uint32_t visited = 0;
     while (!pending.empty()) {
-        const Section node = pending.back();
+        const Pending entry = pending.back();
         pending.pop_back();
+        const Section& node = entry.section;
         if (++visited > maxNodes) {
             return fail(ErrorCode::Invalid, std::format("the BSP holds more than the {} sectors its world header "
                                                         "counts",
                                                         maxNodes));
         }
+        // Where this node's index is recorded.
+        const auto link = [&world, &entry](BspChild child) {
+            if (!entry.parent) {
+                world.root = child;
+            } else if (entry.left) {
+                world.planes[*entry.parent].left = child;
+            } else {
+                world.planes[*entry.parent].right = child;
+            }
+        };
         if (node.header.id == kRwAtomicSector) {
             auto sector = readAtomicSector(node);
             if (!sector) {
                 return std::unexpected(std::move(sector.error()));
             }
+            link(BspChild{.leaf = true, .index = static_cast<std::uint32_t>(world.sectors.size())});
             world.sectors.push_back(*sector);
             continue;
         }
@@ -193,7 +214,8 @@ std::expected<void, Error> walkSectors(const Section& root, std::uint32_t maxNod
                                                         "atomic sector",
                                                         node.offset, node.header.id));
         }
-        // A plane sector: its struct, then the left and the right child.
+        // A plane sector: its struct (the axis as a byte offset into a vector, 0, 4 or 8, then the value), then the
+        // left and the right child.
         io::Reader reader(node.data);
         auto info = expectSection(reader, node.data, graphics::kRwStruct, "plane sector struct");
         if (!info) {
@@ -203,6 +225,11 @@ std::expected<void, Error> walkSectors(const Section& root, std::uint32_t maxNod
             return fail(ErrorCode::Invalid, std::format("plane sector at {:#x}: struct of {} bytes, expected {}",
                                                         node.offset, info->data.size(), kPlaneSectorStructBytes));
         }
+        const std::uint32_t type = io::loadU32Le(info->data.subspan(0, 4));
+        if (type != 0 && type != 4 && type != 8) {
+            return fail(ErrorCode::Invalid,
+                        std::format("plane sector at {:#x}: plane type {} is not an axis", node.offset, type));
+        }
         auto left = nextSection(reader, node.data, "left child");
         if (!left) {
             return std::unexpected(std::move(left.error()));
@@ -211,9 +238,15 @@ std::expected<void, Error> walkSectors(const Section& root, std::uint32_t maxNod
         if (!right) {
             return std::unexpected(std::move(right.error()));
         }
+        const auto index = static_cast<std::uint32_t>(world.planes.size());
+        link(BspChild{.leaf = false, .index = index});
+        world.planes.push_back(BspPlane{.axis = type / 4,
+                                        .value = std::bit_cast<float>(io::loadU32Le(info->data.subspan(4, 4))),
+                                        .left = {},
+                                        .right = {}});
         ++world.planeSectors;
-        pending.push_back(*right); // popped after the left subtree
-        pending.push_back(*left);
+        pending.push_back(Pending{.section = *right, .parent = index, .left = false}); // after the left subtree
+        pending.push_back(Pending{.section = *left, .parent = index, .left = true});
     }
     return {};
 }

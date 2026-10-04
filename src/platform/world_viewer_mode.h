@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 
+#include "camera/camera_lens.h"
 #include "core/error.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
@@ -33,8 +34,10 @@ struct WorldViewerStats {
 
 /// Coney's streamed-world viewer, behind `coney --view-world NAME` (docs/guides/building.md#the-world-viewer): a
 /// level's streamed worlds loaded in the original's order, streamed one decision a frame around a free-flying camera
-/// driven by pad 1, and drawn in the original's world order with the draw distance and fade-in. The first step of
-/// level loading; there is no level file, collision, objects or script yet.
+/// driven by pad 1, and drawn in the original's world order with the draw distance and fade-in. The free-flying camera
+/// is Coney's debug camera, but it looks through the player camera's lens (camera::kPlayerCameraLens: 65°, near 0.1,
+/// far clip 115, which caps the draw distance). The first step of level loading; there is no level file, collision,
+/// objects or script yet.
 ///
 /// Every frame: move the camera (world::DebugCamera); make one streaming decision from the last frame's visibility
 /// (world::updateStreaming); move the draw distance (world::adjustDrawDistance); run the visibility pass; draw. Time is
@@ -45,14 +48,12 @@ class WorldViewerMode final : public GameMode {
   public:
     /// The mode's id, outside the original's range.
     static constexpr std::uint32_t kId = 0x104;
-    /// **Coney's choice** for the camera's own far clip, which caps the draw distance: the 300 the draw-distance
-    /// adjustment never exceeds (the player camera's own value is not on the pages).
-    static constexpr float kFarClip = 300.0F;
-    /// **Coney's choice** for the background and fog colour (a level's own is not on the pages).
-    static constexpr graphics::Rgba kFogColour{40, 44, 56, 255};
-    /// **Coney's choice**: the brightness of the ambient light that stands in for the LightManager
-    /// (WorldRenderer).
-    static constexpr float kAmbient = 0.25F;
+    /// The background and fog colour before a level script sets one: white, as the device starts
+    /// (docs/research/world.md#fog). The level scripts' SetFogColor is not run yet.
+    static constexpr graphics::Rgba kFogColour{255, 255, 255, 255};
+    /// The world's ambient light with no script call: the LightManager's constant offset, 40/255 = 0.157
+    /// (docs/research/world.md#lighting).
+    static constexpr float kAmbient = 40.0F / 255.0F;
 
     /// Loads the worlds `name` stands for (worldNamesFor()) from `wad`, charging `budget` first with the pools a
     /// running game holds before them: the `Global Data Pool` for `warriors.glr` and the `World Level Pool` for
@@ -89,7 +90,8 @@ class WorldViewerMode final : public GameMode {
     world::DebugCamera m_camera;
     WorldRenderer m_renderer;
     std::function<void(std::string_view)> m_print;
-    float m_drawDistance = kFarClip; // InitLevel sets the draw distance to the far clip before the preload
+    // InitLevel sets the draw distance to the far clip before the preload.
+    float m_drawDistance = camera::kPlayerCameraLens.farClip;
     WorldViewerStats m_stats;
 };
 

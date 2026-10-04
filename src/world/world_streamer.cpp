@@ -11,8 +11,6 @@ namespace coney::world {
 
 namespace {
 
-constexpr float kInfinity = std::numeric_limits<float>::infinity();
-
 // The wanted sector of one decision: which world, which sector and how far.
 struct Wanted {
     std::size_t world = 0;
@@ -52,7 +50,8 @@ StreamStep updateStreaming(std::span<StreamedWorld* const> worlds, std::span<con
         }
     }
     if (!wanted) {
-        return StreamStep{.result = StreamResult::Idle, .world = 0, .part = 0, .distance = kInfinity, .error = {}};
+        return StreamStep{
+            .result = StreamResult::Idle, .world = 0, .part = 0, .distance = kNoPendingDistance, .error = {}};
     }
     StreamedWorld& world = *worlds[wanted->world];
     const std::uint32_t part = world.sectors()[wanted->sector].part;
@@ -72,7 +71,8 @@ StreamStep updateStreaming(std::span<StreamedWorld* const> worlds, std::span<con
             .result = StreamResult::Loaded, .world = wanted->world, .part = part, .distance = distance, .error = {}};
     }
 
-    // 3. No room: free the farthest part nobody saw, if it is clearly farther than what is wanted.
+    // 3. No room: free the farthest part nobody saw, if it is clearly farther than what is wanted. The margin is added
+    // to the squared distance, as the original does.
     std::optional<std::pair<std::size_t, UnloadCandidate>> farthest;
     for (std::size_t w = 0; w < worlds.size(); ++w) {
         const std::optional<UnloadCandidate> candidate = worlds[w]->findPartToUnload(cameras);
@@ -80,7 +80,7 @@ StreamStep updateStreaming(std::span<StreamedWorld* const> worlds, std::span<con
             farthest = std::pair{w, *candidate};
         }
     }
-    if (farthest && std::sqrt(farthest->second.distanceSq) > distance + kUnloadMargin) {
+    if (farthest && farthest->second.distanceSq > wanted->distanceSq + kUnloadMargin) {
         StreamedWorld& owner = *worlds[farthest->first];
         const std::uint32_t victim = farthest->second.part;
         store.unloadPart(farthest->first, victim);
@@ -97,7 +97,7 @@ StreamStep updateStreaming(std::span<StreamedWorld* const> worlds, std::span<con
 }
 
 float nearestPendingDistance(std::span<StreamedWorld* const> worlds, std::span<const Vec3> cameras) {
-    float nearest = kInfinity;
+    float nearest = kNoPendingDistance;
     for (const StreamedWorld* world : worlds) {
         nearest = std::min(nearest, world->pendingDistance(cameras));
     }
@@ -127,13 +127,10 @@ PreloadResult preloadWorlds(std::span<StreamedWorld* const> worlds, std::span<co
         case StreamResult::NoRoom:
             return result; // no more work
         }
-        // Keep going while what is still missing lies within the radius: a fresh search, since the last one found what
-        // was just loaded (0x0040e100, read here as searching again; inferred).
-        for (StreamedWorld* world : worlds) {
-            (void)world->findSectorToLoad(cameras, radius);
-        }
+        // Keep going while the nearest missing sector of the last searches lies within the radius, or none was found.
+        // No new search: 0x0040e100 reads the last one, which found what this pass just loaded.
         const float pending = nearestPendingDistance(worlds, cameras);
-        if (std::isfinite(pending) && pending > radius) {
+        if (pending != kNoPendingDistance && pending > radius) {
             return result;
         }
     }

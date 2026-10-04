@@ -51,12 +51,13 @@ struct StreamStep {
     StreamResult result = StreamResult::Idle;
     std::size_t world = 0;  ///< Index into the worlds given, for every result but Idle.
     std::uint32_t part = 0; ///< The part loaded, freed, refused or failed.
-    float distance = 0.0F;  ///< The nearest missing sector's distance (not squared); +infinity when none.
+    float distance = 0.0F;  ///< The nearest missing sector's distance (not squared); kNoPendingDistance when none.
     std::string error;      ///< Failed: why the part could not be read.
 };
 
 /// How much farther than the nearest missing sector a part must be before it is freed for it: the original's 5.0
-/// units of hysteresis.
+/// of hysteresis, added to the *squared* distance of the wanted sector and compared with the part's squared distance
+/// (confirmed in code at 0x0040f8a0, docs/research/world.md#streaming), so in plain units it shrinks with distance.
 inline constexpr float kUnloadMargin = 5.0F;
 
 /// Asks for room for part `part` of `world` (its manifest heap size) and, when it fits, reads it through `store` and
@@ -75,20 +76,22 @@ inline constexpr float kUnloadMargin = 5.0F;
 /// 1. each world finds its nearest missing sector (World_FindPartToLoad); the nearest of all is wanted;
 /// 2. its part is requested; if it fits, it is read (Loaded);
 /// 3. otherwise each world offers its farthest loaded part that nobody saw last frame (World_FindPartToUnload); the
-///    farthest of those is freed, but only if it is more than kUnloadMargin farther than the wanted sector (Unloaded);
+///    farthest of those is freed, but only if its squared distance is more than the wanted sector's plus
+///    kUnloadMargin (Unloaded);
 /// 4. otherwise NoRoom; with nothing missing at all, Idle.
 ///
 /// The original also weighs the resource manager's and the water effect's wants, and does nothing while a read is in
 /// flight; Coney has neither yet and reads synchronously. Freeing only when a wanted part does not fit is how
-/// Coney reads "when nothing could be started" (inferred). Whether the 5.0 margin compares plain or squared distances
-/// is not on the page; Coney compares plain ones (a Coney choice, TODO for the analysts on world.md).
+/// Coney reads "when nothing could be started" (inferred).
 /// @orig 0x0040f8a0 WorldManager_Update (WorldManagerPS2.cpp)
 [[nodiscard]] StreamStep updateStreaming(std::span<StreamedWorld* const> worlds, std::span<const Vec3> cameras,
                                          float drawDistance, SectorBudget& budget, PartStore& store,
                                          std::uint64_t nowMs);
 
-/// The distance to the nearest missing sector of any of `worlds`, from their last searches: what the draw distance
-/// follows and the preload compares with its radius. +infinity when nothing is missing.
+/// The distance to the nearest missing sector of any of `worlds`, from their last searches, without searching again:
+/// what the draw distance follows and the preload compares with its radius. kNoPendingDistance (FLT_MAX) when no
+/// search found anything.
+/// @orig 0x0040e100 WorldManager_NearestPendingDistance (WorldManagerPS2.cpp)
 [[nodiscard]] float nearestPendingDistance(std::span<StreamedWorld* const> worlds, std::span<const Vec3> cameras);
 
 /// What a preload did.
@@ -99,7 +102,8 @@ struct PreloadResult {
 };
 
 /// The streaming loop before a level's first frame: runs updateStreaming() while it does work and the nearest missing
-/// sector is within `radius` (or nothing is missing), counting the passes that did not load, up to 200. The original
+/// sector of the last searches (nearestPendingDistance(), no new search) is within `radius` or there is none,
+/// counting the passes that did not load, up to 200. The original
 /// also loads the section's pack and stops at a real-time budget (15 or 30 s); Coney has no packs yet and reads
 /// synchronously, so the passes alone bound it.
 /// @orig 0x0040e2d8 WorldManager_Preload (WorldManagerPS2.cpp)
@@ -108,7 +112,7 @@ PreloadResult preloadWorlds(std::span<StreamedWorld* const> worlds, std::span<co
 
 /// The inputs of the per-frame draw-distance adjustment (docs/research/world.md#a-frame, step 3).
 struct DrawDistanceInputs {
-    float pending = 0.0F;     ///< nearestPendingDistance(); +infinity when nothing is missing.
+    float pending = 0.0F;     ///< nearestPendingDistance(); kNoPendingDistance when nothing was found.
     float farClip = 0.0F;     ///< The camera's own far clip, the ceiling.
     float seconds = 0.0F;     ///< The frame's step; capped at 0.1.
     float frameRate = 30.0F;  ///< Frames a second (Coney's fixed step: always 30).

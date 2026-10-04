@@ -39,6 +39,16 @@ TEST_CASE("a world stream's sectors are read with their boxes and plugin data", 
     CHECK(world->partCount == 1);
     CHECK(world->dictionaryOffset == 4);
     CHECK(world->planeSectors == 1);
+    // The BSP: one plane splitting x at 0, the first sector on its left, the second on its right.
+    REQUIRE(world->planes.size() == 1);
+    CHECK_FALSE(world->root.leaf);
+    CHECK(world->root.index == 0);
+    CHECK(world->planes[0].axis == 0);
+    CHECK(world->planes[0].value == 0.0F);
+    CHECK(world->planes[0].left.leaf);
+    CHECK(world->planes[0].left.index == 0);
+    CHECK(world->planes[0].right.leaf);
+    CHECK(world->planes[0].right.index == 1);
     REQUIRE(world->sectors.size() == 2);
     REQUIRE(world->sectors[1].plugin.has_value());
     CHECK(world->sectors[1].plugin.value_or(coney::world::SectorPluginData{}).streamedIndex == 0);

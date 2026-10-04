@@ -76,6 +76,21 @@ struct WorldSector {
     std::optional<SectorPluginData> plugin;
 };
 
+/// One child of a BSP plane: another plane, or a leaf (an atomic sector).
+struct BspChild {
+    bool leaf = true;        ///< An atomic sector rather than a plane.
+    std::uint32_t index = 0; ///< Into WorldStream::sectors for a leaf, WorldStream::planes otherwise.
+};
+
+/// An inner node of a world's BSP (a RenderWare plane sector): the axis it splits, where, and its two children. The
+/// left child holds the side below the value (inferred from RenderWare; Coney's disc test checks it).
+struct BspPlane {
+    std::uint32_t axis = 0; ///< 0 x, 1 y, 2 z.
+    float value = 0.0F;     ///< Where the plane cuts the axis.
+    BspChild left;
+    BspChild right;
+};
+
 /// What a world stream holds, from its structure. Research: docs/research/world.md#world-stream
 struct WorldStream {
     std::uint32_t partCount = 0;      ///< The leading `u32`: how many part files the world has.
@@ -85,6 +100,8 @@ struct WorldStream {
     Box worldBox;                     ///< The world's own bounding box.
     std::uint32_t planeSectors = 0;   ///< Inner nodes of the BSP read.
     std::vector<WorldSector> sectors; ///< Atomic sectors, in stream order (the BSP's leaves, left first).
+    std::vector<BspPlane> planes;     ///< The BSP's inner nodes, in stream order (parents before children).
+    BspChild root;                    ///< The BSP's root: a plane, or the only sector.
 };
 
 /// Reads the layout of a world stream: the part count, where the texture dictionary is, and every atomic sector of

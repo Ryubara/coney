@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <limits>
 #include <optional>
 #include <span>
 #include <string>
@@ -67,6 +68,10 @@ struct UnloadCandidate {
 /// How long a new atomic fades in, in milliseconds.
 inline constexpr std::uint64_t kFadeInMs = 1000;
 
+/// The pending distance when no missing sector was found: FLT_MAX, as World_PendingDistance returns, not infinity
+/// (docs/research/world.md#camera-distance).
+inline constexpr float kNoPendingDistance = std::numeric_limits<float>::max();
+
 /// One streamed world's state. Its tables are sized from the data, not the original's fixed 560 sectors and 139 parts
 /// (`level70s` has 593 streamed sectors).
 ///
@@ -102,8 +107,7 @@ class StreamedWorld {
     [[nodiscard]] bool searchFellBack() const { return m_fellBack; }
 
     /// The distance (not squared) from the cameras to the sector the last findSectorToLoad() found, even if it has been
-    /// loaded since, as the original reads it; +infinity when it found none (a Coney choice: what the original returns
-    /// then is not on the page).
+    /// loaded since, as the original reads it; kNoPendingDistance (FLT_MAX) when it found none.
     /// @orig 0x00411880 World_PendingDistance (WorldPS2.cpp)
     [[nodiscard]] float pendingDistance(std::span<const Vec3> cameras) const;
 
@@ -127,12 +131,13 @@ class StreamedWorld {
     /// Marks sector `sector` visible, as the visibility pass's sector callback does for a sector it keeps.
     void markVisible(std::uint32_t sector);
 
-    /// The sectors to draw for this viewport: those marked visible whose atomic is loaded, nearest first.
-    ///
-    /// The original collects them in its BSP walk, which runs back to front, and draws the list from its end, so
-    /// roughly front to back (inferred); Coney sorts by the camera distance to the same effect (a Coney choice).
+    /// The sectors to draw for this viewport, in drawing order: those marked visible whose atomic is loaded, collected
+    /// in a back-to-front walk of the world's BSP from `viewpoint` (the viewport camera's position, RenderWare axes)
+    /// and returned last collected first, as the original draws its list from the end: so front to back by the BSP. At
+    /// each plane the side `viewpoint` is not on is walked first. A layout without planes and with several sectors
+    /// (only synthetic ones) is collected in stream order (a Coney choice).
     /// @orig 0x00411b20 World_CollectSector (WorldPS2.cpp)
-    [[nodiscard]] std::vector<std::uint32_t> collectSectors(std::span<const Vec3> cameras) const;
+    [[nodiscard]] std::vector<std::uint32_t> collectSectors(Vec3 viewpoint) const;
 
     /// Records that part `number`'s atomics are in place, their fade-in ending kFadeInMs after `nowMs`.
     void markPartLoaded(std::uint32_t number, std::uint64_t nowMs);
@@ -151,7 +156,10 @@ class StreamedWorld {
 
     std::string m_name;
     std::vector<StreamedSector> m_sectors;
-    std::vector<WorldPart> m_parts; // part i at [i - 1]
+    std::vector<BspPlane> m_planes;          // the BSP's inner nodes, for the drawing order
+    BspChild m_root;                         // the BSP's root
+    std::vector<std::int32_t> m_leafSectors; // by the layout's sector index: its streamed index, or -1
+    std::vector<WorldPart> m_parts;          // part i at [i - 1]
     std::optional<std::uint32_t> m_lastFound;
     bool m_fellBack = false;
 };
