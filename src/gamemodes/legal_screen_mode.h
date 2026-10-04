@@ -7,10 +7,12 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "core/error.h"
 #include "core/language.h"
 #include "gamemodes/game_mode.h"
+#include "graphics/overlay_camera.h"
 #include "graphics/particle_page.h"
 #include "graphics/render_device.h"
 
@@ -39,9 +41,25 @@ struct LegalScreenSettings {
 /// Research: docs/research/graphics.md#first-screen, docs/research/formats/wad-contents.md#names
 [[nodiscard]] std::string resourceFileName(std::string_view resourceName);
 
+/// The legal screen's scale factors (horizontal, vertical) for the video mode `settings` stands for: (1.55, 1.35) in
+/// the default interlaced 4:3 mode, (1.9, 1.45) with the 16:9 option. The original also has factors for its
+/// progressive modes, which Coney does not offer.
+///
+/// Research: docs/research/graphics.md#first-screen
+[[nodiscard]] std::pair<float, float> legalScreenFactors(const LegalScreenSettings& settings);
+
+/// Where the legal screen's picture goes on the logical screen: a sprite of size (fx × d × (u1 - u0), fy × d ×
+/// (v1 - v0)) at (0, 0, -d) in front of the overlay camera `camera`, `(fx, fy)` the factors and `rect` the page's first
+/// rectangle, centred on the screen. In the default mode it covers 1.068 × 1.011 of the screen with the disc's picture:
+/// slightly more than all of it. `d` cancels out.
+///
+/// Research: docs/research/graphics.md#first-screen
+[[nodiscard]] graphics::LogicalQuad legalScreenQuad(const graphics::OverlayCamera& camera,
+                                                    std::pair<float, float> factors, const graphics::UvRect& rect);
+
 /// Game mode 5, the legal screen: the first screen after the start-up movies. It loads the legal screen's sprite
-/// sheet, shows its first rectangle over the whole screen on black, holds it for 5,000 ms of game time whatever the
-/// player presses, then leaves.
+/// sheet, shows its first rectangle on black, centred and slightly overfilling the screen as the original sizes it
+/// (legalScreenQuad()), holds it for 5,000 ms of game time whatever the player presses, then leaves.
 ///
 /// Coney's differences from the original, all invisible on the screen:
 /// - The original draws the picture once in `Enter`, into both display buffers, and its `Update` presents nothing;
@@ -49,8 +67,6 @@ struct LegalScreenSettings {
 ///   shows it.
 /// - The original times the hold in real milliseconds; Coney counts game time on the fixed 1/30 s step, so the hold is
 ///   exactly 150 frames and a test can run it without a clock.
-/// - The picture fills the logical screen. The original sizes it from the overlay camera's near clip and per-mode
-///   factors whose exact result is not worked out (docs/research/graphics.md#open-questions).
 /// - The preload scripts the original runs in `Enter` wait for the Lua system.
 ///
 /// Research: docs/research/graphics.md#first-screen, docs/research/frontend.md#mode-flow

@@ -473,8 +473,9 @@ the frame START is pressed.
 - `enter` picks the resource name by language, 16:9 and the flag `0x02` (`legalScreenResourceName`; the defaults
   are NTSC-U English 4:3, `legal_screen`), loads that sprite sheet from the WAD file named by the name's decimal CRC
   (`resourceFileName`, `platform::loadSpriteSheetResource`) and keeps it until `exit`.
-- `update` draws the sheet's first rectangle over the whole 640 × 448 logical screen on black and presents it, every
-  frame; it reads no input. It leaves once 5,000 ms of **game time** have passed since the mode was entered: exactly
+- `update` draws the sheet's first rectangle on black, centred and 1.068 × 1.011 the size of the 640 × 448 logical
+  screen as the original sizes it ([Placement](graphics.md#first-screen)), and presents it, every frame; it reads no
+  input. It leaves once 5,000 ms of **game time** have passed since the mode was entered: exactly
   150 frames of the fixed 1/30 s step.
 - A sheet that fails to load is printed and the screen stays black for the hold.
 

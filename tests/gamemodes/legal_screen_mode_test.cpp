@@ -7,8 +7,10 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
@@ -18,6 +20,7 @@
 #include "graphics/screen.h"
 #include "support/recording_device.h"
 
+using Catch::Approx;
 using coney::GameModeStack;
 using coney::GameTimer;
 using coney::Language;
@@ -99,7 +102,7 @@ TEST_CASE("the legal screen holds exactly 5,000 ms of game time, then leaves", "
     CHECK(loader.texture.use_count() == 1);
 }
 
-TEST_CASE("the legal screen draws its picture over the whole screen on black every frame", "[legal_screen]") {
+TEST_CASE("the legal screen draws its picture slightly overfilling the screen on black every frame", "[legal_screen]") {
     RecordingDevice device;
     FakeLoader loader;
     Log log;
@@ -118,12 +121,31 @@ TEST_CASE("the legal screen draws its picture over the whole screen on black eve
     CHECK(draw.texture == loader.texture.get());
     REQUIRE(draw.quads.size() == 1);
     const coney::graphics::LogicalQuad& quad = draw.quads[0];
-    CHECK(quad.x == 0.0F);
-    CHECK(quad.y == 0.0F);
-    CHECK(quad.width == coney::graphics::kLogicalWidth);
-    CHECK(quad.height == coney::graphics::kLogicalHeight);
+    // 1.55 x 1 / (2 x 0.725) = 1.069 of the width and 1.35 x 0.75 / (2 x 0.5) = 1.0125 of the height, centred.
+    CHECK(quad.width == Approx(640.0 * 1.55 / 1.45));
+    CHECK(quad.height == Approx(448.0 * 1.35 * 0.75));
+    CHECK(quad.x + quad.width / 2 == Approx(320.0));
+    CHECK(quad.y + quad.height / 2 == Approx(224.0));
     CHECK(quad.uv == UvRect{0.0F, 0.0F, 1.0F, 0.75F});
     CHECK(quad.colour == coney::graphics::kWhite);
+}
+
+TEST_CASE("the disc's legal picture covers 1.068 x 1.011 of the screen, as the research page works out",
+          "[legal_screen]") {
+    // The first rectangle of legal_screen's page: 0.99902 x 0.74902 of the texture (docs/research/graphics.md).
+    const UvRect rect{0.0F, 0.0F, 0.99902F, 0.74902F};
+    const coney::graphics::LogicalQuad quad =
+        coney::legalScreenQuad(coney::graphics::OverlayCamera(), coney::legalScreenFactors({}), rect);
+    CHECK(quad.width / 640.0F == Approx(1.068).margin(1e-3));
+    CHECK(quad.height / 448.0F == Approx(1.011).margin(1e-3));
+    // About 683 x 453 logical pixels, centred.
+    CHECK(quad.width == Approx(683.4).margin(0.5));
+    CHECK(quad.height == Approx(453.1).margin(0.5));
+    CHECK(quad.x == Approx(-(quad.width - 640.0F) / 2));
+    // The 16:9 option's factors are larger, but so is its overlay camera's view window.
+    const std::pair<float, float> wide =
+        coney::legalScreenFactors({.language = Language::English, .widescreen = true, .europe = false});
+    CHECK(wide == std::pair{1.9F, 1.45F});
 }
 
 TEST_CASE("a legal screen that cannot load is logged and stays black for the hold", "[legal_screen]") {

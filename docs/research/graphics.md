@@ -489,11 +489,12 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   code passes a `graphics::Texture`, which the platform implements over a librw texture.
 - **GUI coordinates and the overlay camera** (`src/graphics/overlay_camera.h`, `OverlayCamera`): device slots `+0x90`
   and `+0x98` as [2D drawing](#2d-drawing) gives them (`guiToOverlay`, `guiWidthToOverlay`), and the overlay camera's
-  perspective projection with its view window (0.6667, 0.5) × the view scale, which takes a point or a size of
-  overlay-camera space to logical pixels (`project`, `projectSize`; `unproject` for Coney's tools). GUI 0 and 1 land
-  at 1.3 % and 98.7 % across and 4.5 % and 95.5 % down; a test pins it. **This differs from the original**, whose
-  view window is 0.725 × 0.5 in the default mode (TODO below). Coney computes
-  the projection itself rather than rendering through a librw camera, and draws the result as 2D quads.
+  perspective projection with the default mode's view window, 0.725 × 0.5 (aspect 1.45) × the view scale, which takes
+  a point or a size of overlay-camera space to logical pixels (`project`, `projectSize`; `unproject` for Coney's
+  tools). GUI 0 and 1 land at 5.2 % and 94.8 % across and 4.5 % and 95.5 % down, and the main menu's button glyph
+  where PCSX2 shows it; tests pin both. Coney computes the projection itself rather than rendering through a librw
+  camera, and draws the result as 2D quads. The 16:9 aspect (1.6667, scale 1.1) is there for the legal screen's `_w`
+  pictures; the progressive modes are not offered.
 - `TextureDictionary` (`src/platform/texture_dictionary.h`) reads a dictionary with librw after
   `graphics::inspectTexDictionary` has checked the stream, and converts it to RGBA images (any backend) or to OpenGL
   textures (`Raster::convertTexToCurrentPlatform`). The chunk readers for `0x0B` and `0x2A` push it as `0x0B`
@@ -516,10 +517,11 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   the last frame. The legal screen (`--view-txd 863681355`) shows correctly.
 - **The first screen** is mode 5 ([Front end](frontend.md#coneys-implementation)): `coney --disc <disc>` loads
   `legal_screen` through the chunk system (its `0x2A` dictionary and its `0x4C` sprite sheet,
-  [GUI](gui.md#coneys-implementation)) and draws the sheet's first rectangle, the top 512 × 384 of the texture, over
-  the whole logical screen on black for 5,000 ms. **Coney's choice:** the picture fills the logical screen exactly;
-  the original overfills it slightly, 1.068 × 1.011 of the screen, centred (TODO below). On the NTSC-U disc it shows
-  correctly and gives way to the memory-card check after frame 150.
+  [GUI](gui.md#coneys-implementation)) and draws the sheet's first rectangle, the top 512 × 384 of the texture, on
+  black for 5,000 ms, sized as [Placement](#first-screen) works out (`legalScreenQuad`, from the mode's factors and the
+  overlay camera): 1.068 × 1.011 of the logical screen, centred, so the picture slightly overfills it as the
+  original's does. A test pins the 1.068 × 1.011. On the NTSC-U disc it shows correctly and gives way to the
+  memory-card check after frame 150.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc]"` with `CONEY_DISC` set reads 20,314
 dictionaries (from 3,016 chunk containers, 1,911 sector atomics files and 159 world streams) holding 42,211 textures;
@@ -542,18 +544,8 @@ What is still to do:
   ([The streamed world](world.md#coneys-implementation)); the level world, PVS and occluders do not.
 - The 16:9 option: a 16:9 logical screen shape, the overlay view-window scale 1.1 and the `_w` legal screens.
 
-TODO for the implementers, from the runtime answers (2026-10-04):
-
-- **The overlay camera's view window differs from Coney's choice.** `OverlayCamera` (`src/graphics/overlay_camera.h`)
-  uses 0.6667 × 0.5 (scale × 1.3333 × 0.5), from the static value of `0x0050b208`; the device overwrites it, and in
-  the default interlaced 4:3 mode the view window is **0.725 × 0.5** ([2D drawing](#2d-drawing)). GUI 0 and 1 then
-  land at 5.2 % and 94.8 % across, not 1.3 % and 98.7 %; the test that pins the margin needs the new numbers. 16:9
-  is 1.6667 × 0.5 × 1.1, progressive 1.59 × 0.5.
-- **The legal screen overfills the screen, unlike Coney's choice.** Coney stretches the picture to the logical
-  screen exactly; the original covers 1.068 × 1.011 of it, centred ([Placement](#first-screen)), cutting about 16
-  texels off each side and 2 off the top and bottom. Computing it from the factors and the view window, as the
-  original does, gives the right result in the other modes too.
-- **The legal screen's colour is white** (255, 255, 255, 255), as Coney draws it (confirmed (code) at `0x0015a0b8`).
+The implementers' TODOs from the runtime answers (2026-10-04) are done: the overlay camera's view window is
+0.725 × 0.5 and the legal screen overfills the screen as above; its colour was already white.
 
 Still for the analysts:
 

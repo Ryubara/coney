@@ -26,8 +26,8 @@ struct LogicalPoint {
 ///
 /// GUI coordinates: x to the right and y down, the whole screen about [0, 1]². The device turns a GUI point into the
 /// overlay camera's space at a fixed depth, and the camera's perspective projection puts it on the screen. Because the
-/// camera's view window is a little larger than the GUI square at that depth, GUI 0 and 1 land about 1.3 % and 98.7 %
-/// across the width and 4.5 % and 95.5 % down the height: a margin built into the projection, not into the menus.
+/// camera's view window is larger than the GUI square at that depth, GUI 0 and 1 land about 5.2 % and 94.8 % across
+/// the width and 4.5 % and 95.5 % down the height: a safe-area margin built into the projection, not into the menus.
 ///
 /// Coney does not render through a librw camera for this; it computes the same projection and draws in logical
 /// pixels (graphics/screen.h).
@@ -37,15 +37,21 @@ class OverlayCamera {
   public:
     /// The depth at which GUI points are placed, in front of the camera.
     static constexpr float kGuiDepth = 1.1F;
-    /// The aspect of the overlay camera's view window (`0x0050b208`): 4:3.
-    static constexpr float kViewAspect = 4.0F / 3.0F;
+    /// The aspect of the overlay camera's view window (`0x0050b208`) in the default interlaced 4:3 mode: 1.45, which
+    /// the device writes over the static 1.3333 when it starts (confirmed at runtime,
+    /// docs/research/graphics.md#a-frame).
+    static constexpr float kViewAspect = 1.45F;
+    /// The aspect in the 16:9 mode, which also scales the view window by 1.1 (`0x0050b20c`).
+    static constexpr float kWideViewAspect = 1.6667F;
 
-    /// The camera of the 4:3 screen, view-window scale 1.0. The original's 16:9 option uses a scale of 1.1
-    /// (`0x0050b20c`), which Coney does not have yet.
-    explicit OverlayCamera(float viewScale = 1.0F) : m_viewScale(viewScale) {}
+    /// The overlay camera with view-window scale `viewScale` and aspect `aspect`: by default that of the interlaced 4:3
+    /// mode. The original's 16:9 option uses a scale of 1.1 and kWideViewAspect, which Coney's 4:3 logical screen does
+    /// not show yet.
+    explicit OverlayCamera(float viewScale = 1.0F, float aspect = kViewAspect)
+        : m_viewScale(viewScale), m_aspect(aspect) {}
 
-    /// Half the width of the view window at distance 1: scale × aspect × 0.5 = 0.6667 at scale 1.0.
-    [[nodiscard]] float viewWindowX() const { return m_viewScale * kViewAspect * 0.5F; }
+    /// Half the width of the view window at distance 1: scale × aspect × 0.5 = 0.725 in the default mode.
+    [[nodiscard]] float viewWindowX() const { return m_viewScale * m_aspect * 0.5F; }
     /// Half the height of the view window at distance 1: scale × 0.5.
     [[nodiscard]] float viewWindowY() const { return m_viewScale * 0.5F; }
 
@@ -79,6 +85,7 @@ class OverlayCamera {
 
   private:
     float m_viewScale;
+    float m_aspect;
 };
 
 } // namespace coney::graphics

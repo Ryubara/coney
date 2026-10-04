@@ -3,6 +3,7 @@
 
 #include <array>
 #include <format>
+#include <span>
 #include <utility>
 
 #include "core/game_timer.h"
@@ -23,6 +24,26 @@ std::string legalScreenResourceName(const LegalScreenSettings& settings) {
     }
     name += kSuffixes.at(static_cast<std::size_t>(settings.language));
     return name;
+}
+
+std::pair<float, float> legalScreenFactors(const LegalScreenSettings& settings) {
+    // The interlaced factors; flag 0x02 picks the picture, not the mode (docs/research/graphics.md#first-screen).
+    return settings.widescreen ? std::pair{1.9F, 1.45F} : std::pair{1.55F, 1.35F};
+}
+
+graphics::LogicalQuad legalScreenQuad(const graphics::OverlayCamera& camera, std::pair<float, float> factors,
+                                      const graphics::UvRect& rect) {
+    // The sprite record's depth: the overlay camera's near clip. Any positive depth gives the same result.
+    constexpr float kDepth = 0.5F;
+    const graphics::LogicalPoint size = camera.projectSize(factors.first * kDepth * (rect.u1 - rect.u0),
+                                                           factors.second * kDepth * (rect.v1 - rect.v0), kDepth);
+    const graphics::LogicalPoint centre = camera.project(graphics::OverlayPoint{0.0F, 0.0F, kDepth});
+    return graphics::LogicalQuad{.x = centre.x - size.x * 0.5F,
+                                 .y = centre.y - size.y * 0.5F,
+                                 .width = size.x,
+                                 .height = size.y,
+                                 .uv = rect,
+                                 .colour = graphics::kWhite};
 }
 
 std::string resourceFileName(std::string_view resourceName) { return std::format("{}", crc32(resourceName)); }
@@ -64,9 +85,12 @@ void LegalScreenMode::exit() { m_sheet.reset(); }
 void LegalScreenMode::drawFrame() {
     m_device.beginFrame(graphics::kBlack);
     if (m_sheet) {
-        // Coney's choice: the first rectangle stretched over the whole logical screen (see the class comment).
-        const graphics::LogicalQuad quad{
-            0.0F, 0.0F, graphics::kLogicalWidth, graphics::kLogicalHeight, m_sheet->page.rect(0), graphics::kWhite};
+        // The first rectangle, sized as the original's sprite record sizes it, through the mode's overlay camera.
+        const graphics::OverlayCamera camera =
+            m_settings.widescreen ? graphics::OverlayCamera(1.1F, graphics::OverlayCamera::kWideViewAspect)
+                                  : graphics::OverlayCamera();
+        const graphics::LogicalQuad quad =
+            legalScreenQuad(camera, legalScreenFactors(m_settings), m_sheet->page.rect(0));
         m_device.drawQuads(m_sheet->texture.get(), std::span(&quad, 1));
     }
     m_device.present();

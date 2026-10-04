@@ -19,21 +19,31 @@ TEST_CASE("a GUI point becomes overlay-camera space as the device's conversion d
     CHECK(OverlayCamera::guiWidthToOverlay(0.7F) == Approx(0.7 * 640.0 / 448.0));
 }
 
-TEST_CASE("the overlay camera's view window is 4:3 with the safe margin of the research page", "[overlay_camera]") {
+TEST_CASE("the overlay camera's view window is 0.725 x 0.5 with the safe margin of the research page",
+          "[overlay_camera]") {
     const OverlayCamera camera;
-    CHECK(camera.viewWindowX() == Approx(0.6667).epsilon(1e-3));
+    CHECK(camera.viewWindowX() == Approx(0.725));
     CHECK(camera.viewWindowY() == Approx(0.5));
-    // GUI 0 and 1 land about 1.3 % and 98.7 % across, 4.5 % and 95.5 % down.
+    // GUI 0 and 1 land about 5.2 % and 94.8 % across, 4.5 % and 95.5 % down (docs/research/graphics.md#2d-drawing).
     const LogicalPoint topLeft = camera.guiToLogical(0.0F, 0.0F);
     const LogicalPoint bottomRight = camera.guiToLogical(1.0F, 1.0F);
-    CHECK(topLeft.x / 640.0F == Approx(0.0130).margin(5e-4));
+    CHECK(topLeft.x / 640.0F == Approx(0.0522).margin(5e-4));
     CHECK(topLeft.y / 448.0F == Approx(0.0455).margin(5e-4));
-    CHECK(bottomRight.x / 640.0F == Approx(0.9870).margin(5e-4));
+    CHECK(bottomRight.x / 640.0F == Approx(0.9478).margin(5e-4));
     CHECK(bottomRight.y / 448.0F == Approx(0.9545).margin(5e-4));
     // The GUI centre is the screen's centre.
     const LogicalPoint centre = camera.guiToLogical(0.5F, 0.5F);
     CHECK(centre.x == Approx(320.0));
     CHECK(centre.y == Approx(224.0));
+}
+
+TEST_CASE("the main menu's button glyph lands where PCSX2 shows it", "[overlay_camera]") {
+    // The runtime check of docs/research/graphics.md#2d-drawing: overlay (-0.6945, -0.3700, -1.1) is drawn at 6.45 %
+    // across and 83.5 % down.
+    const OverlayCamera camera;
+    const LogicalPoint glyph = camera.project(OverlayPoint{-0.6945F, -0.3700F, 1.1F});
+    CHECK(glyph.x / 640.0F == Approx(0.0646).margin(5e-4));
+    CHECK(glyph.y / 448.0F == Approx(0.8364).margin(5e-4));
 }
 
 TEST_CASE("GUI sizes project like the distance between GUI points, and shrink with depth", "[overlay_camera]") {
