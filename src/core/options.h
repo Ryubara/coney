@@ -34,6 +34,9 @@ struct Options {
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;
+    /// `--input-script`: play the pad input in this file (src/core/input_script.h) instead of reading the keyboard
+    /// and gamepads: the scripted input of test mode.
+    std::optional<std::string> inputScript;
 };
 
 /// Largest accepted `--frames` value: about 4.6 hours at 60 Hz, far beyond any test, and well inside `int`.

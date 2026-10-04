@@ -17,6 +17,7 @@ namespace {
 constexpr std::string_view kUsage =
     "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
     "             [--screenshot PATH] [--headless] [--help]\n"
+    "             [--input-script FILE]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -27,6 +28,8 @@ constexpr std::string_view kUsage =
     "                     or a WAD entry; needs --disc\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
+    "  --input-script FILE\n"
+    "                     play the pad input in FILE instead of the keyboard and gamepads\n"
     "  --headless         run with no window and no GPU (nothing is drawn)\n"
     "  --help             show this text and exit\n";
 
@@ -147,6 +150,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--view-sheet") {
             if (auto value = takeValue(args, i, options.viewSheet, "--view-sheet", "a sheet name or a WAD entry");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--input-script") {
+            if (auto value = takeValue(args, i, options.inputScript, "--input-script", "the path of an input script");
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }

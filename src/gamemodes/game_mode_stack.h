@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "core/game_timer.h"
+#include "core/pads.h"
 #include "gamemodes/game_mode.h"
 
 namespace coney {
@@ -48,8 +49,8 @@ class GameModeStack {
     void step(const FrameTime& frame);
 
     /// Runs the main loop until the stack is empty, `beginFrame` returns false (the window was closed) or
-    /// `frameLimit` frames have run. Each frame calls `beginFrame` (when set), advances `timer` by one update and
-    /// runs step() with the time it advanced. Returns the number of frames run.
+    /// `frameLimit` frames have run. Each frame calls `beginFrame` (when set), updates the pads (samplePads()),
+    /// advances `timer` by one update and runs step() with the time it advanced. Returns the number of frames run.
     ///
     /// The loop does no pacing: the original paces itself by waiting for vertical sync in the frame's present
     /// (docs/research/boot.md#one-frame), which Coney's renderer will do; tests and `--frames` run flat out.
@@ -57,8 +58,26 @@ class GameModeStack {
     std::uint64_t runUntilEmpty(GameTimer& timer, const std::function<bool()>& beginFrame,
                                 std::optional<std::uint64_t> frameLimit);
 
+    /// Sets where the pad samples come from: SDL devices, a script, or null for none (the records then stay
+    /// disconnected). The source is not owned and must outlive its use by the stack.
+    void setInput(InputSource* input) { m_input = input; }
+
+    /// The pad records, which modes read their input from (`stack.pads().port(0)` in an update).
+    ///
+    /// The original's modes each call the pad update themselves (the legal screen, the memory-card check, the movie
+    /// player, a task in a level: docs/research/frontend.md#input); Coney's loop does it once for every frame
+    /// instead, so every mode sees the same fresh records, and a mode that ignores input (the legal screen) simply
+    /// never reads them.
+    [[nodiscard]] const Pads& pads() const { return m_pads; }
+
+    /// Updates the pad records with the input source's sample for frame `frame` (FrameTime::index); does nothing
+    /// without a source. runUntilEmpty() calls it each frame; a test that drives step() itself can call it too.
+    void samplePads(std::uint64_t frame);
+
   private:
     std::vector<GameMode*> m_modes; ///< Bottom first; never holds null.
+    Pads m_pads;
+    InputSource* m_input = nullptr; // where samplePads() reads from; not owned
 };
 
 } // namespace coney

@@ -5,8 +5,11 @@ add_library(coney_core STATIC
     core/chunk_system.cpp
     core/chunk_types.cpp
     core/game_timer.cpp
+    core/input_script.cpp
     core/name_hash.cpp
     core/options.cpp
+    core/pad.cpp
+    core/pads.cpp
     fileio/disc.cpp
     fileio/file_stream.cpp
     fileio/reader.cpp

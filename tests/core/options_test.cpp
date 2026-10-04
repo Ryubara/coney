@@ -163,3 +163,13 @@ TEST_CASE("the sheet viewer option takes a sheet and needs a disc and no other v
     CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--view-sheet", "a", "--load", "b"}).has_value());
     CHECK(coney::usageText().find("--view-sheet") != std::string_view::npos);
 }
+
+TEST_CASE("the input script option takes a file and may be given once", "[options]") {
+    auto scripted = parse(std::array<std::string_view, 3>{"--input-script", "menu.txt", "--headless"});
+    REQUIRE(scripted.has_value());
+    CHECK(scripted->inputScript == "menu.txt");
+    CHECK(scripted->headless);
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--input-script"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--input-script", "a", "--input-script", "b"}).has_value());
+    CHECK(coney::usageText().find("--input-script FILE") != std::string_view::npos);
+}

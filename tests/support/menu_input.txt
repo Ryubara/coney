@@ -1,0 +1,7 @@
+# A synthetic input script for the smoke test: START on port 1, then a menu move down and a cross that is let go.
+# Format: docs/guides/building.md#input-scripts
+2 tap start
+4 press down
+6 release down
+7 p2 connect
+8 tap cross

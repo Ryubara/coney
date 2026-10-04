@@ -157,6 +157,9 @@ back:
 | `0x00144ce0`, `0x00144d60`, `0x00144e50` | taps and holds over the 8-sample history (in-game use) |
 | `0x00144ef8`, `0x00144f48` | button combinations (all held, one newly pressed) |
 
+Until the research database names them, Coney's `@orig` tags call the first seven `Pad_ButtonsBack`, `Pad_Held`,
+`Pad_Pressed`, `Pad_Released`, `Pad_PressedRepeat`, `Pad_PressedMask` and `Pad_ReleasedMask` (our names).
+
 ## Behaviour
 
 ### From the movies to the main menu {#mode-flow}
@@ -389,12 +392,53 @@ Coney's choices, where the original does something else or the page is silent:
   exists.
 - The preload scripts `Enter` runs (`enum_preload.lua`, `config_preload.lua`) wait for a Lua system.
 
+**The pads** (`src/core/pad.h`, `Pad`; `src/core/pads.h`, `Pads`), written from [the pad record](#pad-record),
+[the queries](#pad-queries) and [the input section](#input):
+
+- `Pad` is one record: the 16-bit button word with the `libpad` bit layout (`coney::pad::kCross` and so on), a ring of
+  the last 8 words, the four hold counters (1 to 15, then 15 → 12), the diagonal rule, the sticks in [-1, 1] through
+  the 95..160 dead zone with y up, the raw stick and pressure bytes, and the queries: `buttons(n)`, `held`,
+  `pressed`, `released`, `pressedWithRepeat` (the auto-repeat of `0x00144ad0`) and the masked forms.
+- `Pads` holds the 8 records and updates records 0 and 4 from ports 1 and 2 (`Pads_Update`).
+- The input comes from an `InputSource`, asked once per frame for both ports' raw samples (`PadSample`: connected,
+  button word, the four stick bytes, the twelve pressure bytes). `GameModeStack::runUntilEmpty` updates the records
+  after the window's events and before the top mode's update; a mode reads them with `stack.pads().port(0)`. The
+  legal screen reads none, so its behaviour is unchanged.
+- Sources: `platform::SdlInput` (`src/platform/sdl_input.h`), SDL3 gamepads and the keyboard; and
+  `ScriptedInput` (`src/core/input_script.h`), which plays an input script (`--input-script FILE`, format and
+  controls in [Building and testing](../guides/building.md#controls)) for tests and headless runs.
+
+Coney's choices for the pads, where the original does something else or the page is silent:
+
+- The original's modes call `Pads_Update` themselves, each in its own place; Coney's main loop updates the pads once
+  for every frame, whatever the mode. The original's 6 ms rule (repeat the previous word when the last real read is
+  too recent) never applies, since Coney reads once per 1/30 s step.
+- A disconnected pad: the original stops its update after the read; Coney stores an empty word, clears the hold
+  counters and centres the sticks, so a pad pulled out mid-hold neither stays held nor keeps auto-repeating.
+- The diagonal rule with two directions at equal pressure keeps the first in pressure-byte order (right, left, up,
+  down). Digital inputs (keys, SDL buttons, scripts) report full pressure (255), so ties are the rule on PC: with the
+  arrow keys, up and right gives right, down and left gives left.
+- SDL's triggers are axes: their travel becomes the L2 and R2 pressure bytes, and the button counts as held from a
+  quarter of the travel. SDL's face buttons are positional (south is cross on any gamepad). The first gamepad plays
+  on port 1, the second on port 2; the keyboard always plays on port 1, which is therefore always connected in a
+  windowed run. A headless run without a script has no input source: every record stays disconnected.
+- Left out for now: the camera-turned left stick (`+0x00`, in game only), the Lua pad handlers (`PadSetHandler`; no
+  script system yet), vibration, the owning player (`+0x42`) and the sample time (`+0x48`).
+
 TODO for the analysts, found while implementing:
 
 - Names for the mode 5 functions: the `@orig` tags call them `Mode5::Enter` (`0x00159a58`), `Mode5::Update`
   (`0x00159ae0`) and `Mode5::Exit` (`0x00159ab8`) until the research database names them.
 - Does `legal_screen_euro` have a 16:9 counterpart in another region's build, or does the flag `0x02` with 16:9 pick
   `legal_screen_w`?
+- Names and file for the pad functions (`0x00144a08`-`0x00144bf0`, `0x00144fb0`, `0x001454a8`): the tags use our
+  names (above) and `(unknown)`. What is the second argument of `0x00144a80`, `0x00144a30` and `0x00144ad0`, passed
+  as 0 by every caller on this page?
+- `Pad_Update` order: are the hold counters counted from the word before the diagonal rule (as step 3 before step 4
+  reads, and as Coney does) or after it? Before means a direction the rule drops still auto-repeats.
+- The diagonal rule with equal pressures: which direction wins (strict or non-strict comparison, and in which
+  order)?
+- A disconnected pad: what does `Pad_Update` leave in the new ring slot, the hold counters and the sticks?
 
 What the implementer still needs:
 
@@ -408,10 +452,6 @@ What the implementer still needs:
   binding that is not ready yet can be a logged no-op, as long as `ShowProfileManager` pushes the menu mode.
 - The level table filled by `CfgLevelName`; `level100` as level 0.
 - `InitLevel` far enough to load `level100.lev`, its world and its dependency list, and to call `Menu.onStart`.
-- The pad model of [Data](#pad-record) on top of SDL3 gamepads: the 16-bit button word with the bit layout above,
-  sticks in [-1, 1] with the 95..160 dead zone (SDL's axes need mapping onto that byte range or an equivalent dead
-  zone), an 8-sample history, the hold counters and auto-repeat, the diagonal rule, and "pressed" and "released"
-  queries. In test mode the same record is filled from scripted input.
 - Menu commands exactly as in [the table](#input), with the 110 ms and 400 ms gaps, accept and back on release.
 - The profile manager screens and their transition table; `PM_Greet` (START, blinking text, 70 s attract movie) and
   `PM_Mode` (three items) first. Their drawing is on [GUI](gui.md).

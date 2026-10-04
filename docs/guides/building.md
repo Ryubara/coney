@@ -95,9 +95,10 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and seven smoke tests of the `coney` executable itself: it starts
+`ctest` runs the Catch2 unit tests (`coney_tests`) and nine smoke tests of the `coney` executable itself: it starts
 and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd` or `--view-sheet` without
-`--disc` and refuses a disc that does not exist. The unit tests build their disc images, archives and RenderWare texture
+`--disc`, refuses a disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and
+refuses one that does not exist. The unit tests build their disc images, archives and RenderWare texture
 dictionaries byte by byte; none needs the game or a GPU (the texture tests run librw on its NULL device). Two tests
 check your own disc, one every texture dictionary and one every sprite sheet and the sheet table; they run only when
 the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
@@ -117,7 +118,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
-      [--headless] [--help]
+      [--headless] [--help] [--input-script FILE]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -204,6 +205,63 @@ sheet's first glyph (-1 for a sheet that is not a font) and the texture's size.
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --view-sheet menu_system --frames 2 --screenshot ../../scratch/menu.png
 ```
+
+### Controls {#controls}
+
+In a window, Coney reads the keyboard and any gamepad SDL3 recognises, and turns them into the PS2 pad the game
+expects ([Front end](../research/frontend.md#coneys-implementation)). Nothing reads them yet: the legal screen
+ignores input, as in the original, and the menus are still to come.
+
+| PS2 pad | Gamepad (SDL3 names) | Keyboard (port 1) |
+| --- | --- | --- |
+| d-pad | d-pad | arrow keys |
+| left stick | left stick | W A S D (full deflection) |
+| right stick | right stick | none |
+| cross | south (A on Xbox, cross on PlayStation) | K or Space |
+| circle | east | L |
+| square | west | J |
+| triangle | north | I |
+| START | start | Enter |
+| SELECT | back | Backspace |
+| L1, R1 | left and right shoulder | Q, E |
+| L2, R2 | left and right trigger (held from a quarter of the travel) | 1, 3 |
+| L3, R3 | stick presses | F, H |
+
+The first gamepad connected plays on port 1, the second on port 2; the keyboard always plays on port 1, alongside
+the first gamepad. Escape quits. A headless run reads no devices.
+
+### Input scripts {#input-scripts}
+
+`--input-script FILE` replaces the keyboard and gamepads with a script, so a test or a headless run gets the same
+input every time without a human. Each line is `FRAME [p1|p2] ACTION ARGS`, where `FRAME` counts from 0 (the frame
+the line takes effect on); `#` starts a comment and blank lines are skipped. Frames must not go down from one line to
+the next.
+
+| Action | Meaning |
+| --- | --- |
+| `press BUTTON...` | hold the buttons from this frame on |
+| `release BUTTON...` | let them go from this frame on |
+| `tap BUTTON...` | hold them for this frame only: pressed on it, released on the next |
+| `stick left X Y`, `stick right X Y` | move a stick; X and Y are whole numbers from -100 to 100, right and up positive |
+| `connect`, `disconnect` | plug the pad in or pull it out |
+
+Buttons are `cross`, `circle`, `triangle`, `square`, `l1`, `r1`, `l2`, `r2`, `l3`, `r3`, `start`, `select`, `up`,
+`down`, `left` and `right`. The port defaults to `p1`; port 1 starts connected and port 2 does not. A held button
+reports full pressure. For example:
+
+```text
+# Press START on frame 150, then move down the menu and accept.
+150 tap start
+160 tap down
+170 tap cross
+200 p2 connect
+```
+
+```sh
+build/dev/src/platform/coney --headless --frames 300 --input-script ../../scratch/menu.txt
+```
+
+A script that cannot be read or has a bad line stops Coney at start-up with exit code 1 and the line's number.
 
 ## Sanitizers
 

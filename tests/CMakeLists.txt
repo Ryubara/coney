@@ -2,8 +2,10 @@
 add_executable(coney_tests
     core/chunk_system_test.cpp
     core/game_timer_test.cpp
+    core/input_script_test.cpp
     core/name_hash_test.cpp
     core/options_test.cpp
+    core/pad_test.cpp
     fileio/disc_test.cpp
     fileio/reader_test.cpp
     fileio/stream_test.cpp
@@ -23,6 +25,7 @@ add_executable(coney_tests
     graphics/texture_grid_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_textures_test.cpp
+    platform/sdl_input_test.cpp
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp)
 coney_target_defaults(coney_tests)

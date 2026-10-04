@@ -54,11 +54,19 @@ std::uint64_t GameModeStack::runUntilEmpty(GameTimer& timer, const std::function
         if (beginFrame && !beginFrame()) {
             break;
         }
+        // The pads are read once per frame, after the window's events (which carry the keyboard and gamepad state).
+        samplePads(frames);
         const std::uint64_t advanced = timer.update();
         step(FrameTime{frames, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
         ++frames;
     }
     return frames;
+}
+
+void GameModeStack::samplePads(std::uint64_t frame) {
+    if (m_input != nullptr) {
+        m_pads.update(m_input->sample(frame));
+    }
 }
 
 } // namespace coney

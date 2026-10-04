@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#pragma once
+
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <vector>
+
+#include "core/error.h"
+#include "core/pads.h"
+
+// No SDL type appears in this header, so code that holds an SdlInput stays platform-neutral and never includes SDL.
+
+namespace coney::platform {
+
+/// The raw PS2 stick byte for an SDL gamepad axis (-32768 to 32767, right or down positive): 0 at full left or up,
+/// 255 at full right or down, 128 at rest.
+[[nodiscard]] std::uint8_t stickByteFromAxis(std::int16_t axis);
+
+/// The pressure byte (0-255) for an SDL trigger axis (0 to 32767; negative values count as 0).
+[[nodiscard]] std::uint8_t pressureFromTrigger(std::int16_t axis);
+
+/// The lowest trigger pressure that counts as L2 or R2 held: a quarter of the travel, a Coney choice (the PS2's L2
+/// and R2 are buttons with pressure, an SDL trigger is an axis).
+inline constexpr std::uint8_t kTriggerHeldPressure = 64;
+
+/// Pad input from SDL3: gamepads through SDL's gamepad API, laid out as a PS2 pad, and the keyboard on port 1.
+///
+/// The first gamepad found plays on port 1, the second on port 2, in the order they were connected; a gamepad
+/// pulled out frees its port for the next. Port 1 is always connected, since the keyboard plays on it too; port 2
+/// only while it has a gamepad. The mapping (docs/guides/building.md#controls) is Coney's own: SDL names its face
+/// buttons by position, so south is cross, east circle, west square and north triangle on any gamepad.
+///
+/// It reads device state, not events, so it needs the window's event pump (Window::pumpEvents) to have run before
+/// each sample(); the stack's loop does that.
+///
+/// Research: docs/research/frontend.md#pad-record
+class SdlInput final : public InputSource {
+  public:
+    /// Starts SDL's gamepad support. Fails with ErrorCode::PlatformFailure, with SDL's reason, when SDL refuses.
+    /// Needs SDL's video started (the RenderEngine's window) for the keyboard, and must be destroyed before it.
+    [[nodiscard]] static std::expected<std::unique_ptr<SdlInput>, Error> start();
+
+    ~SdlInput() override;
+    SdlInput(const SdlInput&) = delete;
+    SdlInput& operator=(const SdlInput&) = delete;
+    SdlInput(SdlInput&&) = delete;
+    SdlInput& operator=(SdlInput&&) = delete;
+
+    /// The current state of the keyboard and the gamepads; `frame` is not needed, the devices are live.
+    [[nodiscard]] PortSamples sample(std::uint64_t frame) override;
+
+  private:
+    SdlInput() = default;
+
+    // Opens gamepads that appeared and closes those that went away, keeping the others in their order.
+    void refreshGamepads();
+
+    // One open gamepad: SDL's id and its SDL_Gamepad*, kept opaque here.
+    struct OpenGamepad {
+        std::uint32_t id;
+        void* handle;
+    };
+    std::vector<OpenGamepad> m_gamepads; // in connection order: the first is port 1's
+};
+
+} // namespace coney::platform

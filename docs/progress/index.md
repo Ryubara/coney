@@ -23,9 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.3% of the game's own code (9,048 of 3,342,408 bytes, 39 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.3% of the game's own code (9,048 of 3,342,408 bytes, 48 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
+
+9 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -71,7 +73,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,524,752 |
+| Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 9 | 1,524,752 |
 
 ## Research coverage
 
@@ -108,6 +110,15 @@ at the top of the repository's `README.md`.
 | `0x00144348` | `ChunkSystem_SetHandlers` | `Core` | 40 |
 | `0x00144370` | `ChunkSystem_RetagAsNullPointer` | `Core` | 40 |
 | `0x00144398` | `ChunkSystem_LoadGroupedContainer` | `Core` | 824 |
+| `0x00144a08` | `Pad_ButtonsBack` | `unattributed` | not filled in |
+| `0x00144a30` | `Pad_Released` | `unattributed` | not filled in |
+| `0x00144a80` | `Pad_Pressed` | `unattributed` | not filled in |
+| `0x00144ad0` | `Pad_PressedRepeat` | `unattributed` | not filled in |
+| `0x00144b88` | `Pad_Held` | `unattributed` | not filled in |
+| `0x00144ba8` | `Pad_ReleasedMask` | `unattributed` | not filled in |
+| `0x00144bf0` | `Pad_PressedMask` | `unattributed` | not filled in |
+| `0x00144fb0` | `Pad_Update` | `unattributed` | not filled in |
+| `0x001454a8` | `Pads_Update` | `unattributed` | not filled in |
 | `0x00145a10` | `GameTimer::Update` | `Device/ps2` | 952 |
 | `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |

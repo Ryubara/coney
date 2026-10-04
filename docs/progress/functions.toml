@@ -82,6 +82,51 @@ subsystem = "Core"
 size = 824
 
 [[function]]
+address = 0x00144a08
+name = "Pad_ButtonsBack"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00144a30
+name = "Pad_Released"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00144a80
+name = "Pad_Pressed"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00144ad0
+name = "Pad_PressedRepeat"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00144b88
+name = "Pad_Held"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00144ba8
+name = "Pad_ReleasedMask"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00144bf0
+name = "Pad_PressedMask"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00144fb0
+name = "Pad_Update"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x001454a8
+name = "Pads_Update"
+subsystem = "unattributed"
+
+[[function]]
 address = 0x00145a10
 name = "GameTimer::Update"
 subsystem = "Device/ps2"

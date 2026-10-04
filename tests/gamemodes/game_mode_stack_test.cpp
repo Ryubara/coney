@@ -3,11 +3,14 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/game_timer.h"
+#include "core/input_script.h"
+#include "core/pad.h"
 #include "gamemodes/game_mode.h"
 
 using coney::FrameTime;
@@ -131,4 +134,43 @@ TEST_CASE("the run loop stops at the frame limit or when the frame hook says so"
     };
     CHECK(stack.runUntilEmpty(timer, hook, std::nullopt) == 2);
     CHECK(stack.size() == 1);
+}
+
+namespace {
+
+/// A mode that records what port 1's record says was pressed in each update, and never leaves.
+class PadReadingMode final : public GameMode {
+  public:
+    [[nodiscard]] std::uint32_t id() const override { return 0x100; }
+    ModeResult update(GameModeStack& stack, const FrameTime& /*frame*/) override {
+        pressed.push_back(stack.pads().port(0).pressed());
+        return ModeResult::Stay;
+    }
+    std::vector<std::uint16_t> pressed; ///< pressed() of port 1, one entry per update.
+};
+
+} // namespace
+
+TEST_CASE("the run loop samples the pads from its input source before each update", "[game_mode_stack]") {
+    auto events = coney::parseInputScript("1 tap start\n3 press cross\n");
+    REQUIRE(events.has_value());
+    coney::ScriptedInput input(std::move(*events));
+    PadReadingMode mode;
+    GameModeStack stack;
+    stack.push(mode);
+    stack.setInput(&input);
+    GameTimer timer;
+    stack.runUntilEmpty(timer, {}, 5);
+    CHECK(mode.pressed == std::vector<std::uint16_t>{0, coney::pad::kStart, 0, coney::pad::kCross, 0});
+    CHECK(stack.pads().port(0).held(coney::pad::kCross));
+}
+
+TEST_CASE("without an input source the pads stay disconnected", "[game_mode_stack]") {
+    PadReadingMode mode;
+    GameModeStack stack;
+    stack.push(mode);
+    GameTimer timer;
+    stack.runUntilEmpty(timer, {}, 2);
+    CHECK_FALSE(stack.pads().port(0).connected());
+    CHECK(mode.pressed == std::vector<std::uint16_t>{0, 0});
 }

@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <expected>
 #include <format>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -19,6 +20,7 @@
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/game_timer.h"
+#include "core/input_script.h"
 #include "core/options.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
@@ -28,6 +30,7 @@
 #include "gamemodes/load_entry_mode.h"
 #include "gamemodes/sheet_viewer_mode.h"
 #include "platform/render_engine.h"
+#include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 #include "platform/texture_viewer_mode.h"
@@ -214,6 +217,27 @@ int main(int argc, char** argv) {
         // No disc: no game to run, only the idle screen.
         modes.push(idle);
     }
+
+    // Pad input (docs/research/frontend.md#input): a script in test mode, otherwise SDL's gamepads and keyboard when
+    // there is a window; a headless run without a script has no pads. Declared after the renderer, so it is destroyed
+    // before SDL stops.
+    std::unique_ptr<coney::InputSource> input;
+    if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
+        auto events = coney::loadInputScript(*scriptPath);
+        if (!events) {
+            std::fprintf(stderr, "coney: %s\n", events.error().message.c_str());
+            return 1;
+        }
+        input = std::make_unique<coney::ScriptedInput>(std::move(*events));
+    } else if (renderer.window()) {
+        auto devices = coney::platform::SdlInput::start();
+        if (devices) {
+            input = std::move(*devices);
+        } else {
+            std::fprintf(stderr, "coney: %s; running without pads\n", devices.error().message.c_str());
+        }
+    }
+    modes.setInput(input.get());
 
     // A screenshot is of the last frame, so it needs the frame limit (parseOptions makes sure of it).
     const std::optional<std::string> screenshotPath = options->screenshotPath;
