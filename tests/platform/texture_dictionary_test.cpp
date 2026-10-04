@@ -196,8 +196,12 @@ TEST_CASE("the headless renderer has no window and draws nothing", "[render_engi
     engine->requestCapture(0, "unused.png");
     engine->beginFrame({});
     engine->present();
-    REQUIRE(engine->capture().has_value());
-    CHECK_FALSE(engine->capture().value().has_value());
+    const auto& capture = engine->capture();
+    REQUIRE(capture.has_value());
+    // An `if` clang-tidy can follow: it does not know that REQUIRE stops the test.
+    if (capture) {
+        CHECK_FALSE(capture->has_value());
+    }
 }
 
 TEST_CASE("only one renderer runs at a time and another can start after it", "[render_engine]") {
