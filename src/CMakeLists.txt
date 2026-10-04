@@ -68,6 +68,18 @@ add_library(coney_core STATIC
     world/world_manifest.cpp
     world/world_streamer.cpp
     world/world_streams.cpp)
+# Characters: the animation format and player, and the character resources (docs/research/characters.md).
+target_sources(coney_core PRIVATE
+    animation/anim_clip.cpp
+    animation/anim_math.cpp
+    animation/anim_pose.cpp
+    animation/skeleton.cpp
+    characters/character_assets.cpp
+    characters/character_data.cpp
+    characters/character_list.cpp
+    characters/character_model.cpp
+    characters/character_rig.cpp
+    characters/clump_reader.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_subdirectory(platform)

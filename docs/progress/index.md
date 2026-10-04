@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 2.0%](https://img.shields.io/badge/reimplemented-2.0%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 2.1%](https://img.shields.io/badge/reimplemented-2.1%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% of the game's own code (66,000 of 3,342,408 bytes, 179 functions) |
+| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,408 bytes, 193 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▋░░░░░░░░░░░░░` | 4 of 12 done |
 
@@ -50,7 +50,7 @@ at the top of the repository's `README.md`.
 
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
-| `Animation` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 37,160 |
+| `Animation` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 2 | 37,160 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 31,208 |
 | `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 118,632 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
@@ -58,7 +58,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 4 | 32,152 |
 | `FileIO` | `▋░░░░░░░░░░░░░░░░░░░` | 3.3% | 2 | 6,480 |
 | `GameModes` | `██▏░░░░░░░░░░░░░░░░░` | 10.7% | 22 | 51,816 |
-| `Graphics` | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% | 23 | 189,024 |
+| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 27 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 31 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
@@ -74,7 +74,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.0% | 8 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 25 | 1,524,752 |
+| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% | 33 | 1,524,752 |
 
 ## Research coverage
 
@@ -100,6 +100,12 @@ at the top of the repository's `README.md`.
 
 | Address | Original name | Subsystem | Bytes |
 | --- | --- | --- | --- |
+| `0x00101120` | `Skeleton_InitParents` | `unattributed` | 304 |
+| `0x001041f8` | `AnimCursor_Init` | `unattributed` | 536 |
+| `0x001044a0` | `AnimCursor_Advance` | `unattributed` | 208 |
+| `0x001045e0` | `AnimData_OnLoaded` | `unattributed` | 80 |
+| `0x00104ce0` | `AnimCursor_SamplePose` | `Animation` | 1,144 |
+| `0x00105158` | `Pose_BlendPartial` | `Animation` | 848 |
 | `0x00143f68` | `Crc32_Hash` | `Core` | 112 |
 | `0x00143fd8` | `Crc32_Lowercase` | `Core` | 120 |
 | `0x001440a0` | `ChunkSystem_PopObject` | `Core` | 40 |
@@ -148,6 +154,11 @@ at the top of the repository's `README.md`.
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
 | `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
 | `0x00161218` | `RunPreloadScripts` | `GameModes` | 152 |
+| `0x0016e258` | `CharacterData_OnLoaded` | `unattributed` | 304 |
+| `0x0016e8f0` | `ResourceManager_LoadCharacterData` | `Graphics` | 304 |
+| `0x00175080` | `CharacterInstance_GetAnim` | `Graphics` | 160 |
+| `0x00178098` | `CharacterList_OnLoaded` | `Graphics` | 56 |
+| `0x001783d0` | `ResourceManager_LoadCharacterModel` | `Graphics` | 288 |
 | `0x00179808` | `Font_Size` | `Graphics` | 240 |
 | `0x00179958` | `Font_Measure` | `Graphics` | 728 |
 | `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
@@ -206,6 +217,9 @@ at the top of the repository's `README.md`.
 | `0x0020a268` | `PM_Mode::HandleCommand` | `GUI` | 416 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
+| `0x00336a00` | `QuaternionSlerp` | `unattributed` | 440 |
+| `0x00336bb8` | `VectorLerp` | `unattributed` | 64 |
+| `0x00336bf8` | `QuaternionNlerp` | `unattributed` | 160 |
 | `0x00337920` | `RayTriangle_OneSided` | `unattributed` | not filled in |
 | `0x00337a60` | `RayTriangle_TwoSided` | `unattributed` | not filled in |
 | `0x0034f740` | `Collision_MarchRay` | `unattributed` | not filled in |

@@ -244,6 +244,33 @@ animations, one `0x45`, one `0x08`), model `0xdb1cdf36`, textures `0x46af47d8`. 
 **Disc survey (counts only):** 153 distinct skinned models, all with 33 frames, 32 HAnim bones, key size 36, a PS2
 skin and a 544-byte bone offset chunk; 1,209 Character Data and Anim Range List chunks.
 
+### Character geometry {#character-geometry}
+
+What the model's bytes hold beyond the clump's sections, found by Coney's decoder and its disc test over the 128
+models the Character List names (no code was read for this subsection, so it is corroboration (disc) unless marked).
+
+- **The native geometry** is the world's PS2 layout ([Graphics](graphics.md)) with a fifth slot: `STCYCL 5,1` and
+  five `UNPACK`s per batch, slot 0 positions (`V4_16`), slot 1 texture coordinates (`V4_16`, two sets), slot 2
+  colours (`V4_8` unsigned, all zero in the characters checked), slot 3 normals (`V4_8`) and slot 4 the **bone
+  weights** (`V4_32`, format `0x6c`). Vertex counts match the mesh plugin's in every model.
+- **A weight** is a float whose low 10 bits are replaced by `(node index + 1) << 2`, or 0 for an unused slot; the
+  weight is the float with those bits cleared. The same encoding as librw's PS2 skin reader.
+- **One mesh, one material**, colour `0x969696ff`, and the material is **not textured** (no texture section): every
+  character's texture dictionary holds exactly one texture (507 dictionaries), named after the character in 427 of
+  them. How the game binds that texture to the material is open.
+- **The skin's inverse bind matrices** are the inverses of the HAnim frames' world matrices (checked to float
+  precision for every model).
+- **Frames to pose bones**: frame 0 is the clump's root, frame 1 carries HAnim id 0 and the hierarchy; node index
+  equals id on the disc, and the pose bone of HAnim id `n` is `n + 2` ([Animation](formats/animation.md)), so pose
+  bones 0 and 1 have no frame. Inferred, from the next point.
+- **Pose axes are the clump's turned +90° about x**, `(x, y, z) → (x, −z, y)`: the bone offset chunk's entries are
+  the frames' translations turned so (bone `n + 2` against frame of id `n`), and of the 24 axis rotations this one
+  gives the smallest mismatch between clip-posed joints and the bind skeleton (0.022 m for Rembrandt's walk, 0.054 m
+  for the next best). In pose space z is up and a character faces +y (the walk's root velocity is +y). Inferred.
+- **The parent table differs from the frames in one place**: pose bone 3's parent is 1 in `Skeleton_InitParents`
+  (`0x00101120`), while its frame's parent is HAnim id 0 (pose bone 2). Inferred (Coney follows the table).
+- The float at `+4` of the bone offset chunk (entry 0's `y`) is 0 in every model.
+
 ### Movement constants {#movement-constants}
 
 Confirmed (code) at the readers; values from `.data`.
@@ -454,8 +481,29 @@ reaches 14.9 m/s after about 7.1 m and 20.5 m/s after 13.4 m (inferred from the 
 
 ## Coney's implementation
 
-None yet. Coney loads RW clumps for the world ([The streamed world](world.md#coneys-implementation)) but has no
-human, character resource or animation code.
+Coney loads a character's three resources and plays its clips, without the human, movement or controller:
+
+- `src/characters/character_list.*` reads the Character List from `warriors.glr` and finds a record by model name;
+  `character_assets.*` loads the three resources by the records' hashes (`"%u"` file names).
+- `src/characters/clump_reader.*` and `character_model.*` decode the clump (frames, HAnim, skin, material) and the
+  native geometry, with the shared PS2 decoder in `src/graphics/ps2_world_mesh.*`, into merged skinned vertices and
+  triangles; no librw outside `src/platform/`.
+- `src/characters/character_data.*` resolves the 722 anim ids to clips ([Animation](formats/animation.md)): the
+  distinct slot values, smallest first, each take the next clip popped off the object stack, which gives Rembrandt's
+  408 walk and 413 walk-start as above.
+- `src/characters/character_rig.*` builds the skeleton and the skinning matrices (pose bone `n + 2` · the pose turn
+  · the inverse bind matrix) and skins on the CPU.
+- `--view-character [NAME] [--anim CLIP]` ([Building](../guides/building.md#the-character-viewer)) shows a skinned
+  character playing a clip in place on the fixed 30 Hz step, with a pad-driven orbit camera.
+
+**Disc test** (`[characters]`, counts only): all 543 records load (128 models, 52 character data resources, 507
+dictionaries); 150,509 vertices and 155,493 triangles; 1,692 clips and 2,843 resolved ids; the joint mismatch of a
+clip's first pose against the bind skeleton averages 0.054 m (worst 0.106 m).
+
+**Coney choices** where the research is silent: the material takes its dictionary's only texture; bones 0 and 1
+rest at the identity; slots set to the default (`0xffffffff`) stay unresolved, since the resource manager's default
+table is not decoded; weights are used as stored, not renormalised; the viewer's lights, camera and clip keys are
+Coney's own.
 
 ## Notes for implementers
 
@@ -488,5 +536,10 @@ human, character resource or animation code.
 - **Jog**: when a pad-controlled human jogs other than when carrying (a movement style, a script).
 - **Slots 28-33** and the movement styles of `0x00253688`.
 - **The `+0x65c` scale's source**: what the division in `Human_Init` takes.
+- **How the texture reaches the material**, which names none ([Character geometry](#character-geometry)).
+- **The rest rotations of pose bones 0-2** and why bone 3's parent in the table differs from its frame's.
+- **The vertex colour slot** (zeros in every character checked) and **the second texture coordinate set**: what
+  the renderer does with them.
+- **The default anim table** at resource manager `+0x70`, which answers the slots set to `0xffffffff`.
 - **The rest of the human**: the 0x180 and 0x2f0 records, the state flags tested by `0x002265f0` / `0x00226660`, and
   `Human_MakePlayer`'s steps.

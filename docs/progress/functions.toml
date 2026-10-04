@@ -16,6 +16,42 @@
 # A function without a size is listed but adds no bytes until its size is filled in.
 
 [[function]]
+address = 0x00101120
+name = "Skeleton_InitParents"
+subsystem = "unattributed"
+size = 304
+
+[[function]]
+address = 0x001041f8
+name = "AnimCursor_Init"
+subsystem = "unattributed"
+size = 536
+
+[[function]]
+address = 0x001044a0
+name = "AnimCursor_Advance"
+subsystem = "unattributed"
+size = 208
+
+[[function]]
+address = 0x001045e0
+name = "AnimData_OnLoaded"
+subsystem = "unattributed"
+size = 80
+
+[[function]]
+address = 0x00104ce0
+name = "AnimCursor_SamplePose"
+subsystem = "Animation"
+size = 1144
+
+[[function]]
+address = 0x00105158
+name = "Pose_BlendPartial"
+subsystem = "Animation"
+size = 848
+
+[[function]]
 address = 0x00143f68
 name = "Crc32_Hash"
 subsystem = "Core"
@@ -293,6 +329,36 @@ address = 0x00161218
 name = "RunPreloadScripts"
 subsystem = "GameModes"
 size = 152
+
+[[function]]
+address = 0x0016e258
+name = "CharacterData_OnLoaded"
+subsystem = "unattributed"
+size = 304
+
+[[function]]
+address = 0x0016e8f0
+name = "ResourceManager_LoadCharacterData"
+subsystem = "Graphics"
+size = 304
+
+[[function]]
+address = 0x00175080
+name = "CharacterInstance_GetAnim"
+subsystem = "Graphics"
+size = 160
+
+[[function]]
+address = 0x00178098
+name = "CharacterList_OnLoaded"
+subsystem = "Graphics"
+size = 56
+
+[[function]]
+address = 0x001783d0
+name = "ResourceManager_LoadCharacterModel"
+subsystem = "Graphics"
+size = 288
 
 [[function]]
 address = 0x00179808
@@ -635,6 +701,24 @@ size = 88
 address = 0x0024e720
 name = "PathData_OnLoaded"
 subsystem = "Human"
+
+[[function]]
+address = 0x00336a00
+name = "QuaternionSlerp"
+subsystem = "unattributed"
+size = 440
+
+[[function]]
+address = 0x00336bb8
+name = "VectorLerp"
+subsystem = "unattributed"
+size = 64
+
+[[function]]
+address = 0x00336bf8
+name = "QuaternionNlerp"
+subsystem = "unattributed"
+size = 160
 
 [[function]]
 address = 0x00337920

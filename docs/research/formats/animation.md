@@ -185,7 +185,19 @@ the channel count equals the mask's bit count in all; at most 606 keys in a chan
 
 ## Coney's implementation
 
-None yet.
+`src/animation/` holds the format and the player, pure and deterministic: `anim_clip.*` parses a descriptor and its
+keyframes into channels and pairs them as the chunk system loads them; `anim_pose.*` samples a clip into a pose
+(search per channel, lerp or nlerp, the last key held), blends poses and steps a cursor; `skeleton.*` holds the
+parent table and turns a pose into bone transforms; `anim_math.*` the vectors, quaternions and matrices. The
+characters' skinning is on [Characters](../characters.md#coneys-implementation).
+
+**Disc test** (`[anim]`, counts only): 5,127 resources, 31,274 occurrences, 1,875 distinct clips, none failing,
+unpaired or sampling to a non-finite pose; 957 clips have no section A, none lacks B; 9,468 events.
+
+**Coney choices**: the rate is 1 (where the flags `0x800`-`0x2000` live is not known to Coney); "entry `+4`" of the
+bone offset chunk is read literally, the float at byte 4, which is 0 on the disc; bones without a channel keep the
+model's bind rotation; root motion is not applied, so the viewer plays clips in place; a looping clip carries its
+overshoot into the next pass.
 
 ## Notes for implementers
 
@@ -207,4 +219,5 @@ None yet.
 - The event types (11 is the most common) and what they trigger (footsteps, sounds, hit windows; speculative).
 - How section A drives the character during a start clip (confirm by comparing a clip's keys with the speeds
   sampled at runtime).
-- The exact HAnim bone ↔ pose bone mapping (inferred above, not checked).
+- The exact HAnim bone ↔ pose bone mapping (inferred above; Coney's disc test supports `n + 2`,
+  [Character geometry](../characters.md#character-geometry)).

@@ -66,6 +66,18 @@ add_executable(coney_tests
     world/world_manifest_test.cpp
     world/world_streamer_test.cpp
     world/world_streams_test.cpp)
+# Characters: the animation format and player, and the character resources.
+target_sources(coney_tests PRIVATE
+    animation/anim_clip_test.cpp
+    animation/anim_math_test.cpp
+    animation/anim_pose_test.cpp
+    animation/disc_anim_clips_test.cpp
+    animation/skeleton_test.cpp
+    characters/character_data_test.cpp
+    characters/character_list_test.cpp
+    characters/character_model_test.cpp
+    characters/character_rig_test.cpp
+    characters/disc_characters_test.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
