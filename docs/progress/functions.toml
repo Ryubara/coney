@@ -335,10 +335,118 @@ subsystem = "unattributed"
 size = 64
 
 [[function]]
+address = 0x001a1bf8
+name = "BaseWidget::BaseWidget"
+subsystem = "unattributed"
+size = 56
+
+[[function]]
+address = 0x001a2690
+name = "BaseWidget_AddSprite"
+subsystem = "GUI"
+size = 640
+
+[[function]]
+address = 0x001a8e30
+name = "Widget::Widget"
+subsystem = "GUI"
+size = 72
+
+[[function]]
 address = 0x001b9600
 name = "TextWidget_Layout"
 subsystem = "GUI"
 size = 5664
+
+[[function]]
+address = 0x001c7e80
+name = "ScreenFlowController::ScreenFlowController"
+subsystem = "GUI"
+size = 400
+
+[[function]]
+address = 0x001c8010
+name = "ScreenFlowController_AddTransition"
+subsystem = "GUI"
+size = 184
+
+[[function]]
+address = 0x001c80e8
+name = "ScreenFlowController_Push"
+subsystem = "GUI"
+size = 256
+
+[[function]]
+address = 0x001c81e8
+name = "ScreenFlowController_Unwind"
+subsystem = "GUI"
+size = 256
+
+[[function]]
+address = 0x001c82e8
+name = "ScreenFlowController_Pop"
+subsystem = "GUI"
+size = 224
+
+[[function]]
+address = 0x001c83c8
+name = "ScreenFlowController_Update"
+subsystem = "GUI"
+size = 456
+
+[[function]]
+address = 0x001ccf88
+name = "TextWidget::TextWidget"
+subsystem = "GUI"
+size = 56
+
+[[function]]
+address = 0x001cd1e0
+name = "TextWidget_SetText"
+subsystem = "GUI"
+size = 160
+
+[[function]]
+address = 0x001cea70
+name = "UsageInfo::UsageInfo"
+subsystem = "GUI"
+size = 64
+
+[[function]]
+address = 0x001cec28
+name = "UsageInfo_SetText"
+subsystem = "GUI"
+size = 80
+
+[[function]]
+address = 0x001d3ef0
+name = "OptionGrid::OptionGrid"
+subsystem = "GUI"
+size = 136
+
+[[function]]
+address = 0x001d4110
+name = "OptionGrid_Setup"
+subsystem = "GUI"
+size = 240
+
+[[function]]
+address = 0x001d4230
+name = "OptionGrid_AddItem"
+subsystem = "GUI"
+size = 440
+
+[[function]]
+address = 0x001d4d28
+name = "OptionGrid_TakeFocus"
+subsystem = "GUI"
+size = 144
+
+[[function]]
+address = 0x001e95c0
+name = "MenuInput_Dispatch"
+subsystem = "GUI"
+size = 1080
 
 [[function]]
 address = 0x0035e5d0

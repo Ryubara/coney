@@ -30,9 +30,16 @@ add_library(coney_core STATIC
     graphics/screen.cpp
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
+    gui/base_widget.cpp
     gui/global_strings.cpp
     gui/markup.cpp
+    gui/menu_input.cpp
+    gui/option_grid.cpp
+    gui/screen_flow_controller.cpp
     gui/text_layout.cpp
+    gui/text_widget.cpp
+    gui/usage_info.cpp
+    gui/widget.cpp
     scripting/config_strings.cpp
     scripting/lua_chunk.cpp
     scripting/lua_value.cpp

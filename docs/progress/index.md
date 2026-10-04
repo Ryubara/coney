@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 0.5%](https://img.shields.io/badge/reimplemented-0.5%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 0.7%](https://img.shields.io/badge/reimplemented-0.7%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.5% of the game's own code (17,200 of 3,342,408 bytes, 76 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.7% of the game's own code (22,144 of 3,342,408 bytes, 94 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
@@ -58,7 +58,7 @@ at the top of the repository's `README.md`.
 | `FileIO` | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 1 | 6,480 |
 | `GameModes` | `▉░░░░░░░░░░░░░░░░░░░` | 4.6% | 9 | 51,816 |
 | `Graphics` | `▋░░░░░░░░░░░░░░░░░░░` | 2.9% | 19 | 189,024 |
-| `GUI` | `▎░░░░░░░░░░░░░░░░░░░` | 1.2% | 1 | 481,192 |
+| `GUI` | `▌░░░░░░░░░░░░░░░░░░░` | 2.2% | 18 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 11 | 1,524,752 |
+| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 12 | 1,524,752 |
 
 ## Research coverage
 
@@ -154,7 +154,25 @@ at the top of the repository's `README.md`.
 | `0x00198e20` | `SectorPlugin_StreamRead` | `Graphics` | not filled in |
 | `0x0019ee70` | `GlobalString_Get` | `unattributed` | 48 |
 | `0x0019eea0` | `GlobalString_Set` | `unattributed` | 64 |
+| `0x001a1bf8` | `BaseWidget::BaseWidget` | `unattributed` | 56 |
+| `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
+| `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
 | `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
+| `0x001c7e80` | `ScreenFlowController::ScreenFlowController` | `GUI` | 400 |
+| `0x001c8010` | `ScreenFlowController_AddTransition` | `GUI` | 184 |
+| `0x001c80e8` | `ScreenFlowController_Push` | `GUI` | 256 |
+| `0x001c81e8` | `ScreenFlowController_Unwind` | `GUI` | 256 |
+| `0x001c82e8` | `ScreenFlowController_Pop` | `GUI` | 224 |
+| `0x001c83c8` | `ScreenFlowController_Update` | `GUI` | 456 |
+| `0x001ccf88` | `TextWidget::TextWidget` | `GUI` | 56 |
+| `0x001cd1e0` | `TextWidget_SetText` | `GUI` | 160 |
+| `0x001cea70` | `UsageInfo::UsageInfo` | `GUI` | 64 |
+| `0x001cec28` | `UsageInfo_SetText` | `GUI` | 80 |
+| `0x001d3ef0` | `OptionGrid::OptionGrid` | `GUI` | 136 |
+| `0x001d4110` | `OptionGrid_Setup` | `GUI` | 240 |
+| `0x001d4230` | `OptionGrid_AddItem` | `GUI` | 440 |
+| `0x001d4d28` | `OptionGrid_TakeFocus` | `GUI` | 144 |
+| `0x001e95c0` | `MenuInput_Dispatch` | `GUI` | 1,080 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0040e2d8` | `WorldManager_Preload` | `World` | not filled in |
 | `0x0040e8d8` | `WorldManager_Render` | `World` | not filled in |

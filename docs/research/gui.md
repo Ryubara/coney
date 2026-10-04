@@ -414,6 +414,22 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   characters `0x91`-`0xa0` are exactly the button pictures of the tag table, while in `big_font` they are empty but for
   a triangle at `0x9c`; `big_font`'s rectangles 256-261 hold a circle and five d-pad pictures. Inferred from viewing
   the sheets with `--view-sheet`).
+- **The screen flow** (`src/gui/screen_flow_controller.h`, `ScreenFlowController`, `ScreenFlowState`), as
+  [above](#screen-flow): per-screen transitions (`0x001c8010`), push (`0x001c80e8`), pop (`0x001c82e8`), unwind
+  (`0x001c81e8`) and update (`0x001c83c8`) with the results "stay" (`-0x100`) and "back" (`-0xff`); a code without a
+  transition is ignored; the flow is done when its stack is empty. Coney's choice: `exit` is called only on an entered
+  screen, so unwinding exits the top screen alone (the covered ones were exited when they were covered).
+- **Widgets** (`src/gui/widget.h` and beside it): `Widget` (`0x001a8e30`) with `init` once (until `shutdown`),
+  `update` with the frame's game time and the player's pad, `render` into batches, and visibility. `BaseWidget`
+  (`0x001a1bf8`, its sprite `0x001a2690`): one rectangle of a sheet as one sprite, after the black shadow at (0.0025,
+  0.004) with alpha × 128 / 255. `TextWidget` (`0x001ccf88`, text `0x001cd1e0`): a text through `layoutText`, with a
+  fade and its own time for `<PULSE>` and `<DISPLAYTIME>`; it draws with a shadow of 128. `OptionGrid` (`0x001d3ef0`,
+  setup `0x001d4110`, add item `0x001d4230` up to 50, focus `0x001d4d28`): items with codes, the selected one at 1.15
+  times the size; up and down move, accept returns the code. `UsageInfo` (`0x001cea70`, text `0x001cec28`): the
+  legend line. Coney's choices where the page is silent: a sprite widget's rectangle is its centre and size; the grid
+  is one column whose selection wraps, left and right do nothing, the selected item is white and the others grey
+  (160), and its layout (top, spacing, box) is the owner's; the usage line is a centred text. The screens that use them
+  are on [Front end](frontend.md#coneys-implementation).
 - **The `METRICS1` file** is not read: no code uses it ([above](#the-metrics1-file)), and the fonts' metrics come from
   their sheets' rectangles.
 - `coney --disc <disc> --view-text <font> <text or @id>` lays a text out and draws it through a batch per font and
@@ -463,6 +479,12 @@ TODO for the analysts, found while implementing:
   of `<PULSE>`'s swing; whether the shadow is drawn per glyph (Coney) or under the whole string first.
 - Names: the `@orig` tags call `0x00179808`, `0x00179958` and `0x00179c30` `Font_Size`, `Font_Measure` and
   `Font_Draw`, and `0x001b9600` `TextWidget_Layout`, all with file `(unknown)`.
+- **Widget geometry:** where a sprite widget's rectangle is anchored (Coney: its centre) and what the setup slot
+  `+0x6c`'s flags do; the `OptionGrid`'s rows, columns, spacing and item colours.
+- Names: the `@orig` tags call `0x001a2690` `BaseWidget_AddSprite`, `0x001cd1e0` `TextWidget_SetText`, `0x001cec28`
+  `UsageInfo_SetText`, `0x001d4110` `OptionGrid_Setup`, `0x001d4230` `OptionGrid_AddItem`, `0x001d4d28`
+  `OptionGrid_TakeFocus` and the screen-flow functions `ScreenFlowController_AddTransition`, `_Push`, `_Pop`,
+  `_Unwind` and `_Update`, until the research database names them.
 - Names: the `@orig` tags call `0x0019ee70` `GlobalString_Get`, `0x0019eea0` `GlobalString_Set` and `0x0035e5d0`
   `CfgHUDMessage` with file `(unknown)` until the research database names them.
 
@@ -470,8 +492,8 @@ What the implementer still needs:
 
 - The other instance formats (1, a 2D rotation; 2, a full matrix), the resource manager's 255 instance slots and
   the worlds an instance can live in (3D overlay, 2D overlay), where the original's pass finds its batches.
-- Widgets with `Init`, `Update`, `Render`, `Shutdown`, focus; the screen flow with push, pop, unwind and a per-screen
-  transition table, entering and exiting covered screens as described.
+- The widget base's other slots (setup with a rectangle and flags, the rectangle, active, the text reveal) and the
+  message box.
 - Text widgets around the layout: the reveal fraction, `<SOUND>` played once, `<FREEZE>` on the game timer, and
   the open tags above (`MONEYFONT` first: the menus use it around every button glyph).
 

@@ -28,7 +28,10 @@ add_executable(coney_tests
     graphics/texture_grid_test.cpp
     gui/disc_text_test.cpp
     gui/markup_test.cpp
+    gui/menu_input_test.cpp
+    gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
+    gui/widgets_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp
