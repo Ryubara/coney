@@ -2,6 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "graphics/ps2_world_mesh.h"
+#include "support/character_fixtures.h"
 #include "support/world_fixtures.h"
 
 using coney::ErrorCode;
@@ -156,4 +157,26 @@ TEST_CASE("the default decoder refuses the game's packed layout and broken strip
     auto broken = coney::graphics::decodePs2DefaultMesh(defaultChain({{0, 1, 2}, {5, 6, 7}}).span(), true);
     REQUIRE_FALSE(broken.has_value());
     CHECK(broken.error().code == ErrorCode::Invalid);
+}
+
+TEST_CASE("a skinned chain decodes its fifth slot, the bone weights", "[ps2_world_mesh]") {
+    // Two batches of a strip, five slots a vertex (STCYCL 5, 1), as the characters' geometry is.
+    const auto a = coney::test::skinnedVertex(1, 0, 0, 3);
+    const auto b = coney::test::skinnedVertex(2, 0, 0, 4, 0.75F, 9);
+    const auto c = coney::test::skinnedVertex(3, 0, 0, 31);
+    const auto d = coney::test::skinnedVertex(4, 0, 0, 0);
+    const Bytes chain = coney::test::ps2SkinnedMeshChain({{a, b, c}, {b, c, d}});
+    auto mesh = decodePs2WorldMesh(chain.span(), true);
+    REQUIRE(mesh.has_value());
+    CHECK(mesh->attributes.skin);
+    CHECK(mesh->attributes.normals);
+    REQUIRE(mesh->vertices.size() == 4);
+    CHECK(mesh->vertices[1].skin == b.skin);
+    CHECK(mesh->vertices[3].skin == d.skin);
+    CHECK(mesh->vertices[3].position[0] == 4);
+
+    // The world's chains carry no weights.
+    auto world = decodePs2WorldMesh(ps2MeshChain({{ps2Vertex(1, 2, 3), ps2Vertex(4, 5, 6)}}, true).span(), false);
+    REQUIRE(world.has_value());
+    CHECK_FALSE(world->attributes.skin);
 }

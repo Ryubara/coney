@@ -13,7 +13,8 @@
 // The PS2 native geometry of the streamed world's atomics, decoded without RenderWare. Each mesh is a DMA chain that
 // feeds the PS2's vector unit 1 the vertices in batches, packed as integers; the game's own pipelines (right to render
 // 0x30082 and 0x30083) unpack them. librw's PS2 reader keeps these chains but cannot unpack this layout, so Coney does
-// it here. Layout and evidence: docs/research/world.md#ps2-world-geometry.
+// it here. Layout and evidence: docs/research/world.md#ps2-world-geometry. The skinned characters' geometry is the same
+// layout with a fifth slot of bone weights (docs/research/characters.md#character-geometry), so it decodes here too.
 
 namespace coney::graphics {
 
@@ -23,6 +24,7 @@ struct Ps2PackedVertex {
     std::array<std::int16_t, 4> texCoords{}; ///< u, v of the first set, then u, v of the second (0 with one set).
     std::array<std::uint8_t, 4> colour{};    ///< Prelighting colour, RGBA.
     std::array<std::int8_t, 4> normal{};     ///< x, y, z, then padding.
+    std::array<std::uint32_t, 4> skin{};     ///< Skinned geometry only: four weights with their bone in the low bits.
 
     friend bool operator==(const Ps2PackedVertex&, const Ps2PackedVertex&) = default;
 };
@@ -32,6 +34,7 @@ struct Ps2Attributes {
     std::uint32_t texCoordSets = 0; ///< 0, 1 (V2_16) or 2 (V4_16).
     bool colours = false;
     bool normals = false;
+    bool skin = false; ///< A fifth slot of bone weights (V4_32), as skinned characters have.
 };
 
 /// A decoded mesh: its vertices in strip (or list) order, the batches joined.
@@ -45,9 +48,9 @@ struct Ps2WorldMesh {
 /// from the chain's start). Walks the tags (cnt, ref, refs, ret, end, refe), runs the VIF commands they carry and
 /// collects each batch: up to four interleaved UNPACKs (STCYCL 4, 1) to vector-unit slots 0 to 3 with position
 /// (V4_16, always), texture coordinates (V4_16 for two sets, V2_16 for one), colour (V4_8 unsigned) and normal (V4_8),
-/// ended by ITOP (the batch's real vertex count; each slot may unpack a few more, as padding) and a microprogram
-/// start. In a strip, every batch after the first
-/// repeats the last two vertices of the one before, so those are dropped when joining.
+/// or five (STCYCL 5, 1) with the bone weights (V4_32) in slot 4 for skinned geometry, ended by ITOP (the batch's real
+/// vertex count; each slot may unpack a few more, as padding) and a microprogram start. In a strip, every batch after
+/// the first repeats the last two vertices of the one before, so those are dropped when joining.
 ///
 /// Fails with ErrorCode::Truncated when a tag, command or UNPACK runs past the chain, and ErrorCode::Invalid for a
 /// layout other than the one above: an unknown DMA tag or VIF command, masked or offset unpacks, a slot with another

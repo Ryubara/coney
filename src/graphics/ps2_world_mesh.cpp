@@ -48,18 +48,21 @@ constexpr std::uint32_t kV2_32 = 0x04;
 constexpr std::uint32_t kV2_16 = 0x05;
 constexpr std::uint32_t kV3_32 = 0x08;
 constexpr std::uint32_t kV3_8 = 0x0A;
+constexpr std::uint32_t kV4_32 = 0x0C;
 constexpr std::uint32_t kV4_16 = 0x0D;
 constexpr std::uint32_t kV4_8 = 0x0E;
 constexpr std::uint32_t kUnpackMasked = 0x10;
 constexpr std::uint32_t kUnpackUnsigned = 0x4000;
 constexpr std::uint32_t kUnpackAddressMask = 0x3FF;
 
-// The vertex attributes, by vector-unit slot.
-constexpr std::size_t kSlots = 4;
+// The vertex attributes, by vector-unit slot: four for the world, a fifth (bone weights) for skinned characters.
+constexpr std::size_t kSlots = 5;
+constexpr std::size_t kWorldSlots = 4;
 constexpr std::size_t kSlotPosition = 0;
 constexpr std::size_t kSlotTexCoords = 1;
 constexpr std::size_t kSlotColour = 2;
 constexpr std::size_t kSlotNormal = 3;
+constexpr std::size_t kSlotSkin = 4;
 
 // The format (and signedness) each slot must have. Texture coordinates come as one set (V2_16) or two (V4_16).
 struct SlotFormat {
@@ -67,8 +70,11 @@ struct SlotFormat {
     std::uint32_t alternative;
     bool isUnsigned;
 };
-constexpr std::array<SlotFormat, kSlots> kSlotFormats{
-    {{kV4_16, kV4_16, false}, {kV4_16, kV2_16, false}, {kV4_8, kV4_8, true}, {kV4_8, kV4_8, false}}};
+constexpr std::array<SlotFormat, kSlots> kSlotFormats{{{kV4_16, kV4_16, false},
+                                                       {kV4_16, kV2_16, false},
+                                                       {kV4_8, kV4_8, true},
+                                                       {kV4_8, kV4_8, false},
+                                                       {kV4_32, kV4_32, false}}};
 
 // Gathers the VIF stream a DMA chain sends: for each tag, the two VIF words in its upper half, then its data (inline
 // after a cnt or ret tag, elsewhere in the chain for a ref tag). Stops after ret, end or refe.
@@ -139,11 +145,12 @@ std::expected<std::vector<Ps2PackedVertex>, Error> batchVertices(const Batch& ba
                                                         index, slot, batch.counts[slot], *batch.itop));
         }
     }
-    const Ps2Attributes here{batch.texCoordSets, !batch.slots[kSlotColour].empty(), !batch.slots[kSlotNormal].empty()};
+    const Ps2Attributes here{batch.texCoordSets, !batch.slots[kSlotColour].empty(), !batch.slots[kSlotNormal].empty(),
+                             !batch.slots[kSlotSkin].empty()};
     if (index == 0) {
         attributes = here;
     } else if (here.texCoordSets != attributes.texCoordSets || here.colours != attributes.colours ||
-               here.normals != attributes.normals) {
+               here.normals != attributes.normals || here.skin != attributes.skin) {
         return fail(ErrorCode::Invalid, std::format("batch {} carries other attributes than the first", index));
     }
     std::vector<Ps2PackedVertex> vertices(*batch.itop);
@@ -168,6 +175,10 @@ std::expected<std::vector<Ps2PackedVertex>, Error> batchVertices(const Batch& ba
             }
             if (here.normals) {
                 vertices[v].normal[c] = static_cast<std::int8_t>(byteAt(batch.slots[kSlotNormal], v * 4 + c));
+            }
+            if (here.skin) {
+                const std::size_t at = (v * 4 + c) * 4;
+                vertices[v].skin[c] = io::loadU32Le(batch.slots[kSlotSkin].subspan(at, 4));
             }
         }
     }
@@ -260,8 +271,9 @@ std::expected<Ps2WorldMesh, Error> decodePs2WorldMesh(std::span<const std::byte>
             const std::uint32_t format = command & 0x0FU;
             const std::uint32_t count = number == 0 ? 256 : number;
             const std::size_t slot = immediate & kUnpackAddressMask;
-            if ((command & kUnpackMasked) != 0 || cycle != kSlots || write != 1 || slot >= kSlots ||
-                (format != kSlotFormats[slot].format && format != kSlotFormats[slot].alternative) ||
+            // Four slots a vertex for the world, five for skinned geometry; the cycle says which.
+            if ((command & kUnpackMasked) != 0 || (cycle != kWorldSlots && cycle != kSlots) || write != 1 ||
+                slot >= cycle || (format != kSlotFormats[slot].format && format != kSlotFormats[slot].alternative) ||
                 ((immediate & kUnpackUnsigned) != 0) != kSlotFormats[slot].isUnsigned || !batch.slots[slot].empty()) {
                 return fail(ErrorCode::Invalid, std::format("UNPACK {:#010x} at {:#x} (cycle {}, {}) is not the world "
                                                             "vertex layout",
@@ -346,8 +358,8 @@ std::expected<Ps2WorldMesh, Error> decodePs2WorldMesh(std::span<const std::byte>
 }
 
 std::expected<Ps2DefaultMesh, Error> decodePs2DefaultMesh(std::span<const std::byte> chain, bool triangleStrip) {
-    // The format and signedness each slot must have in RenderWare's default layout.
-    static constexpr std::array<SlotFormat, kSlots> kDefaultFormats{
+    // The format and signedness each slot must have in RenderWare's default layout: four slots, no bone weights.
+    static constexpr std::array<SlotFormat, kWorldSlots> kDefaultFormats{
         {{kV3_32, kV3_32, false}, {kV2_32, kV2_32, false}, {kV4_8, kV4_8, true}, {kV3_8, kV3_8, false}}};
     auto gathered = gatherVifStream(chain);
     if (!gathered) {
@@ -374,7 +386,7 @@ std::expected<Ps2DefaultMesh, Error> decodePs2DefaultMesh(std::span<const std::b
             const std::uint32_t format = command & 0x0FU;
             const std::uint32_t count = number == 0 ? 256 : number;
             const std::size_t slot = immediate & kUnpackAddressMask;
-            if ((command & kUnpackMasked) != 0 || cycle != kSlots || write != 1 || slot >= kSlots ||
+            if ((command & kUnpackMasked) != 0 || cycle != kWorldSlots || write != 1 || slot >= kWorldSlots ||
                 format != kDefaultFormats.at(slot).format ||
                 ((immediate & kUnpackUnsigned) != 0) != kDefaultFormats.at(slot).isUnsigned ||
                 !batch.slots.at(slot).empty()) {
@@ -406,7 +418,7 @@ std::expected<Ps2DefaultMesh, Error> decodePs2DefaultMesh(std::span<const std::b
                 return fail(ErrorCode::Invalid,
                             std::format("batch {} has no positions or no vertex count (ITOP)", mesh.batches));
             }
-            for (std::size_t slot = 0; slot < kSlots; ++slot) {
+            for (std::size_t slot = 0; slot < kWorldSlots; ++slot) {
                 if (!batch.slots.at(slot).empty() && batch.counts.at(slot) < *batch.itop) {
                     return fail(ErrorCode::Invalid,
                                 std::format("batch {}: slot {} holds {} vectors, fewer than its {} vertices",
