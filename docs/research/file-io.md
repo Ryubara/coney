@@ -313,17 +313,26 @@ queue first (inferred from the callers; no lock exists).
 
 ## Coney's implementation
 
-Not started. A natural split for the milestone:
+Written from this page and [WARRIORS.DIR / .WAD](formats/wad-dir.md), in `src/fileio/` (namespace `coney::io`):
 
-- `platform`: open the player's disc image and read a root file (what `coney-tools`' `Disc` does in Python).
-- `fileio`: a `WadIndex` (parse `WARRIORS.DIR`, CRC-32 of the lowercased `./ee_files/<name>`, lookup; a hash map
-  instead of the linear scan is fine: all 10,701 entry hashes on the NTSC-U disc are distinct, so first-match and
-  any-match agree), a `FileSystem` with
-  `Exists`, `GetSize`, `Open` and a `File` with `Read`, `Seek`, `Tell`, `GetSize`, all returning
-  `std::expected` instead of crashing.
-- The asynchronous queue can be a simple FIFO serviced once per frame by the game loop, with the callback contract
-  above; a synchronous implementation that completes each request on its next service call keeps the original's
-  timing visible to callers without threads. No 384 KB staging buffer is needed on a PC.
+- `stream.h`: the file interface as `Stream` (`read`, `seek`, `tell`, `size`, `skip`), where a read delivers every
+  byte or fails with `coney::Error`; `MemoryStream` over a buffer (the read side of `FS_MemoryFile`); `SubStream`, a
+  window of another stream that the chunk system hands to stream readers.
+- `file_stream.h`: `FileStream`, a byte range of a host file read on demand with standard C++ file I/O.
+- `disc.h`: `Disc`, the player's disc as a folder or an ISO 9660 image (primary volume descriptor and root directory
+  only, 2048-byte sectors), with files found by name in any letter case, as `coney-tools` does.
+- `wad_index.h`: `WadIndex`, the parsed `WARRIORS.DIR` with lookup by name (`./ee_files/` prefix, lowercased CRC-32)
+  through a hash table, and by hash. It refuses a file whose size is not `16 + count x 12` and an entry that ends
+  past the end of `WARRIORS.WAD`.
+- `wad.h`: `Wad`, the disc plus its index; `lookup` takes a name or a `0x` hash and `openEntry` returns a stream over
+  one entry. Reads are synchronous; there is no IOP, no 384 KB staging buffer and no one-file-open limit.
+
+Not done yet: the file-system interface (`Exists`, `GetSize`, `Open` by name for the game's own callers), the
+`BufferedStream` and the asynchronous `FileManager` queue. None is needed until a subsystem loads files by itself.
+
+TODO for the analysts, found while implementing: the WAD object's constructor at `0x0040c5e0` and the
+`FS_MemoryFile` functions have no names on this page, so Coney's equivalents carry no `@orig` tag; `Stream_SkipBytes`
+is cited with file `(unknown)`.
 
 ## Open questions
 

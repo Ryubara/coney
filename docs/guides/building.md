@@ -89,17 +89,18 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and three smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, and refuses a bad argument.
+`ctest` runs the Catch2 unit tests (`coney_tests`) and five smoke tests of the `coney` executable itself: it starts
+and stops headless, prints its help, refuses a bad argument, refuses `--load` without `--disc` and refuses a
+disc that does not exist. The unit tests build their disc images and archives byte by byte; none needs the game.
 
-## Run Coney
+## Run Coney {#run-coney}
 
 The executable is `build/<preset>/src/platform/coney` (`coney.exe` on Windows). Run with no arguments, it opens an
-empty window and runs until you close it. There is nothing to see yet; the window and the engine start-up are the
-skeleton later work builds on.
+empty window and runs until you close it. Underneath, the game-mode stack runs on a fixed 1/30 s step with an idle
+mode at its bottom; there is nothing to see yet.
 
 ```text
-coney [--frames N] [--help]
+coney [--disc PATH] [--load ENTRY]... [--frames N] [--help]
 ```
 
 `--frames N` stops after N frames, which is how tests and scripts run it. To run it with no display at all, as CI
@@ -110,6 +111,37 @@ SDL_VIDEO_DRIVER=dummy build/dev/src/platform/coney --frames 3
 ```
 
 In PowerShell, set the variable first with `$env:SDL_VIDEO_DRIVER = "dummy"`.
+
+### Loading entries from your disc
+
+`--disc PATH` names your own copy of the game: a mounted disc (`H:\` on Windows, `/mnt/disc` on Linux), a folder
+holding `WARRIORS.DIR` and `WARRIORS.WAD`, or an ISO 9660 image of the disc (the same forms `coney-tools wad`
+takes, see [The coney-tools command line](coney-tools.md#naming-the-disc)). Coney reads `WARRIORS.DIR`, checks it
+against `WARRIORS.WAD`, and prints how many entries it lists.
+
+`--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a
+file name such as `level1.lev` (any letter case) or a name hash written `0x` and up to 8 hex digits, such as
+`0x7e23a6f2`, for entries whose name is not known. Give `--load` as often as you like; with any `--load`, Coney
+opens no window, loads one entry per frame of its fixed timestep and exits when all are done.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --load level1.lev --load global.pak
+```
+
+```text
+/path/to/warriors.iso: WARRIORS.DIR lists 10701 entries
+level1.lev: entry 6864, hash 0x393f70e2, 46992 bytes
+  flat container: 18 chunks, 46688 bytes of chunk data (header says 46688)
+    type 0x03 Collision Mesh: 1 chunk, 160 bytes
+    ...
+  left on the stacks: 18 chunks, 0 objects; 0 trailing bytes
+```
+
+The summary gives the container's shape (flat, or grouped for a pack of resources), the number of chunks and their
+bytes per [chunk type](../research/chunk-system.md#chunk-type-table), and what the chunk handlers left on the
+loader's stacks. It prints counts and sizes only, never the data. An entry that is not a chunk container (Lua
+bytecode, text, sound banks) is reported as such. Coney exits with 0 when every entry loaded, 1 when any could not
+be found or parsed, and 2 for a bad command line.
 
 ## Sanitizers
 

@@ -14,10 +14,15 @@ namespace coney {
 namespace {
 
 // The text usageText() returns (see its doc comment in options.h).
-constexpr std::string_view kUsage = "Usage: coney [--frames N] [--help]\n"
-                                    "\n"
-                                    "  --frames N   stop after N frames (1 to 1000000); used by tests and CI\n"
-                                    "  --help       show this text and exit\n";
+constexpr std::string_view kUsage =
+    "Usage: coney [--disc PATH] [--load ENTRY]... [--frames N] [--help]\n"
+    "\n"
+    "  --disc PATH    the game's disc: a mounted disc, a folder of its files or an ISO image\n"
+    "  --load ENTRY   load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
+    "                 through the chunk system and print a summary; repeatable; needs --disc;\n"
+    "                 runs without a window and exits when every entry is loaded\n"
+    "  --frames N     stop after N frames (1 to 1000000); used by tests and CI\n"
+    "  --help         show this text and exit\n";
 
 std::unexpected<Error> invalidArgument(std::string message) {
     return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)});
@@ -70,10 +75,26 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(limit.error()));
             }
             options.frameLimit = *limit;
+        } else if (arg == "--disc") {
+            if (options.discPath.has_value()) {
+                return invalidArgument("--disc given twice");
+            }
+            if (i + 1 == args.size() || args[i + 1].empty()) {
+                return invalidArgument("--disc needs the path of a disc folder or an ISO image");
+            }
+            options.discPath = std::string(args[++i]);
+        } else if (arg == "--load") {
+            if (i + 1 == args.size() || args[i + 1].empty()) {
+                return invalidArgument("--load needs an entry name or a 0x hash");
+            }
+            options.loads.emplace_back(args[++i]);
         } else {
             // Unknown options and stray positionals alike: a typo ignored silently would run something else.
             return invalidArgument(std::format("unknown argument \"{}\"", arg));
         }
+    }
+    if (!options.loads.empty() && !options.discPath.has_value() && !options.showHelp) {
+        return invalidArgument("--load needs --disc to say where the game's files are");
     }
     return options;
 }

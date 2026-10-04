@@ -50,6 +50,11 @@ resources and typed chunks). Per-type format pages will be added as each type is
 
 ## Coney's implementation
 
+The engine reads the index with `coney::io::WadIndex` (`src/fileio/wad_index.h`) and the archive with
+`coney::io::Wad` (`src/fileio/wad.h`), from a disc folder or an ISO image (`src/fileio/disc.h`);
+`coney --disc <disc> --load <entry>` uses them (see [File I/O](../file-io.md)). They make the same two checks as the
+Python parser below.
+
 `python/src/coney_tools/wad.py` parses `WARRIORS.DIR` (`parse_dir`), hashes names (`name_hash`), extracts entries
 and recovers names; `disc.py` reads the files from a folder or an ISO 9660 image; `wad_cli.py` holds the
 `coney-tools wad` commands. How to run them: [The coney-tools command line](../../guides/coney-tools.md).

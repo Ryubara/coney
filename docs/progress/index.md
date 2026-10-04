@@ -19,13 +19,15 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 0.0%](https://img.shields.io/badge/reimplemented-0.0%25-lightgrey) ![Researched: 50.6%](https://img.shields.io/badge/researched-50.6%25-yellow)
+![Reimplemented: 0.1%](https://img.shields.io/badge/reimplemented-0.1%25-red) ![Researched: 50.6%](https://img.shields.io/badge/researched-50.6%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `░░░░░░░░░░░░░░░░░░░░` | 0.0% of the game's own code (0 of 3,342,408 bytes, 0 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% of the game's own code (3,032 of 3,342,408 bytes, 21 functions) |
 | **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,296 bytes) |
-| **[Milestones](../roadmap.md)** | `████▌░░░░░░░░░░░░░░░` | 2 of 9 done |
+| **[Milestones](../roadmap.md)** | `██████▋░░░░░░░░░░░░░` | 3 of 9 done |
+
+1 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -33,7 +35,7 @@ at the top of the repository's `README.md`.
 | --- | --- |
 | [Foundations](../roadmap.md#foundations) | done |
 | [Read the disc](../roadmap.md#read-the-disc) | done |
-| [Boot the engine](../roadmap.md#boot-the-engine) | in progress |
+| [Boot the engine](../roadmap.md#boot-the-engine) | done |
 | [First pixels](../roadmap.md#first-pixels) | not started |
 | [Scripts](../roadmap.md#scripts) | not started |
 | [Characters](../roadmap.md#characters) | not started |
@@ -48,11 +50,11 @@ at the top of the repository's `README.md`.
 | `Animation` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 37,160 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 31,208 |
 | `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 118,632 |
-| `Core` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 2,184 |
+| `Core` | `████████████▌░░░░░░░` | 62.3% | 4 | 2,184 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 20,800 |
-| `FileIO` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 6,480 |
-| `GameModes` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 47,040 |
+| `Device/ps2` | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% | 3 | 20,800 |
+| `FileIO` | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 1 | 6,480 |
+| `GameModes` | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% | 5 | 47,040 |
 | `Graphics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 189,024 |
 | `GUI` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
@@ -69,7 +71,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,541,888 |
+| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 8 | 1,541,888 |
 
 ## Research coverage
 
@@ -93,7 +95,29 @@ at the top of the repository's `README.md`.
 
 ## Reimplemented functions
 
-None yet.
+| Address | Original name | Subsystem | Bytes |
+| --- | --- | --- | --- |
+| `0x00143f68` | `Crc32_Hash` | `unattributed` | 112 |
+| `0x00143fd8` | `Crc32_Lowercase` | `unattributed` | 120 |
+| `0x001440a0` | `ChunkSystem_PopObject` | `unattributed` | 40 |
+| `0x001440c8` | `ChunkSystem_PushObject` | `unattributed` | 40 |
+| `0x001440f0` | `ChunkSystem_PeekChunkType` | `unattributed` | 48 |
+| `0x00144120` | `ChunkSystem_PopChunk` | `unattributed` | 40 |
+| `0x00144148` | `ChunkSystem_PushChunk` | `unattributed` | 56 |
+| `0x00144180` | `ChunkSystem_LoadContainer` | `Core` | 456 |
+| `0x00144348` | `ChunkSystem_SetHandlers` | `Core` | 40 |
+| `0x00144370` | `ChunkSystem_RetagAsNullPointer` | `Core` | 40 |
+| `0x00144398` | `ChunkSystem_LoadGroupedContainer` | `Core` | 824 |
+| `0x00145a10` | `GameTimer::Update` | `unattributed` | not filled in |
+| `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
+| `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
+| `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
+| `0x00154440` | `Stream_SkipBytes` | `FileIO` | 128 |
+| `0x0015e5e8` | `GameModeStack_Push` | `GameModes` | 104 |
+| `0x0015e650` | `GameModeStack_Pop` | `GameModes` | 104 |
+| `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes` | 96 |
+| `0x0015e718` | `GameModeStack_Top` | `GameModes` | 48 |
+| `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
 <!-- progress:end -->
 
 ## How it is measured

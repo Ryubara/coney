@@ -6,6 +6,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -86,4 +87,28 @@ TEST_CASE("giving --frames twice is an error", "[options]") {
 TEST_CASE("the usage text documents every option", "[options]") {
     CHECK(coney::usageText().find("--frames") != std::string_view::npos);
     CHECK(coney::usageText().find("--help") != std::string_view::npos);
+}
+
+TEST_CASE("giving --disc and --load collects the disc and the entries in order", "[options]") {
+    auto result = parse(std::array<std::string_view, 6>{"--disc", "H:\\", "--load", "level1.lev", "--load", "0x1"});
+    REQUIRE(result.has_value());
+    CHECK(result->discPath == "H:\\");
+    CHECK(result->loads == std::vector<std::string>{"level1.lev", "0x1"});
+}
+
+TEST_CASE("giving --load without --disc is an error naming --disc", "[options]") {
+    auto result = parse(std::array<std::string_view, 2>{"--load", "level1.lev"});
+    REQUIRE_FALSE(result.has_value());
+    CHECK(result.error().message.find("--disc") != std::string::npos);
+}
+
+TEST_CASE("giving --disc or --load without a value is an error", "[options]") {
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--disc"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--load"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--disc", "y"}).has_value());
+}
+
+TEST_CASE("the usage text documents the disc options", "[options]") {
+    CHECK(coney::usageText().find("--disc") != std::string_view::npos);
+    CHECK(coney::usageText().find("--load") != std::string_view::npos);
 }

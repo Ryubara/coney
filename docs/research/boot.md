@@ -311,18 +311,31 @@ empties (inferred). No subsystem has a teardown call on this path. Confirmed (co
 
 ## Coney's implementation
 
-Not started. The roadmap's "Boot the engine" step needs:
+Written from this page:
 
-- A `GameMode` interface with `Enter`, `Exit`, `Suspend`, `Resume`, `Update(dt) -> bool` and an id, and a mode
-  stack with the push/pop semantics above. `Update` should take `dt` from the engine instead of reading a global
-  timer, which keeps the engine's test mode (fixed timestep, no real clock) possible.
-- The game clock: a fixed step of exactly 1/30 s, with the real-time mode only where the original uses it (front-end
-  screens on `Timer`).
-- An initialisation sequence in the order above, minus everything PS2-specific (IOP, pads through `libpad`, the
-  `host0:` file system, memory pools sized for 32 MB). Coney can keep the order of the game subsystems even where it
-  replaces their insides, because later subsystems look up earlier ones through globals.
-- The movies and the bugstar check can be skipped at first; the memory-card mode can start as a stub that pops at
-  once.
+- `src/gamemodes/game_mode.h` (`GameMode`): `enter`, `exit`, `suspend`, `resume`, `update` and `id`, empty by
+  default as in the base class. `update` is handed the frame's time (`FrameTime`) instead of reading a global timer,
+  and returns `ModeResult::Stay` or `ModeResult::Leave`. The entered flag stands for the state field at `+0x0c`.
+- `src/gamemodes/game_mode_stack.h` (`GameModeStack`): push, pop, top, top id and the run loop with the semantics of
+  [The main loop](#the-main-loop), including the original's quirk that a mode which pushes another and then leaves
+  pops the one it pushed. Pushing a mode already on the stack is a programmer error. There is no fixed capacity.
+- `src/core/game_timer.h` (`GameTimer`): game time in EE ticks, with the fixed step of exactly `0x960000` ticks and a
+  real-time mode clamped to 40 ms whose elapsed time the caller measures (the engine never reads a clock itself).
+- The run loop advances the `GameTimer` once per frame and hands the step to the top mode. The original computes
+  `dt` per mode from the timestamp at `+0x00` (`0x00156220`); Coney's step is the same 1/30 s under the fixed step.
+- `coney` builds the stack in `main` (`src/platform/main.cpp`): it opens the WAD when given `--disc`, creates the
+  chunk handler table, then runs either an idle mode (with a window) or a mode that loads the `--load` entries, one
+  per frame ([Building and testing](../guides/building.md#run-coney)). The rest of the initialisation order, the
+  movies, the memory-card and start-up modes and the bugstar check are not done.
+
+TODO for the analysts, found while implementing:
+
+- Whether `GameTimer` honours its pause in real-time mode, and what the time scale at `+0x50` does there; Coney
+  stops the clock in both modes.
+- What `dt` a mode sees on its first update (the value of its timestamp at `+0x00` after a push).
+- The `@orig` tags cite the game-mode functions and `GameTimer::Update` with file `(unknown)`: the base game-mode
+  file and the timer's file have no name yet. `coney-tools progress sizes --fill` gives `GameTimer::Update` a span of
+  952 bytes, which looks too large for what this page describes, so its size is left out of the tracker for now.
 
 ## Open questions
 

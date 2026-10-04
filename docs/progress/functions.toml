@@ -14,3 +14,128 @@
 #                                 # `coney-tools progress sizes --fill` derives it from your own disc
 #
 # A function without a size is listed but adds no bytes until its size is filled in.
+
+[[function]]
+address = 0x00143f68
+name = "Crc32_Hash"
+subsystem = "unattributed"
+size = 112
+
+[[function]]
+address = 0x00143fd8
+name = "Crc32_Lowercase"
+subsystem = "unattributed"
+size = 120
+
+[[function]]
+address = 0x001440a0
+name = "ChunkSystem_PopObject"
+subsystem = "unattributed"
+size = 40
+
+[[function]]
+address = 0x001440c8
+name = "ChunkSystem_PushObject"
+subsystem = "unattributed"
+size = 40
+
+[[function]]
+address = 0x001440f0
+name = "ChunkSystem_PeekChunkType"
+subsystem = "unattributed"
+size = 48
+
+[[function]]
+address = 0x00144120
+name = "ChunkSystem_PopChunk"
+subsystem = "unattributed"
+size = 40
+
+[[function]]
+address = 0x00144148
+name = "ChunkSystem_PushChunk"
+subsystem = "unattributed"
+size = 56
+
+[[function]]
+address = 0x00144180
+name = "ChunkSystem_LoadContainer"
+subsystem = "Core"
+size = 456
+
+[[function]]
+address = 0x00144348
+name = "ChunkSystem_SetHandlers"
+subsystem = "Core"
+size = 40
+
+[[function]]
+address = 0x00144370
+name = "ChunkSystem_RetagAsNullPointer"
+subsystem = "Core"
+size = 40
+
+[[function]]
+address = 0x00144398
+name = "ChunkSystem_LoadGroupedContainer"
+subsystem = "Core"
+size = 824
+
+[[function]]
+address = 0x00145a10
+name = "GameTimer::Update"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00148aa0
+name = "PS2StreamFileSys::Open"
+subsystem = "Device/ps2"
+size = 264
+
+[[function]]
+address = 0x001490b8
+name = "DVDWadIndex::Find"
+subsystem = "Device/ps2"
+size = 168
+
+[[function]]
+address = 0x00149160
+name = "DVDWadIndex::DVDWadIndex"
+subsystem = "Device/ps2"
+size = 232
+
+[[function]]
+address = 0x00154440
+name = "Stream_SkipBytes"
+subsystem = "FileIO"
+size = 128
+
+[[function]]
+address = 0x0015e5e8
+name = "GameModeStack_Push"
+subsystem = "GameModes"
+size = 104
+
+[[function]]
+address = 0x0015e650
+name = "GameModeStack_Pop"
+subsystem = "GameModes"
+size = 104
+
+[[function]]
+address = 0x0015e6b8
+name = "GameModeStack_RunUntilEmpty"
+subsystem = "GameModes"
+size = 96
+
+[[function]]
+address = 0x0015e718
+name = "GameModeStack_Top"
+subsystem = "GameModes"
+size = 48
+
+[[function]]
+address = 0x0015e748
+name = "GameModeStack_TopId"
+subsystem = "GameModes"
+size = 72

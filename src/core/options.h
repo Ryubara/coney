@@ -4,7 +4,9 @@
 #include <expected>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include "core/error.h"
 
@@ -16,6 +18,11 @@ struct Options {
     std::optional<int> frameLimit;
     /// `--help` was given: print usageText() and exit 0.
     bool showHelp = false;
+    /// `--disc`: the player's disc, a folder (a mounted disc) or an ISO 9660 image, exactly as typed.
+    std::optional<std::string> discPath;
+    /// `--load`, in the order given: WAD entries to load through the chunk system, each a name or a `0x` hash.
+    /// Requires discPath.
+    std::vector<std::string> loads;
 };
 
 /// Largest accepted `--frames` value: about 4.6 hours at 60 Hz, far beyond any test, and well inside `int`.

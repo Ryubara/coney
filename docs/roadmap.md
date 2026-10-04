@@ -11,7 +11,7 @@ This page is kept current: a milestone's status changes in the same commit as th
 | --- | --- |
 | [Foundations](#foundations) | done |
 | [Read the disc](#read-the-disc) | done |
-| [Boot the engine](#boot-the-engine) | in progress |
+| [Boot the engine](#boot-the-engine) | done |
 | [First pixels](#first-pixels) | not started |
 | [Scripts](#scripts) | not started |
 | [Characters](#characters) | not started |
@@ -48,6 +48,15 @@ that loads data, file I/O and the frame loop. Coney reads its data straight from
 
 - Done: research pages for the boot path and frame loop ([Boot and the main loop](research/boot.md)), the chunk
   loader ([Chunk system](research/chunk-system.md)) and the file layers ([File I/O](research/file-io.md)).
+- Done: disc access from a folder or an ISO image, the `WARRIORS.DIR` index and entry reads (`src/fileio/`).
+- Done: the chunk system: flat and grouped containers, the handler table, per-load stacks with checked pops, and
+  raw blocks for every type whose subsystem is not written yet (`src/core/`).
+- Done: the game-mode stack and the game clock on a fixed 1/30 s step (`src/gamemodes/`, `src/core/game_timer.h`).
+- Done: `coney --disc <disc> --load <entry>` loads any WAD entry through the chunk system and prints a summary
+  ([Building and testing](guides/building.md#run-coney)). On the NTSC-U disc 7,066 of the 10,701 entries load as
+  chunk containers; the rest are not containers (Lua bytecode, text, sound banks, RenderWare-only data).
+- Left for later milestones: the memory system (no research page yet), the rest of the initialisation order, the
+  asynchronous file queue and the chunk handlers that need their subsystems.
 
 **Done when** `coney` opens the player's disc and loads and parses any WAD entry through the reimplemented chunk
 system, under a fixed timestep.

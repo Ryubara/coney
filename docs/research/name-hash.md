@@ -19,3 +19,11 @@ def warriors_hash(name: str) -> int:
 ```
 
 **Confidence:** confirmed from code (decompiled table generator and hash loop).
+
+## Coney's implementation
+
+`src/core/name_hash.h`: `crc32` (of bytes, or of a string as given), `lowercaseAscii` (A to Z only, so the hash
+never depends on the host's locale) and `nameHash`, the CRC-32 of the lowercased string. The CRC table is built at
+compile time. `coney::io::wadPath` adds the `./ee_files/` prefix for WAD lookups
+([WARRIORS.DIR / .WAD](formats/wad-dir.md#name-lookup)). The Python equivalent is `name_hash` in
+`python/src/coney_tools/wad.py`.

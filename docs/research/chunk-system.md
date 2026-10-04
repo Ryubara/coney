@@ -301,15 +301,35 @@ initialisation (confirmed (code)):
 
 ## Coney's implementation
 
-Not started. What an implementer needs:
+Written from this page, in `src/core/`:
 
-- A reader for both container forms over Coney's stream interface, bounds-checked (the original checks nothing).
-- A handler table keyed by chunk type (the 84 names above are facts and can be used as-is for diagnostics).
-- The stack discipline is part of the file format: chunks refer to earlier chunks only by position. Coney can keep
-  two explicit stacks per load (not globals), check the expected type on every pop, and fail the load with
-  `coney::Error` instead of corrupting memory.
-- Types with no handler can stay as raw byte blocks until the subsystem that owns them is written; that is enough
-  for the milestone's "load and parse any WAD entry".
+- `chunk_types.h`: the header layouts and the 84 type names (`chunkTypeName`), used for diagnostics only.
+- `chunk_stacks.h` (`ChunkStacks`): the two stacks, one pair per load rather than globals. `popChunk(type)` and
+  `popObject<T>()` check what they pop and fail with `coney::Error` (leaving the stack as it was) instead of
+  corrupting memory; `peekChunkType` returns nothing on an empty stack where the original returns `0x54`.
+- `chunk_system.h`: the handler table (`ChunkHandlerTable`, `setHandlers`), `loadContainer` and
+  `loadGroupedContainer`. Every count and size is checked against what the stream holds before anything is
+  allocated, a type at or above `0x54` is an error, and a `readFromStream` handler gets a window of exactly its chunk
+  (`io::SubStream`), so it cannot read into the next one; what it leaves unread is skipped.
+- Handlers implemented: only the retag handler (`retagAsNullPointer`) on `0x0E`, `0x14` and `0x30`, which needs no
+  other subsystem. Every other type stays on the chunk stack as a raw byte block until its subsystem is written.
+- The grouped loader loads every group: Coney has no resource manager yet to ask whether a group is resident.
+- `coney --disc <disc> --load <entry>` loads an entry with these and prints a summary
+  ([Building and testing](../guides/building.md#run-coney)). It reads an entry whose container header ends with
+  `0xDE686795` (`crc32("package")`) as grouped, any other as flat, and if the flat parse fails, as grouped.
+
+Run over every entry of the NTSC-U disc (2026-10-04; counts only): 6,183 load as flat containers, 881 as packs
+(grouped, with the marker) and 2 as grouped containers without the marker; the other 3,635 are not chunk containers.
+1,939 of the flat loads leave bytes after the container, close to the 1,938 header-plus-RenderWare-stream entries
+described above (which parse as one chunk of type `0x16` or `0x01`); the disc check above counts 6,184 flat
+containers. Neither difference of one has been looked into.
+
+TODO for the analysts, found while implementing:
+
+- What the original does with a `readFromStream` handler that reads past its chunk (`h.size - consumed` is then
+  negative); Coney fails the load.
+- Which caller decides that an entry is grouped: Coney's choice by the package marker, with a flat-then-grouped
+  fallback, is a heuristic from the data.
 
 ## Open questions
 

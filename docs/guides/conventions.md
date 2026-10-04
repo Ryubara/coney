@@ -9,9 +9,9 @@ Coney is written from the research in `docs/research/`, never from decompiler ou
 [LEGAL.md](repo:LEGAL.md#clean-room)). Several rules below, `@orig` tags and
 research links above all, are there to keep the path from a line of our code back to its research visible.
 
-The engine is still small. Some names this page uses as examples (`coney::io::Reader`, and the exact shape of
-`coney::Error` and `CONEY_ASSERT`) are the **intended API**; where the code in `src/core/` differs, this page is
-updated to match it as the engine grows.
+The engine is still small. `coney::io::Reader` (`src/fileio/reader.h`) and the error codes below exist as shown;
+the `WadIndex` example is a simplified version of `src/fileio/wad_index.h`, and `CONEY_ASSERT` takes only the
+condition. Where the code differs from an example, the code is right and this page is updated to match it.
 
 ## Licence header
 
@@ -245,7 +245,8 @@ the boundary with C libraries such as SDL3 and librw. Instead:
 - **Programmer errors** (a broken invariant, an index out of range, a call in the wrong state) use `CONEY_ASSERT`.
   These are bugs, not situations to recover from, so the program stops and reports where.
 
-The intended API, to be defined in `src/core/error.h` and `src/core/assert.h`:
+The API, from `src/core/error.h` and `src/core/assert.h` (abridged: the enum has two more codes, and
+`CONEY_ASSERT` takes only the condition):
 
 ```cpp
 namespace coney {
@@ -329,7 +330,7 @@ an assert. A parser that silently accepts truncated data is a Critical review fi
 
     `Reader` assembles each value from bytes, which avoids all three, and the cost is negligible next to disc I/O.
 
-The intended `Reader` interface, to be defined in `src/fileio/reader.h`:
+The `Reader` interface, from `src/fileio/reader.h` (abridged; it also has `readBytes`):
 
 ```cpp
 namespace coney::io {
