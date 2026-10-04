@@ -399,7 +399,7 @@ reverse-engineering projects goes to Rekit instead, once a second project needs 
   `uv run` runs inside it, so everyone uses the same locked dependencies.
 - **One command-line entry point:** `coney-tools <group> <command>`, for example `coney-tools wad extract`. No
   loose scripts: a script outside the CLI has no tests, no `--help` and nowhere obvious to be found. The planned
-  groups are `wad`, `emu` and `harness`.
+  groups are `wad`, `xbox`, `emu` and `harness`.
 - **ruff** formats and lints, **mypy --strict** type-checks, and **pytest** tests. All three run in CI; ruff format
   also runs in pre-commit. Strict typing matters here because these tools parse binary formats, where a wrong type
   is a silent wrong answer.

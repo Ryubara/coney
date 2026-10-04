@@ -21,7 +21,7 @@ SECTOR = 2048
 _PVD_SECTOR = 16
 
 
-class _Slice(io.RawIOBase):
+class FileSlice(io.RawIOBase):
     """A read-only, seekable view of `length` bytes of an open file, starting at `start`."""
 
     def __init__(self, handle: BinaryIO, start: int, length: int) -> None:
@@ -160,7 +160,7 @@ class Disc:
                 return self._folder[key].open("rb")
             if self._iso is not None and key in self._iso:
                 entry = self._iso[key]
-                raw = _Slice(self.path.open("rb"), entry.extent * SECTOR, entry.size)
+                raw = FileSlice(self.path.open("rb"), entry.extent * SECTOR, entry.size)
                 return cast(BinaryIO, io.BufferedReader(raw, buffer_size=1 << 20))
         except OSError as error:
             raise ConfigError(f"{self.path}: cannot open {name} ({error})") from error

@@ -111,7 +111,8 @@ test pack replaces a named texture.
 A player who also owns the Xbox version can point Coney at that disc too. Coney then loads its sharper textures and
 720p movies in place of the PS2 ones wherever the two correspond, through a resolver keyed by name and resource
 hash, and falls back to the PS2 disc everywhere else. The PS2 version stays the only reference for behaviour.
-Feasibility, formats and the plan: [Xbox assets](research/xbox-assets.md).
+Feasibility, formats and the plan: [Xbox assets](research/xbox-assets.md). The survey is a repeatable check:
+`coney-tools xbox` reads the Xbox disc's archive and reproduces its counts ([guide](guides/coney-tools.md#xbox)).
 
 **Done when** a level renders with the Xbox disc's textures and a movie plays from its HD version, and the game
 runs the same with or without the Xbox disc.

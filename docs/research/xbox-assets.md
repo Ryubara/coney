@@ -146,8 +146,10 @@ Of the 3,990 PS2 names recovered so far ([WAD contents](formats/wad-contents.md#
 | Memory card icon (`.ico`) | 1 | 0 | none |
 
 The five packs not found belong to levels 60, 64 and 100. Adding the Xbox-only scene records (by their own names)
-and levels gives 4,038 of the 10,587 Xbox names. As on the PS2, the named entries from index 210 on are in name
-order. **Evidence:** inferred (hash matches; with these three fixed prefixes chance matches are negligible).
+and levels gives 4,038 names, which cover 4,041 of the 10,587 entries: three hashes occur twice in the index
+(`paks\global.pak` in both `System.wad0` and `Paks.wad0`, `scene_list.cnk` in both `System.wad0` and `Main.wad0`,
+and one scene record stored twice at two different sizes). As on the PS2, the named entries from index 210 on are
+in name order. **Evidence:** inferred (hash matches; with these three fixed prefixes chance matches are negligible).
 
 **By resource.** The standalone models and textures are unnamed on both discs, but the [chunk
 container](formats/wad-contents.md#chunk-container)'s resource hashes are the same on both (they hash the resource's
@@ -167,12 +169,12 @@ characters have an Xbox resource with the same hash. **This, not the WAD name, i
 | Resource: global, scene list | 3 | 4 | 1,525,008 | no |
 | Scene records (`.scn`) | 2,765 | 2,814 | 200,615,808 | **all 2,765 PS2 records identical**; 49 more on the Xbox |
 | Lua 4.0 bytecode | 467 | 503 | 10,931,421 | **all 467 PS2 scripts identical**; 36 more on the Xbox |
-| Object lists and other text | 63 | 81 | 1,154,288 | 74 identical |
+| Object lists and other text | 63 | 81 | 1,154,288 | 74 identical; includes the font metrics (`METRICS1`) |
 | Streamed world | 2,229 | 2,048 | 516,969,472 | no: a different split (below) |
 | Sound banks (`.msb`, `.msd`) | 42 | 0 | | moved to XACT |
 | XACT sound bank (`SDBK`) | 0 | 1 | 4,544,708 | identical to `audio/xbox000.xsb` |
 | 24-bit bitmap (`BM`, 256 × 128) | 1 | 1 | 98,358 | identical |
-| Font metrics, memory card icon, older RenderWare streams | 7 | 0 | | |
+| Font metrics, memory card icon, older RenderWare streams | 7 | 0 | | font metrics counted as text above |
 | **Total** | **10,701** | **10,587** | **1,726,598,311** | |
 
 **Evidence:** inferred: every entry is assigned by the same structural tests as on the PS2 (the container parse,
@@ -267,6 +269,11 @@ textures on both (65 differ: 35 have two more on the Xbox, 30 one fewer).
 | Mipmaps | | full chains (1 to 10 levels) |
 | Bytes of `0x2a` chunks, every instance | 330,158,928 | 501,984,640 |
 
+`coney-tools xbox textures --ps2` reproduces the 2,092 shared resources, the 2,027 with equal counts and the 35 / 30
+that differ. Over the first instance of each of the 2,092 it counts 2,222 Xbox textures (DXT1 1,403, DXT2/3 375,
+DXT4/5 444) and 2,182 PS2 ones, so the pixel-format row's totals (2,312 and 2,205) were taken over a set the tool does
+not reproduce; the format shares are close either way.
+
 So about 30% of the textures double in resolution; the rest are the PS2 images re-encoded from 4- and 8-bit palettes
 to DXT, which trades palette banding for block artefacts rather than adding detail. **Evidence:** inferred.
 
@@ -279,7 +286,15 @@ about the port's behaviour is in scope: it is not a reference for Coney.
 
 ## Coney's implementation
 
-Not started; this is the plan.
+**The survey as a check (done).** `coney-tools xbox` ([The coney-tools command line](../guides/coney-tools.md#xbox))
+reads the disc as this page describes and prints counts only: `python/src/coney_tools/xdvdfs.py` (the XDVDFS reader:
+full image, XISO or folder), `chunks.py` (the chunk container, shared with the PS2 archive) and `xbox.py` (the index,
+the name hash, the kinds of entry, the resource index and the texture-chunk header). Run against the NTSC-U disc on
+2026-10-04 it reproduces this page's counts: 431 files in 2 directories (5,620,148,362 bytes), 10,587 entries
+(1,726,598,311 bytes) and every row of [Kinds of entry](#kinds-of-entry); 43,104 resources and 108,836 chunks; the
+graphics chunks by first words; 18,245 texture chunks (501,984,640 bytes), all readable; the resource-hash overlap
+(2,092 texture dictionaries, 1,541 models, 616 of 617 animations, 53 characters); the 2,027 equal-count texture
+resources; and 4,038 names (3,957 from the PS2's names). The rest of this section is the plan for the engine.
 
 **Policy.** The PS2 disc is required and stays the reference for behaviour. The Xbox disc is optional, supplied by
 the player like the PS2 one, and only ever replaces *assets*: never scripts, scenes, levels, collision or anything
@@ -288,8 +303,8 @@ levels) is ignored.
 
 **Reading the disc.** An XDVDFS reader (the format is public: a volume descriptor at sector 32 of the partition and
 binary-tree directories) that finds the partition by its magic at `0x18300000` (XGD1) or `0x1FB20000` (XGD2), or
-reads an extracted folder; then `XBoxWad.idx` and the eight volumes as above. `coney-tools` should gain the same
-`wad` commands for it, to keep the survey reproducible.
+reads an extracted folder; then `XBoxWad.idx` and the eight volumes as above. `coney-tools xbox` does this in
+Python; the engine needs the same in C++.
 
 **The resolver.** It works below the chunk system, at **resource** level, keyed by the resource hash and the chunk
 type, because the WAD names of the PS2's models and textures are unknown:
@@ -309,9 +324,8 @@ type, because the WAD names of the PS2's models and textures are unknown:
 | Sound | not yet | XACT banks and Xbox ADPCM are documented formats, but the PS2's sounds would first have to be mapped to Xbox waves (no names). |
 | Scripts, scenes, animations, characters | never | Identical or behaviour data; the PS2 copy is the reference. |
 
-**Recommended next step.** Add `coney-tools xbox` (XDVDFS reader, `XBoxWad.idx` parser, the Xbox name hash, resource
-index and a texture-chunk reader that prints counts only), turning this survey into a repeatable check; then, once
-[First pixels](../roadmap.md#first-pixels) draws PS2 textures, add the texture path behind an option. Track it as the
+**Recommended next step.** Once [First pixels](../roadmap.md#first-pixels) draws PS2 textures, add the texture
+path behind an option. Track it as the
 roadmap's [Xbox assets](../roadmap.md#xbox-assets-optional) milestone.
 
 ## Open questions
@@ -325,7 +339,7 @@ roadmap's [Xbox assets](../roadmap.md#xbox-assets-optional) milestone.
    match the PS2 world streams' texture dictionaries? If so, level textures can be swapped without the geometry.
 4. **The index header's third word** (`0x00100000`) and the volumes' trailing `0xffffffff`: unused by the lookup;
    probably a volume size limit and a flag.
-5. **Unnamed Xbox entries.** 6,549 of 10,587 (models, textures, streamed world, 653 packs, 228 scripts), as on the
-   PS2; the subfolder scheme (`paks\`, `anims\`) suggests the rest also live in subfolders.
+5. **Unnamed Xbox entries.** 6,546 of 10,587 (models, textures, characters, streamed world, 652 packs, 227
+   scripts, 18 text entries), as on the PS2; the subfolder scheme (`paks\`, `anims\`) suggests the rest also live in subfolders.
 6. **Sound mapping.** Which XACT cue or wave corresponds to which PS2 sound; the global resource's sound chunks
    (`0x29`, `0x48`, `0x49`) differ between the discs and probably hold the mapping.

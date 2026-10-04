@@ -1,8 +1,9 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers two groups:
-`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, and
-[`progress`](#progress), which keeps the progress tables of the README and the docs current. Everything is read in
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers three groups:
+`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
+[`xbox`](#xbox), which reads the Xbox disc's archive, and [`progress`](#progress), which keeps the progress tables of
+the README and the docs current. Everything is read in
 place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
 [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
@@ -65,6 +66,51 @@ takes entry hashes (8 hex digits) or names (`global.lua`), and without it every 
     `extract` and `names` refuse an output path inside the repository, because extracted files are game data and
     must never be committed ([LEGAL.md](repo:LEGAL.md#no-game-data)). Use a
     folder beside the checkout, such as `../../scratch/`.
+
+## xbox {#xbox}
+
+The Xbox version is an optional asset source ([Xbox assets](../research/xbox-assets.md)). The `xbox` commands read
+its archive, `XBoxWad.idx` over eight volume files, from **your own Xbox disc** and print counts, offsets and hashes,
+so the survey on that page can be repeated. `DISC` is required and is one of:
+
+* a **full disc image** (Redump style, 7.8 GB): the game partition is found by its `MICROSOFT*XBOX*MEDIA` volume
+  descriptor at byte `0x18300000` (XGD1) or `0x1FB20000` (XGD2);
+* an **XISO**, an image of just the game partition;
+* an **extracted folder** holding `XBoxWad.idx`, the `*.wad<N>` volumes and, for `names`, `default.xbe`.
+
+The file system (XDVDFS) is read with Coney's own small reader and every file is streamed. Problems print one line
+and exit with code 2, as for `wad`.
+
+| Command | What it prints |
+| --- | --- |
+| `xbox files DISC` | Every file with its size, then the file, folder and byte totals |
+| `xbox info DISC [--names FILE]` | The entry count, entries and bytes per volume, entries and bytes per kind (pack, texture dictionary, model, scene record, streamed world, ...) and how many entries a names file resolves |
+| `xbox list DISC [--names FILE]` | One line per entry: index, volume, offset, size, hash, and the name when known |
+| `xbox names DISC OUT_FILE [--candidates FILE ...]` | Matches names against the index and writes them, one path below `ee_files\` per line; prints how many entries stay unnamed, by kind |
+| `xbox extract DISC OUT_DIR [--names FILE] [--only HASH_OR_NAME ...]` | Writes entries as files: a named one under its path (`paks/global.pak`), the rest as `<hash>.bin` |
+| `xbox resources DISC [--ps2 PS2_DISC]` | The resource index: packs, resources, chunks, distinct `(resource hash, chunk type)` keys, and the graphics chunks by their first two words; with `--ps2`, how many of the PS2's texture, model, animation and character resource hashes the Xbox has |
+| `xbox textures DISC [--ps2 PS2_DISC]` | Texture chunks by format (DXT1, DXT2/3, DXT4/5), mip count and size; with `--ps2`, the texture resources both discs share and how many hold the same number of textures |
+
+A names file has one name per line and the tools take the **last word** of each line, so the output of `wad names`,
+`xbox names`, `wad list` and `xbox list` all work. A bare name (`global.pak`, as from the PS2) is tried in each of the
+Xbox folders `ee_files\`, `ee_files\paks\` and `ee_files\anims\`; a name with a folder as given.
+
+`names` keeps every name from `--candidates` and every scene record's own name (plus `.scn`) that matches. It also
+guesses: `level<N>.lev`, every file-name-like string in `default.xbe` and in the Lua and text entries, and every
+identifier there plus `.lev`. A guess is kept only when its extension fits the kind of the entry it matches (`.lev`
+on a level, `.pak` on a pack, ...), which rejects chance matches. With the PS2 names as candidates it gives the
+4,038 names on the research page:
+
+```sh
+uv run --project python coney-tools wad names PS2_DISC ../../scratch/names.txt
+uv run --project python coney-tools xbox names XBOX_DISC ../../scratch/xbox-names.txt --candidates ../../scratch/names.txt
+```
+
+`--ps2` takes the PS2 disc as the `wad` commands do and reads its `WARRIORS.WAD`. `resources` and `textures` read
+the whole Xbox archive (1.7 GB) and, with `--ps2`, the whole PS2 one.
+
+!!! warning "Game data stays out of the checkout"
+    `xbox extract` and `xbox names` refuse an output path inside the repository, as `wad extract` and `wad names` do.
 
 ## progress {#progress}
 
