@@ -444,6 +444,12 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   coordinates, drawn with Z test and Z write off, no culling, no fog, vertex alpha on and source alpha / inverse
   source alpha blending ([2D drawing](#2d-drawing)), with the texture's own filter mode and clamped addressing. Game
   code passes a `graphics::Texture`, which the platform implements over a librw texture.
+- **GUI coordinates and the overlay camera** (`src/graphics/overlay_camera.h`, `OverlayCamera`): device slots `+0x90`
+  and `+0x98` as [2D drawing](#2d-drawing) gives them (`guiToOverlay`, `guiWidthToOverlay`), and the overlay camera's
+  perspective projection with its view window (0.6667, 0.5) × the view scale, which takes a point or a size of
+  overlay-camera space to logical pixels (`project`, `projectSize`; `unproject` for Coney's tools). GUI 0 and 1 land
+  at 1.3 % and 98.7 % across and 4.5 % and 95.5 % down, the margin the page computes; a test pins it. Coney computes
+  the projection itself rather than rendering through a librw camera, and draws the result as 2D quads.
 - `TextureDictionary` (`src/platform/texture_dictionary.h`) reads a dictionary with librw after
   `graphics::inspectTexDictionary` has checked the stream, and converts it to RGBA images (any backend) or to OpenGL
   textures (`Raster::convertTexToCurrentPlatform`). The chunk readers for `0x0B` and `0x2A` push it as `0x0B`
@@ -496,6 +502,8 @@ TODO for the analysts, found while implementing:
   size, and so whether the picture fills the screen (Coney's choice) or leaves a border. Taken at face value with the
   overlay camera's view window, the factors give a picture narrower in proportion than the screen, which would
   distort a 4:3 image, so something in the reading is missing.
+- **Names for device slots `+0x90` and `+0x98`:** the `@orig` tags call them `RwDevice::GuiToOverlay`
+  (`0x00195238`) and `RwDevice::GuiWidthToOverlay` (`0x00195330`) until the research database names them.
 - **The legal screen's colour:** what colour `StartupScreen_Draw` gives its sprite; Coney draws it white (unchanged).
 
 ## Open questions

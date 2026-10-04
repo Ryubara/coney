@@ -187,3 +187,15 @@ address = 0x00190770
 name = "ChunkReader_RenderwareTextureDic"
 subsystem = "Graphics"
 size = 160
+
+[[function]]
+address = 0x00195238
+name = "RwDevice::GuiToOverlay"
+subsystem = "Graphics"
+size = 248
+
+[[function]]
+address = 0x00195330
+name = "RwDevice::GuiWidthToOverlay"
+subsystem = "Graphics"
+size = 120

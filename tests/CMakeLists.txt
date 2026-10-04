@@ -14,6 +14,7 @@ add_executable(coney_tests
     gamemodes/legal_screen_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
     graphics/frame_stats_test.cpp
+    graphics/overlay_camera_test.cpp
     graphics/particle_page_test.cpp
     graphics/rw_stream_test.cpp
     graphics/screen_test.cpp

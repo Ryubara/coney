@@ -17,6 +17,7 @@ add_library(coney_core STATIC
     gamemodes/legal_screen_mode.cpp
     gamemodes/load_entry_mode.cpp
     graphics/frame_stats.cpp
+    graphics/overlay_camera.cpp
     graphics/particle_page.cpp
     graphics/rw_stream.cpp
     graphics/screen.cpp
