@@ -165,6 +165,14 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   hotkeys in `[Hotkeys]`: **Space pauses**, F8 saves a screenshot to `snaps/` (aspect-corrected, 1240 × 930 for the
   game's 640 × 448), F4 toggles the frame limiter. Hold a pad key for about 300 ms so that a 30 Hz game sees it.
   Leave the frame limiter on: with it off, real-time waits (the legal screen's 5 s) pass in a blink.
+- **A chosen analog stick value.** Keyboard keys bound to a stick only give full deflection (raw byte 0
+  or 255), but the gait thresholds need partial values. The game turns each raw stick byte into a float through a
+  256-entry `float` table at `0x0050b8d0` (entry 0 is −1.0, entry 255 is +1.0); it is data, so a PINE write takes
+  effect at once. To give the left stick a magnitude *m* straight up: write −*m* to entry 0 (`0x0050b8d0`) and +*m*
+  to entry 255 (`0x0050b8d0 + 0x3fc`), then hold W; the pad record (`0x005dd810`; `+0x08` / `+0x0c` the stick as
+  floats, `+0x00` / `+0x04` the same turned by the camera) shows the value the game uses. Write −1.0 / +1.0 back
+  afterwards. The camera's right-stick code (`0x00129050`) reads the raw bytes, so the table does not change it.
+  State the magnitude used with every runtime claim that depends on input ("stick magnitude 0.5, straight up").
 - **Catching a moment.** Load a state, press Space to pause, make the memory writes, then send Space followed by a
   run of F8 presses (one a second, or faster) and look at the screenshots afterwards. Data drawn in one frame
   usually survives in memory until reused: a sprite batch's arrays keep the last frame's sprites after its count is

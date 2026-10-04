@@ -348,8 +348,11 @@ for the order; the roles of callees not named elsewhere are inferred from what t
 
 - **1 or 2** (a level end): the countdown `+0x28` is capped at 90 frames and drops to 10 when cross (`0x40`) is
   pressed; a type-`0xc` camera gets a 6.5 s fade (`0x0018c988`). When it reaches 0, 1 leads to `0x00155408` or
-  `0x001557f8` (chosen by `0x0041d110`) and 2 to `0x0015d420(0)`. What 1 and 2 mean (mission passed and failed are
-  the likely pair, speculative) is not traced.
+  `0x001557f8` (chosen by `0x0041d110`) and 2 to `0x0015d420(0)`. **1 is a failure**: a player who falls more than
+  20 m below the collision mesh sets it, with `+0x152` = 2, when the game-state flags `+0x150` have bit 1
+  (`Human_StateUpdate`, `0x002403e8`, [Characters](characters.md#ground)). **2 is a level completed**: `0x00160d00`
+  sets it together with the next level's index (`+0x56dc` + 1) for the load mode. Confirmed (code) for the writers;
+  that 1 means "mission failed" in general is inferred from this one writer.
 - **Any other value** (3 is what `MenuLoadLevel` sets): `Update` returns 0, which pops the mode; its `Exit` then
   unloads the level ([Leaving gameplay](#unload)).
 

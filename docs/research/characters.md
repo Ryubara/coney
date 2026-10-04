@@ -46,6 +46,16 @@ string gives them.
 | `0x00146078` | `PlayerRecord_Update` | pad → stick angle and magnitude | confirmed (code) |
 | `0x00240e38` | `Human_PlayerLocomotion` | stick → velocity and heading | confirmed (code) |
 | `0x00248df0` | `Human_Lean` | a lean from the turn rate | confirmed (code) |
+| `0x0023fea8` | `Human_StateUpdate` (vtable `+0x13c`) | per update: state function, gravity, out-of-world, move | confirmed (code) |
+| `0x0023d8c8` | `Human_Move` | slope factor, physics sweep, ground snap | confirmed (code) |
+| `0x0023eab8` | `Human_SnapToGround` | 1.5 m ray down from 1 m above the feet | confirmed (code) |
+| `0x0023dc58` | `Human_StartFall` (vtable `+0x154`) | airborne flag, fall target, camera ledge hint | confirmed (code) |
+| `0x0023e408` | `Human_LandingTest` | the airborne sweep's floor test (`n.z` > 0.65) | confirmed (code) |
+| `0x0023e090` | `Human_Land` | clears airborne, fall damage, `vz` = 0 | confirmed (code) |
+| `0x003a2158` / `0x003a21c0` | `Object_SetAirborne` / `Object_SetGrounded` | flag `0x4000000` / `0x2000000` in `+0x54` | confirmed (code) |
+| `0x0021b0b8` | `Object_SetPosition` | writes the transform table `0x00714b00` | confirmed (code) |
+| `0x0033e278` | `PhysicsBody_Sweep` | moves a body by `v × dt`, up to three sliding passes | confirmed (code) for the steps listed |
+| `0x003477c0` | `PhysicsBody_PushOutOfWalls` | sphere against the collision mesh's walls (`n.z` within ±0.65) | confirmed (code) |
 | `0x00249108` | `Humans_Update` | the characters' update, every second task-manager tick | confirmed (code) |
 | `0x00249b98` | `Humans_MarkSkeletons` | marks every skeleton for an update, from mode 1 | confirmed (code) |
 | `0x001783d0`, `0x0018e9e0`, `0x0016e8f0` | resource loaders | model (type 3), textures (type 4), character data (type 5) | confirmed (code) |
@@ -75,15 +85,24 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0xd0` | int | the type passed to `HuCreate` (`0x20`) | confirmed (code), runtime |
 | `+0xd4` | pointer | the human's 0x180-byte record (`0x0065a540 + i × 0x180`) | confirmed (code), runtime |
 | `+0xd8` | pointer | the `CharacterInstance` (model, skeleton, animation) | confirmed (code) |
+| `+0x1a0` | pointer | the physics body (0 for none) | confirmed (code) |
+| `+0x1a8` | int | the gait for the current speed (0, 1-5; `0x0022aeb0`), used by the lean | confirmed (code) |
+| `+0x1ac` | float | current speed (length of the velocity, written with it) | confirmed (code) |
 | `+0x1b0` | s8 | player index, -1 for none | confirmed (code) |
-| `+0x1a8` | int | the gait (0, 2-5) used by the lean | confirmed (code) |
+| `+0x1d8` | int | material of the ground under the feet (5 when none) | confirmed (code) |
+| `+0x230` | vec4 | ground normal from the last snap (`+0x238` its `z`) | confirmed (code) |
+| `+0x280` | int | an attachment: −1 normally; otherwise the human moves without the physics sweep | confirmed (code) for the tests |
 | `+0x298` / `+0x29c` | float | turn this update / smoothed lean (radians) | confirmed (code) |
+| `+0x2f0` | vec4 | external push velocity, added to the velocity when moving | confirmed (code) |
 | `+0x37c` (`+0xdf` as a word index) | int | model index in the Character List | confirmed (code) |
-| `+0x3a0` | float | vertical velocity, kept by the locomotion | confirmed (code) |
-| `+0x3a4` | float | speed multiplier (1.0 for the player; 0.98-1.02 at random for others, `0x00219608`) | confirmed (code), runtime |
+| `+0x384` | int | airborne updates so far | confirmed (code) |
+| `+0x390` | vec4 | last ground position | confirmed (code) |
+| `+0x3a0` | float | vertical velocity, kept by the locomotion, integrated by gravity while airborne, 0 on landing | confirmed (code) |
+| `+0x3a4` | float | speed multiplier, set to 1.0 by `Human_Init` (`0x002180c8`); Rembrandt's speeds match his clips exactly, so 1.0 at runtime | confirmed (code); runtime inferred |
 | `+0x3c8` | 7 × 0x28 | dynamic animation slots | confirmed (code) |
 | `+0x5d8` / `+0x5dc` | float | last stick angle / magnitude | confirmed (code) |
 | `+0x5e0` / `+0x5e4` | float | last turn step / last heading error (turn smoothing) | confirmed (code) |
+| `+0x65c` | float | body scale: 1.0, then set by `Human_Init` through `0x00219608` to `1 − 0.01 × n` (`n` from a division not traced; at least 0.99 in one case); read by `0x0021d020`. 0.97 for Rembrandt | confirmed (code), runtime |
 
 **Per-player record** (`0x00660f50 + i × 0x2c`, 60 of them, one per human index), confirmed (code) at `0x00146078`:
 
@@ -126,10 +145,55 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
 
 **But these are not used in play.** When `0x005101e0` is set (it is 1 at runtime), each getter returns the human's
 own value from its 0x180-byte record times `+0x3a4` instead (confirmed (code) at `0x00221710`, `0x002215d0`): `+0x164`
-for the base, `+0x170` for walk, and (by the same pattern, inferred) `+0x174`, `+0x178`, `+0x17c` for jog, run and
-sprint. **Rembrandt at runtime:** base 3.43, walk 1.63, jog 4.86, run 7.80, sprint 10.25 m/s (`+0x16c` = 1.59).
-Confirmed (runtime). Who writes these values is not traced; that they come from the character's own animations
-(a clip's root displacement over its duration) is speculative.
+for the base, `+0x170` for walk, `+0x174`, `+0x178`, `+0x17c` for jog, run and sprint.
+
+**The speeds come from the clips.** `0x00254078` (called when the character is attached, `Human_AttachInstance`
+`0x00217a98`, and after a movement-style change, `0x00243848`, `0x00253688`) computes each one from the clip in an
+[anim slot](#anim-slots) as the clip's horizontal root displacement over its playing time:
+`sqrt(dx² + dy²) / (duration / rate)`, with the displacement from the clip's descriptor (`0x00101950`), the duration
+from `0x00101a00` and the rate from `0x00104a38`. Confirmed (code). It writes, in the 0x180 record:
+
+| Record field | Speed | From slot | Rembrandt (runtime) |
+| --- | --- | --- | --- |
+| `+0x164` | base (combat walk) | 14 | 3.429 (clip 380) |
+| `+0x16c` | sneak walk | 3 | 1.585 (407) |
+| `+0x170` | walk | 4 | 1.629 (408) |
+| `+0x174` | jog | 5 | 4.857 (409) |
+| `+0x178` | run | 6 | 7.801 (410) |
+| `+0x17c` | sprint | 7 | 10.245 (411) |
+
+Each runtime value equals the clip's displacement divided by its duration as read from the disc, confirmed (runtime).
+The speed class table is therefore only a fallback.
+
+**Gait from speed** (`0x0022aeb0`, the gait stored with the velocity): below 0.5 m/s gait 0; otherwise the gait 1-5
+whose speed (`+0x16c`, `+0x170`, `+0x174`, `+0x178`, `+0x17c`) is nearest. Confirmed (code); a jump table at
+`0x0055bec0`.
+
+### Anim slots {#anim-slots}
+
+The 0x180 record holds the human's **anim slots**: 35 anim ids at `+0x28`-`+0xb3`, copied from the default table at
+`0x005105d8` (`0x00253608`) and changed one by one by `0x002535f0(human, slot, id)`. A player gets slot 14 = 380
+(player combat walk). `0x00253688(human, style)` swaps in a movement style's ids (cases 1-20, a jump table) and then
+recomputes the speeds. Record `+0x20` is the anim id playing (getter `0x002266b8`). Confirmed (code); Rembrandt's ids
+were read at runtime and named from the clips on the disc (confirmed (runtime)).
+
+| Slot | Id | Clip | Slot | Id | Clip |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 388 | neutral idle | 12 | 366 | combat shuffle forward |
+| 1 | 401 | step forward | 13 | 368 | combat dash forward |
+| 2 | 403 | dash forward | 14 | 372 (player 380) | combat walk forward |
+| 3 | 407 | sneak walk | 15 | 360 | combat turn |
+| 4 | 408 | walk | 16-24 | | attacks, grabs, blocks |
+| 5 | 409 | jog | 25 | 427 | jump start |
+| 6 | 410 | run | 26 | 428 | drop cycle |
+| 7 | 411 | sprint | 27 | 429 | drop land |
+| 8 | 390 | slow turn right | 28-33 | | not identified |
+| 9 | 412 | sneak walk start | 34 | 417 | run to neutral |
+| 10 | 413 | walk start | | | |
+| 11 | 358 | combat idle | | | |
+
+Other locomotion ids seen at runtime outside the slots: 414 run start, 418 run 180° turn, 421-426 fall front / back
+begin, cycle and land.
 
 ### Files of a character {#files}
 
@@ -172,7 +236,7 @@ combo attacks (inferred from the clip names). The handler keeps the Anim Range L
 (code) for the slot rule; the id meanings inferred.
 
 **Anim Range List** (`0x45`, 11,568 bytes): a count word, then 722 records of 16 bytes, one per anim id, of the form
-`(u16, u16 = 1000, f32, u16, u16, u16, u16)`. Not decoded.
+`(s16, s16 = 1000, f32, s16, s16, s16, u16)`: offsets, reach, ranges and rate flags ([Animation](formats/animation.md#anim-range-list)).
 
 **Example, Rembrandt (`warr_re_cv`)**: character data `0xe72f9fb5` (200,640 bytes, shared with `warr_re`: 36
 animations, one `0x45`, one `0x08`), model `0xdb1cdf36`, textures `0x46af47d8`. Corroboration (disc).
@@ -277,13 +341,116 @@ Confirmed (code) for the steps; the state predicates are named by what they test
    difference per update, at most 1°, 1.2°, 1.3° or 1.8° per update. What `+0x1ac` holds is not traced.
 
 **Idle, walk, run.** `Human_GaitForSpeed` (`0x00221760`) maps a speed to a gait: 5 (sprint) at or above the sprint
-speed, else 4 (run) at or above the run speed, 3 (jog), 2 (walk), else 0 (idle). Confirmed (code). Which clip each
-gait plays, and how the blend between them is weighted, is not traced; the blend itself is the animation player's
-([Animation](formats/animation.md#blending)).
+speed, else 4 (run) at or above the run speed, 3 (jog), 2 (walk), else 0 (idle). Confirmed (code). The code that
+picks the clip for a gait was not found (the slot table has no getter; its readers index it inline). What it does at
+runtime is below. The
+blend itself is the animation player's ([Animation](formats/animation.md#blending)).
 
-**Measured** (PCSX2 2.9.94, the stick held fully forward from a standstill, positions read over PINE): 4.10 m after a
+**Gaits at runtime** (PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt standing; the left stick held straight up at
+the magnitude given, by the stick-table method in [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2);
+speed is `+0x1ac` sampled every 5 ms, the clip is record `+0x20`). Confirmed (runtime):
+
+| Stick magnitude | What happens |
+| --- | --- |
+| 0.10 | nothing (inside the 0.12 dead zone) |
+| 0.13, 0.5, 0.94 | **walk start** (413) at a steady 0.76 m/s for about 0.45 s, then **walk** (408) at 1.63 m/s, gait 2: the walk speed does not depend on how far the stick is pushed |
+| 0.96, 1.0 | **run start** (414) for about 0.36 s, the speed following the clip (2.77, 2.49, 2.56, 2.63, 2.84, 3.35, 3.90, 4.54, 5.11, 5.40, 5.61, 5.69 m/s, one value per update), then **run** (410), gaining 0.8 m/s per update up to 7.80 |
+| released | speed 0 at once and **idle** (388); run to neutral (417) is not played on release |
+
+So the start clips drive the speed while they play (inferred: their root motion), and the gait clip's speed is the
+target afterwards. A jog was not reached from the stick alone (it needs a carried object, see the locomotion steps
+above).
+
+**Measured** (PCSX2 2.9.94, the stick held fully forward from a standstill by the W key, magnitude 1.0, positions
+read over PINE): 4.10 m after a
 0.75 s hold, 10.08 m after 1.5 s: 5.98 m in the second 0.75 s, **8.0 m/s**, close to Rembrandt's run speed of
 7.80 m/s (confirmed (runtime); the hold times are those of the key presses, so about ±1 frame).
+
+### Moving, standing on the ground and falling {#ground}
+
+The locomotion above only sets a velocity. Moving the human, keeping it on the ground and making it fall happen in
+the human's state update (vtable slot `+0x13c`, `0x0023fea8`) and its move step (`0x0023d8c8`), with the physics
+world (`0x00597198`, `Physics/`) doing the sweep against walls. Confirmed (code) unless marked.
+
+**Where the transform lives.** The authoritative position and rotation of every task-manager object are in a table at
+`0x00714b00`, 32 bytes per object (`position` vec4, then `rotation` quat), indexed by the object's handle index
+(`+0x92`). `SetPosition` (`0x0021b0b8`) writes the table; the human copies it into `+0x10` / `+0x20` at the start of
+each update (vtable `+0xac`, `0x004ed828`). The velocity is at `+0x30` (vec4), read through `0x003a1f00` (zero while
+flag `0x600` is set in `+0x54`); writing it (vtable `+0x74`, `0x0023cf00`) also stores its length at `+0x1ac` and the
+gait for that speed (`0x0022aeb0`) at `+0x1a8`. So `+0x1ac` (used by the lean) is the current speed.
+
+**Airborne flag.** Bit `0x4000000` of the object flags at `+0x54` means "in the air". `0x003a2158` sets it (and clears
+`0x2000000`, "on the ground"); `0x003a21c0` does the reverse.
+
+**One update, in order** (the parts that move the body; the human's other duties are left out):
+
+1. Copy the transform from the table; run the current state's function (for the player, the locomotion,
+   [above](#locomotion)), which sets the velocity.
+2. **Speed sanity check:** a velocity longer than 50 × the human's scale (`+0x65c`, 1.0 normally; `0x0021d020`) is
+   zeroed.
+3. **Gravity**, only while airborne: from the second airborne update on (the counter `+0x384` counts airborne
+   updates), `vz -= 15.68 × dt` (0.5227 m/s per 1/30 s update; 15.68 m/s² is 1.6 g), clamped at **−50 m/s**. The
+   result is written back with the velocity. On the ground `+0x384` is reset to 0.
+4. **Fell out of the world:** if the position is more than **20 m below the collision mesh's lowest vertex** (mesh
+   header `+0x98`, [Collision](collision.md#header)), the human is flagged dead (`0x200000000`), its velocity zeroed,
+   and for a player in a mission whose game-state flags `+0x150` have bit 1, `W_GameState + 0x14c` is set to 1 and
+   `+0x152` to 2 (a mission failure, [Level loading](level-loading.md#a-frame-of-play)).
+5. **Stuck in the air:** after 60 airborne updates, if the physics body's "could not move" counter (body `+0x70`) is
+   also above 59, the human is put back at its last ground position (`+0x390`) and landed (`0x0023e090`).
+6. **Move** (`0x0023d8c8`, below).
+
+**The move.** With velocity `v` (and an external push `+0x2f0` added, which knock-backs use):
+
+- A human without a physics body (`+0x1a0` = 0), riding something (`+0x280` ≠ −1) or in state `0x40` simply moves:
+  `position += (v + push) × dt`.
+- Otherwise, on the ground, **`v.z` is set to 0** first: walking never climbs by velocity, only by the ground snap
+  below. On a slope (ground normal `z`, `+0x238`, below 0.95) and outside some states (`0x00227f68`), the velocity
+  is scaled by `clamp(0.6 + 0.3 × (n.z − 0.5), 0.5, 1.0)`: 0.735 just below the threshold, 0.71 on a 30° slope
+  (`n.z` = 0.87), 0.5 from `n.z` ≤ 0.17. (The code also computes the facing just before, but the scale
+  does not depend on it, so it slows uphill and downhill alike; and there is a step from 1.0 to 0.735 at
+  `n.z` = 0.95.)
+- The physics world then **sweeps the body** (`0x0033e278(dt, world, body, &v, &out)`): the body's pending push-out
+  (body `+0x50`, divided by dt) is added to the displacement `v × dt`, which is swept up to three times, sliding
+  along what it hits. If it is still blocked after three passes, the body stays where it is, its horizontal velocity is
+  zeroed and its "could not move" counter (`+0x70`) goes up; otherwise the counter is reset. Walls come from the
+  level's [collision mesh](collision.md): the physics code walks the same grid (`0x00347170`) and pushes the body's
+  sphere out of the **nearest** enabled triangle that is a wall by its own rule, `|n.z| ≤ 0.65` (steeper than about
+  49°, not the 15° of `CollisionMesh_SpherePush`), by `n × (radius − distance)` (`0x003477c0`).
+- **Ground snap**, on the ground only (and not in game modes 8, `0xb` or `0x11`, `0x00221950`), `0x0023eab8`: cast
+  a ray **straight down from 1.0 m above the feet, 1.5 m long** (the 1.0 is vtable `+0x5c`, `0x004ed818`, a constant).
+    - **Hit:** put the feet **exactly on the hit point** (no gap), remember it as the last ground position (`+0x390`
+      before the snap, `+0x240` after), store the ground normal at `+0x230` (its `z` at `+0x238`, used by the slope
+      rule) and the material at `+0x1d8`. The triangle's flag bits 4 and 5 are passed on (bit 4 to a per-player
+      "under cover" state, `0x0028ef00`; bit 5 to `0x002195e0`; meanings inferred from what the callees touch).
+    - **Miss** (nothing within 0.5 m below the feet): the human **starts to fall** through vtable `+0x154`
+      (`0x0023dc58`) unless it is in state `0x800`.
+  So a step or kerb up to **1.0 m** high is climbed in one update when the sweep lets the body over it, and a drop of
+  up to **0.5 m** is followed without falling; anything deeper is a fall.
+
+**Starting to fall** (`0x0023dc58`): march a ray along the velocity (`Collision_MarchRay`, steps of 0.1 m, up to 5 m)
+to find where the fall will end (kept at `+0x2c0`; the current position if nothing is hit), set the airborne flag
+(`0x003a2158`) and switch the body to its falling mode (body slot `+0x2c` with 2). For a player whose follow camera is
+in its normal mode, a ray 2.5 m down from 0.75 m ahead of the feet checks for a drop and, if there is no ground,
+tells the camera (`0x0012da20` with the heading, −1.0): the camera reacts to a ledge.
+
+**Landing.** While airborne, the sweep tests the segment from the body's upper point (feet + `+0x4e8` − 0.16 × scale)
+to the moved feet against the collision mesh (`0x0023e408`, through `WorldManager_RayCast`); a hit on a triangle with
+`n.z` > **0.65** is a landing contact. The contact handler (`0x00219d50`) then calls `Land(human, 1, 1)`
+(`0x0023e090`): clear the airborne flag, apply **fall damage** by the vertical speed at impact
+(`vz` ≥ −14.9 m/s: none; between −14.9 and −20.5: a share of the maximum health, `(vz + 14.9) / −5.6`, at least the
+class's minimum `+0x118`; below −20.5 m/s: the maximum health, so a fall that fast kills), tell a player's camera
+when `vz` < −1.5 (camera slot `+0x15c` with the landing kind 1-3), set `+0x3a0` (the vertical velocity) to 0 and
+write the velocity back. The thresholds are `0x00510674` (−14.9) and `0x00510678` (−20.5). Free fall from rest
+reaches 14.9 m/s after about 7.1 m and 20.5 m/s after 13.4 m (inferred from the gravity above).
+
+**A fall at runtime** (PCSX2 2.9.94, `level99`, no stick input; Rembrandt raised 10 m by writing the transform table's
+`z`). Confirmed (runtime):
+
+- `vz` changes by −0.5227 m/s per update from the second airborne update, and `z(n+1) = z(n) + vz(n+1) × dt`: the
+  velocity is updated before the move.
+- Clip 428 (drop cycle) plays while falling.
+- Landing after 34 updates at `vz` = −17.25 m/s, inside the damage band; then 429 (drop land), 294 (a hit reaction)
+  and 198 (a ground roll).
 
 ## Coney's implementation
 
@@ -297,8 +464,13 @@ human, character resource or animation code.
   above; pad 0; the follow camera targeting it ([Camera](camera.md)).
 - **Step at 30 Hz.** Movement, turning and the animation step all use dt = 1/30 and per-update limits; a PC build
   that runs faster should keep a fixed 30 Hz step (or scale every limit) so speeds and turn rates match.
-- **Speeds per human.** Read the five speeds per character; for Rembrandt walk 1.63, jog 4.86, run 7.80, sprint
-  10.25 m/s. Until their source is known, the speed class table times the multiplier is the fallback the code has.
+- **Speeds per human** come from the clips: for each locomotion slot, the clip's horizontal root displacement over
+  its duration ([Speed classes](#speed-classes)). For Rembrandt walk 1.63, jog 4.86, run 7.80, sprint 10.25 m/s.
+- **Gaits**: a walk up to 0.95 stick magnitude (any amount above 0.12 gives the same walk), a run above it; the start
+  clips (413, 414) first, then the gait clip; idle at once on release.
+- **Ground**: no vertical velocity on the ground; snap the feet with a ray from 1.0 m above, 1.5 m long, each update;
+  a miss starts a fall with gravity 15.68 m/s² (from the second airborne update), capped at 50 m/s; land on floors
+  with `n.z` > 0.65; fall damage from 14.9 m/s, a kill from 20.5 m/s ([above](#ground)).
 - **The stick is camera-relative** before the human sees it: turn the stick by the camera's heading first, then
   apply the dead zone (0.12) and the run threshold (0.95) to its length.
 - **Turn with a limit and an ease**, not instantly: 12° per update walking, 4° running, eased below 1.5 rad.
@@ -309,14 +481,12 @@ human, character resource or animation code.
 
 ## Open questions
 
-- **Gravity and ground following** while moving: the locomotion keeps `+0x3a0` as the vertical velocity, but where
-  it is integrated and how the human is kept on the ground (a ray per update like the spawn's, or the collision
-  mesh's sphere push) is not traced. `Collision_DropToGround` (`0x0034f950`) and `SpherePush` (`0x003519f8`) on
-  [Collision](collision.md) are the candidates.
-- **Who writes the per-human speeds** (`+0x164`-`+0x17c` of the 0x180 record), and whether they are derived from the
-  walk and run clips.
-- **Which anim ids** the gaits play (walk is 408 for Rembrandt; idle, run and sprint not found), and how the
-  locomotion blend is weighted.
-- **The Anim Range List** (`0x45`) records.
+- **Clip selection**: the code that turns a gait into a clip (start clip, then gait clip, idle on release) and weights
+  the locomotion blend was not found; the anim-task system (`0x00175610`, the AnimationBlend tasks) is the next
+  place to look. Whether the playback rate is scaled with the speed is not known either (the walk start ran at a
+  constant 0.76 m/s, so the start clips seem to play at their own rate).
+- **Jog**: when a pad-controlled human jogs other than when carrying (a movement style, a script).
+- **Slots 28-33** and the movement styles of `0x00253688`.
+- **The `+0x65c` scale's source**: what the division in `Human_Init` takes.
 - **The rest of the human**: the 0x180 and 0x2f0 records, the state flags tested by `0x002265f0` / `0x00226660`, and
   `Human_MakePlayer`'s steps.

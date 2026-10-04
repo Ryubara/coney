@@ -122,16 +122,41 @@ Confirmed (code) at `0x001041f8`, `0x00104110`.
 
 - In a character data resource (resource type 5): pairs of `0x00` + `0x02` chunks, then the Anim Range List and the
   Character Data table that maps 722 anim ids to these clips ([Characters](../characters.md#files)).
+- **Which clip an id gets**: Character Data slot `n` counts the clips of the resource from the **last** one loaded
+  (the chunk system pops them last-in first-out), confirmed (runtime) on Rembrandt's walk (id 408). After loading the
+  slots hold descriptor pointers, which `CharacterInstance_GetAnim` (`0x00175080`) returns.
 - Dynamic animations (`SetDynamicAnimation`) loaded by name later; the **Anim List** in `warriors.glr` (chunk `0x4E`)
   has 564 records of `{hash, size}` after a count word (inferred: the list of loadable clips).
+
+### The Anim Range List (chunk `0x45`) {#anim-range-list}
+
+A count word, then one 16-byte record per anim id (722), next to the clips in each character data resource. The
+character keeps it at Character Data `+0xb54` (`+0xb50` the count); the human's 0x180 record points at it from
+`+0x160` (`+0x15c` the count), set by `0x00254568`. The readers, confirmed (code) at the cited addresses:
+
+| Offset | Type | Meaning | Reader |
+| --- | --- | --- | --- |
+| `+0x00`, `+0x02` | s16 × 0.001 | `x`, `y` of a target offset in metres (where the other human should be for this move) | `0x00254418`; its angle `0x00254310` |
+| `+0x04` | f32 | reach; 0 means the id has no range data | `0x002544a0` |
+| `+0x08` | s16 × 0.001 | a far range; when 0, `+0x04` × 1.25 | `0x00254508`; setter `0x002545a8` |
+| `+0x0a` | s16 | a value not named | `0x002542e8`; setter `0x002548c8` |
+| `+0x0c` | s16 | a kind (10 by default; 0 maps to `0x26` in one state) | `0x00254d60` |
+| `+0x0e` | u16 | flags: `0x800` plays the clip at rate 0.85, `0x1000` and `0x2000` at 1.0 | `0x00104a38` |
+
+The second word on the disc is 1000 in every record seen, which is consistent with `+0x02` being a scaled value of
+1.0 m (inferred). The ranges are most likely for attacks and grabs (speculative);
+the locomotion clips carry flag `0x1000` (confirmed (runtime) on Rembrandt). The class record (`CfgChar`'s 45 floats
+and 16-bit values) overrides the range data for some ids, through the jump tables at `0x0055d640` and `0x0055d6f0`
+(called from `Human_AttachInstance`, `0x00217a98`), confirmed (code).
 
 ## Behaviour
 
 ### Playing a clip
 
 1. **Init** (`0x001041f8`): find each channel's first key in sections A, B and C and set up its countdown.
-2. **Advance** (`0x001044a0`) by dt times the rate (`0x00104a38`: the flags `0x800`, `0x1000`, `0x2000` choose a
-   multiplier from `0x00510260`-`0x0051026c`, which hold 1.0, 0.85, 1.0, 1.0): the time grows, the frame is
+2. **Advance** (`0x001044a0`) by dt times the rate (`0x00104a38`: the id's [Anim Range List](#anim-range-list)
+   flags `0x800`, `0x1000`, `0x2000` choose a multiplier from `0x00510260`-`0x0051026c`, which hold 1.0, 0.85, 1.0,
+   1.0): the time grows, the frame is
    `time × 30`, and each passing frame steps the channels (`0x00104110`). Past the duration it returns the overshoot,
    so the caller can loop or chain the next clip without losing time.
 3. **Sample** (`0x00104ce0`): for each channel, `t = (frame − key start) / next key's delta`; lerp positions
@@ -146,7 +171,13 @@ Confirmed (code) for the steps.
 `Pose_BlendPartial` (`0x00105158`) mixes two poses with a weight: rotations by slerp (`0x00336a00`), translations by
 lerp; with a bone given, only that bone's subtree (found through the parent table) is blended, so an upper-body clip
 can play over legs that walk. Confirmed (code). Which clips the locomotion blends, and with which weights, is open
-([Characters](../characters.md#locomotion)).
+([Characters](../characters.md#locomotion)); at runtime a gait change shows a start clip (413 walk start, 414 run
+start) and then the gait clip, and release goes straight to idle.
+
+**Root motion and speed.** A character's walking speeds are computed from its clips: the descriptor's displacement
+over the duration divided by the rate ([Characters](../characters.md#speed-classes)), confirmed (code) and runtime.
+While a start clip plays the character's speed follows the clip (the run start's speed varies from 2.5 to 5.7 m/s
+over its 0.36 s), inferred from runtime samples to be section A's root velocity.
 
 **Disc survey (counts only):** 31,274 clip occurrences in the WAD, 1,875 distinct; all parse with the channel rule;
 the channel count equals the mask's bit count in all; at most 606 keys in a channel; clips run 1 to 680 frames; bone
@@ -161,15 +192,19 @@ None yet.
 - Decode a clip into channels of `(start frame, value)` keys at load; sampling is then a search (or a cursor) per
   channel and one lerp or nlerp. Keep the hold rule for a channel's last key.
 - Rebuild `w` with a non-negative square root and nlerp with the sign flip, or the joints will flip.
-- The root's motion is data: section A's velocity and the descriptor's displacement say how far a clip moves;
-  whether the game moves the character by it or by the locomotion speed is open ([Characters](../characters.md)).
+- The root's motion is data: the descriptor's displacement over the duration is the speed of a looping gait (the
+  game derives each character's walk, jog, run and sprint speeds from it), and start clips appear to move the
+  character by their own root velocity ([Characters](../characters.md#speed-classes)).
+- Apply the [Anim Range List](#anim-range-list) rate flag when advancing a clip (0.85 for `0x800`).
 - A synthetic test fixture is easy to make: one clip with two channels and a few keys per channel, checking the
   channel split, the scales and the interpolation; no game data is needed.
 - Bones are 0-33 in the clip and the pose, 32 in the HAnim hierarchy: map them once through the parent table.
 
 ## Open questions
 
-- The meaning of byte `+1` of a key, and of the Anim Range List (`0x45`) next to the clips.
+- The meaning of byte `+1` of a key (not looked at in this pass).
+- The Anim Range List's `+0x0a` and `+0x0c`, and the class record overrides by id.
 - The event types (11 is the most common) and what they trigger (footsteps, sounds, hit windows; speculative).
-- How the descriptor's root displacement and section A are used by the character controller.
+- How section A drives the character during a start clip (confirm by comparing a clip's keys with the speeds
+  sampled at runtime).
 - The exact HAnim bone ↔ pose bone mapping (inferred above, not checked).

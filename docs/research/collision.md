@@ -274,9 +274,14 @@ on these rays.
 
 ## Open questions
 
-- **Flag bits 2-10 and 12-15**, and the masks the callers pass: which bits mean what (stairs, no-camera, water?).
+- **Flag bits 2-10 and 12-15**, and the masks the callers pass: which bits mean what (stairs, no-camera, water?). The
+  characters' ground snap passes bits 4 and 5 of the triangle under the feet on: bit 4 to a per-player "under cover"
+  state (`0x0028ef00`), bit 5 to `0x002195e0` (inferred from the callees, [Characters](characters.md#ground)). The
+  follow camera's rays use mask `0x200` ([Camera](camera.md#collision)).
 - **The area byte** (`+0x09`): what the 125 values number.
 - **`level118`'s header**: is that level's grid usable as it is (its `y` scale is 0)?
-- **The cameras' and characters' use**: which caller passes which mask and exclusion list; how characters stand on
-  the ground (the 46 `WorldManager_RayCast` callers).
+- **The cameras' and characters' use** (partly answered): characters stand on the ground by a ray 1.0 m above the
+  feet, 1.5 m down, each update, and land on triangles with `n.z` > 0.65; walls for moving bodies are the physics
+  code's own push-out from triangles with `|n.z|` ≤ 0.65 ([Characters](characters.md#ground)). The masks and
+  exclusion lists of the other `WorldManager_RayCast` callers are not listed.
 - **`ChangeCollision`**: whether the Lua binding reaches `0x0034fba0`.
