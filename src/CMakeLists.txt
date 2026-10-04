@@ -34,6 +34,7 @@ add_library(coney_core STATIC
     graphics/particle_page.cpp
     graphics/rw_stream.cpp
     graphics/screen.cpp
+    graphics/screen_fade.cpp
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
     raycast/collision_mesh.cpp

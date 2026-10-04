@@ -10,7 +10,9 @@ namespace coney::gui {
 
 PmController::PmController(PmShared& shared) : m_shared(shared), m_greet(shared), m_mode(shared) {
     for (std::size_t i = 0; i < kPlaceholderNames.size(); ++i) {
-        m_placeholders.at(i) = std::make_unique<PmPlaceholder>(kPlaceholderNames.at(i), shared);
+        const std::string_view name = kPlaceholderNames.at(i);
+        const bool storyPath = std::ranges::find(kStoryPathNames, name) != kStoryPathNames.end();
+        m_placeholders.at(i) = std::make_unique<PmPlaceholder>(name, shared, storyPath);
     }
 
     // The transition table, screen by screen as the controller's constructor adds them.
@@ -65,12 +67,23 @@ PmController::PmController(PmShared& shared) : m_shared(shared), m_greet(shared)
 
 void PmController::start(std::string onRumble) {
     m_flow.clear();
+    m_shared.onRumble = onRumble;
     m_onRumble = std::move(onRumble);
     m_shared.finishing = false;
+    m_shared.finishRequested = false;
     m_flow.push(m_greet);
 }
 
-bool PmController::update() { return m_flow.update(); }
+bool PmController::update() {
+    const bool done = m_flow.update();
+    // A stand-in screen on the story path ends the profile manager as the screens it replaces would.
+    if (m_shared.finishRequested) {
+        m_shared.finishRequested = false;
+        m_flow.clear();
+        return true;
+    }
+    return done;
+}
 
 void PmController::stop() { m_flow.clear(); }
 

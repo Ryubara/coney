@@ -19,11 +19,18 @@ namespace coney::gui {
 /// docs/research/frontend.md#profile-manager, starting at PM_Greet. It is done when the flow's stack is empty.
 ///
 /// PM_Greet and PM_Mode are written; the twelve others are PmPlaceholder stand-ins (Coney's) until their research
-/// and code exist.
+/// and code exist. The stand-ins on the story path (kStoryPathNames) end the profile manager on accept, so the story
+/// item leads to `Menu.startGame` as it does in the game once the player has picked a profile.
 ///
 /// Research: docs/research/frontend.md#profile-manager, docs/research/gui.md#screen-flow
 class PmController {
   public:
+    /// The stand-ins on the way from the main menu's story item to a game: accept on one ends the profile manager,
+    /// which then calls `Menu.startGame` (Coney's, until the profile, difficulty and option screens are written).
+    static constexpr std::array<std::string_view, 8> kStoryPathNames{"PM_NumPlayers", "PM_Profile",  "PM_Create",
+                                                                     "PM_Load",       "PM_Continue", "PM_Difficulty",
+                                                                     "PM_Light",      "PM_Subtitles"};
+
     /// The screens other than PM_Greet and PM_Mode, in the order of the controller's fields (`+0x68` on).
     static constexpr std::array<std::string_view, 12> kPlaceholderNames{
         "PM_NoSpace", "PM_TooManyProfiles", "PM_Extras", "PM_NumPlayers", "PM_Profile", "PM_Create",
@@ -38,7 +45,8 @@ class PmController {
     /// @orig 0x00204a78 PM_Controller_Start (PM_Controller.cpp)
     void start(std::string onRumble);
 
-    /// Runs one frame of the flow (the top screen updates and draws). Returns true when the flow is done.
+    /// Runs one frame of the flow (the top screen updates and draws). Returns true when the flow is done, or a stand-in
+    /// screen asked to finish (PmShared::finishRequested), which empties it.
     /// @orig 0x00204ba0 PM_Controller_Update (PM_Controller.cpp)
     bool update();
 

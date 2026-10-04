@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,6 +13,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/pad.h"
+#include "graphics/screen_fade.h"
 #include "graphics/sprite_batch.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_greet.h"
@@ -45,11 +47,12 @@ struct Harness {
     SpriteBatch textBatch{font.sheet(), 4096, 9000.0F};
     SpriteBatch menuBatch{menuSheet(), 50, 8500.0F};
     coney::gui::PmShared shared;
+    coney::graphics::ScreenFade fade;
     std::unique_ptr<PmController> controller;
     Pad pad;
     std::uint64_t frame = 0;
     std::vector<int> cues;
-    std::vector<std::pair<std::string, double>> scripts;
+    std::vector<std::pair<std::string, std::vector<double>>> scripts;
 
     explicit Harness(bool europe = false) {
         strings.set(PmGreet::kPromptString, "PRESS START");
@@ -63,9 +66,10 @@ struct Harness {
         shared.canvas.fonts = [this](int /*slot*/) { return &font; };
         shared.canvas.textBatch = [this](int /*slot*/) { return &textBatch; };
         shared.playSound = [this](int cue) { cues.push_back(cue); };
-        shared.callScript = [this](std::string_view function, double argument) {
-            scripts.emplace_back(std::string(function), argument);
+        shared.callScript = [this](std::string_view function, std::span<const double> args) {
+            scripts.emplace_back(std::string(function), std::vector<double>(args.begin(), args.end()));
         };
+        shared.fade = &fade;
         controller = std::make_unique<PmController>(shared);
     }
 
@@ -80,6 +84,7 @@ struct Harness {
         sample.pressure.fill(255);
         pad.update(sample);
         shared.frame = coney::gui::GuiFrame{.timeMs = msOf(frame++), .pad = &pad};
+        fade.update(shared.frame.timeMs);
         textBatch.clear();
         menuBatch.clear();
         return controller->update();
@@ -145,24 +150,51 @@ TEST_CASE("PM_Greet: START leads to PM_Mode with front-end sound cue 9", "[profi
     CHECK(g.controller->currentName() == "PM_Greet");
 }
 
-TEST_CASE("PM_Greet: 70 s without input call Menu.playMovie(2), and input restarts the wait", "[profile_manager]") {
+TEST_CASE("PM_Greet: 70 s without a fade call Menu.playMovie(2); the pad does not restart the wait",
+          "[profile_manager]") {
     Harness h;
     h.start();
-    // 70,000 ms is frame 2,100; input on frame 1,000 pushes it to frame 3,100.
+    // 70,000 ms is frame 2,100 (the screen entered on frame 0); a button held on frame 1,000 changes nothing.
     for (int i = 0; i < 1000; ++i) {
         h.step();
     }
     h.step(coney::pad::kSquare);
-    while (h.frame < 3099) {
+    while (h.frame < 2100) {
         h.step();
     }
     CHECK(h.scripts.empty());
     h.step();
-    h.step();
     REQUIRE(h.scripts.size() == 1);
     CHECK(h.scripts[0].first == "Menu.playMovie");
-    CHECK(h.scripts[0].second == 2.0);
+    CHECK(h.scripts[0].second == std::vector<double>{2.0});
     CHECK(h.controller->currentName() == "PM_Greet");
+}
+
+TEST_CASE("PM_Greet: a screen fade keeps the prompt lit and restarts the idle wait", "[profile_manager]") {
+    Harness h;
+    h.start();
+    h.step();
+    // A 1.5 s fade in queued on frame 1: the prompt stays fully lit while it runs, then blinks again.
+    h.fade.queue(coney::graphics::ScreenFade::kFadeIn, 1.5, Harness::msOf(h.frame));
+    for (int i = 0; i < 20; ++i) {
+        h.step();
+        CHECK(h.controller->greet().prompt().style().fade == 1.0F);
+    }
+    while (h.fade.active()) {
+        h.step();
+    }
+    const std::uint64_t clearFrame = h.frame;
+    h.step();
+    CHECK(h.controller->greet().prompt().style().fade < 1.0F);
+    // The idle wait counts from the last frame of the fade: 70 s later, not 70 s after the screen's entry.
+    while (h.frame < 2101) {
+        h.step();
+    }
+    CHECK(h.scripts.empty());
+    while (h.frame < clearFrame + 2101) {
+        h.step();
+    }
+    CHECK(h.scripts.size() == 1);
 }
 
 TEST_CASE("PM_Mode: three items, the first selected; extras left out with the flag 0x02", "[profile_manager]") {
@@ -203,28 +235,80 @@ TEST_CASE("PM_Mode: down and cross on extras lead to PM_Extras; back returns to 
     CHECK(h.controller->mode().grid().selected() == 0);
 }
 
-TEST_CASE("PM_Mode: story leads to PM_Profile, quick rumble stays, back leads to PM_Greet", "[profile_manager]") {
+TEST_CASE("PM_Mode: story leads to PM_Profile, quick rumble calls the first callback, back leads to PM_Greet",
+          "[profile_manager]") {
     Harness h;
     h.start();
     h.step(coney::pad::kStart);
     h.wait();
     h.tap(coney::pad::kCross);
     CHECK(h.controller->currentName() == "PM_Profile");
+    CHECK(h.cues == std::vector<int>{PmGreet::kStartCue, PmMode::kAcceptCue});
     h.wait();
     h.tap(coney::pad::kCircle);
     CHECK(h.controller->currentName() == "PM_Mode");
 
-    // Up wraps to the last item, quick rumble, whose code has no transition.
+    // Up wraps to the last item, quick rumble: the profile manager's first Lua callback, and the menu stays.
     h.wait();
     h.tap(coney::pad::kUp);
     h.wait();
     h.tap(coney::pad::kCross);
     CHECK(h.controller->currentName() == "PM_Mode");
+    REQUIRE(h.scripts.size() == 1);
+    CHECK(h.scripts[0].first == "Menu.fadeToRMI");
+    CHECK(h.scripts[0].second.empty());
 
+    // Back: PM_Greet, with cue 0xf.
     h.wait();
     h.tap(coney::pad::kTriangle);
     CHECK(h.controller->currentName() == "PM_Greet");
     CHECK(h.controller->flow().size() == 1);
+    CHECK(h.cues.back() == PmMode::kBackCue);
+}
+
+TEST_CASE("PM_Mode: input waits while the screen is faded; story with two pads asks for the players",
+          "[profile_manager]") {
+    Harness h;
+    h.start();
+    h.step(coney::pad::kStart);
+    h.wait();
+    // Faded out: cross does nothing.
+    h.fade.queue(coney::graphics::ScreenFade::kFadeOut, 0.0, Harness::msOf(h.frame));
+    h.tap(coney::pad::kCross);
+    CHECK(h.controller->currentName() == "PM_Mode");
+    // Faded back in: two pads connected make story lead to PM_NumPlayers.
+    h.fade.queue(coney::graphics::ScreenFade::kFadeIn, 0.0, Harness::msOf(h.frame));
+    h.shared.connectedPads = 2;
+    h.wait();
+    h.tap(coney::pad::kCross);
+    CHECK(h.controller->currentName() == "PM_NumPlayers");
+}
+
+TEST_CASE("profile manager: accept on a story-path stand-in ends the profile manager", "[profile_manager]") {
+    Harness h;
+    h.start();
+    h.step(coney::pad::kStart);
+    h.wait();
+    h.tap(coney::pad::kCross);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    h.wait();
+    // Cross on PM_Profile: the flow is done, which makes the profile manager leave and call its second callback.
+    CHECK_FALSE(h.step(coney::pad::kCross));
+    CHECK(h.step());
+    CHECK(h.controller->current() == nullptr);
+
+    // A stand-in off the story path (extras) does not.
+    Harness g;
+    g.start();
+    g.step(coney::pad::kStart);
+    g.wait();
+    g.tap(coney::pad::kDown);
+    g.wait();
+    g.tap(coney::pad::kCross);
+    REQUIRE(g.controller->currentName() == "PM_Extras");
+    g.wait();
+    g.tap(coney::pad::kCross);
+    CHECK(g.controller->currentName() == "PM_Extras");
 }
 
 TEST_CASE("profile manager: every screen of the table exists; stop empties the flow", "[profile_manager]") {

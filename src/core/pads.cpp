@@ -24,4 +24,12 @@ const Pad& Pads::record(std::size_t index) const {
     return m_records.at(index);
 }
 
+std::size_t Pads::connectedCount() const {
+    std::size_t count = 0;
+    for (const Pad& pad : m_records) {
+        count += pad.connected() ? 1 : 0;
+    }
+    return count;
+}
+
 } // namespace coney

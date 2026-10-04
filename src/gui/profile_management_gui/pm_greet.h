@@ -14,18 +14,20 @@
 namespace coney::gui {
 
 /// The profile manager's first screen, "press START": the game's logo and a blinking prompt. START on the HUD player's
-/// pad leads to the main menu (PM_Mode) with front-end sound cue 9; 70 s without input call the Lua function
-/// `Menu.playMovie(2)` (the attract movie).
+/// pad leads to the main menu (PM_Mode) with front-end sound cue 9; 70 s without a screen fade call the Lua function
+/// `Menu.playMovie(2)` (the attract movie), and the wait starts again.
 ///
 /// - The prompt is global string 0x76; its alpha ramps 0 → 255 and back in alternate 1,500 ms halves, counted from the
 ///   screen's entry, while the profile manager is not finishing.
 /// - START is read with the auto-repeating query, as the original does; START is not a d-pad bit, so that is its plain
 ///   press.
 ///
+/// - A screen fade in progress (the screen-effects manager's `+0x1d4` and `+0x1d8`, graphics::ScreenFade::active())
+///   keeps the prompt fully lit and restarts the idle time; the pad does not touch it.
+///
 /// Coney's choices: the sprite is rectangle 0 of `menu_system` (the logo, from viewing the sheet); the layout is
-/// PmLayout's (the logo keeps its rectangle's shape); "activity" that restarts the idle time is any button held or a
-/// stick off centre on the HUD player's pad (the original reads two HUD fields, `0x005fdeb8` `+0x1d4` and `+0x1d8`, not
-/// on the page); after the movie call the idle time starts again; the prompt is drawn in font slot 2 at scale 1.
+/// PmLayout's (the logo keeps its rectangle's shape); "a fade in progress" is a fade running or a screen not fully
+/// clear; the prompt is drawn in font slot 2 at scale 1.
 ///
 /// Research: docs/research/frontend.md#profile-manager
 class PmGreet final : public ScreenFlowState {
@@ -40,8 +42,10 @@ class PmGreet final : public ScreenFlowState {
     static constexpr std::uint32_t kPromptString = 0x76;
     /// Half the prompt's blink: the time it takes to fade in, and to fade out.
     static constexpr std::uint64_t kBlinkHalfMs = 1500;
-    /// Idle time before the attract movie.
+    /// Time without a screen fade before the attract movie.
     static constexpr std::uint64_t kIdleMs = 70'000;
+    /// The movie `Menu.playMovie` is asked for: entry 2 of `Menu.movies`, the intro `L1_IN`.
+    static constexpr double kAttractMovie = 2.0;
     /// The front-end sound cue START plays.
     static constexpr int kStartCue = 9;
     /// The `menu_system` rectangle the logo is.

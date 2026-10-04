@@ -15,8 +15,13 @@ void PmPlaceholder::enter(ScreenFlowController& /*flow*/) {
 int PmPlaceholder::update() {
     const GuiFrame& frame = m_shared.frame;
     int result = kStay;
-    if (frame.pad != nullptr && m_shared.input.dispatch(*frame.pad, frame.timeMs) == MenuCommand::Back) {
-        result = kBack;
+    if (frame.pad != nullptr) {
+        const std::optional<MenuCommand> command = m_shared.input.dispatch(*frame.pad, frame.timeMs);
+        if (command == MenuCommand::Back) {
+            result = kBack;
+        } else if (command == MenuCommand::Accept && m_finishesOnAccept) {
+            m_shared.finishRequested = true;
+        }
     }
     m_text.update(frame);
     m_text.render(m_shared.canvas);

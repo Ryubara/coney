@@ -49,12 +49,17 @@ graphics::LogicalQuad legalScreenQuad(const graphics::OverlayCamera& camera, std
 std::string resourceFileName(std::string_view resourceName) { return std::format("{}", crc32(resourceName)); }
 
 LegalScreenMode::LegalScreenMode(graphics::RenderDevice& device, SheetLoader loadSheet, LegalScreenSettings settings,
-                                 std::function<void(std::string_view)> log)
-    : m_device(device), m_loadSheet(std::move(loadSheet)), m_settings(settings), m_log(std::move(log)) {}
+                                 std::function<void(std::string_view)> log, script::ScriptSystem* scripts)
+    : m_device(device), m_loadSheet(std::move(loadSheet)), m_settings(settings), m_log(std::move(log)),
+      m_scripts(scripts) {}
 
 void LegalScreenMode::enter() {
-    // The original also runs the preload scripts (enum_preload.lua, config_preload.lua) here; they wait for Coney's
-    // Lua system. TODO(docs/research/frontend.md#mode-flow): run them once there is one.
+    // The preload scripts, two lists in the one Lua state: the enumerations, then the configuration. The "mode switch"
+    // calls the original makes around them do nothing in this build.
+    if (m_scripts != nullptr && m_scripts->exists()) {
+        m_scripts->runFiles(script::kEnumPreloadScripts);
+        m_scripts->runFiles(script::kConfigPreloadScripts);
+    }
     m_startTicks.reset();
     const std::string name = legalScreenResourceName(m_settings);
     auto sheet = m_loadSheet(name);

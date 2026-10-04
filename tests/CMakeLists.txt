@@ -26,6 +26,7 @@ add_executable(coney_tests
     graphics/particle_page_test.cpp
     graphics/ps2_world_mesh_test.cpp
     graphics/rw_stream_test.cpp
+    graphics/screen_fade_test.cpp
     graphics/screen_test.cpp
     graphics/sprite_batch_test.cpp
     graphics/texture_grid_test.cpp

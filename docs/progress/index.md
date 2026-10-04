@@ -19,15 +19,15 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 0.9%](https://img.shields.io/badge/reimplemented-0.9%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 2.0%](https://img.shields.io/badge/reimplemented-2.0%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 136 functions) |
+| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% of the game's own code (66,000 of 3,342,408 bytes, 179 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▋░░░░░░░░░░░░░` | 4 of 12 done |
 
-52 reimplemented function(s) have no size yet and add no bytes.
+56 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -57,21 +57,21 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 4 | 32,152 |
 | `FileIO` | `▋░░░░░░░░░░░░░░░░░░░` | 3.3% | 2 | 6,480 |
-| `GameModes` | `█▊░░░░░░░░░░░░░░░░░░` | 8.6% | 17 | 51,816 |
-| `Graphics` | `▋░░░░░░░░░░░░░░░░░░░` | 2.9% | 22 | 189,024 |
-| `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 481,192 |
+| `GameModes` | `██▏░░░░░░░░░░░░░░░░░` | 10.7% | 22 | 51,816 |
+| `Graphics` | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% | 23 | 189,024 |
+| `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 31 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 197,192 |
+| `Scripting` | `███▍░░░░░░░░░░░░░░░░` | 16.7% | 29 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 23,816 |
 | `WorldObjects` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 18,648 |
-| `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
+| `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.0% | 8 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 25 | 1,524,752 |
@@ -133,8 +133,11 @@ at the top of the repository's `README.md`.
 | `0x0015a270` | `MemoryCard_SetBootCheck` | `GameModes` | 32 |
 | `0x0015c2c0` | `Mode6::Exit` | `GameModes` | 320 |
 | `0x0015c4b0` | `LevelFlow_StartFrontEnd` | `GameModes` | 328 |
+| `0x0015c5f8` | `LevelFlow_FinishFrontEnd` | `GameModes` | 136 |
 | `0x0015c688` | `Mode8::Enter` | `GameModes` | 64 |
 | `0x0015c6f8` | `Mode8::Resume` | `GameModes` | 136 |
+| `0x0015c7b0` | `LevelFlow_ChooseLevel` | `GameModes` | 168 |
+| `0x0015c858` | `Mode8::Update` | `GameModes` | 568 |
 | `0x0015e048` | `Mode12::Enter` | `GameModes` | 176 |
 | `0x0015e130` | `Mode12::Exit` | `GameModes` | 264 |
 | `0x0015e238` | `Mode12::Update` | `GameModes` | 760 |
@@ -143,6 +146,8 @@ at the top of the repository's `README.md`.
 | `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes` | 96 |
 | `0x0015e718` | `GameModeStack_Top` | `GameModes` | 48 |
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
+| `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
+| `0x00161218` | `RunPreloadScripts` | `GameModes` | 152 |
 | `0x00179808` | `Font_Size` | `Graphics` | 240 |
 | `0x00179958` | `Font_Measure` | `Graphics` | 728 |
 | `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
@@ -157,6 +162,7 @@ at the top of the repository's `README.md`.
 | `0x00184890` | `ResourceMgr_CompareOverlayKeys` | `Graphics` | 64 |
 | `0x00185cc8` | `ResourceMgr_EmptyInstances` | `Graphics` | 88 |
 | `0x00185d20` | `ResourceMgr_RenderOverlay` | `Graphics` | 840 |
+| `0x0018cc60` | `ScreenQueueEffect` | `Graphics` | 504 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 | `0x00192688` | `AtomicPlugin_StreamRead` | `Graphics` | not filled in |
@@ -197,6 +203,7 @@ at the top of the repository's `README.md`.
 | `0x00207e28` | `PM_Greet::Update` | `GUI` | 1,120 |
 | `0x00208288` | `PM_Greet::Render` | `GUI` | 152 |
 | `0x00209da8` | `PM_Mode::Init` | `GUI` | 944 |
+| `0x0020a268` | `PM_Mode::HandleCommand` | `GUI` | 416 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x00337920` | `RayTriangle_OneSided` | `unattributed` | not filled in |
@@ -212,7 +219,35 @@ at the top of the repository's `README.md`.
 | `0x00351160` | `CollisionMesh_SetEnabledInBox` | `unattributed` | not filled in |
 | `0x00351468` | `CollisionMesh_SphereTestCell` | `unattributed` | not filled in |
 | `0x003519f8` | `CollisionMesh_SpherePush` | `unattributed` | not filled in |
+| `0x00356390` | `ScriptSystem_Create` | `Scripting` | 192 |
+| `0x00356450` | `ScriptSystem_Destroy` | `Scripting` | 136 |
+| `0x003564d8` | `ScriptSystem::ScriptSystem` | `Scripting` | 312 |
+| `0x00356610` | `ScriptSystem::~ScriptSystem` | `Scripting` | 200 |
+| `0x003566d8` | `ScriptSystem::Update` | `Scripting` | 696 |
+| `0x003569d8` | `ScriptSystem::EnterLevel` | `Scripting` | 160 |
+| `0x00356af8` | `ScriptSystem::RunFile` | `Scripting` | 352 |
+| `0x00356c58` | `ScriptSystem::RunFiles` | `Scripting` | 432 |
+| `0x00356e08` | `ScriptSystem::FindFunction` | `Scripting` | 360 |
+| `0x00357188` | `ScriptSystem::Call` | `Scripting` | 48 |
+| `0x003571b8` | `ScriptSystem::Schedule` | `Scripting` | 304 |
+| `0x003572e8` | `ScriptSystem::ScheduleArg1` | `Scripting` | 328 |
+| `0x00357430` | `ScriptSystem::ScheduleArg2` | `Scripting` | 344 |
+| `0x00357588` | `ScriptSystem::FlushScheduled` | `Scripting` | 848 |
+| `0x003578d8` | `ScriptSystem::SetUpdateFunction` | `Scripting` | 56 |
+| `0x00357990` | `isRelease` | `Scripting` | 8 |
+| `0x00357998` | `GetPlatform` | `Scripting` | 8 |
+| `0x003579a0` | `doFile` | `Scripting` | 200 |
+| `0x00357a68` | `preLoadFile` | `Scripting` | 312 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
+| `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
+| `0x0036d938` | `ToInt` | `Scripting` | not filled in |
+| `0x0036df48` | `MenuLoadLevel` | `Scripting` | not filled in |
+| `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
+| `0x0037d420` | `RegisterBindings` | `Scripting` | 27,408 |
+| `0x00386370` | `gc` | `Scripting` | 48 |
+| `0x003863d8` | `ScheduleFunc` | `Scripting` | 56 |
+| `0x00386410` | `ScheduleFuncArg1` | `Scripting` | 64 |
+| `0x00386450` | `FlushScheduledFuncs` | `Scripting` | 56 |
 | `0x0040cdd8` | `LevelObject_LinkModel` | `World` | not filled in |
 | `0x0040ce30` | `LevelObject_OnLoaded` | `World` | not filled in |
 | `0x0040d0a8` | `LevelObject_RenderBackground` | `World` | not filled in |
@@ -236,6 +271,14 @@ at the top of the repository's `README.md`.
 | `0x004120a8` | `World_FindPartToUnload` | `World` | not filled in |
 | `0x00412310` | `World_RequestPart` | `World` | not filled in |
 | `0x004123e8` | `World_ResetVisibility` | `World` | not filled in |
+| `0x0041abe8` | `GetCheckPoint` | `Warriors` | 16 |
+| `0x0041d6f0` | `GetLevelId` | `Warriors` | 40 |
+| `0x0041d718` | `GetCurrentLevelIndex` | `Warriors` | 16 |
+| `0x0041d7f0` | `GetLanguage` | `Warriors` | 16 |
+| `0x0041d800` | `GetDifficulty` | `Warriors` | 16 |
+| `0x0041d820` | `GetProfileDifficulty` | `Warriors` | 16 |
+| `0x0041f118` | `W_GameState_SetLevelRecord` | `Warriors` | 384 |
+| `0x004238a8` | `UM_IsLevelComplete` | `Warriors` | 64 |
 <!-- progress:end -->
 
 ## How it is measured

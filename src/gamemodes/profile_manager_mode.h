@@ -16,10 +16,12 @@
 #include "graphics/overlay_camera.h"
 #include "graphics/particle_page.h"
 #include "graphics/render_device.h"
+#include "graphics/screen_fade.h"
 #include "graphics/sprite_batch.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_controller.h"
 #include "gui/profile_management_gui/pm_shared.h"
+#include "scripting/script_system.h"
 
 namespace coney {
 
@@ -33,13 +35,14 @@ class GameModeStack;
 ///   sprites at depth 8,500) and starts the controller with the first Lua callback. (Coney starts the controller at
 ///   the top of the first update, in the same step, so the first screen knows the frame's time.)
 /// - `Update` runs one frame: the controller (the screen on top reads the HUD player's pad, port 1, and adds its
-///   sprites), then the 2D pass, then the present. It leaves when the flow is done.
+///   sprites), the 2D pass, the screen fade, then the scripts (scheduled calls) and the present. It leaves when the
+///   flow is done.
 /// - `Exit` stops the controller and, when the flow finished, calls the second Lua callback (`Menu.startGame`).
 ///
-/// Coney's choices: there is no front-end world yet (`level100` is not loaded), so the screen is cleared to black where
-/// the original draws the Wonder Wheel scene; the fonts are loaded here (`part_page0` for font slot 2, `big_font` for
-/// slot 6; the original makes them once at start-up) and drawn at depth 9,000; the Rumble-mode flag the original's
-/// `Exit` reads is always clear; the Lua callbacks go to FrontEndServices, which skips them.
+/// Coney's choices: there is no front-end world yet (`level100`'s world is not loaded), so the screen is cleared to
+/// black where the original draws the Wonder Wheel scene; the fonts are loaded here (`part_page0` for font slot 2,
+/// `big_font` for slot 6; the original makes them once at start-up) and drawn at depth 9,000; the Rumble-mode flag the
+/// original's `Exit` reads is always clear; the fade is drawn over the menus as a black quad.
 ///
 /// Research: docs/research/frontend.md#mode-flow, docs/research/frontend.md#profile-manager
 class ProfileManagerMode final : public GameMode {
@@ -59,11 +62,13 @@ class ProfileManagerMode final : public GameMode {
     /// Loads a sprite sheet by its resource name; the platform layer reads it from the disc.
     using SheetLoader = std::function<std::expected<graphics::SpriteSheet, Error>(std::string_view resourceName)>;
 
-    /// Draws through `device` with sheets from `loadSheet`, shows `strings`, and sends sound, movies and Lua calls to
-    /// `services`; `europe` is the device flag 0x02 (hides PM_Extras). A sheet that fails to load is passed to `log`
-    /// and its sprites or text are not drawn. `device`, `strings` and `services` must outlive the mode.
+    /// Draws through `device` with sheets from `loadSheet`, shows `strings`, sends sound, movies and Lua calls to
+    /// `services`, waits for `fade` and runs `scripts` once a frame; `europe` is the device flag 0x02 (hides
+    /// PM_Extras). A sheet that fails to load is passed to `log` and its sprites or text are not drawn. Every reference
+    /// must outlive the mode.
     ProfileManagerMode(graphics::RenderDevice& device, SheetLoader loadSheet, const gui::GlobalStrings& strings,
-                       FrontEndServices& services, bool europe, std::function<void(std::string_view)> log);
+                       FrontEndServices& services, graphics::ScreenFade& fade, script::ScriptSystem& scripts,
+                       bool europe, std::function<void(std::string_view)> log);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
 
@@ -102,6 +107,8 @@ class ProfileManagerMode final : public GameMode {
     graphics::RenderDevice& m_device;
     SheetLoader m_loadSheet;
     FrontEndServices& m_services;
+    graphics::ScreenFade& m_fade;
+    script::ScriptSystem& m_scripts;
     std::function<void(std::string_view)> m_log;
     gui::PmShared m_shared;
     gui::PmController m_controller; // after m_shared, which it refers to

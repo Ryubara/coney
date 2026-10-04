@@ -50,6 +50,9 @@ class Pads {
     [[nodiscard]] const Pad& record(std::size_t index) const;
     /// The record of `port` (0 for port 1, 1 for port 2).
     [[nodiscard]] const Pad& port(std::size_t port) const { return record(recordOfPort(port)); }
+    /// How many records are connected: the main menu counts the eight records' connected words (`+0x4c`) to decide
+    /// whether story asks for the number of players (docs/research/frontend.md#profile-manager).
+    [[nodiscard]] std::size_t connectedCount() const;
 
   private:
     std::array<Pad, kRecords> m_records{};

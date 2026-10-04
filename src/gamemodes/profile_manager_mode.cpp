@@ -11,15 +11,16 @@
 namespace coney {
 
 ProfileManagerMode::ProfileManagerMode(graphics::RenderDevice& device, SheetLoader loadSheet,
-                                       const gui::GlobalStrings& strings, FrontEndServices& services, bool europe,
+                                       const gui::GlobalStrings& strings, FrontEndServices& services,
+                                       graphics::ScreenFade& fade, script::ScriptSystem& scripts, bool europe,
                                        std::function<void(std::string_view)> log)
-    : m_device(device), m_loadSheet(std::move(loadSheet)), m_services(services), m_log(std::move(log)),
-      m_controller(m_shared) {
+    : m_device(device), m_loadSheet(std::move(loadSheet)), m_services(services), m_fade(fade), m_scripts(scripts),
+      m_log(std::move(log)), m_controller(m_shared) {
     m_shared.strings = &strings;
     m_shared.europe = europe;
+    m_shared.fade = &m_fade;
     m_shared.playSound = [this](int cue) { m_services.playCue(cue); };
-    m_shared.callScript = [this](std::string_view function, double argument) {
-        const double args[] = {argument};
+    m_shared.callScript = [this](std::string_view function, std::span<const double> args) {
         m_services.callScript(function, args);
     };
     m_shared.canvas.fonts = [this](int slot) -> const graphics::Font* {
@@ -50,8 +51,13 @@ void ProfileManagerMode::enter() {
 }
 
 ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& frame) {
-    // The frame the screens see: game time in milliseconds and the HUD player's pad (port 1).
-    m_shared.frame = gui::GuiFrame{frame.gameTicks / (GameTimer::kTicksPerSecond / 1000), &stack.pads().port(0)};
+    // The frame the screens see: game time in milliseconds and the HUD player's pad (port 1). The scripts and the
+    // fade count from the same time, so a call the menus schedule this frame is timed from it.
+    const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
+    m_shared.frame = gui::GuiFrame{nowMs, &stack.pads().port(0)};
+    m_shared.connectedPads = stack.pads().connectedCount();
+    m_scripts.setTime(nowMs);
+    m_fade.update(nowMs);
 
     // The controller starts here rather than in enter(), which has no frame: its first screen times itself from the
     // game time of the frame it is entered on.
@@ -69,6 +75,9 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
         }
     }
     m_pass.render(m_device, m_camera);
+    m_fade.render(m_device);
+    // The scripts' frame: the scheduled calls that are due (a fade's follow-up, the Rumble mode's launch).
+    m_scripts.update(nowMs, frame.seconds);
     m_device.present();
 
     // Log each change of screen once, so a headless run shows how far the menus went.

@@ -205,6 +205,12 @@ subsystem = "GameModes"
 size = 328
 
 [[function]]
+address = 0x0015c5f8
+name = "LevelFlow_FinishFrontEnd"
+subsystem = "GameModes"
+size = 136
+
+[[function]]
 address = 0x0015c688
 name = "Mode8::Enter"
 subsystem = "GameModes"
@@ -215,6 +221,18 @@ address = 0x0015c6f8
 name = "Mode8::Resume"
 subsystem = "GameModes"
 size = 136
+
+[[function]]
+address = 0x0015c7b0
+name = "LevelFlow_ChooseLevel"
+subsystem = "GameModes"
+size = 168
+
+[[function]]
+address = 0x0015c858
+name = "Mode8::Update"
+subsystem = "GameModes"
+size = 568
 
 [[function]]
 address = 0x0015e048
@@ -263,6 +281,18 @@ address = 0x0015e748
 name = "GameModeStack_TopId"
 subsystem = "GameModes"
 size = 72
+
+[[function]]
+address = 0x00160d78
+name = "MenuLoadLevel_Choose"
+subsystem = "GameModes"
+size = 56
+
+[[function]]
+address = 0x00161218
+name = "RunPreloadScripts"
+subsystem = "GameModes"
+size = 152
 
 [[function]]
 address = 0x00179808
@@ -345,6 +375,12 @@ address = 0x00185d20
 name = "ResourceMgr_RenderOverlay"
 subsystem = "Graphics"
 size = 840
+
+[[function]]
+address = 0x0018cc60
+name = "ScreenQueueEffect"
+subsystem = "Graphics"
+size = 504
 
 [[function]]
 address = 0x001906e8
@@ -584,6 +620,12 @@ subsystem = "GUI"
 size = 944
 
 [[function]]
+address = 0x0020a268
+name = "PM_Mode::HandleCommand"
+subsystem = "GUI"
+size = 416
+
+[[function]]
 address = 0x0020a4b8
 name = "PM_Mode::Update"
 subsystem = "GUI"
@@ -660,9 +702,173 @@ name = "CollisionMesh_SpherePush"
 subsystem = "unattributed"
 
 [[function]]
+address = 0x00356390
+name = "ScriptSystem_Create"
+subsystem = "Scripting"
+size = 192
+
+[[function]]
+address = 0x00356450
+name = "ScriptSystem_Destroy"
+subsystem = "Scripting"
+size = 136
+
+[[function]]
+address = 0x003564d8
+name = "ScriptSystem::ScriptSystem"
+subsystem = "Scripting"
+size = 312
+
+[[function]]
+address = 0x00356610
+name = "ScriptSystem::~ScriptSystem"
+subsystem = "Scripting"
+size = 200
+
+[[function]]
+address = 0x003566d8
+name = "ScriptSystem::Update"
+subsystem = "Scripting"
+size = 696
+
+[[function]]
+address = 0x003569d8
+name = "ScriptSystem::EnterLevel"
+subsystem = "Scripting"
+size = 160
+
+[[function]]
+address = 0x00356af8
+name = "ScriptSystem::RunFile"
+subsystem = "Scripting"
+size = 352
+
+[[function]]
+address = 0x00356c58
+name = "ScriptSystem::RunFiles"
+subsystem = "Scripting"
+size = 432
+
+[[function]]
+address = 0x00356e08
+name = "ScriptSystem::FindFunction"
+subsystem = "Scripting"
+size = 360
+
+[[function]]
+address = 0x00357188
+name = "ScriptSystem::Call"
+subsystem = "Scripting"
+size = 48
+
+[[function]]
+address = 0x003571b8
+name = "ScriptSystem::Schedule"
+subsystem = "Scripting"
+size = 304
+
+[[function]]
+address = 0x003572e8
+name = "ScriptSystem::ScheduleArg1"
+subsystem = "Scripting"
+size = 328
+
+[[function]]
+address = 0x00357430
+name = "ScriptSystem::ScheduleArg2"
+subsystem = "Scripting"
+size = 344
+
+[[function]]
+address = 0x00357588
+name = "ScriptSystem::FlushScheduled"
+subsystem = "Scripting"
+size = 848
+
+[[function]]
+address = 0x003578d8
+name = "ScriptSystem::SetUpdateFunction"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00357990
+name = "isRelease"
+subsystem = "Scripting"
+size = 8
+
+[[function]]
+address = 0x00357998
+name = "GetPlatform"
+subsystem = "Scripting"
+size = 8
+
+[[function]]
+address = 0x003579a0
+name = "doFile"
+subsystem = "Scripting"
+size = 200
+
+[[function]]
+address = 0x00357a68
+name = "preLoadFile"
+subsystem = "Scripting"
+size = 312
+
+[[function]]
 address = 0x0035e5d0
 name = "CfgHUDMessage"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x0036b220
+name = "CfgLevelName"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x0036d938
+name = "ToInt"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x0036df48
+name = "MenuLoadLevel"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x0036eef8
+name = "ShowProfileManager_Binding"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x0037d420
+name = "RegisterBindings"
+subsystem = "Scripting"
+size = 27408
+
+[[function]]
+address = 0x00386370
+name = "gc"
+subsystem = "Scripting"
+size = 48
+
+[[function]]
+address = 0x003863d8
+name = "ScheduleFunc"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00386410
+name = "ScheduleFuncArg1"
+subsystem = "Scripting"
+size = 64
+
+[[function]]
+address = 0x00386450
+name = "FlushScheduledFuncs"
+subsystem = "Scripting"
+size = 56
 
 [[function]]
 address = 0x0040cdd8
@@ -778,3 +984,51 @@ subsystem = "World"
 address = 0x004123e8
 name = "World_ResetVisibility"
 subsystem = "World"
+
+[[function]]
+address = 0x0041abe8
+name = "GetCheckPoint"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041d6f0
+name = "GetLevelId"
+subsystem = "Warriors"
+size = 40
+
+[[function]]
+address = 0x0041d718
+name = "GetCurrentLevelIndex"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041d7f0
+name = "GetLanguage"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041d800
+name = "GetDifficulty"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041d820
+name = "GetProfileDifficulty"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041f118
+name = "W_GameState_SetLevelRecord"
+subsystem = "Warriors"
+size = 384
+
+[[function]]
+address = 0x004238a8
+name = "UM_IsLevelComplete"
+subsystem = "Warriors"
+size = 64

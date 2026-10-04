@@ -15,6 +15,7 @@
 #include "graphics/overlay_camera.h"
 #include "graphics/particle_page.h"
 #include "graphics/render_device.h"
+#include "scripting/script_system.h"
 
 namespace coney {
 
@@ -57,7 +58,9 @@ struct LegalScreenSettings {
 [[nodiscard]] graphics::LogicalQuad legalScreenQuad(const graphics::OverlayCamera& camera,
                                                     std::pair<float, float> factors, const graphics::UvRect& rect);
 
-/// Game mode 5, the legal screen: the first screen after the start-up movies. It loads the legal screen's sprite
+/// Game mode 5, the legal screen: the first screen after the start-up movies. Its entry runs the preload scripts
+/// (`enum_preload.lua`, then `config_preload.lua`, `config_preload2.lua` and `config_preload3.lua`, which set up the
+/// enumerations, the UI strings, the configuration and the level table). It then loads the legal screen's sprite
 /// sheet, shows its first rectangle on black, centred and slightly overfilling the screen as the original sizes it
 /// (legalScreenQuad()), holds it for 5,000 ms of game time whatever the player presses, then leaves.
 ///
@@ -67,7 +70,8 @@ struct LegalScreenSettings {
 ///   shows it.
 /// - The original times the hold in real milliseconds; Coney counts game time on the fixed 1/30 s step, so the hold is
 ///   exactly 150 frames and a test can run it without a clock.
-/// - The preload scripts the original runs in `Enter` wait for the Lua system.
+/// - The preloads run before the picture loads; the original runs them in `Enter` too (the order within `Enter` is
+///   not on the page). Coney's reads are synchronous, so they take no frames.
 ///
 /// Research: docs/research/graphics.md#first-screen, docs/research/frontend.md#mode-flow
 class LegalScreenMode final : public GameMode {
@@ -80,15 +84,17 @@ class LegalScreenMode final : public GameMode {
     /// Loads a sprite sheet by its resource name (`legal_screen`); the platform layer reads it from the disc.
     using SheetLoader = std::function<std::expected<graphics::SpriteSheet, Error>(std::string_view resourceName)>;
 
-    /// Draws through `device` with the sheet `loadSheet` returns for `settings`' resource. A failed load is passed to
-    /// `log` and the screen stays black for the hold. `device` must outlive the mode.
+    /// Draws through `device` with the sheet `loadSheet` returns for `settings`' resource, and runs the preloads in
+    /// `scripts` (null: none). A failed load is passed to `log` and the screen stays black for the hold. `device` and
+    /// `scripts` must outlive the mode.
     LegalScreenMode(graphics::RenderDevice& device, SheetLoader loadSheet, LegalScreenSettings settings,
-                    std::function<void(std::string_view)> log);
+                    std::function<void(std::string_view)> log, script::ScriptSystem* scripts = nullptr);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
 
-    /// Loads the picture and starts the hold.
+    /// Runs the preload scripts, loads the picture and starts the hold.
     /// @orig 0x00159a58 Mode5::Enter (unknown)
+    /// @orig 0x00161218 RunPreloadScripts (unknown)
     /// @orig 0x00159c08 StartupScreen_Draw (unknown)
     void enter() override;
 
@@ -112,6 +118,7 @@ class LegalScreenMode final : public GameMode {
     SheetLoader m_loadSheet;
     LegalScreenSettings m_settings;
     std::function<void(std::string_view)> m_log;
+    script::ScriptSystem* m_scripts; // runs the preloads; not owned, may be null
     std::optional<graphics::SpriteSheet> m_sheet;
     std::optional<std::uint64_t> m_startTicks; // game time when the mode was entered; set by the first update
 };

@@ -101,14 +101,15 @@ and stops headless, prints its help, refuses a bad argument, refuses `--load`, `
 (`tests/support/menu_input.txt`) and refuses one that does not exist; with `CONEY_DISC` set when CMake configures, a
 twelfth runs `coney --disc` to the main menu (`coney.reaches_main_menu`). The unit tests build their disc images,
 archives, RenderWare texture dictionaries, streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU
-(the librw tests run librw on its NULL device). Seven tests check your own disc: every texture dictionary; every
+(the librw tests run librw on its NULL device). Eight tests check your own disc: every texture dictionary; every
 sprite sheet, font and the sheet table; every streamed world with the atomics of its parts (`[world]`, about a
 second); every level's worlds streamed under a scripted camera path, with the streaming's invariants checked every
 frame (`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run through the game's own Lua
-scripts (`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); and the start-up
-path from the legal screen to the main menu with a scripted START (`[frontend]`). They run only when the environment
-variable
-`CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
+scripts (`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); the front end's
+scripts (the preloads, `global.lua`, `level100.lua` and the menu callbacks) run in the script system with no error and
+no missing binding (`[scripts]`); and the start-up path from the legal screen to the main menu, through quick rumble
+and story to the level request and back, driven by a scripted pad (`[frontend]`). They run only when the environment
+variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"

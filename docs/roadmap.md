@@ -92,7 +92,9 @@ functions the game exposes to its scripts.
   and what the bindings return ([Scripts](research/scripting.md)).
 - Done: a Lua 4.0 bytecode interpreter written from the public format runs the game's string scripts
   (`src/scripting/`).
-- In progress: the front end runs the game's own preload, `global.lua` and `level100.lua` scripts.
+- Done: the front end runs the game's own preload, `global.lua` and `level100.lua` scripts and the menu callbacks in
+  one script system, with no error and no call of a missing binding on the NTSC-U disc; STORY reaches the level request
+  for `level99` and quick rumble fades out and back ([Scripts](research/scripting.md#coneys-implementation)).
 - In progress: a [masterlist of every script binding](#script-mods), in the style of FiveM's natives reference.
 
 ## Characters

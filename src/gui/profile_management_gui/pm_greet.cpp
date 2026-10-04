@@ -1,20 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gui/profile_management_gui/pm_greet.h"
 
+#include <array>
+
 #include "core/pad.h"
 #include "graphics/overlay_camera.h"
 
 namespace coney::gui {
-
-namespace {
-
-// Whether the player is doing anything on `pad`: a button held or a stick off centre.
-bool padActive(const Pad* pad) {
-    return pad != nullptr && (pad->buttons() != 0 || pad->leftX() != 0.0F || pad->leftY() != 0.0F ||
-                              pad->rightX() != 0.0F || pad->rightY() != 0.0F);
-}
-
-} // namespace
 
 float PmGreet::logoHeight(float width) const {
     const graphics::SpriteBatch* batch = m_shared.menuSprites;
@@ -54,8 +46,13 @@ int PmGreet::update() {
     const GuiFrame& frame = m_shared.frame;
     int result = kStay;
 
-    // The prompt's blink, while the profile manager is not finishing.
-    if (!m_shared.finishing) {
+    // A screen fade in progress keeps the prompt fully lit and restarts the idle time; otherwise the prompt blinks
+    // while the profile manager is not finishing.
+    const bool fading = m_shared.fade != nullptr && m_shared.fade->active();
+    if (fading) {
+        m_prompt.setFade(1.0F);
+        m_lastActivityMs = frame.timeMs;
+    } else if (!m_shared.finishing) {
         m_prompt.setFade(static_cast<float>(promptAlpha(m_enteredMs, frame.timeMs)) / 255.0F);
     }
     m_prompt.update(frame);
@@ -68,12 +65,11 @@ int PmGreet::update() {
         }
     }
 
-    // The idle time, restarted by any input; the attract movie when it runs out.
-    if (padActive(frame.pad)) {
-        m_lastActivityMs = frame.timeMs;
-    } else if (frame.timeMs - m_lastActivityMs >= kIdleMs) {
+    // The idle time, restarted by a fade (above), not by the pad; the attract movie when it runs out.
+    if (frame.timeMs - m_lastActivityMs >= kIdleMs) {
         if (m_shared.callScript) {
-            m_shared.callScript("Menu.playMovie", 2.0);
+            const std::array<double, 1> movie{kAttractMovie};
+            m_shared.callScript("Menu.playMovie", movie);
         }
         m_lastActivityMs = frame.timeMs;
     }

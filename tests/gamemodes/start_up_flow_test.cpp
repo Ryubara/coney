@@ -3,12 +3,16 @@
 // synthetic sheets and a scripted pad (docs/research/frontend.md#mode-flow).
 #include "gamemodes/start_up_flow.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -22,6 +26,7 @@
 #include "gamemodes/profile_manager_mode.h"
 #include "gui/global_strings.h"
 #include "support/font_fixtures.h"
+#include "support/lua_fixtures.h"
 #include "support/recording_device.h"
 
 using coney::GameModeStack;
@@ -142,4 +147,119 @@ TEST_CASE("profile manager: show() pushes the mode only when it is not on top", 
     run.flow->profileManager().show(run.stack, "a", "b");
     CHECK(run.stack.size() == size);
     CHECK(run.flow->profileManager().onStartGame() == "b");
+}
+
+namespace {
+
+// Synthetic scripts for the front end, written like the game's (Lua 4.0 bytecode built by hand, nothing from the
+// disc): the preload fills a two-record level table, level100.lua defines Menu.onStart (show the menus) and
+// Menu.startGame (ask for level 1).
+std::map<std::string, std::vector<std::byte>, std::less<>> frontEndScripts() {
+    using coney::test::LuaAsm;
+    std::map<std::string, std::vector<std::byte>, std::less<>> files;
+    // enum_preload.lua: Preloaded = 1
+    LuaAsm enumPreload;
+    enumPreload.pushInt(1).setGlobal("Preloaded");
+    files["enum_preload.lua"] = coney::test::luaChunk(enumPreload.end());
+    // config_preload3.lua: CfgLevelName(0, "level100", "", "level100", "", 100), the same for "level1" at index 1.
+    LuaAsm levels;
+    for (const auto& [index, name] : {std::pair{0, "level100"}, std::pair{1, "level1"}}) {
+        levels.getGlobal("CfgLevelName").pushInt(index).pushString(name).pushString("").pushString(name);
+        levels.pushString("").pushInt(index == 0 ? 100 : 1).call(6);
+    }
+    files["config_preload3.lua"] = coney::test::luaChunk(levels.end());
+    for (const char* empty : {"config_preload.lua", "config_preload2.lua", "global.lua"}) {
+        files[empty] = coney::test::luaChunk(LuaAsm().end());
+    }
+    // level100.lua: Menu = {}; Menu.onStart = function() ShowProfileManager("Menu.fadeToRMI", "Menu.startGame") end;
+    // Menu.startGame = function() MenuLoadLevel("level1") end
+    LuaAsm onStart;
+    onStart.getGlobal("ShowProfileManager").pushString("Menu.fadeToRMI").pushString("Menu.startGame").call(2);
+    LuaAsm startGame;
+    startGame.getGlobal("MenuLoadLevel").pushString("level1").call(1);
+    LuaAsm level;
+    level.spec.protos = {onStart.end(), startGame.end()};
+    level.newTable().setGlobal("Menu");
+    level.getGlobal("Menu").pushString("onStart").closure(0).setTable();
+    level.getGlobal("Menu").pushString("startGame").closure(1).setTable();
+    files["level100.lua"] = coney::test::luaChunk(level.end());
+    return files;
+}
+
+// A run of the start-up flow with the synthetic scripts.
+struct ScriptedRun {
+    coney::test::RecordingDevice device;
+    GameModeStack stack;
+    Sheets sheets;
+    coney::gui::GlobalStrings strings;
+    std::vector<std::string> log;
+    std::map<std::string, std::vector<std::byte>, std::less<>> files = frontEndScripts();
+    std::unique_ptr<StartUpFlow> flow;
+    std::unique_ptr<coney::ScriptedInput> input;
+    GameTimer timer;
+    std::uint64_t index = 0;
+
+    explicit ScriptedRun(std::string_view script) {
+        input = std::make_unique<coney::ScriptedInput>(coney::parseInputScript(script).value());
+        stack.setInput(input.get());
+        timer.setFixedStep(true);
+        flow = std::make_unique<StartUpFlow>(
+            device, stack, sheets.loader(), strings, coney::LegalScreenSettings{},
+            [this](std::string_view line) { log.emplace_back(line); },
+            [this](std::string_view name) -> std::expected<std::vector<std::byte>, coney::Error> {
+                const auto found = files.find(name);
+                if (found == files.end()) {
+                    return coney::fail(coney::ErrorCode::NotFound, "no such script");
+                }
+                return found->second;
+            });
+        flow->start();
+    }
+
+    // Runs `count` more frames as the main loop does.
+    void frames(std::uint64_t count) {
+        for (std::uint64_t i = 0; i < count; ++i, ++index) {
+            stack.samplePads(index);
+            const std::uint64_t advanced = timer.update();
+            stack.step(coney::FrameTime{index, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
+        }
+    }
+
+    // Whether a log line contains `text`.
+    [[nodiscard]] bool logged(std::string_view text) const {
+        return std::ranges::any_of(log, [text](const std::string& line) { return line.contains(text); });
+    }
+};
+
+} // namespace
+
+TEST_CASE("start-up with scripts: preloads at the legal screen, Menu.onStart shows the menus", "[start_up]") {
+    ScriptedRun run("");
+    CHECK(run.flow->scripts().generation() == 1);
+    // Frame 0: the legal screen's entry ran the preloads in the one state.
+    run.frames(1);
+    CHECK(run.flow->scripts().vm().global("Preloaded").number() == 1.0);
+    CHECK(run.flow->state().levels.count() == 2);
+    // Frame 151: the level flow runs global.lua and level100.lua; Menu.onStart's ShowProfileManager pushes the menus.
+    run.frames(151);
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    CHECK(run.flow->levelFlow().currentLevel() == "level100");
+    CHECK(run.flow->profileManager().onStartGame() == "Menu.startGame");
+    CHECK_FALSE(run.logged("did not show the menus"));
+    CHECK(run.flow->scripts().errors() == 0);
+}
+
+TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level request, and back to the menus",
+          "[start_up]") {
+    // START, then cross on story (PM_Profile), then cross on the stand-in, which ends the profile manager.
+    ScriptedRun run("200 tap start\n215 tap cross\n235 tap cross\n");
+    run.frames(240);
+    CHECK(run.flow->levelFlow().levelRequests() == std::vector<std::string>{"level1"});
+    CHECK(run.logged("level start requested: level1"));
+    // The front-end level was unloaded (a fresh Lua state) and started again: the menus are back at PM_Greet.
+    CHECK(run.flow->scripts().generation() == 2);
+    run.frames(2);
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    CHECK(run.flow->profileManager().controller().currentName() == "PM_Greet");
+    CHECK(run.flow->scripts().errors() == 0);
 }

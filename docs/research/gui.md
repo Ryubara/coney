@@ -373,9 +373,11 @@ whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 
   rectangles over a 512 × 256 texture) and `big_font` (262 glyphs) show correctly on the NTSC-U disc.
 
 - **UI strings** (`src/gui/global_strings.h`, `src/scripting/config_strings.h`), loaded [as the game
-  does](#strings): Coney runs the game's own bytecode, `enum_preload.lua` and then `config_preload2.lua`, in its Lua
-  4.0 virtual machine (`src/scripting/lua_vm.h`, [Front end](frontend.md#coneys-implementation)) with `GetLanguage`
-  (the language field's value, 0 English to 4 German), `GetPlatform` and `doFile` provided. `doFile` runs
+  does](#strings): in a game run, by the legal screen's preloads in the script system
+  ([Scripts](scripting.md#coneys-implementation)); for `--view-text` and the strings disc check, by a short load that
+  runs the game's own bytecode, `enum_preload.lua` and then `config_preload2.lua`, in its Lua 4.0 virtual machine
+  (`src/scripting/lua_vm.h`, [Front end](frontend.md#coneys-implementation)) with `GetLanguage` (the language field's
+  value, 0 English to 4 German), `GetPlatform` and `doFile` provided. `doFile` runs
   `config_strings_<code>.lua`, and the script's loops pass every entry of `GSTRING.HUD`, `GSTRING.CRIME`, `TSTRING`,
   `GSTRING.COMMAND` and `GSTRING.ANNOUNCE` to `CfgHUDMessage` (`0x0035e5d0`), `CfgCrimeMessage`,
   `CfgTutorialMessage`, `CfgWarriorCommand` and `CfgAnnounceMessage`, which fill `GlobalStrings`; `get(id)`
@@ -383,7 +385,8 @@ whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 
   script gives**, explicit in the files (`GSTRING.HUD[n] = ...`), not the order of the entries. The other ~1,800
   binding calls of `config_preload2.lua` (character, weapon and sound configuration) are skipped as no-ops.
   Coney's choices: every table is a map, so any id works (the original's HUD array at `0x00600048` has a size not
-  yet known); `doFile("config_strings_en")` adds the `.lua` the WAD entry has; `GetPlatform` returns 0 (below).
+  yet known); `doFile("config_strings_en")` adds the `.lua` the WAD entry has, as the original does; `GetPlatform`
+  returns 1, as on the PS2 (below).
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][strings]"` with `CONEY_DISC` set loads all five
 languages. HUD strings: English, Spanish and German 388, French 386, Italian 387, with ids 0-388 (id 372 is unset in
@@ -459,7 +462,7 @@ TODO for the analysts, found while implementing:
   `ResourceMgr_SheetSize` (`0x00181e50`) until the research database names them.
 - **`GetPlatform` on the PS2** (answered, 2026-10-04): it returns **1** (`0x00357998`), so the language files take
   their `else` branch: "PRESS THE START BUTTON" for `0x76`, triangle as "back" in `0x1f` (confirmed (code); the
-  wording confirmed (runtime) in PCSX2). Coney's 0 takes the same branch; nothing to change
+  wording confirmed (runtime) in PCSX2). Coney now returns 1 as well
   ([Scripts](scripting.md#bindings-whose-results-the-front-end-needs)). The original question: what does the binding
   return? Each language file has about twenty strings in an
   `if Platform == 2 then ... else ... end`; the two branches differ mainly in naming triangle or circle as "back"

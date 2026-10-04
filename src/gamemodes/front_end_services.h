@@ -10,20 +10,23 @@
 
 namespace coney {
 
+namespace script {
+class ScriptSystem;
+} // namespace script
+
 /// The start-up movies `main` plays before it pushes the first game modes, in order
 /// (docs/research/boot.md#main, step 7).
 inline constexpr std::array<std::string_view, 3> kStartUpMovies{"LOGO", "PLOGO", "L1_IN"};
 
-/// Coney's stand-in for what the front end asks of subsystems Coney does not have yet: the audio manager (music
-/// tracks, front-end sound cues), the movie player and the script system's calls of Lua functions. Each request is
-/// recorded (for tests and the log) and then skipped:
+/// What the front end asks of the audio manager (music tracks, front-end sound cues), the movie player and the script
+/// system's calls of Lua functions, in one place. Each request is recorded (for tests) and logged:
 ///
 /// - **Music and cues** are not played: there is no audio yet. The current track is remembered, so "play `menu` if it
 ///   is not already playing" behaves as in the original.
 /// - **Movies** are skipped, as if each had ended at once: Coney has no video decoder (Coney's choice; the original
 ///   blocks until the movie ends).
-/// - **Lua calls** are skipped: the level scripts need the script system's level entry and bindings that are not
-///   researched yet (docs/research/frontend.md#coneys-implementation).
+/// - **Lua calls** go to the script system attached with attachScripts(); without one (or before its state exists)
+///   they are skipped.
 ///
 /// Nothing in the original corresponds; every request names the original's call in the caller's comments.
 class FrontEndServices {
@@ -37,6 +40,8 @@ class FrontEndServices {
     [[nodiscard]] bool musicPlaying(std::string_view track) const { return m_music == track; }
     /// The current music track; empty when none was started.
     [[nodiscard]] const std::string& music() const { return m_music; }
+    /// Stops the current music track (`SoundStopMusicTrack`).
+    void stopMusic();
 
     /// Plays front-end sound cue `cue` (an entry of the audio manager's table, docs/research/frontend.md#audio-cues).
     void playCue(int cue);
@@ -48,8 +53,11 @@ class FrontEndServices {
     /// The movies asked for, in order.
     [[nodiscard]] const std::vector<std::string>& movies() const { return m_movies; }
 
-    /// Calls the Lua function `function` (a dotted name such as `Menu.playMovie`) with numeric `args`: skipped.
+    /// Calls the Lua function `function` (a dotted name such as `Menu.playMovie`) with numeric `args` through the
+    /// attached script system; skipped without one.
     void callScript(std::string_view function, std::span<const double> args = {});
+    /// Sends Lua calls to `scripts` (null: skip them). The script system must outlive its use here.
+    void attachScripts(script::ScriptSystem* scripts) { m_scripts = scripts; }
     /// The Lua functions asked for, in order.
     [[nodiscard]] const std::vector<std::string>& scriptCalls() const { return m_scriptCalls; }
 
@@ -62,6 +70,7 @@ class FrontEndServices {
     std::vector<int> m_cues;
     std::vector<std::string> m_movies;
     std::vector<std::string> m_scriptCalls;
+    script::ScriptSystem* m_scripts = nullptr; // where Lua calls go; not owned
 };
 
 } // namespace coney

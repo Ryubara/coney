@@ -13,13 +13,15 @@ namespace coney::gui {
 
 /// The main menu: an OptionGrid of three items with the usage line under it. The items are global strings 0x78
 /// (code 0, "Story" on the English disc), 0x8a (code 5, PM_Extras; left out with the device flag 0x02) and 0x79
-/// (code 1, "Quick Rumble"); the first is selected and drawn at 1.15 times the size. Up and down move the selection,
-/// accept returns the selected item's code.
+/// (code 1, "Quick Rumble"); the first is selected and drawn at 1.15 times the size. Up and down move the selection.
 ///
-/// Coney's choices: back returns code 8 (PM_Greet), the one transition of PM_Mode that leads back (the page does not
-/// say what back does); the layout is PmLayout's; code 1 has no transition, so choosing it keeps the menu on screen,
-/// as the screen flow's rule says (the page infers the original ends the profile manager there; not done until the
-/// Rumble mode is researched).
+/// The command handler (`0x0020a268`) ignores input while the screen fade is not finished (its level is not 0).
+/// **Back** returns 8 (PM_Greet) with front-end sound cue 0xf. **Accept** plays cue 9, then by the item's code: story
+/// returns 0 (PM_Profile), or 6 (PM_NumPlayers) with two or more pads connected; extras returns 5; code 7 calls the
+/// Lua function `Menu.reloadProfiles` (no item has it); any other code, so quick rumble, calls the Lua function the
+/// profile manager was started with (`Menu.fadeToRMI`) and the menu stays.
+///
+/// Coney's choice: the layout is PmLayout's.
 ///
 /// Research: docs/research/frontend.md#profile-manager
 class PmMode final : public ScreenFlowState {
@@ -32,6 +34,15 @@ class PmMode final : public ScreenFlowState {
     static constexpr int kExtras = 5;
     /// Result that leads back to PM_Greet.
     static constexpr int kToGreet = 8;
+    /// Result of story with two or more pads: PM_NumPlayers.
+    static constexpr int kToNumPlayers = 6;
+    /// The item code that reloads the profiles through Lua (no item of this menu has it).
+    static constexpr int kReloadProfiles = 7;
+    /// The Lua function code 7 calls.
+    static constexpr std::string_view kReloadProfilesFunction = "Menu.reloadProfiles";
+    /// The front-end sound cues of accept and back.
+    static constexpr int kAcceptCue = 9;
+    static constexpr int kBackCue = 0xf;
     /// The items' global strings.
     static constexpr std::uint32_t kStoryString = 0x78;
     static constexpr std::uint32_t kExtrasString = 0x8a;
@@ -49,6 +60,7 @@ class PmMode final : public ScreenFlowState {
 
     /// One frame: the HUD player's menu command moves the selection or chooses an item; then draws.
     /// @orig 0x0020a4b8 PM_Mode::Update (unknown)
+    /// @orig 0x0020a268 PM_Mode::HandleCommand (unknown)
     int update() override;
 
     /// Releases the widgets.
@@ -60,6 +72,13 @@ class PmMode final : public ScreenFlowState {
     [[nodiscard]] const UsageInfo& usage() const { return m_usage; }
 
   private:
+    // Accept on the item with `code`: the cue, then the result (or a Lua call and kStay).
+    int choose(int code);
+    // Plays front-end sound cue `cue`, if the profile manager has a way to.
+    void playSound(int cue) const;
+    // Calls the Lua function `function` with no argument, if the profile manager has a way to.
+    void callScript(std::string_view function) const;
+
     PmShared& m_shared;
     OptionGrid m_grid;
     UsageInfo m_usage;

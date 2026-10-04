@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <span>
+#include <string>
 #include <string_view>
 
+#include "graphics/screen_fade.h"
 #include "graphics/sprite_batch.h"
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
@@ -28,8 +32,8 @@ struct PmLayout {
 };
 
 /// What every screen of the profile manager shares (the original's flow keeps an `SFC_SharedData`): the strings, the
-/// canvas and the menu sprite batch, the HUD player's input, the frame being run, and the profile manager's ways out
-/// to sound and script, which Coney stands in for (gamemodes/front_end_services.h).
+/// canvas and the menu sprite batch, the HUD player's input, the frame being run, the screen fade, and the profile
+/// manager's ways out to sound and to the scripts (gamemodes/front_end_services.h).
 ///
 /// Research: docs/research/frontend.md#profile-manager
 struct PmShared {
@@ -41,8 +45,15 @@ struct PmShared {
     PmLayout layout;                              ///< Where things go.
     bool europe = false;                          ///< The device flag 0x02, which hides PM_Extras.
     bool finishing = false;                       ///< The profile manager is finishing (ends PM_Greet's blink).
-    std::function<void(int cue)> playSound;       ///< Plays a front-end sound cue; may be empty.
-    std::function<void(std::string_view function, double argument)> callScript; ///< Calls a Lua function; may be empty.
+    /// A screen asks to end the profile manager: the controller empties the flow after this frame (Coney's stand-in
+    /// screens on the story path, PmPlaceholder).
+    bool finishRequested = false;
+    const graphics::ScreenFade* fade = nullptr; ///< The screen fade the menus wait for; null for none.
+    std::size_t connectedPads = 1;              ///< Pads plugged in (PM_Mode's story goes to PM_NumPlayers from 2).
+    std::string onRumble; ///< The first Lua callback the controller was started with (`Menu.fadeToRMI`).
+    std::function<void(int cue)> playSound; ///< Plays a front-end sound cue; may be empty.
+    /// Calls a Lua function by name with number arguments; may be empty.
+    std::function<void(std::string_view function, std::span<const double> args)> callScript;
 
     /// Global string `id`, or an empty string without strings.
     [[nodiscard]] std::string_view string(std::uint32_t id) const {
