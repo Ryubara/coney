@@ -245,11 +245,32 @@ match the header's counts; `+0x98` equals the lowest vertex `z` everywhere. `lev
 
 ## Coney's implementation
 
-None yet (2026-10-04). What a first version needs, from the above: read the six chunks as they are (the format is
-already in game axes and the queries need no conversion); the grid and point-to-cell rule; `RayCast` with its column
-walk, the per-cast checked set, the flag and mask rules and the nearest-hit rule; `DropToGround`; and
-`SpherePush` for walls. All of it can be unit-tested with synthetic meshes (one wall, one floor, a two-sided triangle,
-a disabled triangle, a triangle listed in two cells), and a disc test can drop a point onto every level's ground.
+`src/raycast/collision_mesh.h` (2026-10-04), platform-neutral, in game axes:
+
+- `onCollisionMeshLoaded` is the `0x03` handler: it pops the header and the five other chunks in reverse file order and
+  pushes a `CollisionMesh` object. `CollisionMesh::build` checks what the queries follow before anything is used: the
+  header's counts against the chunk sizes, the clamp box against the grid, every grid offset and list against the
+  index lists, every listed triangle and every triangle's vertices against their counts. It sets every triangle's
+  enabled bit, as the original's handler does.
+- `rayCast` is `CollisionMesh_RayCast` with `RayTestCell`: the same cell box, the same column walk (half a cell off,
+  as above), the per-cast checked set, the mask and enabled rules, the material exclusion (a span of ids in place of
+  the list ended by 1) and the nearest hit. `spherePush`, `setEnabledInBox`, `dropToGround`, `dropToMarkedGround`
+  and `marchRay` follow the sections above.
+- **Coney's choices:** the ground helpers cast with mask 0 and no exclusions (what the original passes to its world
+  cast is not on this page); `marchRay`'s last step is shortened to end at its maximum; the sphere push tests the
+  centre's projection against the edges with the face's own normal, whichever side the sphere is on (the page gives
+  the test as "edge × n against the point" without its sign).
+- Unit tests on synthetic meshes cover a floor, a one- and a two-sided triangle, a wall from either side, the type
+  bits, the mask, disabled triangles, material exclusion, a triangle listed in many cells, a long diagonal ray across
+  the grid, marked ground and refused data.
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][collision]"` loads all 64 `.lev` files
+through the chunk system with the `0x03` handler: none fails; 150,567 triangles and 94,294 vertices, 39,531 facing up,
+5,060 down and 105,976 walls, as above. A point 1 above the centre of every up-facing triangle drops onto ground in all
+39,531 cases (39,202 onto that triangle; the rest onto something in between). Two slanted rays at each of those
+centres, a steep one 22 long and a shallow one about 102 long, give the same nearest hit through the grid walk as a
+brute-force cast over every triangle in all 79,062 casts: on the disc's data the walk's half-cell offset loses no hit
+on these rays.
 
 ## Open questions
 

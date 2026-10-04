@@ -36,6 +36,7 @@ add_library(coney_core STATIC
     graphics/screen.cpp
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
+    raycast/collision_mesh.cpp
     gui/base_widget.cpp
     gui/global_strings.cpp
     gui/markup.cpp

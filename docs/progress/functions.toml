@@ -575,6 +575,71 @@ subsystem = "GUI"
 size = 88
 
 [[function]]
+address = 0x00337920
+name = "RayTriangle_OneSided"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00337a60
+name = "RayTriangle_TwoSided"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x0034f740
+name = "Collision_MarchRay"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x0034f950
+name = "Collision_DropToGround"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x0034fa28
+name = "Collision_DropToMarkedGround"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00350538
+name = "CollisionTri_PassesMaterialFilter"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00350580
+name = "CollisionMesh_OnLoaded"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00350778
+name = "CollisionMesh_RayTestCell"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00350aa0
+name = "CollisionMesh_SetEnabledInBoxCell"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00350cd8
+name = "CollisionMesh_RayCast"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00351160
+name = "CollisionMesh_SetEnabledInBox"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00351468
+name = "CollisionMesh_SphereTestCell"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x003519f8
+name = "CollisionMesh_SpherePush"
+subsystem = "unattributed"
+
+[[function]]
 address = 0x0035e5d0
 name = "CfgHUDMessage"
 subsystem = "Scripting"

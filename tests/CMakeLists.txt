@@ -45,6 +45,8 @@ add_executable(coney_tests
     platform/texture_dictionary_test.cpp
     platform/world_atomic_test.cpp
     platform/world_set_test.cpp
+    raycast/collision_mesh_test.cpp
+    raycast/disc_collision_test.cpp
     scripting/config_strings_test.cpp
     scripting/disc_strings_test.cpp
     scripting/lua_chunk_test.cpp

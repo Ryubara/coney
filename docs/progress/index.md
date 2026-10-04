@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 116 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 129 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
-32 reimplemented function(s) have no size yet and add no bytes.
+45 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 12 | 1,524,752 |
+| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 25 | 1,524,752 |
 
 ## Research coverage
 
@@ -194,6 +194,19 @@ at the top of the repository's `README.md`.
 | `0x00208288` | `PM_Greet::Render` | `GUI` | 152 |
 | `0x00209da8` | `PM_Mode::Init` | `GUI` | 944 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
+| `0x00337920` | `RayTriangle_OneSided` | `unattributed` | not filled in |
+| `0x00337a60` | `RayTriangle_TwoSided` | `unattributed` | not filled in |
+| `0x0034f740` | `Collision_MarchRay` | `unattributed` | not filled in |
+| `0x0034f950` | `Collision_DropToGround` | `unattributed` | not filled in |
+| `0x0034fa28` | `Collision_DropToMarkedGround` | `unattributed` | not filled in |
+| `0x00350538` | `CollisionTri_PassesMaterialFilter` | `unattributed` | not filled in |
+| `0x00350580` | `CollisionMesh_OnLoaded` | `unattributed` | not filled in |
+| `0x00350778` | `CollisionMesh_RayTestCell` | `unattributed` | not filled in |
+| `0x00350aa0` | `CollisionMesh_SetEnabledInBoxCell` | `unattributed` | not filled in |
+| `0x00350cd8` | `CollisionMesh_RayCast` | `unattributed` | not filled in |
+| `0x00351160` | `CollisionMesh_SetEnabledInBox` | `unattributed` | not filled in |
+| `0x00351468` | `CollisionMesh_SphereTestCell` | `unattributed` | not filled in |
+| `0x003519f8` | `CollisionMesh_SpherePush` | `unattributed` | not filled in |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0040e100` | `WorldManager_NearestPendingDistance` | `World` | not filled in |
 | `0x0040e2d8` | `WorldManager_Preload` | `World` | not filled in |
