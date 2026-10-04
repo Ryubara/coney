@@ -46,6 +46,9 @@ published.
 The path from the executable's entry point to its main loop, and the core it stands on: memory, the chunk system
 that loads data, file I/O and the frame loop. Coney reads its data straight from the player's disc image.
 
+- Done: research pages for the boot path and frame loop ([Boot and the main loop](research/boot.md)), the chunk
+  loader ([Chunk system](research/chunk-system.md)) and the file layers ([File I/O](research/file-io.md)).
+
 **Done when** `coney` opens the player's disc and loads and parses any WAD entry through the reimplemented chunk
 system, under a fixed timestep.
 

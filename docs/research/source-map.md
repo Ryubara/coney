@@ -457,35 +457,20 @@ The full anchor list and every attributed function are reproducible with the [me
 
 What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it lives:
 
-- **`main` is at `0x001446d0`** (confirmed (code): `entry` calls it). It sits right after `Core/ChunkSystem.cpp`'s
-  anchors, inside the same static-init block (stubs at `0x00144080` and `0x001449e8`), and holds the build stamp
-  strings (`Release`, `Sep 25 2005`, `20:21:44`). In order, it calls `GameModes/Initialize.cpp` (`0x00160df8`), loads
-  `level1` through `World/ps2/WorldManagerPS2.cpp` (`0x0040dbb8`), plays the `LOGO`, `PLOGO` and `L1_IN` movies through
-  `Movie/PlayMovie.cpp` (`0x0042a938`), sets up game modes through `0x0015e5e8` (an unnamed `GameModes/` file) and the
-  memory-card mode (`0x0015a270`), then makes a virtual call on the object whose address is stored at `0x00515024`
-  (vtable pointer at `+0x128`, slot `+0xe8`/`+0xec`) before shutting down. That virtual call is probably the main
-  loop (speculative). Confirmed (code) at `0x001446d0` for the calls; their roles are inferred from the files they
-  belong to.
-- **Chunk system:** `Core/ChunkSystem.cpp`, anchors `0x00144180` and `0x00144398` (both load the path and the chunk
-  type table). `0x00144398` calls into `Graphics/ResourceMgr.cpp` (`0x00186110`, `0x00186e88`, `0x00186ff0`) and both
-  call `0x00154440`, just after `FileIO/FS_MemoryFile.cpp`'s anchors.
-- **Chunk type table:** `0x0050b2e0` in `.data`, 84 records of 12 bytes, `{char* name; u32 a; u32 b}`, indexed by
-  chunk type `0x00` to `0x53` and ended by a record whose name is `0xffffffff`. `a` and `b` are 0 or function
-  pointers. Confirmed (code) that both chunk system anchors load it; the meaning of `a` and `b` (probably per-type
-  load and fix-up handlers) is speculative. Record `0x2A` is `Renderware Texture Dic`, which matches the inner chunk
-  type `0x2A` seen in the [WAD](formats/wad-dir.md) texture entries (corroboration). Other records include
-  `Anim Rot Keyframes` (`0x00`), `Collision Mesh` (`0x03`), `Character DFF Data` (`0x09`), `English String Table`
-  (`0x0F`, the other four languages follow), `World Header` (`0x16`), `Level Header` (`0x17`), `Particle Types`
-  (`0x19`), `Game Object Instance` (`0x22`), `GBH Script` (`0x30`), `Texture Dictionary` (`0x35`), `Scene Data`
-  (`0x38`), `PathData` (`0x40`), `Subtitles` (`0x51`) and `Occluders` (`0x53`). The handlers land in the files that
-  own the data (the string tables in `StringTable/`, `Static Sounds` and `Music` in `Audio/`, `Scene Data` in
-  `Scene/`, `Subtitles` beside `GUI/SubTitle.cpp`), which independently supports this map.
-- **File I/O:** `Device/ps2/DS_PS2Device.cpp` (`0x001483e8`-`0x00148580`) creates the `PS2StreamFileSys`, `PS2FileSys`
-  and `FS_FSToStreamFSFileSys` objects; `Device/ps2/DS_PS2FileSys.cpp` (`0x00148608`-`0x00148828`, `PS2DbgFile`);
-  `Device/ps2/fileio/DVDWadIndexPS2.cpp` (`0x00149040`-`0x00149248`, see [WARRIORS.DIR / .WAD](formats/wad-dir.md));
-  `FileIO/FS_MemoryFile.cpp` (`0x001541e0`-`0x00154440`); `FileIO/StreamManager.cpp` (`0x001547b0`, `FileManager`
-  and `File Stream Buffer`). The IOP sound bank path `cdrom0:\IOP\BFW.SND;1` is opened from
-  `Device/ps2/sound/msaudiodevice.cpp` (`0x0014bbd8`).
+- **Boot path and main loop:** [Boot and the main loop](boot.md). `main` (`0x001446d0`) calls
+  `GameModes/Initialize.cpp` (`0x00160df8`), plays the start-up movies, pushes game modes and runs the game-mode
+  stack (`0x0015e6b8`), which is the frame loop. The virtual call through `0x00515024` is a save-system call
+  (`W_PS2SaveSystem`, slot `+0xe8` = `0x0041f960`) that reads a QA file from the memory card, not the main loop.
+  `0x0042b020`, called first in `main`, is the C++ runtime's `__main` (it runs the global constructors).
+- **Chunk system:** [Chunk system](chunk-system.md), with all 84 chunk types and their handlers. In the type table
+  `0x0050b2e0`, field `a` (`+4`) is the "on loaded" handler and field `b` (`+8`) reads the chunk from the stream
+  itself. The CRC helpers before `ChunkSystem.cpp` (`0x00143f68`-`0x00144050`) belong to the unit that ends at the
+  stub `0x00144080`.
+- **File I/O:** [File I/O](file-io.md): the device's file systems (`DS_PS2Device.cpp`, `DS_PS2FileSys.cpp`), the WAD
+  index (`DVDWadIndexPS2.cpp`), `FS_MemoryFile.cpp` and `StreamManager.cpp` (the buffered reader and the
+  `FileManager` request queue). The WAD-opening code at `0x0040c5e0`-`0x0040c688` is game code, so tolua ends
+  before it. The IOP sound bank path `cdrom0:\IOP\BFW.SND;1` is opened from `Device/ps2/sound/msaudiodevice.cpp`
+  (`0x0014bbd8`).
 - **Memory:** `Memory/` at `0x00338420`-`0x0033b1a0`; `Memory/WarriorsMemory.cpp` (`0x0033afe0`) sets up the
   `Level Dynamic & LUA Memory` heap.
 - **Level loading:** `World/ps2/WorldManagerPS2.cpp` (`0x0040d688`: `Sector Pool`; `0x0040d900`: `warriors.glr`,
@@ -504,12 +489,9 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   `Utils/Dictionary.cpp`. Their code lies between their neighbours in the tables; vtables in `.data` (which follow
   the same file order) are the next thing to try.
 - **Is `main` in `Core/ChunkSystem.cpp`** or in an unnamed `Core/` file (say `Main.cpp`) that has no path string?
-  Both fit the stubs at `0x00144080` and `0x001449e8`.
-- **The main loop:** confirm that the virtual call in `main` through `0x00515024` is the frame loop, and find its
-  target (runtime: a breakpoint on that call in PCSX2).
-- **Chunk type numbering:** the [WAD survey](formats/wad-dir.md) counts outer entry types 1 and 2 in thousands of
-  entries; how those outer types relate to this table's indices (and what fields `a` and `b` do) is for the chunk
-  system page.
+  The stub at `0x00144080` ends the unit *before* `ChunkSystem.cpp`, and no stub separates `ChunkSystem.cpp`'s
+  functions from `main`, so `main` is in `ChunkSystem.cpp` unless a unit without global constructors sits between
+  them (inferred).
 - **Unknown stretches:** the 711 KB after `Human/cns/cnsplayertag.cpp` and the 389 KB after
   `TaskEngine/TaskManager.cpp` have no path strings. Splitting them needs other per-TU markers: the `MemoryStl.h`
   copies in `.rodata`, vtables in `.data`, or class tags passed to the allocator.
@@ -517,7 +499,5 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   libraries, and a RenderWare build with symbols, would pin them and name the functions.
 - **Bink and RenderWare:** functions at `0x004be000`-`0x004c1000`, inside the Bink block, call into RenderWare. Are
   they RAD's own RenderWare glue, or does the RenderWare block extend there?
-- **`0x0042b020`** (called first in `main`, writes `0x006ff280`) sits between the game code and the C++ runtime; what
-  it is, and which file it belongs to, is unknown.
 - **Tooling:** the scripts behind this map were throwaway. A `coney-tools` or Rekit command that rebuilds the map
   from a disc (printing only counts and addresses) would keep it repeatable.

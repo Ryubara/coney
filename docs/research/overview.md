@@ -55,12 +55,18 @@ dictionaries, models and worlds, animations, characters and level data; 2,765 en
 a level's streamed world (RenderWare atomics, worlds and their manifests), 467 are Lua 4.0 bytecode, and the rest are
 sound banks, object lists and a few singletons.
 
+The leading word of a chunk container is its chunk (or group) count, not a type. The layout and the loaders are on
+[Chunk system](chunk-system.md#container-layout).
+
 ## Implications for Coney
 
 1. Lua scripts carry much of the mission/game logic → decompile bytecode instead of MIPS for that part.
 2. Source file list → Ghidra can be organised by TU from assert-string xrefs (done: [Source map](source-map.md)).
-3. Asset pipeline: write a WAD extractor + chunk-format docs early; RW streams can be loaded by **librw** on PC.
+3. Asset pipeline: write a WAD extractor + chunk-format docs early ([Chunk system](chunk-system.md)); RW streams can
+   be loaded by **librw** on PC.
 4. VU microcode/DVP overlays do not need decompiling — replaced by librw's PC renderer.
+5. Engine core: how the game boots and runs its frame is on [Boot and the main loop](boot.md); how it reads files,
+   on [File I/O](file-io.md).
 
 ## Status
 

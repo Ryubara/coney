@@ -24,7 +24,8 @@ from:
 
 Fields `a` and `b` are addresses in `.text` (or zero). `b` is set only on the types that carry RenderWare streams
 (`0x09`, `0x25`, `0x47` share one value, `0x0b`, `0x15` and `0x2a` have their own), so `b` is probably the stream
-reader and `a` some other per-type handler. Neither has been read in the code yet.
+reader and `a` some other per-type handler. The code has since confirmed this: `b` (`+8`) reads the chunk from the
+stream itself and `a` (`+4`) is an "on loaded" handler; see [Chunk system](../chunk-system.md#chunk-type-table).
 
 ## Data
 
@@ -174,7 +175,8 @@ type: `0x0045de40` (`0x02`), `0x00436b10` (`0x08`), `0x00421620` (`0x03`), `0x00
 **Evidence:** inferred. That a chunk's `type` indexes the table at `0x0050b2e0` is supported by every type whose
 content is recognisable: `0x15` holds a RenderWare world, `0x2a` a texture dictionary, `0x47` a clump, `0x28` a
 fixed-size block beside skinned clumps, `0x00`/`0x02` animations, and the types in the global resource are its
-sound, music and list types. No code has been read yet.
+sound, music and list types. The loaders at `0x00144180` and `0x00144398` index the table by `type`: confirmed
+(code), see [Chunk system](../chunk-system.md#container-layout).
 
 ### Common resource shapes
 
@@ -295,10 +297,13 @@ Not started. `coney-tools wad` should classify entries with the structural tests
 
 These need the code (Ghidra); the data alone cannot settle them.
 
-1. **The chunk loader.** Which functions in `ChunkSystem.cpp` read the pack, resource and chunk headers, and do
-   they confirm the field meanings above, including the third field (always 0: reserved, flags, or an alignment)?
-2. **The chunk-type table at `0x0050b2e0`.** What handlers `a` and `b` do, when they run, and whether `type`
-   really indexes this table (the strongest data evidence is above).
+1. **The chunk loader** is now on [Chunk system](../chunk-system.md): a standalone resource is its flat container
+   and a pack its grouped container, and the loaders read only the counts, chunk types and sizes. Still open: the
+   two pages count differently (881 packs here, 1,259 grouped containers there; 5,127 chunked entries here, 4,246
+   flat plus 1,259 grouped there, with 1,938 header-plus-RenderWare-stream entries such as the sector atomics
+   counted separately). A disc-backed recount with one classifier should settle which entries are which.
+2. **The chunk-type table's handlers** are documented on [Chunk system](../chunk-system.md#chunk-type-table);
+   what remains is which code reads the unused header words (the third and fourth fields).
 3. **The leading `.text` addresses** in fixed-size chunks (`0x0045de40` etc.): vtable or handler pointers from the
    build, fixed up on load, or unused?
 4. **Chunk `0x4c` "Particle Page"** sits beside texture dictionaries that look like screens and screenshots: what
