@@ -338,6 +338,24 @@ whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 
   through a batch and the 2D pass ([Building and testing](../guides/building.md#run-coney)): `menu_system` (6
   rectangles over a 512 × 256 texture) and `big_font` (262 glyphs) show correctly on the NTSC-U disc.
 
+- **UI strings** (`src/gui/global_strings.h`, `src/scripting/config_strings.h`), loaded [as the game
+  does](#strings): Coney runs the game's own bytecode, `enum_preload.lua` and then `config_preload2.lua`, in its Lua
+  4.0 virtual machine (`src/scripting/lua_vm.h`, [Front end](frontend.md#coneys-implementation)) with `GetLanguage`
+  (the language field's value, 0 English to 4 German), `GetPlatform` and `doFile` provided. `doFile` runs
+  `config_strings_<code>.lua`, and the script's loops pass every entry of `GSTRING.HUD`, `GSTRING.CRIME`, `TSTRING`,
+  `GSTRING.COMMAND` and `GSTRING.ANNOUNCE` to `CfgHUDMessage` (`0x0035e5d0`), `CfgCrimeMessage`,
+  `CfgTutorialMessage`, `CfgWarriorCommand` and `CfgAnnounceMessage`, which fill `GlobalStrings`; `get(id)`
+  (`0x0019ee70`) returns a HUD string or an empty one, `set` (`0x0019eea0`) stores one. **The id is the table key the
+  script gives**, explicit in the files (`GSTRING.HUD[n] = ...`), not the order of the entries. The other ~1,800
+  binding calls of `config_preload2.lua` (character, weapon and sound configuration) are skipped as no-ops.
+  Coney's choices: every table is a map, so any id works (the original's HUD array at `0x00600048` has a size not
+  yet known); `doFile("config_strings_en")` adds the `.lua` the WAD entry has; `GetPlatform` returns 0 (below).
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][strings]"` with `CONEY_DISC` set loads all five
+languages. HUD strings: English, Spanish and German 388, French 386, Italian 387, with ids 0-388 (id 372 is unset in
+English); every language has 15 crime, 27 tutorial, 8 command and 5 announce strings and a usage line `0x1f`. A load
+runs about 42,600 Lua instructions and skips 1,796 binding calls.
+
 TODO for the analysts, found while implementing:
 
 - **Sprite colours:** are the colours `Instance_AddSprite` copies in the GS range (128 = full intensity and opaque,
@@ -347,6 +365,17 @@ TODO for the analysts, found while implementing:
 - Names for the sheet functions: the `@orig` tags call them `ChunkLoaded_ParticlePage` (`0x00181b20`),
   `ChunkLoaded_ParticlePageHeader` (`0x00182820`), `ResourceMgr_SheetRecord` (`0x001828c0`) and
   `ResourceMgr_SheetSize` (`0x00181e50`) until the research database names them.
+- **`GetPlatform` on the PS2:** what does the binding return? Each language file has about twenty strings in an
+  `if Platform == 2 then ... else ... end`; the two branches differ mainly in naming triangle or circle as "back"
+  (`0x1f` among them). Coney returns 0 (the triangle branch, which matches [Front end](frontend.md#input)'s reading).
+  Which platform is 2, and which branch does the NTSC-U game show?
+- **Who runs `config_preload2.lua`, and when?** Coney runs it after `enum_preload.lua` to get the strings; the
+  original's call site is not on this page.
+- **`doFile`:** does the binding add `.lua` to a name without an extension (as Coney does), or look the name up some
+  other way?
+- **The HUD string array** at `0x00600048`: its size, and what `GlobalString_Get` does with an id past it.
+- Names: the `@orig` tags call `0x0019ee70` `GlobalString_Get`, `0x0019eea0` `GlobalString_Set` and `0x0035e5d0`
+  `CfgHUDMessage` with file `(unknown)` until the research database names them.
 
 What the implementer still needs:
 
@@ -356,7 +385,6 @@ What the implementer still needs:
   transition table, entering and exiting covered screens as described.
 - Text: the size formula, proportional advance, alignment, shadow, the markup tags (at least `COLOR`, `SIZE`,
   `BIGFONT`, `CENTER`, `CR`, the button glyphs and their closing tags for the menus), and glyph = `firstGlyph + byte`.
-- The global UI string table filled by `CfgHUDMessage` from the language's `config_strings_*.lua`.
 
 ## Open questions
 

@@ -31,6 +31,10 @@ add_executable(coney_tests
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp
     platform/world_atomic_test.cpp
+    scripting/config_strings_test.cpp
+    scripting/disc_strings_test.cpp
+    scripting/lua_chunk_test.cpp
+    scripting/lua_vm_test.cpp
     world/world_streams_test.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).

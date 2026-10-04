@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.3% of the game's own code (9,048 of 3,342,408 bytes, 50 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.3% of the game's own code (9,160 of 3,342,408 bytes, 53 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
-11 reimplemented function(s) have no size yet and add no bytes.
+12 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,7 +64,7 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 197,192 |
+| `Scripting` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 9 | 1,524,752 |
+| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 11 | 1,524,752 |
 
 ## Research coverage
 
@@ -149,6 +149,9 @@ at the top of the repository's `README.md`.
 | `0x00195330` | `RwDevice::GuiWidthToOverlay` | `Graphics` | 120 |
 | `0x00197168` | `Instance_Render` | `Graphics` | 328 |
 | `0x00198e20` | `SectorPlugin_StreamRead` | `Graphics` | not filled in |
+| `0x0019ee70` | `GlobalString_Get` | `unattributed` | 48 |
+| `0x0019eea0` | `GlobalString_Set` | `unattributed` | 64 |
+| `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 <!-- progress:end -->
 
 ## How it is measured

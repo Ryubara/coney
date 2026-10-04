@@ -9,20 +9,12 @@
 #include <string_view>
 
 #include "core/error.h"
+#include "core/language.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/particle_page.h"
 #include "graphics/render_device.h"
 
 namespace coney {
-
-/// The game's languages, in the order of the original's language field (`W_GameState + 0x120`).
-enum class Language : std::uint8_t {
-    English,
-    Spanish,
-    French,
-    Italian,
-    German,
-};
 
 /// What picks the legal screen's picture: the language, the 16:9 option and the device's mode flag 0x02 (read as PAL,
 /// speculative). The defaults are the NTSC-U disc's: English, 4:3, flag clear.

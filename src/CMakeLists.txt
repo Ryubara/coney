@@ -28,6 +28,11 @@ add_library(coney_core STATIC
     graphics/screen.cpp
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
+    gui/global_strings.cpp
+    scripting/config_strings.cpp
+    scripting/lua_chunk.cpp
+    scripting/lua_value.cpp
+    scripting/lua_vm.cpp
     world/world_streams.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

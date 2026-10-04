@@ -425,6 +425,24 @@ Coney's choices for the pads, where the original does something else or the page
 - Left out for now: the camera-turned left stick (`+0x00`, in game only), the Lua pad handlers (`PadSetHandler`; no
   script system yet), vibration, the owning player (`+0x42`) and the sample time (`+0x48`).
 
+**The Lua 4.0 virtual machine** (`src/scripting/`), Coney's own implementation of the public Lua 4.0 language,
+so the game's precompiled scripts run unchanged:
+
+- `parseLuaChunk` (`lua_chunk.h`) reads a precompiled chunk: the header (`ESC "Lua"`, version `0x40`, then the
+  compiling machine's layout), the test number, and the main function with its constants, nested functions and code.
+  It accepts only the layout every script on the disc has: little-endian, 4-byte int, size_t and instruction,
+  6-bit opcodes and 9-bit B operands, 8-byte numbers; debug information is skipped. Checked on the disc (data,
+  inferred): the five `config_strings_*.lua`, `config_preload2.lua` and `enum_preload.lua` parse to their last byte.
+- `LuaVm` (`lua_vm.h`) interprets all 49 Lua 4.0 instructions over nil, numbers, strings, tables and functions
+  (native bindings or Lua closures with Lua 4.0's copied upvalues). Coney's choices and limits: no tag methods, so
+  indexing a non-table, arithmetic on a non-number and ordering mixed types fail with an error; numeric strings are
+  not converted for arithmetic; tables iterate in the order keys were first set (Lua's hash order is unspecified);
+  no garbage collector (reference counting only); strings compare by byte. Malformed bytecode (an unknown opcode, an
+  operand out of range, stack underflow) fails instead of crashing, and an instruction budget and a call-depth limit
+  stop a runaway script deterministically. An option turns calls of nil into counted no-ops, so a script runs past
+  bindings Coney does not have yet.
+- The string load that uses it is on [GUI](gui.md#coneys-implementation).
+
 TODO for the analysts, found while implementing:
 
 - Names for the mode 5 functions: the `@orig` tags call them `Mode5::Enter` (`0x00159a58`), `Mode5::Update`
@@ -445,11 +463,13 @@ What the implementer still needs:
 - Game modes 6, 8, 0x12 and 1 with the behaviour of [the flow](#mode-flow); mode 6 can at first be a pass-through
   that reports "no memory card, continue" (Coney's saves are files); mode 8 loads the front-end level on its first
   entry and starts the chosen level later. Their place is marked in `src/platform/main.cpp`.
-- A Lua 4.0 virtual machine running the game's own bytecode (`level100.lua`, `config_preload*.lua`,
-  `config_strings_*.lua`), with Coney's own implementations of the bindings it calls: at least `CfgLevelName`,
-  `CfgHUDMessage`, `GetLanguage`, `ShowProfileManager`, `ShowRumbleModeInterface`, `MenuLoadLevel`, `PadSetHandler`,
-  `ScheduleFunc`, `ScreenQueueEffect`, `GetPTank`, `ReleasePTank`, `PlayMovie`, the scene and sound functions. A
-  binding that is not ready yet can be a logged no-op, as long as `ShowProfileManager` pushes the menu mode.
+- The script system around the Lua 4.0 virtual machine (which exists, see above): running `enum_preload.lua`,
+  `config_preload.lua` and the level scripts (`level100.lua`) at the original's points, with Coney's own
+  implementations of the bindings they call: at least `CfgLevelName`, `ShowProfileManager`,
+  `ShowRumbleModeInterface`, `MenuLoadLevel`, `PadSetHandler`, `ScheduleFunc`, `ScreenQueueEffect`, `GetPTank`,
+  `ReleasePTank`, `PlayMovie`, the scene and sound functions. A binding that is not ready yet can be a logged no-op,
+  as long as `ShowProfileManager` pushes the menu mode. `GetLanguage`, `GetPlatform`, `doFile` and the five string
+  bindings exist for the string load ([GUI](gui.md#coneys-implementation)).
 - The level table filled by `CfgLevelName`; `level100` as level 0.
 - `InitLevel` far enough to load `level100.lev`, its world and its dependency list, and to call `Menu.onStart`.
 - Menu commands exactly as in [the table](#input), with the 110 ms and 400 ms gaps, accept and back on release.

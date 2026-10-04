@@ -303,3 +303,20 @@ size = 328
 address = 0x00198e20
 name = "SectorPlugin_StreamRead"
 subsystem = "Graphics"
+
+[[function]]
+address = 0x0019ee70
+name = "GlobalString_Get"
+subsystem = "unattributed"
+size = 48
+
+[[function]]
+address = 0x0019eea0
+name = "GlobalString_Set"
+subsystem = "unattributed"
+size = 64
+
+[[function]]
+address = 0x0035e5d0
+name = "CfgHUDMessage"
+subsystem = "Scripting"
