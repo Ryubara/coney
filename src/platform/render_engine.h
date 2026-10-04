@@ -5,17 +5,20 @@
 #include <expected>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 
 #include "core/error.h"
 #include "graphics/frame_stats.h"
 #include "graphics/render_device.h"
+#include "graphics/screen.h"
 #include "graphics/texture_grid.h"
 #include "platform/window.h"
 
 // librw's types, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
 namespace rw {
 struct Camera;
+struct Raster;
 struct Texture;
 } // namespace rw
 
@@ -69,9 +72,23 @@ class RenderEngine final : public graphics::RenderDevice {
     /// the NULL backend.
     [[nodiscard]] graphics::Extent frameSize() const { return m_frameSize; }
 
-    /// Starts a frame cleared to `clear`. Follows the window's size: when the window has been resized, the frame
-    /// buffers are made again at the new size first.
+    /// Starts a frame: the window cleared to black and the logical screen (graphics::fitLogicalScreen()) filled with
+    /// `clear`. Follows the window's size: when the window has been resized, the frame buffers are made again at the
+    /// new size first.
     void beginFrame(graphics::Rgba clear) override;
+
+    /// Starts a frame with the whole window cleared to `clear`, for Coney's tools that lay out in window pixels (the
+    /// texture viewer). Otherwise as beginFrame().
+    void beginWindowFrame(graphics::Rgba clear);
+
+    /// Where the logical screen is in the window this frame, in window pixels.
+    [[nodiscard]] graphics::ScreenRect logicalViewport() const { return m_viewport; }
+
+    /// Draws `quads`, given in logical pixels, mapped onto the logical screen's place in the window. `texture` must
+    /// be a SheetTexture (src/platform/sprite_sheets.h) converted for drawing, or null for flat colour. The texture's
+    /// own filter mode is used, with clamped addressing. Only between beginFrame() and present() (checked by
+    /// CONEY_ASSERT); draws nothing with the NULL backend.
+    void drawQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) override;
 
     /// Draws `texture` stretched over `rect` (screen pixels, from the top left), blended by its alpha. Only between
     /// beginFrame() and present(), and only with the OpenGL backend (both checked by CONEY_ASSERT); the texture's
@@ -93,6 +110,11 @@ class RenderEngine final : public graphics::RenderDevice {
     // Only start() makes one, which then fills it in as librw comes up.
     RenderEngine(RenderBackend backend, const WindowDesc& desc);
 
+    /// Clears the whole window to `clear` and starts the camera's update: the part both beginFrame()s share.
+    void startFrame(graphics::Rgba clear);
+    /// Draws quads already in window pixels with `raster` (null: flat colour) in the 2D states.
+    void drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads);
+
     /// Makes the camera and its frame and depth buffers at m_frameSize (OpenGL only).
     void createCamera();
     /// Destroys the camera and its buffers, if any.
@@ -103,16 +125,17 @@ class RenderEngine final : public graphics::RenderDevice {
     void shutDown() noexcept;
 
     RenderBackend m_backend;
-    std::string m_title;            // librw keeps a pointer to it until the window is made
-    void* m_sdlWindow = nullptr;    // SDL_Window*, written by librw's GL3 device when it creates the window
-    rw::Camera* m_camera = nullptr; // what frames are cleared and drawn through (OpenGL only)
-    graphics::Extent m_frameSize;   // size of the camera's buffers, or the requested size for NULL
-    graphics::Rgba m_clearColour;   // of the current frame, for the capture's statistics
-    bool m_inFrame = false;         // between beginFrame() and present()
-    bool m_librwStarted = false;    // librw has reached Engine::start and must be stopped
-    bool m_sdlStarted = false;      // this object holds a reference to SDL's video subsystem
-    bool m_glStubbed = false;       // the NULL backend's stand-in for glDeleteTextures is installed
-    std::uint64_t m_presented = 0;  // frames presented so far
+    std::string m_title;             // librw keeps a pointer to it until the window is made
+    void* m_sdlWindow = nullptr;     // SDL_Window*, written by librw's GL3 device when it creates the window
+    rw::Camera* m_camera = nullptr;  // what frames are cleared and drawn through (OpenGL only)
+    graphics::Extent m_frameSize;    // size of the camera's buffers, or the requested size for NULL
+    graphics::Rgba m_clearColour;    // of the current frame, for the capture's statistics
+    graphics::ScreenRect m_viewport; // where the logical screen is in the window (graphics::fitLogicalScreen())
+    bool m_inFrame = false;          // between beginFrame() and present()
+    bool m_librwStarted = false;     // librw has reached Engine::start and must be stopped
+    bool m_sdlStarted = false;       // this object holds a reference to SDL's video subsystem
+    bool m_glStubbed = false;        // the NULL backend's stand-in for glDeleteTextures is installed
+    std::uint64_t m_presented = 0;   // frames presented so far
     std::optional<std::uint64_t> m_captureFrame;
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;

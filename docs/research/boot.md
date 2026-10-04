@@ -326,9 +326,13 @@ Written from this page:
 - The run loop advances the `GameTimer` once per frame and hands the step to the top mode. The original computes
   `dt` per mode from the timestamp at `+0x00` (`0x00156220`); Coney's step is the same 1/30 s under the fixed step.
 - `coney` builds the stack in `main` (`src/platform/main.cpp`): it opens the WAD when given `--disc`, creates the
-  chunk handler table, then runs either an idle mode (with a window) or a mode that loads the `--load` entries, one
-  per frame ([Building and testing](../guides/building.md#run-coney)). The rest of the initialisation order, the
-  movies, the memory-card and start-up modes and the bugstar check are not done.
+  chunk handler table, then runs the start-up flow: with a disc it pushes an idle mode (standing in for mode 8) and
+  then the legal screen (mode 5, [Front end](frontend.md#coneys-implementation)), which runs first; without one, the
+  idle mode alone. `--load` and `--view-txd` run their own tool modes instead
+  ([Building and testing](../guides/building.md#run-coney)). The rest of the initialisation order, the movies, mode 6
+  and the bugstar check are not done.
+- `FrameTime` also carries the ticks the step advanced (`stepTicks`), so a mode can time itself from the moment it
+  was entered, as mode 5 does.
 
 TODO for the analysts, found while implementing:
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/render_engine.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstring>
@@ -14,6 +15,7 @@
 #include <rw.h>
 
 #include "core/assert.h"
+#include "platform/sprite_sheets.h"
 
 namespace coney::platform {
 
@@ -170,9 +172,107 @@ void RenderEngine::destroyCamera() noexcept {
 }
 
 void RenderEngine::beginFrame(graphics::Rgba clear) {
+    // The border around the logical screen is black; the logical screen itself is filled with `clear` by a flat quad,
+    // since librw's camera clear always covers the whole frame buffer.
+    startFrame(graphics::kBlack);
+    m_clearColour = clear;
+    if (m_camera == nullptr || clear == graphics::kBlack) {
+        return;
+    }
+    const graphics::LogicalQuad fill{0.0F, 0.0F, graphics::kLogicalWidth, graphics::kLogicalHeight, graphics::UvRect{},
+                                     clear};
+    drawQuads(nullptr, std::span(&fill, 1));
+}
+
+void RenderEngine::beginWindowFrame(graphics::Rgba clear) { startFrame(clear); }
+
+void RenderEngine::drawQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) {
+    CONEY_ASSERT(m_inFrame);
+    if (m_camera == nullptr || quads.empty()) {
+        return; // NULL backend: nothing to draw
+    }
+    rw::Raster* raster = nullptr;
+    if (texture != nullptr) {
+        const auto* sheetTexture = dynamic_cast<const SheetTexture*>(texture);
+        CONEY_ASSERT(sheetTexture != nullptr);
+        rw::Texture* rwTexture = sheetTexture->rwTexture();
+        raster = rwTexture->raster;
+        // The texture's own filtering (most of the game's textures ask for linear), clamped at the edges so a
+        // rectangle that reaches the texture's border does not pick up texels from the opposite side.
+        rw::SetRenderState(rw::TEXTUREFILTER, rwTexture->getFilter());
+        rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
+    }
+    // Logical pixels to window pixels, then the shared 2D drawing.
+    std::vector<graphics::LogicalQuad> mapped(quads.begin(), quads.end());
+    for (graphics::LogicalQuad& quad : mapped) {
+        const graphics::LogicalRect rect =
+            graphics::logicalToWindow(graphics::LogicalRect{quad.x, quad.y, quad.width, quad.height}, m_viewport);
+        quad.x = rect.x;
+        quad.y = rect.y;
+        quad.width = rect.width;
+        quad.height = rect.height;
+    }
+    drawWindowQuads(raster, mapped);
+}
+
+void RenderEngine::drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads) {
+    // The 2D pass's states (docs/research/graphics.md#2d-drawing): no depth test or write, no culling, no fog, blended
+    // by the vertex and texture alpha over what is already drawn.
+    rw::SetRenderState(rw::ZTESTENABLE, 0);
+    rw::SetRenderState(rw::ZWRITEENABLE, 0);
+    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+    rw::SetRenderState(rw::FOGENABLE, 0);
+    rw::SetRenderState(rw::VERTEXALPHA, 1);
+    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    rw::SetRenderStatePtr(rw::TEXTURERASTER, raster);
+
+    // Four corners and two triangles per quad, clockwise from the top left, as the device's screen quads.
+    const float nearZ = rw::im2d::GetNearZ();
+    const float recipZ = 1.0F / m_camera->nearPlane;
+    std::vector<rw::gl3::Im2DVertex> vertices(quads.size() * 4);
+    for (std::size_t q = 0; q < quads.size(); ++q) {
+        const graphics::LogicalQuad& quad = quads[q];
+        struct Corner {
+            float x, y, u, v;
+        };
+        const std::array<Corner, 4> corners{{{quad.x, quad.y, quad.uv.u0, quad.uv.v0},
+                                             {quad.x + quad.width, quad.y, quad.uv.u1, quad.uv.v0},
+                                             {quad.x + quad.width, quad.y + quad.height, quad.uv.u1, quad.uv.v1},
+                                             {quad.x, quad.y + quad.height, quad.uv.u0, quad.uv.v1}}};
+        for (std::size_t i = 0; i < corners.size(); ++i) {
+            rw::gl3::Im2DVertex& vertex = vertices[q * 4 + i];
+            vertex.setScreenX(corners[i].x);
+            vertex.setScreenY(corners[i].y);
+            vertex.setScreenZ(nearZ);
+            vertex.setRecipCameraZ(recipZ);
+            vertex.setColor(quad.colour.r, quad.colour.g, quad.colour.b, quad.colour.a);
+            vertex.setU(corners[i].u, recipZ);
+            vertex.setV(corners[i].v, recipZ);
+        }
+    }
+    // 16-bit indices: draw in runs of at most 16,384 quads, each run indexing its own vertices from 0.
+    constexpr std::size_t kMaxQuadsPerDraw = 0x10000 / 4;
+    std::vector<std::uint16_t> indices;
+    for (std::size_t first = 0; first < quads.size(); first += kMaxQuadsPerDraw) {
+        const std::size_t count = std::min(kMaxQuadsPerDraw, quads.size() - first);
+        indices.clear();
+        indices.reserve(count * 6);
+        for (std::size_t q = 0; q < count; ++q) {
+            for (const std::size_t corner : {0U, 1U, 2U, 0U, 2U, 3U}) {
+                indices.push_back(static_cast<std::uint16_t>(q * 4 + corner));
+            }
+        }
+        rw::im2d::RenderIndexedPrimitive(rw::PRIMTYPETRILIST, &vertices[first * 4], static_cast<rw::int32>(count * 4),
+                                         indices.data(), static_cast<rw::int32>(indices.size()));
+    }
+}
+
+void RenderEngine::startFrame(graphics::Rgba clear) {
     CONEY_ASSERT(!m_inFrame);
     m_inFrame = true;
     m_clearColour = clear;
+    m_viewport = graphics::fitLogicalScreen(m_frameSize);
     if (m_camera == nullptr) {
         return; // NULL backend: nothing to clear
     }
@@ -185,6 +285,7 @@ void RenderEngine::beginFrame(graphics::Rgba clear) {
         m_frameSize = graphics::Extent{width, height};
         createCamera();
     }
+    m_viewport = graphics::fitLogicalScreen(m_frameSize);
     rw::RGBA colour = toRw(clear);
     m_camera->clear(&colour, rw::Camera::CLEARIMAGE | rw::Camera::CLEARZ);
     m_camera->beginUpdate();

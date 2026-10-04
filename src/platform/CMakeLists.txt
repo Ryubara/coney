@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Everything that talks to SDL3 or librw, as a library so the tests can use it too (with the headless renderer).
-add_library(coney_platform STATIC render_engine.cpp texture_dictionary.cpp texture_viewer_mode.cpp window.cpp)
+add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_viewer_mode.cpp
+                                  window.cpp)
 coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core SDL3::SDL3-static librw::librw)
 

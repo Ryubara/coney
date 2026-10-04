@@ -367,13 +367,40 @@ scripts' string constants show (inferred, from the constants; the bytecode was n
 
 ## Coney's implementation
 
-Not yet implemented.
+**Mode 5, the legal screen** (`src/gamemodes/legal_screen_mode.h`, `LegalScreenMode`), written from
+[the flow](#mode-flow) and [Graphics](graphics.md#first-screen). `coney --disc <disc>` with no tool option pushes an
+idle mode (standing in for mode 8) and then mode 5, as `main` does; mode 5 runs first:
 
-What the implementer needs:
+- `enter` picks the resource name by language, 16:9 and the flag `0x02` (`legalScreenResourceName`; the defaults
+  are NTSC-U English 4:3, `legal_screen`), loads that sprite sheet from the WAD file named by the name's decimal CRC
+  (`resourceFileName`, `platform::loadSpriteSheetResource`) and keeps it until `exit`.
+- `update` draws the sheet's first rectangle over the whole 640 × 448 logical screen on black and presents it, every
+  frame; it reads no input. It leaves once 5,000 ms of **game time** have passed since the mode was entered: exactly
+  150 frames of the fixed 1/30 s step.
+- A sheet that fails to load is printed and the screen stays black for the hold.
 
-- Game modes 5, 6, 8, 0x12 and 1 with the behaviour of [the flow](#mode-flow): mode 5 holds 5 s and ignores input;
-  mode 6 can at first be a pass-through that reports "no memory card, continue" (Coney's saves are files); mode 8
-  loads the front-end level on its first entry and starts the chosen level later.
+Coney's choices, where the original does something else or the page is silent:
+
+- The original draws once in `Enter` into both display buffers and presents nothing in `Update`; Coney redraws every
+  frame (the same picture), so a window that is moved, resized or captured keeps showing it.
+- The original times the hold in real milliseconds (`Timer`); Coney uses game time on the fixed step, so the engine
+  never reads a clock and a test can run the whole hold.
+- `legal_screen_euro` is used for English with the flag `0x02` whatever the 16:9 option, since no `_w` variant of it
+  exists.
+- The preload scripts `Enter` runs (`enum_preload.lua`, `config_preload.lua`) wait for a Lua system.
+
+TODO for the analysts, found while implementing:
+
+- Names for the mode 5 functions: the `@orig` tags call them `Mode5::Enter` (`0x00159a58`), `Mode5::Update`
+  (`0x00159ae0`) and `Mode5::Exit` (`0x00159ab8`) until the research database names them.
+- Does `legal_screen_euro` have a 16:9 counterpart in another region's build, or does the flag `0x02` with 16:9 pick
+  `legal_screen_w`?
+
+What the implementer still needs:
+
+- Game modes 6, 8, 0x12 and 1 with the behaviour of [the flow](#mode-flow); mode 6 can at first be a pass-through
+  that reports "no memory card, continue" (Coney's saves are files); mode 8 loads the front-end level on its first
+  entry and starts the chosen level later. Their place is marked in `src/platform/main.cpp`.
 - A Lua 4.0 virtual machine running the game's own bytecode (`level100.lua`, `config_preload*.lua`,
   `config_strings_*.lua`), with Coney's own implementations of the bindings it calls: at least `CfgLevelName`,
   `CfgHUDMessage`, `GetLanguage`, `ShowProfileManager`, `ShowRumbleModeInterface`, `MenuLoadLevel`, `PadSetHandler`,

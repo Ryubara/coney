@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 0.1%](https://img.shields.io/badge/reimplemented-0.1%25-red) ![Researched: 50.6%](https://img.shields.io/badge/researched-50.6%25-yellow)
+![Reimplemented: 0.2%](https://img.shields.io/badge/reimplemented-0.2%25-red) ![Researched: 50.6%](https://img.shields.io/badge/researched-50.6%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% of the game's own code (3,328 of 3,342,408 bytes, 23 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.2% of the game's own code (5,392 of 3,342,408 bytes, 29 functions) |
 | **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,568 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
@@ -56,8 +56,8 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% | 3 | 20,800 |
 | `FileIO` | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 1 | 6,480 |
-| `GameModes` | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% | 5 | 47,040 |
-| `Graphics` | `▏░░░░░░░░░░░░░░░░░░░` | 0.2% | 2 | 189,024 |
+| `GameModes` | `█░░░░░░░░░░░░░░░░░░░` | 5.1% | 9 | 47,040 |
+| `Graphics` | `▏░░░░░░░░░░░░░░░░░░░` | 0.2% | 4 | 189,024 |
 | `GUI` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
@@ -115,11 +115,17 @@ at the top of the repository's `README.md`.
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
 | `0x00154440` | `Stream_SkipBytes` | `FileIO` | 128 |
+| `0x00159a58` | `Mode5::Enter` | `GameModes` | 96 |
+| `0x00159ab8` | `Mode5::Exit` | `GameModes` | 40 |
+| `0x00159ae0` | `Mode5::Update` | `GameModes` | 296 |
+| `0x00159c08` | `StartupScreen_Draw` | `GameModes` | 1,536 |
 | `0x0015e5e8` | `GameModeStack_Push` | `GameModes` | 104 |
 | `0x0015e650` | `GameModeStack_Pop` | `GameModes` | 104 |
 | `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes` | 96 |
 | `0x0015e718` | `GameModeStack_Top` | `GameModes` | 48 |
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
+| `0x00181b20` | `ChunkLoaded_ParticlePage` | `Graphics` | 72 |
+| `0x00181e38` | `Page_Rect` | `Graphics` | 24 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 <!-- progress:end -->

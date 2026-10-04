@@ -111,6 +111,30 @@ subsystem = "FileIO"
 size = 128
 
 [[function]]
+address = 0x00159a58
+name = "Mode5::Enter"
+subsystem = "GameModes"
+size = 96
+
+[[function]]
+address = 0x00159ab8
+name = "Mode5::Exit"
+subsystem = "GameModes"
+size = 40
+
+[[function]]
+address = 0x00159ae0
+name = "Mode5::Update"
+subsystem = "GameModes"
+size = 296
+
+[[function]]
+address = 0x00159c08
+name = "StartupScreen_Draw"
+subsystem = "GameModes"
+size = 1536
+
+[[function]]
 address = 0x0015e5e8
 name = "GameModeStack_Push"
 subsystem = "GameModes"
@@ -139,6 +163,18 @@ address = 0x0015e748
 name = "GameModeStack_TopId"
 subsystem = "GameModes"
 size = 72
+
+[[function]]
+address = 0x00181b20
+name = "ChunkLoaded_ParticlePage"
+subsystem = "Graphics"
+size = 72
+
+[[function]]
+address = 0x00181e38
+name = "Page_Rect"
+subsystem = "Graphics"
+size = 24
 
 [[function]]
 address = 0x001906e8

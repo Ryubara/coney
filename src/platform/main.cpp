@@ -24,8 +24,10 @@
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/idle_mode.h"
+#include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/load_entry_mode.h"
 #include "platform/render_engine.h"
+#include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 #include "platform/texture_viewer_mode.h"
 #include "platform/window.h"
@@ -112,6 +114,7 @@ int main(int argc, char** argv) {
     }
     coney::chunk::ChunkHandlerTable chunkHandlers = coney::chunk::ChunkHandlerTable::withDefaults();
     coney::platform::addTextureDictionaryHandlers(chunkHandlers);
+    coney::platform::addSpriteSheetHandlers(chunkHandlers);
 
     // Game time runs on the fixed 1/30 s step and never reads a real clock, which keeps the engine's test mode
     // (docs/guides/conventions.md#platform-code) possible.
@@ -144,9 +147,16 @@ int main(int argc, char** argv) {
         return loader.failures() == 0 ? 0 : 1;
     }
 
-    // The mode at the bottom of the stack: the texture viewer for --view-txd, or an idle screen while Coney has no
-    // game to run. Declared after the renderer, so they are destroyed before it: the viewer's textures are librw's.
+    // The modes. Declared after the renderer, so they are destroyed before it: their textures are librw's.
     coney::IdleMode idle(&renderer);
+    const auto loadSheet = [&wad, &chunkHandlers, &renderer](
+                               std::string_view name) -> std::expected<coney::graphics::SpriteSheet, coney::Error> {
+        if (!wad) {
+            return coney::fail(coney::ErrorCode::NotFound, "no disc to load from");
+        }
+        return coney::platform::loadSpriteSheetResource(*wad, chunkHandlers, name, renderer.drawsPixels());
+    };
+    coney::LegalScreenMode legal(renderer, loadSheet, coney::LegalScreenSettings{}, printText);
     std::optional<coney::platform::TextureViewerMode> viewer;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
@@ -158,7 +168,15 @@ int main(int argc, char** argv) {
             return 1;
         }
         modes.push(viewer.emplace(renderer, std::move(*dictionaries)));
+    } else if (wad) {
+        // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
+        // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first. Until
+        // modes 8 and 6 exist, the idle mode stands in for mode 8 and nothing for mode 6.
+        // TODO(docs/research/frontend.md#mode-flow): push mode 8, then mode 6 with its boot flag, here.
+        modes.push(idle);
+        modes.push(legal);
     } else {
+        // No disc: no game to run, only the idle screen.
         modes.push(idle);
     }
 

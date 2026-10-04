@@ -21,7 +21,7 @@ TextureViewerMode::TextureViewerMode(RenderEngine& engine, std::vector<TextureDi
 
 // One frame: clear, lay the textures out for the current window size and draw each in its cell, present.
 ModeResult TextureViewerMode::update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) {
-    m_engine.beginFrame(kClearColour);
+    m_engine.beginWindowFrame(kClearColour);
     if (m_engine.drawsPixels()) {
         const graphics::GridLayout layout = graphics::layoutGrid(m_sizes, m_engine.frameSize(), kMargin);
         for (std::size_t i = 0; i < m_textures.size(); ++i) {

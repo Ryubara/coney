@@ -11,11 +11,15 @@ add_executable(coney_tests
     fileio/wad_test.cpp
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
+    gamemodes/legal_screen_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
     graphics/frame_stats_test.cpp
+    graphics/particle_page_test.cpp
     graphics/rw_stream_test.cpp
+    graphics/screen_test.cpp
     graphics/texture_grid_test.cpp
     platform/disc_textures_test.cpp
+    platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).

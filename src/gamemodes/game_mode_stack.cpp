@@ -55,7 +55,7 @@ std::uint64_t GameModeStack::runUntilEmpty(GameTimer& timer, const std::function
             break;
         }
         const std::uint64_t advanced = timer.update();
-        step(FrameTime{frames, GameTimer::toSeconds(advanced), timer.ticks()});
+        step(FrameTime{frames, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
         ++frames;
     }
     return frames;

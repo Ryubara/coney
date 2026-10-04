@@ -10,7 +10,7 @@ namespace coney::platform {
 /// What the window should look like when it opens.
 struct WindowDesc {
     std::string_view title = "Coney"; ///< The title bar text.
-    int width = 1280;                 ///< Client area width in pixels.
+    int width = 960;                  ///< Client area width in pixels: 4:3, the shape of the logical screen.
     int height = 720;                 ///< Client area height in pixels.
 };
 

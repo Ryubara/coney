@@ -299,12 +299,25 @@ debug or PC tool (inferred).
 
 ## Coney's implementation
 
-Not yet implemented.
+- **Sprite sheets** (`src/graphics/particle_page.h`): `parseParticlePage` reads a `0x4C` chunk's count, `firstGlyph`
+  and rectangles as [laid out above](#particle-page), refusing data shorter than its header or count; the placeholder
+  and the two load-time words are ignored, zero padding after the rectangles is allowed, the coordinates are not
+  checked (the original does not either). A `graphics::SpriteSheet` is the rectangles plus a shared reference to the
+  texture.
+- **The `0x4C` handler** (`src/platform/sprite_sheets.h`, `onParticlePageLoaded`): pops the page and the `0x0B`
+  dictionary before it and pushes a `SpriteSheetObject` back under `0x4C`, owning the dictionary and bound to its
+  first texture. A dictionary with no texture fails the load. `loadSpriteSheetResource` loads a sheet by resource
+  name from the WAD file named by the name's decimal CRC-32; the legal screen uses it
+  ([Front end](frontend.md#coneys-implementation)).
 
-What the implementer needs:
+TODO for the analysts, found while implementing:
 
-- A reader for chunk `0x4C` (the layout above) that keeps the rectangles and binds the sheet to the single texture of
-  the `0x2A` dictionary before it; the `0x4D` table from `warriors.glr` to map sheet index or name hash to a resource.
+- A name for the `0x4C` handler: the `@orig` tag calls it `ChunkLoaded_ParticlePage` (`0x00181b20`) until the
+  research database names it.
+
+What the implementer still needs:
+
+- The `0x4D` table from `warriors.glr` to map sheet index or name hash to a resource.
 - Sprite batches (instances): a sheet, a capacity, a format (position + size, + rotation, or matrix), a blend of
   source alpha / inverse source alpha, a world (none, 3D overlay, 2D overlay) and a depth; `AddSprite` with the record
   above, dropped past capacity; emptied after each frame. librw's PTank, or a plain textured-quad batch, both fit.

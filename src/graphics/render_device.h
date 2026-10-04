@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 
 namespace coney::graphics {
 
@@ -15,11 +16,55 @@ struct Rgba {
     friend bool operator==(const Rgba&, const Rgba&) = default;
 };
 
-/// The part of the renderer a game mode drives each frame: start a frame cleared to a colour, then show it.
+/// Opaque black: the colour the start-up screens clear to.
+inline constexpr Rgba kBlack{0, 0, 0, 255};
+/// Opaque white: a sprite drawn in it shows its texture unchanged.
+inline constexpr Rgba kWhite{255, 255, 255, 255};
+
+/// A rectangle of texture coordinates: (u0, v0) the top-left corner, (u1, v1) the bottom-right, 0 to 1 across the
+/// texture. The sprite sheets store theirs this way (docs/research/gui.md#particle-page).
+struct UvRect {
+    float u0 = 0.0F;
+    float v0 = 0.0F;
+    float u1 = 1.0F;
+    float v1 = 1.0F;
+
+    friend bool operator==(const UvRect&, const UvRect&) = default;
+};
+
+/// A texture a RenderDevice can draw. The platform layer implements it over librw's textures; game code only holds it
+/// and passes it back to the device, so it never sees a graphics API.
+class Texture {
+  public:
+    virtual ~Texture() = default;
+    Texture() = default;
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
+    Texture(Texture&&) = delete;
+    Texture& operator=(Texture&&) = delete;
+
+    /// Width of the texture in texels.
+    [[nodiscard]] virtual int width() const = 0;
+    /// Height of the texture in texels.
+    [[nodiscard]] virtual int height() const = 0;
+};
+
+/// One textured rectangle of a 2D pass, in the logical screen's pixels (graphics/screen.h).
+struct LogicalQuad {
+    float x = 0.0F;      ///< Left edge, logical pixels from the left of the screen.
+    float y = 0.0F;      ///< Top edge, logical pixels from the top.
+    float width = 0.0F;  ///< Logical pixels.
+    float height = 0.0F; ///< Logical pixels.
+    UvRect uv;           ///< The part of the texture stretched over it.
+    Rgba colour;         ///< Multiplies the texture; its alpha blends the quad over what is below.
+};
+
+/// The part of the renderer a game mode drives each frame: start a frame cleared to a colour, draw 2D quads, then
+/// show it.
 ///
 /// It stands for the original's render device, which each game mode's update calls to begin the frame and, at the
 /// end, to present it (docs/research/boot.md#one-frame, steps 6 and 10). The platform layer implements it with librw
-/// (src/platform/render_engine.h); the headless renderer implements both calls as no-ops, so a mode never needs to
+/// (src/platform/render_engine.h); the headless renderer implements every call as a no-op, so a mode never needs to
 /// know whether anything is on screen.
 class RenderDevice {
   public:
@@ -30,8 +75,15 @@ class RenderDevice {
     RenderDevice(RenderDevice&&) = delete;
     RenderDevice& operator=(RenderDevice&&) = delete;
 
-    /// Starts a frame with the whole screen cleared to `clear`. Drawing happens between this and present().
+    /// Starts a frame with the logical screen cleared to `clear` (and any border around it in the window to black,
+    /// see graphics::fitLogicalScreen()). Drawing happens between this and present().
     virtual void beginFrame(Rgba clear) = 0;
+
+    /// Draws `quads` with `texture` (null: flat colour) in the 2D pass's states: depth test and depth write off, no
+    /// culling, blended by source alpha over what is already drawn (docs/research/graphics.md#2d-drawing). The quads
+    /// are drawn in the order given. Only between beginFrame() and present(); `texture` must stay alive until the call
+    /// returns.
+    virtual void drawQuads(const Texture* texture, std::span<const LogicalQuad> quads) = 0;
 
     /// Ends the frame and shows it. With a display this waits for the vertical blank, which paces the game as the
     /// original's present does; the headless renderer returns at once.

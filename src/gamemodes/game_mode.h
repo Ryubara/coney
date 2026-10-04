@@ -18,6 +18,7 @@ struct FrameTime {
     std::uint64_t index = 0;     ///< Frames run before this one.
     double seconds = 0.0;        ///< The step: exactly 1/30 s under the fixed timestep.
     std::uint64_t gameTicks = 0; ///< Game time after this step, in GameTimer ticks.
+    std::uint64_t stepTicks = 0; ///< Ticks this step advanced: GameTimer::kFixedStepTicks under the fixed step.
 };
 
 /// A screen or state of the game (front end, in-game, memory card, error), run by a GameModeStack.

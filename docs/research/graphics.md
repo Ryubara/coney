@@ -432,9 +432,18 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   gets a non-owning `Window`. A run-time NULL backend (`--headless`) installs librw's NULL device instead, for CI and
   tests: no window, no GPU. It implements `graphics::RenderDevice` (begin a frame cleared to a colour, present),
   which game modes call as the original's modes call the device; the idle mode clears and presents every frame.
-  There are no device cameras, logical 640 × 448 screen or 30 Hz present yet: one camera covers the window, and the
-  present waits for every vertical blank (librw's GL3 device sets a swap interval of 1, not the 2 of
-  [the frame rate](#frame-rate)).
+  There are no device cameras or 30 Hz present yet: one camera covers the window, and the present waits for every
+  vertical blank (librw's GL3 device sets a swap interval of 1, not the 2 of [the frame rate](#frame-rate)).
+- **The logical screen** (`src/graphics/screen.h`): every 2D position is in the 640 × 448 pixels of
+  [the video mode](#video-mode). Coney shows that screen at the television's shape, 4:3 (16:9 later, with the
+  widescreen option), as the largest such rectangle centred in the window (`fitLogicalScreen`), and fills the rest of
+  the window black: **letterboxing or pillarboxing is Coney's choice** for a window that is not 4:3; the original
+  has a television picture and no border. The window opens at 960 × 720. `beginFrame(colour)` clears the window to
+  black and the logical screen to the colour (with a flat quad, since librw's clear covers the whole frame buffer).
+- **2D quads** (`RenderDevice::drawQuads`): textured or flat rectangles in logical pixels with a colour and texture
+  coordinates, drawn with Z test and Z write off, no culling, no fog, vertex alpha on and source alpha / inverse
+  source alpha blending ([2D drawing](#2d-drawing)), with the texture's own filter mode and clamped addressing. Game
+  code passes a `graphics::Texture`, which the platform implements over a librw texture.
 - `TextureDictionary` (`src/platform/texture_dictionary.h`) reads a dictionary with librw after
   `graphics::inspectTexDictionary` has checked the stream, and converts it to RGBA images (any backend) or to OpenGL
   textures (`Raster::convertTexToCurrentPlatform`). The chunk readers for `0x0B` and `0x2A` push it as `0x0B`
@@ -451,6 +460,12 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
 - `coney --disc <disc> --view-txd <entry>` draws an entry's textures in a grid with RwIm2D quads, nearest filtering,
   Z off and source-alpha blending, as the device's screen quads do ([2D drawing](#2d-drawing)); `--screenshot` saves
   the last frame. The legal screen (`--view-txd 863681355`) shows correctly.
+- **The first screen** is mode 5 ([Front end](frontend.md#coneys-implementation)): `coney --disc <disc>` loads
+  `legal_screen` through the chunk system (its `0x2A` dictionary and its `0x4C` sprite sheet,
+  [GUI](gui.md#coneys-implementation)) and draws the sheet's first rectangle, the top 512 × 384 of the texture, over
+  the whole logical screen on black for 5,000 ms. **Coney's choice:** the picture fills the logical screen exactly;
+  the original sizes it from the overlay camera's near clip and the per-mode factors, whose result is not worked out
+  (TODO below). On the NTSC-U disc it shows correctly and gives way to the idle mode after frame 150.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc]"` with `CONEY_DISC` set reads 20,314
 dictionaries (from 3,016 chunk containers, 1,911 sector atomics files and 159 world streams) holding 42,211 textures;
@@ -461,8 +476,8 @@ dictionaries (from 3,016 chunk containers, 1,911 sector atomics files and 159 wo
 What is still to do:
 
 - A device object that owns librw's engine start-up (with the HAnim, Skin, MatFX and world plugins; PTank for
-  sprites), a 640 × 448 logical screen scaled to the window, and the cameras of [the device object](#device-object):
-  main, per-viewport, overlay and effects, sharing one frame and Z buffer.
+  sprites) and the cameras of [the device object](#device-object): main, per-viewport, overlay and effects, sharing
+  one frame and Z buffer.
 - `Present` once per fixed 1/30 s step ([frame rate](#frame-rate)); a test mode that renders without a display.
 - Clear to the background colour (white until a level sets one; the legal screen clears to black) with Z.
 - Texture dictionaries read with librw from the chunk stream (`0x0B`, `0x2A`, world streams, sector atomics) and kept
@@ -473,8 +488,15 @@ What is still to do:
   needs both ([The streamed world](world.md#coneys-implementation)).
 - Sprites: GUI coordinates `[0, 1]²` mapped as in [2D drawing](#2d-drawing), drawn after the 3D scene with depth test
   and write off and source-alpha blending.
-- The legal screen as the first screen: resource `legal_screen` (WAD name `863681355`), its texture's top 512 × 384
-  scaled to fill the screen for 5 seconds.
+- The 16:9 option: a 16:9 logical screen shape, the overlay view-window scale 1.1 and the `_w` legal screens.
+
+TODO for the analysts, found while implementing:
+
+- **Legal-screen placement:** how the near clip and the factors (1.55, 1.35) turn into the sprite's position and
+  size, and so whether the picture fills the screen (Coney's choice) or leaves a border. Taken at face value with the
+  overlay camera's view window, the factors give a picture narrower in proportion than the screen, which would
+  distort a 4:3 image, so something in the reading is missing.
+- **The legal screen's colour:** what colour `StartupScreen_Draw` gives its sprite; Coney draws it white (unchanged).
 
 ## Open questions
 

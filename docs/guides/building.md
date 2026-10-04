@@ -109,8 +109,11 @@ CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
 ## Run Coney {#run-coney}
 
 The executable is `build/<preset>/src/platform/coney` (`coney.exe` on Windows). Run with no arguments, it opens a
-window and runs until you close it (or press Escape). Underneath, the game-mode stack runs on a fixed 1/30 s step
-with an idle mode at its bottom, which clears the window to a dark slate and presents it every frame.
+960 × 720 window and runs until you close it (or press Escape). Underneath, the game-mode stack runs on a fixed
+1/30 s step with an idle mode at its bottom, which clears the screen to a dark slate and presents it every frame.
+
+Everything is drawn into the original's 640 × 448 screen, shown at a television's 4:3 shape as large as the window
+allows and centred; a window of another shape gets black bars at the sides or at the top and bottom.
 
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--frames N] [--screenshot PATH] [--headless] [--help]
@@ -136,6 +139,14 @@ the image. Keep screenshots of game data out of the repository (`../../scratch/`
 holding `WARRIORS.DIR` and `WARRIORS.WAD`, or an ISO 9660 image of the disc (the same forms `coney-tools wad`
 takes, see [The coney-tools command line](coney-tools.md#naming-the-disc)). Coney reads `WARRIORS.DIR`, checks it
 against `WARRIORS.WAD`, and prints how many entries it lists.
+
+With `--disc` and neither `--load` nor `--view-txd`, Coney runs the game's start-up as far as it goes: the legal
+screen for five seconds (150 frames), then the idle screen, which stands in for what comes next
+([Front end](../research/frontend.md#coneys-implementation)). No button skips the legal screen, as in the original.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --frames 3 --screenshot ../../scratch/legal.png
+```
 
 `--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a
 file name such as `level1.lev` (any letter case) or a name hash written `0x` and up to 8 hex digits, such as
