@@ -136,13 +136,13 @@ class Disc:
             raise ConfigError(f"{path}: not a folder or an ISO image (does it exist?)")
 
     def has(self, name: str) -> bool:
-        """Whether the disc root holds `name` (case-insensitive)."""
-        key = name.upper()
+        """Whether the disc root holds `name`; any case, with a `;1` suffix or trailing dot ignored, as in C++."""
+        key = _clean_name(name).upper()
         return key in (self._folder if self._folder is not None else self._iso or {})
 
     def size(self, name: str) -> int:
         """Byte size of the root file `name`. Raises ConfigError when the disc has no such file."""
-        key = name.upper()
+        key = _clean_name(name).upper()
         try:
             if self._folder is not None and key in self._folder:
                 return self._folder[key].stat().st_size
@@ -154,7 +154,7 @@ class Disc:
 
     def open(self, name: str) -> BinaryIO:
         """Open the root file `name` for reading (seekable, streamed). Raises ConfigError when it is missing."""
-        key = name.upper()
+        key = _clean_name(name).upper()
         try:
             if self._folder is not None and key in self._folder:
                 return self._folder[key].open("rb")

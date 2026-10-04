@@ -16,6 +16,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/name_hash.h"
+
 namespace coney::test {
 
 /// Builds a little-endian byte buffer. Every method appends (or patches) and returns the builder, so calls chain.
@@ -182,6 +184,15 @@ inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> fil
         image.padTo((image.size() + kSector - 1) / kSector * kSector);
     }
     return image.data();
+}
+
+/// A WARRIORS.DIR with two entries: global.lua at 0 (5 bytes) and level1.lev at 2048 (12 bytes).
+inline Bytes twoEntryDir() {
+    Bytes dir;
+    dir.header(2, 0, 0, 0);
+    dir.u32(0).u32(5).u32(nameHash("./ee_files/global.lua"));
+    dir.u32(2048).u32(12).u32(nameHash("./ee_files/level1.lev"));
+    return dir;
 }
 
 } // namespace coney::test

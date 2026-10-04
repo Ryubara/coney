@@ -170,7 +170,7 @@ def test_harvest_matches_across_a_chunk_edge() -> None:
 
 def test_iso_reader_reads_root_files(tmp_path: Path) -> None:
     disc = Disc(make_iso(tmp_path / "t.iso", {"HELLO.TXT": b"hello", "BIG.BIN": b"x" * 5000}, pad_directory=True))
-    assert disc.has("hello.txt") and not disc.has("SUBDIR")
+    assert disc.has("hello.txt") and disc.has("HELLO.TXT;1") and not disc.has("SUBDIR")
     assert disc.size("BIG.BIN") == 5000
     with disc.open("HELLO.TXT") as handle:
         assert handle.read() == b"hello"

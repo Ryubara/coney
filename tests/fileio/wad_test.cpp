@@ -10,24 +10,11 @@
 #include "support/fixtures.h"
 
 using coney::ErrorCode;
-using coney::nameHash;
 using coney::io::Disc;
 using coney::io::Wad;
 using coney::test::Bytes;
 using coney::test::TempDir;
-
-namespace {
-
-/// A WARRIORS.DIR with two entries: global.lua at 0 (5 bytes) and level1.lev at 2048 (12 bytes).
-Bytes twoEntryDir() {
-    Bytes dir;
-    dir.header(2, 0, 0, 0);
-    dir.u32(0).u32(5).u32(nameHash("./ee_files/global.lua"));
-    dir.u32(2048).u32(12).u32(nameHash("./ee_files/level1.lev"));
-    return dir;
-}
-
-} // namespace
+using coney::test::twoEntryDir;
 
 TEST_CASE("Wad opens a disc folder, looks entries up and reads them", "[wad]") {
     TempDir folder;

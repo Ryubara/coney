@@ -22,7 +22,8 @@ struct WindowDesc {
 class Window {
   public:
     /// Initialises SDL video and opens a resizable window. Fails with ErrorCode::PlatformFailure, carrying SDL's own
-    /// error text, when SDL cannot start or cannot create the window; SDL is shut down again in either case.
+    /// error text, when SDL cannot start (SDL_Init undoes its own partial start) or cannot create the window (SDL is
+    /// then shut down again).
     [[nodiscard]] static std::expected<Window, Error> open(const WindowDesc& desc);
 
     Window(Window&& other) noexcept;
