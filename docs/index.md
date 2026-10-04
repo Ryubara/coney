@@ -9,5 +9,6 @@ Windows, Linux and macOS.
 
 | Section | What's in it |
 | --- | --- |
+| [Roadmap](roadmap.md) | The milestones from an empty window to the whole game, and where we are |
 | [Research](research/overview.md) | How the original game works: disc, executable, file formats, engine subsystems |
 | [Guides](guides/writing-docs.md) | How to set up, use the tools, and contribute |
