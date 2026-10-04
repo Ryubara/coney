@@ -236,6 +236,46 @@ the scene and the music and calls `MenuLoadLevel(name)` (`0x0036df48` → `0x001
 level table). Mode 8's next `Update` then calls `Menu.onFinish` and `UnloadLevel(0)` (`0x0015c5f8`), selects the
 level and pushes **mode 1** (gameplay), whose `Enter` loads it with `InitLevel`. Confirmed (code) for the C++ side.
 
+### Starting a story game {#story-start}
+
+What `Menu.startGame` leads to on a new profile, from the script side ([Scripts](scripting.md#run-next-mission)) to
+the first frame of mode 1 ([Level loading](level-loading.md#mode-1)):
+
+1. `runNextMission(1)` (`global.lua`) finds the last level completed (none on a new profile), looks up the next
+   mission, **`level99` with checkpoint 1**, and calls `SetCheckPoint(1)` (`0x0037b760`: `W_GameState + 0x33a` = 1,
+   the section), `SoundStopMusicTrack()` and `MenuLoadLevel("level99")`, then `HUDLaunchMissionComplete(4)`.
+   Inferred from the disassembly of `global.lua`; the bindings' effects confirmed (code).
+2. `MenuLoadLevel` sets `W_GameState + 0x14c` = 3 and mode 8's `+0x20` to the index of `level99` (record 1).
+   The profile manager pops; mode 8's next `Update` (`0x0015c858`) sees `+0x20` ≥ 0, calls `LevelFlow_FinishFrontEnd`
+   (because `+0x24` is 1), selects the level (`0x0041ce88`), sets `+0x20` = -1 and pushes **mode 1**. Confirmed
+   (code).
+3. Mode 1's `Enter` runs `InitLevel` for `level99`, section 1: the loading screen, the intro movie `L99_IN` (record
+   flag `0x02`, section 1), the level script, the preload ([Level loading](level-loading.md#initlevel)). The level
+   script's start callback (`SetStartGameCallback("StartAmbient")`, step 13 of `InitLevel`) then starts the
+   in-engine intro scene.
+
+**Level record 1**, read from `W_GameState + 0x14d4 + 0x84` in PCSX2 2.9.94 with the `level99` level loaded
+(`W_GameState` = `0x01fd8400`, from the pointer at `0x0051489c`; confirmed (runtime)):
+
+| Offset | Value |
+| --- | --- |
+| `+0x00` | 1 (the index) |
+| `+0x04` | 99 (the level number: `L99_IN`) |
+| `+0x08` | 3 sections |
+| `+0x0c` | 1 |
+| `+0x0d` | `0x02` (intro movie) |
+| `+0x10` | 1 |
+| `+0x14` | `level99` |
+| `+0x24` | `1:Coney` (the mission's number and place) |
+| `+0x39` | `level99` (the world) |
+| `+0x49` | `New Blood` (the mission's title) |
+
+**At runtime** (PCSX2 2.9.94, a new profile, screenshots): after the new game is chosen the screen shows a loading
+picture titled "1 Coney" / "New Blood" with a progress bar, later a letterboxed in-engine scene, and then control of
+Rembrandt with the first tutorial text. Confirmed (runtime) for that order; the movie between them was not watched
+for (the disc has `PSS/L99_IN.BIK`, corroboration). That `+0x24` and `+0x49` are the loading screen's two lines is
+inferred from the matching text.
+
 ### InitLevel
 
 `0x0015fe90` (`GameModes/InitLevel.cpp`), used for the front end and every game level, in this order (confirmed

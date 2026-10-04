@@ -231,12 +231,20 @@ with `0x00251188`.
 
 ### Entering gameplay (mode 1) {#mode-1}
 
-Mode 8 pushes mode 1 once a level is chosen ([Front end](frontend.md#mode-flow)). Mode 1's `Enter` (`0x001582e0`),
-confirmed (code): sets up the audio manager (`0x001110c8` with 0.1; three channels cleared through `0x001104c8`),
-takes `GameTimer` (setting its fields `+0x5c` = 1, `+0x60` = 0), calls its own `Resume`, reads the pads once, then
-**`InitLevel`**
-(`0x0015fe90`). Afterwards it clears five globals (`0x0050c550`-`0x0050c560`), resets the timer and sets `+0x28` =
-180 (a frame countdown that the `Update` uses to hold input and fades at the start).
+Mode 8 pushes mode 1 once a level is chosen ([Front end](frontend.md#mode-flow); a new story game chooses `level99`,
+section 1, [Front end](frontend.md#story-start)). Mode 1's `Enter` (`0x001582e0`), confirmed (code), in order:
+
+1. Audio: the manager's fields `+0x3fa58` = 1, `+0x3fa5c` = 1.0, `+0x3faac` = 0.2, `+0x3fab0` = 0.75, volume 0.1
+   (`0x001110c8`); three channels cleared (`0x001104c8`).
+2. The pending level change `0x0050c754` = 0.
+3. Take `GameTimer` (fields `+0x5c` = 1, `+0x60` = 0), call its own `Resume`, read the pads once (`Pads_Update`).
+4. **`InitLevel`** (`0x0015fe90`, [below](#initlevel)).
+5. Clear five globals (`0x0050c550`-`0x0050c560`), reset the timer, call `0x0041a460(gameState, -1)` (sets up the
+   player slots and their pads; inferred from its use for the second player's join, below) and set `+0x28` = 180.
+
+`+0x28` is the **level-end countdown** in frames, read only while `W_GameState + 0x14c` is 1 or 2 ([A frame of
+play](#a-frame-of-play)); it does not hold input at the start of a level (an earlier version of this page said so).
+Confirmed (code) at `0x00158728`.
 
 ### InitLevel {#initlevel}
 
@@ -308,14 +316,42 @@ So the worlds' textures and layout are loaded **before** the level file, and bot
 9. Pump the resource manager until it is idle; then load every pack in the queue at `+0x0c`.
 10. Restore the timer and the `0x001458d8` value; give the camera back its draw distance; return the time taken.
 
-### A frame of play
+### A frame of play {#a-frame-of-play}
 
-Mode 1's `Update` (`0x00158728`) is the [in-game frame](boot.md#one-frame) with the streaming in it: after the
-simulation, **`WorldManager_Update`** and the resource manager's update run once each frame (when `0x0050c694` is
-set, which it is in `.data`). The world is drawn per viewport by `WorldManager_Render`
-([The streamed world](world.md#a-frame)). `W_GameState + 0x14c` drives the way out: 1 leads to `0x00155408` or
-`0x001557f8` and 2 to `0x0015d420` once the frame countdown `+0x28` runs out; any value other than 0, 1 and 2 (3 is
-what `MenuLoadLevel` sets) makes `Update` return 0, which pops the mode. The meanings of 1 and 2 are not traced.
+Mode 1's `Update` (`0x00158728`) is the [in-game frame](boot.md#one-frame) with the streaming in it. Confirmed (code)
+for the order; the roles of callees not named elsewhere are inferred from what they touch. While
+`W_GameState + 0x14c` is 0 (playing):
+
+1. Frame pacing (`0x00159468` with the device's value from `0x0018d020`); an empty hook (`0x001561f8`); the
+   unlockables manager (`0x004233f8` on `0x0051504c`); `0x0048d420`; the save system's sub-object at `+0x128`,
+   slot `+0x1c`.
+2. The task manager's phase-0 set-up (`0x003a3148`), the **cameras** (`0x001562c8`), the **tick** (`0x00156220`,
+   which stores the frame's step in seconds at `mode + 0x20`), the debug frame counter (`0x001569c0`).
+3. **The simulation**, when `0x005e536c` is 1 (during normal play; what clears it is not traced):
+    - `0x00249b98` walks the 60 human slots and calls each live one's slot `+0xc4` (`0x0023bdb8`), which only marks
+      the character's skeleton for an update (`+0x255` = 1, `0x00177240(+0xd8, 0)`); the humans themselves update
+      as task-manager objects ([Characters](characters.md#update));
+    - the task manager's phase 0 (`0x003a31a8`): the game objects' updates (inferred: the characters among them);
+    - `CollisionMesh_UpdateEmpty` ([Collision](collision.md)).
+4. **`WorldManager_Update`** and the resource manager's update (`0x00186068`), when `0x0050c694` is set (it is in
+   `.data`).
+5. If player 0 exists: for each player, the audio listener at the camera's matrix (camera slot `+0xac`) and the
+   player's position raised by 1.8; then `0x0010f810` and the HUD (`0x001af010`). START pauses (`0x00154f28`), or
+   on the second pad lets a second player join (`0x0041a460`, `0x0041b2f8`).
+6. Service the file manager; `0x001562a0` (`0x00412ca0`, `0x00414398`); the per-viewport passes (`0x00156408`,
+   [below](#render-order)); the overlays (`0x00156658`); the **script update** (scheduled calls,
+   [Scripts](scripting.md#scheduled-calls)); device slot `+0x34` (present); the cheat-code sequence check
+   (`0x00163c68` against the table at `0x0050c7f8`); and the error check `0x00156200`, which switches to the error
+   mode (`0x0015e7e8`).
+
+**Leaving.** `W_GameState + 0x14c` drives the way out, confirmed (code):
+
+- **1 or 2** (a level end): the countdown `+0x28` is capped at 90 frames and drops to 10 when cross (`0x40`) is
+  pressed; a type-`0xc` camera gets a 6.5 s fade (`0x0018c988`). When it reaches 0, 1 leads to `0x00155408` or
+  `0x001557f8` (chosen by `0x0041d110`) and 2 to `0x0015d420(0)`. What 1 and 2 mean (mission passed and failed are
+  the likely pair, speculative) is not traced.
+- **Any other value** (3 is what `MenuLoadLevel` sets): `Update` returns 0, which pops the mode; its `Exit` then
+  unloads the level ([Leaving gameplay](#unload)).
 
 ### The level in a frame {#render-order}
 

@@ -72,12 +72,15 @@ nav:
           - GUI, sprite sheets and text: research/gui.md
           - Level loading: research/level-loading.md
           - Scripts (Lua): research/scripting.md
+          - Characters: research/characters.md
+          - Camera: research/camera.md
           - Collision: research/collision.md
           - The streamed world: research/world.md
           - Memory: research/memory.md
       - File formats:
           - WARRIORS.DIR / .WAD: research/formats/wad-dir.md
           - WAD contents: research/formats/wad-contents.md
+          - Animation: research/formats/animation.md
       - Xbox assets (optional): research/xbox-assets.md
   - Guides:
       - Building and testing: guides/building.md

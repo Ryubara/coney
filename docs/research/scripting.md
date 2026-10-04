@@ -251,6 +251,82 @@ the table `Menu` and two particle tanks. The `Menu` functions (inferred from the
 `ScreenQueueEffect(type, seconds)` with type 0 fades in and 1 fades out ([Front end](frontend.md#profile-manager)
 for what a fade blocks).
 
+### `runNextMission` (story progress) {#run-next-mission}
+
+`global.lua`'s `runNextMission(arg)` (function 61 of the main chunk) chooses the story's next level. Inferred from the
+disassembly:
+
+1. It builds a table from the **last completed level** to the next mission's `{checkpoint, level}`. In order: 0 →
+   99; 99 → 80; 80 → 87; 87 → 95 (checkpoint 1); 34 → 95 (2); 2 → 95 (3); 3 → 95 (4); 5 → 95 (5); 81 → 95 (6);
+   86 → 93; 93 → 95 (7); 31 → 95 (8); 14 → 95 (9); 9 → 95 (10); 51 → 52; 52 → 54; 54 → 55; 55 → 84; 84 → 95 (11);
+   64 → 95 (12). Entries without a checkpoint in this list use 1. Level 95 is the hub the story returns to between
+   missions, entered at a different checkpoint each time (inferred from the pattern).
+2. The last level is the global `LastLevel` (set to 0 by `global.lua`'s main chunk, so 0 after every level load).
+   When it is 0 or nil, `findLastMission()` takes the first of 64, 84, 55, 54, 52, 51, 9, 14, 31, 93, 86, 81, 5, 3,
+   2, 34, 87, 80, 99 for which `UM_IsLevelComplete` is true, else 0.
+3. If the table has an entry: `SetCheckPoint(checkpoint)`, `SoundStopMusicTrack()`,
+   `MenuLoadLevel("level" .. level)`, and when `arg` is 1, `HUDLaunchMissionComplete(4)`. Otherwise it calls
+   `HUDLaunchMisssionComplete(3)` (three `s`), a name no binding has, so that call fails and, since errors are silent,
+   ends the function. That this branch is a bug in the shipped script is inferred.
+
+So a **new game** starts `level99` at checkpoint 1 ([Front end](frontend.md#story-start)).
+
+### Cameras from Lua {#cameras-from-lua}
+
+`CameraCreateFollow(name, target)` is a `global.lua` helper (function 15), not a binding: it calls
+`CamSetupFollow(name, target)` and then `CfgFollowCamera(FOLLOWCAM_MINDIST, FOLLOWCAM_MAXDIST, FOLLOWCAM_DEFAULTDIST,
+FOLLOWCAM_DEFAULTANGLE, FOLLOWCAM_FOV, FOLLOWCAM_NEARPLANE, {FOLLOWCAM_OFFSET_X, _Y, _Z}, FOLLOWCAM_SLOWMO)` and
+returns the camera's handle. `global.lua` sets these globals to **3, 6.6, 4.8, 13 (degrees), 65, 0.1, (0, 0, 1.4)
+and 0.2**; `CameraNormal()` applies them again to `MainCam`. Inferred from the disassembly; the values are confirmed
+(runtime) in the camera object ([Camera](camera.md#the-follow-camera-object)).
+
+### `level99.lua` (the first mission) {#level99}
+
+The first story level's script, inferred from the disassembly. Its main chunk defines helpers, calls
+`AddFlagsBoxesPaths()` and `RegisterObjects()`, sets the animation ids it uses (`ANIM_*`) and a `Buttons` table, and
+calls `Main()`:
+
+- **`Main`**: `checkpoint = GetCheckPoint()`, `SetFogColor(0.05, 0.05, 0.02)`, `ReportCrime(0)`, `ShowHud(0)`,
+  `RestoreHud()`; a table `tMission` of three checkpoints, each `{create the Warriors, start function, script}`:
+  1 = `{AddWarriors2, "Checkpoint1", "level99_combat"}`, 2 = `{AddWarriors, "Checkpoint2", "level99_lesson1"}`,
+  3 = `{AddWarriors1, "Checkpoint3", "level99_lesson2"}`; then `RunLevel()`.
+- **`RunLevel`**, in order: `CfgSetStatValue(0, 0, 1000)`; `F.PreloadAnims()` (six `SetDynamicAnimation` calls
+  naming `.anm` clips); `Warriors, GangWarriors = tMission[checkpoint][1]()`; `player = Warriors.Rembrandt`,
+  `player2 = Warriors.Ash`; `preLoadFile(script, startFunction)` (the checkpoint's script, which runs the start
+  function when it has loaded); `AddCameras()`; `SetStartGameCallback("StartAmbient")`;
+  `HuSetDemiGodMode(player, true, 0.25)` and the same for `player2`; `CfgPlayerMugging(false)`; extra set-up for
+  checkpoints 2 and 3; `EnableCommand(player, 38, 0)` and `EnableCommand(player, 37, 0)` (two player commands off
+  for the tutorial).
+- **`AddWarriors2`** (checkpoint 1): `GangCreate(0, "Warriors2", 0, 0)`, then
+  `HuCreate("Rembrandt", 32, {-284.4, 120.4, 0.3}, 0, "warr_sw", 1, gang)` (player 1) and
+  `HuCreate("Ash", 40, {-285.5, 125.1, -8.5}, 235, "warr_sw", 2, gang)`; returns the table of humans and the gang.
+- **`AddCameras`**: `Cameras.follow = CameraCreateFollow("follow", player)`, `MainCam = Cameras.follow`,
+  `CameraMakeActive(Cameras.follow, 0)`, `CameraReset(Cameras.follow)`, then `AddCameras = nil`.
+- **`StartAmbient`** (run by `InitLevel` once the level is ready): at checkpoint 1, `SuperRunScene(IntroScene)`
+  (the in-engine intro, defined in `level99_combat.lua`); at checkpoint 3, the ambient loop
+  `vags/ambient/city/distant_traffic_loop`.
+- **`Checkpoint1`** (`level99_combat.lua`) calls `P1.SetupCombat`: the tutorial's sections (`P1.SetupCam`,
+  `SetupBasicAttacks`, ...), `HUDSetObjective`, `HUDTurnOffRadar` and the training enemies (`AddCombatEnemy`).
+
+The player therefore exists and the follow camera is active before the first frame of mode 1; the intro scene takes
+the camera over and gives it back. The bindings these calls reach are below.
+
+| Binding | Address | Does | Evidence |
+| --- | --- | --- | --- |
+| `HuCreate(name, type, {x,y,z}, heading, str, player, gang, flag)` | `0x00358428` → `0x00233d60` | creates a human, returns its handle or `NilHandle` ([Characters](characters.md#creation)) | confirmed (code) |
+| `GangCreate(id, name, a, b)` | `0x00373148` → `0x0016a1c8` | creates a gang, returns its handle | confirmed (code) for the call |
+| `CamSetupFollow(name, target)` | `0x00365a48` → `0x0011bfa8` | sets up the player's follow camera ([Camera](camera.md#setting-up)) | confirmed (code) |
+| `CfgFollowCamera(min, max, default, angle, fov, near, {offset}, slowmo)` | `0x0036ab88` → `0x0011c0b8` | configures it | confirmed (code) |
+| `CameraMakeActive(cam, seconds, ...)` | `0x003656a0` → `0x0011b770` | makes a camera current, blending over `seconds` | confirmed (code) |
+| `CameraReset(cam)` | `0x00365a10` | camera slot `+0x13c` | confirmed (code) |
+| `CamSetFollowZoom` / `Angle` / `Heading` / `Pos` | `0x00365bf0` / `0x00365bb8` / `0x00365b80` / `0x00365c60` | change the follow camera at run time | confirmed (code) for the addresses |
+| `SetStartGameCallback(name)` | `0x0036df98` → `0x0015fe50` | stores the name (32 bytes) at `0x005e6d88`, which `InitLevel` calls at its end | confirmed (code) |
+| `SetCheckPoint(n)` / `GetCheckPoint()` | `0x0037b760` / `0x0037b798` (→ `0x0041abe8`) | write / read `W_GameState + 0x33a` | confirmed (code) |
+| `SetDynamicAnimation(...)` | `0x0036e668` | asks for an animation to be loaded for the level ([Characters](characters.md#files)) | confirmed (code) for the address |
+| `HuSetDemiGodMode(h, on, f)`, `EnableCommand(h, id, on)`, `CfgPlayerMugging(on)` | `0x0035ba40`, `0x00369638`, `0x0035e9c8` | player flags | confirmed (code) for the addresses |
+| `ShowHud(on)`, `RestoreHud()`, `ReportCrime(n)` | `0x00370c68`, `0x00370cc0`, `0x0037a600` | HUD and police state | confirmed (code) for the addresses |
+| `MenuLoadLevel(name)`, `HUDLaunchMissionComplete(n)` | `0x0036df48`, `0x0036f218` | level change; the mission-complete screen | confirmed (code) for the addresses |
+
 ## Notes for implementers
 
 - **Table constructors flush every 62 items**, not 64: `SETLIST` stores its items at `A × 62 + 1` onwards
@@ -265,4 +341,6 @@ for what a fade blocks).
 
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them?
+- `IntroScene` and the scene system (`SuperRunScene`): how a scripted scene takes the camera and the player's control
+  and gives them back.
 - `RegisterUpdate`, and what `preLoadFile`'s completion routine (`0x00356d00`) does with the callback name.
