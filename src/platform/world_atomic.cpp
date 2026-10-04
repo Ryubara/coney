@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstring>
 #include <format>
 #include <map>
@@ -70,77 +71,150 @@ rw::int32 atomicPluginStreamSize(void* /*object*/, rw::int32 /*offset*/, rw::int
     return static_cast<rw::int32>(world::kAtomicPluginStreamBytes);
 }
 
-// Coney's stand-ins for the game's two PS2 atomic pipelines. They only unpack: drawing happens after the atomic has
-// been handed to the platform's default pipeline (WorldAtomic::unpack).
+// Coney's stand-ins for the game's two PS2 atomic pipelines, and for RenderWare's default PS2 pipeline as the level
+// world uses it. They only unpack: drawing happens after the atomic has been handed to the platform's default
+// pipeline (WorldAtomic::unpack).
 std::array<rw::ObjPipeline, 2> gamePipelines{};
+rw::ObjPipeline defaultLayoutPipeline{};
 
-// The vertex scales of `atomic`'s geometry and the packed vertices of every mesh, decoded again from the native data
-// librw kept. Returns false if anything does not decode (WorldAtomic::read has checked the same data, so only an
-// atomic that did not come through it can fail).
-bool decodeMeshes(rw::Atomic* atomic, std::vector<graphics::Ps2WorldMesh>& meshes) {
-    rw::Geometry* geometry = atomic->geometry;
-    if (geometry->instData == nullptr || geometry->instData->platform != rw::PLATFORM_PS2 ||
-        geometry->meshHeader == nullptr) {
-        return false;
-    }
-    const auto* header = static_cast<const rw::ps2::InstanceDataHeader*>(geometry->instData);
-    if (header->numMeshes != geometry->meshHeader->numMeshes) {
-        return false;
-    }
-    const bool strip = geometry->meshHeader->flags == rw::MeshHeader::TRISTRIP;
-    const rw::Mesh* mesh = geometry->meshHeader->getMeshes();
-    for (rw::uint32 i = 0; i < header->numMeshes; ++i) {
-        const rw::ps2::InstanceData& instance = header->instanceMeshes[i];
-        auto decoded = graphics::decodePs2WorldMesh(
-            std::span<const std::byte>(reinterpret_cast<const std::byte*>(instance.data), instance.dataSize), strip);
-        if (!decoded || decoded->vertices.size() != mesh[i].numIndices) {
-            return false;
-        }
-        meshes.push_back(std::move(*decoded));
-    }
-    return true;
-}
+// One vertex in librw's terms, from either layout: what a plain geometry stores.
+struct PlainVertex {
+    rw::V3d position{};
+    std::array<rw::TexCoords, 2> texCoords{};
+    rw::RGBA colour{};
+    rw::V3d normal{};
+};
 
-// Ordering key of a packed vertex, so that identical vertices of a geometry share one index (strips join through
-// repeated vertices, and librw finds degenerate triangles by equal indices).
-using VertexKey = std::array<std::int32_t, 16>;
-
-// The key of `vertex`: every component, in order.
-VertexKey keyOf(const graphics::Ps2PackedVertex& vertex) {
-    VertexKey key{};
-    for (std::size_t c = 0; c < 4; ++c) {
-        key[c] = vertex.position[c];
-        key[4 + c] = vertex.texCoords[c];
-        key[8 + c] = vertex.colour[c];
-        key[12 + c] = static_cast<std::uint8_t>(vertex.normal[c]); // the bits are all that matter here
-    }
-    return key;
-}
+// A decoded mesh in librw's terms, with the attributes its batches carried.
+struct PlainMesh {
+    std::vector<PlainVertex> vertices;
+    std::uint32_t texCoordSets = 0;
+    bool colours = false;
+    bool normals = false;
+};
 
 // A prelighting colour channel for librw, where 255 is full brightness. The PS2's GS modulates a texel by a vertex
 // colour with 0x80 as 1.0, so the packed channels are doubled and clamped (a Coney choice inferred from the GS: the
 // disc's values average about 14 and rarely pass 128, and look right doubled; alpha, always 255 here, is kept).
 rw::uint8 doubled(std::uint8_t channel) { return static_cast<rw::uint8>(std::min(255, channel * 2)); }
 
-// Replaces `atomic`'s PS2 native geometry with plain geometry: librw's uninstance step for the game's pipelines.
-// Positions are the packed integers times the atomic's position scale (0x3F0 +0x00); texture coordinates are
-// scaled by its second scale (the world viewer shows textures right only with it, world.md); normals are signed bytes
-// over 128 as librw's PS2 code reads them; colours are doubled (doubled()).
-void uninstanceGameAtomic(rw::ObjPipeline* /*pipeline*/, rw::Atomic* atomic) {
+// The PS2 native meshes of `atomic`'s geometry, checked against its mesh header; nothing when there are none.
+const rw::ps2::InstanceDataHeader* nativeMeshes(rw::Atomic* atomic) {
     rw::Geometry* geometry = atomic->geometry;
-    std::vector<graphics::Ps2WorldMesh> meshes;
-    if ((geometry->flags & rw::Geometry::NATIVE) == 0 || !decodeMeshes(atomic, meshes)) {
-        return;
+    if ((geometry->flags & rw::Geometry::NATIVE) == 0 || geometry->instData == nullptr ||
+        geometry->instData->platform != rw::PLATFORM_PS2 || geometry->meshHeader == nullptr) {
+        return nullptr;
+    }
+    const auto* header = static_cast<const rw::ps2::InstanceDataHeader*>(geometry->instData);
+    return header->numMeshes == geometry->meshHeader->numMeshes ? header : nullptr;
+}
+
+// The DMA chain of native mesh `instance`.
+std::span<const std::byte> chainOf(const rw::ps2::InstanceData& instance) {
+    return {reinterpret_cast<const std::byte*>(instance.data), instance.dataSize};
+}
+
+// Decodes every mesh of `atomic` in the game's packed layout: positions times the atomic's position scale (0x3F0
+// +0x00), texture coordinates times its second scale (the world viewer shows textures right only with it, world.md),
+// normals over 128 as librw's PS2 code reads them, colours doubled. False if anything does not decode
+// (WorldAtomic::read has checked the same data, so only an atomic that did not come through it can fail).
+bool decodeGameMeshes(rw::Atomic* atomic, std::vector<PlainMesh>& meshes) {
+    const rw::ps2::InstanceDataHeader* header = nativeMeshes(atomic);
+    if (header == nullptr) {
+        return false;
     }
     const world::AtomicPluginData scales = atomicPluginData(atomic);
+    const bool strip = atomic->geometry->meshHeader->flags == rw::MeshHeader::TRISTRIP;
+    const rw::Mesh* mesh = atomic->geometry->meshHeader->getMeshes();
+    for (rw::uint32 i = 0; i < header->numMeshes; ++i) {
+        auto decoded = graphics::decodePs2WorldMesh(chainOf(header->instanceMeshes[i]), strip);
+        if (!decoded || decoded->vertices.size() != mesh[i].numIndices) {
+            return false;
+        }
+        PlainMesh& plain = meshes.emplace_back();
+        plain.texCoordSets = decoded->attributes.texCoordSets;
+        plain.colours = decoded->attributes.colours;
+        plain.normals = decoded->attributes.normals;
+        for (const graphics::Ps2PackedVertex& v : decoded->vertices) {
+            PlainVertex& out = plain.vertices.emplace_back();
+            out.position = rw::makeV3d(static_cast<float>(v.position[0]) * scales.positionScale,
+                                       static_cast<float>(v.position[1]) * scales.positionScale,
+                                       static_cast<float>(v.position[2]) * scales.positionScale);
+            for (std::size_t set = 0; set < 2; ++set) {
+                out.texCoords.at(set) =
+                    rw::TexCoords{static_cast<float>(v.texCoords.at(set * 2)) * scales.secondScale,
+                                  static_cast<float>(v.texCoords.at(set * 2 + 1)) * scales.secondScale};
+            }
+            out.colour = rw::makeRGBA(doubled(v.colour[0]), doubled(v.colour[1]), doubled(v.colour[2]), v.colour[3]);
+            out.normal = rw::makeV3d(static_cast<float>(v.normal[0]) / 128.0F, static_cast<float>(v.normal[1]) / 128.0F,
+                                     static_cast<float>(v.normal[2]) / 128.0F);
+        }
+    }
+    return true;
+}
 
+// Decodes every mesh of `atomic` in RenderWare's default PS2 layout: float positions and texture coordinates as they
+// are, normals over 127 as RenderWare packs them, colours doubled as for the game's layout (the GS is the same).
+bool decodeDefaultMeshes(rw::Atomic* atomic, std::vector<PlainMesh>& meshes) {
+    const rw::ps2::InstanceDataHeader* header = nativeMeshes(atomic);
+    if (header == nullptr) {
+        return false;
+    }
+    const bool strip = atomic->geometry->meshHeader->flags == rw::MeshHeader::TRISTRIP;
+    const rw::Mesh* mesh = atomic->geometry->meshHeader->getMeshes();
+    for (rw::uint32 i = 0; i < header->numMeshes; ++i) {
+        auto decoded = graphics::decodePs2DefaultMesh(chainOf(header->instanceMeshes[i]), strip);
+        if (!decoded || decoded->vertices.size() != mesh[i].numIndices) {
+            return false;
+        }
+        PlainMesh& plain = meshes.emplace_back();
+        plain.texCoordSets = 1;
+        plain.colours = true;
+        plain.normals = true;
+        for (const graphics::Ps2DefaultVertex& v : decoded->vertices) {
+            PlainVertex& out = plain.vertices.emplace_back();
+            out.position = rw::makeV3d(v.position[0], v.position[1], v.position[2]);
+            out.texCoords[0] = rw::TexCoords{v.texCoords[0], v.texCoords[1]};
+            out.colour = rw::makeRGBA(doubled(v.colour[0]), doubled(v.colour[1]), doubled(v.colour[2]), v.colour[3]);
+            out.normal = rw::makeV3d(static_cast<float>(v.normal[0]) / 127.0F, static_cast<float>(v.normal[1]) / 127.0F,
+                                     static_cast<float>(v.normal[2]) / 127.0F);
+        }
+    }
+    return true;
+}
+
+// Ordering key of a plain vertex, so that identical vertices of a geometry share one index (strips join through
+// repeated vertices, and librw finds degenerate triangles by equal indices): every component's bits, in order.
+using VertexKey = std::array<std::uint32_t, 12>;
+VertexKey keyOf(const PlainVertex& v) {
+    const auto bits = [](float f) { return std::bit_cast<std::uint32_t>(f); };
+    return {bits(v.position.x),
+            bits(v.position.y),
+            bits(v.position.z),
+            bits(v.texCoords[0].u),
+            bits(v.texCoords[0].v),
+            bits(v.texCoords[1].u),
+            bits(v.texCoords[1].v),
+            bits(v.normal.x),
+            bits(v.normal.y),
+            bits(v.normal.z),
+            static_cast<std::uint32_t>(v.colour.red) | static_cast<std::uint32_t>(v.colour.green) << 8U |
+                static_cast<std::uint32_t>(v.colour.blue) << 16U | static_cast<std::uint32_t>(v.colour.alpha) << 24U,
+            0};
+}
+
+// Replaces `atomic`'s PS2 native geometry with plain geometry made of `meshes`: librw's uninstance step for Coney's
+// stand-in pipelines. The meshes keep their materials and counts; identical vertices are shared and the triangles
+// derived from the strips.
+void replaceWithPlainGeometry(rw::Atomic* atomic, const std::vector<PlainMesh>& meshes) {
+    rw::Geometry* geometry = atomic->geometry;
     // Number the distinct vertices; librw's indices are 16 bits.
     std::map<VertexKey, rw::uint16> indexOf;
-    std::vector<const graphics::Ps2PackedVertex*> unique;
+    std::vector<const PlainVertex*> unique;
     std::vector<std::vector<rw::uint16>> indices(meshes.size());
     rw::int32 triangleBound = 0;
     for (std::size_t m = 0; m < meshes.size(); ++m) {
-        for (const graphics::Ps2PackedVertex& vertex : meshes[m].vertices) {
+        for (const PlainVertex& vertex : meshes[m].vertices) {
             auto [it, inserted] = indexOf.try_emplace(keyOf(vertex), static_cast<rw::uint16>(unique.size()));
             if (inserted) {
                 if (unique.size() > 0xFFFF) {
@@ -160,38 +234,28 @@ void uninstanceGameAtomic(rw::ObjPipeline* /*pipeline*/, rw::Atomic* atomic) {
     geometry->allocateData();
     geometry->allocateMeshes(static_cast<rw::int32>(meshes.size()), geometry->meshHeader->totalIndices, 0);
 
-    // Fill the vertices.
-    const std::uint32_t uvSets = meshes.empty() ? 0 : meshes[0].attributes.texCoordSets;
-    const bool hasColour = !meshes.empty() && meshes[0].attributes.colours;
-    const bool hasNormal = !meshes.empty() && meshes[0].attributes.normals;
+    // Fill the vertices, with what the batches did not carry set to neutral values.
+    const std::uint32_t uvSets = meshes.empty() ? 0 : meshes[0].texCoordSets;
+    const bool hasColour = !meshes.empty() && meshes[0].colours;
+    const bool hasNormal = !meshes.empty() && meshes[0].normals;
     rw::MorphTarget& target = geometry->morphTargets[0];
     for (std::size_t i = 0; i < unique.size(); ++i) {
-        const graphics::Ps2PackedVertex& v = *unique[i];
-        target.vertices[i] = rw::makeV3d(static_cast<float>(v.position[0]) * scales.positionScale,
-                                         static_cast<float>(v.position[1]) * scales.positionScale,
-                                         static_cast<float>(v.position[2]) * scales.positionScale);
+        const PlainVertex& v = *unique[i];
+        target.vertices[i] = v.position;
         if (target.normals != nullptr) {
-            target.normals[i] = hasNormal ? rw::makeV3d(static_cast<float>(v.normal[0]) / 128.0F,
-                                                        static_cast<float>(v.normal[1]) / 128.0F,
-                                                        static_cast<float>(v.normal[2]) / 128.0F)
-                                          : rw::makeV3d(0.0F, 0.0F, 1.0F);
+            target.normals[i] = hasNormal ? v.normal : rw::makeV3d(0.0F, 0.0F, 1.0F);
         }
         if (geometry->colors != nullptr) {
-            geometry->colors[i] =
-                hasColour ? rw::makeRGBA(doubled(v.colour[0]), doubled(v.colour[1]), doubled(v.colour[2]), v.colour[3])
-                          : rw::makeRGBA(255, 255, 255, 255);
+            geometry->colors[i] = hasColour ? v.colour : rw::makeRGBA(255, 255, 255, 255);
         }
         for (rw::int32 set = 0; set < geometry->numTexCoordSets && set < 2; ++set) {
-            const auto first = static_cast<std::size_t>(set) * 2;
-            geometry->texCoords[set][i] =
-                static_cast<std::uint32_t>(set) < uvSets
-                    ? rw::TexCoords{static_cast<float>(v.texCoords[first]) * scales.secondScale,
-                                    static_cast<float>(v.texCoords[first + 1]) * scales.secondScale}
-                    : rw::TexCoords{0.0F, 0.0F};
+            geometry->texCoords[set][i] = static_cast<std::uint32_t>(set) < uvSets
+                                              ? v.texCoords.at(static_cast<std::size_t>(set))
+                                              : rw::TexCoords{0.0F, 0.0F};
         }
     }
 
-    // The meshes keep their materials and counts; give them their indices, then derive the triangles.
+    // Give the meshes their indices, then derive the triangles.
     rw::Mesh* mesh = geometry->meshHeader->getMeshes();
     for (std::size_t m = 0; m < meshes.size(); ++m) {
         std::memcpy(mesh[m].indices, indices[m].data(), indices[m].size() * sizeof(rw::uint16));
@@ -200,6 +264,22 @@ void uninstanceGameAtomic(rw::ObjPipeline* /*pipeline*/, rw::Atomic* atomic) {
     rw::ps2::destroyNativeData(geometry, 0, 0);
     geometry->flags &= ~static_cast<rw::uint32>(rw::Geometry::NATIVE);
     geometry->calculateBoundingSphere();
+}
+
+// The uninstance step of the game pipelines' stand-in: the packed layout.
+void uninstanceGameAtomic(rw::ObjPipeline* /*pipeline*/, rw::Atomic* atomic) {
+    std::vector<PlainMesh> meshes;
+    if (decodeGameMeshes(atomic, meshes)) {
+        replaceWithPlainGeometry(atomic, meshes);
+    }
+}
+
+// The uninstance step of the default pipeline's stand-in: RenderWare's own layout.
+void uninstanceDefaultAtomic(rw::ObjPipeline* /*pipeline*/, rw::Atomic* atomic) {
+    std::vector<PlainMesh> meshes;
+    if (decodeDefaultMeshes(atomic, meshes)) {
+        replaceWithPlainGeometry(atomic, meshes);
+    }
 }
 
 // The rights callback of the game's pipeline plugin: an atomic whose right to render names one of the two world
@@ -257,6 +337,8 @@ void attachWorldPlugins() {
         pipeline.pluginData = i == 0 ? kGameAtomicPipelineA : kGameAtomicPipelineB;
         pipeline.impl.uninstance = uninstanceGameAtomic;
     }
+    defaultLayoutPipeline.init(rw::PLATFORM_PS2);
+    defaultLayoutPipeline.impl.uninstance = uninstanceDefaultAtomic;
     rw::Atomic::registerPlugin(0, kGamePipelinePlugin, nullptr, nullptr, nullptr);
     rw::Atomic::setStreamRightsCallback(kGamePipelinePlugin, gamePipelineRights);
 }
@@ -269,14 +351,21 @@ world::AtomicPluginData atomicPluginData(const rw::Atomic* atomic) {
     return data;
 }
 
-std::expected<WorldAtomic, Error> WorldAtomic::read(std::span<const std::byte> section, world::Vec3 origin) {
+std::expected<WorldAtomic, Error> WorldAtomic::read(std::span<const std::byte> section, world::Vec3 origin,
+                                                    VertexLayout layout) {
     CONEY_ASSERT(atomicPluginOffset >= 0);
     auto info = world::inspectAtomicSection(section);
     if (!info) {
         return std::unexpected(std::move(info.error()));
     }
-    if (info->pipelinePlugin != kGamePipelinePlugin ||
-        (info->pipeline != kGameAtomicPipelineA && info->pipeline != kGameAtomicPipelineB)) {
+    const bool packed = layout == VertexLayout::GamePacked;
+    if (!packed && info->pipeline) {
+        return fail(ErrorCode::Invalid,
+                    std::format("an atomic in RenderWare's default layout names pipeline {:#x}/{:#x}",
+                                info->pipelinePlugin, *info->pipeline));
+    }
+    if (packed && (info->pipelinePlugin != kGamePipelinePlugin ||
+                   (info->pipeline != kGameAtomicPipelineA && info->pipeline != kGameAtomicPipelineB))) {
         return fail(ErrorCode::Invalid, std::format("the atomic's pipeline {:#x}/{:#x} is not one of the game's world "
                                                     "pipelines",
                                                     info->pipelinePlugin, info->pipeline.value_or(0)));
@@ -294,13 +383,23 @@ std::expected<WorldAtomic, Error> WorldAtomic::read(std::span<const std::byte> s
     }
     for (std::size_t i = 0; i < info->meshes.size(); ++i) {
         const world::MeshInfo& mesh = info->meshes[i];
-        auto decoded = graphics::decodePs2WorldMesh(mesh.nativeData, info->triangleStrips);
-        if (!decoded) {
-            return fail(decoded.error().code, std::format("mesh {}: {}", i, decoded.error().message));
+        // The vertex count of a decoded mesh, or its failure.
+        auto count = [&]() -> std::expected<std::size_t, Error> {
+            if (packed) {
+                auto decoded = graphics::decodePs2WorldMesh(mesh.nativeData, info->triangleStrips);
+                return decoded ? std::expected<std::size_t, Error>(decoded->vertices.size())
+                               : std::unexpected(std::move(decoded.error()));
+            }
+            auto decoded = graphics::decodePs2DefaultMesh(mesh.nativeData, info->triangleStrips);
+            return decoded ? std::expected<std::size_t, Error>(decoded->vertices.size())
+                           : std::unexpected(std::move(decoded.error()));
+        }();
+        if (!count) {
+            return fail(count.error().code, std::format("mesh {}: {}", i, count.error().message));
         }
-        if (decoded->vertices.size() != mesh.indexCount) {
+        if (*count != mesh.indexCount) {
             return fail(ErrorCode::Invalid, std::format("mesh {} decodes to {} vertices; its mesh record says {}", i,
-                                                        decoded->vertices.size(), mesh.indexCount));
+                                                        *count, mesh.indexCount));
         }
     }
 
@@ -337,6 +436,9 @@ std::expected<WorldAtomic, Error> WorldAtomic::read(std::span<const std::byte> s
     if (atomic == nullptr) {
         frame->destroy();
         return fail(ErrorCode::Invalid, "librw could not read the atomic");
+    }
+    if (!packed) {
+        atomic->pipeline = &defaultLayoutPipeline; // no right to render: RenderWare's default pipeline
     }
     if (atomic->pipeline == nullptr) {
         // The rights callback did not run: the world plugins were attached to another engine.
@@ -383,11 +485,22 @@ void WorldAtomic::destroy() noexcept {
     }
 }
 
+void WorldAtomic::setTransform(const world::FrameMatrix& transform) {
+    rw::Matrix matrix;
+    matrix.setIdentity();
+    matrix.right = rw::V3d{transform.right.x, transform.right.y, transform.right.z};
+    matrix.up = rw::V3d{transform.up.x, transform.up.y, transform.up.z};
+    matrix.at = rw::V3d{transform.at.x, transform.at.y, transform.at.z};
+    matrix.pos = rw::V3d{transform.position.x, transform.position.y, transform.position.z};
+    matrix.update(); // no longer the identity setIdentity() marked it as
+    m_atomic->getFrame()->transform(&matrix, rw::COMBINEREPLACE);
+}
+
 void WorldAtomic::unpack() {
     if ((m_atomic->geometry->flags & rw::Geometry::NATIVE) == 0) {
         return;
     }
-    m_atomic->uninstance(); // through the game pipeline's stand-in: uninstanceGameAtomic
+    m_atomic->uninstance(); // through Coney's stand-in pipeline: uninstanceGameAtomic or uninstanceDefaultAtomic
     m_atomic->pipeline = nullptr;
 }
 

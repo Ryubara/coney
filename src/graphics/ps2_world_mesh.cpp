@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "graphics/ps2_world_mesh.h"
 
+#include <bit>
 #include <format>
 #include <optional>
 #include <utility>
@@ -43,7 +44,10 @@ constexpr std::uint32_t kVifDirectHl = 0x51;
 constexpr std::uint32_t kVifUnpack = 0x60; // 0x60 to 0x7F: bit 4 is the mask flag, bits 0 to 3 the format
 
 // UNPACK formats (vn << 2 | vl) and immediate bits.
+constexpr std::uint32_t kV2_32 = 0x04;
 constexpr std::uint32_t kV2_16 = 0x05;
+constexpr std::uint32_t kV3_32 = 0x08;
+constexpr std::uint32_t kV3_8 = 0x0A;
 constexpr std::uint32_t kV4_16 = 0x0D;
 constexpr std::uint32_t kV4_8 = 0x0E;
 constexpr std::uint32_t kUnpackMasked = 0x10;
@@ -170,22 +174,56 @@ std::expected<std::vector<Ps2PackedVertex>, Error> batchVertices(const Batch& ba
     return vertices;
 }
 
-// Appends a batch's vertices to the mesh; a strip batch after the first starts with the previous batch's last two.
-std::expected<void, Error> joinBatch(std::vector<Ps2PackedVertex>&& vertices, bool triangleStrip, std::uint32_t index,
-                                     Ps2WorldMesh& mesh) {
+// Appends a batch's vertices to the mesh's; a strip batch after the first starts with the previous batch's last two.
+template <class Vertex>
+std::expected<void, Error> joinBatch(std::vector<Vertex>&& vertices, bool triangleStrip, std::uint32_t index,
+                                     std::vector<Vertex>& meshVertices) {
     std::size_t skip = 0;
     if (triangleStrip && index > 0) {
-        const std::size_t have = mesh.vertices.size();
-        if (vertices.size() < 2 || have < 2 || vertices[0] != mesh.vertices[have - 2] ||
-            vertices[1] != mesh.vertices[have - 1]) {
+        const std::size_t have = meshVertices.size();
+        if (vertices.size() < 2 || have < 2 || vertices[0] != meshVertices[have - 2] ||
+            vertices[1] != meshVertices[have - 1]) {
             return fail(
                 ErrorCode::Invalid,
                 std::format("strip batch {} does not start with the last two vertices of batch {}", index, index - 1));
         }
         skip = 2;
     }
-    mesh.vertices.insert(mesh.vertices.end(), vertices.begin() + static_cast<std::ptrdiff_t>(skip), vertices.end());
+    meshVertices.insert(meshVertices.end(), vertices.begin() + static_cast<std::ptrdiff_t>(skip), vertices.end());
     return {};
+}
+
+// Bytes of data that follow a VIF command other than UNPACK, or nothing for a command the world layouts never use.
+std::optional<std::size_t> vifDataBytes(std::uint32_t command, std::uint32_t number, std::uint32_t immediate) {
+    switch (command) {
+    case kVifNop:
+    case kVifStcycl:
+    case kVifOffset:
+    case kVifBase:
+    case kVifItop:
+    case kVifStmod:
+    case kVifMskpath3:
+    case kVifMark:
+    case kVifFlushe:
+    case kVifFlush:
+    case kVifFlusha:
+    case kVifMscal:
+    case kVifMscalf:
+    case kVifMscnt:
+        return 0;
+    case kVifStmask:
+        return 4;
+    case kVifStrow:
+    case kVifStcol:
+        return 16;
+    case kVifMpg:
+        return std::size_t{number == 0 ? 256U : number} * 8;
+    case kVifDirect:
+    case kVifDirectHl:
+        return std::size_t{immediate == 0 ? 65536U : immediate} * 16;
+    default:
+        return std::nullopt;
+    }
 }
 
 } // namespace
@@ -273,7 +311,7 @@ std::expected<Ps2WorldMesh, Error> decodePs2WorldMesh(std::span<const std::byte>
             if (!vertices) {
                 return std::unexpected(std::move(vertices.error()));
             }
-            if (auto joined = joinBatch(std::move(*vertices), triangleStrip, mesh.batches, mesh); !joined) {
+            if (auto joined = joinBatch(std::move(*vertices), triangleStrip, mesh.batches, mesh.vertices); !joined) {
                 return std::unexpected(std::move(joined.error()));
             }
             ++mesh.batches;
@@ -299,6 +337,117 @@ std::expected<Ps2WorldMesh, Error> decodePs2WorldMesh(std::span<const std::byte>
         }
         if (!done) {
             return std::unexpected(std::move(done.error()));
+        }
+    }
+    if (!batch.slots[kSlotPosition].empty() || mesh.batches == 0) {
+        return fail(ErrorCode::Invalid, "the chain ends with vertices no microprogram call draws");
+    }
+    return mesh;
+}
+
+std::expected<Ps2DefaultMesh, Error> decodePs2DefaultMesh(std::span<const std::byte> chain, bool triangleStrip) {
+    // The format and signedness each slot must have in RenderWare's default layout.
+    static constexpr std::array<SlotFormat, kSlots> kDefaultFormats{
+        {{kV3_32, kV3_32, false}, {kV2_32, kV2_32, false}, {kV4_8, kV4_8, true}, {kV3_8, kV3_8, false}}};
+    auto gathered = gatherVifStream(chain);
+    if (!gathered) {
+        return std::unexpected(std::move(gathered.error()));
+    }
+    const std::span<const std::byte> stream(*gathered);
+    io::Reader reader(stream);
+    Ps2DefaultMesh mesh;
+    Batch batch;
+    std::uint32_t cycle = 0;
+    std::uint32_t write = 0;
+    // A little-endian float of a slot's data.
+    const auto floatAt = [](std::span<const std::byte> data, std::size_t at) {
+        return std::bit_cast<float>(io::loadU32Le(data.subspan(at, 4)));
+    };
+    while (reader.remaining() >= 4) {
+        const std::size_t at = reader.position();
+        const std::uint32_t code = reader.readU32Le().value();
+        const std::uint32_t command = (code >> 24) & 0x7FU;
+        const std::uint32_t number = (code >> 16) & 0xFFU;
+        const std::uint32_t immediate = code & 0xFFFFU;
+        if (command >= kVifUnpack) {
+            // An UNPACK: data for one slot of the batch.
+            const std::uint32_t format = command & 0x0FU;
+            const std::uint32_t count = number == 0 ? 256 : number;
+            const std::size_t slot = immediate & kUnpackAddressMask;
+            if ((command & kUnpackMasked) != 0 || cycle != kSlots || write != 1 || slot >= kSlots ||
+                format != kDefaultFormats.at(slot).format ||
+                ((immediate & kUnpackUnsigned) != 0) != kDefaultFormats.at(slot).isUnsigned ||
+                !batch.slots.at(slot).empty()) {
+                return fail(ErrorCode::Invalid, std::format("UNPACK {:#010x} at {:#x} (cycle {}, {}) is not "
+                                                            "RenderWare's default vertex layout",
+                                                            code, at, cycle, write));
+            }
+            auto data = reader.readBytes(unpackBytes(format, count));
+            if (!data) {
+                return fail(ErrorCode::Truncated,
+                            std::format("UNPACK {:#010x} at {:#x}: its data is cut off", code, at));
+            }
+            batch.slots.at(slot) = *data;
+            batch.counts.at(slot) = count;
+            continue;
+        }
+        if (command == kVifStcycl) {
+            cycle = immediate & 0xFFU;
+            write = (immediate >> 8) & 0xFFU;
+        } else if (command == kVifStmod && (immediate & 3U) != 0) {
+            return fail(ErrorCode::Invalid, std::format("STMOD {} at {:#x}: offset or difference unpacking is not "
+                                                        "RenderWare's default vertex layout",
+                                                        immediate & 3U, at));
+        } else if (command == kVifItop) {
+            batch.itop = immediate & kUnpackAddressMask;
+        } else if (command == kVifMscal || command == kVifMscalf || command == kVifMscnt) {
+            // The batch is complete: check its counts as batchVertices() does, then read the first ITOP vectors.
+            if (batch.slots[kSlotPosition].empty() || !batch.itop) {
+                return fail(ErrorCode::Invalid,
+                            std::format("batch {} has no positions or no vertex count (ITOP)", mesh.batches));
+            }
+            for (std::size_t slot = 0; slot < kSlots; ++slot) {
+                if (!batch.slots.at(slot).empty() && batch.counts.at(slot) < *batch.itop) {
+                    return fail(ErrorCode::Invalid,
+                                std::format("batch {}: slot {} holds {} vectors, fewer than its {} vertices",
+                                            mesh.batches, slot, batch.counts.at(slot), *batch.itop));
+                }
+            }
+            std::vector<Ps2DefaultVertex> vertices(*batch.itop);
+            for (std::size_t v = 0; v < vertices.size(); ++v) {
+                Ps2DefaultVertex& vertex = vertices[v];
+                for (std::size_t c = 0; c < 3; ++c) {
+                    vertex.position.at(c) = floatAt(batch.slots[kSlotPosition], (v * 3 + c) * 4);
+                }
+                if (!batch.slots[kSlotTexCoords].empty()) {
+                    vertex.texCoords[0] = floatAt(batch.slots[kSlotTexCoords], v * 8);
+                    vertex.texCoords[1] = floatAt(batch.slots[kSlotTexCoords], v * 8 + 4);
+                }
+                for (std::size_t c = 0; c < 4; ++c) {
+                    vertex.colour.at(c) = batch.slots[kSlotColour].empty()
+                                              ? std::uint8_t{255}
+                                              : std::to_integer<std::uint8_t>(batch.slots[kSlotColour][v * 4 + c]);
+                }
+                for (std::size_t c = 0; c < 3 && !batch.slots[kSlotNormal].empty(); ++c) {
+                    vertex.normal.at(c) =
+                        static_cast<std::int8_t>(std::to_integer<std::uint8_t>(batch.slots[kSlotNormal][v * 3 + c]));
+                }
+            }
+            if (auto joined = joinBatch(std::move(vertices), triangleStrip, mesh.batches, mesh.vertices); !joined) {
+                return std::unexpected(std::move(joined.error()));
+            }
+            ++mesh.batches;
+            batch = Batch{};
+        }
+        // Every other command is skipped with its data.
+        const auto bytes = vifDataBytes(command, number, immediate);
+        if (!bytes) {
+            return fail(ErrorCode::Invalid, std::format("VIF command {:#010x} at {:#x} is not supported", code, at));
+        }
+        if (*bytes > 0 && !reader.readBytes(*bytes)) {
+            return fail(ErrorCode::Truncated, std::format("VIF command {:#010x} at {:#x}: its {} bytes of data are "
+                                                          "cut off",
+                                                          code, at, *bytes));
         }
     }
     if (!batch.slots[kSlotPosition].empty() || mesh.batches == 0) {

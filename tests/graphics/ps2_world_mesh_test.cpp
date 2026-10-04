@@ -79,3 +79,81 @@ TEST_CASE("an unpack in another format is not the world layout", "[ps2_world_mes
     REQUIRE_FALSE(mesh.has_value());
     CHECK(mesh.error().code == ErrorCode::Invalid);
 }
+
+namespace {
+
+// One vertex of RenderWare's default layout for the chains below: position (i, 2i, 3i), uv (i / 10, 1), colour i,
+// normal (0, 127, 0).
+coney::graphics::Ps2DefaultVertex defaultVertex(int i) {
+    const auto f = static_cast<float>(i);
+    const auto c = static_cast<std::uint8_t>(i);
+    return {{f, 2 * f, 3 * f}, {f / 10, 1.0F}, {c, c, c, 255}, {0, 127, 0}};
+}
+
+// A chain in RenderWare's default PS2 layout: one ret tag carrying, per batch, STCYCL 4,1, the four UNPACKs (V3_32,
+// V2_32, V4_8 unsigned, V3_8), ITOP and MSCALF, padded to whole 16-byte units. `positionFormat` replaces V3_32 to make
+// a layout the decoder must refuse.
+Bytes defaultChain(const std::vector<std::vector<int>>& batches, std::uint32_t positionFormat = 0x08) {
+    Bytes vif;
+    for (const std::vector<int>& batch : batches) {
+        const auto n = static_cast<std::uint32_t>(batch.size());
+        vif.u32(0x01000104); // STCYCL cycle 4, write 1
+        vif.u32((0x60U | positionFormat) << 24U | n << 16U | 0x8000U);
+        for (const int i : batch) {
+            const auto v = defaultVertex(i);
+            for (const float p : v.position) {
+                coney::test::f32(vif, p);
+            }
+        }
+        vif.u32(0x64000000U | n << 16U | 0x8001U);
+        for (const int i : batch) {
+            const auto v = defaultVertex(i);
+            coney::test::f32(coney::test::f32(vif, v.texCoords[0]), v.texCoords[1]);
+        }
+        vif.u32(0x6E000000U | n << 16U | 0xC002U);
+        for (const int i : batch) {
+            for (const std::uint8_t b : defaultVertex(i).colour) {
+                vif.u8(b);
+            }
+        }
+        vif.u32(0x6A000000U | n << 16U | 0x8003U);
+        Bytes normals;
+        for (const int i : batch) {
+            for (const std::int8_t b : defaultVertex(i).normal) {
+                normals.u8(static_cast<std::uint8_t>(b));
+            }
+        }
+        normals.padTo((normals.size() + 3) / 4 * 4);
+        vif.append(normals.span());
+        vif.u32(0x04000000U | n); // ITOP
+        vif.u32(0x15000000U);     // MSCALF
+    }
+    vif.padTo((vif.size() + 15) / 16 * 16 + 8);
+    // The ret tag's own two VIF words (NOPs) come first, then its data: the stream above minus those 8 bytes.
+    Bytes chain;
+    chain.u32(0x60000000U | static_cast<std::uint32_t>((vif.size() - 8) / 16)).u32(0).u32(0).u32(0);
+    chain.append(vif.span());
+    return chain;
+}
+
+} // namespace
+
+TEST_CASE("RenderWare's default layout decodes to float vertices, strip batches joined", "[ps2_world_mesh]") {
+    const Bytes chain = defaultChain({{0, 1, 2}, {1, 2, 3}});
+    auto mesh = coney::graphics::decodePs2DefaultMesh(chain.span(), true);
+    REQUIRE(mesh.has_value());
+    CHECK(mesh->batches == 2);
+    REQUIRE(mesh->vertices.size() == 4);
+    for (int i = 0; i < 4; ++i) {
+        CHECK(mesh->vertices[static_cast<std::size_t>(i)] == defaultVertex(i));
+    }
+}
+
+TEST_CASE("the default decoder refuses the game's packed layout and broken strips", "[ps2_world_mesh]") {
+    auto packed = coney::graphics::decodePs2DefaultMesh(defaultChain({{0, 1, 2}}, 0x0D).span(), true);
+    REQUIRE_FALSE(packed.has_value());
+    CHECK(packed.error().code == ErrorCode::Invalid);
+    auto broken = coney::graphics::decodePs2DefaultMesh(defaultChain({{0, 1, 2}, {5, 6, 7}}).span(), true);
+    REQUIRE_FALSE(broken.has_value());
+    CHECK(broken.error().code == ErrorCode::Invalid);
+}

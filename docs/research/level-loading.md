@@ -421,9 +421,9 @@ too. `UnloadLevel(keep)`, confirmed (code) for the order:
 
 ## Coney's implementation
 
-The streamed-world half of `LoadLevel` and the streaming of a running level exist (2026-10-04), behind Coney's world
-viewer (`coney --view-world <level>`, [Building](../guides/building.md#the-world-viewer)); mode 1, `InitLevel`, the
-level file and `UnloadLevel` do not. Details on [The streamed world](world.md#coneys-implementation).
+The streamed-world half of `LoadLevel`, the level file and the streaming of a running level exist (2026-10-04),
+behind Coney's world viewer (`coney --view-world <level>`, [Building](../guides/building.md#the-world-viewer)); mode 1,
+`InitLevel` and `UnloadLevel` do not. Details on [The streamed world](world.md#coneys-implementation).
 
 - **The worlds in `LoadLevel`'s order**: `<level>s_sec.wld` decides between two worlds (`<level>s`, `<level>d`) and one
   (`<level>`); each is constructed, its manifest read and its world stream loaded, and no part is loaded
@@ -437,16 +437,36 @@ level file and `UnloadLevel` do not. Details on [The streamed world](world.md#co
 - **A frame of play**, as far as the world goes: one `WorldManager_Update` decision, then the world's part of
   `WorldManager_Render`. Game time and scripted input make it deterministic.
 - **Unload**: destroying the world set frees every part and world (`World_Unload`) and gives the budget back.
+- **The level file** (`src/world/level_object.h`, platform-neutral; `src/platform/level_file.h`, the RenderWare parts):
+  `loadLevel` reads `<level>.lev` through the chunk system with a handler for every chunk of
+  [the table above](#the-level-file) but the subtitles. `0x03` builds the [collision mesh](collision.md#coneys-implementation);
+  `0x40` checks the path data's header and pushes it as an object; `0x47` rearranges its clump into a standalone
+  atomic (`extractClumpModel`), reads it as a game-pipeline atomic, places it by its frames and unpacks it; `0x15`
+  rearranges its world's one sector the same way (`extractLevelWorld`) and reads it in RenderWare's own default PS2
+  layout (`decodePs2DefaultMesh`: float positions and texture coordinates), with the glow dictionary just below it
+  registered for the texture lookup during the read; `0x17` pops everything in the original's order into a
+  `LevelObject`, linking each model to its dictionary's first texture (`linkLevelModel`). The loader then takes the
+  raw subtitles and fails if a chunk or object is left over.
+- **Coney's choices for the level file:** the path data and subtitles are kept as bytes in the level object (the
+  original fixes the paths up in place and keeps both in globals); the clumps' models are unpacked into plain
+  geometry at load, like the streamed parts; the glow world is one atomic at the origin rather than a RenderWare
+  world (it has one sector and no planes, so nothing is lost).
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][level]"` loads all 64 `.lev` files on librw's
+NULL device: none fails, and nothing is left on the stacks. 66 occluders; 10,992 paths; 386,784 bytes of subtitles.
+The models unpack to 147,462 skyline, 2,092 sky box and 1,792 cloud box triangles (28 per cloud box), every model's
+first material gets its dictionary's texture, and every sky and cloud box lies within 2 units of the origin once
+placed by its frames: the root frames turn the models and place the skyline in the world, while the boxes are drawn
+round the camera ([The background](#render-order)). The glow worlds unpack to 6,870 triangles, as counted above, and
+every one of their materials finds its `propglow…` texture.
 
 What the implementer still needs:
 
 - **Mode 1** with `Enter` → `InitLevel`, an `Update` that streams once a frame, and `Exit` → `UnloadLevel`.
 - **The level table** filled from `config_preload3.lua` ([Front end](frontend.md#the-level-table)), with the names at
   `+0x14` (level) and `+0x39` (world); in practice both are `level<N>`.
-- **`LoadLevel`** in the order above: the worlds (`<world>s`, `<world>d`, or one `<world>`), then `<level>.lev`
-  through the chunk system with handlers for `0x53`, `0x15`, `0x40`, the collision chunks, `0x17` and `0x51`. A first
-  milestone can skip the paths and subtitles (keep them as raw chunks) and build the level object with the sky,
-  cloud and skyline models, the glows and the [collision](collision.md) mesh.
+- **`LoadLevel`** in the order above: the worlds, then the level file (done, above); still missing are the path
+  records' and subtitles' meaning, and handing the level object to a world manager.
 - **The background pass** before the world in each viewport ([The level in a frame](#render-order)): sky and clouds
   around the camera at near 0.05 / far 5, the skyline from 39 to 560, then a Z-only clear. The three models show
   their dictionary's first texture.
@@ -474,6 +494,12 @@ What the implementer still needs:
 - **The level object's destructor** (`0x0040cf80`): no caller on the unload path was found; is it called through the
   vtable from elsewhere, or does the pool's destruction alone end the level's RenderWare objects?
 - **The subtitles chunk** (`0x51`) and the path records (A to D in [Path data](#path-data)): their contents.
+- **The path data's size**: in all 64 files the records the header counts (16 + 16 A + 16 B + 0x50 per path + 32 C + 8
+  D bytes) add up to less than the chunk: 79,472 bytes in all are not described (32 of `level1`'s 3,008; 3,160 of
+  `level2`'s 215,088). A record size or a count is missing from [Path data](#path-data) (found by Coney's disc test,
+  2026-10-04).
+- **`WorldLevel_Load`** (`0x0040c688`): the progress tool's source map counts that address as middleware (the tolua
+  range), while this page places the function in `World/`. Which is right?
 - **`Sector Pool 2`** (answered): nothing; it is created at its 4 KB minimum in practice and never read
   ([Memory](memory.md#the-pool-tree)).
 - **The script entry** (answered, confirmed (code)): `global.lua`, then `<level>.lua`, in the Lua state the last

@@ -39,6 +39,7 @@ add_executable(coney_tests
     platform/disc_sprite_sheets_test.cpp
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp
+    platform/disc_level_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/sdl_input_test.cpp
     platform/sprite_sheets_test.cpp
@@ -52,6 +53,7 @@ add_executable(coney_tests
     scripting/lua_chunk_test.cpp
     scripting/lua_vm_test.cpp
     world/debug_camera_test.cpp
+    world/level_object_test.cpp
     world/streamed_world_test.cpp
     world/view_frustum_test.cpp
     world/world_manifest_test.cpp

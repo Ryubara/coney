@@ -36,6 +36,12 @@ void attachWorldPlugins();
 /// attachWorldPlugins().
 [[nodiscard]] world::AtomicPluginData atomicPluginData(const rw::Atomic* atomic);
 
+/// Which vertex layout an atomic's PS2 native data uses.
+enum class VertexLayout : std::uint8_t {
+    GamePacked,        ///< The game's packed integers, unpacked by its pipelines 0x30082 and 0x30083.
+    RenderWareDefault, ///< RenderWare's own default layout (floats), as the level world uses it.
+};
+
 /// One atomic of a streamed world's part file, read with librw, with a frame of its own. Owns both and destroys them.
 /// Move-only. Needs a running RenderEngine (either backend) started with the world plugins attached, and must be
 /// destroyed before the engine stops.
@@ -48,7 +54,11 @@ class WorldAtomic {
     /// world::inspectAtomicSection() and every mesh is decoded once with graphics::decodePs2WorldMesh() before librw
     /// sees any of it, so damaged data fails as those do rather than reaching librw; ErrorCode::Invalid if librw still
     /// refuses it or the atomic is not drawn by one of the game's two world pipelines.
-    [[nodiscard]] static std::expected<WorldAtomic, Error> read(std::span<const std::byte> section, world::Vec3 origin);
+    ///
+    /// With VertexLayout::RenderWareDefault the meshes are checked with graphics::decodePs2DefaultMesh() instead, the
+    /// atomic must name no pipeline, and it gets Coney's stand-in for RenderWare's default PS2 pipeline.
+    [[nodiscard]] static std::expected<WorldAtomic, Error> read(std::span<const std::byte> section, world::Vec3 origin,
+                                                                VertexLayout layout = VertexLayout::GamePacked);
 
     WorldAtomic(WorldAtomic&& other) noexcept;
     WorldAtomic& operator=(WorldAtomic&& other) noexcept;
@@ -61,6 +71,9 @@ class WorldAtomic {
 
     /// What the section's headers said, from the check before reading.
     [[nodiscard]] const world::AtomicSection& info() const { return m_info; }
+
+    /// Replaces the atomic frame's matrix with `transform` (the frame of a clump's model).
+    void setTransform(const world::FrameMatrix& transform);
 
     /// Turns the PS2 native geometry into plain librw geometry (positions scaled by the 0x3F0 position scale, texture
     /// coordinates, prelighting, normals and triangles), through the atomic's pipeline as librw's own uninstance step,

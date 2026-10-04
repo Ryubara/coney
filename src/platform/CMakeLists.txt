@@ -3,7 +3,7 @@
 add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_viewer_mode.cpp
                                   window.cpp world_atomic.cpp)
 # The streamed-world viewer (docs/research/world.md#coneys-implementation).
-target_sources(coney_platform PRIVATE texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp)
+target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 coney_target_defaults(coney_platform)

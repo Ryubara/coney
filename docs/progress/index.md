@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 129 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 135 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
-45 reimplemented function(s) have no size yet and add no bytes.
+51 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -57,9 +57,9 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 4 | 32,152 |
 | `FileIO` | `▋░░░░░░░░░░░░░░░░░░░` | 3.3% | 2 | 6,480 |
 | `GameModes` | `█▊░░░░░░░░░░░░░░░░░░` | 8.6% | 17 | 51,816 |
-| `Graphics` | `▋░░░░░░░░░░░░░░░░░░░` | 2.9% | 19 | 189,024 |
+| `Graphics` | `▋░░░░░░░░░░░░░░░░░░░` | 2.9% | 22 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 481,192 |
-| `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
+| `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -68,7 +68,7 @@ at the top of the repository's `README.md`.
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 20 | 23,816 |
+| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 22 | 23,816 |
 | `WorldObjects` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 18,648 |
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
@@ -145,6 +145,8 @@ at the top of the repository's `README.md`.
 | `0x00179808` | `Font_Size` | `Graphics` | 240 |
 | `0x00179958` | `Font_Measure` | `Graphics` | 728 |
 | `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
+| `0x0017a560` | `Occluders_Load` | `Graphics` | not filled in |
+| `0x0017f2c0` | `ChunkReader_PreinstanceObject` | `Graphics` | not filled in |
 | `0x00181b20` | `ChunkLoaded_ParticlePage` | `Graphics` | 72 |
 | `0x00181e38` | `Page_Rect` | `Graphics` | 24 |
 | `0x00181e50` | `ResourceMgr_SheetSize` | `Graphics` | 240 |
@@ -160,6 +162,7 @@ at the top of the repository's `README.md`.
 | `0x00195238` | `RwDevice::GuiToOverlay` | `Graphics` | 248 |
 | `0x00195330` | `RwDevice::GuiWidthToOverlay` | `Graphics` | 120 |
 | `0x00197168` | `Instance_Render` | `Graphics` | 328 |
+| `0x00197b30` | `ChunkReader_SectorBspData` | `Graphics` | not filled in |
 | `0x00198e20` | `SectorPlugin_StreamRead` | `Graphics` | not filled in |
 | `0x0019ee70` | `GlobalString_Get` | `unattributed` | 48 |
 | `0x0019eea0` | `GlobalString_Set` | `unattributed` | 64 |
@@ -194,6 +197,7 @@ at the top of the repository's `README.md`.
 | `0x00208288` | `PM_Greet::Render` | `GUI` | 152 |
 | `0x00209da8` | `PM_Mode::Init` | `GUI` | 944 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
+| `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x00337920` | `RayTriangle_OneSided` | `unattributed` | not filled in |
 | `0x00337a60` | `RayTriangle_TwoSided` | `unattributed` | not filled in |
 | `0x0034f740` | `Collision_MarchRay` | `unattributed` | not filled in |
@@ -208,6 +212,8 @@ at the top of the repository's `README.md`.
 | `0x00351468` | `CollisionMesh_SphereTestCell` | `unattributed` | not filled in |
 | `0x003519f8` | `CollisionMesh_SpherePush` | `unattributed` | not filled in |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
+| `0x0040cdd8` | `LevelObject_LinkModel` | `World` | not filled in |
+| `0x0040ce30` | `LevelObject_OnLoaded` | `World` | not filled in |
 | `0x0040e100` | `WorldManager_NearestPendingDistance` | `World` | not filled in |
 | `0x0040e2d8` | `WorldManager_Preload` | `World` | not filled in |
 | `0x0040e8d8` | `WorldManager_Render` | `World` | not filled in |

@@ -283,6 +283,16 @@ subsystem = "Graphics"
 size = 1408
 
 [[function]]
+address = 0x0017a560
+name = "Occluders_Load"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0017f2c0
+name = "ChunkReader_PreinstanceObject"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x00181b20
 name = "ChunkLoaded_ParticlePage"
 subsystem = "Graphics"
@@ -370,6 +380,11 @@ address = 0x00197168
 name = "Instance_Render"
 subsystem = "Graphics"
 size = 328
+
+[[function]]
+address = 0x00197b30
+name = "ChunkReader_SectorBspData"
+subsystem = "Graphics"
 
 [[function]]
 address = 0x00198e20
@@ -575,6 +590,11 @@ subsystem = "GUI"
 size = 88
 
 [[function]]
+address = 0x0024e720
+name = "PathData_OnLoaded"
+subsystem = "Human"
+
+[[function]]
 address = 0x00337920
 name = "RayTriangle_OneSided"
 subsystem = "unattributed"
@@ -643,6 +663,16 @@ subsystem = "unattributed"
 address = 0x0035e5d0
 name = "CfgHUDMessage"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x0040cdd8
+name = "LevelObject_LinkModel"
+subsystem = "World"
+
+[[function]]
+address = 0x0040ce30
+name = "LevelObject_OnLoaded"
+subsystem = "World"
 
 [[function]]
 address = 0x0040e100

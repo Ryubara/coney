@@ -239,8 +239,10 @@ data: all 5,315 atomics, 181,150 batches decode this way; what the microcode doe
   loader places at the sector plugin's origin ([Atomic plugin 0x3F0](#atomic-plugin)).
 
 Triangles: decoded and joined, the strips give 2,869,406 non-degenerate triangles against 2,870,179 in the geometry
-headers (5,155 of 5,315 atomics equal), and 4,887,946 distinct vertices against 4,943,282. The difference is inferred
-to be vertices that became identical when packed to 16 bits, which merges them and turns their triangles degenerate.
+headers (5,155 of 5,315 atomics equal), and 4,882,437 distinct vertices against 4,943,282 (vertices compared in every
+attribute librw keeps; the unused fourth position word and the normal's padding byte are ignored). The difference is
+inferred to be vertices that became identical when packed to 16 bits, which merges them and turns their triangles
+degenerate.
 
 ### Pipelines and the second texture-coordinate set {#pipelines}
 

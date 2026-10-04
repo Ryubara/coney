@@ -55,4 +55,30 @@ struct Ps2WorldMesh {
 [[nodiscard]] std::expected<Ps2WorldMesh, Error> decodePs2WorldMesh(std::span<const std::byte> chain,
                                                                     bool triangleStrip);
 
+/// One vertex of RenderWare's default PS2 layout, as the vector unit receives it.
+struct Ps2DefaultVertex {
+    std::array<float, 3> position{};      ///< x, y, z.
+    std::array<float, 2> texCoords{};     ///< u, v.
+    std::array<std::uint8_t, 4> colour{}; ///< Prelighting colour, RGBA.
+    std::array<std::int8_t, 3> normal{};  ///< x, y, z over 127, as RenderWare packs them.
+
+    friend bool operator==(const Ps2DefaultVertex&, const Ps2DefaultVertex&) = default;
+};
+
+/// A mesh decoded from RenderWare's default PS2 layout: its vertices in strip (or list) order, the batches joined.
+struct Ps2DefaultMesh {
+    std::vector<Ps2DefaultVertex> vertices;
+    std::uint32_t batches = 0;
+};
+
+/// Decodes one mesh's DMA chain in RenderWare's own default PS2 layout, which the level world (the `.lev` file's
+/// light glows) uses rather than the game's packed one: per batch, up to four UNPACKs (STCYCL 4, 1) to vector-unit
+/// slots 0 to 3 with position (V3_32), texture coordinates (V2_32), colour (V4_8 unsigned) and normal (V3_8), ended by
+/// ITOP and a microprogram start. Every batch must carry the position; strip batches overlap by two vertices as in
+/// decodePs2WorldMesh(), whose DMA walk and failures this shares.
+///
+/// Research: docs/research/level-loading.md#the-level-object
+[[nodiscard]] std::expected<Ps2DefaultMesh, Error> decodePs2DefaultMesh(std::span<const std::byte> chain,
+                                                                        bool triangleStrip);
+
 } // namespace coney::graphics

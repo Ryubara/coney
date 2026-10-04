@@ -2,7 +2,9 @@
 #include "world/world_streams.h"
 
 #include <algorithm>
+#include <array>
 #include <bit>
+#include <cmath>
 #include <format>
 #include <optional>
 #include <string_view>
@@ -22,8 +24,11 @@ constexpr std::uint32_t kRwMaterialList = 0x08;
 constexpr std::uint32_t kRwAtomicSector = 0x09;
 constexpr std::uint32_t kRwPlaneSector = 0x0A;
 constexpr std::uint32_t kRwWorld = 0x0B;
+constexpr std::uint32_t kRwFrameList = 0x0E;
 constexpr std::uint32_t kRwGeometry = 0x0F;
+constexpr std::uint32_t kRwClump = 0x10;
 constexpr std::uint32_t kRwAtomic = 0x14;
+constexpr std::uint32_t kRwGeometryList = 0x1A;
 constexpr std::uint32_t kRwRightToRender = 0x1F;
 constexpr std::uint32_t kRwMeshPlugin = 0x50E;
 constexpr std::uint32_t kRwNativeData = 0x510;
@@ -682,6 +687,263 @@ std::expected<AtomicSection, Error> inspectAtomicSection(std::span<const std::by
         return std::unexpected(std::move(read.error()));
     }
     return atomic;
+}
+
+namespace {
+
+// Bytes of one frame record in a frame list: the 3×3 matrix, the position, the parent index and flags.
+constexpr std::size_t kFrameRecordBytes = 56;
+
+// Appends a RenderWare section: its header with `stamp`, then `data`.
+void appendSection(std::vector<std::byte>& out, std::uint32_t id, std::span<const std::byte> data,
+                   std::uint32_t stamp) {
+    for (const std::uint32_t word : {id, static_cast<std::uint32_t>(data.size()), stamp}) {
+        for (int shift = 0; shift < 32; shift += 8) {
+            out.push_back(static_cast<std::byte>((word >> shift) & 0xFFU));
+        }
+    }
+    out.insert(out.end(), data.begin(), data.end());
+}
+
+// Appends a little-endian word.
+void appendU32(std::vector<std::byte>& out, std::uint32_t value) {
+    for (int shift = 0; shift < 32; shift += 8) {
+        out.push_back(static_cast<std::byte>((value >> shift) & 0xFFU));
+    }
+}
+
+// The frame `matrix` placed in its parent's: each row turned by the parent's rows, the position moved too.
+FrameMatrix combine(const FrameMatrix& matrix, const FrameMatrix& parent) {
+    const auto turn = [&parent](Vec3 v) {
+        return Vec3{v.x * parent.right.x + v.y * parent.up.x + v.z * parent.at.x,
+                    v.x * parent.right.y + v.y * parent.up.y + v.z * parent.at.y,
+                    v.x * parent.right.z + v.y * parent.up.z + v.z * parent.at.z};
+    };
+    const Vec3 moved = turn(matrix.position);
+    return FrameMatrix{
+        .right = turn(matrix.right),
+        .up = turn(matrix.up),
+        .at = turn(matrix.at),
+        .position = {moved.x + parent.position.x, moved.y + parent.position.y, moved.z + parent.position.z}};
+}
+
+} // namespace
+
+std::expected<ClumpModel, Error> extractClumpModel(std::span<const std::byte> clump) {
+    io::Reader outer(clump);
+    auto rwClump = expectSection(outer, clump, kRwClump, "clump");
+    if (!rwClump) {
+        return std::unexpected(std::move(rwClump.error()));
+    }
+    io::Reader reader(rwClump->data);
+    auto info = expectSection(reader, rwClump->data, graphics::kRwStruct, "clump struct");
+    if (!info) {
+        return std::unexpected(std::move(info.error()));
+    }
+    if (info->data.size() < 4 || io::loadU32Le(info->data) != 1) {
+        return fail(ErrorCode::Invalid, "the clump does not hold exactly one atomic");
+    }
+
+    // The frame list: each frame's matrix and parent.
+    auto frameList = expectSection(reader, rwClump->data, kRwFrameList, "frame list");
+    if (!frameList) {
+        return std::unexpected(std::move(frameList.error()));
+    }
+    io::Reader framesReader(frameList->data);
+    auto framesStruct = expectSection(framesReader, frameList->data, graphics::kRwStruct, "frame list struct");
+    if (!framesStruct) {
+        return std::unexpected(std::move(framesStruct.error()));
+    }
+    io::Reader frameFields(framesStruct->data);
+    const auto frameCount = frameFields.readU32Le();
+    if (!frameCount || frameFields.remaining() < std::size_t{*frameCount} * kFrameRecordBytes) {
+        return fail(ErrorCode::Truncated, "the frame list is shorter than its count");
+    }
+    std::vector<FrameMatrix> frames(*frameCount);
+    std::vector<std::int32_t> parents(*frameCount);
+    for (std::uint32_t i = 0; i < *frameCount; ++i) {
+        std::array<Vec3, 4> rows{};
+        for (Vec3& row : rows) {
+            row = readVec3(frameFields).value();
+        }
+        frames[i] = FrameMatrix{.right = rows[0], .up = rows[1], .at = rows[2], .position = rows[3]};
+        parents[i] = static_cast<std::int32_t>(frameFields.readU32Le().value());
+        if (!frameFields.seek(frameFields.position() + 4)) { // the frame's flags, not needed
+            return fail(ErrorCode::Truncated, "the frame list is shorter than its count");
+        }
+    }
+
+    // The geometry list: exactly one geometry.
+    auto geometryList = expectSection(reader, rwClump->data, kRwGeometryList, "geometry list");
+    if (!geometryList) {
+        return std::unexpected(std::move(geometryList.error()));
+    }
+    io::Reader geometries(geometryList->data);
+    auto listStruct = expectSection(geometries, geometryList->data, graphics::kRwStruct, "geometry list struct");
+    if (!listStruct) {
+        return std::unexpected(std::move(listStruct.error()));
+    }
+    if (listStruct->data.size() < 4 || io::loadU32Le(listStruct->data) != 1) {
+        return fail(ErrorCode::Invalid, "the clump does not hold exactly one geometry");
+    }
+    auto geometry = expectSection(geometries, geometryList->data, kRwGeometry, "clump geometry");
+    if (!geometry) {
+        return std::unexpected(std::move(geometry.error()));
+    }
+
+    // The atomic: its struct names its frame; its extension carries the right to render and the game's plugin.
+    auto atomic = expectSection(reader, rwClump->data, kRwAtomic, "clump atomic");
+    if (!atomic) {
+        return std::unexpected(std::move(atomic.error()));
+    }
+    io::Reader atomicReader(atomic->data);
+    auto atomicStruct = expectSection(atomicReader, atomic->data, graphics::kRwStruct, "clump atomic struct");
+    if (!atomicStruct) {
+        return std::unexpected(std::move(atomicStruct.error()));
+    }
+    if (atomicStruct->data.size() != kAtomicStructBytes) {
+        return fail(ErrorCode::Invalid, std::format("clump atomic struct of {} bytes", atomicStruct->data.size()));
+    }
+    auto extension = expectSection(atomicReader, atomic->data, graphics::kRwExtension, "clump atomic extension");
+    if (!extension) {
+        return std::unexpected(std::move(extension.error()));
+    }
+
+    // The atomic's frame in the world: its own matrix, then each parent's, up to the root (parent -1).
+    ClumpModel model;
+    std::int64_t index = static_cast<std::int32_t>(io::loadU32Le(atomicStruct->data));
+    if (index < 0 || index >= static_cast<std::int64_t>(frames.size())) {
+        return fail(ErrorCode::Invalid, std::format("the clump atomic names frame {} of {}", index, frames.size()));
+    }
+    model.frame = frames[static_cast<std::size_t>(index)];
+    for (std::size_t steps = 0;; ++steps) {
+        index = parents[static_cast<std::size_t>(index)];
+        if (index < 0) {
+            break;
+        }
+        if (index >= static_cast<std::int64_t>(frames.size()) || steps >= frames.size()) {
+            return fail(ErrorCode::Invalid, "the clump's frame parents are out of range or loop");
+        }
+        model.frame = combine(model.frame, frames[static_cast<std::size_t>(index)]);
+    }
+
+    // The standalone atomic section: the struct, the geometry and the extension, in that order.
+    std::vector<std::byte> body;
+    appendSection(body, graphics::kRwStruct, atomicStruct->data, atomicStruct->header.libraryStamp);
+    body.insert(body.end(), geometry->whole.begin(), geometry->whole.end());
+    body.insert(body.end(), extension->whole.begin(), extension->whole.end());
+    appendSection(model.atomicSection, kRwAtomic, body, atomic->header.libraryStamp);
+    return model;
+}
+
+std::expected<LevelWorldModel, Error> extractLevelWorld(std::span<const std::byte> world) {
+    io::Reader outer(world);
+    auto rwWorld = expectSection(outer, world, kRwWorld, "level world");
+    if (!rwWorld) {
+        return std::unexpected(std::move(rwWorld.error()));
+    }
+    const std::uint32_t stamp = rwWorld->header.libraryStamp;
+    io::Reader parts(rwWorld->data);
+    auto info = expectSection(parts, rwWorld->data, graphics::kRwStruct, "level world struct");
+    if (!info) {
+        return std::unexpected(std::move(info.error()));
+    }
+    if (info->data.size() != kWorldStructBytes) {
+        return fail(ErrorCode::Invalid,
+                    std::format("level world struct of {} bytes, expected {}", info->data.size(), kWorldStructBytes));
+    }
+    // The counts: triangles, vertices, plane sectors, atomic sectors, collision size, format.
+    io::Reader fields(info->data.subspan(16));
+    const std::vector<std::uint32_t> counts = readWords(fields, 6).value();
+    if (counts[2] != 0 || counts[3] != 1) {
+        return fail(ErrorCode::Invalid, std::format("the level world has {} planes and {} sectors; one sector and no "
+                                                    "planes expected",
+                                                    counts[2], counts[3]));
+    }
+    LevelWorldModel model;
+    model.worldFormat = counts[5];
+    if ((model.worldFormat & kGeometryNative) == 0) {
+        return fail(ErrorCode::Invalid, "the level world is not PS2 native");
+    }
+    auto materials = expectSection(parts, rwWorld->data, kRwMaterialList, "level world material list");
+    if (!materials) {
+        return std::unexpected(std::move(materials.error()));
+    }
+    auto sector = expectSection(parts, rwWorld->data, kRwAtomicSector, "level world sector");
+    if (!sector) {
+        return std::unexpected(std::move(sector.error()));
+    }
+
+    // The sector: its struct (material base, counts, box), then its extension with the meshes and native data.
+    io::Reader sectorReader(sector->data);
+    auto sectorStruct = expectSection(sectorReader, sector->data, graphics::kRwStruct, "level world sector struct");
+    if (!sectorStruct) {
+        return std::unexpected(std::move(sectorStruct.error()));
+    }
+    if (sectorStruct->data.size() != kAtomicSectorStructBytes) {
+        return fail(ErrorCode::Invalid, std::format("level world sector struct of {} bytes, expected {}",
+                                                    sectorStruct->data.size(), kAtomicSectorStructBytes));
+    }
+    io::Reader sectorFields(sectorStruct->data);
+    const std::vector<std::uint32_t> sectorWords = readWords(sectorFields, 3).value();
+    if (sectorWords[0] != 0) {
+        return fail(ErrorCode::Invalid, "the level world sector's material window does not start at 0");
+    }
+    model.triangleCount = sectorWords[1];
+    model.vertexCount = sectorWords[2];
+    const Vec3 a = readVec3(sectorFields).value();
+    const Vec3 b = readVec3(sectorFields).value();
+    model.box = boxOf(a, b);
+    auto sectorExtension =
+        expectSection(sectorReader, sector->data, graphics::kRwExtension, "level world sector extension");
+    if (!sectorExtension) {
+        return std::unexpected(std::move(sectorExtension.error()));
+    }
+    // Only the mesh and native data plugins go into the geometry; the sector plugin (0x3F1) stays behind.
+    std::vector<std::byte> geometryPlugins;
+    io::Reader plugins(sectorExtension->data);
+    while (plugins.remaining() > 0) {
+        auto plugin = nextSection(plugins, sectorExtension->data, "level world sector plugin");
+        if (!plugin) {
+            return std::unexpected(std::move(plugin.error()));
+        }
+        if (plugin->header.id == kRwMeshPlugin || plugin->header.id == kRwNativeData) {
+            geometryPlugins.insert(geometryPlugins.end(), plugin->whole.begin(), plugin->whole.end());
+        }
+    }
+
+    // The geometry: struct (format without the world's own high flags, counts, one morph target with a sphere round
+    // the box and no vertex arrays), the world's material list, the plugins.
+    std::vector<std::byte> geometryStruct;
+    appendU32(geometryStruct, model.worldFormat & 0x01FFFFFFU);
+    appendU32(geometryStruct, model.triangleCount);
+    appendU32(geometryStruct, model.vertexCount);
+    appendU32(geometryStruct, 1);
+    const Vec3 centre{(model.box.min.x + model.box.max.x) * 0.5F, (model.box.min.y + model.box.max.y) * 0.5F,
+                      (model.box.min.z + model.box.max.z) * 0.5F};
+    const Vec3 half{model.box.max.x - centre.x, model.box.max.y - centre.y, model.box.max.z - centre.z};
+    const float radius = std::sqrt(half.x * half.x + half.y * half.y + half.z * half.z);
+    for (const float value : {centre.x, centre.y, centre.z, radius}) {
+        appendU32(geometryStruct, std::bit_cast<std::uint32_t>(value));
+    }
+    appendU32(geometryStruct, 0); // no vertex positions
+    appendU32(geometryStruct, 0); // no normals
+    std::vector<std::byte> geometryBody;
+    appendSection(geometryBody, graphics::kRwStruct, geometryStruct, stamp);
+    geometryBody.insert(geometryBody.end(), materials->whole.begin(), materials->whole.end());
+    appendSection(geometryBody, graphics::kRwExtension, geometryPlugins, stamp);
+
+    // The atomic: frame 0, geometry 0, flags collision test and render, then the geometry and an empty extension.
+    std::vector<std::byte> atomicStruct;
+    for (const std::uint32_t word : {0U, 0U, 5U, 0U}) {
+        appendU32(atomicStruct, word);
+    }
+    std::vector<std::byte> atomicBody;
+    appendSection(atomicBody, graphics::kRwStruct, atomicStruct, stamp);
+    appendSection(atomicBody, kRwGeometry, geometryBody, stamp);
+    appendSection(atomicBody, graphics::kRwExtension, {}, stamp);
+    appendSection(model.atomicSection, kRwAtomic, atomicBody, stamp);
+    return model;
 }
 
 } // namespace coney::world

@@ -23,6 +23,15 @@ struct Vec3 {
     float z = 0.0F;
 };
 
+/// A RenderWare frame's matrix: the rows `right`, `up` and `at`, then `position`; a point p goes to
+/// p.x·right + p.y·up + p.z·at + position.
+struct FrameMatrix {
+    Vec3 right{1.0F, 0.0F, 0.0F};
+    Vec3 up{0.0F, 1.0F, 0.0F};
+    Vec3 at{0.0F, 0.0F, 1.0F};
+    Vec3 position;
+};
+
 /// An axis-aligned box: `min` is the smallest corner, `max` the largest.
 struct Box {
     Vec3 min;
@@ -163,5 +172,38 @@ inline constexpr std::uint32_t kPs2Platform = 4;
 /// data's per-mesh sizes. Only PS2 native geometry is accepted. Fails with ErrorCode::Truncated or ErrorCode::Invalid
 /// naming what is wrong.
 [[nodiscard]] std::expected<AtomicSection, Error> inspectAtomicSection(std::span<const std::byte> section);
+
+/// The one model of a level file's preinstanced clump (chunk 0x47), rearranged for the part atomics' reader.
+struct ClumpModel {
+    std::vector<std::byte> atomicSection; ///< A standalone atomic section: its struct, its geometry, its extension.
+    FrameMatrix frame;                    ///< The atomic's frame in the world: its frame times every parent's.
+};
+
+/// Reads a RenderWare clump (section 0x10) of one atomic and one geometry, as the level file's skyline, sky box and
+/// cloud box are, and rearranges it as a standalone atomic section (inspectAtomicSection()'s input), with the
+/// atomic's frame composed with its parents' (the disc's root frames place and turn the models). Fails with
+/// ErrorCode::Truncated or ErrorCode::Invalid for a clump of another shape: not exactly one atomic and one geometry,
+/// a frame index out of range or frames that loop.
+///
+/// Research: docs/research/level-loading.md#the-level-object
+[[nodiscard]] std::expected<ClumpModel, Error> extractClumpModel(std::span<const std::byte> clump);
+
+/// The level file's world (chunk 0x15), rearranged for the part atomics' reader.
+struct LevelWorldModel {
+    std::vector<std::byte> atomicSection; ///< A standalone atomic section holding the world's one sector.
+    std::uint32_t worldFormat = 0;        ///< The world's geometry format flags.
+    std::uint32_t triangleCount = 0;      ///< Triangles of its sector.
+    std::uint32_t vertexCount = 0;        ///< Vertices of its sector.
+    Box box;                              ///< The sector's box.
+};
+
+/// Reads a RenderWare world (section 0x0B) with no planes and one atomic sector, as the level file's glow world is,
+/// and rearranges the sector as a standalone atomic section: a geometry with the world's format, the sector's counts,
+/// the world's material list and the sector's mesh and native data plugins, in an atomic with no plugins (so no
+/// pipeline: RenderWare's default). Fails with ErrorCode::Truncated or ErrorCode::Invalid for a world of another
+/// shape, naming what is out of place.
+///
+/// Research: docs/research/level-loading.md#the-level-object
+[[nodiscard]] std::expected<LevelWorldModel, Error> extractLevelWorld(std::span<const std::byte> world);
 
 } // namespace coney::world

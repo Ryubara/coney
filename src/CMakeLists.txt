@@ -56,6 +56,7 @@ add_library(coney_core STATIC
     scripting/lua_value.cpp
     scripting/lua_vm.cpp
     world/debug_camera.cpp
+    world/level_object.cpp
     world/sector_budget.cpp
     world/streamed_world.cpp
     world/view_frustum.cpp
