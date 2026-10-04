@@ -27,9 +27,9 @@ The build on Windows, Linux and macOS, CI, the `coney` executable (a window and 
 
 Everything Coney loads comes out of `WARRIORS.WAD`, so the first job is to read it and know what is in it.
 
-- `coney-tools wad`: list, extract and name the archive's entries from the player's own disc
-  ([WARRIORS.DIR / .WAD](research/formats/wad-dir.md)).
-- Recover as many entry names as possible (412 of 10,701 so far).
+- Done: `coney-tools wad` lists, extracts and names the archive's entries from the player's own disc or disc image
+  ([guide](guides/coney-tools.md), [WARRIORS.DIR / .WAD](research/formats/wad-dir.md)).
+- Recover as many entry names as possible (414 of 10,701 so far).
 - A survey of every entry type: what each is, how many there are, which ones RenderWare or Lua already explain.
 - A map of the executable: which functions belong to which of the original's source files, from the file paths its
   assertion messages carry. It tells every later analyst where to look.

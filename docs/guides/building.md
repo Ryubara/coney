@@ -159,6 +159,8 @@ uv run --project python mypy python/src python/tests
 `coney-tools config show` prints the paths your `coney.local.toml` sets (start from `coney.local.example.toml`;
 [Local workspace](workspace.md) explains each one). `coney-tools repo check-title` checks a commit or pull request
 title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits).
+`coney-tools wad` reads the archive on your own disc (`info`, `list`, `extract`, `names`); [The coney-tools command
+line](coney-tools.md) shows how to run each command.
 
 ## Formatting and pre-commit
 

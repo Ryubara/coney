@@ -44,3 +44,24 @@ Example: `./ee_files/global.lua` → `0x7e23a6f2`.
 
 See [Recon](../overview.md#warriorsdir-warriorswad) for the first classification by leading bytes.
 Per-type format pages will be added as each type is decoded.
+
+## Coney's implementation
+
+`python/src/coney_tools/wad.py` parses `WARRIORS.DIR` (`parse_dir`), hashes names (`name_hash`), extracts entries
+and recovers names; `disc.py` reads the files from a folder or an ISO 9660 image; `wad_cli.py` holds the
+`coney-tools wad` commands. How to run them: [The coney-tools command line](../../guides/coney-tools.md).
+
+Name recovery (`coney-tools wad names`) scans printable file-name-like strings (path characters followed by one or
+more `.ext` parts) in `SLUS_212.15` and in every WAD entry, hashes each as `./ee_files/<last path component>` and
+as written, and keeps those that match an entry's hash. It recovered 414 of 10,701 names on the NTSC-U disc
+(2026-10-04). The parser rejects a `WARRIORS.DIR` whose size is not `16 + count x 12` and an entry that ends past
+the end of the WAD; the game itself does neither check as far as these pages record.
+
+## Open questions
+
+- Is the whole disc one flat root (`SLUS_212.15`, `WARRIORS.DIR`, `WARRIORS.WAD` and the other files), or does the
+  game read any file from a subdirectory? The ISO reader only reads the root directory.
+- Do names ever hash without the `./ee_files/` prefix, for example names built by other callers of the hash? The
+  recovery tries both forms, but this page only documents the prefixed one.
+- Why do roughly 96% of the entries have no name in any string on the disc? Are the names built at run time
+  (for example from a number or a level name), or stored in a form the string scan does not see?

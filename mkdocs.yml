@@ -66,6 +66,7 @@ nav:
   - Guides:
       - Building and testing: guides/building.md
       - Local workspace: guides/workspace.md
+      - The coney-tools command line: guides/coney-tools.md
       - Conventions: guides/conventions.md
       - Research workflow: guides/research-workflow.md
       - Ghidra + ghidra-mcp: guides/ghidra.md

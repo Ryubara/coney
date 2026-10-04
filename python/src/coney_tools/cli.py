@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections.abc import Sequence
 from importlib.metadata import version
 from pathlib import Path
+from typing import Any
 
+from coney_tools import wad_cli
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.repo_checks import check_pointer_files, check_title, first_line, load_title_rules
 
@@ -69,21 +72,67 @@ def _build_parser() -> argparse.ArgumentParser:
         "check-title", help="check a commit or pull request title against the commit title rules"
     )
     check_title_parser.add_argument("file", help="a file whose first line (not blank, not #) is the title; - for stdin")
+    _add_wad_commands(groups)
     return parser
+
+
+def _add_wad_commands(groups: Any) -> None:
+    """Register `coney-tools wad ...`."""
+    disc_help = "a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
+    names_help = "a names file, one name per line (made by `wad names`)"
+    wad = groups.add_parser("wad", help="read the game's WARRIORS.DIR / WARRIORS.WAD archive")
+    commands = wad.add_subparsers(dest="command", required=True)
+    info = commands.add_parser("info", help="entry count, sizes and a breakdown by first four bytes")
+    info.add_argument("disc", nargs="?", help=disc_help)
+    info.add_argument("--names", type=Path, help=names_help)
+    listing = commands.add_parser("list", help="one line per entry: index, offset, size, hash, name")
+    listing.add_argument("disc", nargs="?", help=disc_help)
+    listing.add_argument("--names", type=Path, help=names_help)
+    extract = commands.add_parser("extract", help="write entries to OUT_DIR (outside the repository)")
+    extract.add_argument("paths", nargs="+", metavar="[DISC] OUT_DIR", help=f"[DISC] ({disc_help}) and OUT_DIR")
+    extract.add_argument("--names", type=Path, help=names_help)
+    extract.add_argument("--only", nargs="+", metavar="HASH_OR_NAME", help="extract just these entries")
+    names = commands.add_parser("names", help="recover names by hashing strings found on the disc")
+    names.add_argument("paths", nargs="+", metavar="[DISC] OUT_FILE", help=f"[DISC] ({disc_help}) and OUT_FILE")
+
+
+def _run_wad(args: argparse.Namespace) -> int:
+    if args.command == "info":
+        return wad_cli.run_info(args.disc, args.names)
+    if args.command == "list":
+        return wad_cli.run_list(args.disc, args.names)
+    if args.command == "extract":
+        return wad_cli.run_extract(args.paths, args.names, args.only)
+    return wad_cli.run_names(args.paths)
+
+
+def _run(args: argparse.Namespace) -> int:
+    """Dispatch to the chosen command and return its exit status."""
+    if args.group == "wad":
+        return _run_wad(args)
+    if args.group == "config":
+        return _config_show()
+    if args.command == "check-title":
+        return _repo_check_title(args.file)
+    return _repo_check()
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line; returns 0 on success, 1 when a check fails, 2 on a usage or configuration error."""
     args = _build_parser().parse_args(argv)
     try:
-        if args.group == "config":
-            return _config_show()
-        if args.command == "check-title":
-            return _repo_check_title(args.file)
-        return _repo_check()
+        status = _run(args)
+        # Flush here, inside the handler below: a closed pipe often only shows when buffered output is written.
+        sys.stdout.flush()
+        return status
     except ConfigError as error:
         print(f"coney-tools: {error}", file=sys.stderr)
         return 2
+    except (BrokenPipeError, wad_cli.OutputClosedError):
+        # The reader went away (`wad list | head`): stop quietly, as Unix tools do. Point stdout at devnull so the
+        # interpreter's final flush does not fail again on exit.
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return 0
 
 
 if __name__ == "__main__":
