@@ -460,6 +460,19 @@ placed by its frames: the root frames turn the models and place the skyline in t
 round the camera ([The background](#render-order)). The glow worlds unpack to 6,870 triangles, as counted above, and
 every one of their materials finds its `propglow…` texture.
 
+**The background and the glows** (`src/platform/world_renderer.h`) follow [The background](#render-order) and step 5 of
+[A frame](world.md#a-frame). The sky box and then the cloud box are drawn round the camera with its translation zeroed
+(near 0.05, far 5; Z write and fog off, nothing culled). The cloud box turns about `y` by one radian a minute of game
+time (`cloudFrame`), so a fixed-step run draws the same frames. The skyline is drawn in place from the smaller of 39
+and the nearest missing scenery out to 560, with Z write on and fog off. Then only Z is cleared, and the glow world is
+drawn before the `s` world: nothing culled, Z test and write and fog on. `coney --view-world <level>` loads the level
+file whenever the level has one.
+
+- **Coney's choices for the background:** it is lit by the viewer's one ambient light (0.157), the stand-in for the
+  world lights the original selects for a far-away sphere ([Lighting](world.md#lighting)). The PS2 driver's far-clip
+  call (`0x0048f0f8`) has no counterpart. Switching camera planes ends and begins librw's camera update, which makes
+  the camera's world current, so Coney then puts the light world back.
+
 What the implementer still needs:
 
 - **Mode 1** with `Enter` → `InitLevel`, an `Update` that streams once a frame, and `Exit` → `UnloadLevel`.
@@ -467,9 +480,6 @@ What the implementer still needs:
   `+0x14` (level) and `+0x39` (world); in practice both are `level<N>`.
 - **`LoadLevel`** in the order above: the worlds, then the level file (done, above); still missing are the path
   records' and subtitles' meaning, and handing the level object to a world manager.
-- **The background pass** before the world in each viewport ([The level in a frame](#render-order)): sky and clouds
-  around the camera at near 0.05 / far 5, the skyline from 39 to 560, then a Z-only clear. The three models show
-  their dictionary's first texture.
 - **The level's lighting, fog colour and camera** from the level script and the player camera
   ([The streamed world](world.md#lighting)).
 - **The preload** as the first frame's precondition: load the section's pack, then stream world parts until the

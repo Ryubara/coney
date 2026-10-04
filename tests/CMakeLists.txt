@@ -45,6 +45,7 @@ add_executable(coney_tests
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp
     platform/world_atomic_test.cpp
+    platform/world_renderer_test.cpp
     platform/world_set_test.cpp
     raycast/collision_mesh_test.cpp
     raycast/disc_collision_test.cpp

@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/world_renderer.h"
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <span>
 #include <vector>
 
 #include <rw.h>
 
+#include "platform/level_file.h"
 #include "world/streamed_world.h"
 
 namespace coney::platform {
@@ -17,27 +20,87 @@ namespace {
 // librw's vector from ours.
 rw::V3d toRw(world::Vec3 v) { return rw::V3d{v.x, v.y, v.z}; }
 
-// Places the camera at `view` and sets its clip planes, fog plane and view window. librw's GL3 renderer flips the
-// camera frame's x axis, so the frame's `right` is the screen's left: -pose.right, which keeps the frame right-handed.
-void placeCamera(rw::Camera* camera, const WorldView& view) {
+// Places the camera at `view` (at `position` instead when given) and sets its clip planes `nearClip` and `farClip`,
+// fog plane and view window. librw's GL3 renderer flips the camera frame's x axis, so the frame's `right` is the
+// screen's left: -pose.right, which keeps the frame right-handed.
+void placeCamera(rw::Camera* camera, const WorldView& view, world::Vec3 position, float nearClip, float farClip) {
     rw::Matrix matrix;
     matrix.setIdentity();
     const world::Vec3 r = view.pose.right;
     matrix.right = rw::V3d{-r.x, -r.y, -r.z};
     matrix.up = toRw(view.pose.up);
     matrix.at = toRw(view.pose.forward);
-    matrix.pos = toRw(view.pose.position);
+    matrix.pos = toRw(position);
     matrix.update(); // no longer the identity setIdentity() marked it as
     matrix.optimize();
     camera->getFrame()->transform(&matrix, rw::COMBINEREPLACE);
-    camera->setNearPlane(view.nearClip);
-    camera->setFarPlane(view.drawDistance);
-    camera->fogPlane = view.drawDistance * kFogStart;
+    camera->setNearPlane(nearClip);
+    camera->setFarPlane(farClip);
+    camera->fogPlane = farClip * kFogStart;
     const rw::V2d window{view.halfWidth, view.halfHeight};
     camera->setViewWindow(&window);
 }
 
+// The camera as the world pass uses it: at the view, from the near clip to the draw distance.
+void placeCamera(rw::Camera* camera, const WorldView& view) {
+    placeCamera(camera, view, view.pose.position, view.nearClip, view.drawDistance);
+}
+
+// Moves the camera between passes: new placement and planes, taking effect for what is drawn next (librw computes the
+// projection when an update begins). Beginning an update also makes the camera's own world current, which is none,
+// so the world whose lights librw uses is put back afterwards.
+void replaceCamera(rw::Camera* camera, const WorldView& view, world::Vec3 position, float nearClip, float farClip) {
+    rw::World* lights = rw::engine->currentWorld;
+    camera->endUpdate();
+    placeCamera(camera, view, position, nearClip, farClip);
+    camera->beginUpdate();
+    rw::engine->currentWorld = lights;
+}
+
+// The atomic of a level object's part, or null.
+rw::Atomic* atomicOf(const chunk::LoadedObject* object) { return levelAtomic(object); }
+
 } // namespace
+
+world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowMs) {
+    // Each row, and the position, turned about y: (x, y, z) -> (x cos a + z sin a, y, -x sin a + z cos a).
+    const float angle = static_cast<float>(nowMs % 377'000'000ULL) * kCloudRadiansPerMs; // a whole number of turns
+    const float c = std::cos(angle);
+    const float s = std::sin(angle);
+    const auto turn = [c, s](world::Vec3 v) { return world::Vec3{v.x * c + v.z * s, v.y, -v.x * s + v.z * c}; };
+    return world::FrameMatrix{
+        .right = turn(base.right), .up = turn(base.up), .at = turn(base.at), .position = turn(base.position)};
+}
+
+void WorldRenderer::renderBackground(rw::Camera* camera, const world::LevelObject& level, const WorldView& view,
+                                     graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs) {
+    // 1-2. The background is lit as one object far away by the world's lights: Coney's one ambient, already current.
+    // 3. The sky box, then the turning cloud box, round the camera with its translation zeroed: near 0.05, far 5;
+    // Z write and fog off, nothing culled.
+    replaceCamera(camera, view, world::Vec3{}, kSkyNearClip, kSkyFarClip);
+    rw::SetRenderState(rw::ZWRITEENABLE, 0);
+    rw::SetRenderState(rw::FOGENABLE, 0);
+    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+    if (rw::Atomic* sky = atomicOf(level.skyBox.model.get()); sky != nullptr) {
+        sky->render();
+    }
+    if (auto* clouds = dynamic_cast<LevelAtomicObject*>(level.cloudBox.model.get()); clouds != nullptr) {
+        clouds->place(cloudFrame(clouds->frame(), nowMs));
+        clouds->atomic()->render();
+    }
+    // 4. The skyline in place, from 39 (or the nearest missing scenery, if nearer) to 560, with Z write on and fog
+    // off; then Z alone is cleared so the world, with its much shorter far clip, covers it where it has geometry.
+    replaceCamera(camera, view, view.pose.position, std::min(kSkylineNearClip, pendingDistance), kSkylineFarClip);
+    rw::SetRenderState(rw::ZWRITEENABLE, 1);
+    if (rw::Atomic* skyline = atomicOf(level.skyline.model.get()); skyline != nullptr) {
+        skyline->render();
+    }
+    rw::SetRenderState(rw::FOGENABLE, 1);
+    rw::RGBA clearColour = rw::makeRGBA(fogColour.r, fogColour.g, fogColour.b, fogColour.a); // librw takes it non-const
+    camera->clear(&clearColour, rw::Camera::CLEARZ);
+    // 5. The world pass's camera again.
+    replaceCamera(camera, view, view.pose.position, view.nearClip, view.drawDistance);
+}
 
 WorldRenderer::WorldRenderer(float ambient)
     : m_lights(rw::World::create()), m_ambient(rw::Light::create(rw::Light::AMBIENT)) {
@@ -64,7 +127,8 @@ void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEnd
     atomic->render();
 }
 
-void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const WorldView& view, graphics::Rgba fogColour,
+void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level,
+                           const WorldView& view, graphics::Rgba fogColour, float pendingDistance,
                            std::uint64_t nowMs) {
     m_drawn = 0;
     // 1-4. The camera, with the draw distance as its far clip and the fog from half of it. The frame is begun first:
@@ -93,7 +157,19 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const Worl
     rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
     rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
 
-    // 5. The level world: not loaded yet. 6. The `s` world. 7. Objects: none yet. 8. The `d` world, the same way.
+    // The level's background, before the world (LevelObject_RenderBackground, from the viewport pass).
+    if (level != nullptr) {
+        renderBackground(camera, *level, view, fogColour, pendingDistance, nowMs);
+        // 5. The level world, the light glows: nothing culled, Z test and write and fog on.
+        if (rw::Atomic* glows = atomicOf(level->levelWorld.get()); glows != nullptr) {
+            rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+            glows->render();
+            ++m_drawn;
+        }
+        rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    }
+
+    // 6. The `s` world. 7. Objects: none yet. 8. The `d` world, the same way.
     const std::span<world::StreamedWorld* const> worlds = set.worlds();
     for (std::size_t w = 0; w < worlds.size(); ++w) {
         const std::vector<world::StreamedSector>& sectors = worlds[w]->sectors();

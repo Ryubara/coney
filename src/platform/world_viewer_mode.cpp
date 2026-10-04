@@ -11,6 +11,7 @@
 
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
+#include "platform/level_file.h"
 #include "world/view_frustum.h"
 #include "world/world_streamer.h"
 
@@ -68,14 +69,28 @@ WorldViewerMode::create(RenderEngine& engine, const io::Wad& wad, std::string_vi
                             world->sectors().size());
     }
     print(text + std::format("; sector budget {} of {} bytes in use\n", budget.used(), budget.capacity()));
+    // The level file, read after the worlds as LoadLevel does.
+    std::unique_ptr<world::LevelObject> level;
+    if (wad.lookup(std::string(name) + ".lev")) {
+        auto loaded = loadLevel(wad, name, engine.drawsPixels());
+        if (!loaded) {
+            return std::unexpected(std::move(loaded.error()));
+        }
+        level = std::move(*loaded);
+        print(std::format("{}.lev: {} collision triangles, {} occluders, {} path records, sky, clouds, skyline and "
+                          "glows\n",
+                          name, level->collision->triangles().size(), level->occluders.size(),
+                          level->pathHeader.paths));
+    }
     return std::unique_ptr<WorldViewerMode>(
-        new WorldViewerMode(engine, std::move(*set), budget, start, std::move(print)));
+        new WorldViewerMode(engine, std::move(*set), std::move(level), budget, start, std::move(print)));
 }
 
-WorldViewerMode::WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set, world::SectorBudget& budget,
+WorldViewerMode::WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set,
+                                 std::unique_ptr<world::LevelObject> level, world::SectorBudget& budget,
                                  world::Vec3 start, std::function<void(std::string_view)> print)
-    : m_engine(engine), m_set(std::move(set)), m_budget(budget), m_camera(start), m_renderer(kAmbient),
-      m_print(std::move(print)) {}
+    : m_engine(engine), m_set(std::move(set)), m_level(std::move(level)), m_budget(budget), m_camera(start),
+      m_renderer(kAmbient), m_print(std::move(print)) {}
 
 WorldView WorldViewerMode::view() const {
     // The player camera's view window on the 4:3 picture; a window of another shape keeps its height and widens or
@@ -144,13 +159,14 @@ ModeResult WorldViewerMode::update(GameModeStack& stack, const FrameTime& frame)
     }
 
     // The draw distance follows the nearest missing scenery; Coney's fixed step is always 30 frames a second.
-    m_drawDistance = world::adjustDrawDistance(
-        m_drawDistance, world::DrawDistanceInputs{.pending = world::nearestPendingDistance(m_set->worlds(), cameras),
-                                                  .farClip = camera::kPlayerCameraLens.farClip,
-                                                  .seconds = seconds,
-                                                  .frameRate = 30.0F,
-                                                  .viewports = 1,
-                                                  .lowRateMode = false});
+    const float pending = world::nearestPendingDistance(m_set->worlds(), cameras);
+    m_drawDistance = world::adjustDrawDistance(m_drawDistance,
+                                               world::DrawDistanceInputs{.pending = pending,
+                                                                         .farClip = camera::kPlayerCameraLens.farClip,
+                                                                         .seconds = seconds,
+                                                                         .frameRate = 30.0F,
+                                                                         .viewports = 1,
+                                                                         .lowRateMode = false});
 
     // The visibility pass of this frame's one viewport, then the drawing.
     const WorldView current = view();
@@ -159,7 +175,7 @@ ModeResult WorldViewerMode::update(GameModeStack& stack, const FrameTime& frame)
     for (world::StreamedWorld* world : m_set->worlds()) {
         world->findVisibleSectors(frustum, true);
     }
-    m_renderer.render(m_engine, *m_set, current, kFogColour, nowMs);
+    m_renderer.render(m_engine, *m_set, m_level.get(), current, kFogColour, pending, nowMs);
     m_stats.maxDrawn = std::max(m_stats.maxDrawn, m_renderer.drawnAtomics());
     ++m_stats.frames;
     return ModeResult::Stay;

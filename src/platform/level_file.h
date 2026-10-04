@@ -27,14 +27,20 @@ namespace coney::platform {
 /// into plain geometry, its frame placed.
 class LevelAtomicObject final : public chunk::LoadedObject {
   public:
-    /// Wraps `atomic`; `what` names it for diagnostics ("level model", "level world").
-    LevelAtomicObject(WorldAtomic atomic, std::string_view what) : m_atomic(std::move(atomic)), m_what(what) {}
+    /// Wraps `atomic`, placed at `frame`; `what` names it for diagnostics ("level model", "level world").
+    LevelAtomicObject(WorldAtomic atomic, const world::FrameMatrix& frame, std::string_view what)
+        : m_atomic(std::move(atomic)), m_frame(frame), m_what(what) {}
     [[nodiscard]] std::string_view describe() const override { return m_what; }
     /// The librw atomic. Valid as long as this object.
     [[nodiscard]] rw::Atomic* atomic() const { return m_atomic.atomic(); }
+    /// The frame it was placed with at load (the cloud box turns from there each frame).
+    [[nodiscard]] const world::FrameMatrix& frame() const { return m_frame; }
+    /// Places the atomic at `frame` for drawing, leaving frame() as it was loaded.
+    void place(const world::FrameMatrix& frame) { m_atomic.setTransform(frame); }
 
   private:
     WorldAtomic m_atomic;
+    world::FrameMatrix m_frame;
     std::string_view m_what;
 };
 

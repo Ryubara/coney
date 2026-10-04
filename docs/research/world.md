@@ -593,7 +593,9 @@ registered from Coney's code; librw needs no patch.
 - `world_renderer.h`: `WorldManager_Render` as far as it goes: the camera at the draw distance with fog from half of
   it in the background colour, then the `s` world's collected sectors and the `d` world's in the BSP's drawing order,
   Z test and write, back faces culled, each atomic through `World_RenderSectorAtomic` (material alpha for the
-  one-second fade, then librw's render).
+  one-second fade, then librw's render). With a level object it first draws the level's background (sky, turning
+  clouds, skyline, then a Z-only clear), and then step 5, the glow world
+  ([Level loading](level-loading.md#coneys-implementation)).
 - `world_viewer_mode.h`: the mode behind `--view-world`. Per frame: camera, one streaming decision (from the last
   frame's visibility), draw distance, visibility pass, draw. Game time, so `--frames` and `--input-script` give the
   same run every time. The camera is Coney's free-flying debug camera, looking through the player camera's lens

@@ -6,10 +6,12 @@
 #include "graphics/render_device.h"
 #include "platform/render_engine.h"
 #include "platform/world_set.h"
+#include "world/level_object.h"
 #include "world/view_frustum.h"
 
 namespace rw {
 struct Atomic;
+struct Camera;
 struct Light;
 struct World;
 } // namespace rw
@@ -29,9 +31,24 @@ struct WorldView {
 /// docs/research/graphics.md#device-object).
 inline constexpr float kFogStart = 0.5F;
 
-/// Draws the streamed worlds of a WorldSet with librw, in the order of the original's world pass, as far as Coney has
-/// its parts: the `s` world's collected sectors, then the `d` world's, each with Z test and write, back-face culling
-/// and fog, each atomic faded in over its first second. Not drawn yet: the level world, objects, water and effects.
+/// Draws a level with librw in the order of the original's viewport pass, as far as Coney has its parts: the level's
+/// background (LevelObject_RenderBackground: sky box, turning cloud box, skyline, then a Z-only clear), then the world
+/// pass (WorldManager_Render): the level world's light glows, the `s` world's collected sectors and the `d` world's,
+/// each with Z test and write, back-face culling and fog, each sector's atomic faded in over its first second. Not
+/// drawn yet: objects, water and effects.
+
+/// The sky's clip planes, round a camera whose translation is zeroed (docs/research/level-loading.md#render-order).
+inline constexpr float kSkyNearClip = 0.05F;
+inline constexpr float kSkyFarClip = 5.0F;
+/// The skyline's far clip, and the most its near clip can be: it comes closer when scenery nearer is still missing.
+inline constexpr float kSkylineFarClip = 560.0F;
+inline constexpr float kSkylineNearClip = 39.0F;
+/// How fast the cloud box turns about the up axis: one radian a minute of game time.
+inline constexpr float kCloudRadiansPerMs = 1.0F / 60000.0F;
+
+/// The cloud box's frame after `nowMs` of game time: `base` turned about RenderWare's up axis (y) through the
+/// origin by nowMs × kCloudRadiansPerMs.
+[[nodiscard]] world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowMs);
 ///
 /// The original lights each atomic from its LightManager, which Coney does not have yet. In its place the atomics are
 /// lit by one ambient light of the brightness given (a Coney choice; 0 shows the prelighting alone).
@@ -49,17 +66,26 @@ class WorldRenderer {
     WorldRenderer& operator=(WorldRenderer&&) = delete;
 
     /// One frame of the worlds of `set` through `view`, cleared to `fogColour` (which is also the fog's colour, as the
-    /// device's background colour is), drawn into the whole window and presented. Draws the sectors each world
-    /// collects (StreamedWorld::collectSectors), so the visibility pass must have run. `nowMs` is game time for the
-    /// fade-in. With the NULL backend the frame is begun and presented and nothing is drawn.
+    /// device's background colour is), drawn into the whole window and presented. With `level`, its background comes
+    /// first and its light glows open the world pass; `pendingDistance` (the nearest missing scenery,
+    /// world::nearestPendingDistance()) brings the skyline's near clip closer. Draws the sectors each world collects
+    /// (StreamedWorld::collectSectors), so the visibility pass must have run. `nowMs` is game time for the fade-in and
+    /// the clouds. With the NULL backend the frame is begun and presented and nothing is drawn.
     /// @orig 0x0040e8d8 WorldManager_Render (WorldManagerPS2.cpp)
-    void render(RenderEngine& engine, const WorldSet& set, const WorldView& view, graphics::Rgba fogColour,
-                std::uint64_t nowMs);
+    void render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level, const WorldView& view,
+                graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs);
 
     /// Atomics drawn by the last render().
     [[nodiscard]] std::uint32_t drawnAtomics() const { return m_drawn; }
 
   private:
+    /// The level's background, before the world: the sky box and the turning cloud box round the camera, then the
+    /// skyline in place from min(39, pendingDistance) to 560, then a Z-only clear so the world covers it. Leaves the
+    /// camera as `view` places it.
+    /// @orig 0x0040d0a8 LevelObject_RenderBackground (unknown)
+    static void renderBackground(rw::Camera* camera, const world::LevelObject& level, const WorldView& view,
+                                 graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs);
+
     /// Fades one sector's atomic in by its material colours' alpha, then draws it.
     /// @orig 0x00411990 World_RenderSectorAtomic (WorldPS2.cpp)
     static void renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEndMs, std::uint64_t nowMs);

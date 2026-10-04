@@ -675,6 +675,11 @@ name = "LevelObject_OnLoaded"
 subsystem = "World"
 
 [[function]]
+address = 0x0040d0a8
+name = "LevelObject_RenderBackground"
+subsystem = "World"
+
+[[function]]
 address = 0x0040e100
 name = "WorldManager_NearestPendingDistance"
 subsystem = "World"

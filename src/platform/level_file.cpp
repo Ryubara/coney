@@ -54,11 +54,11 @@ std::expected<void, Error> readPreinstanceObjectChunk(io::Stream& chunk, const c
     }
     atomic->setTransform(model->frame);
     atomic->unpack();
-    stacks.pushChunk(
-        chunk::ChunkData{.type = world::kLevelModelResult,
-                         .id = header.id,
-                         .bytes = {},
-                         .object = std::make_unique<LevelAtomicObject>(std::move(*atomic), "level model")});
+    stacks.pushChunk(chunk::ChunkData{
+        .type = world::kLevelModelResult,
+        .id = header.id,
+        .bytes = {},
+        .object = std::make_unique<LevelAtomicObject>(std::move(*atomic), model->frame, "level model")});
     return {};
 }
 
@@ -89,11 +89,11 @@ std::expected<void, Error> readSectorBspChunk(io::Stream& chunk, const chunk::Ch
         return std::unexpected(std::move(atomic.error()));
     }
     atomic->unpack();
-    stacks.pushChunk(
-        chunk::ChunkData{.type = world::kLevelWorldResult,
-                         .id = header.id,
-                         .bytes = {},
-                         .object = std::make_unique<LevelAtomicObject>(std::move(*atomic), "level world")});
+    stacks.pushChunk(chunk::ChunkData{
+        .type = world::kLevelWorldResult,
+        .id = header.id,
+        .bytes = {},
+        .object = std::make_unique<LevelAtomicObject>(std::move(*atomic), world::FrameMatrix{}, "level world")});
     return {};
 }
 

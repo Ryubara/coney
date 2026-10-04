@@ -17,6 +17,7 @@
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
 #include "world/debug_camera.h"
+#include "world/level_object.h"
 #include "world/sector_budget.h"
 
 namespace coney::platform {
@@ -36,8 +37,9 @@ struct WorldViewerStats {
 /// level's streamed worlds loaded in the original's order, streamed one decision a frame around a free-flying camera
 /// driven by pad 1, and drawn in the original's world order with the draw distance and fade-in. The free-flying camera
 /// is Coney's debug camera, but it looks through the player camera's lens (camera::kPlayerCameraLens: 65°, near 0.1,
-/// far clip 115, which caps the draw distance). The first step of level loading; there is no level file, collision,
-/// objects or script yet.
+/// far clip 115, which caps the draw distance). For a level with a level file (`<name>.lev`) the level object is
+/// loaded too, and its background (sky, clouds, skyline) and light glows are drawn round the worlds. The first steps
+/// of level loading; there are no objects or script yet.
 ///
 /// Every frame: move the camera (world::DebugCamera); make one streaming decision from the last frame's visibility
 /// (world::updateStreaming); move the draw distance (world::adjustDrawDistance); run the visibility pass; draw. Time is
@@ -57,8 +59,9 @@ class WorldViewerMode final : public GameMode {
 
     /// Loads the worlds `name` stands for (worldNamesFor()) from `wad`, charging `budget` first with the pools a
     /// running game holds before them: the `Global Data Pool` for `warriors.glr` and the `World Level Pool` for
-    /// `<name>.lev`, when those files exist. `print` receives one line per streaming event.
-    /// Everything given must outlive the mode. Fails as worldNamesFor() and WorldSet::load() do.
+    /// `<name>.lev`, when those files exist; then the level file itself, when there is one (loadLevel()). `print`
+    /// receives one line per streaming event. Everything given must outlive the mode. Fails as worldNamesFor(),
+    /// WorldSet::load() and loadLevel() do.
     [[nodiscard]] static std::expected<std::unique_ptr<WorldViewerMode>, Error>
     create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
            std::function<void(std::string_view)> print);
@@ -74,18 +77,21 @@ class WorldViewerMode final : public GameMode {
 
     [[nodiscard]] const WorldViewerStats& stats() const { return m_stats; }
     [[nodiscard]] const WorldSet& worlds() const { return *m_set; }
+    /// The level object, or null for a name without a level file.
+    [[nodiscard]] const world::LevelObject* level() const { return m_level.get(); }
     [[nodiscard]] const world::DebugCamera& camera() const { return m_camera; }
     [[nodiscard]] float drawDistance() const { return m_drawDistance; }
 
   private:
-    WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set, world::SectorBudget& budget, world::Vec3 start,
-                    std::function<void(std::string_view)> print);
+    WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set, std::unique_ptr<world::LevelObject> level,
+                    world::SectorBudget& budget, world::Vec3 start, std::function<void(std::string_view)> print);
 
     // The camera as the frame draws it: pose, view window for the window's shape, clip distances.
     [[nodiscard]] WorldView view() const;
 
     RenderEngine& m_engine;
     std::unique_ptr<WorldSet> m_set;
+    std::unique_ptr<world::LevelObject> m_level; // null without a level file
     world::SectorBudget& m_budget;
     world::DebugCamera m_camera;
     WorldRenderer m_renderer;
