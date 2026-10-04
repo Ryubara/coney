@@ -59,12 +59,12 @@ std::optional<Table::Key> Table::keyOf(const Value& key) {
     case Value::Type::Nil:
         return std::nullopt;
     case Value::Type::Number: {
-        const double number = *key.number();
+        const double number = key.number().value_or(0.0);
         // -0 and 0 are the same key; the hash of a double need not agree.
         return Key(number == 0.0 ? 0.0 : number);
     }
     case Value::Type::String:
-        return Key(std::string(*key.string()));
+        return Key(std::string(key.string().value_or(std::string_view{})));
     case Value::Type::Table:
         return Key(static_cast<const void*>(key.table().get()));
     case Value::Type::Function:

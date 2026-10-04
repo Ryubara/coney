@@ -116,11 +116,16 @@ std::string numberText(double number) { return std::format("{:.16g}", number); }
 
 // Lua's `<` for two numbers or two strings (strings by byte, where Lua 4.0 uses the C locale's collation).
 std::optional<bool> lessThan(const Value& x, const Value& y) {
-    if (x.number() && y.number()) {
-        return *x.number() < *y.number();
+    // Each accessor returns a fresh optional, so bind them before testing and reading.
+    const std::optional<double> xn = x.number();
+    const std::optional<double> yn = y.number();
+    if (xn && yn) {
+        return *xn < *yn;
     }
-    if (x.string() && y.string()) {
-        return *x.string() < *y.string();
+    const std::optional<std::string_view> xs = x.string();
+    const std::optional<std::string_view> ys = y.string();
+    if (xs && ys) {
+        return *xs < *ys;
     }
     return std::nullopt;
 }
@@ -461,21 +466,25 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             }
             const Value y = frame.pop();
             const Value x = frame.pop();
-            if (!x.number() || !y.number()) {
+            const std::optional<double> xn = x.number();
+            const std::optional<double> yn = y.number();
+            if (!xn || !yn) {
                 return error(std::format("arithmetic on a {} and a {}", typeName(x), typeName(y)));
             }
-            frame.stack.emplace_back(arithmetic(in.op, *x.number(), *y.number()));
+            frame.stack.emplace_back(arithmetic(in.op, *xn, *yn));
             break;
         }
-        case Op::AddI:
+        case Op::AddI: {
             if (!frame.has(1)) {
                 return underflow();
             }
-            if (!frame.fromTop(1).number()) {
+            const std::optional<double> n = frame.fromTop(1).number();
+            if (!n) {
                 return error(std::format("arithmetic on a {}", typeName(frame.fromTop(1))));
             }
-            frame.fromTop(1) = Value(*frame.fromTop(1).number() + static_cast<double>(in.s));
+            frame.fromTop(1) = Value(*n + static_cast<double>(in.s));
             break;
+        }
         case Op::Concat: { // the top u values joined into one string
             if (in.u == 0 || !frame.has(in.u)) {
                 return underflow();
@@ -483,10 +492,10 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             std::string joined;
             for (std::size_t i = in.u; i > 0; --i) {
                 const Value& part = frame.fromTop(i);
-                if (part.string()) {
-                    joined += *part.string();
-                } else if (part.number()) {
-                    joined += numberText(*part.number());
+                if (const std::optional<std::string_view> s = part.string()) {
+                    joined += *s;
+                } else if (const std::optional<double> n = part.number()) {
+                    joined += numberText(*n);
                 } else {
                     return error(std::format("attempt to concatenate a {} value", typeName(part)));
                 }
@@ -495,15 +504,17 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             frame.stack.emplace_back(std::move(joined));
             break;
         }
-        case Op::Minus:
+        case Op::Minus: {
             if (!frame.has(1)) {
                 return underflow();
             }
-            if (!frame.fromTop(1).number()) {
+            const std::optional<double> n = frame.fromTop(1).number();
+            if (!n) {
                 return error(std::format("arithmetic on a {}", typeName(frame.fromTop(1))));
             }
-            frame.fromTop(1) = Value(-*frame.fromTop(1).number());
+            frame.fromTop(1) = Value(-*n);
             break;
+        }
         case Op::Not: // nil becomes 1, anything else nil
             if (!frame.has(1)) {
                 return underflow();
@@ -583,13 +594,14 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
             Value& index = frame.fromTop(3);
             const std::optional<double> limit = frame.fromTop(2).number();
             const std::optional<double> step = frame.fromTop(1).number();
-            if (!index.number() || !limit || !step) {
+            const std::optional<double> start = index.number();
+            if (!start || !limit || !step) {
                 return error("`for' values must be numbers");
             }
+            const double at = in.op == Op::ForLoop ? *start + *step : *start;
             if (in.op == Op::ForLoop) {
-                index = Value(*index.number() + *step);
+                index = Value(at);
             }
-            const double at = *index.number();
             const bool done = *step > 0 ? at > *limit : at < *limit;
             // FORPREP jumps past the loop when it is empty; FORLOOP jumps back while it is not done.
             if (done) {

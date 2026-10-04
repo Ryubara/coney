@@ -185,9 +185,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             if (auto value = takeValue(args, i, languageArg, "--language", "en, es, fr, it or de"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
-            const std::optional<Language> language = languageFromCode(*languageArg);
+            // takeValue filled languageArg; value_or keeps the access checked.
+            const std::string code = languageArg.value_or(std::string{});
+            const std::optional<Language> language = languageFromCode(code);
             if (!language) {
-                return invalidArgument(std::format("--language needs en, es, fr, it or de, got \"{}\"", *languageArg));
+                return invalidArgument(std::format("--language needs en, es, fr, it or de, got \"{}\"", code));
             }
             options.language = *language;
         } else if (arg == "--screenshot") {

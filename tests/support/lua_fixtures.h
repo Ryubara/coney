@@ -15,7 +15,7 @@
 namespace coney::test {
 
 /// Lua 4.0 opcodes the tests assemble, by their number in the instruction set.
-enum class LuaOp : std::uint32_t {
+enum class LuaOp : std::uint8_t {
     End = 0,
     Return = 1,
     Call = 2,
