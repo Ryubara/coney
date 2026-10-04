@@ -98,7 +98,7 @@ The top-level directories in `.text` order (from the path strings' order, inferr
 | `Scripting` | `0x00356390`-`0x003865d8` | 1,064 | mostly the Lua bindings around `ScriptLua.inl` |
 | `StringTable` | `0x00386b30`-`0x00386f58` | 2 | |
 | `TaskEngine` | `0x00397a48`-`0x003a8698` | 279 | the 389 KB after it, up to tolua, is unattributed |
-| `World` | `0x0040c7f0`-`0x004123e8` | 55 | |
+| `World` | `0x0040c7f0`-`0x004124f8` | 56 | |
 | `WorldObjects` | `0x00413218`-`0x00417af0` | 107 | |
 | `Warriors` | `0x00417b10`-`0x00424ee8` | 389 | |
 | `Movie` | `0x00429b18`-`0x0042af70` | 10 | |
@@ -370,8 +370,13 @@ compiled out, or reaches the string some other way); its code lies somewhere bet
 | `WorldLevel.cpp` | `0x0040c7f0`-`0x0040c868` | 1 | | `0x0040c7f0` |
 | `WorldManagerLua.cpp` | `0x0040ca18`-`0x0040cc40` | 1 | | `0x0040ca18` (`WaterEffect`, `water_tex`) |
 | `ps2/WorldLevelPS2.cpp` | `0x0040cf40`-`0x0040d088` | 2 | | `0x0040cf80` |
-| `ps2/WorldManagerPS2.cpp` | `0x0040d688`-`0x0040f850` | 11 | | `0x0040d688` (`MemoryPoolHeap`, `Sector Pool`); `0x0040d900` (`MemoryPoolClump`, `warriors.glr`); `0x0040dbb8` (`MemoryPoolClump`, `%s.lev`), +1 more |
-| `ps2/WorldPS2.cpp` | `0x004101f0`-`0x004123e8` | 22 | | `0x00410648` (`MemoryPoolClump`, `%s_sec.wld`); `0x00410b70`; `0x004110c0` (`MemoryPoolClump`, `Sectors%d`), +1 more |
+| `ps2/WorldManagerPS2.cpp` | `0x0040d688`-`0x004101f0` | 13 | | `0x0040d688` (`MemoryPoolHeap`, `Sector Pool`); `0x0040d900` (`MemoryPoolClump`, `warriors.glr`); `0x0040dbb8` (`MemoryPoolClump`, `%s.lev`), +1 more |
+| `ps2/WorldPS2.cpp` | `0x004101f0`-`0x004124f8` | 23 | | `0x00410648` (`MemoryPoolClump`, `%s_sec.wld`); `0x00410b70`; `0x004110c0` (`MemoryPoolClump`, `Sectors%d`), +1 more |
+
+`0x0040f850` and `0x0040f8a0` (the world manager's sector-heap getter and its streaming update, which uses the
+string `0x00588c68` among the file's strings) and `0x004123e8` (it works on the world object's fields, called only
+from `World/ps2/WorldPS2.cpp`) were added to these two files while writing [The streamed world](world.md)
+(inferred).
 
 ### WorldObjects
 
@@ -429,16 +434,16 @@ Bytes of `.text` (4,154,744) and functions (13,789), each counted once, in the f
 | Category | Functions | Bytes | Share of `.text` |
 | --- | --- | --- | --- |
 | Anchors: file confirmed (code) | 302 | 208,296 | 5.0% |
-| File inferred (steps 4 to 6) | 1,744 | 420,792 | 10.1% |
-| Directory inferred (step 7) | 4,316 | 1,062,208 | 25.6% |
+| File inferred (steps 4 to 6) | 1,747 | 423,528 | 10.2% |
+| Directory inferred (step 7) | 4,314 | 1,059,744 | 25.5% |
 | Lua 4.0.1 and tolua | 543 | 94,808 | 2.3% |
 | Other middleware and crt0 (C/C++ runtime, SCE, RenderWare, Bink) | 2,016 | 717,520 | 17.3% |
 | Game link-once code (templates, inlines) | 603 | 115,808 | 2.8% |
-| Unknown | 4,265 | 1,535,304 | 37.0% |
+| Unknown | 4,264 | 1,535,032 | 36.9% |
 
-So 15.1% of `.text` is tied to a named file, 40.7% to at least a directory, and 19.6% is middleware or runtime. Of
+So 15.2% of `.text` is tied to a named file, 40.7% to at least a directory, and 19.6% is middleware or runtime. Of
 the file-level share, 5.1% comes from extending files to their static-init stubs (step 6); without it the attributed
-ranges in the tables cover 416,024 bytes (10.0%). RenderWare alone is 376,960 bytes (9.1%).
+ranges in the tables cover 418,760 bytes (10.1%). RenderWare alone is 376,960 bytes (9.1%).
 
 Most of the unknown share is in a few large stretches between anchored files:
 
@@ -473,8 +478,10 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   (`0x0014bbd8`).
 - **Memory:** `Memory/` at `0x00338420`-`0x0033b1a0`; `Memory/WarriorsMemory.cpp` (`0x0033afe0`) sets up the
   `Level Dynamic & LUA Memory` heap.
-- **Level loading:** `World/ps2/WorldManagerPS2.cpp` (`0x0040d688`: `Sector Pool`; `0x0040d900`: `warriors.glr`,
-  `Global Data`; `0x0040dbb8`: `%s.lev`) and `World/ps2/WorldPS2.cpp` (`0x00410648`: `%s_sec.wld`, `%s_ms%i.sec`).
+- **Level loading:** [Level loading](level-loading.md) and [The streamed world](world.md).
+  `World/ps2/WorldManagerPS2.cpp` (`0x0040d688`: `Sector Pool`; `0x0040d900`: `warriors.glr`, `Global Data`;
+  `0x0040dbb8`: `%s.lev`; `0x0040f8a0`: the streaming update) and `World/ps2/WorldPS2.cpp` (`0x00410648`:
+  `%s_sec.wld`, `%s_ms%i.sec`).
 - **Graphics:** [Graphics device and textures](graphics.md): the RenderWare device in
   `Graphics/Devices/Renderware/DevRWGeneric.cpp` (created by `0x00194488`, vtable `0x00538d78`), its camera wrapper
   (vtable `0x00538f78`), texture dictionaries (`Graphics/Texture.cpp`) and the world streaming loaders in

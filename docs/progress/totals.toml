@@ -27,13 +27,13 @@ bytes = 208296
 key = "inferred-file"
 label = "File inferred"
 kind = "researched"
-bytes = 420792
+bytes = 423528
 
 [[coverage]]
 key = "directory"
 label = "Directory inferred"
 kind = "researched"
-bytes = 1062208
+bytes = 1059744
 
 [[coverage]]
 key = "link-once"
@@ -45,7 +45,7 @@ bytes = 115808
 key = "unknown"
 label = "Unknown"
 kind = "game"
-bytes = 1535304
+bytes = 1535032
 
 [[coverage]]
 key = "lua-tolua"
@@ -143,7 +143,7 @@ ranges = []
 
 [[subsystem]]
 name = "World"
-ranges = [[0x0040c7f0, 0x004123e8]]
+ranges = [[0x0040c7f0, 0x004124f8]]
 
 [[subsystem]]
 name = "WorldObjects"

@@ -43,9 +43,9 @@ Every entry falls into exactly one of these kinds. "Named" counts entries whose 
 | Resource: global (`.glr`) | 2 | 1,677,296 | 1 | Game-wide lists: sounds, music, characters, objects, particles, anims, dependencies |
 | Resource: scene list (`.cnk`) | 1 | 66,400 | 1 | One chunk of type `0x43` "Scene List" |
 | Scene record (`.scn`) | 2,765 | 197,667,392 | 2,760 | Scripted scenes and cutscenes, see [Scene records](#scene-records) |
-| Sector atomics | 1,911 | 310,714,060 | 0 | RenderWare atomics for one level's world sectors, see [Level files](#level-files) |
-| World stream | 159 | 70,177,584 | 0 | `u32 n` + RenderWare texture dictionary + RenderWare world |
-| Stream manifest | 159 | 14,420 | 0 | Sizes of one world stream and its atomics files |
+| Sector atomics (`_ms<i>.sec`) | 1,911 | 310,714,060 | 1,911 | One part of a streamed world: RenderWare atomics for its sectors, see [Level files](#level-files) |
+| World stream (`_sec.wld`) | 159 | 70,177,584 | 159 | `u32 n` + RenderWare texture dictionary + RenderWare world |
+| Stream manifest (`_sec.mem`) | 159 | 14,420 | 159 | Sizes of one world stream and its parts |
 | Lua 4.0 bytecode (`.lua`) | 467 | 10,379,282 | 280 | Game scripts, see [Lua](#lua) |
 | Object list (`_objs.txt`) | 63 | 1,111,944 | 63 | Text: a count, then one `{name {x, y, z ...}}` line per dynamic object or particle emitter; 26 hold only a zero count |
 | Sound bank (`.msb`) | 21 | 27,360,592 | 13 | PS2 ADPCM (VAG) data, no header |
@@ -54,7 +54,7 @@ Every entry falls into exactly one of these kinds. "Named" counts entries whose 
 | Font metrics (`.met`) | 1 | 2,625 | 1 | `cn12.met`: text beginning `METRICS1`, pixel rectangles of the characters 32-126 in `cn12.bmp`; unused by the PS2 code ([GUI](../gui.md#the-metrics1-file)) |
 | Memory card icon (`.ico`) | 1 | 79,128 | 1 | PS2 icon, magic `00 00 01 00` |
 | Bitmap (`.bmp`) | 1 | 98,358 | 1 | `cn12.bmp`: a 256 × 128, 24-bit Windows bitmap (`BM`), the glyphs of `cn12.met`; first counted as a sound bank |
-| **Total** | **10,701** | **1,484,729,244** | **3,997** | The rest of the 1,495,371,776-byte WAD is padding |
+| **Total** | **10,701** | **1,484,729,244** | **6,226** | The rest of the 1,495,371,776-byte WAD is padding |
 
 **Evidence:** inferred. Every entry is assigned by a structural test that must consume the whole entry (the
 container parse below, an exact RenderWare section walk, the Lua header, the `.msd` pair layout); none falls through.
@@ -71,7 +71,7 @@ The entries form two blocks:
   header's `nameHash`; the other 16 are texture dictionaries whose name hash differs. Digits sort before letters, so
   this block is just the start of the one name order below: the 3,599 decimal names are in ascending ASCII order.
 - **Entries 3,615–10,700**: everything else, **sorted by name** in ASCII order of the upper-cased name (so `_`
-  sorts after letters). All 3,997 recovered names in this block are in that order with no exception, which makes
+  sorts after letters). All 6,226 recovered names in this block are in that order with no exception, which makes
   the order a strong filter against false matches when recovering names.
 
 **Evidence:** inferred.
@@ -209,18 +209,17 @@ The name order (above) shows each level as a group of neighbouring entries: `lev
 `level<N>.lua`, sometimes `level<N>main.lua` and `level<N>_strings.lua`, `level<N>_<k>.pak`, `level<N>_objs.txt`,
 and between them the unnamed **streamed world**:
 
-- **Sector atomics** (1,911 entries): `{u32 1, u32 0, u32 0, u32 hash}`, an empty RenderWare texture dictionary,
-  `u32 n`, then `n` times `{u32 sectorIndex, RenderWare atomic (section 0x14)}`. Sector indices rise within a file
-  and the files of a group cover distinct indices.
-- **World stream** (159 entries): `u32 n`, a RenderWare texture dictionary, a RenderWare world (section `0x0B`).
-- **Stream manifest** (159 entries, one just before each world stream): `{u32 worldSize, u32 b, u32 n}` then `n`
-  pairs `{u32 atomicsSize, u32 c}`. `worldSize` equals the size of the following world-stream entry in all 159,
-  `b >= worldSize` in all 159, `n` equals that world stream's leading `u32` in all 159, and 1,535 of the 1,564
-  pairs' first values equal the size of an atomics entry just before the manifest. `b` and `c` are probably
-  buffer sizes (sizes rounded up for loading).
+- **Sector atomics** (1,911 entries, `<world>_ms<i>.sec`): `{u32 1, u32 0, u32 0, u32 crc32(file name)}`, a
+  RenderWare texture dictionary (empty in 411 of the 1,564 parts the game loads), `u32 n`, then `n` times
+  `{u32 sectorIndex, RenderWare atomic (section 0x14)}`.
+- **World stream** (159 entries, `<world>_sec.wld`): `u32 n`, a RenderWare texture dictionary, a RenderWare world
+  (section `0x0B`).
+- **Stream manifest** (159 entries, `<world>_sec.mem`): `{u32 worldSize, u32 worldHeap, u32 n}` then `n` pairs
+  `{u32 partSize, u32 partHeap}`; the second values are the heap sizes the loader creates.
 
-So a level's world is streamed in parts, each part a world stream plus its sector atomics, and the manifest tells
-the loader how much to read. **Evidence:** inferred.
+Every level has two worlds, `<level>s` and `<level>d`; `objarena` has one. The formats, how the game streams the
+parts and the per-level counts are on [The streamed world](../world.md). **Evidence:** confirmed (code) for the
+formats; names and counts from the disc.
 
 ### Scene records {#scene-records}
 
@@ -252,7 +251,7 @@ dictionary (PS2 native textures, platform `6`), `0x10` clump, `0x0B` world, `0x1
 
 ## Names {#names}
 
-3,997 of the 10,701 entry names are recovered (2026-10-04), up from 412. The recovered names themselves stay out
+6,226 of the 10,701 entry names are recovered (2026-10-04), up from 412. The recovered names themselves stay out
 of the repository until it is decided whether a names list may be committed.
 
 | Extension | Names | Kind |
@@ -262,6 +261,7 @@ of the repository until it is decided whether a names list may be committed.
 | `.lua` | 280 | Lua bytecode |
 | `.pak` | 236 | Packs |
 | `.lev` | 64 | Level resources |
+| `_ms<i>.sec`, `_sec.wld`, `_sec.mem` | 1,911 + 159 + 159 | Streamed worlds: parts, world streams, manifests |
 | `_objs.txt` | 63 | Object lists |
 | `.msb`, `.msd` | 13 + 13 | Sound banks and their indexes |
 | `.cnk`, `.glr`, `.ico`, `.met`, `.bmp` | 1 each | Scene list, global resource, memory card icon, font metrics and its bitmap |
@@ -281,17 +281,22 @@ How:
    Rare extensions on unrelated content (several dozen one-off hits such as `.sec` on scene records) were rejected
    this way, as were two hits in entries 0–3,614 (where there is no order to check) whose extension did not
    fit.
+5. **Streamed worlds from the code.** The world loader builds its names from the level record's world name
+   (`<world>s` / `<world>d`, [Level loading](../level-loading.md#worldmanager-loadlevel)) and the format strings
+   `%s_sec.wld`, `%s_sec.mem` and `%s_ms%i.sec`. Trying `level<N>s`, `level<N>d` and every other stem with them
+   names all 2,229 streamed-world entries; together with the earlier names they keep the sorted block in order with
+   no exception.
 
 Entries 0–3,614 are named by number ([above](#layout-of-the-wad)), which the table does not count: 3,599 of them
 have their WAD name, and a readable resource name wherever the resource hash is matched (about 1,170 resource hashes
-in the archive are). What stays unnamed: 16 texture dictionaries of entries 0–3,614, 645 packs, the 2,229
-streamed-world entries (atomics, world streams, manifests), 187 Lua scripts, and the sound banks without an index
-name.
+in the archive are). What stays unnamed: 16 texture dictionaries of entries 0–3,614, 645 packs, 187 Lua scripts,
+and the sound banks without an index name.
 
 Brute force over short suffixes runs into CRC-32's linearity: for names of equal length, the XOR of two hashes
 depends only on the XOR of the names, so a wrong guess that happens to match one entry produces matching variants
 for its same-length neighbours. Several such "families" of matches turned up for the streamed-world entries; they
-show those entries' true names have equal lengths and differ in a few characters, but they are not the names.
+show those entries' true names have equal lengths and differ in a few characters, but they are not the names (the
+real names, found from the code, bear this out: `level51s_ms12.sec` and `level51s_ms13.sec` differ in one character).
 
 ## Coney's implementation
 
@@ -303,10 +308,9 @@ Not started. `coney-tools wad` should classify entries with the structural tests
 These need the code (Ghidra); the data alone cannot settle them.
 
 1. **The chunk loader** is now on [Chunk system](../chunk-system.md): a standalone resource is its flat container
-   and a pack its grouped container, and the loaders read only the counts, chunk types and sizes. Still open: the
-   two pages count differently (881 packs here, 1,259 grouped containers there; 5,127 chunked entries here, 4,246
-   flat plus 1,259 grouped there, with 1,938 header-plus-RenderWare-stream entries such as the sector atomics
-   counted separately). A disc-backed recount with one classifier should settle which entries are which.
+   and a pack its grouped container, and the loaders read only the counts, chunk types and sizes. The two pages'
+   counts are reconciled by one classifier on [Chunk system](../chunk-system.md#container-layout): the extra flat
+   and grouped parses there are world files and chance matches, and this page's kinds stand (answered).
 2. **The chunk-type table's handlers** are documented on [Chunk system](../chunk-system.md#chunk-type-table);
    what remains is which code reads the unused header words (the third and fourth fields).
 3. **The leading `.text` addresses** in fixed-size chunks (`0x0045de40` etc.): vtable or handler pointers from the
@@ -314,10 +318,9 @@ These need the code (Ghidra); the data alone cannot settle them.
 4. **Chunk `0x4c` "Particle Page"** (answered): a sprite sheet, a count and `count` texture rectangles into the
    single texture of the dictionary before it; the full layout, checked on all 1,335 pages, is on
    [GUI](../gui.md#particle-page).
-5. **The streamed world.** `World/ps2/WorldPS2.cpp` reads the world streams (`%s_sec.wld`, `0x00410648`) and the
-   sector atomics (`%s_ms%i.sec`, `0x004114d8`); `%s_sec.mem` is probably the manifest
-   ([Graphics](../graphics.md#loading-textures)). Open: what `%s` is (not `level<N>`: no such name matches), and what
-   the manifest's second values and the atomics file's header hash mean.
+5. **The streamed world** (answered): `%s` is `level<N>s` or `level<N>d` (or `objarena`), the manifest's second
+   values are heap sizes and the atomics header holds the CRC-32 of the file's name; see
+   [The streamed world](../world.md).
 6. **Entries 0–3,614.** Named by the decimal CRC-32 of the resource name (answered above). Open: the 16 texture
    dictionaries whose header hash does not give their WAD name.
 7. **Scene records.** The full layout of headers and segments, and which code streams them (the chunk types

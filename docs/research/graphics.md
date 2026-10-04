@@ -192,8 +192,8 @@ PDS pipelines (id `0x131`, `0x00461340`, then seven pipeline registrations throu
 
 | Id | Attached to | Stream data | Read by | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x3F1` | world sector (32 bytes of plugin data, offset in `0x0050ced0`) | 20 bytes: `u32`, `u32`, 12 bytes | `0x00198e20` | confirmed (code); meaning unknown |
-| `0x3F0` | atomic (16 bytes, offset in `0x0050cd98`) | 12 bytes: three 4-byte values | `0x00192688` | confirmed (code); meaning unknown |
+| `0x3F1` | world sector (32 bytes of plugin data, offset in `0x0050ced0`) | 20 bytes: streamed-sector index, part number, origin of the sector's atomic | `0x00198e20` | confirmed (code); see [The streamed world](world.md#sector-plugin) |
+| `0x3F0` | atomic (16 bytes, offset in `0x0050cd98`) | 12 bytes: two floats for the game's PS2 pipelines, one word | `0x00192688` | confirmed (code); meaning of the values open, see [The streamed world](world.md#atomic-plugin) |
 
 **Disc check (corroboration):** RenderWare extension chunks in the WAD with the `0x1C02000A` stamp: `0x110` (PS2
 sky mipmap value) 148,835; `0x11E` 102,149; `0x3F0` 34,857 (all 12 bytes); `0x120` 19,059; `0x3F1` 16,138 (all
@@ -277,8 +277,10 @@ What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code)
    streaming does not free data the GPU still reads).
 3. **Each viewport** (`0x00156408`): slot `+0x88` positions viewport `i`'s cameras on their part of the screen
    (columns × rows from `0x0050b1a8`/`0x0050b1aa`; one viewport covers the whole screen); lights; the world
-   (`0x0040e8d8`: several `RwCameraBeginUpdate`/`EndUpdate` passes over the sectors, objects and characters, with
-   back-face culling off, Z test and write on and fog on); resources; particles; slot `+0x118` (heat distortion).
+   (`0x0040e8d8`: several `RwCameraBeginUpdate`/`EndUpdate` passes: the level world with culling off, the streamed
+   world's sectors with back-face culling, objects, the detail world, water, translucent objects; Z test and write
+   on and fog on except where stated; the full order is on [The streamed world](world.md#a-frame)); resources;
+   particles; slot `+0x118` (heat distortion).
 4. **Overlays** (`0x00156658`): screen effects (slot `+0x128`), the HUD, subtitles and the front-end layers, each
    followed by the overlay pass `0x00185d20` ([2D drawing](#2d-drawing)).
 5. **Present** (slot `+0x30`), then file streaming.
@@ -286,7 +288,8 @@ What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code)
 The world pass also adjusts the **draw distance** to the measured frame rate: while the rate (`0x0050c680`) is below
 29.5 (24.5 when flag `0x02` is set) the far clip shrinks, down to 60 − 10 × viewports, and otherwise grows back
 toward the camera's own far clip (`0x0040e8d8`, confirmed (code); that `0x0050c680` is the debug counter's frames per
-second is inferred).
+second is inferred). While the rate is good, the draw distance instead follows the distance of the nearest scenery
+that is not loaded yet, so missing sectors stay beyond the far clip ([The streamed world](world.md#a-frame)).
 
 ### Presenting and the frame rate {#frame-rate}
 
@@ -326,8 +329,8 @@ custom stream, `0x00197df0`: close, read, write and skip functions over a game s
 | --- | --- | --- | --- |
 | chunk `0x0B` | `0x001906e8` | find section `0x16`, read the dictionary, push it as chunk `0x0B` | confirmed (code) |
 | chunk `0x2A` | `0x00190770` | device slot `+0x150` reads it (the stream object is allocated in the `Level Dynamic & LUA Pool` heap, the dictionary in the current heap); make it current and at once current = none; push as `0x0B` | confirmed (code) |
-| world stream `%s_sec.wld` | `0x00410648` → `0x00410a50` | `u32` count, then a dictionary (made current and back to none), then the world (section `0x0B`) | confirmed (code) |
-| sector atomics `%s_ms%i.sec` | `0x004114d8` → `0x004110c0` | skip the 16-byte header, a dictionary (current, then none), `u32 n`, then `n` × `{u32 sector, atomic (section 0x14)}`, each atomic placed in its sector | confirmed (code) |
+| world stream `%s_sec.wld` | `0x00410648` → `0x00410a50` | `u32` part count, then a dictionary (made current and back to none), then the world (section `0x0B`) | confirmed (code) |
+| sector atomics (world parts) `%s_ms%i.sec` | `0x004114d8` → `0x004110c0` | skip the 16-byte header, a dictionary (current, then none), `u32 n`, then `n` × `{u32 sector, atomic (section 0x14)}`, each atomic placed in its sector | confirmed (code); formats on [The streamed world](world.md) |
 
 The world reader also sets RenderWare's sector render callback (`0x00411b20`) and checks every atomic's textures
 (`0x00198190`, which prints "Potential Crash from Missing Texture" for a missing one).
@@ -335,7 +338,8 @@ The world reader also sets RenderWare's sector render callback (`0x00411b20`) an
 **The 1,911 WAD entries that are a 16-byte header `{1, 0, 0, id}` followed by a RenderWare stream are the sector
 atomics files**, read by `0x004114d8`/`0x004110c0` in `World/ps2/WorldPS2.cpp`. They are not chunk containers.
 Confirmed (code) for the reader; the match to the entries is a disc check (corroboration): exactly 1,911 entries start
-with `{1, 0, 0, id}` and a `0x16` section stamped `0x1C02000A`.
+with `{1, 0, 0, id}` and a `0x16` section stamped `0x1C02000A`, and all 1,911 are now named `<world>_ms<i>.sec`, with
+`id` the CRC-32 of that name ([The streamed world](world.md#file-names)).
 
 Each texture dictionary loaded in a resource pack has a holder object (`Graphics/Texture.cpp`, vtable `0x00538d60`)
 that, when the resource is freed, destroys every texture in the dictionary, the dictionary and the resource's heap
@@ -465,7 +469,8 @@ What is still to do:
   per resource; texture lookup by name across all loaded dictionaries, newest first (check the order), no file
   fallback.
 - PS2 native textures: 4- and 8-bit palettised, 32-bit palettes, power-of-two sizes up to 512; check alpha scaling.
-- Readers (or skippers) for the game's plugin data `0x3F0` (atomic, 12 bytes) and `0x3F1` (sector, 20 bytes).
+- Readers for the game's plugin data `0x3F0` (atomic, 12 bytes) and `0x3F1` (sector, 20 bytes): the streamed world
+  needs both ([The streamed world](world.md#coneys-implementation)).
 - Sprites: GUI coordinates `[0, 1]²` mapped as in [2D drawing](#2d-drawing), drawn after the 3D scene with depth test
   and write off and source-alpha blending.
 - The legal screen as the first screen: resource `legal_screen` (WAD name `863681355`), its texture's top 512 × 384
@@ -478,7 +483,8 @@ What is still to do:
   screenshot of the legal screen would settle it.
 - **Mode flag `0x02`.** Read as PAL from the 24.5 frames-a-second threshold and the `_euro` screen; nothing that sets
   it has been found (speculative).
-- **What the game plugins hold:** `0x3F0` (atomic, three values) and `0x3F1` (sector, two words and 12 bytes).
+- **What the game plugins hold** (answered for `0x3F1`): see [The streamed world](world.md#sector-plugin). For `0x3F0`
+  the two floats feed the game's PS2 pipelines; what they mean is open ([The streamed world](world.md#open-questions)).
 - **The overlay world** (`ResourceManager + 0x9034`) rendered before the sprites. The sort order of the queued
   PTanks is answered on [GUI](gui.md#draw-order): ascending key; that the 2D key is the creation depth is inferred.
 - **librw and PS2 alpha:** does librw's PS2 native texture reader scale palette alpha from 0-128 to 0-255?

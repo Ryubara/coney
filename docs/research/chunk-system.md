@@ -208,9 +208,28 @@ dictionary) or `0x01` (RenderWare's struct), with the RenderWare version stamp `
 third word would be. They happen to parse as one chunk of type `0x16` or `0x01`. 1,911 of them are the streamed
 world's sector-atomics files (`%s_ms%i.sec`), which the world loader reads directly as RenderWare streams, skipping
 the 16-byte header (`0x004114d8`/`0x004110c0`, `World/ps2/WorldPS2.cpp`; see
-[Graphics](graphics.md#loading-textures)); a stricter check finds exactly 1,911 such entries, so the other 27 counted
-here are not identified. Of the 1,406 entries that do not parse flat, 1,259 parse as grouped containers. The other
-3,111 entries are not containers (Lua bytecode, text and the other kinds on [WARRIORS.DIR / .WAD](formats/wad-dir.md)).
+[Graphics](graphics.md#loading-textures)); a stricter check finds exactly 1,911 such entries. Of the 1,406 entries
+that do not parse flat, 1,259 parse as grouped containers. The other 3,111 entries are not containers (Lua bytecode,
+text and the other kinds on [WARRIORS.DIR / .WAD](formats/wad-dir.md)).
+
+**One classifier (2026-10-04)** settles these counts against [WAD contents](formats/wad-contents.md#kinds-of-entry).
+Each entry was first given its kind from its name or its structure (streamed-world files by their now-known names,
+packs by the marker `0xDE686795` plus a grouped parse, resources by an exact flat parse), and the loose parses above
+were then run over every kind:
+
+| Kind | Entries | Also parses flat (loosely) | Also parses grouped |
+| --- | ---: | ---: | ---: |
+| standalone resource (exact flat container) | 4,246 | 4,246 | 56 |
+| pack (`.pak`) | 881 | 1 | 881 |
+| world part (`_ms<i>.sec`) | 1,911 | 1,911 | 0 |
+| world stream (`_sec.wld`) | 159 | 26 | 26 |
+| world manifest (`_sec.mem`) | 159 | 0 | 0 |
+| everything else | 3,345 | 0 | 379 |
+
+So the 6,184 flat parses are 4,246 resources, 1,911 world parts, 26 world streams and 1 pack; the 1,938 that are not
+exact are the last three groups (the "other 27" are 26 world streams, whose leading part count looks like a chunk
+count, and 1 pack). The 1,259 grouped parses that are not flat are 880 packs and 379 entries of other kinds that
+parse by chance. Only the marker, or the caller, tells a pack from a flat container reliably.
 
 ### The two stacks {#stacks}
 
@@ -338,8 +357,11 @@ TODO for the analysts, found while implementing:
 
 - What the original does with a `readFromStream` handler that reads past its chunk (`h.size - consumed` is then
   negative); Coney fails the load.
-- Which caller decides that an entry is grouped: Coney's choice by the package marker, with a flat-then-grouped
-  fallback, is a heuristic from the data.
+- Which caller decides that an entry is grouped (answered): the caller, by the kind of file. The resource manager
+  reads `.pak` files grouped (`0x00187c38`); `WorldLevel_Load` (`0x0040c688`, `.lev`) and the `WorldManager`
+  constructor (`0x0040d900`, `warriors.glr`) read flat. The world files are not chunk containers at all
+  ([The streamed world](world.md)). Coney's choice by the package marker finds the same 881 packs (see the
+  classifier above).
 - Names for the two texture chunk readers: Coney's `@orig` tags call them `ChunkReader_TextureDictionaryTid`
   (`0x001906e8`) and `ChunkReader_RenderwareTextureDic` (`0x00190770`), after their chunk types, until the research
   database gives them names.
@@ -347,8 +369,8 @@ TODO for the analysts, found while implementing:
 ## Open questions
 
 - What the container header's fourth word and the chunk header's fourth word (`id`) mean; neither loader reads them.
-- What the sector-atomics header's `id` is, and what the 27 entries counted above besides the 1,911 sector-atomics
-  files are.
+- What the sector-atomics header's `id` is (answered): the CRC-32 of the file's own name, `<world>_ms<i>.sec`; the 27
+  other entries are 26 world streams and a pack ([above](#container-layout)).
 - Why 147 container-like entries parse neither flat nor grouped.
 - The `GroupHeader`'s second and third words.
 - Which file holds the CRC helpers (`0x00143f68`-`0x00144050`), the unit that ends at the stub `0x00144080`.

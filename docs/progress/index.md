@@ -24,7 +24,7 @@ at the top of the repository's `README.md`.
 | | Progress | Share |
 | --- | --- | --- |
 | **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% of the game's own code (3,328 of 3,342,408 bytes, 23 functions) |
-| **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,296 bytes) |
+| **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,568 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
 1 reimplemented function(s) have no size yet and add no bytes.
@@ -68,22 +68,22 @@ at the top of the repository's `README.md`.
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 23,544 |
+| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 23,816 |
 | `WorldObjects` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 18,648 |
 | `Warriors` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 8 | 1,541,888 |
+| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | <0.1% | 8 | 1,541,616 |
 
 ## Research coverage
 
 | Category | Share of `.text` | | Bytes |
 | --- | --- | --- | --- |
 | File confirmed (code): anchors | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 208,296 |
-| File inferred | `██░░░░░░░░░░░░░░░░░░` | 10.1% | 420,792 |
-| Directory inferred | `█████▏░░░░░░░░░░░░░░` | 25.6% | 1,062,208 |
+| File inferred | `██░░░░░░░░░░░░░░░░░░` | 10.2% | 423,528 |
+| Directory inferred | `█████▏░░░░░░░░░░░░░░` | 25.5% | 1,059,744 |
 | Game link-once code (templates, inlines) | `▌░░░░░░░░░░░░░░░░░░░` | 2.8% | 115,808 |
-| Unknown | `███████▍░░░░░░░░░░░░` | 37.0% | 1,535,304 |
+| Unknown | `███████▍░░░░░░░░░░░░` | 36.9% | 1,535,032 |
 | Middleware: Lua 4.0.1 and tolua | `▌░░░░░░░░░░░░░░░░░░░` | 2.3% | 94,808 |
 | Middleware: C/C++ runtimes, SCE, RenderWare, Bink, crt0 | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 717,520 |
 

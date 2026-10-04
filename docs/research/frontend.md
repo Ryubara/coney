@@ -90,7 +90,8 @@ Derived fields after the 0x20-byte base, confirmed (code) at `0x00159a58`:
 (`W_GameState + 0x56d4`) and the current index at `W_GameState + 0x56dc` (16 bits). The records are filled from Lua:
 the binding `CfgLevelName` (`0x0036b220`) passes 18 arguments to `0x0041f118`, which writes record `id`: `+0x00` id,
 `+0x04`, `+0x08`, `+0x0c` (byte), `+0x0d` flags (bit 0, 1, 2 from three booleans), `+0x10`, `+0x14` the level name
-(15 characters), `+0x24` a second name (20), `+0x39` a third (15), `+0x49` a fourth (31), `+0x6c`-`+0x80` five more
+(15 characters), `+0x24` a second name (20), `+0x39` a third (15, the streamed world's name, see
+[Level loading](level-loading.md#the-level-record)), `+0x49` a fourth (31), `+0x6c`-`+0x80` five more
 values. Confirmed (code) for the layout; what the fields mean beyond the name is open.
 
 **Disc check (corroboration):** `config_preload3.lua` calls `CfgLevelName`, and its `levelNames` list begins with
@@ -222,10 +223,12 @@ the game state, cameras, screen effects and actionables; reset the save buffers;
 reset the AI, path and character tables; create the task-manager objects `load` and `Wind_Manager`; reset the HUD;
 the script system's level entry point (slot `+0x24` with the level name); read the object list (`%s_objs.txt`, or
 `../levels/%s/%s_objs.txt` on the host file system); add the `CrimeScene` and `GangCall` objects; load the level's
-**dependency list** (`0x00178bc8` with the CRC-32 of the level name, blocking); set the draw distance (30,000, or
-15,000 for level ids below 101) and preload the world around the camera; start the level's music (or the track
-`sound` when the level's is `none`); flush the file manager; play the intro movie `L%d_IN` when the level record's
-flag `0x02` is set and fewer than two players play; call a pending Lua function (`0x005e6d88`) if one is set.
+**dependency list** (`0x00178bc8` with the CRC-32 of the level name, blocking); preload the section's pack and the
+world around the camera, for at most 30,000 ms (15,000 ms when the record's `+0x04` is below 101); start the level's
+music (or the track `sound` when the level's is `none`); flush the file manager; play the intro movie `L%d_IN` when
+the level record's flag `0x02` is set and this is the level's first section (`W_GameState + 0x33a` below 2, earlier
+read here as a player count); call a pending Lua function (`0x005e6d88`) if one is set. The full order, the memory it
+uses and what each step loads are on [Level loading](level-loading.md#initlevel).
 
 ### Input on the front end {#input}
 
@@ -396,7 +399,8 @@ What the implementer needs:
   decoder for `config_strings_*.lua` (the entries' order in the `GSTRING.HUD` table gives the id; a string that
   occurs twice is stored once among the constants, so the constants alone do not give the order).
 - **`InitLevel` details**: what the script system's slot `+0x24` loads for a level (which `.lua` files), and the
-  meaning of the level record's fields.
+  meaning of the remaining level record fields (the ones known are on
+  [Level loading](level-loading.md#the-level-record)).
 - **The device flag `0x02`** hides `PM_Extras` and selects other layouts; it is still unidentified (see
   [Graphics](graphics.md#open-questions)).
 - **Script system slots** used here are named by their use only: `+0x44` run a script file, `+0x4c` find a function

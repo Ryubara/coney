@@ -70,6 +70,8 @@ nav:
           - Graphics device and textures: research/graphics.md
           - Start-up and the front end: research/frontend.md
           - GUI, sprite sheets and text: research/gui.md
+          - Level loading: research/level-loading.md
+          - The streamed world: research/world.md
       - File formats:
           - WARRIORS.DIR / .WAD: research/formats/wad-dir.md
           - WAD contents: research/formats/wad-contents.md

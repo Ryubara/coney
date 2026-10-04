@@ -28,7 +28,7 @@ so it is not counted.
 | | Progress | Share |
 | --- | --- | --- |
 | **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% of the game's own code (3,328 of 3,342,408 bytes, 23 functions) |
-| **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,296 bytes) |
+| **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,568 bytes) |
 | **[Milestones](docs/roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
 Per subsystem, the research coverage, the middleware and how it is all measured: [Progress](docs/progress/index.md).

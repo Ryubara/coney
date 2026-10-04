@@ -157,7 +157,8 @@ Confirmed (code) at `0x001446d0`, in this order:
 3. **`Game_InitializeSubsystems()`** (below).
 4. Clear the "no controller" flag (`0x005e5580 = 0`).
 5. **Load `level1`, header only**: `WorldManager::LoadLevel(world, "level1", 1)` (`0x0040dbb8`). The third argument
-   skips the sector data (`%ss_sec.wld` and friends), so only `level1.lev` is loaded into a `World Level Pool` sized
+   skips the streamed worlds (`<world>s_sec.wld` and the rest, [Level loading](level-loading.md#worldmanager-loadlevel)),
+   so only `level1.lev` is loaded into a `World Level Pool` sized
    at 103% of the file, at least 256 KB (confirmed (code)). Its purpose here is inferred: the intro movie `L1_IN`
    needs level 1's subtitle data.
 6. With the `Level Dynamic & LUA Pool` heap current: subtitle system setup (`0x001cabc0` on the object at
@@ -208,7 +209,7 @@ manager's current pool at the time. Confirmed (code) for the order and sizes; ro
 | 18 | `0x00306520`, `0x00321828` | reset two tables in the unattributed `Human/` region |
 | 19 | `0x0018ba10` | `ScreenEffectsManager` |
 | 20 | `0x00417b10` | `W_ActionableManager` |
-| 21 | `0x0040d688` | **sector heaps**: `Sector Pool` = the largest free block minus 128 KB, then `Sector Pool 2` = what is left minus 128 KB (at least 4 KB) |
+| 21 | `0x0040d688` | **sector heaps**: `Sector Pool` = the largest free block minus 128 KB, then `Sector Pool 2` = what is left minus 128 KB (at least 4 KB); every level's data lives in the `Sector Pool` ([Level loading](level-loading.md#memory)) |
 | 22 | `0x00184918` | `ResourceManager` (`global.pak`) → `0x0050cd4c` |
 | 23 | `0x00293840` | resets AI/character tables in the unattributed `Human/` region |
 | 24 | alloc `W_GameState` (0x57c0) | → `0x0051489c` |
