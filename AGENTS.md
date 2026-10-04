@@ -51,6 +51,7 @@ why in code comments. `HANDOFF.md` holds only the current state of the work (loc
   `platform`, `tools`, `research`, `agents`, `tests`, `legal`, `docs` (list and meanings:
   `.github/commit-conventions.json`, which CI checks PR titles against).
 - A body says what changed for a user or developer and why. An agent ends the message with
-  `Co-Authored-By: <model name>`, with no email address anywhere in the message.
+  `Co-Authored-By: <model name> <its noreply address>` (Claude: `Claude Opus 5.5 <noreply@anthropic.com>`); no
+  other email address appears in a message.
 - Work happens on branches; before a push the branch is squashed into feature-sized commits. Only `main` and
   release branches are pushed.

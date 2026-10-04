@@ -21,8 +21,9 @@ Get the messages with `git log --format=%B <base>..<tip>`.
   agent name.
 - [ ] **A breaking change** to a public interface ends the title with `(BREAKING)` and says what breaks in the body.
 - [ ] **The body** says what changed for a user or developer and why, wrapped at 72 columns.
-- [ ] **Agent-written work** ends with `Co-Authored-By: <model name>`. There is **no email address anywhere in the
-  message**, and no personal data or machine path.
+- [ ] **Agent-written work** ends with `Co-Authored-By: <model name> <its noreply address>` (Claude:
+  `Claude Opus 5.5 <noreply@anthropic.com>`). There is **no other email address in the message**, and no personal
+  data or machine path.
 - [ ] **No game data and no files that should not be tracked** (scratch output, worktrees, local config,
   `HANDOFF.md`) in the diff: list the files with `git show --stat`.
 - [ ] **Every commit builds and passes the checks** (`mkdocs build --strict`, the engine build and tests, the
@@ -37,6 +38,6 @@ Get the messages with `git log --format=%B <base>..<tip>`.
 ## Severity examples
 
 - **Critical:** a commit that does not build or fails the checks; game data in a commit.
-- **Important:** a title outside the areas, or over 72 characters; an email address; a
-  fix-of-a-fix left unsquashed.
+- **Important:** a title outside the areas, or over 72 characters; an email address other than the agent's noreply
+  one; a fix-of-a-fix left unsquashed.
 - **Minor:** a body wrapped past 72 columns; a body that is vague about why.

@@ -73,15 +73,17 @@ Changes:
 - LEGAL.md: describe the agent trailer
 - AGENTS.md: point at the rule
 
-Co-Authored-By: Claude Opus 5.5
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
 ## Agents' commits
 
-A commit an AI agent wrote names the agent in a trailer, using the model's name and no email address:
+A commit an AI agent wrote names the agent in a trailer: the model's name and the vendor's noreply address, and no
+other email address:
 
 ```text
-Co-Authored-By: <model name>
+Co-Authored-By: <model name> <its noreply address>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
 The person who submits or merges the work answers for it. The full rule is in [LEGAL.md](LEGAL.md#provenance).

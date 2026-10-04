@@ -50,8 +50,9 @@ By contributing you agree that:
 - it contains no game data ([No game data](#no-game-data));
 - it respects the clean room ([Clean room](#clean-room)).
 
-A commit an AI agent writes names the agent in a `Co-Authored-By:` line: the model's name only, never an email
-address. The maintainer who merges the work answers for it.
+A commit an AI agent writes names the agent in a `Co-Authored-By:` line: the model's name and the vendor's noreply
+address (for Claude, `<noreply@anthropic.com>`), never a personal email address. The maintainer who merges the
+work answers for it.
 
 ## Trademarks
 

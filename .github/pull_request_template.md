@@ -6,7 +6,8 @@
 ## Checklist
 
 - [ ] Title follows `area: Verb the rest` (AGENTS.md, Commits and GitHub)
-- [ ] Agent-written commits name the model in `Co-Authored-By: <model name>`, with no email address
+- [ ] Agent-written commits name the model in `Co-Authored-By: <model name> <its noreply address>`, with no
+  other email address
 - [ ] No game data, extracted files or dumps (LEGAL.md)
 - [ ] Engine code written from docs/research, not from decompiler output (LEGAL.md#clean-room)
 - [ ] Docs and comments updated; `mkdocs build --strict` passes
