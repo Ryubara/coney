@@ -64,6 +64,7 @@ nav:
       - Name hashing (CRC-32): research/name-hash.md
       - File formats:
           - WARRIORS.DIR / .WAD: research/formats/wad-dir.md
+          - WAD contents: research/formats/wad-contents.md
   - Guides:
       - Building and testing: guides/building.md
       - Local workspace: guides/workspace.md

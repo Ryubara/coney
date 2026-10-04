@@ -46,21 +46,14 @@ DIR:  u32 count (=10701); u8 pad[12];
       struct { u32 wadOffset; u32 size; u32 nameHash; } entries[count];   // sorted by offset, 2048-aligned
 ```
 
-16 + 10701×12 = 128,428 = file size exactly. Names are stored only as hashes. Not CRC32/FNV/djb/sdbm/OAAT of bare
-filenames → get the hash from `DVDWadIndexPS2.cpp` / `RockWadIndexPS2.cpp` code (TODO).
+16 + 10701×12 = 128,428 = file size exactly. Names are stored only as hashes: CRC-32 of the lowercased
+`./ee_files/<name>` path, see [Name hashing](name-hash.md) and [WARRIORS.DIR / .WAD](formats/wad-dir.md).
 
-Entry content by leading bytes (counts of 10,701):
-
-| Count | Lead | Guess |
-| --- | --- | --- |
-| 4771 | `01 00 00 00`, size, 0, ? | **Texture dictionary**: `{u32 type=1, u32 size, u32 0, u32 ?}` → inner chunk `0x2A` (same header) → RW stream `0x16` rwID_TEXDICTIONARY, RW version stamp `0x1C02000A`, PS2-native palettized textures (librw can read these) |
-| 1461 | `02 00 00 00` … | chunk container type 2 (larger, ~256 KB) |
-| 467 | `1B 4C 75 61 40` | **Compiled Lua 4.0 bytecode** — game scripts; decompilable with a Lua 4.0 decompiler. Source names stripped (`=(none)`) |
-| ~600 | types 3–0x46 | other chunk types |
-| ~200 | `<size> 00 00 00 00 <ascii name>` | named records, e.g. `gen_cop0`, `l14_l1_0`, `cam_audi` (likely anim/cutscene data) |
-| 26 | `0\r\n` | tiny text |
-| 18 | `PI\0\0` | ? |
-| 13+5 | `24`/`1E 00 00 00 16 00 00 00 … 0A 00 02 1C` | RenderWare binary stream (version-tagged), likely world/BSP |
+What the entries are is surveyed on [WAD contents](formats/wad-contents.md). In short: about half of the archive
+(5,127 entries) uses one chunk container of packs, resources and typed chunks, holding RenderWare texture
+dictionaries, models and worlds, animations, characters and level data; 2,765 entries are scene records, 2,229 are
+a level's streamed world (RenderWare atomics, worlds and their manifests), 467 are Lua 4.0 bytecode, and the rest are
+sound banks, object lists and a few singletons.
 
 ## Implications for Coney
 

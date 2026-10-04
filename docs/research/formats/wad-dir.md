@@ -38,12 +38,15 @@ The folder is flat: there are no subdirectories under `ee_files/`.
 
 Example: `./ee_files/global.lua` → `0x7e23a6f2`.
 
-**Recovered names:** 412 of 10,701 so far (2026-10-04), from strings in the ELF and inside WAD files.
+**Recovered names:** 3,990 of 10,701 so far (2026-10-04), from strings in the ELF and inside WAD files, the names
+scene records carry, and level-number patterns; how, and which kinds are still unnamed, is in
+[WAD contents](wad-contents.md#names). Entries from index 3,615 on are stored in ASCII order of the upper-cased
+name, which rules out chance matches.
 
 ## Entry contents
 
-See [Recon](../overview.md#warriorsdir-warriorswad) for the first classification by leading bytes.
-Per-type format pages will be added as each type is decoded.
+[WAD contents](wad-contents.md) classifies every entry and describes the chunk container most of them use (packs,
+resources and typed chunks). Per-type format pages will be added as each type is decoded.
 
 ## Coney's implementation
 
@@ -63,5 +66,7 @@ the end of the WAD; the game itself does neither check as far as these pages rec
   game read any file from a subdirectory? The ISO reader only reads the root directory.
 - Do names ever hash without the `./ee_files/` prefix, for example names built by other callers of the hash? The
   recovery tries both forms, but this page only documents the prefixed one.
-- Why do roughly 96% of the entries have no name in any string on the disc? Are the names built at run time
-  (for example from a number or a level name), or stored in a form the string scan does not see?
+- Why do many entries have no name in any string on the disc? The [WAD contents](wad-contents.md#names) survey
+  recovers 3,990 by also using scene records' own names, level-number patterns and the archive's name order (not
+  yet in `coney-tools wad names`); the rest, notably the streamed world and entries 0-3,614, probably have names
+  built at run time.
