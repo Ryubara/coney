@@ -65,7 +65,11 @@ Every entry starts on a 2,048-byte boundary and the gap to the next entry is les
 The entries form two blocks:
 
 - **Entries 0–3,614**: 3,615 resources (1,509 texture dictionaries, 1,324 models, 576 texture dictionaries with a
-  `0x4c` chunk, 153 models with bone offsets and 53 characters), in an order not yet explained. None is named yet.
+  `0x4c` chunk, 153 models with bone offsets and 53 characters). Their WAD names are **decimal numbers**: the
+  CRC-32 of the resource's name, printed with `%u` (the code that loads the legal screen builds its file name this
+  way, `0x00159c08`; see [Graphics](../graphics.md#first-screen)). For 3,599 of the 3,615 the number is the resource
+  header's `nameHash`; the other 16 are texture dictionaries whose name hash differs. Digits sort before letters, so
+  this block is just the start of the one name order below: the 3,599 decimal names are in ascending ASCII order.
 - **Entries 3,615–10,700**: everything else, **sorted by name** in ASCII order of the upper-cased name (so `_`
   sorts after letters). All 3,990 recovered names in this block are in that order with no exception, which makes
   the order a strong filter against false matches when recovering names.
@@ -278,11 +282,11 @@ How:
    this way, as were two hits in entries 0–3,614 (where there is no order to check) whose extension did not
    fit.
 
-What stays unnamed: the 3,615 models, textures and characters of entries 0–3,614, 645 packs, the 2,229
+Entries 0–3,614 are named by number ([above](#layout-of-the-wad)), which the table does not count: 3,599 of them
+have their WAD name, and a readable resource name wherever the resource hash is matched (about 1,170 resource hashes
+in the archive are). What stays unnamed: 16 texture dictionaries of entries 0–3,614, 645 packs, the 2,229
 streamed-world entries (atomics, world streams, manifests), 192 Lua scripts, and the sound banks without an index
-name. The resource hashes already give names for about 1,170 resources inside the archive; turning those into WAD
-names needs the extension scheme for models and texture dictionaries, which the code that builds these names will
-show.
+name.
 
 Brute force over short suffixes runs into CRC-32's linearity: for names of equal length, the XOR of two hashes
 depends only on the XOR of the names, so a wrong guess that happens to match one entry produces matching variants
@@ -307,13 +311,15 @@ These need the code (Ghidra); the data alone cannot settle them.
    what remains is which code reads the unused header words (the third and fourth fields).
 3. **The leading `.text` addresses** in fixed-size chunks (`0x0045de40` etc.): vtable or handler pointers from the
    build, fixed up on load, or unused?
-4. **Chunk `0x4c` "Particle Page"** sits beside texture dictionaries that look like screens and screenshots: what
-   does the code use it for?
-5. **The streamed world.** Which code reads the manifests, world streams and sector atomics, how it names them
-   (their names would unlock 2,229 entries), and what the manifest's second values and the atomics file's header
-   hash mean.
-6. **Entries 0–3,614.** Why they sit before the sorted block, and how their names are built (resource names
-   without an extension are known for many of them; the extension or suffix is not).
+4. **Chunk `0x4c` "Particle Page"** is a sprite sheet: rectangles of texture coordinates into the dictionary's
+   texture, drawn as sprites by the front end and the HUD ([Graphics](../graphics.md#particle-pages)). Its full
+   layout is still open.
+5. **The streamed world.** `World/ps2/WorldPS2.cpp` reads the world streams (`%s_sec.wld`, `0x00410648`) and the
+   sector atomics (`%s_ms%i.sec`, `0x004114d8`); `%s_sec.mem` is probably the manifest
+   ([Graphics](../graphics.md#loading-textures)). Open: what `%s` is (not `level<N>`: no such name matches), and what
+   the manifest's second values and the atomics file's header hash mean.
+6. **Entries 0–3,614.** Named by the decimal CRC-32 of the resource name (answered above). Open: the 16 texture
+   dictionaries whose header hash does not give their WAD name.
 7. **Scene records.** The full layout of headers and segments, and which code streams them (the chunk types
    `0x38`–`0x3d` named "Scene ..." do not occur in the WAD, so scene data may use its own reader).
 8. **Sound banks.** How `.msd` hashes are formed and which code (or the IOP driver) plays `.msb` data.
