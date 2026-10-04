@@ -28,6 +28,9 @@ struct Options {
     /// `--view-txd`: a WAD entry (a name or a `0x` hash) whose texture dictionaries the viewer shows. Requires
     /// discPath; cannot be combined with `--load`.
     std::optional<std::string> viewTxd;
+    /// `--view-sheet`: a sprite sheet to show, by resource name (`menu_system`) or as a WAD entry (a name or a `0x`
+    /// hash). Requires discPath; cannot be combined with `--load` or `--view-txd`.
+    std::optional<std::string> viewSheet;
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;

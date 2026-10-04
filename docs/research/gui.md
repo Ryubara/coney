@@ -323,17 +323,35 @@ way round; 1,328 have `firstGlyph` -1. The table in `warriors.glr` has 576 recor
 whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 are the CRC-32s of `part_page0`,
 `part_page1`, `menu_system`, `part_fire`, `lighting`, `hud_minigames`, `big_font` and `legal_screen`, as above.
 
+- **Sprite batches** (`src/graphics/sprite_batch.h`, `SpriteBatch`): a sheet, a capacity and a depth;
+  `addSprite` (`0x00182de0`) appends a [sprite record](#sprite-record) of format 0 (position in overlay-camera space,
+  size, texture rectangle, colour) and drops it past the capacity, returning false; `render` (`0x00197168`) projects
+  each sprite through the overlay camera ([Graphics](graphics.md#coneys-implementation)), centred on its position,
+  and draws the batch as one call with the sheet's texture and source-alpha blending. The largest count seen is kept
+  as at `+0x74`.
+- **The 2D pass** (`OverlayPass`): batches queued for the frame, drawn in [ascending key](#draw-order) (the depth
+  by default), then every batch and the queue emptied (`0x00185d20`, the comparator `0x00184890`, `0x00185cc8`).
+  Coney's choices: batches with equal keys keep the order they were queued in (the original's `qsort` promises no
+  order); batches are queued by their owner, where the original collects them by rendering its overlay world; only
+  format 0 exists.
+- `coney --disc <disc> --view-sheet <sheet>` lays a sheet's rectangles out in a grid and draws them as sprites
+  through a batch and the 2D pass ([Building and testing](../guides/building.md#run-coney)): `menu_system` (6
+  rectangles over a 512 × 256 texture) and `big_font` (262 glyphs) show correctly on the NTSC-U disc.
+
 TODO for the analysts, found while implementing:
 
+- **Sprite colours:** are the colours `Instance_AddSprite` copies in the GS range (128 = full intensity and opaque,
+  as the shadow's alpha × 128/255 suggests) or in RenderWare's 0-255? Coney takes 0-255 (255 opaque) for now.
+- Names for the batch functions: the `@orig` tags call `0x00184890` `ResourceMgr_CompareOverlayKeys` and
+  `0x00185cc8` `ResourceMgr_EmptyInstances` until the research database names them.
 - Names for the sheet functions: the `@orig` tags call them `ChunkLoaded_ParticlePage` (`0x00181b20`),
   `ChunkLoaded_ParticlePageHeader` (`0x00182820`), `ResourceMgr_SheetRecord` (`0x001828c0`) and
   `ResourceMgr_SheetSize` (`0x00181e50`) until the research database names them.
 
 What the implementer still needs:
-- Sprite batches (instances): a sheet, a capacity, a format (position + size, + rotation, or matrix), a blend of
-  source alpha / inverse source alpha, a world (none, 3D overlay, 2D overlay) and a depth; `AddSprite` with the record
-  above, dropped past capacity; emptied after each frame. librw's PTank, or a plain textured-quad batch, both fit.
-- The 2D pass: Z test and write off, culling off, batches sorted by ascending key, drawn through the overlay camera.
+
+- The other instance formats (1, a 2D rotation; 2, a full matrix), the resource manager's 255 instance slots and
+  the worlds an instance can live in (3D overlay, 2D overlay), where the original's pass finds its batches.
 - Widgets with `Init`, `Update`, `Render`, `Shutdown`, focus; the screen flow with push, pop, unwind and a per-screen
   transition table, entering and exiting covered screens as described.
 - Text: the size formula, proportional advance, alignment, shadow, the markup tags (at least `COLOR`, `SIZE`,

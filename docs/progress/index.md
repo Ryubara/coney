@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.2% of the game's own code (6,176 of 3,342,408 bytes, 34 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.2% of the game's own code (8,096 of 3,342,408 bytes, 39 functions) |
 | **Researched** | `██████████▏░░░░░░░░░` | 50.6% placed in a source file or directory (1,691,568 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
@@ -57,7 +57,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% | 3 | 20,800 |
 | `FileIO` | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 1 | 6,480 |
 | `GameModes` | `█░░░░░░░░░░░░░░░░░░░` | 5.1% | 9 | 47,040 |
-| `Graphics` | `▏░░░░░░░░░░░░░░░░░░░` | 0.6% | 9 | 189,024 |
+| `Graphics` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 14 | 189,024 |
 | `GUI` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
@@ -129,10 +129,15 @@ at the top of the repository's `README.md`.
 | `0x00181e50` | `ResourceMgr_SheetSize` | `Graphics` | 240 |
 | `0x00182820` | `ChunkLoaded_ParticlePageHeader` | `Graphics` | 144 |
 | `0x001828c0` | `ResourceMgr_SheetRecord` | `Graphics` | 32 |
+| `0x00182de0` | `Instance_AddSprite` | `Graphics` | 600 |
+| `0x00184890` | `ResourceMgr_CompareOverlayKeys` | `Graphics` | 64 |
+| `0x00185cc8` | `ResourceMgr_EmptyInstances` | `Graphics` | 88 |
+| `0x00185d20` | `ResourceMgr_RenderOverlay` | `Graphics` | 840 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 | `0x00195238` | `RwDevice::GuiToOverlay` | `Graphics` | 248 |
 | `0x00195330` | `RwDevice::GuiWidthToOverlay` | `Graphics` | 120 |
+| `0x00197168` | `Instance_Render` | `Graphics` | 328 |
 <!-- progress:end -->
 
 ## How it is measured

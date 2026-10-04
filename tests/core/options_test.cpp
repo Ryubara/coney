@@ -151,3 +151,15 @@ TEST_CASE("the usage text documents the viewer options", "[options]") {
     CHECK(coney::usageText().find("--screenshot") != std::string_view::npos);
     CHECK(coney::usageText().find("--headless") != std::string_view::npos);
 }
+
+TEST_CASE("the sheet viewer option takes a sheet and needs a disc and no other viewer", "[options]") {
+    auto viewer = parse(std::array<std::string_view, 4>{"--disc", "H:\\", "--view-sheet", "menu_system"});
+    REQUIRE(viewer.has_value());
+    CHECK(viewer->viewSheet == "menu_system");
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--view-sheet", "a"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--view-sheet"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--view-sheet", "a", "--view-txd", "b"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--view-sheet", "a", "--load", "b"}).has_value());
+    CHECK(coney::usageText().find("--view-sheet") != std::string_view::npos);
+}

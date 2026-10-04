@@ -15,14 +15,16 @@ namespace {
 
 // The text usageText() returns (see its doc comment in options.h).
 constexpr std::string_view kUsage =
-    "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--frames N] [--screenshot PATH]\n"
-    "             [--headless] [--help]\n"
+    "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
+    "             [--screenshot PATH] [--headless] [--help]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
     "                     through the chunk system and print a summary; repeatable; needs --disc;\n"
     "                     runs without a window and exits when every entry is loaded\n"
     "  --view-txd ENTRY   show the textures of a WAD entry's texture dictionaries; needs --disc\n"
+    "  --view-sheet SHEET show a sprite sheet's rectangles as sprites: a name such as menu_system,\n"
+    "                     or a WAD entry; needs --disc\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
     "  --headless         run with no window and no GPU (nothing is drawn)\n"
@@ -84,6 +86,12 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     if (options.viewTxd.has_value() && !options.loads.empty()) {
         return invalidArgument("--view-txd and --load cannot be combined: --load runs without a window");
     }
+    if (options.viewSheet.has_value() && !options.discPath.has_value()) {
+        return invalidArgument("--view-sheet needs --disc to say where the game's files are");
+    }
+    if (options.viewSheet.has_value() && (!options.loads.empty() || options.viewTxd.has_value())) {
+        return invalidArgument("--view-sheet cannot be combined with --load or --view-txd");
+    }
     if (options.screenshotPath.has_value()) {
         if (!options.frameLimit.has_value()) {
             return invalidArgument("--screenshot needs --frames N: the screenshot is of the last frame");
@@ -135,6 +143,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.headless = true;
         } else if (arg == "--view-txd") {
             if (auto value = takeValue(args, i, options.viewTxd, "--view-txd", "an entry name or a 0x hash"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--view-sheet") {
+            if (auto value = takeValue(args, i, options.viewSheet, "--view-sheet", "a sheet name or a WAD entry");
+                !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--screenshot") {

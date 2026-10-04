@@ -70,6 +70,10 @@ class OverlayCamera {
     /// for Coney's tools that lay things out in pixels. `z` must be positive (checked by CONEY_ASSERT).
     [[nodiscard]] OverlayPoint unproject(const LogicalPoint& point, float z) const;
 
+    /// The overlay-space width and height at depth `z` that project to a logical size of `size`: the inverse of
+    /// projectSize(). `z` must be positive (checked by CONEY_ASSERT).
+    [[nodiscard]] LogicalPoint unprojectSize(const LogicalPoint& size, float z) const;
+
     /// A GUI point straight onto the logical screen: guiToOverlay(), then project().
     [[nodiscard]] LogicalPoint guiToLogical(float x, float y) const { return project(guiToOverlay(x, y)); }
 

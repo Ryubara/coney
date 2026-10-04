@@ -59,3 +59,11 @@ TEST_CASE("unproject undoes project at the same depth", "[overlay_camera]") {
     CHECK(again.x == Approx(point.x));
     CHECK(again.y == Approx(point.y));
 }
+
+TEST_CASE("unprojectSize undoes projectSize at the same depth", "[overlay_camera]") {
+    const OverlayCamera camera;
+    const LogicalPoint size = camera.unprojectSize(LogicalPoint{64.0F, 32.0F}, 2.0F);
+    const LogicalPoint again = camera.projectSize(size.x, size.y, 2.0F);
+    CHECK(again.x == Approx(64.0));
+    CHECK(again.y == Approx(32.0));
+}

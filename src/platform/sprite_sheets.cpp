@@ -95,7 +95,13 @@ std::expected<graphics::SpriteSheet, Error> loadSpriteSheetResource(const io::Wa
         return std::unexpected(
             Error{entry.error().code, std::format("{} ({}): {}", resourceName, fileName, entry.error().message)});
     }
-    auto sheets = loadSpriteSheets(wad, **entry, table);
+    return loadSpriteSheet(wad, **entry, table, convertForDrawing);
+}
+
+std::expected<graphics::SpriteSheet, Error> loadSpriteSheet(const io::Wad& wad, const io::WadEntry& entry,
+                                                            const chunk::ChunkHandlerTable& table,
+                                                            bool convertForDrawing) {
+    auto sheets = loadSpriteSheets(wad, entry, table);
     if (!sheets) {
         return std::unexpected(std::move(sheets.error()));
     }

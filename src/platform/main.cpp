@@ -26,6 +26,7 @@
 #include "gamemodes/idle_mode.h"
 #include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/load_entry_mode.h"
+#include "gamemodes/sheet_viewer_mode.h"
 #include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
@@ -71,6 +72,29 @@ loadForViewer(const coney::io::Wad& wad, const coney::chunk::ChunkHandlerTable& 
     }
     printText(text);
     return dictionaries;
+}
+
+// Loads the sprite sheet `request` names for the sheet viewer: a resource name first (`menu_system`, found by the
+// decimal CRC-32 of the name), then a WAD entry name or hash. Prints its shape: counts only, never the data.
+std::expected<coney::graphics::SpriteSheet, coney::Error>
+loadSheetForViewer(const coney::io::Wad& wad, const coney::chunk::ChunkHandlerTable& table, const std::string& request,
+                   const coney::platform::RenderEngine& engine) {
+    auto sheet = coney::platform::loadSpriteSheetResource(wad, table, request, engine.drawsPixels());
+    if (!sheet && sheet.error().code == coney::ErrorCode::NotFound) {
+        auto entry = wad.lookup(request);
+        if (!entry) {
+            return std::unexpected(std::move(sheet.error()));
+        }
+        sheet = coney::platform::loadSpriteSheet(wad, **entry, table, engine.drawsPixels());
+    }
+    if (!sheet) {
+        return sheet;
+    }
+    const coney::graphics::Texture* texture = sheet->texture.get();
+    printText(std::format("{}: {} rectangles, first glyph {}, texture {}x{}\n", request, sheet->page.rects.size(),
+                          sheet->page.firstGlyph, texture != nullptr ? texture->width() : 0,
+                          texture != nullptr ? texture->height() : 0));
+    return sheet;
 }
 
 } // namespace
@@ -158,6 +182,7 @@ int main(int argc, char** argv) {
     };
     coney::LegalScreenMode legal(renderer, loadSheet, coney::LegalScreenSettings{}, printText);
     std::optional<coney::platform::TextureViewerMode> viewer;
+    std::optional<coney::SheetViewerMode> sheetViewer;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
             return 2; // parseOptions refuses --view-txd without --disc, so this is never reached
@@ -168,6 +193,16 @@ int main(int argc, char** argv) {
             return 1;
         }
         modes.push(viewer.emplace(renderer, std::move(*dictionaries)));
+    } else if (const std::optional<std::string> viewSheet = options->viewSheet; viewSheet) {
+        if (!wad) {
+            return 2; // parseOptions refuses --view-sheet without --disc, so this is never reached
+        }
+        auto sheet = loadSheetForViewer(*wad, chunkHandlers, *viewSheet, renderer);
+        if (!sheet) {
+            std::fprintf(stderr, "coney: %s: %s\n", viewSheet->c_str(), sheet.error().message.c_str());
+            return 1;
+        }
+        modes.push(sheetViewer.emplace(renderer, *sheet));
     } else if (wad) {
         // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
         // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first. Until

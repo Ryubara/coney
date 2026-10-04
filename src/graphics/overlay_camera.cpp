@@ -33,4 +33,10 @@ OverlayPoint OverlayCamera::unproject(const LogicalPoint& point, float z) const 
     return OverlayPoint{(across - 0.5F) * 2.0F * viewWindowX() * z, (0.5F - down) * 2.0F * viewWindowY() * z, z};
 }
 
+LogicalPoint OverlayCamera::unprojectSize(const LogicalPoint& size, float z) const {
+    CONEY_ASSERT(z > 0.0F);
+    return LogicalPoint{size.x / kLogicalWidth * 2.0F * viewWindowX() * z,
+                        size.y / kLogicalHeight * 2.0F * viewWindowY() * z};
+}
+
 } // namespace coney::graphics

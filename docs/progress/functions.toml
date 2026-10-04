@@ -195,6 +195,30 @@ subsystem = "Graphics"
 size = 32
 
 [[function]]
+address = 0x00182de0
+name = "Instance_AddSprite"
+subsystem = "Graphics"
+size = 600
+
+[[function]]
+address = 0x00184890
+name = "ResourceMgr_CompareOverlayKeys"
+subsystem = "Graphics"
+size = 64
+
+[[function]]
+address = 0x00185cc8
+name = "ResourceMgr_EmptyInstances"
+subsystem = "Graphics"
+size = 88
+
+[[function]]
+address = 0x00185d20
+name = "ResourceMgr_RenderOverlay"
+subsystem = "Graphics"
+size = 840
+
+[[function]]
 address = 0x001906e8
 name = "ChunkReader_TextureDictionaryTid"
 subsystem = "Graphics"
@@ -217,3 +241,9 @@ address = 0x00195330
 name = "RwDevice::GuiWidthToOverlay"
 subsystem = "Graphics"
 size = 120
+
+[[function]]
+address = 0x00197168
+name = "Instance_Render"
+subsystem = "Graphics"
+size = 328

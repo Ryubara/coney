@@ -95,9 +95,9 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and six smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, refuses a bad argument, refuses `--load` or `--view-txd` without `--disc` and
-refuses a disc that does not exist. The unit tests build their disc images, archives and RenderWare texture
+`ctest` runs the Catch2 unit tests (`coney_tests`) and seven smoke tests of the `coney` executable itself: it starts
+and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd` or `--view-sheet` without
+`--disc` and refuses a disc that does not exist. The unit tests build their disc images, archives and RenderWare texture
 dictionaries byte by byte; none needs the game or a GPU (the texture tests run librw on its NULL device). Two tests
 check your own disc, one every texture dictionary and one every sprite sheet and the sheet table; they run only when
 the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
@@ -116,7 +116,8 @@ Everything is drawn into the original's 640 × 448 screen, shown at a television
 allows and centred; a window of another shape gets black bars at the sides or at the top and bottom.
 
 ```text
-coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--frames N] [--screenshot PATH] [--headless] [--help]
+coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
+      [--headless] [--help]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -189,6 +190,20 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --view-txd 863681355 -
 That entry is the legal screen, the first image the game shows ([Graphics](../research/graphics.md#first-screen)).
 The textures are the PS2's palettised formats, converted by librw: palettes are expanded and the PS2's alpha range
 (128 is opaque) is scaled to 0-255.
+
+### Viewing sprite sheets
+
+`--view-sheet SHEET` opens the window and shows every rectangle of a sprite sheet
+([GUI](../research/gui.md#particle-page)) as a sprite, laid out in a grid over the logical screen, each at its own
+shape, over a grey background. The sprites go through the same sprite batch and 2D pass as the game's
+([GUI](../research/gui.md#coneys-implementation)), so this is also a check of that path. `SHEET` is a sheet's
+resource name, such as `menu_system`, `big_font` or `legal_screen` (Coney looks for the WAD file named by the decimal
+CRC-32 of the name), or failing that a WAD entry named as for `--load`. Coney prints the number of rectangles, the
+sheet's first glyph (-1 for a sheet that is not a font) and the texture's size.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-sheet menu_system --frames 2 --screenshot ../../scratch/menu.png
+```
 
 ## Sanitizers
 

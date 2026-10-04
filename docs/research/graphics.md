@@ -492,8 +492,6 @@ What is still to do:
 - PS2 native textures: 4- and 8-bit palettised, 32-bit palettes, power-of-two sizes up to 512; check alpha scaling.
 - Readers for the game's plugin data `0x3F0` (atomic, 12 bytes) and `0x3F1` (sector, 20 bytes): the streamed world
   needs both ([The streamed world](world.md#coneys-implementation)).
-- Sprites: GUI coordinates `[0, 1]²` mapped as in [2D drawing](#2d-drawing), drawn after the 3D scene with depth test
-  and write off and source-alpha blending.
 - The 16:9 option: a 16:9 logical screen shape, the overlay view-window scale 1.1 and the `_w` legal screens.
 
 TODO for the analysts, found while implementing:

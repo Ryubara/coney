@@ -98,6 +98,12 @@ void addSpriteSheetHandlers(chunk::ChunkHandlerTable& table);
 [[nodiscard]] std::expected<std::vector<std::unique_ptr<SpriteSheetObject>>, Error>
 loadSpriteSheets(const io::Wad& wad, const io::WadEntry& entry, const chunk::ChunkHandlerTable& table);
 
+/// Loads the first sprite sheet of `entry` and with `convertForDrawing` converts its texture for the OpenGL renderer.
+/// Fails as loadSpriteSheets() and the conversion do.
+[[nodiscard]] std::expected<graphics::SpriteSheet, Error> loadSpriteSheet(const io::Wad& wad, const io::WadEntry& entry,
+                                                                          const chunk::ChunkHandlerTable& table,
+                                                                          bool convertForDrawing);
+
 /// Loads the sprite sheet resource named `resourceName` (such as `legal_screen`) from the WAD file named by its
 /// decimal CRC-32 (coney::resourceFileName()), and with `convertForDrawing` converts its texture for the OpenGL
 /// renderer. Returns the first sheet of the entry. Fails with ErrorCode::NotFound when no such entry or no sheet in it
