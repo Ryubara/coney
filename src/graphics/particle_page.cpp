@@ -47,4 +47,56 @@ std::expected<ParticlePage, Error> parseParticlePage(std::span<const std::byte> 
     return page;
 }
 
+const SheetTableRecord& SpriteSheetTable::record(std::size_t index) const {
+    CONEY_ASSERT(index < records.size());
+    return records[index];
+}
+
+std::optional<std::uint32_t> SpriteSheetTable::sizeOf(std::uint32_t nameHash) const {
+    for (const SheetTableRecord& entry : records) {
+        if (entry.nameHash == nameHash) {
+            return entry.size;
+        }
+    }
+    return std::nullopt;
+}
+
+std::expected<SpriteSheetTable, Error> parseSpriteSheetTable(std::span<const std::byte> data) {
+    constexpr std::size_t kRecordSize = 8;
+    if (data.size() < 4) {
+        return fail(ErrorCode::Truncated, "a sprite sheet table needs its 4-byte count");
+    }
+    const std::uint32_t count = io::loadU32Le(data.first(4));
+    // Check the size before allocating, so a damaged count cannot reserve gigabytes.
+    if ((data.size() - 4) / kRecordSize < count) {
+        return fail(ErrorCode::Truncated,
+                    std::format("a sprite sheet table of {} bytes cannot hold its {} records", data.size(), count));
+    }
+    SpriteSheetTable table;
+    table.records.reserve(count);
+    for (std::size_t i = 0; i < count; ++i) {
+        const std::span<const std::byte> bytes = data.subspan(4 + i * kRecordSize, kRecordSize);
+        table.records.push_back(SheetTableRecord{io::loadU32Le(bytes.first(4)), io::loadU32Le(bytes.subspan(4, 4))});
+    }
+    return table;
+}
+
+std::expected<void, Error> onParticlePageHeaderLoaded(chunk::ChunkStacks& stacks, std::uint32_t type) {
+    auto chunk = stacks.popChunk(type);
+    if (!chunk) {
+        return std::unexpected(std::move(chunk.error()));
+    }
+    auto table = parseSpriteSheetTable(chunk->bytes);
+    if (!table) {
+        stacks.pushChunk(std::move(*chunk)); // leave the stack as it was
+        return std::unexpected(std::move(table.error()));
+    }
+    chunk::ChunkData result;
+    result.type = kParticlePageHeader;
+    result.id = chunk->id;
+    result.object = std::make_unique<SpriteSheetTableObject>(std::move(*table));
+    stacks.pushChunk(std::move(result));
+    return {};
+}
+
 } // namespace coney::graphics

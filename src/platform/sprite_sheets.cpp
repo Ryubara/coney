@@ -62,6 +62,7 @@ std::expected<void, Error> onParticlePageLoaded(chunk::ChunkStacks& stacks, std:
 
 void addSpriteSheetHandlers(chunk::ChunkHandlerTable& table) {
     table.setHandlers(kParticlePage, chunk::ChunkHandlers{onParticlePageLoaded, {}});
+    table.setHandlers(graphics::kParticlePageHeader, chunk::ChunkHandlers{graphics::onParticlePageHeaderLoaded, {}});
 }
 
 std::expected<std::vector<std::unique_ptr<SpriteSheetObject>>, Error>

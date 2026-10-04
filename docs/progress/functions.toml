@@ -177,6 +177,24 @@ subsystem = "Graphics"
 size = 24
 
 [[function]]
+address = 0x00181e50
+name = "ResourceMgr_SheetSize"
+subsystem = "Graphics"
+size = 240
+
+[[function]]
+address = 0x00182820
+name = "ChunkLoaded_ParticlePageHeader"
+subsystem = "Graphics"
+size = 144
+
+[[function]]
+address = 0x001828c0
+name = "ResourceMgr_SheetRecord"
+subsystem = "Graphics"
+size = 32
+
+[[function]]
 address = 0x001906e8
 name = "ChunkReader_TextureDictionaryTid"
 subsystem = "Graphics"

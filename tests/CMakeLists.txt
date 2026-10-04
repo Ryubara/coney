@@ -19,6 +19,7 @@ add_executable(coney_tests
     graphics/rw_stream_test.cpp
     graphics/screen_test.cpp
     graphics/texture_grid_test.cpp
+    platform/disc_sprite_sheets_test.cpp
     platform/disc_textures_test.cpp
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp)

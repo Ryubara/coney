@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -33,6 +34,9 @@ class SheetTexture final : public graphics::Texture {
 
     [[nodiscard]] int width() const override;
     [[nodiscard]] int height() const override;
+
+    /// How many textures the dictionary holds; the sheet uses the first. The game's sheets all have exactly one.
+    [[nodiscard]] std::size_t dictionaryTextureCount() const { return m_dictionary.textures().size(); }
 
     /// The librw texture, for the renderer.
     [[nodiscard]] rw::Texture* rwTexture() const { return m_texture; }
@@ -83,7 +87,8 @@ inline constexpr std::uint32_t kParticlePage = 0x4C;
 /// @orig 0x00181b20 ChunkLoaded_ParticlePage (unknown)
 [[nodiscard]] std::expected<void, Error> onParticlePageLoaded(chunk::ChunkStacks& stacks, std::uint32_t type);
 
-/// Registers onParticlePageLoaded() for type 0x4C in `table`. The 0x4C handler needs the texture dictionary readers
+/// Registers onParticlePageLoaded() for type 0x4C and graphics::onParticlePageHeaderLoaded() for type 0x4D (the
+/// sheet table) in `table`. The 0x4C handler needs the texture dictionary readers
 /// of addTextureDictionaryHandlers() in the same table.
 void addSpriteSheetHandlers(chunk::ChunkHandlerTable& table);
 

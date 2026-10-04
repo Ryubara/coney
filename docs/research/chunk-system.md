@@ -341,7 +341,8 @@ Written from this page, in `src/core/`:
   object under type `0x0B`. The original's `0x2A` reader also makes the dictionary current and clears it again; Coney
   keeps no current dictionary, so that step has no counterpart. The `0x4C` (Particle Page) `onLoaded` handler
   (`0x00181b20`, `src/platform/sprite_sheets.h`) pops the page and the dictionary before it and pushes a sprite sheet
-  back under `0x4C` ([GUI](gui.md#coneys-implementation)). Every other type stays on the chunk stack as a raw byte
+  back under `0x4C`, and the `0x4D` (Particle Page Header) handler (`0x00182820`) pushes the sheet table back under
+  `0x4D` ([GUI](gui.md#coneys-implementation)). Every other type stays on the chunk stack as a raw byte
   block until its subsystem is written. `ChunkStacks::takeChunks(type)` (Coney's own) lets a tool collect every
   result of one type once a load is over.
 - The grouped loader loads every group: Coney has no resource manager yet to ask whether a group is resident.

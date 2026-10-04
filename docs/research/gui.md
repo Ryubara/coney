@@ -310,14 +310,26 @@ debug or PC tool (inferred).
   name from the WAD file named by the name's decimal CRC-32; the legal screen uses it
   ([Front end](frontend.md#coneys-implementation)).
 
+- **The sheet table** (`graphics::parseSpriteSheetTable`, `SpriteSheetTable`): the `0x4D` chunk's records, with
+  `record(i)` (`0x001828c0`) and `sizeOf(hash)` (`0x00181e50`, without the original's fallback to the WAD file's
+  size, which a caller can ask the WAD for). Its `onLoaded` handler (`0x00182820`) pushes the table back under
+  `0x4D`; **Coney's choice:** with no resource manager to keep it, whoever loads `warriors.glr` takes it off the
+  stack. `addSpriteSheetHandlers` registers both handlers.
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][sprite_sheets]"` with `CONEY_DISC` set finds
+1,335 `0x4C` chunks in 814 entries; every one follows a `0x2A` chunk, has exactly the size `align16(0x14 + 16 ×
+count)`, loads through the handlers, has a dictionary of exactly one texture and rectangles inside [0, 1] the right
+way round; 1,328 have `firstGlyph` -1. The table in `warriors.glr` has 576 records; every name hash names a WAD file
+whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 are the CRC-32s of `part_page0`,
+`part_page1`, `menu_system`, `part_fire`, `lighting`, `hud_minigames`, `big_font` and `legal_screen`, as above.
+
 TODO for the analysts, found while implementing:
 
-- A name for the `0x4C` handler: the `@orig` tag calls it `ChunkLoaded_ParticlePage` (`0x00181b20`) until the
-  research database names it.
+- Names for the sheet functions: the `@orig` tags call them `ChunkLoaded_ParticlePage` (`0x00181b20`),
+  `ChunkLoaded_ParticlePageHeader` (`0x00182820`), `ResourceMgr_SheetRecord` (`0x001828c0`) and
+  `ResourceMgr_SheetSize` (`0x00181e50`) until the research database names them.
 
 What the implementer still needs:
-
-- The `0x4D` table from `warriors.glr` to map sheet index or name hash to a resource.
 - Sprite batches (instances): a sheet, a capacity, a format (position + size, + rotation, or matrix), a blend of
   source alpha / inverse source alpha, a world (none, 3D overlay, 2D overlay) and a depth; `AddSprite` with the record
   above, dropped past capacity; emptied after each frame. librw's PTank, or a plain textured-quad batch, both fit.

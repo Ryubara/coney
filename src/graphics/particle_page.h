@@ -5,9 +5,13 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <span>
+#include <string_view>
+#include <utility>
 #include <vector>
 
+#include "core/chunk_stacks.h"
 #include "core/error.h"
 #include "graphics/render_device.h"
 
@@ -49,5 +53,61 @@ struct SpriteSheet {
     ParticlePage page;
     std::shared_ptr<const Texture> texture; ///< Never null in a sheet a loader returns.
 };
+
+/// Chunk type 0x4D, "Particle Page Header": the table of every sprite sheet, in `warriors.glr`.
+inline constexpr std::uint32_t kParticlePageHeader = 0x4D;
+
+/// One record of the sprite sheet table.
+struct SheetTableRecord {
+    std::uint32_t size = 0;     ///< The sheet resource's size in bytes.
+    std::uint32_t nameHash = 0; ///< CRC-32 of the sheet's name; its WAD file is named by this number in decimal.
+
+    friend bool operator==(const SheetTableRecord&, const SheetTableRecord&) = default;
+};
+
+/// The table of sprite sheets, read from chunk 0x4D: game code refers to a sheet by its index here (`menu_system` is
+/// 3, `big_font` 13) or by its name hash.
+///
+/// Research: docs/research/gui.md#sprite-sheet-table-chunk-0x4d-particle-page-header
+struct SpriteSheetTable {
+    std::vector<SheetTableRecord> records;
+
+    /// Record `index`, which must be below records.size() (checked by CONEY_ASSERT).
+    /// @orig 0x001828c0 ResourceMgr_SheetRecord (unknown)
+    [[nodiscard]] const SheetTableRecord& record(std::size_t index) const;
+
+    /// The size the table gives for the sheet whose name hashes to `nameHash`, or nothing when it is not in the
+    /// table. The original then falls back to the size of the WAD file named by the hash; a caller that needs that
+    /// asks the WAD itself.
+    /// @orig 0x00181e50 ResourceMgr_SheetSize (unknown)
+    [[nodiscard]] std::optional<std::uint32_t> sizeOf(std::uint32_t nameHash) const;
+};
+
+/// Parses the data of a 0x4D chunk: a little-endian count, then `count` records of {size, name hash}. Fails with
+/// ErrorCode::Truncated when the data is shorter than its count says. Bytes after the records are ignored.
+[[nodiscard]] std::expected<SpriteSheetTable, Error> parseSpriteSheetTable(std::span<const std::byte> data);
+
+/// The sprite sheet table on the chunk stack, pushed back under 0x4D by its handler.
+class SpriteSheetTableObject final : public chunk::LoadedObject {
+  public:
+    explicit SpriteSheetTableObject(SpriteSheetTable table) : m_table(std::move(table)) {}
+
+    [[nodiscard]] std::string_view describe() const override { return "sprite sheet table"; }
+
+    /// The table.
+    [[nodiscard]] const SpriteSheetTable& table() const { return m_table; }
+
+  private:
+    SpriteSheetTable m_table;
+};
+
+/// The onLoaded handler of chunk type 0x4D: pops the chunk, parses it (parseSpriteSheetTable()) and pushes a
+/// SpriteSheetTableObject back under 0x4D. The original keeps the table in its resource manager; Coney has none yet,
+/// so whoever loads `warriors.glr` takes the table off the stack. Fails as ChunkStacks::popChunk() and
+/// parseSpriteSheetTable() do.
+///
+/// Research: docs/research/gui.md#sprite-sheet-table-chunk-0x4d-particle-page-header
+/// @orig 0x00182820 ChunkLoaded_ParticlePageHeader (unknown)
+[[nodiscard]] std::expected<void, Error> onParticlePageHeaderLoaded(chunk::ChunkStacks& stacks, std::uint32_t type);
 
 } // namespace coney::graphics
