@@ -70,6 +70,7 @@ nav:
       - File formats:
           - WARRIORS.DIR / .WAD: research/formats/wad-dir.md
           - WAD contents: research/formats/wad-contents.md
+      - Xbox assets (optional): research/xbox-assets.md
   - Guides:
       - Building and testing: guides/building.md
       - Local workspace: guides/workspace.md

@@ -48,11 +48,12 @@ Every entry falls into exactly one of these kinds. "Named" counts entries whose 
 | Stream manifest | 159 | 14,420 | 0 | Sizes of one world stream and its atomics files |
 | Lua 4.0 bytecode (`.lua`) | 467 | 10,379,282 | 275 | Game scripts, see [Lua](#lua) |
 | Object list (`_objs.txt`) | 63 | 1,111,944 | 63 | Text: a count, then one `{name {x, y, z ...}}` line per dynamic object or particle emitter; 26 hold only a zero count |
-| Sound bank (`.msb`) | 22 | 27,458,950 | 13 | PS2 ADPCM (VAG) data, no header |
+| Sound bank (`.msb`) | 21 | 27,360,592 | 13 | PS2 ADPCM (VAG) data, no header |
 | Sound bank index (`.msd`) | 21 | 21,568 | 13 | `{u32 hash, u32 offset}` pairs into the matching `.msb`, ended by a zero pair |
 | Older RenderWare streams | 5 | 1,395,507 | 0 | RenderWare streams stamped `0x1803FFFF` (3.6.0.3) instead of the usual `0x1C02000A` |
 | Font metrics | 1 | 2,625 | 0 | Text beginning `METRICS1` |
 | Memory card icon (`.ico`) | 1 | 79,128 | 1 | PS2 icon, magic `00 00 01 00` |
+| Bitmap | 1 | 98,358 | 0 | A 256 × 128, 24-bit Windows bitmap (`BM`); first counted as a sound bank |
 | **Total** | **10,701** | **1,484,729,244** | **3,990** | The rest of the 1,495,371,776-byte WAD is padding |
 
 **Evidence:** inferred. Every entry is assigned by a structural test that must consume the whole entry (the

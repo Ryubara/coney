@@ -17,6 +17,8 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [Characters](#characters) | not started |
 | [Gameplay](#gameplay) | not started |
 | [Sound and video](#sound-and-video) | not started |
+| [Enhancements](#enhancements) | not started |
+| [Xbox assets (optional)](#xbox-assets-optional) | not started |
 | [The whole game](#the-whole-game) | not started |
 
 ## Foundations
@@ -92,6 +94,27 @@ Combat, AI, missions, game modes, the front end and menus, cameras and saving.
 Sound banks, streamed music, speech and the Bink movies.
 
 **Done when** the first mission plays with its sound, music and cutscenes.
+
+## Enhancements
+
+What the PC can do beyond the PS2, without changing how the game plays: any resolution and aspect ratio (widescreen),
+anti-aliasing, and rendering interpolated between simulation steps so that motion is smooth above the game's fixed
+30 Hz simulation. PS2-specific effects (the VU microcode's particles, glows and screen filters) are rewritten for the
+PC renderer from their research pages. Texture-replacement packs, made by players and keyed by texture name, load
+from a mods folder; Coney ships only the loader, never a pack.
+
+**Done when** the first mission plays at a widescreen resolution with anti-aliasing and interpolated rendering, and a
+test pack replaces a named texture.
+
+## Xbox assets (optional)
+
+A player who also owns the Xbox version can point Coney at that disc too. Coney then loads its sharper textures and
+720p movies in place of the PS2 ones wherever the two correspond, through a resolver keyed by name and resource
+hash, and falls back to the PS2 disc everywhere else. The PS2 version stays the only reference for behaviour.
+Feasibility, formats and the plan: [Xbox assets](research/xbox-assets.md).
+
+**Done when** a level renders with the Xbox disc's textures and a movie plays from its HD version, and the game
+runs the same with or without the Xbox disc.
 
 ## The whole game
 

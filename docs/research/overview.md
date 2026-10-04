@@ -11,7 +11,7 @@ Date: 2026-10-04. Disc: `Warriors, The (USA) (En,Fr,De,Es,It).iso` (4,295,917,56
 | `WARRIORS.DIR` | 128,428 | Index for the WAD (see below) |
 | `WARRIORS.WAD` | 1,495,371,776 | All game assets, 10,701 entries |
 | `IOP/BFW.SND`, `IOP/MUSIC.SND` | 1.4 GB / 960 MB | Sound banks / streamed music (IOP side) |
-| `PSS/*.BIK` | 15 files | Bink videos (intro/outro per level, logos, trailer) |
+| `PSS/*.BIK` | 16 files | Bink videos (intro/outro per level, logos, trailer) |
 | `MODULES/*.IRX`, `IOPRP300.IMG` | | Standard SCE IOP modules + one custom `IOP.IRX` (audio driver, probably) |
 
 ## Main ELF (`SLUS_212.15`)
@@ -67,6 +67,9 @@ The leading word of a chunk container is its chunk (or group) count, not a type.
 4. VU microcode/DVP overlays do not need decompiling — replaced by librw's PC renderer.
 5. Engine core: how the game boots and runs its frame is on [Boot and the main loop](boot.md); how it reads files,
    on [File I/O](file-io.md).
+6. The Xbox version is an optional asset source, never a behaviour reference: it shares the chunk container, the
+   scripts and the scenes byte for byte but uses its own graphics formats instead of RenderWare. What it could
+   supply (sharper textures, 720p movies) and how: [Xbox assets](xbox-assets.md).
 
 ## Status
 
