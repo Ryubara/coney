@@ -12,7 +12,7 @@ also the map of *when* each one comes to life. The chunk loader the boot path us
 In one paragraph: `main` creates every subsystem in one long initialisation function, briefly loads the first level's
 header so it can play the three start-up movies, then pushes game modes onto a **game-mode stack** and runs that stack.
 The **main loop is the game-mode stack's run loop** (`0x0015e6b8`): every iteration calls the top mode's `Update`,
-which runs one whole frame (simulation, rendering, scripts, present with vsync, file streaming). There is no other
+which runs one whole frame (simulation, rendering, scripts, present, file streaming). There is no other
 frame loop. The virtual call through `0x00515024` that the [source map](source-map.md#for-the-next-steps) suspected of
 being the main loop is not: it is a save-system call that reads a QA file from the memory card (see
 [main](#main)).
@@ -57,7 +57,7 @@ All are pointers in `.data` set during initialisation; the table gives what each
 | `0x0050b734` | `GameTimer` (0x68 bytes, game time) | `Game_InitializeSubsystems` | confirmed (code) |
 | `0x005e5340` | `FileManager` (asynchronous file reader, see [File I/O](file-io.md#filemanager)) | `0x001547b0` | confirmed (code) |
 | `0x006f39e8` (via `0x005147a4`) | the WAD: `+0` is the `DVDWadIndex*` | `0x0040c5e0` | confirmed (code) |
-| `0x0050cdb4` | RenderWare graphics device (0x460 bytes, vtable at `+8` = `0x00538d78`) | `0x00194488` | confirmed (code) |
+| `0x0050cdb4` | RenderWare graphics device (0x460 bytes, vtable at `+8` = `0x00538d78`; see [Graphics](graphics.md#device-object)) | `0x00194488` | confirmed (code) |
 | `0x0050cd4c` | `ResourceManager` (`global.pak`) | `0x00184918` | confirmed (code) |
 | `0x00512b04` | script system (Lua) | `0x00356390` | confirmed (code) |
 | `0x00512c7c` | `TaskManager` (0x878 bytes) | `Game_InitializeSubsystems` | confirmed (code) |
@@ -100,7 +100,7 @@ The modes, each a static object built by a static constructor (or a constructor 
 | Id | Object | Vtable | `Enter` | Source file | Role | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | (ctor `0x001582a8`) | `0x00538480` | `0x001582e0` | `GameModes/` | | confirmed (code) id |
-| 5 | `0x005e57e0` | `0x00538538` | `0x00159a58` | `GameModes/` | timed start-up screen: stays 5,000 ms or until a button | confirmed (code) at `0x00159ae0`; "start-up screen" inferred |
+| 5 | `0x005e57e0` | `0x00538538` | `0x00159a58` | `GameModes/` | **legal screen**: drawn once on `Enter`, held 5,000 ms ([Graphics](graphics.md#first-screen)) | confirmed (code) at `0x00159c08`, `0x00159ae0` |
 | 6 | `0x005e5810` | `0x00538580` | `0x0015baa0` | `Gm_MemoryCard.cpp` | memory card checks and saving | confirmed (code) (anchor) |
 | 7 | `0x005e6800` | `0x005388b8` | `0x0015f830` | `Gm_XboxSaveSystem.cpp` | save-system screens | confirmed (code) (anchor) |
 | 8 | `0x005e5d90` | `0x005385c8` | `0x0015c688` | `GameModes/` | bottom of the stack in `main`; runs a world frame; picks the level (`0x0015c7b0`) | confirmed (code); role inferred |
@@ -175,7 +175,7 @@ Confirmed (code) at `0x001446d0`, in this order:
 11. Copy 20 bytes from `W_GameState + 0x46c` into a local buffer (`0x00418bc8`); unused afterwards (confirmed (code)).
 12. **Controller check** (`0x00157860`): if no controller is connected, set the "no controller" flag; then
     `0x0015e7e8` pushes the error mode (id 0xf) if the flag is set and the error mode is not already on top.
-13. Push mode 5 (`0x005e57e0`), the timed start-up screen.
+13. Push mode 5 (`0x005e57e0`), the legal screen.
 14. **`GameModeStack_RunUntilEmpty()`**: the main loop.
 15. `return 0` to crt0, which exits.
 
@@ -236,8 +236,8 @@ manager's current pool at the time. Confirmed (code) for the order and sizes; ro
    for names and sizes; the memory system's own page is still to be written.
 5. Slot `+0xa0` (`0x001488f8`): **pads** (`scePadInit`, two port opens, eight 0x140-byte pad records starting near
    `0x005de4c0`; the library calls are identified by `libpad`'s position, inferred) and audio device setup (`0x0010f618`).
-6. **Renderer**: `0x00194488(0, 0)` creates the RenderWare device (`Renderware`, 0x460 bytes) and starts RenderWare;
-   `0x0017a1e0` finishes graphics setup.
+6. **Renderer**: `0x00194488(0, 0)` creates the RenderWare device (`Renderware`, 0x460 bytes) in 4:3, interlaced
+   mode; `0x0017a1e0` starts RenderWare through the device's `Init` ([Graphics](graphics.md#start-up)).
 7. **File systems**: slot `+0x58` creates `PS2StreamFileSys`; slot `+0x60` creates `FS_FSToStreamFSFileSys` over it
    and mounts it as the current file system; slot `+0x80` creates `PS2FileSys` on `host0:` with root `debug/`. Slot
    `+0x88` copies the current file system to `+0x88`. See [File I/O](file-io.md).
@@ -264,8 +264,8 @@ Modes push and pop each other from inside `Update` (for example the in-game mode
 save is due, `0x00155308`, and pushes the error mode when a controller is unplugged).
 
 **There is no frame pacing in the loop itself.** Each mode's `Update` renders and presents its own frame, and the
-present waits for vertical sync (below). The loop ends only when the stack is empty; modes 8 and 0xb always return
-1, so on a retail run it never ends (inferred).
+PS2 driver shows a new frame at most every second vertical blank (below). The loop ends only when the stack is empty;
+modes 8 and 0xb always return 1, so on a retail run it never ends (inferred).
 
 ### One in-game frame {#one-frame}
 
@@ -280,16 +280,16 @@ files they belong to.
 4. **Cameras** (`0x001562c8`): read the player-1 camera and hand its view to the render device (slots `+0x28`,
    `+0x38`).
 5. **Simulation**: task manager phase 0 (`0x003a31a8`): object tasks, AI and per-viewport screen effects.
-6. Characters (`0x00249b98`), resource streaming (`0x0018a980`), render device slot `+0x18` (RenderWare frame
-   begin), world update (`0x0040f8a0`), resource manager (`0x00186068`).
+6. Characters (`0x00249b98`), resource streaming (`0x0018a980`), render device slot `+0x18` (flush the render
+   queue), world update (`0x0040f8a0`), resource manager (`0x00186068`).
 7. **Render each viewport** (`0x00156408`, one or two): device begin-viewport (slot `+0x88`), lights, world sectors,
    resources, particles (`0x0017b2e0`), device slot `+0x118`.
 8. **Overlays** (`0x00156658`): HUD (`0x001b1688`), subtitles, the front-end layers when active, screen effects with
    `dt` (device slot `+0x128`).
 9. **Scripts**: `scriptSystem.Update(dt)` (slot `+0x10`).
-10. **Present** (device slot `+0x30`, `0x001958b0`): the camera's show-raster call with flag 1, then clear the
-    "cameras set up this frame" flag (`0x0050b6f8`). In RenderWare, show-raster flag 1 is "wait for vsync"
-    (inferred).
+10. **Present** (device slot `+0x30`, `0x001958b0`): the main camera's show-raster (the flag 1 the device passes
+    is dropped; RenderWare gets 0), then clear the "cameras set up this frame" flag (`0x0050b6f8`). See
+    [Graphics](graphics.md#frame-rate).
 11. **File streaming**: `FileManager_Service(fileManager, 0)`: collect a finished asynchronous read and start the
     next ([File I/O](file-io.md#filemanager)).
 12. Push the error mode if needed (`0x0015e7e8`).
@@ -300,9 +300,10 @@ files they belong to.
     save is due (`0x00155308`). The meaning of each reason value is inferred from these calls only.
 15. Return 1 (stay).
 
-**Timing, as far as the code shows:** game logic steps 1/30 s per frame, and the present waits for vsync. NTSC
-vsync is about 60 Hz, so for the game to run at the right speed each frame must take two vertical blanks (30 frames a
-second). Where the second blank is waited for is not confirmed; see [Open questions](#open-questions).
+**Timing:** game logic steps 1/30 s per frame, and the RenderWare PS2 driver's vertical-blank handler shows a new
+frame at most every second vertical blank (the limit 2 is set at start-up), so the game runs at 30 frames a second
+(29.97 on NTSC) and slows down rather than skipping when a frame takes longer. Confirmed (code); the details are on
+[Graphics](graphics.md#frame-rate).
 
 ### Shutdown
 
@@ -339,10 +340,6 @@ TODO for the analysts, found while implementing:
 
 ## Open questions
 
-- **Frame rate.** The fixed step is 1/30 s and the present waits for vsync once (inferred); what makes the game run at
-  30 frames a second (a second vblank wait inside RenderWare's PS2 driver, an interlaced field mode, or nothing, in
-  which case the game would run at 60 frames with a 1/30 s step)? A PCSX2 frame counter or a breakpoint on the present
-  would settle it.
 - Which mode is which: modes 1, 0xa, 0xc, 0xd, 0xe, 0x10 to 0x14 have no role yet, and mode 8's role (front end or
   level flow) is inferred.
 - What camera state 4 is, which lifts the 40 ms clamp in real-time mode.

@@ -69,6 +69,9 @@ librw's OpenGL 3 renderer through SDL3, then the game's textures, models and lev
 
 **Done when** a level is on screen, textured, and can be flown through.
 
+- Done: the research page for the graphics device, the frame, textures and 2D drawing
+  ([Graphics device and textures](research/graphics.md)).
+
 ## Scripts
 
 Much of the game's logic is Lua 4.0 bytecode in the WAD. Coney runs it in a Lua 4.0 interpreter and reimplements the

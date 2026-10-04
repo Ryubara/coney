@@ -67,6 +67,7 @@ nav:
           - Boot and the main loop: research/boot.md
           - Chunk system: research/chunk-system.md
           - File I/O: research/file-io.md
+          - Graphics device and textures: research/graphics.md
       - File formats:
           - WARRIORS.DIR / .WAD: research/formats/wad-dir.md
           - WAD contents: research/formats/wad-contents.md

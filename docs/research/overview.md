@@ -66,7 +66,8 @@ The leading word of a chunk container is its chunk (or group) count, not a type.
    be loaded by **librw** on PC.
 4. VU microcode/DVP overlays do not need decompiling — replaced by librw's PC renderer.
 5. Engine core: how the game boots and runs its frame is on [Boot and the main loop](boot.md); how it reads files,
-   on [File I/O](file-io.md).
+   on [File I/O](file-io.md); how it draws (the RenderWare device, textures, 2D, the first screen), on
+   [Graphics device and textures](graphics.md).
 6. The Xbox version is an optional asset source, never a behaviour reference: it shares the chunk container, the
    scripts and the scenes byte for byte but uses its own graphics formats instead of RenderWare. What it could
    supply (sharper textures, 720p movies) and how: [Xbox assets](xbox-assets.md).

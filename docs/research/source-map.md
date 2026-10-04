@@ -475,6 +475,10 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   `Level Dynamic & LUA Memory` heap.
 - **Level loading:** `World/ps2/WorldManagerPS2.cpp` (`0x0040d688`: `Sector Pool`; `0x0040d900`: `warriors.glr`,
   `Global Data`; `0x0040dbb8`: `%s.lev`) and `World/ps2/WorldPS2.cpp` (`0x00410648`: `%s_sec.wld`, `%s_ms%i.sec`).
+- **Graphics:** [Graphics device and textures](graphics.md): the RenderWare device in
+  `Graphics/Devices/Renderware/DevRWGeneric.cpp` (created by `0x00194488`, vtable `0x00538d78`), its camera wrapper
+  (vtable `0x00538f78`), texture dictionaries (`Graphics/Texture.cpp`) and the world streaming loaders in
+  `World/ps2/WorldPS2.cpp`.
 - **Scripts:** the Lua bindings are the `Scripting/` block (`0x00356390`-`0x003865d8`), mostly around
   `ScriptLua.inl` (anchor `0x0036bb10`).
 

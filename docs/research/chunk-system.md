@@ -116,7 +116,7 @@ the push/pop behaviour; the description of what the object *is* is inferred from
 | `0x27` | Level Header Obj List | | | raw |
 | `0x28` | Chunk Bone Offsets | | | raw |
 | `0x29` | Static Sounds | `0x0010f320` | | pops `0x29`; stored at `0x0059867c` and handed to the audio manager (`0x0010f900`) |
-| `0x2A` | Renderware Texture Dic | | `0x00190770` | texture dictionary read through the render device (slot `+0x150`), made current and then cleared (slot `+0x160`); result `0x0B` |
+| `0x2A` | Renderware Texture Dic | | `0x00190770` | texture dictionary read through the render device (slot `+0x150`), made current and then cleared (slot `+0x160`); result `0x0B`; see [Graphics](graphics.md#loading-textures) |
 | `0x2B` | Game Map | | | raw |
 | `0x2C` | Path Grid | | | raw |
 | `0x2D` | Path Nodes | | | raw |
@@ -205,9 +205,12 @@ alignment gets it from the allocator, not from the file.
 entry: these are real chunk containers. The other 1,938 only look like containers: they are a 16-byte header
 `{1, 0, 0, id}` followed directly by a **RenderWare stream** whose first chunk id is `0x16` (RenderWare's texture
 dictionary) or `0x01` (RenderWare's struct), with the RenderWare version stamp `0x1C02000A` where a chunk header's
-third word would be. They happen to parse as one chunk of type `0x16` or `0x01`; which code loads them is open. Of
-the 1,406 entries that do not parse flat, 1,259 parse as grouped containers. The other 3,111 entries are not
-containers (Lua bytecode, text and the other kinds on [WARRIORS.DIR / .WAD](formats/wad-dir.md)).
+third word would be. They happen to parse as one chunk of type `0x16` or `0x01`. 1,911 of them are the streamed
+world's sector-atomics files (`%s_ms%i.sec`), which the world loader reads directly as RenderWare streams, skipping
+the 16-byte header (`0x004114d8`/`0x004110c0`, `World/ps2/WorldPS2.cpp`; see
+[Graphics](graphics.md#loading-textures)); a stricter check finds exactly 1,911 such entries, so the other 27 counted
+here are not identified. Of the 1,406 entries that do not parse flat, 1,259 parse as grouped containers. The other
+3,111 entries are not containers (Lua bytecode, text and the other kinds on [WARRIORS.DIR / .WAD](formats/wad-dir.md)).
 
 ### The two stacks {#stacks}
 
@@ -334,8 +337,8 @@ TODO for the analysts, found while implementing:
 ## Open questions
 
 - What the container header's fourth word and the chunk header's fourth word (`id`) mean; neither loader reads them.
-- Which code loads the 1,938 entries that are a 16-byte header followed by a RenderWare stream (texture
-  dictionaries, probably through `Graphics/Texture.cpp` or the resource manager), and what their header's `id` is.
+- What the sector-atomics header's `id` is, and what the 27 entries counted above besides the 1,911 sector-atomics
+  files are.
 - Why 147 container-like entries parse neither flat nor grouped.
 - The `GroupHeader`'s second and third words.
 - Which file holds the CRC helpers (`0x00143f68`-`0x00144050`), the unit that ends at the stub `0x00144080`.
