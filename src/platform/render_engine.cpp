@@ -373,6 +373,11 @@ std::expected<CapturedFrame, Error> RenderEngine::captureBackBuffer(const std::s
     for (std::size_t y = 0; y < height; ++y) {
         std::memcpy(&rgba[y * rowBytes], &bottomUp[(height - 1 - y) * rowBytes], rowBytes);
     }
+    // The screen shows no alpha: blending leaves partial alpha in the frame buffer (a fading atomic), which an image
+    // viewer would otherwise composite over its own background.
+    for (std::size_t i = 3; i < rgba.size(); i += 4) {
+        rgba[i] = 255;
+    }
 
     // librw's PNG writer reports a failure only through its own error state, so remove any old file first and check
     // that a new one exists afterwards.

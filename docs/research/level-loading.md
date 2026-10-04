@@ -280,9 +280,24 @@ too. `UnloadLevel(keep)`, confirmed (code) for the order:
 
 ## Coney's implementation
 
-Not yet implemented.
+The streamed-world half of `LoadLevel` and the streaming of a running level exist (2026-10-04), behind Coney's world
+viewer (`coney --view-world <level>`, [Building](../guides/building.md#the-world-viewer)); mode 1, `InitLevel`, the
+level file and `UnloadLevel` do not. Details on [The streamed world](world.md#coneys-implementation).
 
-What the implementer needs:
+- **The worlds in `LoadLevel`'s order**: `<level>s_sec.wld` decides between two worlds (`<level>s`, `<level>d`) and one
+  (`<level>`); each is constructed, its manifest read and its world stream loaded, and no part is loaded
+  (`src/platform/world_set.h`). The world name is the level name (the level table does not exist yet).
+- **Memory**: one `SectorBudget`, charged first with the `Global Data Pool` and the `World Level Pool` (sized from
+  `warriors.glr` and `<level>.lev`, though neither file is loaded yet), then the worlds and parts
+  ([Memory](memory.md#coneys-implementation)).
+- **The preload**: `preloadWorlds` (`WorldManager_Preload`, `src/world/world_streamer.h`) with the camera's draw
+  distance as the radius, before the first frame: no pack, no time budget (reads are synchronous), and the passes that
+  load nothing count up to 200.
+- **A frame of play**, as far as the world goes: one `WorldManager_Update` decision, then the world's part of
+  `WorldManager_Render`. Game time and scripted input make it deterministic.
+- **Unload**: destroying the world set frees every part and world (`World_Unload`) and gives the budget back.
+
+What the implementer still needs:
 
 - **Mode 1** with `Enter` → `InitLevel`, an `Update` that streams once a frame, and `Exit` → `UnloadLevel`.
 - **The level table** filled from `config_preload3.lua` ([Front end](frontend.md#the-level-table)), with the names at

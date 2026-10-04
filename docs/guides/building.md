@@ -95,13 +95,14 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and ten smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet` or `--view-text`
-without `--disc`, refuses a disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and
+`ctest` runs the Catch2 unit tests (`coney_tests`) and eleven smoke tests of the `coney` executable itself: it starts
+and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`, `--view-text` or
+`--view-world` without `--disc`, refuses a disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and
 refuses one that does not exist. The unit tests build their disc images, archives, RenderWare texture dictionaries,
 streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU (the librw tests run librw on its NULL
-device). Five tests check your own disc: every texture dictionary; every sprite sheet, font and the sheet table; every
-streamed world with the atomics of its parts (`[world]`, about a second); the UI strings of all five languages, run
+device). Six tests check your own disc: every texture dictionary; every sprite sheet, font and the sheet table; every
+streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds streamed under a
+scripted camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run
 through the game's own Lua scripts (`[strings]`); and the two text fonts with every English UI string laid out in
 them (`[text]`). They run only when the environment variable
 `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
@@ -122,6 +123,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
+      [--view-world NAME]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -226,11 +228,42 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --view-text part_page0
 build/dev/src/platform/coney --disc /path/to/warriors.iso --view-text part_page0 "<BIGFONT>Title</BIGFONT><CR>Press <X>" --frames 3
 ```
 
+### The world viewer {#the-world-viewer}
+
+`--view-world NAME` loads a level's streamed scenery and lets you fly through it
+([The streamed world](../research/world.md#coneys-implementation)). `NAME` is a level, such as `level2`, which loads
+both of its worlds (`level2s` and `level2d`), a single world such as `level2s`, or `objarena`. The worlds' layouts and
+textures load first, then the parts around the camera before the first frame (the original's preload), and from then
+on one part is read or freed per frame as you move. New scenery fades in over a second; the view's far end follows
+the nearest scenery not yet loaded, with fog in the background colour. There is no level file, collision, objects or
+sky yet, so the scenery floats in a slate-blue void. Coney prints one line for each part read or freed and a summary
+when it stops (counts only).
+
+The camera starts above the middle of the first part and is driven by pad 1. These controls are Coney's own; the
+original's cameras follow the player:
+
+| Pad | Keyboard | Does |
+| --- | --- | --- |
+| left stick | W A S D | fly forward and back along the view, and sideways |
+| right stick, d-pad | arrow keys | turn left and right, look up and down |
+| R1 / L1 | E / Q | rise / sink straight up and down |
+| cross (held) | K or Space | five times as fast |
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-world level2
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-world level2 --frames 60 --input-script fly.txt --screenshot ../../scratch/level2.png
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-world level51 --headless --frames 300 --input-script fly.txt
+```
+
+With `--headless` the streaming, visibility and draw distance run exactly as in a window and nothing is drawn, which
+is how a test drives it. Game time runs on the fixed 1/30 s step, so a script gives the same parts in the same frames
+every time.
+
 ### Controls {#controls}
 
 In a window, Coney reads the keyboard and any gamepad SDL3 recognises, and turns them into the PS2 pad the game
-expects ([Front end](../research/frontend.md#coneys-implementation)). Nothing reads them yet: the legal screen
-ignores input, as in the original, and the menus are still to come.
+expects ([Front end](../research/frontend.md#coneys-implementation)). Only [the world viewer](#the-world-viewer)
+reads them so far: the legal screen ignores input, as in the original, and the menus are still to come.
 
 | PS2 pad | Gamepad (SDL3 names) | Keyboard (port 1) |
 | --- | --- | --- |

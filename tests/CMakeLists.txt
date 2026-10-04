@@ -32,10 +32,12 @@ add_executable(coney_tests
     platform/disc_sprite_sheets_test.cpp
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp
+    platform/disc_world_streaming_test.cpp
     platform/sdl_input_test.cpp
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp
     platform/world_atomic_test.cpp
+    platform/world_set_test.cpp
     scripting/config_strings_test.cpp
     scripting/disc_strings_test.cpp
     scripting/lua_chunk_test.cpp

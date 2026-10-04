@@ -63,6 +63,9 @@ class TextureDictionary {
     /// The textures, in the dictionary's order. The pointers stay valid as long as this dictionary.
     [[nodiscard]] std::vector<rw::Texture*> textures() const;
 
+    /// The librw dictionary, for the global texture lookup (platform/texture_lookup.h). Valid as long as this object.
+    [[nodiscard]] rw::TexDictionary* rwDictionary() const { return m_dictionary; }
+
     /// Converts every texture to RGBA pixels, on either backend; palettes are expanded and the PS2's alpha range
     /// (0 to 128) is scaled to 0 to 255, as librw does. Fails with ErrorCode::Invalid naming the first texture librw
     /// could not convert.

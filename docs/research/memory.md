@@ -331,10 +331,18 @@ crashes the original, so nothing depends on its limit).
 
 ## Coney's implementation
 
-Not yet implemented. Coney allocates with the C++ standard library. When streaming arrives, the recommendation
-above applies: a `SectorBudget` with a configurable size (the original's as the default in test mode), charged by
-world parts and resources and consulted by the eviction, and per-level ownership so that unloading a level frees
-everything it made.
+Coney allocates with the C++ standard library. The `Sector Pool` budget exists as a number (2026-10-04):
+`coney::world::SectorBudget` (`src/world/sector_budget.h`) counts "capacity minus bytes in use", the approximation
+recommended above, and the world streamer asks it for room before every world and part, as
+`ResourceManager_MakeRoom` asks the heap ([The streamed world](world.md#coneys-implementation)). There are no
+resources yet, so a request either fits or the streamer frees a world part.
+
+**Coney's choice** for its size until a runtime read: the upper bound above, 23,181,864 bytes
+(`kSectorPoolUpperBound`). The world viewer charges it, in the original's order, with the `Global Data Pool` (101 %
+of `warriors.glr`), the `World Level Pool` (103 % of `<level>.lev`, at least 256 KB), each world's heap and each loaded
+part's heap, all from the manifest. Per-level ownership is the world set's: destroying it frees every part and world
+and gives their bytes back. With this size every level's worlds and parts fit at once (17.4 MB at most for worlds and
+parts), so the original's eviction only shows with a smaller budget; Coney's disc test forces it with one.
 
 ## Open questions
 

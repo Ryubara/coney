@@ -42,7 +42,9 @@
 #include "platform/texture_dictionary.h"
 #include "platform/texture_viewer_mode.h"
 #include "platform/window.h"
+#include "platform/world_viewer_mode.h"
 #include "scripting/config_strings.h"
+#include "world/sector_budget.h"
 
 namespace {
 
@@ -228,6 +230,9 @@ int main(int argc, char** argv) {
     std::optional<coney::platform::TextureViewerMode> viewer;
     std::optional<coney::SheetViewerMode> sheetViewer;
     std::optional<coney::TextViewerMode> textViewer;
+    // The world viewer's memory budget: the original's Sector Pool, at Coney's estimate of its size.
+    coney::world::SectorBudget sectorBudget(coney::world::kSectorPoolUpperBound);
+    std::unique_ptr<coney::platform::WorldViewerMode> worldViewer;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
             return 2; // parseOptions refuses --view-txd without --disc, so this is never reached
@@ -273,6 +278,17 @@ int main(int argc, char** argv) {
             }
         }
         modes.push(textViewer.emplace(renderer, std::move(*font), std::move(bigFont), std::move(*text)));
+    } else if (const std::optional<std::string> viewWorld = options->viewWorld; viewWorld) {
+        if (!wad) {
+            return 2; // parseOptions refuses --view-world without --disc, so this is never reached
+        }
+        auto viewerMode = coney::platform::WorldViewerMode::create(renderer, *wad, *viewWorld, sectorBudget, printText);
+        if (!viewerMode) {
+            std::fprintf(stderr, "coney: %s: %s\n", viewWorld->c_str(), viewerMode.error().message.c_str());
+            return 1;
+        }
+        worldViewer = std::move(*viewerMode);
+        modes.push(*worldViewer);
     } else if (wad) {
         // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
         // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first. Until
@@ -314,6 +330,9 @@ int main(int argc, char** argv) {
 
     std::optional<coney::platform::Window> window = renderer.window();
     modes.runUntilEmpty(timer, [&window] { return !window || window->pumpEvents(); }, frameLimit);
+    if (worldViewer) {
+        printText(worldViewer->summary());
+    }
 
     // Report the screenshot: where it went and a summary that says whether anything was drawn.
     if (const auto& capture = renderer.capture(); capture) {

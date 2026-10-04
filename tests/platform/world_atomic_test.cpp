@@ -69,6 +69,8 @@ TEST_CASE("unpacking turns the PS2 data into scaled librw geometry with its tria
     CHECK(maxX == 2.0F); // 4 * 0.5
     REQUIRE(geometry->colors != nullptr);
     CHECK(geometry->colors[0].alpha == 0x80);
+    CHECK(geometry->colors[0].red == 20); // the GS's 0x80 is full brightness: the packed 10 is doubled
+    CHECK(geometry->colors[0].blue == 60);
     REQUIRE(geometry->texCoords[0] != nullptr);
     CHECK(geometry->meshHeader->getMeshes()[1].numIndices == 4);
 }

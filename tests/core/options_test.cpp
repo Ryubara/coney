@@ -165,6 +165,18 @@ TEST_CASE("the sheet viewer option takes a sheet and needs a disc and no other v
     CHECK(coney::usageText().find("--view-sheet") != std::string_view::npos);
 }
 
+TEST_CASE("the world viewer option takes a name and needs a disc and no other viewer", "[options]") {
+    auto viewer = parse(std::array<std::string_view, 4>{"--disc", "H:\\", "--view-world", "level2"});
+    REQUIRE(viewer.has_value());
+    CHECK(viewer->viewWorld == "level2");
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--view-world", "level2"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--view-world"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--view-world", "a", "--view-sheet", "b"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--view-world", "a", "--load", "b"}).has_value());
+    CHECK(coney::usageText().find("--view-world") != std::string_view::npos);
+}
+
 TEST_CASE("the input script option takes a file and may be given once", "[options]") {
     auto scripted = parse(std::array<std::string_view, 3>{"--input-script", "menu.txt", "--headless"});
     REQUIRE(scripted.has_value());

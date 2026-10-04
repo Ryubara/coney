@@ -405,7 +405,11 @@ front to back (inferred).
 
 ## Coney's implementation
 
-Reading and decoding exist (2026-10-04); the manifest, streaming, placement in a scene and drawing do not.
+Reading, decoding, streaming and drawing exist (2026-10-04): `coney --view-world <level>` streams a level's two worlds
+around a free-flying camera ([Building](../guides/building.md#the-world-viewer)). The level file, the level world,
+objects, PVS and occluders do not.
+
+**Reading and decoding** (2026-10-04, unchanged):
 
 - **`src/world/world_streams.h`** reads the layout of a world stream (`inspectWorldStream`: part count, dictionary,
   every atomic sector with its box and `0x3F1` data) and of a part file (`inspectPartFile`), and checks each atomic
@@ -428,28 +432,93 @@ reference, interleaved and scaled. With its asserts off (Coney's build) it would
 wrong bytes. And the GL3 renderer cannot draw PS2 native geometry at all. So the smallest fix is the pipeline above,
 registered from Coney's code; librw needs no patch.
 
-**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[world]"` reads 159 worlds (16,074 atomic sectors,
-5,315 with an atomic) and 1,564 parts; all 5,315 atomics pass the checks, decode and read with librw (0 failed), each
-naming a sector of its own part, and all 5,315 unpack into plain geometry that lies in its sector's box once placed by
-its frame. Results in [Atomic plugin](#atomic-plugin) and [PS2 world geometry](#ps2-world-geometry).
+**Streaming** (platform-neutral, `src/world/`, unit-tested on synthetic worlds):
 
-What the implementer still needs:
+- `world_manifest.h`: `readWorldManifest` (`0x00410e08`) and the no-manifest heap rules.
+- `streamed_world.h`: `StreamedWorld`, one world's bookkeeping, its tables sized from the data (so `level70s`'s 593
+  sectors fit): `create` indexes the sectors (`World_RegisterSector`); `cameraDistanceSq` is
+  [the face-plane metric](#camera-distance); `findSectorToLoad`, `pendingDistance`, `findPartToUnload`,
+  `resetVisibility`, `findVisibleSectors` and `collectSectors` follow `0x00411eb0`, `0x00411880`, `0x004120a8`,
+  `0x004123e8`, `0x00411d10` and `0x00411b20`. The two quirks are kept and marked in the code: the squared distance
+  compared with the plain draw distance, and part `n` never unloaded. A consequence of the metric shows in the tests:
+  a camera inside a sector is as near to the neighbour across the closest face, and the lower index wins the tie.
+- `world_streamer.h`: `updateStreaming` (`WorldManager_Update`) makes one decision a frame across the `s` and `d`
+  worlds through a `PartStore`; `requestPart` (`0x00412310`); `preloadWorlds` (`WorldManager_Preload`, radius = the
+  draw distance); `adjustDrawDistance` (step 3 of [A frame](#a-frame)).
+- `sector_budget.h`: `SectorBudget`, the `Sector Pool` as a number ([Memory](memory.md#coneys-implementation)).
+- `view_frustum.h`, `debug_camera.h`: the visibility pass's frustum test (Coney tests each sector's box, having no BSP
+  walk) and the viewer's free-fly camera.
 
-- **The manifest reader**, and the world's and each part's texture dictionary kept while the part is loaded.
-- **Texture lookup**: the world's and each part's dictionary are loaded without being made current, so materials find
-  their textures through the [global lookup](graphics.md#texture-lookup) across every loaded dictionary.
-- **Streaming** with the behaviour of [Choosing what to stream](#streaming): one decision a frame, nearest missing
-  sector first (visible ones first), farthest unseen part out when memory is short, a five-unit hysteresis, never the
-  last part. Coney can read synchronously at first, but the test mode needs the decisions to be deterministic, so
-  "now" and file completion must come from the engine's clock and file layer, not the wall clock.
-- **Memory**: Coney has no 32 MB limit, but the eviction order is visible to the player (what pops in where), so a
-  budget that mimics the original's `Sector Pool` is worth having as an option
-  ([Memory](memory.md#what-a-reimplementation-must-keep)); tables sized from the data, not 560 sectors and 140
-  parts.
-- **Rendering** in the order of [A frame](#a-frame): the level world, `s` world sectors (back-face culling), opaque
-  objects, `d` world sectors, water, translucent objects; a one-second fade-in per newly loaded atomic; the
-  draw-distance adjustment; frustum, PVS and occluder culling (PVS and occluders can come later: they only save work).
-- **Disc test** for the manifests (159, sizes as in [Manifest](#manifest)); the worlds and parts are covered.
+**Loading and drawing** (`src/platform/`):
+
+- `world_set.h`: `WorldSet` loads a name's worlds in LoadLevel's order (`<name>s` then `<name>d`, or `<name>` alone):
+  manifest, room in the budget, world stream with its dictionary (`0x00410648`, `0x00410a50`); it is the `PartStore`
+  that reads a part (`0x004110c0`: dictionary first, then each atomic placed at its sector's origin, unpacked and
+  given geometry flag `0x40`) and frees one (`0x004115d0`: atomics, then dictionary); its destructor is `World_Unload`.
+- `texture_lookup.h`: [the global lookup](graphics.md#texture-lookup). Every world and part dictionary is registered,
+  newest first, and librw's find callback searches them all; librw's own default makes its start-up dictionary current
+  and searches only that one, so Coney clears the current dictionary, as the game never leaves one set. No file is
+  read and no stand-in made for a missing name.
+- `world_renderer.h`: `WorldManager_Render` as far as it goes: the camera at the draw distance with fog from half of
+  it in the background colour, then the `s` world's collected sectors and the `d` world's, Z test and write, back faces
+  culled, each atomic through `World_RenderSectorAtomic` (material alpha for the one-second fade, then librw's render).
+- `world_viewer_mode.h`: the mode behind `--view-world`. Per frame: camera, one streaming decision (from the last
+  frame's visibility), draw distance, visibility pass, draw. Game time, so `--frames` and `--input-script` give the
+  same run every time.
+
+**Seen in the viewer** (screenshots of `level2`, `level14`, `level51`, `level83`, `level100` and `objarena`, checked by
+eye; none kept):
+
+- Sectors meet without cracks or overlaps, so placement at the sector origin with the `+0x00` scale is right.
+- **`0x3F0 +0x04` is the texture-coordinate scale**: with it, road markings, crossings, tiled pavements and trees
+  look right; with the `+0x00` scale instead, the same textures tile visibly wrong (trees become rows of repeated leaf
+  patches, crossings lose their stripes). Coney's evidence: confirmed (runtime), visually.
+- **The first texture-coordinate set** is the base texture's: drawn with set 1 only, everything looks right. What the
+  second set (in the `s` worlds) is for is open.
+- **Prelighting is dark**: over all of `level2s`'s vertices the colour channels average about 14 of 255 and rarely
+  pass 128; alpha is always 255. Coney doubles red, green and blue (clamped) when it unpacks, reading 0x80 as full
+  brightness as the GS does when it modulates a texel by a vertex colour (**Coney's choice**, inferred from the GS).
+  Even so the scenery is dark without the game's LightManager, so the viewer adds one ambient light of 0.25
+  (**Coney's choice**, a stand-in until the LightManager exists).
+- **Winding and culling**: in `level2s`, `level2d` and `level51s` 99.6 % of the triangles face the way their vertex
+  normals point (153,453 against 525); with back-face culling, the faces that go are the backs of one-sided backdrop
+  façades seen from outside the play area, as expected.
+- Billboards and signs read left to right: the image is not mirrored.
+
+**Coney's choices** (marked in the code): the `Sector Pool`'s size is the memory page's upper bound, 23,181,864
+bytes, charged with the `Global Data Pool` (101 % of `warriors.glr`), the `World Level Pool` (103 % of `<level>.lev`,
+at least 256 KB) and then the worlds and parts by their manifest heap sizes; a part's recorded heap size stays the
+manifest's (the original replaces it with what the part used); reads are synchronous; a part that fails to read is
+marked failed and not asked for again; freeing happens only when a wanted part does not fit; the 5.0 margin compares
+plain distances; `pendingDistance` is +infinity when the last search found nothing; the preload's "nearest missing
+sector" (`0x0040e100`) is a fresh search; the fade uses game time; the camera's own far clip is 300, its near clip 0.5,
+its view window 0.5 high and as wide as the window's shape; the background and fog colour is a slate blue; collected
+sectors are drawn nearest first, sorted by the camera metric; the viewer starts above the middle of the first world's
+part 1, looking along +z.
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[world_streaming]"` streams all 80 levels' worlds
+(79 pairs and `objarena`) under a camera that visits the centre of every streamed sector, three frames each (15,945
+frames): 1,564 parts read, every used part at least once, none failed, none freed: with the default budget every
+level's worlds and parts fit at once (largest peak 17,428,516 bytes for the worlds and parts alone). Most atomics
+resident at once: 598. With the budget cut to the worlds plus 2 MB, `level51`, `level83` and `level54` stream with
+682 parts freed, 711 read and 533 frames short of room, peak 3,753,423 bytes; in both runs no frame breaks an
+invariant (budget never exceeded and equal to what is loaded, every loaded part's atomics present, no freed part seen
+last frame, the last part never freed, the margin always kept).
+
+TODO for the analysts, found while implementing:
+
+- **The `0x3F0 +0x04` row** of [Atomic plugin](#atomic-plugin) can say "texture-coordinate scale", with Coney's visual
+  check above as runtime evidence; a PCSX2 look at the microcode would confirm it in code.
+- **Vertex colour range**: whether the game's pipelines (or the GS) really treat the prelighting colour as 0x80 = 1.0,
+  and what the LightManager adds to the streamed world (`0x0017de10`, `0x0017e810`): the world is very dark without it.
+- **The 5.0 margin**: whether `0x0040f8a0` compares it with plain or squared distances.
+- **`0x0040e100`**, the preload's "nearest missing sector": does it search again or read the last search?
+- **`World_PendingDistance` with nothing found**: what it returns, and so where the draw distance goes when the
+  whole level is loaded.
+- **The player camera's far clip, near clip and view window**, which set the draw distance's ceiling and the view.
+- **The `Sector Pool`'s real size** (runtime read, [Memory](memory.md#open-questions)).
+- **The second texture-coordinate set** and the material pipelines `0x30084`/`0x30086`/`0x30088`: how they draw.
+- **The level's background colour** (the fog colour), and the level world's role.
 
 ## Disc counts {#disc-counts}
 
@@ -562,7 +631,7 @@ Some pairs are byte-identical (`level91`/`level97`, `level119`/`level120`).
 
 ## Open questions
 
-- **What `0x3F0` `+0x04` scales** (texture coordinates, speculative), and the material pipelines `0x30084`,
+- **What `0x3F0` `+0x04` scales**: texture coordinates by Coney's visual check ([Coney's implementation](#coneys-implementation)), to be confirmed in code; and the material pipelines `0x30084`,
   `0x30086`, `0x30088`: what they change in drawing (the materials carry MatFX dual-texture data, plugin `0x120`).
 - **The two atomic pipelines `0x30082` and `0x30083`:** only one atomic uses `0x30082`; how the two differ.
 - **The native data struct size** that exceeds its section ([Part file](#part-file)).

@@ -81,6 +81,10 @@ class RenderEngine final : public graphics::RenderDevice {
     /// texture viewer). Otherwise as beginFrame().
     void beginWindowFrame(graphics::Rgba clear);
 
+    /// The camera frames are cleared and drawn through, for 3D drawing (platform/world_renderer.h); null with the NULL
+    /// backend. It may be made again when the window is resized, so do not keep it across frames.
+    [[nodiscard]] rw::Camera* camera() const { return m_camera; }
+
     /// Where the logical screen is in the window this frame, in window pixels.
     [[nodiscard]] graphics::ScreenRect logicalViewport() const { return m_viewport; }
 

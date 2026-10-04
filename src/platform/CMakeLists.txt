@@ -2,6 +2,8 @@
 # Everything that talks to SDL3 or librw, as a library so the tests can use it too (with the headless renderer).
 add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_viewer_mode.cpp
                                   window.cpp world_atomic.cpp)
+# The streamed-world viewer (docs/research/world.md#coneys-implementation).
+target_sources(coney_platform PRIVATE texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 coney_target_defaults(coney_platform)
@@ -26,6 +28,8 @@ add_test(NAME coney.view_sheet_needs_disc COMMAND coney --view-sheet menu_system
 set_tests_properties(coney.view_sheet_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.view_text_needs_disc COMMAND coney --view-text big_font hello)
 set_tests_properties(coney.view_text_needs_disc PROPERTIES WILL_FAIL TRUE)
+add_test(NAME coney.view_world_needs_disc COMMAND coney --view-world level2)
+set_tests_properties(coney.view_world_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.rejects_missing_disc COMMAND coney --disc "${CMAKE_CURRENT_BINARY_DIR}/no-such-disc" --load x)
 set_tests_properties(coney.rejects_missing_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.plays_input_script

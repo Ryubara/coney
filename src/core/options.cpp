@@ -19,6 +19,7 @@ constexpr std::string_view kUsage =
     "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE]\n"
+    "             [--view-world NAME]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -31,6 +32,7 @@ constexpr std::string_view kUsage =
     "                     lay out and draw TEXT (markup allowed; @ID for a UI string, such as @0x1f)\n"
     "                     with the font sheet FONT (such as big_font); needs --disc\n"
     "  --language CODE    the language of the UI strings: en, es, fr, it or de (default en)\n"
+    "  --view-world NAME  fly through a level's streamed scenery: level2, level2s, objarena; needs --disc\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
     "  --input-script FILE\n"
@@ -107,6 +109,13 @@ std::expected<void, Error> checkCombinations(const Options& options) {
         (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value())) {
         return invalidArgument("--view-text cannot be combined with --load, --view-txd or --view-sheet");
     }
+    if (options.viewWorld.has_value() && !options.discPath.has_value()) {
+        return invalidArgument("--view-world needs --disc to say where the game's files are");
+    }
+    if (options.viewWorld.has_value() && (!options.loads.empty() || options.viewTxd.has_value() ||
+                                          options.viewSheet.has_value() || options.viewText.has_value())) {
+        return invalidArgument("--view-world cannot be combined with --load, --view-txd, --view-sheet or --view-text");
+    }
     if (options.screenshotPath.has_value()) {
         if (!options.frameLimit.has_value()) {
             return invalidArgument("--screenshot needs --frames N: the screenshot is of the last frame");
@@ -164,6 +173,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
         } else if (arg == "--view-sheet") {
             if (auto value = takeValue(args, i, options.viewSheet, "--view-sheet", "a sheet name or a WAD entry");
                 !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--view-world") {
+            if (auto value = takeValue(args, i, options.viewWorld, "--view-world", "a level or world name"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--input-script") {

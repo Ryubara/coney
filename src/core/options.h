@@ -38,6 +38,9 @@ struct Options {
     /// `--view-sheet`: a sprite sheet to show, by resource name (`menu_system`) or as a WAD entry (a name or a `0x`
     /// hash). Requires discPath; cannot be combined with `--load` or `--view-txd`.
     std::optional<std::string> viewSheet;
+    /// `--view-world`: a level or streamed world whose scenery the world viewer streams and shows (`level2`, `level2s`,
+    /// `objarena`). Requires discPath; cannot be combined with `--load`, `--view-txd`, `--view-sheet` or `--view-text`.
+    std::optional<std::string> viewWorld;
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;

@@ -454,8 +454,12 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   `graphics::inspectTexDictionary` has checked the stream, and converts it to RGBA images (any backend) or to OpenGL
   textures (`Raster::convertTexToCurrentPlatform`). The chunk readers for `0x0B` and `0x2A` push it as `0x0B`
   ([Chunk system](chunk-system.md#coneys-implementation)); sector atomics files and world streams are read at their
-  fixed offsets by `loadTextureDictionaries`. Dictionaries are not kept per resource and there is no lookup by name
-  yet.
+  fixed offsets by `loadTextureDictionaries`. Dictionaries are not kept per resource yet.
+- **Texture lookup by name** (`src/platform/texture_lookup.h`): every dictionary of a loaded streamed world and its
+  parts is registered, newest first, and librw's find callback searches them all, first match winning, with no file
+  fallback ([Finding textures by name](#texture-lookup)). librw itself searches only the current dictionary and makes a
+  dictionary of its own current at start-up, so Coney clears the current dictionary, as the game never leaves one set.
+  The newest-first order is still RenderWare's inferred one (open question below).
 - **Alpha:** librw's PS2 reader scales alpha by 255/128 when it converts a raster to an image (palette entries and
   32-bit texels alike), so 128 becomes 255; that answers the open question below, and a unit test pins it.
 - **librw and the game's data:** librw recomputes each PS2 texture's GS layout and asserts that the stream agrees;
@@ -487,12 +491,11 @@ What is still to do:
 - `Present` once per fixed 1/30 s step ([frame rate](#frame-rate)); a test mode that renders without a display.
 - Clear to the background colour (white until a level sets one; the legal screen clears to black) with Z.
 - Texture dictionaries read with librw from the chunk stream (`0x0B`, `0x2A`, world streams, sector atomics) and kept
-  per resource; texture lookup by name across all loaded dictionaries, newest first (check the order), no file
-  fallback.
+  per resource (the lookup by name exists, above; the chunk readers' dictionaries are not registered in it yet).
 - PS2 native textures: 4- and 8-bit palettised, 32-bit palettes, power-of-two sizes up to 512; check alpha scaling.
 - Drawing the streamed world: the readers for `0x3F0` and `0x3F1` and the decoder of the world atomics' PS2 geometry
-  exist, and a part atomic is placed at its sector's origin ([The streamed world](world.md#coneys-implementation));
-  streaming and rendering do not.
+  exist, and the world viewer streams and draws the `s` and `d` worlds
+  ([The streamed world](world.md#coneys-implementation)); the level world, PVS and occluders do not.
 - The 16:9 option: a 16:9 logical screen shape, the overlay view-window scale 1.1 and the `_w` legal screens.
 
 TODO for the analysts, found while implementing:

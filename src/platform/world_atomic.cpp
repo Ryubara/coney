@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/world_atomic.h"
 
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <format>
@@ -116,10 +117,15 @@ VertexKey keyOf(const graphics::Ps2PackedVertex& vertex) {
     return key;
 }
 
+// A prelighting colour channel for librw, where 255 is full brightness. The PS2's GS modulates a texel by a vertex
+// colour with 0x80 as 1.0, so the packed channels are doubled and clamped (a Coney choice inferred from the GS: the
+// disc's values average about 14 and rarely pass 128, and look right doubled; alpha, always 255 here, is kept).
+rw::uint8 doubled(std::uint8_t channel) { return static_cast<rw::uint8>(std::min(255, channel * 2)); }
+
 // Replaces `atomic`'s PS2 native geometry with plain geometry: librw's uninstance step for the game's pipelines.
 // Positions are the packed integers times the atomic's position scale (0x3F0 +0x00); texture coordinates are
-// scaled by its second scale (speculative, world.md); normals are signed bytes over 128 as librw's PS2 code reads
-// them; colours are copied.
+// scaled by its second scale (the world viewer shows textures right only with it, world.md); normals are signed bytes
+// over 128 as librw's PS2 code reads them; colours are doubled (doubled()).
 void uninstanceGameAtomic(rw::ObjPipeline* /*pipeline*/, rw::Atomic* atomic) {
     rw::Geometry* geometry = atomic->geometry;
     std::vector<graphics::Ps2WorldMesh> meshes;
@@ -171,8 +177,9 @@ void uninstanceGameAtomic(rw::ObjPipeline* /*pipeline*/, rw::Atomic* atomic) {
                                           : rw::makeV3d(0.0F, 0.0F, 1.0F);
         }
         if (geometry->colors != nullptr) {
-            geometry->colors[i] = hasColour ? rw::makeRGBA(v.colour[0], v.colour[1], v.colour[2], v.colour[3])
-                                            : rw::makeRGBA(255, 255, 255, 255);
+            geometry->colors[i] =
+                hasColour ? rw::makeRGBA(doubled(v.colour[0]), doubled(v.colour[1]), doubled(v.colour[2]), v.colour[3])
+                          : rw::makeRGBA(255, 255, 255, 255);
         }
         for (rw::int32 set = 0; set < geometry->numTexCoordSets && set < 2; ++set) {
             const auto first = static_cast<std::size_t>(set) * 2;
