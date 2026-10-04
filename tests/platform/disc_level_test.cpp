@@ -132,7 +132,7 @@ TEST_CASE("every level file loads into a level object", "[disc][level]") {
         static_cast<unsigned long long>(totals.modelTriangles[0]),
         static_cast<unsigned long long>(totals.modelTriangles[1]),
         static_cast<unsigned long long>(totals.modelTriangles[2]),
-        static_cast<unsigned long long>(totals.texturedModels), static_cast<unsigned long long>(totals.levels * 3),
+        static_cast<unsigned long long>(totals.texturedModels), static_cast<unsigned long long>(totals.levels) * 3,
         static_cast<unsigned long long>(totals.boxesNearOrigin), static_cast<unsigned long long>(totals.worldTriangles),
         static_cast<unsigned long long>(totals.worldTextured));
     CHECK(totals.levels == 64);

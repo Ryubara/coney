@@ -362,7 +362,7 @@ std::expected<WorldAtomic, Error> WorldAtomic::read(std::span<const std::byte> s
     if (!packed && info->pipeline) {
         return fail(ErrorCode::Invalid,
                     std::format("an atomic in RenderWare's default layout names pipeline {:#x}/{:#x}",
-                                info->pipelinePlugin, *info->pipeline));
+                                info->pipelinePlugin, info->pipeline.value_or(0)));
     }
     if (packed && (info->pipelinePlugin != kGamePipelinePlugin ||
                    (info->pipeline != kGameAtomicPipelineA && info->pipeline != kGameAtomicPipelineB))) {
