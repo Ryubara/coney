@@ -20,6 +20,8 @@ add_library(coney_core STATIC
     gamemodes/legal_screen_mode.cpp
     gamemodes/load_entry_mode.cpp
     gamemodes/sheet_viewer_mode.cpp
+    gamemodes/text_viewer_mode.cpp
+    graphics/font.cpp
     graphics/frame_stats.cpp
     graphics/overlay_camera.cpp
     graphics/ps2_world_mesh.cpp
@@ -29,6 +31,8 @@ add_library(coney_core STATIC
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
     gui/global_strings.cpp
+    gui/markup.cpp
+    gui/text_layout.cpp
     scripting/config_strings.cpp
     scripting/lua_chunk.cpp
     scripting/lua_value.cpp

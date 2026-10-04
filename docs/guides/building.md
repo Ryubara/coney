@@ -95,13 +95,15 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and nine smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd` or `--view-sheet` without
-`--disc`, refuses a disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and
+`ctest` runs the Catch2 unit tests (`coney_tests`) and ten smoke tests of the `coney` executable itself: it starts
+and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet` or `--view-text`
+without `--disc`, refuses a disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and
 refuses one that does not exist. The unit tests build their disc images, archives, RenderWare texture dictionaries,
 streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU (the librw tests run librw on its NULL
-device). Three tests check your own disc: every texture dictionary, every sprite sheet and the sheet table, and every
-streamed world with the atomics of its parts (`[world]`, about a second). They run only when the environment variable
+device). Five tests check your own disc: every texture dictionary; every sprite sheet, font and the sheet table; every
+streamed world with the atomics of its parts (`[world]`, about a second); the UI strings of all five languages, run
+through the game's own Lua scripts (`[strings]`); and the two text fonts with every English UI string laid out in
+them (`[text]`). They run only when the environment variable
 `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
 
 ```sh
@@ -119,7 +121,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
-      [--headless] [--help] [--input-script FILE]
+      [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -205,6 +207,23 @@ sheet's first glyph (-1 for a sheet that is not a font) and the texture's size.
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --view-sheet menu_system --frames 2 --screenshot ../../scratch/menu.png
+```
+
+### Viewing text
+
+`--view-text FONT TEXT` opens the window and lays out and draws one text, as a text widget would
+([GUI](../research/gui.md#coneys-implementation)): markup tags such as `<COLOR AA2B2BFF>`, `<SIZE 1.5>`, `<CR>`,
+`<CENTER>`, `<BIGFONT>` and the button glyphs `<X>`, `<T>`, `<DU>` all work. `FONT` is the sheet the text starts in:
+`part_page0`, the font Coney's text starts in and the one with the button pictures, or `big_font`, which `<BIGFONT>`
+always uses. `TEXT` is the text itself (quote it for the shell), or `@` and the id of one of the game's UI strings,
+decimal or `0x` hex (`@0x1f` is the menus' usage line). For `@ID` Coney runs the game's string scripts for the
+language `--language CODE` gives (`en`, `es`, `fr`, `it` or `de`; English by default) and prints the number of strings
+and the length of the one shown, never its text. The text's game time runs with the frames, so `<PULSE>` and
+`<DISPLAYTIME>` animate.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-text part_page0 @0x1f --frames 3 --screenshot ../../scratch/usage.png
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-text part_page0 "<BIGFONT>Title</BIGFONT><CR>Press <X>" --frames 3
 ```
 
 ### Controls {#controls}

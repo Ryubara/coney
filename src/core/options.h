@@ -9,8 +9,15 @@
 #include <vector>
 
 #include "core/error.h"
+#include "core/language.h"
 
 namespace coney {
+
+/// What `--view-text` shows: a text laid out in a font.
+struct TextView {
+    std::string font; ///< A font's sprite sheet resource, such as `big_font`.
+    std::string text; ///< Marked-up text, or `@` and a UI string id (`@31`, `@0x1f`).
+};
 
 /// Settings taken from the command line.
 struct Options {
@@ -37,6 +44,11 @@ struct Options {
     /// `--input-script`: play the pad input in this file (src/core/input_script.h) instead of reading the keyboard
     /// and gamepads: the scripted input of test mode.
     std::optional<std::string> inputScript;
+    /// `--view-text FONT TEXT`: lay out and draw a text. Requires discPath; cannot be combined with `--load`,
+    /// `--view-txd` or `--view-sheet`.
+    std::optional<TextView> viewText;
+    /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
+    Language language = Language::English;
 };
 
 /// Largest accepted `--frames` value: about 4.6 hours at 60 Hz, far beyond any test, and well inside `int`.

@@ -24,6 +24,8 @@ add_test(NAME coney.view_needs_disc COMMAND coney --view-txd 0x1234)
 set_tests_properties(coney.view_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.view_sheet_needs_disc COMMAND coney --view-sheet menu_system)
 set_tests_properties(coney.view_sheet_needs_disc PROPERTIES WILL_FAIL TRUE)
+add_test(NAME coney.view_text_needs_disc COMMAND coney --view-text big_font hello)
+set_tests_properties(coney.view_text_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.rejects_missing_disc COMMAND coney --disc "${CMAKE_CURRENT_BINARY_DIR}/no-such-disc" --load x)
 set_tests_properties(coney.rejects_missing_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.plays_input_script

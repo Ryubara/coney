@@ -5,6 +5,7 @@
 #include <charconv>
 #include <cstddef>
 #include <format>
+#include <optional>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -17,7 +18,7 @@ namespace {
 constexpr std::string_view kUsage =
     "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
     "             [--screenshot PATH] [--headless] [--help]\n"
-    "             [--input-script FILE]\n"
+    "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -26,6 +27,10 @@ constexpr std::string_view kUsage =
     "  --view-txd ENTRY   show the textures of a WAD entry's texture dictionaries; needs --disc\n"
     "  --view-sheet SHEET show a sprite sheet's rectangles as sprites: a name such as menu_system,\n"
     "                     or a WAD entry; needs --disc\n"
+    "  --view-text FONT TEXT\n"
+    "                     lay out and draw TEXT (markup allowed; @ID for a UI string, such as @0x1f)\n"
+    "                     with the font sheet FONT (such as big_font); needs --disc\n"
+    "  --language CODE    the language of the UI strings: en, es, fr, it or de (default en)\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
     "  --input-script FILE\n"
@@ -95,6 +100,13 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     if (options.viewSheet.has_value() && (!options.loads.empty() || options.viewTxd.has_value())) {
         return invalidArgument("--view-sheet cannot be combined with --load or --view-txd");
     }
+    if (options.viewText.has_value() && !options.discPath.has_value()) {
+        return invalidArgument("--view-text needs --disc to say where the game's files are");
+    }
+    if (options.viewText.has_value() &&
+        (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value())) {
+        return invalidArgument("--view-text cannot be combined with --load, --view-txd or --view-sheet");
+    }
     if (options.screenshotPath.has_value()) {
         if (!options.frameLimit.has_value()) {
             return invalidArgument("--screenshot needs --frames N: the screenshot is of the last frame");
@@ -110,6 +122,7 @@ std::expected<void, Error> checkCombinations(const Options& options) {
 
 std::expected<Options, Error> parseOptions(std::span<const std::string_view> args) {
     Options options;
+    std::optional<std::string> languageArg; // as typed, so a repeat is refused like any other option
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string_view arg = args[i];
         if (arg == "--help") {
@@ -158,6 +171,25 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--view-text") {
+            // Two values: the font, then the text.
+            if (options.viewText.has_value()) {
+                return invalidArgument("--view-text given twice");
+            }
+            if (i + 2 >= args.size() || args[i + 1].empty() || args[i + 2].empty()) {
+                return invalidArgument("--view-text needs a font sheet and a text");
+            }
+            options.viewText = TextView{std::string(args[i + 1]), std::string(args[i + 2])};
+            i += 2;
+        } else if (arg == "--language") {
+            if (auto value = takeValue(args, i, languageArg, "--language", "en, es, fr, it or de"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            const std::optional<Language> language = languageFromCode(*languageArg);
+            if (!language) {
+                return invalidArgument(std::format("--language needs en, es, fr, it or de, got \"{}\"", *languageArg));
+            }
+            options.language = *language;
         } else if (arg == "--screenshot") {
             if (auto value = takeValue(args, i, options.screenshotPath, "--screenshot", "the path of a PNG file");
                 !value) {

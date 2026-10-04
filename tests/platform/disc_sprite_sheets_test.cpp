@@ -22,6 +22,7 @@
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "gamemodes/load_entry_mode.h"
+#include "graphics/font.h"
 #include "graphics/particle_page.h"
 #include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
@@ -39,6 +40,8 @@ struct SheetTotals {
     std::uint64_t oneTexture = 0;         // ... whose dictionary holds exactly one texture
     std::uint64_t notFont = 0;            // ... with firstGlyph -1
     std::uint64_t coordinatesInRange = 0; // ... whose every rectangle lies in [0, 1] with u1 >= u0 and v1 >= v0
+    std::uint64_t fonts = 0;              // ... with a first glyph, which load as fonts
+    std::uint64_t fullFonts = 0;          // ... with a rectangle for every byte from their first glyph on
     std::uint64_t failedEntries = 0;
 };
 
@@ -124,6 +127,12 @@ TEST_CASE("every sprite sheet on the disc loads and the sheet table matches", "[
             totals.oneTexture += sheet->texture()->dictionaryTextureCount() == 1 ? 1 : 0;
             totals.notFont += sheet->page().firstGlyph == -1 ? 1 : 0;
             totals.coordinatesInRange += rectanglesInRange(sheet->page()) ? 1 : 0;
+            if (sheet->page().firstGlyph >= 0) {
+                // Every font sheet must load as a font (docs/research/gui.md#text).
+                auto font = coney::graphics::Font::fromSheet(sheet->sheet());
+                totals.fonts += font ? 1 : 0;
+                totals.fullFonts += font && font->glyph(0xff).has_value() ? 1 : 0;
+            }
         }
         countRawPages(raw->report, totals, rectCounts);
     }
@@ -132,6 +141,8 @@ TEST_CASE("every sprite sheet on the disc loads and the sheet table matches", "[
                 static_cast<unsigned long long>(totals.entries), static_cast<unsigned long long>(totals.rawPages),
                 static_cast<unsigned long long>(totals.afterDictionary),
                 static_cast<unsigned long long>(totals.exactSize));
+    std::printf("fonts: %llu, of which %llu cover all 256 bytes\n", static_cast<unsigned long long>(totals.fonts),
+                static_cast<unsigned long long>(totals.fullFonts));
     std::printf("sheets loaded: %llu, one texture: %llu, not fonts: %llu, rectangles in range: %llu, failed: %llu\n",
                 static_cast<unsigned long long>(totals.sheets), static_cast<unsigned long long>(totals.oneTexture),
                 static_cast<unsigned long long>(totals.notFont),
@@ -146,6 +157,7 @@ TEST_CASE("every sprite sheet on the disc loads and the sheet table matches", "[
     CHECK(totals.oneTexture == 1335);
     CHECK(totals.coordinatesInRange == 1335);
     CHECK(totals.notFont == 1328);
+    CHECK(totals.fonts == 7);
 
     // The sheet table in warriors.glr: 576 records, and the sheets the page names at their indices.
     auto glr = wad.lookup("warriors.glr");

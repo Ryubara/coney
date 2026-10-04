@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 0.3%](https://img.shields.io/badge/reimplemented-0.3%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 0.5%](https://img.shields.io/badge/reimplemented-0.5%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.3% of the game's own code (9,160 of 3,342,408 bytes, 53 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.5% of the game's own code (17,200 of 3,342,408 bytes, 57 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
@@ -57,8 +57,8 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 4 | 32,152 |
 | `FileIO` | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 1 | 6,480 |
 | `GameModes` | `▉░░░░░░░░░░░░░░░░░░░` | 4.6% | 9 | 51,816 |
-| `Graphics` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 16 | 189,024 |
-| `GUI` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 481,192 |
+| `Graphics` | `▋░░░░░░░░░░░░░░░░░░░` | 2.9% | 19 | 189,024 |
+| `GUI` | `▎░░░░░░░░░░░░░░░░░░░` | 1.2% | 1 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
@@ -133,6 +133,9 @@ at the top of the repository's `README.md`.
 | `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes` | 96 |
 | `0x0015e718` | `GameModeStack_Top` | `GameModes` | 48 |
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
+| `0x00179808` | `Font_Size` | `Graphics` | 240 |
+| `0x00179958` | `Font_Measure` | `Graphics` | 728 |
+| `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
 | `0x00181b20` | `ChunkLoaded_ParticlePage` | `Graphics` | 72 |
 | `0x00181e38` | `Page_Rect` | `Graphics` | 24 |
 | `0x00181e50` | `ResourceMgr_SheetSize` | `Graphics` | 240 |
@@ -151,6 +154,7 @@ at the top of the repository's `README.md`.
 | `0x00198e20` | `SectorPlugin_StreamRead` | `Graphics` | not filled in |
 | `0x0019ee70` | `GlobalString_Get` | `unattributed` | 48 |
 | `0x0019eea0` | `GlobalString_Set` | `unattributed` | 64 |
+| `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 <!-- progress:end -->
 

@@ -3,6 +3,7 @@
 // Entry point. SDL_main.h lets SDL provide the right entry on each OS (WinMain on Windows), which is why main lives
 // in src/platform/: it is the one function that is part of the operating-system boundary.
 
+#include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -12,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -21,6 +23,7 @@
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "core/language.h"
 #include "core/options.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
@@ -29,12 +32,17 @@
 #include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/load_entry_mode.h"
 #include "gamemodes/sheet_viewer_mode.h"
+#include "gamemodes/text_viewer_mode.h"
+#include "graphics/font.h"
+#include "gui/global_strings.h"
+#include "gui/text_layout.h"
 #include "platform/render_engine.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 #include "platform/texture_viewer_mode.h"
 #include "platform/window.h"
+#include "scripting/config_strings.h"
 
 namespace {
 
@@ -98,6 +106,39 @@ loadSheetForViewer(const coney::io::Wad& wad, const coney::chunk::ChunkHandlerTa
                           sheet->page.firstGlyph, texture != nullptr ? texture->width() : 0,
                           texture != nullptr ? texture->height() : 0));
     return sheet;
+}
+
+// The text `--view-text` shows: the argument itself, or for `@ID` (decimal or 0x hex) that UI string of the language,
+// loaded by running the game's string scripts. Prints counts only, never the text.
+std::expected<std::string, coney::Error> resolveViewText(const coney::io::Wad& wad, const std::string& argument,
+                                                         coney::Language language) {
+    if (!argument.starts_with('@')) {
+        return argument;
+    }
+    std::string_view digits = std::string_view(argument).substr(1);
+    int base = 10;
+    if (digits.starts_with("0x") || digits.starts_with("0X")) {
+        digits.remove_prefix(2);
+        base = 16;
+    }
+    std::uint32_t id = 0;
+    const auto parsed = std::from_chars(digits.data(), digits.data() + digits.size(), id, base);
+    if (digits.empty() || parsed.ec != std::errc{} || parsed.ptr != digits.data() + digits.size()) {
+        return coney::fail(coney::ErrorCode::InvalidArgument,
+                           std::format("\"{}\" is not a UI string id (@ and a number)", argument));
+    }
+    coney::gui::GlobalStrings strings;
+    auto loaded = coney::script::loadGlobalStrings(coney::script::wadScriptSource(wad), language, strings);
+    if (!loaded) {
+        return std::unexpected(std::move(loaded.error()));
+    }
+    const std::string_view text = strings.get(id);
+    printText(std::format("UI strings ({}): {} HUD strings; string {:#x} has {} bytes\n", coney::languageCode(language),
+                          strings.size(coney::gui::StringTable::Hud), id, text.size()));
+    if (text.empty()) {
+        return coney::fail(coney::ErrorCode::NotFound, std::format("no UI string has the id {:#x}", id));
+    }
+    return std::string(text);
 }
 
 } // namespace
@@ -186,6 +227,7 @@ int main(int argc, char** argv) {
     coney::LegalScreenMode legal(renderer, loadSheet, coney::LegalScreenSettings{}, printText);
     std::optional<coney::platform::TextureViewerMode> viewer;
     std::optional<coney::SheetViewerMode> sheetViewer;
+    std::optional<coney::TextViewerMode> textViewer;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
             return 2; // parseOptions refuses --view-txd without --disc, so this is never reached
@@ -206,6 +248,31 @@ int main(int argc, char** argv) {
             return 1;
         }
         modes.push(sheetViewer.emplace(renderer, *sheet));
+    } else if (const std::optional<coney::TextView> viewText = options->viewText; viewText) {
+        if (!wad) {
+            return 2; // parseOptions refuses --view-text without --disc, so this is never reached
+        }
+        auto sheet = loadSheetForViewer(*wad, chunkHandlers, viewText->font, renderer);
+        auto font = sheet ? coney::graphics::Font::fromSheet(std::move(*sheet))
+                          : std::expected<coney::graphics::Font, coney::Error>(std::unexpected(sheet.error()));
+        auto text = font ? resolveViewText(*wad, viewText->text, options->language)
+                         : std::expected<std::string, coney::Error>(std::unexpected(font.error()));
+        if (!text) {
+            std::fprintf(stderr, "coney: %s: %s\n", viewText->font.c_str(), text.error().message.c_str());
+            return 1;
+        }
+        // <BIGFONT> needs big_font beside the chosen font.
+        std::optional<coney::graphics::Font> bigFont;
+        if (viewText->font != coney::gui::kBigFontSheet) {
+            auto bigSheet = coney::platform::loadSpriteSheetResource(*wad, chunkHandlers, coney::gui::kBigFontSheet,
+                                                                     renderer.drawsPixels());
+            if (bigSheet) {
+                if (auto big = coney::graphics::Font::fromSheet(std::move(*bigSheet))) {
+                    bigFont = std::move(*big);
+                }
+            }
+        }
+        modes.push(textViewer.emplace(renderer, std::move(*font), std::move(bigFont), std::move(*text)));
     } else if (wad) {
         // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
         // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first. Until

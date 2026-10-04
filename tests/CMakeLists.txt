@@ -16,6 +16,8 @@ add_executable(coney_tests
     gamemodes/legal_screen_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
     gamemodes/sheet_viewer_mode_test.cpp
+    gamemodes/text_viewer_mode_test.cpp
+    graphics/font_test.cpp
     graphics/frame_stats_test.cpp
     graphics/overlay_camera_test.cpp
     graphics/particle_page_test.cpp
@@ -24,6 +26,9 @@ add_executable(coney_tests
     graphics/screen_test.cpp
     graphics/sprite_batch_test.cpp
     graphics/texture_grid_test.cpp
+    gui/disc_text_test.cpp
+    gui/markup_test.cpp
+    gui/text_layout_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp

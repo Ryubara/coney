@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstddef>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -172,4 +173,35 @@ TEST_CASE("the input script option takes a file and may be given once", "[option
     CHECK_FALSE(parse(std::array<std::string_view, 1>{"--input-script"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--input-script", "a", "--input-script", "b"}).has_value());
     CHECK(coney::usageText().find("--input-script FILE") != std::string_view::npos);
+}
+
+TEST_CASE("the text viewer option takes a font and a text and needs a disc", "[options]") {
+    auto viewer = parse(std::array<std::string_view, 5>{"--disc", "H:\\", "--view-text", "big_font", "@0x1f"});
+    REQUIRE(viewer.has_value());
+    if (!viewer) {
+        return;
+    }
+    // A local copy: clang-tidy cannot follow a check through the outer optional.
+    const std::optional<coney::TextView> view = viewer->viewText;
+    REQUIRE(view.has_value());
+    if (!view) {
+        return;
+    }
+    CHECK(view->font == "big_font");
+    CHECK(view->text == "@0x1f");
+    CHECK(viewer->language == coney::Language::English);
+    CHECK(!parse(std::array<std::string_view, 3>{"--view-text", "big_font", "a"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 4>{"--disc", "x", "--view-text", "big_font"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 7>{"--disc", "x", "--view-text", "f", "a", "--view-sheet", "b"})
+               .has_value());
+    CHECK(coney::usageText().find("--view-text FONT TEXT") != std::string_view::npos);
+}
+
+TEST_CASE("the language option takes one of the five codes", "[options]") {
+    auto german = parse(std::array<std::string_view, 2>{"--language", "de"});
+    REQUIRE(german.has_value());
+    CHECK(german->language == coney::Language::German);
+    CHECK(!parse(std::array<std::string_view, 2>{"--language", "jp"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 1>{"--language"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 4>{"--language", "en", "--language", "fr"}).has_value());
 }

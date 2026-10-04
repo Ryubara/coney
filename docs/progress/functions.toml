@@ -211,6 +211,24 @@ subsystem = "GameModes"
 size = 72
 
 [[function]]
+address = 0x00179808
+name = "Font_Size"
+subsystem = "Graphics"
+size = 240
+
+[[function]]
+address = 0x00179958
+name = "Font_Measure"
+subsystem = "Graphics"
+size = 728
+
+[[function]]
+address = 0x00179c30
+name = "Font_Draw"
+subsystem = "Graphics"
+size = 1408
+
+[[function]]
 address = 0x00181b20
 name = "ChunkLoaded_ParticlePage"
 subsystem = "Graphics"
@@ -315,6 +333,12 @@ address = 0x0019eea0
 name = "GlobalString_Set"
 subsystem = "unattributed"
 size = 64
+
+[[function]]
+address = 0x001b9600
+name = "TextWidget_Layout"
+subsystem = "GUI"
+size = 5664
 
 [[function]]
 address = 0x0035e5d0

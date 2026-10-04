@@ -356,6 +356,45 @@ languages. HUD strings: English, Spanish and German 388, French 386, Italian 387
 English); every language has 15 crime, 27 tutorial, 8 command and 5 announce strings and a usage line `0x1f`. A load
 runs about 42,600 Lua instructions and skips 1,796 binding calls.
 
+- **Fonts** (`src/graphics/font.h`, `Font`): a sprite sheet with a first glyph, character `c` being rectangle
+  `firstGlyph + c`. `fontMetrics(scale)` is `Font_Size` (`0x00179808`); `measure` is `Font_Measure` (`0x00179958`):
+  proportional or fixed widths and the 0.56 gap of a space or `0xac` as [Text](#text) gives them; `draw` is
+  `Font_Draw` (`0x00179c30`): right and centred alignment, one sprite per glyph centred at (pen + (width + spacing) /
+  2, y) of size (width, h) through device slots `+0x90` and `+0x98`, and the black shadow at (0.0025, 0.004) with alpha
+  shadow × colour alpha / 255. Coney's choices: a character past the sheet's last rectangle takes no room and draws
+  nothing; a space draws nothing; the shadow comes just before each glyph (the page's "added first", read per glyph);
+  the reveal fraction is not implemented yet.
+- **Markup** (`src/gui/markup.h`): the tag table by index, with the characters of the glyph tags; `parseMarkup`
+  splits a text at `<` ... `>`. A tag name compares exactly; a `<` with no `>` after it is text; a name not in the
+  table (and the nine HUD icon tags 23-31, whose names are not on this page) is skipped and counted.
+- **Layout** (`src/gui/text_layout.h`, `layoutText`, `TextWidget_Layout` `0x001b9600`): measures each line's runs,
+  grows the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into
+  sprites tagged with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha ×
+  the widget's fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
+  `MONEYPLUS`/`MINUS`, the alignments, `CR`, `CR2`, `CR3 f`, `CRM`, every glyph tag and the closing tags; `SOUND`
+  names and the largest `FREEZE` are reported for the audio layer and the timer; `BOLD`, `MONEYFONT`, `BGFONT`,
+  `AUTOINDENT` and the animated stick tags have no effect yet. Lines break only at the `CR` tags: the page documents no
+  automatic wrapping. Coney's choices: a closing tag restores the value before its opening tag; a line takes the
+  alignment in effect at its first character, centring and right-aligning inside the box (`CCENTER` and `RRIGHT` act
+  as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales the colour by 1 + 0.5 × sin(2π t / ms);
+  the style's y is the first line's centre line. **The text font:** a text starts in slot 2, a `part_page0` instance,
+  and `<BIGFONT>` switches to slot 6, `big_font` (Coney's choice, from the data: in `part_page0`, first glyph 94,
+  characters `0x91`-`0xa0` are exactly the button pictures of the tag table, while in `big_font` they are empty but for
+  a triangle at `0x9c`; `big_font`'s rectangles 256-261 hold a circle and five d-pad pictures. Inferred from viewing
+  the sheets with `--view-sheet`).
+- **The `METRICS1` file** is not read: no code uses it ([above](#the-metrics1-file)), and the fonts' metrics come from
+  their sheets' rectangles.
+- `coney --disc <disc> --view-text <font> <text or @id>` lays a text out and draws it through a batch per font and
+  the 2D pass ([Building and testing](../guides/building.md#viewing-text)). On the NTSC-U disc, `@0x1f` shows the
+  usage line as cross "ok" and triangle "back", and a test text shows `big_font` headings, colours, sizes, alignment
+  and every button picture correctly.
+
+**Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][sprite_sheets]"` finds 7 fonts among the 1,335
+sheets (4 with a rectangle for all 256 bytes), all loading as fonts; `"[disc][text]"` loads `big_font` (262
+rectangles over 512 × 256) and `part_page0` (371, first glyph 94), finds a rectangle for all 21 glyph tags' characters
+in both, and lays out all 388 English HUD strings: 10,675 sprites on 400 lines, 89 tags skipped (unknown names such
+as `BOBJ`, `YOBJ`, `ROBJ`, and the tags with no effect yet), no string empty.
+
 TODO for the analysts, found while implementing:
 
 - **Sprite colours:** are the colours `Instance_AddSprite` copies in the GS range (128 = full intensity and opaque,
@@ -374,6 +413,21 @@ TODO for the analysts, found while implementing:
 - **`doFile`:** does the binding add `.lua` to a name without an extension (as Coney does), or look the name up some
   other way?
 - **The HUD string array** at `0x00600048`: its size, and what `GlobalString_Get` does with an id past it.
+- **The font a text widget starts in:** which instance slot (and so which sheet) does a `TextWidget` draw with
+  before any `<BIGFONT>`? Coney takes slot 2 (`part_page0`), the sheet whose characters `0x91`-`0xa0` are the button
+  pictures (above). And what does the explicit base of the two `Font_Measure`/`Font_Draw` call sites (slot 6 with
+  -1, slot 3 with `-'0'`) draw?
+- **`<MONEYFONT>`:** the glyph base `0xd0100` (font 6) or `0xb` (font 3): which rectangles does it select? The strings
+  wrap button tags in it (`<MONEYFONT><ST></MONEYFONT>`, 25 times in English); `part_page0`'s icons below its first
+  glyph (fists, faces, W badges) look like its targets. Coney ignores it.
+- **HUD icon tags 23-31:** their names and characters. The English strings use `<BOBJ>`, `<YOBJ>` and `<ROBJ>`, which
+  are not among the names on this page.
+- **Layout details:** what `<CCENTER>` and `<RRIGHT>` do differently from `<CENTER>` and `<RIGHT>`; when `<CRM>`
+  breaks; `<BOLD>` and `<AUTOINDENT>`; the two characters of each animated stick tag; whether a closing tag restores
+  the previous value or the widget's; whether the widget's y is the first line's centre (Coney) or its top; the shape
+  of `<PULSE>`'s swing; whether the shadow is drawn per glyph (Coney) or under the whole string first.
+- Names: the `@orig` tags call `0x00179808`, `0x00179958` and `0x00179c30` `Font_Size`, `Font_Measure` and
+  `Font_Draw`, and `0x001b9600` `TextWidget_Layout`, all with file `(unknown)`.
 - Names: the `@orig` tags call `0x0019ee70` `GlobalString_Get`, `0x0019eea0` `GlobalString_Set` and `0x0035e5d0`
   `CfgHUDMessage` with file `(unknown)` until the research database names them.
 
@@ -383,8 +437,8 @@ What the implementer still needs:
   the worlds an instance can live in (3D overlay, 2D overlay), where the original's pass finds its batches.
 - Widgets with `Init`, `Update`, `Render`, `Shutdown`, focus; the screen flow with push, pop, unwind and a per-screen
   transition table, entering and exiting covered screens as described.
-- Text: the size formula, proportional advance, alignment, shadow, the markup tags (at least `COLOR`, `SIZE`,
-  `BIGFONT`, `CENTER`, `CR`, the button glyphs and their closing tags for the menus), and glyph = `firstGlyph + byte`.
+- Text widgets around the layout: the reveal fraction, `<SOUND>` played once, `<FREEZE>` on the game timer, and
+  the open tags above (`MONEYFONT` first: the menus use it around every button glyph).
 
 ## Open questions
 
