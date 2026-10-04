@@ -21,9 +21,12 @@ of it and never ship a copy.
 **Reference lists** are the one exception, decided 2026-10-04. Curated lists that identify things in
 the game may be committed and published in `docs/` and `research/`: names and ids (characters, objects, weapons,
 levels, animation clips, WAD entry names, script bindings), numeric values and short descriptions written by us. They
-are facts that let players and modders interoperate with the game, in the way FiveM documents GTA V. They never
-include assets or anything rendered from them (models, textures, images, sound, movies), the game's text (subtitles,
-dialogue, menu strings beyond short labels) or script source, and they are never a file copied out of the disc.
+are facts that let players and modders interoperate with the game, in the way FiveM documents GTA V. They may be
+illustrated with **reference screenshots**: small images Coney renders or captures of a model, object or screen
+(thumbnails, transparent or plain background) to identify it on its reference page, as FiveM's references do. They
+never include the assets themselves (model, texture, sound or movie files, or textures exported as images), the game's
+text (subtitles, dialogue, menu strings beyond short labels) or script source, and they are never a file copied out of
+the disc.
 
 ## Clean room
 
