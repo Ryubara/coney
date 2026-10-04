@@ -481,6 +481,9 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   `World/ps2/WorldPS2.cpp`.
 - **Scripts:** the Lua bindings are the `Scripting/` block (`0x00356390`-`0x003865d8`), mostly around
   `ScriptLua.inl` (anchor `0x0036bb10`).
+- **Front end and GUI:** [Start-up and the front end](frontend.md) (game modes 5, 6, 8, 0x12 and 1, the pads, the
+  profile-manager screens in `GUI/ProfileManagementGUI/`) and [GUI](gui.md) (`ScreenFlowController.cpp`, the
+  widgets, sprite sheets from `Graphics/ParticlePage.cpp`, text and draw order).
 
 ## Open questions
 

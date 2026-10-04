@@ -330,9 +330,12 @@ Written from this page and [WARRIORS.DIR / .WAD](formats/wad-dir.md), in `src/fi
 Not done yet: the file-system interface (`Exists`, `GetSize`, `Open` by name for the game's own callers), the
 `BufferedStream` and the asynchronous `FileManager` queue. None is needed until a subsystem loads files by itself.
 
-TODO for the analysts, found while implementing: the WAD object's constructor at `0x0040c5e0` and the
-`FS_MemoryFile` functions have no names on this page, so Coney's equivalents carry no `@orig` tag; `Stream_SkipBytes`
-is cited with file `(unknown)`.
+TODO for the analysts, found while implementing: the `FS_MemoryFile` functions have no names on this page, so
+Coney's equivalents carry no `@orig` tag; `Stream_SkipBytes` is cited with file `(unknown)`. The WAD opener at
+`0x0040c5e0` is named `Wad_Open` here (our name; no string names it). It opens `cdrom0:\WARRIORS.DIR;1` through
+`0x00149040` and `WARRIORS.WAD` through `0x001500a8`, and its strings sit just before `WorldLevel.cpp`'s
+(`"WorldLevel"`, `"%s.lev"`), so it is probably the first unit of `World/` (inferred); cite it as
+`@orig 0x0040c5e0 Wad_Open (World/unknown)`.
 
 ## Open questions
 

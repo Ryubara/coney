@@ -230,7 +230,8 @@ Chunk `0x4C` beside a texture dictionary is a **sprite sheet**: rectangles of te
 dictionary's texture, each `{u0, v0, u1, v1}` as floats (inferred from `0x00181e38`, which returns rectangle `i` as
 16 bytes, and from the data). The legal screen's page has one rectangle, `(1/2048, 1/2048)` to
 `(1 - 1/2048, 0.75 - 1/2048)`: the top 512 × 384 of its 512 × 512 texture, inset half a texel (data, inferred). The
-front end and the HUD draw sprites from these pages ([2D drawing](#2d-drawing)).
+front end and the HUD draw sprites from these pages ([2D drawing](#2d-drawing)). The full layout, now confirmed
+(code) and checked on all 1,335 pages, the sprite batches and fonts are on [GUI](gui.md#particle-page).
 
 ## Behaviour
 
@@ -447,8 +448,8 @@ What the implementer needs:
 - **Mode flag `0x02`.** Read as PAL from the 24.5 frames-a-second threshold and the `_euro` screen; nothing that sets
   it has been found (speculative).
 - **What the game plugins hold:** `0x3F0` (atomic, three values) and `0x3F1` (sector, two words and 12 bytes).
-- **The overlay world** (`ResourceManager + 0x9034`) rendered before the sprites, and the sort order of the queued
-  PTanks (`0x00184890`).
+- **The overlay world** (`ResourceManager + 0x9034`) rendered before the sprites. The sort order of the queued
+  PTanks is answered on [GUI](gui.md#draw-order): ascending key; that the 2D key is the creation depth is inferred.
 - **librw and PS2 alpha:** does librw's PS2 native texture reader scale palette alpha from 0-128 to 0-255?
 - **Texture dictionary list order** for name lookups (newest first is RenderWare's usual behaviour; not read here).
 - **The remaining slots**: `+0xf0` (`0x001931f8`, not a defined function in our Ghidra project), `+0x148`

@@ -150,8 +150,8 @@ the push/pop behaviour; the description of what the object *is* is inferred from
 | `0x49` | Sound Material Data | `0x0010f3d8` | | pops `0x49`; stored at `0x00598688`; audio manager gets word 0 (count) and the records at `+0x10` |
 | `0x4A` | Sound Anim Data | `0x0010f410` | | pops `0x4a`; stored at `0x0059868c` |
 | `0x4B` | Light Glow Data | `0x0017e490` | | pops `0x4b`; word 0 is a count of 40-byte light records starting at `+0x10`; each becomes a light in the `LightManager` |
-| `0x4C` | Particle Page | `0x00181b20` | | pops `0x4c`, `0x0B`; textures at `+0x10`, `+0x0c` = chunk `+0x14`; pushed back as `0x4c` |
-| `0x4D` | Particle Page Header | `0x00182820` | | pops `0x4d`; resource manager `+0x9040` = chunk, `+0x9048` = word 0, `+0x9044` = chunk `+4` |
+| `0x4C` | Particle Page | `0x00181b20` | | pops `0x4c`, `0x0B`; textures at `+0x10`, `+0x0c` = chunk `+0x14`; pushed back as `0x4c`. Layout: [GUI](gui.md#particle-page) |
+| `0x4D` | Particle Page Header | `0x00182820` | | pops `0x4d`; resource manager `+0x9040` = chunk, `+0x9048` = word 0, `+0x9044` = chunk `+4`: the table of sprite sheets ([GUI](gui.md#sprite-sheet-table-chunk-0x4d-particle-page-header)) |
 | `0x4E` | Anim List | `0x00178ee8` | | pops `0x4e`; resource manager `+0x98` = chunk, `+0x9c` = word 0, `+0xa0` = chunk `+4` |
 | `0x4F` | Dependency List | `0x00178b30` | | pops `0x4f`; resource manager `+0xa4` = chunk, `+0xa8` = word 0, `+0xac` = chunk `+0x10`, `+0xb0` = 1; then loads the dependencies named for the CRC of `always` (`0x00178bc8`) |
 | `0x50` | ImportCars | | | raw; also a result type of a DFF read |

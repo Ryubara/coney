@@ -99,11 +99,11 @@ The modes, each a static object built by a static constructor (or a constructor 
 
 | Id | Object | Vtable | `Enter` | Source file | Role | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | (ctor `0x001582a8`) | `0x00538480` | `0x001582e0` | `GameModes/` | | confirmed (code) id |
+| 1 | `0x005e56b8` (ctor `0x001582a8`) | `0x00538480` | `0x001582e0` | `GameModes/` | **gameplay**: one level, loaded by `InitLevel` in `Enter` ([Front end](frontend.md#mode-flow)) | confirmed (code); role inferred |
 | 5 | `0x005e57e0` | `0x00538538` | `0x00159a58` | `GameModes/` | **legal screen**: drawn once on `Enter`, held 5,000 ms ([Graphics](graphics.md#first-screen)) | confirmed (code) at `0x00159c08`, `0x00159ae0` |
 | 6 | `0x005e5810` | `0x00538580` | `0x0015baa0` | `Gm_MemoryCard.cpp` | memory card checks and saving | confirmed (code) (anchor) |
 | 7 | `0x005e6800` | `0x005388b8` | `0x0015f830` | `Gm_XboxSaveSystem.cpp` | save-system screens | confirmed (code) (anchor) |
-| 8 | `0x005e5d90` | `0x005385c8` | `0x0015c688` | `GameModes/` | bottom of the stack in `main`; runs a world frame; picks the level (`0x0015c7b0`) | confirmed (code); role inferred |
+| 8 | `0x005e5d90` | `0x005385c8` | `0x0015c688` | `GameModes/` | **level flow**: bottom of the stack in `main`; loads the front end, then pushes mode 1 with the chosen level ([Front end](frontend.md#mode-flow)) | confirmed (code); role inferred |
 | 0xa | `0x005e6550` | `0x005386e8` | `0x0015dbb8` | `GameModes/` | | confirmed (code) id |
 | 0xb | `0x005e5df8` | `0x00538658` | `0x0015cf70` | `GameModes/` | **in-game**: runs the game world on `GameTimer` | confirmed (code); role inferred |
 | 0xc | `0x005e5dc0` | `0x00538610` | `0x0015cae0` | `GameModes/` | | confirmed (code) id |
@@ -112,7 +112,7 @@ The modes, each a static object built by a static constructor (or a constructor 
 | 0xf | `0x005e5560` (ctor `0x00156d20`) | `0x005383f0` | `0x00156dd8` | `Gm_Error.cpp` | error screen (disc error, controller removed) | confirmed (code) |
 | 0x10 | (ctor `0x0015d4f8`) | `0x005386a0` | `0x0015d648` | `GameModes/` | | confirmed (code) id |
 | 0x11 | `0x005e66d0` | `0x00538828` | `0x0015e8b0` | `GameModes/` | | confirmed (code) id |
-| 0x12 | `0x005e65c0` | `0x00538730` | `0x0015e048` | `GameModes/` | | confirmed (code) id |
+| 0x12 | `0x005e65c0` | `0x00538730` | `0x0015e048` | `GameModes/` | **profile manager**: the front-end menus ([Front end](frontend.md#profile-manager)) | confirmed (code); role inferred |
 | 0x13 | `0x005e56f0` | `0x005384c8` | `0x00159538` | `GameModes/` | | confirmed (code) id |
 | 0x14 | `0x005e67d0` | `0x00538870` | `0x0015f1a0` | `GameModes/` | | confirmed (code) id |
 
@@ -195,7 +195,7 @@ manager's current pool at the time. Confirmed (code) for the order and sizes; ro
 | 5 | alloc `Timer` (0x18) | real-time clock → `0x0050b8b8` |
 | 6 | alloc `GameTimer` (0x68) | game clock → `0x0050b734` |
 | 7 | alloc `W_StopWatch` (0x50) | → `0x0051504c` |
-| 8 | `0x0040c5e0` | opens the WAD: reads `WARRIORS.DIR` into a `DVDWadIndex` and opens `WARRIORS.WAD` on the IOP ([File I/O](file-io.md#the-wad-index)) |
+| 8 | `0x0040c5e0` (`Wad_Open`, our name) | opens the WAD: reads `WARRIORS.DIR` into a `DVDWadIndex` and opens `WARRIORS.WAD` on the IOP ([File I/O](file-io.md#the-wad-index)) |
 | 9 | `0x0040cf18` | registers the `Level Header` chunk handler ([Chunk system](chunk-system.md#handlers-registered-at-run-time)) |
 | 10 | alloc `IPhysics` (`0x4f460`) | physics → `0x00597198` |
 | 11 | `0x0016fcc8`, `0x00171540`, `0x00183510` | `ICameraGarbage`, `ICameraGroundFog`, `IRainDrops` effects |
@@ -340,11 +340,9 @@ TODO for the analysts, found while implementing:
 
 ## Open questions
 
-- Which mode is which: modes 1, 0xa, 0xc, 0xd, 0xe, 0x10 to 0x14 have no role yet, and mode 8's role (front end or
-  level flow) is inferred.
+- Which mode is which: modes 0xa, 0xc, 0xd, 0xe, 0x10, 0x11, 0x13 and 0x14 have no role yet. The start-up path
+  (5, 6, 8, 0x12, 1) is on [Start-up and the front end](frontend.md#mode-flow).
 - What camera state 4 is, which lifts the 40 ms clamp in real-time mode.
-- Where the pads are read during an in-game frame (only the start-up screen and the file wait loop call the pad
-  update `0x001454a8` directly).
 - Is `main` in `Core/ChunkSystem.cpp` or in an unnamed `Core/` file?
 - The memory system (`Memory/`) needs its own page: pools, clumps, the heap stack used by `main` (slots `+0xb8`
   push and `+0xc0` pop) and the allocator's tag arguments.
