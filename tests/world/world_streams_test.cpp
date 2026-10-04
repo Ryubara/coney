@@ -46,7 +46,9 @@ TEST_CASE("a world stream's sectors are read with their boxes and plugin data", 
     CHECK(world->sectors[1].plugin.value_or(coney::world::SectorPluginData{}).origin.z == 3.0F);
     CHECK(world->sectors[1].box.min.y == -20.0F);
     CHECK(world->sectors[1].box.max.y == 20.0F);
-    CHECK(world->sectors[0].plugin.value_or(coney::world::SectorPluginData{.streamedIndex = 7}).streamedIndex == -1);
+    CHECK(world->sectors[0]
+              .plugin.value_or(coney::world::SectorPluginData{.streamedIndex = 7, .part = 0, .origin = {}})
+              .streamedIndex == -1);
     CHECK(world->worldBox.max.x == 100.0F);
 }
 
