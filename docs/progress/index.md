@@ -25,7 +25,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- |
 | **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 136 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
-| **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
+| **[Milestones](../roadmap.md)** | `██████▋░░░░░░░░░░░░░` | 4 of 12 done |
 
 52 reimplemented function(s) have no size yet and add no bytes.
 
@@ -36,12 +36,13 @@ at the top of the repository's `README.md`.
 | [Foundations](../roadmap.md#foundations) | done |
 | [Read the disc](../roadmap.md#read-the-disc) | done |
 | [Boot the engine](../roadmap.md#boot-the-engine) | done |
-| [First pixels](../roadmap.md#first-pixels) | not started |
-| [Scripts](../roadmap.md#scripts) | not started |
-| [Characters](../roadmap.md#characters) | not started |
-| [Gameplay](../roadmap.md#gameplay) | not started |
+| [First pixels](../roadmap.md#first-pixels) | done |
+| [Scripts](../roadmap.md#scripts) | in progress |
+| [Characters](../roadmap.md#characters) | in progress |
+| [Gameplay](../roadmap.md#gameplay) | in progress |
 | [Sound and video](../roadmap.md#sound-and-video) | not started |
 | [Enhancements](../roadmap.md#enhancements) | not started |
+| [Script mods](../roadmap.md#script-mods) | not started |
 | [Xbox assets (optional)](../roadmap.md#xbox-assets-optional) | not started |
 | [The whole game](../roadmap.md#the-whole-game) | not started |
 

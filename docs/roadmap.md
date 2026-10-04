@@ -12,12 +12,13 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [Foundations](#foundations) | done |
 | [Read the disc](#read-the-disc) | done |
 | [Boot the engine](#boot-the-engine) | done |
-| [First pixels](#first-pixels) | not started |
-| [Scripts](#scripts) | not started |
-| [Characters](#characters) | not started |
-| [Gameplay](#gameplay) | not started |
+| [First pixels](#first-pixels) | done |
+| [Scripts](#scripts) | in progress |
+| [Characters](#characters) | in progress |
+| [Gameplay](#gameplay) | in progress |
 | [Sound and video](#sound-and-video) | not started |
 | [Enhancements](#enhancements) | not started |
+| [Script mods](#script-mods) | not started |
 | [Xbox assets (optional)](#xbox-assets-optional) | not started |
 | [The whole game](#the-whole-game) | not started |
 
@@ -71,6 +72,14 @@ librw's OpenGL 3 renderer through SDL3, then the game's textures, models and lev
 
 - Done: the research page for the graphics device, the frame, textures and 2D drawing
   ([Graphics device and textures](research/graphics.md)).
+- Done: librw's OpenGL 3 renderer through SDL3, and a headless mode on librw's null device for tests and CI.
+- Done: `--view-txd` shows any of the disc's 20,314 texture dictionaries.
+- Done: `--view-world <level>` streams a level's scenery from the disc as you fly through it with a gamepad or the
+  keyboard, with the level file, collision, the night sky, clouds, skyline and light glows
+  ([The streamed world](research/world.md), [Level loading](research/level-loading.md),
+  [Collision](research/collision.md)).
+- Left for later milestones: lighting from the game's light manager, the fog and background colours the level
+  scripts set, and the level's objects.
 
 ## Scripts
 
@@ -79,6 +88,13 @@ functions the game exposes to its scripts.
 
 **Done when** a level's scripts load and run without errors.
 
+- Done: the research page for the script system: the one Lua state and its lifecycle, the order the scripts run in
+  and what the bindings return ([Scripts](research/scripting.md)).
+- Done: a Lua 4.0 bytecode interpreter written from the public format runs the game's string scripts
+  (`src/scripting/`).
+- In progress: the front end runs the game's own preload, `global.lua` and `level100.lua` scripts.
+- In progress: a [masterlist of every script binding](#script-mods), in the style of FiveM's natives reference.
+
 ## Characters
 
 People in the world: models and animation, physics and collision, pathfinding, and the player under control from a
@@ -86,11 +102,20 @@ gamepad or keyboard.
 
 **Done when** the player can walk around a level and other characters move in it.
 
+- Done: research pages for the player character, its model, skeleton and skin, the game's animation format,
+  movement, falling and the follow camera ([Characters](research/characters.md),
+  [Animation](research/formats/animation.md), [Cameras](research/camera.md)).
+- In progress: loading and showing a character and its animations from the disc (`--view-character`).
+- Next: the player in the first mission's level under gamepad control, with the follow camera.
+
 ## Gameplay
 
 Combat, AI, missions, game modes, the front end and menus, cameras and saving.
 
 **Done when** the first mission can be played from the title screen to its end.
+
+- Done: the start-up modes, the legal screen and the menus up to the main menu, with the game's text and fonts and
+  pad input ([Front end](research/frontend.md), [GUI](research/gui.md)).
 
 ## Sound and video
 
@@ -108,6 +133,20 @@ from a mods folder; Coney ships only the loader, never a pack.
 
 **Done when** the first mission plays at a widescreen resolution with anti-aliasing and interpolated rendering, and a
 test pack replaces a named texture.
+
+## Script mods
+
+A way for players to write their own scripts and mods, in the spirit of ScriptHook for the GTA games. Because the
+game's own logic is already Lua calling engine bindings, mods can use the same language and the same bindings:
+Coney loads Lua files from a mods folder into the game's script state at documented points (start-up, each level
+start, each frame), and they call the bindings the game's scripts call. The bindings are documented in a masterlist
+in the style of FiveM's natives reference: every binding's arguments, result and effect, and whether Coney implements
+it yet. Later, Coney may add bindings of its own for mods (marked as Coney's, never confused with the original's)
+and a native plugin interface. Coney ships only the loader and the documentation, never a mod; the game's behaviour
+without mods is unchanged.
+
+**Done when** a test mod from the mods folder runs at a level start, calls documented bindings (spawning a character
+and moving the camera, say) and the game runs the same with the mods folder empty.
 
 ## Xbox assets (optional)
 
