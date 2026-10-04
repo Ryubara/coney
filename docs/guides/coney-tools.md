@@ -1,8 +1,9 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers the `wad`
-group, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**. Everything is
-read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers two groups:
+`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, and
+[`progress`](#progress), which keeps the progress tables of the README and the docs current. Everything is read in
+place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
 [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
@@ -64,3 +65,48 @@ takes entry hashes (8 hex digits) or names (`global.lua`), and without it every 
     `extract` and `names` refuse an output path inside the repository, because extracted files are game data and
     must never be committed ([LEGAL.md](repo:LEGAL.md#no-game-data)). Use a
     folder beside the checkout, such as `../../scratch/`.
+
+## progress {#progress}
+
+The [Progress](../progress/index.md) page and the Progress section of `README.md` are generated from three inputs:
+`docs/progress/functions.toml` (the original functions Coney reimplements), `docs/progress/totals.toml` (the
+denominators, copied from the [source map](../research/source-map.md)) and the status table of the
+[roadmap](../roadmap.md). The page says what the numbers mean; this section says how to run the commands.
+
+```sh
+uv run --project python coney-tools progress show [--json]
+```
+
+Prints the reimplemented and researched shares, the milestones and the subsystems that have reimplemented code.
+`--json` prints everything, per subsystem and per coverage category, for other tools. It exits with 1 when
+`functions.toml` and the `@orig` tags in `src/` disagree, and lists each problem.
+
+```sh
+uv run --project python coney-tools progress update [--check]
+```
+
+Rewrites the generated block between `<!-- progress:start -->` and `<!-- progress:end -->` in `README.md` and in
+`docs/progress/index.md`; the text outside the markers is never touched. Run it after changing any of the inputs and
+commit the result with the change. With `--check` it writes nothing and exits with 1 when a block is stale; CI runs
+it that way. It refuses to write while the inputs disagree:
+
+* an `@orig` tag in `src/` with no `[[function]]` in `functions.toml`, or the other way round, or the two naming the
+  function differently;
+* a `subsystem` that is not the one whose range in `totals.toml` holds the address (the message names the right
+  one; outside every range it is `unattributed`);
+* an address inside middleware or outside `.text`, an address listed twice, or sizes that overlap.
+
+```sh
+uv run --project python coney-tools progress sizes [DISC] [--fill]
+```
+
+Checks the size of every function in `functions.toml` against the executable `SLUS_212.15` on your own disc (`DISC`
+works as for the `wad` commands). The executable has no symbols, so the command takes every `jal` target and every
+function pointer in `.data` as the start of a function, and a function's **span** runs to the next of those starts,
+alignment padding included. A given size larger than the span is an error (exit code 1); one smaller than the code
+before the padding, or an address no call reaches, is a warning. `--fill` writes the span into each entry that has no
+`size` yet. It prints only the addresses and sizes of the functions already listed.
+
+The span is an upper bound: a function that nothing calls directly and no pointer in `.data` names (one reached
+only by a tail jump) is not seen as a start, and the span of the function before it includes it. When `--fill`
+gives a size that looks too large for what the research page describes, ask an analyst for the size Ghidra shows.

@@ -171,7 +171,13 @@ Everything that reimplements a function of the original game carries an `@orig` 
   the tag when research finds it.
 
 One tag per original function. A Coney function that does the work of two original functions carries two tags; a
-function with no original counterpart (our own glue, a helper the original inlined) carries none. Rekit's
+function with no original counterpart (our own glue, a helper the original inlined) carries none.
+
+**Every tag is counted.** In the same commit as the code, add a `[[function]]` block for each newly tagged original
+function to `docs/progress/functions.toml` (address, original name, subsystem and, when known, size), then run
+`uv run --project python coney-tools progress update` and commit the regenerated tables. CI fails when a tag and the
+file disagree. `coney-tools progress sizes --fill` finds a size from your own disc. Details:
+[the progress commands](coney-tools.md#progress) and [Progress](../progress/index.md). Rekit's
 `rekit research check` matches the tags against the research database in both directions, so a tag with a wrong
 address, or a reimplemented symbol with no tag, is caught by CI once that check is in place.
 

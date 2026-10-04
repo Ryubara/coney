@@ -4,7 +4,8 @@ How Coney gets from an empty window to the whole game, as a sequence of mileston
 something you can run or check, and each builds on the ones before it. Research for a milestone usually starts
 before the previous one is finished, because the implementer can only begin once the research page exists.
 
-This page is kept current: a milestone's status changes in the same commit as the work that changes it.
+This page is kept current: a milestone's status changes in the same commit as the work that changes it. The
+[Progress](progress/index.md) page and the README read their milestone table from here.
 
 | Milestone | Status |
 | --- | --- |

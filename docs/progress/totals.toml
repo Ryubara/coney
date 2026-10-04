@@ -1,0 +1,182 @@
+# The denominators of the progress tracker (docs/progress/index.md), taken by hand from the source map,
+# docs/research/source-map.md. Update this file in the same commit as a source-map change that moves a range or a
+# coverage figure, then run `uv run --project python coney-tools progress update`.
+#
+# Everything here is about SLUS_212.15 (NTSC-U). Addresses are virtual addresses; a range is [start, end): `end` is
+# the first byte after it. Evidence: the ranges and the per-subsystem totals derived from them are inferred, like the
+# source map's directory and middleware ranges they come from.
+
+# `.text`, from the ELF section header (source-map.md#layout-of-text).
+[text]
+start = 0x00100000
+end = 0x004f6578
+
+# The source map's coverage table (source-map.md#coverage): every byte of `.text` counted once, in the first
+# category that applies. `kind` decides how the tracker uses a category:
+#   researched  game code tied to at least a source file or a directory: the "Researched" bar
+#   game        game code the map does not tie to a file or directory (still Coney's to reimplement)
+#   middleware  libraries Coney replaces rather than reimplements; left out of every denominator
+# The sum of the non-middleware categories is the game's own code, the denominator of "Reimplemented".
+[[coverage]]
+key = "anchored-file"
+label = "File confirmed (code): anchors"
+kind = "researched"
+bytes = 208296
+
+[[coverage]]
+key = "inferred-file"
+label = "File inferred"
+kind = "researched"
+bytes = 420792
+
+[[coverage]]
+key = "directory"
+label = "Directory inferred"
+kind = "researched"
+bytes = 1062208
+
+[[coverage]]
+key = "link-once"
+label = "Game link-once code (templates, inlines)"
+kind = "game"
+bytes = 115808
+
+[[coverage]]
+key = "unknown"
+label = "Unknown"
+kind = "game"
+bytes = 1535304
+
+[[coverage]]
+key = "lua-tolua"
+label = "Middleware: Lua 4.0.1 and tolua"
+kind = "middleware"
+bytes = 94808
+
+[[coverage]]
+key = "middleware"
+label = "Middleware: C/C++ runtimes, SCE, RenderWare, Bink, crt0"
+kind = "middleware"
+bytes = 717520
+
+# The game's top-level source directories in `.text` order, each with the range from its first to its last
+# attributed function (source-map.md, the directory table; Physics and RayCast split at their own files). A
+# directory with no attributed function has no ranges yet. `link-once` is the game's template and inline code linked
+# after the libraries. Game code inside no range (the unknown stretches between directories) counts as
+# "unattributed", which the tracker computes as the rest of the game's code. A reimplemented function's `subsystem`
+# in functions.toml is the entry here whose range holds its address, or "unattributed".
+[[subsystem]]
+name = "Animation"
+ranges = [[0x00104630, 0x0010d758]]
+
+[[subsystem]]
+name = "Audio"
+ranges = [[0x0010edd0, 0x001167b8]]
+
+[[subsystem]]
+name = "Camera"
+ranges = [[0x0011e1b0, 0x0013b118]]
+
+[[subsystem]]
+name = "Core"
+ranges = [[0x00144180, 0x00144a08]]
+
+[[subsystem]]
+name = "Debug"
+ranges = []
+
+[[subsystem]]
+name = "Device/ps2"
+ranges = [[0x001483e8, 0x0014d528]]
+
+[[subsystem]]
+name = "FileIO"
+ranges = [[0x001541e0, 0x00155b30]]
+
+[[subsystem]]
+name = "GameModes"
+ranges = [[0x00156dd8, 0x00162598]]
+
+[[subsystem]]
+name = "Graphics"
+ranges = [[0x0016e388, 0x0019c5e8]]
+
+[[subsystem]]
+name = "GUI"
+ranges = [[0x001a1f10, 0x002176b8]]
+
+[[subsystem]]
+name = "Human"
+ranges = [[0x0021c7c8, 0x00273fa0]]
+
+[[subsystem]]
+name = "Memory"
+ranges = [[0x00338420, 0x0033b1a0]]
+
+[[subsystem]]
+name = "Physics"
+ranges = [[0x003418f8, 0x00341a68]]
+
+[[subsystem]]
+name = "RayCast"
+ranges = [[0x00350688, 0x00350778]]
+
+[[subsystem]]
+name = "Scene"
+ranges = [[0x00351da0, 0x00354bb8]]
+
+[[subsystem]]
+name = "Scripting"
+ranges = [[0x00356390, 0x003865d8]]
+
+[[subsystem]]
+name = "StringTable"
+ranges = [[0x00386b30, 0x00386f58]]
+
+[[subsystem]]
+name = "TaskEngine"
+ranges = [[0x00397a48, 0x003a8698]]
+
+[[subsystem]]
+name = "Utils"
+ranges = []
+
+[[subsystem]]
+name = "World"
+ranges = [[0x0040c7f0, 0x004123e8]]
+
+[[subsystem]]
+name = "WorldObjects"
+ranges = [[0x00413218, 0x00417af0]]
+
+[[subsystem]]
+name = "Warriors"
+ranges = [[0x00417b10, 0x00424ee8]]
+
+[[subsystem]]
+name = "Movie"
+ranges = [[0x00429b18, 0x0042af70]]
+
+[[subsystem]]
+name = "link-once"
+ranges = [[0x004da118, 0x004f6578]]
+
+# Middleware: replaced, not reimplemented (source-map.md#middleware). `bytes` is the size the coverage table gives;
+# the ranges are approximate (the map's `~` ends) and only stop a middleware address being listed as reimplemented.
+[[middleware]]
+name = "Lua 4.0.1 and tolua"
+bytes = 94808
+replaced_by = "a Lua 4.0 interpreter (roadmap: Scripts)"
+ranges = [[0x00321ab8, 0x00335670], [0x004077b8, 0x0040c7f0]]
+
+[[middleware]]
+name = "RenderWare Graphics"
+bytes = 376960
+replaced_by = "librw"
+ranges = [[0x0044e060, 0x004aa000]]
+
+[[middleware]]
+name = "SCE libraries, C/C++ runtimes, Bink, crt0"
+bytes = 340560
+replaced_by = "SDL3 and the C++ standard library; Bink movies not decided yet"
+ranges = [[0x00100000, 0x00100200], [0x0042b040, 0x0044e060], [0x004aa000, 0x004da118]]

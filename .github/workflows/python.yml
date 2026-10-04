@@ -31,3 +31,5 @@ jobs:
       - run: uv run --project python mypy python/src python/tests
       - run: uv run --project python pytest python/tests
       - run: uv run --project python coney-tools repo check
+      # The README's and the docs' progress tables must match their inputs (docs/progress/, the @orig tags, the roadmap).
+      - run: uv run --project python coney-tools progress update --check

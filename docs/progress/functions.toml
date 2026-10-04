@@ -1,0 +1,16 @@
+# The original game's functions that Coney reimplements, the numerator of the progress tracker
+# (docs/progress/index.md). It lists ONLY reimplemented functions, never the executable's whole function list.
+#
+# Add one [[function]] block per `@orig` tag, in the same commit as the code that carries the tag
+# (docs/guides/conventions.md#comments-and-orig). `coney-tools progress update --check`, run by CI, fails when a tag
+# in src/ and this file disagree. Keep the blocks sorted by address.
+#
+#   [[function]]
+#   address = 0x001490b8          # the entry point, exactly as in the @orig tag
+#   name = "DVDWadIndex::Find"    # the original name, exactly as in the @orig tag
+#   subsystem = "Device/ps2"      # the totals.toml subsystem whose range holds the address, or "unattributed";
+#                                 # `coney-tools progress update` names the right one when it is wrong
+#   size = 168                    # bytes of the original function; leave it out if you do not know it, and
+#                                 # `coney-tools progress sizes --fill` derives it from your own disc
+#
+# A function without a size is listed but adds no bytes until its size is filled in.

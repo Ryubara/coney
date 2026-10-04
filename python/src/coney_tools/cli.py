@@ -11,7 +11,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from coney_tools import wad_cli
+from coney_tools import progress_cli, wad_cli
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.repo_checks import check_pointer_files, check_title, first_line, load_title_rules
 
@@ -73,6 +73,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     check_title_parser.add_argument("file", help="a file whose first line (not blank, not #) is the title; - for stdin")
     _add_wad_commands(groups)
+    _add_progress_commands(groups)
     return parser
 
 
@@ -96,6 +97,29 @@ def _add_wad_commands(groups: Any) -> None:
     names.add_argument("paths", nargs="+", metavar="[DISC] OUT_FILE", help=f"[DISC] ({disc_help}) and OUT_FILE")
 
 
+def _add_progress_commands(groups: Any) -> None:
+    """Register `coney-tools progress ...`."""
+    tracker = groups.add_parser("progress", help="the progress tracker shown in README.md and docs/progress/")
+    commands = tracker.add_subparsers(dest="command", required=True)
+    show = commands.add_parser("show", help="print how much is reimplemented and researched")
+    show.add_argument("--json", action="store_true", help="print everything as JSON")
+    update = commands.add_parser("update", help="regenerate the progress blocks of README.md and the docs page")
+    update.add_argument("--check", action="store_true", help="change nothing; exit 1 when a block is stale")
+    sizes = commands.add_parser("sizes", help="check the listed functions' sizes against your own disc")
+    sizes.add_argument(
+        "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
+    )
+    sizes.add_argument("--fill", action="store_true", help="write the estimated size of entries that have none")
+
+
+def _run_progress(args: argparse.Namespace) -> int:
+    if args.command == "show":
+        return progress_cli.run_show(args.json)
+    if args.command == "update":
+        return progress_cli.run_update(args.check)
+    return progress_cli.run_sizes(args.disc, args.fill)
+
+
 def _run_wad(args: argparse.Namespace) -> int:
     if args.command == "info":
         return wad_cli.run_info(args.disc, args.names)
@@ -110,6 +134,8 @@ def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
     if args.group == "wad":
         return _run_wad(args)
+    if args.group == "progress":
+        return _run_progress(args)
     if args.group == "config":
         return _config_show()
     if args.command == "check-title":
