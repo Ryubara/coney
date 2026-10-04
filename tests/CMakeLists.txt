@@ -11,11 +11,13 @@ add_executable(coney_tests
     fileio/stream_test.cpp
     fileio/wad_index_test.cpp
     fileio/wad_test.cpp
+    gamemodes/disc_front_end_test.cpp
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
     gamemodes/sheet_viewer_mode_test.cpp
+    gamemodes/start_up_flow_test.cpp
     gamemodes/text_viewer_mode_test.cpp
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
@@ -29,6 +31,7 @@ add_executable(coney_tests
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
+    gui/profile_management_gui/pm_controller_test.cpp
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp

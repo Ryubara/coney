@@ -96,15 +96,18 @@ other.
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
 `ctest` runs the Catch2 unit tests (`coney_tests`) and eleven smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`, `--view-text` or
-`--view-world` without `--disc`, refuses a disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and
-refuses one that does not exist. The unit tests build their disc images, archives, RenderWare texture dictionaries,
-streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU (the librw tests run librw on its NULL
-device). Six tests check your own disc: every texture dictionary; every sprite sheet, font and the sheet table; every
-streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds streamed under a
-scripted camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run
-through the game's own Lua scripts (`[strings]`); and the two text fonts with every English UI string laid out in
-them (`[text]`). They run only when the environment variable
+and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
+`--view-text` or `--view-world` without `--disc`, refuses a disc that does not exist, plays a synthetic input script
+(`tests/support/menu_input.txt`) and refuses one that does not exist; with `CONEY_DISC` set when CMake configures, a
+twelfth runs `coney --disc` to the main menu (`coney.reaches_main_menu`). The unit tests build their disc images,
+archives, RenderWare texture dictionaries, streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU
+(the librw tests run librw on its NULL device). Seven tests check your own disc: every texture dictionary; every
+sprite sheet, font and the sheet table; every streamed world with the atomics of its parts (`[world]`, about a
+second); every level's worlds streamed under a scripted camera path, with the streaming's invariants checked every
+frame (`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run through the game's own Lua
+scripts (`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); and the start-up
+path from the legal screen to the main menu with a scripted START (`[frontend]`). They run only when the environment
+variable
 `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
 
 ```sh
@@ -147,13 +150,21 @@ holding `WARRIORS.DIR` and `WARRIORS.WAD`, or an ISO 9660 image of the disc (the
 takes, see [The coney-tools command line](coney-tools.md#naming-the-disc)). Coney reads `WARRIORS.DIR`, checks it
 against `WARRIORS.WAD`, and prints how many entries it lists.
 
-With `--disc` and neither `--load` nor `--view-txd`, Coney runs the game's start-up as far as it goes: the legal
-screen for five seconds (150 frames), then the idle screen, which stands in for what comes next
-([Front end](../research/frontend.md#coneys-implementation)). No button skips the legal screen, as in the original.
+With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes: the legal screen for five
+seconds (150 frames; no button skips it, as in the original), then the menus' first screen, the game's logo and a
+blinking "press START" (from frame 152). START leads to the main menu (story, extras, quick rumble); the d-pad or the
+left stick moves, cross chooses and triangle or circle goes back. The menus' other screens are placeholders that show
+their name, and there is no 3D scene behind the menus, no sound and no movie yet: Coney prints a line for each movie,
+music and sound it skips, and one for each screen it reaches
+([Front end](../research/frontend.md#coneys-implementation)). `--language CODE` picks the strings and the legal
+screen.
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --frames 3 --screenshot ../../scratch/legal.png
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 220 --input-script tests/support/start_menu.txt
 ```
+
+The second line runs to the main menu without a window: its last line is `profile manager: PM_Mode`.
 
 `--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a
 file name such as `level1.lev` (any letter case) or a name hash written `0x` and up to 8 hex digits, such as
@@ -262,8 +273,8 @@ every time.
 ### Controls {#controls}
 
 In a window, Coney reads the keyboard and any gamepad SDL3 recognises, and turns them into the PS2 pad the game
-expects ([Front end](../research/frontend.md#coneys-implementation)). Only [the world viewer](#the-world-viewer)
-reads them so far: the legal screen ignores input, as in the original, and the menus are still to come.
+expects ([Front end](../research/frontend.md#coneys-implementation)). The legal screen ignores input, as in the
+original; the menus and [the world viewer](#the-world-viewer) read port 1.
 
 | PS2 pad | Gamepad (SDL3 names) | Keyboard (port 1) |
 | --- | --- | --- |

@@ -29,9 +29,9 @@
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/idle_mode.h"
-#include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/load_entry_mode.h"
 #include "gamemodes/sheet_viewer_mode.h"
+#include "gamemodes/start_up_flow.h"
 #include "gamemodes/text_viewer_mode.h"
 #include "graphics/font.h"
 #include "gui/global_strings.h"
@@ -226,7 +226,8 @@ int main(int argc, char** argv) {
         }
         return coney::platform::loadSpriteSheetResource(*wad, chunkHandlers, name, renderer.drawsPixels());
     };
-    coney::LegalScreenMode legal(renderer, loadSheet, coney::LegalScreenSettings{}, printText);
+    coney::gui::GlobalStrings strings;
+    std::optional<coney::StartUpFlow> startUp;
     std::optional<coney::platform::TextureViewerMode> viewer;
     std::optional<coney::SheetViewerMode> sheetViewer;
     std::optional<coney::TextViewerMode> textViewer;
@@ -291,11 +292,17 @@ int main(int argc, char** argv) {
         modes.push(*worldViewer);
     } else if (wad) {
         // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
-        // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first. Until
-        // modes 8 and 6 exist, the idle mode stands in for mode 8 and nothing for mode 6.
-        // TODO(docs/research/frontend.md#mode-flow): push mode 8, then mode 6 with its boot flag, here.
-        modes.push(idle);
-        modes.push(legal);
+        // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first; the level
+        // flow later shows the menus (mode 0x12). The UI strings come first: Coney loads them here, where the
+        // original's preload scripts set them (docs/research/gui.md#strings). Without them the menus show empty texts.
+        if (auto loaded =
+                coney::script::loadGlobalStrings(coney::script::wadScriptSource(*wad), options->language, strings);
+            !loaded) {
+            std::fprintf(stderr, "coney: UI strings: %s\n", loaded.error().message.c_str());
+        }
+        coney::LegalScreenSettings legal;
+        legal.language = options->language;
+        startUp.emplace(renderer, modes, loadSheet, strings, legal, printText).start();
     } else {
         // No disc: no game to run, only the idle screen.
         modes.push(idle);

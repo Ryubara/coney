@@ -16,10 +16,15 @@ add_library(coney_core STATIC
     fileio/stream.cpp
     fileio/wad.cpp
     fileio/wad_index.cpp
+    gamemodes/front_end_services.cpp
     gamemodes/game_mode_stack.cpp
     gamemodes/legal_screen_mode.cpp
+    gamemodes/level_flow_mode.cpp
     gamemodes/load_entry_mode.cpp
+    gamemodes/memory_card_mode.cpp
+    gamemodes/profile_manager_mode.cpp
     gamemodes/sheet_viewer_mode.cpp
+    gamemodes/start_up_flow.cpp
     gamemodes/text_viewer_mode.cpp
     graphics/font.cpp
     graphics/frame_stats.cpp
@@ -35,6 +40,10 @@ add_library(coney_core STATIC
     gui/markup.cpp
     gui/menu_input.cpp
     gui/option_grid.cpp
+    gui/profile_management_gui/pm_controller.cpp
+    gui/profile_management_gui/pm_greet.cpp
+    gui/profile_management_gui/pm_mode.cpp
+    gui/profile_management_gui/pm_placeholder.cpp
     gui/screen_flow_controller.cpp
     gui/text_layout.cpp
     gui/text_widget.cpp

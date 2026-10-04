@@ -157,6 +157,12 @@ subsystem = "FileIO"
 size = 128
 
 [[function]]
+address = 0x001552b0
+name = "ShowProfileManager"
+subsystem = "FileIO"
+size = 88
+
+[[function]]
 address = 0x00159a58
 name = "Mode5::Enter"
 subsystem = "GameModes"
@@ -179,6 +185,54 @@ address = 0x00159c08
 name = "StartupScreen_Draw"
 subsystem = "GameModes"
 size = 1536
+
+[[function]]
+address = 0x0015a270
+name = "MemoryCard_SetBootCheck"
+subsystem = "GameModes"
+size = 32
+
+[[function]]
+address = 0x0015c2c0
+name = "Mode6::Exit"
+subsystem = "GameModes"
+size = 320
+
+[[function]]
+address = 0x0015c4b0
+name = "LevelFlow_StartFrontEnd"
+subsystem = "GameModes"
+size = 328
+
+[[function]]
+address = 0x0015c688
+name = "Mode8::Enter"
+subsystem = "GameModes"
+size = 64
+
+[[function]]
+address = 0x0015c6f8
+name = "Mode8::Resume"
+subsystem = "GameModes"
+size = 136
+
+[[function]]
+address = 0x0015e048
+name = "Mode12::Enter"
+subsystem = "GameModes"
+size = 176
+
+[[function]]
+address = 0x0015e130
+name = "Mode12::Exit"
+subsystem = "GameModes"
+size = 264
+
+[[function]]
+address = 0x0015e238
+name = "Mode12::Update"
+subsystem = "GameModes"
+size = 760
 
 [[function]]
 address = 0x0015e5e8
@@ -447,6 +501,78 @@ address = 0x001e95c0
 name = "MenuInput_Dispatch"
 subsystem = "GUI"
 size = 1080
+
+[[function]]
+address = 0x002040f0
+name = "PM_Controller::PM_Controller"
+subsystem = "GUI"
+size = 2400
+
+[[function]]
+address = 0x00204a78
+name = "PM_Controller_Start"
+subsystem = "GUI"
+size = 296
+
+[[function]]
+address = 0x00204ba0
+name = "PM_Controller_Update"
+subsystem = "GUI"
+size = 128
+
+[[function]]
+address = 0x00204c20
+name = "PM_Controller_Stop"
+subsystem = "GUI"
+size = 48
+
+[[function]]
+address = 0x002079a0
+name = "PM_Greet::Init"
+subsystem = "GUI"
+size = 792
+
+[[function]]
+address = 0x00207d48
+name = "PM_Greet_Enter"
+subsystem = "GUI"
+size = 88
+
+[[function]]
+address = 0x00207da0
+name = "PM_Greet_Exit"
+subsystem = "GUI"
+size = 48
+
+[[function]]
+address = 0x00207dd0
+name = "PM_Greet_Update"
+subsystem = "GUI"
+size = 88
+
+[[function]]
+address = 0x00207e28
+name = "PM_Greet::Update"
+subsystem = "GUI"
+size = 1120
+
+[[function]]
+address = 0x00208288
+name = "PM_Greet::Render"
+subsystem = "GUI"
+size = 152
+
+[[function]]
+address = 0x00209da8
+name = "PM_Mode::Init"
+subsystem = "GUI"
+size = 944
+
+[[function]]
+address = 0x0020a4b8
+name = "PM_Mode::Update"
+subsystem = "GUI"
+size = 88
 
 [[function]]
 address = 0x0035e5d0

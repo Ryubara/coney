@@ -516,10 +516,10 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   the last frame. The legal screen (`--view-txd 863681355`) shows correctly.
 - **The first screen** is mode 5 ([Front end](frontend.md#coneys-implementation)): `coney --disc <disc>` loads
   `legal_screen` through the chunk system (its `0x2A` dictionary and its `0x4C` sprite sheet,
-  [GUI](gui.md#coneys-implementation)) and draws the sheet's first rectangle, the top 512 × 384 of the texture, over the
-  whole logical screen on black for 5,000 ms. **Coney's choice:** the picture fills the logical screen exactly; the
-  original overfills it slightly, 1.068 × 1.011 of the screen, centred (TODO below). On the NTSC-U disc it shows
-  correctly and gives way to the idle mode after frame 150.
+  [GUI](gui.md#coneys-implementation)) and draws the sheet's first rectangle, the top 512 × 384 of the texture, over
+  the whole logical screen on black for 5,000 ms. **Coney's choice:** the picture fills the logical screen exactly;
+  the original overfills it slightly, 1.068 × 1.011 of the screen, centred (TODO below). On the NTSC-U disc it shows
+  correctly and gives way to the memory-card check after frame 150.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc]"` with `CONEY_DISC` set reads 20,314
 dictionaries (from 3,016 chunk containers, 1,911 sector atomics files and 159 world streams) holding 42,211 textures;

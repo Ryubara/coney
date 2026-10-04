@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 0.7%](https://img.shields.io/badge/reimplemented-0.7%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 0.9%](https://img.shields.io/badge/reimplemented-0.9%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.7% of the game's own code (22,144 of 3,342,408 bytes, 94 functions) |
+| **Reimplemented** | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% of the game's own code (30,504 of 3,342,408 bytes, 115 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▌░░░░░░░░░░░░░░` | 3 of 11 done |
 
@@ -55,10 +55,10 @@ at the top of the repository's `README.md`.
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 4 | 32,152 |
-| `FileIO` | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 1 | 6,480 |
-| `GameModes` | `▉░░░░░░░░░░░░░░░░░░░` | 4.6% | 9 | 51,816 |
+| `FileIO` | `▋░░░░░░░░░░░░░░░░░░░` | 3.3% | 2 | 6,480 |
+| `GameModes` | `█▊░░░░░░░░░░░░░░░░░░` | 8.6% | 17 | 51,816 |
 | `Graphics` | `▋░░░░░░░░░░░░░░░░░░░` | 2.9% | 19 | 189,024 |
-| `GUI` | `▌░░░░░░░░░░░░░░░░░░░` | 2.2% | 18 | 481,192 |
+| `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 481,192 |
 | `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
@@ -124,10 +124,19 @@ at the top of the repository's `README.md`.
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
 | `0x00154440` | `Stream_SkipBytes` | `FileIO` | 128 |
+| `0x001552b0` | `ShowProfileManager` | `FileIO` | 88 |
 | `0x00159a58` | `Mode5::Enter` | `GameModes` | 96 |
 | `0x00159ab8` | `Mode5::Exit` | `GameModes` | 40 |
 | `0x00159ae0` | `Mode5::Update` | `GameModes` | 296 |
 | `0x00159c08` | `StartupScreen_Draw` | `GameModes` | 1,536 |
+| `0x0015a270` | `MemoryCard_SetBootCheck` | `GameModes` | 32 |
+| `0x0015c2c0` | `Mode6::Exit` | `GameModes` | 320 |
+| `0x0015c4b0` | `LevelFlow_StartFrontEnd` | `GameModes` | 328 |
+| `0x0015c688` | `Mode8::Enter` | `GameModes` | 64 |
+| `0x0015c6f8` | `Mode8::Resume` | `GameModes` | 136 |
+| `0x0015e048` | `Mode12::Enter` | `GameModes` | 176 |
+| `0x0015e130` | `Mode12::Exit` | `GameModes` | 264 |
+| `0x0015e238` | `Mode12::Update` | `GameModes` | 760 |
 | `0x0015e5e8` | `GameModeStack_Push` | `GameModes` | 104 |
 | `0x0015e650` | `GameModeStack_Pop` | `GameModes` | 104 |
 | `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes` | 96 |
@@ -173,6 +182,18 @@ at the top of the repository's `README.md`.
 | `0x001d4230` | `OptionGrid_AddItem` | `GUI` | 440 |
 | `0x001d4d28` | `OptionGrid_TakeFocus` | `GUI` | 144 |
 | `0x001e95c0` | `MenuInput_Dispatch` | `GUI` | 1,080 |
+| `0x002040f0` | `PM_Controller::PM_Controller` | `GUI` | 2,400 |
+| `0x00204a78` | `PM_Controller_Start` | `GUI` | 296 |
+| `0x00204ba0` | `PM_Controller_Update` | `GUI` | 128 |
+| `0x00204c20` | `PM_Controller_Stop` | `GUI` | 48 |
+| `0x002079a0` | `PM_Greet::Init` | `GUI` | 792 |
+| `0x00207d48` | `PM_Greet_Enter` | `GUI` | 88 |
+| `0x00207da0` | `PM_Greet_Exit` | `GUI` | 48 |
+| `0x00207dd0` | `PM_Greet_Update` | `GUI` | 88 |
+| `0x00207e28` | `PM_Greet::Update` | `GUI` | 1,120 |
+| `0x00208288` | `PM_Greet::Render` | `GUI` | 152 |
+| `0x00209da8` | `PM_Mode::Init` | `GUI` | 944 |
+| `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0040e2d8` | `WorldManager_Preload` | `World` | not filled in |
 | `0x0040e8d8` | `WorldManager_Render` | `World` | not filled in |

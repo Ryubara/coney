@@ -377,9 +377,15 @@ scripts' string constants show (inferred, from the constants; the bytecode was n
 
 ## Coney's implementation
 
+**The start-up path** (`src/gamemodes/start_up_flow.h`, `StartUpFlow`), written from [the flow](#mode-flow) and
+[Boot](boot.md#main): `coney --disc <disc>` with no tool option loads the UI strings, then does what `main` does from
+the movies on: the three start-up movies (skipped, below), push mode 8, ask for the memory-card boot check, push mode 6,
+push mode 5. Mode 5 runs first; on the NTSC-U disc the main menu is reached as follows (frames of the 1/30 s step):
+legal screen frames 0-149, mode 6 frame 150, mode 8 frame 151 (it pushes 0x12), PM_Greet from frame 152, PM_Mode on
+the frame START is pressed.
+
 **Mode 5, the legal screen** (`src/gamemodes/legal_screen_mode.h`, `LegalScreenMode`), written from
-[the flow](#mode-flow) and [Graphics](graphics.md#first-screen). `coney --disc <disc>` with no tool option pushes an
-idle mode (standing in for mode 8) and then mode 5, as `main` does; mode 5 runs first:
+[the flow](#mode-flow) and [Graphics](graphics.md#first-screen):
 
 - `enter` picks the resource name by language, 16:9 and the flag `0x02` (`legalScreenResourceName`; the defaults
   are NTSC-U English 4:3, `legal_screen`), loads that sprite sheet from the WAD file named by the name's decimal CRC
@@ -432,6 +438,70 @@ Coney's choices for the pads, where the original does something else or the page
 - Left out for now: the camera-turned left stick (`+0x00`, in game only), the Lua pad handlers (`PadSetHandler`; no
   script system yet), vibration, the owning player (`+0x42`) and the sample time (`+0x48`).
 
+**Mode 6, the memory-card check** (`src/gamemodes/memory_card_mode.h`, `MemoryCardMode`): `setBootCheck` is
+`0x0015a270(1)`; `exit` is the original's (`0x0015c2c0`): the boot flag becomes 2 and, because the mode below is the
+level flow, its "load the front end on resume" (`+0x28`) is cleared. **Coney's choice:** Coney has no memory card (its
+saves will be files, and none exist yet), so `enter` and `update` are a pass-through on the "no saved profile" path:
+one black frame, then the mode leaves. No message box, no "checking" message (string `0xb5`) and no card dialogs; what
+the original shows with no card is an [open question](#open-questions).
+
+**Mode 8, the level flow** (`src/gamemodes/level_flow_mode.h`, `LevelFlowMode`): the three fields of
+[Mode 8 fields](#mode-8-fields); `enter` sets `+0x28` and calls `resume`, which starts the front end when `+0x28` is set
+and no level is chosen (`LevelFlow_StartFrontEnd`): select level 0, play `menu`, run `Menu.onStart`, mark the front end
+loaded. Coney's stand-ins, each because the research or the subsystem is not there yet:
+
+- Level 0 is selected by the name `level100`: no level table (`CfgLevelName` in `config_preload3.lua`) and no
+  `InitLevel`, so nothing of the level is loaded and the background is black where the Wonder Wheel scene would be.
+- `Menu.onStart` is not run. Coney does the one call of it the menus need, `ShowProfileManager("Menu.fadeToRMI",
+  "Menu.startGame")`. Running `level100.lua` in Coney's Lua VM fails at its first instructions (a nil global is
+  indexed), and `config_preload3.lua` fails likewise; both need globals that the script system's other scripts or its
+  bindings provide (see the TODO below).
+- `update` clears to black and presents (no front-end world); starting a chosen level (mode 1) does not exist yet.
+
+**Mode 0x12, the profile manager** (`src/gamemodes/profile_manager_mode.h`, `ProfileManagerMode`): `show` is
+`ShowProfileManager` (`0x001552b0`: keep the two callbacks, push unless on top); `enter` plays `menu` unless it is
+playing and loads `menu_system` (a batch of 50 sprites at depth 8,500); `update` runs the controller with the HUD
+player's pad (port 1) and the frame's game time, then the 2D pass and the present, and leaves when the flow is done;
+`exit` stops the controller and calls `Menu.startGame` when the flow finished. Coney's choices: the controller starts at
+the top of the first update instead of in `enter` (same step), so PM_Greet's blink is timed from that frame; the two
+fonts are loaded here (`part_page0` for slot 2, `big_font` for slot 6, depth 9,000); the screen is cleared to black (no
+world); each change of screen is logged (`profile manager: PM_Greet`), which is what a headless run shows.
+
+**The profile manager's screens** (`src/gui/profile_management_gui/`): `PmController` builds all fourteen screens and
+the [transition table](#profile-manager) on the screen flow ([GUI](gui.md#coneys-implementation)) and starts at
+PM_Greet; PM_Greet and PM_Mode are written, the twelve others are Coney's `PmPlaceholder` (it shows the screen's name
+and goes back on the back command), so the table can be followed today.
+
+- **PM_Greet** (`PmGreet`): the logo (`menu_system` rectangle 0, keeping its shape) and global string `0x76` centred
+  under it; the text's alpha ramps 0 → 255 → 0 in 1,500 ms halves from the screen's entry; START (the auto-repeating
+  query) returns 0, which leads to PM_Mode, and plays cue 9; 70,000 ms without input call `Menu.playMovie(2)`.
+- **PM_Mode** (`PmMode`): an option grid of `0x78` (code 0), `0x8a` (code 5, left out with the flag `0x02`) and `0x79`
+  (code 1), the first selected and drawn at 1.15 times the size, and the usage line `0x1f` below.
+- Coney's choices: the layout (every position and size: `PmLayout`, since the ten layout floats are not on this page);
+  the logo is rectangle 0 (it is the game's logo, from viewing the sheet); "activity" that restarts PM_Greet's idle
+  time is any button held or a stick off centre; after the movie call the idle time starts again; back on PM_Mode
+  returns code 8 (PM_Greet, its only transition back); code 1 (quick rumble) has no transition, so by the flow's rule
+  the menu stays (the page's reading that it ends the profile manager is not followed until the Rumble mode is
+  researched); unselected items are grey (160), the selected one white.
+
+**Menu commands** (`src/gui/menu_input.h`, `MenuInput`, `MenuInput_Dispatch` `0x001e95c0`), from [Input](#input): up,
+down, left and right from the auto-repeating d-pad query or the left stick past ±0.5; accept on the release of cross;
+back on the release of triangle or circle. A command is accepted only when more than 110 ms have passed since the last
+one, and a stick held the same way waits 400 ms until it returns to neutral. Taking focus forgets the last command and
+blocks the d-pad for 20 ms. Coney's reading: at most one command a frame, in the order d-pad, stick, accept, back; a
+command refused by the gap is dropped (a release too soon after a move is lost); the stick's up or down wins over left
+or right.
+
+**The front end's other requests** (`src/gamemodes/front_end_services.h`, `FrontEndServices`): music, sound cues,
+movies and Lua calls are recorded, logged and skipped. **Coney's choice for movies:** Coney has no video decoder, so
+each movie (`LOGO`, `PLOGO`, `L1_IN` at start-up, the attract movie) is skipped as if it had ended at once; the original
+blocks until it ends.
+
+**Disc check (NTSC-U, 2026-10-04, states only):** `coney_tests "[disc][frontend]"` with `CONEY_DISC` set runs the
+start-up path headless with the disc's sheets and strings: PM_Greet is on top by frame 160 with every sheet loaded,
+and START on frame 200 reaches PM_Mode with three items and cue 9. With `CONEY_DISC` set when CMake configures, the
+smoke test `coney.reaches_main_menu` runs `coney --disc` the same way.
+
 **The Lua 4.0 virtual machine** (`src/scripting/`), Coney's own implementation of the public Lua 4.0 language,
 so the game's precompiled scripts run unchanged:
 
@@ -452,6 +522,27 @@ so the game's precompiled scripts run unchanged:
 
 TODO for the analysts, found while implementing:
 
+- **The level script entry and `Menu.onStart`:** which scripts run before `level100.lua` (script system slot `+0x24`,
+  [Level loading](level-loading.md#open-questions)), and which globals and binding results `level100.lua`,
+  `config_preload3.lua` and `global.lua` expect. In Coney's VM, with every unknown binding a no-op returning nothing,
+  `level100.lua` fails on its first instructions indexing a nil global, `config_preload3.lua` on instruction 18
+  likewise, and `global.lua` compares nil with a number (a binding that should return a number). Until then Coney
+  calls `ShowProfileManager` itself in place of `Menu.onStart`.
+- **The ten layout floats** at `0x0050f5c4`-`0x0050f5e8` (`0x00203b98`): their values per video mode and which
+  widget each places (PM_Greet's logo and text, PM_Mode's grid and usage line); also which `menu_system` rectangle
+  PM_Greet's sprite widget shows (Coney: 0, the logo) and how its rectangle is anchored (Coney: the centre).
+- **PM_Mode:** what back does (Coney returns 8, PM_Greet), and how code 1 ends the profile manager when it has no
+  transition (the flow's rule says it stays). The item colours (selected and not) and the grid's spacing.
+- **PM_Greet's idle timer:** what the HUD fields `0x005fdeb8 + 0x1d4` and `+0x1d8` record (Coney: any button or stick),
+  and whether the timer restarts after `Menu.playMovie(2)`.
+- **`MenuInput_Dispatch`:** whether more than one command can fire in a frame, and the order of the d-pad, stick and
+  button passes when several are active.
+- **The unwind** (`0x001c81e8`): does it call `Exit` on screens that are already exited (covered), or only on the top?
+  Coney calls `exit` only on an entered screen.
+- Names: the `@orig` tags call the mode 6, 8 and 0x12 functions `Mode6::Exit`, `MemoryCard_SetBootCheck`,
+  `Mode8::Enter`, `Mode8::Resume`, `LevelFlow_StartFrontEnd`, `Mode12::Enter`/`Update`/`Exit`, and the screen
+  functions `PM_Controller_Start`/`Update`/`Stop`, `PM_Greet_Enter`/`Update`/`Exit` (the flow-state slots),
+  `PM_Greet::Init`/`Update`/`Render`, `PM_Mode::Init`/`Update`, until the research database names them.
 - Names for the mode 5 functions: the `@orig` tags call them `Mode5::Enter` (`0x00159a58`), `Mode5::Update`
   (`0x00159ae0`) and `Mode5::Exit` (`0x00159ab8`) until the research database names them.
 - Does `legal_screen_euro` have a 16:9 counterpart in another region's build, or does the flag `0x02` with 16:9 pick
@@ -467,9 +558,9 @@ TODO for the analysts, found while implementing:
 
 What the implementer still needs:
 
-- Game modes 6, 8, 0x12 and 1 with the behaviour of [the flow](#mode-flow); mode 6 can at first be a pass-through
-  that reports "no memory card, continue" (Coney's saves are files); mode 8 loads the front-end level on its first
-  entry and starts the chosen level later. Their place is marked in `src/platform/main.cpp`.
+- Mode 1, and mode 8's half that starts the chosen level (`Menu.onFinish`, `UnloadLevel`, push mode 1); mode 6's
+  real card check once Coney has saves.
+- The profile manager's other twelve screens, and the message box mode 6 uses ([GUI](gui.md#open-questions)).
 - The script system around the Lua 4.0 virtual machine (which exists, see above): running `enum_preload.lua`,
   `config_preload.lua` and the level scripts (`level100.lua`) at the original's points, with Coney's own
   implementations of the bindings they call: at least `CfgLevelName`, `ShowProfileManager`,
@@ -479,9 +570,6 @@ What the implementer still needs:
   bindings exist for the string load ([GUI](gui.md#coneys-implementation)).
 - The level table filled by `CfgLevelName`; `level100` as level 0.
 - `InitLevel` far enough to load `level100.lev`, its world and its dependency list, and to call `Menu.onStart`.
-- Menu commands exactly as in [the table](#input), with the 110 ms and 400 ms gaps, accept and back on release.
-- The profile manager screens and their transition table; `PM_Greet` (START, blinking text, 70 s attract movie) and
-  `PM_Mode` (three items) first. Their drawing is on [GUI](gui.md).
 
 ## Open questions
 

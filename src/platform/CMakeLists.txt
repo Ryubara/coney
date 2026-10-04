@@ -37,3 +37,12 @@ add_test(NAME coney.plays_input_script
 set_tests_properties(coney.plays_input_script PROPERTIES TIMEOUT 30)
 add_test(NAME coney.rejects_missing_input_script COMMAND coney --headless --frames 1 --input-script no-such-script.txt)
 set_tests_properties(coney.rejects_missing_input_script PROPERTIES WILL_FAIL TRUE)
+
+# With CONEY_DISC set when CMake configures, a headless run from the legal screen to the main menu: START on PM_Greet
+# must reach PM_Mode (docs/research/frontend.md#coneys-implementation). It prints states only, never game data.
+if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
+    add_test(NAME coney.reaches_main_menu
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 220
+                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/start_menu.txt")
+    set_tests_properties(coney.reaches_main_menu PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "profile manager: PM_Mode")
+endif()

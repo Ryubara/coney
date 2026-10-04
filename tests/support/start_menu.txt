@@ -1,0 +1,3 @@
+# A synthetic input script for the disc smoke test: START on PM_Greet, which is up from frame 152.
+# Format: docs/guides/building.md#input-scripts
+200 tap start
