@@ -580,5 +580,10 @@ Still for the analysts:
   20-a-second and the tearing cases) is still to do.
 - **Display brightness.** In PCSX2's screenshots the white of the legal image and of `big_font` text both come out
   at about 178 of 255 (and the menu's grey and red text at the same 70 % of their vertex colours), so the whole
-  picture is about 70 % bright. Whether that is in the textures, in the GS output circuit (`PMODE`) or in PCSX2's
-  capture is not known (speculative); the GS registers cannot be read over PINE.
+  picture is about 70 % bright. **Not `PMODE`** (partly answered, 2026-10-04): the game writes the GS output
+  registers from a display-buffer record in memory (`0x004aa748`, called at the vertical blank by `0x0048bdb0`), and
+  at the front end that record holds `PMODE` = `0x8067`: both read circuits on, mixed with the fixed alpha `0x80`
+  (`MMOD` = 1), `SMODE2` = 1, the two circuits' frame buffers one address step apart (the usual two-circuit
+  anti-flicker set-up; inferred). A half-and-half mix of two copies of the picture keeps its brightness, so the
+  70 % is in the drawn colours or in PCSX2's capture (open). confirmed (runtime) for the values, read from EE memory
+  over PINE at `0x0070f610`.

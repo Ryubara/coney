@@ -157,7 +157,8 @@ sprites.
 255)` (confirmed (code) at `0x0015a0b8`, [Graphics](graphics.md#first-screen)). The shadow's alpha × 128 / 255 is
 therefore a half-transparent shadow (128 of 255 for a fully opaque widget), not a conversion to the GS range. On
 PCSX2's screen the grey and the red text come out at the same 70 % of these values, as does the legal picture's white
-at full colour, which fits one scale for all three (the cause of the 70 % is open, [Graphics](graphics.md#open-questions)).
+at full colour, which fits one scale for all three (the cause of the 70 % is open,
+[Graphics](graphics.md#open-questions)).
 
 ### Widgets
 
@@ -319,7 +320,8 @@ heap and stores the pointer at `0x00600048 + id × 4`; `GlobalString_Get(id)` (`
 string. The other tables and the script side are inferred from the scripts' string constants.
 
 The chunk types `0x0F`-`0x13` (English to German string tables) and `StringTable/StringTableCache.cpp` are used by
-other screens (credits, Rumble mode); they do not occur in the WAD ([WAD contents](formats/wad-contents.md#chunk-types)).
+other screens (credits, Rumble mode); they do not occur in the WAD ([WAD
+contents](formats/wad-contents.md#chunk-types)).
 
 ### The `METRICS1` file
 
@@ -455,13 +457,22 @@ TODO for the analysts, found while implementing:
 - Names for the sheet functions: the `@orig` tags call them `ChunkLoaded_ParticlePage` (`0x00181b20`),
   `ChunkLoaded_ParticlePageHeader` (`0x00182820`), `ResourceMgr_SheetRecord` (`0x001828c0`) and
   `ResourceMgr_SheetSize` (`0x00181e50`) until the research database names them.
-- **`GetPlatform` on the PS2:** what does the binding return? Each language file has about twenty strings in an
+- **`GetPlatform` on the PS2** (answered, 2026-10-04): it returns **1** (`0x00357998`), so the language files take
+  their `else` branch: "PRESS THE START BUTTON" for `0x76`, triangle as "back" in `0x1f` (confirmed (code); the
+  wording confirmed (runtime) in PCSX2). Coney's 0 takes the same branch; nothing to change
+  ([Scripts](scripting.md#bindings-whose-results-the-front-end-needs)). The original question: what does the binding
+  return? Each language file has about twenty strings in an
   `if Platform == 2 then ... else ... end`; the two branches differ mainly in naming triangle or circle as "back"
   (`0x1f` among them). Coney returns 0 (the triangle branch, which matches [Front end](frontend.md#input)'s reading).
   Which platform is 2, and which branch does the NTSC-U game show?
-- **Who runs `config_preload2.lua`, and when?** Coney runs it after `enum_preload.lua` to get the strings; the
+- **Who runs `config_preload2.lua`, and when?** (answered): the legal screen's `Enter` (`0x00161218`), after
+  `enum_preload.lua` and `config_preload.lua` and before `config_preload3.lua`, all in one Lua state
+  ([Scripts](scripting.md#life-of-the-lua-state)); Coney's order matches for the two it runs. Originally: Coney runs it
+  after `enum_preload.lua` to get the strings; the
   original's call site is not on this page.
-- **`doFile`:** does the binding add `.lua` to a name without an extension (as Coney does), or look the name up some
+- **`doFile`** (answered): it always adds `.lua` (`0x003579a0` formats `"%s.lua"`, `0x00579058`) and runs the
+  result as a WAD name (script system slot `+0x34`), as Coney does. Originally: does the binding add `.lua` to a name
+  without an extension (as Coney does), or look the name up some
   other way?
 - **The HUD string array** at `0x00600048`: its size, and what `GlobalString_Get` does with an id past it.
 - **The font a text widget starts in:** which instance slot (and so which sheet) does a `TextWidget` draw with

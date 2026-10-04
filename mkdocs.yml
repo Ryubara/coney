@@ -71,6 +71,7 @@ nav:
           - Start-up and the front end: research/frontend.md
           - GUI, sprite sheets and text: research/gui.md
           - Level loading: research/level-loading.md
+          - Scripts (Lua): research/scripting.md
           - Collision: research/collision.md
           - The streamed world: research/world.md
           - Memory: research/memory.md

@@ -27,7 +27,7 @@ Names are ours unless they come from a path or class string.
 | Address | Name | File | Role | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x00159a58` / `0x00159ae0` | mode 5 `Enter` / `Update` | `GameModes/` | legal screen | confirmed (code) |
-| `0x00161218` | `RunPreloadScripts` | `GameModes/` | runs `enum_preload.lua` and `config_preload.lua` | confirmed (code) |
+| `0x00161218` | `RunPreloadScripts` | `GameModes/` | runs `enum_preload.lua`, then `config_preload.lua`, `config_preload2.lua` and `config_preload3.lua` ([Scripts](scripting.md#life-of-the-lua-state)) | confirmed (code) |
 | `0x00156148` | `AnyPadHoldsL1OrR1` | `GameModes/` (base file) | latch read by mode 5 | confirmed (code) |
 | `0x0015baa0` / `0x0015be00` / `0x0015c2c0` | mode 6 `Enter` / `Update` / `Exit` | `GameModes/Gm_MemoryCard.cpp` | memory-card boot check | confirmed (code) |
 | `0x0015c6f8` | mode 8 `Resume` (also called by its `Enter`) | `GameModes/` | first entry loads the front-end level | confirmed (code) |
@@ -168,8 +168,10 @@ Until the research database names them, Coney's `@orig` tags call the first seve
 so modes 8 and 6 have not been entered when mode 5 runs first.
 
 1. **Mode 5, the legal screen** (5,000 ms). See [Graphics](graphics.md#first-screen) for the drawing. `Enter` also runs
-   two scripts through the script system (`0x00161218`, slot `+0x44` with `enum_preload.lua` and
-   `config_preload.lua`, wrapped in slot `+0xdc(1)` / `+0xdc(0)`). `Update` (`0x00159ae0`) switches `GameTimer` to
+   the preload scripts through the script system (`0x00161218`, slot `+0x44` twice: the list `enum_preload.lua`,
+   then the list `config_preload.lua`, `config_preload2.lua`, `config_preload3.lua`; the slot `+0xdc(1)` /
+   `+0xdc(0)` calls around them do nothing in this build, [Scripts](scripting.md#vtable-slots)). `Update` (`0x00159ae0`)
+   switches `GameTimer` to
    the fixed step, ticks, calls `Pads_Update` and stays while fewer than `+0x28` = 5,000 ms of real time have passed.
    **No button skips it**: the code checks for a pressed button only once the time is already up, and a latch set by
    holding L1 or R1 (`0x00156148`, bits `0x000c`) only copies `+0x24` into `+0x28`, which are equal. Confirmed (code);
@@ -181,11 +183,21 @@ so modes 8 and 6 have not been entered when mode 5 runs first.
    box (`0x001c6b78` on the box at `0x005e5840`). Then either a two-choice dialog (`0x0015a370`: global strings
    `0xa8`, `0xba`, `0xbb`) when the scan flag `0x0050c6fc` is set, or a timed message (`0x0015a328`: global string
    `0xb5` for 3,000 ms). Each frame `Update` (`0x0015be00`) services the save system, runs the box's callbacks
-   (a card that is missing, unformatted or full opens further dialogs: `0x0015b918` with strings `0xb7`-`0xc1`),
+   (when the save system reports the card not usable, slot `+0x34` returning 0 while slot `+0x24` reports it idle,
+   the next step is the card dialog `0x0015b918`, below),
    reads the pads, checks for a removed controller, clears to black and draws the HUD and the box. It leaves when the
    save system and the box are done. `Exit` (`0x0015c2c0`) frees the buffer, sets the boot flag to 2 and, because the
-   mode below is 8, clears mode 8's `+0x28`. Confirmed (code) for the calls; what each dialog says is in the string
-   table and not traced here.
+   mode below is 8, clears mode 8's `+0x28`. Confirmed (code) for the calls.
+
+   **The card dialog** (`0x0015b918`), confirmed (code); the texts are the English strings of
+   `config_strings_en.lua`: a message box (`0x001c7128` on the box at `0x005e5840`) with a message and two choices.
+   The message is the one stored at `0x0050c730` if any, else by the save system's state words (not identified;
+   `0x005e5d80`, `0x0050c700`): `0xb7` "Autosave failed! Please check the memory card ... and try again.", `0xb8`
+   "Load failed! ..." or `0xb9` "Delete failed! ...". The first choice is `0xc0` "Continue without saving" (or `0xc1`
+   "Start Game", `0xbc` "OK", `0xbe` "Cancel" in the other states) and sets the next step to `0x0015b8c0`, which
+   lets the mode finish; the second is `0xbd` "Retry": the "Checking memory card ..." message (`0xb5`) for 3,000 ms
+   (`0x0015a328`), then a new card scan (`0x0015a2b0`). Which message a boot with **no card** shows is not
+   identified (the state words); a runtime look with the card removed would tell.
 
    **At runtime with an unformatted card** in slot 1 (PCSX2 2.9.94, a blank card file, no button pressed; one
    screenshot a second): the legal screen for 4 to 5 seconds, then a white message on black, "Checking memory card
@@ -330,23 +342,52 @@ globals (`0x0050f584`-`0x0050f5c0`, the first Lua callback in `0x0050f584`), pic
   1,500 ms (`+0x98`).
 - `Update` (`0x00207e28`): while the profile manager is not finishing, the text's alpha ramps 0 → 255 and 255 → 0 in
   alternate 1,500 ms halves (`0x00337568`, a linear interpolation). If START is pressed on the HUD player's pad, the
-  result is 0 (→ `PM_Mode`) and the front-end sound cue **9** plays (`0x0010fc30`). Any activity on the HUD
-  (`0x005fdeb8 + 0x1d4`, `+0x1d8`) restarts an idle timer; after **70,000 ms** idle the screen calls the Lua function
-  **`Menu.playMovie(2)`** (an attract movie; which of the script's two movies, `TRAILER` or `L1_IN`, index 2 means is
-  inferred to be the second, `L1_IN`).
+  result is 0 (→ `PM_Mode`) and the front-end sound cue **9** plays (`0x0010fc30`). A **screen fade** in progress
+  restarts an idle timer and keeps the text fully visible: `0x005fdeb8` is the first of the two
+  **screen-effects managers** (`ScreenEffectsManager`, 0x220 bytes each, made by `0x0018ba10`), and `+0x1d4` (a fade
+  is running) and `+0x1d8` (the fade level) are set by `ScreenQueueEffect` (`0x0018cc60`); pad input does not touch
+  them (confirmed (code); confirmed (runtime): both stayed 0 while pad keys were pressed). After **70,000 ms** with no
+  fade the screen calls the Lua function **`Menu.playMovie(2)`** (`0x00558c60`), sets `+0xac` and restarts
+  the timer: an attract movie, `Menu.movies[2]` = `L1_IN` (`level100.lua`; inferred, from its disassembly).
 - Render (`0x00208288`): draws the text and the sprite while the screen is active and visible.
 
 **`PM_Mode`** (the main menu), confirmed (code) at `0x00209da8`: an `OptionGrid` with three items, global strings
-`0x78` (code 0), `0x8a` (code 5, `PM_Extras`; left out when the device flag `0x02` is set) and `0x79` (code 1), the
-first selected, scaled 1.15, plus a usage line (string `0x1f`). Code 1 has no transition in the flow, so choosing it
-ends the profile manager (inferred); with the Lua script's `Menu.fadeToRMI` and `ShowRumbleModeInterface` it is
-probably the Rumble mode entry (speculative). The item labels are in the string table; `level100main.lua` (below)
-names the same choices "Story" and "Quick Rumble", which suggests `0x78` and `0x79` (speculative).
+`0x78` "STORY" (code 0), `0x8a` "EXTRAS" (code 5, `PM_Extras`; left out when the device flag `0x02` is set) and
+`0x79` "QUICK RUMBLE" (code 1), the first selected, scaled 1.15, plus a usage line (string `0x1f`: X "ok", triangle
+"back" on the PS2). The texts are from `config_strings_en.lua` (inferred, from its disassembly).
+
+Its command handler (`0x0020a268`), confirmed (code), ignores input while a screen fade is not
+finished (`0x005fdeb8 + 0x1d8` ≠ 0). **Back** (command 5): result 8 (→ `PM_Greet`) and front-end sound cue `0xf`.
+**Accept** (command 4):
+sound cue 9, then by the selected item's code: 0 → result 0 (`PM_Profile`), or 6 (`PM_NumPlayers`) when two or more
+pads are connected (the count of non-zero words at `0x005dd85c`, stride 0x50, eight pads); 5 → result 5; 7 → call
+the Lua function `Menu.reloadProfiles` (`0x00558fe0`; no item of this menu has code 7); any other code, so **code 1
+"QUICK RUMBLE"**, → call the Lua function the profile manager was started with (`0x0050f584`, the first
+`ShowProfileManager` argument, `Menu.fadeToRMI`) and stay. The script then fades out and opens the Rumble mode
+interface ([Scripts](scripting.md#level100lua-the-front-end)).
+
+**The layout floats** (`0x00203b98`, read through ten getters `0x00203af8`-`0x00203b88`), confirmed (code); values
+for the default video mode (no device flag `0x02`, `0x04` or `0x20`) confirmed (runtime). Positions are fractions of
+the screen, a vector (x, 0, y, 1) with x relative to the centre (inferred):
+
+| Address | Default | Used by |
+| --- | --- | --- |
+| `0x0050f5c4` | 0.0 | x offset of the greeting, the usage lines and most screens' widgets (13 screens) |
+| `0x0050f5c8` | 0.81 | `PM_Greet`'s text y; `PM_Mode`'s grid y when it has two items (flag `0x02`); other screens |
+| `0x0050f5cc` | 0.76 | `PM_Mode`'s grid y (three items); `PM_Load`, `PM_Profile` |
+| `0x0050f5d0`-`0x0050f5e4` | 0.71, 0.657, 0.745, 0.7, 0.65, 0.6 | `PM_Difficulty`, `PM_Load`, `PM_Profile`, `PM_Subtitles` only |
+| `0x0050f5e8` | 0.87 | y of the usage line (every screen that has one) |
+
+`PM_Greet`'s sprite (the logo) is at x = `0x0050f5c4`, y = `0x0050f628` (0.2 by default, 0.27 with flag `0x02`
+without `0x04`) with size `0x0050f624` (0.33 by default), depth 11,000; its text at y = `0x0050f5c8` with the font
+size 1.15 (`0x002079a0`). The screen names of the other users come from their functions' addresses (each `Init`
+follows its constructor; inferred).
 
 ### The front-end scripts
 
-The front end's behaviour beyond the C++ screens lives in Lua 4.0 bytecode on the disc. What the code and the
-scripts' string constants show (inferred, from the constants; the bytecode was not disassembled):
+The front end's behaviour beyond the C++ screens lives in Lua 4.0 bytecode on the disc. The scripts have been
+disassembled (2026-10-04); the script system and `level100.lua`'s `Menu` functions in detail are on
+[Scripts](scripting.md). In short (inferred, from the disassembly):
 
 - `level100.lua` defines the table `Menu` with `onStart`, `onFinish`, `fadeToRMI`, `launchRMI`, `startRumbleMode`,
   `cancelRumbleMode`, `fadeIn`, `startGame`, `stopScene`, `startScene`, profile reload and delete helpers, and
@@ -354,7 +395,9 @@ scripts' string constants show (inferred, from the constants; the bytecode was n
   `dyn_s_wwcart_simple_*`, `dyn_s_wwheel_a`, `dyn_s_neon_*`) and the music `music/wonderwheel_132b`, and uses the
   bindings `ShowProfileManager`, `ShowRumbleModeInterface`, `ScreenQueueEffect`, `ScheduleFunc`, `GetPTank`,
   `ReleasePTank`, `SoundLoopMusicTrack`, `SoundStopMusicTrack`, `SetCheckPoint`, `MenuLoadLevel`, `PlayMovie` and
-  the `SSMC_*` save-sequence functions.
+  the `SSMC_*` save-sequence functions. `Menu.startGame` (the profile manager's second callback) stops the music
+  and the scene and calls `runNextMission(1)`, a `global.lua` helper; `Menu.startRumbleMode(n)` calls
+  `MenuLoadLevel("level" .. n)`.
 - `level100main.lua` is a different, Lua-driven menu (dialogs `DlgGreet`, `DlgMode`, `DlgProfile`, ..., a serial
   number and "dongle" check). It calls functions that the PS2 executable does not register (`Simon_*`,
   `GetDefaultUIFont`, `CreateCenteredSprite`; none of these names occur in the executable or elsewhere in the WAD),
@@ -403,7 +446,7 @@ Coney's choices, where the original does something else or the page is silent:
   never reads a clock and a test can run the whole hold.
 - `legal_screen_euro` is used for English with the flag `0x02` whatever the 16:9 option, since no `_w` variant of it
   exists.
-- The preload scripts `Enter` runs (`enum_preload.lua`, `config_preload.lua`) wait for a Lua system.
+- The preload scripts `Enter` runs (`enum_preload.lua` and the three `config_preload*.lua`) wait for a Lua system.
 
 **The pads** (`src/core/pad.h`, `Pad`; `src/core/pads.h`, `Pads`), written from [the pad record](#pad-record),
 [the queries](#pad-queries) and [the input section](#input):
@@ -522,18 +565,26 @@ so the game's precompiled scripts run unchanged:
 
 TODO for the analysts, found while implementing:
 
-- **The level script entry and `Menu.onStart`:** which scripts run before `level100.lua` (script system slot `+0x24`,
+- **The level script entry and `Menu.onStart`** (answered, 2026-10-04): the preloads (four scripts, at the legal
+  screen), then `global.lua`, then `level100.lua`, all in one Lua state; what each needs is on
+  [Scripts](scripting.md#notes-for-implementers) (also: table constructors flush every **62** items, not 64).
+  Originally: which scripts run before `level100.lua` (script system slot `+0x24`,
   [Level loading](level-loading.md#open-questions)), and which globals and binding results `level100.lua`,
   `config_preload3.lua` and `global.lua` expect. In Coney's VM, with every unknown binding a no-op returning nothing,
   `level100.lua` fails on its first instructions indexing a nil global, `config_preload3.lua` on instruction 18
   likewise, and `global.lua` compares nil with a number (a binding that should return a number). Until then Coney
   calls `ShowProfileManager` itself in place of `Menu.onStart`.
-- **The ten layout floats** at `0x0050f5c4`-`0x0050f5e8` (`0x00203b98`): their values per video mode and which
+- **The ten layout floats** (answered: [the table above](#profile-manager); the `menu_system` rectangle and the
+  anchoring are still open) at `0x0050f5c4`-`0x0050f5e8` (`0x00203b98`): their values per video mode and which
   widget each places (PM_Greet's logo and text, PM_Mode's grid and usage line); also which `menu_system` rectangle
   PM_Greet's sprite widget shows (Coney: 0, the logo) and how its rectangle is anchored (Coney: the centre).
-- **PM_Mode:** what back does (Coney returns 8, PM_Greet), and how code 1 ends the profile manager when it has no
+- **PM_Mode** (answered, [above](#profile-manager)): back returns 8 with cue `0xf`; code 1 calls `Menu.fadeToRMI`
+  and stays; the item colours and spacing are still open. Originally: what back does (Coney returns 8, PM_Greet),
+  and how code 1 ends the profile manager when it has no
   transition (the flow's rule says it stays). The item colours (selected and not) and the grid's spacing.
-- **PM_Greet's idle timer:** what the HUD fields `0x005fdeb8 + 0x1d4` and `+0x1d8` record (Coney: any button or stick),
+- **PM_Greet's idle timer** (answered, [above](#profile-manager)): the fields are the screen-effects manager's fade
+  state, not input, and the timer restarts after `Menu.playMovie(2)`. Originally: what the HUD fields
+  `0x005fdeb8 + 0x1d4` and `+0x1d8` record (Coney: any button or stick),
   and whether the timer restarts after `Menu.playMovie(2)`.
 - **`MenuInput_Dispatch`:** whether more than one command can fire in a frame, and the order of the d-pad, stick and
   button passes when several are active.
@@ -575,8 +626,11 @@ What the implementer still needs:
 
 - **Mode 6 at boot** (answered for an unformatted card: no dialog, see [the flow](#mode-flow)): still open with no
   card, a formatted card without a save and a card with a save.
-- **Rumble mode**: what `PM_Mode`'s code 1 does, and how `Menu.fadeToRMI` and the Rumble mode interface follow.
-- **Global string ids**: the text behind `0x76`, `0x78`, `0x79`, `0x8a`, `0x1f` and the memory-card ids needs a
+- **Rumble mode** (answered for the entry): code 1 calls `Menu.fadeToRMI`, which opens the Rumble mode interface;
+  what that interface (`ShowRumbleModeInterface`) does is open.
+- **Global string ids** (answered for the front end: `GSTRING.HUD` entries are set with explicit indices, so the
+  disassembly gives each id's text; the texts are quoted above). Originally: the text behind `0x76`, `0x78`, `0x79`,
+  `0x8a`, `0x1f` and the memory-card ids needs a
   decoder for `config_strings_*.lua` (the entries' order in the `GSTRING.HUD` table gives the id; a string that
   occurs twice is stored once among the constants, so the constants alone do not give the order).
 - **`InitLevel` details**: what the script system's slot `+0x24` loads for a level (which `.lua` files), and the
@@ -584,6 +638,8 @@ What the implementer still needs:
   [Level loading](level-loading.md#the-level-record)).
 - **The device flag `0x02`** hides `PM_Extras` and selects other layouts; it is still unidentified (see
   [Graphics](graphics.md#open-questions)).
-- **Script system slots** used here are named by their use only: `+0x44` run a script file, `+0x4c` find a function
+- **Script system slots** (answered: [Scripts](scripting.md#vtable-slots); update is `+0x14`, its adjust word
+  `+0x10`, and `+0xdc` does nothing). Originally named by their use only: `+0x44` run a script file, `+0x4c` find a
+  function
   by name, `+0x6c` push a number, `+0x8c` call, `+0xcc` keep a reference to a function by name, `+0xdc` a mode switch
   around preload scripts, `+0x10` update, `+0x24` level entry. A page on the script system should confirm them.

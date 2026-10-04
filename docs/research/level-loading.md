@@ -440,8 +440,9 @@ What the implementer still needs:
 - **The subtitles chunk** (`0x51`) and the path records (A to D in [Path data](#path-data)): their contents.
 - **`Sector Pool 2`** (answered): nothing; it is created at its 4 KB minimum in practice and never read
   ([Memory](memory.md#the-pool-tree)).
-- **The script entry** (script system slot `+0x24`): which `.lua` files a level runs (`<level>.lua`,
-  `<level>_strings.lua`, `<level>main.lua`).
+- **The script entry** (answered, confirmed (code)): `global.lua`, then `<level>.lua`, in the Lua state the last
+  unload made ([Scripts](scripting.md#life-of-the-lua-state)). The `*_strings_<lang>.lua` files are chosen by the level
+  scripts themselves (`level95.lua` picks one of five by `GetLanguage`; inferred from the disassembly).
 - **The resource manager** (packs, the dependency list, the time stamps behind "least recently used", its seven
   lists) needs its own page.
 - **Runtime confirmation** with PCSX2: the size of the `Sector Pool` on a retail boot (answered: 17,217,536 bytes,

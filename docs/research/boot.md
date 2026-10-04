@@ -365,7 +365,7 @@ files they belong to.
    resources, particles (`0x0017b2e0`), device slot `+0x118`.
 8. **Overlays** (`0x00156658`): HUD (`0x001b1688`), subtitles, the front-end layers when active, screen effects with
    `dt` (device slot `+0x128`).
-9. **Scripts**: `scriptSystem.Update(dt)` (slot `+0x10`).
+9. **Scripts**: `scriptSystem.Update(dt)` (slot `+0x14`; [Scripts](scripting.md#vtable-slots)).
 10. **Present** (device slot `+0x30`, `0x001958b0`): the main camera's show-raster (the flag 1 the device passes
     is dropped; RenderWare gets 0), then clear the "cameras set up this frame" flag (`0x0050b6f8`). See
     [Graphics](graphics.md#frame-rate).
