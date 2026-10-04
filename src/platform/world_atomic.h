@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <expected>
 #include <span>
+#include <utility>
 
 #include "core/error.h"
 #include "world/world_streams.h"
@@ -68,7 +69,7 @@ class WorldAtomic {
     void unpack();
 
   private:
-    WorldAtomic(rw::Atomic* atomic, world::AtomicSection info) : m_atomic(atomic), m_info(info) {}
+    WorldAtomic(rw::Atomic* atomic, world::AtomicSection info) : m_atomic(atomic), m_info(std::move(info)) {}
 
     /// Destroys the atomic and its frame, if this object still owns them.
     void destroy() noexcept;
