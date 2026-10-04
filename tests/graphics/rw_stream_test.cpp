@@ -32,9 +32,9 @@ TEST_CASE("a headered RenderWare stream is recognised by its header and stamp", 
     entry.append(texDictionary({}).span());
     auto found = detectHeaderedRwStream(entry.span());
     REQUIRE(found.has_value());
-    CHECK(found->id == 0xCAFE);
-    CHECK(found->firstSection.id == kRwTexDictionary);
-    CHECK(found->firstSection.libraryStamp == kRwLibraryStamp);
+    CHECK(found.value().id == 0xCAFE);
+    CHECK(found.value().firstSection.id == kRwTexDictionary);
+    CHECK(found.value().firstSection.libraryStamp == kRwLibraryStamp);
 }
 
 TEST_CASE("chunk containers and other stamps are not headered RenderWare streams", "[rw_stream]") {

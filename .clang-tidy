@@ -3,3 +3,5 @@ Checks: >
   misc-definitions-in-headers,misc-redundant-expression,modernize-use-nullptr,modernize-use-override
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(src|tests)/.*'
+# Fetched dependencies have src/ folders too (librw's headers are in _deps/librw-src/src/); they are not ours to fix.
+ExcludeHeaderFilterRegex: '.*/_deps/.*'

@@ -73,6 +73,9 @@ loadForViewer(const coney::io::Wad& wad, const coney::chunk::ChunkHandlerTable& 
 
 } // namespace
 
+// Coney throws no exceptions; what could escape is a failed allocation inside the standard library or librw, which
+// ends the program either way.
+// NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv) {
     // Parse the command line; exit 2 on a usage error, as command-line tools do.
     const std::vector<std::string_view> args(argv + 1, argv + argc);

@@ -197,7 +197,7 @@ TEST_CASE("the headless renderer has no window and draws nothing", "[render_engi
     engine->beginFrame({});
     engine->present();
     REQUIRE(engine->capture().has_value());
-    CHECK_FALSE(engine->capture()->has_value());
+    CHECK_FALSE(engine->capture().value().has_value());
 }
 
 TEST_CASE("only one renderer runs at a time and another can start after it", "[render_engine]") {

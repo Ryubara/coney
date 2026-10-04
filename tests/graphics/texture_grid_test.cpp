@@ -52,6 +52,7 @@ TEST_CASE("a wide screen puts three textures in one row", "[texture_grid]") {
 
 TEST_CASE("grid cells stay inside the screen and keep each shape without overlapping", "[texture_grid]") {
     std::vector<Extent> textures;
+    textures.reserve(23);
     for (int i = 0; i < 23; ++i) {
         textures.push_back(Extent{4 << (i % 7), 4 << ((i * 3) % 7)});
     }

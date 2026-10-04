@@ -15,11 +15,10 @@ bool Window::pumpEvents() {
     const SDL_WindowID ours = SDL_GetWindowID(static_cast<SDL_Window*>(m_handle));
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_EVENT_QUIT) {
-            keepRunning = false;
-        } else if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == ours) {
-            keepRunning = false;
-        } else if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) {
+        // Quit, a close request for our window, or Escape.
+        if (event.type == SDL_EVENT_QUIT ||
+            (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == ours) ||
+            (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE)) {
             keepRunning = false;
         }
     }
