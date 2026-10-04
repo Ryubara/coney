@@ -40,7 +40,12 @@ calls them the **`s` world** and the **`d` world**.
 | `0x004101f0` | `World_CameraDistanceSq(bbox)` | squared distance from the nearest camera to a sector box | confirmed (code) |
 | `0x00411eb0` | `World_FindPartToLoad` | nearest sector without its atomic | confirmed (code) |
 | `0x004120a8` | `World_FindPartToUnload` | farthest part that nobody sees | confirmed (code) |
-| `0x00411880` | `World_PendingDistance` | distance to the sector found by `0x00411eb0` | confirmed (code) |
+| `0x00411880` | `World_PendingDistance` | distance to the sector found by `0x00411eb0`; `FLT_MAX` when there is none | confirmed (code) |
+| `0x0040e100` | `WorldManager_NearestPendingDistance` | the smaller of the two worlds' `World_PendingDistance`; no new search | confirmed (code) |
+| `0x00426c78` | `Atomic_AssignGamePipelines` | the game's PS2 pipelines for an atomic and its materials ([Pipelines](#pipelines)) | confirmed (code) |
+| `0x0017d640` | `LightManager` constructor | the light manager (`0x0050cce4`, 0xc0 bytes) ([Lighting](#lighting)) | confirmed (code) |
+| `0x0017de10` | `LightManager_SelectLights` | the lights for one atomic or sphere | confirmed (code) |
+| `0x00124778` | `Cam_Follow::Cam_Follow` | the player camera: field of view, near and far clip ([The player camera](#player-camera)) | confirmed (code) |
 | `0x00411d10` | `World_FindVisibleSectors(world, firstViewport)` | visibility pass for one camera | confirmed (code) |
 | `0x00411b98` | sector callback during the visibility pass | PVS, occluders, mark visible | confirmed (code) |
 | `0x00411b20` | `World_CollectSector` (the world's sector render callback) | queues a sector whose atomic is loaded | confirmed (code) |
@@ -195,7 +200,7 @@ Every atomic gets 16 bytes (offset in `0x0050cd98`; registered by `0x001927d8`);
 | Offset | Stream | Default | Meaning | Evidence |
 | --- | --- | --- | --- | --- |
 | `+0x00` | float | 1.0 | uploaded to VU memory by the game's four custom PS2 pipelines (`0x004252c8`, `0x00426430`, `0x004275d0`, `0x00428410`); **the scale of the packed 16-bit vertex positions** ([PS2 world geometry](#ps2-world-geometry)) | upload confirmed (code); scale confirmed (runtime) by Coney's disc test; that the microcode applies it this way inferred |
-| `+0x04` | float | 1.0 | uploaded next to `+0x00`; not the position scale | confirmed (code); meaning speculative (texture coordinates) |
+| `+0x04` | float | 1.0 | uploaded next to `+0x00` in the same quadword (`+0x00` as `x`, `+0x04` as `z`; `0x001928c0`, `0x001928f0`); **the scale of the packed 16-bit texture coordinates** | upload confirmed (code); scale confirmed (runtime) by Coney's viewer, visually; the microcode was not read |
 | `+0x08` | u32 | 0 | read by `0x004290d8` | confirmed (code); meaning unknown |
 | `+0x0c` | | 0 | not streamed: the game object that owns the atomic (getter `0x00192870`, used by the object renderers) | confirmed (code); meaning inferred |
 
@@ -208,8 +213,8 @@ Every atomic gets 16 bytes (offset in `0x0050cd98`; registered by `0x001927d8`);
 box's largest side. Unscaled, 136 vertices lie in the box. In the 4,708 atomics whose two floats differ, scaling by
 `+0x04` never gives the box (0 of 4,708; the floats are equal in the other 607). So `+0x00` is the position scale.
 The atomic's own bounding sphere in the geometry header is in the same scaled units (seen on one atomic). `+0x04` is
-plausibly the texture-coordinate scale (speculative: scaled by it, second-set coordinates fall in 0 to 1 for 93 % of
-`level2s`'s vertices, first-set ones show tiling values).
+the texture-coordinate scale (Coney's viewer, [below](#coneys-implementation); scaled by it, second-set coordinates
+fall in 0 to 1 for 93 % of `level2s`'s vertices, first-set ones show tiling values).
 
 ### PS2 world geometry {#ps2-world-geometry}
 
@@ -236,6 +241,37 @@ data: all 5,315 atomics, 181,150 batches decode this way; what the microcode doe
 Triangles: decoded and joined, the strips give 2,869,406 non-degenerate triangles against 2,870,179 in the geometry
 headers (5,155 of 5,315 atomics equal), and 4,887,946 distinct vertices against 4,943,282. The difference is inferred
 to be vertices that became identical when packed to 16 bits, which merges them and turns their triangles degenerate.
+
+### Pipelines and the second texture-coordinate set {#pipelines}
+
+The pipeline ids in the files are not the whole story: when a part's atomic (and the level file's sky, cloud and
+skyline models) is set up, `Atomic_AssignGamePipelines` (`0x00426c78`) gives the atomic the pipeline `0x30083`
+(`0x005151c4`, made by `0x00426d58`) and chooses each material's pipeline from its **MatFX effect** (`0x00426cc8`,
+reading the effect type through `0x004653d8`), confirmed (code):
+
+| Material's MatFX effect | Pipeline | Made by | Texture coordinates unpacked as | Microcode |
+| --- | --- | --- | --- | --- |
+| none, geometry without flag `0x80` | `0x30084` (`0x005151b4`) | `0x00428f30` | `V2_16`, one set (`0x6500000d`) | table `0x005045a0` |
+| none, geometry with flag `0x80` (two sets) | `0x30088` (`0x005151b8`) | `0x004298c0` | `V4_16`, two sets (`0x6d00000d`) | the same table `0x005045a0` |
+| 4, dual texture | `0x30086` (`0x005151bc`) | `0x004273f8` | | `0x004fc870` |
+| 2, environment map | `0x30087` (`0x005151c0`) | `0x00428080` | | `0x004ff1c0` |
+| any other | unchanged | | | |
+
+The set-up of these pipelines is `0x00426e28` / `0x00426c40`. So `0x30084` and `0x30088` run the **same microcode**
+and differ only in unpacking one or two texture-coordinate sets: on a plain material the second set is unpacked and,
+inferred from the shared microcode, not used. `0x30086` is the dual-texture pipeline with its own microcode.
+
+**Disc check (corroboration):** in the streamed worlds' part files, 9,516 materials carry MatFX effect 4 (dual), all
+with the blend `SRCALPHA` / `INVSRCALPHA` and a second texture; 2,467 carry effect 1 (bump map), which keeps its stored
+pipeline. So the **second texture-coordinate set** is, inferred, the coordinates of a dual material's second texture,
+alpha-blended over the first (decals, grime, painted markings); the `0x3F0 +0x04` scale presumably applies to it too.
+How the microcode at `0x004fc870` draws the second pass was not read.
+
+**Vertex colour range**, confirmed (code) at the uploads `0x004252c8` and `0x00426430`: the **material colour** is
+scaled by `1/255` for an untextured material and by `0.0019700117` (about `0.5/255`) for a textured one; alpha
+always by `0.00197`. A textured white material thus reaches the GS as 128, and the GS's texture modulate treats 128 as
+1.0 (inferred from the GS's documented behaviour). The prelighting colours are unpacked unsigned (`V4_8`) and not
+scaled by the CPU, so they too are on the GS's scale, where 0x80 is full brightness (inferred).
 
 ### The world object (0x2188 bytes) {#world-object}
 
@@ -310,7 +346,10 @@ summarised:
    part whose nearest sector is farthest from the cameras, among parts that are loaded and of which no sector was
    visible last frame and no atomic is still in use (`0x00198220`). The resource manager offers its farthest
    resource. The farthest of these is unloaded, but only if it is more than 5.0 farther than the nearest wanted
-   thing (return 2). If there is nothing to unload, return 1 or 3.
+   thing (return 2). If there is nothing to unload, return 1 or 3. The two world searches give **squared** camera
+   distances, so for scenery the 5.0 margin is added to a squared distance (`unload > load + 5.0`, both squared;
+   confirmed (code) at `0x0040f8a0`); the resource manager's values (`0x00189750`, scaled by 0.001) are compared on
+   the same scale, with a `- 5.0` on its own path.
 
 `World_FindPartToUnload` looks at parts 1 to `n - 1` only: the last part of a world is never unloaded (confirmed
 (code); an off-by-one in the original, inferred).
@@ -339,7 +378,11 @@ result = the smallest d2 over all cameras
 ```
 
 This is a distance to the nearest face *planes*, not to the box: a camera inside a box still gets a positive value.
-`0x00411880` takes the square root of the result for the sector found by the last search.
+`World_PendingDistance` (`0x00411880`) recomputes this for the sector found by the last search (world `+0x14`),
+against the current cameras, and returns its square root; with no sector found (`+0x14` null) it returns `FLT_MAX`
+(3.4028235e38), not infinity. `0x0040e100` returns the smaller of the two worlds' values and does **not** search
+again (confirmed (code)). So in the draw-distance step of [A frame](#a-frame), a fully loaded level gives `FLT_MAX`
+and the draw distance grows to its ceiling.
 
 ### Preloading {#preloading}
 
@@ -362,11 +405,12 @@ Z write, `0x0e` fog. The world toggles `0x005e5380`-`0x005e5398` are all 1 (set 
       distance](#camera-distance) of the nearest missing sector of either world, shrinking by up to `40.5 dt` and
       growing by up to `10.5 dt`, never above 300;
     - frame rate below it: shrink by `(threshold - rate) × 10.5 dt`;
-    - never below `60 - 10 × viewports` and never above the camera's own far clip.
+    - never below `60 - 10 × viewports` and never above the camera's own far clip (115 for the player camera,
+      [The player camera](#player-camera)).
 
     So the view closes in on scenery that is not loaded yet rather than showing holes.
 4. Far clip = draw distance; fog distance = draw distance × the device's fog start.
-5. **The level world** (the small world in the `.lev`, [Level loading](level-loading.md#the-level-file)): culling off,
+5. **The level world** (the light glows in the `.lev`, [Level loading](level-loading.md#the-level-object)): culling off,
    Z test, Z write and fog on, rendered with `RpWorldRender`.
 6. **The `s` world:** add the camera to it; culling = `0x0050c69c` (2, back faces); the visibility pass
    ([below](#visibility)); then draw the collected sectors' atomics, last collected first, each with
@@ -402,6 +446,86 @@ second**.
 
 Because the world's render order is back-to-front and the list is drawn from its end, sectors are drawn roughly
 front to back (inferred).
+
+### Lighting {#lighting}
+
+The `LightManager` (constructor `0x0017d640`, 0xc0 bytes, pointer `0x0050cce4`) owns the lights of a level; the level
+script adds lights, the world uses some of them. Confirmed (code) unless stated.
+
+| Offset | What |
+| --- | --- |
+| `+0x40` | ambient light A: flags 2 (world), enabled; its colour is set each viewport from `+0x50` |
+| `+0x44` | ambient light B: flags 1 (objects), disabled by default; colour a triangle wave between `+0x60` (black) and `+0x70` (0.25 grey) with period `+0x80` = 300 ms (what enables it is not traced) |
+| `+0x50` | the world ambient colour |
+| `+0x84` | a point light, radius 0.4, white, flags 1: a character's glow, used when the character's byte `+0x647` is above 10 |
+| `+0x90` | the gamma offset (RGB) |
+| `+0xa0` | a constant offset, 40/255 = 0.157 (set by the constructor through `0x0017ec38`) |
+
+A light's flags say what it lights: bit 0 (1) objects, bit 1 (2) the world.
+
+**Colour.** `0x0017c840` adds `+0x90 + +0xa0` to the colour of every ambient and directional light, clamped below at 0
+(`0x0017ecc8`). So with no script call, the world's ambient is **0.157 grey**. The Lua bindings, confirmed (code):
+
+- `SetWorldAmbient(r, g, b)` (`0x0036e4b8` → `0x0017f218`): `+0x50 = (r, g, b) + 0.07`, so the world ambient becomes
+  `rgb + 0.07 + 0.157`. Used in 3 script files of 2 levels.
+- `SetGammaOffset({r, g, b})` (`0x0037bd30` → `0x001b4908` → `0x0017ec80`): `+0x90`. Used in 1 file.
+- `SetLight(handle, type, pos, dir, colour, radius, a7…a10, flags, a12, flicker, state)` (`0x0037bfb8`, `0x0037c348`,
+  through `0x0017ef20`): type 0 point, 1 spot, 2 directional, 3 ambient; `flags` up to 3; `flicker` up to 6
+  (`SetLightFlicker` sets it alone); state 0 off, 1 on, 2 delete. Used in 60 files of 52 levels; `SetLightFlicker`
+  in 9 levels. The light descriptor `0x0017c508` (RenderWare type at `+0x00`: 0x80 point, 0x81 spot, 1 directional,
+  2 ambient; position `+0x04`, direction `+0x10`, colour `+0x20`, radius `+0x30`, flags `+0x44`, flicker `+0x4c`,
+  enabled `+0x4e`).
+
+(File counts from a scan of the disc's compiled Lua files for the binding names; corroboration.)
+
+**Per viewport** (`LightManager_BeginViewport`, `0x0017ea60`, and `0x0017d880`): ambient A takes its colour, and the
+lights are sorted into lists: list A (`0x00715324`) holds the enabled ambient and directional lights with flag 2; lists
+B and C those with flag 1; point and spot lights are culled by distance from the camera (`far × 0.75 + radius`) and by
+the frustum planes into the viewport's lists `+0x20` (all) and `+0x30` (flag 2).
+
+**Per atomic** (`LightManager_SelectLights`, `0x0017de10(…, sphere, flags, …)`, then the upload `0x0017e810`): for the
+world (flags bit 0 clear), list A, up to 8 lights, then the point lights of `+0x30` whose sphere meets the atomic's,
+keeping the nearest when full; objects use lists B or C, with `6 - LOD` lights. Streamed sectors are lit this way with
+their world bounding sphere (`World_RenderSectorAtomic`), and the background with a sphere far away and no point
+lights ([Level loading](level-loading.md#render-order)).
+
+So the streamed world's light is the prelighting (on the GS's 0x80 scale) modulated by the lighting the microcode
+computes from the 0.157 ambient, the script's world ambient and the script's world lights (how the microcode combines
+prelighting and lights was not read).
+
+### The player camera {#player-camera}
+
+Confirmed (code) at the constructors and `0x00120a98`:
+
+| Field | `Cam_ICamera` base (`0x00120868`) | `Cam_Follow` (`0x00124778`, vtable `0x00535d50`), the player camera | Getter slot |
+| --- | --- | --- | --- |
+| `+0x44` field of view, degrees | 60 | **65** | `0x1f4` |
+| `+0x50` near clip | 0.3 | **0.1** | `0x204` |
+| `+0x54` the camera's own far clip | 60 | **115.0** (`0x005d91c0`, set by `Cam_Follow`'s static initialiser `0x00134ab0`) | `0x20c` |
+| `+0x58` draw distance | 60 | set by `0x00122128` (which also sets the main camera's far clip when `0x0050c698` is set) | `0x214` |
+| `+0x5c`, `+0x60` view window | | from the field of view, below | `0x254` |
+
+**View window** (`0x00120a98`): `half = (fov + 0x0050b178) × 0.5` degrees (`0x0050b178` is 0); `+0x5c = tan(half) ×
+0.75 × aspect` with aspect `+0x4c` = `0x0050b204` = 4/3, so just `tan(half)`; `+0x60 = tan(half) × 0.75`. For the
+player camera that is **(0.637, 0.478)**: a 65° horizontal field of view on a 4:3 picture. Split screen halves the
+values. (`0x004b8d30` is inferred to be `tanf`.)
+
+Each frame `0x001562c8` hands the view window, the near clip (`+0x50`) and the **draw distance** (`+0x58`) as the far
+clip to device slot `+0x28`; fog starts at far clip × the device's fog start. In `WorldManager_Render` the draw
+distance's ceiling is the camera's own far clip (`+0x54`, slot `0x20c`): **115** for the player camera.
+
+### Fog and background colour {#fog}
+
+One colour is both: device `+0x440`, set through device slot `+0x48` ([Graphics](graphics.md#device-object)). It is
+white from start-up (`GraphicsDevice_Open`) and black after `UnloadLevel`; a level sets it from its script, confirmed
+(code):
+
+- `SetFogColor(r, g, b)` (`0x0036e558` → `Level_SetFogColour`, `0x0040c868`): floats in 0 to 1, times 255, alpha 255.
+- `SetFogDistance(d)` (`0x0036e5f8` → `0x0040c908`): the device's fog start `+0x444` (0.5 by default), the fraction
+  of the far clip where fog begins.
+
+**Disc check (corroboration):** `SetFogColor` appears in 66 compiled Lua files, covering 62 of the 64 levels that have
+a `.lev`; `SetFogDistance` in 14 levels. The colour values themselves are inside Lua bytecode and were not decoded.
 
 ## Coney's implementation
 
@@ -490,10 +614,14 @@ bytes, charged with the `Global Data Pool` (101 % of `warriors.glr`), the `World
 at least 256 KB) and then the worlds and parts by their manifest heap sizes; a part's recorded heap size stays the
 manifest's (the original replaces it with what the part used); reads are synchronous; a part that fails to read is
 marked failed and not asked for again; freeing happens only when a wanted part does not fit; the 5.0 margin compares
-plain distances; `pendingDistance` is +infinity when the last search found nothing; the preload's "nearest missing
-sector" (`0x0040e100`) is a fresh search; the fade uses game time; the camera's own far clip is 300, its near clip 0.5,
-its view window 0.5 high and as wide as the window's shape; the background and fog colour is a slate blue; collected
-sectors are drawn nearest first, sorted by the camera metric; the viewer starts above the middle of the first world's
+plain distances (**the original: squared**, [Choosing what to stream](#streaming)); `pendingDistance` is +infinity
+when the last search found nothing (**the original: `FLT_MAX`**; the same in effect); the preload's "nearest missing
+sector" (`0x0040e100`) is a fresh search (**the original reuses the last search**); the fade uses game time; the
+camera's own far clip is 300, its near clip 0.5, its view window 0.5 high and as wide as the window's shape (**the
+original: 115, 0.1 and a 65° view, (0.637, 0.478)**, [The player camera](#player-camera)); the background and fog
+colour is a slate blue (**the original: the level script's `SetFogColor`, white by default**, [Fog](#fog)); collected
+sectors are drawn nearest first, sorted by the camera metric (**the original: last collected first**,
+[Visibility](#visibility)); the viewer starts above the middle of the first world's
 part 1, looking along +z.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[world_streaming]"` streams all 80 levels' worlds
@@ -505,20 +633,22 @@ resident at once: 598. With the budget cut to the worlds plus 2 MB, `level51`, `
 invariant (budget never exceeded and equal to what is loaded, every loaded part's atomics present, no freed part seen
 last frame, the last part never freed, the margin always kept).
 
-TODO for the analysts, found while implementing:
+**The implementer's questions, answered** (2026-10-04, from code; the contradictions are marked in the paragraph
+above):
 
-- **The `0x3F0 +0x04` row** of [Atomic plugin](#atomic-plugin) can say "texture-coordinate scale", with Coney's visual
-  check above as runtime evidence; a PCSX2 look at the microcode would confirm it in code.
-- **Vertex colour range**: whether the game's pipelines (or the GS) really treat the prelighting colour as 0x80 = 1.0,
-  and what the LightManager adds to the streamed world (`0x0017de10`, `0x0017e810`): the world is very dark without it.
-- **The 5.0 margin**: whether `0x0040f8a0` compares it with plain or squared distances.
-- **`0x0040e100`**, the preload's "nearest missing sector": does it search again or read the last search?
-- **`World_PendingDistance` with nothing found**: what it returns, and so where the draw distance goes when the
-  whole level is loaded.
-- **The player camera's far clip, near clip and view window**, which set the draw distance's ceiling and the view.
-- **The `Sector Pool`'s real size** (runtime read, [Memory](memory.md#open-questions)).
-- **The second texture-coordinate set** and the material pipelines `0x30084`/`0x30086`/`0x30088`: how they draw.
-- **The level's background colour** (the fog colour), and the level world's role.
+- **`0x3F0 +0x04`**: the texture-coordinate scale. The code shows both floats uploaded in one quadword; the microcode
+  that applies them was not read, so the evidence stays Coney's visual check ([Atomic plugin](#atomic-plugin)).
+- **Vertex colour range**: consistent with 0x80 = 1.0, so Coney's doubling stays; the CPU halves textured material
+  colours for the same reason ([Pipelines](#pipelines)). The 0.25 ambient stand-in should become the
+  [LightManager](#lighting): 0.157 plus the script's world ambient (+ 0.07) and world lights; Coney's 0.25 is brighter
+  than the default.
+- **The 5.0 margin**: squared distances. **`0x0040e100`**: no new search. **`World_PendingDistance` with nothing
+  found**: `FLT_MAX` ([Camera distance](#camera-distance)).
+- **The player camera**: far clip 115, near clip 0.1, 65° ([The player camera](#player-camera)).
+- **The second texture-coordinate set and the pipelines**: [Pipelines](#pipelines).
+- **The background colour**: the level script's fog colour ([Fog](#fog)); **the level world**: the light glows
+  ([Level loading](level-loading.md#the-level-object)).
+- **The `Sector Pool`'s real size**: still open (runtime, [Memory](memory.md#open-questions)).
 
 ## Disc counts {#disc-counts}
 
@@ -631,8 +761,10 @@ Some pairs are byte-identical (`level91`/`level97`, `level119`/`level120`).
 
 ## Open questions
 
-- **What `0x3F0` `+0x04` scales**: texture coordinates by Coney's visual check ([Coney's implementation](#coneys-implementation)), to be confirmed in code; and the material pipelines `0x30084`,
-  `0x30086`, `0x30088`: what they change in drawing (the materials carry MatFX dual-texture data, plugin `0x120`).
+- **The microcode**: how the VU1 programs at `0x005045a0`, `0x004fc870` and `0x004ff1c0` use the `0x3F0` scales,
+  the prelighting and the lights, and how the dual pass draws (a PCSX2 look at VU1 memory would settle `+0x04`).
+- **MatFX effect 1** (bump map, 2,467 materials): which pipeline it ends up with, and whether it draws differently.
+- **Light B** of the `LightManager` (the 300 ms pulse on objects): what turns it on.
 - **The two atomic pipelines `0x30082` and `0x30083`:** only one atomic uses `0x30082`; how the two differ.
 - **The native data struct size** that exceeds its section ([Part file](#part-file)).
 - **`0x3F0` `+0x08`** (always 0 in the worlds) and `0x004290d8`, its only reader.

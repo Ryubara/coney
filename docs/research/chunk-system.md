@@ -78,10 +78,10 @@ the push/pop behaviour; the description of what the object *is* is inferred from
 | `0x00` | Anim Rot Keyframes | | | raw; popped by `Anim Data` |
 | `0x01` | Anim Pos Keyframes | | | raw |
 | `0x02` | Anim Data | set at run time: `0x001045e0` | | pops `0x02`, `0x00`; builds an animation object (vtable `0x00534240`, keyframes at `+0x1c`); pushes it as an object |
-| `0x03` | Collision Mesh | `0x00350580` | | pops `0x03`, `0x06`, `0x05`, `0x04`, `0x07`, `0x52`; links strings `+0x80`, grid `+0x78`, triangles `+0x88`, vertex buffer `+0x8c`, checked bitset `+0x94`; sets a flag bit in every 10-byte triangle; clears the bitset; pushes the mesh as an object |
+| `0x03` | Collision Mesh | `0x00350580` | | pops `0x03`, `0x06`, `0x05`, `0x04`, `0x07`, `0x52`; writes the mesh's vtable into the 160-byte header; links index lists `+0x80`, grid `+0x78`, triangles `+0x88`, vertex buffer `+0x8c`, checked bitset `+0x94`; sets the enabled bit in every 10-byte triangle; clears the bitset; pushes the mesh as an object ([Collision](collision.md)) |
 | `0x04` | Collision Triangles | | | raw |
 | `0x05` | Collision Grid | | | raw |
-| `0x06` | Collision Strings | | | raw |
+| `0x06` | Collision Strings | | | raw; despite the name, the grid's triangle index lists (`u16` count, then `u16` indices), not text |
 | `0x07` | Collision Vertex Buffer | | | raw |
 | `0x08` | Character Data | `0x0016e258` | | pops `0x08`, `0x45`; resolves 722 slot indices at `+0x08` into pointers by popping objects (see [Fix-ups](#fix-ups)); pushes the character as an object |
 | `0x09` | Character DFF Data | | `0x0017f2c0` | RenderWare clump read; result `0x0A`, `0x41` or `0x50` (below) |
@@ -158,7 +158,7 @@ the push/pop behaviour; the description of what the object *is* is inferred from
 | `0x50` | ImportCars | | | raw; also a result type of a DFF read |
 | `0x51` | Subtitles | `0x001cab90` | | pops `0x51`; stored at `0x0050ea74` |
 | `0x52` | Collision Checked | | | raw; popped by `Collision Mesh` |
-| `0x53` | Occluders | | | raw; popped by `Level Header` |
+| `0x53` | Occluders | | | raw; popped by `Level Header`, points converted to RenderWare axes ([Level loading](level-loading.md#occluders)) |
 
 The DFF reader (`0x0017f2c0`) wraps the chunk stream in a RenderWare custom stream (`0x00197df0`), finds the clump
 chunk (`0x10`) and reads a clump. It pushes the clump as `0x50` when it has two or more atomics, otherwise as `0x41`
@@ -320,7 +320,8 @@ initialisation (confirmed (code)):
 - `0x0040cf18`: type `0x17` `Level Header` gets `onLoaded = 0x0040ce30`. That handler pops the `Level Header`, builds
   the level object (`0x0040cf40`), takes one object from the object stack (`+4`), then pops in order `0x42` (`+0x0c`),
   `0x0B` (`+0x08`), and three (`0x41`, `0x0B`) pairs into `+0x24`/`+0x20`, `+0x1c`/`+0x18`, `+0x14`/`+0x10`, then
-  `0x53` occluders; links the three pairs and pushes the level as an object.
+  `0x53` occluders; links the three pairs and pushes the level as an object. The object is built in place on the
+  48-byte `Level Header` chunk ([Level loading](level-loading.md#the-level-object)).
 
 ## Coney's implementation
 

@@ -279,7 +279,8 @@ What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code)
 2. Simulation runs; then slot `+0x18` flushes the render queue before the world update (why there: inferred, so that
    streaming does not free data the GPU still reads).
 3. **Each viewport** (`0x00156408`): slot `+0x88` positions viewport `i`'s cameras on their part of the screen
-   (columns × rows from `0x0050b1a8`/`0x0050b1aa`; one viewport covers the whole screen); lights; the world
+   (columns × rows from `0x0050b1a8`/`0x0050b1aa`; one viewport covers the whole screen); lights and the level's
+   sky, clouds and skyline ([Level loading](level-loading.md#render-order)); the world
    (`0x0040e8d8`: several `RwCameraBeginUpdate`/`EndUpdate` passes: the level world with culling off, the streamed
    world's sectors with back-face culling, objects, the detail world, water, translucent objects; Z test and write
    on and fog on except where stated; the full order is on [The streamed world](world.md#a-frame)); resources;
