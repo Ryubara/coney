@@ -223,8 +223,10 @@ uv run --project python coney-tools refs render [--check]                       
 To change a list by hand, edit its YAML and run `refs render`; CI fails when a page is out of date with its YAML.
 To add a field or a list, add it in `refs_topics.py` (and its reader in `refs_extract.py` when it comes from the
 disc), then run `refs extract`. **Thumbnails** go in `docs/references/images/` (`characters/<model>.png`,
-`objects/<name>.png`; 256 × 256, transparent, rendered by `coney --render-references` from the player's disc);
-`refs extract` links each one that exists.
+`objects/<name>.png`; 256 × 256, transparent, rendered by `coney --render-references` from the player's disc,
+then shrunk with `coney-tools refs compress-images`); `refs extract` links each one that exists. The character
+images are rendered with `--names` given every model name in `character-models.yaml`, so only the models with no
+recovered name are named by hash.
 
 ## Tools
 

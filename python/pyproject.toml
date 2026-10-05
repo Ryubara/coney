@@ -5,7 +5,7 @@ description = "Coney's own automation: local configuration and repository checks
 requires-python = ">=3.12"
 license = "GPL-3.0-or-later"
 # PyYAML reads the research database (research/*.yaml) for `coney-tools natives` and `coney-tools refs`.
-dependencies = ["pyyaml>=6"]
+dependencies = ["pyyaml>=6", "pillow>=10"]
 
 [project.scripts]
 coney-tools = "coney_tools.cli:main"

@@ -239,3 +239,29 @@ def test_image_cells_point_below_the_images_folder() -> None:
     characters = next(item for item in TOPICS if item.key == "characters")
     cell = refs_render.cell(characters.field_map()["image"], "characters/warr_re_cv.png", "characters")
     assert cell == '![characters/warr_re_cv.png](images/characters/warr_re_cv.png){ width="64" }'
+
+
+def test_compress_image_keeps_size_and_alpha_and_is_deterministic(tmp_path: Path) -> None:
+    """A thumbnail becomes a palette PNG of the same size, keeps its transparency and compresses the same twice."""
+    from PIL import Image
+
+    from coney_tools.refs_cli import compress_image
+
+    image = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    for x in range(16, 48):
+        for y in range(8, 56):
+            image.putpixel((x, y), (x * 5, y * 4, 120, 255))
+    first, second = tmp_path / "a.png", tmp_path / "b.png"
+    image.save(first)
+    image.save(second)
+    compress_image(first)
+    compress_image(second)
+    assert first.read_bytes() == second.read_bytes()
+    with Image.open(first) as result:
+        assert result.mode == "P"
+        assert result.size == (64, 64)
+        rgba = result.convert("RGBA")
+        assert rgba.getpixel((0, 0)) == (0, 0, 0, 0)
+        pixel = rgba.getpixel((32, 32))
+        assert isinstance(pixel, tuple)
+        assert pixel[3] == 255

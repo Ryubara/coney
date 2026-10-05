@@ -171,6 +171,8 @@ def _add_refs_commands(groups: Any) -> None:
     )
     extract.add_argument("--only", nargs="+", choices=refs_cli.topic_keys(), metavar="LIST", help="these lists only")
     extract.add_argument("--names", type=Path, help="extra WAD names, one per line (the last word of each line)")
+    compress = commands.add_parser("compress-images", help="rewrite the thumbnails as 256-colour PNGs, in place")
+    compress.add_argument("folder", nargs="?", type=Path, help="default: docs/references/images/")
 
 
 def _run_progress(args: argparse.Namespace) -> int:
@@ -225,6 +227,8 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "refs":
         if args.command == "render":
             return refs_cli.run_render(args.check)
+        if args.command == "compress-images":
+            return refs_cli.run_compress_images(args.folder)
         return refs_cli.run_extract(args.disc, args.only, args.names)
     if args.group == "config":
         return _config_show()

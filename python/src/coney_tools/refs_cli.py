@@ -4,6 +4,7 @@
 `refs render` reads `research/references/*.yaml`, checks each against its schema and writes `docs/references/`;
 with `--check` it changes nothing and fails when a page is out of date (CI runs it). `refs extract` reads the
 player's disc, merges what it finds into the YAML (keeping every hand-written field) and renders.
+`refs compress-images` turns the rendered thumbnails into small palette PNGs before they are committed.
 
 Research: docs/guides/research-workflow.md#reference-lists
 """
@@ -111,6 +112,35 @@ def run_extract(disc_arg: str | None, only: list[str] | None, names_file: Path |
     # Re-render only when every list exists (a first `--only` run leaves the others to come).
     if all(_yaml_path(root, item).is_file() for item in TOPICS):
         return run_render(check=False)
+    return 0
+
+
+def compress_image(path: Path) -> tuple[int, int]:
+    """Rewrite one PNG as a 256-colour palette image with alpha; returns its sizes before and after.
+
+    `coney --render-references` writes full-colour PNGs of about 26 KB each. The docs keep about 550 of them, so
+    they are stored with a palette instead: under a quarter of the size, and indistinguishable at 256 pixels.
+    Pillow's octree quantizer is deterministic, so the same render always gives the same bytes.
+    """
+    from PIL import Image  # only this command needs Pillow
+
+    before = path.stat().st_size
+    with Image.open(path) as image:
+        palette = image.convert("RGBA").quantize(256, method=Image.Quantize.FASTOCTREE)
+    palette.save(path, "PNG", optimize=True)
+    return before, path.stat().st_size
+
+
+def run_compress_images(folder: Path | None) -> int:
+    """Compress every PNG below docs/references/images/ (or `folder`) in place."""
+    root = find_repo_root(Path.cwd())
+    base = folder if folder is not None else root / IMAGES_DIR
+    files = sorted(base.rglob("*.png"))
+    before = after = 0
+    for path in files:
+        old, new = compress_image(path)
+        before, after = before + old, after + new
+    print(f"{len(files)} image(s): {before // 1024} KB -> {after // 1024} KB")
     return 0
 
 
