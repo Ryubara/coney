@@ -355,9 +355,10 @@
   calls:
     - {addr: 0x00160d38}
   description: >-
-    Ends the game session: calls `0x0041ce88` and `0x0041cef0` on the game state and sets the level-end state to 3
-    (inferred: back to the front end). No shipped script calls it.
-  evidence: inferred
+    Ends the game session: selects level index 0 (the front end, `0x0041ce88`), sets the level-end state
+    `W_GameState + 0x14c` to 3 and the checkpoint back to 1 (`0x0041cef0`). Mode 1 then pops itself and mode 8's
+    Resume reloads the front end. No shipped script calls it.
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
@@ -946,9 +947,11 @@
   results:
     - {lua: number, desc: "The number stored in that slot."}
   description: >-
-    Reads a number from the saved script data.
+    Reads a number from the saved script data (`W_GameState + 0x570c + (slot - 1) x 4`, no bounds check). The game
+    state's constructor zeroes the eight slots, so a slot never written reads 0. level5.lua restores its mission's
+    progress bits from slot 1 at every checkpoint above 1.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   usage: {chunks: 19, calls: 51, boot: false, mission1: false, result_used: true}
 
 - name: SetLUASaveDataBool

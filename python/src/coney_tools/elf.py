@@ -6,12 +6,15 @@ so nothing in it says where a function ends. This module estimates it from where
 
 * every target of a `jal` instruction in `.text` starts a function;
 * every 8-byte-aligned word in `.data` that points into `.text` is taken to start one too (vtables and other
-  function pointers live there; switch jump tables, which point inside functions, live in `.rodata` instead).
+  function pointers live there; switch jump tables, which point inside functions, live in `.rodata` instead);
+* every 8-byte-aligned address into `.text` that code builds with a `lui` / `addiu` pair starts one: the function
+  pointers handed over in code, such as the script bindings' wrappers that `RegisterBindings` registers.
 
 A function's *span* runs from its address to the next known start (or the end of `.text`), including the zero
-padding that aligns the next function. Together these find about as many starts (14,097) as Ghidra finds functions
-(13,789), but the span is only an upper bound: a function that no call and no `.data` pointer reaches (one entered
-only by a tail jump, say) is not seen, and the span of the function before it swallows it.
+padding that aligns the next function. Together these find 15,742 starts (Ghidra finds about 13,800 functions; the
+`lui` / `addiu` pairs add 1,645, without which a binding wrapper's span ran over dozens of its neighbours), but the
+span is only an upper bound: a function that nothing calls and no pointer names (one entered only by a tail jump,
+say) is not seen, and the span of the function before it swallows it.
 Research: docs/research/source-map.md#method.
 """
 
@@ -97,7 +100,7 @@ def read_elf(data: bytes) -> Elf:
 
 
 def function_starts(elf: Elf) -> list[int]:
-    """Sorted addresses known to start a function: `jal` targets and `.data` pointers into `.text`."""
+    """Sorted addresses known to start a function: `jal` targets, `.data` pointers and code-built pointers."""
     text = elf.section(".text")
     end = text.address + text.size
     starts = set()
@@ -108,7 +111,42 @@ def function_starts(elf: Elf) -> list[int]:
                 starts.add(target)
     if ".data" in elf.sections:
         starts.update(w for w in elf.words(".data") if text.address <= w < end and w % 8 == 0)
+    starts.update(a for a in code_built_addresses(elf) if text.address <= a < end and a % 8 == 0)
     return sorted(starts)
+
+
+# MIPS opcodes (the top six bits) whose `rt` field is the register they write: the immediate arithmetic and logic
+# instructions, the loads, and the EE's `ld` / `lq`.
+_WRITES_RT = frozenset({8, 9, 10, 11, 12, 13, 14, 15, 0x18, 0x19, 0x1A, 0x1B, 0x1E, 0x37} | set(range(0x20, 0x28)))
+
+
+def code_built_addresses(elf: Elf) -> set[int]:
+    """Addresses `.text` builds with `lui r, hi` then `addiu r2, r, lo`, followed through straight-line code.
+
+    A register's `lui` value is forgotten when another instruction writes the register, and every value after a
+    jump's delay slot (a call clobbers the argument registers), so a pair split by a call is not taken.
+    """
+    words = elf.words(".text")
+    upper: dict[int, int] = {}  # register -> the value its last `lui` put there
+    forget_after = -1
+    found = set()
+    for i, word in enumerate(words):
+        op, rs, rt = word >> 26, (word >> 21) & 31, (word >> 16) & 31
+        if op == 15:  # lui rt, imm: the immediate in the upper half
+            upper[rt] = (word & 0xFFFF) << 16
+        elif op == 9 and rs in upper:  # addiu rt, rs, imm (imm sign-extended)
+            low = word & 0xFFFF
+            found.add((upper[rs] + low - (0x10000 if low & 0x8000 else 0)) & 0xFFFFFFFF)
+            upper.pop(rt, None)
+        else:
+            written = (word >> 11) & 31 if op == 0 else (rt if op in _WRITES_RT else None)
+            if written:
+                upper.pop(written, None)
+        if i == forget_after:
+            upper.clear()
+        if op in (2, 3) or (op == 0 and word & 0x3F in (8, 9)):  # j, jal, jr, jalr: forget after the delay slot
+            forget_after = i + 1
+    return found
 
 
 def is_jump_or_branch(word: int) -> bool:

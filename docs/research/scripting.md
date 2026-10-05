@@ -85,7 +85,11 @@ its adjust word at `+0x10`, the offset [Boot](boot.md#one-frame) once gave).
 
 There is no `io` library. `dofile` and `dostring` exist (base library) but the scripts use the binding `doFile`.
 `random` is a game binding (registered after the math library, so it replaces `math`'s): `random(a, b)` returns a
-number from the game's own generator (`0x00386488`, state at `0x006eb880`).
+whole number in `[a, b]`, both ends included, from the game's own generator (`0x00386488` → `0x003353f0`): the next
+entry of a fixed table of 1,024 32-bit numbers (`0x005117e0`) taken modulo `b − a + 1` (unsigned) and added to `a`.
+The generator's state is only the table index at `0x006eb880`, advanced by 1 (masked to 10 bits) on every draw,
+zeroed by a static initialiser (`0x00335608`) and never seeded; many C++ callers draw from the same index.
+Confirmed (code). Details: [World flags](flags.md#player-starts).
 
 **Runtime check:** at the boot movies the global table holds exactly 1,034 entries: the 956 bindings and 78 library
 and tolua names. confirmed (runtime).
@@ -381,6 +385,34 @@ These calls reach [`HuCreate`](../references/bindings/character.md#hucreate),
 mission uses; each is described in the [script bindings](../references/bindings/index.md) reference (`ShowHud`, for
 one, does nothing in this build).
 
+### Errors in a fresh state {#errors-in-a-fresh-state}
+
+Two level scripts stopped in Coney's fresh Lua state (scripts read with the disassembly; the bindings' code
+confirmed):
+
+- **`level5.lua` at checkpoint 2, "comparing nil with a number" on instruction 19** is in `DecodeU32` (a `level5.lua`
+  helper that turns a number into a table of 30 bits; instruction 19 compares the remaining value with `2 ^ i`). The
+  level's start-up calls it, for every checkpoint above 1, as `DecodeU32(GetLUASaveDataFloat(1))` to restore the
+  mission's saved progress bits (`tblSaveData`). Coney has no `GetLUASaveDataFloat`, so the call returned nothing.
+  **The original returns a number: slot 1 of the eight saved script floats** at `W_GameState + 0x570c`
+  (`0x0037b850` → `0x0041ad00`, slot `n` at `+0x570c + (n − 1) × 4`, `n` read as 16 bits, no bounds check). The game
+  state's constructor (`0x00418588`) zeroes the eight floats and the saved flag bits at `+0x572c`, so a level entered
+  at checkpoint 2 without a save gets **0.0** (no bits set). `SetLUASaveDataFloat` (`0x0041acd8`) writes the slot;
+  `level5.lua` itself stores the encoded bits there (`EncodeU32`, in two of its functions). Confirmed (code)
+  for the bindings and the zeroing; the script side inferred.
+- **`level102.lua`, "indexing nil" on instruction 5** is in the `global.lua` helper **`FlagPos`**: instruction 5 reads
+  `.x` of what `GetFlagPos` returned. The arena's `ConfigRumble` calls `AddDummyPlayer`, which does
+  `HuCreate("Dummah", 352, FlagPos(fP1[1]), ...)`; `fP1` comes from `level102_brawl_init.lua`'s `AddFlag` calls.
+  Coney has neither `AddFlag` (so `fP1[1]` is nil) nor `GetFlagPos` (so `FlagPos` indexes nil). **The original
+  provides both as bindings**: `AddFlag` returns a handle, `GetFlagPos` an `M_Vector4` with `x y z w`
+  ([World flags](flags.md)). Nothing else is missing before that point: `Level` is set by `global.lua`,
+  `RumbleInfo` and `Rumble` by the arena's main chunk.
+- **`GetRumbleModeData`** (also missing in Coney) fills `RM_LuaData` with the Rumble menu's 23 choices; with it
+  absent the table keeps the zeros `ParseLuaData` put there, so `Rumble.gameType` is 0 (`RumbleInfo[0]` is
+  `"brawl"`, the right file by chance), `Rumble.gangSize` is 0 (the "no gangs" path, `ShowRules1`) and
+  `Rumble.gang1[1]`, the player's type, is nil. A playable arena needs the menu's values (inferred from the
+  disassembly of `level102.lua`).
+
 ## Notes for implementers
 
 - **Table constructors flush every 62 items**, not 64: `SETLIST` stores its items at `A × 62 + 1` onwards
@@ -451,9 +483,9 @@ of the original).
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,
   `global.lua` and `level100.lua` run without errors in Coney's fresh state, and so do `level99.lua` with
-  `level99_combat.lua`, `level2.lua` and `level3.lua` at the checkpoints tried; `level5.lua` at checkpoint 2 stops on
-  instruction 19 comparing nil with a number (its player 1 is still created), and `level102.lua` on instruction 5
-  indexing nil. Each is a binding Coney lacks returning nothing, or a missing preload: not yet told apart.)
+  `level99_combat.lua`, `level2.lua` and `level3.lua` at the checkpoints tried.) The two errors Coney met are
+  answered below ([Errors in a fresh state](#errors-in-a-fresh-state)): both are bindings Coney lacks, not missing
+  preloads or globals.
 - The scene system (`SuperRunScene`): how a scripted scene takes the player's control and gives it back. The camera
   side is on [Camera](camera.md#scenes).
 - `RegisterUpdate`. (Answered: `preLoadFile`'s completion routine `0x00356d00` runs the loaded chunk through slot
@@ -467,7 +499,9 @@ of the original).
 - **`CfgObj` count:** the page counts 1,279 `CfgObj` calls in `config_preload3.lua`; running it calls the binding 1,371
   times. Static call sites against calls made (loops, or functions called twice)?
 - **Degrees or radians:** does this build's math library keep Lua 4.0's degrees (Coney's assumption)?
-- **`random`'s generator** (`0x00386488`, state `0x006eb880`), and what `random(a, b)` returns (whole numbers?).
+- **`random`'s generator** (answered: a table of 1,024 numbers walked by an unseeded index, results in `[a, b]`
+  inclusive, [Bindings](#libraries)). Still open: whether Coney should reproduce the table (it is data in the
+  executable, so a reimplementation would read it from the player's disc) or keep its own seeded generator.
 - **`NilHandle` and `NilSoundHandle`:** their values.
 - **`PadSetHandler`'s arguments:** this page gives `(pad, button, name)`, [Front end](frontend.md#input) gives
   `(button, player, "function")`. Coney implements neither yet: `PadSetHandler` is a stub that ignores its

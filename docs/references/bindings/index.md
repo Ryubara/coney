@@ -33,13 +33,13 @@ YAML, never these pages. CI runs `coney-tools natives render --check`, which fai
 | [HUD and menus](hud.md): the in-game HUD, radar, objectives, messages and front-end menus | 78 | 66 | 18 | 25 | 31 |
 | [Sound and music](sound.md): sound effects, ambient emitters, music tracks and sound configuration | 51 | 45 | 20 | 8 | 24 |
 | [Scenes and movies](scene.md): in-engine cutscenes and full-motion movies | 16 | 12 | 9 | 3 | 9 |
-| [Levels and game state](level.md): level flow, checkpoints, difficulty, unlockables, stats, money and police | 90 | 75 | 38 | 11 | 43 |
+| [Levels and game state](level.md): level flow, checkpoints, difficulty, unlockables, stats, money and police | 90 | 75 | 38 | 11 | 44 |
 | [Script flow](script.md): running scripts, scheduled calls, callbacks and message handlers | 18 | 15 | 10 | 8 | 11 |
 | [Pad input](input.md): the gamepad: button handlers | 2 | 2 | 1 | 2 | 2 |
 | [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 9 | 74 |
 | [Utilities](util.md): numbers, platform queries and generic object queries | 8 | 7 | 6 | 1 | 6 |
 | [Debug](debug.md): developer leftovers: network debugging, sample capture, detail flags | 5 | 3 | 0 | 1 | 1 |
-| **All** | **956** | **802** | **266** | **175** | **367** |
+| **All** | **956** | **802** | **266** | **175** | **368** |
 
 ## Conventions {#conventions}
 
@@ -122,9 +122,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 636 |
+| confirmed (code) | 637 |
 | confirmed (runtime) | 0 |
-| inferred | 284 |
+| inferred | 283 |
 | speculative | 36 |
-| detail: traced | 367 |
-| detail: brief | 589 |
+| detail: traced | 368 |
+| detail: brief | 588 |

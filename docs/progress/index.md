@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% of the game's own code (107,992 of 3,342,936 bytes, 276 functions) |
+| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% of the game's own code (108,248 of 3,342,936 bytes, 276 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
-108 reimplemented function(s) have no size yet and add no bytes.
+106 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -66,7 +66,7 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `███▍░░░░░░░░░░░░░░░░` | 16.7% | 31 | 197,192 |
+| `Scripting` | `███▍░░░░░░░░░░░░░░░░` | 16.8% | 31 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -155,7 +155,7 @@ at the top of the repository's `README.md`.
 | `0x00159ab8` | `Mode5::Exit` | `GameModes` | 40 |
 | `0x00159ae0` | `Mode5::Update` | `GameModes` | 296 |
 | `0x00159c08` | `StartupScreen_Draw` | `GameModes` | 1,536 |
-| `0x0015a270` | `MemoryCard_SetBootCheck` | `GameModes` | 32 |
+| `0x0015a270` | `MemoryCard_SetBootCheck` | `GameModes` | 16 |
 | `0x0015c2c0` | `Mode6::Exit` | `GameModes` | 320 |
 | `0x0015c4b0` | `LevelFlow_StartFrontEnd` | `GameModes` | 328 |
 | `0x0015c5f8` | `LevelFlow_FinishFrontEnd` | `GameModes` | 136 |
@@ -322,7 +322,7 @@ at the top of the repository's `README.md`.
 | `0x003566d8` | `ScriptSystem::Update` | `Scripting` | 696 |
 | `0x003569d8` | `ScriptSystem::EnterLevel` | `Scripting` | 160 |
 | `0x00356af8` | `ScriptSystem::RunFile` | `Scripting` | 352 |
-| `0x00356c58` | `ScriptSystem::RunFiles` | `Scripting` | 432 |
+| `0x00356c58` | `ScriptSystem::RunFiles` | `Scripting` | 168 |
 | `0x00356e08` | `ScriptSystem::FindFunction` | `Scripting` | 360 |
 | `0x00357188` | `ScriptSystem::Call` | `Scripting` | 48 |
 | `0x003571b8` | `ScriptSystem::Schedule` | `Scripting` | 304 |
@@ -334,13 +334,13 @@ at the top of the repository's `README.md`.
 | `0x00357998` | `GetPlatform` | `Scripting` | 8 |
 | `0x003579a0` | `doFile` | `Scripting` | 200 |
 | `0x00357a68` | `preLoadFile` | `Scripting` | 312 |
-| `0x00358428` | `HuCreate` | `Scripting` | not filled in |
+| `0x00358428` | `HuCreate` | `Scripting` | 480 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
 | `0x0036d938` | `ToInt` | `Scripting` | not filled in |
 | `0x0036df48` | `MenuLoadLevel` | `Scripting` | not filled in |
 | `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
-| `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | not filled in |
+| `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | 56 |
 | `0x0037d420` | `RegisterBindings` | `Scripting` | 27,408 |
 | `0x00386370` | `gc` | `Scripting` | 48 |
 | `0x003863d8` | `ScheduleFunc` | `Scripting` | 56 |

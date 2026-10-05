@@ -775,7 +775,9 @@ HUDLaunchMissionComplete(kind)
 Pushes the mission-complete screen (game mode 0xb) unless it is already showing. See
 [runNextMission](../../research/scripting.md#run-next-mission).
 
-**Notes.** What each kind changes on the screen and what the 0x0050c754 flag does are not traced.
+**Notes.** The kind is stored on every call, also when mode 0xb is already on top and nothing is pushed; 0x0050c754 (the
+level-change flag mode 1's Exit reads) is set only when it pushes with kind 0. Mode 0xb's Enter sets the kind back to 0
+before calling UnlockAndLoad, whose runNextMission(1) launches 4; the shipped scripts pass only 0 and 4.
 
 - **Evidence:** confirmed (code) at `0x0015d420`; detail: traced
 - **Wrapper** `0x0036f218` (registered by `RegisterBindings`); **calls** `0x0015d420` `MissionComplete_Launch`

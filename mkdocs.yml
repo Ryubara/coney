@@ -75,6 +75,7 @@ nav:
           - GUI, sprite sheets and text: research/gui.md
           - Level loading: research/level-loading.md
           - Scripts (Lua): research/scripting.md
+          - World flags: research/flags.md
           - Characters: research/characters.md
           - Combat: research/combat.md
           - Camera: research/camera.md

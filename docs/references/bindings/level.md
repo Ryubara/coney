@@ -52,7 +52,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`PrecacheWorld`](#precacheworld) | - | 36 | no | no | inferred |
 | [`ProcessTag`](#processtag) | - | 10 | yes | no | confirmed (code) |
 | [`QueueFileToPrecache`](#queuefiletoprecache) | - | 34 | no | no | inferred |
-| [`Quit`](#quit) | - | 0 | no | no | inferred |
+| [`Quit`](#quit) | - | 0 | no | no | confirmed (code) |
 | [`ReportCrime`](#reportcrime) | - | 9 | no | yes | confirmed (code) |
 | [`ResetStore`](#resetstore) | - | 1 | no | no | confirmed (code) |
 | [`SetCheckPoint`](#setcheckpoint) | - | 64 | yes | yes | confirmed (code) |
@@ -523,9 +523,11 @@ GetLUASaveDataFloat(slot) -> number
 
 **Returns** number: The number stored in that slot.
 
-Reads a number from the saved script data.
+Reads a number from the saved script data (`W_GameState + 0x570c + (slot - 1) x 4`, no bounds check). The game state's
+constructor zeroes the eight slots, so a slot never written reads 0. level5.lua restores its mission's progress bits
+from slot 1 at every checkpoint above 1.
 
-- **Evidence:** confirmed (code) at `0x0041ad00`; detail: brief
+- **Evidence:** confirmed (code) at `0x0041ad00`; detail: traced
 - **Wrapper** `0x0037b850` (registered by `RegisterBindings`); **calls** `0x0041ad00`
 - **Used by** 19 of 467 script chunks (51 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** not implemented
@@ -998,10 +1000,11 @@ No arguments.
 
 **Returns** nothing.
 
-Ends the game session: calls `0x0041ce88` and `0x0041cef0` on the game state and sets the level-end state to 3
-(inferred: back to the front end). No shipped script calls it.
+Ends the game session: selects level index 0 (the front end, `0x0041ce88`), sets the level-end state `W_GameState +
+0x14c` to 3 and the checkpoint back to 1 (`0x0041cef0`). Mode 1 then pops itself and mode 8's Resume reloads the front
+end. No shipped script calls it.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00160d38`; detail: brief
 - **Wrapper** `0x0036df78` (registered by `RegisterBindings`); **calls** `0x00160d38`
 - **Used by** no script on the disc
 - **Coney:** not implemented

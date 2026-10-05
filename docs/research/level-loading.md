@@ -315,7 +315,7 @@ where not stated.
    audio set-up.
 6. **Level script**: script system slot `+0x24` with the level name.
 7. **Object list**: `<name>_objs.txt` (or `../levels/<name>/<name>_objs.txt` on the host file system) into the task
-   manager's object list (`0x00398598`); add the `CrimeScene` and `GangCall` objects.
+   manager's object list (`0x00398598`); add the `CrimeScene` and `GangCall` [flags](flags.md#sources) at the origin.
 8. **Dependency list**: `0x00178bc8(resourceManager, crc32(name), 1)` loads the resources the level's entry in the
    dependency list names, blocking.
 9. Camera: `0x0011e878(0.17)`; set the camera's draw distance to its far clip.

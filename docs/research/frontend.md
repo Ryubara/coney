@@ -82,7 +82,7 @@ Derived fields after the 0x20-byte base, confirmed (code) at `0x00159a58`:
 | --- | --- | --- |
 | `+0x20` | level chosen to start next (index into the level table), -1 = none | confirmed (code) at `0x0015c858`, `0x0015c7b0` |
 | `+0x24` | 1 while the front-end level is loaded | confirmed (code) at `0x0015c4b0`, `0x0015c5f8` |
-| `+0x28` | "load the front end on the next `Resume`"; set to 1 by `Enter`, cleared by mode 6's `Exit` when mode 8 is the mode below it | confirmed (code) at `0x0015c688`, `0x0015c2c0` |
+| `+0x28` | "load the front end on the next `Resume`": set to 1 by `Enter` and again at the end of **every** `Resume` (`0x0015c6f8`); cleared by mode 6's `Exit` and by mode 0xb's `Update` when mode 8 is the mode directly below them | confirmed (code) at `0x0015c688`, `0x0015c6f8`, `0x0015c2c0`, `0x0015d160` |
 
 ### The level table
 
@@ -268,17 +268,22 @@ the first frame of mode 1 ([Level loading](level-loading.md#mode-1)):
    (record 1, a name search `0x0015c7b0`). **`HUDLaunchMissionComplete(4)`** (`MissionComplete_Launch`, `0x0015d420`)
    finds mode 8 on top (the pop has already taken 0x12 off before calling `Exit`) and so **pushes mode 0xb**, the
    mission-complete mode, and stores 4 in its `+0x24` (`0x005e5e1c`). Confirmed (code).
-3. **Mode 0xb, one frame.** The loop enters it: `Enter` (`0x0015cf70`) takes `GameTimer`, puts every live human into a still
-   state (inferred; there is none at the front end) and calls the Lua function `UnlockAndLoad`, which runs
+3. **Mode 0xb, one frame.** The loop enters it: `Enter` (`0x0015cf70`) notes the id of the mode below it (`+0x28`),
+   takes `GameTimer`, **sets the kind `+0x24` back to 0** (so the 4 stored by the launch is dropped), puts every live
+   human into a still state (inferred; there is none at the front end) and calls the Lua function `UnlockAndLoad`,
+   which runs
    `MissionCompleteUnlocks()` and
    `runNextMission(1)` again (the same `SetCheckPoint(1)` and `MenuLoadLevel("level99")`; mode 0xb is on top now, so
-   no second push). Its `Update` (`0x0015d160`) runs one world frame (task manager, cameras, `WorldManager_Update`,
-   the resource manager, the passes, the scripts, `Present`), sees `+0x24` ≠ 0 and pops itself; 4 is none of the kinds
-   it acts on (1: checkpoint 1; 2: reload the current level; 3: the next record), so it only services the save
-   system, rebuilds the two inventories (`0x0041e420` / `0x0041e398`) and asks for an **autosave** (`0x00155308`: pushes
-   mode 6 when the save system is on and the level index is not 0 or `0x00204008` says so). Confirmed (code) for the
-   C++ side; the Lua side inferred.
-4. Mode 8 is on top again (`Resume`; it does not reload the front end, since `+0x28` is 0). Its next `Update`
+   no second push, but `MissionComplete_Launch` stores the kind 4 all the same). Its `Update` (`0x0015d160`) runs one
+   world frame (task manager, cameras, `WorldManager_Update`, the resource manager, the passes, the scripts,
+   `Present`), sees `+0x24` ≠ 0, clears mode 8's `+0x28` because mode 8 is the mode below, and pops itself; 4 is none
+   of the kinds it acts on (1: checkpoint 1; 2: reload the current level; 3: the next record), so it only services the
+   save system, pops mode 1 as well **when mode 1 is now on top** (the end of a mission: mode 1's `Exit` unloads the
+   level), rebuilds the two inventories (`0x0041e420` / `0x0041e398`) and asks for an **autosave** (`0x00155308`:
+   pushes mode 6 when the save system is on and the level index is not 0 or `0x00204008` says so). Confirmed (code) for
+   the C++ side; the Lua side inferred.
+4. Mode 8 is on top again (`Resume`; it does not reload the front end, since `+0x28` is 0, and sets it to 1 again).
+   Its next `Update`
    (`0x0015c858`) sees `+0x20` ≥ 0, calls `LevelFlow_FinishFrontEnd` (because `+0x24` is 1: `Menu.onFinish`,
    `UnloadLevel(0)`), selects the level (`0x0041ce88`), sets `+0x20` = -1 and pushes **mode 1**. Confirmed (code).
 5. Mode 1's `Enter` runs `InitLevel` for `level99`, checkpoint 1: the loading screen, `global.lua` and `level99.lua`
@@ -308,6 +313,47 @@ picture titled "1 Coney" / "New Blood" with a progress bar, later a letterboxed 
 Rembrandt with the first tutorial text. Confirmed (runtime) for that order; the movie between them was not watched
 for (the disc has `PSS/L99_IN.BIK`, corroboration). That `+0x24` and `+0x49` are the loading screen's two lines is
 inferred from the matching text.
+
+### From QUICK RUMBLE to an arena fight {#quick-rumble}
+
+The chain from the main menu's **QUICK RUMBLE** to a fight, static analysis only (a runtime check in PCSX2 is still
+to come). Confirmed (code) for the C++ steps; the Lua steps inferred from the disassembly of `level100.lua`,
+`level102.lua` (the Fight Pen; every arena `level101`-`level137` has the same functions) and `brawl.lua`.
+
+1. **Main menu.** QUICK RUMBLE (code 1, [Input](#input)) calls the profile manager's first callback,
+   `Menu.fadeToRMI`: fade out over 0.7 s and `ScheduleFunc("Menu.launchRMI", 500)`.
+2. **`Menu.launchRMI`** loops the menu music and calls `ShowRumbleModeInterface("Menu.cancelRumbleMode",
+   "Menu.startRumbleMode", 1)`. `RumbleMenu_Show` (`0x00155228`) keeps the two names (`0x005e67c0` cancel,
+   `0x005e67c4` start; `0x0015e838`), stores "opened from the front end" (1, at `0x0063ef64`) and pushes **mode 0x11**,
+   the Rumble set-up menu, unless it is on top.
+3. **Mode 0x11** (`Enter` `0x0015e8b0`, `Exit` `0x0015ea40`) runs the Rumble menu screens (`RumbleModeGUI/`). They
+   write the set-up the arena will read: 23 16-bit values from `0x0063eec0` (game type, gangs, options; one screen's
+   confirm, `0x001f8d80`, fills several). Backing out sets "cancelled" (`0x0050f4dc`); the last screen's confirm
+   (`0x001ebb90`) sets "started" (`0x0050f4e0`) and the chosen arena's **level number** (`0x0050f4e8`, the `+0x04` of
+   its level record). When the menu pops, `Exit` calls `Menu.cancelRumbleMode()` if cancelled, else, when started,
+   `Menu.startRumbleMode(levelNumber)`; it also asks for an autosave when `0x0063f1d0` is set (`0x00155308`).
+4. **`Menu.startRumbleMode(n)`**: `SetCheckPoint(1)`, stop the music and the menu scene, `MenuLoadLevel("level" ..
+   n)`: state 3 and mode 8's `+0x20` = the arena's record ([Starting a story game](#story-start), step 2).
+5. **Mode 8** is on top again: its `Resume` does not reload the front end (a level is chosen); its `Update` finishes
+   the front end (`Menu.onFinish`, `UnloadLevel(0)`) and pushes **mode 1** for the arena.
+6. **`InitLevel`** for `level<n>` ([Level loading](level-loading.md#initlevel)): `global.lua`, then `level<n>.lua`,
+   whose `Main` calls **`ConfigRumble`**: `GetRumbleModeData` copies the 23 values (`0x001f26e0`) into `RM_LuaData`,
+   `ParseLuaData` spreads them over `Rumble` (`gameMode`, `gameType`, `gangSize`, the gangs and their packs, ...), the
+   mode's flags come from `doFile("level<n>_<mode>_init")` (which creates `fP1`, `fP2`, [World flags](flags.md)) and
+   its rules from `doFile("<mode>")` (`brawl.lua` ...); a stand-in human and camera are made at `fP1[1]`
+   (`AddDummyPlayer`, `AddDummyCamera`); the gangs' character packs are queued (`QueueFileToPrecache`); and, when
+   gangs were chosen, `SetStartGameCallback("DoRules")` (`ShowRules1` without gangs, `MakeRumblePak` in one debug
+   case). The object list, dependencies and the preload follow.
+7. **The players are placed last**: `InitLevel`'s step 13 calls the start callback, **`DoRules`**, which calls the
+   mode's **`StartRumble`**: for a brawl `AddBrawlGang1` → the arena's `AddRumbleGang1`, which creates player 1 with
+   `HuCreate("P11", Rumble.gang1[1], FlagPos(fP1[1]), 270, nil, 1, gang, true)` and teleports it onto `fP1[1]` with
+   the flag's heading (and gang 2 at `fP2`); then `DoRules` makes the gangs enemies, hides the HUD and starts the
+   intro and countdown (`ShowRumbleModeIntro("FinishCountdown", ...)`). The fight runs in mode 1.
+
+What Coney needs for QUICK RUMBLE to reach a fight: mode 0x11 (or a stand-in that fills the 23 set-up values and
+calls `Menu.startRumbleMode` with an arena's level number), `GetRumbleModeData`, the flag bindings, the start
+callback, and `HuCreate` with the chosen character types. The same menu opens in game from the hub with
+`fromFrontEnd` 0.
 
 ### InitLevel
 
@@ -592,9 +638,8 @@ it is the new top. So STORY goes as in the original: the profile manager's exit 
 `runNextMission(1)` sets checkpoint 1, chooses `level99` and pushes mode 0xb over mode 8; the next frame its enter runs
 `UnlockAndLoad` (the same choice again; already on top, so no second push) and its update pops it; the frame after,
 mode 8 finishes the front end and pushes mode 1, which loads `level99` with Rembrandt where its script creates him.
-Coney's choices: the kind is stored on every launch, on top or not (the page says where it is stored, not whether a
-second launch stores it); no mission-complete screen, save-system call, inventories or autosave (Coney has no saves);
-the frame is black.
+Coney's choices: the kind is stored on every launch, on top or not, as in the original; no mission-complete screen,
+save-system call, inventories or autosave (Coney has no saves); the frame is black.
 
 **Mode 0x12, the profile manager** (`src/gamemodes/profile_manager_mode.h`, `ProfileManagerMode`): `show` is
 `ShowProfileManager` (`0x001552b0`: keep the two callbacks, push unless on top); `enter` plays `menu` unless it is
@@ -735,8 +780,9 @@ What the implementer still needs:
 
 - **Mode 6 at boot** (answered for an unformatted card: no dialog, see [the flow](#mode-flow)): still open with no
   card, a formatted card without a save and a card with a save.
-- **Rumble mode** (answered for the entry): code 1 calls `Menu.fadeToRMI`, which opens the Rumble mode interface;
-  what that interface (`ShowRumbleModeInterface`) does is open.
+- **Rumble mode** (answered for the entry and the way to the arena, [QUICK RUMBLE](#quick-rumble)): the screens
+  of mode 0x11 themselves (which of the 23 values each sets, and their meaning) are open, and the chain wants a
+  runtime check.
 - **Global string ids** (answered for the front end: `GSTRING.HUD` entries are set with explicit indices, so the
   disassembly gives each id's text; the texts are quoted above). Originally: the text behind `0x76`, `0x78`, `0x79`,
   `0x8a`, `0x1f` and the memory-card ids needs a
@@ -749,13 +795,26 @@ What the implementer still needs:
   transitions in the table), and what `0x00204008` (asked by the autosave check after the mission-complete mode)
   reports. A runtime check: break on `0x0015e130` and `0x0015cf70` after choosing STORY on a new profile and note the
   mode stack (`0x005e66a0`, top index `0x0050c784`) each time.
-- **A second launch while mode 0xb is on top** (from Coney's mission-complete mode): does `MissionComplete_Launch`
-  (`0x0015d420`) store the new kind at `0x005e5e1c` when it does not push (`UnlockAndLoad`'s `runNextMission(1)`
-  launches 4 again, which would replace a kind 1, 2 or 3 the mission end asked for)? Coney stores it either way.
-- **Mode 8's `+0x28` after a level** (from Coney's gameplay mode): `Enter` sets it after mode 6's boot `Exit` has
-  cleared it, so it stays 1, and a mode 1 popped with no level chosen would bring the front end back on `Resume` (Coney
-  does so). Does the autosave's mode 6 (pushed after the mission-complete mode) clear it again, so that the game never
-  reloads the front end that way? And what pops mode 1 when a mission is quit to the menus?
+- **A second launch while mode 0xb is on top** (answered): `MissionComplete_Launch` (`0x0015d420`) stores the kind
+  at `0x005e5e1c` on every call, pushing mode 0xb only when it is not on top, and sets the level-change flag
+  `0x0050c754` only when it pushes with kind 0 (confirmed (code)). Coney's choice matches. The launch's own kind never
+  survives anyway: mode 0xb's `Enter` sets it to 0 before calling `UnlockAndLoad`, and `UnlockAndLoad` always ends
+  with `runNextMission(1)`, which launches 4 (confirmed (code) for `Enter`; the Lua side inferred). On the disc the
+  only kinds passed are 0 (no argument: 11 calls in ten scripts, and the C++ caller `0x00158c4c`) and 4
+  (`runNextMission`); nothing passes 1, 2 or 3 (inferred from the disassembly of every script), so the kinds `Update`
+  acts on are unused by the shipped scripts unless a script launches during mode 0xb's frames.
+- **Mode 8's `+0x28` after a level** (answered, confirmed (code)): mode 8's `Resume` (`0x0015c6f8`) loads the front
+  end when `+0x28` is set and no level is chosen (`+0x20` = -1), then **sets `+0x28` to 1 again every time**. Mode 6's
+  `Exit` (`0x0015c2c0`) and mode 0xb's `Update` (`0x0015d160`) clear it when mode 8 is directly below them, so their
+  own pop never reloads the front end; the autosave's mode 6 does clear it (after a mission, mode 0xb has popped
+  itself and mode 1, so mode 8 is below), but the next `Resume` sets it again. So a mode 1 popped with no level chosen
+  does bring the front end back, as Coney does. **Quitting a mission to the menus:** the in-game menus of modes 0xc
+  and 0x14 (`0x00155408`, the failure menu, and `0x00155648`; roles inferred), on their quit choice, call
+  `MenuLoadLevel("menu")` (checkpoint 1, `W_GameState + 0x14c` = 3), and no level record is named `menu`, so mode
+  8's `+0x20` becomes -1; mode 1's own `Update` then returns 0 for the state 3 and the loop pops it, its `Exit`
+  unloads the level, and mode 8's `Resume` reloads the front end (inferred that no record is named `menu`, from the
+  level table; the rest confirmed (code)). The binding `Quit` (`0x00160d38`: level index 0, state 3, checkpoint 1)
+  would end the same way, but no script calls it.
 - **The device flag `0x02`** hides `PM_Extras` and selects other layouts; it is still unidentified (see
   [Graphics](graphics.md#open-questions)).
 - **Script system slots** (answered: [Scripts](scripting.md#vtable-slots); update is `+0x14`, its adjust word

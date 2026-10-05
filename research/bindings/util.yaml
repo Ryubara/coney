@@ -112,12 +112,14 @@
     - {name: low, lua: number, ctype: int, desc: "Lowest value."}
     - {name: high, lua: number, ctype: int, desc: "Highest value."}
   results:
-    - {lua: number, desc: "A whole number from the game's own random generator (state at `0x006eb880`) between low and high."}
+    - {lua: number, desc: "A whole number in [low, high], both included: low + (the next entry of a 1,024-entry table at `0x005117e0`) mod (high - low + 1), unsigned."}
   description: >-
     Returns a random whole number in a range; replaces the math library's `random`.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Whether `high` is included is not traced (`0x003353f0`). A test mode should seed this generator.
+    The generator's state is only the table index at `0x006eb880` (advanced by 1, masked to 10 bits, per draw),
+    zeroed at start-up and never seeded; C++ code draws from the same index. A test mode should seed Coney's own
+    generator.
   usage: {chunks: 111, calls: 343, boot: true, mission1: true, result_used: true}
   coney: implemented

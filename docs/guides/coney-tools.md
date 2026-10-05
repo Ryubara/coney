@@ -147,13 +147,16 @@ uv run --project python coney-tools progress sizes [DISC] [--fill]
 ```
 
 Checks the size of every function in `functions.toml` against the executable `SLUS_212.15` on your own disc (`DISC`
-works as for the `wad` commands). The executable has no symbols, so the command takes every `jal` target and every
-function pointer in `.data` as the start of a function, and a function's **span** runs to the next of those starts,
-alignment padding included. A given size larger than the span is an error (exit code 1); one smaller than the code
-before the padding, or an address no call reaches, is a warning. `--fill` writes the span into each entry that has no
+works as for the `wad` commands). The executable has no symbols, so the command takes every `jal` target, every
+function pointer in `.data` and every address into `.text` that code builds with a `lui` / `addiu` pair (the function
+pointers handed over in code, such as the script binding wrappers) as the start of a function, and a function's
+**span** runs to the next of those starts, alignment padding included. Before the pairs were counted, a binding
+wrapper's span ran over its unseen neighbours (38,440 bytes for `HuCreate`'s 480). A given size larger than the
+span is an error (exit code 1); one smaller than the code before the padding, or an address no call reaches, is a
+warning. `--fill` writes the span into each entry that has no
 `size` yet. It prints only the addresses and sizes of the functions already listed.
 
-The span is an upper bound: a function that nothing calls directly and no pointer in `.data` names (one reached
+The span is an upper bound: a function that nothing calls directly and no pointer names (one reached
 only by a tail jump) is not seen as a start, and the span of the function before it includes it. When `--fill`
 gives a size that looks too large for what the research page describes, ask an analyst for the size Ghidra shows.
 

@@ -98,19 +98,20 @@ AddFlag(name, pos, heading, kind, kind2) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Flag name (the scripts use names like `fP1_01`); `FindFlag` looks flags up by it. |
+| 1 | `name` | string | Flag name (the scripts use names like `fP1_01`); `FindFlag` looks flags up by it. Only the first 15 characters are kept. |
 | 2 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` in metres. Written back unchanged. |
-| 3 | `heading` | number (single precision) | Facing in degrees (the scripts pass values such as 45, 89, 270), used when a human is placed at or uses the flag. |
-| 4 | `kind` | number, truncated to an integer | Integer stored with the flag (16-bit); scripts usually pass 0. Meaning not traced. |
-| 5 | `kind2` | number, truncated to an integer | Second integer stored with the flag (16-bit); usually 0. |
+| 3 | `heading` | number (single precision) | Facing in degrees (the scripts pass values such as 45, 89, 270), kept as given at +0x44; TeleportToFlag with heading -1 uses it. |
+| 4 | `kind` | number, truncated to an integer | Integer stored with the flag (16-bit, at +0xd0); scripts usually pass 0. Meaning not traced. |
+| 5 | `kind2` | number, truncated to an integer | Second integer stored with the flag (16-bit, sign-extended to +0xd8); usually 0. |
 
 **Returns** number: Handle of the new flag.
 
 Creates a flag: a named marker point with a facing, used as a spawn point, waypoint, objective or interaction point.
-Levels create thousands of them.
+Levels create thousands of them, in their AddFlagsBoxesPaths after CfgSetDatabaseSizes has sized the pool. See [World
+flags](../../research/flags.md).
 
 **Notes.** Callee 0x00415c18 → 0x00415b68 (a flag from the flag pool, 0x00415af0, initialised by 0x00415e70 with
-NilHandle as owner).
+NilHandle as parent). A full pool is not checked: the constructor then runs on a null pointer.
 
 - **Evidence:** confirmed (code) at `0x00415c18`; detail: traced
 - **Wrapper** `0x00379fd0` (registered by `RegisterBindings`); **calls** `0x00415c18` `Flag_Add`
@@ -680,7 +681,8 @@ FindFlag(name) -> number
 
 **Returns** number: Handle of the first flag with that name, or NilHandle.
 
-Looks up a flag by name (linear search over all flags). Three scripts call it, once each.
+Looks up a flag by name (linear search over the flags in creation order, case-sensitive strcmp against the stored
+15-character name). Three scripts call it, once each.
 
 - **Evidence:** confirmed (code) at `0x00415c48`; detail: brief
 - **Wrapper** `0x0037a770` (registered by `RegisterBindings`); **calls** `0x00415c48` `Flag_FindByName`
@@ -866,9 +868,10 @@ GetFlagPos(flag) -> usertype
 | 1 | `flag` | number, truncated to an unsigned integer | Handle of the flag. |
 
 **Returns** tolua object (nil for none): The flag's position as an `M_Vector4` (`x y z w`); when the flag has a live
-owner object, that object's current position instead.
+parent object (+0x48), that object's current position instead.
 
-Returns where a flag is, following its owner when it has one.
+Returns where a flag is, following its parent object when it has one. The global.lua helper FlagPos(flag) turns the
+result into the table {x, y, z} that HuCreate and Teleport take.
 
 - **Evidence:** confirmed (code) at `0x00416bb8`; detail: traced
 - **Wrapper** `0x0037a288` (registered by `RegisterBindings`); **calls** `0x00416bb8` `Flag_GetPosition`

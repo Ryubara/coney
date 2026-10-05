@@ -126,11 +126,13 @@ random(low, high) -> number
 | 1 | `low` | number, truncated to an integer | Lowest value. |
 | 2 | `high` | number, truncated to an integer | Highest value. |
 
-**Returns** number: A whole number from the game's own random generator (state at `0x006eb880`) between low and high.
+**Returns** number: A whole number in [low, high], both included: low + (the next entry of a 1,024-entry table at
+`0x005117e0`) mod (high - low + 1), unsigned.
 
 Returns a random whole number in a range; replaces the math library's `random`.
 
-**Notes.** Whether `high` is included is not traced (`0x003353f0`). A test mode should seed this generator.
+**Notes.** The generator's state is only the table index at `0x006eb880` (advanced by 1, masked to 10 bits, per draw),
+zeroed at start-up and never seeded; C++ code draws from the same index. A test mode should seed Coney's own generator.
 
 - **Evidence:** confirmed (code) at `0x00386488`; detail: traced
 - **Wrapper** `0x0036dfc8` (registered by `RegisterBindings`); **calls** `0x00386488`

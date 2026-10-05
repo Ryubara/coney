@@ -320,7 +320,7 @@ size = 1536
 address = 0x0015a270
 name = "MemoryCard_SetBootCheck"
 subsystem = "GameModes"
-size = 32
+size = 16
 
 [[function]]
 address = 0x0015c2c0
@@ -1267,7 +1267,7 @@ size = 352
 address = 0x00356c58
 name = "ScriptSystem::RunFiles"
 subsystem = "Scripting"
-size = 432
+size = 168
 
 [[function]]
 address = 0x00356e08
@@ -1339,6 +1339,7 @@ size = 312
 address = 0x00358428
 name = "HuCreate"
 subsystem = "Scripting"
+size = 480
 
 [[function]]
 address = 0x0035e5d0
@@ -1369,6 +1370,7 @@ subsystem = "Scripting"
 address = 0x0036f218
 name = "HUDLaunchMissionComplete"
 subsystem = "Scripting"
+size = 56
 
 [[function]]
 address = 0x0037d420

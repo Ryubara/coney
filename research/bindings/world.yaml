@@ -974,21 +974,22 @@
   calls:
     - {addr: 0x00415c18, name: Flag_Add}
   args:
-    - {name: name, lua: string, desc: "Flag name (the scripts use names like `fP1_01`); `FindFlag` looks flags up by it."}
+    - {name: name, lua: string, desc: "Flag name (the scripts use names like `fP1_01`); `FindFlag` looks flags up by it. Only the first 15 characters are kept."}
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` in metres. Written back unchanged."}
-    - {name: heading, lua: number, ctype: float, desc: "Facing in degrees (the scripts pass values such as 45, 89, 270), used when a human is placed at or uses the flag."}
-    - {name: kind, lua: number, ctype: int, desc: "Integer stored with the flag (16-bit); scripts usually pass 0. Meaning not traced."}
-    - {name: kind2, lua: number, ctype: int, desc: "Second integer stored with the flag (16-bit); usually 0."}
+    - {name: heading, lua: number, ctype: float, desc: "Facing in degrees (the scripts pass values such as 45, 89, 270), kept as given at +0x44; TeleportToFlag with heading -1 uses it."}
+    - {name: kind, lua: number, ctype: int, desc: "Integer stored with the flag (16-bit, at +0xd0); scripts usually pass 0. Meaning not traced."}
+    - {name: kind2, lua: number, ctype: int, desc: "Second integer stored with the flag (16-bit, sign-extended to +0xd8); usually 0."}
   results:
     - {lua: number, desc: "Handle of the new flag."}
   description: >-
     Creates a flag: a named marker point with a facing, used as a spawn point, waypoint, objective or interaction
-    point. Levels create thousands of them.
+    point. Levels create thousands of them, in their AddFlagsBoxesPaths after CfgSetDatabaseSizes has sized the pool.
+    See [World flags](../../research/flags.md).
   evidence: confirmed-code
   depth: thorough
   notes: >-
     Callee 0x00415c18 → 0x00415b68 (a flag from the flag pool, 0x00415af0, initialised by 0x00415e70 with NilHandle as
-    owner).
+    parent). A full pool is not checked: the constructor then runs on a null pointer.
   usage: {chunks: 94, calls: 7058, boot: false, mission1: true, result_used: true}
 
 - name: SetFlagPos
@@ -1024,9 +1025,10 @@
   args:
     - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag."}
   results:
-    - {lua: usertype, desc: "The flag's position as an `M_Vector4` (`x y z w`); when the flag has a live owner object, that object's current position instead."}
+    - {lua: usertype, desc: "The flag's position as an `M_Vector4` (`x y z w`); when the flag has a live parent object (+0x48), that object's current position instead."}
   description: >-
-    Returns where a flag is, following its owner when it has one.
+    Returns where a flag is, following its parent object when it has one. The global.lua helper FlagPos(flag) turns
+    the result into the table {x, y, z} that HuCreate and Teleport take.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 14, calls: 25, boot: true, mission1: false, result_used: true}
@@ -1040,7 +1042,8 @@
   results:
     - {lua: number, desc: "Handle of the first flag with that name, or NilHandle."}
   description: >-
-    Looks up a flag by name (linear search over all flags). Three scripts call it, once each.
+    Looks up a flag by name (linear search over the flags in creation order, case-sensitive strcmp against the
+    stored 15-character name). Three scripts call it, once each.
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}

@@ -219,6 +219,55 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
 `Human_Init` remaps the type: 32 becomes behaviour class 30 (`0x1e`) with a variant flag (confirmed (code) at
 `0x00218008`, runtime `+0xcc` = `0x1e`, `+0xd0` = `0x20`).
 
+### From a type to a model {#type-to-model}
+
+How `HuCreate`'s type picks what is drawn and animated, confirmed (code) at `0x00218008` (`Human_Init`),
+`0x00228af8` (`Cfg_SetCharacterClass`, `CfgChar`'s writer) and `0x001780e8`:
+
+1. **`CfgChar` resolves the model name once**, when `config_preload2.lua` runs: its model-name argument (`warr_re_cv`
+   for type 32) is hashed (CRC-32 of the lower-case name, [Name hashing](name-hash.md)) and looked up in the
+   **Character List** (the resource manager's `+0x88`, the chunk `0x44` records of [Files](#files)); the record's
+   **index** is stored at `+0x112` (`0xffff` when the name is not in the list). The same is done for `"<name>_a"`
+   into `+0x114`.
+2. **`Human_Init` maps the type to a class** with a fixed switch. Types not in it are their own class. A type marked
+   *variant* below sets a flag; the others are plain aliases of their class:
+
+    | Class | Plain aliases | Variants |
+    | --- | --- | --- |
+    | 1 | 2 | 3, 4 |
+    | 5 | 6 | 7, 8, 9, 10 |
+    | 11 (`0xb`) | 12 | 13, 14 |
+    | 15 (`0xf`) | 16 | |
+    | 18 (`0x12`) | 19 | 20 |
+    | 21 (`0x15`) | 22 | 25 |
+    | 26 (`0x1a`) | 27 | 28, 29 |
+    | 30 (`0x1e`) | 31 | 32 |
+    | 33 (`0x21`) | 34 | 35, 36, 37 |
+    | 38 (`0x26`) | | 39, 40 |
+    | 41 (`0x29`) | | 42 |
+    | 43 (`0x2b`) | | 44 |
+    | 45 (`0x2d`) | | 46, 47, 48 |
+    | 221 (`0xdd`) | | 222 |
+
+3. **The model index** (kept at `+0x37c`): the **type's own** record when the human is not a player (player index
+   below 1) or the type is a variant; otherwise (a player created as a plain alias) the **class's** record. Of that
+   record it reads `+0x114` (the `_a` model) when the current level's number is 60-64 (the Armies of the Night bonus
+   levels), else `+0x112`. So a player made as type 2 (`warr_cl_gen`) is drawn as type 1's `warr_cl`, while type 32
+   keeps `warr_re_cv`.
+4. **The rest of `Human_Init` reads the class record**: `+0xcc` holds the class from here on, and the fields read
+   after the remap (`+0x118`, `+0x11a`, `+0x14b`, `+0xb4`, the strings at `+0x14c` and `+0x18c`) come from it; only
+   `+0x11b` and `+0x11d` are first read from the type's own record. `+0xd0` keeps the type as given. Whether the
+   later systems (combat, health) read the class or the type is not traced here.
+5. **The files**: the Character List record at the model index names the three resources (character data with the
+   animations, model, texture dictionary, [Files](#files)); `Human_Init` makes the instance at once when they are
+   resident (`0x001774d0`, `0x00177b80`, then `Human_AttachInstance` `0x00217a98`), else the resource manager loads
+   them later ([Creation](#creation)). The anim set is that character data over the generic defaults (its 722 slots,
+   [Files](#files)) and the [anim slots](#anim-slots), the same for every type until a movement style changes them.
+
+For an implementer with Coney's recorded `CfgChar` calls and its `CharacterList`: find the type's call, apply the
+alias rule for a player, take the model-name argument (or `<name>_a` in levels 60-64) and look it up by name. The
+[character reference](../references/characters.md) lists every type's model name.
+
 ### Speed classes {#speed-classes}
 
 `CfgSpeedClass(class, ...)` writes six floats at `0x006b6548 + class × 0x18`. The getters read entry `+0x00` (base),
@@ -471,16 +520,18 @@ and the hub's clubhouse at `z` −194.3).
 `fWchiefStart_1` (−188.6, 95, −194.3), heading 222, as the type the chapter script's `WarchiefTable` names (Cleon,
 Rembrandt, Ajax, Cochise, Cowboy or Swan by chapter). `StartLevel` then either opens the quick map (when unlockable
 `(6, 3)` is unlocked, or `LoadLight` is set) or makes the **door walk**: `TeleportToFlag(player, fWchiefStart_<n>)`
-and a walk to `fWchiefEnd_<n>`, where `n` = `WCLoc`, `random(1, 5)` from the main chunk, or 5 when chapter 1 runs
-before unlockable `(6, 4)` (the tutorial). The five start flags: 1 (−188.6, 95, −194.3) 89°; 2 (−188.6, 102.7,
-−197.5) 89°; 3 (−163.7, 80.7, −197.5) 358°; 4 (−174.4, 80.5, −194.3) 358°; 5 (−185.2, 112.7, −193.7) 182°.
-Inferred from the disassembly.
+and a walk to `fWchiefEnd_<n>`, where `n` = `WCLoc`, `random(1, 5)` from the main chunk (1 to 5 inclusive, from the
+game's table generator), or 5 while unlockable `(6, 4)` (the tutorial) is still locked, in any chapter. The five
+start flags: 1 (−188.6, 95, −194.3) 89°; 2 (−188.6, 102.7, −197.5) 89°; 3 (−163.7, 80.7, −197.5) 358°; 4 (−174.4,
+80.5, −194.3) 358°; 5 (−185.2, 112.7, −193.7) 182°. Inferred from the disassembly; how flags work, the generator
+and the order of `StartLevel`'s steps are on [World flags](flags.md#player-starts).
 
 **A Rumble arena** (`level101`-`level137`): the level script runs `doFile("level" .. Level .. "_" ..
 RumbleInfo[Rumble.gameType] .. "_init")`, which adds the mode's flags, among them the list `fP1` (player 1's gang)
 and `fP2`. `AddRumbleGang1` creates `P11` with `HuCreate("P11", Rumble.gang1[1], FlagPos(fP1[1]), 270, nil, 1,
 gang, true)` and teleports it to `fP1[1]` with heading −1, so it stands on the first flag facing the flag's heading
-(inferred from the disassembly). The gang, and so the type, comes from the Rumble menu.
+(inferred from the disassembly). The gang, and so the type, comes from the Rumble menu (`GetRumbleModeData`); the
+steps are on [World flags](flags.md#player-starts).
 
 **No player**: `level100` (the front end), `level1` (its script only calls `MenuLoadLevel("menu")`), and the levels
 without a `.lev` file.

@@ -307,6 +307,41 @@ def test_function_starts_and_spans() -> None:
     assert elf.span(executable, 0x1020, starts) == 16  # to the end of .text
 
 
+def lui(reg: int, value: int) -> int:
+    """A `lui reg, value >> 16` instruction word."""
+    return (15 << 26) | (reg << 16) | (value >> 16)
+
+
+def addiu(dest: int, src: int, imm: int) -> int:
+    """An `addiu dest, src, imm` instruction word."""
+    return (9 << 26) | (src << 21) | (dest << 16) | (imm & 0xFFFF)
+
+
+def test_function_starts_from_code_built_pointers() -> None:
+    """A `lui` / `addiu` pair into .text starts a function, even split; a call between the two breaks the pair."""
+    a2, a3 = 6, 7
+    text = [
+        lui(a3, 0x100000),
+        lui(a2, 0x5000),
+        addiu(a3, a3, 0x20),  # 0x100020: a start, though the lui is two words back
+        addiu(a2, a2, 0x10),  # 0x5010: outside .text, ignored
+        lui(a3, 0x100000),
+        jal(0x100000),
+        NOP,
+        addiu(a3, a3, 0x30),  # after a call: the lui is forgotten
+        JR_RA,
+        NOP,
+        NOP,
+        NOP,
+        0x24020002,
+        JR_RA,
+        NOP,
+        NOP,
+    ]
+    starts = elf.function_starts(elf.read_elf(make_elf(text, [], text_address=0x100000)))
+    assert starts == [0x100000, 0x100020]
+
+
 def test_check_size_bounds() -> None:
     """A size between the code length and the span passes; past the span is an error, short of the code a warning."""
     executable = elf.read_elf(make_elf(TEXT, DATA))
