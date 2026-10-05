@@ -112,7 +112,7 @@ Run runScript(const Course& course, const char* label, const std::string& name, 
         if ((frame + 1) % 30 == 0) {
             const coney::anim::Vec3 p = human.position();
             std::printf("sandbox %s: frame %3llu at (%.2f, %.2f, %.2f)%s\n", label,
-                        static_cast<unsigned long long>(frame + 1), p.x, p.y, p.z, human.airborne() ? " airborne" : "");
+                        static_cast<unsigned long long>(frame) + 1, p.x, p.y, p.z, human.airborne() ? " airborne" : "");
         }
     }
     run.respawns = player.respawns();
