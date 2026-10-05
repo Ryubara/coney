@@ -558,9 +558,9 @@ grabber's heading.
    victim stands within **0.3 m** of grabber position + rotation × (direction × reach of the move's id)
    (`Pair_CheckPlace`, `0x00277958`; 51: (0.348, 0.937) × 1.082 m, the hold's point). The attacker plays the id as a
    type 3 task, the victim **id + 1 from the attacker's set** as a type 6 task (fade 0); neither snaps. The **spins**
-   (78 / 79, `0x0026d570`, and 80 / 81) end the same way as the connect: their end callback (`0x0026d510` for 78)
-   snaps and attaches at the rear hold 84 (80 / 81 at the front hold 82, inferred). `0x0026d078`, `0x0026d8c8`, `0x0026eba0` and
-   `0x00272918` also end in `Pair_SnapAttach` (not traced further).
+   (78 / 79, `0x0026d570`, and 80 / 81) end the same way as the connect: their end callback (`0x0026d510` for 78) snaps
+   and attaches at the rear hold 84 (80 / 81 at the front hold 82, inferred). `0x0026d078`, `0x0026d8c8`, `0x0026eba0`
+   and `0x00272918` also end in `Pair_SnapAttach` (not traced further).
 
 **The offsets** (from the Anim Range List record of the grabber's id, [direction and reach](formats/animation.md#anim-range-list);
 each matches the clip's type 8 event):

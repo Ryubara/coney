@@ -330,10 +330,10 @@ couples the two stacks while they play. What makes a task "paired" is only **whe
 - So the victim of a grab plays the reaction clip **of the grabber's animation set**: a grab by a Rembrandt-class
   human plays the Rembrandt reaction 73 on a civilian, whatever the civilian's own set holds for 73. The pair's two
   clips were authored together and play at the attacker's rate, so they stay in step.
-- Type 6 is otherwise type 3: it advances by `rate × dt`, blends into its next task over the given time and hands
-  over at the clip's end, runs the end callback and clears its state flags (`0x00108bd0`, `0x00108c80`, `0x00108ba8`
-  sit in the vtable slots of type 3's `0x00105af0`, `0x00105ba0`, `0x00105ab0` and do the same steps). Type 4 takes the same arguments as type 5's
-  first constructor (`0x00106140`) plus the handle.
+- Type 6 is otherwise type 3: it advances by `rate × dt`, blends into its next task over the given time and hands over
+  at the clip's end, runs the end callback and clears its state flags (`0x00108bd0`, `0x00108c80`, `0x00108ba8` sit in
+  the vtable slots of type 3's `0x00105af0`, `0x00105ba0`, `0x00105ab0` and do the same steps). Type 4 takes the same
+  arguments as type 5's first constructor (`0x00106140`) plus the handle.
 - **No root rotation is stripped, replaced or composed**: the clips are sampled and drawn exactly as a single clip
   is, each body in its own frame. The task flags are those the caller gives (none for the grab's connecting clips, so
   their root motion moves both bodies). The two bodies are put in place by the combat code, not by the task:
