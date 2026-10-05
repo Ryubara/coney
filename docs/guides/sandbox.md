@@ -59,21 +59,32 @@ The values from the research that the courses are built round (all from
 | Value | Where it shows |
 | --- | --- |
 | The ground snap climbs a step of up to 1.0 m | stairs and ledges: higher ledges are red |
+| Wall faces under 0.25 m tall do not stop a walking body; taller ones do ([walls and steps](../research/characters.md#walls)) | stairs and ledges: in the original the 10 and 20 cm risers and ledges are walked up, the 30 cm and higher are walls |
 | A drop of more than 0.5 m is a fall | gaps, drops and ledges |
 | A character lands only on ground whose normal has z > 0.65 (about 49°) | the slope gallery: the 50° and 60° ramps are red |
 | Gravity 15.68 m/s²; a landing hurts from 14.9 m/s (about 7.1 m) and kills from 20.5 m/s (about 13.4 m) | the drop towers bracket both heights (inferred from the speeds) |
 | Walk 1.63, jog 4.86, run 7.80, sprint 10.25 m/s ([speed classes](../research/characters.md#speed-classes)) | the run-up lane's marks |
+| A jump leaves at 5.5 m/s up at the run or sprint speed and rises 1.06 m; it lands 6.4 m on at a run ([jumping](../research/characters.md#jump)) | the platform gaps and jump-up blocks: in the original a 1 m block is about the limit |
+| Climbs: short fence or short wall for an obstacle from 0.69 to 1.7 m, fence (below 2.5 m) or wall (top 1.7 to 2.91 m) above that ([climbing](../research/characters.md#climb)) | the fences, low walls and climb blocks |
 
-The game has fence, short-fence, wall and short-wall climbs (`research/references/anim-ids.yaml`), but the heights that
-choose them are not researched yet, so the fence, wall and climb ranges are Coney's choices, wide enough to bracket
-them. No collision flag for climbable surfaces is known; a primitive's `flags=` sets the triangle flag bits raw for
-experiments ([Collision](../research/collision.md#triangles)).
+The climbs follow two forward rays at 0.69 and 1.7 m above the feet and a downward probe 0.4 m behind the face: a
+fence has nothing to stand on just behind it, a wall has a top inside the window
+([Climbing](../research/characters.md#climb)). In the original only triangles of material 30 (`LOW_FENCE`) or with
+flag bit 2 (`0x4`, players) or bit 7 (`0x80`) are climbable ([Collision](../research/collision.md#triangles)); a
+primitive's `flags=` sets those bits raw.
 
 What a walk over the default course shows today, with the player code merged so far: Rembrandt walks up the 20° ramp
 and the 20 cm stairs onto their 2 m platforms. He steps up onto the 50 cm ledge and back down. The 75 cm ledge stops
 him like a wall, because the human's sideways collision holds him 0.35 m short of its face before the ground snap is
-reached. The disc test `tests/sandbox/disc_sandbox_player_test.cpp` checks these runs and pins that behaviour until
-the question below is answered.
+reached. The disc test `tests/sandbox/disc_sandbox_player_test.cpp` checks these runs and pins that behaviour.
+
+**What the original does** (from the code, [walls and steps](../research/characters.md#walls); not yet checked at
+runtime against ledges of these heights): its walking body is a sphere of 0.34 m whose bottom is 0.05 m above the
+feet, and a wall triangle under 0.25 m tall is not a wall. So the 20 cm stairs and the 10 and 20 cm ledges are walked
+up, but the **50 cm and the 75 cm ledges are both walls**: the original has no step-up beyond those 0.25 m. A 75 cm
+ledge is climbed with triangle as a short wall when its face is climbable (from 0.7 m); a 50 cm one is below the
+climbs' 0.69 m ray and is only jumped onto. Coney's sphere sits higher (centre 0.9 m), which is why it walks up the
+50 cm ledge; matching the original means the lower sphere and the 0.25 m rule.
 
 ## The layout format {#the-layout-format}
 
@@ -181,16 +192,17 @@ the player, and each frame draws the camera blended between the last two steps.
 
 ## Open questions
 
-- **Should a 75 cm ledge stop the player?** Today the human's sideways collision holds Rembrandt 0.35 m short of
-  the 75 cm ledge's face, so he never reaches the ground snap, which would climb any step up to 1.0 m
-  ([Characters](../research/characters.md#ground)). It is not known whether the original lets him walk up a ledge
-  between about 0.5 and 1.0 m, or whether such a ledge needs a climb or vault. The research pages do not say how high
-  the body sphere sits or how the step-up and the wall push interact. The disc test pins today's behaviour until a
-  research page answers this.
-- **Which heights choose the fence, wall and climb animations?** The parkour ranges bracket them, but the thresholds
-  are not researched.
-- **Is there a collision flag for climbable surfaces?** Triangle flag bits 2 to 10 are unknown
-  ([Collision](../research/collision.md#triangles)).
+Answered and moved into the text above: whether a 75 cm ledge stops the player (it does in the original, and so does
+a 50 cm one, [walls and steps](../research/characters.md#walls)); which heights choose the climbs
+([climbing](../research/characters.md#climb)); and the climbable flags (bits 2 and 7 and material 30,
+[Collision](../research/collision.md#triangles)).
+
+- **Should Coney's body match the original's now?** The disc test pins Coney's 50 cm step-up, which the original
+  does not have. Lowering the sphere and adding the 0.25 m rule changes the default course's results and the test.
+- **Do the course's ranges need the original's limits?** The parkour fences, low walls and climb blocks were spread
+  to bracket unknown thresholds; they can now be placed on both sides of 0.69, 1.7, 2.5 and 2.91 m.
+- **Runtime checks of the step rule**: a kerb and ledges of 0.3, 0.5 and 0.75 m in the game have not been walked into
+  with the patched pad yet.
 
 ## Credits
 

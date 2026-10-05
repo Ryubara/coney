@@ -1,7 +1,9 @@
 # Characters (humans)
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Runtime claims were made in
-PCSX2 2.9.94 (2026-10-04) by reading memory over PINE in `level99`, checkpoint 1, and say so. The disc survey read the
+PCSX2 2.9.94 (2026-10-04) by reading memory over PINE in `level99`, checkpoint 1, and say so; those about sprint,
+jumps and climbs (2026-10-05) in a later street level ("the street"), from save states made at test spots, with pad
+input patched in through a copy of the state. The disc survey read the
 NTSC-U disc's WAD with throwaway scripts outside the repository and reports counts and hashes only.
 
 ## Purpose
@@ -9,9 +11,9 @@ NTSC-U disc's WAD with throwaway scripts outside the repository and reports coun
 Every person in the game, the player included, is a **human**: one object of a single class with a skinned model,
 an animation player and a brain. The player is a human whose controller is a pad instead of the AI. This page covers
 what the first playable milestone needs: how a level script creates the player, which files make a character, the
-object's layout as far as it is known, how pad input becomes movement, and how a speed picks idle, walk or run. The
-animation format is on [Animation](formats/animation.md); the camera that follows the player on
-[Camera](camera.md).
+object's layout as far as it is known, how pad input becomes movement, how a speed picks idle, walk or run, and the
+player's sprint, stamina, jump and climbs. The animation format is on [Animation](formats/animation.md); the camera
+that follows the player on [Camera](camera.md).
 
 In one paragraph: a level script calls `HuCreate(name, type, position, heading, ..., player, gang)`. The game takes a
 free slot among **60 static humans**, remaps the type to a behaviour class, finds the character's model by name in
@@ -20,7 +22,8 @@ binds pad 0 and the camera. The character's files are three resources named by C
 32-bone HAnim skeleton and a PS2 skin), its texture dictionary, and its **character data** (its animations and an
 anim id → animation table). Each update (30 per second) the pad's stick, already turned into camera space, gives a
 direction and a magnitude; the magnitude chooses walk (from 0.12) or run (above 0.95), the speed ramps towards it at
-24 m/s², and the heading turns towards the stick at a limited rate.
+24 m/s², and the heading turns towards the stick at a limited rate. Holding L2 at a run sprints while stamina lasts;
+Triangle climbs a fence or wall in front of the player or, at a run, jumps.
 
 ## Original structure
 
@@ -58,7 +61,22 @@ string gives them.
 | `0x003a2158` / `0x003a21c0` | `Object_SetAirborne` / `Object_SetGrounded` | flag `0x4000000` / `0x2000000` in `+0x54` | confirmed (code) |
 | `0x0021b0b8` | `Object_SetPosition` | writes the transform table `0x00714b00` | confirmed (code) |
 | `0x0033e278` | `PhysicsBody_Sweep` | moves a body by `v × dt`, up to three sliding passes | confirmed (code) for the steps listed |
+| `0x00347c08` | `PhysicsMesh_SweepCapsule` | the walking body's sphere swept against the mesh's walls, with the 0.25 m step rule | confirmed (code) |
 | `0x003477c0` | `PhysicsBody_PushOutOfWalls` | sphere against the collision mesh's walls (`n.z` within ±0.65) | confirmed (code) |
+| `0x0021a490` | `Human_PushOutInAir` | the push-out sphere (or a bone segment) while airborne and in some states | confirmed (code) |
+| `0x00219d50` | `Human_OnContact` | the body's contact handler: landings, fences while climbing, objects | confirmed (code) for the parts cited |
+| `0x0027c120` | `Player_UpdateActions` | the player's commands each update: climb, jump, block, sprint | confirmed (code) for the parts cited |
+| `0x0027ce90` | `Player_UpdateSprint` | clears the sprint flag and sets it again while L2 is held | confirmed (code), runtime |
+| `0x00223188` | `Human_StaminaMax` | stamina maximum from the power class | confirmed (code) |
+| `0x002562d0` | `Human_DrainMeters` | stamina drain while sprinting (and a second meter) | confirmed (code) |
+| `0x00256a60` | `Human_RefillMeters` | stamina refill (and the second meter) | confirmed (code) |
+| `0x002829e8` / `0x0023db48` | `Player_TryJump` / `Human_BeginJump` | the jump's checks; take-off gait and height | confirmed (code) |
+| `0x002217f0` | `Human_LaunchJump` | the jump's velocity, then airborne | confirmed (code) |
+| `0x00240898` | `Human_AirControl` | the jump's state function: steering in the air | confirmed (code) |
+| `0x002826f0` | `Climb_TryStart` | the two forward probes; fence, wall and their short forms | confirmed (code) |
+| `0x00282370` | `Climb_ProbeTop` | finds the obstacle's top and picks fence or wall | confirmed (code) |
+| `0x00281c20` | `Climb_Start` | reach window, start point, the three-clip chain | confirmed (code) |
+| `0x00281450` / `0x00281838` | climb callbacks | end of the first clip, from a run / from standing | confirmed (code) |
 | `0x00249108` | `Humans_Update` | the characters' update, every second task-manager tick | confirmed (code) |
 | `0x00249b98` | `Humans_MarkSkeletons` | marks every skeleton for an update, from mode 1 | confirmed (code) |
 | `0x001783d0`, `0x0018e9e0`, `0x0016e8f0` | resource loaders | model (type 3), textures (type 4), character data (type 5) | confirmed (code) |
@@ -86,23 +104,30 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x90` / `+0x92` | u16 | own handle's serial / index | confirmed (code) |
 | `+0xcc` | int | behaviour class (`0x1e` for Rembrandt): selects the class record for speeds | confirmed (code), runtime |
 | `+0xd0` | int | the type passed to `HuCreate` (`0x20`) | confirmed (code), runtime |
-| `+0xd4` | pointer | the human's 0x180-byte record (`0x0065a540 + i × 0x180`) | confirmed (code), runtime |
+| `+0x54` | u32 | object flags: `0x4000000` airborne, `0x2000000` on the ground ([Ground](#ground)) | confirmed (code) |
+| `+0xd4` | pointer | the human's 0x180-byte record (`0x0065a540 + i × 0x180`, [below](#the-record)) | confirmed (code), runtime |
+| `+0xe0` | u64 | human flags. `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x24004440407` | confirmed (code), runtime |
 | `+0xd8` | pointer | the `CharacterInstance` (model, skeleton, animation) | confirmed (code) |
 | `+0x1a0` | pointer | the physics body (0 for none) | confirmed (code) |
 | `+0x1a8` | int | the gait for the current speed (0, 1-5; `0x0022aeb0`), used by the lean | confirmed (code) |
 | `+0x1ac` | float | current speed (length of the velocity, written with it) | confirmed (code) |
 | `+0x1b0` | s8 | player index, -1 for none | confirmed (code) |
+| `+0x1b8` / `+0x1b9` | u8 | [power class](#power-classes) of a non-player / of a player (64 for Rembrandt) | confirmed (code), runtime |
 | `+0x1d8` | int | material of the ground under the feet (5 when none) | confirmed (code) |
 | `+0x230` | vec4 | ground normal from the last snap (`+0x238` its `z`) | confirmed (code) |
 | `+0x280` | int | an attachment: −1 normally; otherwise the human moves without the physics sweep | confirmed (code) for the tests |
 | `+0x298` / `+0x29c` | float | turn this update / smoothed lean (radians) | confirmed (code) |
+| `+0x2c0` | vec4 | where a fall will end (`Human_StartFall`); a climb's start point (`Climb_Start`) | confirmed (code) |
 | `+0x2f0` | vec4 | external push velocity, added to the velocity when moving | confirmed (code) |
 | `+0x37c` (`+0xdf` as a word index) | int | model index in the Character List | confirmed (code) |
 | `+0x384` | int | airborne updates so far | confirmed (code) |
 | `+0x390` | vec4 | last ground position | confirmed (code) |
 | `+0x3a0` | float | vertical velocity, kept by the locomotion, integrated by gravity while airborne, 0 on landing | confirmed (code) |
 | `+0x3a4` | float | speed multiplier, set to 1.0 by `Human_Init` (`0x002180c8`); Rembrandt's speeds match his clips exactly, so 1.0 at runtime | confirmed (code); runtime inferred |
+| `+0x3c0` | int | the gait at a jump's take-off (picks the launch speed) | confirmed (code) |
 | `+0x3c8` | 7 × 0x28 | dynamic animation slots | confirmed (code) |
+| `+0x560` | float | the height (`z`) at a jump's take-off | confirmed (code) |
+| `+0x5b9` | u8 | 1 while a climb clip (437-460) plays, set by `Human_StateUpdate` | confirmed (code) |
 | `+0x5d8` / `+0x5dc` | float | last stick angle / magnitude | confirmed (code) |
 | `+0x5e0` / `+0x5e4` | float | last turn step / last heading error (turn smoothing) | confirmed (code) |
 | `+0x65c` | float | body scale: 1.0, then set by `Human_Init` through `0x00219608` to `1 − 0.01 × n` (`n` from a division not traced; at least 0.99 in one case); read by `0x0021d020`. 0.97 for Rembrandt | confirmed (code), runtime |
@@ -118,8 +143,58 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x19` | pad index, -1 for none (0 for the player at runtime) |
 | `+0x1b` | 1 while the human is pad-controlled; 0 hands it to the AI |
 | `+0x1f` | input locked: angle π/2, magnitude 0 |
+| `+0x20` | this update's command id ([Buttons](#buttons)), read by `0x00147ef8` |
+| `+0x24` | a pending command (from table entries whose mask is `0xfe`) |
 
 A second per-human record of 0x2f0 bytes is at `0x006d53f0 + i × 0x2f0` (contents not traced).
+
+### The 0x180 record {#the-record}
+
+Each human's record (`+0xd4`), as far as this page uses it. Confirmed (code) at the accessors named; runtime values
+are Rembrandt's.
+
+| Offset | Type | Meaning |
+| --- | --- | --- |
+| `+0x00` | u64 | **state flags**: test `0x002265f0`, set `0x002265d0`, clear `0x00226620`; bits below |
+| `+0x08` | u32 | more flags: test `0x00226660`, set `0x00226640`, clear `0x00226688`. `0x10` forbids a sprint, `0x40` is set while climbing over, `0x400000` slows a body in the air (velocity × 0.95 per update); any of `0x84240` refuses a climb and any of `0x41a420` stops the stamina refill. Seen at runtime: `0x10000000` while a start clip plays, `0x80000` during a run stop and the first and last clips of a climb, `0x1000000` while landing from a jump |
+| `+0x14` | int | state code (setter `0x002266a8`) |
+| `+0x18` | int | anim state ([Clip selection](#clip-selection)) |
+| `+0x20` | int | anim id playing (getter `0x002266b8`) |
+| `+0x28`-`+0xb3` | int[35] | [anim slots](#anim-slots) |
+| `+0x148` | s16 | a second meter, refilled at the power class's `+0x2a` per second to the maximum `0x00223068` returns; not traced further |
+| `+0x14a` | s16 | **stamina** ([Sprint](#sprint)) |
+| `+0x14c` / `+0x154` | u32 | game time (ms, `*(0x0050b734) + 0x48`) of the last update of the second meter / of stamina |
+| `+0x150` / `+0x158` | float | the fractions carried between updates of the two meters |
+| `+0x164`-`+0x17c` | float | the speeds ([Speed classes](#speed-classes)) |
+
+State flag bits used on this page:
+
+| Bit | Meaning |
+| --- | --- |
+| `0x1000000` | sprint asked for (L2 held, [Sprint](#sprint)) |
+| `0x200000000` | dead |
+| `0x400000000` | jumping (set at launch) |
+| `0x800000000` | falling (a drop) |
+| `0x1000000000` | a long fall |
+| `0x2000000000` | landing |
+
+The three airborne bits (`0x1c00000000`) are cleared on landing.
+
+### Power classes {#power-classes}
+
+`CfgPowerClass` fills records of 0x44 bytes at `0x006619a0 + class × 0x44`. A human's class is byte `+0x1b9` for a
+player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads; Rembrandt's values confirmed (runtime):
+
+| Field | Rembrandt (class 64) | Use |
+| --- | --- | --- |
+| `+0x28` | 400 | not traced on this page |
+| `+0x2a` | 60 | the second meter's refill per second |
+| `+0x2c` | 135 | **stamina maximum** |
+| `+0x2e` | 40 | **stamina refill per second** |
+
+`Human_StaminaMax` (`0x00223188`) returns `+0x2c`; for a player, when the flag `0x00424130(0x6fe998, 6, 0xc)` is set,
+it returns `+0x2c × (1 + b × 0.01)` rounded, where `b` is byte 3 of the record `0x00228860` returns (an upgrade,
+inferred).
 
 ### Character classes {#classes}
 
@@ -402,13 +477,104 @@ speed is `+0x1ac` sampled every 5 ms, the clip is record `+0x20`). Confirmed (ru
 | 0.10 | nothing (inside the 0.12 dead zone) |
 | 0.13, 0.5, 0.94 | **walk start** (413) at a steady 0.76 m/s for about 0.45 s, then **walk** (408) at 1.63 m/s, gait 2: the walk speed does not depend on how far the stick is pushed |
 | 0.96, 1.0 | **run start** (414) for about 0.36 s, the speed following the clip (2.77, 2.49, 2.56, 2.63, 2.84, 3.35, 3.90, 4.54, 5.11, 5.40, 5.61, 5.69 m/s, one value per update), then **run** (410), gaining 0.8 m/s per update up to 7.80 |
-| released | speed 0 at once and **idle** (388); run to neutral (417) is not played on release |
+| released | speed 0 at once and **idle** (388); run to neutral (417) is not played on release from a walk or a run at 7.80 m/s |
+| released in a sprint (10.245 m/s) | **run stop** (417) for about 0.8 s, moved by the clip, then the idle ([Sprint](#sprint)) |
 
 So the start clips drive the speed while they play (their root motion, [Animation](formats/animation.md#root-motion)),
 and the gait clip's speed is the target afterwards. The walk start's "about 0.45 s" is its 0.333 s played at rate 0.75
 (0.444 s). The run start's shorter 0.36 s is not explained; it may begin part-way through, as the walk-start-to-run-start
 swap does (speculative). A jog was not reached from the stick alone (it needs a carried object, see the locomotion steps
 above).
+
+### Buttons {#buttons}
+
+The pad's buttons become **command ids** through tables of 12-byte entries `{u16 mask, u32 command, u16 buttons,
+u16 extra}` that `AddCommand` fills. Each update `0x00147940` matches them and stores the command in the per-player
+record's `+0x20`, or in the pending `+0x24` when the entry's mask is `0xfe` (`0xff` enables it for pad 0). The buttons
+are the pad word's bits ([Pad record](frontend.md#pad-record)). The matchers are confirmed (code); the tables were read
+in `level99` (confirmed (runtime)):
+
+| Table | Matched when | Button → command |
+| --- | --- | --- |
+| `0x005ddd10` | held (`0x00144b88`) | L1 → 6, R1 → 4, **L2 → 5**, R2 → 1, square → `0x15`, cross → `0x16` |
+| `0x005dddd0` | pressed (`0x00144bf0`) | d-pad up, down, right, left → `0x26`, `0x25`, `0x28`, `0x27`; **triangle → 10**; L1 → 7; R1 → 3; square → `0xf`; cross → `0x12`; circle → `0x1e` |
+| `0x005dde90` | released (`0x00144ba8`) | L1 → 8, R2 → 2 |
+| `0x005ddf50`, `0x005ddfb0`, `0x005de010` | not traced | circle → `0xd`; cross → `0x10`; triangle → `0xb`, circle → `0xe` |
+| `0x005de070` | combinations (`0x00144ef8`) | d-pad directions → `0x29`-`0x2c`; L3 → 9; circle + cross → `0x23`; L1 + R1 → `0x1f` |
+| `0x005de130` | combinations (`0x00144f48`) | L2 + left → `0x21`, L2 + down → `0x20`, cross + left → `0x22`, circle + up → `0x24` |
+
+Traversal uses two buttons: **triangle pressed** (command 10) starts a climb, a context action or a jump
+([Jumping](#jump), [Climbing](#climb)), and **L2** sprints. The sprint reads the button itself
+(`0x00147f98(record, 1)`, "is the button of mask 1 held") rather than command 5. Confirmed (code) at `0x0027c120` and
+`0x0027ce90`.
+
+### Sprint and stamina {#sprint}
+
+**Sprint is held, not toggled.** Every update `Player_UpdateSprint` (`0x0027ce90`, called from `0x0027d5a0`, which
+`Player_UpdateActions` calls) first **clears** state flag `0x1000000`, then sets it again (and calls `0x00230140`,
+and clears state flags `0x8008`) only when all of these hold. Confirmed (code):
+
+1. L2 is held;
+2. stamina (record `+0x14a`) is not 0;
+3. record `+0x08` bit `0x10` is clear.
+
+So the sprint lasts exactly as long as L2 is held and stamina lasts: letting go of L2 ends it on the next update, and
+nothing latches it. It also ends when stamina reaches 0 (below) and when `Player_UpdateActions` takes its block branch
+(`0x0027c6b0`, reached among other cases when R1 is held while `0x00224f28` holds, a fight inferred), which clears
+the flag and sets state flags `0x8001`. **At runtime** (`level99` and a street, stick 1.0 straight up and L2 held
+through patched pad input, [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)) the flag was set every
+update, the command was 5, and the speed rose by 0.8 m/s per update from 7.80 to **10.245 m/s** (gait 5).
+Confirmed (runtime).
+
+**The stick still decides.** The flag only asks for a sprint: the locomotion's sprint test (`0x00225dc0`) also needs
+the stick above **0.95** and stamina, as for a run ([Locomotion](#locomotion)). With `0x00510258` set
+(`CfgPlayerRunButton`), L2's pressure decides instead (pressure byte 10 above 100 sprints, otherwise a run); it is 0 in
+play. Confirmed (code).
+
+**Stamina** is the s16 at record `+0x14a`. Its maximum is `Human_StaminaMax` ([Power classes](#power-classes)): 135 for
+Rembrandt (confirmed (runtime)). Confirmed (code) unless marked:
+
+- **Drain** (`0x002562d0`, called from the brain `0x00254e78`): while the gait stored with the velocity (`+0x1a8`) is 5
+  and record `+0x08` is 0 (`0x00223a98`), stamina loses **20 per second** of game time (`0x005101f4`, `CfgBurnRates`
+  rate 5; 0 when `0x005102a8` is set, which it is not in play), with the fraction carried at `+0x158` and the time at
+  `+0x154`. When it reaches 0 or below it is set to 0 and the sprint flag is cleared. Gait 5 is the speed nearest the
+  sprint speed, above 9.02 m/s for Rembrandt, so the drain starts on the third update of the speed-up.
+- **Refill** (`0x00256a60`, every update): stamina gains the power class's `+0x2e`, **40 per second** for Rembrandt,
+  up to the maximum. It gains nothing (and the time is not carried over) while any of these holds: gait 5
+  (`0x00223a98`); state flags `0x1c18003ff0` (the airborne bits among them); a jump or fall (`0x00227f90`, flags
+  `0x1c00000000`); **gait 4 (run) with L2 held** (`0x00223a60` and the button); record `+0x08` flags `0x41a420`. Human
+  flag `0x4000000` fills stamina and the second meter every update. In three states (`0x00223b98`, `0x00223bc0`,
+  `0x00223b70`) the function returns before taking the time, so the time spent in them is refilled at once afterwards.
+- **No delay and no threshold**: the refill starts on the first update the blocks are gone, and the sprint test is
+  only "not 0", so one point of stamina sprints again.
+
+**At runtime** (the street, Rembrandt, stamina 135 of 135; stick and L2 through patched pad
+input; stamina, speed and flags read every update). Confirmed (runtime):
+
+- From a standstill with stick 1.0 and L2 held, stamina **still refilled** through the run start (gait 2-3), stood
+  still at gait 4 (the "run with L2" block), and fell by 1 every 1.5 updates (**20 per second**) from the update the
+  speed reached 9.686 m/s (gait 5, the third update of the speed-up from 6.486).
+- When it reached 0 the sprint flag cleared and the speed dropped from 10.245 to **7.801 m/s in one update**; with
+  L2 still held for 1.5 s more, stamina **stayed at 0**.
+- With L2 let go and the stick still at 1.0 (a run), stamina refilled at 40 per second (0 to 39 in about 1 s); L2
+  pressed again sprinted at once.
+- Standing, it refilled by 4 every 3 updates (**40 per second**) to 135.
+- Letting go of the stick in a sprint played the **run stop** (417) for about 0.8 s with record `+0x08` = `0x80000`,
+  the body moved by the clip (about 1.6 m) while stamina refilled, then the idle: the skid of
+  [Locomotion](#locomotion) step 3.
+- Stamina also drains **in a jump** from a run (135 to 132): the gait is taken from the whole velocity, and the jump's
+  vertical speed puts it above 9.02 m/s ([Jumping](#jump)).
+
+**What a player sees**, from the code and the runs above:
+
+| Stick | L2 | Result |
+| --- | --- | --- |
+| 0.5 or 0.8 | held | walk at 1.63 m/s; the flag is set but there is no sprint and no drain; stamina refills (inferred) |
+| 1.0, or a full diagonal | held | run, then sprint at 10.245 m/s after 4 updates; stamina drains from the third, 135 lasts **6.75 s** |
+| 1.0 | released | run at 7.80 m/s; stamina refills at 40 per second, **3.4 s** from empty to full |
+| 1.0 | held at 0 stamina | run at 7.80 m/s, and stamina **stays at 0** until L2 is let go |
+
+In an input script: `stick left 0 100` and `press l2` to sprint, `release l2` to refill.
 
 **Measured** (PCSX2 2.9.94, the stick held fully forward from a standstill by the W key, magnitude 1.0, positions
 read over PINE): 4.10 m after a
@@ -535,9 +701,8 @@ gait for that speed (`0x0022aeb0`) at `+0x1a8`. So `+0x1ac` (used by the lean) i
   (body `+0x50`, divided by dt) is added to the displacement `v × dt`, which is swept up to three times, sliding
   along what it hits. If it is still blocked after three passes, the body stays where it is, its horizontal velocity is
   zeroed and its "could not move" counter (`+0x70`) goes up; otherwise the counter is reset. Walls come from the
-  level's [collision mesh](collision.md): the physics code walks the same grid (`0x00347170`) and pushes the body's
-  sphere out of the **nearest** enabled triangle that is a wall by its own rule, `|n.z| ≤ 0.65` (steeper than about
-  49°, not the 15° of `CollisionMesh_SpherePush`), by `n × (radius − distance)` (`0x003477c0`).
+  level's [collision mesh](collision.md) through the body's shape: a **sphere swept along the move**, below
+  ([Walls and steps](#walls)).
 - **Ground snap**, on the ground only (and not in game modes 8, `0xb` or `0x11`, `0x00221950`), `0x0023eab8`: cast
   a ray **straight down from 1.0 m above the feet, 1.5 m long** (the 1.0 is vtable `+0x5c`, `0x004ed818`, a constant).
     - **Hit:** put the feet **exactly on the hit point** (no gap), remember it as the last ground position (`+0x390`
@@ -547,7 +712,46 @@ gait for that speed (`0x0022aeb0`) at `+0x1a8`. So `+0x1ac` (used by the lean) i
     - **Miss** (nothing within 0.5 m below the feet): the human **starts to fall** through vtable `+0x154`
       (`0x0023dc58`) unless it is in state `0x800`.
   So a step or kerb up to **1.0 m** high is climbed in one update when the sweep lets the body over it, and a drop of
-  up to **0.5 m** is followed without falling; anything deeper is a fall.
+  up to **0.5 m** is followed without falling; anything deeper is a fall. The sweep lets the body over a step only
+  when the step's wall triangles are under 0.25 m tall ([Walls and steps](#walls)).
+
+#### Walls and steps {#walls}
+
+The physics body of a human holds a capsule shape (type 3, shape `+0x30`; radius 0.35
+at shape `+0x40`, 1.886 at `+0x44`; read at runtime), and the physics world handles a shape through a table of
+functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 3 that is
+`PhysicsMesh_SweepCapsule` (`0x00347c08`), which treats the body as **one sphere** for walls. Confirmed (code):
+
+1. **The sphere**: radius `r` = shape `+0x40` × body `+0x60` (1.0) × the human's scale (`0x0021d020`: `+0x65c`),
+   centre **`r + 0.05` above the feet**. For Rembrandt (scale 0.97) `r` = 0.34 and the sphere spans 0.05 to 0.73 m
+   above the feet.
+2. For each enabled triangle of the grid cells it covers that is a wall (`|n.z| ≤ 0.65`) and that the sphere is in
+   front of (a two-sided triangle is turned to face it), and that the move goes into (`n · move < −0.001`):
+3. **Skip low and thin triangles**: take the edge whose unit vector is steepest; if its two ends differ in height by
+   less than **0.25 m**, skip the triangle. Then take the longest edge; unless it is nearly vertical (`|unit z|` ≥
+   0.8), skip the triangle when the third corner lies less than 0.25 m from that edge's line within the triangle's
+   plane.
+4. Sweep the sphere along the move against the triangle (`0x0034ee60`); a hit at a fraction from 0 to 1 is a
+   contact. The contacts go to the body's contact handler (`Human_OnContact`, `0x00219d50`), which for the level's
+   triangles slides (code `0x20001`), lands on a floor contact (flag `0x80`), and during a climb (record `+0x08`
+   `0x40`) **ignores** triangles of materials 30 (`LOW_FENCE`), 31 (`OPAQUE_FENCE`) and 122 (`RAILING`), so the body
+   passes through the fence it climbs.
+
+So on the ground the original has **no step height of its own**: a wall face shorter than 0.25 m is not a wall, and
+the ground snap (1.0 m up, above) then lifts the feet onto it; any face 0.25 m or taller that reaches into the sphere
+(0.05-0.73 m above the feet) stops the body. A kerb of 0.2 m is walked onto; a ledge of 0.5 m or 0.75 m is a wall to
+walk into and needs a climb (a short wall from 0.7 m, [Climbing](#climb)) or a jump (inferred from the rule; not yet
+checked at runtime against a ledge of a known height).
+
+The push-out `PhysicsBody_PushOutOfWalls` (`0x003477c0`, a sphere out of the nearest wall by `n × (r − distance)`)
+is not the walking case: its only caller `Human_PushOutInAir` (`0x0021a490`) runs while the human is airborne
+(object flag `0x4000000`), in a few states (`0x00227ef8`, `0x00223b48`, record `+0x08` `0x400000`, anim id 2 or 4),
+and not in states `0x00223920` / `0x00223980`. Its sphere has radius 0.35, or **0.5 for a player**, times the scale,
+centred `r + 0.05` above the feet (at bone 2 in states `0x00227ef8` / `0x00223b48`). In a long fall (state flag
+`0x1000000000`) and some states it instead pushes out a 0.2 m capsule between bones 6 and 3 (`0x0033e7f0`, the
+average of the contacts). Confirmed (code).
+
+#### Falling and landing {#falling}
 
 **Starting to fall** (`0x0023dc58`): march a ray along the velocity (`Collision_MarchRay`, steps of 0.1 m, up to 5 m)
 to find where the fall will end (kept at `+0x2c0`; the current position if nothing is hit), set the airborne flag
@@ -573,6 +777,135 @@ reaches 14.9 m/s after about 7.1 m and 20.5 m/s after 13.4 m (inferred from the 
 - Clip 428 (drop cycle) plays while falling.
 - Landing after 34 updates at `vz` = −17.25 m/s, inside the damage band; then 429 (drop land), 294 (a hit reaction)
   and 198 (a ground roll).
+
+**Anim states in the air.** `Human_ChooseAnimState` (`0x00259578`) checks the state flags first: `0x2000000000` →
+anim state **27** (landing), `0x800000000` or `0x1000000000` → **26** (falling), `0x400000000` → **25** (jump).
+Confirmed (code). The builders, confirmed (code):
+
+- 25 (`0x0025fba0` → `0x0025cf30`): the **jump loop** (434) after a 0.1 s fade, then the launch ([Jumping](#jump)).
+- 26 (`0x0025d020`): the **drop cycle** (428), or the long-fall cycles 422 / 425 in a long fall
+  (`0x400000`, `0x00223b48`, `0x00227e60`). After a jump the jump loop keeps playing (runtime).
+- 27 (`0x0025d390`): after a jump, **436** (jump end running) handing over to a gait blend when the stick is above
+  0.12, else **435** (jump end) and then the idle; after a drop, **429** (drop land); after a long fall
+  (`0x1000000000`), the clip after the current one, or 198 (ground roll).
+
+**Walking off an edge at runtime** (the roof of a car, 1.48 m up; stick 0.5). Confirmed (runtime): state 26 with 428
+and record `+0x08` `0x400000` for the first two updates, gravity as above, then state 27 with **429** for about
+0.5 s and the idle.
+
+### Jumping {#jump}
+
+**The button.** On command 10 (triangle pressed), `Player_UpdateActions` (`0x0027c120`) tries, in order, and stops at
+the first that succeeds. Confirmed (code):
+
+1. a **climb** (`Climb_TryStart`, [below](#climb)), if human flag `0x20000000` is clear and the stick is above 0.12;
+2. a **context action** (`0x002811f0`), if L2 is not held;
+3. a **jump** (`Player_TryJump`, `0x002829e8`), if human flag `0x10000000` is clear and the stick is above **0.95**;
+4. an object action (`0x00226ff0`, `0x00257f38`), if L2 is not held.
+
+Nothing happens while state flags `0x7bf9e9f7ff0` or record `+0x08` flags `0x5cfeafb` are set.
+
+**Checks** (`Player_TryJump`, then `Human_BeginJump` `0x0023db48`). Confirmed (code). The jump is refused when the human
+carries an object of class 4 or 6 (`0x00224000`), is in a combat stance (`0x00228340`), moves at 3.3 m/s or less
+(`0x0051018c`, speed `+0x1ac`), is not a player, or a ray from 1.7 m above the feet, 5.5 m long in the stick's
+direction (`0x0021d228`), hits a **climbable** triangle (the rule of [Climbing](#climb)): near a climbable wall the
+button climbs or does nothing. `Human_BeginJump` then needs the gait for the speed (`Human_GaitForSpeed`) to be 3 or
+more and `|v|` at least 3.3; it keeps the gait at `+0x3c0` and the height at `+0x560` and sets state flag
+`0x400000000`.
+
+**Launch** (`Human_LaunchJump`, `0x002217f0`, called by the state 25 builder). Confirmed (code):
+
+- horizontal velocity: the current direction times the **run speed** for a take-off gait of 3 or 4, the **sprint
+  speed** for gait 5 (the jog speed below 3);
+- vertical velocity **5.5 m/s** (`0x00510188`);
+- `Human_StartFall` (vtable `+0x154`), then the state function `Human_AirControl` (`0x00240898`, set through
+  `0x00227c28`) and anim state 26.
+
+**In the air** (`Human_AirControl`). The horizontal speed is kept. With the stick above 0.12 the heading turns toward
+it at the `Human_MaxTurn` limit with the same ease as on the ground, and the velocity turns with it; with the stick
+centred nothing changes. Gravity, the airborne counter and the landing are those of a fall. Confirmed (code).
+
+**At runtime** (the street, Rembrandt on flat ground, triangle tapped for one update). Confirmed (runtime):
+
+| Case | What happened |
+| --- | --- |
+| stick 0.8 (walk at 1.63 m/s), triangle | nothing |
+| stick 1.0, run at 7.80 m/s, triangle | state 26 and clip 434 at once, state flags `0xc00000000`; `vz` 5.5 then −0.5227 per update; apex **1.06 m** above the take-off; horizontal speed 7.80 throughout; landed after about 25 updates (0.83 s), **6.4 m** further |
+| stick 1.0 and L2, sprint at 10.245 m/s, triangle | the same arc at 10.24 m/s horizontal, about 23 updates in the air |
+| the same, stick turned 90° right just after take-off | the heading turned by about **4° per update** toward the stick, the horizontal speed staying 10.24; that is the run's limit, not the sprint's 2.5° (which gait the air turn uses is not traced) |
+| landing | state 27, **436** for about 0.4 s at its own 4.23 m/s, record `+0x08` `0x1000000`, then the gait blend from a jog back to the run |
+
+Clips 427 (slot 25) and 430-433 (jump from idle, walk or either foot) did not play in the player's jump; 430-433
+belong to the AI's jump (`0x0029ade0`, inferred from its callees).
+
+**In an input script**: `stick left 0 100`, wait until the run start is over and the speed is above 3.3 m/s, then
+`tap triangle`; add `press l2` beforehand for a sprint jump.
+
+### Climbing {#climb}
+
+`Climb_TryStart` (`0x002826f0`) runs on triangle with the stick above 0.12 ([Jumping](#jump)). Confirmed (code):
+
+1. Refused while record `+0x08` has any of `0x84240`.
+2. Direction `d`: the stick's direction when its magnitude is above 0.01, else the facing (`0x0021d228`).
+3. Two horizontal rays along `d` from **1.7 m** and **0.69 m** above the feet, **1.5 m** long, or **4.5 m** when human
+   flag `0x2` is set (players) and the gait (`+0x1a8`) is 4 or 5.
+4. If both hit and their distances differ by less than 0.1, the obstacle is **tall** (the high hit is used);
+   otherwise it is **short** (the low hit is used; a hit by the high ray alone is not a climb).
+5. The hit must be **climbable**: material 30 (`MATERIAL_LOW_FENCE`), or triangle flag `0x4` for a player, or
+   triangle flag `0x80` ([Collision](collision.md#triangles)).
+6. `Climb_ProbeTop` (`0x00282370`) with, for a tall obstacle, `H` = 3.0, a window of 1.7-2.91 m and the fence ids
+   437 / 440; for a short one `H` = 1.8, a window of 0.7-1.7 m and the short-fence ids 443 / 446.
+
+`Climb_ProbeTop`, confirmed (code):
+
+1. The face must look at the player: `n · d < −0.7` (within about 45°).
+2. A ray straight down from `H` above the point 0.4 m beyond the face (`pos + d·t − 0.4·n`), `H + 0.5` long, finds
+   what lies just behind the face; its **top** is `H` minus the hit distance, a height above the feet.
+3. A top inside the window is a **wall climb**: the ids + 12 (449 / 452 wall, 455 / 458 short wall).
+4. Otherwise a top of 0.25 m or more refuses the climb.
+5. Otherwise (no floor just behind the face, or one near the feet' height: a **fence**), for a tall obstacle a ray
+   along `d` from 2.5 m above the feet must miss (the fence is lower than 2.5 m), and the fence ids are kept.
+
+`Climb_Start` (`0x00281c20`), confirmed (code):
+
+- The first id is the **standing** clip; the **running** one (+3) is used when human flag `0x2` is set and the gait
+  is 4 or 5. Each clip's reach is the length of its type-8 event vector (`0x00101558`, through the Anim Range List,
+  `0x002544a0`). A running climb needs the face between `(r1 + r2) × 0.4` and `r2 × 2.2` away (the reaches of the
+  first and second clips); a standing one at most `(r1 + r2) × 0.4`. `CfgClimbWithGhetto` (`0x00510250`) is also
+  read here.
+- The start point is the hit at the feet' height plus `n × 0.9 × reach`, kept at `+0x2c0`; the human is turned to
+  face the wall and moved there over 1/60 s or 1/15 s.
+- The three clips play in turn (P1, P2 = id + 1, P3 = id + 2). At P1's end (`0x00281450` running, `0x00281838`
+  standing) the forward probe is made again from 0.69 m (2.5 m long running, 1.5 m standing). On success the body
+  is **moved at once** by P2's root displacement turned to the facing, body `+0x40` gets `0x80000000 | 0x4000`,
+  and record `+0x08` gets `0x40` (the fences stop blocking, [Walls and steps](#walls)); on failure the climb ends
+  in the idle or the combat idle. A running climb ends in a gait blend, a standing one in the idle.
+- While clips 437-460 play, `+0x5b9` is 1 (`Human_StateUpdate`).
+
+**What gets climbed**, from the rules above (heights above the feet; inferred from the code, the three rows marked
+runtime were seen):
+
+| The obstacle | Just behind it (0.4 m past the face) | Climb |
+| --- | --- | --- |
+| reaches 0.69 m but not 1.7 m | ground lower than 0.25 m | short fence (443-448) |
+| reaches 0.69 m but not 1.7 m | a top at 0.7-1.7 m | short wall (455-460); runtime: a trash can (1.28 m) and a car (1.48 m) |
+| reaches 1.7 m | a top at 1.7-2.91 m | wall (449-454); runtime: a roof 2.64 m above the trash can |
+| reaches 1.7 m, lower than 2.5 m | ground lower than 0.25 m | fence (437-442); runtime: a street fence, from a run |
+| lower than 0.69 m, or a top outside the windows, or a fence of 2.5 m or more | | no climb |
+
+**At runtime** (the street; stick and triangle through patched pad input). Confirmed (runtime):
+
+| Climb | Input | What happened |
+| --- | --- | --- |
+| fence from a run (440, 441, 442) | stick 1.0, triangle tapped every 0.1 s | the tap 4.9 m from the face did nothing (no climb, and no jump: the 5.5 m climbable check); the one about 4.4 m away started 440. The body was **snapped** 2.5 m forward in two updates (37-39 m/s), then 440 moved it at 5.4 to 4.5 m/s to the start point (0.34 m before the face, 0.3 s); 441 (0.47 s, record `+0x08` `0x40`) carried it **through the fence** at 2.4-3.4 m/s with the feet at ground height; 442 (0.43 s, `0x80000`) and the run went on; 1.27 s in all |
+| short wall, standing (455, 456, 457) | stick 0.5, triangle | 455 for 0.3 s (`0x80000`); at 456's start the feet **jumped** 1.06 m forward and **1.29 m up** in one update onto the trash can; 456 for 0.6 s (`0x40`), 457 for about 0.6 s, then the walk |
+| wall, standing (449, 450, 451) | stick 0.5, triangle, on the trash can | 449 for 0.37 s; at 450's start the feet jumped 0.98 m forward and 2.4 m up, and the ground snap settled them on the roof (2.64 m above the start) over the next updates; 450 for 1.4 s, 451 for 0.37 s |
+| short wall onto a car | stick 0.5, triangle | as the trash can, 1.48 m up |
+
+The vertical part of a climb is the single move at P2's start: the feet do not rise during P1 or P2.
+
+**In an input script**: standing, `stick left 0 50` toward the obstacle and `tap triangle` within reach; from a run,
+`stick left 0 100` and `tap triangle` when the face is 4.5 m away or less.
 
 ## Coney's implementation
 
@@ -634,14 +967,18 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 - **The default anim table**: slots set to the default (`0xffffffff`) are answered by the generic character data
   `0x9da2e531`, whose clip speeds match the runtime-confirmed ones exactly (380, 407, 409, 410, 411); the table at
   resource manager `+0x70` is not decoded.
-- **Standing**: a human not asked to move counts as moving while faster than a quarter of the walk speed (the getter
-  `0x00221580` is not identified).
+- **Standing**: a human not asked to move counts as moving while faster than a quarter of the walk speed. The
+  original's getter `0x00221580` is the **sneak-walk** speed (record `+0x16c` × `+0x3a4`, 1.585 for Rembrandt;
+  confirmed (code)), so the original's threshold is 0.396 m/s against Coney's 0.407.
 - **Falling**: a Coney anim state (100) that loops the drop cycle (slot 26, 428) with the idle's 0.15 s fade; the
-  original's airborne anim state is not researched.
+  original's are states 25-27 ([Falling and landing](#falling)).
 - **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip), and runs
-  while airborne too (air control).
+  while airborne too (air control). In the original only a jump steers in the air (`Human_AirControl`, which keeps
+  the speed and turns the heading, [Jumping](#jump)); walking off a car's roof, the fall kept its horizontal velocity (runtime).
 - **The body** is a sphere of radius 0.35 m with its centre 0.9 m above the feet, pushed out of the nearest wall
   triangle (`|n.z|` ≤ 0.65) by the distance to the triangle's closest point; the sweep tries 3 passes, then stops.
+  The original's walking sphere sits lower, its centre `r + 0.05` above the feet, and ignores wall triangles under
+  0.25 m tall ([Walls and steps](#walls)); so Coney walks up ledges the original treats as walls.
 - **Landing** probes from 1.0 m above the feet, as the ground snap does.
 - **Out of the world** (20 m below the mesh's lowest point): the human is put back at the start instead of failing
   the mission.
@@ -666,6 +1003,15 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 - **Ground**: no vertical velocity on the ground; snap the feet with a ray from 1.0 m above, 1.5 m long, each update;
   a miss starts a fall with gravity 15.68 m/s² (from the second airborne update), capped at 50 m/s; land on floors
   with `n.z` > 0.65; fall damage from 14.9 m/s, a kill from 20.5 m/s ([above](#ground)).
+- **Walls**: a sphere of radius 0.35 × scale, centred that radius plus 0.05 above the feet, swept along the move;
+  wall triangles less than 0.25 m tall are not walls, which is all the step-up there is ([Walls and steps](#walls)).
+- **Sprint** is L2 **held** with the stick above 0.95: cleared every update and set again while L2 is down and
+  stamina is not 0. Stamina drains 20 per second at the sprint gait and refills 40 per second (Rembrandt: 135), not
+  while running with L2 held ([Sprint](#sprint)).
+- **Triangle** tries a climb (stick above 0.12), then a context action, then a jump (stick above 0.95, faster than
+  3.3 m/s): 5.5 m/s up, the run or sprint speed forward, steering in the air ([Jumping](#jump)).
+- **Climbs** are chosen by two forward rays at 0.69 and 1.7 m and a downward probe 0.4 m behind the face; the feet
+  rise in one move at the second clip's start ([Climbing](#climb)).
 - **The stick is camera-relative** before the human sees it: turn the stick by the camera's heading first, then
   apply the dead zone (0.12) and the run threshold (0.95) to its length.
 - **Turn with a limit and an ease**, not instantly: 12° per update walking, 4° running, eased below 1.5 rad.
@@ -689,9 +1035,20 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   the renderer does with them.
 - **The default anim table** at resource manager `+0x70`, which answers the slots set to `0xffffffff`; Coney uses the
   generic data `0x9da2e531`, which matches every speed checked, but whether the table is that resource is open.
-- **The idle threshold's getter** `0x00221580`: whose quarter decides that a human not asked to move is standing.
-- **The body's shape**: its radius, height and `+0x4e8`, which `PhysicsBody_PushOutOfWalls` reads.
-- **The airborne anim state**, and whether locomotion (turning, air control) runs while airborne or while a start
-  clip plays.
+- **The idle threshold's getter** (answered): the sneak-walk speed ([Coney's implementation](#coneys-implementation)).
+- **The body's shape** (answered): a capsule shape whose walls are a swept sphere ([Walls and steps](#walls)). Still
+  open: what the capsule's 1.886 (shape `+0x44`) and the human's `+0x4e8` are used for.
+- **The airborne anim state** (answered): states 25-27 ([Falling and landing](#falling)); air control
+  ([Jumping](#jump)). Still open: whether locomotion turns the human while a start clip plays.
+- **Step height at runtime**: the 0.25 m rule is from the code; walking at a kerb and at ledges of known heights
+  (0.3, 0.5, 0.75 m) has not been checked in the game.
+- **The context action** (`0x002811f0`) and the object action (`0x00226ff0`) that triangle also starts: doors,
+  pick-ups, which objects.
+- **The air turn's gait**: a sprint jump turned at about 4° per update (the run's limit, not the sprint's).
+- **Climb reaches**: the clips' type-8 event vectors give each climb's distance window; their values, and
+  `CfgClimbWithGhetto`'s effect, are not read.
+- **Triangle flags `0x4` and `0x80`**: why two climbable flags (one for players only), and which surfaces carry them.
+- **The sprint's other clear** (`0x0027c6b0`): the exact block and fight conditions; and what `0x00230140`, called when
+  the sprint is set, does.
 - **The rest of the human**: the 0x180 and 0x2f0 records, the state flags tested by `0x002265f0` / `0x00226660`, and
   `Human_MakePlayer`'s steps.

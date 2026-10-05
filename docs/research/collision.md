@@ -1,7 +1,7 @@
 # Collision
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims: PCSX2 was
-not used for this page. The disc-side checks (2026-10-04) read all 64 `.lev` files of the NTSC-U disc's WAD with
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). One runtime claim (PCSX2
+2.9.94, 2026-10-05, `level99`'s mesh read over PINE, counts only) says so. The disc-side checks (2026-10-04) read all 64 `.lev` files of the NTSC-U disc's WAD with
 throwaway scripts outside the repository and are reported as counts, ranges and invariants only.
 
 ## Purpose
@@ -121,9 +121,9 @@ Flags, confirmed (code) at `0x00350778` and `0x00351468` unless stated:
 | --- | --- |
 | 0 (`0x0001`) | **enabled**; set on every triangle at load, switched by `CollisionMesh_SetEnabledInBox` |
 | 1 (`0x0002`) | **two-sided** |
-| 2-10 (`0x07fc`) | type bits: a query skips a triangle when `flags & 0xfff & mask & ~0x801` is non-zero; their meanings are not traced |
+| 2-10 (`0x07fc`) | type bits: a query skips a triangle when `flags & 0xfff & mask & ~0x801` is non-zero. Known meanings: bit 2 (`0x0004`) **climbable by a player** and bit 7 (`0x0080`) **climbable** (by anyone), read from a ray's result by `Climb_TryStart` (`0x002826f0`, [Characters](characters.md#climb)); bits 4 and 5 under the feet, below. The rest are not traced |
 | 11 (`0x0800`) | testable while disabled, if the query's mask has `0x800` |
-| 12-15 | a value 1 to 15; never read by the queries on this page (meaning unknown) |
+| 12-15 | a value 1 to 15; never read by the queries on this page (meaning unknown). The physics sweep of a walking body reads bits 14-15 as an index (`0x00347c08`, not traced) |
 
 **Disc check (corroboration), triangles with each bit:** bit 0 all 150,567; bit 1 4; bit 2 2,717; bit 3 4,231; bit 4
 1,052; bit 5 17,421; bit 6 0; bit 7 16,316; bit 8 20,231; bit 9 4,786; bit 10 3,989; bit 11 4.
@@ -136,6 +136,12 @@ Flags, confirmed (code) at `0x00350778` and `0x00351468` unless stated:
 (names without their `MATERIAL_` prefix after the first). The material decides sounds and effects elsewhere (inferred
 from the names). **Disc check:** 31 ids occur in the level meshes: 0-7, 12, 13, 15, 16, 18, 28, 30, 31, 35, 36, 41,
 47, 95, 105-107, 114-116, 118, 122, 152, 153; the most common is 116 (34,199 triangles).
+
+Materials that change movement, confirmed (code): a triangle of material **30** (`LOW_FENCE`) is climbable whatever
+its flags (`Climb_TryStart`), and while a human climbs over (record `+0x08` `0x40`), its body's contacts with
+materials **30**, **31** (`OPAQUE_FENCE`) and **122** (`RAILING`) are ignored (`0x00219d50`), so it passes through
+the fence ([Characters](characters.md#walls)). In `level99`'s mesh (1,718 triangles, read at runtime) the
+material-30 triangles stand away from the start room.
 
 ## Behaviour
 
@@ -284,14 +290,17 @@ on these rays.
 
 ## Open questions
 
-- **Flag bits 2-10 and 12-15**, and the masks the callers pass: which bits mean what (stairs, no-camera, water?). The
+- **Flag bits 2-10 and 12-15** (partly answered: bits 2 and 7 mark climbable triangles), and the masks the callers
+  pass: which other bits mean what (stairs, no-camera, water?). The
   characters' ground snap passes bits 4 and 5 of the triangle under the feet on: bit 4 to a per-player "under cover"
   state (`0x0028ef00`), bit 5 to `0x002195e0` (inferred from the callees, [Characters](characters.md#ground)). The
   follow camera's rays use mask `0x200` ([Camera](camera.md#collision)).
 - **The area byte** (`+0x09`): what the 125 values number.
 - **`level118`'s header**: is that level's grid usable as it is (its `y` scale is 0)?
 - **The cameras' and characters' use** (partly answered): characters stand on the ground by a ray 1.0 m above the
-  feet, 1.5 m down, each update, and land on triangles with `n.z` > 0.65; walls for moving bodies are the physics
-  code's own push-out from triangles with `|n.z|` ≤ 0.65 ([Characters](characters.md#ground)). The masks and
-  exclusion lists of the other `WorldManager_RayCast` callers are not listed.
+  feet, 1.5 m down, each update, and land on triangles with `n.z` > 0.65; walls for walking bodies are the physics
+  code's own swept sphere against triangles with `|n.z|` ≤ 0.65, skipping those under 0.25 m tall
+  ([Characters](characters.md#walls)); climbs read flags `0x4` and `0x80` and material 30
+  ([Characters](characters.md#climb)). The masks and exclusion lists of the other `WorldManager_RayCast` callers
+  are not listed.
 - **`ChangeCollision`**: whether the Lua binding reaches `0x0034fba0`.

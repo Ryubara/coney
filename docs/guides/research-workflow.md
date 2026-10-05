@@ -273,7 +273,21 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
 - **Patching code to see something.** A code write lands before the recompiler first compiles the block if the
   function has not run yet; the legal screen's placement was measured by patching its clear colour to blue and
   halving its size factors, and the start-up movies were skipped by making their skip check (`0x0042a820`) return 1.
-  Say on the page which patch a claim depends on.
+  Say on the page which patch a claim depends on. A write to code that has already been compiled is not picked up
+  (PCSX2 logs "Impossible block clearing failure", and writing during a state load crashed it).
+- **Scripted pad input** (2026-10-05, the traversal pass). When the keyboard does not reach the window, or for exact
+  timing, make the pad code read buttons and the left stick from spare bytes after the `scePadRead` buffer: in the
+  DualShock 2 path the `lbu` loads at `0x00149dd4`, `0x00149dd8`, `0x00149de8` and `0x00149df0` (and at `0x00149e8c`,
+  `0x00149e90`, `0x00149ea8`, `0x00149eb0` in the digital path) take offsets `0x22`, `0x23`, `0x26` and `0x27`
+  instead of 2, 3, 6 and 7, so `0x005de3aa` / `0x005de3ab` are the active-low button bytes and `0x005de3ae` /
+  `0x005de3af` the stick's x and y. The patch must be in RAM before the block is compiled: **copy** the save state
+  file (a zip of `eeMemory.bin` and the rest; Python 3.14's `zipfile` reads its zstd entries), patch `eeMemory.bin` at
+  those addresses, and start `pcsx2-qt.exe -fastboot -statefile <copy> -- <iso>`; restart PCSX2 the same way for
+  every run. Then write the bytes over PINE (the stick table above gives the magnitude). Find the player as the human
+  whose `+0x1b0` is 0: in later levels it is not human 0, and the per-player record is indexed by its `+0x92`.
+- **Leave the quick-save slots alone.** Never save a state to a slot number (PINE's save writes a quick-save slot):
+  load existing slots read-only (they may hold someone else's test spots), and keep your own states as files in your
+  scratch folder, made as above.
 - **Hygiene.** Save states, screenshots and logs contain game data: keep them in your scratch folder (move the
   `.p2s` files out of `pcsx2/sstates/` afterwards) and close PCSX2 when done. Screenshots are measured, never
   committed; a claim quotes the numbers.
