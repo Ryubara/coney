@@ -180,7 +180,7 @@ TEST_CASE("the trace writes one line per step with every column its header names
     const std::string line = coney::human::traceLine(1, player);
     // As many commas in each, one newline at the end, the step first and the idle's clip in it.
     CHECK(std::ranges::count(header, ',') == std::ranges::count(line, ','));
-    CHECK(std::ranges::count(header, ',') == 26);
+    CHECK(std::ranges::count(header, ',') == 29);
     CHECK(header.back() == '\n');
     CHECK(line.back() == '\n');
     CHECK(line.starts_with("1,"));

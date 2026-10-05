@@ -501,8 +501,8 @@ then adds the fight's counts (hits, damage, power, rage, and the targets' health
 #### Tracing {#tracing}
 
 `--trace FILE` (with `--play-level`) writes the player's and the follow camera's state after every step to `FILE`,
-one CSV line per step, so a feel comparison with the original ([Feel comparison](../research/feel.md)) can be
-repeated with Coney alone. Drive it with an input script in test mode, so the run is the same every time:
+one CSV line per step, so a feel or combat comparison with the original ([Feel comparison](../research/feel.md)) can
+be repeated with Coney alone. Drive it with an input script in test mode, so the run is the same every time:
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox:parkour --spawn lane --headless --frames 300 --input-script ../../scratch/run_turn.txt --trace ../../scratch/run_turn.csv
@@ -520,6 +520,7 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `cam_x` ... `wanted_z` | the camera's position, its look-at point and its wanted position |
 | `cam_distance`, `cam_pitch`, `cam_yaw` | the camera's distance from its look-at point, its pitch above it and the heading its view faces |
 | `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
+| `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
 
 ### The debug menus {#the-debug-menus}
 
