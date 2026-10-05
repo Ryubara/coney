@@ -1,0 +1,241 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Tests for the game reference lists: the Lua 4 reader, the YAML schema, the merge, the pages and the commands.
+
+Everything is synthetic: a hand-assembled Lua 4.0 chunk, a made-up topic and made-up entries.
+"""
+
+import struct
+from pathlib import Path
+
+import pytest
+
+from coney_tools import lua4, refs, refs_cli, refs_render
+from coney_tools.cli import main
+from coney_tools.refs import Field, RefList, RefsError, Topic
+from coney_tools.refs_topics import TOPICS
+
+# --- a hand-assembled Lua 4.0 chunk ------------------------------------------------------------------------------
+
+_MAXARG_S = ((1 << 26) - 1) >> 1
+
+
+def _op(name: str, u: int = 0, a: int | None = None, b: int = 0) -> int:
+    """One instruction: the opcode in the low 6 bits, then U (or A and B)."""
+    code = lua4.OPCODES.index(name)
+    if a is not None:
+        return code | (b << 6) | (a << 15)
+    return code | (u << 6)
+
+
+def _string(text: str | None) -> bytes:
+    """A Lua 4.0 string: a length counting the trailing NUL, 0 for none."""
+    if text is None:
+        return struct.pack("<I", 0)
+    raw = text.encode("latin-1") + b"\0"
+    return struct.pack("<I", len(raw)) + raw
+
+
+def _chunk(strings: list[str], code: list[int]) -> bytes:
+    """A whole chunk holding one main function with no parameters, locals, numbers or children."""
+    body = _string(None) + struct.pack("<iiBi", 0, 0, 0, 8)
+    body += struct.pack("<ii", 0, 0)  # no locals, no line info
+    body += struct.pack("<i", len(strings)) + b"".join(_string(s) for s in strings)
+    body += struct.pack("<ii", 0, 0)  # no numbers, no child functions
+    body += struct.pack("<i", len(code)) + b"".join(struct.pack("<I", word) for word in code)
+    return lua4.HEADER + struct.pack("<d", 3.14159265358979e8) + body
+
+
+# CfgChar(32, "warr_re_cv"); LEVEL = 7
+CHUNK = _chunk(
+    ["CfgChar", "warr_re_cv", "LEVEL"],
+    [
+        _op("GETGLOBAL", 0),
+        _op("PUSHINT", 32 + _MAXARG_S),
+        _op("PUSHSTRING", 1),
+        _op("CALL", a=0, b=0),
+        _op("PUSHINT", 7 + _MAXARG_S),
+        _op("SETGLOBAL", 2),
+        _op("END"),
+    ],
+)
+
+
+def test_lua4_reads_calls_and_assignments() -> None:
+    facts = lua4.walk_chunk(lua4.parse_chunk(CHUNK))
+    assert [(call.callee, [lua4.plain(arg) for arg in call.args]) for call in facts.calls] == [
+        ("CfgChar", [32, "warr_re_cv"])
+    ]
+    assert [(item.name, lua4.plain(item.value)) for item in facts.assignments] == [("LEVEL", 7)]
+    assert lua4.all_strings(lua4.parse_chunk(CHUNK)) == ["CfgChar", "warr_re_cv", "LEVEL"]
+
+
+def test_lua4_refuses_other_data() -> None:
+    with pytest.raises(lua4.LuaError, match="header"):
+        lua4.parse_chunk(b"\x1bLua\x50" + bytes(40))
+    with pytest.raises(lua4.LuaError, match="cut short"):
+        lua4.parse_chunk(CHUNK[:-6])
+    with pytest.raises(lua4.LuaError, match="left after"):
+        lua4.parse_chunk(CHUNK + b"\0")
+
+
+# --- schema, YAML and merge --------------------------------------------------------------------------------------
+
+THINGS = Topic(
+    "things",
+    "id",
+    "thing",
+    (
+        Field("id", "int", "The id.", "Id", required=True),
+        Field("name", "str", "A name.", "Name"),
+        Field("hash", "hex", "A hash.", "Hash"),
+        Field("size", "float", "A size.", "Size"),
+        Field("tags", "list", "Tags.", "Tags"),
+        Field("speeds", "dict", "Speeds.", "Speeds"),
+        Field("label", "str", "Who it is.", "Who", curated=True),
+        Field("friends", "list", "Other things.", "Friends", link="things.md#thing"),
+    ),
+)
+
+
+def _things(entries: list[dict[str, object]]) -> RefList:
+    """A list of the made-up topic with the given entries."""
+    return RefList(
+        THINGS, "Things", "About *things*.", "All of them.", {"source": "made up", "evidence": "inferred"}, entries
+    )
+
+
+def test_validate_reports_each_problem() -> None:
+    reflist = _things(
+        [
+            {"id": 1, "name": 5},
+            {"id": 1, "colour": "red"},
+            {"name": "no id"},
+            {"id": 3, "evidence": "probably"},
+        ]
+    )
+    problems = "\n".join(refs.validate(reflist, "things.yaml"))
+    assert "name should be str" in problems
+    assert "unknown field 'colour'" in problems
+    assert "id 1 appears twice" in problems
+    assert "no id" in problems
+    assert "evidence 'probably' is not one of" in problems
+    bare = _things([{"id": 9}])
+    bare.defaults = {}
+    assert "no source" in "\n".join(refs.validate(bare, "things.yaml"))
+
+
+def test_dump_and_load_round_trip(tmp_path: Path) -> None:
+    entries = [
+        {"id": 1, "name": "yes", "hash": 0xDEADBEEF, "size": 1.0, "tags": ["a b", 2], "speeds": {"walk": 1.5}},
+        {"id": 2, "name": "0x12", "hash": 0x40, "label": "Has: a colon | and a pipe", "friends": [1]},
+        {"id": 3, "name": "plain_name/path.ext", "size": -0.25},
+    ]
+    path = tmp_path / "things.yaml"
+    refs.write(path, _things(entries))
+    text = path.read_text(encoding="utf-8")
+    assert "hash: 0xdeadbeef" in text and "hash: 0x0040" in text
+    assert 'name: "yes"' in text  # a YAML word stays a string
+    loaded = refs.load(path, THINGS)
+    assert loaded.entries == entries
+    assert loaded.about == "About *things*." and loaded.complete == "All of them."
+    assert refs.dump(loaded) == text  # canonical: a second write changes nothing
+
+
+def test_load_refuses_bad_files(tmp_path: Path) -> None:
+    path = tmp_path / "things.yaml"
+    path.write_text("title: x\nentries: [{id: 1}]\nextra: 1\n", encoding="utf-8")
+    with pytest.raises(RefsError, match="unknown top-level keys extra"):
+        refs.load(path, THINGS)
+    path.write_text("entries: [{id: 1, source: s, evidence: guessed}]\n", encoding="utf-8")
+    with pytest.raises(RefsError, match="evidence 'guessed'"):
+        refs.load(path, THINGS)
+    path.write_text("- not a mapping\n", encoding="utf-8")
+    with pytest.raises(RefsError, match="not a mapping"):
+        refs.load(path, THINGS)
+
+
+def test_merge_keeps_hand_written_fields_and_entries() -> None:
+    old = _things(
+        [
+            {"id": 1, "name": "old", "size": 2.0, "label": "The first", "evidence": "confirmed-runtime"},
+            {"id": 2, "name": "gone from the disc", "label": "Kept"},
+        ]
+    )
+    merged = refs.merge(old, [{"id": 1, "name": "new", "hash": 7}, {"id": 5, "name": "fresh"}])
+    assert merged.entries == [
+        {"id": 1, "name": "new", "hash": 7, "label": "The first", "evidence": "confirmed-runtime"},
+        {"id": 5, "name": "fresh"},
+        {"id": 2, "name": "gone from the disc", "label": "Kept"},
+    ]
+    assert merged.about == old.about
+
+
+# --- pages -------------------------------------------------------------------------------------------------------
+
+
+def test_page_has_anchors_links_and_schema() -> None:
+    page = refs_render.page(_things([{"id": 70000, "name": "a", "label": "Prose *here*", "friends": [1]}]))
+    assert page.startswith("# Things\n")
+    assert "Do not edit." in page and "About *things*." in page and '!!! info "What is complete"' in page
+    assert '<span id="thing-00011170"></span>70000' in page  # large keys anchor as hex
+    assert "| `a` |" in page and "| Prose *here* |" in page  # names as code, hand-written text as Markdown
+    assert "[1](things.md#thing-1)" in page
+    assert "| `label` | str | yes | Who it is. |" in page
+    assert "| Hash |" not in page.split("## Sources")[0]  # a column no entry fills is left out
+
+
+def test_slug_and_cells() -> None:
+    assert refs_render.slug("pad-d-pad up") == "pad-d-pad-up"
+    assert refs_render.slug(32) == "32"
+    assert refs_render.cell(THINGS.field_map()["size"], 1.23456789) == "1.2346"
+    assert refs_render.cell(THINGS.field_map()["speeds"], {"walk": 1.5}) == "walk 1.5"
+    assert refs_render.cell(THINGS.field_map()["name"], "a|b") == "`a\\|b`"
+
+
+def test_every_real_topic_has_a_unique_key_and_anchor() -> None:
+    assert len({t.key for t in TOPICS}) == len(TOPICS) == len({t.anchor for t in TOPICS})
+    for item in TOPICS:
+        fields = item.field_map()
+        assert item.key_field in fields and fields[item.key_field].required
+        assert item.group_by is None or item.group_by in fields
+        assert item.key in refs_cli.STARTERS
+
+
+# --- commands ----------------------------------------------------------------------------------------------------
+
+
+def _checkout(tmp_path: Path) -> Path:
+    """A made-up checkout with an empty list for every real topic."""
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    for item in TOPICS:
+        refs.write(tmp_path / refs_cli.REFS_DIR / f"{item.key}.yaml", refs_cli.new_list(item))
+    return tmp_path
+
+
+def test_render_writes_then_check_passes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(_checkout(tmp_path))
+    assert main(["refs", "render", "--check"]) == 1  # no pages yet
+    assert main(["refs", "render"]) == 0
+    assert main(["refs", "render", "--check"]) == 0
+    index = (tmp_path / "docs" / "references" / "index.md").read_text(encoding="utf-8")
+    assert "[Characters](characters.md)" in index and "Script bindings" in index
+    page = tmp_path / "docs" / "references" / "levels.md"
+    page.write_text(page.read_text(encoding="utf-8") + "edited\n", encoding="utf-8")
+    assert main(["refs", "render", "--check"]) == 1
+
+
+def test_render_reports_a_bad_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(_checkout(tmp_path))
+    (tmp_path / refs_cli.REFS_DIR / "gangs.yaml").write_text("entries: [{id: x}]\n", encoding="utf-8")
+    (tmp_path / refs_cli.REFS_DIR / "levels.yaml").unlink()
+    assert main(["refs", "render"]) == 2
+    error = capsys.readouterr().err
+    assert "id should be int" in error and "levels.yaml: missing" in error
+
+
+def test_image_cells_point_below_the_images_folder() -> None:
+    characters = next(item for item in TOPICS if item.key == "characters")
+    cell = refs_render.cell(characters.field_map()["image"], "characters/warr_re_cv.png", "characters")
+    assert cell == '![characters/warr_re_cv.png](images/characters/warr_re_cv.png){ width="64" }'

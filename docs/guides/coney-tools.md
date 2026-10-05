@@ -1,11 +1,11 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers four groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers five groups:
 `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`xbox`](#xbox), which
 reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
-current, and [`natives`](#natives), which renders the script-binding masterlist. Everything is read in place and
-streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR /
-.WAD](../research/formats/wad-dir.md).
+current, [`natives`](#natives), which renders the script-binding masterlist, and [`refs`](#refs), which builds the
+game reference lists. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The
+format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -190,3 +190,28 @@ uv run --project python coney-tools natives stats
 
 Prints the counts by category, evidence level, detail and Coney status, and how many bindings the game's scripts
 call.
+
+## refs {#refs}
+
+The [Game references](../references/index.md) are generated from the lists in `research/references/`
+([Research workflow](research-workflow.md#reference-lists) has their schema and rules).
+
+```sh
+uv run --project python coney-tools refs extract [DISC] [--only LIST ...] [--names FILE]
+```
+
+Reads your own disc (`DISC` works as for the `wad` commands) and refreshes every list, or only the ones named
+(`characters`, `levels`, ...): the configuration calls of the compiled scripts, the Character List of
+`warriors.glr`, every animation clip, two tables of the executable and the WAD's entry names. It keeps every
+hand-written field and every entry it did not produce, then renders the pages. `--names` adds WAD names found
+another way (a file with one name per line, or the last word of each line, as `wad names` writes), each kept only
+when it hashes to an entry; the names already in `wad-names.yaml` are always used. A full run takes about half a
+minute and keeps only names, ids and numbers.
+
+```sh
+uv run --project python coney-tools refs render [--check]
+```
+
+Checks every list against its schema and writes `docs/references/index.md` and one page per list. With `--check` it
+writes nothing and exits with 1 when a page is out of date; CI runs it that way. A list that fails its schema stops
+both, with each problem named (exit code 2).

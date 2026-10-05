@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Coney's own automation: local configuration and repository checks, later the WAD and emulator tools"
 requires-python = ">=3.12"
 license = "GPL-3.0-or-later"
-# PyYAML reads the research database (research/*.yaml) for `coney-tools natives`.
+# PyYAML reads the research database (research/*.yaml) for `coney-tools natives` and `coney-tools refs`.
 dependencies = ["pyyaml>=6"]
 
 [project.scripts]

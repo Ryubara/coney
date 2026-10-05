@@ -11,7 +11,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from coney_tools import natives_cli, progress_cli, wad_cli, xbox_cli
+from coney_tools import natives_cli, progress_cli, refs_cli, wad_cli, xbox_cli
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.repo_checks import check_pointer_files, check_title, first_line, load_title_rules
 
@@ -77,6 +77,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_xbox_commands(groups)
     _add_progress_commands(groups)
     _add_natives_commands(groups)
+    _add_refs_commands(groups)
     return parser
 
 
@@ -158,6 +159,20 @@ def _add_natives_commands(groups: Any) -> None:
     commands.add_parser("stats", help="print the counts by category, evidence level and usage")
 
 
+def _add_refs_commands(groups: Any) -> None:
+    """Register `coney-tools refs ...`."""
+    group = groups.add_parser("refs", help="the game reference lists (research/references/, docs/references/)")
+    commands = group.add_subparsers(dest="command", required=True)
+    render = commands.add_parser("render", help="check the lists and write the pages of docs/references/")
+    render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a page is stale")
+    extract = commands.add_parser("extract", help="refresh the lists from your own disc, keeping hand-written fields")
+    extract.add_argument(
+        "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
+    )
+    extract.add_argument("--only", nargs="+", choices=refs_cli.topic_keys(), metavar="LIST", help="these lists only")
+    extract.add_argument("--names", type=Path, help="extra WAD names, one per line (the last word of each line)")
+
+
 def _run_progress(args: argparse.Namespace) -> int:
     """Dispatch a `progress` command."""
     if args.command == "show":
@@ -207,6 +222,10 @@ def _run(args: argparse.Namespace) -> int:
         if args.command == "render":
             return natives_cli.run_render(args.check)
         return natives_cli.run_coney(args.check) if args.command == "coney" else natives_cli.run_stats()
+    if args.group == "refs":
+        if args.command == "render":
+            return refs_cli.run_render(args.check)
+        return refs_cli.run_extract(args.disc, args.only, args.names)
     if args.group == "config":
         return _config_show()
     if args.command == "check-title":
