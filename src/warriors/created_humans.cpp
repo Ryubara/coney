@@ -32,10 +32,11 @@ std::optional<world_objects::Placement> CreatedHumans::placement(double handle) 
     if (found->teleported) {
         return found->teleported;
     }
-    if (!found->position) {
+    const auto& position = found->position;
+    if (!position) {
         return std::nullopt;
     }
-    return world_objects::Placement{.position = *found->position, .headingDegrees = found->headingDegrees};
+    return world_objects::Placement{.position = *position, .headingDegrees = found->headingDegrees};
 }
 
 } // namespace coney

@@ -960,7 +960,7 @@ constexpr std::array<NativeArg, 4> kArgs_CfgBreathingSound{{{"threshold", A::Num
 constexpr std::array<NativeArg, 5> kArgs_CfgBurnRates{{{"rate1", A::Integer, "", 0}, {"rate2", A::Integer, "", 0}, {"rate3", A::Integer, "", 0}, {"rate4", A::Integer, "", 0}, {"rate5", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgBurnTime{{{"ms", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgButtonHeldFrames{{{"frames", A::Integer, "", 0}}};
-constexpr std::array<NativeArg, 3> kArgs_CfgButtonMash{{{"perPress", A::Integer, "", 0}, {"decay", A::Integer, "", 0}, {"target", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 3> kArgs_CfgButtonMash{{{"decay", A::Integer, "", 0}, {"pressGain", A::Integer, "", 0}, {"target", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgCanBeAttackedModifier{{{"factor", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgChanceToGetHelp{{{"percent", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 17> kArgs_CfgChar{{{"charType", A::Integer, "", 0}, {"v2", A::Integer, "", 0}, {"v3", A::Integer, "", 0}, {"speedClass", A::Integer, "", 0}, {"v5", A::Integer, "", 0}, {"v6", A::Integer, "", 0}, {"damage", A::NumberTable, "", 45}, {"attacks", A::NumberTable, "", 45}, {"damageScale", A::Number, "", 0}, {"model", A::String, "", 0}, {"str11", A::String, "", 0}, {"warrior", A::Integer, "", 0}, {"v13", A::Integer, "", 0}, {"ranges", A::NumberTable, "", 45}, {"str15", A::String, "", 0}, {"v16", A::Integer, "", 0}, {"str17", A::String, "", 0}}};
