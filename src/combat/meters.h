@@ -86,6 +86,10 @@ class PowerMeter {
     int spend(float fraction);
     /// Sets the meter (clamped to 0..maximum), as a script or a test may.
     void set(int value);
+    /// The human's hurt state: while `hurt` the maximum is the class's × `factor` (`int(x + 0.5)`), the meter held
+    /// to it; otherwise the class's again (the meter refills to it).
+    /// @orig 0x00223068 Human_PowerMax (unknown)
+    void setHurt(bool hurt, float factor);
 
     /// Moves the meter to game time `nowMs`: down by `drainPerSecond` while `draining` (grabbing or tackling), else up
     /// by the refill rate, to the maximum. The fraction of a point is carried to the next update.
@@ -95,6 +99,7 @@ class PowerMeter {
   private:
     int m_value;
     int m_maximum;
+    int m_classMaximum; // the class's maximum, before the hurt scale
     int m_refillPerSecond;
     std::uint64_t m_lastMs;
     float m_carry = 0.0F;
@@ -121,7 +126,7 @@ class RageMeter {
     /// Sets the meter (clamped), as a script or a test may.
     void set(int value);
 
-    /// Adds `round(points × f × gain / 100 × h × s)` to the maximum, where `f` is the factor below the cap for an award
+    /// Adds `trunc(points × f × gain / 100 × h × s)` to the maximum, where `f` is the factor below the cap for an award
     /// of up to CombatTuning::ragePointsCap points and the factor above it for a larger one (the whole award), and
     /// holds the meter for CombatTuning::rageHoldMs from `nowMs`; nothing while raging. Returns what was added. Only a
     /// player gains rage: the caller checks that.

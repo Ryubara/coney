@@ -20,8 +20,8 @@ namespace coney::human {
 /// Anim Range List without the record.
 inline constexpr anim::Vec3 kFrontHoldOffset{0.380F, 1.012F, 0.0F};
 inline constexpr anim::Vec3 kRearHoldOffset{-0.097F, 0.222F, 0.0F};
-/// The mounted victim's offset under a tackle, from the record of 210 / 213 ((−0.965, 0.259) × 0.124 m). **Inferred**:
-/// how the tackle places the pair is not traced, only the record is read.
+/// The mounted victim's offset under a tackle, 0.032 m ahead and 0.120 m to the mounter's left (confirmed at runtime):
+/// clip 210's type-8 pair event, for a clip without it (docs/research/combat.md#grab-turn).
 inline constexpr anim::Vec3 kMountOffset{-0.120F, 0.032F, 0.0F};
 /// The connecting clips' reach (72 from the front, 74 from the rear) and far range, for a list without them.
 inline constexpr float kConnectReachFront = 0.999F;
@@ -50,6 +50,10 @@ inline constexpr float kPairPlaceTolerance = 0.3F;
 /// Where anim `id` puts the partner in the attacker's frame: its Anim Range List record's direction × reach, or
 /// `fallback` when `ranges` is null or has no reach for it.
 [[nodiscard]] anim::Vec3 pairPoint(const combat::AnimRangeList* ranges, std::uint32_t id, anim::Vec3 fallback);
+
+/// The partner's place in the attacker's frame that `clip`'s first type-8 pair event gives (its vector's x right, y
+/// ahead), or `fallback` when `clip` is null or has none (docs/research/formats/animation.md#paired-tasks).
+[[nodiscard]] anim::Vec3 pairEventPoint(const anim::AnimClip* clip, anim::Vec3 fallback);
 
 /// How long the alignment before `clip` (played at `rate`) lasts: kAlignShare × the time of its first contact event
 /// (types 9, 0xf, 0x13, 0x2c, 0x34, 0x36, 0x41) or, with none, its duration, over the rate.

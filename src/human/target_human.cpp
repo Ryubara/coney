@@ -5,19 +5,15 @@
 #include <cmath>
 
 #include "animation/anim_task.h"
-#include "combat/reactions.h"
 #include "human/locomotion.h"
 
 namespace coney::human {
 
 namespace {
 
-// The ground clips (docs/references/anim-ids.md): lying on the back, a strike taken there, and getting up.
+// The ground clips (docs/references/anim-ids.md): lying on the back and a strike taken there.
 constexpr std::uint32_t kGroundedIdle = 196;
 constexpr std::uint32_t kGroundedStrikeReact = 195;
-constexpr std::uint32_t kGroundedRise = 199;
-// The clip event type that knocks a victim down (docs/research/combat.md#reactions).
-constexpr std::uint16_t kKnockdownEvent = 7;
 
 // The one clip `clip` as an array.
 std::array<std::uint32_t, 1> one(std::uint32_t clip) { return {clip}; }
@@ -44,7 +40,7 @@ TargetHuman::TargetHuman(const characters::AnimSet& anims, const AnimSlots& slot
                          std::span<const anim::Quat, anim::kPoseBones> defaultRotations, int health,
                          anim::Vec3 position, float headingRadians, std::uint32_t seed)
     : m_animator(anims, slots), m_position(position), m_heading(wrapAngle(headingRadians)), m_health(health),
-      m_random(seed), m_idle(slots.ids[kSlotIdle]) {
+      m_victim(combat::kCivilianPowerClass, seed), m_idle(slots.ids[kSlotIdle]) {
     std::ranges::copy(defaultRotations, m_defaultRotations.begin());
     m_current = capture();
     m_previous = m_current;
@@ -52,39 +48,29 @@ TargetHuman::TargetHuman(const characters::AnimSet& anims, const AnimSlots& slot
 
 std::uint64_t TargetHuman::nowMs() const { return m_updates * 1000 / 30; }
 
-void TargetHuman::hit(const TargetHit& hit) {
-    // The update keeps its largest hit, as the pending damage does.
-    if (!m_hasPending || hit.damage > m_pending.damage) {
-        m_pending = hit;
-        m_hasPending = true;
-    }
-}
+void TargetHuman::hit(const TargetHit& hit) { m_victim.hit(hit); }
 
 void TargetHuman::step() {
     ++m_updates;
     // 1. The update's hit lands and is reacted to.
-    if (m_hasPending) {
-        if (m_health.apply(m_pending.damage) > 0) {
+    if (m_victim.pending()) {
+        const TargetHit hit = m_victim.takePending();
+        if (m_health.apply(hit.damage) > 0) {
             ++m_hits;
         }
-        react(m_pending);
-        m_hasPending = false;
+        react(hit);
     }
     m_animator.advance(kStepSeconds);
-    // A held target not yet attached moves by its paired clip's root motion (not by a loop's).
-    if (m_state == TargetState::Held && !m_attached && m_animator.drivingClipPlaying()) {
+    // A clip that moves the body moves it by its root motion, unless its grabber places it (not by a loop's).
+    if (!m_attached && m_state != TargetState::Mounted && m_animator.drivingClipPlaying()) {
         applyRootMotion();
     }
-    // 2. A stun runs out: 357, then the idle.
-    if (m_stunUntilMs != 0 && nowMs() >= m_stunUntilMs) {
-        m_stunUntilMs = 0;
-        if (m_state == TargetState::Standing) {
-            m_animator.playCombat(one(combat::kStunEnd), m_idle, AnimState::Attack);
+    // 2. The stun's end (357 once the reaction is over) and the rise from the ground.
+    if (m_state == TargetState::Standing || m_state == TargetState::Grounded) {
+        const bool canRise = m_state == TargetState::Grounded && !m_health.depleted();
+        if (m_victim.step(m_animator, m_idle, nowMs(), canRise)) {
+            m_state = TargetState::Standing;
         }
-    }
-    // 3. A target down with health left gets up once its ground time has passed.
-    if (m_state == TargetState::Grounded && !m_health.depleted() && nowMs() >= m_riseAtMs) {
-        play(one(kGroundedRise), m_idle, AnimState::Attack, TargetState::Standing);
     }
     // Between hits it stands in its idle: the controller only finishes the clips it was given.
     m_animator.choose(AnimInputs{});
@@ -93,18 +79,13 @@ void TargetHuman::step() {
 }
 
 void TargetHuman::react(const TargetHit& hit) {
-    combat::ReactionInput input;
-    input.attackAnim = hit.attackAnim;
-    input.code = hit.code;
-    input.side = combat::victimSide(m_position, m_heading, hit.attacker);
-    input.attackerAbove = hit.attacker.z - m_position.z;
-    input.victimHurt = hurt();
+    const VictimFrame frame{.position = m_position, .heading = m_heading, .hurt = hurt(), .flag400 = false};
     // Out of health: a dying clip on its feet (the DIE set half the time), then the ground for good.
     if (m_health.depleted()) {
         if (m_state == TargetState::Standing || m_state == TargetState::Held) {
-            const int dying = combat::deathReaction(input, m_random.coin());
-            play(one(static_cast<std::uint32_t>(dying)), kGroundedIdle, AnimState::Hold, TargetState::Grounded);
-            m_lastReaction = dying;
+            m_victim.die(hit, frame, m_animator);
+            m_attached = false;
+            m_state = TargetState::Grounded;
         } else if (m_state != TargetState::Grounded) {
             play(kNoClips, kGroundedIdle, AnimState::Hold, TargetState::Grounded);
         }
@@ -122,29 +103,9 @@ void TargetHuman::react(const TargetHit& hit) {
         return;
     }
     // On its feet: the table's reaction, a knockdown when its clip has the event, else a stun or a plain reaction.
-    const combat::Reaction reaction = combat::hitReaction(input);
-    const auto clip = static_cast<std::uint32_t>(reaction.animId);
-    m_lastReaction = reaction.animId;
-    ++m_reactions;
-    if (knocksDown(reaction.animId)) {
-        play(one(clip), kGroundedIdle, AnimState::Hold, TargetState::Grounded);
-        ++m_knockdowns;
-        return;
+    if (m_victim.react(hit, frame, m_animator, m_idle, nowMs()) == ReactionKind::Knockdown) {
+        m_state = TargetState::Grounded;
     }
-    if ((hit.flags & combat::kRangeFlagStun) != 0 || stunned()) {
-        play(one(clip), static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold, TargetState::Standing);
-        m_stunUntilMs = nowMs() + static_cast<std::uint64_t>(m_class.stunMs);
-        ++m_stuns;
-        return;
-    }
-    play(one(clip), m_idle, AnimState::Attack, TargetState::Standing);
-}
-
-bool TargetHuman::knocksDown(int id) const {
-    const anim::AnimClip* clip = id >= 0 ? m_animator.anims().clip(static_cast<std::size_t>(id)) : nullptr;
-    return clip != nullptr && std::ranges::any_of(clip->events, [](const anim::ClipEvent& event) {
-               return event.type == kKnockdownEvent;
-           });
 }
 
 void TargetHuman::play(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
@@ -160,15 +121,17 @@ void TargetHuman::playPaired(std::span<const std::uint32_t> clips, const charact
 }
 
 void TargetHuman::enter(TargetState targetState) {
-    // Going down starts the ground time; anything but a hold lets go of the grabber.
-    if (targetState == TargetState::Grounded && m_state != TargetState::Grounded) {
-        m_riseAtMs = nowMs() + static_cast<std::uint64_t>(m_class.groundMs);
+    // Going down starts the ground time; anything but a hold lets go of the grabber; a stun ends.
+    const bool wasGrounded = m_state == TargetState::Grounded;
+    if (targetState != TargetState::Grounded) {
+        m_victim.clear();
+    } else if (!wasGrounded) {
+        m_victim.knockDown(nowMs(), false);
     }
     if (targetState != TargetState::Held) {
         m_attached = false;
     }
     m_state = targetState;
-    m_stunUntilMs = 0;
 }
 
 void TargetHuman::applyRootMotion() {

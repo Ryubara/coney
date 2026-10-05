@@ -12,6 +12,8 @@ namespace coney::human {
 
 namespace {
 
+// The clip event type that carries a pair's offset.
+constexpr std::uint16_t kPairEvent = 8;
 // The clip event types that count as a contact for the alignment's time (docs/research/combat.md#grab-posing).
 constexpr std::array<std::uint16_t, 7> kContactEvents{0x09, 0x0f, 0x13, 0x2c, 0x34, 0x36, 0x41};
 
@@ -29,6 +31,18 @@ anim::Vec3 toFrame(anim::Vec3 feet, float heading, anim::Vec3 world) {
     const float s = std::sin(heading);
     const anim::Vec3 d = anim::subtract(world, feet);
     return anim::Vec3{(d.x * c) + (d.y * s), (-d.x * s) + (d.y * c), d.z};
+}
+
+anim::Vec3 pairEventPoint(const anim::AnimClip* clip, anim::Vec3 fallback) {
+    if (clip == nullptr) {
+        return fallback;
+    }
+    for (const anim::ClipEvent& event : clip->events) {
+        if (event.type == kPairEvent) {
+            return anim::Vec3{event.position.x, event.position.y, 0.0F};
+        }
+    }
+    return fallback;
 }
 
 anim::Vec3 pairPoint(const combat::AnimRangeList* ranges, std::uint32_t id, anim::Vec3 fallback) {

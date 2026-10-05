@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <span>
 #include <vector>
@@ -18,6 +19,7 @@
 #include "human/locomotion.h"
 #include "human/stamina.h"
 #include "human/target_human.h"
+#include "human/victim.h"
 #include "raycast/collision_mesh.h"
 
 // A human driven by a pad: the player. Its locomotion, sprint and stamina, jump and climbs, its fighting (Fighter), its
@@ -80,11 +82,15 @@ class Human {
 
     /// A human playing `anims` (which must outlive it) through `slots`, bones its clips leave out taking
     /// `bindRotations` (the game's reference pose, anim::referenceRotations()), of body scale `scale` (`+0x65c`), its
-    /// hits' damage from `ranges` (may be null: no damage; must outlive it). It stands at the origin facing +y with
-    /// full stamina until spawn().
+    /// hits' damage from `ranges` (may be null: no damage; must outlive it). With `classDamage` (its character
+    /// class's damage table, `CfgChar` `+0xb8`) the human keeps its own copy of the list with the class's damage
+    /// written over it (combat::applyClassDamage(), scaled by `damagePercent`, the Warrior class byte `+0x06` of a
+    /// player; 0 for none), so each human deals its own class's damage. It stands at the origin facing +y with full
+    /// stamina until spawn().
     Human(const characters::AnimSet& anims, const AnimSlots& slots,
           std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale = 1.0F,
-          const combat::AnimRangeList* ranges = nullptr);
+          const combat::AnimRangeList* ranges = nullptr, std::span<const std::int16_t> classDamage = {},
+          int damagePercent = 0);
 
     /// Places the human at `position` (the feet, game axes) facing `headingDegrees` (0 faces +y), snapped to the
     /// ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m above; 0.01 above the hit. Stamina is full
@@ -137,6 +143,23 @@ class Human {
     /// The fighting: combat's state, meters and what it last did.
     [[nodiscard]] const Fighter& fighter() const { return m_fighter; }
     [[nodiscard]] Fighter& fighter() { return m_fighter; }
+    /// The Anim Range List its hits take their damage from (its own copy when made with a class damage table); null
+    /// for none.
+    [[nodiscard]] const combat::AnimRangeList* ranges() const { return m_ranges; }
+
+    // Being attacked: the entry points another human (a future AI attacker) and the tests use. Each is acted on at the
+    // human's next step (docs/research/combat.md#being-hit-runtime).
+
+    /// A hit on the human (Fighter::takeHit()): the update keeps its largest.
+    void takeHit(const IncomingHit& hit) { m_fighter.takeHit(hit); }
+    /// An attacker's clip warns the human of its hit (Fighter::warn()): a blocking human ducks or blocks early.
+    void warn(const AttackNotice& notice) { m_fighter.warn(notice); }
+    /// Another human's grab catches this one (Fighter::catchInGrab()).
+    void catchInGrab(const GrabCatch& grab) { m_fighter.catchInGrab(grab); }
+    /// The grabber's numbers this update, while held (Fighter::updateGrabber()).
+    void updateGrabber(const combat::GrabberState& grabber) { m_fighter.updateGrabber(grabber); }
+    /// The grabber lets go (Fighter::releaseFromGrab()).
+    void releaseFromGrab() { m_fighter.releaseFromGrab(m_animator); }
 
   private:
     // A climb under way: what it climbs, which clip of its chain plays, and the move to its start point.
@@ -182,8 +205,13 @@ class Human {
     // The materials the body and the snap pass through now: the fences while climbing over.
     [[nodiscard]] std::span<const std::uint8_t> passThrough() const;
 
-    // Combat holds the body: no stick movement; a block turns toward the stick in place (the shuffle).
+    // Combat holds the body: no stick movement; a block turns toward the stick in place (the shuffle); a standing grab
+    // turns and walks the pair by the stick.
     void holdForCombat();
+    // Locked onto `target`: faces it and walks at the combat walk's speed along the stick without turning, in the
+    // combat-walk clip of the stick's angle from the facing.
+    // @orig 0x00241b90 Human_FightStanceMove (unknown)
+    void combatWalk(const TargetHuman& target);
     // Combat's update: the stick turned into the facing frame, the game time, the targets.
     void fight(const HumanInput& input);
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
@@ -206,6 +234,7 @@ class Human {
     void endClimb();
 
     HumanAnimator m_animator;
+    std::unique_ptr<combat::AnimRangeList> m_ownRanges; // the list with the class's damage, when it has one
     const combat::AnimRangeList* m_ranges;
     Fighter m_fighter;
     std::uint64_t m_updates = 0; // updates stepped: combat's game time

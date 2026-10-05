@@ -47,9 +47,17 @@ struct ReactionInput {
     int code = 0;               ///< The attack's hit code.
     Side side = Side::Front;    ///< victimSide().
     float attackerAbove = 0.0F; ///< How much higher the attacker's feet stand, metres (negative: lower).
-    bool victimFlag400 = false; ///< The victim's flag `0x400` (its meaning is not researched).
-    bool victimHurt = false;    ///< The victim's health is below its power class's hurt fraction.
+    bool victimFlag400 =
+        false;               ///< The victim's human flag `0x400` (the player has it): combo hits keep their strength.
+    bool victimHurt = false; ///< The victim's health is below its power class's hurt fraction.
+    bool attackerFlag200000 = false; ///< The attacker's human flag `0x200000`: strength + 1 (see hitReaction()).
+    bool victimFlag200 = false;      ///< The victim's human flag `0x200`: strength - 1.
+    bool victimFlag80 = false;       ///< The victim's human flag `0x80`: strength at most 1.
 };
+
+/// Whether `animId` is a combo id for the reaction's strength rules: 13, 14, 15 and 17 to 20. Both of the original's
+/// tests (`0x00266b50`, `0x00266c40`) skip 16 `SS2`.
+[[nodiscard]] bool isComboAttack(int animId);
 
 /// The reaction picked, with the modified code it came from.
 struct Reaction {
@@ -57,11 +65,13 @@ struct Reaction {
     HitCode code; ///< The strength and height after the modifiers, and the reaction's direction.
 };
 
-/// The victim's reaction: the code's strength less 1 for a combo id 13-20 at a victim without flag `0x400` that is
-/// not hurt (at least 0, at most 3); the height raised 1 when the attacker stands 0.3 to 0.9 m higher and 2 when 0.9
-/// to 1.5 m, lowered as much when lower (0 to 2); a low hit is always strength 2; the direction the code's plus the
-/// side, modulo 4; the id from the table at `0x00510798`, a missing entry giving 272.
-/// Not here: the attacker and victim flags that raise or cap the strength, and the allies' rule (Coney has none yet).
+/// The victim's reaction: the code's strength less 1 when the victim has flag `0x200` or the attack is a combo id
+/// (isComboAttack()) at a victim without flag `0x400` that is not hurt; plus 1 when the attacker has flag `0x200000`
+/// and the victim `0x400` or the attack is a combo id; at most 1 for a victim with `0x80`; 0 to 3. The height raised 1
+/// when the attacker stands 0.3 to 0.9 m higher and 2 when 0.9 to 1.5 m, lowered as much when lower (0 to 2); a low
+/// hit is always strength 2; the direction the code's plus the side, modulo 4; the id from the table at
+/// `0x00510798`, a missing entry giving 272.
+/// Not here: the allies' rule (Coney has no allies yet).
 /// @orig 0x0026b0a0 Hit_PickReaction (unknown)
 /// @orig 0x00266d00 Hit_PickReaction (unknown)
 [[nodiscard]] Reaction hitReaction(const ReactionInput& input);

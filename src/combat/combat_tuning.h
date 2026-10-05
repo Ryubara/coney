@@ -70,6 +70,33 @@ struct CombatTuning {
     float theftMaxStepDegrees = 90.0F;
     int theftStagePauseMs = 250;
     int theftStages = 4;
+
+    /// Lock-on (`CfgLockOn`, auto-combat, `CfgAutoLock`, `CfgAutoLockAndCombat`: 0, 0, 0, 1 in the street): L1 held
+    /// locks only with the first; any of the others locks whenever there is a target.
+    bool lockOnButton = false;
+    bool autoCombat = false;
+    bool autoLock = false;
+    bool autoLockAndCombat = true;
+    /// A target farther than this is dropped (`0x005104c0`, 2.5 m), unless L1 or a hold keeps it.
+    float targetDropDistance = 2.5F;
+    /// The combat walk's speed, m/s, at any stick deflection past the dead zone (the clips 380-387 cover 2.4 m in
+    /// 0.7 s).
+    float combatWalkSpeed = 3.429F;
+
+    /// Turning a grab: the stick length it needs (`0x005102e8`), the largest turn an update for a player (radians,
+    /// table `0x005101b0`), the share of the last turn carried on (`0x00510314`) and the one when the turn reverses
+    /// within 45°; and the pair's backward walk in the front and the rear hold, m/s.
+    float grabTurnStick = 0.95F;
+    float grabTurnMax = 0.192F;
+    float grabTurnCarry = 0.8F;
+    float grabTurnReverseCarry = -0.5F;
+    float grabWalkFront = 1.125F;
+    float grabWalkRear = 1.22F;
+
+    /// Being hit: the counter at a grab's catch (`0x00510254`, 1) and the health floor of a player (`0x0051024c`, a
+    /// share of its maximum one hit cannot go below).
+    bool grabCounters = true;
+    float healthFloor = 0.25F;
 };
 
 /// The one CombatTuning the game uses; at its defaults unless a debug menu changed it.

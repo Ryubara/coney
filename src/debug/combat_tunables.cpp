@@ -60,6 +60,28 @@ void registerCombatTunables(TunableRegistry& registry) {
     registry.add(kCategory, "Theft step limit", &tuning.theftMaxStepDegrees).range(1, 180, 1).units("deg");
     registry.add(kCategory, "Theft stage pause", &tuning.theftStagePauseMs).range(0, 2000, 10).units("ms");
     registry.add(kCategory, "Theft stages", &tuning.theftStages).range(1, 10, 1);
+
+    // Lock-on and the combat walk.
+    registry.add(kCategory, "Lock on with L1", &tuning.lockOnButton)
+        .describe("CfgLockOn: L1 held locks onto the target");
+    registry.add(kCategory, "Auto combat", &tuning.autoCombat).describe("Locks onto any target");
+    registry.add(kCategory, "Auto lock", &tuning.autoLock).describe("CfgAutoLock: locks onto any target");
+    registry.add(kCategory, "Auto lock and combat", &tuning.autoLockAndCombat)
+        .describe("CfgAutoLockAndCombat: locks onto any target");
+    registry.add(kCategory, "Target drop distance", &tuning.targetDropDistance).range(0, 10, 0.1).units("m");
+    registry.add(kCategory, "Combat walk speed", &tuning.combatWalkSpeed).range(0, 10, 0.01).units("m/s");
+
+    // Turning a grab.
+    registry.add(kCategory, "Grab turn stick", &tuning.grabTurnStick).range(0, 1, 0.01);
+    registry.add(kCategory, "Grab turn max", &tuning.grabTurnMax).range(0, 1, 0.002).units("rad");
+    registry.add(kCategory, "Grab turn carry", &tuning.grabTurnCarry).range(-1, 1, 0.05);
+    registry.add(kCategory, "Grab turn reverse carry", &tuning.grabTurnReverseCarry).range(-1, 1, 0.05);
+    registry.add(kCategory, "Grab walk front", &tuning.grabWalkFront).range(0, 5, 0.005).units("m/s");
+    registry.add(kCategory, "Grab walk rear", &tuning.grabWalkRear).range(0, 5, 0.005).units("m/s");
+
+    // Being hit.
+    registry.add(kCategory, "Grab counters", &tuning.grabCounters).describe("R1 at a grab's catch counters it");
+    registry.add(kCategory, "Health floor", &tuning.healthFloor).range(0, 1, 0.05);
 }
 
 } // namespace coney::debug

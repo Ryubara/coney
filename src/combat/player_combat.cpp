@@ -17,6 +17,9 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
     const bool holding = m_mode == CombatMode::Grabbing || m_mode == CombatMode::Tackling;
     m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
     m_rage.update(input.nowMs, tuning);
+    if (input.helpless) {
+        return out;
+    }
 
     // 1. The block. With R1 held as the command nothing else reads the input this update.
     const bool blockOnly = updateBlock(input, out);
@@ -89,6 +92,23 @@ void PlayerCombat::release() {
     m_mugging.reset();
 }
 
+void PlayerCombat::interrupt() {
+    m_chain.cancel();
+    m_blocking = false;
+}
+
+void PlayerCombat::startCounter(int animId, const CombatTuning& tuning) {
+    m_chain.cancel();
+    m_blocking = false;
+    m_chain.start(animId, tuning);
+}
+
+void PlayerCombat::startHolding() {
+    m_chain.cancel();
+    m_blocking = false;
+    m_mode = CombatMode::Grabbing;
+}
+
 bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
     const bool r1 = m_mode == CombatMode::Free && input.inFight && (input.buttons & pad::kR1) != 0;
     const bool keep =
@@ -122,6 +142,7 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
         m_chain.cancel();
         out.grabAction = GrabAction::LetGo;
         out.startAnim = anim_id::kGrabLetGo;
+        out.grabPowerOut = true;
         m_mode = CombatMode::Free;
         return;
     }

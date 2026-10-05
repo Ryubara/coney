@@ -244,9 +244,31 @@ void HumanAnimator::playCombatThenRun(std::span<const std::uint32_t> clips, floa
     m_state = AnimState::Attack;
 }
 
+void HumanAnimator::playCombatWalk(std::uint32_t clip) {
+    std::uint32_t id = clip;
+    if (m_anims->clip(id) == nullptr) {
+        id = m_anims->clip(kAnimFightIdle) != nullptr ? kAnimFightIdle : m_slots.ids[kSlotIdle];
+    }
+    if (m_state == AnimState::CombatWalk && animId() == id) {
+        return;
+    }
+    // The velocity is the human's, so the clip's own root velocity is not sampled.
+    m_tasks.change(
+        std::make_unique<anim::LoopTask>(*m_anims->clip(id), id, m_anims->rate(id), anim::kTaskNoRootVelocity),
+        kCombatFade);
+    m_state = AnimState::CombatWalk;
+}
+
+void HumanAnimator::leaveCombatWalk() {
+    if (m_state == AnimState::CombatWalk) {
+        buildIdle();
+        m_state = AnimState::Idle;
+    }
+}
+
 void HumanAnimator::choose(const AnimInputs& inputs) {
     // A held combat pose stays until combat plays something else.
-    if (m_state == AnimState::Hold) {
+    if (m_state == AnimState::Hold || m_state == AnimState::CombatWalk) {
         return;
     }
     // An action's clips play out; then the state is whatever they handed over to.
@@ -287,6 +309,7 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
         case AnimState::Climb:
         case AnimState::Attack:
         case AnimState::Hold:
+        case AnimState::CombatWalk:
             break;
         }
         m_state = next;

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "combat/reactions.h"
 
+#include <array>
+#include <cstddef>
 #include <numbers>
 
 #include <catch2/catch_test_macros.hpp>
@@ -93,4 +95,66 @@ TEST_CASE("dying takes the DIE set or 292; a block holds below strength 3", "[co
     CHECK(blockHolds(2, anim_id::kAttackS1));
     CHECK_FALSE(blockHolds(3, anim_id::kAttackS1));
     CHECK_FALSE(blockHolds(1, 30));
+}
+
+TEST_CASE("the combo ids are 13-15 and 17-20: SS2 (16) is never one", "[combat]") {
+    for (const int animId : {13, 14, 15, 17, 18, 19, 20}) {
+        CHECK(isComboAttack(animId));
+    }
+    CHECK_FALSE(isComboAttack(16));
+    CHECK_FALSE(isComboAttack(12));
+    CHECK_FALSE(isComboAttack(21));
+    // SS2 with a medium code keeps its strength on a fresh victim; XS2 (14) with the same code drops one.
+    CHECK(react(anim_id::kAttackSS2, 0x1a, Side::Front) == 280);
+    CHECK(react(anim_id::kAttackXS2, 0x1a, Side::Front) == 272);
+}
+
+TEST_CASE("the being-hit table of the runtime, from all four sides, on the player (flag 0x400)", "[combat]") {
+    // The civilian's codes on the player: front, the victim's left, behind, the victim's right
+    // (docs/research/combat.md#being-hit-runtime).
+    struct Row {
+        int animId;
+        int code;
+        std::array<int, 4> expected; // front, left, rear, right
+    };
+    const std::array<Row, 8> rows{{
+        {.animId = anim_id::kAttackS1, .code = 0x0a, .expected = {272, 275, 274, 273}},
+        {.animId = anim_id::kAttackX1, .code = 0x09, .expected = {275, 274, 273, 272}},
+        {.animId = anim_id::kAttackSS2, .code = 0x09, .expected = {275, 274, 273, 272}},
+        {.animId = anim_id::kAttackSX2, .code = 0x1a, .expected = {280, 283, 282, 281}},
+        {.animId = anim_id::kAttackXS2, .code = 0x1b, .expected = {281, 280, 283, 282}},
+        {.animId = anim_id::kAttackSSS3, .code = 0x16, .expected = {276, 279, 278, 277}},
+        {.animId = anim_id::kAttackXX2, .code = 0x26, .expected = {288, 291, 290, 289}},
+        {.animId = 653, .code = 0x39, .expected = {303, 302, 301, 300}},
+    }};
+    const std::array<Side, 4> sides{Side::Front, Side::Left, Side::Rear, Side::Right};
+    for (const Row& row : rows) {
+        for (std::size_t i = 0; i < sides.size(); ++i) {
+            ReactionInput input;
+            input.attackAnim = row.animId;
+            input.code = row.code;
+            input.side = sides.at(i);
+            input.victimFlag400 = true;
+            CHECK(hitReaction(input).animId == row.expected.at(i));
+        }
+    }
+    // SSX3 (0x2b) from in front and the left: 293, 292.
+    ReactionInput ssx3{.attackAnim = anim_id::kAttackSSX3, .code = 0x2b, .side = Side::Front, .victimFlag400 = true};
+    CHECK(hitReaction(ssx3).animId == 293);
+    ssx3.side = Side::Left;
+    CHECK(hitReaction(ssx3).animId == 292);
+}
+
+TEST_CASE("the attacker's 0x200000 adds strength; the victim's 0x200 takes it, 0x80 caps it", "[combat]") {
+    ReactionInput input{.attackAnim = anim_id::kAttackS1, .code = 0x1a, .side = Side::Front};
+    CHECK(hitReaction(input).code.strength == 1);
+    // +1 only with the victim's 0x400 or a combo id.
+    input.attackerFlag200000 = true;
+    CHECK(hitReaction(input).code.strength == 1);
+    input.victimFlag400 = true;
+    CHECK(hitReaction(input).code.strength == 2);
+    input.victimFlag80 = true;
+    CHECK(hitReaction(input).code.strength == 1);
+    ReactionInput lighter{.attackAnim = anim_id::kAttackS1, .code = 0x1a, .side = Side::Front, .victimFlag200 = true};
+    CHECK(hitReaction(lighter).code.strength == 0);
 }

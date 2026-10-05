@@ -24,9 +24,10 @@ constexpr std::array<int, 64> kReactions{// Strength 0: low (none), mid, high, u
 // The block reactions at `0x00510898`: mid, then high, each back, left, front, right.
 constexpr std::array<int, 8> kBlockReactions{614, 615, 612, 613, 610, 611, 608, 609};
 
-// Combo ids (the chain's second and third hits) whose strength drops at a fresh victim.
+// Combo ids (the chain's second and third hits) whose strength drops at a fresh victim; 16 is skipped.
 constexpr int kFirstComboId = 13;
 constexpr int kLastComboId = 20;
+constexpr int kSkippedComboId = 16;
 // The attacker clips that break a block.
 constexpr int kFirstBlockBreaker = 26;
 constexpr int kLastBlockBreaker = 34;
@@ -69,12 +70,23 @@ Side victimSide(const anim::Vec3& victim, float heading, const anim::Vec3& attac
     return sideOf(std::atan2(right, ahead) * 180.0F / std::numbers::pi_v<float>);
 }
 
+bool isComboAttack(int animId) {
+    return animId >= kFirstComboId && animId <= kLastComboId && animId != kSkippedComboId;
+}
+
 Reaction hitReaction(const ReactionInput& input) {
     HitCode code = decodeHitCode(input.code);
-    // 1. The strength: a combo hit is lighter on a fresh victim.
-    const bool combo = input.attackAnim >= kFirstComboId && input.attackAnim <= kLastComboId;
-    if (combo && !input.victimFlag400 && !input.victimHurt) {
+    // 1. The strength: lighter for a victim with 0x200 or a combo hit on a fresh victim, heavier from an attacker with
+    // 0x200000, capped for a victim with 0x80.
+    const bool combo = isComboAttack(input.attackAnim);
+    if (input.victimFlag200 || (combo && !input.victimFlag400 && !input.victimHurt)) {
         code.strength -= 1;
+    }
+    if (input.attackerFlag200000 && (input.victimFlag400 || combo)) {
+        code.strength += 1;
+    }
+    if (input.victimFlag80) {
+        code.strength = std::min(code.strength, 1);
     }
     code.strength = std::clamp(code.strength, 0, 3);
     // 2. The height by where the attacker stands; a low hit is heavy.

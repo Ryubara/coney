@@ -109,19 +109,26 @@ target_sources(coney_core PRIVATE
     human/locomotion.cpp
     human/pair_placement.cpp
     human/fighter.cpp
+    human/fighter_grab.cpp
+    human/fighter_victim.cpp
     human/player.cpp
     human/player_trace.cpp
     human/stamina.cpp
-    human/target_human.cpp)
+    human/target_human.cpp
+    human/victim.cpp)
 # Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat.md).
 target_sources(coney_core PRIVATE
     combat/anim_ranges.cpp
     combat/attacks.cpp
+    combat/being_hit.cpp
     combat/combat_tuning.cpp
     combat/commands.cpp
     combat/grab.cpp
+    combat/grabbed.cpp
+    combat/lock_on.cpp
     combat/meters.cpp
     combat/player_combat.cpp
+    combat/rage_awards.cpp
     combat/reactions.cpp
     combat/stick_games.cpp
     debug/combat_tunables.cpp)

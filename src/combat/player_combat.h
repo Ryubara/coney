@@ -45,6 +45,7 @@ struct CombatInput {
     bool wallInReach = false;             ///< A wall within a throw's reach.
     bool victimMuggable = false;          ///< The held victim may be mugged.
     bool victimInPlace = true;            ///< The held victim stands in its place for a move in the hold.
+    bool helpless = false;                ///< Reacting to a hit, stunned, down or held: only the meters run.
     std::uint64_t nowMs = 0;              ///< Game time, whole milliseconds.
 };
 
@@ -59,6 +60,7 @@ struct CombatOutput {
     bool tackleStarted = false;
     bool grabMissed = false; ///< Circle with nobody in reach: the intro, then the miss clip.
     GrabAction grabAction = GrabAction::None;
+    bool grabPowerOut = false;             ///< The grab broke because the power meter ran out (grabAction is LetGo).
     GameResult game = GameResult::Running; ///< A minigame's result this update (mugging or theft).
 };
 
@@ -78,6 +80,12 @@ class PlayerCombat {
     void startTheft(TheftKind kind, std::uint64_t nowMs, float stageTurns = 1.0F, float mashFactor = 1.5F);
     /// The grab or tackle is over (the victim broke free, was thrown, the tackle resolved): back to free.
     void release();
+    /// A hit took the player out of what it was doing: the attack and its chain are lost and the block ends.
+    void interrupt();
+    /// The player holds someone without having grabbed them (the reversal of a grab on it): grabbing.
+    void startHolding();
+    /// Starts the duck's counter `animId` (617-620) as an attack with its hit timing: the block and any chain end.
+    void startCounter(int animId, const CombatTuning& tuning);
 
     [[nodiscard]] CombatMode mode() const { return m_mode; }
     [[nodiscard]] bool blocking() const { return m_blocking; }

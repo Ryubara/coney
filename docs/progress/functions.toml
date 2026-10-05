@@ -34,6 +34,12 @@ subsystem = "unattributed"
 size = 328
 
 [[function]]
+address = 0x00101dd8
+name = "Anim_FireEvents"
+subsystem = "unattributed"
+size = 8376
+
+[[function]]
 address = 0x001041f8
 name = "AnimCursor_Init"
 subsystem = "unattributed"
@@ -976,6 +982,12 @@ subsystem = "Human"
 size = 88
 
 [[function]]
+address = 0x00223068
+name = "Human_PowerMax"
+subsystem = "Human"
+size = 288
+
+[[function]]
 address = 0x00226448
 name = "Human_SpendPower"
 subsystem = "Human"
@@ -991,6 +1003,24 @@ size = 192
 address = 0x0022aeb0
 name = "Human_GaitOfVelocity"
 subsystem = "Human"
+
+[[function]]
+address = 0x0022f100
+name = "Human_KnockDown"
+subsystem = "Human"
+size = 712
+
+[[function]]
+address = 0x0022f658
+name = "Human_Stun"
+subsystem = "Human"
+size = 640
+
+[[function]]
+address = 0x0022f8d8
+name = "Human_EndStun"
+subsystem = "Human"
+size = 264
 
 [[function]]
 address = 0x00233d60
@@ -1049,10 +1079,28 @@ name = "Human_PlayerLocomotion"
 subsystem = "Human"
 
 [[function]]
+address = 0x00241b90
+name = "Human_FightStanceMove"
+subsystem = "Human"
+size = 3160
+
+[[function]]
 address = 0x00244e78
 name = "Human_MoveAttached"
 subsystem = "Human"
 size = 1176
+
+[[function]]
+address = 0x00245310
+name = "Human_MoveGrabbing"
+subsystem = "Human"
+size = 1552
+
+[[function]]
+address = 0x00245920
+name = "Human_HandleMessage"
+subsystem = "Human"
+size = 8248
 
 [[function]]
 address = 0x00248df0
@@ -1068,6 +1116,12 @@ subsystem = "Human"
 address = 0x00254078
 name = "Human_ComputeSpeeds"
 subsystem = "Human"
+
+[[function]]
+address = 0x00254e78
+name = "Human_UpdateBlockState"
+subsystem = "Human"
+size = 1736
 
 [[function]]
 address = 0x002562d0
@@ -1116,6 +1170,30 @@ name = "Human_BuildIdleTasks"
 subsystem = "Human"
 
 [[function]]
+address = 0x002617f8
+name = "Block_DuckCounter"
+subsystem = "Human"
+size = 528
+
+[[function]]
+address = 0x002653d8
+name = "Stats_AttackRage"
+subsystem = "Human"
+size = 2128
+
+[[function]]
+address = 0x00265dd0
+name = "Rage_NoteHit"
+subsystem = "Human"
+size = 416
+
+[[function]]
+address = 0x0026a6d0
+name = "Human_PlayReaction"
+subsystem = "Human"
+size = 1824
+
+[[function]]
 address = 0x0026bad8
 name = "Grab_ConnectEnd"
 subsystem = "Human"
@@ -1126,6 +1204,18 @@ address = 0x0026be68
 name = "Grab_Connect"
 subsystem = "Human"
 size = 848
+
+[[function]]
+address = 0x0026c1d8
+name = "Grab_IntroEnd"
+subsystem = "Human"
+size = 880
+
+[[function]]
+address = 0x0026cc18
+name = "Grab_Escape"
+subsystem = "Human"
+size = 1120
 
 [[function]]
 address = 0x00276998
@@ -1149,6 +1239,12 @@ size = 456
 address = 0x0027ce90
 name = "Player_UpdateSprint"
 subsystem = "unattributed"
+
+[[function]]
+address = 0x0027fd68
+name = "Player_UpdateGrabbed"
+subsystem = "unattributed"
+size = 568
 
 [[function]]
 address = 0x002802a0
@@ -1837,6 +1933,12 @@ address = 0x00416bb8
 name = "Flag_GetPosition"
 subsystem = "WorldObjects"
 size = 40
+
+[[function]]
+address = 0x00418428
+name = "RepeatTracker_Note"
+subsystem = "Warriors"
+size = 240
 
 [[function]]
 address = 0x0041abe8

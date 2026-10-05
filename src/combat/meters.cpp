@@ -63,8 +63,15 @@ int strikeDamage(const AnimRangeList& ranges, int animId, bool doubled, bool qua
 }
 
 PowerMeter::PowerMeter(int maximum, int refillPerSecond, std::uint64_t startMs)
-    : m_value(maximum), m_maximum(maximum), m_refillPerSecond(refillPerSecond), m_lastMs(startMs) {
+    : m_value(maximum), m_maximum(maximum), m_classMaximum(maximum), m_refillPerSecond(refillPerSecond),
+      m_lastMs(startMs) {
     CONEY_ASSERT(maximum > 0);
+}
+
+void PowerMeter::setHurt(bool hurt, float factor) {
+    m_maximum =
+        hurt ? std::max(1, static_cast<int>(std::lround(static_cast<float>(m_classMaximum) * factor))) : m_classMaximum;
+    m_value = std::min(m_value, m_maximum);
 }
 
 float PowerMeter::fraction() const { return static_cast<float>(m_value) / static_cast<float>(m_maximum); }
@@ -115,7 +122,8 @@ int RageMeter::add(float points, const CombatTuning& tuning, std::uint64_t nowMs
     const float scaled = points * factor;
     const float halving = gain.halved ? 0.5F : 1.0F;
     const float raw = scaled * static_cast<float>(m_gainPercent) / 100.0F * halving * gain.stateMultiplier;
-    const auto added = std::clamp(static_cast<int>(std::lround(raw)), 0, m_maximum - m_value);
+    // The float becomes an integer by truncation (`0x0042c718`): 0.72 gives nothing.
+    const auto added = std::clamp(static_cast<int>(raw), 0, m_maximum - m_value);
     m_value += added;
     return added;
 }

@@ -61,6 +61,8 @@ enum class AnimState : std::int8_t {
     Climb = 102,   ///< **Coney's**: a climb's three clips, then the gait blend or the idle.
     Attack = 103,  ///< **Coney's**: combat clips played once (an attack, a reaction), then what follows them.
     Hold = 104,    ///< **Coney's**: a held combat pose (a block, a grab, a mount, a mugging) until combat changes it.
+    CombatWalk =
+        105, ///< **Coney's**: locked onto a target, the combat walk (380-387) or the fight idle, set by the human.
 };
 
 /// What the controller decides from, each update.
@@ -143,6 +145,12 @@ class HumanAnimator {
                     AnimState state, float fade = 0.0F);
     /// Combat: plays `clips` in turn, then the gait blend at the run (a run attack after which the run resumes).
     void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade);
+    /// The combat walk locked onto a target: `clip` (one of 380-387, or the fight idle 358 with the stick at rest)
+    /// looping with no root velocity, since the human sets the velocity (docs/research/combat.md#targets). A clip the
+    /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays.
+    void playCombatWalk(std::uint32_t clip);
+    /// Leaves the combat walk for the idle (the lock is gone); nothing in any other state.
+    void leaveCombatWalk();
     /// Whether the anim set has a clip for `id`.
     [[nodiscard]] bool hasClip(std::uint32_t id) const { return m_anims->clip(id) != nullptr; }
 

@@ -8,7 +8,8 @@ namespace coney::debug {
 /// Registers combat's tunables in `registry` under the category **Combat**, each over the live value in
 /// combat::combatTuning() and defaulting to its researched value (src/combat/combat_tuning.h,
 /// docs/research/combat.md#constants): the history hold, snap attacks, the chain timing, the grab search, the power
-/// costs and drain, the rage points and drain, the button mash, the mugging and the stereo theft.
+/// costs and drain, the rage points and drain, the button mash, the mugging, the stereo theft, lock-on and the combat
+/// walk, turning a grab, the counter at a grab's catch and the health floor.
 ///
 /// Call it once at start-up, beside registerGameTunables(); the values live as long as the program. Unregister with
 /// TunableRegistry::removeCategory("Combat").

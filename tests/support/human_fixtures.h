@@ -31,6 +31,8 @@ struct LocomotionClip {
     std::uint16_t rangeFlags = 0; ///< The Anim Range List's rate flags.
     float reach = 0.0F;           ///< A type-8 event's vector along +y (a climb clip's reach); 0 for no event.
     bool knockdown = false;       ///< A type-7 event (a reaction that knocks the victim down).
+    float pairX = 0.0F;           ///< The type-8 event's x (with `reach` as its y: a pair event's offset).
+    std::vector<std::array<std::uint16_t, 2>> markers{}; ///< More events with no vector: (frame, type) each.
 };
 
 /// The synthetic climb clips: for each of the four climbs (437 fence, 443 short fence, 449 wall, 455 short wall), a
@@ -124,8 +126,39 @@ inline std::vector<LocomotionClip> combatClips() {
                      .rangeFlags = 0,
                      .reach = 0.0F,
                      .knockdown = false});
-    for (const std::uint32_t id : {82U, 83U, 84U, 85U, 196U, 207U, 210U, 356U, 358U, 606U, 607U}) {
+    for (const std::uint32_t id : {82U, 83U, 84U, 85U, 196U, 207U, 356U, 358U, 606U, 607U}) {
         still(id, 1.0F, true);
+    }
+    // The mount's loop carries its pair event: the victim 0.120 m to the left and 0.032 m ahead.
+    clips.push_back({.id = 210,
+                     .speed = 0.0F,
+                     .duration = 1.0F,
+                     .rootVelocity = 0.0F,
+                     .rangeFlags = 0x1000,
+                     .reach = 0.032F,
+                     .knockdown = false,
+                     .pairX = -0.120F});
+    // The combat walk's eight loops.
+    for (std::uint32_t id = 380; id <= 387; ++id) {
+        still(id, 0.7F, true);
+    }
+    // The block's reactions, and its duck with the counter window's events 0x25 on frames 6-13 (as the disc's 616).
+    for (std::uint32_t id = 608; id <= 615; ++id) {
+        still(id, 0.3F);
+    }
+    still(616, 0.7F);
+    for (std::uint16_t frame = 6; frame <= 13; ++frame) {
+        clips.back().markers.push_back({frame, 0x25});
+    }
+    // The duck counters.
+    for (std::uint32_t id = 617; id <= 620; ++id) {
+        still(id, 0.5F);
+    }
+    // The grabbed player's moves and their grabber sides: the counter, the reversals, the struggles, the escapes and
+    // the strikes back.
+    for (const std::uint32_t id :
+         {76U, 77U, 90U, 91U, 92U, 93U, 96U, 97U, 100U, 101U, 104U, 105U, 108U, 109U, 112U, 113U, 116U, 117U}) {
+        still(id, 0.5F);
     }
     for (std::uint32_t id = 51; id <= 58; ++id) {
         still(id, 0.5F);
@@ -154,10 +187,12 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
         const Bytes sectionB = clipKeys({{0, 0, 0, 0}});
         Bytes keys = sectionA;
         keys.append(sectionB.span());
-        // A climb clip's reach: one type-8 event at frame 0 whose vector is (0, reach, 0), stored as a position key.
+        // A climb clip's reach or a pair's offset: one type-8 event at frame 0 whose vector is (pairX, reach, 0),
+        // stored as a position key.
         if (clip.reach > 0.0F) {
             Bytes event;
-            event.u16(0).u16(8).u16(0).u16(0).u16(0);
+            event.u16(0).u16(8).u16(0).u16(0);
+            event.u16(static_cast<std::uint16_t>(static_cast<std::int16_t>(clip.pairX * 1023.0F)));
             event.u16(static_cast<std::uint16_t>(static_cast<std::int16_t>(clip.reach * 1023.0F))).u16(0);
             event.u16(0).u16(0).u16(0).u16(0).u16(0);
             keys.append(event.span());
@@ -173,7 +208,15 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
         fields.name = "synthetic";
         fields.displacementY = clip.speed * clip.duration;
         fields.duration = clip.duration;
-        fields.events = (clip.reach > 0.0F ? 1 : 0) + (clip.knockdown ? 1 : 0);
+        // Markers: an event each, with no vector.
+        for (const std::array<std::uint16_t, 2>& marker : clip.markers) {
+            Bytes event;
+            event.u16(marker[0]).u16(marker[1]);
+            event.fill(20, 0);
+            keys.append(event.span());
+        }
+        fields.events = static_cast<std::uint16_t>((clip.reach > 0.0F ? 1U : 0U) + (clip.knockdown ? 1U : 0U) +
+                                                   clip.markers.size());
         chunks.push_back(chunk(anim::kAnimKeyframesChunk, keys));
         chunks.push_back(chunk(anim::kAnimDataChunk, clipDescriptor(fields, sectionA.size(), sectionB.size(), 0)));
     }

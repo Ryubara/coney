@@ -106,6 +106,7 @@ target_sources(coney_tests PRIVATE
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp
+    human/being_hit_test.cpp
     human/jump_test.cpp
     human/locomotion_test.cpp
     human/pair_placement_test.cpp
@@ -116,10 +117,14 @@ target_sources(coney_tests PRIVATE
     combat/anim_ranges_test.cpp
     combat/commands_test.cpp
     combat/attacks_test.cpp
+    combat/being_hit_test.cpp
     combat/disc_combat_test.cpp
     combat/grab_test.cpp
+    combat/grabbed_test.cpp
+    combat/lock_on_test.cpp
     combat/meters_test.cpp
     combat/player_combat_test.cpp
+    combat/rage_awards_test.cpp
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
     debug/combat_tunables_test.cpp)

@@ -101,21 +101,40 @@ TEST_CASE("the power meter refills 2 an update and drains 1 every 2 while holdin
     CHECK(power.value() == 0);
 }
 
+TEST_CASE("while hurt the power maximum is the class's times its hurt factor", "[combat]") {
+    PowerMeter power;
+    // Rembrandt's class: 400, 0.75 while hurt.
+    power.setHurt(true, 0.75F);
+    CHECK(power.maximum() == 300);
+    CHECK(power.value() == 300);
+    // The civilian's 200 × 0.55 = 110.
+    PowerMeter civilian(200, 32);
+    civilian.setHurt(true, 0.55F);
+    CHECK(civilian.maximum() == 110);
+    // Well again, the class's maximum returns and the meter refills to it.
+    power.setHurt(false, 0.75F);
+    CHECK(power.maximum() == 400);
+    for (std::uint64_t update = 1; update <= 60; ++update) {
+        power.update(msAt(update), false, 15.0F);
+    }
+    CHECK(power.value() == 400);
+}
+
 TEST_CASE("rage gains points times the class's percentage, a large award at 0.1 as a whole", "[combat]") {
     const CombatTuning tuning;
     RageMeter rage;
     CHECK(rage.maximum() == 78);
     // 7 points × 144 % = 10.08: 10.
     CHECK(rage.add(7.0F, tuning, 0) == 10);
-    // 1 point: 1.44, rounded to 1; halved: 0.72, rounded to 1.
+    // 1 point: 1.44, truncated to 1; halved: 0.72, truncated to 0 (the halved S1 of the runtime).
     CHECK(rage.add(1.0F, tuning, 0) == 1);
-    CHECK(rage.add(1.0F, tuning, 0, RageGain{true, 1.0F}) == 1);
+    CHECK(rage.add(1.0F, tuning, 0, RageGain{true, 1.0F}) == 0);
     // 25 points count in full: 36; 35 points all count at 0.1: 3.5 × 1.44 = 5.04.
     CHECK(rage.add(25.0F, tuning, 0) == 36);
     CHECK(rage.add(35.0F, tuning, 0) == 5);
-    CHECK(rage.value() == 53);
+    CHECK(rage.value() == 52);
     // The meter stops at its maximum.
-    CHECK(rage.add(20.0F, tuning, 0) == 25);
+    CHECK(rage.add(20.0F, tuning, 0) == 26);
     CHECK(rage.full());
 }
 

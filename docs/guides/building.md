@@ -434,9 +434,11 @@ and sprint, the idle, the run stop, the jump and its landing, and the climbs
 ([Combat](../research/combat.md#coneys-implementation)): the square and cross chains, the snaps, the run attack, the
 charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with the
 original's commands, timing and clips; in a level there is no one to hit yet, and the sandbox's fight yard
-(`--play-level sandbox:combat`) has passive targets that take the hits. The level script runs only for the start: there
-are no objects, other characters or missions yet; a fall out of the world puts him back at the start. Coney prints a
-line whenever the clip changes and a summary when it stops (the player's position, speed, gait, clip, traversal state,
+(`--play-level sandbox:combat`) has passive targets that take the hits. With a target (the one he attacked, or the one
+L1 picks) he locks onto it, as the original's default settings do: he faces it and the stick walks him at one speed in
+any direction with the combat walk until it is more than 2.5 m away or down. The level script runs only for the start:
+there are no objects, other characters or missions yet; a fall out of the world puts him back at the start. Coney prints
+a line whenever the clip changes and a summary when it stops (the player's position, speed, gait, clip, traversal state,
 stamina, the camera's distance and counts only).
 
 | Pad | Keyboard | Does |
@@ -448,6 +450,7 @@ stamina, the camera's distance and counts only).
 | cross | K or Space | attack on the release (`X1`, then `XX2` or `XS2`); in a grab, strike |
 | circle | L | tapped, grab the target in reach; held, tackle; in a grab, throw towards the stick (pushed past 25 %) |
 | R1 held | E | block: the stick turns him in place and he does not move; in a grab, R1 pressed spins the hold |
+| L1 held | Q | pick the target in front (within 2.5 m): he faces it and the stick walks him round it |
 | L1 + R1 | Q + E | start rage, with a full rage meter |
 | L2 held, then cross or square | 1, then K or J | the charge or the dive, at a run or sprint |
 | right stick | none | turn the camera round him, look up and down |

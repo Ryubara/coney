@@ -138,8 +138,10 @@ Combat, AI, missions, game modes, the front end and menus, cameras and saving.
   its strikes, spins, throws, let-go and the mugging, the tackle, the power and rage meters, and the victim's
   reactions, stuns and knockdowns, played through his clips against passive targets in the sandbox's fight yard and
   checked by scripted disc tests.
-- Next: the player being hit (his reactions, block and escapes), the character class damage table from the disc,
-  and characters that fight back.
+- Done: the player as a victim (the reactions, stun, knockdown and mash, the block, the duck and its counter, the
+  hit armour, the struggle, escape and reversal in a grab), the rage his hits give with the repeat tracker, the
+  lock-on and combat walk, and the grab's turn, checked by scripted tests.
+- Next: the character class damage table from the disc, and characters that fight back.
 - Done: QUICK RUMBLE from the main menu through the Rumble menu's four screens (mode 0x11: game mode, game type,
   gangs, arena, with the fresh boot's entries and the original's 23 set-up values) to a Baseball Fury under control on
   his flag in the Fight Pen ([Front end](research/frontend.md#rumble-setup)).

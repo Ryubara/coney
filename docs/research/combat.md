@@ -1174,15 +1174,21 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `combat/commands.*` | the nine trigger tables (`CommandTables::street()` is the street's), and the matcher that turns each update's buttons into one command in the documented order, with the tap (1-6 samples), long hold (4th sample, or a release within 3) and history hold (7) counted per button |
 | `combat/attacks.*` | square's choice (target, snap, run, walk, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, `attackTiming()` (the [timing table](#attacks) per attack) and `AttackChain`: the hit, the chain window, the end and the recovery counted in updates, one buffered press |
 | `combat/anim_ranges.*` | the Anim Range List decoded from the character data's chunk (direction, reach, far range, damage, hit code, flags), and `applyClassDamage()`: a class's damage table written over it by the index → anim id table, scaled for a player |
-| `combat/reactions.*` | the hit code taken apart, the victim's side, `hitReaction()` (the strength, height and direction rules and the table at `0x00510798`), the dying reaction, the block reactions and when a block holds |
-| `combat/meters.*` | health, the pending damage (the update's largest), `strikeDamage()`, the power meter (400, refill 60/s, drain 15/s, `spend()`) and the rage meter (78, the gain formula, the 5 s hold, the 7.8/s decay, start, the 9.36/s drain) |
+| `combat/reactions.*` | the hit code taken apart, the victim's side, `hitReaction()` (the strength, height and direction rules, the combo attacks 13-15 and 17-20, and the table at `0x00510798`), the dying reaction, the block reactions and when a block holds |
+| `combat/power_class.h` | a human's power class: the power maximum and refill, the hurt fraction and the power factor while hurt, the stun and ground times and the struggle divisor (`+0x36`); the player's and the street civilian's |
+| `combat/being_hit.*` | the victim's decisions: the warnings an attacker's clip sends (events `0x24` duck, `0x26` early block), the duck's counter (event `0x25` in 616, the commands that ask for it, 617-620 by side), the hit armour, the health floor, `blockHit()` and the mash's cut |
+| `combat/grabbed.*` | held in another human's grab (`Player_UpdateGrabbed`): the struggle and its cost to the grabber, the escape or reversal roll, the strike back 104 and the counter at the catch (76 / 77) |
+| `combat/rage_awards.*` | the rage a hit gives its attacker: the two awards per attack (event 2 and event 1), halved when blocked, and the repeat tracker (`+0x182`: six of a kind within 5 s halves later hits; the throw bonus) |
+| `combat/lock_on.*` | the lock-on rule by `CfgLockOn` and the auto settings, the combat walk's clip by the stick's angle (380-387), when a target is dropped, and the grab's turn step (`0x00245310`) |
+| `combat/meters.*` | health, the pending damage (the update's largest), `strikeDamage()`, the power meter (400, refill 60/s, drain 15/s, `spend()`) and the rage meter (78, the gain formula truncated per award, the 5 s hold, the 7.8/s decay, start, the 9.36/s drain); the power maximum scaled by the hurt factor |
 | `combat/grab.*` | when a grab may start, the search ranges (far range × 1.25), the nearest-candidate search, the throw by stick side and wall, and one update of a grab (strikes, the power strikes with the rear spin first, throws, the release with too little power, the R1 and circle spins, the L2 let-go, the mugging; nothing spent in rage) |
 | `combat/stick_games.*` | the mugging, the stereo theft's rotation (mode 3) and the button mash (mode 1) |
 | `combat/player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order; the grab breaks at 0 power |
 | `combat/combat_tuning.*`, `debug/combat_tunables.*` | the values above as tunables, category **Combat**, registered at start-up beside the game's |
-| `human/fighter.*` | the player's combat inside the human: builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front and the grab search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), lands the hits |
-| `human/pair_placement.*` | the pair's geometry: offsets in the grabber's frame from a range record's direction × reach, the alignment (`Pair_AlignStart`), its time, the gate at the connect's end and `Pair_CheckPlace` |
-| `human/target_human.*` | a passive target for the sandbox: health, the update's largest hit, the reaction, the stun, the knockdown, the ground time and the rise, the dying clip |
+| `human/fighter.*`, `human/fighter_grab.cpp`, `human/fighter_victim.cpp`, `human/fighter_clips.h` | the player's combat inside the human (split as the attacker, the grab and the victim side): builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front and the grab search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), turns and walks the grab by the stick, lands the hits with their rage, locks onto a target and combat-walks round it; and the player hit (a duck and its counter, the block, the health floor, the hit armour, the reaction, stun, knockdown and mash) and held in a grab (the counter at the catch, the struggle, the strike back, the escape and the reversal) |
+| `human/victim.*` | what the player and the target share as victims: the update's largest hit, the reaction it plays, the stun (its exit waits for the clip playing to end), the knockdown, the ground time, the rise and the mash |
+| `human/pair_placement.*` | the pair's geometry: offsets in the grabber's frame from a range record's direction × reach or a clip's type-8 pair event, the alignment (`Pair_AlignStart`), its time, the gate at the connect's end and `Pair_CheckPlace` |
+| `human/target_human.*` | a passive target for the sandbox on `Victim`: health, the reaction, the stun, the knockdown, the ground time and the rise, the dying clip, the root motion of its reactions and throws |
 
 **In the player.** `human::Player` runs the street's `CommandMatcher` on the pad's buttons and gives the human the
 command, the buttons and the targets; the human calls the fighter each update it is on the ground and not climbing,
@@ -1190,6 +1196,49 @@ after the locomotion and stamina. While the fighter holds the body (blocking, ho
 clip playing) the stick does not move it: the clip's root motion does, with the slide an attack starts. Triangle keeps
 its own order (climb, context action, jump) and is not read while the fighter holds the body; L2 still sprints, but
 not while blocking.
+
+**Lock-on and the combat walk.** The attack's target search, or L1 when there is none (**Coney's choice**: L1
+searches as far as a target is kept, 2.5 m), gives the player a target. With the original's settings (`CfgLockOn` 0,
+`CfgAutoLockAndCombat` 1) L1 alone does not lock: the auto setting does, so while he has a target the player faces it
+every update and the stick past the 12 % dead zone walks him at 3.429 m/s in any direction, with the combat-walk clip
+(380-387) by the stick's angle from his facing. The target is dropped beyond 2.5 m (unless L1 or a grab holds it),
+when it leaves the fight or has no health left, and (**Coney's choice**) when it is not standing. Grabbing, the stick
+past 95 % turns the pair towards it at most 0.192 rad an update (the carry 0.8, −0.5 when the turn reverses within
+45°) and pulled back walks it backward at 1.125 m/s (front hold) or 1.22 m/s (rear), both bodies by their clips.
+
+**Rage from hits.** Each hit the player lands or has blocked gives its two awards (`rage_awards.*`): the attack's
+count A × 1 point and count B × 4 points, each through the gain formula and truncated on its own, a blocked hit
+halving each with a shift; while the repeat tracker's flag is set each award is halved, and while throwing it is
+multiplied by the throw bonus. The hit is then noted: six square-ended (or six cross-ended) hits in a row, each within
+5000 ms of the last, set the flag; each grab or mount strike adds 0.27 to the bonus (up to 2.0), which goes back to 1.0
+every update the player is neither grabbing from the front nor throwing. Being hit gives nothing. **Coney's choice**:
+the counter 76 awards 7 points and the strike back 104 1 point (the rage seen at runtime, back-derived), as the
+events of those two moves are not mapped.
+
+**The player hit** (`fighter_victim.cpp`; nothing attacks him yet, so `Human::takeHit()`, `warn()` and
+`catchInGrab()` are the entry points a future attacker and the tests use). An attacker's clip warns him as its events
+pass: blocking, event `0x24` makes him duck (616) and the attack passes over him, and event `0x26` plays the block's
+reaction early. Ducking, square or cross pressed or held while 616's own `0x25` events fire (frames 6-13) asks for the
+counter, played on the next update by the side the target stands on: 617 front, 618 right, 619 back, 620 left. Each
+update the largest pending hit then lands in the original's order: a duck lets it pass; a held block cancels it with
+its block reaction unless the hit breaks it (strength 3, or attacks 26-34); the damage is taken as it is, held at the
+health floor (a hit cannot take him below 25 % of his maximum); a grabber hit by a third human loses power; winding up
+(`+0x08` `0x1`) or in the chain window (`0x2`) his hit armour holds against a non-player, non-raging attacker not
+playing 617-620, so the damage lands and his attack goes on; otherwise the reaction plays and his attack is lost. A
+plain reaction returns to the fight idle; a stun hit holds him 200 ms, then 357 when the reaction's clip has ended
+(the stun's loop 356 does not play); a knockdown lays him down for 2750 ms, then 199, and a stunned knockdown stays
+stunned for 200 ms after the rise. Every command made while he lies in 196 cuts the ground time (and a stun's) by
+2750 ms divided by 1, 2 or 3 at random (**Coney's choice**: the three evenly). The power meter's maximum is scaled by
+the hurt factor while hurt (below 30 % health: 0.75 × 400).
+
+**Held in a grab** (`grabbed.*`): R1 on the update the grabber's intro ends counters (76, the grabber plays 77, both
+paired, needing and spending power); otherwise he plays the grabber's set's reaction (73 or 75) and the held loop.
+Square struggles (96 / 108), costing the grabber its maximum divided by the player's struggle divisor (`+0x36`, 3);
+the grab's drain of 15/s goes on through it. Cross strikes back (104 / 116, 20 damage). Circle escapes (100 / 112,
+the grabber knocked down and stunned) and R1 reverses (90 / 92, then he holds the grabber from the rear, 84 / 85) on
+a won roll: with `t` a quarter of the grabber's maximum (half when it is hurt) and `p` its power, always when `p` ≤
+`t`, else 1 in floor(`p` / `t`); never against a raging grabber, and no reversal of one with flag `0x40`. The
+grabber's power running out ends the grab, with an escape when the grabber is hurt.
 
 **The clips** (anim ids, played through the human's animator, `AnimState::Attack` returning to the fight idle 358 and
 `AnimState::Hold` keeping its loop): the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15,
@@ -1205,18 +1254,21 @@ let-go 95 / 94; the mugging 78, 338, 340 (victim 79, 339, 341) with 342 / 343 wh
 **The target** (`human::TargetHuman`, Coney's own, placed only by a sandbox layout's `target` line,
 [Sandbox](../guides/sandbox.md)): it takes the hit with the attacker's hit code and flags, and picks its reaction with
 `hitReaction()`; a reaction whose clip has an event of type 7 knocks it down (196) for the ground time, then it rises
-with 199; a stun hit (flag `0x400`) plays the reaction, then 356 until the stun time passes, then 357 and the idle; a
-hit at 0 health plays the dying reaction and lies in 196 for good; a grounded target takes 195. Its numbers are the
-street civilian's power class (hurt below 35 %, stun 750 ms, ground 2000 ms). It has no brain, never moves by itself,
-blocks nothing and is drawn with the player's model.
+with 199; a stun hit (flag `0x400`) plays the reaction, then 356 until the stun time passes and the clip playing has
+ended, then 357 and the idle; a hit at 0 health plays the dying reaction and lies in 196 for good; a grounded target
+takes 195. Its reactions and throws move it by their clips' root motion. Its numbers are the street civilian's power
+class (hurt below 35 %, stun 750 ms, ground 2000 ms). It has no brain, never moves by itself, blocks nothing and is
+drawn with the player's model.
 
 The tests drive all of this with input scripts played through the pad records at partial stick deflections:
-`tests/combat/` the core (each attack's timing, the chain, the grab rules, the meters, the reactions, the class
-damage), `tests/human/combat_test.cpp` the human with synthetic clips (the combo and its reactions and stun, the stun's
-750 ms, the block holding the body while the stick at 0.6 turns it, the grab, strike and throw with the rise 2 s
-later, the R1 spin and the L2 let-go, the tackle, the turn into an attack, the knockdown, the victim at the front and
-rear holds' offsets after the connect, a paired clip from the attacker's set), `tests/human/pair_placement_test.cpp` the
-pair's geometry, and
+`tests/combat/` the core (each attack's timing, the chain, the grab rules, the meters, the reactions, the class damage,
+the victim's decisions, the grabbed player, the lock-on and the rage awards), `tests/human/being_hit_test.cpp` the
+player hit (the duck and its counter, the block, the floor, the armour, the stun, knockdown and mash, held in a grab,
+the rage and repeat tracker, the combat walk and the grab's turn), `tests/human/combat_test.cpp` the human with
+synthetic clips (the combo and its reactions and stun, the stun's 750 ms, the block holding the body while the stick at
+0.6 turns it, the grab, strike and throw with the rise 2 s later, the R1 spin and the L2 let-go, the tackle, the turn
+into an attack, the knockdown, the victim at the front and rear holds' offsets after the connect, a paired clip from the
+attacker's set), `tests/human/pair_placement_test.cpp` the pair's geometry, and
 `tests/sandbox/disc_sandbox_combat_test.cpp` Rembrandt from the disc in the fight yard (`assets/sandbox/combat.layout`;
 the scripts `tests/support/combat_*.txt`: a combo, a grab with a strike, both spins and a throw, a tackle, a mugging;
 clip ids, counts and hashes only; and the pelvis of the holds 82-85 against the runtime one: 82-84 within 0.1°, 85
@@ -1227,8 +1279,9 @@ starts has one; the grab and tackle ranges come out at 3.12 m and 3.75 m as at r
 the target play is there (120 ids), 41 of the reactions with a knockdown event. **The file's damage is not the
 runtime damage** (confirmed (Coney's disc check)): Rembrandt's file says `S1` 40, `SS2` 40, `X1` 45 where play gives
 17, 36, 26, because the character class's table is written over the list ([Damage](#damage-table)).
-`applyClassDamage()` does that write, but Coney does not yet read `CfgChar`'s damage table from the config script (the
-script runner keeps table arguments as nil), so the game plays the file's damage for now.
+`applyClassDamage()` does that write into each human's own copy of the list (`Human`'s `classDamage`), but Coney
+does not yet read `CfgChar`'s damage table from the config script (the script runner keeps table arguments as nil),
+so the game plays the file's damage for now.
 
 **Coney choices**, where the research is silent or inferred:
 
@@ -1263,12 +1316,11 @@ script runner keeps table arguments as nil), so the game plays the file's damage
   update it is put at the player's transform × that offset, its own root motion ignored. A spin (78 / 80) detaches it
   so both bodies move by their clips, as at runtime, and its end snaps it to the other hold. A strike, power strike or
   throw is refused (nothing played or spent) unless the victim stands within 0.3 m of the current hold's point. The
-  mounted victim is attached at 210's record, (−0.120, 0.032), facing the player (**inferred**: the tackle's placement
-  is not traced). **Coney's choices**: the grab's side is decided as the intro starts (a passive target does not move
-  in between); the place a move checks is the current hold's point (the strikes' points are the front hold's); the
-  victim's turn spreads evenly over the alignment's updates and a slide under 0.01 m is left out; the moves of a hold
-  switch both humans with no fade, the let-go keeps the combat fade; the target moves by its clips' root motion only
-  while held and detached (its reactions and throws do not move it yet).
+  mounted victim is attached at 210's type-8 pair event, (−0.120, 0.032): 0.032 m ahead and 0.120 m to the left,
+  facing the other way. **Coney's choices**: the grab's side is decided as the intro starts (a passive target does
+  not move in between); the place a move checks is the current hold's point (the strikes' points are the front
+  hold's); the victim's turn spreads evenly over the alignment's updates and a slide under 0.01 m is left out; the
+  moves of a hold switch both humans with no fade, the let-go keeps the combat fade.
 - The mugging: the 50° tolerance; a random first target; each move between the tolerance plus 20° and 360° less that;
   the period counts game time. The theft: clockwise steps neither add nor take away; the 250 ms pause ignores the
   stick. The mash: the first press counts, a press's gain is truncated, and other commands are ignored.
@@ -1277,17 +1329,39 @@ script runner keeps table arguments as nil), so the game plays the file's damage
 - The stun's loop is 356, as seen at runtime (the code names 355 as a stunned reaction's return).
 - `applyClassDamage()` rounds as the PS2's floating-point unit does (toward zero), which gives the research's 34 for 30
   at 115 %.
+- **The shared Anim Range List is not reproduced**: in the original the class damage is written into the list the
+  character's humans share, so the newest human's class sets everyone's damage ([Being hit](#being-hit-runtime)).
+  Coney gives each human its own copy, as the design plainly means; whether the original intends the overwrite is
+  open.
+- The player hit: the stun's exit (357) waits for the clip playing to end; a mash also cuts the time of a stun taken
+  with the knockdown; held in a grab or holding someone, a hit only takes health (the reactions by those states,
+  `0x002688d0` and `0x00268ea8`, are not traced); the health floor stops a hit that starts above 25 %, a player
+  already at or below it takes the whole hit; the escapee takes its escape clip's own damage, as at runtime.
+- The duck's counter is asked for once per duck and the command that asks is spent (no attack starts from it); it
+  plays on the next update with no steering, against the attacker that made the player duck, else the nearest target
+  within 1.25 × 617's reach, and hits once.
+- Held: the counter at the catch costs the grabber a quarter of its maximum; a reversed hold has no passive target
+  behind it (the grabber is an entry point, not a `TargetHuman`).
+- The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full
+  speed (the 5 slower first updates backward are not known).
 
-**Not yet**: hits from rage (the stats events that give the points are not mapped), the player being hit (no human
-attacks him yet), weapons, breakables and the theft's car windows (no objects yet), the class damage table read from
-the disc, and the hit armour, allies and class 13 rules a fight between humans needs.
+**Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests); the
+warnings of the player's own clips to the targets (they never block); the rage of throws and of the attacks beyond
+the chain and moving attacks (their events are not mapped, so the throw bonus changes nothing yet); the hurt
+multipliers `+0x10` / `+0x14`; weapons, breakables and the theft's car windows (no objects yet); the class damage
+table read from the disc (`CfgChar` waits for the script runner's tables); and the allies and class 13 rules a fight
+between humans needs.
 
 ## Open questions
 
 - **The block**: whether a strength-3 hit can still break a block. (Answered: `+0x14` = `0xe`, message `0xa5`, is
   the duck counter, [Blocking](#block).) Still open: the counter at runtime, and the AI tactics' answer.
 - **The shared Anim Range List**: whether the overwrite by the newest human is intended, and which humans share a
-  list ([Being hit](#being-hit-runtime)).
+  list ([Being hit](#being-hit-runtime)). Coney does not reproduce it.
+- **A blocked `SSS3`'s rage**: 0 at runtime ([Rage](#rage)) where the two awards' formula gives 1 (3 >> 1 = 1 point,
+  as `SSX3`'s blocked 1); Coney gives 1.
+- **The stun after a knockdown**: it ends at the rise + 200 ms, before 199 ends, yet after 653 the player stood in
+  356 for 7 updates before 357 ([Being hit](#being-hit-runtime)); Coney plays 357 as 199 ends.
 - **The halved rage** (answered): the repeat tracker ([Rage](#rage)). Still open: the throw bonus at runtime, and
   whether the brain type 3 that also notes hits is the ally brain.
 - **The backward combat walk** (answered): 3.429 m/s like every direction, after 5 slower updates

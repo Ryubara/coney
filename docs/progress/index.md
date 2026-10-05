@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 3.8%](https://img.shields.io/badge/reimplemented-3.8%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 4.7%](https://img.shields.io/badge/reimplemented-4.7%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▊░░░░░░░░░░░░░░░░░░░` | 3.8% of the game's own code (125,484 of 3,342,936 bytes, 339 functions) |
+| **Reimplemented** | `█░░░░░░░░░░░░░░░░░░░` | 4.7% of the game's own code (158,164 of 3,342,936 bytes, 356 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `▉░░░░░░░░░░░░░░░░░░░` | 4.1% | 41 | 481,192 |
-| `Human` | `▌░░░░░░░░░░░░░░░░░░░` | 2.4% | 43 | 358,360 |
+| `Human` | `█▊░░░░░░░░░░░░░░░░░░` | 9.0% | 57 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -72,10 +72,10 @@ at the top of the repository's `README.md`.
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 10 | 18,648 |
-| `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.4% | 11 | 54,232 |
+| `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▍░░░░░░░░░░░░░░░░░░░` | 1.9% | 65 | 1,524,752 |
+| Unattributed | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 67 | 1,524,752 |
 
 ## Research coverage
 
@@ -104,6 +104,7 @@ at the top of the repository's `README.md`.
 | `0x00100200` | `Pose_InitReference` | `unattributed` | 2,172 |
 | `0x00101120` | `Skeleton_InitParents` | `unattributed` | 304 |
 | `0x00101658` | `Anim_FirstContactTime` | `unattributed` | 328 |
+| `0x00101dd8` | `Anim_FireEvents` | `unattributed` | 8,376 |
 | `0x001041f8` | `AnimCursor_Init` | `unattributed` | 536 |
 | `0x001044a0` | `AnimCursor_Advance` | `unattributed` | 208 |
 | `0x001045e0` | `AnimData_OnLoaded` | `unattributed` | 80 |
@@ -267,9 +268,13 @@ at the top of the repository's `README.md`.
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
 | `0x00222ef0` | `Human_HealthPercent` | `Human` | 88 |
+| `0x00223068` | `Human_PowerMax` | `Human` | 288 |
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
+| `0x0022f100` | `Human_KnockDown` | `Human` | 712 |
+| `0x0022f658` | `Human_Stun` | `Human` | 640 |
+| `0x0022f8d8` | `Human_EndStun` | `Human` | 264 |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x0023a5f8` | `Cfg_SetTurnRate` | `Human` | not filled in |
 | `0x0023a7a0` | `Cfg_SetTurnRates` | `Human` | not filled in |
@@ -281,12 +286,16 @@ at the top of the repository's `README.md`.
 | `0x0023fea8` | `Human_StateUpdate` | `Human` | not filled in |
 | `0x00240898` | `Human_AirControl` | `Human` | not filled in |
 | `0x00240e38` | `Human_PlayerLocomotion` | `Human` | not filled in |
+| `0x00241b90` | `Human_FightStanceMove` | `Human` | 3,160 |
 | `0x00244e78` | `Human_MoveAttached` | `Human` | 1,176 |
+| `0x00245310` | `Human_MoveGrabbing` | `Human` | 1,552 |
+| `0x00245920` | `Human_HandleMessage` | `Human` | 8,248 |
 | `0x00248df0` | `Human_Lean` | `Human` | not filled in |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
 | `0x002548f0` | `AnimRange_ApplyClassDamage` | `Human` | not filled in |
+| `0x00254e78` | `Human_UpdateBlockState` | `Human` | 1,736 |
 | `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
 | `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
 | `0x00259578` | `Human_ChooseAnimState` | `Human` | not filled in |
@@ -295,16 +304,22 @@ at the top of the repository's `README.md`.
 | `0x0025d390` | `Human_BuildLandTasks` | `Human` | not filled in |
 | `0x0025ec28` | `Gait_BlendForSpeed` | `Human` | not filled in |
 | `0x0025f770` | `Human_BuildIdleTasks` | `Human` | not filled in |
+| `0x002617f8` | `Block_DuckCounter` | `Human` | 528 |
 | `0x002625a8` | `Attack_Start` | `Human` | 792 |
 | `0x00264178` | `Player_ObjectAttack` | `Human` | 744 |
 | `0x00264bd8` | `Human_AddPendingDamage` | `Human` | 288 |
 | `0x00264cf8` | `Human_AddRage` | `Human` | 680 |
+| `0x002653d8` | `Stats_AttackRage` | `Human` | 2,128 |
+| `0x00265dd0` | `Rage_NoteHit` | `Human` | 416 |
 | `0x00265f70` | `Human_ApplyPendingDamage` | `Human` | not filled in |
 | `0x00266d00` | `Hit_PickReaction` | `Human` | not filled in |
 | `0x00269f30` | `Human_BlockHit` | `Human` | not filled in |
+| `0x0026a6d0` | `Human_PlayReaction` | `Human` | 1,824 |
 | `0x0026b0a0` | `Hit_PickReaction` | `Human` | not filled in |
 | `0x0026bad8` | `Grab_ConnectEnd` | `Human` | 912 |
 | `0x0026be68` | `Grab_Connect` | `Human` | 848 |
+| `0x0026c1d8` | `Grab_IntroEnd` | `Human` | 880 |
+| `0x0026cc18` | `Grab_Escape` | `Human` | 1,120 |
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
 | `0x00276998` | `Pair_AlignStart` | `unattributed` | 1,024 |
 | `0x00276d98` | `Pair_SnapAttach` | `unattributed` | 600 |
@@ -316,6 +331,7 @@ at the top of the repository's `README.md`.
 | `0x0027d900` | `Player_Dive` | `unattributed` | 272 |
 | `0x0027e6d8` | `Player_UpdateTheft` | `unattributed` | 560 |
 | `0x0027f3b0` | `Player_UpdateGrabbing` | `unattributed` | 2,488 |
+| `0x0027fd68` | `Player_UpdateGrabbed` | `unattributed` | 568 |
 | `0x002802a0` | `Pair_Attach` | `unattributed` | 680 |
 | `0x00280630` | `Player_UpdateChain` | `unattributed` | 216 |
 | `0x00280708` | `Player_UpdateChain` | `unattributed` | 1,560 |
@@ -429,6 +445,7 @@ at the top of the repository's `README.md`.
 | `0x004161e8` | `Flag_Position` | `WorldObjects` | 104 |
 | `0x00416258` | `Flag_Heading` | `WorldObjects` | 120 |
 | `0x00416bb8` | `Flag_GetPosition` | `WorldObjects` | 40 |
+| `0x00418428` | `RepeatTracker_Note` | `Warriors` | 240 |
 | `0x0041abe8` | `GetCheckPoint` | `Warriors` | 16 |
 | `0x0041acd8` | `GameState_SetLuaSaveFloat` | `Warriors` | 40 |
 | `0x0041ad00` | `GameState_GetLuaSaveFloat` | `Warriors` | 40 |

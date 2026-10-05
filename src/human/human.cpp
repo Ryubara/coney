@@ -3,9 +3,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <numbers>
 
 #include "animation/anim_task.h"
+#include "combat/combat_tuning.h"
+#include "combat/lock_on.h"
 #include "human/body.h"
 #include "human/jump.h"
 
@@ -24,6 +27,18 @@ constexpr int kRunningClimbMove = 2;
 constexpr int kStandingClimbMove = 1;
 // A stick longer than this gives the climb its direction; a shorter one leaves the facing.
 constexpr float kClimbStickDirection = 0.01F;
+
+// A human's own copy of `ranges` with its class's damage written over it, or null when it has no class table (then it
+// uses `ranges` as it is). Each human keeps its own list, so its class decides only its own damage.
+std::unique_ptr<combat::AnimRangeList> classRanges(const combat::AnimRangeList* ranges,
+                                                   std::span<const std::int16_t> classDamage, int damagePercent) {
+    if (ranges == nullptr || classDamage.empty()) {
+        return nullptr;
+    }
+    auto own = std::make_unique<combat::AnimRangeList>(*ranges);
+    combat::applyClassDamage(*own, classDamage, damagePercent);
+    return own;
+}
 
 raycast::Vec3 toMesh(anim::Vec3 v) { return raycast::Vec3{v.x, v.y, v.z}; }
 anim::Vec3 fromMesh(raycast::Vec3 v) { return anim::Vec3{v.x, v.y, v.z}; }
@@ -81,8 +96,9 @@ const char* traversalName(Traversal traversal) {
 
 Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
              std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale,
-             const combat::AnimRangeList* ranges)
-    : m_animator(anims, slots), m_ranges(ranges), m_fighter(ranges), m_scale(scale) {
+             const combat::AnimRangeList* ranges, std::span<const std::int16_t> classDamage, int damagePercent)
+    : m_animator(anims, slots), m_ownRanges(classRanges(ranges, classDamage, damagePercent)),
+      m_ranges(m_ownRanges != nullptr ? m_ownRanges.get() : ranges), m_fighter(m_ranges), m_scale(scale) {
     std::ranges::copy(bindRotations, m_bindRotations.begin());
 }
 
@@ -348,6 +364,32 @@ void Human::holdForCombat() {
     if (m_fighter.blocking() && m_intent.magnitude > locomotionTuning().stickDeadZone) {
         m_heading = turnToward(m_heading, m_intent.angle - kPi / 2.0F, stanceTurn(), m_turn);
     }
+    // A standing grab: the stick near full turns the grabber's back to it and walks the pair backward.
+    const anim::Vec3 pull = m_fighter.moveGrab(m_intent.angle - kPi / 2.0F, m_intent.magnitude, m_animator, m_heading);
+    if (anim::length(pull) > 0.0F) {
+        m_velocity = anim::Vec3{pull.x, pull.y, m_velocity.z};
+    }
+}
+
+void Human::combatWalk(const TargetHuman& target) {
+    // Faces the target every update.
+    const anim::Vec3 to = anim::subtract(target.position(), m_position);
+    if (std::hypot(to.x, to.y) > 1e-4F) {
+        m_heading = headingOf(to);
+    }
+    m_turn = TurnState{};
+    // The stick, normalised, walks the human at one speed whatever its deflection; at rest it stands in the fight idle.
+    if (m_intent.magnitude <= locomotionTuning().stickDeadZone) {
+        m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
+        m_animator.playCombatWalk(kAnimFightIdle);
+        return;
+    }
+    const float speed = combat::combatTuning().combatWalkSpeed;
+    m_velocity = anim::Vec3{std::cos(m_intent.angle) * speed, std::sin(m_intent.angle) * speed, m_velocity.z};
+    // The clip by the stick's angle from the facing, clockwise (record +0xdc).
+    const float stickHeading = m_intent.angle - kPi / 2.0F;
+    const float clockwise = -wrapAngle(stickHeading - m_heading) * 180.0F / kPi;
+    m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
 }
 
 void Human::fight(const HumanInput& input) {
@@ -539,7 +581,11 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
         }
     } else if (m_fighter.holdsMovement(m_animator)) {
         holdForCombat();
+    } else if (const TargetHuman* lock = m_fighter.lockTarget(); lock != nullptr) {
+        combatWalk(*lock);
     } else {
+        // Out of the lock the locomotion's clips come back.
+        m_animator.leaveCombatWalk();
         locomote();
     }
     const float turn = wrapAngle(m_heading - headingBefore);

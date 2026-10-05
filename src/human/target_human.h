@@ -9,8 +9,10 @@
 #include "animation/anim_pose.h"
 #include "characters/anim_set.h"
 #include "combat/meters.h"
+#include "combat/power_class.h"
 #include "combat/stick.h"
 #include "human/human_animator.h"
+#include "human/victim.h"
 
 // A passive human to fight: Coney's own test target for the sandbox, not part of the original game and never placed in
 // a real level. It stands where its layout line puts it, takes the player's hits as pending damage, loses health and
@@ -40,22 +42,8 @@ struct TargetSnapshot {
 /// The snapshot `alpha` of the way from `previous` to `current` (as human::interpolate() blends the player's).
 [[nodiscard]] TargetSnapshot interpolate(const TargetSnapshot& previous, const TargetSnapshot& current, float alpha);
 
-/// One hit on a target.
-struct TargetHit {
-    int damage = 0;
-    int attackAnim = -1;     ///< The attacker's anim id.
-    int code = 0;            ///< The attack's hit code (Anim Range List `+0x0c`).
-    std::uint16_t flags = 0; ///< The attack's flags (`+0x0e`): combat::kRangeFlagStun stuns.
-    anim::Vec3 attacker;     ///< Where the attacker's feet are.
-    bool react = true;       ///< False for a move inside a hold, whose victim clips the attacker plays.
-};
-
-/// The street civilian's power class (class 2, docs/research/characters.md#power-classes), a target's numbers.
-struct TargetClass {
-    float hurtFraction = 0.35F; ///< Below this share of its health it is hurt.
-    int stunMs = 750;           ///< A stun's length.
-    int groundMs = 2000;        ///< How long a knockdown keeps it down.
-};
+/// One hit on a target (the same as any human's, human::IncomingHit).
+using TargetHit = IncomingHit;
 
 /// A passive target human.
 class TargetHuman {
@@ -68,11 +56,10 @@ class TargetHuman {
                 float headingRadians, std::uint32_t seed = 1);
 
     /// One update of 1/30 s: the update's largest hit is applied and reacted to (a reaction, a stun, a knockdown, or
-    /// at 0 health a dying clip and the ground for good), the animation steps, a stun runs out with 357, and a target
-    /// down long enough gets up with 199. Held and not attached (a grab's connecting clip), its clip's root motion
-    /// moves and turns it, as the original's does both bodies.
+    /// at 0 health a dying clip and the ground for good), the animation steps, a stun runs out with 357 once its
+    /// reaction is over, and a target down long enough gets up with 199. Not attached to a grabber, a clip that moves
+    /// the body (a paired clip, a reaction, a throw's) moves and turns it by its root motion, as the original's does.
     /// @orig 0x00265f70 Human_ApplyPendingDamage (unknown)
-    /// @orig 0x00256a60 Human_RefillMeters (unknown)
     void step();
 
     /// A hit this update; the update keeps its largest (combat::PendingDamage).
@@ -100,19 +87,21 @@ class TargetHuman {
     [[nodiscard]] const combat::Health& health() const { return m_health; }
     [[nodiscard]] TargetState state() const { return m_state; }
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
+    /// Its power class: the street civilian's (combat::kCivilianPowerClass).
+    [[nodiscard]] const combat::PowerClass& powerClass() const { return m_victim.powerClass(); }
     /// Stunned: a stun hit's reaction, until its time runs out.
-    [[nodiscard]] bool stunned() const { return m_stunUntilMs != 0; }
+    [[nodiscard]] bool stunned() const { return m_victim.stunned(); }
     /// Hurt: below the class's hurt fraction of its health.
-    [[nodiscard]] bool hurt() const { return m_health.fraction() < m_class.hurtFraction; }
+    [[nodiscard]] bool hurt() const { return m_health.fraction() < m_victim.powerClass().hurtFraction; }
     /// Damage taken so far.
     [[nodiscard]] int damageTaken() const { return m_health.maximum() - m_health.value(); }
     /// Hits that took health off, reactions played, stuns and knockdowns so far.
     [[nodiscard]] int hitsTaken() const { return m_hits; }
-    [[nodiscard]] int reactions() const { return m_reactions; }
-    [[nodiscard]] int stuns() const { return m_stuns; }
-    [[nodiscard]] int knockdowns() const { return m_knockdowns; }
+    [[nodiscard]] int reactions() const { return m_victim.reactions(); }
+    [[nodiscard]] int stuns() const { return m_victim.stuns(); }
+    [[nodiscard]] int knockdowns() const { return m_victim.knockdowns(); }
     /// The last reaction clip it played (-1 before any).
-    [[nodiscard]] int lastReaction() const { return m_lastReaction; }
+    [[nodiscard]] int lastReaction() const { return m_victim.lastReaction(); }
     [[nodiscard]] const TargetSnapshot& current() const { return m_current; }
     [[nodiscard]] const TargetSnapshot& previous() const { return m_previous; }
 
@@ -121,11 +110,9 @@ class TargetHuman {
     [[nodiscard]] std::uint64_t nowMs() const;
     // Reacts to the update's hit: a dying clip, a reaction with its stun or knockdown.
     void react(const TargetHit& hit);
-    // Whether anim `id`'s clip has a knockdown event (type 7).
-    [[nodiscard]] bool knocksDown(int id) const;
     // Takes `targetState`: the ground time starts, a hold's end detaches, a stun ends.
     void enter(TargetState targetState);
-    // A held target's clip moves it by its root motion (velocity turned by the heading, and the turn).
+    // Its clip moves it by its root motion (velocity turned by the heading, and the turn).
     void applyRootMotion();
     // The snapshot of the state now.
     [[nodiscard]] TargetSnapshot capture() const;
@@ -135,21 +122,12 @@ class TargetHuman {
     anim::Vec3 m_position;
     float m_heading = 0.0F;
     combat::Health m_health;
-    combat::CombatRandom m_random;
-    TargetClass m_class;
+    Victim m_victim;
     std::uint32_t m_idle; // the idle clip of its slots
-    TargetHit m_pending;
-    bool m_hasPending = false;
     TargetState m_state = TargetState::Standing;
     bool m_attached = false; // placed by its grabber (setAttached())
     std::uint64_t m_updates = 0;
-    std::uint64_t m_stunUntilMs = 0; // 0 when not stunned
-    std::uint64_t m_riseAtMs = 0;    // when a grounded target gets up
     int m_hits = 0;
-    int m_reactions = 0;
-    int m_stuns = 0;
-    int m_knockdowns = 0;
-    int m_lastReaction = -1;
     TargetSnapshot m_previous;
     TargetSnapshot m_current;
 };
