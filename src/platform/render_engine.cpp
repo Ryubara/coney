@@ -350,7 +350,9 @@ void RenderEngine::present() {
         if (captureThisFrame) {
             m_capture = captureBackBuffer(m_capturePath);
         }
-        m_camera->showRaster(rw::Raster::FLIPWAITVSYNCH);
+        // librw's GL3 device sets the swap interval from the flag on every show: 1 with it, 0 without.
+        m_camera->showRaster(m_vsync ? rw::Raster::FLIPWAITVSYNCH : 0);
+
     } else if (captureThisFrame) {
         m_capture = std::unexpected(Error{ErrorCode::PlatformFailure, "the headless renderer draws no frames"});
     }

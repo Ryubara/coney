@@ -47,9 +47,12 @@ class MemoryCardMode final : public GameMode {
     /// carries no original-function tag.
     void enter() override {}
 
-    /// Clears the screen to black, presents it and leaves: the check is done. A stand-in for the original's `Update`
-    /// (`0x0015be00`), so it carries no original-function tag.
+    /// Leaves: the check is done. A stand-in for the original's `Update` (`0x0015be00`), so it carries no
+    /// original-function tag.
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+
+    /// Clears the screen to black and presents it: the one frame the check shows.
+    void render(const RenderTime& time) override;
 
     /// Marks the boot check done and, when the level flow is now on top (the mode below), cancels its front-end load
     /// on resume.

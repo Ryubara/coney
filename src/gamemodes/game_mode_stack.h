@@ -7,14 +7,34 @@
 #include <optional>
 #include <vector>
 
+#include "core/frame_clock.h"
 #include "core/game_timer.h"
 #include "core/pads.h"
 #include "gamemodes/game_mode.h"
 
 namespace coney {
 
-/// The stack of game modes. Its run loop is the game's main loop: every frame the mode on top runs once, and the
-/// game ends when the stack is empty.
+/// What the main loop calls each real frame, besides the modes. Every hook may be empty.
+struct FrameHooks {
+    /// Waits for the frame's start under any frame cap and returns the real nanoseconds since the previous frame
+    /// began; the platform implements it (src/platform/frame_pacer.h). Empty in test mode: the loop then never asks
+    /// for the time, which lockstep pacing does not need.
+    std::function<std::uint64_t()> waitForFrame;
+    /// Handles the window's events (which carry the keyboard and gamepad state); returns false once the user asked to
+    /// quit.
+    std::function<bool()> beginFrame;
+    /// Called at the end of each frame with the number of steps it ran, for frame-rate statistics.
+    std::function<void(std::uint32_t steps)> endFrame;
+};
+
+/// What a run of the main loop did.
+struct LoopCounts {
+    std::uint64_t frames = 0; ///< Real frames: each renders once.
+    std::uint64_t steps = 0;  ///< Fixed 1/30 s simulation steps.
+};
+
+/// The stack of game modes. Its run loop is the game's main loop: every simulation step the mode on top updates
+/// once, every real frame the mode that updated last renders once, and the game ends when the stack is empty.
 ///
 /// The stack does not own its modes (the original's are static objects); each must outlive its time on the stack.
 ///
@@ -44,19 +64,35 @@ class GameModeStack {
     /// Number of modes on the stack.
     [[nodiscard]] std::size_t size() const { return m_modes.size(); }
 
-    /// One iteration of the main loop: enters the top mode if it has not been entered, runs its update with `frame`,
-    /// and pops the top if the update returns ModeResult::Leave. Does nothing on an empty stack.
+    /// One simulation step: enters the top mode if it has not been entered, runs its update with `frame`, and pops
+    /// the top if the update returns ModeResult::Leave. Does nothing on an empty stack. Draws nothing: render() does.
     void step(const FrameTime& frame);
 
-    /// Runs the main loop until the stack is empty, `beginFrame` returns false (the window was closed) or
-    /// `frameLimit` frames have run. Each frame calls `beginFrame` (when set), updates the pads (samplePads()),
-    /// advances `timer` by one update and runs step() with the time it advanced. Returns the number of frames run.
+    /// Draws one frame: render() of the mode that ran the last step, if it is still on the stack (so the step a mode
+    /// leaves on, or pushes another mode on, still shows that mode's picture, as the original's update drew it), else
+    /// of the top mode if it has been entered; nothing on an empty stack or before any mode has run.
+    void render(const RenderTime& time);
+
+    /// The main loop: runs until the stack is empty, `hooks.beginFrame` returns false (the window was closed) or
+    /// `stepLimit` steps have run. Each real frame it waits for the frame (`hooks.waitForFrame`), handles the window's
+    /// events (`hooks.beginFrame`), asks `clock` how many steps the real time calls for, runs each step (sample the
+    /// pads, advance `timer` by one update, update the top mode), then renders once with the clock's alpha (render()).
     ///
-    /// The loop does no pacing: the original paces itself by waiting for vertical sync in the frame's present
-    /// (docs/research/boot.md#one-frame), which Coney's renderer will do; tests and `--frames` run flat out.
+    /// A mode that leaves on a frame's last step is popped after that frame's render, so its last picture is shown;
+    /// on any earlier step it is popped before the next one. Either way the next step sees the stack the original
+    /// would.
+    ///
+    /// The limit counts **steps**, which is what `--frames N` means: in lockstep (test mode) every frame is one step
+    /// and one render, so N frames are N steps and N renders whatever the machine's speed. Step indexes
+    /// (FrameTime::index, which scripted input is keyed by) carry on from one call to the next.
     /// @orig 0x0015e6b8 GameModeStack_RunUntilEmpty (unknown)
+    LoopCounts runUntilEmpty(GameTimer& timer, FrameClock& clock, const FrameHooks& hooks,
+                             std::optional<std::uint64_t> stepLimit);
+
+    /// The loop in lockstep with no clock (test mode): one step and one render at alpha 1 per frame, `beginFrame` as
+    /// FrameHooks::beginFrame. Returns the number of steps (= frames) run.
     std::uint64_t runUntilEmpty(GameTimer& timer, const std::function<bool()>& beginFrame,
-                                std::optional<std::uint64_t> frameLimit);
+                                std::optional<std::uint64_t> stepLimit);
 
     /// Sets where the pad samples come from: SDL devices, a script, or null for none (the records then stay
     /// disconnected). The source is not owned and must outlive its use by the stack.
@@ -65,19 +101,30 @@ class GameModeStack {
     /// The pad records, which modes read their input from (`stack.pads().port(0)` in an update).
     ///
     /// The original's modes each call the pad update themselves (the legal screen, the memory-card check, the movie
-    /// player, a task in a level: docs/research/frontend.md#input); Coney's loop does it once for every frame
+    /// player, a task in a level: docs/research/frontend.md#input); Coney's loop does it once for every step
     /// instead, so every mode sees the same fresh records, and a mode that ignores input (the legal screen) simply
-    /// never reads them.
+    /// never reads them. Sampling per step, not per real frame, keeps "pressed this step" seen exactly once.
     [[nodiscard]] const Pads& pads() const { return m_pads; }
 
-    /// Updates the pad records with the input source's sample for frame `frame` (FrameTime::index); does nothing
-    /// without a source. runUntilEmpty() calls it each frame; a test that drives step() itself can call it too.
+    /// Updates the pad records with the input source's sample for step `frame` (FrameTime::index); does nothing
+    /// without a source. runUntilEmpty() calls it each step; a test that drives step() itself can call it too.
     void samplePads(std::uint64_t frame);
 
   private:
+    /// step() without the pop: a Leave is kept in m_popPending for finishPop().
+    void updateTop(const FrameTime& frame);
+    /// Pops the top if the last update asked to leave.
+    void finishPop();
+
     std::vector<GameMode*> m_modes; ///< Bottom first; never holds null.
     Pads m_pads;
-    InputSource* m_input = nullptr; // where samplePads() reads from; not owned
+    InputSource* m_input = nullptr;    // where samplePads() reads from; not owned
+    GameMode* m_lastUpdated = nullptr; // the mode the last step ran, while it is on the stack: what render() draws
+    FrameTime m_lastStep;              // the last step's time, for the render's game time
+    std::uint64_t m_steps = 0;         // steps runUntilEmpty() has run, over every call: the next FrameTime::index
+
+    std::uint64_t m_renders = 0; // renders so far, for RenderTime::index
+    bool m_popPending = false;   // the last update returned Leave and the pop has not happened yet
 };
 
 } // namespace coney

@@ -68,6 +68,13 @@ PlayerSnapshot Player::capture() const {
 }
 
 PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot& current, float alpha) {
+    // The ends exactly, which a blend at 0 or 1 would only round to.
+    if (alpha >= 1.0F) {
+        return current;
+    }
+    if (alpha <= 0.0F) {
+        return previous;
+    }
     return PlayerSnapshot{.feet = anim::lerp(previous.feet, current.feet, alpha),
                           .heading =
                               wrapAngle(previous.heading + wrapAngle(current.heading - previous.heading) * alpha),

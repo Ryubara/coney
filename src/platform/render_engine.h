@@ -99,9 +99,15 @@ class RenderEngine final : public graphics::RenderDevice {
     /// raster must have been converted for the current platform.
     void drawTexture(rw::Texture* texture, graphics::ScreenRect rect);
 
-    /// Ends the frame and shows it, waiting for the vertical blank. Takes the capture requested for this frame, if
-    /// any, just before showing it.
+    /// Ends the frame and shows it, waiting for the vertical blank while vsync is on (setVsync()). Takes the capture
+    /// requested for this frame, if any, just before showing it.
     void present() override;
+
+    /// Chooses whether present() waits for the vertical blank (swap interval 1, the default) or shows the frame at
+    /// once (swap interval 0, which may tear). Only the OpenGL backend has anything to wait for.
+    void setVsync(bool on) { m_vsync = on; }
+    /// Whether present() waits for the vertical blank.
+    [[nodiscard]] bool vsync() const { return m_vsync; }
 
     /// Asks for the frame shown by the `frameIndex`-th present() (counting from 0) to be read back, summarised and
     /// saved as a PNG at `path`. The result is in capture() once that frame has been presented.
@@ -139,7 +145,9 @@ class RenderEngine final : public graphics::RenderDevice {
     bool m_librwStarted = false;     // librw has reached Engine::start and must be stopped
     bool m_sdlStarted = false;       // this object holds a reference to SDL's video subsystem
     bool m_glStubbed = false;        // the NULL backend's stand-in for glDeleteTextures is installed
-    std::uint64_t m_presented = 0;   // frames presented so far
+    bool m_vsync = true;             // present() waits for the vertical blank
+
+    std::uint64_t m_presented = 0; // frames presented so far
     std::optional<std::uint64_t> m_captureFrame;
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;

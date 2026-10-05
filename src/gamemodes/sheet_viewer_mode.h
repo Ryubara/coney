@@ -31,7 +31,10 @@ class SheetViewerMode final : public GameMode {
     SheetViewerMode(graphics::RenderDevice& device, const graphics::SpriteSheet& sheet);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
+    /// One step: lists every rectangle's sprite for the 2D pass.
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+    /// Clears, draws the listed sprites in the 2D pass and presents.
+    void render(const RenderTime& time) override;
 
     /// The sprites one frame adds, in the sheet's order: one per rectangle.
     [[nodiscard]] const std::vector<graphics::Sprite>& layout() const { return m_layout; }

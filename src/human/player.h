@@ -79,7 +79,9 @@ struct PlayerSnapshot {
 };
 
 /// The snapshot `alpha` (0 to 1) of the way from `previous` to `current`: positions lerped, the heading along the
-/// shorter way round, the pose blended as two animation poses are.
+/// shorter way round, the pose blended as two animation poses are (each bone's rotation slerped). Returns `current`
+/// itself at alpha 1 or more and `previous` at 0 or less, so a render at alpha 1 (test mode, `--fps-cap 30`) draws
+/// exactly the newest step (docs/guides/conventions.md#update-and-render).
 [[nodiscard]] PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot& current, float alpha);
 
 /// Player 1: the human and its follow camera.

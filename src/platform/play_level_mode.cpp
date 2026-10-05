@@ -137,7 +137,7 @@ PlayLevelMode::~PlayLevelMode() {
     m_mesh.reset(); // before the dictionaries, whose texture it holds
 }
 
-WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot) const {
+WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot, float drawDistance) const {
     // The follow camera through the player camera's lens, in RenderWare's axes; a window of another shape keeps the
     // view's height (as the world viewer does).
     const world::Vec3 position = toRenderWare(snapshot.cameraEye);
@@ -159,13 +159,13 @@ WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot) const {
                      .halfWidth = window.halfHeight * aspect,
                      .halfHeight = window.halfHeight,
                      .nearClip = camera::kPlayerCameraLens.nearClip,
-                     .drawDistance = m_drawDistance};
+                     .drawDistance = drawDistance};
 }
 
 void PlayLevelMode::enter() {
     const std::array<world::Vec3, 1> cameras{toRenderWare(m_player->camera().position())};
     const world::PreloadResult preload =
-        world::preloadWorlds(m_scenery.set->worlds(), cameras, m_drawDistance, m_budget, *m_scenery.set, 0);
+        world::preloadWorlds(m_scenery.set->worlds(), cameras, m_drawDistance.current(), m_budget, *m_scenery.set, 0);
     m_stats.unloads += preload.unloaded;
     m_stats.failures += preload.failed;
     m_print(std::format("preload: {} parts read, {} freed, {} failed; {} atomics resident\n", preload.loaded,
@@ -200,14 +200,9 @@ void PlayLevelMode::drawCharacter() const {
 }
 
 ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
-    simulate(stack, frame);
-    draw(1.0F);
-    return ModeResult::Stay;
-}
-
-void PlayLevelMode::simulate(GameModeStack& stack, const FrameTime& frame) {
     const auto seconds = static_cast<float>(frame.seconds);
-    m_nowMs = millisecondsOf(frame.gameTicks);
+    m_drawDistance.commit();
+    const std::uint64_t nowMs = millisecondsOf(frame.gameTicks);
     const raycast::CollisionMesh* mesh = m_scenery.level->collision.get();
 
     // The characters' update, then the cameras' (human::Player keeps that order).
@@ -224,7 +219,7 @@ void PlayLevelMode::simulate(GameModeStack& stack, const FrameTime& frame) {
     WorldSet& set = *m_scenery.set;
     const std::array<world::Vec3, 1> cameras{toRenderWare(m_player->camera().position())};
     const world::StreamStep step =
-        world::updateStreaming(set.worlds(), cameras, m_drawDistance, m_budget, set, m_nowMs);
+        world::updateStreaming(set.worlds(), cameras, m_drawDistance.current(), m_budget, set, nowMs);
     switch (step.result) {
     case world::StreamResult::Loaded:
         ++m_stats.loads;
@@ -241,33 +236,38 @@ void PlayLevelMode::simulate(GameModeStack& stack, const FrameTime& frame) {
         break;
     }
     m_pending = world::nearestPendingDistance(set.worlds(), cameras);
-    m_drawDistance = world::adjustDrawDistance(m_drawDistance,
-                                               world::DrawDistanceInputs{.pending = m_pending,
-                                                                         .farClip = camera::kPlayerCameraLens.farClip,
-                                                                         .seconds = seconds,
-                                                                         .frameRate = 30.0F,
-                                                                         .viewports = 1,
-                                                                         .lowRateMode = false});
-    ++m_stats.frames;
-}
+    m_drawDistance.current() = world::adjustDrawDistance(
+        m_drawDistance.current(), world::DrawDistanceInputs{.pending = m_pending,
+                                                            .farClip = camera::kPlayerCameraLens.farClip,
+                                                            .seconds = seconds,
+                                                            .frameRate = 30.0F,
+                                                            .viewports = 1,
+                                                            .lowRateMode = false});
 
-void PlayLevelMode::draw(float alpha) {
-    // Everything drawn comes from the player's snapshots, `alpha` of the way from the last step to this one.
-    const human::PlayerSnapshot snapshot = human::interpolate(m_player->previous(), m_player->current(), alpha);
-    // The visibility pass, the character's skin, and the frame with the character among the objects.
-    WorldSet& set = *m_scenery.set;
-    const WorldView current = view(snapshot);
-    const world::ViewFrustum frustum(current.pose, current.halfWidth, current.halfHeight, current.nearClip,
-                                     current.drawDistance);
+    // The visibility pass, from the newest step's camera: the next step's streaming reads it, so it belongs to the
+    // simulation, not to the blended render.
+    const WorldView newest = view(m_player->current(), m_drawDistance.current());
+    const world::ViewFrustum frustum(newest.pose, newest.halfWidth, newest.halfHeight, newest.nearClip,
+                                     newest.drawDistance);
     for (world::StreamedWorld* world : set.worlds()) {
         world->findVisibleSectors(frustum, true);
     }
+    ++m_stats.frames;
+    return ModeResult::Stay;
+}
+
+void PlayLevelMode::render(const RenderTime& time) {
+    // Everything drawn comes from the player's snapshots and the draw distance, `alpha` of the way from the step before
+    // to the newest one.
+    const human::PlayerSnapshot snapshot = human::interpolate(m_player->previous(), m_player->current(), time.alpha);
+    const WorldView blended = view(snapshot, lerp(m_drawDistance.previous(), m_drawDistance.current(), time.alpha));
     if (m_engine.drawsPixels()) {
         skin(snapshot);
         m_mesh->update(m_positions, m_normals);
     }
-    m_renderer.render(m_engine, set, m_scenery.level.get(), current, kFogColour, m_pending, m_nowMs,
-                      [this] { drawCharacter(); });
+    // The world draws the sectors its own view sees (WorldRenderer::render), with the character among the objects.
+    m_renderer.render(m_engine, *m_scenery.set, m_scenery.level.get(), blended, kFogColour, m_pending,
+                      millisecondsOf(time.gameTicks), [this] { drawCharacter(); });
 }
 
 std::string PlayLevelMode::summary() const {

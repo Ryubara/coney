@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <expected>
 #include <format>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,6 +22,7 @@
 
 #include "core/chunk_system.h"
 #include "core/error.h"
+#include "core/frame_clock.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
 #include "core/language.h"
@@ -37,6 +39,7 @@
 #include "gui/global_strings.h"
 #include "gui/text_layout.h"
 #include "platform/character_viewer_mode.h"
+#include "platform/frame_pacer.h"
 #include "platform/play_level_mode.h"
 #include "platform/reference_renderer.h"
 #include "platform/render_engine.h"
@@ -190,7 +193,7 @@ int main(int argc, char** argv) {
     coney::platform::addSpriteSheetHandlers(chunkHandlers);
 
     // Game time runs on the fixed 1/30 s step and never reads a real clock, which keeps the engine's test mode
-    // (docs/guides/conventions.md#platform-code) possible.
+    // (docs/guides/conventions.md#platform-code) possible; only the frame pacer below does, outside test mode.
     coney::GameTimer timer;
     timer.setFixedStep(true);
     coney::GameModeStack modes;
@@ -212,6 +215,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     coney::platform::RenderEngine& renderer = **engine;
+    renderer.setVsync(options->vsync);
 
     if (!options->loads.empty()) {
         if (!wad) {
@@ -380,8 +384,30 @@ int main(int argc, char** argv) {
         renderer.requestCapture(*frameLimit - 1, *screenshotPath);
     }
 
+    // The main loop (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock: one step
+    // and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it into fixed
+    // steps, rendering blended between them; a cap of 30 is the original's rhythm, one step per frame, unblended.
+    const bool testMode = coney::isTestMode(*options);
+    const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
+    constexpr std::uint32_t kStepsPerSecond = 30;
+    coney::FrameClock clock(testMode || fpsCap == kStepsPerSecond ? coney::FramePacing::Lockstep
+                                                                  : coney::FramePacing::Interpolated);
     std::optional<coney::platform::Window> window = renderer.window();
-    modes.runUntilEmpty(timer, [&window] { return !window || window->pumpEvents(); }, frameLimit);
+    coney::FrameHooks hooks;
+    hooks.beginFrame = [&window] { return !window || window->pumpEvents(); };
+    std::optional<coney::platform::FramePacer> pacer;
+    if (!testMode) {
+        coney::platform::FramePacer& paced =
+            pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(printText)
+                                                   : std::function<void(std::string_view)>());
+        hooks.waitForFrame = [&paced] { return paced.waitForFrame(); };
+        hooks.endFrame = [&paced](std::uint32_t steps) { paced.endFrame(steps); };
+    }
+    modes.runUntilEmpty(timer, clock, hooks, frameLimit);
+    if (pacer && options->showFps) {
+        printText(pacer->summary());
+    }
+
     if (worldViewer) {
         printText(worldViewer->summary());
     }

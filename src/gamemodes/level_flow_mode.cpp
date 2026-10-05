@@ -44,11 +44,14 @@ ModeResult LevelFlowMode::update(GameModeStack& /*stack*/, const FrameTime& fram
         startFrontEnd();
     }
 
-    // The front-end world's frame: no world yet, so the black background the front end sets; then the scripts.
-    m_device.beginFrame(graphics::kBlack);
+    // The scripts' step. The original draws the front-end world's frame around it; Coney's render() does.
     m_scripts.update(nowMs, frame.seconds);
-    m_device.present();
     return ModeResult::Stay;
+}
+
+void LevelFlowMode::render(const RenderTime& /*time*/) {
+    m_device.beginFrame(graphics::kBlack);
+    m_device.present();
 }
 
 void LevelFlowMode::chooseLevel(std::string_view name) {

@@ -43,11 +43,20 @@ void SpriteBatch::render(RenderDevice& device, const OverlayCamera& camera) cons
 void OverlayPass::queue(SpriteBatch& batch, float key) { m_queue.push_back(Entry{&batch, key}); }
 
 void OverlayPass::render(RenderDevice& device, const OverlayCamera& camera) {
-    // Ascending key: the smallest is drawn first and the largest ends on top.
+    draw(device, camera);
+    empty();
+}
+
+void OverlayPass::draw(RenderDevice& device, const OverlayCamera& camera) {
+    // Ascending key: the smallest is drawn first and the largest ends on top. The sort is stable, so sorting again on
+    // the next draw of the same queue changes nothing.
     std::ranges::stable_sort(m_queue, [](const Entry& a, const Entry& b) { return a.key < b.key; });
     for (const Entry& entry : m_queue) {
         entry.batch->render(device, camera);
     }
+}
+
+void OverlayPass::empty() {
     for (const Entry& entry : m_queue) {
         entry.batch->clear();
     }

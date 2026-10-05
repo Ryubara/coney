@@ -32,7 +32,10 @@ class TextureViewerMode final : public GameMode {
     TextureViewerMode(RenderEngine& engine, std::vector<TextureDictionary> dictionaries);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
+    /// Nothing to simulate: it only stays.
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+    /// Clears, lays the textures out for the current window size and draws each in its cell, then presents.
+    void render(const RenderTime& time) override;
 
     /// The number of textures shown.
     [[nodiscard]] std::size_t textureCount() const { return m_textures.size(); }

@@ -63,7 +63,9 @@ struct LogicalQuad {
 /// show it.
 ///
 /// It stands for the original's render device, which each game mode's update calls to begin the frame and, at the
-/// end, to present it (docs/research/boot.md#one-frame, steps 6 and 10). The platform layer implements it with librw
+/// end, to present it (docs/research/boot.md#one-frame, steps 6 and 10); in Coney a mode's render() makes these calls
+/// (gamemodes/game_mode.h), never its update(). The platform layer implements it with librw
+
 /// (src/platform/render_engine.h); the headless renderer implements every call as a no-op, so a mode never needs to
 /// know whether anything is on screen.
 class RenderDevice {
@@ -85,8 +87,10 @@ class RenderDevice {
     /// returns.
     virtual void drawQuads(const Texture* texture, std::span<const LogicalQuad> quads) = 0;
 
-    /// Ends the frame and shows it. With a display this waits for the vertical blank, which paces the game as the
-    /// original's present does; the headless renderer returns at once.
+    /// Ends the frame and shows it. With a display and vsync on this waits for the vertical blank; the headless
+    /// renderer returns at once. The game's speed does not depend on it: the main loop steps the game by real time
+    /// (core/frame_clock.h), not by presents.
+
     virtual void present() = 0;
 };
 

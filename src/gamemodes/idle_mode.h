@@ -24,13 +24,15 @@ class IdleMode final : public GameMode {
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
 
+    // Nothing to simulate: it only stays.
+    ModeResult update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) override { return ModeResult::Stay; }
+
     // One frame: clear and present when there is a device to draw on.
-    ModeResult update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) override {
+    void render(const RenderTime& /*time*/) override {
         if (m_device != nullptr) {
             m_device->beginFrame(kClearColour);
             m_device->present();
         }
-        return ModeResult::Stay;
     }
 
   private:

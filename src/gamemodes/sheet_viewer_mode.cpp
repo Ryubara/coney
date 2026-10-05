@@ -54,16 +54,19 @@ std::vector<graphics::Sprite> layoutSheet(const graphics::SpriteSheet& sheet, co
 SheetViewerMode::SheetViewerMode(graphics::RenderDevice& device, const graphics::SpriteSheet& sheet)
     : m_device(device), m_batch(sheet, sheet.page.rects.size(), 0.0F), m_layout(layoutSheet(sheet, m_camera)) {}
 
-// One frame: clear, add every rectangle's sprite to the batch, draw it in the 2D pass, present.
 ModeResult SheetViewerMode::update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) {
-    m_device.beginFrame(kClearColour);
+    m_pass.empty();
     for (const graphics::Sprite& sprite : m_layout) {
         m_batch.addSprite(sprite);
     }
     m_pass.queue(m_batch);
-    m_pass.render(m_device, m_camera);
-    m_device.present();
     return ModeResult::Stay;
+}
+
+void SheetViewerMode::render(const RenderTime& /*time*/) {
+    m_device.beginFrame(kClearColour);
+    m_pass.draw(m_device, m_camera);
+    m_device.present();
 }
 
 } // namespace coney

@@ -21,7 +21,8 @@ struct TextView {
 
 /// Settings taken from the command line.
 struct Options {
-    /// Stop after this many frames; unset means run until the window closes. Tests and CI use it.
+    /// Stop after this many frames; unset means run until the window closes. Tests and CI use it. A frame here is
+    /// one fixed 1/30 s step and one render: `--frames` puts Coney in test mode (isTestMode()).
     std::optional<int> frameLimit;
     /// `--help` was given: print usageText() and exit 0.
     bool showHelp = false;
@@ -71,7 +72,23 @@ struct Options {
     /// `--names`: a text file of model names, one per line, that `--render-references` files images under. Requires
     /// renderReferences.
     std::optional<std::string> namesFile;
+    /// `--fps-cap N`: draw at most N frames a second, 0 for no cap (the default; vsync still limits the rate while
+    /// it is on). 30 is the original's rhythm: one step and one render per frame, nothing blended
+    /// (docs/guides/building.md#frame-rate). Not in test mode.
+    std::optional<int> fpsCap;
+    /// `--vsync on|off`: whether a present waits for the display's vertical blank; on by default. Needs a window.
+    bool vsync = true;
+    /// `--show-fps`: print the frame and step rates once a second, and their totals at the end. Not in test mode.
+    bool showFps = false;
 };
+
+/// The largest `--fps-cap`.
+inline constexpr int kMaxFpsCap = 1000;
+
+/// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script` or `--screenshot`. Test
+/// mode runs the main loop in lockstep, one fixed step and one render per frame, and never reads a real clock, so a run
+/// gives the same result every time on any machine (docs/guides/conventions.md#platform-code).
+[[nodiscard]] bool isTestMode(const Options& options);
 
 /// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).
 inline constexpr std::string_view kDefaultViewCharacter = "warr_re_cv";

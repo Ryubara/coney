@@ -608,9 +608,14 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   order of [Update](#update) (stick, animation, root motion of the start clips, locomotion, gravity, move or fall,
   then the anim state), the ground snap, the fall and landing, and the body pushed out of walls.
 - `src/human/player.*` is player 1 (the character, the human, the follow camera) and the snapshot drawing reads: the
-  previous and current feet, heading, pose and camera, interpolated for a renderer that draws between steps.
+  previous and current feet, heading, pose (each bone slerped) and camera, interpolated for a renderer that draws
+  between steps.
 - `--play-level NAME` ([Building](../guides/building.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
-  steps the player and streams the level, then draws from the snapshot only.
+  steps the player, streams the level and runs the visibility pass in its update, and draws from the snapshots of the
+  last two steps, blended by the frame's alpha, in its render
+  ([Update and render](../guides/conventions.md#update-and-render)). A disc test (`[frame_rate]`) plays both scripts
+  at 30, 60, 144, 240 and 1000 frames a second and with irregular frames and checks the player, the camera and the
+  streaming come out bit for bit as in lockstep.
 
 **Disc test** (`[characters]`, counts only): all 543 records load (128 models, 52 character data resources, 507
 dictionaries); 150,509 vertices and 155,493 triangles; 1,692 clips and 2,843 resolved ids; the joint mismatch of a

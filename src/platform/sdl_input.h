@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include "core/error.h"
@@ -31,8 +32,11 @@ inline constexpr std::uint8_t kTriggerHeldPressure = 64;
 /// only while it has a gamepad. The mapping (docs/guides/building.md#controls) is Coney's own: SDL names its face
 /// buttons by position, so south is cross, east circle, west square and north triangle on any gamepad.
 ///
-/// It reads device state, not events, so it needs the window's event pump (Window::pumpEvents) to have run before
-/// each sample(); the stack's loop does that.
+/// It reads device state, so it needs the window's event pump (Window::pumpEvents) to have run before each sample();
+/// the stack's loop does that. It also watches the button and key events as they arrive: a button pressed since the
+/// last sample counts as held in the next one even if it was let go already, so a tap shorter than a step (or made
+/// while a fast display ran frames with no step) is never lost, and it is seen in exactly one step, as the original's
+/// pad read once per frame would see it (docs/guides/conventions.md#update-and-render).
 ///
 /// Research: docs/research/frontend.md#pad-record
 class SdlInput final : public InputSource {
@@ -47,14 +51,28 @@ class SdlInput final : public InputSource {
     SdlInput(SdlInput&&) = delete;
     SdlInput& operator=(SdlInput&&) = delete;
 
-    /// The current state of the keyboard and the gamepads; `frame` is not needed, the devices are live.
+    /// The current state of the keyboard and the gamepads, plus every button pressed since the last sample;
+    /// `frame` is not needed, the devices are live.
     [[nodiscard]] PortSamples sample(std::uint64_t frame) override;
+
+    /// Records a press of `bit` on the keyboard (`gamepad` 0) or on the gamepad with SDL id `gamepad`, for the next
+    /// sample(). The SDL event watch calls it; safe from any thread.
+    void notePress(std::uint32_t gamepad, std::uint16_t bit);
 
   private:
     SdlInput() = default;
 
     // Opens gamepads that appeared and closes those that went away, keeping the others in their order.
     void refreshGamepads();
+
+    // A button press seen by the event watch and not sampled yet: the keyboard (gamepad 0) or an SDL gamepad id.
+    struct Press {
+        std::uint32_t gamepad;
+        std::uint16_t bit;
+    };
+    std::mutex m_pressMutex;      // SDL may call the event watch from another thread
+    std::vector<Press> m_presses; // guarded by m_pressMutex
+    bool m_watching = false;      // the event watch is installed
 
     // One open gamepad: SDL's id and its SDL_Gamepad*, kept opaque here.
     struct OpenGamepad {

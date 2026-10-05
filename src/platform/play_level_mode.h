@@ -11,6 +11,7 @@
 
 #include "animation/anim_math.h"
 #include "core/error.h"
+#include "core/interpolation.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
@@ -41,10 +42,12 @@ struct PlayStats {
 /// start, driven by pad 1's left stick, and the follow camera behind him turned by the right stick. The scenery streams
 /// around the follow camera.
 ///
-/// Every frame, first the simulation: the player's update (human::Player: the human, then the camera), one streaming
-/// decision, the draw distance. Then the drawing, from the player's snapshots only: the visibility pass, the character
-/// skinned and drawn with the world, between its two worlds where the original draws its objects. Game time only, so
-/// with `--frames` and `--input-script` a run is the same every time.
+/// Every step (update()): the player's update (human::Player: the human, then the camera), one streaming decision, the
+/// draw distance, and the visibility pass the next step's streaming reads. Every real frame (render()): the drawing,
+/// from the player's snapshots of the last two steps blended by the frame's alpha (human::interpolate()) and the draw
+/// distance blended the same way: the character skinned and drawn with the world, between its two worlds where the
+/// original draws its objects (docs/guides/conventions.md#update-and-render). Game time only, so with `--frames` and
+/// `--input-script` a run is the same every time, and the simulation is the same at any frame rate.
 ///
 /// No level script, objects or other characters yet. The parts follow docs/research/characters.md and
 /// docs/research/camera.md; the mode is Coney's own glue.
@@ -77,8 +80,10 @@ class PlayLevelMode final : public GameMode {
     [[nodiscard]] std::uint32_t id() const override { return kId; }
     /// Preloads the scenery around the camera.
     void enter() override;
-    /// One frame, as the class comment says.
+    /// One step, as the class comment says.
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+    /// Draws a frame between the last two steps and presents it.
+    void render(const RenderTime& time) override;
     /// One line: frames, the player's position, heading, speed, gait, clip and state, parts streamed.
     [[nodiscard]] std::string summary() const;
 
@@ -90,15 +95,9 @@ class PlayLevelMode final : public GameMode {
                   std::vector<TextureDictionary> dictionaries, world::SectorBudget& budget,
                   const human::PlayerStart& start, std::function<void(std::string_view)> print);
 
-    // The simulation half of a frame: the player's update, one streaming decision, the draw distance. Reads the pads
-    // and game time only; draws nothing.
-    void simulate(GameModeStack& stack, const FrameTime& frame);
-    // The drawing half: the visibility pass, the character skinned, the frame drawn, all from the player's snapshots
-    // `alpha` (0 to 1) of the way from the last step to this one. Changes no simulation state. The split is ready for
-    // a frame loop that steps the simulation and draws at its own rate.
-    void draw(float alpha);
-    // The camera of `snapshot` as the world renderer draws it, in RenderWare's axes.
-    [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot) const;
+    // The camera of `snapshot` as the world renderer draws it, in RenderWare's axes, with `drawDistance` as its far
+    // clip.
+    [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot, float drawDistance) const;
     // Skins the character in `snapshot`'s pose and places it in the world (RenderWare's axes) for drawing.
     void skin(const human::PlayerSnapshot& snapshot);
     // Draws the character: its lights, the render states, the atomic.
@@ -116,9 +115,8 @@ class PlayLevelMode final : public GameMode {
     std::vector<anim::Vec3> m_normals;
     std::unique_ptr<CharacterMesh> m_mesh;
     std::unique_ptr<CharacterLights> m_lights;
-    float m_drawDistance;
-    float m_pending = 0.0F;    // the nearest missing scenery after the last step
-    std::uint64_t m_nowMs = 0; // game time after the last step
+    Interpolated<float> m_drawDistance; // at the last two steps
+    float m_pending = 0.0F;             // the nearest missing scenery after the last step
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0;
 };

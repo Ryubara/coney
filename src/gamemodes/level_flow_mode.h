@@ -66,10 +66,13 @@ class LevelFlowMode final : public GameMode {
     /// @orig 0x0015c6f8 Mode8::Resume (unknown)
     void resume() override;
 
-    /// One frame: with a level chosen, finishes the front end and (for now) starts it again; otherwise the front-end
-    /// world's frame (black) and the scripts. Always stays.
+    /// One step: with a level chosen, finishes the front end and (for now) starts it again; then the scripts. Always
+    /// stays.
     /// @orig 0x0015c858 Mode8::Update (unknown)
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+
+    /// The front-end world's frame: no world yet, so the black background the front end sets, presented.
+    void render(const RenderTime& time) override;
 
     /// `MenuLoadLevel(name)`: chooses the level named `name` (by the level table) to start on the next update. A name
     /// the table does not have is logged and ignored.

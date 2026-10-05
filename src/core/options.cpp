@@ -22,6 +22,7 @@ constexpr std::string_view kUsage =
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "             [--play-level NAME]\n"
     "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
+    "             [--fps-cap N] [--vsync on|off] [--show-fps]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -47,7 +48,13 @@ constexpr std::string_view kUsage =
     "  --only NAME        with --render-references: render only this character (a model name or a\n"
     "                     0x name hash); repeatable\n"
     "  --names FILE       with --render-references: model names, one per line, to name the images by\n"
-    "  --frames N         stop after N frames (1 to 1000000); used by tests and CI\n"
+    "  --fps-cap N        draw at most N frames a second (0, the default: no cap); the game runs at\n"
+    "                     its fixed 30 steps a second whatever the rate; 30 draws one frame per step\n"
+    "  --vsync on|off     wait for the display's vertical blank when presenting (default on)\n"
+    "  --show-fps         print the frame and step rates once a second\n"
+    "  --frames N         stop after N frames (1 to 1000000); used by tests and CI. Test mode: with\n"
+    "                     --frames, --headless, --input-script or --screenshot each frame is one\n"
+    "                     step and one render, with no clock, so a run is the same every time\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
     "  --input-script FILE\n"
     "                     play the pad input in FILE instead of the keyboard and gamepads\n"
@@ -158,8 +165,26 @@ std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     return {};
 }
 
+// Refuses the frame-pacing options where they cannot work: part of checkCombinations().
+std::expected<void, Error> checkPacing(const Options& options) {
+    if ((options.fpsCap.has_value() || options.showFps) && isTestMode(options)) {
+        return invalidArgument("--fps-cap and --show-fps pace a real-time run, so they cannot be combined with "
+                               "--headless, --load, --frames, --input-script or --screenshot (test mode)");
+    }
+    if (!options.vsync && (options.headless || !options.loads.empty())) {
+        return invalidArgument("--vsync needs a window, so it cannot be combined with --headless or --load");
+    }
+    if ((options.fpsCap.has_value() || options.showFps || !options.vsync) && options.renderReferences.has_value()) {
+        return invalidArgument("--fps-cap, --vsync and --show-fps cannot be combined with --render-references");
+    }
+    return {};
+}
+
 // Refuses options that cannot work together, once the whole command line is read.
 std::expected<void, Error> checkCombinations(const Options& options) {
+    if (auto pacing = checkPacing(options); !pacing) {
+        return pacing;
+    }
     if (auto character = checkCharacterViewer(options); !character) {
         return character;
     }
@@ -209,11 +234,31 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     return {};
 }
 
+// Parses the value after `--fps-cap`: a whole number from 0 to kMaxFpsCap, written with decimal digits only.
+std::expected<int, Error> parseFpsCap(std::string_view text) {
+    int value = 0;
+    if (isAllDigits(text)) {
+        const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (parsed.ec == std::errc{} && value <= kMaxFpsCap) {
+            return value;
+        }
+    }
+    return invalidArgument(
+        std::format("--fps-cap needs a whole number from 0 (no cap) to {}, got \"{}\"", kMaxFpsCap, text));
+}
+
 } // namespace
+
+bool isTestMode(const Options& options) {
+    return options.headless || !options.loads.empty() || options.frameLimit.has_value() ||
+           options.inputScript.has_value() || options.screenshotPath.has_value();
+}
 
 std::expected<Options, Error> parseOptions(std::span<const std::string_view> args) {
     Options options;
     std::optional<std::string> languageArg; // as typed, so a repeat is refused like any other option
+    std::optional<std::string> fpsCapArg;   // as typed, likewise
+    std::optional<std::string> vsyncArg;    // as typed, likewise
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string_view arg = args[i];
         if (arg == "--help") {
@@ -317,7 +362,29 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument(std::format("--language needs en, es, fr, it or de, got \"{}\"", code));
             }
             options.language = *language;
+        } else if (arg == "--fps-cap") {
+            if (auto value = takeValue(args, i, fpsCapArg, "--fps-cap", "a number of frames a second (0: no cap)");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto cap = parseFpsCap(fpsCapArg.value_or(std::string{}));
+            if (!cap) {
+                return std::unexpected(std::move(cap.error()));
+            }
+            options.fpsCap = *cap;
+        } else if (arg == "--vsync") {
+            if (auto value = takeValue(args, i, vsyncArg, "--vsync", "on or off"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            const std::string setting = vsyncArg.value_or(std::string{});
+            if (setting != "on" && setting != "off") {
+                return invalidArgument(std::format("--vsync needs on or off, got \"{}\"", setting));
+            }
+            options.vsync = setting == "on";
+        } else if (arg == "--show-fps") {
+            options.showFps = true;
         } else if (arg == "--screenshot") {
+
             if (auto value = takeValue(args, i, options.screenshotPath, "--screenshot", "the path of a PNG file");
                 !value) {
                 return std::unexpected(std::move(value.error()));

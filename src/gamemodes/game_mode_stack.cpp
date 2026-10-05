@@ -19,6 +19,9 @@ void GameModeStack::pop() {
     CONEY_ASSERT(!m_modes.empty());
     GameMode* leaving = m_modes.back();
     m_modes.pop_back();
+    if (leaving == m_lastUpdated) {
+        m_lastUpdated = nullptr;
+    }
     if (leaving->entered()) {
         leaving->exit();
         leaving->m_entered = false;
@@ -32,7 +35,7 @@ GameMode* GameModeStack::top() const { return m_modes.empty() ? nullptr : m_mode
 
 std::uint32_t GameModeStack::topId() const { return m_modes.empty() ? 0 : m_modes.back()->id(); }
 
-void GameModeStack::step(const FrameTime& frame) {
+void GameModeStack::updateTop(const FrameTime& frame) {
     GameMode* mode = top();
     if (mode == nullptr) {
         return;
@@ -42,25 +45,83 @@ void GameModeStack::step(const FrameTime& frame) {
         mode->m_entered = true;
         mode->enter();
     }
-    if (mode->update(*this, frame) == ModeResult::Leave) {
+    m_lastUpdated = mode;
+    m_lastStep = frame;
+    m_popPending = mode->update(*this, frame) == ModeResult::Leave;
+}
+
+void GameModeStack::finishPop() {
+    if (m_popPending) {
+        m_popPending = false;
         pop();
     }
 }
 
-std::uint64_t GameModeStack::runUntilEmpty(GameTimer& timer, const std::function<bool()>& beginFrame,
-                                           std::optional<std::uint64_t> frameLimit) {
-    std::uint64_t frames = 0;
-    while (!empty() && (!frameLimit || frames < *frameLimit)) {
-        if (beginFrame && !beginFrame()) {
+void GameModeStack::step(const FrameTime& frame) {
+    updateTop(frame);
+    finishPop();
+}
+
+void GameModeStack::render(const RenderTime& time) {
+    GameMode* mode = m_lastUpdated;
+    if (mode == nullptr) {
+        GameMode* candidate = top();
+        mode = candidate != nullptr && candidate->entered() ? candidate : nullptr;
+    }
+    if (mode != nullptr) {
+        mode->render(time);
+        ++m_renders;
+    }
+}
+
+LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, const FrameHooks& hooks,
+                                        std::optional<std::uint64_t> stepLimit) {
+    LoopCounts counts;
+    const auto belowLimit = [&counts, stepLimit] { return !stepLimit || counts.steps < *stepLimit; };
+    while (!empty() && belowLimit()) {
+        // Wait out the frame cap first and then read the events, so the steps see the freshest input.
+        const std::uint64_t elapsed = hooks.waitForFrame ? hooks.waitForFrame() : 0;
+        if (hooks.beginFrame && !hooks.beginFrame()) {
             break;
         }
-        // The pads are read once per frame, after the window's events (which carry the keyboard and gamepad state).
-        samplePads(frames);
-        const std::uint64_t advanced = timer.update();
-        step(FrameTime{frames, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
-        ++frames;
+        const FramePlan plan = clock.advance(elapsed);
+
+        // The steps the real time calls for. A Leave from the step before is carried out first.
+        std::uint32_t ran = 0;
+        for (; ran < plan.steps && belowLimit(); ++ran) {
+            finishPop();
+            if (empty()) {
+                break;
+            }
+            // The pads are read once per step, after the window's events.
+            samplePads(m_steps);
+            const std::uint64_t advanced = timer.update();
+            updateTop(FrameTime{m_steps, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
+            ++m_steps;
+            ++counts.steps;
+        }
+
+        // One render between the last two steps, by alpha (exactly the newest step at alpha 1); then the last step's
+        // Leave, if any.
+        const auto behind = static_cast<std::uint64_t>((1.0 - static_cast<double>(plan.alpha)) *
+                                                       static_cast<double>(m_lastStep.stepTicks));
+        render(RenderTime{.alpha = plan.alpha, .gameTicks = m_lastStep.gameTicks - behind, .index = m_renders});
+        finishPop();
+        ++counts.frames;
+        if (hooks.endFrame) {
+            hooks.endFrame(ran);
+        }
     }
-    return frames;
+    finishPop();
+    return counts;
+}
+
+std::uint64_t GameModeStack::runUntilEmpty(GameTimer& timer, const std::function<bool()>& beginFrame,
+                                           std::optional<std::uint64_t> stepLimit) {
+    FrameClock lockstep(FramePacing::Lockstep);
+    FrameHooks hooks;
+    hooks.beginFrame = beginFrame;
+    return runUntilEmpty(timer, lockstep, hooks, stepLimit).steps;
 }
 
 void GameModeStack::samplePads(std::uint64_t frame) {

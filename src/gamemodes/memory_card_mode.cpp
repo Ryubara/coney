@@ -5,10 +5,11 @@
 
 namespace coney {
 
-ModeResult MemoryCardMode::update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) {
+ModeResult MemoryCardMode::update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) { return ModeResult::Leave; }
+
+void MemoryCardMode::render(const RenderTime& /*time*/) {
     m_device.beginFrame(graphics::kBlack);
     m_device.present();
-    return ModeResult::Leave;
 }
 
 void MemoryCardMode::exit() {

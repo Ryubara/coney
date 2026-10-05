@@ -36,3 +36,13 @@ repos:
       - id: ruff-format
         files: ^python/
         types_or: [python, pyi]
+  # Only the frame pacer reads the real clock or sleeps: everything else runs on the fixed step's FrameTime, so the
+  # game behaves the same at any frame rate and in test mode (docs/guides/conventions.md#update-and-render).
+  - repo: local
+    hooks:
+      - id: no-real-clock
+        name: only the frame pacer reads the real clock
+        language: pygrep
+        entry: '\b(SDL_GetTicks(NS)?|SDL_GetPerformance(Counter|Frequency)|SDL_Delay(NS|Precise)?|steady_clock|system_clock|high_resolution_clock|QueryPerformanceCounter|clock_gettime|timeGetTime|GetTickCount(64)?|sleep_for|sleep_until)\b'
+        files: ^(src|tests)/.*\.(h|cpp)$
+        exclude: ^src/platform/frame_pacer\.cpp$

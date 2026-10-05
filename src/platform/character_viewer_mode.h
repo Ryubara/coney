@@ -15,6 +15,7 @@
 #include "characters/character_assets.h"
 #include "characters/orbit_camera.h"
 #include "core/error.h"
+#include "core/interpolation.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
@@ -31,9 +32,11 @@ namespace coney::platform {
 /// by pad 1. The character stands at the origin in the game's axes (z up) and plays in place: the clip's root motion
 /// is not applied.
 ///
-/// Every frame: move the camera (characters::OrbitCamera); switch clips on circle or square; advance the clip by the
-/// step (looping with the overshoot); sample the pose, build the bone transforms and skinning matrices, skin the
-/// vertices; draw. Game time only, so with `--frames` and `--input-script` a run is the same every time (test mode).
+/// Every step: move the camera (characters::OrbitCamera); switch clips on circle or square; advance the clip by the
+/// step (looping with the overshoot). Every real frame: sample the pose at the playhead blended between the last two
+/// steps, build the bone transforms and skinning matrices, skin the vertices; draw through the camera blended the same
+/// way. A new clip is not blended into. Game time only, so with `--frames` and `--input-script` a run is the same
+/// every time (test mode).
 ///
 /// Coney's own tool; the parts it is made of follow docs/research/characters.md and docs/research/formats/animation.md.
 class CharacterViewerMode final : public GameMode {
@@ -66,8 +69,10 @@ class CharacterViewerMode final : public GameMode {
     CharacterViewerMode& operator=(CharacterViewerMode&&) = delete;
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
-    /// One frame, as the class comment says.
+    /// One step, as the class comment says.
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+    /// Skins the character at the blended playhead and draws it through the blended camera, then presents.
+    void render(const RenderTime& time) override;
 
     /// One line of counts: frames, the clip playing and how often it looped, the joint check.
     [[nodiscard]] std::string summary() const;
@@ -75,8 +80,9 @@ class CharacterViewerMode final : public GameMode {
     [[nodiscard]] const characters::CharacterAssets& assets() const { return m_assets; }
     [[nodiscard]] const anim::AnimClip& clip() const { return *m_clips[m_clipIndex]; }
     [[nodiscard]] const anim::AnimCursor& cursor() const { return m_cursor; }
-    [[nodiscard]] const characters::OrbitCamera& camera() const { return m_camera; }
-    /// The skinned positions of the last frame, in the character's space.
+    /// The camera as of the newest step.
+    [[nodiscard]] const characters::OrbitCamera& camera() const { return m_camera.current(); }
+    /// The skinned positions of the last render, in the character's space.
     [[nodiscard]] const std::vector<anim::Vec3>& positions() const { return m_positions; }
 
   private:
@@ -86,10 +92,10 @@ class CharacterViewerMode final : public GameMode {
 
     // Plays clip `index` of m_clips from its start and says so.
     void startClip(std::size_t index);
-    // Samples the pose at the cursor and skins the vertices into m_positions and m_normals.
-    void skin();
-    // Draws the character through the camera into the whole window and presents the frame.
-    void render();
+    // Samples the pose of the clip at `time` and skins the vertices into m_positions and m_normals.
+    void skin(float time);
+    // Draws the character through `camera` into the whole window and presents the frame.
+    void draw(const characters::OrbitCamera& camera);
 
     RenderEngine& m_engine;
     characters::CharacterAssets m_assets;
@@ -98,7 +104,9 @@ class CharacterViewerMode final : public GameMode {
     std::size_t m_clipIndex = 0;
     anim::Skeleton m_skeleton;
     anim::AnimCursor m_cursor;
-    characters::OrbitCamera m_camera;
+    Interpolated<float> m_clipTime{0.0F};           // the playhead at the last two steps
+    Interpolated<characters::OrbitCamera> m_camera; // at the last two steps
+
     std::function<void(std::string_view)> m_print;
     std::vector<anim::Vec3> m_positions;
     std::vector<anim::Vec3> m_normals;

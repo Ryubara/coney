@@ -66,8 +66,8 @@ struct LegalScreenSettings {
 ///
 /// Coney's differences from the original, all invisible on the screen:
 /// - The original draws the picture once in `Enter`, into both display buffers, and its `Update` presents nothing;
-///   Coney draws and presents the same picture every frame, so a window that is moved, resized or captured still
-///   shows it.
+///   Coney's render() draws and presents the same picture every frame, so a window that is moved, resized or
+///   captured still shows it.
 /// - The original times the hold in real milliseconds; Coney counts game time on the fixed 1/30 s step, so the hold is
 ///   exactly 150 frames and a test can run it without a clock.
 /// - The preloads run before the picture loads; the original runs them in `Enter` too (the order within `Enter` is
@@ -98,10 +98,14 @@ class LegalScreenMode final : public GameMode {
     /// @orig 0x00159c08 StartupScreen_Draw (unknown)
     void enter() override;
 
-    /// Draws the frame and leaves once kHoldMilliseconds of game time have passed since the mode was entered. Input
-    /// is not read: no button skips the screen.
+    /// Leaves once kHoldMilliseconds of game time have passed since the mode was entered. Input is not read: no
+    /// button skips the screen.
     /// @orig 0x00159ae0 Mode5::Update (unknown)
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+
+    /// Clears the logical screen to black and draws the picture over it, then presents. Nothing moves, so there is
+    /// nothing to blend.
+    void render(const RenderTime& time) override;
 
     /// Releases the picture.
     /// @orig 0x00159ab8 Mode5::Exit (unknown)
@@ -111,10 +115,8 @@ class LegalScreenMode final : public GameMode {
     [[nodiscard]] const std::optional<graphics::SpriteSheet>& sheet() const { return m_sheet; }
 
   private:
-    /// Clears the logical screen to black and draws the picture over it, then presents.
-    void drawFrame();
-
     graphics::RenderDevice& m_device;
+
     SheetLoader m_loadSheet;
     LegalScreenSettings m_settings;
     std::function<void(std::string_view)> m_log;

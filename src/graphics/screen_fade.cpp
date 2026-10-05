@@ -36,11 +36,11 @@ void ScreenFade::update(std::uint64_t nowMs) {
     m_level = m_from + ((m_to - m_from) * t);
 }
 
-void ScreenFade::render(RenderDevice& device) const {
-    if (m_level <= 0.0F) {
+void ScreenFade::draw(RenderDevice& device, float level) {
+    if (level <= 0.0F) {
         return;
     }
-    const auto alpha = static_cast<std::uint8_t>(std::clamp(std::lround(m_level * 255.0F), 0L, 255L));
+    const auto alpha = static_cast<std::uint8_t>(std::clamp(std::lround(level * 255.0F), 0L, 255L));
     const LogicalQuad quad{0.0F, 0.0F, kLogicalWidth, kLogicalHeight, UvRect{}, Rgba{0, 0, 0, alpha}};
     device.drawQuads(nullptr, std::span(&quad, 1));
 }

@@ -99,28 +99,28 @@ WorldViewerMode::create(RenderEngine& engine, const io::Wad& wad, std::string_vi
 WorldViewerMode::WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set,
                                  std::unique_ptr<world::LevelObject> level, world::SectorBudget& budget,
                                  world::Vec3 start, std::function<void(std::string_view)> print)
-    : m_engine(engine), m_set(std::move(set)), m_level(std::move(level)), m_budget(budget), m_camera(start),
-      m_renderer(kAmbient), m_print(std::move(print)) {}
+    : m_engine(engine), m_set(std::move(set)), m_level(std::move(level)), m_budget(budget),
+      m_camera(world::DebugCamera(start)), m_renderer(kAmbient), m_print(std::move(print)) {}
 
-WorldView WorldViewerMode::view() const {
+WorldView WorldViewerMode::view(const world::DebugCamera& camera, float drawDistance) const {
     // The player camera's view window on the 4:3 picture; a window of another shape keeps its height and widens or
     // narrows (a Coney choice: the original's picture is always the television's).
     const camera::ViewWindow window = camera::viewWindow(camera::kPlayerCameraLens);
     const graphics::Extent size = m_engine.frameSize();
     const float aspect =
         size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 4.0F / 3.0F;
-    return WorldView{.pose = m_camera.pose(),
+    return WorldView{.pose = camera.pose(),
                      .halfWidth = window.halfHeight * aspect,
                      .halfHeight = window.halfHeight,
                      .nearClip = camera::kPlayerCameraLens.nearClip,
-                     .drawDistance = m_drawDistance};
+                     .drawDistance = drawDistance};
 }
 
 void WorldViewerMode::enter() {
     // The preload before the first frame, at game time 0, with the camera's draw distance as its radius.
-    const std::array<world::Vec3, 1> cameras{m_camera.position()};
+    const std::array<world::Vec3, 1> cameras{m_camera.current().position()};
     const world::PreloadResult preload =
-        world::preloadWorlds(m_set->worlds(), cameras, m_drawDistance, m_budget, *m_set, 0);
+        world::preloadWorlds(m_set->worlds(), cameras, m_drawDistance.current(), m_budget, *m_set, 0);
     m_stats.preloaded = preload.loaded;
     m_stats.unloads += preload.unloaded;
     m_stats.failures += preload.failed;
@@ -139,13 +139,17 @@ ModeResult WorldViewerMode::update(GameModeStack& stack, const FrameTime& frame)
     const auto seconds = static_cast<float>(frame.seconds);
     const std::uint64_t nowMs = millisecondsOf(frame.gameTicks);
 
-    // The camera moves first, as the simulation does before the world manager's update.
-    m_camera.update(stack.pads().port(0), seconds);
-    const std::array<world::Vec3, 1> cameras{m_camera.position()};
+    // The values render() blends move on a step.
+    m_camera.commit();
+    m_drawDistance.commit();
 
-    // One streaming decision, from the visibility of the last frame.
+    // The camera moves first, as the simulation does before the world manager's update.
+    m_camera.current().update(stack.pads().port(0), seconds);
+    const std::array<world::Vec3, 1> cameras{m_camera.current().position()};
+
+    // One streaming decision, from the visibility of the last step.
     const world::StreamStep step =
-        world::updateStreaming(m_set->worlds(), cameras, m_drawDistance, m_budget, *m_set, nowMs);
+        world::updateStreaming(m_set->worlds(), cameras, m_drawDistance.current(), m_budget, *m_set, nowMs);
     switch (step.result) {
     case world::StreamResult::Loaded:
         ++m_stats.loads;
@@ -169,26 +173,38 @@ ModeResult WorldViewerMode::update(GameModeStack& stack, const FrameTime& frame)
     }
 
     // The draw distance follows the nearest missing scenery; Coney's fixed step is always 30 frames a second.
-    const float pending = world::nearestPendingDistance(m_set->worlds(), cameras);
-    m_drawDistance = world::adjustDrawDistance(m_drawDistance,
-                                               world::DrawDistanceInputs{.pending = pending,
-                                                                         .farClip = camera::kPlayerCameraLens.farClip,
-                                                                         .seconds = seconds,
-                                                                         .frameRate = 30.0F,
-                                                                         .viewports = 1,
-                                                                         .lowRateMode = false});
+    m_pendingDistance = world::nearestPendingDistance(m_set->worlds(), cameras);
+    m_drawDistance.current() = world::adjustDrawDistance(
+        m_drawDistance.current(), world::DrawDistanceInputs{.pending = m_pendingDistance,
+                                                            .farClip = camera::kPlayerCameraLens.farClip,
+                                                            .seconds = seconds,
+                                                            .frameRate = 30.0F,
+                                                            .viewports = 1,
+                                                            .lowRateMode = false});
 
-    // The visibility pass of this frame's one viewport, then the drawing.
-    const WorldView current = view();
+    // The visibility pass of this step's one viewport, which the next step's streaming reads.
+    const WorldView current = view(m_camera.current(), m_drawDistance.current());
     const world::ViewFrustum frustum(current.pose, current.halfWidth, current.halfHeight, current.nearClip,
                                      current.drawDistance);
     for (world::StreamedWorld* world : m_set->worlds()) {
         world->findVisibleSectors(frustum, true);
     }
-    m_renderer.render(m_engine, *m_set, m_level.get(), current, kFogColour, pending, nowMs);
-    m_stats.maxDrawn = std::max(m_stats.maxDrawn, m_renderer.drawnAtomics());
     ++m_stats.frames;
     return ModeResult::Stay;
+}
+
+void WorldViewerMode::render(const RenderTime& time) {
+    // The camera and the draw distance between the last two steps; the turn the short way round.
+    const world::DebugCamera& from = m_camera.previous();
+    const world::DebugCamera& to = m_camera.current();
+    world::DebugCamera blended(world::Vec3{lerp(from.position().x, to.position().x, time.alpha),
+                                           lerp(from.position().y, to.position().y, time.alpha),
+                                           lerp(from.position().z, to.position().z, time.alpha)});
+    blended.setOrientation(lerpAngle(from.yaw(), to.yaw(), time.alpha), lerp(from.pitch(), to.pitch(), time.alpha));
+    const float drawDistance = lerp(m_drawDistance.previous(), m_drawDistance.current(), time.alpha);
+    m_renderer.render(m_engine, *m_set, m_level.get(), view(blended, drawDistance), kFogColour, m_pendingDistance,
+                      millisecondsOf(time.gameTicks));
+    m_stats.maxDrawn = std::max(m_stats.maxDrawn, m_renderer.drawnAtomics());
 }
 
 } // namespace coney::platform

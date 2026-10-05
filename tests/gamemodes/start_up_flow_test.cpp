@@ -71,16 +71,9 @@ struct Run {
         flow->start();
     }
 
-    // Runs `count` more frames as the main loop does (pads, timer, step), the frame index carrying on from the last.
-    void frames(std::uint64_t count) {
-        for (std::uint64_t i = 0; i < count; ++i, ++index) {
-            stack.samplePads(index);
-            const std::uint64_t advanced = timer.update();
-            stack.step(coney::FrameTime{index, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
-        }
-    }
-
-    std::uint64_t index = 0; ///< The next frame's index.
+    // Runs `count` more frames of the main loop in test mode (a step and a render each), the frame index carrying on
+    // from the last.
+    void frames(std::uint64_t count) { stack.runUntilEmpty(timer, {}, count); }
 };
 
 } // namespace
@@ -197,7 +190,6 @@ struct ScriptedRun {
     std::unique_ptr<StartUpFlow> flow;
     std::unique_ptr<coney::ScriptedInput> input;
     GameTimer timer;
-    std::uint64_t index = 0;
 
     explicit ScriptedRun(std::string_view script) {
         input = std::make_unique<coney::ScriptedInput>(coney::parseInputScript(script).value());
@@ -216,14 +208,8 @@ struct ScriptedRun {
         flow->start();
     }
 
-    // Runs `count` more frames as the main loop does.
-    void frames(std::uint64_t count) {
-        for (std::uint64_t i = 0; i < count; ++i, ++index) {
-            stack.samplePads(index);
-            const std::uint64_t advanced = timer.update();
-            stack.step(coney::FrameTime{index, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
-        }
-    }
+    // Runs `count` more frames of the main loop in test mode, the frame index carrying on from the last.
+    void frames(std::uint64_t count) { stack.runUntilEmpty(timer, {}, count); }
 
     // Whether a log line contains `text`.
     [[nodiscard]] bool logged(std::string_view text) const {

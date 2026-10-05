@@ -403,8 +403,18 @@ Written from this page:
   pops the one it pushed. Pushing a mode already on the stack is a programmer error. There is no fixed capacity.
 - `src/core/game_timer.h` (`GameTimer`): game time in EE ticks, with the fixed step of exactly `0x960000` ticks and a
   real-time mode clamped to 40 ms whose elapsed time the caller measures (the engine never reads a clock itself).
-- The run loop advances the `GameTimer` once per frame and hands the step to the top mode. The original computes
+- The run loop advances the `GameTimer` once per step and hands the step to the top mode. The original computes
   `dt` per mode from the timestamp at `+0x00` (`0x00156220`); Coney's step is the same 1/30 s under the fixed step.
+- **Update and render are split**, Coney's choice: the original's `Update` simulates, draws and presents one frame;
+  Coney's `update()` only simulates one step and a separate `render()` draws and presents. Each real frame the loop
+  runs the steps the real time calls for (0 to 4, from `FrameClock`), then renders once, blended between the last two
+  steps, so the game keeps its 30 steps a second at any display rate
+  ([Graphics](graphics.md#coneys-implementation),
+  [Update and render](../guides/conventions.md#update-and-render)). Only the mode that ran the last step renders, as
+  only the top mode's `Update` ran in the original; a mode that leaves on a frame's last step is popped after that
+  frame's render, so its last picture is shown as the original's was. Test mode is lockstep: one step and one render
+  per frame, with no clock.
+
 - `coney` builds the stack in `main` (`src/platform/main.cpp`): it opens the WAD when given `--disc`, creates the
   chunk handler table, then runs the start-up flow: with a disc it loads the UI strings, skips the three movies (no
   video decoder yet), pushes mode 8, asks for the memory-card boot check, pushes mode 6 and then the legal screen

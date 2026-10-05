@@ -19,8 +19,9 @@ TextureViewerMode::TextureViewerMode(RenderEngine& engine, std::vector<TextureDi
     }
 }
 
-// One frame: clear, lay the textures out for the current window size and draw each in its cell, present.
-ModeResult TextureViewerMode::update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) {
+ModeResult TextureViewerMode::update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) { return ModeResult::Stay; }
+
+void TextureViewerMode::render(const RenderTime& /*time*/) {
     m_engine.beginWindowFrame(kClearColour);
     if (m_engine.drawsPixels()) {
         const graphics::GridLayout layout = graphics::layoutGrid(m_sizes, m_engine.frameSize(), kMargin);
@@ -31,7 +32,6 @@ ModeResult TextureViewerMode::update(GameModeStack& /*stack*/, const FrameTime& 
         }
     }
     m_engine.present();
-    return ModeResult::Stay;
 }
 
 } // namespace coney::platform

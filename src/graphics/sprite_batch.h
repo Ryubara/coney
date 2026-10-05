@@ -78,11 +78,20 @@ class OverlayPass {
     /// Queues `batch` for this frame with `key`. The batch must stay alive until render().
     void queue(SpriteBatch& batch, float key);
 
-    /// Draws every queued batch through `camera` in ascending key order, then empties each batch and the queue.
+    /// Draws every queued batch through `camera` in ascending key order, then empties each batch and the queue: the
+    /// original's pass, which draws a frame's sprites once. draw() and empty() are its two halves.
+    void render(RenderDevice& device, const OverlayCamera& camera);
+
+    /// Draws every queued batch through `camera` in ascending key order, keeping the batches and the queue, so a
+    /// mode's render() can draw the sprites of its last step as often as the display asks
+    /// (docs/guides/conventions.md#update-and-render).
     /// @orig 0x00185d20 ResourceMgr_RenderOverlay (unknown)
     /// @orig 0x00184890 ResourceMgr_CompareOverlayKeys (unknown)
+    void draw(RenderDevice& device, const OverlayCamera& camera);
+
+    /// Empties each queued batch and the queue: what a mode's update does before it lists the step's sprites.
     /// @orig 0x00185cc8 ResourceMgr_EmptyInstances (unknown)
-    void render(RenderDevice& device, const OverlayCamera& camera);
+    void empty();
 
     /// Batches queued so far this frame.
     [[nodiscard]] std::size_t queued() const { return m_queue.size(); }

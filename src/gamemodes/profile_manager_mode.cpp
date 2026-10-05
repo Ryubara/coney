@@ -45,7 +45,10 @@ void ProfileManagerMode::enter() {
         m_services.playMusic(kMusic);
     }
     loadResources();
+    // Nothing to blend from a time the menus were not up.
+    m_fadeLevel.reset(m_fade.level());
     m_finished = false;
+
     m_lastScreen.clear();
     m_startPending = true;
 }
@@ -58,6 +61,9 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
     m_shared.connectedPads = stack.pads().connectedCount();
     m_scripts.setTime(nowMs);
     m_fade.update(nowMs);
+    m_fadeLevel.commit();
+    // The sprites of the step before are drawn; this step lists its own.
+    m_pass.empty();
 
     // The controller starts here rather than in enter(), which has no frame: its first screen times itself from the
     // game time of the frame it is entered on.
@@ -66,19 +72,17 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
         m_controller.start(m_onRumble);
     }
 
-    // No front-end world yet: black where the scene would be. Then the menus, the 2D pass and the present.
-    m_device.beginFrame(graphics::kBlack);
+    // The menus list their sprites for the 2D pass; the fade's level is taken where the original draws it, before
+    // the scripts run.
     m_finished = m_controller.update();
     for (std::optional<graphics::SpriteBatch>* batch : {&m_menuBatch, &m_textBatch, &m_bigBatch}) {
         if (*batch) {
             m_pass.queue(**batch);
         }
     }
-    m_pass.render(m_device, m_camera);
-    m_fade.render(m_device);
+    m_fadeLevel.current() = m_fade.level();
     // The scripts' frame: the scheduled calls that are due (a fade's follow-up, the Rumble mode's launch).
     m_scripts.update(nowMs, frame.seconds);
-    m_device.present();
 
     // Log each change of screen once, so a headless run shows how far the menus went.
     if (const std::string_view screen = m_controller.currentName(); screen != m_lastScreen) {
@@ -88,8 +92,19 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
     return m_finished ? ModeResult::Leave : ModeResult::Stay;
 }
 
+void ProfileManagerMode::render(const RenderTime& time) {
+    // No front-end world yet: black where the scene would be. Then the menus, the 2D pass, the fade and the present.
+    m_device.beginFrame(graphics::kBlack);
+    m_pass.draw(m_device, m_camera);
+    graphics::ScreenFade::draw(m_device, lerp(m_fadeLevel.previous(), m_fadeLevel.current(), time.alpha));
+    m_device.present();
+}
+
 void ProfileManagerMode::exit() {
     m_controller.stop();
+    // The queue points at the batches released below.
+    m_pass.empty();
+
     // The second callback starts the chosen game, unless the flow was left another way (the Rumble-mode flag the
     // original also reads is always clear in Coney).
     if (m_finished && !m_onStartGame.empty()) {

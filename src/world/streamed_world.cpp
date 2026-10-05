@@ -191,17 +191,28 @@ void StreamedWorld::findVisibleSectors(const ViewFrustum& frustum, bool firstVie
 }
 
 std::vector<std::uint32_t> StreamedWorld::collectSectors(Vec3 viewpoint) const {
+    return collectSectorsWhere(viewpoint, [](const StreamedSector& sector) { return sector.visible; });
+}
+
+std::vector<std::uint32_t> StreamedWorld::collectSectorsIn(Vec3 viewpoint, const ViewFrustum& frustum) const {
+    return collectSectorsWhere(viewpoint,
+                               [&frustum](const StreamedSector& sector) { return frustum.mayContain(sector.box); });
+}
+
+std::vector<std::uint32_t>
+StreamedWorld::collectSectorsWhere(Vec3 viewpoint, const std::function<bool(const StreamedSector&)>& chosen) const {
     std::vector<std::uint32_t> collected;
     // Appends the sector of layout leaf `leaf` when it is to be drawn, as World_CollectSector does.
-    const auto collect = [this, &collected](std::uint32_t leaf) {
+    const auto collect = [this, &collected, &chosen](std::uint32_t leaf) {
         if (leaf >= m_leafSectors.size() || m_leafSectors[leaf] < 0) {
             return;
         }
         const auto k = static_cast<std::uint32_t>(m_leafSectors[leaf]);
-        if (m_sectors[k].visible && m_sectors[k].loaded) {
+        if (m_sectors[k].loaded && chosen(m_sectors[k])) {
             collected.push_back(k);
         }
     };
+
     if (m_planes.empty()) {
         // No BSP to walk: the only sector, or a synthetic layout in stream order.
         for (std::uint32_t leaf = 0; leaf < m_leafSectors.size(); ++leaf) {

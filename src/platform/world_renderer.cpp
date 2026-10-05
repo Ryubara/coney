@@ -172,6 +172,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
 
     // 6. The `s` world. 7. The objects, when there are any. 8. The `d` world, the same way as the `s` world.
     const std::span<world::StreamedWorld* const> worlds = set.worlds();
+    const world::ViewFrustum frustum(view.pose, view.halfWidth, view.halfHeight, view.nearClip, view.drawDistance);
     for (std::size_t w = 0; w < worlds.size(); ++w) {
         if (w == 1 && drawObjects) {
             drawObjects();
@@ -185,7 +186,8 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
             rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
         }
         const std::vector<world::StreamedSector>& sectors = worlds[w]->sectors();
-        for (const std::uint32_t sector : worlds[w]->collectSectors(view.pose.position)) {
+        for (const std::uint32_t sector : worlds[w]->collectSectorsIn(view.pose.position, frustum)) {
+
             if (rw::Atomic* atomic = set.atomic(w, sector); atomic != nullptr) {
                 renderSectorAtomic(atomic, sectors[sector].fadeEndMs, nowMs);
                 ++m_drawn;

@@ -8,6 +8,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/frame_clock.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
 #include "core/pad.h"
@@ -37,6 +38,10 @@ class LoggingMode final : public GameMode {
         }
         return --m_left <= 0 ? ModeResult::Leave : ModeResult::Stay;
     }
+    void render(const coney::RenderTime& time) override {
+        m_log.push_back(m_name + ".render");
+        alphas.push_back(time.alpha);
+    }
     void enter() override { m_log.push_back(m_name + ".enter"); }
     void exit() override { m_log.push_back(m_name + ".exit"); }
     void resume() override { m_log.push_back(m_name + ".resume"); }
@@ -44,6 +49,7 @@ class LoggingMode final : public GameMode {
 
     GameMode* pushOnFirstUpdate = nullptr; ///< Pushed onto the stack during the next update, then cleared.
     std::vector<double> seconds;           ///< The step each update was given.
+    std::vector<float> alphas;             ///< The alpha each render was given.
 
   private:
     std::string m_name;
@@ -173,4 +179,101 @@ TEST_CASE("without an input source the pads stay disconnected", "[game_mode_stac
     stack.runUntilEmpty(timer, {}, 2);
     CHECK_FALSE(stack.pads().port(0).connected());
     CHECK(mode.pressed == std::vector<std::uint16_t>{0, 0});
+}
+
+namespace {
+
+/// Hooks that feed the loop made-up frame times: the first frame at time 0, then one frame per entry of `times`
+/// (nanoseconds), stopping when they run out.
+struct FakeFrames {
+    std::vector<std::uint64_t> times;
+    std::size_t next = 0; // frames begun
+
+    coney::FrameHooks hooks() {
+        coney::FrameHooks hooks;
+        hooks.waitForFrame = [this] {
+            return next == 0 || next > times.size() ? std::uint64_t{0} : times.at(next - 1);
+        };
+        hooks.beginFrame = [this] { return ++next <= times.size() + 1; };
+        return hooks;
+    }
+};
+
+constexpr std::uint64_t kStepNs = 33'333'334; // a little over 1/30 s: one step each
+
+} // namespace
+
+TEST_CASE("in lockstep every frame is one update and then one render at alpha 1", "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode mode("mode", 8, log, 2);
+    GameModeStack stack;
+    stack.push(mode);
+    GameTimer timer;
+    CHECK(stack.runUntilEmpty(timer, {}, std::nullopt) == 2);
+    // The step it leaves on is still drawn, before it is popped: the original's update drew that frame.
+    CHECK(log == std::vector<std::string>{"mode.enter", "mode.update", "mode.render", "mode.update", "mode.render",
+                                          "mode.exit"});
+    CHECK(mode.alphas == std::vector<float>{1.0F, 1.0F});
+}
+
+TEST_CASE("a frame may run several steps or none, and renders once either way", "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode mode("mode", 8, log, 1000);
+    GameModeStack stack;
+    stack.push(mode);
+    GameTimer timer;
+    coney::FrameClock clock(coney::FramePacing::Interpolated);
+    // The first frame (one step), a frame of three steps' time, then two frames of a fifth of a step each.
+    FakeFrames frames{{3 * kStepNs, kStepNs / 5, kStepNs / 5}};
+    const coney::LoopCounts counts = stack.runUntilEmpty(timer, clock, frames.hooks(), std::nullopt);
+    CHECK(counts.frames == 4);
+    CHECK(counts.steps == 4);
+    CHECK(log == std::vector<std::string>{"mode.enter", "mode.update", "mode.render", "mode.update", "mode.update",
+                                          "mode.update", "mode.render", "mode.render", "mode.render"});
+    REQUIRE(mode.alphas.size() == 4);
+    // The renders without a step fall further between the last two steps.
+    CHECK(mode.alphas[2] > mode.alphas[1]);
+    CHECK(mode.alphas[3] > mode.alphas[2]);
+    CHECK(mode.alphas[3] < 1.0F);
+}
+
+TEST_CASE("a mode leaving on an earlier step of a frame is popped before the next step", "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode bottom("bottom", 8, log, 1000);
+    LoggingMode top("top", 5, log, 2);
+    GameModeStack stack;
+    stack.push(bottom);
+    stack.push(top);
+    GameTimer timer;
+    coney::FrameClock clock(coney::FramePacing::Interpolated);
+    FakeFrames frames{{3 * kStepNs}};
+    stack.runUntilEmpty(timer, clock, frames.hooks(), std::nullopt);
+    CHECK(log == std::vector<std::string>{"top.enter", "top.update", "top.render", "top.update", "top.exit",
+                                          "bottom.enter", "bottom.update", "bottom.update", "bottom.render"});
+}
+
+TEST_CASE("a mode that pushes another is still the one drawn until the new one has run", "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode bottom("bottom", 8, log, 1000);
+    LoggingMode pushed("pushed", 6, log, 1000);
+    bottom.pushOnFirstUpdate = &pushed;
+    GameModeStack stack;
+    stack.push(bottom);
+    GameTimer timer;
+    stack.runUntilEmpty(timer, {}, 2);
+    CHECK(log == std::vector<std::string>{"bottom.enter", "bottom.update", "bottom.suspend", "bottom.render",
+                                          "pushed.enter", "pushed.update", "pushed.render"});
+}
+
+TEST_CASE("the frame limit counts steps", "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode mode("mode", 8, log, 1000);
+    GameModeStack stack;
+    stack.push(mode);
+    GameTimer timer;
+    coney::FrameClock clock(coney::FramePacing::Interpolated);
+    FakeFrames frames{{4 * kStepNs, 4 * kStepNs}};
+    const coney::LoopCounts counts = stack.runUntilEmpty(timer, clock, frames.hooks(), 6);
+    CHECK(counts.steps == 6);
+    CHECK(timer.ticks() == 6 * GameTimer::kFixedStepTicks);
 }

@@ -44,7 +44,11 @@ class TextViewerMode final : public GameMode {
                    std::string text, float scale = 1.0F);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
+    /// One step: lays the text out at the step's game time and lists its sprites for the 2D pass.
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+    /// Clears, draws the listed sprites in the 2D pass and presents. The text's effects step at 30 a second, as the
+    /// original's do.
+    void render(const RenderTime& time) override;
 
     /// The last frame's layout.
     [[nodiscard]] const gui::TextLayout& layout() const { return m_layout; }

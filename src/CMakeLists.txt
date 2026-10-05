@@ -5,6 +5,7 @@ add_library(coney_core STATIC
     core/chunk_stacks.cpp
     core/chunk_system.cpp
     core/chunk_types.cpp
+    core/frame_clock.cpp
     core/game_timer.cpp
     core/input_script.cpp
     core/name_hash.cpp

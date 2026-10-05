@@ -20,8 +20,8 @@ TextViewerMode::TextViewerMode(graphics::RenderDevice& device, graphics::Font fo
     m_style.shadowAlpha = kShadowAlpha;
 }
 
-// One frame: lay the text out at the frame's game time, add its sprites to the batch, draw it in the 2D pass, present.
 ModeResult TextViewerMode::update(GameModeStack& /*stack*/, const FrameTime& frame) {
+    m_pass.empty();
     m_style.timeMs = static_cast<std::uint32_t>(frame.gameTicks / (GameTimer::kTicksPerSecond / 1000));
     // <BIGFONT>'s slot draws with the big font and its batch when there is one; every other slot with the text font.
     const auto big = [this](int slot) { return slot == gui::kBigFontSlot && m_bigFont.has_value(); };
@@ -29,15 +29,18 @@ ModeResult TextViewerMode::update(GameModeStack& /*stack*/, const FrameTime& fra
         return big(slot) ? &*m_bigFont : &m_font;
     };
     m_layout = gui::layoutText(m_text, m_style, fonts);
-    m_device.beginFrame(kClearColour);
     gui::addTextSprites(m_layout, [this, &big](int slot) { return big(slot) ? &*m_bigBatch : &m_batch; });
     m_pass.queue(m_batch);
     if (m_bigBatch) {
         m_pass.queue(*m_bigBatch);
     }
-    m_pass.render(m_device, m_camera);
-    m_device.present();
     return ModeResult::Stay;
+}
+
+void TextViewerMode::render(const RenderTime& /*time*/) {
+    m_device.beginFrame(kClearColour);
+    m_pass.draw(m_device, m_camera);
+    m_device.present();
 }
 
 } // namespace coney

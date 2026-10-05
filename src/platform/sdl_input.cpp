@@ -5,8 +5,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <mutex>
 #include <span>
 #include <string>
+#include <vector>
 
 #include <SDL3/SDL.h>
 
@@ -127,6 +129,26 @@ void addKeyboard(PadSample& sample) {
     }
 }
 
+// The SDL event watch: records each gamepad button and key press as it arrives, for the next sample, so a tap that is
+// over before the sample is still seen (SdlInput::notePress). Key repeats are not presses. Always keeps the event.
+bool SDLCALL watchPresses(void* userdata, SDL_Event* event) {
+    auto* input = static_cast<SdlInput*>(userdata);
+    if (event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
+        for (const auto& binding : kGamepadButtons) {
+            if (static_cast<int>(binding.source) == static_cast<int>(event->gbutton.button)) {
+                input->notePress(event->gbutton.which, binding.bit);
+            }
+        }
+    } else if (event->type == SDL_EVENT_KEY_DOWN && !event->key.repeat) {
+        for (const auto& binding : kKeyboardButtons) {
+            if (binding.source == event->key.scancode) {
+                input->notePress(0, binding.bit);
+            }
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 std::uint8_t stickByteFromAxis(std::int16_t axis) {
@@ -146,10 +168,15 @@ std::expected<std::unique_ptr<SdlInput>, Error> SdlInput::start() {
                         SDL_GetError());
     }
     // The constructor is private, so make_unique cannot reach it.
-    return std::unique_ptr<SdlInput>(new SdlInput());
+    std::unique_ptr<SdlInput> input(new SdlInput());
+    input->m_watching = SDL_AddEventWatch(watchPresses, input.get());
+    return input;
 }
 
 SdlInput::~SdlInput() {
+    if (m_watching) {
+        SDL_RemoveEventWatch(watchPresses, this);
+    }
     for (const OpenGamepad& gamepad : m_gamepads) {
         SDL_CloseGamepad(static_cast<SDL_Gamepad*>(gamepad.handle));
     }
@@ -190,7 +217,34 @@ PortSamples SdlInput::sample(std::uint64_t /*frame*/) {
     // Port 1 always has the keyboard.
     samples[0].connected = true;
     addKeyboard(samples[0]);
+
+    // Buttons pressed since the last sample count as held in this one, even if they were let go already.
+    std::vector<Press> presses;
+    {
+        const std::scoped_lock lock(m_pressMutex);
+        presses.swap(m_presses);
+    }
+    for (const Press& press : presses) {
+        // The keyboard is port 1's; a gamepad that has gone since (not found) has no port.
+        std::size_t port = 0;
+        if (press.gamepad != 0) {
+            const auto found = std::ranges::find(m_gamepads, press.gamepad, &OpenGamepad::id);
+            port = found == m_gamepads.end() ? kPadPorts : static_cast<std::size_t>(found - m_gamepads.begin());
+        }
+
+        if (port < kPadPorts) {
+            samples.at(port).buttons |= press.bit;
+        }
+    }
+    for (PadSample& sample : samples) {
+        fillDigitalPressure(sample);
+    }
     return samples;
+}
+
+void SdlInput::notePress(std::uint32_t gamepad, std::uint16_t bit) {
+    const std::scoped_lock lock(m_pressMutex);
+    m_presses.push_back(Press{gamepad, bit});
 }
 
 } // namespace coney::platform

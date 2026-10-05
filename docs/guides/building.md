@@ -95,27 +95,29 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and fourteen smoke tests of the `coney` executable itself: it
-starts and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
+`ctest` runs the Catch2 unit tests (`coney_tests`) and fifteen smoke tests of the `coney` executable itself: it starts
+and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
 `--view-text`, `--view-world`, `--view-character`, `--play-level` or `--render-references` without `--disc`, refuses a
-disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and refuses one that does not
-exist. With `CONEY_DISC` set when CMake configures, three more run `coney --disc`: to the main menu
-(`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a scripted orbit (`coney.views_character`,
-`tests/support/character_orbit.txt`), and level99 played headless under a scripted pad (`coney.plays_level`,
-`tests/support/play_walk.txt`). The unit tests build their disc images, archives, RenderWare texture dictionaries,
-streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or a GPU (the librw tests run
-librw on its NULL device). Eleven tests check your own disc: every texture dictionary; every sprite sheet, font and the
-sheet table; every streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds
-streamed under a scripted camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about
-30 seconds); the UI strings of all five languages, run through the game's own Lua scripts (`[strings]`); the two text
-fonts with every English UI string laid out in them (`[text]`); the front end's scripts (the preloads, `global.lua`,
-`level100.lua` and the menu callbacks) run in the script system with no error and no missing binding (`[scripts]`);
-the start-up path from the legal screen to the main menu, through quick rumble and story to the level request and
-back, driven by a scripted pad (`[frontend]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7
-seconds); every Character List record with its model, textures, character data and clips, skinned (`[characters]`);
-and Rembrandt at level99's start, walked, run, turned, stopped and run into the scenery by scripted partial stick
-deflections, with his speeds and clips checked against the research (`[player]`). They run only when the environment
-variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
+disc that does not exist, refuses `--fps-cap` in test mode, plays a synthetic input script
+(`tests/support/menu_input.txt`) and refuses one that does not exist. With `CONEY_DISC` set when CMake configures, three
+more run `coney --disc`: to the main menu (`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a
+scripted orbit (`coney.views_character`, `tests/support/character_orbit.txt`), and level99 played headless under a
+scripted pad (`coney.plays_level`, `tests/support/play_walk.txt`). The unit tests build their disc images, archives,
+RenderWare texture dictionaries, streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or
+a GPU (the librw tests run librw on its NULL device). Twelve tests check your own disc: every texture dictionary; every
+sprite sheet, font and the sheet table; every streamed world with the atomics of its parts (`[world]`, about a second);
+every level's worlds streamed under a scripted camera path, with the streaming's invariants checked every frame
+(`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run through the game's own Lua scripts
+(`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); the front end's scripts (the
+preloads, `global.lua`, `level100.lua` and the menu callbacks) run in the script system with no error and no missing
+binding (`[scripts]`); the start-up path from the legal screen to the main menu, through quick rumble and story to the
+level request and back, driven by a scripted pad (`[frontend]`); every animation clip in the WAD, parsed and sampled
+(`[anim]`, about 7 seconds); every Character List record with its model, textures, character data and clips, skinned
+(`[characters]`); and Rembrandt at level99's start, walked, run, turned, stopped and run into the scenery by scripted
+partial stick deflections, with his speeds and clips checked against the research (`[player]`), and played again through
+the main loop at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`). They
+run only when the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts
+only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
@@ -126,6 +128,7 @@ CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
 The executable is `build/<preset>/src/platform/coney` (`coney.exe` on Windows). Run with no arguments, it opens a
 960 × 720 window and runs until you close it (or press Escape). Underneath, the game-mode stack runs on a fixed
 1/30 s step with an idle mode at its bottom, which clears the screen to a dark slate and presents it every frame.
+The game runs at the same speed at any frame rate ([Frame rate](#frame-rate)).
 
 Everything is drawn into the original's 640 × 448 screen, shown at a television's 4:3 shape as large as the window
 allows and centred; a window of another shape gets black bars at the sides or at the top and bottom.
@@ -133,11 +136,13 @@ allows and centred; a window of another shape gets black bars at the sides or at
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
-      [--view-world NAME] [--view-character [NAME]] [--anim CLIP] [--play-level NAME]
+      [--view-world NAME] [--view-character [NAME]] [--anim CLIP] [--play-level NAME] [--fps-cap N]
+      [--vsync on|off] [--show-fps]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
-OpenGL ES). `--frames N` stops after N frames, which is how tests and scripts run it. `--headless` runs with no window
+OpenGL ES). `--frames N` stops after N frames (each one fixed step and one render, see
+[Frame rate](#frame-rate)), which is how tests and scripts run it. `--headless` runs with no window
 and librw's NULL renderer, so it needs neither a display nor a GPU; this is how CI runs it:
 
 ```sh
@@ -149,6 +154,34 @@ Without `--headless`, a machine with no display or no OpenGL fails at start-up w
 `--screenshot PATH` saves the last frame (the one `--frames N` stops at) as a PNG and prints how many of its pixels
 differ from the background and a hash of the frame, so a script can check that something was drawn without keeping
 the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place).
+
+### Frame rate {#frame-rate}
+
+The game always advances in the original's fixed steps of 1/30 s, 30 a second, whatever the display does; drawing is
+apart from the step and runs as fast as the display or the cap allows, each frame blended between the last two steps,
+so motion is smooth above 30 frames a second and the game's speed never changes
+([Update and render](conventions.md#update-and-render)).
+
+| Option | Does |
+| --- | --- |
+| `--fps-cap N` | at most N frames a second; 0, the default, is no cap. 30 is the original's rhythm: one step and one frame, nothing blended |
+| `--vsync on\|off` | wait for the display's vertical blank when presenting (on, the default) or not (frames may tear) |
+| `--show-fps` | print the frame and step rates once a second, and the totals when Coney stops |
+
+The default, no cap with vsync on, draws one frame per refresh of the display. With vsync off and no cap Coney draws
+as fast as it can, which keeps a processor core busy; give a cap to save power. Below 7.5 frames a second (or after a
+stall such as dragging the window) the game slows down rather than catching up in a rush, as the original slows down
+when a frame runs long. A blended frame shows the world up to one step (33 ms) behind the newest simulated state, and
+the pads are read once per step, as in the original.
+
+Test mode is lockstep: with `--frames`, `--headless`, `--input-script` or `--screenshot` every frame is one step and
+one render, with no clock, so a run gives the same result every time on any machine. `--fps-cap` and `--show-fps`
+are refused there.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --show-fps
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fps-cap 144 --vsync off --show-fps
+```
 
 ### Loading entries from your disc
 
@@ -339,10 +372,11 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
 ```
 
 The simulation runs on the fixed 1/30 s step and reads only the pads and game time, so a script gives the same path,
-clips and camera every time, in a window or headless. Drawing reads a snapshot of each step and nothing else. Until
-frame pacing lands, a window on a 60 Hz monitor steps once per displayed frame, so play looks about twice as fast as
-it should. Scripts drive it with partial deflections, as a player would: `stick left 0 30` walks forward at 30 %,
-`stick left 50 87` runs along an arc to the right, `stick right 60 0` turns the camera at 60 % of its full rate.
+clips and camera every time, in a window or headless. Drawing blends the snapshots of the last two steps (Rembrandt's
+feet, heading and pose, the camera's eye and target), so play runs at the same speed and moves smoothly at any frame
+rate ([Frame rate](#frame-rate)). Scripts drive it with partial deflections, as a player would: `stick left 0 30` walks
+forward at 30 %, `stick left 50 87` runs along an arc to the right, `stick right 60 0` turns the camera at 60 % of its
+full rate.
 
 ### Character reference images {#character-reference-images}
 
@@ -399,7 +433,8 @@ the first gamepad. Escape quits. A headless run reads no devices.
 
 `--input-script FILE` replaces the keyboard and gamepads with a script, so a test or a headless run gets the same
 input every time without a human. Each line is `FRAME [p1|p2] ACTION ARGS`, where `FRAME` counts from 0 (the frame
-the line takes effect on); `#` starts a comment and blank lines are skipped. Frames must not go down from one line to
+the line takes effect on; a script puts Coney in test mode, where a frame is one fixed step); `#` starts
+ a comment and blank lines are skipped. Frames must not go down from one line to
 the next.
 
 | Action | Meaning |

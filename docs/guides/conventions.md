@@ -381,6 +381,42 @@ comparisons against the original game are repeatable. Engine code therefore neve
 source or the input devices directly; it asks the platform layer, which test mode can replace. Don't design this
 out.
 
+## Update and render {#update-and-render}
+
+The game runs at the original's fixed step of exactly 1/30 s at any display rate, from 30 frames a second to
+uncapped, and the simulation comes out bit for bit the same at every rate. That holds only while every piece of
+code keeps to these rules:
+
+- **The simulation reads only `FrameTime`.** Gameplay, physics, animation, timers, scripts, streaming and input all
+  happen in a game mode's `update()`, which is always exactly one fixed step and is handed the step's length and the
+  game time. Nothing in the simulation measures time itself or assumes how many steps a real frame runs (0 to 4).
+  Every gameplay constant in the research assumes this step.
+- **`render()` only draws.** It runs once per real frame, after the frame's steps, with `RenderTime::alpha`: where
+  between the last two steps the frame falls. It may read the simulation's state and blend the last two steps; it
+  never changes anything `update()` reads. A mode never draws or presents in `update()`.
+- **Blend what moves continuously.** Keep anything that moves smoothly (a camera, a character's position and heading,
+  a playhead, a fade) as an `Interpolated<T>` (`src/core/interpolation.h`): `commit()` at the start of each update,
+  change `current()`, and in `render()` blend `previous()` and `current()` with `lerp`, `lerpAngle` (the short way
+  round) or `lerpLooping` (a looping playhead); a rotation is blended as a rotation, never as a matrix. Use `reset()`
+  for a jump that must not be blended (a teleport, a new clip). Discrete state (a menu's selection, text, the GUI's
+  sprite list for the step) is drawn as the newest step has it. Every helper returns the newest value exactly at
+  alpha 1, so lockstep draws exactly what the simulation holds.
+- **Pads are read once per step**, by the stack, before the update. The platform's input source keeps every press
+  until the next step reads it, so a tap shorter than a step is seen, and seen once.
+- **Only the frame pacer reads the real clock** (`src/platform/frame_pacer.cpp`). It measures each frame and holds
+  frames to `--fps-cap`; core's `FrameClock` turns the time into steps. A pre-commit check refuses the clock and
+  sleep calls (`SDL_GetTicks`, `SDL_Delay`, `std::chrono`'s clocks and the like) in any other file under `src/` and
+  `tests/`.
+- **Test mode is lockstep.** `--headless`, `--frames`, `--input-script` and `--screenshot` run one step and one render
+  at alpha 1 per frame, with no clock, so a run gives the same steps, state and pixels every time. `--frames N`
+  counts steps.
+
+The rules' tests: `tests/core/frame_clock_test.cpp` (30 steps a simulated second at any rate, no drift over an hour, the
+catch-up cap) and `tests/gamemodes/frame_rate_test.cpp` (the same simulation, bit for bit, at 30, 60, 144, 240 and 1000
+frames a second and with irregular frames), and with the disc, `tests/platform/disc_play_frame_rate_test.cpp`
+(Rembrandt, the follow camera and the streaming in `--play-level`, the same way). Why the loop is built this way, and
+how it differs from the original's: [Graphics](../research/graphics.md#coneys-implementation).
+
 ## Tests
 
 Everything that can be tested without the game is written test-first, with Catch2 under `tests/` (mirroring

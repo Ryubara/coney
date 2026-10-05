@@ -325,8 +325,9 @@ tears rather than drops to 20). `0x00159468(1)` sets 65,535 ms, which turns this
 resumes (`0x0015c6f8`); mode 1 turns it off when it is suspended or left and chooses per frame in its `Update`
 (`0x00158728`, from a screen-effect state). Why the game allows tearing there is not known.
 
-For Coney: present once per fixed step of 1/30 s. With a 60 Hz display that is a swap interval of 2; the engine's
-test mode needs no display at all.
+For Coney: the game advances in the same fixed steps of 1/30 s and slows down rather than skipping when frames run
+long; drawing is decoupled from the step and may run at any rate, with `--fps-cap 30` as the original's one frame per
+step ([Coney's implementation](#coneys-implementation)). The engine's test mode needs no display at all.
 
 ### Loading textures {#loading-textures}
 
@@ -474,9 +475,28 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   device creates the window and an OpenGL 3.3 core context itself, so the engine owns the window and the event loop
   gets a non-owning `Window`. A run-time NULL backend (`--headless`) installs librw's NULL device instead, for CI and
   tests: no window, no GPU. It implements `graphics::RenderDevice` (begin a frame cleared to a colour, present),
-  which game modes call as the original's modes call the device; the idle mode clears and presents every frame.
-  There are no device cameras or 30 Hz present yet: one camera covers the window, and the present waits for every
-  vertical blank (librw's GL3 device sets a swap interval of 1, not the 2 of [the frame rate](#frame-rate)).
+  which game modes call as the original's modes call the device (from their `render()`, see below); the idle mode
+  clears and presents every frame. There are no device cameras yet: one camera covers the window.
+- **The frame rate: a decoupled loop, Coney's choice.** The original runs one fixed 1/30 s step and one present per
+  frame, held to 30 frames a second by its flip every second vertical blank ([the frame rate](#frame-rate)). Coney
+  keeps the step and frees the display rate: the simulation always advances in steps of exactly `0x960000` ticks,
+  and rendering runs once per real frame, blended between the last two steps
+  ([Update and render](../guides/conventions.md#update-and-render)). The platform's frame pacer
+  (`src/platform/frame_pacer.h`) measures each frame with SDL's nanosecond clock and holds frames to `--fps-cap`
+  with precise sleeps; core's `FrameClock` (`src/core/frame_clock.h`) adds the real time to an exact integer
+  accumulator (millionths of a tick, so 10 s at any rate are exactly 300 steps) and says how many steps to run and
+  the alpha to render with. `--vsync on|off` picks librw's present flag: `FLIPWAITVSYNCH` (swap interval 1) or 0.
+  The default is no cap with vsync on: as many frames as the display shows, each blended, the game at its fixed
+  speed. `--fps-cap 30` is the original's rhythm: lockstep, one step and one frame, nothing blended.
+    - **Slow frames:** a frame is credited with at most four steps (133 ms) of real time, and the rest is dropped, so
+      below 7.5 frames a second the game slows down, as the original slows down when a frame runs long, rather than
+      running ever more steps to catch up; a long gap (a dragged window, a debugger) moves the game on by four steps,
+      not by the gap. The original's level clock catches up by up to 40 ms a frame ([Boot](boot.md#timers)); Coney's
+      fixed step needs whole steps, and four keeps full speed at any usable rate.
+    - **What it costs:** a blended frame shows the world up to one step (33 ms) behind the newest simulated state, and
+      input is read once per step, so it is quantised to 30 a second as in the original.
+    - **Test mode** runs lockstep with no clock (`--headless`, `--frames`, `--input-script`, `--screenshot`), so the
+      screenshots and runs of the tests are the same as before the loop was split, pixel for pixel.
 - **The logical screen** (`src/graphics/screen.h`): every 2D position is in the 640 × 448 pixels of
   [the video mode](#video-mode). Coney shows that screen at the television's shape, 4:3 (16:9 later, with the
   widescreen option), as the largest such rectangle centred in the window (`fitLogicalScreen`), and fills the rest of
@@ -534,7 +554,6 @@ What is still to do:
 - A device object that owns librw's engine start-up (with the HAnim, Skin, MatFX and world plugins; PTank for
   sprites) and the cameras of [the device object](#device-object): main, per-viewport, overlay and effects, sharing
   one frame and Z buffer.
-- `Present` once per fixed 1/30 s step ([frame rate](#frame-rate)); a test mode that renders without a display.
 - Clear to the background colour (white until a level sets one; the legal screen clears to black) with Z.
 - Texture dictionaries read with librw from the chunk stream (`0x0B`, `0x2A`, world streams, sector atomics) and kept
   per resource (the lookup by name exists, above; the chunk readers' dictionaries are not registered in it yet).

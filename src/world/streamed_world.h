@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <limits>
 #include <optional>
 #include <span>
@@ -139,6 +140,13 @@ class StreamedWorld {
     /// @orig 0x00411b20 World_CollectSector (WorldPS2.cpp)
     [[nodiscard]] std::vector<std::uint32_t> collectSectors(Vec3 viewpoint) const;
 
+    /// As collectSectors(), but choosing the loaded sectors whose box `frustum` may contain instead of those the last
+    /// visibility pass marked. For a render that blends between two steps
+    /// (docs/guides/conventions.md#update-and-render): its camera is not the one the visibility pass used, and the
+    /// marks belong to the simulation (streaming reads them), so the render must not redo the pass. With the pass's own
+    /// frustum it gives exactly collectSectors().
+    [[nodiscard]] std::vector<std::uint32_t> collectSectorsIn(Vec3 viewpoint, const ViewFrustum& frustum) const;
+
     /// Records that part `number`'s atomics are in place, their fade-in ending kFadeInMs after `nowMs`.
     void markPartLoaded(std::uint32_t number, std::uint64_t nowMs);
     /// Records that part `number` was unloaded.
@@ -148,6 +156,10 @@ class StreamedWorld {
 
   private:
     StreamedWorld() = default;
+
+    /// The BSP walk both collectSectors() share: the loaded sectors `chosen` keeps, in drawing order.
+    [[nodiscard]] std::vector<std::uint32_t>
+    collectSectorsWhere(Vec3 viewpoint, const std::function<bool(const StreamedSector&)>& chosen) const;
 
     // The nearest sector with a missing atomic among those `include` accepts, and its squared distance.
     template <typename Predicate>

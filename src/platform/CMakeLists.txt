@@ -12,6 +12,8 @@ target_sources(coney_platform PRIVATE play_level_mode.cpp)
 target_sources(coney_platform PRIVATE reference_renderer.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
+# Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
+target_sources(coney_platform PRIVATE frame_pacer.cpp)
 coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core SDL3::SDL3-static librw::librw)
 
@@ -42,6 +44,10 @@ add_test(NAME coney.view_character_needs_disc COMMAND coney --view-character)
 set_tests_properties(coney.view_character_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.play_level_needs_disc COMMAND coney --play-level level99)
 set_tests_properties(coney.play_level_needs_disc PROPERTIES WILL_FAIL TRUE)
+# Test mode is lockstep with no clock, so a frame cap there is a mistake (docs/guides/building.md#frame-rate).
+add_test(NAME coney.fps_cap_refused_in_test_mode COMMAND coney --headless --frames 3 --fps-cap 60)
+set_tests_properties(coney.fps_cap_refused_in_test_mode PROPERTIES WILL_FAIL TRUE)
+
 add_test(NAME coney.rejects_missing_disc COMMAND coney --disc "${CMAKE_CURRENT_BINARY_DIR}/no-such-disc" --load x)
 set_tests_properties(coney.rejects_missing_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.plays_input_script

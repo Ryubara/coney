@@ -41,7 +41,11 @@ class ScreenFade {
     [[nodiscard]] bool active() const { return m_running || m_level > 0.0F; }
 
     /// Draws the fade over the logical screen through `device`: nothing while the screen is clear.
-    void render(RenderDevice& device) const;
+    void render(RenderDevice& device) const { draw(device, m_level); }
+
+    /// Draws a fade of `level` (0 clear, 1 black) over the logical screen: nothing at 0 or less. A render that blends
+    /// the level of the last two steps draws through this.
+    static void draw(RenderDevice& device, float level);
 
   private:
     bool m_running = false;

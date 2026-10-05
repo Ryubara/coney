@@ -89,15 +89,9 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
     coney::GameTimer timer;
     timer.setFixedStep(true);
 
-    // The main loop's frame (pads, timer, step), the index carrying on across the two runs below.
-    std::uint64_t index = 0;
-    const auto run = [&](std::uint64_t count) {
-        for (const std::uint64_t end = index + count; index < end; ++index) {
-            stack.samplePads(index);
-            const std::uint64_t advanced = timer.update();
-            stack.step(coney::FrameTime{index, coney::GameTimer::toSeconds(advanced), timer.ticks(), advanced});
-        }
-    };
+    // The main loop in test mode, the frame index carrying on across the two runs below.
+    const auto run = [&](std::uint64_t count) { stack.runUntilEmpty(timer, {}, count); };
+
     run(160);
     const coney::ProfileManagerMode& menus = flow.profileManager();
     CHECK(stack.topId() == coney::ProfileManagerMode::kId);

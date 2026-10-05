@@ -10,6 +10,7 @@
 
 #include "camera/camera_lens.h"
 #include "core/error.h"
+#include "core/interpolation.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
@@ -19,6 +20,7 @@
 #include "world/debug_camera.h"
 #include "world/level_object.h"
 #include "world/sector_budget.h"
+#include "world/streamed_world.h"
 
 namespace coney::platform {
 
@@ -41,9 +43,10 @@ struct WorldViewerStats {
 /// loaded too, and its background (sky, clouds, skyline) and light glows are drawn round the worlds. The first steps
 /// of level loading; there are no objects or script yet.
 ///
-/// Every frame: move the camera (world::DebugCamera); make one streaming decision from the last frame's visibility
-/// (world::updateStreaming); move the draw distance (world::adjustDrawDistance); run the visibility pass; draw. Time is
-/// game time, so with `--frames` and `--input-script` a run is the same every time (test mode).
+/// Every step: move the camera (world::DebugCamera); make one streaming decision from the last step's visibility
+/// (world::updateStreaming); move the draw distance (world::adjustDrawDistance); run the visibility pass. Every real
+/// frame: draw, with the camera and the draw distance blended between the last two steps. Time is game time, so with
+/// `--frames` and `--input-script` a run is the same every time (test mode).
 ///
 /// Coney's own tool; the parts it is made of follow docs/research/world.md and docs/research/level-loading.md.
 class WorldViewerMode final : public GameMode {
@@ -72,32 +75,37 @@ class WorldViewerMode final : public GameMode {
     void enter() override;
     /// One line of counts: frames, parts read and freed, the most atomics drawn, the budget's peak.
     [[nodiscard]] std::string summary() const;
-    /// One frame, as the class comment says.
+    /// One step, as the class comment says.
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+    /// Draws the worlds through the camera blended between the last two steps, and presents.
+    void render(const RenderTime& time) override;
 
     [[nodiscard]] const WorldViewerStats& stats() const { return m_stats; }
     [[nodiscard]] const WorldSet& worlds() const { return *m_set; }
     /// The level object, or null for a name without a level file.
     [[nodiscard]] const world::LevelObject* level() const { return m_level.get(); }
-    [[nodiscard]] const world::DebugCamera& camera() const { return m_camera; }
-    [[nodiscard]] float drawDistance() const { return m_drawDistance; }
+    /// The camera as of the newest step.
+    [[nodiscard]] const world::DebugCamera& camera() const { return m_camera.current(); }
+    /// The draw distance as of the newest step.
+    [[nodiscard]] float drawDistance() const { return m_drawDistance.current(); }
 
   private:
     WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set, std::unique_ptr<world::LevelObject> level,
                     world::SectorBudget& budget, world::Vec3 start, std::function<void(std::string_view)> print);
 
-    // The camera as the frame draws it: pose, view window for the window's shape, clip distances.
-    [[nodiscard]] WorldView view() const;
+    // The view through `camera` with `drawDistance` as its far clip: pose, view window for the window's shape.
+    [[nodiscard]] WorldView view(const world::DebugCamera& camera, float drawDistance) const;
 
     RenderEngine& m_engine;
     std::unique_ptr<WorldSet> m_set;
     std::unique_ptr<world::LevelObject> m_level; // null without a level file
     world::SectorBudget& m_budget;
-    world::DebugCamera m_camera;
+    Interpolated<world::DebugCamera> m_camera; // at the last two steps
     WorldRenderer m_renderer;
     std::function<void(std::string_view)> m_print;
-    // InitLevel sets the draw distance to the far clip before the preload.
-    float m_drawDistance = camera::kPlayerCameraLens.farClip;
+    // At the last two steps. InitLevel sets the draw distance to the far clip before the preload.
+    Interpolated<float> m_drawDistance{camera::kPlayerCameraLens.farClip};
+    float m_pendingDistance = world::kNoPendingDistance; // the nearest missing scenery as of the newest step
     WorldViewerStats m_stats;
 };
 

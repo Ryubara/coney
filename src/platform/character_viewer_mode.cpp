@@ -134,8 +134,9 @@ CharacterViewerMode::CharacterViewerMode(RenderEngine& engine, characters::Chara
                                          std::function<void(std::string_view)> print)
     : m_engine(engine), m_assets(std::move(assets)), m_dictionaries(std::move(dictionaries)),
       m_skeleton(characters::characterSkeleton(m_assets.model)), m_cursor(*m_assets.data.clips()[clipIndex]),
-      m_camera(kCameraTarget, kCameraDistance, kCameraYaw, kCameraPitch), m_print(std::move(print)),
-      m_positions(m_assets.model.vertices.size()), m_normals(m_assets.model.vertices.size()) {
+      m_camera(characters::OrbitCamera(kCameraTarget, kCameraDistance, kCameraYaw, kCameraPitch)),
+      m_print(std::move(print)), m_positions(m_assets.model.vertices.size()),
+      m_normals(m_assets.model.vertices.size()) {
     for (const auto& clip : m_assets.data.clips()) {
         m_clips.push_back(clip.get());
     }
@@ -161,20 +162,21 @@ CharacterViewerMode::~CharacterViewerMode() {
 void CharacterViewerMode::startClip(std::size_t index) {
     m_clipIndex = index;
     m_cursor = anim::AnimCursor(*m_clips[index]);
+    m_clipTime.reset(m_cursor.time());
     const anim::AnimClip& clip = *m_clips[index];
     m_print(std::format("playing clip {} of {}: {} ({:.3f} s, {} rotation channels)\n", index + 1, m_clips.size(),
                         clip.name, clip.duration, clip.rotations.size()));
 }
 
-void CharacterViewerMode::skin() {
-    const anim::Pose pose = anim::samplePose(m_cursor.clip(), m_cursor.time(), m_skeleton.bindRotations);
+void CharacterViewerMode::skin(float time) {
+    const anim::Pose pose = anim::samplePose(m_cursor.clip(), time, m_skeleton.bindRotations);
     const auto bones = anim::boneTransforms(m_skeleton, pose);
     const std::vector<anim::Mat34> matrices = characters::skinningMatrices(m_assets.model, bones);
     characters::skinVertices(m_assets.model, matrices, m_positions, m_normals);
     m_lastMismatch = characters::jointMismatch(m_assets.model, matrices);
 }
 
-void CharacterViewerMode::render() {
+void CharacterViewerMode::draw(const characters::OrbitCamera& orbit) {
     m_engine.beginWindowFrame(kBackground);
     rw::Camera* camera = m_engine.camera();
     if (camera == nullptr) {
@@ -184,7 +186,7 @@ void CharacterViewerMode::render() {
     m_mesh->update(m_positions, m_normals);
     const graphics::Extent size = m_engine.frameSize();
     const float aspect = size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 1.0F;
-    placeCamera(camera, m_camera.pose(), aspect);
+    placeCamera(camera, orbit.pose(), aspect);
     camera->beginUpdate();
     m_lights->use();
     rw::SetRenderState(rw::ZTESTENABLE, 1);
@@ -201,8 +203,12 @@ ModeResult CharacterViewerMode::update(GameModeStack& stack, const FrameTime& fr
     const auto seconds = static_cast<float>(frame.seconds);
     const Pad& pad = stack.pads().port(0);
 
+    // The values render() blends move on a step.
+    m_camera.commit();
+    m_clipTime.commit();
+
     // The camera first, then the clip: circle plays the next, square the one before.
-    m_camera.update(pad, seconds);
+    m_camera.current().update(pad, seconds);
     if ((pad.pressed() & pad::kCircle) != 0) {
         startClip((m_clipIndex + 1) % m_clips.size());
     } else if ((pad.pressed() & pad::kSquare) != 0) {
@@ -213,11 +219,22 @@ ModeResult CharacterViewerMode::update(GameModeStack& stack, const FrameTime& fr
         m_cursor.restart(duration > 0.0F ? std::fmod(overshoot, duration) : 0.0F);
         ++m_loops;
     }
-
-    skin();
-    render();
+    m_clipTime.current() = m_cursor.time();
     ++m_frames;
     return ModeResult::Stay;
+}
+
+void CharacterViewerMode::render(const RenderTime& time) {
+    // The playhead goes forwards between the last two steps, wrapping round the clip's end when it looped.
+    skin(lerpLooping(m_clipTime.previous(), m_clipTime.current(), time.alpha, m_cursor.clip().duration));
+    const characters::OrbitCamera& from = m_camera.previous();
+    const characters::OrbitCamera& to = m_camera.current();
+    const anim::Vec3 target{lerp(from.target().x, to.target().x, time.alpha),
+                            lerp(from.target().y, to.target().y, time.alpha),
+                            lerp(from.target().z, to.target().z, time.alpha)};
+    draw(characters::OrbitCamera(target, lerp(from.distance(), to.distance(), time.alpha),
+                                 lerpAngle(from.yaw(), to.yaw(), time.alpha),
+                                 lerp(from.pitch(), to.pitch(), time.alpha)));
 }
 
 std::string CharacterViewerMode::summary() const {

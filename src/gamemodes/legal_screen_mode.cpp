@@ -80,14 +80,14 @@ ModeResult LegalScreenMode::update(GameModeStack& /*stack*/, const FrameTime& fr
     if (!m_startTicks) {
         m_startTicks = frame.gameTicks - frame.stepTicks;
     }
-    drawFrame();
     const std::uint64_t elapsedMs = (frame.gameTicks - *m_startTicks) / (GameTimer::kTicksPerSecond / 1000);
     return elapsedMs >= kHoldMilliseconds ? ModeResult::Leave : ModeResult::Stay;
 }
 
 void LegalScreenMode::exit() { m_sheet.reset(); }
 
-void LegalScreenMode::drawFrame() {
+void LegalScreenMode::render(const RenderTime& /*time*/) {
+
     m_device.beginFrame(graphics::kBlack);
     if (m_sheet) {
         // The first rectangle, sized as the original's sprite record sizes it, through the mode's overlay camera.

@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "core/error.h"
+#include "core/interpolation.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/font.h"
@@ -36,7 +37,8 @@ class GameModeStack;
 ///   the top of the first update, in the same step, so the first screen knows the frame's time.)
 /// - `Update` runs one frame: the controller (the screen on top reads the HUD player's pad, port 1, and adds its
 ///   sprites), the 2D pass, the screen fade, then the scripts (scheduled calls) and the present. It leaves when the
-///   flow is done.
+///   flow is done. Coney splits it: update() runs the controller, lists the step's sprites and runs the scripts;
+///   render() draws the 2D pass and the fade and presents, blending the fade's level between the last two steps.
 /// - `Exit` stops the controller and, when the flow finished, calls the second Lua callback (`Menu.startGame`).
 ///
 /// Coney's choices: there is no front-end world yet (`level100`'s world is not loaded), so the screen is cleared to
@@ -81,9 +83,12 @@ class ProfileManagerMode final : public GameMode {
     /// @orig 0x0015e048 Mode12::Enter (unknown)
     void enter() override;
 
-    /// One frame of the menus; leaves when the flow is done.
+    /// One step of the menus; leaves when the flow is done.
     /// @orig 0x0015e238 Mode12::Update (unknown)
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+
+    /// Draws the menus' sprites of the last step on black and the fade over them, then presents.
+    void render(const RenderTime& time) override;
 
     /// Stops the controller, calls the second callback when the flow finished, and releases the sheets.
     /// @orig 0x0015e130 Mode12::Exit (unknown)
@@ -119,6 +124,8 @@ class ProfileManagerMode final : public GameMode {
     std::optional<graphics::SpriteBatch> m_bigBatch;
     graphics::OverlayCamera m_camera;
     graphics::OverlayPass m_pass;
+    Interpolated<float> m_fadeLevel{0.0F}; // the fade's level at the last two steps, for render()
+
     std::string m_onRumble;
     std::string m_onStartGame;
     std::string m_lastScreen;    // the screen logged last, so each change is logged once

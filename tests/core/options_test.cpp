@@ -274,3 +274,38 @@ TEST_CASE("the reference renderer takes a folder, characters to render and a nam
                .has_value());
     CHECK(coney::usageText().find("--render-references DIR") != std::string_view::npos);
 }
+
+TEST_CASE("the frame pacing options default to no cap with vsync on, outside test mode", "[options]") {
+    auto plain = parseOptions({});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->fpsCap.has_value());
+    CHECK(plain->vsync);
+    CHECK_FALSE(plain->showFps);
+    CHECK_FALSE(coney::isTestMode(*plain));
+
+    auto paced = parse(std::array<std::string_view, 5>{"--fps-cap", "144", "--vsync", "off", "--show-fps"});
+    REQUIRE(paced.has_value());
+    CHECK(paced->fpsCap == 144);
+    CHECK_FALSE(paced->vsync);
+    CHECK(paced->showFps);
+    auto uncapped = parse(std::array<std::string_view, 2>{"--fps-cap", "0"});
+    REQUIRE(uncapped.has_value());
+    CHECK(uncapped->fpsCap == 0);
+}
+
+TEST_CASE("the frame pacing options refuse bad values and test mode", "[options]") {
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--fps-cap", "-1"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--fps-cap", "1001"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--fps-cap", "60fps"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--fps-cap"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--vsync", "maybe"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--vsync", "on", "--vsync", "off"}).has_value());
+    // Test mode is lockstep with no clock: a cap or a rate report means nothing there.
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--fps-cap", "60", "--frames", "3"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--show-fps", "--headless"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--vsync", "off", "--headless"}).has_value());
+    auto script = parse(std::array<std::string_view, 2>{"--input-script", "a.txt"});
+    REQUIRE(script.has_value());
+    CHECK(coney::isTestMode(*script));
+    CHECK(coney::usageText().find("--fps-cap") != std::string_view::npos);
+}

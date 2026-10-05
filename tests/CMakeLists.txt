@@ -2,8 +2,10 @@
 add_executable(coney_tests
     camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
+    core/frame_clock_test.cpp
     core/game_timer_test.cpp
     core/input_script_test.cpp
+    core/interpolation_test.cpp
     core/name_hash_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
@@ -13,6 +15,7 @@ add_executable(coney_tests
     fileio/wad_index_test.cpp
     fileio/wad_test.cpp
     gamemodes/disc_front_end_test.cpp
+    gamemodes/frame_rate_test.cpp
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
@@ -41,6 +44,7 @@ add_executable(coney_tests
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
+    platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/sdl_input_test.cpp
     platform/sprite_sheets_test.cpp
