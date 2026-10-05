@@ -26,7 +26,9 @@ namespace {
 constexpr Vec3 kAlongY{0.0F, 1.0F, 0.0F};
 
 // A stick at `x`, `y` seen from a camera looking along +y.
-HumanInput stick(float x, float y) { return HumanInput{.stickX = x, .stickY = y, .cameraForward = kAlongY}; }
+HumanInput stick(float x, float y) {
+    return HumanInput{.stickX = x, .stickY = y, .cameraForward = kAlongY, .targets = {}};
+}
 
 // The synthetic character and its anim set, held together for a test.
 struct TestCharacter {
@@ -198,7 +200,8 @@ TEST_CASE("the stick is camera-relative: up walks away from the camera", "[human
     Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
     // The camera looks along -x: stick up walks along -x.
     for (int i = 0; i < 60; ++i) {
-        human.step(HumanInput{.stickX = 0.0F, .stickY = 0.6F, .cameraForward = Vec3{-1.0F, 0.0F, -0.2F}}, mesh.get());
+        human.step(HumanInput{.stickX = 0.0F, .stickY = 0.6F, .cameraForward = Vec3{-1.0F, 0.0F, -0.2F}, .targets = {}},
+                   mesh.get());
     }
     CHECK(human.position().x < 38.0F);
     CHECK(human.position().y == Approx(40.0F).margin(0.3));

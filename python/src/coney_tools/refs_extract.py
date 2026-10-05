@@ -706,7 +706,9 @@ def level_starts(scripts: dict[str, lua4.ChunkFacts]) -> list[dict[str, Any]]:
     for script, facts in scripts.items():
         match = _RUMBLE_INIT.match(script)
         flags = facts.tables.get(RUMBLE_PLAYER_FLAGS)
-        flag = flags.items.get(1) if match and flags is not None else None
+        if match is None or flags is None:
+            continue
+        flag = flags.items.get(1)
         if not isinstance(flag, lua4.CallResult) or flag.callee != "AddFlag" or len(flag.args) < 3:
             continue
         entries.append(

@@ -38,7 +38,14 @@ constexpr Vec3 kAlongY{0.0F, 1.0F, 0.0F};
 
 // The pad for one update: the left stick at `x`, `y`, L2 held or not, triangle pressed this update or not.
 HumanInput pad(float x, float y, bool l2 = false, bool triangle = false) {
-    return HumanInput{.stickX = x, .stickY = y, .cameraForward = kAlongY, .sprintHeld = l2, .actionPressed = triangle};
+    return HumanInput{.stickX = x,
+                      .stickY = y,
+                      .cameraForward = kAlongY,
+                      .sprintHeld = l2,
+                      .actionPressed = triangle,
+                      .command = coney::combat::command::kNone,
+                      .buttons = 0,
+                      .targets = {}};
 }
 
 // The synthetic character and its anim set, held together for a test.

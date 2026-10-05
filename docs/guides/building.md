@@ -95,35 +95,34 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and seventeen smoke tests of the `coney` executable itself: it
-starts and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
+`ctest` runs the Catch2 unit tests (`coney_tests`) and seventeen smoke tests of the `coney` executable itself: it starts
+and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
 `--view-text`, `--view-world`, `--view-character`, `--play-level` or `--render-references` without `--disc`, refuses a
 disc that does not exist, refuses `--fps-cap` in test mode, plays a synthetic input script
-(`tests/support/menu_input.txt`) and refuses one that does not exist, opens [the debug menu](debug-menu.md) with the
-pad chord and walks it to a native call (`coney.debug_menu_by_pad`, `tests/support/debug_menu.txt`), and refuses a
-tunables file that is not one. With `CONEY_DISC` set when CMake configures, three more run `coney --disc`: to the
-main menu (`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a scripted orbit
-(`coney.views_character`, `tests/support/character_orbit.txt`), and level99 played headless under a scripted pad
-(`coney.plays_level`, `tests/support/play_walk.txt`). The unit tests build their disc images, archives,
-RenderWare texture dictionaries, streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or
-a GPU (the librw tests run librw on its NULL device). Thirteen tests check your own disc: every texture dictionary; every
-sprite sheet, font and the sheet table; every streamed world with the atomics of its parts (`[world]`, about a second);
-every level's worlds streamed under a scripted camera path, with the streaming's invariants checked every frame
-(`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run through the game's own Lua scripts
-(`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); the front end's scripts (the
-preloads, `global.lua`, `level100.lua` and the menu callbacks) run in the script system with no error and no missing
-binding (`[scripts]`); the start-up path from the legal screen to the main menu, through quick rumble and story to the
-level request and back, driven by a scripted pad (`[frontend]`); STORY through the mission-complete mode to Rembrandt
-standing at level99's start under the pad, and the level scripts' player starts for a few checkpoints (`[story]`);
-every animation clip in the WAD, parsed and sampled (`[anim]`, about 7 seconds); every Character List record with its
-model, textures, character data and clips, skinned (`[characters]`); Rembrandt's Anim Range List with a damage for
-every attack and the grab and tackle ranges, and Rembrandt in the sandbox's fight yard doing a combo, a grab with a
-strike, spins and a throw, a tackle and a mugging on a passive target (`[combat]`); and Rembrandt at level99's start, walked, run, turned,
-stopped and run into the scenery by scripted
-partial stick deflections, with his speeds and clips checked against the research (`[player]`), and played again through
-the main loop at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`). They
-run only when the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts
-only:
+(`tests/support/menu_input.txt`) and refuses one that does not exist, opens [the debug menu](debug-menu.md) with the pad
+chord and walks it to a native call (`coney.debug_menu_by_pad`, `tests/support/debug_menu.txt`), and refuses a tunables
+file that is not one. With `CONEY_DISC` set when CMake configures, three more run `coney --disc`: to the main menu
+(`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a scripted orbit (`coney.views_character`,
+`tests/support/character_orbit.txt`), and level99 played headless under a scripted pad (`coney.plays_level`,
+`tests/support/play_walk.txt`). The unit tests build their disc images, archives, RenderWare texture dictionaries,
+streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or a GPU (the librw tests run librw
+on its NULL device). Thirteen tests check your own disc: every texture dictionary; every sprite sheet, font and the
+sheet table; every streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds
+streamed under a scripted camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about
+30 seconds); the UI strings of all five languages, run through the game's own Lua scripts (`[strings]`); the two text
+fonts with every English UI string laid out in them (`[text]`); the front end's scripts (the preloads, `global.lua`,
+`level100.lua` and the menu callbacks) run in the script system with no error and no missing binding (`[scripts]`); the
+start-up path from the legal screen to the main menu, through quick rumble and story to the level request and back,
+driven by a scripted pad (`[frontend]`); STORY through the mission-complete mode to Rembrandt standing at level99's
+start under the pad, and the level scripts' player starts for a few checkpoints (`[story]`); every animation clip in the
+WAD, parsed and sampled (`[anim]`, about 7 seconds); every Character List record with its model, textures, character
+data and clips, skinned (`[characters]`); Rembrandt's Anim Range List with a damage for every attack and the grab and
+tackle ranges, and Rembrandt in the sandbox's fight yard doing a combo, a grab with a strike, spins and a throw, a
+tackle and a mugging on a passive target (`[combat]`); and Rembrandt at level99's start, walked, run, turned, stopped
+and run into the scenery by scripted partial stick deflections, with his speeds and clips checked against the research
+(`[player]`), and played again through the main loop at five frame rates and with irregular frames, bit for bit the same
+as in test mode (`[frame_rate]`). They run only when the environment variable `CONEY_DISC` names the disc, are reported
+as skipped otherwise, and print counts only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
