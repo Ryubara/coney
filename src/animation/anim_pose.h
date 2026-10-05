@@ -15,14 +15,24 @@
 namespace coney::anim {
 
 /// A sampled pose: the two root translations and a local rotation for each of the 34 bones (relative to the bone's
-/// parent). Bones a clip does not animate keep the rotation they were given (the bind rotation).
+/// parent; bone 1's in the character's space, bone 0's the root's turn per frame). Bones a clip does not animate take
+/// the default rotations the sampler is given (the game's reference pose, referenceRotations()) and are marked in
+/// `defaulted`, the original's tag (the lowest bit of the value's `y` word), which blendPoses() reads.
 struct Pose {
     Vec3 rootVelocity;               ///< Section A at this time, m/s; zero when the clip has none.
     Vec3 rootTranslation;            ///< Section B at this time: the pelvis's position.
-    bool hasRootVelocity = false;    ///< The clip has a section A.
+    bool hasRootVelocity = false;    ///< The clip has a section A; false is the root velocity's "default" tag.
     bool hasRootTranslation = false; ///< The clip has a section B; otherwise the pelvis keeps its bind offset.
     std::array<Quat, kPoseBones> rotations{};
+    std::array<bool, kPoseBones> defaulted{}; ///< The bone's rotation is the default's, not the clip's.
 };
+
+/// The game's fixed reference pose: the 34 rotations that fill every bone a clip has no channel for (bone 0 the
+/// identity, bone 2 `(-0.5, 0.5, -0.5, 0.5)`, ...), constants of the code written at start-up. Many clips leave bone
+/// 2 out (the grabs, the tackle, the grounded idle), so filling it with anything else turns the body below the pelvis.
+/// Research: docs/research/formats/animation.md#reference-pose
+/// @orig 0x00100200 Pose_InitReference (unknown)
+[[nodiscard]] std::span<const Quat, kPoseBones> referenceRotations();
 
 /// The value of a position channel at `frame` (fractional): lerped between the key at or before it and the next one,
 /// `t = (frame - key) / (next - key)`; the last key holds after it, the first before it. `channel` must not be empty
@@ -33,14 +43,18 @@ struct Pose {
 [[nodiscard]] Quat sampleChannel(std::span<const RotationKey> channel, float frame);
 
 /// The pose of `clip` at `seconds` (clamped to 0 and the clip's duration): every channel sampled at frame
-/// `seconds × 30`; bones without a channel take `bindRotations`.
+/// `seconds × 30`; bones without a channel take `defaultRotations` (the game's: referenceRotations()) and are marked
+/// as defaulted.
 /// @orig 0x00104ce0 AnimCursor_SamplePose (unknown)
-[[nodiscard]] Pose samplePose(const AnimClip& clip, float seconds, std::span<const Quat, kPoseBones> bindRotations);
+[[nodiscard]] Pose samplePose(const AnimClip& clip, float seconds, std::span<const Quat, kPoseBones> defaultRotations);
 
 /// `a` blended towards `b` by `weight` (0 gives `a`, 1 gives `b`): rotations slerped, translations lerped. With
 /// `subtreeBone` below kPoseBones only that bone and its descendants (by poseBoneParent()) are blended, the other
 /// bones keep `a`'s, so an upper-body clip can play over walking legs; with kPoseBones or more, every bone. The root
-/// translations are blended only for the whole skeleton.
+/// translations are blended only for the whole skeleton. The default marks decide too: two defaulted rotations keep
+/// `a`'s; for the motion channels (the root velocity and bone 0) a defaulted side is ignored and the other copied, so
+/// a clip without root motion does not damp the motion of the one it blends with; otherwise a defaulted rotation is
+/// slerped like any other. Research: docs/research/formats/animation.md#the-pose
 /// @orig 0x00105158 Pose_BlendPartial (unknown)
 [[nodiscard]] Pose blendPoses(const Pose& a, const Pose& b, float weight, std::size_t subtreeBone = kPoseBones);
 

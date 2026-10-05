@@ -172,3 +172,21 @@ TEST_CASE("in a grab, R1 spins the hold, circle spins a rear hold to the front, 
     CHECK(letGo.action == GrabAction::LetGo);
     CHECK(letGo.animId == anim_id::kGrabLetGo);
 }
+
+TEST_CASE("a strike, power strike or throw is refused while the victim is out of its place", "[combat]") {
+    PowerMeter power;
+    CombatRandom random(1);
+    GrabInput input;
+    input.victimInPlace = false;
+    for (const CommandId command : {command::kSquarePressed, command::kCrossLongHold, command::kCrossSquare}) {
+        input.command = command;
+        CHECK(updateGrab(input, power, CombatTuning{}, random).action == GrabAction::None);
+    }
+    input.command = command::kCirclePressed;
+    input.stick = Stick{0.0F, 0.7F};
+    CHECK(updateGrab(input, power, CombatTuning{}, random).action == GrabAction::None);
+    CHECK(power.value() == 400);
+    // The spin needs no place.
+    input.command = command::kR1Pressed;
+    CHECK(updateGrab(input, power, CombatTuning{}, random).action == GrabAction::Spin);
+}

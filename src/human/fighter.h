@@ -16,14 +16,19 @@
 // and the targets around; the fighter plays what it decided through the human's animator (the attacks, their chains,
 // the block, the grab, the tackle, the throws, the mugging), lands the hits on the targets with the victim's clips,
 // and tells the human when combat, not the stick, moves the body.
-// Research: docs/research/combat.md
+// Research: docs/research/combat.md, docs/research/combat.md#grab-posing (the pair's placement: human/pair_placement.h)
 
 namespace coney::human {
 
-/// Where a held victim stands in front of the player, metres (**Coney's choice**: the grab and tackle clips are not
-/// measured for it).
-inline constexpr float kGrabDistance = 0.8F;
-inline constexpr float kMountDistance = 0.9F;
+/// How a grab's two bodies are held together (docs/research/combat.md#grab-posing).
+enum class PairStage : std::uint8_t {
+    None,     ///< No grab, or a tackle's intro.
+    Intro,    ///< The grab's intro (71) plays; the victim waits.
+    Moving,   ///< Paired clips that carry both bodies play (the connecting 72 / 73 or 74 / 75, a spin 78 / 79 or
+              ///< 80 / 81): each body is moved by its own root motion until the snap at their end.
+    Attached, ///< The victim stands at its stored offset in the grabber's frame, placed every update.
+};
+
 /// A strike reaches a target within the attack's far range (combat::AnimRangeList::farRange()), or this far when the
 /// list has none (**Coney's choice**), and in front of the attacker (within 90° of its facing).
 inline constexpr float kDefaultStrikeReach = 2.0F;
@@ -59,8 +64,9 @@ class Fighter {
     /// A fighter whose damage comes from `ranges` (may be null: no damage), coin flips seeded with `seed`.
     explicit Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed = 1);
 
-    /// One update: combat decides, then the fighter plays the clips, turns `heading` to a target it grabs or tackles,
-    /// moves the victim, and lands the hits.
+    /// One update: a grab's alignment turns and its pair's moments (the connect, the snap at a clip's end), then
+    /// combat decides, the fighter plays the clips, turns `heading` to a target it attacks, grabs or tackles, lands the
+    /// hits, and puts an attached victim at its offset.
     void update(const FighterInput& input, HumanAnimator& animator, float& heading);
 
     /// Whether combat moves the body this update rather than the stick: blocking, holding someone, mugging, a theft,
@@ -73,8 +79,10 @@ class Fighter {
     [[nodiscard]] const combat::CombatOutput& last() const { return m_last; }
     /// The victim held in a grab, a tackle or a mugging; null when none.
     [[nodiscard]] const TargetHuman* held() const { return m_held; }
-    /// The hold is from the victim's rear (after a spin or in the mugging).
+    /// The hold is from the victim's rear (a grab from behind, after a spin or in the mugging).
     [[nodiscard]] bool fromRear() const { return m_rear; }
+    /// How the grab's two bodies are held together now.
+    [[nodiscard]] PairStage pairStage() const { return m_pair; }
     /// The velocity (m/s, horizontal) an attack's start slides the body at this update, counting the slide down; zero
     /// when none. The human calls it once per update while combat holds the movement.
     [[nodiscard]] anim::Vec3 takeSlide();
@@ -96,9 +104,28 @@ class Fighter {
     void steer(int animId, const FighterInput& input, float& heading);
     // The block's clip: the shuffle with the stick pushed, the sustain otherwise.
     static void playBlock(const FighterInput& input, HumanAnimator& animator);
-    // A grab or tackle started on `victim`: the player faces it and it is put in front.
+    // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits.
     void startHold(TargetHuman& victim, const FighterInput& input, float& heading, bool tackle,
                    HumanAnimator& animator);
+    // The pair's moments, read from the grabber's clip at the start of an update: the connecting clip starting (the
+    // alignment and the victim's paired clip), a connecting clip or a spin ending (the gate and the snap), and a spin
+    // starting (detachForSpin()).
+    void followPairClips(const FighterInput& input, HumanAnimator& animator, float heading);
+    // A spin has started: the victim leaves its offset and moves by its own clip until the spin's end.
+    void detachForSpin(const HumanAnimator& animator);
+    // The connecting clip has started: align the pair over the alignment's time and start the victim's clip, or fail
+    // the grab beyond the far range.
+    // @orig 0x0026be68 Grab_Connect (unknown)
+    void connect(const FighterInput& input, HumanAnimator& animator, float heading);
+    // Puts the victim at `offset` in the grabber's frame, turned by `turn` from the grabber's heading, and attaches it
+    // there (the offset stored).
+    // @orig 0x00276d98 Pair_SnapAttach (unknown)
+    // @orig 0x002802a0 Pair_Attach (unknown)
+    void snapAttach(const FighterInput& input, float heading, anim::Vec3 offset, float turn);
+    // One update of the alignment's turns: the grabber's (on `heading`) and the victim's.
+    void stepAlignment(float& heading);
+    // Whether the held victim stands in its place for a move in the hold (the current hold's point).
+    [[nodiscard]] bool victimInPlace(const FighterInput& input) const;
     // The moves inside a grab, with the victim's clips.
     void playGrabAction(const combat::CombatOutput& out, HumanAnimator& animator);
     // Lands a hit of attack `animId` and `damage`.
@@ -106,8 +133,9 @@ class Fighter {
     // Lets go of the victim: the let-go clips (95 / 94) with `letGo`, else straight to the idles (a release, the
     // victim out of health).
     void releaseHold(HumanAnimator& animator, bool letGo);
-    // Puts the held victim in front of the player at `heading`, facing it, or facing away for a rear hold.
-    void placeHeld(const FighterInput& input, float heading) const;
+    // Puts an attached victim at its stored offset from the grabber at `position` facing `heading`.
+    // @orig 0x00244e78 Human_MoveAttached (unknown)
+    void placeAttached(anim::Vec3 position, float heading) const;
 
     const combat::AnimRangeList* m_ranges;
     combat::PlayerCombat m_combat;
@@ -118,8 +146,15 @@ class Fighter {
     bool m_tacklePending = false;       // the tackle's intro plays; the victim reacts when its hit clip starts
     bool m_mugOnTarget = false;
     bool m_rear = false;    // the hold is from the victim's rear
-    anim::Vec3 m_slide;     // an attack start's slide velocity, m/s
+    anim::Vec3 m_slide;     // an attack start's (or a grab's alignment's) slide velocity, m/s
     int m_slideUpdates = 0; // updates of slide left
+    PairStage m_pair = PairStage::None;
+    anim::Vec3 m_holdOffset;       // the attached victim's place in the grabber's frame
+    float m_holdTurn = 0.0F;       // the attached victim's heading less the grabber's
+    std::uint32_t m_lastClip = 0;  // the grabber's clip at the end of the last update
+    float m_turnStep = 0.0F;       // the grabber's alignment turn per update, radians
+    float m_victimTurnStep = 0.0F; // the victim's
+    int m_turnUpdates = 0;         // updates of turn left
     bool m_wasBlocking = false;
     int m_hitsLanded = 0;
     int m_damageDealt = 0;

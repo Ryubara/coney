@@ -1134,7 +1134,10 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 
 **Disc test** (`[characters]`, counts only): all 543 records load (128 models, 52 character data resources, 507
 dictionaries); 150,509 vertices and 155,493 triangles; 1,692 clips and 2,843 resolved ids; the joint mismatch of a
-clip's first pose against the bind skeleton averages 0.054 m (worst 0.106 m).
+clip's first pose over the [reference pose](formats/animation.md#reference-pose) averages 0.045 m (worst 0.098 m); the
+skinned heights run from -0.07 to 4.06 m (2.29 m at most over the bind rotations; which first clips reach higher is
+not looked at yet); every model's bind rotation for
+bone 2 is 120° from the reference pose's, and 292 of the bones 2-33 over the models are more than 10° from it.
 
 **Disc test** (`[player]`, counts only): Rembrandt's speeds from his clips are the runtime values (walk 1.629, jog
 4.857, run 7.801, sprint 10.245 m/s); at level99's start he lands at z 0.25, idles in 388, takes the walk start 413

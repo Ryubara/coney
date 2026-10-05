@@ -78,9 +78,10 @@ class Human {
     /// (`+0x4e8` − 0.16 × scale, `+0x4e8` not researched).
     static constexpr float kLandingTestHeight = 1.0F;
 
-    /// A human playing `anims` (which must outlive it) through `slots`, posed over `bindRotations` (the skeleton's),
-    /// of body scale `scale` (`+0x65c`), its hits' damage from `ranges` (may be null: no damage; must outlive it). It
-    /// stands at the origin facing +y with full stamina until spawn().
+    /// A human playing `anims` (which must outlive it) through `slots`, bones its clips leave out taking
+    /// `bindRotations` (the game's reference pose, anim::referenceRotations()), of body scale `scale` (`+0x65c`), its
+    /// hits' damage from `ranges` (may be null: no damage; must outlive it). It stands at the origin facing +y with
+    /// full stamina until spawn().
     Human(const characters::AnimSet& anims, const AnimSlots& slots,
           std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale = 1.0F,
           const combat::AnimRangeList* ranges = nullptr);

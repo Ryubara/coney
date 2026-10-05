@@ -68,19 +68,30 @@ GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTu
         outcome.animId = animId;
         outcome.powerSpent = spend(tuning.powerEndurance);
     };
+    // A move with a partner point needs the victim in its place: otherwise nothing happens.
+    const bool placed = input.victimInPlace;
     switch (input.command) {
     case command::kSquarePressed:
+        if (!placed) {
+            break;
+        }
         outcome.action = GrabAction::Strike;
         outcome.animId = random.coin() ? anim_id::kGrabComboStrike2 : anim_id::kGrabComboStrike1;
         outcome.powerSpent = spend(tuning.grabStrikeCost * kPlayerStrikeCostShare);
         break;
     case command::kCrossLongHold:
+        if (!placed) {
+            break;
+        }
         outcome.action = GrabAction::Strike;
         outcome.animId = anim_id::kGrabComboStrike3;
         outcome.powerSpent = spend(tuning.grabStrikeCost * kPlayerStrikeCostShare);
         break;
     case command::kCrossSquare:
     case command::kCircleCross: {
+        if (!placed) {
+            break;
+        }
         const bool rageStrike = input.raging || input.command == command::kCircleCross;
         powerMove(GrabAction::PowerStrike, rageStrike ? anim_id::kGrabPower2Strike1 : anim_id::kGrabPower1Strike1);
         outcome.spinFirst = outcome.action == GrabAction::PowerStrike && input.fromRear;
@@ -94,6 +105,9 @@ GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTu
     case command::kCirclePressed:
         // The stick decides between a throw and, from the rear, the spin to the front.
         if (input.stick.magnitude() > kThrowStick) {
+            if (!placed) {
+                break;
+            }
             powerMove(GrabAction::Throw, throwAttack(sideOf(input.stick.angleDegrees()), input.wallInReach));
         } else if (input.fromRear) {
             outcome.action = GrabAction::Spin;

@@ -10,6 +10,8 @@
 #include "combat/anim_ids.h"
 #include "combat/combat_tuning.h"
 #include "combat/grab.h"
+#include "combat/reactions.h"
+#include "human/pair_placement.h"
 
 namespace coney::human {
 
@@ -24,6 +26,8 @@ constexpr float kDegrees = kPi / 180.0F;
 constexpr std::uint32_t kIdle = 388;
 constexpr std::uint32_t kGrabFrontEnd = 72;
 constexpr std::uint32_t kGrabReactFromFront = 73;
+constexpr std::uint32_t kGrabRearEnd = 74;
+constexpr std::uint32_t kGrabReactFromRear = 75;
 constexpr std::uint32_t kGrabMiss = 69;
 constexpr std::uint32_t kGrabHold = 82;
 constexpr std::uint32_t kGrabHeld = 83;
@@ -48,6 +52,18 @@ constexpr std::uint32_t kMugEnd = 344;
 constexpr std::uint32_t kMugEndReact = 345;
 constexpr std::uint32_t kBlockSustain = 606;
 constexpr std::uint32_t kBlockShuffle = 607;
+
+// The moves of a hold switch both humans on the same update, with no fade (docs/research/combat.md#grab-posing).
+constexpr float kPairFade = 0.0F;
+// The alignment's slide is dropped from this far, or above this speed (m/s).
+constexpr float kAlignMaxSlide = 13.0F;
+constexpr float kAlignMaxSpeed = 50.0F;
+
+// Whether grabber clip `clip` is a spin (78 front to rear, 80 rear to front).
+bool isSpin(std::uint32_t clip) {
+    return clip == static_cast<std::uint32_t>(id::kGrabSpinToRear) ||
+           clip == static_cast<std::uint32_t>(id::kGrabSpinToFront);
+}
 
 // Whether `animId` is one of the throws.
 bool isThrow(int animId) { return animId >= id::kThrow1Front && animId <= id::kThrow2Left; }
@@ -146,6 +162,9 @@ TargetHuman* Fighter::pickTarget(const FighterInput& input, float range) {
 void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& heading) {
     const combat::CombatTuning& tuning = combat::combatTuning();
     const combat::CombatMode before = m_combat.mode();
+    // A grab's alignment turns, then its pair's moments as the grabber's clips change.
+    stepAlignment(heading);
+    followPairClips(input, animator, heading);
 
     // What the dispatcher needs from the world: square's target, and for circle the nearest target in its search.
     combat::CombatInput in;
@@ -176,6 +195,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     in.grabTargetInReach = m_candidate != nullptr;
     in.fromRear = m_rear;
     in.victimMuggable = m_held != nullptr && !m_held->health().depleted();
+    in.victimInPlace = victimInPlace(input);
     const combat::CombatOutput out = m_combat.update(in, tuning);
     m_last = out;
 
@@ -249,12 +269,13 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         playAttack(out.startAnim, input, animator, heading);
     }
 
-    // The tackle's hit: when its clip starts the victim goes down in front of the player, mounted.
+    // The tackle's hit: when its clip starts the victim goes down under the player (the attacker's clip, a paired
+    // task), mounted, and stays at the mount's offset (**inferred** from the range record only).
     if (m_tacklePending && m_held != nullptr &&
         (animator.animId() == kTackleHit || animator.animId() == kMountingIdle)) {
         m_tacklePending = false;
-        m_held->place(anim::add(input.position, anim::scale(facing(heading), kMountDistance)), heading + kPi);
-        m_held->play(one(kTackleReact), kMountedIdle, AnimState::Hold, TargetState::Mounted);
+        m_held->playPaired(one(kTackleReact), animator.anims(), kMountedIdle, AnimState::Hold, TargetState::Mounted);
+        snapAttach(input, heading, pairPoint(m_ranges, kMountingIdle, kMountOffset), kPi);
     }
     if (out.hitAnim != id::kNone) {
         landHit(out.hitAnim, out.hitDamage, input);
@@ -269,6 +290,13 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         (m_held->health().depleted() || (mode == combat::CombatMode::Tackling && m_combat.power().value() == 0))) {
         releaseHold(animator, false);
     }
+    // A spin the dispatcher started lets go of the offset; an attached victim follows the grabber: its transform
+    // times the stored offset.
+    detachForSpin(animator);
+    if (m_pair == PairStage::Attached && m_held != nullptr) {
+        placeAttached(input.position, heading);
+    }
+    m_lastClip = animator.animId();
 }
 
 void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
@@ -327,25 +355,16 @@ void Fighter::steer(int animId, const FighterInput& input, float& heading) {
     m_slideUpdates = updates;
 }
 
-void Fighter::placeHeld(const FighterInput& input, float heading) const {
-    if (m_held == nullptr) {
-        return;
-    }
-    m_held->place(anim::add(input.position, anim::scale(facing(heading), kGrabDistance)),
-                  m_rear ? heading : heading + kPi);
-}
-
 void Fighter::startHold(TargetHuman& victim, const FighterInput& input, float& heading, bool tackle,
                         HumanAnimator& animator) {
-    // Face the victim; it faces back.
     const anim::Vec3 to = anim::subtract(victim.position(), input.position);
-    if (std::hypot(to.x, to.y) > 1e-4F) {
-        heading = headingOf(to);
-    }
+    const float toVictim = std::hypot(to.x, to.y) > 1e-4F ? headingOf(to) : heading;
     m_held = &victim;
     m_rear = false;
+    m_pair = PairStage::None;
     if (tackle) {
-        // The intro covers the distance; the victim waits for the hit clip.
+        // The tackle faces the victim at once; the intro covers the distance and the victim waits for the hit clip.
+        heading = toVictim;
         const std::array<std::uint32_t, 2> tackleClips{id::kTacklePlayerIntro, kTackleHit};
         animator.playCombat(tackleClips, kMountingIdle, AnimState::Hold);
         victim.face(input.position);
@@ -353,10 +372,134 @@ void Fighter::startHold(TargetHuman& victim, const FighterInput& input, float& h
         m_tacklePending = true;
         return;
     }
-    const std::array<std::uint32_t, 2> grabClips{id::kGrabPlayerIntro, kGrabFrontEnd};
-    animator.playCombat(grabClips, kGrabHold, AnimState::Hold);
-    placeHeld(input, heading);
-    victim.play(one(kGrabReactFromFront), kGrabHeld, AnimState::Hold, TargetState::Held);
+    // The grab: from the rear when the player stands on the victim's rear side, else from the front. **Coney's
+    // choice**: the side is decided as the intro starts rather than at its end; a passive target does not move between.
+    m_rear = combat::victimSide(victim.position(), victim.heading(), input.position) == combat::Side::Rear;
+    const std::array<std::uint32_t, 2> grabClips{id::kGrabPlayerIntro, m_rear ? kGrabRearEnd : kGrabFrontEnd};
+    animator.playCombat(grabClips, m_rear ? kGrabRearHold : kGrabHold, AnimState::Hold);
+    // The intro turns the grabber to face the victim over its playing time; the victim's own movement stops.
+    const auto intro = static_cast<std::uint32_t>(id::kGrabPlayerIntro);
+    const anim::AnimClip* introClip = animator.anims().clip(intro);
+    const float introSeconds = introClip != nullptr ? introClip->duration / animator.anims().rate(intro) : 0.0F;
+    m_turnUpdates = std::max(1, static_cast<int>(std::lround(introSeconds / kStepSeconds)));
+    m_turnStep = wrapAngle(toVictim - heading) / static_cast<float>(m_turnUpdates);
+    m_victimTurnStep = 0.0F;
+    victim.play(kNone, kIdle, AnimState::Hold, TargetState::Held);
+    m_pair = PairStage::Intro;
+}
+
+void Fighter::stepAlignment(float& heading) {
+    if (m_turnUpdates <= 0) {
+        return;
+    }
+    --m_turnUpdates;
+    heading = wrapAngle(heading + m_turnStep);
+    if (m_held != nullptr && m_pair != PairStage::Attached && m_victimTurnStep != 0.0F) {
+        m_held->place(m_held->position(), m_held->heading() + m_victimTurnStep);
+    }
+}
+
+void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator, float heading) {
+    if (m_held == nullptr) {
+        m_pair = PairStage::None;
+        return;
+    }
+    const std::uint32_t clip = animator.animId();
+    // The intro has handed over to the connecting clip.
+    if (m_pair == PairStage::Intro && clip == (m_rear ? kGrabRearEnd : kGrabFrontEnd)) {
+        connect(input, animator, heading);
+        return;
+    }
+    // A connecting clip or a spin has ended: the victim is snapped to the hold of the side the grab is now on (a
+    // spin set the side as it started). At a connecting clip's end the gate may release the grab instead.
+    const bool connectEnded = m_lastClip == kGrabFrontEnd || m_lastClip == kGrabRearEnd;
+    if (clip != m_lastClip && m_pair == PairStage::Moving && (connectEnded || isSpin(m_lastClip))) {
+        const anim::Vec3 offset =
+            pairPoint(m_ranges, m_rear ? kGrabRearHold : kGrabHold, m_rear ? kRearHoldOffset : kFrontHoldOffset);
+        if (connectEnded && !holdGatePasses(input.position, m_held->position(), anim::length(offset))) {
+            releaseHold(animator, false);
+            return;
+        }
+        snapAttach(input, heading, offset, m_rear ? 0.0F : kPi);
+    }
+    detachForSpin(animator);
+}
+
+void Fighter::detachForSpin(const HumanAnimator& animator) {
+    // A spin carries both bodies by their clips (the victim's turns it half round): the victim leaves its offset
+    // until the spin's end snaps it again.
+    if (m_held != nullptr && m_pair == PairStage::Attached && isSpin(animator.animId())) {
+        m_held->setAttached(false);
+        m_pair = PairStage::Moving;
+    }
+}
+
+void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float heading) {
+    const std::uint32_t clip = m_rear ? kGrabRearEnd : kGrabFrontEnd;
+    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clip) : nullptr;
+    const float reach =
+        range != nullptr && range->reach > 0.0F ? range->reach : (m_rear ? kConnectReachRear : kConnectReachFront);
+    const float listed = m_ranges != nullptr ? m_ranges->farRange(clip) : 0.0F;
+    const float far = (listed > 0.0F ? listed : kConnectFarRange) * kPlayerFarScale;
+    const PairAlignment align = alignPair(input.position, m_held->position(), reach, far, m_rear);
+    if (!align.inRange) {
+        // Too far: the grab fails, the miss plays on and the victim is free.
+        const std::array<std::uint32_t, 2> miss{kGrabMiss, kNormalFromFight};
+        animator.playCombat(miss, kIdle, AnimState::Attack, kPairFade);
+        m_combat.release();
+        m_held->play(kNone, kIdle, AnimState::Attack, TargetState::Standing);
+        m_held = nullptr;
+        m_pair = PairStage::None;
+        return;
+    }
+    // Over the alignment's time the grabber turns to the victim and slides to the clip's reach, the victim turns.
+    const anim::AnimClip* connecting = animator.anims().clip(clip);
+    const float seconds = connecting != nullptr ? alignSeconds(*connecting, animator.anims().rate(clip)) : 0.0F;
+    m_turnUpdates = std::max(1, static_cast<int>(std::lround(seconds / kStepSeconds)));
+    const auto updates = static_cast<float>(m_turnUpdates);
+    const float turn = wrapAngle(align.grabberHeading - heading);
+    m_turnStep = std::fabs(turn) < kAlignMinTurn ? 0.0F : turn / updates;
+    const float victimTurn = wrapAngle(align.victimHeading - m_held->heading());
+    m_victimTurnStep = std::fabs(victimTurn) < kAlignMinTurn ? 0.0F : victimTurn / updates;
+    const anim::Vec3 slide{align.grabberFeet.x - input.position.x, align.grabberFeet.y - input.position.y, 0.0F};
+    const float distance = anim::length(slide);
+    const float speed = distance / (updates * kStepSeconds);
+    m_slideUpdates = 0;
+    if (distance >= kAlignMinSlide && distance < kAlignMaxSlide && speed <= kAlignMaxSpeed) {
+        m_slide = anim::scale(slide, 1.0F / (updates * kStepSeconds));
+        m_slideUpdates = m_turnUpdates;
+    }
+    // Both humans switch on the same update: the victim plays the grabber's set's reaction, then its own hold.
+    m_held->playPaired(one(m_rear ? kGrabReactFromRear : kGrabReactFromFront), animator.anims(),
+                       m_rear ? kGrabRearHeld : kGrabHeld, AnimState::Hold, TargetState::Held);
+    m_pair = PairStage::Moving;
+}
+
+void Fighter::snapAttach(const FighterInput& input, float heading, anim::Vec3 offset, float turn) {
+    m_holdOffset = offset;
+    m_holdTurn = turn;
+    m_held->setAttached(true);
+    m_pair = PairStage::Attached;
+    m_turnUpdates = 0;
+    placeAttached(input.position, heading);
+}
+
+void Fighter::placeAttached(anim::Vec3 position, float heading) const {
+    m_held->place(fromFrame(position, heading, m_holdOffset), heading + m_holdTurn);
+}
+
+bool Fighter::victimInPlace(const FighterInput& input) const {
+    // A move in the hold finds the victim at the hold's point (the strikes' points are the front hold's); before the
+    // snap it is not there yet. **Coney's choice**: the point checked is the current hold's.
+    if (m_held == nullptr) {
+        return true;
+    }
+    if (m_pair != PairStage::Attached) {
+        return false;
+    }
+    const anim::Vec3 point =
+        pairPoint(m_ranges, m_rear ? kGrabRearHold : kGrabHold, m_rear ? kRearHoldOffset : kFrontHoldOffset);
+    return pairInPlace(input.position, input.heading, m_held->position(), point);
 }
 
 void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& animator) {
@@ -365,9 +508,10 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
     switch (out.grabAction) {
     case combat::GrabAction::Strike:
         // The strike and the victim's reaction (the next id), then both back to the hold.
-        animator.playCombat(one(clipOf(out.startAnim)), hold, AnimState::Hold);
+        animator.playCombat(one(clipOf(out.startAnim)), hold, AnimState::Hold, kPairFade);
         if (m_held != nullptr) {
-            m_held->play(one(clipOf(out.startAnim) + 1), held, AnimState::Hold, TargetState::Held);
+            m_held->playPaired(one(clipOf(out.startAnim) + 1), animator.anims(), held, AnimState::Hold,
+                               TargetState::Held);
         }
         break;
     case combat::GrabAction::PowerStrike: {
@@ -376,36 +520,38 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         if (m_rear) {
             const std::array<std::uint32_t, 2> clips{id::kGrabSpinToFront, strike};
             const std::array<std::uint32_t, 2> reacts{id::kGrabSpinToFront + 1, strike + 1};
-            animator.playCombat(clips, kGrabHold, AnimState::Hold);
+            animator.playCombat(clips, kGrabHold, AnimState::Hold, kPairFade);
             if (m_held != nullptr) {
-                m_held->play(reacts, kGrabHeld, AnimState::Hold, TargetState::Held);
+                m_held->playPaired(reacts, animator.anims(), kGrabHeld, AnimState::Hold, TargetState::Held);
             }
             m_rear = false;
         } else {
-            animator.playCombat(one(strike), kGrabHold, AnimState::Hold);
+            animator.playCombat(one(strike), kGrabHold, AnimState::Hold, kPairFade);
             if (m_held != nullptr) {
-                m_held->play(one(strike + 1), kGrabHeld, AnimState::Hold, TargetState::Held);
+                m_held->playPaired(one(strike + 1), animator.anims(), kGrabHeld, AnimState::Hold, TargetState::Held);
             }
         }
         break;
     }
     case combat::GrabAction::Throw:
         // The throw lets go: the victim plays its reaction and lands on its back.
-        animator.playCombat(one(clipOf(out.startAnim)), kAnimFightIdle, AnimState::Attack);
+        animator.playCombat(one(clipOf(out.startAnim)), kAnimFightIdle, AnimState::Attack, kPairFade);
         if (m_held != nullptr) {
-            m_held->play(one(clipOf(out.startAnim) + 1), kGroundedIdle, AnimState::Hold, TargetState::Grounded);
+            m_held->playPaired(one(clipOf(out.startAnim) + 1), animator.anims(), kGroundedIdle, AnimState::Hold,
+                               TargetState::Grounded);
         }
         m_thrown = m_held;
+        m_pair = PairStage::None;
         m_held = nullptr;
         m_rear = false;
         break;
     case combat::GrabAction::Spin: {
         // The spin to the other side, then that side's hold.
         m_rear = out.startAnim == id::kGrabSpinToRear;
-        animator.playCombat(one(clipOf(out.startAnim)), m_rear ? kGrabRearHold : kGrabHold, AnimState::Hold);
+        animator.playCombat(one(clipOf(out.startAnim)), m_rear ? kGrabRearHold : kGrabHold, AnimState::Hold, kPairFade);
         if (m_held != nullptr) {
-            m_held->play(one(clipOf(out.startAnim) + 1), m_rear ? kGrabRearHeld : kGrabHeld, AnimState::Hold,
-                         TargetState::Held);
+            m_held->playPaired(one(clipOf(out.startAnim) + 1), animator.anims(), m_rear ? kGrabRearHeld : kGrabHeld,
+                               AnimState::Hold, TargetState::Held);
         }
         break;
     }
@@ -473,6 +619,9 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
 }
 
 void Fighter::releaseHold(HumanAnimator& animator, bool letGo) {
+    m_held->setAttached(false);
+    m_pair = PairStage::None;
+    m_turnUpdates = 0;
     const bool mounted = m_held->state() == TargetState::Mounted;
     m_combat.release();
     if (letGo) {

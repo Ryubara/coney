@@ -51,7 +51,7 @@ TEST_CASE("a channel is lerped between its keys and holds before the first and a
     CHECK(coney::anim::dot(half, aboutZ(0.5F)) == Approx(1.0F).margin(1e-3));
 }
 
-TEST_CASE("a pose takes the clip's channels and the bind rotations elsewhere", "[anim_pose]") {
+TEST_CASE("a pose takes the clip's channels and the given defaults elsewhere, marked", "[anim_pose]") {
     const AnimClip clip = testClip();
     std::array<Quat, kPoseBones> bind{};
     bind[7] = aboutZ(0.3F);
@@ -61,9 +61,53 @@ TEST_CASE("a pose takes the clip's channels and the bind rotations elsewhere", "
     CHECK(pose.rootTranslation.x == Approx(1.5F)); // frame 15 of 30
     CHECK(coney::anim::dot(pose.rotations[5], aboutZ(0.785398F)) == Approx(1.0F).margin(1e-3));
     CHECK(pose.rotations[7] == bind[7]);
+    CHECK(pose.defaulted[7]);
+    CHECK_FALSE(pose.defaulted[5]);
     CHECK(pose.rotations[0] == Quat{});
     // Times outside the clip are clamped to it.
     CHECK(coney::anim::samplePose(clip, 5.0F, bind).rootTranslation.x == Approx(3.0F));
+}
+
+TEST_CASE("a clip without a bone 2 channel poses bone 2 at the reference pose", "[anim_pose]") {
+    // testClip() animates bone 5 only: bone 2 (the parent of the spine and both legs) takes the reference value.
+    const AnimClip clip = testClip();
+    const coney::anim::Pose pose = coney::anim::samplePose(clip, 0.5F, coney::anim::referenceRotations());
+    const Quat bone2 = pose.rotations[2];
+    CHECK(bone2.x == Approx(-0.5F));
+    CHECK(bone2.y == Approx(0.5F));
+    CHECK(bone2.z == Approx(-0.5F));
+    CHECK(bone2.w == Approx(0.5F));
+    CHECK(pose.defaulted[2]);
+    // Bone 0 without a channel is the identity; every reference rotation is a unit quaternion.
+    CHECK(pose.rotations[0] == Quat{});
+    for (const Quat& q : coney::anim::referenceRotations()) {
+        CHECK(coney::anim::dot(q, q) == Approx(1.0F).margin(1e-5));
+    }
+}
+
+TEST_CASE("blending keeps two defaults and lets a default motion channel give way", "[anim_pose]") {
+    coney::anim::Pose a;
+    coney::anim::Pose b;
+    a.defaulted.fill(true);
+    b.defaulted.fill(true);
+    for (Quat& q : b.rotations) {
+        q = aboutZ(1.0F);
+    }
+    // Bone 7 defaulted on both sides: a's stays. Bone 9 defaulted on one side only: slerped all the same.
+    b.defaulted[9] = false;
+    // Bone 0 is motion: b's turn is copied whole, not damped by a's default.
+    b.defaulted[0] = false;
+    // The root velocity likewise: a has none, b's is copied.
+    b.hasRootVelocity = true;
+    b.rootVelocity = Vec3{0, 2, 0};
+    const coney::anim::Pose blend = coney::anim::blendPoses(a, b, 0.25F);
+    CHECK(blend.rotations[7] == Quat{});
+    CHECK(blend.defaulted[7]);
+    CHECK(coney::anim::dot(blend.rotations[9], aboutZ(0.25F)) == Approx(1.0F));
+    CHECK_FALSE(blend.defaulted[9]);
+    CHECK(coney::anim::dot(blend.rotations[0], aboutZ(1.0F)) == Approx(1.0F));
+    CHECK(blend.hasRootVelocity);
+    CHECK(blend.rootVelocity.y == Approx(2.0F));
 }
 
 TEST_CASE("a partial blend only touches the subtree of its bone", "[anim_pose]") {

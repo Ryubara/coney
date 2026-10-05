@@ -10,6 +10,7 @@
 
 #include <rw.h>
 
+#include "animation/anim_pose.h"
 #include "characters/character_rig.h"
 #include "core/chunk_system.h"
 #include "gamemodes/game_mode_stack.h"
@@ -169,7 +170,7 @@ void CharacterViewerMode::startClip(std::size_t index) {
 }
 
 void CharacterViewerMode::skin(float time) {
-    const anim::Pose pose = anim::samplePose(m_cursor.clip(), time, m_skeleton.bindRotations);
+    const anim::Pose pose = anim::samplePose(m_cursor.clip(), time, anim::referenceRotations());
     const auto bones = anim::boneTransforms(m_skeleton, pose);
     const std::vector<anim::Mat34> matrices = characters::skinningMatrices(m_assets.model, bones);
     characters::skinVertices(m_assets.model, matrices, m_positions, m_normals);

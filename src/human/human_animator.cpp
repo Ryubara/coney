@@ -100,9 +100,12 @@ std::unique_ptr<anim::AnimTask> HumanAnimator::idleLoop() const {
     return std::make_unique<anim::LoopTask>(*idle.clip, idle.animId, m_anims->rate(idle.animId), 0U);
 }
 
-std::unique_ptr<anim::AnimTask> HumanAnimator::clipThen(std::uint32_t id, std::unique_ptr<anim::AnimTask> next) const {
-    // Single clips have no task flags, so their root motion moves the body.
-    return std::make_unique<anim::ClipThenNextTask>(*m_anims->clip(id), id, m_anims->rate(id), 0U, std::move(next));
+std::unique_ptr<anim::AnimTask> HumanAnimator::clipThen(std::uint32_t id, std::unique_ptr<anim::AnimTask> next,
+                                                        const characters::AnimSet* from) const {
+    // Single clips have no task flags, so their root motion moves the body. A paired clip is the attacker's, at the
+    // attacker's rate (the original's type 6 task); it plays on this human like any other.
+    const characters::AnimSet& set = from != nullptr ? *from : *m_anims;
+    return std::make_unique<anim::ClipThenNextTask>(*set.clip(id), id, set.rate(id), 0U, std::move(next));
 }
 
 bool HumanAnimator::drivingClipPlaying() const {
@@ -203,7 +206,18 @@ void HumanAnimator::stopToIdle() {
 }
 
 void HumanAnimator::playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade) {
-    // The loop last, then each clip handing over to what follows it, built from the end.
+    playChain(clips, nullptr, loop, state, fade);
+}
+
+void HumanAnimator::playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker,
+                               std::uint32_t loop, AnimState state, float fade) {
+    playChain(clips, &attacker, loop, state, fade);
+}
+
+void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,
+                              AnimState state, float fade) {
+    // The loop last (this human's own), then each clip handing over to what follows it, built from the end.
+    const characters::AnimSet& set = from != nullptr ? *from : *m_anims;
     std::unique_ptr<anim::AnimTask> chain;
     if (const anim::AnimClip* clip = m_anims->clip(loop); clip != nullptr) {
         chain = std::make_unique<anim::LoopTask>(*clip, loop, m_anims->rate(loop), 0U);
@@ -211,8 +225,8 @@ void HumanAnimator::playCombat(std::span<const std::uint32_t> clips, std::uint32
         chain = idleLoop();
     }
     for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
-        if (hasClip(*it)) {
-            chain = clipThen(*it, std::move(chain));
+        if (set.clip(*it) != nullptr) {
+            chain = clipThen(*it, std::move(chain), from);
         }
     }
     m_tasks.change(std::move(chain), fade);

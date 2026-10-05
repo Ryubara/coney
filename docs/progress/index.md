@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 3.4%](https://img.shields.io/badge/reimplemented-3.4%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 3.7%](https://img.shields.io/badge/reimplemented-3.7%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.4% of the game's own code (113,816 of 3,342,936 bytes, 318 functions) |
+| **Reimplemented** | `▊░░░░░░░░░░░░░░░░░░░` | 3.7% of the game's own code (122,736 of 3,342,936 bytes, 329 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -51,7 +51,7 @@ at the top of the repository's `README.md`.
 
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
-| `Animation` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 11 | 37,160 |
+| `Animation` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 13 | 37,160 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 31,208 |
 | `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 5 | 118,632 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 32 | 481,192 |
-| `Human` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 40 | 358,360 |
+| `Human` | `▌░░░░░░░░░░░░░░░░░░░` | 2.4% | 43 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -75,7 +75,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.4% | 11 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 59 | 1,524,752 |
+| Unattributed | `▍░░░░░░░░░░░░░░░░░░░` | 1.9% | 65 | 1,524,752 |
 
 ## Research coverage
 
@@ -101,16 +101,20 @@ at the top of the repository's `README.md`.
 
 | Address | Original name | Subsystem | Bytes |
 | --- | --- | --- | --- |
+| `0x00100200` | `Pose_InitReference` | `unattributed` | 2,176 |
 | `0x00101120` | `Skeleton_InitParents` | `unattributed` | 304 |
+| `0x00101658` | `Anim_FirstContactTime` | `unattributed` | 328 |
 | `0x001041f8` | `AnimCursor_Init` | `unattributed` | 536 |
 | `0x001044a0` | `AnimCursor_Advance` | `unattributed` | 208 |
 | `0x001045e0` | `AnimData_OnLoaded` | `unattributed` | 80 |
+| `0x00104630` | `Instance_BuildBoneMatrices` | `Animation` | 416 |
 | `0x00104a38` | `Anim_RateMultiplier` | `Animation` | not filled in |
 | `0x00104ce0` | `AnimCursor_SamplePose` | `Animation` | 1,144 |
 | `0x00105158` | `Pose_BlendPartial` | `Animation` | 848 |
 | `0x00105678` | `AnimTask_Loop` | `Animation` | not filled in |
 | `0x00105990` | `AnimTask_ClipThenNext` | `Animation` | not filled in |
 | `0x00106c80` | `AnimTask_Fade` | `Animation` | not filled in |
+| `0x00108a78` | `PairedTask_Init` | `Animation` | 304 |
 | `0x0010a310` | `AnimTask_GaitBlend` | `Animation` | not filled in |
 | `0x0010a500` | `GaitBlend_SetTarget` | `Animation` | not filled in |
 | `0x0010a558` | `GaitBlend_SetValue` | `Animation` | not filled in |
@@ -268,6 +272,7 @@ at the top of the repository's `README.md`.
 | `0x0023fea8` | `Human_StateUpdate` | `Human` | not filled in |
 | `0x00240898` | `Human_AirControl` | `Human` | not filled in |
 | `0x00240e38` | `Human_PlayerLocomotion` | `Human` | not filled in |
+| `0x00244e78` | `Human_MoveAttached` | `Human` | 1,176 |
 | `0x00248df0` | `Human_Lean` | `Human` | not filled in |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
@@ -289,7 +294,12 @@ at the top of the repository's `README.md`.
 | `0x00266d00` | `Hit_PickReaction` | `Human` | not filled in |
 | `0x00269f30` | `Human_BlockHit` | `Human` | not filled in |
 | `0x0026b0a0` | `Hit_PickReaction` | `Human` | not filled in |
+| `0x0026bad8` | `Grab_ConnectEnd` | `Human` | 912 |
+| `0x0026be68` | `Grab_Connect` | `Human` | 848 |
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
+| `0x00276998` | `Pair_AlignStart` | `unattributed` | 1,024 |
+| `0x00276d98` | `Pair_SnapAttach` | `unattributed` | 600 |
+| `0x00277958` | `Pair_CheckPlace` | `unattributed` | 456 |
 | `0x0027a6c0` | `Player_PickTarget` | `unattributed` | not filled in |
 | `0x0027c120` | `Player_UpdateActions` | `unattributed` | 3,120 |
 | `0x0027ce90` | `Player_UpdateSprint` | `unattributed` | not filled in |
@@ -297,6 +307,7 @@ at the top of the repository's `README.md`.
 | `0x0027d900` | `Player_Dive` | `unattributed` | 272 |
 | `0x0027e6d8` | `Player_UpdateTheft` | `unattributed` | 560 |
 | `0x0027f3b0` | `Player_UpdateGrabbing` | `unattributed` | 2,488 |
+| `0x002802a0` | `Pair_Attach` | `unattributed` | 680 |
 | `0x00280630` | `Player_UpdateChain` | `unattributed` | 216 |
 | `0x00280708` | `Player_UpdateChain` | `unattributed` | 1,560 |
 | `0x00281450` | `Climb_RunningClipEnd` | `unattributed` | not filled in |

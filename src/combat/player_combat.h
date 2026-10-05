@@ -44,6 +44,7 @@ struct CombatInput {
     bool fromRear = false;                ///< Holding the victim from behind.
     bool wallInReach = false;             ///< A wall within a throw's reach.
     bool victimMuggable = false;          ///< The held victim may be mugged.
+    bool victimInPlace = true;            ///< The held victim stands in its place for a move in the hold.
     std::uint64_t nowMs = 0;              ///< Game time, whole milliseconds.
 };
 

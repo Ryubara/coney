@@ -1013,7 +1013,8 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `combat/stick_games.*` | the mugging, the stereo theft's rotation (mode 3) and the button mash (mode 1) |
 | `combat/player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order; the grab breaks at 0 power |
 | `combat/combat_tuning.*`, `debug/combat_tunables.*` | the values above as tunables, category **Combat**, registered at start-up beside the game's |
-| `human/fighter.*` | the player's combat inside the human: builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front and the grab search), plays its clips, turns and slides into an attack, puts a held victim in front, lands the hits |
+| `human/fighter.*` | the player's combat inside the human: builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front and the grab search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), lands the hits |
+| `human/pair_placement.*` | the pair's geometry: offsets in the grabber's frame from a range record's direction × reach, the alignment (`Pair_AlignStart`), its time, the gate at the connect's end and `Pair_CheckPlace` |
 | `human/target_human.*` | a passive target for the sandbox: health, the update's largest hit, the reaction, the stun, the knockdown, the ground time and the rise, the dying clip |
 
 **In the player.** `human::Player` runs the street's `CommandMatcher` on the pad's buttons and gives the human the
@@ -1027,7 +1028,8 @@ not while blocking.
 `AnimState::Hold` keeping its loop): the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15,
 `XS2` 14 and the snaps; the run attack 24 and the charge 0 and dive 1, after which the run resumes when the stick is
 still at a run; the block 606, or the shuffle 607 with the stick pushed; rage 643; the grab 71, 72, then the hold 82
-(victim 73, then 83); the miss 71, 69, 389; the tackle 4, 5, then 210 (victim 6 when the player's 5 starts, then 207),
+(victim 73, then 83), or from the rear 71, 74, 84 (victim 75, 85); the miss 71, 69, 389; the tackle 4, 5, then 210
+(victim 6 when the player's 5 starts, then 207),
 the tackle's miss 4, 2; the grab strikes and power strikes with the victim's next id (52, 54, 56, 58, 64); the spins
 78 / 79 to the rear hold 84 / 85 and 80 / 81 back to 82 / 83; the throws with the victim's next id, then 196; the
 let-go 95 / 94; the mugging 78, 338, 340 (victim 79, 339, 341) with 342 / 343 while the stick is on target and 344 /
@@ -1045,10 +1047,13 @@ The tests drive all of this with input scripts played through the pad records at
 `tests/combat/` the core (each attack's timing, the chain, the grab rules, the meters, the reactions, the class
 damage), `tests/human/combat_test.cpp` the human with synthetic clips (the combo and its reactions and stun, the stun's
 750 ms, the block holding the body while the stick at 0.6 turns it, the grab, strike and throw with the rise 2 s
-later, the R1 spin and the L2 let-go, the tackle, the turn into an attack, the knockdown), and
+later, the R1 spin and the L2 let-go, the tackle, the turn into an attack, the knockdown, the victim at the front and
+rear holds' offsets after the connect, a paired clip from the attacker's set), `tests/human/pair_placement_test.cpp` the
+pair's geometry, and
 `tests/sandbox/disc_sandbox_combat_test.cpp` Rembrandt from the disc in the fight yard (`assets/sandbox/combat.layout`;
 the scripts `tests/support/combat_*.txt`: a combo, a grab with a strike, both spins and a throw, a tackle, a mugging;
-clip ids, counts and hashes only).
+clip ids, counts and hashes only; and the pelvis of the holds 82-85 against the runtime one: 82-84 within 0.1°, 85
+within 2.5°, all within 1 mm).
 
 **Disc test** (`[disc][combat]`, counts only): Rembrandt's list has 722 records, 160 with damage; every attack combat
 starts has one; the grab and tackle ranges come out at 3.12 m and 3.75 m as at runtime; every clip the fighter and
@@ -1080,8 +1085,23 @@ script runner keeps table arguments as nil), so the game plays the file's damage
   second missed); within the far range the attacker faces the target and slides so that it stands at the clip's reach,
   spread over the updates to the hit, on top of the clip's root motion; beyond it the attacker turns at most 8°
   (read as degrees).
-- A held victim stands 0.8 m in front (0.9 m mounted), facing the player, or facing away in a rear hold (the
-  research now gives the original's offsets: [Posing a grab](#grab-posing)).
+- **Posing a grab** follows [Posing a grab](#grab-posing): circle plays 71, then 72 (from the front) or 74 (from the
+  rear, when the player stands on the victim's rear side), the player turning to face the victim over 71's playing
+  time while the victim waits in its idle. When 72 / 74 starts, the alignment turns and slides the player over 0.1 ×
+  the clip's time (two updates for 72) so the victim stands at the clip's reach straight ahead, and turns the victim
+  to face him (or away); beyond the far range × 1.25 the grab fails with 69. The victim then plays 73 / 75 **from the
+  player's anim set at its rate** (a paired clip, fade 0), and both bodies move by their clips' root motion. At the
+  clip's end the gate (1.297 m, 0.2 m in height) releases the grab or the victim is snapped to the hold's offset from
+  82's / 84's range record, (0.380, 1.012) facing the player or (−0.097, 0.222) facing his way, and attached: each
+  update it is put at the player's transform × that offset, its own root motion ignored. A spin (78 / 80) detaches it
+  so both bodies move by their clips, as at runtime, and its end snaps it to the other hold. A strike, power strike or
+  throw is refused (nothing played or spent) unless the victim stands within 0.3 m of the current hold's point. The
+  mounted victim is attached at 210's record, (−0.120, 0.032), facing the player (**inferred**: the tackle's placement
+  is not traced). **Coney's choices**: the grab's side is decided as the intro starts (a passive target does not move
+  in between); the place a move checks is the current hold's point (the strikes' points are the front hold's); the
+  victim's turn spreads evenly over the alignment's updates and a slide under 0.01 m is left out; the moves of a hold
+  switch both humans with no fade, the let-go keeps the combat fade; the target moves by its clips' root motion only
+  while held and detached (its reactions and throws do not move it yet).
 - The mugging: the 50° tolerance; a random first target; each move between the tolerance plus 20° and 360° less that;
   the period counts game time. The theft: clockwise steps neither add nor take away; the 250 ms pause ignores the
   stick. The mash: the first press counts, a press's gain is truncated, and other commands are ignored.

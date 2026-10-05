@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "animation/anim_task.h"
 #include "combat/reactions.h"
 #include "human/locomotion.h"
 
@@ -40,11 +41,11 @@ TargetSnapshot interpolate(const TargetSnapshot& previous, const TargetSnapshot&
 }
 
 TargetHuman::TargetHuman(const characters::AnimSet& anims, const AnimSlots& slots,
-                         std::span<const anim::Quat, anim::kPoseBones> bindRotations, int health, anim::Vec3 position,
-                         float headingRadians, std::uint32_t seed)
+                         std::span<const anim::Quat, anim::kPoseBones> defaultRotations, int health,
+                         anim::Vec3 position, float headingRadians, std::uint32_t seed)
     : m_animator(anims, slots), m_position(position), m_heading(wrapAngle(headingRadians)), m_health(health),
       m_random(seed), m_idle(slots.ids[kSlotIdle]) {
-    std::ranges::copy(bindRotations, m_bindRotations.begin());
+    std::ranges::copy(defaultRotations, m_defaultRotations.begin());
     m_current = capture();
     m_previous = m_current;
 }
@@ -70,6 +71,10 @@ void TargetHuman::step() {
         m_hasPending = false;
     }
     m_animator.advance(kStepSeconds);
+    // A held target not yet attached moves by its paired clip's root motion (not by a loop's).
+    if (m_state == TargetState::Held && !m_attached && m_animator.drivingClipPlaying()) {
+        applyRootMotion();
+    }
     // 2. A stun runs out: 357, then the idle.
     if (m_stunUntilMs != 0 && nowMs() >= m_stunUntilMs) {
         m_stunUntilMs = 0;
@@ -145,12 +150,37 @@ bool TargetHuman::knocksDown(int id) const {
 void TargetHuman::play(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
                        TargetState targetState) {
     m_animator.playCombat(clips, loop, state);
-    // Going down starts the ground time.
+    enter(targetState);
+}
+
+void TargetHuman::playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker,
+                             std::uint32_t loop, AnimState state, TargetState targetState) {
+    m_animator.playPaired(clips, attacker, loop, state);
+    enter(targetState);
+}
+
+void TargetHuman::enter(TargetState targetState) {
+    // Going down starts the ground time; anything but a hold lets go of the grabber.
     if (targetState == TargetState::Grounded && m_state != TargetState::Grounded) {
         m_riseAtMs = nowMs() + static_cast<std::uint64_t>(m_class.groundMs);
     }
+    if (targetState != TargetState::Held) {
+        m_attached = false;
+    }
     m_state = targetState;
     m_stunUntilMs = 0;
+}
+
+void TargetHuman::applyRootMotion() {
+    const anim::RootMotion root = anim::rootMotionOf(m_animator.pose(m_defaultRotations));
+    // The clip's velocity is in the target's axes (facing +y): turned by the heading into the world's.
+    const float c = std::cos(m_heading);
+    const float s = std::sin(m_heading);
+    const anim::Vec3 world{(root.velocity.x * c) - (root.velocity.y * s), (root.velocity.x * s) + (root.velocity.y * c),
+                           0.0F};
+    m_position = anim::add(m_position, anim::scale(world, kStepSeconds));
+    // The turn is per 1/30 s.
+    m_heading = wrapAngle(m_heading + (root.turn * 30.0F * kStepSeconds));
 }
 
 void TargetHuman::place(anim::Vec3 position, float headingRadians) {
@@ -166,7 +196,7 @@ void TargetHuman::face(anim::Vec3 point) {
 }
 
 TargetSnapshot TargetHuman::capture() const {
-    return TargetSnapshot{.feet = m_position, .heading = m_heading, .pose = m_animator.pose(m_bindRotations)};
+    return TargetSnapshot{.feet = m_position, .heading = m_heading, .pose = m_animator.pose(m_defaultRotations)};
 }
 
 } // namespace coney::human

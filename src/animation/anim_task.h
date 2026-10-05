@@ -57,9 +57,9 @@ class AnimTask {
     [[nodiscard]] virtual AnimTaskType type() const = 0;
     /// Moves the task on by `seconds` of game time (the task scales it by its rate).
     virtual void advance(float seconds) = 0;
-    /// The task's pose now; bones the clips leave alone take `bindRotations`. Section A is scaled by the rate, and
-    /// removed under kTaskNoRootVelocity; bone 0 takes its bind rotation under kTaskNoRootTurn.
-    [[nodiscard]] virtual Pose sample(std::span<const Quat, kPoseBones> bindRotations) const = 0;
+    /// The task's pose now; bones the clips leave alone take `defaultRotations`. Section A is scaled by the rate, and
+    /// removed under kTaskNoRootVelocity; bone 0 takes its default (marked so) under kTaskNoRootTurn.
+    [[nodiscard]] virtual Pose sample(std::span<const Quat, kPoseBones> defaultRotations) const = 0;
     /// The time into the (leading) clip and its duration, in seconds of clip time.
     [[nodiscard]] virtual float time() const = 0;
     [[nodiscard]] virtual float duration() const = 0;
@@ -76,7 +76,7 @@ class AnimTask {
 
   protected:
     // Applies the task flags and the rate to a pose sampled from a clip.
-    [[nodiscard]] Pose applyFlags(Pose pose, std::span<const Quat, kPoseBones> bindRotations) const;
+    [[nodiscard]] Pose applyFlags(Pose pose, std::span<const Quat, kPoseBones> defaultRotations) const;
 
   private:
     float m_rate;
@@ -91,7 +91,7 @@ class LoopTask final : public AnimTask {
     LoopTask(const AnimClip& clip, std::uint32_t animId, float rate, std::uint32_t flags, float startSeconds = 0.0F);
     [[nodiscard]] AnimTaskType type() const override { return AnimTaskType::Loop; }
     void advance(float seconds) override;
-    [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> bindRotations) const override;
+    [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> defaultRotations) const override;
     [[nodiscard]] float time() const override { return m_cursor.time(); }
     [[nodiscard]] float duration() const override { return m_cursor.clip().duration; }
     [[nodiscard]] std::uint32_t animId() const override { return m_animId; }
@@ -114,7 +114,7 @@ class ClipThenNextTask final : public AnimTask {
                      std::unique_ptr<AnimTask> next, float startSeconds = 0.0F, bool handOverEarly = false);
     [[nodiscard]] AnimTaskType type() const override { return AnimTaskType::ClipThenNext; }
     void advance(float seconds) override;
-    [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> bindRotations) const override;
+    [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> defaultRotations) const override;
     [[nodiscard]] float time() const override { return m_cursor.time(); }
     [[nodiscard]] float duration() const override { return m_cursor.clip().duration; }
     [[nodiscard]] std::uint32_t animId() const override { return m_animId; }
@@ -154,7 +154,7 @@ class GaitBlendTask final : public AnimTask {
     void advance(float seconds) override;
     /// The lower clip alone below a fraction of 0.01, the upper above 0.995, otherwise both blended by the fraction.
     /// @orig 0x0010adf8 GaitBlend_Sample (AnimationBlend.cpp)
-    [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> bindRotations) const override;
+    [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> defaultRotations) const override;
     [[nodiscard]] float time() const override;
     [[nodiscard]] float duration() const override;
     [[nodiscard]] std::uint32_t animId() const override;
@@ -204,7 +204,7 @@ class AnimTaskStack {
     void advance(float seconds);
     /// The blended pose: the oldest task's, then each newer task over it with the outgoing weight
     /// `(1 + cos(π t / d)) / 2`.
-    [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> bindRotations) const;
+    [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> defaultRotations) const;
     /// The newest task (the original's "top" task, under the fade), or null with none.
     /// @orig 0x00175210 CharacterInstance_TopTask (unknown)
     [[nodiscard]] AnimTask* top() const { return m_layers.empty() ? nullptr : m_layers.front().task.get(); }
@@ -230,7 +230,8 @@ class AnimTaskStack {
 };
 
 /// The root's motion in a pose: section A as sampled (already scaled by its task's rate), and bone 0's rotation read
-/// as a turn about z per 1/30 s (angle `2 acos(w)`, its sign from z), 0 when the pose has neither.
+/// as a turn about z per 1/30 s (angle `2 acos(w)`, its sign from z), 0 when the pose has neither
+/// (bone 0 marked as defaulted is no turn).
 [[nodiscard]] RootMotion rootMotionOf(const Pose& pose);
 
 } // namespace coney::anim

@@ -107,6 +107,7 @@ target_sources(coney_tests PRIVATE
     human/combat_test.cpp
     human/jump_test.cpp
     human/locomotion_test.cpp
+    human/pair_placement_test.cpp
     human/stamina_test.cpp
     human/traversal_test.cpp)
 # Combat (docs/research/combat.md).

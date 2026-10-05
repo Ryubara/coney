@@ -16,7 +16,8 @@
 // a real level. It stands where its layout line puts it, takes the player's hits as pending damage, loses health and
 // reacts as the research's victim does (the reaction table, the stun, the knockdown and getting up, with a street
 // civilian's power class); it has no brain, does not walk and never fights back.
-// Research: docs/research/combat.md#hit-codes, docs/research/combat.md#reactions, docs/research/combat.md#grab
+// Research: docs/research/combat.md#hit-codes, docs/research/combat.md#reactions, docs/research/combat.md#grab,
+// docs/research/combat.md#grab-posing
 // Guide: docs/guides/sandbox.md
 
 namespace coney::human {
@@ -59,16 +60,17 @@ struct TargetClass {
 /// A passive target human.
 class TargetHuman {
   public:
-    /// A target playing `anims` (which must outlive it) through `slots`, posed over `bindRotations`, with `health` of
-    /// `health` (at least 1), its feet at `position` facing `headingRadians`; its coin flips (which dying clip) seeded
-    /// with `seed`.
+    /// A target playing `anims` (which must outlive it) through `slots`, bones its clips leave out taking
+    /// `defaultRotations` (the game's reference pose, anim::referenceRotations()), with `health` of `health` (at least
+    /// 1), its feet at `position` facing `headingRadians`; its coin flips (which dying clip) seeded with `seed`.
     TargetHuman(const characters::AnimSet& anims, const AnimSlots& slots,
-                std::span<const anim::Quat, anim::kPoseBones> bindRotations, int health, anim::Vec3 position,
+                std::span<const anim::Quat, anim::kPoseBones> defaultRotations, int health, anim::Vec3 position,
                 float headingRadians, std::uint32_t seed = 1);
 
     /// One update of 1/30 s: the update's largest hit is applied and reacted to (a reaction, a stun, a knockdown, or
     /// at 0 health a dying clip and the ground for good), the animation steps, a stun runs out with 357, and a target
-    /// down long enough gets up with 199.
+    /// down long enough gets up with 199. Held and not attached (a grab's connecting clip), its clip's root motion
+    /// moves and turns it, as the original's does both bodies.
     /// @orig 0x00265f70 Human_ApplyPendingDamage (unknown)
     /// @orig 0x00256a60 Human_RefillMeters (unknown)
     void step();
@@ -78,6 +80,16 @@ class TargetHuman {
     /// Plays the victim's `clips`, then `loop`, in `state` (AnimState::Attack returns to the idle afterwards,
     /// AnimState::Hold keeps the loop), and takes `targetState`; a stun ends.
     void play(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, TargetState targetState);
+    /// The victim's side of a paired move: plays `clips` from `attacker`'s anim set at its rates (the grabber's
+    /// reaction clips, docs/research/formats/animation.md#paired-tasks), then its own `loop`, switching at once (no
+    /// fade), as play() does otherwise.
+    void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
+                    AnimState state, TargetState targetState);
+    /// Attaches it to its grabber (Coney's stand-in for `Human_MoveAttached`, `0x00244e78`): while attached the
+    /// grabber places it each update and its own root motion does not move it; detached, a held target moves by its
+    /// clip's root motion.
+    void setAttached(bool attached) { m_attached = attached; }
+    [[nodiscard]] bool attached() const { return m_attached; }
     /// Moves it to `position` facing `headingRadians` (a grab or a tackle puts it in front of the player).
     void place(anim::Vec3 position, float headingRadians);
     /// Turns it to face `point`.
@@ -111,11 +123,15 @@ class TargetHuman {
     void react(const TargetHit& hit);
     // Whether anim `id`'s clip has a knockdown event (type 7).
     [[nodiscard]] bool knocksDown(int id) const;
+    // Takes `targetState`: the ground time starts, a hold's end detaches, a stun ends.
+    void enter(TargetState targetState);
+    // A held target's clip moves it by its root motion (velocity turned by the heading, and the turn).
+    void applyRootMotion();
     // The snapshot of the state now.
     [[nodiscard]] TargetSnapshot capture() const;
 
     HumanAnimator m_animator;
-    std::array<anim::Quat, anim::kPoseBones> m_bindRotations{};
+    std::array<anim::Quat, anim::kPoseBones> m_defaultRotations{};
     anim::Vec3 m_position;
     float m_heading = 0.0F;
     combat::Health m_health;
@@ -125,6 +141,7 @@ class TargetHuman {
     TargetHit m_pending;
     bool m_hasPending = false;
     TargetState m_state = TargetState::Standing;
+    bool m_attached = false; // placed by its grabber (setAttached())
     std::uint64_t m_updates = 0;
     std::uint64_t m_stunUntilMs = 0; // 0 when not stunned
     std::uint64_t m_riseAtMs = 0;    // when a grounded target gets up

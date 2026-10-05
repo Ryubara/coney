@@ -183,8 +183,8 @@ no bone 2 channel, where the attacks (11, 12), the fight idle 358, the block 606
 one. A
 player that fills a missing bone with anything but this value turns the whole body below the pelvis; filling it from
 the model's bind rotation is the likely cause of the grab clips posing "rolled on the side" in Coney (inferred: only
-clips without bone 2 show it). Bones 7-15 (the fingers) are also left out by most clips, bone 0 by most clips that do
-not turn.
+clips without bone 2 show it; confirmed by Coney's disc check, [below](#coneys-implementation)). Bones 7-15 (the
+fingers) are also left out by most clips, bone 0 by most clips that do not turn.
 
 ### The cursor (`WarAnimInstance`)
 
@@ -468,13 +468,27 @@ fraction above 0.875, a shared normalised phase), and the stack with its cosine 
 pose of the newest task and switched off by its flags (`0x1` velocity, `0x2` turn; the locomotion tasks carry
 `0x2c1`). Rates come from `CfgAnimSpeeds` by the Anim Range List's flags at `+0x0e` (`src/characters/anim_set.*`).
 
+**The pose** follows the original's: a bone without a channel takes the [reference pose](#reference-pose)
+(`anim::referenceRotations()`, the 34 rotations above, normalised) and is marked as a default, and `blendPoses()` reads
+the mark as `Pose_BlendPartial` does (two defaults keep the first pose's value; for the root velocity and bone 0 a
+default side gives way to the other; otherwise slerp). `boneTransforms()` draws from the pelvis: entry 0 is the
+identity, bone 1 takes the root translation and its own rotation in model space, so bone 0's turn never tilts the
+body ([Bone transforms](#bone-transforms)). A paired clip is played through `HumanAnimator::playPaired()`, which takes
+the clip and its rate from the attacker's anim set ([Paired tasks](#paired-tasks)).
+
+**Coney's disc check** (`[disc][characters]`, values only) confirms the inferred cause of the grabs posing "rolled on
+the side": Coney's bind rotation for bone 2 (from the model's HAnim frame) is the identity in every model, 120° from
+the reference pose's `(-0.5, 0.5, -0.5, 0.5)`. With the reference pose the grab clips stand upright, and the disc test
+`[disc][combat]` finds the model-space pelvis of the holds 82-85 within 2.5° and a millimetre of the values read at
+runtime ([Combat](../combat.md#grab-pose-runtime)); the walk, run and attack clips, which animate bone 2, are unchanged.
+
 **Disc test** (`[anim]`, counts only): 5,127 resources, 31,274 occurrences, 1,875 distinct clips, none failing,
 unpaired or sampling to a non-finite pose; 957 clips have no section A, none lacks B; 9,468 events.
 
 **Coney choices**: "entry `+4`" of the bone offset chunk is read literally, the float at byte 4, which is 0 on the
-disc; bones without a channel keep the model's bind rotation (the original fills them from its
-[reference pose](#reference-pose), which Coney does not do yet); the character viewer plays clips in place at rate 1
-with no root motion; a looping clip carries its overshoot into the next pass. In the task system:
+disc; the character viewer plays clips in place at rate 1 with no root motion; a looping clip carries its overshoot
+into the next pass; a clip without section B has the pelvis at its skeleton offset (none on the disc). In the task
+system:
 
 - **The stack** is kept as a list of layers, newest first; when a fade completes, everything older than it goes. A
   change finishes the newest fade at once when the stack holds more than 6 tasks, and drops the oldest above 12.

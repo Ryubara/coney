@@ -136,6 +136,7 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
     grab.raging = m_rage.raging();
     grab.wallInReach = input.wallInReach;
     grab.victimMuggable = input.victimMuggable;
+    grab.victimInPlace = input.victimInPlace;
     const GrabOutcome outcome = updateGrab(grab, m_power, tuning, m_random);
     out.grabAction = outcome.action;
     switch (outcome.action) {

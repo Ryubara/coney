@@ -16,10 +16,22 @@
 # A function without a size is listed but adds no bytes until its size is filled in.
 
 [[function]]
+address = 0x00100200
+name = "Pose_InitReference"
+subsystem = "unattributed"
+size = 2176
+
+[[function]]
 address = 0x00101120
 name = "Skeleton_InitParents"
 subsystem = "unattributed"
 size = 304
+
+[[function]]
+address = 0x00101658
+name = "Anim_FirstContactTime"
+subsystem = "unattributed"
+size = 328
 
 [[function]]
 address = 0x001041f8
@@ -38,6 +50,12 @@ address = 0x001045e0
 name = "AnimData_OnLoaded"
 subsystem = "unattributed"
 size = 80
+
+[[function]]
+address = 0x00104630
+name = "Instance_BuildBoneMatrices"
+subsystem = "Animation"
+size = 416
 
 [[function]]
 address = 0x00104a38
@@ -70,6 +88,12 @@ subsystem = "Animation"
 address = 0x00106c80
 name = "AnimTask_Fade"
 subsystem = "Animation"
+
+[[function]]
+address = 0x00108a78
+name = "PairedTask_Init"
+subsystem = "Animation"
+size = 304
 
 [[function]]
 address = 0x0010a310
@@ -971,6 +995,12 @@ name = "Human_PlayerLocomotion"
 subsystem = "Human"
 
 [[function]]
+address = 0x00244e78
+name = "Human_MoveAttached"
+subsystem = "Human"
+size = 1176
+
+[[function]]
 address = 0x00248df0
 name = "Human_Lean"
 subsystem = "Human"
@@ -1032,9 +1062,45 @@ name = "Human_BuildIdleTasks"
 subsystem = "Human"
 
 [[function]]
+address = 0x0026bad8
+name = "Grab_ConnectEnd"
+subsystem = "Human"
+size = 912
+
+[[function]]
+address = 0x0026be68
+name = "Grab_Connect"
+subsystem = "Human"
+size = 848
+
+[[function]]
+address = 0x00276998
+name = "Pair_AlignStart"
+subsystem = "unattributed"
+size = 1024
+
+[[function]]
+address = 0x00276d98
+name = "Pair_SnapAttach"
+subsystem = "unattributed"
+size = 600
+
+[[function]]
+address = 0x00277958
+name = "Pair_CheckPlace"
+subsystem = "unattributed"
+size = 456
+
+[[function]]
 address = 0x0027ce90
 name = "Player_UpdateSprint"
 subsystem = "unattributed"
+
+[[function]]
+address = 0x002802a0
+name = "Pair_Attach"
+subsystem = "unattributed"
+size = 680
 
 [[function]]
 address = 0x00281450

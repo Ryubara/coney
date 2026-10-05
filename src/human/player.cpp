@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "animation/anim_pose.h"
 #include "characters/character_list.h"
 #include "characters/character_rig.h"
 #include "combat/combat_tuning.h"
@@ -77,8 +78,8 @@ PlayerCharacter::PlayerCharacter(characters::CharacterAssets assets, characters:
       m_skeleton(characters::characterSkeleton(m_assets.model)), m_ranges(std::move(ranges)) {}
 
 Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start)
-    : m_start(start), m_human(character.anims(), AnimSlots::player(), character.skeleton().bindRotations,
-                              kPlayerBodyScale, &character.ranges()),
+    : m_start(start), m_human(character.anims(), AnimSlots::player(), anim::referenceRotations(), kPlayerBodyScale,
+                              &character.ranges()),
       m_camera(start.position, 0.0F) {
     m_human.spawn(mesh, start.position, start.headingDegrees);
     m_camera = camera::FollowCamera(m_human.position(), m_human.heading());

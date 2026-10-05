@@ -22,17 +22,22 @@ namespace coney::anim {
 struct Skeleton {
     /// Each bone's position in its parent's space: the model's bone offset chunk (0x28), entry b's x, y, z.
     std::array<Vec3, kPoseBones> offsets{};
-    /// Each bone's rest rotation relative to its parent, for bones a clip does not animate.
+    /// a channel take the reference pose, referenceRotations()); kept for the skinning's bind-pose checks.
+    /// a channel take the reference pose, referenceRotations()); the character viewer's bind view and the tests use it.
     std::array<Quat, kPoseBones> bindRotations{};
     /// Added to the z of the pelvis's animated translation (section B). animation.md places it at "entry +4" of the
     /// bone offset chunk, read literally as the float at byte 4 (entry 0's y); 0 in every model on the disc.
     float rootHeightOffset = 0.0F;
 };
 
-/// The 34 bones' transforms in the character's space (game axes, z up, the root at the origin) for `pose`: each
-/// bone's local transform, its rotation from the pose and its offset from the skeleton, applied after its parent's.
-/// The pelvis (bone 1) takes the pose's root translation, z plus rootHeightOffset, when the pose has one, else its
-/// offset. The root's motion (section A) is not applied: the character stays at the origin.
+/// The 34 bones' transforms in the character's space (game axes, z up, the root at the origin) for `pose`. Entry 0
+/// is the root's motion, not a bone: it is the identity, so bone 0's rotation (the turn per frame) never tilts the
+/// body. The pelvis (bone 1) is absolute: its rotation from the pose as is, its position the pose's root translation,
+/// z plus rootHeightOffset, when the pose has one, else its offset. Bones 2-33 apply their local transform (the
+/// pose's rotation, the skeleton's offset) after their parent's. The root's motion (section A) is not applied: the
+/// character stays at the origin.
+/// Research: docs/research/formats/animation.md#bone-transforms
+/// @orig 0x00104630 Instance_BuildBoneMatrices (unknown)
 [[nodiscard]] std::array<Mat34, kPoseBones> boneTransforms(const Skeleton& skeleton, const Pose& pose);
 
 } // namespace coney::anim

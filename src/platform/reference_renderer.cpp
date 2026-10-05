@@ -237,7 +237,7 @@ std::expected<void, Error> renderOne(const io::Wad& wad, const characters::Chara
     }
     if (clip != nullptr) {
         const anim::Skeleton skeleton = characters::characterSkeleton(model);
-        const anim::Pose pose = anim::samplePose(*clip, 0.0F, skeleton.bindRotations);
+        const anim::Pose pose = anim::samplePose(*clip, 0.0F, anim::referenceRotations());
         const auto bones = anim::boneTransforms(skeleton, pose);
         characters::skinVertices(model, characters::skinningMatrices(model, bones), positions, normals);
     } else {

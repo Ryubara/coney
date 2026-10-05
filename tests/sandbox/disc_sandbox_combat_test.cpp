@@ -23,6 +23,10 @@
 #include <SDL3/SDL_stdinc.h>
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_clip.h"
+#include "animation/anim_math.h"
+#include "animation/anim_pose.h"
+#include "animation/skeleton.h"
 #include "characters/character_data.h"
 #include "core/input_script.h"
 #include "core/pads.h"
@@ -122,7 +126,7 @@ Fight runFight(const Yard& yard, const char* label, const std::string& name, std
                                 coney::human::PlayerStart{.position = layout.spawns.front().position,
                                                           .headingDegrees = layout.spawns.front().headingDegrees});
     coney::human::TargetHuman target(yard.character->anims(), coney::human::AnimSlots::player(),
-                                     yard.character->skeleton().bindRotations, point.health, point.position,
+                                     coney::anim::referenceRotations(), point.health, point.position,
                                      point.headingDegrees * std::numbers::pi_v<float> / 180.0F);
     const std::array<coney::human::TargetHuman*, 1> targets{&target};
     Fight fight;
@@ -265,4 +269,40 @@ TEST_CASE("on the disc, triangle in a grab starts the mugging", "[sandbox][comba
     CHECK(inOrder(fight.playerClips, {71, 82, 78, 338}));
     CHECK(inOrder(fight.targetClips, {83, 79, 339}));
     CHECK(std::ranges::find(fight.modes, coney::combat::CombatMode::Mugging) != fight.modes.end());
+}
+
+TEST_CASE("on the disc, the holds 82-85 pose the pelvis as the game does at runtime", "[sandbox][combat][disc]") {
+    const char* path = discPath();
+    if (path == nullptr) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    const Yard yard = loadYard(path);
+    // The model-space pelvis read in PCSX2 at the holds' first frame (docs/research/combat.md, the grab pose at
+    // runtime, #grab-pose-runtime): the grabber's 82 turned 71° about the vertical, the victim's 83 leaning 39°, and
+    // the rear holds 84 and 85; none rolled onto its side.
+    struct Expected {
+        std::uint32_t id;
+        coney::anim::Quat rotation;
+        float height;
+    };
+    const std::array<Expected, 4> holds{Expected{82, coney::anim::Quat{-0.701F, -0.034F, 0.056F, 0.711F}, 0.871F},
+                                        Expected{83, coney::anim::Quat{-0.693F, -0.252F, 0.589F, 0.332F}, 0.831F},
+                                        Expected{84, coney::anim::Quat{-0.329F, -0.645F, 0.537F, 0.433F}, 1.013F},
+                                        Expected{85, coney::anim::Quat{-0.282F, -0.662F, 0.454F, 0.525F}, 1.011F}};
+    for (const Expected& hold : holds) {
+        const coney::anim::AnimClip* clip = yard.character->anims().clip(hold.id);
+        REQUIRE(clip != nullptr);
+        const coney::anim::Pose pose = coney::anim::samplePose(*clip, 0.0F, coney::anim::referenceRotations());
+        const auto bones = coney::anim::boneTransforms(yard.character->skeleton(), pose);
+        const coney::anim::Quat pelvis = coney::anim::quatFromMatrix(bones[1]);
+        const float dot = std::min(1.0F, std::fabs(coney::anim::dot(pelvis, hold.rotation)));
+        const float degrees = 2.0F * std::acos(dot) * 180.0F / std::numbers::pi_v<float>;
+        std::printf("hold %u: pelvis (%.3f, %.3f, %.3f, %.3f), %.1f degrees from the runtime one; height %.3f m "
+                    "(runtime %.3f)\n",
+                    hold.id, static_cast<double>(pelvis.x), static_cast<double>(pelvis.y),
+                    static_cast<double>(pelvis.z), static_cast<double>(pelvis.w), static_cast<double>(degrees),
+                    static_cast<double>(bones[1].t.z), static_cast<double>(hold.height));
+        CHECK(degrees < 3.0F);
+        CHECK(std::fabs(bones[1].t.z - hold.height) < 0.02F);
+    }
 }

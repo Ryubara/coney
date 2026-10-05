@@ -92,7 +92,7 @@ inline std::vector<LocomotionClip> locomotionClips() {
     return clips;
 }
 
-/// The synthetic combat clips, all still: the attacks (11-17, 19, 0.6 s), the grab (69, 71-73, 0.3 s; the holds
+/// The synthetic combat clips, all still but 74: the attacks (11-17, 19, 0.6 s), the grab (69, 71-75, 0.3 s; the holds
 /// 82-85, 1 s), the grab strikes and their reactions (51-56, 57-58, 0.5 s), the spins (78-81, 0.4 s), the let-go
 /// (94, 95, 0.4 s), the throw and its reaction (147, 148, 0.6 s), the tackle (2, 4-6, 0.4 s), the ground (195, 196,
 /// 199, 207, 210, 212), the reactions 268-303 (0.4 s; 288-303, the heavy and crushing ones, knock down), the stun (356
@@ -112,9 +112,18 @@ inline std::vector<LocomotionClip> combatClips() {
     for (const std::uint32_t id : {11U, 12U, 13U, 14U, 15U, 16U, 17U, 19U}) {
         still(id, 0.6F);
     }
-    for (const std::uint32_t id : {69U, 71U, 72U, 73U}) {
+    for (const std::uint32_t id : {69U, 71U, 72U, 73U, 75U}) {
         still(id, 0.3F);
     }
+    // The rear connecting clip carries the grabber 0.8 m forward (2.65 m/s for 0.3 s of clip), closing the gap from
+    // its reach (1.018 m) to the rear hold's (0.222 m) as the disc's 74 and 75 do between them.
+    clips.push_back({.id = 74,
+                     .speed = 0.0F,
+                     .duration = 0.3F,
+                     .rootVelocity = 2.65F,
+                     .rangeFlags = 0,
+                     .reach = 0.0F,
+                     .knockdown = false});
     for (const std::uint32_t id : {82U, 83U, 84U, 85U, 196U, 207U, 210U, 356U, 358U, 606U, 607U}) {
         still(id, 1.0F, true);
     }

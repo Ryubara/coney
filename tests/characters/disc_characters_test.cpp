@@ -4,16 +4,19 @@
 // resources; every distinct model decodes (33 frames, a 32-node HAnim hierarchy, a 32-bone PS2 skin, the 544-byte bone
 // offsets) with every material's texture in its texture dictionary (read with librw on its NULL device); every
 // distinct character data resource resolves its anim table; and each character is posed with its first clip and
-// skinned, the joints checked with characters::jointMismatch(). docs/research/characters.md has the results. It runs
+// skinned over the reference pose, the joints checked with characters::jointMismatch(), and its bind rotations compared
+// with the reference pose (bone 2's angle). docs/research/characters.md has the results. It runs
 // only when the environment variable CONEY_DISC names the disc and skips otherwise, so CI never needs the game. It
 // prints counts only, never data (LEGAL.md).
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <map>
 #include <memory>
+#include <numbers>
 #include <set>
 #include <string>
 #include <utility>
@@ -56,8 +59,12 @@ struct CharacterTotals {
     std::uint64_t posed = 0;       // models posed with their first clip
     float worstMismatch = 0.0F;    // the largest jointMismatch() over them, metres
     double mismatchSum = 0.0;
-    float lowest = 1e9F;   // the lowest skinned vertex height over them
-    float highest = -1e9F; // the highest
+    float lowest = 1e9F;       // the lowest skinned vertex height over them
+    float highest = -1e9F;     // the highest
+    float bone2Largest = 0.0F; // the largest angle between a model's bind rotation of bone 2 and the reference, degrees
+    float bone2Smallest = 1e9F; // the smallest
+    std::uint64_t bone2Off = 0; // models whose bone 2 bind is more than 1 degree from the reference
+    std::uint64_t bonesOff = 0; // bones (2-33, over the models) whose bind is more than 10 degrees from it
 };
 
 // Whether a model has the shape characters.md gives every skinned character.
@@ -67,10 +74,31 @@ bool hasCharacterShape(const coney::characters::CharacterModel& model) {
 }
 
 // Poses a model with `clip` halfway through and skins it, adding the joint check and the height range to the totals.
+// The angle between two rotations, degrees.
+float angleBetween(coney::anim::Quat a, coney::anim::Quat b) {
+    const float d = std::min(1.0F, std::fabs(coney::anim::dot(a, b)));
+    return 2.0F * std::acos(d) * 180.0F / std::numbers::pi_v<float>;
+}
+
+// Compares a model's bind rotations (Coney's skeleton) with the game's reference pose, which fills the bones a clip
+// leaves out: bone 2 above all, which the grab clips leave out (docs/research/formats/animation.md#reference-pose).
+void compareBind(const coney::characters::CharacterModel& model, CharacterTotals& totals) {
+    const coney::anim::Skeleton skeleton = coney::characters::characterSkeleton(model);
+    const auto reference = coney::anim::referenceRotations();
+    const float bone2 = angleBetween(skeleton.bindRotations[2], reference[2]);
+    totals.bone2Largest = std::max(totals.bone2Largest, bone2);
+    totals.bone2Smallest = std::min(totals.bone2Smallest, bone2);
+    totals.bone2Off += bone2 > 1.0F ? 1 : 0;
+    for (std::size_t bone = 2; bone < coney::anim::kPoseBones; ++bone) {
+        totals.bonesOff += angleBetween(skeleton.bindRotations[bone], reference[bone]) > 10.0F ? 1 : 0;
+    }
+}
+
 void poseAndSkin(const coney::characters::CharacterModel& model, const coney::anim::AnimClip& clip,
                  CharacterTotals& totals) {
     const coney::anim::Skeleton skeleton = coney::characters::characterSkeleton(model);
-    const coney::anim::Pose pose = coney::anim::samplePose(clip, clip.duration * 0.5F, skeleton.bindRotations);
+    const coney::anim::Pose pose =
+        coney::anim::samplePose(clip, clip.duration * 0.5F, coney::anim::referenceRotations());
     const auto bones = coney::anim::boneTransforms(skeleton, pose);
     const auto matrices = coney::characters::skinningMatrices(model, bones);
     std::vector<coney::anim::Vec3> positions(model.vertices.size());
@@ -149,6 +177,7 @@ TEST_CASE("every character in the Character List loads, skins and finds its text
             if (!assets->data.clips().empty()) {
                 poseAndSkin(assets->model, *assets->data.clips().front(), totals);
             }
+            compareBind(assets->model, totals);
         }
         if (newData) {
             totals.clips += assets->data.clips().size();
@@ -191,6 +220,12 @@ TEST_CASE("every character in the Character List loads, skins and finds its text
                 totals.posed == 0 ? 0.0 : totals.mismatchSum / static_cast<double>(totals.posed),
                 static_cast<double>(totals.worstMismatch), static_cast<double>(totals.lowest),
                 static_cast<double>(totals.highest));
+    std::printf(
+        "  bind against the reference pose: bone 2 off by %.1f to %.1f degrees, %llu of %llu models more than 1 "
+        "degree; %llu bones (2-33) more than 10 degrees off\n",
+        static_cast<double>(totals.bone2Smallest), static_cast<double>(totals.bone2Largest),
+        static_cast<unsigned long long>(totals.bone2Off), static_cast<unsigned long long>(totals.models.size()),
+        static_cast<unsigned long long>(totals.bonesOff));
     CHECK(totals.failures == 0);
     CHECK(totals.shapeMismatches == 0);
     CHECK(totals.emptyDictionaries == 0);

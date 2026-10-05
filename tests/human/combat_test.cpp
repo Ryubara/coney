@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cmath>
@@ -20,7 +21,10 @@
 #include "combat/commands.h"
 #include "combat/player_combat.h"
 #include "core/pad.h"
+#include "human/fighter.h"
 #include "human/human.h"
+#include "human/human_animator.h"
+#include "human/pair_placement.h"
 #include "human/target_human.h"
 #include "support/collision_fixtures.h"
 #include "support/human_fixtures.h"
@@ -44,7 +48,7 @@ constexpr Vec3 kAlongY{0.0F, 1.0F, 0.0F};
 
 // The range data the tests fight with: the damage measured on a civilian (combat.md#damage-table), the hit codes and
 // flags read at runtime (combat.md#hit-codes), a reach of 1 m (far 1.25 m) for every attack, and the grab's and the
-// tackle's far ranges.
+// tackle's far ranges and the grab's places.
 coney::combat::AnimRangeList fightRanges() {
     struct Move {
         std::int16_t damage;
@@ -67,7 +71,22 @@ coney::combat::AnimRangeList fightRanges() {
         } else if (animId == id::kTackleIntro) {
             far = 2999;
         }
-        bytes.u16(0).u16(1000).u32(std::bit_cast<std::uint32_t>(1.0F)).u16(static_cast<std::uint16_t>(far));
+        // The grab's records (combat.md#grab-posing): the connecting clips straight ahead at their reach with a far
+        // range of 2.5 m, the front and rear holds at their offsets; every other id straight ahead at 1 m.
+        struct Place {
+            std::int16_t x;
+            std::int16_t y;
+            float reach;
+        };
+        const std::map<int, Place> places{
+            {72, {0, 1000, 0.999F}}, {74, {0, 1000, 1.018F}}, {82, {351, 936, 1.081F}}, {84, {-399, 916, 0.242F}}};
+        const auto placed = places.find(animId);
+        const Place place = placed != places.end() ? placed->second : Place{0, 1000, 1.0F};
+        if (animId == 72 || animId == 74) {
+            far = 2500;
+        }
+        bytes.u16(static_cast<std::uint16_t>(place.x)).u16(static_cast<std::uint16_t>(place.y));
+        bytes.u32(std::bit_cast<std::uint32_t>(place.reach)).u16(static_cast<std::uint16_t>(far));
         bytes.u16(static_cast<std::uint16_t>(move.damage)).u16(static_cast<std::uint16_t>(move.code)).u16(move.flags);
     }
     auto list = coney::combat::AnimRangeList::parse(bytes.span());
@@ -90,14 +109,15 @@ struct FightCharacter {
 // A player and one target on a floor, stepped together by an input script through the street's command tables.
 class Fight {
   public:
-    // The player at (40, 40) facing +y, the target `ahead` metres in front of it, facing it.
-    explicit Fight(const FightCharacter& character, float ahead = 1.0F, float sideways = 0.0F)
+    // The player at (40, 40) facing +y, the target `ahead` metres in front of it, facing it (or `targetHeading`).
+    explicit Fight(const FightCharacter& character, float ahead = 1.0F, float sideways = 0.0F,
+                   float targetHeading = std::numbers::pi_v<float>)
         : m_mesh(coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F))),
           m_human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
                   &character.ranges),
-          m_target(std::make_unique<TargetHuman>(
-              character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 600,
-              Vec3{40.0F + sideways, 40.0F + ahead, 0.0F}, std::numbers::pi_v<float>)) {
+          m_target(std::make_unique<TargetHuman>(character.anims, coney::human::AnimSlots::player(),
+                                                 coney::test::identityBind(), 600,
+                                                 Vec3{40.0F + sideways, 40.0F + ahead, 0.0F}, targetHeading)) {
         m_human.spawn(m_mesh.get(), Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
         m_targets.push_back(m_target.get());
     }
@@ -288,4 +308,91 @@ TEST_CASE("a heavy reaction knocks the target down, and it rises after 2000 ms",
     CHECK(fight.target().state() == TargetState::Grounded);
     fight.run("", 65);
     CHECK(fight.target().state() == TargetState::Standing);
+}
+
+TEST_CASE("after the connect the victim sits at the front hold's offset and follows the grabber", "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, 1.5F);
+    coney::human::PairStage connectingSeen = coney::human::PairStage::None;
+    std::uint64_t attachedAt = 0;
+    fight.run("5 tap circle\n", 40, [&](std::uint64_t frame) {
+        const coney::human::PairStage stage = fight.human().fighter().pairStage();
+        if (stage == coney::human::PairStage::Moving) {
+            connectingSeen = stage;
+            // While the connecting clips play, the victim is not attached and a strike is refused.
+            CHECK_FALSE(fight.target().attached());
+        }
+        if (attachedAt == 0 && stage == coney::human::PairStage::Attached) {
+            attachedAt = frame;
+        }
+    });
+    CHECK(connectingSeen == coney::human::PairStage::Moving);
+    REQUIRE(attachedAt != 0);
+    CHECK(fight.target().attached());
+    // (0.380, 1.012) in the grabber's frame, facing it.
+    const Vec3 local =
+        coney::human::toFrame(fight.human().position(), fight.human().heading(), fight.target().position());
+    CHECK(local.x == Approx(0.38F).margin(0.01F));
+    CHECK(local.y == Approx(1.01F).margin(0.01F));
+    CHECK(std::fabs(coney::human::wrapAngle(fight.target().heading() - fight.human().heading())) ==
+          Approx(std::numbers::pi_v<float>).margin(1e-3));
+    // The alignment slid the grabber from 1.5 m to the clip's reach before the connect.
+    CHECK(fight.human().position().y == Approx(40.0F + 1.5F - 0.999F).margin(0.02F));
+}
+
+TEST_CASE("a grab from behind connects with 74 and holds the victim at the rear offset", "[human][combat]") {
+    const FightCharacter character;
+    // The target 1.2 m ahead, facing away from the player.
+    Fight fight(character, 1.2F, 0.0F, 0.0F);
+    std::vector<std::uint32_t> played;
+    fight.run("5 tap circle\n", 40, [&](std::uint64_t) {
+        const std::uint32_t now = fight.human().animator().animId();
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+        }
+    });
+    CHECK(fight.human().fighter().fromRear());
+    // The intro, the rear connecting clip and the rear hold, in order; never the front ones.
+    const std::vector<std::uint32_t> grab(std::ranges::find(played, 71U), played.end());
+    CHECK(grab == std::vector<std::uint32_t>{71, 74, 84});
+    CHECK(fight.target().animator().animId() == 85);
+    const Vec3 local =
+        coney::human::toFrame(fight.human().position(), fight.human().heading(), fight.target().position());
+    CHECK(local.x == Approx(-0.097F).margin(0.01F));
+    CHECK(local.y == Approx(0.222F).margin(0.01F));
+    CHECK(coney::human::wrapAngle(fight.target().heading() - fight.human().heading()) == Approx(0.0F).margin(1e-3));
+}
+
+TEST_CASE("a paired clip and its rate come from the attacker's anim set", "[human][combat]") {
+    // Two sets: the victim's own 73 lasts 0.3 s with no rate flag (0.75); the attacker's lasts 0.9 s at flag 0x1000.
+    const FightCharacter victimCharacter;
+    std::vector<coney::test::LocomotionClip> clips = coney::test::locomotionClips();
+    clips.push_back({.id = 73,
+                     .speed = 0.0F,
+                     .duration = 0.9F,
+                     .rootVelocity = 0.0F,
+                     .rangeFlags = 0x1000,
+                     .reach = 0.0F,
+                     .knockdown = false});
+    clips.push_back({.id = 83,
+                     .speed = 0.0F,
+                     .duration = 1.0F,
+                     .rootVelocity = 0.0F,
+                     .rangeFlags = 0,
+                     .reach = 0.0F,
+                     .knockdown = false});
+    const coney::characters::CharacterData attackerData = coney::test::locomotionData(clips);
+    const coney::characters::AnimSet attacker{attackerData, nullptr};
+    coney::human::HumanAnimator animator(victimCharacter.anims, coney::human::AnimSlots::player());
+    const std::array<std::uint32_t, 1> react{73};
+    animator.playPaired(react, attacker, 83, AnimState::Hold);
+    const coney::anim::AnimTask* top = animator.tasks().top();
+    REQUIRE(top != nullptr);
+    CHECK(top->animId() == 73);
+    CHECK(top->duration() == Approx(0.9F));
+    CHECK(top->rate() == Approx(1.0F));
+    // Played from its own set it is the victim's clip.
+    animator.playCombat(react, 83, AnimState::Hold);
+    CHECK(animator.tasks().top()->duration() == Approx(0.3F));
+    CHECK(animator.tasks().top()->rate() == Approx(0.75F));
 }

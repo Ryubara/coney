@@ -45,3 +45,23 @@ TEST_CASE("the pose's bones chain their offsets and rotations through the parent
     CHECK(moved[1].t.x == Approx(0.5F));
     CHECK(moved[1].t.z == Approx(2.25F));
 }
+
+TEST_CASE("bone 0's turn never tilts the body: the pelvis is absolute", "[skeleton]") {
+    coney::anim::Skeleton skeleton;
+    skeleton.offsets[0] = Vec3{0, 0, 5}; // ignored: entry 0 is motion, not a bone
+    skeleton.offsets[1] = Vec3{0, 0, 1};
+    skeleton.offsets[28] = Vec3{1, 0, 0};
+    coney::anim::Pose pose;
+    const auto still = coney::anim::boneTransforms(skeleton, pose);
+    pose.rotations[0] = aboutZ(1.0F); // a turn per frame
+    const auto turning = coney::anim::boneTransforms(skeleton, pose);
+    CHECK(turning[0].t.z == 0.0F);
+    CHECK(turning[1].t.z == Approx(1.0F));
+    CHECK(turning[28].t.x == Approx(still[28].t.x));
+    CHECK(turning[28].t.y == Approx(still[28].t.y));
+    // The pelvis's own rotation is taken as is, in the character's space.
+    pose.rotations[1] = aboutZ(1.5707963F);
+    const auto turned = coney::anim::boneTransforms(skeleton, pose);
+    CHECK(turned[28].t.x == Approx(0.0F).margin(1e-5));
+    CHECK(turned[28].t.y == Approx(1.0F));
+}

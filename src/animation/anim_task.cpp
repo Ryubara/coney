@@ -32,7 +32,7 @@ float AnimTask::normalisedTime() const {
     return total > 0.0F ? std::clamp(time() / total, 0.0F, 1.0F) : 0.0F;
 }
 
-Pose AnimTask::applyFlags(Pose pose, std::span<const Quat, kPoseBones> bindRotations) const {
+Pose AnimTask::applyFlags(Pose pose, std::span<const Quat, kPoseBones> defaultRotations) const {
     // The sampler puts section A times the task's rate in the pose, unless the task asks for no root velocity.
     if ((m_flags & kTaskNoRootVelocity) != 0 || !pose.hasRootVelocity) {
         pose.rootVelocity = Vec3{};
@@ -41,7 +41,8 @@ Pose AnimTask::applyFlags(Pose pose, std::span<const Quat, kPoseBones> bindRotat
         pose.rootVelocity = scale(pose.rootVelocity, m_rate);
     }
     if ((m_flags & kTaskNoRootTurn) != 0) {
-        pose.rotations[0] = bindRotations[0];
+        pose.rotations[0] = defaultRotations[0];
+        pose.defaulted[0] = true;
     }
     return pose;
 }
@@ -59,8 +60,8 @@ void LoopTask::advance(float seconds) {
     }
 }
 
-Pose LoopTask::sample(std::span<const Quat, kPoseBones> bindRotations) const {
-    return applyFlags(samplePose(m_cursor.clip(), m_cursor.time(), bindRotations), bindRotations);
+Pose LoopTask::sample(std::span<const Quat, kPoseBones> defaultRotations) const {
+    return applyFlags(samplePose(m_cursor.clip(), m_cursor.time(), defaultRotations), defaultRotations);
 }
 
 ClipThenNextTask::ClipThenNextTask(const AnimClip& clip, std::uint32_t animId, float rate, std::uint32_t flags,
@@ -87,8 +88,8 @@ void ClipThenNextTask::advance(float seconds) {
     }
 }
 
-Pose ClipThenNextTask::sample(std::span<const Quat, kPoseBones> bindRotations) const {
-    return applyFlags(samplePose(m_cursor.clip(), m_cursor.time(), bindRotations), bindRotations);
+Pose ClipThenNextTask::sample(std::span<const Quat, kPoseBones> defaultRotations) const {
+    return applyFlags(samplePose(m_cursor.clip(), m_cursor.time(), defaultRotations), defaultRotations);
 }
 
 std::unique_ptr<AnimTask> ClipThenNextTask::takeReplacement() { return m_finished ? std::move(m_next) : nullptr; }
@@ -132,20 +133,20 @@ void GaitBlendTask::advance(float seconds) {
     }
 }
 
-Pose GaitBlendTask::sample(std::span<const Quat, kPoseBones> bindRotations) const {
+Pose GaitBlendTask::sample(std::span<const Quat, kPoseBones> defaultRotations) const {
     const std::size_t lower = lowerIndex();
     const float fraction = m_value - static_cast<float>(lower);
     const AnimClip& low = *m_clips[lower].clip;
     const AnimClip& high = *m_clips[lower + 1].clip;
     if (fraction < kLowerAlone) {
-        return applyFlags(samplePose(low, timeAt(low, m_phase), bindRotations), bindRotations);
+        return applyFlags(samplePose(low, timeAt(low, m_phase), defaultRotations), defaultRotations);
     }
     if (fraction > kUpperAlone) {
-        return applyFlags(samplePose(high, timeAt(high, m_phase), bindRotations), bindRotations);
+        return applyFlags(samplePose(high, timeAt(high, m_phase), defaultRotations), defaultRotations);
     }
-    const Pose a = samplePose(low, timeAt(low, m_phase), bindRotations);
-    const Pose b = samplePose(high, timeAt(high, m_phase), bindRotations);
-    return applyFlags(blendPoses(a, b, fraction), bindRotations);
+    const Pose a = samplePose(low, timeAt(low, m_phase), defaultRotations);
+    const Pose b = samplePose(high, timeAt(high, m_phase), defaultRotations);
+    return applyFlags(blendPoses(a, b, fraction), defaultRotations);
 }
 
 float GaitBlendTask::time() const { return m_phase * duration(); }
@@ -216,17 +217,18 @@ void AnimTaskStack::advance(float seconds) {
     }
 }
 
-Pose AnimTaskStack::sample(std::span<const Quat, kPoseBones> bindRotations) const {
+Pose AnimTaskStack::sample(std::span<const Quat, kPoseBones> defaultRotations) const {
     if (m_layers.empty()) {
         Pose rest;
-        std::ranges::copy(bindRotations, rest.rotations.begin());
+        std::ranges::copy(defaultRotations, rest.rotations.begin());
+        rest.defaulted.fill(true);
         return rest;
     }
     // From the oldest up: each newer task over what is under it, the old weighing (1 + cos(π t / d)) / 2.
-    Pose pose = m_layers.back().task->sample(bindRotations);
+    Pose pose = m_layers.back().task->sample(defaultRotations);
     for (std::size_t i = m_layers.size() - 1; i-- > 0;) {
         const Layer& layer = m_layers[i];
-        const Pose incoming = layer.task->sample(bindRotations);
+        const Pose incoming = layer.task->sample(defaultRotations);
         pose = blendPoses(incoming, pose, outgoingWeight(layer.elapsed, layer.fade));
     }
     return pose;
@@ -237,7 +239,10 @@ RootMotion rootMotionOf(const Pose& pose) {
     if (pose.hasRootVelocity) {
         motion.velocity = pose.rootVelocity;
     }
-    // Bone 0's rotation is the root's turn per frame: angle 2 acos(w) about z, its sign from z.
+    // Bone 0's rotation is the root's turn per frame: angle 2 acos(w) about z, its sign from z; none when defaulted.
+    if (pose.defaulted[0]) {
+        return motion;
+    }
     const Quat q = pose.rotations[0];
     const float w = std::clamp(q.w, -1.0F, 1.0F);
     const float angle = 2.0F * std::acos(w);

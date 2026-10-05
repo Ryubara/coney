@@ -106,6 +106,7 @@ target_sources(coney_core PRIVATE
     human/human_animator.cpp
     human/jump.cpp
     human/locomotion.cpp
+    human/pair_placement.cpp
     human/fighter.cpp
     human/player.cpp
     human/player_trace.cpp

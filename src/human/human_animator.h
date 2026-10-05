@@ -133,6 +133,14 @@ class HumanAnimator {
     /// missing loop is the idle's (slot 0).
     void playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
                     float fade = kCombatFade);
+    /// Combat, the victim's side of a paired move: plays `clips` in turn from `attacker`'s anim set at its rates (a
+    /// grab's victim plays the grabber's reaction clips, authored with the grabber's), then its own `loop`, after a
+    /// fade of `fade` (0: the two humans switch on the same update). `state` as for playCombat(). Ids `attacker`
+    /// lacks are skipped.
+    /// Research: docs/research/formats/animation.md#paired-tasks
+    /// @orig 0x00108a78 PairedTask_Init (unknown)
+    void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
+                    AnimState state, float fade = 0.0F);
     /// Combat: plays `clips` in turn, then the gait blend at the run (a run attack after which the run resumes).
     void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade);
     /// Whether the anim set has a clip for `id`.
@@ -175,9 +183,14 @@ class HumanAnimator {
     [[nodiscard]] std::unique_ptr<anim::GaitBlendTask> gaitBlend(float value, float phase) const;
     // The idle loop task (slot 0).
     [[nodiscard]] std::unique_ptr<anim::AnimTask> idleLoop() const;
-    // A clip `id` played once (at its range-flag rate, no task flags) that hands over to `next`.
-    [[nodiscard]] std::unique_ptr<anim::AnimTask> clipThen(std::uint32_t id,
-                                                           std::unique_ptr<anim::AnimTask> next) const;
+    // A clip `id` played once (at its range-flag rate, no task flags) that hands over to `next`; the clip and its rate
+    // come from `from` (another human's set, a paired clip), or from this human's own set when null.
+    [[nodiscard]] std::unique_ptr<anim::AnimTask> clipThen(std::uint32_t id, std::unique_ptr<anim::AnimTask> next,
+                                                           const characters::AnimSet* from = nullptr) const;
+    // Combat's chain: `clips` (from `from`, or this human's set when null) handing over in turn, then this human's
+    // `loop`, after a fade of `fade`.
+    void playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,
+                   AnimState state, float fade);
     // The clip for slot `slot` with its anim id.
     [[nodiscard]] anim::GaitClip slotClip(std::size_t slot) const;
 

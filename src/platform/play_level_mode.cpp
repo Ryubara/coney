@@ -11,6 +11,7 @@
 
 #include <rw.h>
 
+#include "animation/anim_pose.h"
 #include "camera/camera_lens.h"
 #include "characters/character_data.h"
 #include "characters/character_rig.h"
@@ -216,7 +217,7 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
         // for the character classes.
         Target target;
         target.human = std::make_unique<human::TargetHuman>(
-            m_character->anims(), human::AnimSlots::player(), m_character->skeleton().bindRotations, point.health,
+            m_character->anims(), human::AnimSlots::player(), anim::referenceRotations(), point.health,
             anim::Vec3{feet.x, feet.y, feet.z}, point.headingDegrees * std::numbers::pi_v<float> / 180.0F, seed++);
         target.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture);
         target.positions.resize(vertices);

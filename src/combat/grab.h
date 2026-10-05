@@ -78,6 +78,7 @@ struct GrabInput {
     bool raging = false;         ///< The player is raging.
     bool wallInReach = false;    ///< A wall is within the throw's reach.
     bool victimMuggable = false; ///< The victim qualifies for a mugging (`0x00225ff0`).
+    bool victimInPlace = true;   ///< The victim stands within 0.3 m of the move's point (`Pair_CheckPlace`).
 };
 
 /// What a grab update did.
@@ -99,7 +100,9 @@ struct GrabOutcome {
 /// - the power strikes and the throws need more than CombatTuning::powerEndurance of the meter and spend it (100 of
 ///   400); with that much or less the grab is released instead;
 /// - R1 pressed (3) spins front to rear (78) or rear to front (80); L2 held (5) lets go (95);
-/// - triangle mugs a victim that qualifies.
+/// - triangle mugs a victim that qualifies;
+/// - a strike, power strike or throw is refused (nothing played or spent) when the victim is not in its place
+///   (`0x00277958`, docs/research/combat.md#grab-posing).
 ///
 /// In rage nothing is spent or needed.
 /// **Coney choices**: circle without the stick from the front does nothing (its routine `0x0026f008` is not traced);
