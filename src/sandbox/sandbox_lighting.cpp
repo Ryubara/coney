@@ -171,7 +171,7 @@ class PrimitiveGrid {
             }
             forCells(bounds[k].min.x - margin, bounds[k].min.y - margin, bounds[k].max.x + margin,
                      bounds[k].max.y + margin,
-                     [this, k](std::vector<std::uint32_t>& cell) { cell.push_back(static_cast<std::uint32_t>(k)); });
+                     [k](std::vector<std::uint32_t>& cell) { cell.push_back(static_cast<std::uint32_t>(k)); });
         }
     }
 
