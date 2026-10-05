@@ -8,9 +8,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "animation/anim_math.h"
 #include "core/error.h"
+#include "debug/play_controls.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
@@ -64,6 +66,18 @@ class PlayScenery {
     [[nodiscard]] virtual anim::Vec3 lightDirection() const = 0;
     /// The scenery's counts for the play summary, starting with "; ".
     [[nodiscard]] virtual std::string summary() const = 0;
+
+    /// What is played, for the debug menus: the level's name, or "sandbox " and the layout's title.
+    [[nodiscard]] virtual std::string name() const = 0;
+    /// The named places the debug menus' teleport offers: the start (a level), or the spawn points (a sandbox).
+    [[nodiscard]] virtual std::vector<debug::Place> places() const;
+    /// Whether the debug menus' Spawner can add objects (a sandbox can).
+    [[nodiscard]] virtual bool canSpawn() const { return false; }
+    /// Rebuilds the scenery with `extra` objects added to what it was made with (none: as made). Fails with
+    /// ErrorCode::InvalidArgument where nothing can be added (a level), and as the rebuild does; the scenery is then
+    /// unchanged.
+    virtual std::expected<void, Error> setExtras(const RenderEngine& engine,
+                                                 const std::vector<sandbox::Primitive>& extra);
 };
 
 /// A level's scenery for the play mode: its streamed worlds and level file (loadLevelScenery()), streamed around the
@@ -91,6 +105,7 @@ class LevelPlayScenery final : public PlayScenery {
               const std::function<void()>& drawObjects) override;
     [[nodiscard]] anim::Vec3 lightDirection() const override;
     [[nodiscard]] std::string summary() const override;
+    [[nodiscard]] std::string name() const override { return m_name; }
 
   private:
     LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
@@ -102,6 +117,7 @@ class LevelPlayScenery final : public PlayScenery {
     bool m_researched; // whether m_start is the level's researched start
     WorldRenderer m_renderer;
     std::function<void(std::string_view)> m_print;
+    std::string m_name; // the level's name
     float m_drawDistance;
     float m_pending = 0.0F; // the nearest missing scenery after the last step
     std::uint32_t m_loads = 0;
@@ -133,11 +149,18 @@ class SandboxPlayScenery final : public PlayScenery {
 
     [[nodiscard]] const sandbox::SandboxWorld& world() const { return m_world; }
 
+    [[nodiscard]] std::string name() const override { return "sandbox " + m_world.layout().title; }
+    [[nodiscard]] std::vector<debug::Place> places() const override;
+    [[nodiscard]] bool canSpawn() const override { return true; }
+    std::expected<void, Error> setExtras(const RenderEngine& engine,
+                                         const std::vector<sandbox::Primitive>& extra) override;
+
   private:
     SandboxPlayScenery(sandbox::SandboxWorld world, std::unique_ptr<SandboxRenderer> renderer,
                        const human::PlayerStart& start, std::string spawn);
 
     sandbox::SandboxWorld m_world;
+    sandbox::SandboxLayout m_made; // the layout as made, before any extras: the base setExtras() builds on
     std::unique_ptr<SandboxRenderer> m_renderer;
     human::PlayerStart m_start;
     std::string m_spawn; // the spawn point's name

@@ -140,7 +140,10 @@ live and call any binding, in a story level and in a test level, from a gamepad.
   console, the cheat codes, level loading by name, display overlays and the live pad.
 - Done: the developer overlay over the same model, with Dear ImGui (F1): a window per page, filter boxes, plots and a
   text box for the console, for the mouse and keyboard.
-- Next: the player, camera, spawner and debug-draw pages and the test levels.
+- Done: the Player, Camera, Spawner and Debug draw pages over the play mode, in a level or a sandbox: teleports,
+  freezing, the camera reset and the free camera, objects spawned in front of the player, collision and marker lines;
+  sandbox layouts played from the Levels page.
+- Next: spawning characters (once other characters move in a level), god mode and model swap, path overlays.
 
 ## Sound and video
 

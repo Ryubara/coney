@@ -49,4 +49,12 @@ std::expected<SandboxWorld, Error> SandboxWorld::load(const std::filesystem::pat
     return world;
 }
 
+std::expected<SandboxWorld, Error> SandboxWorld::build(SandboxLayout layout, std::filesystem::path folder) {
+    auto world = build(std::move(layout));
+    if (world) {
+        world->m_folder = std::move(folder);
+    }
+    return world;
+}
+
 } // namespace coney::sandbox

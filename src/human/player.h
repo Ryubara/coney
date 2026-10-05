@@ -96,6 +96,13 @@ class Player {
     /// original fails the mission, which Coney has no flow for yet).
     void update(const Pad& pad, const raycast::CollisionMesh* mesh);
 
+    /// Puts the human at `start` on `mesh` (spawned there as at a level start) and the camera behind it, with nothing
+    /// to blend from: the debug menus' teleport. Coney's own tool; the original has none.
+    void teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start);
+    /// Places the camera behind the human again with the current follow settings (camera::followDefaults()), with
+    /// nothing to blend from: the debug menus' camera reset.
+    void resetCamera();
+
     [[nodiscard]] const Human& human() const { return m_human; }
     [[nodiscard]] const camera::FollowCamera& camera() const { return m_camera; }
     /// How often the human has been put back at the start.

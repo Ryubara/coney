@@ -20,6 +20,10 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addConsolePage(*this);
     addCheatsPage(*this);
     addLevelsPage(*this);
+    addPlayerPage(*this);
+    addCameraPage(*this);
+    addSpawnerPage(*this);
+    addDebugDrawPage(*this);
     addDisplayPage(*this);
     addInputPage(*this);
 }

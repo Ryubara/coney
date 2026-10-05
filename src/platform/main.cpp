@@ -421,8 +421,8 @@ int main(int argc, char** argv) {
     // there is a window; a headless run without a script has no pads. Declared after the renderer, so it is destroyed
     // before SDL stops.
     std::unique_ptr<coney::InputSource> input;
-    coney::platform::SdlInput* devices =
-        nullptr; // the SDL input, when it is the source: the overlay mutes its keyboard
+    // The SDL input, when it is the source: the developer overlay mutes its keyboard.
+    coney::platform::SdlInput* devices = nullptr;
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
         auto events = coney::loadInputScript(*scriptPath);
         if (!events) {
@@ -460,6 +460,15 @@ int main(int argc, char** argv) {
             return true;
         };
     }
+    // The play mode, for the Player, Camera and Spawner pages; and the sandbox layouts the Levels page plays, switched
+    // to at the start of the next frame (playSandbox below), outside any step.
+    debugServices.play = [&playLevel]() -> coney::debug::PlayControls* { return playLevel.get(); };
+    debugServices.sandboxFolder = sandboxFolder(*options);
+    std::optional<std::string> pendingSandbox;
+    debugServices.loadSandbox = [&pendingSandbox](std::string_view name) {
+        pendingSandbox = std::string(name);
+        return true;
+    };
     // The overrides file: --tunables, or the default in the user's config folder when there is a window (a headless
     // run touches no user folder).
     debugServices.tunablesFile =
@@ -486,6 +495,52 @@ int main(int argc, char** argv) {
         }
     }
     coney::platform::PadMenuOverlay padMenu(debugSession, std::move(debugFont));
+    if (playLevel) {
+        playLevel->setDebugDraw(&debugSession.debugDraw());
+    }
+    // Plays sandbox layout `name` in place of the play mode or sandbox viewer on top (or above whatever runs): with
+    // the player when there is a disc for his character, else with the free camera.
+    const auto playSandbox = [&](const std::string& name) {
+        auto world = loadSandbox(*options, name);
+        if (!world) {
+            debugSession.print("levels: " + world.error().message);
+            return;
+        }
+        // The mode it replaces must be on top, so no mode above it still runs on it.
+        coney::GameMode* replaced = playLevel ? static_cast<coney::GameMode*>(playLevel.get())
+                                              : static_cast<coney::GameMode*>(sandboxViewer.get());
+        if (replaced != nullptr && modes.top() != replaced) {
+            debugSession.print("levels: finish the mode on top first");
+            return;
+        }
+        if (wad) {
+            auto mode = coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world), std::nullopt,
+                                                                        printText);
+            if (!mode) {
+                debugSession.print("levels: " + mode.error().message);
+                return;
+            }
+            if (replaced != nullptr) {
+                modes.pop();
+            }
+            sandboxViewer.reset();
+            playLevel = std::move(*mode);
+            playLevel->setDebugDraw(&debugSession.debugDraw());
+            modes.push(*playLevel);
+            return;
+        }
+        auto viewerMode = coney::platform::SandboxViewerMode::create(renderer, std::move(*world), printText);
+        if (!viewerMode) {
+            debugSession.print("levels: " + viewerMode.error().message);
+            return;
+        }
+        if (replaced != nullptr) {
+            modes.pop();
+        }
+        playLevel.reset();
+        sandboxViewer = std::move(*viewerMode);
+        modes.push(*sandboxViewer);
+    };
     // The developer overlay (F1), only with a window; without it the pad menu still works.
     std::unique_ptr<coney::platform::ImGuiOverlay> devOverlay;
     if (windowed) {
@@ -528,7 +583,13 @@ int main(int argc, char** argv) {
     std::optional<coney::platform::Window> window = renderer.window();
     // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
-    hooks.beginFrame = [&window, &devOverlay, devices] {
+    hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox] {
+        // A sandbox the Levels page asked for, between two frames.
+        if (pendingSandbox) {
+            const std::string name = *pendingSandbox;
+            pendingSandbox.reset();
+            playSandbox(name);
+        }
         if (!window) {
             return true;
         }

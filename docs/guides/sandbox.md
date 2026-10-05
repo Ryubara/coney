@@ -40,6 +40,10 @@ In the play mode Rembrandt starts at the layout's first spawn point, or at the o
 the ground below it. The controls are those of [playing a level](building.md#playing-a-level). Both modes take
 `--headless`, `--frames` and `--input-script` and print a summary when they stop (counts and positions only).
 
+From any run, [the debug menu](debug-menu.md)'s Levels page plays a layout by name, and in the play mode its Player
+page teleports to the spawn points, its Spawner adds objects in front of Rembrandt and its Debug draw page shows the
+collision mesh.
+
 ## The shipped layouts
 
 They live in `assets/sandbox/` with the textures; that folder's README lists them.

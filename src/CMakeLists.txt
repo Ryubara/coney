@@ -112,6 +112,7 @@ target_sources(coney_core PRIVATE
     debug/native_signatures.cpp
     debug/pad_menu_input.cpp
     debug/pages_engine.cpp
+    debug/pages_play.cpp
     debug/pages_scripts.cpp
     debug/time_control.cpp
     debug/time_series.cpp

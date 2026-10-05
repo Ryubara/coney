@@ -110,7 +110,11 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Natives | the [script bindings](#natives) by category with their Coney status, an argument editor and a call |
 | Lua console | a Lua line to run in the script state, a file to run, and the output |
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
-| Levels | the level table's levels, loaded by name, and a name to type |
+| Levels | the level table's levels, loaded by name, a name to type, and the sandbox layouts to play |
+| Player | where the player is and how it moves (plotted), freezing it, teleports to places, a typed or saved spot |
+| Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
+| Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
+| Debug draw | lines in the scene: collision near the player, the player's heading and velocity, the camera, places |
 | Display | the frame-stats line, the GUI safe area and the logical screen's edges, drawn over the game |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
 
@@ -127,8 +131,22 @@ is not in Coney yet. The page does what the checker does on a match: it calls th
 the sandbox the page reports that it is not set.
 
 **Levels.** With a disc the level table holds the game's levels (filled by `CfgLevelName`); choosing one asks the level
-flow to start it next (`MenuLoadLevel`). Loading straight into a level in play waits for the sandbox and level-play
-work.
+flow to start it next (`MenuLoadLevel`). *Sandbox layouts* lists the layouts in the sandbox folder
+([Sandbox](sandbox.md)); choosing one plays it at the start of the next frame, in place of the play mode or sandbox
+viewer on top: with Rembrandt when there is a disc for his character, else with the free camera.
+
+**Player, Camera and Spawner** act on the mode the player plays in (`--play-level`, or a sandbox from Levels), through
+`debug::PlayControls` (`src/debug/play_controls.h`), which the play mode implements; elsewhere they say there is no
+player. A teleport drops the player onto the ground below the spot and places the camera behind him again. Frozen, the
+player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera tunables, so the
+leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's does, while the
+player stands still and the scenery streams round the free camera. The Spawner adds sandbox primitives (Coney's own
+sizes) in front of the player, facing his way, and rebuilds the sandbox with its collision and lighting; a level cannot
+spawn yet.
+
+**Debug draw** switches lines the play mode draws into the scene, tested against depth: the collision triangles within
+a radius of the player as a wireframe (at most 6,000), a cross at his feet with his heading and velocity, the ground's
+normal, the follow camera's wanted position and look-at point, and the scene's places with their headings.
 
 ## Tunables {#tunables}
 
@@ -260,6 +278,6 @@ The overlay is checked the same way: its renderer runs over a bare Dear ImGui co
 
 ## Still to come {#still-to-come}
 
-- The player, camera, spawner and debug-draw pages, once level play and the sandbox are in: teleport, god mode, model
-  swap, free camera, spawning characters and objects, collision and path overlays.
+- Spawning characters, once other characters move in a level; god mode, once the player has health; a model swap.
+- Spawning objects in a level, and path overlays from the level's path data.
 - The retail cheat checker itself, after which the Cheats page gains on/off states.

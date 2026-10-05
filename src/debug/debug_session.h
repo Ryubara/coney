@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
@@ -11,6 +12,7 @@
 #include "debug/menu_model.h"
 #include "debug/menu_navigator.h"
 #include "debug/native_caller.h"
+#include "debug/play_controls.h"
 #include "debug/time_control.h"
 #include "debug/tunables.h"
 #include "scripting/script_bindings.h"
@@ -44,6 +46,14 @@ struct DebugServices {
     /// The real time the last frame took, in milliseconds, as the platform measures it; empty in a run with no real
     /// clock (headless, tests), which then shows no frame time. Only shown and plotted: the steps never depend on it.
     std::function<double()> frameMilliseconds;
+    /// The mode the player plays in, when one runs (the play mode); null otherwise. The Player, Camera and Spawner
+    /// pages act on it, asking for it at each use, since the mode can change while a page is open.
+    std::function<PlayControls*()> play;
+    /// The folder of sandbox layouts the Levels page lists (listSandboxLayouts()); empty: none.
+    std::filesystem::path sandboxFolder;
+    /// Plays the sandbox layout named `name` (in place of the mode playing now); returns false when it cannot. Empty:
+    /// sandboxes cannot be loaded from the menu in this run.
+    std::function<bool(std::string_view name)> loadSandbox;
 };
 
 /// One debug session: the menu model with every page, the state its pages share (the time controls, the log, the Lua
@@ -76,6 +86,10 @@ class DebugSession {
     [[nodiscard]] TunableRegistry& tunables() { return m_tunables; }
     /// The overlays to draw.
     [[nodiscard]] DisplayOptions& display() { return m_display; }
+    /// What the Debug draw page switches, for the play mode to draw.
+    [[nodiscard]] DebugDrawOptions& debugDraw() { return m_debugDraw; }
+    /// The mode the player plays in now (DebugServices::play), or null.
+    [[nodiscard]] PlayControls* play() const { return m_services.play ? m_services.play() : nullptr; }
     /// The session's log: native calls, results, console output.
     [[nodiscard]] DebugLog& log() { return m_log; }
     /// The Lua console.
@@ -103,6 +117,7 @@ class DebugSession {
     InputGate m_gate;
     TimeControl m_time;
     DisplayOptions m_display;
+    DebugDrawOptions m_debugDraw;
     DebugLog m_log;
     LuaConsole m_console;
     std::unique_ptr<SandboxScripts> m_sandbox;

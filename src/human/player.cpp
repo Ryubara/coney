@@ -59,6 +59,18 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
     m_previous = m_current;
 }
 
+void Player::teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
+    m_human.spawn(mesh, start.position, start.headingDegrees);
+    resetCamera();
+}
+
+void Player::resetCamera() {
+    m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
+    // A jump, not a move: both snapshots hold the new state, so a render does not blend across it.
+    m_current = capture();
+    m_previous = m_current;
+}
+
 PlayerSnapshot Player::capture() const {
     return PlayerSnapshot{.feet = m_human.position(),
                           .heading = m_human.heading(),

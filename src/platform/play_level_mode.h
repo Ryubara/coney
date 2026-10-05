@@ -13,6 +13,7 @@
 #include "animation/anim_math.h"
 #include "core/error.h"
 #include "core/interpolation.h"
+#include "debug/play_controls.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
@@ -24,6 +25,7 @@
 #include "platform/texture_dictionary.h"
 #include "platform/world_renderer.h"
 #include "sandbox/sandbox_world.h"
+#include "world/debug_camera.h"
 #include "world/sector_budget.h"
 
 namespace coney::platform {
@@ -49,7 +51,10 @@ struct PlayStats {
 ///
 /// No level script, objects or other characters yet. The parts follow docs/research/characters.md and
 /// docs/research/camera.md; the mode is Coney's own glue.
-class PlayLevelMode final : public GameMode {
+///
+/// It is also the debug menus' way into the game (debug::PlayControls, docs/guides/debug-menu.md): the Player, Camera
+/// and Spawner pages act on it between steps, and render() draws the Debug draw page's lines into the scene.
+class PlayLevelMode final : public GameMode, public debug::PlayControls {
   public:
     /// The mode's id, outside the original's range.
     static constexpr std::uint32_t kId = 0x106;
@@ -89,6 +94,29 @@ class PlayLevelMode final : public GameMode {
     [[nodiscard]] const human::Player& player() const { return *m_player; }
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
+    /// Sets the debug lines render() draws (the debug session's, which must outlive the mode); null draws none.
+    void setDebugDraw(const debug::DebugDrawOptions* options) { m_debugDraw = options; }
+
+    // debug::PlayControls, for the debug menus.
+    [[nodiscard]] std::string sceneName() const override { return m_scenery->name(); }
+    [[nodiscard]] anim::Vec3 playerFeet() const override;
+    [[nodiscard]] float playerHeadingDegrees() const override;
+    [[nodiscard]] float playerSpeed() const override;
+    [[nodiscard]] std::string playerState() const override;
+    void teleport(const debug::Place& place) override;
+    [[nodiscard]] std::vector<debug::Place> places() const override { return m_scenery->places(); }
+    [[nodiscard]] bool playerFrozen() const override { return m_frozen; }
+    void setPlayerFrozen(bool frozen) override { m_frozen = frozen; }
+    [[nodiscard]] anim::Vec3 cameraEye() const override;
+    [[nodiscard]] anim::Vec3 cameraTarget() const override;
+    void resetCamera() override { m_player->resetCamera(); }
+    [[nodiscard]] bool freeCamera() const override { return m_freeCamera.has_value(); }
+    void setFreeCamera(bool on) override;
+    [[nodiscard]] bool canSpawn() const override { return m_scenery->canSpawn(); }
+    std::expected<void, Error> spawn(const sandbox::Primitive& primitive) override;
+    [[nodiscard]] std::size_t spawnedCount() const override { return m_spawned.size(); }
+    std::expected<void, Error> clearSpawned() override;
+
   private:
     PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> scenery,
                   std::unique_ptr<human::PlayerCharacter> character, std::vector<TextureDictionary> dictionaries,
@@ -105,6 +133,13 @@ class PlayLevelMode final : public GameMode {
     void skin(const human::PlayerSnapshot& snapshot);
     // Draws the character: its lights, the render states, the atomic.
     void drawCharacter() const;
+    // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
+    [[nodiscard]] WorldView viewFrom(const world::CameraPose& pose, float drawDistance) const;
+    // The free camera `camera` between its last two steps, `alpha` of the way.
+    [[nodiscard]] static world::DebugCamera blendedFreeCamera(const Interpolated<world::DebugCamera>& camera,
+                                                              float alpha);
+    // Draws the Debug draw page's lines through the current camera, from `snapshot`.
+    void drawDebugLines(const human::PlayerSnapshot& snapshot) const;
 
     RenderEngine& m_engine;
     std::unique_ptr<PlayScenery> m_scenery;
@@ -119,6 +154,10 @@ class PlayLevelMode final : public GameMode {
     Interpolated<float> m_drawDistance; // at the last two steps
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0;
+    const debug::DebugDrawOptions* m_debugDraw = nullptr;
+    bool m_frozen = false;
+    std::optional<Interpolated<world::DebugCamera>> m_freeCamera; // at the last two steps, while it is on
+    std::vector<sandbox::Primitive> m_spawned;
 };
 
 } // namespace coney::platform

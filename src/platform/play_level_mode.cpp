@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/play_level_mode.h"
 
+#include <algorithm>
 #include <cmath>
 #include <format>
 #include <numbers>
 #include <utility>
+#include <vector>
 
 #include <rw.h>
 
@@ -14,6 +16,7 @@
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "human/human_animator.h"
+#include "raycast/collision_mesh.h"
 
 namespace coney::platform {
 
@@ -21,6 +24,64 @@ namespace {
 
 // Game time in milliseconds from GameTimer ticks.
 std::uint64_t millisecondsOf(std::uint64_t ticks) { return ticks / (GameTimer::kTicksPerSecond / 1000); }
+
+// How far above a teleport's spot the drop onto the ground starts, and how far below it reaches, in metres.
+constexpr float kTeleportDrop = 2.0F;
+// How fast the free camera flies, in metres a second: the sandbox viewer's walking pace for a level's scale.
+constexpr float kFreeCameraSpeed = 8.0F;
+// The most collision triangles the Debug draw wireframe draws in one frame.
+constexpr std::size_t kMaxWireTriangles = 6000;
+// The size of a debug marker's cross and of a heading line, in metres.
+constexpr float kMarkerSize = 0.3F;
+constexpr float kHeadingLength = 1.0F;
+// How far debug lines are lifted off what they lie on, in metres.
+constexpr float kLineLift = 0.02F;
+
+// A coloured line list for librw's 3D immediate mode, in RenderWare's axes.
+class LineList {
+  public:
+    // Adds a line from `a` to `b` (game axes) in `colour`.
+    void add(anim::Vec3 a, anim::Vec3 b, graphics::Rgba colour) {
+        push(a, colour);
+        push(b, colour);
+    }
+    // Adds a cross of three lines `size` long, centred on `p`.
+    void cross(anim::Vec3 p, float size, graphics::Rgba colour) {
+        const float h = size * 0.5F;
+        add({p.x - h, p.y, p.z}, {p.x + h, p.y, p.z}, colour);
+        add({p.x, p.y - h, p.z}, {p.x, p.y + h, p.z}, colour);
+        add({p.x, p.y, p.z - h}, {p.x, p.y, p.z + h}, colour);
+    }
+    // Draws the lines through the current camera: tested against depth, not writing it, untextured.
+    void draw() {
+        if (m_vertices.empty()) {
+            return;
+        }
+        rw::SetRenderState(rw::ZTESTENABLE, 1);
+        rw::SetRenderState(rw::ZWRITEENABLE, 0);
+        rw::SetRenderState(rw::VERTEXALPHA, 0);
+        rw::SetRenderStatePtr(rw::TEXTURERASTER, nullptr);
+        rw::im3d::Transform(m_vertices.data(), static_cast<rw::int32>(m_vertices.size()), nullptr,
+                            rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA);
+        rw::im3d::RenderPrimitive(rw::PRIMTYPELINELIST);
+        rw::im3d::End();
+        rw::SetRenderState(rw::ZWRITEENABLE, 1);
+    }
+
+  private:
+    // One vertex, lifted a little so a line on a surface is not hidden in it, turned into RenderWare's axes.
+    void push(anim::Vec3 game, graphics::Rgba colour) {
+        const world::Vec3 p = toRenderWare(anim::Vec3{game.x, game.y, game.z + kLineLift});
+        rw::gl3::Im3DVertex vertex{};
+        vertex.setX(p.x);
+        vertex.setY(p.y);
+        vertex.setZ(p.z);
+        vertex.setColor(colour.r, colour.g, colour.b, colour.a);
+        m_vertices.push_back(vertex);
+    }
+
+    std::vector<rw::gl3::Im3DVertex> m_vertices;
+};
 
 // The gait's name for the summary.
 const char* gaitName(human::Gait gait) {
@@ -121,8 +182,7 @@ PlayLevelMode::~PlayLevelMode() {
 }
 
 WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot, float drawDistance) const {
-    // The follow camera through the player camera's lens, in RenderWare's axes; a window of another shape keeps the
-    // view's height (as the world viewer does).
+    // The follow camera, in RenderWare's axes.
     const world::Vec3 position = toRenderWare(snapshot.cameraEye);
     const anim::Vec3 look = anim::subtract(snapshot.cameraTarget, snapshot.cameraEye);
     const anim::Vec3 forwardGame = anim::length(look) > 1e-6F ? anim::normalise(look) : anim::Vec3{0.0F, 1.0F, 0.0F};
@@ -131,14 +191,20 @@ WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot, float drawD
     anim::Vec3 right = anim::cross(forward, worldUp);
     right = anim::length(right) > 1e-6F ? anim::normalise(right) : anim::Vec3{-1.0F, 0.0F, 0.0F};
     const anim::Vec3 up = anim::cross(right, forward);
+    return viewFrom(world::CameraPose{.position = position,
+                                      .forward = world::Vec3{forward.x, forward.y, forward.z},
+                                      .up = world::Vec3{up.x, up.y, up.z},
+                                      .right = world::Vec3{right.x, right.y, right.z}},
+                    drawDistance);
+}
+
+WorldView PlayLevelMode::viewFrom(const world::CameraPose& pose, float drawDistance) const {
+    // Through the player camera's lens; a window of another shape keeps the view's height (as the world viewer does).
     const camera::ViewWindow window = camera::viewWindow(camera::kPlayerCameraLens);
     const graphics::Extent size = m_engine.frameSize();
     const float aspect =
         size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 4.0F / 3.0F;
-    return WorldView{.pose = world::CameraPose{.position = position,
-                                               .forward = world::Vec3{forward.x, forward.y, forward.z},
-                                               .up = world::Vec3{up.x, up.y, up.z},
-                                               .right = world::Vec3{right.x, right.y, right.z}},
+    return WorldView{.pose = pose,
                      .halfWidth = window.halfHeight * aspect,
                      .halfHeight = window.halfHeight,
                      .nearClip = camera::kPlayerCameraLens.nearClip,
@@ -178,9 +244,18 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     // The draw distance render() blends moves on a step.
     m_drawDistance.commit();
 
+    // The free camera, when on, takes pad 1 and the player stands still, as a frozen one does.
+    const Pad& pad = stack.pads().port(0);
+    if (m_freeCamera) {
+        m_freeCamera->commit();
+        m_freeCamera->current().update(pad, static_cast<float>(frame.seconds));
+    }
+    static const Pad kStill;
+    const Pad& playerPad = m_frozen || m_freeCamera ? kStill : pad;
+
     // The characters' update, then the cameras' (human::Player keeps that order).
     const anim::Vec3 before = m_player->human().position();
-    m_player->update(stack.pads().port(0), &m_scenery->collision());
+    m_player->update(playerPad, &m_scenery->collision());
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
     if (const std::uint32_t id = m_player->human().animator().animId(); id != m_lastAnimId) {
@@ -191,9 +266,13 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     // The scenery's step around the camera (for a level: one streaming decision and the draw distance), then its
     // visibility pass from the newest step's camera: the next step's streaming reads it, so it belongs to the
     // simulation, not to the blended render.
-    m_scenery->step(toRenderWare(m_player->camera().position()), frame);
+    // With the free camera on, the scenery streams and culls round it instead.
+    const world::Vec3 eye =
+        m_freeCamera ? m_freeCamera->current().position() : toRenderWare(m_player->camera().position());
+    m_scenery->step(eye, frame);
     m_drawDistance.current() = m_scenery->drawDistance();
-    m_scenery->findVisible(view(m_player->current(), m_drawDistance.current()));
+    m_scenery->findVisible(m_freeCamera ? viewFrom(m_freeCamera->current().pose(), m_drawDistance.current())
+                                        : view(m_player->current(), m_drawDistance.current()));
     ++m_stats.frames;
     return ModeResult::Stay;
 }
@@ -202,13 +281,153 @@ void PlayLevelMode::render(const RenderTime& time) {
     // Everything drawn comes from the player's snapshots and the draw distance, `alpha` of the way from the step before
     // to the newest one.
     const human::PlayerSnapshot snapshot = human::interpolate(m_player->previous(), m_player->current(), time.alpha);
-    const WorldView blended = view(snapshot, lerp(m_drawDistance.previous(), m_drawDistance.current(), time.alpha));
+    const float drawDistance = lerp(m_drawDistance.previous(), m_drawDistance.current(), time.alpha);
+    const WorldView blended = m_freeCamera ? viewFrom(blendedFreeCamera(*m_freeCamera, time.alpha).pose(), drawDistance)
+                                           : view(snapshot, drawDistance);
     if (m_engine.drawsPixels()) {
         skin(snapshot);
         m_mesh->update(m_positions, m_normals);
     }
-    // The scenery draws itself through the blended view, with the character among its objects.
-    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this] { drawCharacter(); });
+    // The scenery draws itself through the blended view, with the character and the debug lines among its objects.
+    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot] {
+        drawCharacter();
+        drawDebugLines(snapshot);
+    });
+}
+
+world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::DebugCamera>& camera, float alpha) {
+    // As the sandbox viewer blends its camera: the position, and the turn the short way round.
+    const world::DebugCamera& from = camera.previous();
+    const world::DebugCamera& to = camera.current();
+    world::DebugCamera between(world::Vec3{lerp(from.position().x, to.position().x, alpha),
+                                           lerp(from.position().y, to.position().y, alpha),
+                                           lerp(from.position().z, to.position().z, alpha)});
+    between.setOrientation(lerpAngle(from.yaw(), to.yaw(), alpha), lerp(from.pitch(), to.pitch(), alpha));
+    return between;
+}
+
+void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot) const {
+    if (m_debugDraw == nullptr || !m_engine.drawsPixels()) {
+        return;
+    }
+    const debug::DebugDrawOptions& options = *m_debugDraw;
+    LineList lines;
+    const anim::Vec3 feet = snapshot.feet;
+    // The collision triangles whose first corner is near the feet, as a wireframe, up to a budget.
+    if (options.collision) {
+        const raycast::CollisionMesh& mesh = m_scenery->collision();
+        const auto vertices = mesh.vertices();
+        const float reach = options.collisionRadius * options.collisionRadius;
+        std::size_t drawn = 0;
+        for (const raycast::CollisionTriangle& triangle : mesh.triangles()) {
+            const raycast::Vec3 a = vertices[triangle.vertices[0]];
+            const float dx = a.x - feet.x;
+            const float dy = a.y - feet.y;
+            const float dz = a.z - feet.z;
+            if (dx * dx + dy * dy + dz * dz > reach) {
+                continue;
+            }
+            const raycast::Vec3 b = vertices[triangle.vertices[1]];
+            const raycast::Vec3 c = vertices[triangle.vertices[2]];
+            constexpr graphics::Rgba kWire{80, 220, 255, 255};
+            lines.add({a.x, a.y, a.z}, {b.x, b.y, b.z}, kWire);
+            lines.add({b.x, b.y, b.z}, {c.x, c.y, c.z}, kWire);
+            lines.add({c.x, c.y, c.z}, {a.x, a.y, a.z}, kWire);
+            if (++drawn == kMaxWireTriangles) {
+                break;
+            }
+        }
+    }
+    // The player: a cross at the feet, the heading, and the velocity (a second's travel).
+    if (options.player) {
+        constexpr graphics::Rgba kPlayer{255, 230, 60, 255};
+        lines.cross(feet, kMarkerSize, kPlayer);
+        const anim::Vec3 ahead = human::facing(snapshot.heading);
+        lines.add(feet, anim::add(feet, anim::scale(ahead, kHeadingLength)), kPlayer);
+        lines.add(feet, anim::add(feet, m_player->human().velocity()), graphics::Rgba{255, 120, 40, 255});
+    }
+    if (options.groundNormal) {
+        lines.add(feet, anim::add(feet, m_player->human().groundNormal()), graphics::Rgba{120, 255, 120, 255});
+    }
+    // The follow camera: where it wants to be and what it looks at.
+    if (options.camera) {
+        constexpr graphics::Rgba kCamera{255, 80, 220, 255};
+        lines.cross(m_player->camera().wanted(), kMarkerSize, kCamera);
+        lines.cross(snapshot.cameraTarget, kMarkerSize, kCamera);
+        lines.add(snapshot.cameraEye, snapshot.cameraTarget, kCamera);
+    }
+    // The scene's places, each a cross and its heading.
+    if (options.places) {
+        constexpr graphics::Rgba kPlace{255, 255, 255, 255};
+        for (const debug::Place& place : m_scenery->places()) {
+            lines.cross(place.feet, kMarkerSize * 2.0F, kPlace);
+            const anim::Vec3 ahead = human::facing(place.headingDegrees * std::numbers::pi_v<float> / 180.0F);
+            lines.add(place.feet, anim::add(place.feet, anim::scale(ahead, kHeadingLength)), kPlace);
+        }
+    }
+    lines.draw();
+}
+
+anim::Vec3 PlayLevelMode::playerFeet() const { return m_player->human().position(); }
+
+float PlayLevelMode::playerHeadingDegrees() const {
+    return m_player->human().heading() * 180.0F / std::numbers::pi_v<float>;
+}
+
+float PlayLevelMode::playerSpeed() const { return m_player->human().speed(); }
+
+std::string PlayLevelMode::playerState() const {
+    const human::Human& human = m_player->human();
+    return std::format("{}, clip {}, {}", gaitName(human.gait()), human.animator().animId(),
+                       human.airborne() ? "airborne" : "grounded");
+}
+
+void PlayLevelMode::teleport(const debug::Place& place) {
+    // Dropped onto the ground below the spot, as a start is; left where it is over nothing.
+    const raycast::CollisionMesh& mesh = m_scenery->collision();
+    raycast::Vec3 point{place.feet.x, place.feet.y, place.feet.z + kTeleportDrop};
+    if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, point)) {
+        point.z = place.feet.z;
+    }
+    m_player->teleport(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
+                                                 .headingDegrees = place.headingDegrees});
+}
+
+anim::Vec3 PlayLevelMode::cameraEye() const { return m_player->camera().position(); }
+
+anim::Vec3 PlayLevelMode::cameraTarget() const { return m_player->camera().lookAt(); }
+
+void PlayLevelMode::setFreeCamera(bool on) {
+    if (!on) {
+        m_freeCamera.reset();
+        return;
+    }
+    if (m_freeCamera) {
+        return;
+    }
+    // At the follow camera's eye, looking where it looks (RenderWare's axes: y up, the heading 0 along +z).
+    world::DebugCamera camera(toRenderWare(m_player->camera().position()), kFreeCameraSpeed);
+    const anim::Vec3 look = directionToRenderWare(m_player->camera().forward());
+    camera.setOrientation(std::atan2(look.x, look.z), std::asin(std::clamp(look.y, -1.0F, 1.0F)));
+    m_freeCamera.emplace(camera);
+}
+
+std::expected<void, Error> PlayLevelMode::spawn(const sandbox::Primitive& primitive) {
+    std::vector<sandbox::Primitive> next = m_spawned;
+    next.push_back(primitive);
+    if (auto rebuilt = m_scenery->setExtras(m_engine, next); !rebuilt) {
+        return rebuilt;
+    }
+    m_spawned = std::move(next);
+    return {};
+}
+
+std::expected<void, Error> PlayLevelMode::clearSpawned() {
+    if (auto rebuilt = m_scenery->setExtras(m_engine, {}); !rebuilt) {
+        return rebuilt;
+    }
+    m_spawned.clear();
+    return {};
 }
 
 std::string PlayLevelMode::summary() const {

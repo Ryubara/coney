@@ -52,8 +52,10 @@ LevelPlayScenery::load(RenderEngine& engine, const io::Wad& wad, std::string_vie
     const std::optional<human::PlayerStart> researched = human::researchedPlayerStart(name);
     const human::PlayerStart start =
         researched ? *researched : playLevelStandInStart(*scenery->set, *scenery->level->collision);
-    return std::unique_ptr<LevelPlayScenery>(
+    std::unique_ptr<LevelPlayScenery> made(
         new LevelPlayScenery(std::move(*scenery), budget, start, researched.has_value(), std::move(print)));
+    made->m_name = std::string(name);
+    return made;
 }
 
 LevelPlayScenery::LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
@@ -125,6 +127,16 @@ std::string LevelPlayScenery::summary() const {
     return std::format("; parts read {}, freed {}, failed {}", m_loads, m_unloads, m_failures);
 }
 
+std::vector<debug::Place> PlayScenery::places() const {
+    const human::PlayerStart s = start();
+    return {debug::Place{startSource(), s.position, s.headingDegrees}};
+}
+
+std::expected<void, Error> PlayScenery::setExtras(const RenderEngine& /*engine*/,
+                                                  const std::vector<sandbox::Primitive>& /*extra*/) {
+    return fail(ErrorCode::InvalidArgument, "objects can be spawned in a sandbox only, for now");
+}
+
 std::expected<std::unique_ptr<SandboxPlayScenery>, Error>
 SandboxPlayScenery::create(const RenderEngine& engine, sandbox::SandboxWorld world,
                            const std::optional<std::string>& spawn) {
@@ -160,7 +172,37 @@ SandboxPlayScenery::create(const RenderEngine& engine, sandbox::SandboxWorld wor
 
 SandboxPlayScenery::SandboxPlayScenery(sandbox::SandboxWorld world, std::unique_ptr<SandboxRenderer> renderer,
                                        const human::PlayerStart& start, std::string spawn)
-    : m_world(std::move(world)), m_renderer(std::move(renderer)), m_start(start), m_spawn(std::move(spawn)) {}
+    : m_world(std::move(world)), m_made(m_world.layout()), m_renderer(std::move(renderer)), m_start(start),
+      m_spawn(std::move(spawn)) {}
+
+std::vector<debug::Place> SandboxPlayScenery::places() const {
+    std::vector<debug::Place> places;
+    for (const sandbox::SpawnPoint& spawn : m_world.layout().spawns) {
+        places.push_back(debug::Place{spawn.name, spawn.position, spawn.headingDegrees});
+    }
+    return places;
+}
+
+std::expected<void, Error> SandboxPlayScenery::setExtras(const RenderEngine& engine,
+                                                         const std::vector<sandbox::Primitive>& extra) {
+    // Build the new world and its renderer first, so a failure leaves the scenery as it was.
+    sandbox::SandboxLayout layout = m_made;
+    layout.primitives.insert(layout.primitives.end(), extra.begin(), extra.end());
+    auto world = sandbox::SandboxWorld::build(std::move(layout), m_world.folder());
+    if (!world) {
+        return std::unexpected(std::move(world.error()));
+    }
+    if (world->collision() == nullptr) {
+        return fail(ErrorCode::InvalidArgument, "the sandbox would have nothing solid to stand on");
+    }
+    auto renderer = SandboxRenderer::create(engine, *world);
+    if (!renderer) {
+        return std::unexpected(std::move(renderer.error()));
+    }
+    m_world = std::move(*world);
+    m_renderer = std::move(*renderer);
+    return {};
+}
 
 void SandboxPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t /*nowMs*/,
                               const std::function<void()>& drawObjects) {

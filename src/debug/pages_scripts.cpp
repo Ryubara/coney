@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "debug/debug_session.h"
+#include "sandbox/sandbox_layout.h"
 
 namespace coney::debug {
 
@@ -274,6 +275,39 @@ void addCheatsPage(DebugSession& session) {
         "The retail cheat codes, sent to the script's cheat callback.");
 }
 
+namespace {
+
+// The callbacks below copy strings and call through std::function; all they can throw is a failed allocation, which
+// ends the program either way.
+// NOLINTBEGIN(bugprone-exception-escape)
+
+// The Sandbox layouts page: every layout in the sandbox folder (listSandboxLayouts()), each played when chosen.
+void fillSandboxLayouts(MenuPage& page, DebugSession& session) {
+    const DebugServices& services = session.services();
+    const std::vector<std::string> names = services.sandboxFolder.empty()
+                                               ? std::vector<std::string>{}
+                                               : sandbox::listSandboxLayouts(services.sandboxFolder);
+    if (names.empty()) {
+        page.add(watchItem("No layouts", [] { return std::string("no sandbox folder in this run"); }));
+        return;
+    }
+    for (const std::string& name : names) {
+        page.add(actionItem(name, [&session, name] {
+            const auto& loader = session.services().loadSandbox;
+            if (!loader) {
+                session.print("levels: sandboxes cannot be loaded in this run");
+                return;
+            }
+            session.print(loader(name) ? std::format("levels: playing sandbox {}", name)
+                                       : std::format("levels: sandbox {} could not be loaded", name));
+        }));
+    }
+}
+
+// NOLINTEND(bugprone-exception-escape)
+
+} // namespace
+
 void addLevelsPage(DebugSession& session) {
     session.model().addPage(
         "Levels",
@@ -308,9 +342,14 @@ void addLevelsPage(DebugSession& session) {
                     }
                 }
             }
+            page.add(submenuItem("Sandbox layouts", [&session] {
+                         auto sub = std::make_shared<MenuPage>("Sandbox layouts");
+                         fillSandboxLayouts(*sub, session);
+                         return sub;
+                     }).withHelp("Coney's own test worlds (docs/guides/sandbox.md), played with the same player."));
             page.add(logItem("Log", [&session] { return session.log().last(4); }));
         },
-        "Load any level of the level table by name.");
+        "Load any level of the level table by name, or a sandbox layout.");
 }
 
 } // namespace coney::debug

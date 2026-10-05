@@ -110,6 +110,7 @@ target_sources(coney_tests PRIVATE
     debug/menu_navigator_test.cpp
     debug/native_caller_test.cpp
     debug/pad_menu_input_test.cpp
+    debug/play_pages_test.cpp
     debug/tunables_test.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).

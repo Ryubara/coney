@@ -35,6 +35,10 @@ class SandboxWorld {
     [[nodiscard]] static std::expected<SandboxWorld, Error> load(const std::filesystem::path& folder,
                                                                  std::string_view nameOrPath);
 
+    /// build(), for a layout whose textures are in `folder`: a layout read from there and changed since (the debug
+    /// menu's Spawner adds primitives to one). Fails as build() does.
+    [[nodiscard]] static std::expected<SandboxWorld, Error> build(SandboxLayout layout, std::filesystem::path folder);
+
     [[nodiscard]] const SandboxLayout& layout() const { return m_layout; }
     [[nodiscard]] const SandboxMesh& mesh() const { return m_mesh; }
     /// The collision mesh; null when the layout has nothing solid.

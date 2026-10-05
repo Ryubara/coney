@@ -2,11 +2,14 @@
 #pragma once
 
 #include <array>
+#include <string>
 #include <string_view>
 
 namespace coney::debug {
 
 class DebugSession;
+class MenuPage;
+class TunableRegistry;
 
 /// The Time page: pause, step one fixed step, slow motion, and the frame and step counts (with a channel to plot).
 void addTimePage(DebugSession& session);
@@ -22,6 +25,20 @@ void addConsolePage(DebugSession& session);
 void addCheatsPage(DebugSession& session);
 /// The Levels page: the level table's levels, loaded by name.
 void addLevelsPage(DebugSession& session);
+/// The Player page: where the player is and how it moves (plotted), freezing it, and teleports to the scene's places,
+/// a typed spot or a saved one. Over PlayControls; says so when no player plays.
+void addPlayerPage(DebugSession& session);
+/// The Camera page: the follow camera's eye and target, a reset behind the player, the free camera, and the Follow
+/// camera tunables.
+void addCameraPage(DebugSession& session);
+/// The Spawner page: sandbox objects put in front of the player, and clearing them.
+void addSpawnerPage(DebugSession& session);
+/// The Debug draw page: the lines of DebugDrawOptions.
+void addDebugDrawPage(DebugSession& session);
+/// Fills `page` with the tunables of `category`: each as a toggle or a number with its default, then a reset. The
+/// Tunables page's submenus, and any page that shows one category.
+void fillTunableCategory(MenuPage& page, TunableRegistry& registry, const std::string& category);
+
 /// The Display page: the overlays of DisplayOptions.
 void addDisplayPage(DebugSession& session);
 /// The Input page: port 1's buttons, sticks and pressures live, with channels to plot the sticks.

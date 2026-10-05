@@ -31,11 +31,12 @@ std::string buttonNames(std::uint16_t buttons) {
     return text.empty() ? "-" : text;
 }
 
+} // namespace
+
 // The menu callbacks below copy strings and call the registry; all they can throw is a failed allocation, which
 // ends the program either way.
 // NOLINTBEGIN(bugprone-exception-escape)
 
-// The Tunables page of one category: each tunable as a toggle or a number with its default, then a reset.
 void fillTunableCategory(MenuPage& page, TunableRegistry& registry, const std::string& category) {
     for (Tunable* tunable : registry.inCategory(category)) {
         const std::string path = tunable->path();
@@ -63,8 +64,6 @@ void fillTunableCategory(MenuPage& page, TunableRegistry& registry, const std::s
         }
     }));
 }
-
-} // namespace
 
 void addTimePage(DebugSession& session) {
     TimeControl& time = session.time();
