@@ -3,6 +3,7 @@ add_executable(coney_tests
     camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
     core/frame_clock_test.cpp
+    core/game_random_test.cpp
     core/game_timer_test.cpp
     core/input_script_test.cpp
     core/interpolation_test.cpp
@@ -11,6 +12,7 @@ add_executable(coney_tests
     core/options_test.cpp
     core/pad_test.cpp
     fileio/disc_test.cpp
+    fileio/executable_test.cpp
     fileio/reader_test.cpp
     fileio/stream_test.cpp
     fileio/wad_index_test.cpp
@@ -23,6 +25,7 @@ add_executable(coney_tests
     gamemodes/load_entry_mode_test.cpp
     gamemodes/sheet_viewer_mode_test.cpp
     gamemodes/start_up_flow_test.cpp
+    gamemodes/rumble_start_test.cpp
     gamemodes/story_start_test.cpp
     gamemodes/text_viewer_mode_test.cpp
     graphics/font_test.cpp
@@ -62,6 +65,7 @@ add_executable(coney_tests
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
     scripting/disc_strings_test.cpp
+    scripting/level_bindings_test.cpp
     scripting/lua_chunk_test.cpp
     scripting/lua_libraries_test.cpp
     scripting/lua_vm_test.cpp
@@ -74,7 +78,8 @@ add_executable(coney_tests
     world/view_frustum_test.cpp
     world/world_manifest_test.cpp
     world/world_streamer_test.cpp
-    world/world_streams_test.cpp)
+    world/world_streams_test.cpp
+    world_objects/flags_test.cpp)
 # Characters: the animation format and player, and the character resources.
 target_sources(coney_tests PRIVATE
     animation/anim_clip_test.cpp
@@ -83,6 +88,7 @@ target_sources(coney_tests PRIVATE
     animation/disc_anim_clips_test.cpp
     animation/skeleton_test.cpp
     characters/character_data_test.cpp
+    characters/character_class_test.cpp
     characters/character_list_test.cpp
     characters/character_model_test.cpp
     characters/character_rig_test.cpp

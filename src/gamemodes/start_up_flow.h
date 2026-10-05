@@ -13,6 +13,7 @@
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/mission_complete_mode.h"
 #include "gamemodes/profile_manager_mode.h"
+#include "gamemodes/rumble_menu_mode.h"
 #include "graphics/render_device.h"
 #include "graphics/screen_fade.h"
 #include "gui/global_strings.h"
@@ -29,9 +30,9 @@ namespace coney {
 ///
 /// It is also what the script bindings reach outside the script system (script::BindingHost): `ShowProfileManager`
 /// shows the menus, `MenuLoadLevel` chooses a level in the level flow, `HUDLaunchMissionComplete` pushes the
-/// mission-complete mode, `HuCreate` keeps the level scripts' humans, `ScreenQueueEffect` starts a fade, and music and
-/// movies go to FrontEndServices. `ShowRumbleModeInterface` has no screens to show yet: Coney logs it and cancels at
-/// once (the cancel callback runs on the next frame), so quick rumble fades back to the main menu.
+/// mission-complete mode, `HuCreate` and `AddFlag` keep the level scripts' humans and flags, `ScreenQueueEffect` starts
+/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11, placeholder screens), and music and movies go
+/// to FrontEndServices.
 ///
 /// Research: docs/research/boot.md#main, docs/research/frontend.md#mode-flow, docs/research/scripting.md
 class StartUpFlow final : public script::BindingHost {
@@ -74,8 +75,12 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] MissionCompleteMode& missionComplete() { return m_missionComplete; }
     /// Mode 1.
     [[nodiscard]] GameplayMode& gameplay() { return m_gameplay; }
+    /// Mode 0x11.
+    [[nodiscard]] RumbleMenuMode& rumbleMenu() { return m_rumbleMenu; }
     /// The humans the level scripts created.
     [[nodiscard]] const CreatedHumans& humans() const { return m_humans; }
+    /// The level's world flags.
+    [[nodiscard]] const world_objects::WorldFlags& flags() const { return m_flags; }
 
     void showProfileManager(std::string_view onRumble, std::string_view onStartGame) override;
     void showRumbleModeInterface(std::string_view onCancel, std::string_view onStart, double players) override;
@@ -92,6 +97,7 @@ class StartUpFlow final : public script::BindingHost {
     GameState m_state;
     script::RecordedCalls m_recorded;
     CreatedHumans m_humans;
+    world_objects::WorldFlags m_flags;
     FrontEndServices m_services;
     graphics::ScreenFade m_fade;
     script::BindingContext m_context;
@@ -101,6 +107,7 @@ class StartUpFlow final : public script::BindingHost {
     GameplayMode m_gameplay;
     LevelFlowMode m_levelFlow;
     MissionCompleteMode m_missionComplete;
+    RumbleMenuMode m_rumbleMenu;
     MemoryCardMode m_memoryCard;
     LegalScreenMode m_legal;
 };

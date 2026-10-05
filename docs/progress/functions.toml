@@ -275,6 +275,12 @@ subsystem = "FileIO"
 size = 128
 
 [[function]]
+address = 0x00155228
+name = "RumbleMenu_Show"
+subsystem = "FileIO"
+size = 136
+
+[[function]]
 address = 0x001552b0
 name = "ShowProfileManager"
 subsystem = "FileIO"
@@ -429,6 +435,24 @@ address = 0x0015e748
 name = "GameModeStack_TopId"
 subsystem = "GameModes"
 size = 72
+
+[[function]]
+address = 0x0015e8b0
+name = "Mode11::Enter"
+subsystem = "GameModes"
+size = 344
+
+[[function]]
+address = 0x0015ea40
+name = "Mode11::Exit"
+subsystem = "GameModes"
+size = 608
+
+[[function]]
+address = 0x0015fe50
+name = "InitLevel_SetStartCallback"
+subsystem = "GameModes"
+size = 64
 
 [[function]]
 address = 0x0015fe90
@@ -746,6 +770,12 @@ address = 0x001e95c0
 name = "MenuInput_Dispatch"
 subsystem = "GUI"
 size = 1080
+
+[[function]]
+address = 0x001f26e0
+name = "RumbleMode_GetData"
+subsystem = "GUI"
+size = 64
 
 [[function]]
 address = 0x002040f0
@@ -1270,6 +1300,12 @@ subsystem = "Scripting"
 size = 168
 
 [[function]]
+address = 0x00356d00
+name = "ScriptSystem_PreloadDone"
+subsystem = "Scripting"
+size = 264
+
+[[function]]
 address = 0x00356e08
 name = "ScriptSystem::FindFunction"
 subsystem = "Scripting"
@@ -1352,6 +1388,30 @@ name = "CfgLevelName"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x0036b9f0
+name = "GetRumbleModeData"
+subsystem = "Scripting"
+size = 208
+
+[[function]]
+address = 0x0036bb10
+name = "CfgSetDatabaseSizes"
+subsystem = "Scripting"
+size = 424
+
+[[function]]
+address = 0x0036ca18
+name = "GetPosition"
+subsystem = "Scripting"
+size = 112
+
+[[function]]
+address = 0x0036cdc0
+name = "TeleportToFlag"
+subsystem = "Scripting"
+size = 152
+
+[[function]]
 address = 0x0036d938
 name = "ToInt"
 subsystem = "Scripting"
@@ -1360,6 +1420,18 @@ subsystem = "Scripting"
 address = 0x0036df48
 name = "MenuLoadLevel"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x0036df98
+name = "SetStartGameCallback"
+subsystem = "Scripting"
+size = 48
+
+[[function]]
+address = 0x0036e050
+name = "GetGameTime"
+subsystem = "Scripting"
+size = 96
 
 [[function]]
 address = 0x0036eef8
@@ -1373,10 +1445,52 @@ subsystem = "Scripting"
 size = 56
 
 [[function]]
+address = 0x00379fd0
+name = "AddFlag"
+subsystem = "Scripting"
+size = 384
+
+[[function]]
+address = 0x0037a288
+name = "GetFlagPos"
+subsystem = "Scripting"
+size = 112
+
+[[function]]
+address = 0x0037a770
+name = "FindFlag"
+subsystem = "Scripting"
+size = 112
+
+[[function]]
+address = 0x0037b7d8
+name = "SetLUASaveDataFloat"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
+address = 0x0037b850
+name = "GetLUASaveDataFloat"
+subsystem = "Scripting"
+size = 88
+
+[[function]]
 address = 0x0037d420
 name = "RegisterBindings"
 subsystem = "Scripting"
 size = 27408
+
+[[function]]
+address = 0x00385a50
+name = "Object_GetPosition"
+subsystem = "Scripting"
+size = 184
+
+[[function]]
+address = 0x00385db0
+name = "Object_TeleportToFlag"
+subsystem = "Scripting"
+size = 248
 
 [[function]]
 address = 0x00386370
@@ -1401,6 +1515,12 @@ address = 0x00386450
 name = "FlushScheduledFuncs"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x00386488
+name = "random"
+subsystem = "Scripting"
+size = 40
 
 [[function]]
 address = 0x0040cdd8
@@ -1518,10 +1638,88 @@ name = "World_ResetVisibility"
 subsystem = "World"
 
 [[function]]
+address = 0x004158f8
+name = "FlagPool_Create"
+subsystem = "WorldObjects"
+size = 320
+
+[[function]]
+address = 0x00415a38
+name = "FlagPool_Destroy"
+subsystem = "WorldObjects"
+size = 184
+
+[[function]]
+address = 0x00415af0
+name = "FlagPool_Take"
+subsystem = "WorldObjects"
+size = 120
+
+[[function]]
+address = 0x00415b68
+name = "Flag_New"
+subsystem = "WorldObjects"
+size = 176
+
+[[function]]
+address = 0x00415c18
+name = "Flag_Add"
+subsystem = "WorldObjects"
+size = 48
+
+[[function]]
+address = 0x00415c48
+name = "Flag_FindByName"
+subsystem = "WorldObjects"
+size = 160
+
+[[function]]
+address = 0x00415e70
+name = "Flag_Construct"
+subsystem = "WorldObjects"
+size = 304
+
+[[function]]
+address = 0x004161e8
+name = "Flag_Position"
+subsystem = "WorldObjects"
+size = 104
+
+[[function]]
+address = 0x00416258
+name = "Flag_Heading"
+subsystem = "WorldObjects"
+size = 120
+
+[[function]]
+address = 0x00416bb8
+name = "Flag_GetPosition"
+subsystem = "WorldObjects"
+size = 40
+
+[[function]]
 address = 0x0041abe8
 name = "GetCheckPoint"
 subsystem = "Warriors"
 size = 16
+
+[[function]]
+address = 0x0041acd8
+name = "GameState_SetLuaSaveFloat"
+subsystem = "Warriors"
+size = 40
+
+[[function]]
+address = 0x0041ad00
+name = "GameState_GetLuaSaveFloat"
+subsystem = "Warriors"
+size = 40
+
+[[function]]
+address = 0x0041d628
+name = "Cfg_SetDatabaseSizes"
+subsystem = "Warriors"
+size = 104
 
 [[function]]
 address = 0x0041d6f0

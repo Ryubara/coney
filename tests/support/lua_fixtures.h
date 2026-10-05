@@ -133,6 +133,20 @@ class LuaAsm {
     LuaAsm& newTable() { return emit(luaU(LuaOp::CreateTable, 0), 1); }
     /// Pops two numbers and pushes their sum.
     LuaAsm& add() { return emit(luaU(LuaOp::Add, 0), -1); }
+    /// Declares `count` fixed parameters: they take the first stack slots, so pushes start after them.
+    LuaAsm& params(std::uint32_t count) {
+        spec.numParams = count;
+        m_depth = static_cast<int>(count);
+        return *this;
+    }
+    /// Pushes local (or parameter) `index`.
+    LuaAsm& getLocal(std::uint32_t index) { return emit(luaU(LuaOp::GetLocal, index), 1); }
+    /// With a table and a key pushed, pops both and pushes table[key].
+    LuaAsm& getTable() { return emit(luaU(LuaOp::GetTable, 0), -1); }
+    /// Pops the top `count` values and pushes them joined as strings (`..`).
+    LuaAsm& concat(std::uint32_t count) { return emit(luaU(LuaOp::Concat, count), 1 - static_cast<int>(count)); }
+    /// Pushes nil.
+    LuaAsm& pushNil() { return emit(luaU(LuaOp::PushNil, 1), 1); }
     /// Pushes nested function `index` as a closure with no upvalues.
     LuaAsm& closure(std::uint32_t index) { return emit(luaAB(LuaOp::Closure, index, 0), 1); }
     /// With a table, a key and a value pushed, sets table[key] = value and pops all three.

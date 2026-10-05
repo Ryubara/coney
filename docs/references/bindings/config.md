@@ -2091,7 +2091,7 @@ free is made).
 - **Wrapper** `0x0036bb10` (registered by `RegisterBindings`); **calls** `0x0041d628` `Cfg_SetDatabaseSizes`, 2 virtual
   calls
 - **Used by** 90 of 467 script chunks (90 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetDefaultFollowSlotSet {#cfgsetdefaultfollowslotset}
 

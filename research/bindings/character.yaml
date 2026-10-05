@@ -2779,6 +2779,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 162, calls: 1471, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: WalkingDistance
   wrapper: 0x0036cf00

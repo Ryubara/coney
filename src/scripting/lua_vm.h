@@ -89,6 +89,7 @@ class LuaVm {
     std::uint64_t m_budgetStart = 0; // m_instructions when the outermost run() or call() began
     int m_depth = 0;                 // calls in progress, including bindings that run scripts themselves
     std::string m_calleeName;        // the unset global the CALL being made calls; empty otherwise
+    std::string m_lastSkipped;       // the unset global the last skipped call of nil called
     std::map<std::string, std::uint64_t> m_nilCallsByName;
 };
 

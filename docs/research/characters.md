@@ -1205,12 +1205,18 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   the mission.
 - **The gait blend's leading clip** uses a tolerance of 0.001 when it compares the value with its target.
 - **Level starts**: the start comes from the level's own script at run time: its `HuCreate` for player 1 at the
-  checkpoint (`GetCheckPoint`), kept by Coney's `HuCreate` binding
-  ([Level loading](level-loading.md#coneys-implementation)); the story's way in and `--play-level NAME [--checkpoint N]`
-  both run it. Rembrandt's model plays whatever character the script names. A level that places player 1 at a flag
-  (the hub, the Rumble arenas) has no start in Coney yet, and Rembrandt starts above the middle of the first world's
-  part 1 there. The character's lights (ambient 0.45, one directional 0.7) stand in for the LightManager, and he is
-  drawn between the level's two worlds.
+  checkpoint (`GetCheckPoint`), kept by Coney's `HuCreate` binding ([Level
+  loading](level-loading.md#coneys-implementation)); the story's way in and `--play-level NAME [--checkpoint N]` both
+  run it. A level that places player 1 at a flag (the hub, the Rumble arenas) starts him on the flag ([World
+  flags](flags.md#coneys-implementation)). The character's lights (ambient 0.45, one directional 0.7) stand in for the
+  LightManager, and he is drawn between the level's two worlds.
+- **The model** (`src/characters/character_class.h`, from [From a type to a model](#type-to-model)):
+  `characterClassOf` is `Human_Init`'s switch, `modelRecordType` the player's plain-alias rule (a player made as a
+  plain alias is drawn as the class's own type; a variant keeps its own), and `modelNameFor` takes the model name from
+  that type's recorded `CfgChar` call (its tenth argument), with `_a` added in levels 60 to 64; `HuCreate` keeps it
+  and the play mode loads it from the Character List. Disc check: `level2` checkpoint 3 is drawn as `warr_cl` (Cleon),
+  `level3` checkpoint 4 as `warr_sn` (Snow), `level99` checkpoint 1 as `warr_re_cv`. Coney's choice: a type with no
+  `CfgChar` call or a model the Character List lacks is drawn as Rembrandt, with a log line.
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 

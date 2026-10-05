@@ -45,6 +45,7 @@
   notes: >-
     The vector is one static buffer (`0x006ebd20`): every call overwrites it, so copy x, y, z before calling again.
   usage: {chunks: 71, calls: 193, boot: true, mission1: false, result_used: true}
+  coney: implemented
 
 - name: TestDistance
   wrapper: 0x0036ce58

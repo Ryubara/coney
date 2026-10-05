@@ -66,13 +66,14 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
     };
 
     // START on frame 200, well after PM_Greet is up (frame 152) and Menu.onStart's 1.5 s fade in is over. Then the
-    // stick pushed up most of the way (wrapping to quick rumble) and cross; after the Rumble mode's stand-in has
-    // cancelled and the menu has faded back in, the stick down a little past half (wrapping to story), cross, and
+    // stick pushed up most of the way (wrapping to quick rumble) and cross; triangle backs out of the Rumble menu's
+    // placeholder; once the menu has faded back in, the stick down a little past half (wrapping to story), cross, and
     // cross again on the PM_Profile stand-in.
     auto script = coney::parseInputScript("200 tap start\n"
                                           "212 stick left 0 70\n"
                                           "214 stick left 0 0\n"
                                           "225 tap cross\n"
+                                          "265 tap triangle\n"
                                           "320 stick left 0 -60\n"
                                           "322 stick left 0 0\n"
                                           "335 tap cross\n"
@@ -114,10 +115,13 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
     const auto logged = [&log](std::string_view text) {
         return std::ranges::any_of(log, [text](const std::string& line) { return line.contains(text); });
     };
-    // Quick rumble: Menu.fadeToRMI fades out, the Rumble mode's stand-in cancels, Menu.cancelRumbleMode fades back in.
+    // Quick rumble: Menu.fadeToRMI fades out, Menu.launchRMI opens the Rumble menu (mode 0x11), triangle backs out and
+    // Menu.cancelRumbleMode fades back in.
     run(100);
     CHECK(logged("script: Menu.fadeToRMI"));
-    CHECK(logged("the Rumble mode menus are not written yet"));
+    CHECK(logged("rumble menu: placeholder screens"));
+    CHECK(logged("rumble menu: cancelled"));
+    CHECK(flow.rumbleMenu().cancelled());
     CHECK(menus.controller().currentName() == "PM_Mode");
     CHECK(flow.fade().level() == 0.0F);
     // Story: PM_Profile, whose stand-in ends the profile manager; Menu.startGame asks for a level; the front end comes

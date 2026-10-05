@@ -6,6 +6,7 @@ add_library(coney_core STATIC
     core/chunk_system.cpp
     core/chunk_types.cpp
     core/frame_clock.cpp
+    core/game_random.cpp
     core/game_timer.cpp
     core/input_script.cpp
     core/name_hash.cpp
@@ -14,6 +15,7 @@ add_library(coney_core STATIC
     core/pad.cpp
     core/pads.cpp
     fileio/disc.cpp
+    fileio/executable.cpp
     fileio/file_stream.cpp
     fileio/reader.cpp
     fileio/stream.cpp
@@ -29,6 +31,7 @@ add_library(coney_core STATIC
     gamemodes/memory_card_mode.cpp
     gamemodes/mission_complete_mode.cpp
     gamemodes/profile_manager_mode.cpp
+    gamemodes/rumble_menu_mode.cpp
     gamemodes/sheet_viewer_mode.cpp
     gamemodes/start_up_flow.cpp
     gamemodes/text_viewer_mode.cpp
@@ -58,6 +61,7 @@ add_library(coney_core STATIC
     gui/usage_info.cpp
     gui/widget.cpp
     scripting/config_strings.cpp
+    scripting/level_bindings.cpp
     scripting/lua_chunk.cpp
     scripting/lua_libraries.cpp
     scripting/lua_value.cpp
@@ -73,7 +77,8 @@ add_library(coney_core STATIC
     world/view_frustum.cpp
     world/world_manifest.cpp
     world/world_streamer.cpp
-    world/world_streams.cpp)
+    world/world_streams.cpp
+    world_objects/flags.cpp)
 # Characters: the animation format and player, and the character resources (docs/research/characters.md).
 target_sources(coney_core PRIVATE
     animation/anim_clip.cpp
@@ -81,6 +86,7 @@ target_sources(coney_core PRIVATE
     animation/anim_pose.cpp
     animation/skeleton.cpp
     characters/character_assets.cpp
+    characters/character_class.cpp
     characters/character_data.cpp
     characters/character_list.cpp
     characters/character_model.cpp

@@ -4391,7 +4391,7 @@ scripts.
 - **Evidence:** confirmed (code) at `0x00385db0`; detail: traced
 - **Wrapper** `0x0036cdc0` (registered by `RegisterBindings`); **calls** `0x00385db0` `Object_TeleportToFlag`
 - **Used by** 162 of 467 script chunks (1471 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TurnWarriorCommands {#turnwarriorcommands}
 

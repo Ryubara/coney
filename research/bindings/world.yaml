@@ -991,6 +991,7 @@
     Callee 0x00415c18 → 0x00415b68 (a flag from the flag pool, 0x00415af0, initialised by 0x00415e70 with NilHandle as
     parent). A full pool is not checked: the constructor then runs on a null pointer.
   usage: {chunks: 94, calls: 7058, boot: false, mission1: true, result_used: true}
+  coney: implemented
 
 - name: SetFlagPos
   wrapper: 0x0037a150
@@ -1032,6 +1033,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 14, calls: 25, boot: true, mission1: false, result_used: true}
+  coney: implemented
 
 - name: FindFlag
   wrapper: 0x0037a770
@@ -1047,6 +1049,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: FlagNetAddLink
   wrapper: 0x0037a7e0

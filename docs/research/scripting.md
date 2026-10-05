@@ -440,13 +440,18 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   from the public Lua 4.0 library.
 - **The bindings** (`src/scripting/script_bindings.h`): one table, by name, saying for each whether it is **real**
   (does its job: the getters and script-system bindings of the tables above, `CfgLevelName`, the five string bindings,
-  `ShowProfileManager`, `MenuLoadLevel`, `ScreenQueueEffect`, `HUDLaunchMissionComplete` and `HuCreate`, which keeps
-  the humans a level script makes, [Level loading](level-loading.md#coneys-implementation)), **routed** (handed to a
+  `ShowProfileManager`, `MenuLoadLevel`, `ScreenQueueEffect`, `HUDLaunchMissionComplete`, `GetGameTime`, `HuCreate`,
+  which keeps the humans a level script makes, [Level loading](level-loading.md#coneys-implementation), and the level
+  bindings of `src/scripting/level_bindings.h`: the flags, `GetPosition`, the saved script numbers,
+  `SetStartGameCallback`, `GetRumbleModeData` and `CfgSetDatabaseSizes`, [World flags](flags.md#coneys-implementation)),
+  **routed** (handed to a
   Coney stand-in that logs it: `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`) or a **stub** (returns
-  its documented default: nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn` and `CameraCreateLocked`,
+  its documented default: nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn`, `CameraCreateLocked` and
+  `GangCreate`, 0 for `GangGetHeadCount` and `InvNumberOf`,
   false for `SceneIsPreloaded` and `UM_IsTypeDirty`). The configuration stubs (the `Cfg*` bindings, `CfgObj`, sound, unlockables
-  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 29 real, 5 routed and 110
-  stubs (73 of them recording): every binding the front-end path calls, and the level scripts' `HuCreate`.
+  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 40 real, 5 routed and 111
+  stubs (72 of them recording): every binding the front-end path calls, and what the level scripts need for their
+  starts.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
   `GetLevelId` and the level flow (record 0 is `level100`).
 - **The front end** runs the preloads at the legal screen and `global.lua` and `level100.lua` in the same state when the
@@ -463,11 +468,18 @@ Coney's choices, where the page is silent or Coney differs:
   numbers. Coney maps the index, the level name (`+0x14`), the second name (`+0x24`), the world name (`+0x39`), the
   fourth name (`+0x49`) and the level number (`+0x04`) by the disc's data (record 0 is `level100` with number 100; the
   world name equals the level name in every record with packs), and keeps the twelve numbers in order (inferred).
-- `random(a, b)`: whole numbers in `[a, b]` from Coney's own deterministic generator; the math library's `random` uses
-  another one of Coney's, never the C library's. The trigonometry works in degrees, as stock Lua 4.0 does.
+- `random(a, b)`: whole numbers in `[a, b]` from the game's own table, read from the player's executable
+  ([World flags](flags.md#coneys-implementation)), or a deterministic stand-in without it; the math library's `random`
+  uses another one of Coney's, never the C library's. The trigonometry works in degrees, as stock Lua 4.0 does.
 - `tolua`, `M_Vector4` and `M_Quat` are empty tables and `NilHandle` and `NilSoundHandle` are 0, below the first handle
   a stub gives out.
-- `preLoadFile` runs its file at once (Coney's reads are synchronous) and ignores its callback.
+- `preLoadFile` runs its file at once (Coney's reads are synchronous), then calls its callback by name.
+- `GangCreate` returns a new handle and `GangGetHeadCount` and `InvNumberOf` return 0 until gangs and inventories
+  exist, so the hub's and `level5`'s start functions run to their end.
+- A runtime error's message names the last call of a missing binding skipped before it, the likely cause
+  (`...; last skipped call HuTagPattern`).
+- `GetLUASaveDataFloat` and `SetLUASaveDataFloat` outside slots 1 to 8 read 0 and write nothing (the original does not
+  check).
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][scripts]"` with `CONEY_DISC` set runs the four
 preloads, `global.lua`, `level100.lua`, `Menu.onStart` and the menu callbacks (`fadeToRMI`, `launchRMI`,

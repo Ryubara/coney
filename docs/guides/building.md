@@ -114,15 +114,17 @@ fonts with every English UI string laid out in them (`[text]`); the front end's 
 `level100.lua` and the menu callbacks) run in the script system with no error and no missing binding (`[scripts]`); the
 start-up path from the legal screen to the main menu, through quick rumble and story to the level request and back,
 driven by a scripted pad (`[frontend]`); STORY through the mission-complete mode to Rembrandt standing at level99's
-start under the pad, and the level scripts' player starts for a few checkpoints (`[story]`); every animation clip in the
-WAD, parsed and sampled (`[anim]`, about 7 seconds); every Character List record with its model, textures, character
-data and clips, skinned (`[characters]`); Rembrandt's Anim Range List with a damage for every attack and the grab and
-tackle ranges, and Rembrandt in the sandbox's fight yard doing a combo, a grab with a strike, spins and a throw, a
-tackle and a mugging on a passive target (`[combat]`); and Rembrandt at level99's start, walked, run, turned, stopped
-and run into the scenery by scripted partial stick deflections, with his speeds and clips checked against the research
-(`[player]`), and played again through the main loop at five frame rates and with irregular frames, bit for bit the same
-as in test mode (`[frame_rate]`). They run only when the environment variable `CONEY_DISC` names the disc, are reported
-as skipped otherwise, and print counts only:
+start under the pad, QUICK RUMBLE through the Rumble menu to Cleon on the Fight Pen's flag under the pad, the level
+scripts' player starts and models for a few checkpoints, the hub's and two arenas' flag starts, and the game's random
+table read from the executable (`[story]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7
+seconds); every Character List record with its model, textures, character data and clips, skinned (`[characters]`);
+Rembrandt's Anim Range List with a damage for every attack and the grab and tackle ranges, and Rembrandt in the
+sandbox's fight yard doing a combo, a grab with a strike, spins and a throw, a tackle and a mugging on a passive target
+(`[combat]`); and Rembrandt at level99's start, walked, run, turned, stopped and run into the scenery by scripted
+partial stick deflections, with his speeds and clips checked against the research (`[player]`), and played again through
+the main loop at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`). They
+run only when the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts
+only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
@@ -231,6 +233,23 @@ In a script, with STORY selected first:
 ```
 
 Level99 is up by frame 270; the last line walks Rembrandt forward at 35 % of the stick's travel.
+
+**QUICK RUMBLE** follows the original's path too: the menu's scripts call `ShowRumbleModeInterface`, which opens the
+Rumble menu (mode 0x11). Its screens (gang, arena, rules) are not written yet: a placeholder shows a default set-up,
+Cleon against one Rogue in the Fight Pen (`level102`), and logs `rumble menu: placeholder screens`. Cross starts it,
+triangle or circle goes back. Starting calls the scripts' `Menu.startRumbleMode`, whose level request loads the arena;
+the arena's script reads the set-up (`GetRumbleModeData`), and its start callback creates player 1 and teleports him to
+his gang's first flag, where you control him. The Rumble's other fighters are created by the script but not drawn yet.
+In a script, from the title screen (the stick up most of the way wraps the main menu round to QUICK RUMBLE):
+
+```text
+200 tap start
+212 stick left 0 70
+214 stick left 0 0
+225 tap cross
+280 tap cross
+330 stick left 40 70
+```
 
 `--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a
 file name such as `level1.lev` (any letter case) or a name hash written `0x` and up to 8 hex digits, such as
@@ -382,27 +401,34 @@ build/dev/src/platform/coney --sandbox parkour
 ### Playing a level {#playing-a-level}
 
 `--play-level NAME` puts you in a level (`level2`, `level99`: any of the 79 with a streamed world, listed on the debug
-menu's [Levels page](debug-menu.md), which also switches between them) as Rembrandt, driven with a gamepad's analog
-sticks, with the follow camera
-behind him ([Characters](../research/characters.md#coneys-implementation),
-[Camera](../research/camera.md#coneys-implementation)). The level's worlds and level file load and stream as in
-[the world viewer](#the-world-viewer); Rembrandt stands where the level's own script creates player 1, as when the
-story reaches the level: Coney runs the scripts the original runs before it (the preloads, then a fresh Lua state with
-`SetCheckPoint`), then `global.lua` and the level's script, and takes the position and heading of its `HuCreate` for
-player 1, and prints them (`level script: level2 checkpoint 3: player 1 Cleon (type 1) at ...`). `--checkpoint N`
-picks the checkpoint (1 by default), so `--play-level level2 --checkpoint 3` starts where level2's third checkpoint
-does. It is always Rembrandt's model, whoever the script names. A level whose script places player 1 at a flag (the
-hub, `level95`, and the Rumble arenas) or creates none puts him above the middle of its first world's part 1 for now,
-Coney's stand-in. He walks, runs, sprints, turns and leans into turns, stops, steps onto kerbs under 25 cm, slides
-along walls, jumps, climbs fences and walls, and falls off ledges on the level's collision mesh, with the original's
-speeds, turn rates and clips: the walk or run start, a blend across walk, jog, run and sprint, the idle, the run stop,
-the jump and its landing, and the climbs ([Characters](../research/characters.md#sprint)). He fights as the original's
-player does ([Combat](../research/combat.md#coneys-implementation)): the square and cross chains, the snaps, the run
-attack, the charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the
-tackle, with the original's commands, timing and clips; in a level there is no one to hit yet, and the sandbox's fight
-yard (`--play-level sandbox:combat`) has passive targets that take the hits. The level script runs only for the start:
-there are no objects, other characters or missions yet; a fall out of the world puts him back at the start. Coney prints a line whenever the clip changes and a summary when it stops (the player's position, speed,
-gait, clip, traversal state, stamina, the camera's distance and counts only).
+menu's [Levels page](debug-menu.md), which also switches between them) as player 1, driven with a gamepad's analog
+sticks, with the follow camera behind him ([Characters](../research/characters.md#coneys-implementation),
+[Camera](../research/camera.md#coneys-implementation)). The level's worlds and level file load and stream as in [the
+world viewer](#the-world-viewer); he stands where the level's own script creates player 1, as when the story reaches the
+level: Coney runs the scripts the original runs before it (the preloads, then a fresh Lua state with `SetCheckPoint`),
+then `global.lua` and the level's script, and takes the position and heading of its `HuCreate` for player 1, and prints
+them (`level script: level2 checkpoint 3: player 1 Cleon (type 1) at ...`). `--checkpoint N` picks the checkpoint (1 by
+default), so `--play-level level2 --checkpoint 3` starts where level2's third checkpoint does. He is drawn as the
+character the script's type names (Cleon at `level2 --checkpoint 3`, Snow at `level3 --checkpoint 4`), through the
+type's `CfgChar` model ([Characters](../research/characters.md#type-to-model)); a type with no model falls back to
+Rembrandt with a log line. The scripts' world flags are kept, so a script that teleports player 1 to a flag puts him
+there with the flag's heading, without snapping him to the ground, as the original: the hub, `level95`, starts the
+Warchief at one of its doors, chosen with the game's own random numbers (read from your disc's executable; door 5 while
+the tutorial is locked, which it always is for now), and an arena run alone (`--play-level level102`) uses the Rumble
+menu's default set-up ([Flags](../research/flags.md#coneys-implementation)). The scripts run one second (30 steps) after
+the level starts, so a start callback's teleports are in place. A level whose script creates no player 1 puts him above
+the middle of its first world's part 1, Coney's stand-in. He walks, runs, sprints, turns and leans into turns, stops,
+steps onto kerbs under 25 cm, slides along walls, jumps, climbs fences and walls, and falls off ledges on the level's
+collision mesh, with the original's speeds, turn rates and clips: the walk or run start, a blend across walk, jog, run
+and sprint, the idle, the run stop, the jump and its landing, and the climbs
+([Characters](../research/characters.md#sprint)). He fights as the original's player does
+([Combat](../research/combat.md#coneys-implementation)): the square and cross chains, the snaps, the run attack, the
+charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with the
+original's commands, timing and clips; in a level there is no one to hit yet, and the sandbox's fight yard
+(`--play-level sandbox:combat`) has passive targets that take the hits. The level script runs only for the start: there
+are no objects, other characters or missions yet; a fall out of the world puts him back at the start. Coney prints a
+line whenever the clip changes and a summary when it stops (the player's position, speed, gait, clip, traversal state,
+stamina, the camera's distance and counts only).
 
 | Pad | Keyboard | Does |
 | --- | --- | --- |

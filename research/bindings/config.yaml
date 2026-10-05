@@ -1548,6 +1548,7 @@
     FreeList<VolumeBox>, FreeList<PlayerBox>, FreeListContainer<TurfBox>. Calling it twice leaks the old pools
     (inferred: no free is made).
   usage: {chunks: 90, calls: 90, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgSetDefaultFollowSlotSet
   wrapper: 0x0036bcb8

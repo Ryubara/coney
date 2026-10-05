@@ -19,4 +19,23 @@ const HumanCreation* CreatedHumans::player(int index) const {
     return found == m_humans.end() ? nullptr : &*found;
 }
 
+HumanCreation* CreatedHumans::find(double handle) {
+    const auto found = std::ranges::find(m_humans, handle, &HumanCreation::handle);
+    return found == m_humans.end() ? nullptr : &*found;
+}
+
+std::optional<world_objects::Placement> CreatedHumans::placement(double handle) const {
+    const auto found = std::ranges::find(m_humans, handle, &HumanCreation::handle);
+    if (found == m_humans.end()) {
+        return std::nullopt;
+    }
+    if (found->teleported) {
+        return found->teleported;
+    }
+    if (!found->position) {
+        return std::nullopt;
+    }
+    return world_objects::Placement{.position = *found->position, .headingDegrees = found->headingDegrees};
+}
+
 } // namespace coney

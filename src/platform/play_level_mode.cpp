@@ -2,6 +2,7 @@
 #include "platform/play_level_mode.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
 #include <numbers>
@@ -106,12 +107,16 @@ const char* gaitName(human::Gait gait) {
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
-                      std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start) {
+                      std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start,
+                      const PlayerSetup& setup) {
     auto scenery = LevelPlayScenery::load(engine, wad, name, budget, print, start);
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
     }
-    return createWith(engine, wad, std::move(*scenery), std::move(print));
+    // A start that is not the level script's (the researched or stand-in start) is snapped as a creation is.
+    PlayerSetup used = setup;
+    used.snapToGround = setup.snapToGround || !start;
+    return createWith(engine, wad, std::move(*scenery), std::move(print), used);
 }
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
@@ -126,12 +131,19 @@ PlayLevelMode::createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
-                          std::function<void(std::string_view)> print) {
-    // The player's character and its texture.
+                          std::function<void(std::string_view)> print, const PlayerSetup& setup) {
+    // The player's character and its texture: the model the level script's type names, else Rembrandt's.
     chunk::ChunkHandlerTable table = chunk::ChunkHandlerTable::withDefaults();
     characters::addCharacterDataHandlers(table);
     addTextureDictionaryHandlers(table);
-    auto character = human::PlayerCharacter::load(wad, table, human::kPlayerModel);
+    std::string model = setup.model.empty() ? std::string(human::kPlayerModel) : setup.model;
+    auto character = human::PlayerCharacter::load(wad, table, model);
+    if (!character && model != human::kPlayerModel) {
+        print(std::format("player: model {} could not be loaded ({}); playing {} instead\n", model,
+                          character.error().message, human::kPlayerModel));
+        model = human::kPlayerModel;
+        character = human::PlayerCharacter::load(wad, table, model);
+    }
     if (!character) {
         return std::unexpected(std::move(character.error()));
     }
@@ -149,22 +161,28 @@ PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_
     // Where the player starts, which the scenery decides.
     const human::PlayerStart start = scenery->start();
     const human::Speeds speeds = human::speedsOf((*character)->anims(), human::AnimSlots::player());
-    print(std::format("player: {} at ({:.2f}, {:.2f}, {:.2f}) heading {:.0f} ({}); speeds walk {:.3f}, jog {:.3f}, run "
-                      "{:.3f}, sprint {:.3f} m/s\n",
-                      human::kPlayerModel, start.position.x, start.position.y, start.position.z, start.headingDegrees,
-                      scenery->startSource(), speeds.walk, speeds.jog, speeds.run, speeds.sprint));
+    print(std::format("player: {} at ({:.2f}, {:.2f}, {:.2f}) heading {:.0f} ({}{}); speeds walk {:.3f}, jog {:.3f}, "
+                      "run {:.3f}, sprint {:.3f} m/s\n",
+                      model, start.position.x, start.position.y, start.position.z, start.headingDegrees,
+                      scenery->startSource(), setup.snapToGround ? "" : ", not snapped", speeds.walk, speeds.jog,
+                      speeds.run, speeds.sprint));
     return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, std::move(scenery), std::move(*character),
-                                                            std::move(*dictionaries), std::move(print)));
+                                                            std::move(*dictionaries), std::move(print),
+                                                            std::move(model), setup.snapToGround));
 }
 
 PlayLevelMode::PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> scenery,
                              std::unique_ptr<human::PlayerCharacter> character,
-                             std::vector<TextureDictionary> dictionaries, std::function<void(std::string_view)> print)
+                             std::vector<TextureDictionary> dictionaries, std::function<void(std::string_view)> print,
+                             std::string model, bool snapStart)
     : m_engine(engine), m_scenery(std::move(scenery)), m_character(std::move(character)),
       m_dictionaries(std::move(dictionaries)),
-      m_player(std::make_unique<human::Player>(*m_character, &m_scenery->collision(), m_scenery->start())),
+      // A start with no snap is spawned without the mesh; the first update's ground snap then settles the feet.
+      m_player(std::make_unique<human::Player>(*m_character, snapStart ? &m_scenery->collision() : nullptr,
+                                               m_scenery->start())),
       m_print(std::move(print)), m_positions(m_character->assets().model.vertices.size()),
-      m_normals(m_character->assets().model.vertices.size()), m_drawDistance(m_scenery->drawDistance()) {
+      m_normals(m_character->assets().model.vertices.size()), m_drawDistance(m_scenery->drawDistance()),
+      m_model(std::move(model)) {
     // The texture: the character's dictionary holds one, which every material uses.
     rw::Texture* texture = nullptr;
     if (!m_dictionaries.empty()) {
@@ -438,6 +456,13 @@ void PlayLevelMode::teleport(const debug::Place& place) {
     }
     m_player->teleport(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
                                                  .headingDegrees = place.headingDegrees});
+}
+
+void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement) {
+    // TeleportToFlag sets the transform without a ground snap: spawned without the mesh.
+    const std::array<float, 3>& p = placement.position;
+    m_player->teleport(nullptr, human::PlayerStart{.position = anim::Vec3{p[0], p[1], p[2]},
+                                                   .headingDegrees = placement.headingDegrees});
 }
 
 anim::Vec3 PlayLevelMode::cameraEye() const { return m_player->camera().position(); }

@@ -106,6 +106,7 @@
     The meaning of each of the 23 fields is not traced; the arena scripts index the table by name constants of their
     own.
   usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: GetRumbleModeGangName
   wrapper: 0x0036bac0
@@ -375,6 +376,7 @@
   notes: >-
     Read through the timer's vtable slot `+0x34`; inferred to be the same clock as `+0x48`, which the schedule uses.
   usage: {chunks: 2, calls: 14, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: CheckMultiplayer
   wrapper: 0x0036e468
@@ -937,6 +939,7 @@
     No bounds check: slots outside 1-8 overwrite the neighbouring game-state fields (slot 9 is the first word of the
     saved flags).
   usage: {chunks: 21, calls: 67, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: GetLUASaveDataFloat
   wrapper: 0x0037b850
@@ -953,6 +956,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 19, calls: 51, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: SetLUASaveDataBool
   wrapper: 0x0037b8a8

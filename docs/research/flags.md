@@ -169,6 +169,47 @@ teleport) and faces the flag's heading. `AddDummyPlayer` first creates a stand-i
 in [Level starts](../references/level-starts.md). The players are placed only when the level has finished loading:
 `InitLevel` calls the start callback `DoRules`, which calls the mode's `StartRumble` and so `AddRumbleGang1`.
 
+## Coney's implementation
+
+Written from this page, [Scripts](scripting.md#errors-in-a-fresh-state) and
+[Characters](characters.md#type-to-model) (2026-10-05):
+
+- **The flags** (`src/world_objects/flags.h`, `WorldFlags`): `createPool(n)` makes room for `n + 4`, `add` keeps a
+  flag's handle, name (cut to 15 characters), position, heading, parent, user, enabled flag and the two integers in
+  creation order, `findByName` is case-sensitive and returns the first match, and `position` and `headingDegrees`
+  follow a live parent.
+- **The bindings** (`src/scripting/level_bindings.h`): `AddFlag` takes its handle from the counter every other world
+  object's handle comes from, so a flag and a human never share one; `FindFlag` returns 0 for no flag; `GetFlagPos`
+  returns a table with `x`, `y`, `z` and `w` (1); `TeleportToFlag(object, flag, heading)` puts a human on the flag,
+  with the flag's heading for -1 or no heading and the whole degrees given otherwise; `CfgSetDatabaseSizes` sizes the
+  pool. `GetPosition` answers for a human or a flag.
+- **The game's random numbers** (`src/core/game_random.h`, `GameRandom`, one per game state, shared by every Lua
+  state): the 1,024-entry table is read at run time from the player's own executable (`SLUS_212.15`, `0x005117e0`,
+  through its ELF program headers, `src/fileio/executable.h`); it is never stored in the repository.
+- **The starts**: `InitLevel`'s step 7 adds the `CrimeScene` and `GangCall` flags after the level script, and step 13
+  calls the start callback the script set (`SetStartGameCallback`), once. Gameplay watches player 1's teleports and
+  moves the player there; the play mode starts a teleported player on the flag without snapping him to the ground.
+- **Disc check (NTSC-U, 2026-10-05, positions and counts only):** `coney_tests "[disc][story]"`: at `level95`
+  checkpoint 1 the Warchief (type 1, Cleon) is made at `fWchiefStart_1` facing 222 and teleported to
+  `fWchiefStart_5` (-185.2, 112.7, -193.7) facing 182, with 395 flags; with the Rumble menu's default set-up P11 stands
+  on `fP1[1]` of `level102` (-9.1, 8.9, -11.1) facing 128 and of `level103` (-66.4, 23.2, 0.3) facing 95, with no
+  script error; the table is 1,024 entries, all distinct.
+
+Coney's choices, where the page is silent or Coney differs:
+
+- A pool that is full grows (and counts the overflow) instead of refusing the flag. A second `CfgSetDatabaseSizes`
+  starts a new pool: the old flags keep their handles but `FindFlag` no longer finds them by name.
+- `GetFlagPos` of a handle that names no flag returns nil; `TeleportToFlag` with anything but a human and a flag does
+  nothing.
+- A draw advances the shared index and then reads the entry (the page gives the index and the mask, not the order).
+  Without the disc's executable a fixed xorshift generator stands in, so a test without the disc is still
+  deterministic. `random(a, b)` with `b = a - 1`, a division by zero in the original, gives `a`.
+- The start callback runs right after the level script, before the level loads (the original calls it at the end of
+  `InitLevel`); nothing between the two reads the humans. `--play-level` then runs the scripts for one second (30
+  steps) so that what the start callback schedules has happened before the player is placed.
+- The hub's door walk after the teleport (`fWchiefWalk`) is not played: the Warchief stands on the door's flag.
+- The Rumble's other humans are kept but not drawn.
+
 ## Notes for implementers
 
 - A flag needs: its handle (in the same handle space as the other world objects, since `TeleportToFlag`,

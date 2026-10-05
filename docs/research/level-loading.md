@@ -549,16 +549,16 @@ and [Characters](characters.md#level-starts):
 Coney's choices and stand-ins for mode 1:
 
 - The rest of `InitLevel` (the object and dependency lists, the music, the intro movie `L99_IN`, the pending Lua call)
-  and of mode 1's `Enter` (the audio, the level-end countdown) is not done; the start callback (`StartAmbient`, the
-  intro scene) is never called, and `preLoadFile` runs the checkpoint's script at once without calling its start
-  function, so a start function's teleport does not happen. The player has control on the first frame.
+  and of mode 1's `Enter` (the audio, the level-end countdown) is not done. Its flags step (`CrimeScene`, `GangCall`)
+  and its start callback are ([World flags](flags.md#coneys-implementation)); the callback runs before the level
+  loads, and `preLoadFile` runs the checkpoint's script at once and then calls its callback by name. A teleport of
+  player 1 by the scripts, at the start or later, moves the player. The player has control on the first frame.
 - `HuCreate` does not snap the position or write it back into the script's table (no collision is loaded while the
   script runs; the play mode snaps it); the gang, the unused string and the flag are not kept.
-- The player is always Rembrandt's model (`warr_re_cv`): the type names the character (`CfgChar`), but the class
-  record that maps it to a model is not read yet.
-- A creation whose position is not a table of three numbers (the hub's `AddWarchief` and the Rumble arenas use flags,
-  `FlagPos` and `AddFlag`, which Coney lacks) is kept without a position and does not count as a start: the play mode
-  falls back to the researched level99 start or its stand-in. `level95` creates no human at all in Coney's run.
+- The player is drawn as the model his type names ([Characters](characters.md#coneys-implementation)), Rembrandt
+  when there is none.
+- A creation whose position is not a table of three numbers is kept without a position and counts as a start only
+  when a teleport places it; otherwise the play mode falls back to its stand-in.
 - A level that fails to load leaves gameplay's frame black, with the error logged.
 
 - **The worlds in `LoadLevel`'s order**: `<level>s_sec.wld` decides between two worlds (`<level>s`, `<level>d`) and one

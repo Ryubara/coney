@@ -425,7 +425,7 @@ uses.
 - **Evidence:** confirmed (code) at `0x003864b0`; detail: brief
 - **Wrapper** `0x0036e050` (registered by `RegisterBindings`); **calls** `0x003864b0`
 - **Used by** 2 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetLanguage {#getlanguage}
 
@@ -530,7 +530,7 @@ from slot 1 at every checkpoint above 1.
 - **Evidence:** confirmed (code) at `0x0041ad00`; detail: traced
 - **Wrapper** `0x0037b850` (registered by `RegisterBindings`); **calls** `0x0041ad00`
 - **Used by** 19 of 467 script chunks (51 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetNumberOfLevelsPacked {#getnumberoflevelspacked}
 
@@ -592,7 +592,7 @@ their own.
 - **Evidence:** confirmed (code) at `0x001f26e0`; detail: brief
 - **Wrapper** `0x0036b9f0` (registered by `RegisterBindings`); **calls** `0x001f26e0`
 - **Used by** 33 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetRumbleModeGangName {#getrumblemodegangname}
 
@@ -1300,7 +1300,7 @@ the saved flags).
 - **Evidence:** confirmed (code) at `0x0041acd8`; detail: traced
 - **Wrapper** `0x0037b7d8` (registered by `RegisterBindings`); **calls** `0x0041acd8`
 - **Used by** 21 of 467 script chunks (67 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetSpawnMax {#setspawnmax}
 

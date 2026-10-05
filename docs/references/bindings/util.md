@@ -76,7 +76,7 @@ again.
 - **Evidence:** confirmed (code) at `0x00385a50`; detail: traced
 - **Wrapper** `0x0036ca18` (registered by `RegisterBindings`); **calls** `0x00385a50`
 - **Used by** 71 of 467 script chunks (193 references); boot to menu: yes; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetRTTI {#getrtti}
 

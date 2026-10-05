@@ -96,6 +96,9 @@ functions the game exposes to its scripts.
 - Done: the front end runs the game's own preload, `global.lua` and `level100.lua` scripts and the menu callbacks in
   one script system, with no error and no call of a missing binding on the NTSC-U disc; STORY reaches the level request
   for `level99` and quick rumble fades out and back ([Scripts](research/scripting.md#coneys-implementation)).
+- Done: the level scripts' world flags (`AddFlag`, `FindFlag`, `GetFlagPos`, `TeleportToFlag`), the saved script
+  numbers, the start callback and the game's own random numbers, read from the player's executable; `level5` at
+  checkpoint 2 and the Rumble arenas run without a script error ([World flags](research/flags.md#coneys-implementation)).
 - Done: the [script bindings](references/bindings/index.md) reference: all 956 bindings with their arguments,
   results and effects, in the style of FiveM's natives reference, for the game and for [script mods](#script-mods).
 
@@ -116,8 +119,8 @@ gamepad or keyboard.
 - Done: traversal as in the original: the sprint on L2 with stamina, the lean, the run stop, the jump from a run or
   sprint, climbs over fences and onto walls with triangle, and the original's walking body (wall faces under 0.25 m
   are walked onto), checked on the sandbox's parkour course by scripted disc tests.
-- Done: the player start from the level's own script at run time (`HuCreate`), at any checkpoint, for every story
-  level but the hub (`--play-level NAME --checkpoint N`).
+- Done: the player start from the level's own script at run time (`HuCreate`, `TeleportToFlag`), at any checkpoint,
+  the hub and the Rumble arenas included, drawn as the character the script names (`--play-level NAME --checkpoint N`).
 - Next: objects, and other characters moving in the level.
 
 ## Gameplay
@@ -137,6 +140,9 @@ Combat, AI, missions, game modes, the front end and menus, cameras and saving.
   checked by scripted disc tests.
 - Next: the player being hit (his reactions, block and escapes), the character class damage table from the disc,
   and characters that fight back.
+- Done: QUICK RUMBLE from the main menu through a placeholder Rumble menu (mode 0x11, a default set-up) to Cleon under
+  control on his flag in the Fight Pen ([Front end](research/frontend.md#quick-rumble)).
+- Next: the Rumble menu's screens, and the Rumble's other fighters.
 
 ## Debug menu and test levels
 

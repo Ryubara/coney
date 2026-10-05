@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 3.2%](https://img.shields.io/badge/reimplemented-3.2%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 3.4%](https://img.shields.io/badge/reimplemented-3.4%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% of the game's own code (108,248 of 3,342,936 bytes, 282 functions) |
+| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.4% of the game's own code (113,816 of 3,342,936 bytes, 315 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -57,22 +57,22 @@ at the top of the repository's `README.md`.
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 7 | 32,152 |
-| `FileIO` | `▋░░░░░░░░░░░░░░░░░░░` | 3.3% | 2 | 6,480 |
-| `GameModes` | `█████░░░░░░░░░░░░░░░` | 24.9% | 28 | 51,816 |
+| `FileIO` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 3 | 6,480 |
+| `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
-| `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 31 | 481,192 |
+| `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 32 | 481,192 |
 | `Human` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 38 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `███▍░░░░░░░░░░░░░░░░` | 16.8% | 31 | 197,192 |
+| `Scripting` | `███▋░░░░░░░░░░░░░░░░` | 18.2% | 46 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
-| `WorldObjects` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 18,648 |
-| `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.0% | 8 | 54,232 |
+| `WorldObjects` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 10 | 18,648 |
+| `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.4% | 11 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 59 | 1,524,752 |
@@ -148,6 +148,7 @@ at the top of the repository's `README.md`.
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
 | `0x00154440` | `Stream_SkipBytes` | `FileIO` | 128 |
+| `0x00155228` | `RumbleMenu_Show` | `FileIO` | 136 |
 | `0x001552b0` | `ShowProfileManager` | `FileIO` | 88 |
 | `0x001582e0` | `Mode1::Enter` | `GameModes` | 424 |
 | `0x00158728` | `Mode1::Update` | `GameModes` | 3,392 |
@@ -174,6 +175,9 @@ at the top of the repository's `README.md`.
 | `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes` | 96 |
 | `0x0015e718` | `GameModeStack_Top` | `GameModes` | 48 |
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
+| `0x0015e8b0` | `Mode11::Enter` | `GameModes` | 344 |
+| `0x0015ea40` | `Mode11::Exit` | `GameModes` | 608 |
+| `0x0015fe50` | `InitLevel_SetStartCallback` | `GameModes` | 64 |
 | `0x0015fe90` | `InitLevel` | `GameModes` | 2,344 |
 | `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
 | `0x00161218` | `RunPreloadScripts` | `GameModes` | 152 |
@@ -228,6 +232,7 @@ at the top of the repository's `README.md`.
 | `0x001d4230` | `OptionGrid_AddItem` | `GUI` | 440 |
 | `0x001d4d28` | `OptionGrid_TakeFocus` | `GUI` | 144 |
 | `0x001e95c0` | `MenuInput_Dispatch` | `GUI` | 1,080 |
+| `0x001f26e0` | `RumbleMode_GetData` | `GUI` | 64 |
 | `0x002040f0` | `PM_Controller::PM_Controller` | `GUI` | 2,400 |
 | `0x00204a78` | `PM_Controller_Start` | `GUI` | 296 |
 | `0x00204ba0` | `PM_Controller_Update` | `GUI` | 128 |
@@ -329,6 +334,7 @@ at the top of the repository's `README.md`.
 | `0x003569d8` | `ScriptSystem::EnterLevel` | `Scripting` | 160 |
 | `0x00356af8` | `ScriptSystem::RunFile` | `Scripting` | 352 |
 | `0x00356c58` | `ScriptSystem::RunFiles` | `Scripting` | 168 |
+| `0x00356d00` | `ScriptSystem_PreloadDone` | `Scripting` | 264 |
 | `0x00356e08` | `ScriptSystem::FindFunction` | `Scripting` | 360 |
 | `0x00357188` | `ScriptSystem::Call` | `Scripting` | 48 |
 | `0x003571b8` | `ScriptSystem::Schedule` | `Scripting` | 304 |
@@ -343,15 +349,29 @@ at the top of the repository's `README.md`.
 | `0x00358428` | `HuCreate` | `Scripting` | 480 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
+| `0x0036b9f0` | `GetRumbleModeData` | `Scripting` | 208 |
+| `0x0036bb10` | `CfgSetDatabaseSizes` | `Scripting` | 424 |
+| `0x0036ca18` | `GetPosition` | `Scripting` | 112 |
+| `0x0036cdc0` | `TeleportToFlag` | `Scripting` | 152 |
 | `0x0036d938` | `ToInt` | `Scripting` | not filled in |
 | `0x0036df48` | `MenuLoadLevel` | `Scripting` | not filled in |
+| `0x0036df98` | `SetStartGameCallback` | `Scripting` | 48 |
+| `0x0036e050` | `GetGameTime` | `Scripting` | 96 |
 | `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
 | `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | 56 |
+| `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
+| `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
+| `0x0037a770` | `FindFlag` | `Scripting` | 112 |
+| `0x0037b7d8` | `SetLUASaveDataFloat` | `Scripting` | 120 |
+| `0x0037b850` | `GetLUASaveDataFloat` | `Scripting` | 88 |
 | `0x0037d420` | `RegisterBindings` | `Scripting` | 27,408 |
+| `0x00385a50` | `Object_GetPosition` | `Scripting` | 184 |
+| `0x00385db0` | `Object_TeleportToFlag` | `Scripting` | 248 |
 | `0x00386370` | `gc` | `Scripting` | 48 |
 | `0x003863d8` | `ScheduleFunc` | `Scripting` | 56 |
 | `0x00386410` | `ScheduleFuncArg1` | `Scripting` | 64 |
 | `0x00386450` | `FlushScheduledFuncs` | `Scripting` | 56 |
+| `0x00386488` | `random` | `Scripting` | 40 |
 | `0x0040cdd8` | `LevelObject_LinkModel` | `World` | not filled in |
 | `0x0040ce30` | `LevelObject_OnLoaded` | `World` | not filled in |
 | `0x0040d0a8` | `LevelObject_RenderBackground` | `World` | not filled in |
@@ -375,7 +395,20 @@ at the top of the repository's `README.md`.
 | `0x004120a8` | `World_FindPartToUnload` | `World` | not filled in |
 | `0x00412310` | `World_RequestPart` | `World` | not filled in |
 | `0x004123e8` | `World_ResetVisibility` | `World` | not filled in |
+| `0x004158f8` | `FlagPool_Create` | `WorldObjects` | 320 |
+| `0x00415a38` | `FlagPool_Destroy` | `WorldObjects` | 184 |
+| `0x00415af0` | `FlagPool_Take` | `WorldObjects` | 120 |
+| `0x00415b68` | `Flag_New` | `WorldObjects` | 176 |
+| `0x00415c18` | `Flag_Add` | `WorldObjects` | 48 |
+| `0x00415c48` | `Flag_FindByName` | `WorldObjects` | 160 |
+| `0x00415e70` | `Flag_Construct` | `WorldObjects` | 304 |
+| `0x004161e8` | `Flag_Position` | `WorldObjects` | 104 |
+| `0x00416258` | `Flag_Heading` | `WorldObjects` | 120 |
+| `0x00416bb8` | `Flag_GetPosition` | `WorldObjects` | 40 |
 | `0x0041abe8` | `GetCheckPoint` | `Warriors` | 16 |
+| `0x0041acd8` | `GameState_SetLuaSaveFloat` | `Warriors` | 40 |
+| `0x0041ad00` | `GameState_GetLuaSaveFloat` | `Warriors` | 40 |
+| `0x0041d628` | `Cfg_SetDatabaseSizes` | `Warriors` | 104 |
 | `0x0041d6f0` | `GetLevelId` | `Warriors` | 40 |
 | `0x0041d718` | `GetCurrentLevelIndex` | `Warriors` | 16 |
 | `0x0041d7f0` | `GetLanguage` | `Warriors` | 16 |

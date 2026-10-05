@@ -17,6 +17,7 @@
 #include "debug/play_controls.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
+#include "gamemodes/gameplay_mode.h"
 #include "graphics/render_device.h"
 #include "human/player.h"
 #include "human/target_human.h"
@@ -35,6 +36,17 @@ struct Texture;
 }
 
 namespace coney::platform {
+
+/// Who the play mode's player is and how he is first placed, beyond where (the scenery's start).
+struct PlayerSetup {
+    /// The Character List model the player is drawn and animated as (the level script's type, through `CfgChar`,
+    /// characters::modelNameFor()). **Coney's choice:** when it is empty or fails to load, Rembrandt's, with a line in
+    /// the log.
+    std::string model{human::kPlayerModel};
+    /// Whether the start is snapped to the ground as `HuCreate` does; false for a start a `TeleportToFlag` gave, which
+    /// does not snap (docs/research/flags.md#position).
+    bool snapToGround = true;
+};
 
 /// What a play run has done so far: counts and the player's state, for the summary line.
 struct PlayStats {
@@ -61,7 +73,7 @@ struct PlayStats {
 ///
 /// It is also the debug menus' way into the game (debug::PlayControls, docs/guides/debug-menu.md): the Player, Camera
 /// and Spawner pages act on it between steps, and render() draws the Debug draw page's lines into the scene.
-class PlayLevelMode final : public GameMode, public debug::PlayControls {
+class PlayLevelMode final : public GameMode, public debug::PlayControls, public ScriptedPlayer {
   public:
     /// The mode's id, outside the original's range.
     static constexpr std::uint32_t kId = 0x106;
@@ -71,11 +83,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls {
     static constexpr float kCharacterDirectional = 0.7F;
 
     /// Loads level `name` (LevelPlayScenery::load()) and the player's character from `wad`, the player at `start`
-    /// (player 1 as the level script created him) when given. `print` receives what was loaded and streamed (counts
-    /// only). Everything given must outlive the mode. Fails as the loaders do.
+    /// (player 1 as the level script created him) when given, as `setup` says. `print` receives what was loaded and
+    /// streamed (counts only). Everything given must outlive the mode. Fails as the loaders do.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
     create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
-           std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start = std::nullopt);
+           std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start = std::nullopt,
+           const PlayerSetup& setup = {});
 
     /// The player in the sandbox `world` (SandboxPlayScenery::create()), at spawn point `spawn` (the layout's first
     /// when unset), with the character loaded from `wad`. Fails as the scenery and the character loader do.
@@ -127,15 +140,20 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls {
     [[nodiscard]] std::size_t spawnedCount() const override { return m_spawned.size(); }
     std::expected<void, Error> clearSpawned() override;
 
+    /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play; no ground snap.
+    void teleportPlayer(const world_objects::Placement& placement) override;
+    /// The model the player is drawn as.
+    [[nodiscard]] const std::string& model() const { return m_model; }
+
   private:
     PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> scenery,
                   std::unique_ptr<human::PlayerCharacter> character, std::vector<TextureDictionary> dictionaries,
-                  std::function<void(std::string_view)> print);
+                  std::function<void(std::string_view)> print, std::string model, bool snapStart);
 
     // The character and its texture from `wad`, then the mode round `scenery`: what both create functions share.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
     createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
-               std::function<void(std::string_view)> print);
+               std::function<void(std::string_view)> print, const PlayerSetup& setup = {});
 
     // The camera of `snapshot` as the scenery draws it, in RenderWare's axes, with `drawDistance` as its far clip.
     [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot, float drawDistance) const;
@@ -181,6 +199,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls {
     };
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
+    std::string m_model; // the Character List model the player is
 };
 
 } // namespace coney::platform

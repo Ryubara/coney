@@ -194,6 +194,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 116, calls: 219, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: SetCheatCallback
   wrapper: 0x0036e488

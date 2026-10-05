@@ -404,4 +404,4 @@ Sets the function run once the level has finished loading (kept at `0x005e6d88`)
 - **Evidence:** confirmed (code) at `0x0015fe50`; detail: traced
 - **Wrapper** `0x0036df98` (registered by `RegisterBindings`); **calls** `0x0015fe50`
 - **Used by** 116 of 467 script chunks (219 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented

@@ -15,6 +15,7 @@
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "world_objects/flags.h"
 
 namespace coney::script {
 
@@ -102,11 +103,12 @@ class RecordedCalls {
 
 /// What the bindings work on. Everything must outlive the script system's states.
 struct BindingContext {
-    GameState* state = nullptr;            ///< Read by the getters, filled by `CfgLevelName`.
-    gui::GlobalStrings* strings = nullptr; ///< Filled by `CfgHUDMessage` and the other string bindings.
-    BindingHost* host = nullptr;           ///< Menus, level flow, screen effects, audio and movies.
-    RecordedCalls* recorded = nullptr;     ///< The recording stubs' arguments.
-    CreatedHumans* humans = nullptr;       ///< Where `HuCreate` keeps the humans it makes; null keeps none.
+    GameState* state = nullptr;                 ///< Read by the getters, filled by `CfgLevelName`.
+    gui::GlobalStrings* strings = nullptr;      ///< Filled by `CfgHUDMessage` and the other string bindings.
+    BindingHost* host = nullptr;                ///< Menus, level flow, screen effects, audio and movies.
+    RecordedCalls* recorded = nullptr;          ///< The recording stubs' arguments.
+    CreatedHumans* humans = nullptr;            ///< Where `HuCreate` keeps the humans it makes; null keeps none.
+    world_objects::WorldFlags* flags = nullptr; ///< The level's world flags (`AddFlag`); null keeps none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

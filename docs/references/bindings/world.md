@@ -116,7 +116,7 @@ NilHandle as parent). A full pool is not checked: the constructor then runs on a
 - **Evidence:** confirmed (code) at `0x00415c18`; detail: traced
 - **Wrapper** `0x00379fd0` (registered by `RegisterBindings`); **calls** `0x00415c18` `Flag_Add`
 - **Used by** 94 of 467 script chunks (7058 references); boot to menu: no; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## AddPath {#addpath}
 
@@ -687,7 +687,7 @@ Looks up a flag by name (linear search over the flags in creation order, case-se
 - **Evidence:** confirmed (code) at `0x00415c48`; detail: brief
 - **Wrapper** `0x0037a770` (registered by `RegisterBindings`); **calls** `0x00415c48` `Flag_FindByName`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## FlagEnable {#flagenable}
 
@@ -876,7 +876,7 @@ result into the table {x, y, z} that HuCreate and Teleport take.
 - **Evidence:** confirmed (code) at `0x00416bb8`; detail: traced
 - **Wrapper** `0x0037a288` (registered by `RegisterBindings`); **calls** `0x00416bb8` `Flag_GetPosition`
 - **Used by** 14 of 467 script chunks (25 references); boot to menu: yes; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetHitpoints {#gethitpoints}
 

@@ -675,8 +675,18 @@ and goes back on the back command), so the table can be followed today.
   stand-ins** (PM_NumPlayers, PM_Profile, PM_Create, PM_Load, PM_Continue, PM_Difficulty, PM_Light, PM_Subtitles) end
   the profile manager on accept, so story reaches `Menu.startGame` (the profile manager's `Exit`) before the profile
   screens exist: STORY, then cross on the PM_Profile stand-in. **Quick rumble**: `Menu.fadeToRMI` fades out and
-  schedules `Menu.launchRMI`, whose `ShowRumbleModeInterface` Coney cancels at once (logged; the cancel callback runs on
-  the next frame), so `Menu.cancelRumbleMode` fades the main menu back in.
+  schedules `Menu.launchRMI`, whose `ShowRumbleModeInterface` opens the Rumble menu (below).
+
+**Mode 0x11, the Rumble menu** (`src/gamemodes/rumble_menu_mode.h`, `RumbleMenuMode`), from
+[QUICK RUMBLE](#quick-rumble): `show` keeps the two callbacks and pushes the mode unless it is on top; `exit` calls
+`Menu.cancelRumbleMode` when cancelled, or `Menu.startRumbleMode(level)` when started, whose level request (mode 8)
+loads the arena and pushes gameplay. **Coney's stand-in:** the menu's screens are not written. `enter` fills the game
+state's 23 set-up values with a default, Cleon against one Rogue (`rogu_lt`) in a brawl in the Fight Pen (`level102`),
+and logs `rumble menu: placeholder screens`; the mode draws black. Cross starts, triangle or circle cancels; on start
+the profile manager under it is popped too, so mode 8 is on top for the level request (inferred from the chain). The
+set-up's layout (index 1 the mode, 2 the game type, 3 the gang size, 4 and 5 the gangs' packs plus one, 6-14 and
+15-23 the two gangs' types, player 1's first) was found by running the arena scripts' `ParseLuaData` in Coney's VM,
+not from the original's menu; `--play-level` of an arena uses the same default (`rumbleSetupForLevel`).
 
 **Menu commands** (`src/gui/menu_input.h`, `MenuInput`, `MenuInput_Dispatch` `0x001e95c0`), from [Input](#input): up,
 down, left and right from the auto-repeating d-pad query or the left stick past ±0.5; accept on the release of cross;
@@ -694,11 +704,12 @@ as if it had ended at once; the original blocks until it ends.
 **Disc check (NTSC-U, 2026-10-04, states only):** `coney_tests "[disc][frontend]"` with `CONEY_DISC` set runs the
 start-up path headless with the disc's sheets and the game's own scripts: PM_Greet is on top by frame 160 with every
 sheet loaded, and START on frame 200 reaches PM_Mode with three items and cue 9; quick rumble (chosen with the analog
-stick) fades out and back to PM_Mode; story, then cross on the PM_Profile stand-in, calls `Menu.startGame`, which asks
-for a level (`runNextMission(1)`) and launches the mission-complete mode, whose `UnlockAndLoad` asks again (two
-requests, two launches), and, with no level loader in this test, the front end comes back at PM_Greet in a second Lua
-state. 111 level records, no script error and no call of a missing binding in either state. With `CONEY_DISC` set when
-CMake configures, the smoke test `coney.reaches_main_menu` runs `coney --disc` the same way.
+stick) opens the Rumble menu's placeholder, and triangle there fades back to PM_Mode; story, then cross on the
+PM_Profile stand-in, calls `Menu.startGame`, which asks for a level (`runNextMission(1)`) and launches the
+mission-complete mode, whose `UnlockAndLoad` asks again (two requests, two launches), and, with no level loader in this
+test, the front end comes back at PM_Greet in a second Lua state. 111 level records, no script error and no call of a
+missing binding in either state. With `CONEY_DISC` set when CMake configures, the smoke test `coney.reaches_main_menu`
+runs `coney --disc` the same way.
 
 **Disc check (NTSC-U, 2026-10-05, states only):** `coney_tests "[disc][story]"` runs STORY with the play mode as the
 level loader: gameplay is on top by frame 300 with `level99` loaded, the checkpoint is 1, Rembrandt stands at
@@ -771,7 +782,8 @@ What the implementer still needs:
 
 - Mode 6's real card check once Coney has saves, and the autosave the mission-complete mode asks for.
 - The profile manager's other twelve screens, and the message box mode 6 uses ([GUI](gui.md#open-questions)).
-- The Rumble mode interface (`ShowRumbleModeInterface`), which Coney cancels at once.
+- The Rumble menu's screens (mode 0x11 is a placeholder with a default set-up), and what each of the 23 values
+  means.
 - The bindings that are stubs today (cameras, scenes, particles, sound, `PadSetHandler`), each with its subsystem;
   the list is the binding table in `src/scripting/script_bindings.cpp` ([Scripts](scripting.md#coneys-implementation)).
 - `InitLevel` far enough to load `level100.lev`, its world and its dependency list.

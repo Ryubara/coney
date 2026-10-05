@@ -238,6 +238,7 @@ std::expected<std::vector<Value>, Error> LuaVm::callNested(const Value& function
     if (function.isNil() && m_options.nilCallsAreNoOps) {
         ++m_nilCalls;
         ++m_nilCallsByName[m_calleeName];
+        m_lastSkipped = m_calleeName;
         return std::vector<Value>{};
     }
     const std::shared_ptr<const Function>& target = function.function();
@@ -282,9 +283,12 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
     }
 
     std::size_t pc = 0;
-    // Errors carry the opcode and its position, so a failing script can be found.
-    const auto error = [&pc](std::string_view what) {
-        return fail(ErrorCode::Invalid, std::format("Lua: {} (instruction {})", what, pc - 1));
+    // Errors carry the opcode and its position, so a failing script can be found, and the last binding call skipped,
+    // whose missing result is the usual nil behind a runtime error.
+    const auto error = [&pc, this](std::string_view what) {
+        const std::string skipped =
+            m_lastSkipped.empty() ? std::string() : std::format("; last skipped call `{}`", m_lastSkipped);
+        return fail(ErrorCode::Invalid, std::format("Lua: {} (instruction {}{})", what, pc - 1, skipped));
     };
     const auto underflow = [&error] { return error("stack underflow (malformed bytecode)"); };
     // Moves the program counter by a jump's signed operand, relative to the next instruction.

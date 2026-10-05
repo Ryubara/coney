@@ -26,6 +26,7 @@
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/frame_clock.h"
+#include "core/game_random.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
 #include "core/language.h"
@@ -35,12 +36,14 @@
 #include "debug/game_tunables.h"
 #include "debug/tunables.h"
 #include "fileio/disc.h"
+#include "fileio/executable.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/idle_mode.h"
 #include "gamemodes/level_start.h"
 #include "gamemodes/load_entry_mode.h"
+#include "gamemodes/rumble_menu_mode.h"
 #include "gamemodes/sheet_viewer_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "gamemodes/text_viewer_mode.h"
@@ -193,12 +196,18 @@ std::expected<coney::sandbox::SandboxWorld, coney::Error> loadSandbox(const cone
     return world;
 }
 
-// Player 1's start as the level script created him, in the play mode's terms; nothing when the script made none.
+// Player 1's start as the level scripts left him, in the play mode's terms: where a TeleportToFlag put him, else where
+// HuCreate made him; nothing when the scripts made none.
 std::optional<coney::human::PlayerStart> playerStartOf(const coney::LevelStart& start) {
     if (!start.player) {
         return std::nullopt;
     }
     const coney::HumanCreation& player = *start.player;
+    if (player.teleported) {
+        const std::array<float, 3>& p = player.teleported->position;
+        return coney::human::PlayerStart{.position = coney::anim::Vec3{p[0], p[1], p[2]},
+                                         .headingDegrees = player.teleported->headingDegrees};
+    }
     if (!player.position) {
         return std::nullopt;
     }
@@ -207,26 +216,53 @@ std::optional<coney::human::PlayerStart> playerStartOf(const coney::LevelStart& 
                                      .headingDegrees = player.headingDegrees};
 }
 
+// Who player 1 is and whether his start snaps: the model his type names, no snap after a TeleportToFlag.
+coney::platform::PlayerSetup playerSetupOf(const coney::LevelStart& start) {
+    coney::platform::PlayerSetup setup;
+    if (start.player) {
+        if (!start.player->model.empty()) {
+            setup.model = start.player->model;
+        }
+        setup.snapToGround = !start.player->teleported;
+    }
+    return setup;
+}
+
+// What a level run alone starts with: the game's random table from the disc's executable when it has the NTSC-U one
+// (counted, never printed), and for a Rumble arena the Rumble menu's default set-up.
+coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::string_view name,
+                                             std::vector<std::uint32_t>& table) {
+    coney::LevelScriptOptions options;
+    if (auto words = coney::io::readExecutableWords(wad.disc(), coney::GameRandom::kExecutableName,
+                                                    coney::GameRandom::kTableAddress, coney::GameRandom::kTableSize)) {
+        table = std::move(*words);
+        options.randomTable = table;
+    }
+    options.rumble = coney::rumbleSetupForLevel(name);
+    return options;
+}
+
 // Runs level `name`'s scripts alone, as the story would reach it at `checkpoint`
-// (docs/guides/building.md#playing-a-level), and prints what they made: the start and counts only. Nothing when the
-// script made no player 1 to place.
-std::optional<coney::human::PlayerStart> scriptStartFor(const coney::io::Wad& wad, std::string_view name,
-                                                        int checkpoint) {
-    const coney::LevelScriptRun run =
-        coney::runLevelScriptAlone(coney::script::wadScriptSource(wad), name, checkpoint, {});
+// (docs/guides/building.md#playing-a-level), and prints what they made: the start and counts only.
+coney::LevelStart scriptStartFor(const coney::io::Wad& wad, std::string_view name, int checkpoint) {
+    std::vector<std::uint32_t> table;
+    const coney::LevelScriptRun run = coney::runLevelScriptAlone(coney::script::wadScriptSource(wad), name, checkpoint,
+                                                                 printText, levelScriptOptions(wad, name, table));
     const std::optional<coney::human::PlayerStart> start = playerStartOf(run.start);
     if (start && run.start.player) {
-        printText(std::format("level script: {} checkpoint {}: player 1 {} (type {}) at ({:.2f}, {:.2f}, {:.2f}) "
-                              "heading {:.0f}; {} humans, {} script errors, {} skipped calls\n",
-                              name, checkpoint, run.start.player->name, run.start.player->type, start->position.x,
-                              start->position.y, start->position.z, start->headingDegrees, run.humans, run.scriptErrors,
-                              run.skippedCalls));
+        printText(std::format("level script: {} checkpoint {}: player 1 {} (type {}, model {}) at ({:.2f}, {:.2f}, "
+                              "{:.2f}) heading {:.0f}{}; {} humans, {} flags, {} script errors, {} skipped calls\n",
+                              name, checkpoint, run.start.player->name, run.start.player->type,
+                              run.start.player->model.empty() ? "unknown" : run.start.player->model, start->position.x,
+                              start->position.y, start->position.z, start->headingDegrees,
+                              run.start.player->teleported ? " (teleported to a flag)" : "", run.humans, run.flags,
+                              run.scriptErrors, run.skippedCalls));
     } else {
-        printText(std::format("level script: {} checkpoint {}: no player 1 with a position; {} humans, {} script "
-                              "errors, {} skipped calls\n",
-                              name, checkpoint, run.humans, run.scriptErrors, run.skippedCalls));
+        printText(std::format("level script: {} checkpoint {}: no player 1 with a position; {} humans, {} flags, {} "
+                              "script errors, {} skipped calls\n",
+                              name, checkpoint, run.humans, run.flags, run.scriptErrors, run.skippedCalls));
     }
-    return start;
+    return run.start;
 }
 
 } // namespace
@@ -429,10 +465,9 @@ int main(int argc, char** argv) {
                              : std::unexpected(std::move(world.error()));
         } else {
             // The level's script says where player 1 starts at the checkpoint, as when the story reaches it.
-            const std::optional<coney::human::PlayerStart> start =
-                scriptStartFor(*wad, *playName, options->checkpoint.value_or(1));
-            playMode =
-                coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText, start);
+            const coney::LevelStart start = scriptStartFor(*wad, *playName, options->checkpoint.value_or(1));
+            playMode = coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText,
+                                                              playerStartOf(start), playerSetupOf(start));
         }
         if (!playMode) {
             std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), playMode.error().message.c_str());
@@ -464,17 +499,21 @@ int main(int argc, char** argv) {
             [&renderer, &gameWad, &sectorBudget, &storyDebugDraw](
                 const coney::LevelStart& start) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
             auto mode = coney::platform::PlayLevelMode::create(renderer, gameWad, start.level, sectorBudget, printText,
-                                                               playerStartOf(start));
+                                                               playerStartOf(start), playerSetupOf(start));
             if (!mode) {
                 return std::unexpected(std::move(mode.error()));
             }
             (*mode)->setDebugDraw(storyDebugDraw);
             return std::unique_ptr<coney::GameMode>(std::move(*mode));
         };
-        startUp
-            .emplace(renderer, modes, loadSheet, strings, legal, printText, coney::script::wadScriptSource(*wad),
-                     std::move(loadLevel))
-            .start();
+        startUp.emplace(renderer, modes, loadSheet, strings, legal, printText, coney::script::wadScriptSource(*wad),
+                        std::move(loadLevel));
+        // The game's random table, from the disc's own executable (docs/research/flags.md#player-starts).
+        std::vector<std::uint32_t> table;
+        if (levelScriptOptions(*wad, {}, table).randomTable.size() == coney::GameRandom::kTableSize) {
+            startUp->state().random.setTable(table);
+        }
+        startUp->start();
     } else {
         // No disc: no game to run, only the idle screen.
         modes.push(idle);
@@ -641,8 +680,9 @@ int main(int argc, char** argv) {
         }
         playLevel.reset();
         sandboxViewer.reset();
+        const coney::LevelStart start = scriptStartFor(*wad, name, 1);
         auto mode = coney::platform::PlayLevelMode::create(renderer, *wad, name, sectorBudget, printText,
-                                                           scriptStartFor(*wad, name, 1));
+                                                           playerStartOf(start), playerSetupOf(start));
         if (!mode) {
             debugSession.print(std::format("levels: {}: {}", name, mode.error().message));
             return;

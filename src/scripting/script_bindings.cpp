@@ -9,55 +9,18 @@
 #include <optional>
 #include <utility>
 
+#include "characters/character_class.h"
 #include "core/assert.h"
+#include "scripting/binding_args.h"
 #include "scripting/config_strings.h"
+#include "scripting/level_bindings.h"
 
 namespace coney::script {
 
 namespace {
 
-// What a binding returns: its results, or an error that stops the script.
-using Results = std::expected<std::vector<Value>, Error>;
-
 // The value of the global `NilHandle` (Coney's choice, below): what a binding returns for no object.
 constexpr double kNilHandle = 0.0;
-
-// ---- The tolua argument and result conventions (docs/research/scripting.md#argument-and-result-conventions) ----
-
-// Argument `i` (0-based) as a number: 0 when absent or not convertible, as tolua reads a missing argument.
-double numberArg(std::span<const Value> args, std::size_t i) {
-    if (i >= args.size()) {
-        return 0.0;
-    }
-    if (const std::optional<double> number = args[i].number()) {
-        return *number;
-    }
-    if (const std::optional<std::string_view> text = args[i].string()) {
-        return parseLuaNumber(*text).value_or(0.0);
-    }
-    return 0.0;
-}
-
-// Argument `i` as a string: a string, a number's text, or empty (tolua's NULL) for anything else.
-std::string stringArg(std::span<const Value> args, std::size_t i) {
-    if (i >= args.size()) {
-        return {};
-    }
-    if (const std::optional<std::string_view> text = args[i].string()) {
-        return std::string(*text);
-    }
-    if (const std::optional<double> number = args[i].number()) {
-        return std::format("{:.16g}", *number);
-    }
-    return {};
-}
-
-// No results.
-Results none() { return std::vector<Value>{}; }
-// One number.
-Results number(double value) { return std::vector<Value>{Value(value)}; }
-// A boolean as tolua pushes it: the number 1 for true, nil for false (Lua 4.0 has no booleans).
-Results boolean(bool value) { return std::vector<Value>{value ? Value(1.0) : Value()}; }
 
 // The handles stub bindings give out, counting from 1 for each state.
 struct HandleCounter {
@@ -79,20 +42,20 @@ using MakeBinding = NativeFunction (*)(const Factory& factory);
 // `GetPlatform()`: always 1 on the PS2.
 // @orig 0x00357998 GetPlatform (unknown)
 NativeFunction makeGetPlatform(const Factory& /*factory*/) {
-    return [](std::span<const Value>) { return number(kPlatformValue); };
+    return [](std::span<const Value>) { return binding::number(kPlatformValue); };
 }
 
 // `isRelease()`: always true.
 // @orig 0x00357990 isRelease (unknown)
 NativeFunction makeIsRelease(const Factory& /*factory*/) {
-    return [](std::span<const Value>) { return boolean(true); };
+    return [](std::span<const Value>) { return binding::boolean(true); };
 }
 
 // `GetLanguage()`: the game state's language, 0 English to 4 German.
 // @orig 0x0041d7f0 GetLanguage (unknown)
 NativeFunction makeGetLanguage(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value>) {
-        return number(static_cast<double>(state->language));
+        return binding::number(static_cast<double>(state->language));
     };
 }
 
@@ -100,7 +63,7 @@ NativeFunction makeGetLanguage(const Factory& factory) {
 // @orig 0x0041d718 GetCurrentLevelIndex (unknown)
 NativeFunction makeGetCurrentLevelIndex(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value>) {
-        return number(static_cast<double>(state->currentLevel));
+        return binding::number(static_cast<double>(state->currentLevel));
     };
 }
 
@@ -109,37 +72,38 @@ NativeFunction makeGetCurrentLevelIndex(const Factory& factory) {
 // @orig 0x0041d6f0 GetLevelId (unknown)
 NativeFunction makeGetLevelId(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value> args) {
-        const double index = numberArg(args, 0);
+        const double index = binding::number(args, 0);
         const LevelRecord* record = index >= 0.0 && index < static_cast<double>(LevelTable::kCapacity)
                                         ? state->levels.at(static_cast<std::size_t>(index))
                                         : nullptr;
-        return number(record != nullptr ? record->number : 0.0);
+        return binding::number(record != nullptr ? record->number : 0.0);
     };
 }
 
 // `GetDifficulty()`.
 // @orig 0x0041d800 GetDifficulty (unknown)
 NativeFunction makeGetDifficulty(const Factory& factory) {
-    return [state = factory.context->state](std::span<const Value>) { return number(state->difficulty); };
+    return [state = factory.context->state](std::span<const Value>) { return binding::number(state->difficulty); };
 }
 
 // `GetProfileDifficulty()`.
 // @orig 0x0041d820 GetProfileDifficulty (unknown)
 NativeFunction makeGetProfileDifficulty(const Factory& factory) {
-    return [state = factory.context->state](std::span<const Value>) { return number(state->profileDifficulty); };
+    return
+        [state = factory.context->state](std::span<const Value>) { return binding::number(state->profileDifficulty); };
 }
 
 // `GetCheckPoint()`: the level's current section.
 // @orig 0x0041abe8 GetCheckPoint (unknown)
 NativeFunction makeGetCheckPoint(const Factory& factory) {
-    return [state = factory.context->state](std::span<const Value>) { return number(state->checkPoint); };
+    return [state = factory.context->state](std::span<const Value>) { return binding::number(state->checkPoint); };
 }
 
 // `SetCheckPoint(n)`: sets the section GetCheckPoint reads (the setter's address is not on the page).
 NativeFunction makeSetCheckPoint(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value> args) {
-        state->checkPoint = numberArg(args, 0);
-        return none();
+        state->checkPoint = binding::number(args, 0);
+        return binding::none();
     };
 }
 
@@ -147,31 +111,36 @@ NativeFunction makeSetCheckPoint(const Factory& factory) {
 // as the original answers without one.
 // @orig 0x004238a8 UM_IsLevelComplete (unknown)
 NativeFunction makeIsLevelComplete(const Factory& /*factory*/) {
-    return [](std::span<const Value>) { return boolean(false); };
+    return [](std::span<const Value>) { return binding::boolean(false); };
 }
 
 // `ToInt(x)`: x truncated towards zero.
 // @orig 0x0036d938 ToInt (unknown)
 NativeFunction makeToInt(const Factory& /*factory*/) {
-    return [](std::span<const Value> args) { return number(std::trunc(numberArg(args, 0))); };
+    return [](std::span<const Value> args) { return binding::number(std::trunc(binding::number(args, 0))); };
 }
 
 // `doFile(name)`: runs `name.lua` now, in this state.
 // @orig 0x003579a0 doFile (unknown)
 NativeFunction makeDoFile(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
-        scripts->runFile(std::format("{}.lua", stringArg(args, 0)));
-        return none();
+        scripts->runFile(std::format("{}.lua", binding::string(args, 0)));
+        return binding::none();
     };
 }
 
-// `preLoadFile(name, callback)`: the original asks for `name.lua` without waiting and runs it when it arrives; Coney's
-// reads are synchronous, so it runs at once. What the original does with `callback` is not traced: Coney ignores it.
+// `preLoadFile(name, callback)`: the original asks for `name.lua` without waiting; when it arrives it runs the chunk,
+// then, when a callback name was given, calls that function with no arguments (docs/research/scripting.md#open-
+// questions, `RegisterUpdate`). Coney's reads are synchronous, so both happen at once, inside the call.
 // @orig 0x00357a68 preLoadFile (unknown)
+// @orig 0x00356d00 ScriptSystem_PreloadDone (unknown)
 NativeFunction makePreLoadFile(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
-        scripts->runFile(std::format("{}.lua", stringArg(args, 0)));
-        return none();
+        const bool ran = scripts->runFile(std::format("{}.lua", binding::string(args, 0)));
+        if (const std::string callback = binding::string(args, 1); ran && !callback.empty()) {
+            scripts->call(callback);
+        }
+        return binding::none();
     };
 }
 
@@ -179,8 +148,9 @@ NativeFunction makePreLoadFile(const Factory& factory) {
 // @orig 0x003863d8 ScheduleFunc (unknown)
 NativeFunction makeScheduleFunc(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
-        scripts->schedule(stringArg(args, 0), static_cast<std::uint64_t>(std::max(0.0, numberArg(args, 1))));
-        return none();
+        scripts->schedule(binding::string(args, 0),
+                          static_cast<std::uint64_t>(std::max(0.0, binding::number(args, 1))));
+        return binding::none();
     };
 }
 
@@ -188,9 +158,10 @@ NativeFunction makeScheduleFunc(const Factory& factory) {
 // @orig 0x00386410 ScheduleFuncArg1 (unknown)
 NativeFunction makeScheduleFuncArg1(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
-        const std::array<double, 1> callArgs{numberArg(args, 2)};
-        scripts->schedule(stringArg(args, 0), static_cast<std::uint64_t>(std::max(0.0, numberArg(args, 1))), callArgs);
-        return none();
+        const std::array<double, 1> callArgs{binding::number(args, 2)};
+        scripts->schedule(binding::string(args, 0), static_cast<std::uint64_t>(std::max(0.0, binding::number(args, 1))),
+                          callArgs);
+        return binding::none();
     };
 }
 
@@ -198,23 +169,31 @@ NativeFunction makeScheduleFuncArg1(const Factory& factory) {
 // @orig 0x00386450 FlushScheduledFuncs (unknown)
 NativeFunction makeFlushScheduledFuncs(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
-        scripts->flushScheduled(stringArg(args, 0));
-        return none();
+        scripts->flushScheduled(binding::string(args, 0));
+        return binding::none();
+    };
+}
+
+// `GetGameTime()`: the game time in milliseconds, the clock the schedule counts on.
+// @orig 0x0036e050 GetGameTime (unknown)
+NativeFunction makeGetGameTime(const Factory& factory) {
+    return [scripts = factory.scripts](std::span<const Value>) {
+        return binding::number(static_cast<double>(scripts->now()));
     };
 }
 
 // `gc()`: collect garbage now; Coney's VM has none to collect.
 // @orig 0x00386370 gc (unknown)
 NativeFunction makeGc(const Factory& /*factory*/) {
-    return [](std::span<const Value>) { return none(); };
+    return [](std::span<const Value>) { return binding::none(); };
 }
 
 // `ShowProfileManager(onRumble, onStartGame)`: shows the menus with the two callbacks.
 // @orig 0x0036eef8 ShowProfileManager_Binding (unknown)
 NativeFunction makeShowProfileManager(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
-        host->showProfileManager(stringArg(args, 0), stringArg(args, 1));
-        return none();
+        host->showProfileManager(binding::string(args, 0), binding::string(args, 1));
+        return binding::none();
     };
 }
 
@@ -222,16 +201,16 @@ NativeFunction makeShowProfileManager(const Factory& factory) {
 // @orig 0x0036df48 MenuLoadLevel (unknown)
 NativeFunction makeMenuLoadLevel(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
-        host->menuLoadLevel(stringArg(args, 0));
-        return none();
+        host->menuLoadLevel(binding::string(args, 0));
+        return binding::none();
     };
 }
 
 // `ScreenQueueEffect(type, seconds)`: queues a fade (0 in, 1 out).
 NativeFunction makeScreenQueueEffect(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
-        host->queueScreenEffect(static_cast<int>(numberArg(args, 0)), numberArg(args, 1));
-        return none();
+        host->queueScreenEffect(static_cast<int>(binding::number(args, 0)), binding::number(args, 1));
+        return binding::none();
     };
 }
 
@@ -240,59 +219,55 @@ NativeFunction makeScreenQueueEffect(const Factory& factory) {
 NativeFunction makeCfgLevelName(const Factory& factory) {
     return [state = factory.context->state, scripts = factory.scripts](std::span<const Value> args) {
         LevelRecord record;
-        record.id = numberArg(args, 0);
-        record.name = stringArg(args, 1);
-        record.secondName = stringArg(args, 2);
-        record.worldName = stringArg(args, 3);
-        record.fourthName = stringArg(args, 4);
-        record.number = numberArg(args, 5);
+        record.id = binding::number(args, 0);
+        record.name = binding::string(args, 1);
+        record.secondName = binding::string(args, 2);
+        record.worldName = binding::string(args, 3);
+        record.fourthName = binding::string(args, 4);
+        record.number = binding::number(args, 5);
         for (std::size_t i = 0; i < record.values.size(); ++i) {
-            record.values.at(i) = numberArg(args, 6 + i);
+            record.values.at(i) = binding::number(args, 6 + i);
         }
         if (!state->levels.set(std::move(record))) {
-            scripts->log(
-                std::format("CfgLevelName: record index {} is outside the level table; ignored", numberArg(args, 0)));
+            scripts->log(std::format("CfgLevelName: record index {} is outside the level table; ignored",
+                                     binding::number(args, 0)));
         }
-        return none();
+        return binding::none();
     };
 }
 
-// `random(a, b)`: the game's own generator replaces the math library's. Its algorithm is not on the page, so Coney
-// draws whole numbers in [a, b] from its own deterministic generator (seeded once per state).
-NativeFunction makeRandom(const Factory& /*factory*/) {
-    auto state = std::make_shared<std::uint32_t>(0x12345678U);
-    return [state](std::span<const Value> args) {
-        // xorshift32: small, deterministic, never the C library's.
-        std::uint32_t x = *state;
-        x ^= x << 13U;
-        x ^= x >> 17U;
-        x ^= x << 5U;
-        *state = x;
-        const double low = numberArg(args, 0);
-        const double high = numberArg(args, 1);
-        if (high <= low) {
-            return number(low);
-        }
-        const double span = std::floor(high - low) + 1.0;
-        return number(low + std::floor(static_cast<double>(x) / 4294967296.0 * span));
+// `random(low, high)`: a whole number in [low, high] from the game's generator, the table walked by one index for the
+// whole session (GameRandom, in the game state, so every Lua state shares it).
+// @orig 0x00386488 random (unknown)
+NativeFunction makeRandom(const Factory& factory) {
+    return [state = factory.context->state](std::span<const Value> args) {
+        const auto low = static_cast<std::int32_t>(std::trunc(binding::number(args, 0)));
+        const auto high = static_cast<std::int32_t>(std::trunc(binding::number(args, 1)));
+        return binding::number(static_cast<double>(state->random.range(low, high)));
     };
 }
 
-// The position argument of `HuCreate`: a table of three numbers at t[1]..t[3]; nothing for anything else.
-std::optional<std::array<float, 3>> positionArg(std::span<const Value> args, std::size_t i) {
-    if (i >= args.size() || args[i].table() == nullptr) {
+// The model-name argument of type `type`'s `CfgChar` call among the recorded configuration; nothing when there is none.
+std::optional<std::string> recordedCfgCharModel(const RecordedCalls* recorded, int type) {
+    if (recorded == nullptr) {
         return std::nullopt;
     }
-    const Table& table = *args[i].table();
-    std::array<float, 3> position{};
-    for (std::size_t axis = 0; axis < position.size(); ++axis) {
-        const std::optional<double> value = table.get(Value(static_cast<double>(axis + 1))).number();
-        if (!value) {
-            return std::nullopt;
+    for (const std::vector<Value>& call : recorded->calls("CfgChar")) {
+        if (call.empty() || call[0].number() != static_cast<double>(type) ||
+            call.size() <= characters::kCfgCharModelArgument) {
+            continue;
         }
-        position.at(axis) = static_cast<float>(*value);
+        if (const std::optional<std::string_view> model = call[characters::kCfgCharModelArgument].string()) {
+            return std::string(*model);
+        }
     }
-    return position;
+    return std::nullopt;
+}
+
+// The current level's number (its record's `+0x04`); 0 when the table has no record for it.
+int currentLevelNumber(const GameState& state) {
+    const LevelRecord* record = state.levels.at(state.currentLevel);
+    return record != nullptr ? static_cast<int>(record->number) : 0;
 }
 
 // `HuCreate(name, type, {x, y, z}, heading, unused, player, gang, flag)`: makes a human and returns its handle, or
@@ -300,23 +275,29 @@ std::optional<std::array<float, 3>> positionArg(std::span<const Value> args, std
 // context's CreatedHumans, where the play mode takes player 1 from. Coney's choices: the position is not snapped to
 // the ground here (no collision is loaded while the script runs) and so not written back into the table; the play mode
 // snaps the player the same way when it places him (docs/research/characters.md#creation). The gang, the unused string
-// and the flag are not kept.
+// and the flag are not kept. The model the type is drawn as is resolved here from the recorded `CfgChar` calls
+// (characters::modelNameFor(), docs/research/characters.md#type-to-model); the play mode loads it.
 // @orig 0x00358428 HuCreate (unknown)
 // @orig 0x00233d60 Human_Create (unknown)
 NativeFunction makeHuCreate(const Factory& factory) {
-    return [humans = factory.context->humans, handles = factory.handles](std::span<const Value> args) {
+    return [context = factory.context, handles = factory.handles](std::span<const Value> args) {
         HumanCreation human;
-        human.name = stringArg(args, 0);
-        human.type = static_cast<int>(std::trunc(numberArg(args, 1)));
-        human.position = positionArg(args, 2);
-        human.headingDegrees = static_cast<float>(numberArg(args, 3));
-        human.playerIndex = static_cast<int>(std::trunc(numberArg(args, 5)));
+        human.name = binding::string(args, 0);
+        human.type = static_cast<int>(std::trunc(binding::number(args, 1)));
+        human.position = binding::position(args, 2);
+        human.headingDegrees = static_cast<float>(binding::number(args, 3));
+        human.playerIndex = static_cast<int>(std::trunc(binding::number(args, 5)));
+        human.model =
+            characters::modelNameFor(human.type, human.playerIndex, currentLevelNumber(*context->state),
+                                     [context](int type) { return recordedCfgCharModel(context->recorded, type); })
+                .value_or(std::string{});
         human.handle = handles->next;
+        CreatedHumans* humans = context->humans;
         if (humans != nullptr && !humans->add(human)) {
-            return number(kNilHandle);
+            return binding::number(kNilHandle);
         }
         handles->next += 1;
-        return number(human.handle);
+        return binding::number(human.handle);
     };
 }
 
@@ -324,8 +305,8 @@ NativeFunction makeHuCreate(const Factory& factory) {
 // @orig 0x0036f218 HUDLaunchMissionComplete (unknown)
 NativeFunction makeHudLaunchMissionComplete(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
-        host->launchMissionComplete(static_cast<int>(std::trunc(numberArg(args, 0))));
-        return none();
+        host->launchMissionComplete(static_cast<int>(std::trunc(binding::number(args, 0))));
+        return binding::none();
     };
 }
 
@@ -334,16 +315,16 @@ NativeFunction makeHudLaunchMissionComplete(const Factory& factory) {
 // `PlayMovie(name)`.
 NativeFunction makePlayMovie(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
-        host->playMovie(stringArg(args, 0));
-        return none();
+        host->playMovie(binding::string(args, 0));
+        return binding::none();
     };
 }
 
 // `SoundPlayMusicTrack(track)` and `SoundLoopMusicTrack(track)`.
 NativeFunction makePlayMusic(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
-        host->playMusic(stringArg(args, 0));
-        return none();
+        host->playMusic(binding::string(args, 0));
+        return binding::none();
     };
 }
 
@@ -351,15 +332,15 @@ NativeFunction makePlayMusic(const Factory& factory) {
 NativeFunction makeStopMusic(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value>) {
         host->stopMusic();
-        return none();
+        return binding::none();
     };
 }
 
 // `ShowRumbleModeInterface(onCancel, onStart, n)`.
 NativeFunction makeShowRumbleModeInterface(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
-        host->showRumbleModeInterface(stringArg(args, 0), stringArg(args, 1), numberArg(args, 2));
-        return none();
+        host->showRumbleModeInterface(binding::string(args, 0), binding::string(args, 1), binding::number(args, 2));
+        return binding::none();
     };
 }
 
@@ -374,6 +355,7 @@ constexpr std::array kMakers{
     Maker{"GetCheckPoint", makeGetCheckPoint},
     Maker{"GetCurrentLevelIndex", makeGetCurrentLevelIndex},
     Maker{"GetDifficulty", makeGetDifficulty},
+    Maker{"GetGameTime", makeGetGameTime},
     Maker{"GetLanguage", makeGetLanguage},
     Maker{"GetLevelId", makeGetLevelId},
     Maker{"GetPlatform", makeGetPlatform},
@@ -429,6 +411,7 @@ constexpr std::array kBindings{
     real("ScheduleFuncArg1"),
     real("FlushScheduledFuncs"),
     real("gc"),
+    real("GetGameTime"),
     real("random"),
     real("GetPlatform"),
     real("isRelease"),
@@ -453,8 +436,18 @@ constexpr std::array kBindings{
     real("MenuLoadLevel"),
     real("ScreenQueueEffect"),
     real("HUDLaunchMissionComplete"),
-    // The level scripts' humans.
+    // The level scripts' humans, flags, saved numbers, start callback and Rumble set-up (level_bindings.h).
     real("HuCreate"),
+    real("AddFlag"),
+    real("FindFlag"),
+    real("GetFlagPos"),
+    real("GetPosition"),
+    real("TeleportToFlag"),
+    real("CfgSetDatabaseSizes"),
+    real("GetLUASaveDataFloat"),
+    real("SetLUASaveDataFloat"),
+    real("SetStartGameCallback"),
+    real("GetRumbleModeData"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     routed("SoundPlayMusicTrack"),
@@ -507,7 +500,6 @@ constexpr std::array kBindings{
     recording("CfgScrFx"),
     recording("CfgSearchCounts"),
     recording("CfgSearchTimes"),
-    recording("CfgSetDatabaseSizes"),
     recording("CfgSetDefaultFollowSlotSet"),
     recording("CfgSetGlassProperties"),
     recording("CfgSetGlobalTimeToLive"),
@@ -549,10 +541,11 @@ constexpr std::array kBindings{
     stub("SoundEnableEffects"),
     stub("SoundSetEffect"),
     stub("SoundSetMusicVolume"),
+    // The inventory: Coney has none yet, so a new game's empty one.
+    stub("InvNumberOf", StubResult::Zero),
     // Unlockables and saves: Coney has none.
     stub("ResetCommands"),
     stub("SetLUASaveDataBool"),
-    stub("SetLUASaveDataFloat"),
     stub("UM_IsTypeDirty", StubResult::False),
     stub("UM_Reset"),
     stub("UM_Unlock"),
@@ -580,6 +573,8 @@ constexpr std::array kBindings{
     stub("CameraCreateLocked", StubResult::Handle),
     stub("CameraMakeActive"),
     stub("CameraReset"),
+    stub("GangCreate", StubResult::Handle),
+    stub("GangGetHeadCount", StubResult::Zero),
     stub("GetPTank", StubResult::Handle),
     stub("ObjSpawn", StubResult::Handle),
     stub("ReleasePTank"),
@@ -591,26 +586,26 @@ constexpr std::array kBindings{
 // A stub's function: keeps the arguments when it records, then returns its default.
 NativeFunction makeStub(const BindingInfo& info, const BindingContext& context,
                         const std::shared_ptr<HandleCounter>& handles) {
-    return [info, recorded = context.recorded, handles](std::span<const Value> args) -> Results {
+    return [info, recorded = context.recorded, handles](std::span<const Value> args) -> binding::Results {
         if (info.records && recorded != nullptr) {
             recorded->add(info.name, args);
         }
         switch (info.stubResult) {
         case StubResult::Nothing:
-            return none();
+            return binding::none();
         case StubResult::Handle: {
             const double handle = handles->next;
             handles->next += 1;
-            return number(handle);
+            return binding::number(handle);
         }
         case StubResult::Zero:
-            return number(0.0);
+            return binding::number(0.0);
         case StubResult::False:
-            return boolean(false);
+            return binding::boolean(false);
         case StubResult::True:
-            return boolean(true);
+            return binding::boolean(true);
         }
-        return none();
+        return binding::none();
     };
 }
 
@@ -664,10 +659,17 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
             vm.registerFunction(info.name, maker->make(factory));
             continue;
         }
-        // Every real binding has a maker or is a string binding (CONEY_ASSERT).
-        CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end());
+        // Every real binding has a maker or is a string or level binding (CONEY_ASSERT).
+        CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end() ||
+                     std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end());
     }
     addStringBindings(vm, *context.strings);
+    // The level bindings make world objects, so they take their handles from the same counter as the stubs.
+    addLevelBindings(vm, context, [handles = factory.handles] {
+        const double handle = handles->next;
+        handles->next += 1;
+        return handle;
+    });
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

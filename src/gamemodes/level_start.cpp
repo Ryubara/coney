@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/level_start.h"
 
+#include <array>
 #include <cmath>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 
+#include "core/assert.h"
 #include "gui/global_strings.h"
+#include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
 
 namespace coney {
@@ -27,33 +31,66 @@ class QuietHost final : public script::BindingHost {
     void queueScreenEffect(int /*type*/, double /*seconds*/) override {}
 };
 
+// The script frames runLevelScriptAlone() runs after the start: one second of the fixed 1/30 s step.
+constexpr std::uint64_t kSettleSteps = 30;
+
 } // namespace
 
-LevelStart runLevelScript(script::ScriptSystem& scripts, const GameState& state, CreatedHumans& humans,
-                          std::string_view level) {
-    // The humans of the level before are gone: the original's unload frees every slot.
+LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, CreatedHumans& humans,
+                          world_objects::WorldFlags& flags, std::string_view level) {
+    // The humans and flags of the level before are gone: the original's unload frees every slot and the flag pool.
     humans.clear();
+    flags.clear();
+    state.startGameCallback.clear();
     scripts.enterLevel(level);
 
-    // Player 1 as the script made him. A creation without a readable position cannot be placed, so it counts as none.
+    // InitLevel's own two flags, at the origin facing 0, made through AddFlag so their handles come from the same
+    // counter as every other world object's.
+    for (const std::string_view name : {kCrimeSceneFlag, kGangCallFlag}) {
+        auto origin = std::make_shared<script::Table>();
+        for (int axis = 1; axis <= 3; ++axis) {
+            // A number key into a fresh table cannot fail.
+            const bool stored = origin->set(script::Value(static_cast<double>(axis)), script::Value(0.0)).has_value();
+            CONEY_ASSERT(stored);
+        }
+        const std::array<script::Value, 5> args{script::Value(std::string(name)), script::Value(std::move(origin)),
+                                                script::Value(0.0), script::Value(0.0), script::Value(0.0)};
+        scripts.call("AddFlag", args);
+    }
+
+    // The start callback the script set (an arena's DoRules, which places the players), called once.
+    if (!state.startGameCallback.empty()) {
+        const std::string callback = std::exchange(state.startGameCallback, std::string{});
+        scripts.call(callback);
+    }
+
+    // Player 1 as the scripts made him. A creation without a readable position cannot be placed, so it counts as none.
     LevelStart start;
     start.level = std::string(level);
     start.checkpoint = static_cast<int>(std::trunc(state.checkPoint));
-    if (const HumanCreation* player = humans.player(1); player != nullptr && player->position) {
+    if (const HumanCreation* player = humans.player(1); player != nullptr && (player->position || player->teleported)) {
         start.player = *player;
     }
     return start;
 }
 
 LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::string_view level, int checkpoint,
-                                   const std::function<void(std::string_view)>& log) {
+                                   const std::function<void(std::string_view)>& log,
+                                   const LevelScriptOptions& options) {
     // What the bindings work on: a game state, the strings and configuration the preloads fill, and the humans.
     GameState state;
     gui::GlobalStrings strings;
     script::RecordedCalls recorded;
     CreatedHumans humans;
+    world_objects::WorldFlags flags;
     QuietHost host;
-    const script::BindingContext context{&state, &strings, &host, &recorded, &humans};
+    const script::BindingContext context{&state, &strings, &host, &recorded, &humans, &flags};
+    if (options.randomTable.size() == GameRandom::kTableSize) {
+        state.random.setTable(options.randomTable);
+    }
+    if (options.rumble) {
+        state.rumble = *options.rumble;
+    }
     script::ScriptSystem scripts(
         source,
         [&context](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, context); },
@@ -71,10 +108,22 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     state.currentLevel = state.levels.find(level).value_or(0);
 
     LevelScriptRun run;
-    run.start = runLevelScript(scripts, state, humans, level);
+    run.start = runLevelScript(scripts, state, humans, flags, level);
+
+    // The first second of play's script frames, as gameplay would run them, so what the start schedules (the hub's
+    // walk, 100 ms in) happens; player 1 is then where those calls left him.
+    for (std::uint64_t step = 1; step <= kSettleSteps; ++step) {
+        const std::uint64_t nowMs = step * 1000 / kSettleSteps;
+        scripts.setTime(nowMs);
+        scripts.update(nowMs, 1.0 / static_cast<double>(kSettleSteps));
+    }
+    if (const HumanCreation* player = humans.player(1); player != nullptr && run.start.player) {
+        run.start.player = *player;
+    }
     run.scriptErrors = scripts.errors();
     run.skippedCalls = scripts.skippedCalls();
     run.humans = humans.all().size();
+    run.flags = flags.all().size();
     return run;
 }
 
