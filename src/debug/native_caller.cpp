@@ -66,9 +66,9 @@ std::string formatValue(const script::Value& value) {
     case script::Value::Type::Nil:
         return "nil";
     case script::Value::Type::Number:
-        return formatNumber(*value.number());
+        return formatNumber(value.number().value_or(0.0));
     case script::Value::Type::String:
-        return std::format("\"{}\"", *value.string());
+        return std::format("\"{}\"", value.string().value_or(std::string_view{}));
     case script::Value::Type::Function:
         return "function";
     case script::Value::Type::Table: {

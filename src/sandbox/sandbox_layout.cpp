@@ -3,20 +3,21 @@
 
 #include <algorithm>
 #include <array>
-#include <cerrno>
 #include <charconv>
 #include <cmath>
-#include <cstdlib>
 #include <format>
 #include <fstream>
 #include <functional>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <numbers>
 #include <set>
 #include <span>
 #include <system_error>
 #include <utility>
+
+#include "core/parse_number.h"
 
 namespace coney::sandbox {
 
@@ -207,31 +208,13 @@ class Arguments {
   private:
     explicit Arguments(std::size_t line) : m_line(line) {}
 
-    // A decimal number such as `-1.25`; nothing for anything else (from_chars refuses spaces and a leading `+`).
+    // A decimal number such as `-1.25` that fits a float; nothing for anything else (parseDecimal()).
     static std::optional<float> parseNumber(std::string_view text) {
-        float value = 0.0F;
-#if defined(__cpp_lib_to_chars)
-        const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
-        if (text.empty() || parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() ||
-            !std::isfinite(value)) {
+        const std::optional<double> value = parseDecimal(text);
+        if (!value || std::abs(*value) > std::numeric_limits<float>::max()) {
             return std::nullopt;
         }
-#else
-        // Apple's libc++ has no floating-point std::from_chars, so strtof reads it there. What strtof takes and
-        // from_chars refuses (leading spaces or `+`, hexadecimal) is refused first; the copy adds the null it needs.
-        if (text.empty() || text.front() == '+' || text.front() == ' ' || text.front() == '\t' ||
-            text.find_first_of("xX") != std::string_view::npos) {
-            return std::nullopt;
-        }
-        const std::string copy(text);
-        char* end = nullptr;
-        errno = 0;
-        value = std::strtof(copy.c_str(), &end);
-        if (errno == ERANGE || end != copy.c_str() + copy.size() || !std::isfinite(value)) {
-            return std::nullopt;
-        }
-#endif
-        return value;
+        return static_cast<float>(*value);
     }
 
     std::size_t m_line;

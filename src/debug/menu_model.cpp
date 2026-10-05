@@ -3,13 +3,13 @@
 
 #include <algorithm>
 #include <array>
-#include <charconv>
 #include <cmath>
 #include <format>
 #include <system_error>
 #include <utility>
 
 #include "core/assert.h"
+#include "core/parse_number.h"
 
 namespace coney::debug {
 
@@ -225,12 +225,7 @@ std::optional<double> parseNumber(std::string_view text) {
     while (!text.empty() && text.back() == ' ') {
         text.remove_suffix(1);
     }
-    double value = 0.0;
-    const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
-    if (text.empty() || parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() || !std::isfinite(value)) {
-        return std::nullopt;
-    }
-    return value;
+    return parseDecimal(text);
 }
 
 MenuItem& MenuPage::add(MenuItem item) {

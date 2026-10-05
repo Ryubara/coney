@@ -7,6 +7,7 @@ add_executable(coney_tests
     core/input_script_test.cpp
     core/interpolation_test.cpp
     core/name_hash_test.cpp
+    core/parse_number_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
     fileio/disc_test.cpp

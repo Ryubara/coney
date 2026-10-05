@@ -9,6 +9,7 @@ add_library(coney_core STATIC
     core/game_timer.cpp
     core/input_script.cpp
     core/name_hash.cpp
+    core/parse_number.cpp
     core/options.cpp
     core/pad.cpp
     core/pads.cpp

@@ -233,6 +233,10 @@ void MenuNavigator::startEdit(const MenuItem& item) {
 }
 
 void MenuNavigator::applyEdit(MenuAction action, const MenuItem& item) {
+    // Only called while editing; the check keeps an edit-less call harmless.
+    if (!m_edit) {
+        return;
+    }
     Edit& edit = *m_edit;
     const std::string_view characters = edit.numeric ? kNumberCharacters : kTextCharacters;
     const std::size_t maxLength = item.kind == ItemKind::Text ? item.maxLength : 24;
