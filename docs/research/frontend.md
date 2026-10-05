@@ -715,15 +715,30 @@ and goes back on the back command), so the table can be followed today.
   schedules `Menu.launchRMI`, whose `ShowRumbleModeInterface` opens the Rumble menu (below).
 
 **Mode 0x11, the Rumble menu** (`src/gamemodes/rumble_menu_mode.h`, `RumbleMenuMode`), from
-[QUICK RUMBLE](#quick-rumble): `show` keeps the two callbacks and pushes the mode unless it is on top; `exit` calls
-`Menu.cancelRumbleMode` when cancelled, or `Menu.startRumbleMode(level)` when started, whose level request (mode 8)
-loads the arena and pushes gameplay. **Coney's stand-in:** the menu's screens are not written. `enter` fills the game
-state's 23 set-up values with a default, Cleon against one Rogue (`rogu_lt`) in a brawl in the Fight Pen (`level102`),
-and logs `rumble menu: placeholder screens`; the mode draws black. Cross starts, triangle or circle cancels; on start
-the profile manager under it is popped too, so mode 8 is on top for the level request (inferred from the chain). The
-set-up's layout (index 1 the mode, 2 the game type, 3 the gang size, 4 and 5 the gangs' packs plus one, 6-14 and
-15-23 the two gangs' types, player 1's first) was found by running the arena scripts' `ParseLuaData` in Coney's VM,
-not from the original's menu; `--play-level` of an arena uses the same default (`rumbleSetupForLevel`).
+[QUICK RUMBLE](#quick-rumble): `show` keeps the two callbacks and pushes the mode unless it is on top; `enter` loads
+the fonts and starts the screens; `exit` calls `Menu.cancelRumbleMode` when cancelled, or
+`Menu.startRumbleMode(level)` when started, whose level request (mode 8) loads the arena and pushes gameplay. On
+start the profile manager under it is popped too, so mode 8 is on top for the level request (inferred from the chain).
+
+**The screens** (`src/gui/rumble_mode_gui/rumble_menu.h`, `RumbleMenu`), from [The Rumble set-up](#rumble-setup):
+Game Mode ("1 ON 1", "WAR PARTY"), Game Type ("1 Player : Vs.", and versus or co-op), Choose Gangs (the BASEBALL
+FURIES against the ORPHANS) and Choose Area (the Fight Pen, `level102`), moved through with up and down (`MenuInput`)
+and confirmed with accept. Each confirm writes what the table above gives it: the mode list's the mode number
+(index 1) and the gang size (2), the Game Type screen's the players (0), the gang screen's the two packs (3, 4), the
+nine types of each side (5-13, 14-22) and the two names, the arena's the level number; then the mode leaves "started".
+`GetRumbleModeGangName` (`src/scripting/level_bindings.h`) returns the names, empty until the gangs are confirmed.
+Accepting every first entry gives the default set-up read at run time (`rumbleMenuDefaults`, checked by a test);
+`--play-level` of an arena uses it too, with that arena's level number (`rumbleSetupForLevel`).
+
+Coney's choices: the entries' labels and the gangs' data are the curated names and values on this page, since the
+mode list's and the gang records' addresses are not; only the fresh boot's entries exist (two modes, one pairing, one
+arena); WAR PARTY is `RM_Brawl5` (14), five a side (inferred from its name and the screen's description); the Game Type
+entries other than "1 Player : Vs." are labelled "VS" and "COOP", and they need two pads connected; the screens'
+titles are their names on this page; back from a later screen goes to the one before (the Game Mode screen keeps the
+mode chosen); left and right (the warchief) do nothing; no sound cues; the layout is PM_Mode's style on black (no
+front-end world yet). The "vs" title is not a menu screen in Coney: it is read as the arena's intro,
+`ShowRumbleModeIntro`, which `DoRules` calls after the menu has popped (inferred from the chain); Coney does not have
+that binding yet. Each change of screen is logged (`rumble menu: Game Mode`).
 
 **Menu commands** (`src/gui/menu_input.h`, `MenuInput`, `MenuInput_Dispatch` `0x001e95c0`), from [Input](#input): up,
 down, left and right from the auto-repeating d-pad query or the left stick past ±0.5; accept on the release of cross;
@@ -741,7 +756,7 @@ as if it had ended at once; the original blocks until it ends.
 **Disc check (NTSC-U, 2026-10-04, states only):** `coney_tests "[disc][frontend]"` with `CONEY_DISC` set runs the
 start-up path headless with the disc's sheets and the game's own scripts: PM_Greet is on top by frame 160 with every
 sheet loaded, and START on frame 200 reaches PM_Mode with three items and cue 9; quick rumble (chosen with the analog
-stick) opens the Rumble menu's placeholder, and triangle there fades back to PM_Mode; story, then cross on the
+stick) opens the Rumble menu at its Game Mode screen, and triangle there fades back to PM_Mode; story, then cross on the
 PM_Profile stand-in, calls `Menu.startGame`, which asks for a level (`runNextMission(1)`) and launches the
 mission-complete mode, whose `UnlockAndLoad` asks again (two requests, two launches), and, with no level loader in this
 test, the front end comes back at PM_Greet in a second Lua state. 111 level records, no script error and no call of a
@@ -819,8 +834,9 @@ What the implementer still needs:
 
 - Mode 6's real card check once Coney has saves, and the autosave the mission-complete mode asks for.
 - The profile manager's other twelve screens, and the message box mode 6 uses ([GUI](gui.md#open-questions)).
-- The Rumble menu's screens (mode 0x11 is a placeholder with a default set-up), and what each of the 23 values
-  means.
+- The Rumble menu's other entries: the mode list's and the gang records' addresses (so their names and values can be
+  read from the player's executable), the other gangs and arenas, the warchief choice, the screens' layout, titles,
+  usage lines and sounds, and `ShowRumbleModeIntro`.
 - The bindings that are stubs today (cameras, scenes, particles, sound, `PadSetHandler`), each with its subsystem;
   the list is the binding table in `src/scripting/script_bindings.cpp` ([Scripts](scripting.md#coneys-implementation)).
 - `InitLevel` far enough to load `level100.lev`, its world and its dependency list.
@@ -829,9 +845,10 @@ What the implementer still needs:
 
 - **Mode 6 at boot** (answered for an unformatted card: no dialog, see [the flow](#mode-flow)): still open with no
   card, a formatted card without a save and a card with a save.
-- **Rumble mode** (answered for the entry and the way to the arena, [QUICK RUMBLE](#quick-rumble)): the screens
-  of mode 0x11 themselves (which of the 23 values each sets, and their meaning) are open, and the chain wants a
-  runtime check.
+- **Rumble mode** (answered for the entry, the way to the arena, the screens and the 23 values,
+  [The Rumble set-up](#rumble-setup)): where the mode list and the gang records live (so Coney can read the entries'
+  names and values from the executable rather than list them), what WAR PARTY's entry writes, and whether the "vs"
+  title belongs to the menu or to the arena's `ShowRumbleModeIntro`.
 - **Global string ids** (answered for the front end: `GSTRING.HUD` entries are set with explicit indices, so the
   disassembly gives each id's text; the texts are quoted above). Originally: the text behind `0x76`, `0x78`, `0x79`,
   `0x8a`, `0x1f` and the memory-card ids needs a

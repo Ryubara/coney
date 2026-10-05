@@ -55,6 +55,7 @@ add_library(coney_core STATIC
     gui/profile_management_gui/pm_greet.cpp
     gui/profile_management_gui/pm_mode.cpp
     gui/profile_management_gui/pm_placeholder.cpp
+    gui/rumble_mode_gui/rumble_menu.cpp
     gui/screen_flow_controller.cpp
     gui/text_layout.cpp
     gui/text_widget.cpp

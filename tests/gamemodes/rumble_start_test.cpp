@@ -32,6 +32,7 @@
 #include "gamemodes/rumble_menu_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
+#include "gui/rumble_mode_gui/rumble_menu.h"
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
@@ -155,16 +156,20 @@ constexpr std::string_view kQuickRumble = "200 tap start\n212 stick left 0 70\n2
 
 TEST_CASE("quick rumble: the Rumble menu starts the arena and the start callback teleports player 1 onto its flag",
           "[rumble_start]") {
-    RumbleRun run(std::string(kQuickRumble) + "240 tap cross\n");
+    // Cross on each of the four screens, keeping each screen's first entry.
+    RumbleRun run(std::string(kQuickRumble) + "240 tap cross\n250 tap cross\n260 tap cross\n270 tap cross\n");
     run.frames(230);
-    // The profile manager's quick rumble callback opened mode 0x11 over it, with the placeholder's set-up.
+    // The profile manager's quick rumble callback opened mode 0x11 over it, at its Game Mode screen.
     REQUIRE(run.stack.topId() == coney::RumbleMenuMode::kId);
     CHECK(run.flow->rumbleMenu().fromFrontEnd());
-    CHECK(run.flow->state().rumble.levelNumber == coney::kDefaultRumbleArena);
+    CHECK(run.flow->rumbleMenu().menu().screen() == coney::gui::RumbleScreen::GameMode);
 
-    // Cross: the menu leaves calling Menu.startRumbleMode(102), the profile manager goes too, and the level flow
-    // starts level102, whose start callback places P11 on the flag with the flag's heading.
-    run.frames(20);
+    // The screens write the default set-up; the area's cross leaves calling Menu.startRumbleMode(102), the profile
+    // manager goes too, and the level flow starts level102, whose start callback places P11 on the flag with the
+    // flag's heading.
+    run.frames(50);
+    CHECK(run.flow->state().rumble.values == coney::defaultRumbleSetup().values);
+    CHECK(run.flow->state().rumble.levelNumber == coney::kDefaultRumbleArena);
     CHECK(run.flow->rumbleMenu().started());
     CHECK(run.stack.topId() == coney::GameplayMode::kId);
     REQUIRE(run.starts.size() == 1);

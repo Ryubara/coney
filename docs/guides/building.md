@@ -114,9 +114,10 @@ fonts with every English UI string laid out in them (`[text]`); the front end's 
 `level100.lua` and the menu callbacks) run in the script system with no error and no missing binding (`[scripts]`); the
 start-up path from the legal screen to the main menu, through quick rumble and story to the level request and back,
 driven by a scripted pad (`[frontend]`); STORY through the mission-complete mode to Rembrandt standing at level99's
-start under the pad, QUICK RUMBLE through the Rumble menu to Cleon on the Fight Pen's flag under the pad, the level
-scripts' player starts and models for a few checkpoints, the hub's and two arenas' flag starts, and the game's random
-table read from the executable (`[story]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7
+start under the pad, QUICK RUMBLE through the Rumble menu's four screens to a Baseball Fury on the Fight Pen's flag
+under the pad, the level scripts' player starts and models for a few checkpoints, the hub's and two arenas' flag starts,
+the hub's chat events run for 20 seconds without a script error, and the game's random table read from the executable
+(`[story]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7
 seconds); every Character List record with its model, textures, character data and clips, skinned (`[characters]`);
 Rembrandt's Anim Range List with a damage for every attack and the grab and tackle ranges, and Rembrandt in the
 sandbox's fight yard doing a combo, a grab with a strike, spins and a throw, a tackle and a mugging on a passive target
@@ -235,12 +236,17 @@ In a script, with STORY selected first:
 Level99 is up by frame 270; the last line walks Rembrandt forward at 35 % of the stick's travel.
 
 **QUICK RUMBLE** follows the original's path too: the menu's scripts call `ShowRumbleModeInterface`, which opens the
-Rumble menu (mode 0x11). Its screens (gang, arena, rules) are not written yet: a placeholder shows a default set-up,
-Cleon against one Rogue in the Fight Pen (`level102`), and logs `rumble menu: placeholder screens`. Cross starts it,
-triangle or circle goes back. Starting calls the scripts' `Menu.startRumbleMode`, whose level request loads the arena;
-the arena's script reads the set-up (`GetRumbleModeData`), and its start callback creates player 1 and teleports him to
-his gang's first flag, where you control him. The Rumble's other fighters are created by the script but not drawn yet.
-In a script, from the title screen (the stick up most of the way wraps the main menu round to QUICK RUMBLE):
+Rumble menu (mode 0x11) and its four screens, as a fresh boot offers them: **Game Mode** (1 ON 1 or WAR PARTY),
+**Game Type** (one player against the computer, or versus or co-op with a second pad), **Choose Gangs** (the BASEBALL
+FURIES against the ORPHANS, the only pairing known so far) and **Choose Area** (the Fight Pen, `level102`). Up and down
+(d-pad or left stick) pick an entry, cross confirms it and moves on, triangle or circle goes back a screen (out of the
+menu from the first); each change of screen is logged (`rumble menu: Game Type`). The layout is Coney's: the screen's
+name and its entries in white and grey on black. Confirming the arena calls the scripts' `Menu.startRumbleMode`, whose
+level request loads the arena; the arena's script reads the set-up (`GetRumbleModeData`, `GetRumbleModeGangName`), and
+its start callback creates player 1, the Furies' first fighter, and teleports him to his gang's first flag, where you
+control him. The Rumble's other fighters are created by the script but not drawn yet. In a script, from the title
+screen (the stick up most of the way wraps the main menu round to QUICK RUMBLE, then cross on each of the four
+screens):
 
 ```text
 200 tap start
@@ -248,7 +254,10 @@ In a script, from the title screen (the stick up most of the way wraps the main 
 214 stick left 0 0
 225 tap cross
 280 tap cross
-330 stick left 40 70
+290 tap cross
+300 tap cross
+310 tap cross
+360 stick left 40 70
 ```
 
 `--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a

@@ -218,6 +218,20 @@ NativeFunction makeGetRumbleModeData(const BindingContext& context) {
     };
 }
 
+// `GetRumbleModeGangName(side)`: the name of the gang Rumble side 1 chose, or side 2's for any other side; empty until
+// the gang screen is confirmed.
+// @orig 0x0036bac0 GetRumbleModeGangName (unknown)
+// @orig 0x001f26a8 RumbleMode_GetGangName (unknown)
+// @orig 0x001fe048 RumbleMode_GetGang1Name (unknown)
+// @orig 0x001fe0c8 RumbleMode_GetGang2Name (unknown)
+NativeFunction makeGetRumbleModeGangName(const BindingContext& context) {
+    return [state = context.state](std::span<const Value> args) -> binding::Results {
+        // The side is read as an unsigned integer: 1 is the first side, anything else the second.
+        const bool first = std::trunc(binding::number(args, 0)) == 1.0;
+        return std::vector<Value>{Value(state->rumble.gangNames[first ? 0 : 1])};
+    };
+}
+
 } // namespace
 
 void addLevelBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
@@ -231,6 +245,7 @@ void addLevelBindings(LuaVm& vm, const BindingContext& context, std::function<do
     vm.registerFunction("SetLUASaveDataFloat", makeSetLuaSaveDataFloat(context));
     vm.registerFunction("SetStartGameCallback", makeSetStartGameCallback(context));
     vm.registerFunction("GetRumbleModeData", makeGetRumbleModeData(context));
+    vm.registerFunction("GetRumbleModeGangName", makeGetRumbleModeGangName(context));
 }
 
 } // namespace coney::script

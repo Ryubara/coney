@@ -4,6 +4,7 @@
 #include <array>
 #include <charconv>
 #include <cstddef>
+#include <expected>
 #include <format>
 #include <system_error>
 #include <utility>
@@ -12,6 +13,7 @@
 #include "core/pad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/profile_manager_mode.h"
+#include "gui/text_layout.h"
 #include "scripting/lua_value.h"
 
 namespace coney {
@@ -21,10 +23,6 @@ namespace {
 // The Rumble arenas' level numbers (docs/references/levels.md).
 constexpr int kFirstArena = 101;
 constexpr int kLastArena = 137;
-// Where in the 23 values the placeholder writes (0-based): the gang size, and each gang's first character type.
-constexpr std::size_t kGangSizeValue = 2;
-constexpr std::size_t kGang1Types = 5;
-constexpr std::size_t kGang2Types = 14;
 
 // The level number of `level` (`level102` gives 102); nothing for a name of another shape.
 std::optional<int> levelNumberOf(std::string_view level) {
@@ -43,21 +41,7 @@ std::optional<int> levelNumberOf(std::string_view level) {
 
 } // namespace
 
-RumbleSetup defaultRumbleSetup() {
-    // **Coney's choice**, with the values' places as the arena scripts' ParseLuaData was seen to read them when run in
-    // Coney (an observation of the game's scripts in Coney's VM, not research): 1 the game mode, 2 the game type (0,
-    // the brawl), 3 the gang size, 4 and 5 the two gangs' packs, 6-14 gang 1's character types (the first is player
-    // 1's), 15-23 gang 2's. One Warrior against one Rogue: Cleon (type 1) and the Rogues' leader (type 80).
-    constexpr std::uint16_t kGangSize = 1;
-    constexpr std::uint16_t kPlayerType = 1;
-    constexpr std::uint16_t kRivalType = 80;
-    RumbleSetup setup;
-    setup.values.at(kGangSizeValue) = kGangSize;
-    setup.values.at(kGang1Types) = kPlayerType;
-    setup.values.at(kGang2Types) = kRivalType;
-    setup.levelNumber = kDefaultRumbleArena;
-    return setup;
-}
+RumbleSetup defaultRumbleSetup() { return gui::rumbleMenuDefaults(); }
 
 std::optional<RumbleSetup> rumbleSetupForLevel(std::string_view level) {
     const std::optional<int> number = levelNumberOf(level);
@@ -69,9 +53,19 @@ std::optional<RumbleSetup> rumbleSetupForLevel(std::string_view level) {
     return setup;
 }
 
-RumbleMenuMode::RumbleMenuMode(graphics::RenderDevice& device, GameModeStack& stack, script::ScriptSystem& scripts,
-                               GameState& state, std::function<void(std::string_view)> log)
-    : m_device(device), m_stack(stack), m_scripts(scripts), m_state(state), m_log(std::move(log)) {}
+RumbleMenuMode::RumbleMenuMode(graphics::RenderDevice& device, SheetLoader loadSheet, GameModeStack& stack,
+                               script::ScriptSystem& scripts, GameState& state,
+                               std::function<void(std::string_view)> log)
+    : m_device(device), m_loadSheet(std::move(loadSheet)), m_stack(stack), m_scripts(scripts), m_state(state),
+      m_log(std::move(log)) {
+    m_canvas.fonts = [this](int slot) -> const graphics::Font* {
+        if (slot == gui::kBigFontSlot && m_bigFont) {
+            return &*m_bigFont;
+        }
+        return m_textFont ? &*m_textFont : nullptr;
+    };
+    m_canvas.textBatch = [this](int slot) { return textBatch(slot); };
+}
 
 void RumbleMenuMode::show(std::string onCancel, std::string onStart, bool fromFrontEnd) {
     m_onCancel = std::move(onCancel);
@@ -85,40 +79,63 @@ void RumbleMenuMode::show(std::string onCancel, std::string onStart, bool fromFr
 void RumbleMenuMode::enter() {
     m_started = false;
     m_cancelled = false;
-    m_state.rumble = defaultRumbleSetup();
-    m_log(std::format("rumble menu: placeholder screens; level{} with the default set-up (cross starts, triangle or "
-                      "circle cancels)\n",
-                      m_state.rumble.levelNumber));
+    if (std::optional<graphics::Font> font = loadFont(gui::kTextFontSheet)) {
+        m_textBatch.emplace(font->sheet(), kTextCapacity, kTextDepth);
+        m_textFont = std::move(font);
+    }
+    if (std::optional<graphics::Font> font = loadFont(gui::kBigFontSheet)) {
+        m_bigBatch.emplace(font->sheet(), kTextCapacity, kTextDepth);
+        m_bigFont = std::move(font);
+    }
+    m_lastScreen = {};
+    m_startPending = true;
 }
 
 ModeResult RumbleMenuMode::update(GameModeStack& stack, const FrameTime& frame) {
-    // The scripts' frame, as every front-end mode runs it.
+    // The scripts' and the menu's time, as every front-end mode keeps it; the sprites of the step before are drawn.
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
+    m_pass.empty();
+
+    // The menu starts here rather than in enter(), which has no frame: its focus is timed from this one.
+    if (m_startPending) {
+        m_startPending = false;
+        m_menu.start(nowMs);
+    }
+
+    // One frame of the screens, read from the HUD player's pad (port 1); a confirm writes the set-up.
+    const gui::GuiFrame guiFrame{nowMs, &stack.pads().port(0)};
+    const gui::RumbleMenuResult result = m_menu.update(guiFrame, stack.pads().connectedCount(), m_state.rumble);
+    m_menu.render(m_canvas);
+    for (std::optional<graphics::SpriteBatch>* batch : {&m_textBatch, &m_bigBatch}) {
+        if (*batch) {
+            m_pass.queue(**batch);
+        }
+    }
+    if (const std::string_view screen = m_menu.screenName(); screen != m_lastScreen) {
+        m_lastScreen = screen;
+        m_log(std::format("rumble menu: {}\n", screen));
+    }
     m_scripts.update(nowMs, frame.seconds);
 
-    // The placeholder's two commands, on release as a menu takes them.
-    const Pad& pad = stack.pads().port(0);
-    if (pad.released(pad::kCross)) {
-        m_started = true;
-    } else if (pad.released(pad::kTriangle) || pad.released(pad::kCircle)) {
-        m_cancelled = true;
-    }
+    m_started = result == gui::RumbleMenuResult::Started;
+    m_cancelled = result == gui::RumbleMenuResult::Cancelled;
     if (!m_started && !m_cancelled) {
         return ModeResult::Stay;
     }
 
     // Leave (exit() calls the callback), and for a fight close the menus below, so the level flow starts the arena.
-    const bool started = m_started;
     stack.pop();
-    if (started && stack.topId() == ProfileManagerMode::kId) {
+    if (m_started && stack.topId() == ProfileManagerMode::kId) {
         stack.pop();
     }
     return ModeResult::Stay;
 }
 
 void RumbleMenuMode::render(const RenderTime& /*time*/) {
+    // No front-end world yet: the screen's text on black.
     m_device.beginFrame(graphics::kBlack);
+    m_pass.draw(m_device, m_camera);
     m_device.present();
 }
 
@@ -127,10 +144,35 @@ void RumbleMenuMode::exit() {
         m_log("rumble menu: cancelled\n");
         m_scripts.call(m_onCancel);
     } else if (m_started) {
-        m_log(std::format("rumble menu: start level{}\n", m_state.rumble.levelNumber));
+        m_log(std::format("rumble menu: start level{} ({} vs {})\n", m_state.rumble.levelNumber,
+                          m_state.rumble.gangNames[0], m_state.rumble.gangNames[1]));
         const std::array<script::Value, 1> args{script::Value(static_cast<double>(m_state.rumble.levelNumber))};
         m_scripts.call(m_onStart, args);
     }
+    // The queue points at the batches released below.
+    m_pass.empty();
+    m_textBatch.reset();
+    m_bigBatch.reset();
+    m_textFont.reset();
+    m_bigFont.reset();
+}
+
+std::optional<graphics::Font> RumbleMenuMode::loadFont(std::string_view name) {
+    auto sheet = m_loadSheet(name);
+    auto font = sheet ? graphics::Font::fromSheet(std::move(*sheet))
+                      : std::expected<graphics::Font, Error>(std::unexpected(std::move(sheet.error())));
+    if (!font) {
+        m_log(std::format("rumble menu: {}: {}\n", name, font.error().message));
+        return std::nullopt;
+    }
+    return std::move(*font);
+}
+
+graphics::SpriteBatch* RumbleMenuMode::textBatch(int slot) {
+    if (slot == gui::kBigFontSlot && m_bigBatch) {
+        return &*m_bigBatch;
+    }
+    return m_textBatch ? &*m_textBatch : nullptr;
 }
 
 } // namespace coney

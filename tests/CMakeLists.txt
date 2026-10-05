@@ -43,6 +43,7 @@ add_executable(coney_tests
     gui/markup_test.cpp
     gui/menu_input_test.cpp
     gui/profile_management_gui/pm_controller_test.cpp
+    gui/rumble_mode_gui/rumble_menu_test.cpp
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp

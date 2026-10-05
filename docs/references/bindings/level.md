@@ -616,7 +616,7 @@ FURIES"; empty until the gangs are confirmed (confirmed (runtime)).
 - **Evidence:** confirmed (code) at `0x001f26a8`; detail: brief
 - **Wrapper** `0x0036bac0` (registered by `RegisterBindings`); **calls** `0x001f26a8`
 - **Used by** 33 of 467 script chunks (66 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GiveMoney {#givemoney}
 

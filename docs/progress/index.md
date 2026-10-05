@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 3.7%](https://img.shields.io/badge/reimplemented-3.7%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 3.8%](https://img.shields.io/badge/reimplemented-3.8%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▊░░░░░░░░░░░░░░░░░░░` | 3.7% of the game's own code (122,732 of 3,342,936 bytes, 329 functions) |
+| **Reimplemented** | `▊░░░░░░░░░░░░░░░░░░░` | 3.8% of the game's own code (125,484 of 3,342,936 bytes, 339 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -60,13 +60,13 @@ at the top of the repository's `README.md`.
 | `FileIO` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 3 | 6,480 |
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
-| `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 32 | 481,192 |
+| `GUI` | `▉░░░░░░░░░░░░░░░░░░░` | 4.1% | 41 | 481,192 |
 | `Human` | `▌░░░░░░░░░░░░░░░░░░░` | 2.4% | 43 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `███▋░░░░░░░░░░░░░░░░` | 18.2% | 46 | 197,192 |
+| `Scripting` | `███▋░░░░░░░░░░░░░░░░` | 18.2% | 47 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -237,7 +237,16 @@ at the top of the repository's `README.md`.
 | `0x001d4230` | `OptionGrid_AddItem` | `GUI` | 440 |
 | `0x001d4d28` | `OptionGrid_TakeFocus` | `GUI` | 144 |
 | `0x001e95c0` | `MenuInput_Dispatch` | `GUI` | 1,080 |
+| `0x001ebb90` | `RumbleGUI_Area_Confirm` | `GUI` | 128 |
+| `0x001ef7c0` | `RumbleGUI_Gangs_Confirm` | `GUI` | 1,480 |
+| `0x001f26a8` | `RumbleMode_GetGangName` | `GUI` | 56 |
 | `0x001f26e0` | `RumbleMode_GetData` | `GUI` | 64 |
+| `0x001f8d80` | `RumbleGUI_ModeList_Confirm` | `GUI` | 376 |
+| `0x001fd1c8` | `RumbleGUI_GameType_Confirm` | `GUI` | 416 |
+| `0x001fe048` | `RumbleMode_GetGang1Name` | `GUI` | 24 |
+| `0x001fe070` | `RumbleMode_SetGang1Name` | `GUI` | 88 |
+| `0x001fe0c8` | `RumbleMode_GetGang2Name` | `GUI` | 16 |
+| `0x001fe0d8` | `RumbleMode_SetGang2Name` | `GUI` | 88 |
 | `0x002040f0` | `PM_Controller::PM_Controller` | `GUI` | 2,400 |
 | `0x00204a78` | `PM_Controller_Start` | `GUI` | 296 |
 | `0x00204ba0` | `PM_Controller_Update` | `GUI` | 128 |
@@ -364,6 +373,7 @@ at the top of the repository's `README.md`.
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
 | `0x0036b9f0` | `GetRumbleModeData` | `Scripting` | 208 |
+| `0x0036bac0` | `GetRumbleModeGangName` | `Scripting` | 80 |
 | `0x0036bb10` | `CfgSetDatabaseSizes` | `Scripting` | 424 |
 | `0x0036ca18` | `GetPosition` | `Scripting` | 112 |
 | `0x0036cdc0` | `TeleportToFlag` | `Scripting` | 152 |

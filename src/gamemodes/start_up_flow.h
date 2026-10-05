@@ -31,7 +31,7 @@ namespace coney {
 /// It is also what the script bindings reach outside the script system (script::BindingHost): `ShowProfileManager`
 /// shows the menus, `MenuLoadLevel` chooses a level in the level flow, `HUDLaunchMissionComplete` pushes the
 /// mission-complete mode, `HuCreate` and `AddFlag` keep the level scripts' humans and flags, `ScreenQueueEffect` starts
-/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11, placeholder screens), and music and movies go
+/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11), and music and movies go
 /// to FrontEndServices.
 ///
 /// Research: docs/research/boot.md#main, docs/research/frontend.md#mode-flow, docs/research/scripting.md

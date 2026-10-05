@@ -126,6 +126,7 @@
     The display name the gang screen copied (at most 32 bytes) to `0x0063eef0` or `0x0063ef10`, such as "BASEBALL
     FURIES"; empty until the gangs are confirmed (confirmed (runtime)).
   usage: {chunks: 33, calls: 66, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: SetGameMode
   wrapper: 0x0036c2b0

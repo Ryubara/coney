@@ -166,12 +166,32 @@ TEST_CASE("doFile runs name.lua; ScheduleFunc and FlushScheduledFuncs use the sc
     CHECK(h.sourced == std::vector<std::string>{"config_strings_en.lua"});
     h.scripts.setTime(1000);
     h.call("ScheduleFunc", {str("Menu.launchRMI"), Value(500.0)});
-    h.call("ScheduleFuncArg1", {str("Menu.other"), Value(100.0), Value(3.0)});
+    h.call("ScheduleFuncArg1", {str("Menu.other"), Value(3.0), Value(100.0)});
     CHECK(h.scripts.scheduled() == 2);
     h.call("FlushScheduledFuncs", {str("Menu.other")});
     CHECK(h.scripts.scheduled() == 1);
     h.call("FlushScheduledFuncs");
     CHECK(h.scripts.scheduled() == 0);
+}
+
+// level95's chat events: ScheduleFuncArg1("events.ChatEvent", events.NumEvents, 5000 + random(1, 5000)).
+TEST_CASE("ScheduleFuncArg1 takes the number before the delay", "[script_bindings]") {
+    Harness h;
+    std::vector<double> calls;
+    h.scripts.vm().registerFunction("ChatEvent",
+                                    [&calls](std::span<const Value> args) -> std::expected<std::vector<Value>, Error> {
+                                        calls.push_back(args.empty() ? -1.0 : args[0].number().value_or(-1.0));
+                                        return std::vector<Value>{};
+                                    });
+    h.scripts.setTime(1000);
+    h.call("ScheduleFuncArg1", {str("ChatEvent"), Value(2.0), Value(5001.0)});
+    // Not due after 2 ms (the old, swapped reading's delay), due after 5001 ms, with the number 2.
+    h.scripts.update(1002, 0.002);
+    CHECK(calls.empty());
+    h.scripts.update(6000, 1.0);
+    CHECK(calls.empty());
+    h.scripts.update(6001, 0.001);
+    CHECK(calls == std::vector<double>{2.0});
 }
 
 TEST_CASE("the front-end bindings reach the host", "[script_bindings]") {

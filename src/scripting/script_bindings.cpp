@@ -154,12 +154,13 @@ NativeFunction makeScheduleFunc(const Factory& factory) {
     };
 }
 
-// `ScheduleFuncArg1(name, ms, n)`: the same with one number argument.
+// `ScheduleFuncArg1(name, n, ms)`: the same with one number argument, which comes before the delay; level95's
+// `events.ChatEvent` relies on this order (docs/research/scripting.md#errors-in-a-fresh-state).
 // @orig 0x00386410 ScheduleFuncArg1 (unknown)
 NativeFunction makeScheduleFuncArg1(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
-        const std::array<double, 1> callArgs{binding::number(args, 2)};
-        scripts->schedule(binding::string(args, 0), static_cast<std::uint64_t>(std::max(0.0, binding::number(args, 1))),
+        const std::array<double, 1> callArgs{binding::number(args, 1)};
+        scripts->schedule(binding::string(args, 0), static_cast<std::uint64_t>(std::max(0.0, binding::number(args, 2))),
                           callArgs);
         return binding::none();
     };
@@ -448,6 +449,7 @@ constexpr std::array kBindings{
     real("SetLUASaveDataFloat"),
     real("SetStartGameCallback"),
     real("GetRumbleModeData"),
+    real("GetRumbleModeGangName"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     routed("SoundPlayMusicTrack"),

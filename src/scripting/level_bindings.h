@@ -14,12 +14,18 @@ namespace coney::script {
 /// `GetFlagPos`, `TeleportToFlag` and the pool `CfgSetDatabaseSizes` sizes), where an object is (`GetPosition`), the
 /// saved script numbers
 /// (`GetLUASaveDataFloat`, `SetLUASaveDataFloat`), the start callback `InitLevel` calls (`SetStartGameCallback`) and
-/// the Rumble menu's set-up (`GetRumbleModeData`). All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 10> kLevelBindings{
-    "AddFlag",           "CfgSetDatabaseSizes", "FindFlag",
-    "GetFlagPos",        "GetLUASaveDataFloat", "GetPosition",
-    "GetRumbleModeData", "SetLUASaveDataFloat", "SetStartGameCallback",
-    "TeleportToFlag"};
+/// the Rumble menu's set-up (`GetRumbleModeData`, `GetRumbleModeGangName`). All real; installBindings() registers them.
+inline constexpr std::array<std::string_view, 11> kLevelBindings{"AddFlag",
+                                                                 "CfgSetDatabaseSizes",
+                                                                 "FindFlag",
+                                                                 "GetFlagPos",
+                                                                 "GetLUASaveDataFloat",
+                                                                 "GetPosition",
+                                                                 "GetRumbleModeData",
+                                                                 "GetRumbleModeGangName",
+                                                                 "SetLUASaveDataFloat",
+                                                                 "SetStartGameCallback",
+                                                                 "TeleportToFlag"};
 
 /// Registers kLevelBindings in `vm`, working on `context` (its state, flags, humans and recorded calls; flags and
 /// humans may be null, which keeps none). `nextHandle` gives each new flag its handle, from the counter the other world

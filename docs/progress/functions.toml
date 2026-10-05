@@ -801,10 +801,64 @@ subsystem = "GUI"
 size = 1080
 
 [[function]]
+address = 0x001ebb90
+name = "RumbleGUI_Area_Confirm"
+subsystem = "GUI"
+size = 128
+
+[[function]]
+address = 0x001ef7c0
+name = "RumbleGUI_Gangs_Confirm"
+subsystem = "GUI"
+size = 1480
+
+[[function]]
+address = 0x001f26a8
+name = "RumbleMode_GetGangName"
+subsystem = "GUI"
+size = 56
+
+[[function]]
 address = 0x001f26e0
 name = "RumbleMode_GetData"
 subsystem = "GUI"
 size = 64
+
+[[function]]
+address = 0x001f8d80
+name = "RumbleGUI_ModeList_Confirm"
+subsystem = "GUI"
+size = 376
+
+[[function]]
+address = 0x001fd1c8
+name = "RumbleGUI_GameType_Confirm"
+subsystem = "GUI"
+size = 416
+
+[[function]]
+address = 0x001fe048
+name = "RumbleMode_GetGang1Name"
+subsystem = "GUI"
+size = 24
+
+[[function]]
+address = 0x001fe070
+name = "RumbleMode_SetGang1Name"
+subsystem = "GUI"
+size = 88
+
+[[function]]
+address = 0x001fe0c8
+name = "RumbleMode_GetGang2Name"
+subsystem = "GUI"
+size = 16
+
+[[function]]
+address = 0x001fe0d8
+name = "RumbleMode_SetGang2Name"
+subsystem = "GUI"
+size = 88
 
 [[function]]
 address = 0x002040f0
@@ -1473,6 +1527,12 @@ address = 0x0036b9f0
 name = "GetRumbleModeData"
 subsystem = "Scripting"
 size = 208
+
+[[function]]
+address = 0x0036bac0
+name = "GetRumbleModeGangName"
+subsystem = "Scripting"
+size = 80
 
 [[function]]
 address = 0x0036bb10

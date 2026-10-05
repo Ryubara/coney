@@ -13,13 +13,27 @@
 namespace coney {
 
 /// The Rumble mode's set-up as the Rumble menu (mode 0x11) leaves it for the arena: the 23 16-bit values
-/// `GetRumbleModeData` copies into the arena script's table, and the arena's level number
-/// (docs/research/frontend.md#quick-rumble).
+/// `GetRumbleModeData` copies into the arena script's table, the two gangs' names `GetRumbleModeGangName` returns, and
+/// the arena's level number (docs/research/frontend.md#rumble-setup).
 struct RumbleSetup {
     /// Values `GetRumbleModeData` copies.
     static constexpr std::size_t kValues = 23;
-    std::array<std::uint16_t, kValues> values{}; ///< `0x0063eec0`: game type, gangs, options (meanings not traced).
-    int levelNumber = 0;                         ///< `0x0050f4e8`: the chosen arena's level number (`+0x04`).
+    /// The longest gang name kept: the menu copies at most 32 bytes.
+    static constexpr std::size_t kGangNameLength = 32;
+    /// Where each value lives (the C index; the arena script reads index + 1).
+    static constexpr std::size_t kGameMode = 0;    ///< 3 one player against the computer, 2 versus, 1 co-op.
+    static constexpr std::size_t kGameType = 1;    ///< The mode's `RM_*` number (12 is "1 ON 1").
+    static constexpr std::size_t kGangSize = 2;    ///< Fighters per side.
+    static constexpr std::size_t kGang1Pak = 3;    ///< Side 1's gang pack - 1.
+    static constexpr std::size_t kGang2Pak = 4;    ///< Side 2's gang pack - 1.
+    static constexpr std::size_t kGang1Types = 5;  ///< Side 1's nine character types start here.
+    static constexpr std::size_t kGang2Types = 14; ///< Side 2's nine character types start here.
+    static constexpr std::size_t kGangMembers = 9; ///< Character types per side.
+
+    std::array<std::uint16_t, kValues> values{}; ///< `0x0063eec0`: players, mode, gang size, gangs, their types.
+    /// `0x0063eef0` and `0x0063ef10`: side 1's and side 2's gang names; empty until the gangs are confirmed.
+    std::array<std::string, 2> gangNames;
+    int levelNumber = 0; ///< `0x0050f4e8`: the chosen arena's level number (`+0x04`).
 };
 
 /// The part of the game state (`W_GameState`, 0x57c0 bytes in the original) that the front end and its scripts use:

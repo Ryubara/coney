@@ -67,7 +67,7 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
 
     // START on frame 200, well after PM_Greet is up (frame 152) and Menu.onStart's 1.5 s fade in is over. Then the
     // stick pushed up most of the way (wrapping to quick rumble) and cross; triangle backs out of the Rumble menu's
-    // placeholder; once the menu has faded back in, the stick down a little past half (wrapping to story), cross, and
+    // first screen; once the menu has faded back in, the stick down a little past half (wrapping to story), cross, and
     // cross again on the PM_Profile stand-in.
     auto script = coney::parseInputScript("200 tap start\n"
                                           "212 stick left 0 70\n"
@@ -119,7 +119,7 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
     // Menu.cancelRumbleMode fades back in.
     run(100);
     CHECK(logged("script: Menu.fadeToRMI"));
-    CHECK(logged("rumble menu: placeholder screens"));
+    CHECK(logged("rumble menu: Game Mode"));
     CHECK(logged("rumble menu: cancelled"));
     CHECK(flow.rumbleMenu().cancelled());
     CHECK(menus.controller().currentName() == "PM_Mode");

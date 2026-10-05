@@ -451,13 +451,14 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   `ShowProfileManager`, `MenuLoadLevel`, `ScreenQueueEffect`, `HUDLaunchMissionComplete`, `GetGameTime`, `HuCreate`,
   which keeps the humans a level script makes, [Level loading](level-loading.md#coneys-implementation), and the level
   bindings of `src/scripting/level_bindings.h`: the flags, `GetPosition`, the saved script numbers,
-  `SetStartGameCallback`, `GetRumbleModeData` and `CfgSetDatabaseSizes`, [World flags](flags.md#coneys-implementation)),
+  `SetStartGameCallback`, `GetRumbleModeData`, `GetRumbleModeGangName` and `CfgSetDatabaseSizes`,
+  [World flags](flags.md#coneys-implementation)),
   **routed** (handed to a
   Coney stand-in that logs it: `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`) or a **stub** (returns
   its documented default: nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn`, `CameraCreateLocked` and
   `GangCreate`, 0 for `GangGetHeadCount` and `InvNumberOf`,
   false for `SceneIsPreloaded` and `UM_IsTypeDirty`). The configuration stubs (the `Cfg*` bindings, `CfgObj`, sound, unlockables
-  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 40 real, 5 routed and 111
+  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 41 real, 5 routed and 111
   stubs (72 of them recording): every binding the front-end path calls, and what the level scripts need for their
   starts.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
@@ -488,6 +489,9 @@ Coney's choices, where the page is silent or Coney differs:
   (`...; last skipped call HuTagPattern`).
 - `GetLUASaveDataFloat` and `SetLUASaveDataFloat` outside slots 1 to 8 read 0 and write nothing (the original does not
   check).
+- `ScheduleFuncArg1(name, n, ms)` takes the number before the delay, as the original does; the hub's chat events
+  (`events.ChatEvent`) run without errors since (`coney_tests "[disc][story]"` runs `level95` for 20 seconds of
+  script frames).
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][scripts]"` with `CONEY_DISC` set runs the four
 preloads, `global.lua`, `level100.lua`, `Menu.onStart` and the menu callbacks (`fadeToRMI`, `launchRMI`,

@@ -3,9 +3,10 @@
 // Checks against the player's own disc: (1) the level scripts, run alone as `--play-level` runs them, put player 1
 // where the research says for a few known checkpoints (values written below, from docs/references/level-starts.md),
 // as the character his type names, the hub's Warchief and the Rumble arenas' player on their flags; (2) STORY from the
-// main menu reaches Rembrandt standing at level99's checkpoint 1 under the pad's control, and QUICK RUMBLE reaches
-// Cleon standing on the Fight Pen's flag, headless, through the original's modes with the game's own scripts; (3) the
-// game's random table is read from the disc's executable. They run only when the environment variable CONEY_DISC
+// main menu reaches Rembrandt standing at level99's checkpoint 1 under the pad's control, and QUICK RUMBLE, through
+// the Rumble menu's four screens, reaches a Baseball Fury standing on the Fight Pen's flag, headless, through the
+// original's modes with the game's own scripts; (3) the hub's chat events run without a script error; (4) the game's
+// random table is read from the disc's executable. They run only when the environment variable CONEY_DISC
 // names the disc and skip otherwise; they print counts and positions only (LEGAL.md).
 
 #include <algorithm>
@@ -45,7 +46,14 @@
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 #include "scripting/config_strings.h"
+#include "scripting/lua_value.h"
+#include "scripting/lua_vm.h"
+#include "scripting/script_bindings.h"
+#include "scripting/script_system.h"
+#include "warriors/created_humans.h"
+#include "warriors/game_state.h"
 #include "world/sector_budget.h"
+#include "world_objects/flags.h"
 
 namespace {
 
@@ -61,6 +69,19 @@ std::optional<coney::io::Wad> openDisc() {
     REQUIRE(wad.has_value());
     return wad ? std::optional<coney::io::Wad>(std::move(*wad)) : std::nullopt;
 }
+
+// A binding host that ignores the menus' requests: the hub run below has no front end.
+class QuietHost final : public coney::script::BindingHost {
+  public:
+    void showProfileManager(std::string_view /*onRumble*/, std::string_view /*onStartGame*/) override {}
+    void showRumbleModeInterface(std::string_view /*onCancel*/, std::string_view /*onStart*/,
+                                 double /*players*/) override {}
+    void menuLoadLevel(std::string_view /*level*/) override {}
+    void playMovie(std::string_view /*name*/) override {}
+    void playMusic(std::string_view /*track*/) override {}
+    void stopMusic() override {}
+    void queueScreenEffect(int /*type*/, double /*seconds*/) override {}
+};
 
 // One start the research lists: the level, the checkpoint, player 1's name, type, model, position and heading.
 struct KnownStart {
@@ -257,7 +278,8 @@ TEST_CASE("the disc's hub and Rumble arenas put player 1 on their flags", "[disc
                 hub.flags, static_cast<unsigned long long>(hub.scriptErrors),
                 static_cast<unsigned long long>(hub.skippedCalls));
 
-    // Two arenas with the Rumble menu's default set-up: P11 made at fP1[1] facing 270, then teleported onto it.
+    // Two arenas with the Rumble menu's default set-up: P11, the first Baseball Fury (type 91), made at fP1[1] facing
+    // 270, then teleported onto it.
     struct Arena {
         std::string_view level;
         std::array<float, 3> flag;
@@ -273,7 +295,8 @@ TEST_CASE("the disc's hub and Rumble arenas put player 1 on their flags", "[disc
         REQUIRE(run.start.player.has_value());
         const coney::HumanCreation player = run.start.player.value_or(coney::HumanCreation{});
         CHECK(player.name == "P11");
-        CHECK(player.model == "warr_cl");
+        CHECK(player.type == 91);
+        CHECK(player.model == "fury_so1");
         CHECK(player.headingDegrees == 270.0F);
         const coney::world_objects::Placement placed = player.teleported.value_or(coney::world_objects::Placement{});
         CHECK(samePlace(placed.position, arena.flag));
@@ -284,6 +307,52 @@ TEST_CASE("the disc's hub and Rumble arenas put player 1 on their flags", "[disc
                     static_cast<unsigned long long>(run.scriptErrors),
                     static_cast<unsigned long long>(run.skippedCalls));
     }
+}
+
+TEST_CASE("the disc's hub runs its chat events without a script error", "[disc][story]") {
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // The hub's start as runLevelScriptAlone() makes it (the preloads, a fresh state, checkpoint 1, level95), then 20 s
+    // of script frames: each events.SetupConversationEvent schedules events.ChatEvent(n) 5-10 s on with
+    // ScheduleFuncArg1(name, n, ms), and ChatEvent(n) indexes events.ChatTable[n] (docs/research/scripting.md#errors-
+    // in-a-fresh-state). With the number and the delay swapped, ChatTable[5001...] is nil and the call fails.
+    coney::GameState state;
+    coney::gui::GlobalStrings strings;
+    coney::script::RecordedCalls recorded;
+    coney::CreatedHumans humans;
+    coney::world_objects::WorldFlags flags;
+    QuietHost host;
+    const coney::script::BindingContext context{&state, &strings, &host, &recorded, &humans, &flags};
+    coney::script::ScriptSystem scripts(coney::script::wadScriptSource(*wad),
+                                        [&context](coney::script::ScriptSystem& system, coney::script::LuaVm& vm) {
+                                            coney::script::installBindings(system, vm, context);
+                                        },
+                                        {});
+    scripts.create();
+    scripts.runFiles(coney::script::kEnumPreloadScripts);
+    scripts.runFiles(coney::script::kConfigPreloadScripts);
+    scripts.create();
+    state.checkPoint = 1;
+    state.currentLevel = state.levels.find("level95").value_or(0);
+    const coney::LevelStart start = coney::runLevelScript(scripts, state, humans, flags, "level95");
+    CHECK(start.player.has_value());
+
+    // 20 s at the fixed 1/30 s step.
+    constexpr std::uint64_t kSteps = 600;
+    for (std::uint64_t step = 1; step <= kSteps; ++step) {
+        const std::uint64_t nowMs = step * 100 / 3;
+        scripts.setTime(nowMs);
+        scripts.update(nowMs, 1.0 / 30.0);
+    }
+    const coney::script::Value events = scripts.vm().global("events");
+    REQUIRE(events.table() != nullptr);
+    const double chats = events.table() != nullptr ? events.table()->field("NumEvents").number().value_or(0.0) : 0.0;
+    CHECK(chats > 0.0);
+    CHECK(scripts.errors() == 0);
+    std::printf("  level95 after 20 s: %.0f chat events, %llu script errors, %zu scheduled calls\n", chats,
+                static_cast<unsigned long long>(scripts.errors()), scripts.scheduled());
 }
 
 TEST_CASE("the disc's executable holds the game's random table", "[disc][story]") {
@@ -312,7 +381,7 @@ TEST_CASE("the disc's executable holds the game's random table", "[disc][story]"
     std::printf("  random table: %zu entries, %zu distinct\n", words.size(), distinct.size());
 }
 
-TEST_CASE("the disc's QUICK RUMBLE reaches Cleon standing on the Fight Pen's flag under the pad's control",
+TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight Pen's flag under the pad's control",
           "[disc][story]") {
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
@@ -331,15 +400,19 @@ TEST_CASE("the disc's QUICK RUMBLE reaches Cleon standing on the Fight Pen's fla
     coney::gui::GlobalStrings strings;
     coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
 
-    // START, the stick up most of the way (wrapping to QUICK RUMBLE), cross; cross on the Rumble menu's placeholder;
-    // then in the arena the stick at 40 % right and 70 % forward for two seconds, then let go.
+    // START, the stick up most of the way (wrapping to QUICK RUMBLE), cross; cross on each of the Rumble menu's four
+    // screens (1 ON 1, one player, the default gangs, the Fight Pen); then in the arena the stick at 40 % right and
+    // 70 % forward for two seconds, then let go.
     auto script = coney::parseInputScript("200 tap start\n"
                                           "212 stick left 0 70\n"
                                           "214 stick left 0 0\n"
                                           "225 tap cross\n"
                                           "280 tap cross\n"
-                                          "330 stick left 40 70\n"
-                                          "390 stick left 0 0\n");
+                                          "290 tap cross\n"
+                                          "300 tap cross\n"
+                                          "310 tap cross\n"
+                                          "360 stick left 40 70\n"
+                                          "420 stick left 0 0\n");
     REQUIRE(script.has_value());
     coney::ScriptedInput input(std::move(*script));
     coney::GameModeStack stack;
@@ -356,20 +429,22 @@ TEST_CASE("the disc's QUICK RUMBLE reaches Cleon standing on the Fight Pen's fla
     coney::GameTimer timer;
     timer.setFixedStep(true);
 
-    // Through the menus and the Rumble menu into the arena: by frame 320 gameplay is on top with level102 loaded.
-    stack.runUntilEmpty(timer, {}, 320);
+    // Through the menus and the Rumble menu into the arena: by frame 350 gameplay is on top with level102 loaded.
+    stack.runUntilEmpty(timer, {}, 350);
     for (const std::string& line : log) {
         UNSCOPED_INFO(line);
     }
     REQUIRE(stack.topId() == coney::GameplayMode::kId);
     CHECK(flow.rumbleMenu().started());
+    CHECK(flow.state().rumble.values == coney::defaultRumbleSetup().values);
+    CHECK(flow.state().rumble.gangNames[0] == "BASEBALL FURIES");
     const auto* play = dynamic_cast<const coney::platform::PlayLevelMode*>(flow.gameplay().level());
     REQUIRE(play != nullptr);
     if (play == nullptr) {
         return;
     }
     CHECK(play->sceneName() == "level102");
-    CHECK(play->model() == "warr_cl");
+    CHECK(play->model() == "fury_so1");
     // P11 stands on fP1[1], facing its heading (128 degrees), on the ground.
     const coney::anim::Vec3 feet = play->player().human().position();
     CHECK(std::abs(feet.x - -9.1F) < 0.01F);

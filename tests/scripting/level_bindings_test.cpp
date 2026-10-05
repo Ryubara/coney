@@ -193,6 +193,17 @@ TEST_CASE("SetStartGameCallback keeps 31 characters of the name, and GetRumbleMo
     CHECK(data->get(Value(23.0)).number() == 66.0);
 }
 
+TEST_CASE("GetRumbleModeGangName returns side 1's gang for 1 and side 2's for any other side", "[level_bindings]") {
+    Harness h;
+    // Empty until the gang screen is confirmed.
+    CHECK(h.first("GetRumbleModeGangName", {Value(1.0)}).string() == "");
+    h.state.rumble.gangNames = {"BASEBALL FURIES", "ORPHANS"};
+    CHECK(h.first("GetRumbleModeGangName", {Value(1.0)}).string() == "BASEBALL FURIES");
+    CHECK(h.first("GetRumbleModeGangName", {Value(1.5)}).string() == "BASEBALL FURIES");
+    CHECK(h.first("GetRumbleModeGangName", {Value(2.0)}).string() == "ORPHANS");
+    CHECK(h.first("GetRumbleModeGangName", {Value(0.0)}).string() == "ORPHANS");
+}
+
 TEST_CASE("random draws from the game state's generator, shared by every Lua state", "[level_bindings]") {
     Harness h;
     std::vector<std::uint32_t> table(coney::GameRandom::kTableSize, 0);

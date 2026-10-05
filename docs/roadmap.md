@@ -140,9 +140,11 @@ Combat, AI, missions, game modes, the front end and menus, cameras and saving.
   checked by scripted disc tests.
 - Next: the player being hit (his reactions, block and escapes), the character class damage table from the disc,
   and characters that fight back.
-- Done: QUICK RUMBLE from the main menu through a placeholder Rumble menu (mode 0x11, a default set-up) to Cleon under
-  control on his flag in the Fight Pen ([Front end](research/frontend.md#quick-rumble)).
-- Next: the Rumble menu's screens, and the Rumble's other fighters.
+- Done: QUICK RUMBLE from the main menu through the Rumble menu's four screens (mode 0x11: game mode, game type,
+  gangs, arena, with the fresh boot's entries and the original's 23 set-up values) to a Baseball Fury under control on
+  his flag in the Fight Pen ([Front end](research/frontend.md#rumble-setup)).
+- Next: the Rumble menu's other gangs and arenas (once their records are researched), the arena's intro
+  (`ShowRumbleModeIntro`), and the Rumble's other fighters.
 
 ## Debug menu and test levels
 

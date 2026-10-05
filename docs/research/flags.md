@@ -192,9 +192,9 @@ Written from this page, [Scripts](scripting.md#errors-in-a-fresh-state) and
   moves the player there; the play mode starts a teleported player on the flag without snapping him to the ground.
 - **Disc check (NTSC-U, 2026-10-05, positions and counts only):** `coney_tests "[disc][story]"`: at `level95`
   checkpoint 1 the Warchief (type 1, Cleon) is made at `fWchiefStart_1` facing 222 and teleported to
-  `fWchiefStart_5` (-185.2, 112.7, -193.7) facing 182, with 395 flags; with the Rumble menu's default set-up P11 stands
-  on `fP1[1]` of `level102` (-9.1, 8.9, -11.1) facing 128 and of `level103` (-66.4, 23.2, 0.3) facing 95, with no
-  script error; the table is 1,024 entries, all distinct.
+  `fWchiefStart_5` (-185.2, 112.7, -193.7) facing 182, with 395 flags; with the Rumble menu's default set-up P11
+  (type 91, a Baseball Fury) stands on `fP1[1]` of `level102` (-9.1, 8.9, -11.1) facing 128 and of `level103`
+  (-66.4, 23.2, 0.3) facing 95, with no script error; the table is 1,024 entries, all distinct.
 
 Coney's choices, where the page is silent or Coney differs:
 
