@@ -77,17 +77,26 @@ manager, `Cam_Follow.cpp` the follow camera. Names are ours unless a class strin
 | `+0x32c` / `+0x330` | the leash band: default and default + min(0.5, max − min) (also `+0x344` / `+0x348`) | 6 / 6.5 | 3.0 / 3.5 at checkpoint 1; **4.8 / 5.3** in the street, and 3.0 / 3.5 while sprinting ([In the street](#street)) |
 | `+0x320` | handle of a human or object the camera keeps in view | | |
 | `+0x33c` / `+0x340` | the hard band: the leash band widened by max(5%, 0.2 m) and max(6%, 0.35 m) | | |
+| `+0x34c` | the band's wanted near edge: `+0x32c` eases toward it ([Sprint zoom](#sprint-zoom)); −1 for none | | 3.0 while sprinting, else −1 |
+| `+0x36c` | seconds the target has run or sprinted (zeroed when it stops on the ground) | | |
+| `+0x3c8` | a band saved by another zoom (`0x00126558` / `0x00126878`, not the sprint); while it is set the sprint zoom leaves the band alone | 0 | 0 |
+| `+0x3e0` / `+0x3e8` / `+0x3e4` | the sprint zoom's saved band near edge, zoom distance and target pitch (`+0x3e4` −FLT_MAX for none) | | 4.8 / 6.6 / 13° |
+| `+0x448` | sprint zoom state: 0 off, 1 zoomed in, otherwise the game time (ms) at which to zoom back out | 0 | |
+| `+0x45b` / `+0x45d` | set by the collision step when its main ray is blocked (`+0x45b`) or in a second blocked case (`+0x45d`); either stops auto-follow on the next update | 0 | 0 in the open |
+| `+0x466` / `+0x467` / `+0x468` | sprint zoom latched / armed for this sprint / enabled (`CamEnable(5, on)`) | | 0 / 0 / 1 |
+| `+0x474` | auto-centre latch: cleared while the stick points more than 157.5° from up, set again when the target moves | | 1 |
 | `+0x350` | heading target (a direction; −FLT_MAX for none) | | |
 | `+0x354` | pitch override (−FLT_MAX for none) | | |
 | `+0x358` | right-stick yaw rate, rad/s | | |
 | `+0x368` | stick hold timer: 0.334 s after any camera input | | |
 | `+0x380` | recovered distance (eases 10% per update) | | |
 | `+0x388` | position lag: share of the wanted move covered per update | 0.22 | |
+| `+0x398` | scale of the height hold's 30% ease (1 normally; 0.25 after `0x00125888`) | | 1 |
 | `+0x3ac` | an upper pitch limit | 50° | 30° at checkpoint 1; **40°** in the street (band 4.8-5.3) |
 | `+0x3b0` | a lower pitch limit: `atan((1 − offset.z) / max)`, at least −20° | −20° | |
 | `+0x3b8` | right-stick pitch rate, rad/s | | |
 | `+0x400` | zoom distance: minimum, default or maximum | 6.5 | |
-| `+0x40c` | timed-move timer, seconds (heading target, pitch override) | | |
+| `+0x40c` | timed-move timer, seconds (heading target, pitch override, and the sprint zoom's 0.5 s) | | |
 | `+0x434` / `+0x438` | side factors: 1 when clear, toward 0.125 when blocked | | |
 | `+0x444` | number of targets | | |
 | `+0x418` | | 0.06 | |
@@ -126,9 +135,14 @@ stays where it is until the player drags it, and a few separate rules turn it. T
 update runs them. Confirmed (code) at the cited addresses unless marked; angles are given in degrees, the code holds
 radians.
 
-1. **Look-at point** (`+0x180`): the target's position plus the offset `+0x210` (runtime: feet + 1.4 m). The offset
-   itself eases toward its wanted value by 15% per update (`+0x200` toward `+0x210`). In one target state (the flag the
-   update tests is not traced) the look-at height is instead feet + 1.75 − 0.1 = 1.65 m.
+1. **Look-at point** (`+0x180`, `0x00127d88`, called with 0 from the update at `0x0012b740`): the target's position
+   plus the offset (runtime: feet + 1.4 m). The offset itself eases toward its wanted value by 15% per update
+   (`+0x200` toward `+0x210`). Unless the target is jumping or falling (`0x00227f90`), the look-at point's move this
+   update is **limited by its length** `d` (in 3D, from the previous look-at point `+0x270`): above 0.8 m it moves
+   20% of the way; from 0.4 to 0.8 m it moves `1 − 2 × (d − 0.4)` of the way (100% at 0.4 m, 20% at 0.8 m); below
+   0.4 m all of it. So a climb's rise of 1.3-2.6 m is followed at 20% an update until 0.8 m is left, then in two more
+   updates, and a jump is followed directly. In one target state (`0x00228168`, not traced, while not running or
+   sprinting) the look-at height is instead feet + 1.75 − 0.1 = 1.65 m.
 2. **Field of view** eases toward `+0x394` at `+0x39c` degrees per second, at most 7.5, or over the timed move's
    remaining time `+0x40c` when one runs.
 3. **Right stick** (`0x00129050`, [below](#right-stick)) gives a yaw rate `+0x358` and a pitch rate `+0x3b8`; the zoom
@@ -136,12 +150,17 @@ radians.
 4. **Auto-follow** (`0x00129c78`): with the player moving and no right-stick input, the camera swings round behind the
    player's facing ([Heading](#heading)).
 5. **Leash** to the distance band `+0x32c`-`+0x330`: when the distance from the camera to the look-at point leaves the
-   band, the camera is moved along that line back to the nearer edge. `level99`'s band is 3.0-3.5 m.
+   band, the camera is moved along that line back to the nearer edge. `level99`'s band is 3.0-3.5 m at checkpoint 1
+   and 4.8-5.3 m in the street. The band itself eases toward a wanted near edge `+0x34c` when one is set
+   (`0x0012aae0`, run early in the update, before the look-at point): the [sprint zoom](#sprint-zoom).
 6. **Pitch toward its target** `+0x3b4` (`0x0012d4e8`, a rotation about the look-at point clamped to
    `[+0x3b0, +0x3ac]`); see [Pitch](#pitch).
-7. **Look-at height smoothing** while the camera is in its "height hold" state (`+0x453` set; entered when the target
-   is high above the camera's ground, inferred): the look-at height moves 30% of the way per update toward the wanted
-   one (40.5% or 48% in the two special modes returned by `0x00125588`), scaled by `+0x398`.
+7. **Camera height smoothing** while the camera is in its "height hold" state (`+0x453` set; entered when the target
+   is high above the camera's ground, inferred): the **wanted position's** height (not the look-at point's) moves 30%
+   of the way per update toward the look-at-relative height it held (`+0x378` + `+0x324`; 40.5% or 48% in the two
+   special modes returned by `0x00125588`), times `+0x398` (1 except after `0x00125888`, which sets 0.25). Confirmed
+   (code) at `0x0012c0c0`-`0x0012c14c`. This is the 30% an earlier reading of this page gave for the look-at point;
+   the look-at point's own ease is the distance limit of step 1.
 8. **A heading target** `+0x350`, a direction the camera must face (set by the centre button, scenes and scripts): the
    camera turns toward it by `angle × dt / +0x40c`, so it arrives as the timer `+0x40c` runs out, and the target is
    cleared once within 0.1° (`0x3ae4c389`).
@@ -177,19 +196,35 @@ The yaw rotation is done by `0x0012d688(angle)`, about the look-at point. Four r
   from 120°/s back to 60°/s at 157.5°. Each update turns by `min(a, rate × dt)` toward the facing.
 - **Auto-centre option** (`0x00129f88`, used instead when the per-pad option bytes `0x0050b240` and `0x0050b248` are
   both set; they are 1 in the `level99` save used at runtime and 1 by default,
-  [Feel](feel.md#details-behind-the-table)): nothing below 22.5°; from 22.5° to 90° the rate is
-  `(a − 45°) × 2.444 + 45°` per second (negative below 26.6°, so the step is then a small turn the other way; 45°/s at
-  45°, 155°/s at 90°); 200°/s (`3.4907` rad/s) from 90° to 100°; from 100° to 157.5° it falls linearly
-  (`(157.5° − a) × 2.435 + 60°`) from 200°/s to 60°/s; beyond 157.5° only when the player is moving (an argument
-  the update sets from the gait). Each update turns by `min(a, rate × dt)` toward the facing. The cosine of each
-  threshold is computed with `0x004b8a70` (cosine, inferred from the thresholds' use).
+  [Feel](feel.md#details-behind-the-table)): nothing below 22.5°; from 22.5° to 90° the rate is `(a − 45°) × 2.444 +
+  45°` per second (negative below 26.6°, so the step is then a small turn the other way; 45°/s at 45°, 155°/s at 90°);
+  200°/s (`3.4907` rad/s) from 90° to 100°; from 100° to 157.5° it falls linearly (`(157.5° − a) × 2.435 + 60°`) from
+  200°/s to 60°/s, unless the call's fourth argument (the update's local at `sp + 0x1d4`, not traced) is set, which
+  keeps 200°/s up to 157.5°; beyond 157.5° only when the target's record has state flag 4 (`0x002265f0(target, 4)`, the
+  same flag that can stand in for "moving"). `a` is the angle between the target's facing (its rotation in the transform
+  table) and the camera's own horizontal forward (vtable slot `+0x224`, flattened), so the view as placed at the end of
+  the previous update. Each update turns by `min(a, rate × dt)` toward the facing. The cosine of each threshold is
+  computed with `0x004b8a70` (cosine, inferred from the thresholds' use).
 - **When either rule runs** (`0x0012ae58`, the call at `0x0012bd80`): one target (`+0x444` = 1), the target passes
   `0x00123500` (not in states `0x180050000` of record word `+0x00`), no camera flags in `+0x460 & 0xffff0000`, nothing
   watched (`+0x320` = −1), no yaw from earlier steps this update, and no camera input in the last 0.334 s
-  (`+0x368` = 0). Inside `0x00129c78` the default rule also needs the "moving" argument, which is set when the
-  target's gait `+0x1a8` is 4 or 5 (run, sprint) with record flags `+0x08` clear (`0x00223a60`, `0x00223a98`); the
-  auto-centre rule needs `+0x474` = 1, `+0x455` = 0, no right-stick input, the top animation task's clip without
-  descriptor flag `0x8000` (`0x00175be8`), and none of the human flags `0x18003ff0`.
+  (`+0x368` = 0). Inside `0x00129c78` (arguments read at the call, `0x0012bd30`-`0x0012bd84`), confirmed (code):
+  the default rule needs "running": the target's gait `+0x1a8` is 4 or 5 with no blocking record flags
+  (`0x00223a60`, `0x00223a98`). The auto-centre rule needs "**moving**": gait **2, 4 or 5** (walk, run, sprint;
+  `0x00223a40` adds the walk), or state flag 4 of the record; **not 0, 1 or 3**, so not while the body moves slower
+  than a walk or at a jog's speed. It also needs `+0x474` = 1 (cleared on an update whose stick vector in the
+  per-player record, `+0x00` / `+0x04`, points more than 157.5° from +y, and set again at the start of any update
+  whose gait is not 0, so it blocks only the updates with the stick pulled back that far; whether that vector is
+  the camera-turned stick is not traced), `+0x455` = 0, no right-stick
+  input, the top animation task's clip without descriptor flag `0x8000` (`0x00175be8`), none of the human flags
+  `0x18003ff0`, and the collision bytes `+0x45b` and `+0x45d` clear: the collision step sets `+0x45b` when its main
+  ray from the look-at point is blocked ([World collision](#collision)), so **auto-follow stops on the update after
+  one in which the view was blocked**. Confirmed (runtime), slot 1, stick 100 % sideways: the rule turned
+  110-129°/s every update at gait 4; with `+0x45b` written to 1 before each of 21 updates it turned 0 on each of them,
+  and 129°/s again on the next. The gaits explain what [In the street](#street) saw: no turn in the walk and run
+  start clips (gait 0-1 while the walk start moves at 0.76 m/s, 3 in the run start's middle) or the landing clip
+  (4.23 m/s, gait 3), and a turn during the run start's first five updates and the run stop's slower updates
+  (gait 2).
 - **Keep the target in view** (`0x0012e170(factor)`, called with 0.4 or 0.25): when the human or object the camera
   watches (`+0x320`) leaves `fov × factor` of the view, the camera yaws 35% of the excess per update, at most 270°/s
   (`4.712` rad/s). A ray test (mask `0x200`) skips it when the world hides the target.
@@ -204,6 +239,52 @@ The yaw rotation is done by `0x0012d688(angle)`, about the look-at point. Four r
   default, and 30° at the default when the camera option `0x0050b19c` is 1 (50° otherwise). The same function sets the
   zoom distance `+0x400` to the minimum, maximum or default.
 - Without input the pitch is driven back to the target at most 85°/s (step 9).
+
+### Sprint zoom {#sprint-zoom}
+
+While the player sprints, the camera pulls in to the minimum distance and lowers its target pitch to 7°, and both go
+back 250 ms after the sprint ends. Confirmed (code) at the cited addresses and confirmed (runtime) in the street save
+(slot 1, stick 100 % and L2, every field below read every update; PCSX2 2.9.94):
+
+1. **Detecting the sprint** (in the update, `0x0012b310`-`0x0012b3f4`): the target's stored gait `+0x1a8` is 5
+   with no blocking record flags (`0x00223a98`) → "sprinting" this update (a local, `sp + 0x1e8`). On the first such
+   update of a sprint (`+0x36c`, the run time, still 0) the switch `+0x468` is copied to the arm byte `+0x467`.
+2. **Latching** (in the update, between the right-stick step and the band's ease): while sprinting and armed, when the
+   per-player record's `+0x152` is 0 (or the target is within 12 m of a point it holds), `+0x467` is cleared and
+   `+0x466` set; with `+0x466` set and `+0x448` 0, `+0x448` = 1. On the first update **not** sprinting with `+0x466`
+   set: `+0x466` = 0 and `+0x448` = the game time + **250 ms**. (A time left in `+0x448` by an earlier sprint, as in
+   the save, also lets the function run; it then has nothing to do until the next sprint.)
+3. **The zoom function** `0x00128cf0(camera, sprinting, 0)` runs every update once the game time has passed `+0x448`
+   (so at once for 1, after 250 ms for a time; call at `0x0012c5c8`).
+    - **Sprinting**, with no other zoom's band saved (`+0x3c8` = 0): the first time, it saves the band's near edge
+      in `+0x3e0`, the zoom distance in `+0x3e8` and sets the timer `+0x40c` to **0.5 s**; with the camera option
+      `0x0050b19c` = 1 (as in the street) it sets the wanted near edge `+0x34c` to the **minimum distance** (`+0x300`,
+      3.0) and steps the zoom distance to the default (`0x001254f0`, which also sets the upper pitch limit to 30°);
+      with the option 0 it leaves the band and sets `+0x3e0` to the maximum − 0.5 and `+0x3e8` to the default. It then
+      saves the target pitch in `+0x3e4` and moves the target pitch toward **7°** (0.122173 rad): on the update the
+      timer reads 0.5 nothing; then by `|7° − pitch| / +0x40c × dt` per update, which is a straight line arriving as
+      the timer runs out (without a timer, 30°/s).
+    - **Not sprinting**: `+0x34c` = the saved `+0x3e0`, `+0x3e0` = 0, the zoom distance back to `+0x3e8`, `+0x40c` =
+      0.5 s; the target pitch moves back to `+0x3e4` the same way while the timer runs. Once both the band and the
+      pitch are within 10⁻⁵ of their goals, `+0x448` = 0 and `+0x3e4` = −FLT_MAX: the zoom is over.
+4. **The band's ease** (`0x0012aae0`, every update while `+0x34c` > 0): with `d` = `+0x34c` − `+0x32c` and `T` =
+   `+0x40c`, the near edge moves by `d × |d| / T × dt` (or `d × 3.5 × dt`, `d × 4.5 × dt` with `+0x448` 0, when no
+   timer runs), clamped at `+0x34c`; the far edge is the near edge + 0.5; when within 10⁻⁵ the edge snaps and `+0x34c`
+   = −1. The zoom distance follows the band's position: at or below `min + 0.4 × (default − min)` it is stepped to
+   the minimum, at or below `default + 0.6 × (max − default)` to the maximum, else to the default (`0x001254f0`), so
+   the upper pitch limit `+0x3ac` changes with the band.
+
+So the band moves 4.8 → 4.569 (`1.8² / 0.4667 / 30` = 0.231), 4.379, 4.221, … 3.216, then 3.0 when the timer's last
+float (about 1.5 × 10⁻⁸) makes the step reach the goal: 14 updates, the measured curve to 0.001 m; the target pitch
+falls 6° / 14 = 0.4286° per update. At runtime `+0x34c` read 3 and `+0x40c` 0.4667 on the first update at gait 5,
+`+0x466` was 1 from then until the run stop's first update, when `+0x448` became that time + 250 ms; 8 updates later
+(267 ms) `+0x34c` read 4.8 and the band and pitch went back over the next 14 updates, and on the 15th `+0x448` read 0
+and `+0x3e4` −FLT_MAX. The saved zoom distance was 6.6 (the maximum): the upper pitch limit read 30° in the sprint and
+40° again from the 6th update of the way back.
+
+`CamEnable(5, on)` (`Camera_EnableFeature`, `0x0011de58` → `0x00126a30`) sets the switch `+0x468`; turning it off
+also clears `+0x34c`, `+0x3e4`, `+0x448`, `+0x466` and `+0x467`. The constructor sets it to 1 (it read 1 in the
+save). Confirmed (code).
 
 ### The right stick {#right-stick}
 
@@ -234,10 +315,26 @@ camera options `0x0050b1b0` and `0x0050b1b8` allow it.
 `0x00130990` (about 3,000 lines decompiled) runs after the camera's wanted position is known. Confirmed (code) for the
 calls and constants; the overall reading is inferred:
 
-- **A height ray** down from the look-at point (mask `0x200`) catches a low ceiling and lowers the camera.
-- **Side probes**: rays from the look-at point fan out to both sides of the camera, at a probe angle of 7° at the near
-  distance down to 4° at the far one (`7° − 3° × t`, `t` the position in the distance band), at fractions 1.0, 0.7,
-  0.5, 0.3 and 0.15 of the distance. The free angle found on each side is limited to 3 × the probe angle.
+- **A height ray** (`0x00130c28`) straight down from the look-at point (`0x00511770`, (0, 0, −1)), as long as the
+  look-at offset plus 0.5 m (1.9 m), mask `0x200`: when it hits a face whose normal's `z` is at most cos 15° (a slope,
+  or the top of something under the look-at), `0x0012f3e0` adjusts the camera's height (what it changes is not traced).
+- **The main ray** (the cast at `0x001311b4`, the recast at `0x001312e4`): from the look-at point toward the wanted
+  position, its full length, with mask **`0x200 | 0x800 | 1`** (`| 1` only with one target). Through the [ray cast's
+  rules](collision.md#ray-cast) that skips triangles with type bit 9 (`0x200`), and **tests disabled triangles too**
+  (mask bit 0); one-sided faces are hit only from their front. When the hit is a disabled triangle (flag bit 0 clear,
+  and not `0x800`) and either the target's point (`+0x1e0`) is not in front of its plane or the look-at point is less
+  than **0.5 m** in front of it, the ray is cast again without mask bit 0, so the disabled triangle is ignored; a hit
+  sets `+0x45b` (which stops auto-follow on the next update, [Heading](#heading)) and its distance becomes the limit the
+  rest of the step works from. When that ray hits something that is not a ceiling (normal `z` above cos 150°), a second
+  ray (`0x001314d0`) from the target's point to the look-at point checks whether the obstacle is between them; if so
+  (and the latch `+0x479` is not −1), the main ray is cast again from a point moved along the view by `0.8 / tan(3 ×
+  probe angle)` and that distance is added to its hit. Confirmed (code) for the masks, the 0.5 m and the recast; the
+  meaning of the second ray inferred.
+- **Side probes** (casts from `0x00131744`): the main ray turned about the vertical through the look-at point by **3, 2
+  and 1 × the probe angle** to each side (the loop counts down from 2), each as long as the main ray, with the same mask
+  and the same disabled-triangle recast. The probe angle is 7° at the near edge of the distance band down to 4° at the
+  far one (`7° − 3° × t`, `t` the position in the band). The free angle found on each side is limited to 3 × the probe
+  angle. A table of fractions 1.0, 0.7, 0.5, 0.3 and 0.15 is set up beside them; where it is used is not traced.
 - **Swinging away**: when one side is clearly freer (the two differ by more than 7.5°), the camera yaws toward it by
   20% of the needed angle per update. When the view is fully blocked it turns toward the target direction at up to
   480°/s (`8.378` rad/s); a latch (`+0x479`: 1 one way, 2 the other) stops it reversing, and when it would reverse it
@@ -281,7 +378,11 @@ PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt, read over PINE once per update;
   [Heading](#heading) that can be read over PINE passed (`+0x444` = 1, record words `+0x00` and `+0x08` zero,
   `+0x460` = 0, `+0x320` = −1, `+0x368` = 0, `+0x455` = 0, `+0x474` = 1, the run clip's descriptor flags 0); the
   condition that blocks it was not found (the update's locals cannot be read without breakpoints). So at
-  checkpoint 1 the camera turns only with the right stick and the leash.
+  checkpoint 1 the camera turns only with the right stick and the leash. The gates found since
+  ([Heading](#heading)) give a likely cause, inferred and not yet checked there: the collision bytes `+0x45b` /
+  `+0x45d`, which stop auto-follow on every update after one in which the collision step's main ray was blocked.
+  At the start spot the walls held the camera at 1.85 m and it was still recovering toward the band during the run,
+  which is when its ray is blocked. Reading `+0x458` (bytes 3 and 5) during such a run would settle it.
 
 ### In the street {#street}
 
@@ -298,9 +399,23 @@ rule) and `0x0050b19c` was 1. Confirmed (runtime) unless marked:
   to its look-at point): within 5°/s on average from 30° to 90°, over 656 updates of walks, runs, sprints and turns;
   just above 22.5° it turned slightly the other way, as the rule's negative rate says. It turned while walking,
   running, sprinting and in the air, and not while standing, during the walk and run start clips or during the
-  landing clip 436. Because the stick is turned by the camera, a stick held 90° to the side makes the player run in
-  a circle: facing and camera turned together at about 122°/s running and 127°/s walking (`a` steady near 67°
-  and 73°).
+  landing clip 436 (the gaits, [Heading](#heading)). Because the stick is turned by the camera, a stick held 90° to
+  the side makes the player run in a circle. **The circling rate** (re-measured 2026-10-05, slot 1, stick held 90°
+  to the side for 120 updates after 30 updates straight up; rates averaged over updates 100-158):
+
+  | Stick | Gait | Player's turn | Rule's turn about the look-at point | Leash drag | `a` |
+  | --- | --- | --- | --- | --- | --- |
+  | 35 %, 60 % or 80 % sideways | walk, 1.63 m/s | **143°/s** | 127°/s | 16°/s | 77° |
+  | 100 % sideways | run, 7.80 m/s | **191°/s** | 122°/s | 72°/s | 72° |
+  | 70 % / 70 % (a full diagonal) | run | 61°/s | 24°/s | 42°/s | 34° |
+
+  "Rule's turn" is the wanted position's rotation about the **new** look-at point (what the auto-centre rule adds;
+  the leash moves it only along that line), "leash drag" the rotation of the old wanted position from the old to
+  the new look-at point (the target's sideways move); they add up to the camera's turn, and the player's facing
+  turns with the camera, `a` steady. The 122°/s and 127°/s an earlier reading gave as the circling rate are the
+  rule's share alone: the original circles at **about 190°/s** at a run. The rule's turn is 3-10°/s above the
+  formula for the measured `a` (the camera's forward taken as the view from its last position to the last look-at
+  point; the other definitions tried fit worse). Confirmed (runtime).
 - **Sprint zoom.** From the first update at the sprint gait the band's near edge went 4.8 → 4.569, 4.379, 4.221,
   4.085, 3.968, 3.863, 3.770, 3.686, 3.607, 3.533, 3.462, 3.391, 3.315, 3.216, 3.0 (the far edge 0.5 more), and the
   target pitch `+0x3b4` fell by 0.4286° per update from 13° to **7°**: both over 14 updates. In the sprint the camera
@@ -314,8 +429,14 @@ rule) and `0x0050b19c` was 1. Confirmed (runtime) unless marked:
   0.5-0.6 m in 2 updates, so the view's pitch stayed at 3.6° or more. During a jump it follows the feet directly.
 - **Fences.** Through a running fence climb (slot 7, material 30) the camera stayed 4.9-5.3 m away while the fence
   stood between it and the player, and passed through the fence afterwards without pulling in: its collision does
-  not see that fence (which test skips it is not traced). A low one-sided face 0.19 m behind the player did not
-  pull it in either.
+  not see that fence (which test skips it is not traced). Nor did the face that pulled Coney's camera in 0.19 m
+  behind the player: it is not a low face but a **disabled** two-sided panel of `level99`'s mesh (triangle 27,
+  material 91, flags `0xf442`: bit 0 clear, 4.1 m wide and 2.65 m tall across the run's path at `y` = 31.17),
+  read from the save's RAM; slot 7 has 8 disabled triangles (that panel, two of material 187 `STOREDOOR_GLASS`,
+  four of material 2 `GLASS`) and slot 1 none, while every triangle on the disc is enabled, so the game switched them
+  off ([Collision](collision.md#chunks), `0x0034fba0`). The main ray tests disabled triangles but recasts without
+  them when the look-at point is within 0.5 m of the plane ([World collision](#collision)), which is the case
+  here (inferred; the panel's data and the disabled counts are confirmed (runtime), read from the saves' RAM).
 
 ### Scenes take the camera and give it back {#scenes}
 
@@ -416,10 +537,22 @@ The world viewer keeps its own free camera with the player camera's lens
   ([In the street](#street)); with the stick held sideways the player runs in a circle. At `level99`'s checkpoint 1 it
   was not seen. Implement it, with the leash and the right stick. The player's stick is turned by the camera's
   heading before it reaches the character ([Characters](characters.md#input)), so the camera must ease, never snap.
+  Gate it on the gait (walk, run or sprint; not idle, sneak speed or jog), not on which clip plays, and hold it off
+  on the update after a blocked main ray. With the stick held sideways the original circles at about 190°/s at a
+  run and 143°/s at a walk, the rule's turn plus the leash's drag.
+- **Sprint zoom** ([Sprint zoom](#sprint-zoom)): on the first update at the sprint gait save the band, zoom and
+  target pitch and start a 0.5 s timer; the band's near edge moves by `d × |d| / T × dt` toward the minimum distance
+  (`d` what is left, `T` the timer, after it has counted down once), the target pitch in a straight line to 7°;
+  250 ms after the sprint gait ends, the same back to the saved values.
+- **Look-at point**: limit its move per update by the distance rule of [step 1](#update) (20% above 0.8 m, a
+  linear share from 0.8 to 0.4 m, all of it below), except while jumping or falling; any trigger on "a rise" is not
+  what the original does.
 - **Right stick**: yaw 60-150°/s outside a ±48 raw dead zone, applied to the wanted position at once (the lag
   smooths it); pitch only near the ends of the travel; 0.334 s of no auto-follow after any input.
-- **Collision**: start with a ray from the look-at point and pull in to the hit; the side probes and swing-away rules in
-  [World collision](#collision) can come later.
+- **Collision**: start with a ray from the look-at point and pull in to the hit, with the main ray's mask and its
+  disabled-triangle rule ([World collision](#collision)); the triangles' enabled bits must follow the game (doors,
+  glass and barriers the game switches off), or a disabled panel pulls the camera in. The side probes and swing-away
+  rules can come later.
 - **Update order**: the cameras update at the end of the characters' 30 Hz step, after movement
   ([Characters](characters.md#update)), and the device takes the lens once per frame.
 - Keep the camera deterministic (no real time) so the test mode can compare frames.
@@ -429,18 +562,22 @@ The world viewer keeps its own free camera with the player camera's lens
 - **The tutorial's camera calls**: which call set `+0x32c` / `+0x330` to 3.0 / 3.5 (probably `P1.SetupCam` in
   `level99_combat.lua` through `CamSetFollowZoom`; inferred).
 - **Why auto-follow did not run** at checkpoint 1 ([Runtime checks](#runtime-checks)) when it runs in the street
-  ([In the street](#street)): a gate not yet identified, perhaps a mode the tutorial sets. A breakpoint at
-  `0x0012bd80` would settle it. (The option bytes are 1 by default, [Feel](feel.md#details-behind-the-table), so
-  they do not explain it.)
-- **The circling rate**: does the measured auto-centre rate already include the turn the look-at point's sideways
-  move gives the wanted position? Coney adds the rule's turn to the leash's drag and circles at about 190°/s where
-  the original circled at 122°/s ([Coney's implementation](#coneys-implementation)); a per-update split of the
-  wanted position's rotation in the street save would settle it.
-- **The sprint zoom** ([In the street](#street)): which code moves the band to the minimum distance and the pitch to
-  7°, its easing (the measured curve is not linear), and what ends it.
-- **Look-at height easing**: 20% per update measured after a climb's rise against the 30% read in the code.
-- **The collision step** (`0x00130990`) in full (Coney casts one ray): the exact probe pattern, its margins, when
-  the height ray lowers the camera, and what `+0x10a`-`+0x10c` (side angle history) feed.
+  ([In the street](#street)): most likely the blocked-view bytes `+0x45b` / `+0x45d` ([Heading](#heading),
+  inferred); reading `+0x458` there during a run would settle it. (The option bytes are 1 by default,
+  [Feel](feel.md#details-behind-the-table), so they do not explain it.)
+- **The circling rate** (answered): the original circles at about 190°/s at a run and 143°/s at a walk; the 122°/s
+  and 127°/s first given were the rule's share ([In the street](#street)). Still open: why the rule's measured turn
+  is 3-10°/s above the formula (the exact forward vector of vtable slot `+0x224`).
+- **The sprint zoom** (answered, [Sprint zoom](#sprint-zoom)). Still open: what the per-player record's `+0x152`
+  and the point at `+0x164` that gate the latch are, and what `0x0050b19c` (set by `0x00122ed0`) means beyond the
+  zoom's two branches.
+- **Look-at height easing** (answered): the 20% is the look-at point's distance limit (step 1); the 30% is the
+  camera's height hold (step 7).
+- **The fourth argument of the auto-centre rule** (`sp + 0x1d4` in the update), which keeps 200°/s above 100°, and
+  state flag 4, which allows a turn beyond 157.5°.
+- **The collision step** (`0x00130990`) beyond its rays (partly answered: the main ray, its recast and the side
+  probes' angles, [World collision](#collision)): the second blocked case `+0x45d`, the table of fractions, what
+  `0x0012f3e0` changes after the height ray, and what `+0x10a`-`+0x10c` (side angle history) feed.
 - **The target state** that lifts the look-at point to 1.65 m, and the two modes of `0x00125588`.
 - **The slow-motion factor** `0x005148a0`: what slows down, and when.
 - **Scenes**: the scene camera's own update (type 4) and the "a scene is playing" flag at `0x0051489c + 0x410` (see

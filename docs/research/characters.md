@@ -635,6 +635,20 @@ and the gait blend then gains 0.8 m/s per update. The walk start's clip speed fr
 moves at **the clip's speed × the body scale** (0.97), as does the landing clip 436 (4.230 m/s against the clip's
 4.361) and, inferred, every clip that moves the body. The gait speeds (walk, run, sprint) are not scaled.
 
+The first updates in detail (the second feel pass, 2026-10-05, slot 1; speed `+0x1ac` and the position's change
+agree to 0.003 m/s; the stored gait `+0x1a8` in brackets). Confirmed (runtime):
+
+| Stick, straight up | Update the stick is seen | Then, one value per update |
+| --- | --- | --- |
+| 35 % or 60 % | walk start 413 begins, 0 m/s (gait 0) | 0.762 (1) for 12 updates, then the walk 408 at 1.562 (1), 1.629 (2) |
+| 100 % | run start 414 begins, 0 m/s (0) | 2.773, 2.486, 2.558, 2.629, 2.844 (2); 3.346, 3.895, 4.540, 5.112, 5.399, 5.614, 5.686 (3); then the run 410 at 6.486, 7.286, 7.801 (4) |
+| released after a run | run stop 417 begins, 0 m/s (0) | 2.244 (2), 4.996, 5.101, 5.229, 5.382, 4.193 (3), 3.190, 2.490, 2.163, 2.124, 2.056, 1.928, 1.740 (2), 1.434, 1.143, 0.886, 0.753, 0.645, 0.552 (1), 0.469, 0.390, 0.296, 0.198 (0); the idle 388 on the 25th |
+
+The 35 % and 60 % runs were identical update for update. There is no ramp on the first moving update of any of
+the three clips: it is the clip's own root speed (times 0.97). A walk released stops at once (the idle on the next
+update, 0 m/s). The gaits matter to the camera, whose auto-follow runs only at gait 2, 4 or 5
+([Camera](camera.md#heading)).
+
 ### Buttons {#buttons}
 
 The pad's buttons become **command ids** through tables of 12-byte entries `{u16 mask, u32 command, u16 buttons,
@@ -942,6 +956,26 @@ when `vz` < −1.5 (camera slot `+0x15c` with the landing kind 1-3), set `+0x3a0
 write the velocity back. The thresholds are `0x00510674` (−14.9) and `0x00510678` (−20.5). Free fall from rest
 reaches 14.9 m/s after about 7.1 m and 20.5 m/s after 13.4 m (inferred from the gravity above).
 
+**When the landing happens** (the feel pass's second runtime run, 2026-10-05, PCSX2 2.9.94, slot 1, a run jump with
+stick 100 % and triangle tapped 35 updates in; the arc's phase shifted by adding 0.015 to 0.15 m, or taking 0.05 or
+0.12 m, to the feet's height at the 7th update in the air; ground at 0.2231). Confirmed (runtime):
+
+| Feet at the start of an airborne update, below the ground | That update |
+| --- | --- |
+| above it, or 0.041, 0.091, 0.111, 0.141 or 0.161 m below | still airborne: the body falls a whole step (0.20-0.22 m) more |
+| 0.176 or 0.191 m below (and 0.241-0.379 m) | lands: `Land`, the feet snapped up onto the ground, full horizontal speed |
+
+So the feet are **not** stopped at the ground on the update they pass it: the jump lands on the first update that
+**starts** with the feet about 0.17 m (between 0.161 and 0.176 m) or more below the ground, and until then the body
+keeps falling through it, up to 0.38 m below in one phase. The unshifted jump (the street's arc) crosses with the feet
+0.009 m above the ground, ends that update 0.191 m below and lands on the next: the 0.19 m dip of the per-update
+trace is this, not a sampling artefact. The code path is the sweep's landing contact (`0x0023e408`, run from
+`0x0033d340` when body flag `0x40` is set; segment from feet + `+0x4e8` − 0.16 × scale, 0.880 m for the player,
+to the moved feet), which records the contact's fraction as `(hit − 1.0) / (length − 1.0)`, or 0 when the hit is
+nearer than 1.0 m (the human's vtable `+0x5c`); why the hit is not taken until the feet are about 0.17 m under is not
+traced (inferred: a contact at fraction 0 is discarded by the contact resolution, `0x0033d9d8`, but the 0.17 m does not
+follow from the 0.88 / 1.0 m geometry alone).
+
 **A fall at runtime** (PCSX2 2.9.94, `level99`, no stick input; Rembrandt raised 10 m by writing the transform table's
 `z`). Confirmed (runtime):
 
@@ -1007,7 +1041,7 @@ centred nothing changes. Gravity, the airborne counter and the landing are those
 | stick 1.0 and L2, sprint at 10.245 m/s, triangle | the same arc at 10.24 m/s horizontal, about 23 updates in the air |
 | the same, stick turned 90° right just after take-off | the heading turned by about **4° per update** toward the stick, the horizontal speed staying 10.24; that is the run's limit, not the sprint's 2.5° (which gait the air turn uses is not traced) |
 | landing | state 27, **436** for about 0.4 s at its own 4.23 m/s, record `+0x08` `0x1000000`, then the gait blend from a jog back to the run |
-| per update (the feel pass, slot 1) | **24 updates** in the air from a run: the last airborne update leaves the feet 0.19 m below the ground and the next one lands them; that landing update still moves at the full 7.80 m/s, then 436 holds 4.23 m/s for 10 more updates (11 in all) and the gait blend gains 0.8 m/s per update from there; take-off to landing **6.24 m** |
+| per update (the feel pass, slot 1) | **24 updates** in the air from a run: the last airborne update leaves the feet 0.19 m below the ground and the next one lands them ([the landing rule](#falling)); that landing update still moves at the full 7.80 m/s, then 436 holds 4.23 m/s for 10 more updates (11 in all) and the gait blend gains 0.8 m/s per update from there; take-off to landing **6.24 m** |
 | triangle during the run start (414), at 3.35 m/s | a jump at once: the run start does not block it, only the 3.3 m/s and gait tests do (slot 7) |
 
 Clips 427 (slot 25) and 430-433 (jump from idle, walk or either foot) did not play in the player's jump; 430-433
@@ -1273,7 +1307,14 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   clips (413, 414) first, then the gait clip; idle at once on release.
 - **Ground**: no vertical velocity on the ground; snap the feet with a ray from 1.0 m above, 1.5 m long, each update;
   a miss starts a fall with gravity 15.68 m/s² (from the second airborne update), capped at 50 m/s; land on floors
-  with `n.z` > 0.65; fall damage from 14.9 m/s, a kill from 20.5 m/s ([above](#ground)).
+  with `n.z` > 0.65; fall damage from 14.9 m/s, a kill from 20.5 m/s ([above](#ground)). A fall or jump lands on
+  the first update that starts with the feet about 0.17 m or more below the floor: keep moving the full step until
+  then (feet up to 0.38 m under), then land at that update's position with the horizontal speed kept
+  ([When the landing happens](#falling)).
+- **Clips that move the body** move it at the clip's root speed × the body scale from their **first** moving update,
+  with no fade-in of that speed: the walk start 0.762 m/s on every one of its 12 moving updates, the run start 2.77,
+  2.49, 2.56, … and the run stop 2.24, 5.00, 5.10, … ([Per update](#locomotion)). A first update slower by 0.75 (the
+  start clips' playback rate) or a stop that ramps from 0.31 m/s is a difference to remove.
 - **Walls**: a sphere of radius 0.35 × scale × body `+0x60` (1.4286 for the player: 0.485 m), centred that radius
   plus 0.05 above the feet, swept along the move; the slid velocity is kept, so a steep wall brakes the player;
   wall triangles less than 0.25 m tall are not walls, which is all the step-up there is ([Walls and steps](#walls)).
@@ -1326,6 +1367,9 @@ default ids are known, [Anim slots](#anim-slots)), and the
   `CfgClimbWithGhetto`'s effect.
 - **What builds the run stop** (417): it plays after a run's skid as well as a sprint's (confirmed (runtime),
   [Feel comparison](feel.md)); the builder is not traced.
+- **The landing's threshold**: why the landing contact is taken only once the feet start an update about 0.17 m
+  below the floor ([When the landing happens](#falling)); the contact resolution `0x0033d9d8` and what it does with a
+  contact at fraction 0 would settle it.
 - **The landing's fade** and the gait blend value 436 hands over to; the drop land (429) and the long falls are not
   built in Coney.
 - **The climb's details**: the fade before its first clip; when record `+0x08` `0x40` is cleared; whether the

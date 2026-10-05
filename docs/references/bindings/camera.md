@@ -183,7 +183,7 @@ CamEnable(feature, on, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `feature` | number, truncated to an unsigned integer | Which camera switch, 0-13. 0 is per player; 2 sets a rail-camera flag; 3 re-lays out the views; 5 enables or disables the follow camera's automatic behaviour (turning it off resets its state); the others set global flags whose meaning is not traced. |
+| 1 | `feature` | number, truncated to an unsigned integer | Which camera switch, 0-13. 0 is per player; 2 sets a rail-camera flag; 3 re-lays out the views; 5 enables or disables the follow camera's sprint zoom (turning it off cancels a zoom in progress); 10 sets the auto-centre option byte of both pads; the others set global flags whose meaning is not traced. |
 | 2 | `on` | boolean (nil or 0 is false) | true turns the switch on. |
 | 3 | `player` | number, truncated to an integer; default -1 | Player index for the per-player switches (0, 2, 5), or -1 (default) for every player. |
 
