@@ -77,6 +77,7 @@ nav:
           - Collision: research/collision.md
           - The streamed world: research/world.md
           - Memory: research/memory.md
+          - Debug features and leftovers: research/debug.md
       - File formats:
           - WARRIORS.DIR / .WAD: research/formats/wad-dir.md
           - WAD contents: research/formats/wad-contents.md

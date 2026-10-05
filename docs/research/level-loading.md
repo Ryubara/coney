@@ -340,8 +340,8 @@ for the order; the roles of callees not named elsewhere are inferred from what t
    on the second pad lets a second player join (`0x0041a460`, `0x0041b2f8`).
 6. Service the file manager; `0x001562a0` (`0x00412ca0`, `0x00414398`); the per-viewport passes (`0x00156408`,
    [below](#render-order)); the overlays (`0x00156658`); the **script update** (scheduled calls,
-   [Scripts](scripting.md#scheduled-calls)); device slot `+0x34` (present); the cheat-code sequence check
-   (`0x00163c68` against the table at `0x0050c7f8`); and the error check `0x00156200`, which switches to the error
+   [Scripts](scripting.md#scheduled-calls)); device slot `+0x34` (present); the [cheat-code](debug.md#cheats) sequence
+   check (`0x00163c68` against the table at `0x0050c7f8`); and the error check `0x00156200`, which switches to the error
    mode (`0x0015e7e8`).
 
 **Leaving.** `W_GameState + 0x14c` drives the way out, confirmed (code):
