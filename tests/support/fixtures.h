@@ -5,10 +5,10 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
+#include <random>
 #include <span>
 #include <string>
 #include <string_view>
@@ -84,14 +84,16 @@ class Bytes {
 /// test.
 class TempDir {
   public:
-    // A counter plus a random number, retried until unused, so parallel test processes never share a folder.
+    // A counter plus a number from the OS's entropy, claimed with create_directory (false when the folder already
+    // exists), so parallel test processes never share a folder: an unseeded rand() gives every process the same names,
+    // and an exists() check races with another process creating the folder.
     TempDir() {
         static int counter = 0;
+        static std::random_device entropy;
         const auto base = std::filesystem::temp_directory_path();
         do {
-            m_path = base / ("coney-test-" + std::to_string(++counter) + "-" + std::to_string(std::rand()));
-        } while (std::filesystem::exists(m_path));
-        std::filesystem::create_directories(m_path);
+            m_path = base / ("coney-test-" + std::to_string(++counter) + "-" + std::to_string(entropy()));
+        } while (!std::filesystem::create_directory(m_path));
     }
     TempDir(const TempDir&) = delete;
     TempDir& operator=(const TempDir&) = delete;
