@@ -143,8 +143,9 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x18` | which buffer is current (toggles 0/1 each update; the other is the previous update's) |
 | `+0x19` | pad index, -1 for none (0 for the player at runtime) |
 | `+0x1b` | 1 while the human is pad-controlled; 0 hands it to the AI |
+| `+0x1e` | when not 0, `Player_UpdateActions` is skipped (`0x00254e78` via `0x001480e0`); 0 for every human in the street, so AI humans act on `+0x20` too (confirmed (runtime)) |
 | `+0x1f` | input locked: angle π/2, magnitude 0 |
-| `+0x20` | this update's command id ([Buttons](#buttons)), read by `0x00147ef8` |
+| `+0x20` | this update's command id ([Buttons](#buttons)), read by `0x00147ef8`; cleared each update for a human without a pad (`0x00146000`) |
 | `+0x24` | a pending command (from table entries whose mask is `0xfe`) |
 
 A second per-human record of 0x2f0 bytes is at `0x006d53f0 + i × 0x2f0` (contents not traced).

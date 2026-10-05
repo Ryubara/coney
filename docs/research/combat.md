@@ -5,7 +5,10 @@ PCSX2 2.9.94 (2026-10-05), reading memory over PINE in a street level ("the stre
 loaded read-only and copied with pad input patched in ([Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)).
 The player there is Rembrandt-class "player" human 2 with 314 of 900 health; the test victim is a civilian
 (`PoizoCiv`, 600 health) moved in front of the player by writing the transform table. Damage and timings below were
-read every update (30 per second) while the scripted pad played.
+read every update (30 per second) while the scripted pad played. The being-hit, block, grabbed and pose runs
+([Being hit, at runtime](#being-hit-runtime), [Grab pose at runtime](#grab-pose-runtime)) drove that civilian as a
+**puppet**: command ids written into its per-player record made it attack, grab and block the player
+([Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)); the player's health was reset to 900 before each run.
 
 ## Purpose
 
@@ -256,10 +259,10 @@ The grab strikes 51-57 have code 0 (the grab's own reactions play instead).
 
 **The reaction** (`0x0026b0a0` → `0x00266f38` → `0x00266d00`), confirmed (code):
 
-1. **Strength** = the code's, then -1 if the victim has flag `0x200`, or the attack is a combo id 13-20 and the victim
+1. **Strength** = the code's, then -1 if the victim has flag `0x200`, or the attack is a combo id and the victim
    lacks flag `0x400` and is not hurt (`0x00266b50`); +1 if the attacker has `0x200000` and the victim `0x400` or the
-   attack is 13-20 (`0x00266c40`); 0 between allies when the victim's `+0x08` has `0x1b`; at most 1 if the victim has
-   `0x80`; at most 3.
+   attack is a combo id (`0x00266c40`); 0 between allies when the victim's `+0x08` has `0x1b`; at most 1 if the victim
+   has `0x80`; at most 3. The combo ids are 13, 14, 15 and 17-20: both tests skip 16 `SS2`.
 2. **Height** = the code's, +1 when the attacker stands 0.3-0.9 m higher, +2 when 0.9-1.5 m; -1 / -2 when lower; at
    most 2. A low hit (height 0) is always strength 2.
 3. **Side**: 0 when the attacker is within 45° of the victim's front, 3 on its left, 1 on its right, 2 behind
@@ -279,7 +282,8 @@ The grab strikes 51-57 have code 0 (the grab's own reactions play instead).
 | 3 crushing | 1 mid | 298 | 299 | 296 | 297 |
 | 3 crushing | 2 high | 302 | 303 | 300 | 301 |
 
-Every reaction seen fits (confirmed (runtime)): `S1` (`0x0a`) from in front gives 272 and from the victim's left
+Every reaction seen fits, on the civilian and, from a puppet, on the player ([Being hit, at
+runtime](#being-hit-runtime)) (confirmed (runtime)): `S1` (`0x0a`) from in front gives 272 and from the victim's left
 (61-71°) 275; `X1` (`0x09`) from its left gives 274; `SSS3` (`0x26`, a combo id, so strength 1) gives 276; the special
 653 (`0x26`, strength 2) from the left gives 291 and a knockdown.
 
@@ -368,7 +372,7 @@ second overwrites it). When `0x2` opens it plays the next attack. Confirmed (cod
 | --- | --- | --- |
 | 12 `S1` | 16 `SS2` | 15 `SX2` |
 | 11 `X1` | 14 `XS2` | 13 `XX2` |
-| 16 `SS2` | 19 `SSS3` or 20 at random (19 every time at runtime) | 17 `SSX3` |
+| 16 `SS2` | 19 `SSS3` or 20 at random (19 in all but one of about 15 runs) | 17 `SSX3` |
 | anything else | the chain ends | the chain ends |
 
 A fourth press after `SSS3`, or a third cross after `XX2`, does nothing. A square buffered with the stick above 0.95
@@ -578,21 +582,83 @@ traced, so the mount's offset is inferred from the record only.
 **The pose** of every one of these clips is ordinary; what they share is that most leave out the bone 2 channel, which
 the original fills from its fixed reference pose ([Animation](formats/animation.md#reference-pose)).
 
+### Grab pose at runtime {#grab-pose-runtime}
+
+Measured every update in two runs: the player grabbing the puppet civilian (71, 72 / 73, hold 82 / 83, strike 51 /
+52, cross strike 55 / 56, R1 spin 78 / 79 to the rear hold 84 / 85, spin back 80 / 81, L2 let-go 95 / 94), and the
+civilian grabbing the player (70, 72 / 73, 82 / 83, strike 51 / 52). Confirmed (runtime) unless marked.
+
+**Where the bodies are.** "Ahead" and "right" are in the grabber's frame (a heading `h` faces `(-sin h, cos h)`):
+
+| Moment | Victim ahead | Victim right | Victim's heading |
+| --- | --- | --- | --- |
+| intro 71 / 70, placed 1.0 m away | 0.95 → 0.71 | 0 | grabber + 180° |
+| connect 72 / 73 starts | 0.84-0.94 | 0.01 | grabber + 180° |
+| connect ends, front hold 82 / 83 | **1.012** (1.012-1.076 in the AI's hold) | **0.379** | grabber + 180° |
+| strikes 51 / 52, 55 / 56 | 1.012 | 0.379 | unchanged |
+| spin 78 / 79 | 1.01 → 0.24 | 0.38 → −0.03 | turns from +180° to 0° over 28 updates |
+| rear hold 84 / 85 | **0.222** | **−0.097** | the grabber's |
+| spin back 80 / 81 | 0.22 → 1.01 | −0.10 → 0.38 | 0° → −180° over 17 updates |
+
+The positions match the [offsets](#grab-posing) the hold records give (0.380, 1.012 and −0.097, 0.222). In the player's
+hold neither body moved during the holds and the strikes (world positions constant to the millimetre; in the AI's
+hold the victim swayed between 1.012 and 1.076 m ahead); during 72 / 73 and the spins
+both move by their clips' root motion, which brings the victim from straight ahead to the hold's point.
+
+**The bone cache.** `0x0023bde8` (a human's bone transform for a bone index) fills, once per update, a cache of 34
+bones × 32 bytes at **`0x006b6880` + human index × `0x470`** (`0x0023bca0`; ready flag at `+0x460`) through
+`0x00104630`: entry 0 is the root (its velocity and turn from the clip), entry 1 the **pelvis** (bone 1) position and
+rotation in the model's frame, and entries 2-33 the other bones composed through the parent table (confirmed (code)).
+The pelvis read there, as a position and a quaternion `(x, y, z, w)` in the model frame (`z` up, the model facing
+`+y`, inferred from the heading convention), both characters giving the same values:
+
+| Clip | Pelvis position | Pelvis rotation | Change from the idle's rotation |
+| --- | --- | --- | --- |
+| idle 388 (Rembrandt) | (0.008, −0.011, 1.067) | (−0.558, −0.436, 0.454, 0.540) | |
+| hold 82, grabber | (0.001, 0.0-0.03, 0.871) | (−0.701, −0.034, 0.056, 0.711) | 71° about the model's vertical (`z`) |
+| held 83, victim | (0.000, 0.000, 0.831) | (−0.693, −0.252, 0.589, 0.332) | 39° about the model's `−x` (a lean) |
+| rear hold 84, grabber | (0.000, 0.000, 1.013) | (−0.329, −0.645, 0.537, 0.433) | 40° about (0.36, −0.04, 0.92) |
+| rear held 85, victim | (0.000, 0.000, 1.011) | (−0.282, −0.662, 0.454, 0.525) | 42° about (0.69, −0.02, 0.72) |
+| strike 51, grabber, mid-swing | (−0.002, 0.168, 0.615) | (−0.507, −0.222, 0.293, 0.779) | |
+
+In the idle the pelvis bone's own `x` axis lies along the model's `+y` (forward), its `y` axis along `−z` and its `z`
+axis along `−x`. So in the front hold **the grabber's hips are yawed 71° and lowered 0.2 m, the victim's tilted 39°
+and lowered 0.24 m, and neither is rolled onto its side**: a pelvis rotation that turns the bone's `y` axis away from
+the model's `−z` (straight down) is the "on its side" pose. The root entry was zero (no velocity, no turn) all through
+the holds and strikes and carried only the spins' and connects' root motion (78: about 0.8 m/s forward).
+
 ### Grabbed, and breaking free {#grabbed}
 
 **When the player is grabbed** (`Player_UpdateGrabbed`, `0x0027fd68`, the grabber at human `+0xc4`), confirmed
-(code); no save state has a human that grabs the player, so none of it was seen:
+(code); confirmed (runtime) where marked, from a puppet civilian's grab ([Being hit](#being-hit-runtime)):
 
 - **Square** (`0xf` / `0x11`): a struggle strike, 96 or 108 (front or rear), when the player may struggle
   (`0x002258f0`: not hurt, the grabber not raging, own power above a sixth of the maximum) and the grabber's power
-  fraction is above 1 / its power class byte `+0x36`. It takes 1 / (own byte `+0x36`) of the **grabber's** power, and
-  the strike damages the grabber by its clip's damage; a strike that would kill the grabber breaks the grab.
-- **Cross** (`0x12` / `0x10`): 104 / 116, a strike back.
-- **Circle** (`0x1e`, `0xd`, `0xe`): an **escape** (`0x0026cc18`) unless the grabber holds (`0x00225830`): the
-  threshold is a quarter of the grabber's maximum power (half if hurt); a raging grabber always holds; above the
-  threshold it holds with chance 1 - threshold / power. The escape plays 100 / 112 (102 / 114) and knocks down and
-  stuns the grabber.
-- **R1 pressed** or `0x19`: a reversal (`0x0026d150`), 90 / 91 or 92 / 93.
+  fraction is above 1 / its power class byte `+0x36`. It takes 1 / (own byte `+0x36`) of the **grabber's** maximum
+  power, spent even when the strike then cannot start (another move playing), and the strike damages the grabber by
+  its clip's damage; a strike that would kill the grabber breaks the grab. Runtime: 96 (grabber 97); each press took
+  the 200-power civilian down by about 75 (66.7 for 1 / 3, the rest not traced), 68 when 104 was still playing; the
+  third press emptied the meter and the grab broke with the player on 94 and the grabber on 95. 96 does 0 damage.
+- **Cross** (`0x12` / `0x10`): 104 / 116, a strike back. Runtime: 104 (grabber 105) for 33 updates, 20 damage to the
+  grabber, no power spent, then back to the holds 83 / 82.
+- **Circle** (`0x1e`, `0xd`, `0xe`): an **escape** (`0x0026cc18`) when `0x00225830` lets it: with `t` a quarter of
+  the grabber's maximum power (half if the grabber is hurt) and `p` its power, the escape always works when `p` ≤ `t`,
+  and otherwise with chance 1 / `floor(p / t)` (a random number below `floor(p / t)` must be 0); never against a
+  raging grabber. The escape plays 100 / 112 (102 / 114) and knocks down and stuns the grabber. Runtime: at 189 of
+  200 (chance 1 / 2) the player played 100 and took the clip's 20; the grabber played 101, lay down (`0x180001`), rose
+  with 199 2.2 s later and then stood stunned (356).
+- **R1 pressed** or `0x19`: a reversal (`0x0026d150`), 90 / 91 or 92 / 93, when the escape did not run, the grabber
+  lacks human flag `0x40`, the player lacks `0x80000000`, and the same chance as the escape allows it. Runtime: 90
+  (grabber 91) for 44 updates, after which **the player holds the grabber from the rear** (84 / 85, states `0x85` /
+  `0x21`) and drains its own power at 15 per second. A press that lost the roll did nothing.
+- **A counter at the catch** (`Grab_IntroEnd`, `0x0026c1d8`): when `0x00510254` is set (1 in the street) and a
+  grabbed player's command on the update the intro ends is 3 (R1 pressed), the grab becomes 76 `GRAB_FRONT_COUNTER`
+  (grabber 77) through `Attack_StartPaired`. Runtime: R1 pressed on that one update (not one update earlier or later)
+  played 76 / 77; the grabber lost 100 and was stunned (`0x100000`, then 355, 356, 357), and the player spent 100 of
+  400 power and gained 10 rage.
+- An AI grabber's own circle while holding the player (command `0x1e`, then `0xd`) took the pair to the ground: 118
+  `GRAB_MOUNT` / 119, then 210 `MOUNTING_IDLE` on the player's 207 `MOUNTED_IDLE` (confirmed (runtime); the path is
+  not traced).
 
 `CfgButtonMash` plays no part here: its only reader is the theft game ([Stereo theft](#stereo-theft)).
 
@@ -671,9 +737,89 @@ Confirmed (code):
 (`0x0025e2d8`, setting `+0x08` `0x8000`). Each command a pad-controlled human makes while down cuts the remaining time
 by the ground time / (1 to 3 at random), so **mashing gets the player up sooner**. A standing reaction returns to
 idle at its clip's end (`0x0025f770`, `0x0025fa48`; 355 when stunned). Confirmed (code); confirmed (runtime): the
-civilian rose 2.0 s after the special's hit, the player (2750 ms) 2.78 s after an escape, with no input.
+civilian rose 2.0 s after the special's hit, the player (2750 ms) 2.78 s after an escape, with no input; the player's
+mashing is measured in [Being hit](#being-hit-runtime).
 
 The victim can act again when its reaction clip ends (standing), its stun ends, or its rise ends.
+
+### Being hit, at runtime {#being-hit-runtime}
+
+A puppet civilian (`PoizoCiv`, type 417, power class 2) attacked, blocked and grabbed the player (Rembrandt, 900
+health, power class 64) 1.0 m away at a chosen bearing, with `CfgAutoLockAndCombat` written to 0 so that the player
+did not turn to face it. Every value here is confirmed (runtime) unless marked; updates are 1/30 s.
+
+**Reactions.** Every hit played the reaction the [table](#hit-codes) gives for the attack's code and side, from all
+four sides, for `S1`, `X1`, `SS2`, `SX2`, `XS2`, `XX2`, `SSS3`, `SSX3` and the special 653 / 655; the civilian's own
+codes (its list differs from Rembrandt's: `SS2` `0x09`, `XX2` `0x26`, `XS2` `0x1b`, `SSX3` `0x2b`, `SSS3` `0x16`,
+653 `0x39`) gave, front / victim's left / behind / victim's right:
+
+| Attack (code) | Front | Left | Behind | Right | Then |
+| --- | --- | --- | --- | --- | --- |
+| `S1` (`0x0a`) | 272 | 275 | 274 | 273 | idle |
+| `X1`, `SS2` (`0x09`) | 275 | 274 | 273 | 272 | idle |
+| `SX2` (`0x1a`, stun) | 280 | 283 | 282 | 281 | 357, idle |
+| `XS2` (`0x1b`, stun) | 281 | 280 | 283 | 282 | 357, idle |
+| `SSS3` (`0x16`, stun) | 276 | 279 | 278 | 277 | 357, idle |
+| `XX2` (`0x26`) | 288 | 291 | 290 | 289 | 196, 199 |
+| `SSX3` (`0x2b`) | 293 | 292 | | | 196, 199 |
+| 653 / 655 (`0x39`) | 303 | 302 | 301 | 300 | 196, 199, 356, 357 |
+
+`SSS3` stayed strength 1 on the player because he has flag `0x400`. The player's reaction starts on the attack's hit
+update (`S1` 2 updates after its start, `X1` 6, `SS2` 4, `SX2` 5, `XX2` 5, `SSS3` 5, `SSX3` 6, 653 25 for the
+civilian's clips).
+
+**Stun and ground time.** The player's stun is **200 ms** (`+0x100` = hit + 200): shorter than his reaction clips, so
+the stunned reactions went straight to 357 `STUNNED_EXIT` when the clip ended (0.9-1.2 s after the hit), with no
+356 loop. Knocked down, `+0x104` = hit + **2750 ms**; the player lay in 196 and rose with 199 **83 updates (2.77 s)
+after the hit** with no input. The crushing 653 also set the stun to the rise + 200 ms, so after 199 he stood in 356
+for 7 updates, then 357.
+
+**Mashing.** A press while still in the knockdown reaction (288) did nothing. Pressed while lying in 196 with about
+1.3 s left, one square press made him rise on the next update in 2 runs of 5, and about 13 updates later (when the
+time ran out, or at a second press) in the other 3: consistent with a cut of 2750 / 1, 2 or 3 ms per command (the
+cuts of 2750 and 1375 cover 1.3 s, 917 does not). Pressing every 4 updates from the hit got him up at the end of the
+reaction clip (update 63 instead of 107).
+
+**Hit armour.** The player pressed square (`S1`) and the civilian's `S1` hit him at chosen moments: in his wind-up
+(`+0x08` `0x1`) and in his chain window (`0x2`) the 14 damage landed but **no reaction played** and his attack went
+on (his `S1` still hit); in the attack's end (`0x4`) and before his clip started he played the reaction (274) and his
+attack was lost.
+
+**Damage taken** was the attacker's Anim Range List value with no reduction: 14 `S1`, 23 `X1`, 28 `SS2`, 37 `SX2` /
+`XS2`, 46 `XX2`, 42 `SSS3`, 51 `SSX3`, 50 or 70 for 653 / 655. At other times the same civilian dealt 18 `S1`, 27
+`X1` and 45 `SX2` / `XS2`: the **Anim Range List is shared** by the humans that use the same character data (record
+`+0x160` pointed to one list for `PoizoCiv`, `Civilians0`-`4` and Ash), and `AnimRange_ApplyClassDamage` writes each
+new human's class damage over it, so the newest human's class decides everyone's damage. With type 417
+(`PoizoCiv`, class values 27, 18, 54, 45, 45, 36, 63, 54 for indices 0-7) the list read 18 / 27; after a type 418-420
+civilian appeared (23, 14, 46, 37, 37, 28, 51, 42) it read 14 / 23. The class values of the humans in the street
+(`CfgChar` `+0xb8`, the [index → anim id](#damage-table) map):
+
+| Type | 0 `X1` | 1 `S1` | 2 `XX2` | 3 `SX2` | 4 `XS2` | 5 `SS2` | 6 `SSX3` | 7 `SSS3` | 16 653 | 24 grab strikes | 25 throws |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 417 `PoizoCiv` | 27 | 18 | 54 | 45 | 45 | 36 | 63 | 54 | 70 | 60 | 70 |
+| 418-420, 271, 272 civilians, bums | 23 | 14 | 46 | 37 | 37 | 28 | 51 | 42 | 50 | 20 | 30 |
+| 26 Vermin, 38 Ash | 23 | 15 | 46 | 38 | 38 | 31 | 53 | 46 | 69 | 50 | 57 |
+| 30 Rembrandt (before the 115 % scale) | 23 | 15 | 46 | 38 | 38 | 31 | 53 | 46 | 5 | 50 | 57 |
+
+**Blocking** (R1 held, the player's `0x8` pressed through the pad): the block started on the next update (606, state
+`0x8001`, no 605 seen) and **every blocked hit did 0 damage**, from every side. Light and medium hits played the
+block reactions of the [table](#block) by the reaction's direction: `S1` 608 front, 611 left, 610 behind; `X1` 611,
+610, 609; `SS2` 608 then 611; `SSS3` 612, 615, 614. The heavy and crushing ones (`SSX3`, 653 / 655) played **616
+`BLOCK_DODGE`** (a duck) about 4 updates before their hit, which then missed: `0x00261578` plays 616 (or 628 with
+weapon type 3 against weapon type 3) when the blocker's record `+0x14` is `0xd` (`0x00254e78`), confirmed (code); what
+sets `0xd` is not traced. The block reaction table at `0x00510898` holds -1 in entries 0-3 and 12-15, so a modified
+strength of 3 (entry 0) would break the block (confirmed (code) at `0x002671a8`); no hit broke the player's block. The
+puppet civilian, blocking the player, ducked under `X1`, `XX2` and `XS2` (616) and blocked `S1`, `SS2`, `SSS3` and
+`SSX3`.
+
+**Rage gained by the player** (rage 0 and the hold timer reset before each combo; `S1` gains are 0 or 1):
+
+| Hit | `S1` | `X1` | `SS2` | `SX2` | `XS2` | `XX2` | `SSS3` (19 or 20) | `SSX3` | counter 76 | 104 in a grab |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Rage | 1 | 5 | 1 | 13 | 10 | 6 | 4 | 7 or 15 | 10 | 1 |
+| Blocked | 0 | | 0 | | | | 0 | 6 | | |
+
+Being hit gave the player no rage. Every gain set the hold timer to now + 5000 ms.
 
 ### Power meter {#power-meter}
 
@@ -694,8 +840,8 @@ more (the whole award, not the excess: `CfgRagePoints` `0x005108d8`, table `0x00
 byte `+0x02` (144), `h` 0.5 when the per-player byte `+0x182` (record `0x0051489c + player × 0x5c`) is set, and `s`
 that record's float `+0x17c` when `0x002239e0` holds. The meter is **capped** at the maximum; the first time it fills,
 `0x00236ec8` announces it. Each gain sets the hold timer `+0x648` = now + 5000 ms (`CfgRageHandlers`). Confirmed
-(code). Gains seen per hit at runtime ranged from 1 (`S1`) to 10 for most hits, with 13 and 15 (`SSX3`) for the
-heaviest (confirmed (runtime)).
+(code). The gains per hit at runtime are in [Being hit](#being-hit-runtime): 0 to 15 per hit, 0 for most blocked
+hits, none for being hit (confirmed (runtime)).
 
 **The points** come from the stats system, which also adds them to the per-player score at `0x006fe490 + player ×
 0xc0`: `0x002653d8` maps the attack to an event (`X1` event 1, `S1` event 2, ...; a blocked hit is halved through
@@ -750,6 +896,20 @@ target; released (command 8, `0x00227b98`), it clears `0xc` and opens a 264 ms w
 locks. In the stealth state (`0x00244770`) L1 leaves it; with weapon type 5 and no enemy target it enters mode
 `0x13` (`0x00227b30`). Confirmed (code); confirmed (runtime): L1 held gave state `0xd`, a target, and the movement
 state `0x00241b90`.
+
+**At runtime** (confirmed (runtime), PoizoCiv 2 m ahead as the target): the street has `CfgLockOn` = 0, so **L1 alone
+does not lock**. With `CfgAutoLockAndCombat` written to 0, L1 held gave state `0xd` and a target, but the player kept
+its heading while the target circled it at 3° per update, and walked in the combat-walk clips without turning to it.
+With the street's `CfgAutoLockAndCombat` = 1 the same circling target was **tracked exactly**: the player's heading
+followed it by the same 3° per update, the target's bearing staying at 0°. Record `+0xdc` (the stick's angle from the
+facing, clockwise) picked the combat-walk clip as below (stick 35 % to 80 %, turned by the camera, so the angles are
+not the script's):
+
+| `+0xdc` | 18°, 354° | 27° | 79°, 88° | 120°, 143° | 185° | 329°, 348° |
+| --- | --- | --- | --- | --- | --- | --- |
+| Clip | 380 forward | 381 forward right | 382 right | 383 back right | 384 back | 387 forward left |
+
+A target that the walk took beyond 2.5 m was dropped and the player went back to the walk start 413.
 
 **Turning into an attack** (`Attack_Start`, `0x002625a8`): with the target within the attack's far range, it tells
 the target (`0x0021d5c0`) and steers with `0x002761c8`: turn and slide so that the target, moved by its velocity over
@@ -937,8 +1097,12 @@ the disc, and the hit armour, allies and class 13 rules a fight between humans n
 
 ## Open questions
 
-- **The player being hit, at runtime**: no save state has a human that attacks or grabs the player, so the player's
-  reactions, hit armour, blocks and the grabbed struggle are confirmed (code) only.
+- **The block's duck**: which code sets record `+0x14` to `0xd` (and so `0x00261578`'s 616) for some attacks on a
+  held block ([Being hit](#being-hit-runtime)), and whether a strength-3 hit can still break a block.
+- **The shared Anim Range List**: whether the overwrite by the newest human is intended, and which humans share a
+  list ([Being hit](#being-hit-runtime)).
+- **The AI power meter**: the civilian's meter (class 2, maximum 200) refilled to 300 at about 100 per second.
+- **Rage per hit**: the same `SSX3` gave 7 in one run and 15 in another, and `S1` 0 or 1.
 - **Class 13**: which character class it is (it gets hit armour and adds 2 s to a knockdown).
 - **The rage events**: the full map from anim id to stats event and table entry (`0x002653d8`, `0x00264fa0`).
 - **Commands `0x30`-`0x39`**: which scripts or weapons make them; `0x36`-`0x38` and the d-pad (`0x27`).
@@ -951,10 +1115,6 @@ the disc, and the hit armour, allies and class 13 rules a fight between humans n
   anim id, as the damage table's index → id map does for the damage.
 - **The timing columns not measured**: `SS2`'s window close and end, `SSX3`'s end, and the hit of the snaps, the
   moving attacks, the throws and the grounded and mounted strikes.
-- **The grab at runtime**: the alignment and the attachment ([Posing a grab](#grab-posing)) are confirmed (code)
-  only. To check in PCSX2: break at `0x00276998`'s return and read the grabber's slide (human `+0x2e0`, time
-  `+0x300`) and the victim's turn (`+0x304`, `+0x308`); after `0x00276d98` read the victim's stored offset `+0xa0`
-  (expect about (0.38, 1.01, 0)), its relative rotation `+0xb0` (a half turn about `z`) and its movement state
-  `+0x1c0` (`0x00244e78`); during the hold check that the CharacterInstance's (human `+0xd8`) default pose pointer
-  `+0x70` is `0x00598420`. Also how `0x00245310` turns the pair from the stick (try the stick at 0.6 to the right),
-  and how the tackle places the mount.
+- **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are
+  the fields the alignment writes (human `+0x2e0`-`+0x332`, victim `+0xa0` / `+0xb0`), how `0x00245310` turns the pair
+  from the stick, and how the tackle places the mount.

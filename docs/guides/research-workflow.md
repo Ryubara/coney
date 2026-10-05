@@ -292,6 +292,17 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   Coney's `pad::stickValue` (dead band 95-160, `(raw − 160) / 95`), so writing the raw bytes Coney makes from an input
   script's percentages (`160 + round(0.95 × v)`, `95 − round(0.95 × |v|)`, 128 at rest) gives both games the same
   stick, diagonals included, without touching the table.
+- **A puppet human** (2026-10-05, the combat runtime pass). To make an AI human attack, grab or block the player,
+  write command ids ([Combat](../research/combat.md#commands)) into its per-player record (`0x00660f50` + index ×
+  `0x2c`, `+0x20`): `Player_UpdateActions` runs for every human whose per-player `+0x1e` is 0, AI humans included,
+  and acts on that command. For a human with no pad, `0x00146000` clears `+0x20` every update, so put a `nop` over its
+  `sw zero,0x20(a0)` at `0x00146030` in the state copy (with the pad patch above), then write the command for one
+  update and 0 the next (a cross tap is `0x12`, then `0x10`, then 0). A grab needs a target: write the player's handle
+  (human `+0x90`) to the puppet's human `+0xc8` and its brain's `+0x124` (`0x006d53f0` + index × `0x2f0`), or 70 misses.
+  A held button (R1 to block) is read from a pad record, so give the puppet pad index 4 (per-player `+0x19`) and write
+  the button into all eight entries of pad record 4's button history (`0x005dd950 + 0x1c`, eight `u16`) every update.
+  Set `CfgAutoLockAndCombat` (`0x005104b8`) to 0 when the player must not turn to face the attacker. Pick the puppet
+  by name: the nearest human changes as pedestrians walk, and an ally's hits play reactions without damage.
 - **One sample per update.** Batch every read of a sample into one PINE message (a list of Read32 commands) and keep
   a sample only when the game time `*(0x0050b734) + 0x48` (milliseconds) has advanced by a character update
   (1000 / 30 ms); apply the scripted input as each update is seen. Over PCSX2's TCP PINE this read about 40 words per
