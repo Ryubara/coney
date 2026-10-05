@@ -2,16 +2,15 @@
 #include "debug/tunables.h"
 
 #include <algorithm>
-#include <charconv>
 #include <cmath>
 #include <format>
 #include <fstream>
 #include <iterator>
 #include <set>
-#include <system_error>
 #include <utility>
 
 #include "core/assert.h"
+#include "core/parse_number.h"
 
 namespace coney::debug {
 
@@ -35,12 +34,7 @@ std::optional<double> parseValue(std::string_view text) {
     if (text == "off" || text == "false") {
         return 0.0;
     }
-    double value = 0.0;
-    const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
-    if (text.empty() || parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() || !std::isfinite(value)) {
-        return std::nullopt;
-    }
-    return value;
+    return parseDecimal(text);
 }
 
 } // namespace
