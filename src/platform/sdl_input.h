@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -17,6 +18,15 @@ namespace coney::platform {
 /// The raw PS2 stick byte for an SDL gamepad axis (-32768 to 32767, right or down positive): 0 at full left or up,
 /// 255 at full right or down, 128 at rest.
 [[nodiscard]] std::uint8_t stickByteFromAxis(std::int16_t axis);
+
+/// The raw PS2 stick bytes (x, y) for an SDL gamepad stick's two axes, stretched from the circle a modern gamepad
+/// reports onto the square a DualShock 2 reports. Pushed fully along a diagonal, a modern stick gives about 0.71 on
+/// each axis, which the original's per-axis dead zone (docs/research/frontend.md#pad-record) turns into a length of
+/// about 0.86: under the 0.95 a run needs (docs/research/characters.md), so a full diagonal walked. A DualShock 2
+/// reaches both extremes there (inferred; PCSX2's default analog sensitivity of 1.33 makes up the same difference), so
+/// each point is moved out along its direction until a full circle meets the square's edge; a straight push is
+/// unchanged. A Coney choice for modern gamepads, not the original's behaviour.
+[[nodiscard]] std::array<std::uint8_t, 2> stickBytesFromAxes(std::int16_t x, std::int16_t y);
 
 /// The pressure byte (0-255) for an SDL trigger axis (0 to 32767; negative values count as 0).
 [[nodiscard]] std::uint8_t pressureFromTrigger(std::int16_t axis);

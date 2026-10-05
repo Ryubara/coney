@@ -141,6 +141,18 @@ pressure, and pressure byte 0 maps to `0x2000`, 1 to `0x8000`, 2 to `0x1000` and
 zone), `(r - 95) / 95` below it and `(r - 160) / 95` above it, so the range is exactly [-1, 1]. Confirmed (data in the
 executable). The y values are negated so that up is positive.
 
+**Diagonals and the stick's shape.** The dead zone and the scale are applied to each axis on its own, and the
+in-game stick length is `min(1, sqrt(x² + y²))` ([Characters](characters.md): a run needs more than 0.95, `0x005102e8`).
+So a full push only runs along a diagonal if both bytes reach near 0 or 255 there. The DualShock 2's sticks do: their
+output is close to a square, both axes at their extremes at a full diagonal (inferred, from the game's design and from
+PCSX2, whose default analog sensitivity of 1.33 scales a modern pad up to match; not measured on hardware). A modern
+gamepad reports a circle: about 0.71 of full travel on each axis at a full diagonal, raw bytes about 37 and 218, which
+the table turns into 0.61 each and a length of about 0.86, so the player walks. W A S D are unaffected (bytes 0 and
+255). **Coney's implementation:** the SDL layer stretches each gamepad stick from the circle onto the square before
+making the bytes (`stickBytesFromAxes`, `src/platform/sdl_input.cpp`: each point scaled by its length over its larger
+axis), so a full diagonal runs as on a PS2; straight pushes and the table above are unchanged. Open: measuring a real
+DualShock 2's diagonal bytes (through PCSX2 with a DualShock 2 adapter, or on hardware).
+
 ### Pad queries
 
 Functions over a pad record, all confirmed (code); `cur` is the current button word, `prev(n)` the word `n` samples

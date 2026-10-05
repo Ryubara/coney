@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
@@ -17,6 +18,9 @@
 namespace coney::platform {
 
 namespace {
+
+// An SDL stick axis at full right or down.
+constexpr float kStickAxisFull = 32767.0F;
 
 // A pad button and the SDL thing that drives it.
 template <typename Source> struct Binding {
@@ -96,11 +100,13 @@ PadSample readGamepad(SDL_Gamepad* gamepad) {
         sample.buttons |= pad::kR2;
     }
     fillDigitalPressure(sample);
-    // PadSample::sticks is right x, right y, left x, left y; SDL's y is down positive, like the PS2's byte.
-    sample.sticks = {stickByteFromAxis(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHTX)),
-                     stickByteFromAxis(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHTY)),
-                     stickByteFromAxis(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTX)),
-                     stickByteFromAxis(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTY))};
+    // PadSample::sticks is right x, right y, left x, left y; SDL's y is down positive, like the PS2's byte. Each
+    // stick is squared off like a DualShock 2's, so a full diagonal is a full push.
+    const auto rightStick = stickBytesFromAxes(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHTX),
+                                               SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHTY));
+    const auto leftStick = stickBytesFromAxes(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTX),
+                                              SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTY));
+    sample.sticks = {rightStick[0], rightStick[1], leftStick[0], leftStick[1]};
     return sample;
 }
 
@@ -154,6 +160,18 @@ bool SDLCALL watchPresses(void* userdata, SDL_Event* event) {
 std::uint8_t stickByteFromAxis(std::int16_t axis) {
     // Shift the signed range to 0..65535 and keep the high byte: -32768 -> 0, 0 -> 128, 32767 -> 255.
     return static_cast<std::uint8_t>((static_cast<int>(axis) + 32768) >> 8);
+}
+
+std::array<std::uint8_t, 2> stickBytesFromAxes(std::int16_t x, std::int16_t y) {
+    const float fx = std::max(-1.0F, static_cast<float>(x) / kStickAxisFull);
+    const float fy = std::max(-1.0F, static_cast<float>(y) / kStickAxisFull);
+    // Scale by length / largest axis: a point on the circle of radius r lands on the square of half-side r.
+    const float largest = std::max(std::abs(fx), std::abs(fy));
+    const float scale = largest > 0.0F ? std::min(std::hypot(fx, fy), 1.0F) / largest : 0.0F;
+    const auto axis = [scale](float value) {
+        return static_cast<std::int16_t>(std::clamp(value * scale * kStickAxisFull, -32768.0F, kStickAxisFull));
+    };
+    return {stickByteFromAxis(axis(fx)), stickByteFromAxis(axis(fy))};
 }
 
 std::uint8_t pressureFromTrigger(std::int16_t axis) {

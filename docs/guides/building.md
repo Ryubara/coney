@@ -450,6 +450,11 @@ original; the menus, [the world viewer](#the-world-viewer), [the character viewe
 The first gamepad connected plays on port 1, the second on port 2; the keyboard always plays on port 1, alongside
 the first gamepad. Escape quits. A headless run reads no devices.
 
+A gamepad's sticks are squared off like a DualShock 2's: a modern stick reports a circle, about 0.71 on each axis at a
+full diagonal, which the game's per-axis dead zone turns into a walk; the DualShock 2 reaches both extremes there, so
+Coney stretches each stick's circle onto the square and a full diagonal runs as it does on a PS2
+([Pad record](../research/frontend.md#pad-record)). Straight pushes and W A S D are unchanged.
+
 ### Input scripts {#input-scripts}
 
 `--input-script FILE` replaces the keyboard and gamepads with a script, so a test or a headless run gets the same
