@@ -56,6 +56,9 @@ inline constexpr float kPickHeight = 2.0F;
 inline constexpr float kAttackTurnCapDegrees = 8.0F;
 /// The player's health (Rembrandt's 900 at runtime, record `+0x146`).
 inline constexpr int kPlayerHealth = 900;
+/// After R1 is let go the player stands in the idle (388) this many updates before the stick moves him; a press is
+/// taken on the first of them (docs/research/combat.md#input-return, confirmed (runtime); its source is not traced).
+inline constexpr int kBlockSettleUpdates = 5;
 
 /// What the fighter is given each update.
 struct FighterInput {
@@ -114,6 +117,10 @@ class Fighter {
     /// Whether combat moves the body this update rather than the stick: blocking, holding someone or held, mugging, a
     /// theft, an attack's clips playing, or reacting to a hit (stunned, down, getting up).
     [[nodiscard]] bool holdsMovement(const HumanAnimator& animator) const;
+    /// Whether one of the player's own combat clips still plays (an attack, a grab's intro or miss, a move in a hold,
+    /// a spin, a throw, the let-go, rage's start, a reaction): a new move waits for it to end
+    /// (docs/research/combat.md#coneys-implementation).
+    [[nodiscard]] static bool movePlaying(const HumanAnimator& animator);
     [[nodiscard]] bool blocking() const { return m_combat.blocking(); }
     [[nodiscard]] const combat::PlayerCombat& combat() const { return m_combat; }
     [[nodiscard]] combat::PlayerCombat& combat() { return m_combat; }
@@ -192,8 +199,10 @@ class Fighter {
     [[nodiscard]] TargetHuman* inFront(const FighterInput& input, float range, bool grounded) const;
     // The strike reach of attack `animId`.
     [[nodiscard]] float reachOf(int animId) const;
-    // The dispatcher's input from the world: square's target, circle's search, the hold.
-    [[nodiscard]] combat::CombatInput combatInput(const FighterInput& input, bool helpless);
+    // The dispatcher's input from the world: square's target, circle's search, the hold, and whether a move of the
+    // player's still plays.
+    [[nodiscard]] combat::CombatInput combatInput(const FighterInput& input, const HumanAnimator& animator,
+                                                  bool helpless);
     // Plays what the dispatcher decided: the block, rage, a grab or tackle, the grab's moves, the mugging, a theft,
     // an attack.
     void playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
@@ -297,7 +306,7 @@ class Fighter {
     float m_victimTurnStep = 0.0F; // the victim's
     int m_turnUpdates = 0;         // updates of turn left
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
-    bool m_wasBlocking = false;
+    int m_blockSettle = 0;         // updates left of the settle after the block (the stick held, presses taken)
     int m_hitsLanded = 0;
     int m_damageDealt = 0;
 

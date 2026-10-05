@@ -268,14 +268,25 @@ void HumanAnimator::leaveCombatWalk() {
     }
 }
 
+void HumanAnimator::endHold() {
+    if (m_state == AnimState::Hold) {
+        m_state = AnimState::Idle;
+    }
+}
+
+bool HumanAnimator::settling() const {
+    return m_state == AnimState::Attack && drivingClipPlaying() && animId() == kAnimNormalFromFight;
+}
+
 void HumanAnimator::choose(const AnimInputs& inputs) {
     // A held combat pose stays until combat plays something else.
     if (m_state == AnimState::Hold || m_state == AnimState::CombatWalk) {
         return;
     }
-    // An action's clips play out; then the state is whatever they handed over to.
+    // An action's clips play out (but a move's closing 389 gives way to a move asked for); then the state is whatever
+    // they handed over to.
     if (isAction(m_state)) {
-        if (drivingClipPlaying()) {
+        if (drivingClipPlaying() && !(settling() && inputs.wantsMove)) {
             return;
         }
         const anim::AnimTask* top = m_tasks.top();

@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <array>
 
+#include "combat/anim_ids.h"
+
 namespace coney::combat {
 
 namespace {
@@ -61,6 +63,14 @@ int awardHitRage(RageMeter& rage, int animId, bool blocked, const CombatTuning& 
                  const RepeatTracker& tracker, bool throwing) {
     const RageCounts counts = rageCounts(animId);
     const RageGain gain{.halved = tracker.halved(), .stateMultiplier = throwing ? tracker.bonus() : 1.0F};
+    // A throw's two awards, each times the bonus its grab strikes built.
+    if (animId >= anim_id::kThrow1Front && animId <= anim_id::kThrow2Left) {
+        int added = 0;
+        for (const int points : kThrowAwardPoints) {
+            added += rage.add(static_cast<float>(blocked ? points >> 1 : points), tuning, nowMs, gain);
+        }
+        return added;
+    }
     // Each award goes through the formula on its own, so each is truncated on its own.
     int added =
         rage.add(static_cast<float>(awardPoints(counts.event2, kRageEvent2Points, blocked)), tuning, nowMs, gain);

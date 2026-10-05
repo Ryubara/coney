@@ -1,5 +1,6 @@
 # Rembrandt tackles the fight yard's front target (assets/sandbox/combat.layout): circle held 10 updates (the command
-# comes on the 7th sample), then square strikes the mounted target (212). Frames are 1/30 s.
+# comes on the 7th sample), then, once the tackle's clips have played and he sits mounted (210), square strikes the
+# mounted target (212). Frames are 1/30 s.
 10 press circle
 20 release circle
-60 tap square
+80 tap square

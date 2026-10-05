@@ -81,14 +81,20 @@ inline combat::AnimRangeList fightRanges() {
     return std::move(list).value_or(combat::AnimRangeList{});
 }
 
-// The synthetic character with the locomotion and combat clips.
+// The synthetic locomotion and combat clips together.
+inline std::vector<test::LocomotionClip> fightClips() {
+    std::vector<test::LocomotionClip> clips = test::locomotionClips();
+    const std::vector<test::LocomotionClip> fights = test::combatClips();
+    clips.insert(clips.end(), fights.begin(), fights.end());
+    return clips;
+}
+
+// The synthetic character with the locomotion and combat clips (fightClips()), or with `clips`.
 struct FightCharacter {
-    characters::CharacterData data = test::locomotionData([] {
-        std::vector<test::LocomotionClip> clips = test::locomotionClips();
-        const std::vector<test::LocomotionClip> fights = test::combatClips();
-        clips.insert(clips.end(), fights.begin(), fights.end());
-        return clips;
-    }());
+    FightCharacter() : FightCharacter(fightClips()) {}
+    explicit FightCharacter(const std::vector<test::LocomotionClip>& clips) : data(test::locomotionData(clips)) {}
+
+    characters::CharacterData data;
     characters::AnimSet anims{data, nullptr};
     combat::AnimRangeList ranges = fightRanges();
 };

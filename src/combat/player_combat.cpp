@@ -21,13 +21,18 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
         return out;
     }
 
+    // The record's +0x08 as the update starts: the attack's phase and what the fighter's clips carry.
+    const std::uint32_t phase = phaseFlags(input);
+
     // 1. The block. With R1 held as the command nothing else reads the input this update.
     const bool blockOnly = updateBlock(input, out);
+    // In the recovery or the run attack the dispatcher returns before the chain and every command.
+    const bool dropped = (phase & kDispatchDroppingPhases) != 0;
 
-    // 2. The chain. **Coney choice**: the attack playing still counts its updates under a held R1 (the original's
-    // clip plays on); only the press is not read.
+    // 2. The chain. **Coney choice**: the attack playing still counts its updates under a held R1 or a dropping phase
+    // (the original's clip plays on); only the press is not read.
     const ChainButton press =
-        blockOnly ? ChainButton::None : chainButton(input.command, input.stick, tuning.snapAttacks);
+        blockOnly || dropped ? ChainButton::None : chainButton(input.command, input.stick, tuning.snapAttacks);
     const ChainStep step = m_chain.update(press, tuning);
     if (step.started != anim_id::kNone) {
         out.startAnim = step.started;
@@ -37,6 +42,13 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
         out.hitDamage = m_ranges != nullptr ? strikeDamage(*m_ranges, step.hit) : 0;
     }
     if (blockOnly) {
+        return out;
+    }
+    if (dropped) {
+        // The meters still end a grab whose power ran out (Human_UpdateMeters, not the dispatcher).
+        if (m_mode == CombatMode::Grabbing && m_power.value() == 0) {
+            updateGrabbing(input, tuning, out);
+        }
         return out;
     }
 
@@ -62,8 +74,9 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
         updateGrabbing(input, tuning, out);
         break;
     case CombatMode::Tackling:
-        // Mounted on the victim, square strikes it.
-        if (input.command == command::kSquarePressed && !m_chain.active()) {
+        // Mounted on the victim, square strikes it. **Coney choice**: only once the mount stands (the tackle's clips
+        // and the last strike over), as a move plays to its end.
+        if (input.command == command::kSquarePressed && !m_chain.active() && !input.movePlaying && input.holdReady) {
             startAttack(anim_id::kMountingStrike, tuning, out);
         }
         break;
@@ -146,8 +159,10 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
         m_mode = CombatMode::Free;
         return;
     }
-    // **Coney choice**: one grab move at a time; a move plays out (its hit included) before the next is read.
-    if (m_chain.active()) {
+    // **Coney choice**: one grab move at a time; a move (a strike, a spin, the mugging's end) plays out, its hit
+    // included, before the next is read, and nothing is read before the hold stands (the intro and the connecting
+    // clips, which the original plays before it sets the grabbing state).
+    if (m_chain.active() || input.movePlaying || !input.holdReady) {
         return;
     }
     GrabInput grab;
@@ -210,7 +225,9 @@ void PlayerCombat::updateTheft(const CombatInput& input, const CombatTuning& tun
 }
 
 void PlayerCombat::grabOrTackle(const CombatInput& input, CombatOutput& out) {
-    if (!grabAllowed(m_chain.phaseFlags())) {
+    // Refused while +0x08 has any of 0xfc7eaf7: an attack's phases, and the grab bit 0x10 its own intro and miss carry
+    // (docs/research/combat.md#input-return). **Coney choice**: also while any other move of the player's plays.
+    if (!grabAllowed(phaseFlags(input)) || input.movePlaying) {
         return;
     }
     const bool tackle = input.command == command::kCircleHeld;
@@ -229,14 +246,17 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
     switch (input.command) {
     case command::kL2Cross:
     case command::kL2Square:
-        if (runningAttackAllowed(input.gait, m_chain.phaseFlags())) {
+        // The original's own test (a run with +0x08 clear, or a sprint) decides, not whether a clip plays.
+        if (runningAttackAllowed(input.gait, phaseFlags(input))) {
             startAttack(input.command == command::kL2Cross ? anim_id::kRunningAttackCharge
                                                            : anim_id::kRunningAttackDive,
                         tuning, out);
         }
         break;
     case command::kSquarePressed:
-        if (!m_chain.active()) {
+        // Refused while +0x08 has any of 0x100101f (the attack phases, the grab bit, the duck, the run attack).
+        // **Coney choice**: also while any other move of the player's plays (its bits are not measured).
+        if ((phaseFlags(input) & kAttackRefusingPhases) == 0 && !m_chain.active() && !input.movePlaying) {
             SquareInput square;
             square.target = input.target;
             square.stick = input.stick;
@@ -247,7 +267,7 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
         }
         break;
     case command::kCrossLongHold:
-        if (!m_chain.active()) {
+        if ((phaseFlags(input) & kAttackRefusingPhases) == 0 && !m_chain.active() && !input.movePlaying) {
             startAttack(crossAttack(), tuning, out);
         }
         break;

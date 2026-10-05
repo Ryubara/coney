@@ -252,7 +252,7 @@ TEST_CASE("on the disc, a tackle mounts the target and square strikes it", "[san
         SKIP("CONEY_DISC is not set: no disc to check");
     }
     const Yard yard = loadYard(path);
-    const Fight fight = runFight(yard, "tackle", "combat_tackle.txt", 90);
+    const Fight fight = runFight(yard, "tackle", "combat_tackle.txt", 120);
     CHECK(inOrder(fight.playerClips, {4, 5, 212, 210}));
     CHECK(inOrder(fight.targetClips, {6, 207}));
     CHECK(std::ranges::find(fight.targetStates, TargetState::Mounted) != fight.targetStates.end());

@@ -136,24 +136,24 @@ int nextChainAttack(int current, ChainButton button) {
 AttackTiming attackTiming(int animId, const CombatTuning& tuning) {
     // A measured attack, by hit, window opening, end phase and idle; -1 where the research has no number.
     struct Measured {
-        int id, hit, open, close, end;
+        int id, hit, open, close, recovery, end;
     };
     static constexpr std::array<Measured, 15> kMeasured{{
-        {.id = anim_id::kAttackX1, .hit = 8, .open = 10, .close = 20, .end = 30},
-        {.id = anim_id::kAttackSS2, .hit = 4, .open = 6, .close = -1, .end = -1},
-        {.id = anim_id::kAttackSSS3, .hit = 7, .open = -1, .close = 16, .end = 26},
-        {.id = anim_id::kAttackSSX3, .hit = 7, .open = -1, .close = 24, .end = 30},
-        {.id = anim_id::kAttackXX2, .hit = 10, .open = -1, .close = 17, .end = 30},
-        {.id = anim_id::kAttackSX2, .hit = 7, .open = -1, .close = 14, .end = 19},
-        {.id = anim_id::kAttackXS2, .hit = 9, .open = -1, .close = 22, .end = 30},
-        {.id = anim_id::kGrabComboStrike1, .hit = 1, .open = -1, .close = -1, .end = 21},
-        {.id = anim_id::kGrabComboStrike2, .hit = 1, .open = -1, .close = -1, .end = 21},
-        {.id = anim_id::kGrabComboStrike3, .hit = 1, .open = -1, .close = -1, .end = 23},
-        {.id = anim_id::kGrabPower1Strike1, .hit = 0, .open = 19, .close = 33, .end = 44},
-        {.id = anim_id::kAttackFromWalk, .hit = -1, .open = -1, .close = -1, .end = 24},
-        {.id = anim_id::kAttackFromRun, .hit = -1, .open = -1, .close = -1, .end = 21},
-        {.id = anim_id::kRunningAttackCharge, .hit = -1, .open = -1, .close = -1, .end = 27},
-        {.id = anim_id::kRunningAttackDive, .hit = -1, .open = -1, .close = -1, .end = 60},
+        {.id = anim_id::kAttackX1, .hit = 8, .open = 10, .close = 20, .recovery = 21, .end = 30},
+        {.id = anim_id::kAttackSS2, .hit = 4, .open = 6, .close = -1, .recovery = -1, .end = -1},
+        {.id = anim_id::kAttackSSS3, .hit = 7, .open = -1, .close = 16, .recovery = -1, .end = 26},
+        {.id = anim_id::kAttackSSX3, .hit = 7, .open = -1, .close = 24, .recovery = -1, .end = 30},
+        {.id = anim_id::kAttackXX2, .hit = 10, .open = -1, .close = 17, .recovery = 19, .end = 30},
+        {.id = anim_id::kAttackSX2, .hit = 7, .open = -1, .close = 14, .recovery = -1, .end = 19},
+        {.id = anim_id::kAttackXS2, .hit = 9, .open = -1, .close = 22, .recovery = -1, .end = 30},
+        {.id = anim_id::kGrabComboStrike1, .hit = 1, .open = -1, .close = -1, .recovery = -1, .end = 21},
+        {.id = anim_id::kGrabComboStrike2, .hit = 1, .open = -1, .close = -1, .recovery = -1, .end = 21},
+        {.id = anim_id::kGrabComboStrike3, .hit = 1, .open = -1, .close = -1, .recovery = -1, .end = 23},
+        {.id = anim_id::kGrabPower1Strike1, .hit = 0, .open = 19, .close = 33, .recovery = -1, .end = 44},
+        {.id = anim_id::kAttackFromWalk, .hit = -1, .open = -1, .close = -1, .recovery = -1, .end = 24},
+        {.id = anim_id::kAttackFromRun, .hit = -1, .open = -1, .close = -1, .recovery = -1, .end = 21},
+        {.id = anim_id::kRunningAttackCharge, .hit = -1, .open = -1, .close = -1, .recovery = -1, .end = 27},
+        {.id = anim_id::kRunningAttackDive, .hit = -1, .open = -1, .close = -1, .recovery = -1, .end = 60},
     }};
     // S1's timing, the tunable one, is every other attack's.
     AttackTiming timing{.hit = tuning.hitUpdate,
@@ -172,6 +172,9 @@ AttackTiming attackTiming(int animId, const CombatTuning& tuning) {
     if (found->end >= 0) {
         timing.end = found->end;
         timing.recovery = found->end - (tuning.attackEndUpdate - tuning.recoveryUpdate);
+    }
+    if (found->recovery >= 0) {
+        timing.recovery = found->recovery;
     }
     if (found->close >= 0) {
         timing.chainClose = found->close;
@@ -238,6 +241,10 @@ ChainStep AttackChain::update(ChainButton press, const CombatTuning& tuning) {
 std::uint32_t AttackChain::phaseFlags() const {
     if (!active()) {
         return 0;
+    }
+    // The run attack carries its own bit for its whole length, not the chain's phases.
+    if (m_current == anim_id::kAttackFromRun) {
+        return kPhaseRunAttack;
     }
     if (m_age < m_timing.chainOpen) {
         return kPhaseWindUp;

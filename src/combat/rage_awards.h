@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 #include "combat/combat_tuning.h"
@@ -16,6 +17,11 @@ namespace coney::combat {
 /// The points of event 2 (table 3 entry 2) and event 1 (table 3 entry 1), as `CfgSetStatValue` fills them.
 inline constexpr int kRageEvent2Points = 1;
 inline constexpr int kRageEvent1Points = 4;
+
+/// The points of a throw's two awards (147-161). **Coney's choice**, back-derived from the runtime rage: a throw gave
+/// 8 and 7 rage at gain 144 and 13 and 11 with a throw bonus of 1.54 (docs/research/combat.md#rage), which
+/// `trunc(points × 1.44 × bonus)` gives for 6 and 5 points; the events the throws map to (`0x00264fa0`) are not traced.
+inline constexpr std::array<int, 2> kThrowAwardPoints{6, 5};
 
 /// The two award counts of one attack.
 struct RageCounts {
@@ -72,9 +78,10 @@ class RepeatTracker {
     RepeatKind m_lastKind = RepeatKind::Other;
 };
 
-/// Gives the attacker of a hit of `animId` its rage (blocked or not) at game time `nowMs`: the two awards in turn, each
-/// through RageMeter::add() (which holds the meter 5 s and gives nothing in rage), halved while `tracker`'s flag is set
-/// and times its throw bonus when `throwing`. Returns what was added. The caller notes the hit in `tracker` afterwards.
+/// Gives the attacker of a hit of `animId` its rage (blocked or not) at game time `nowMs`: the two awards in turn (a
+/// throw's kThrowAwardPoints), each through RageMeter::add() (which holds the meter 5 s and gives nothing in rage),
+/// halved while `tracker`'s flag is set and times its throw bonus when `throwing`. Returns what was added. The caller
+/// notes the hit in `tracker` afterwards.
 /// @orig 0x002653d8 Stats_AttackRage (unknown)
 int awardHitRage(RageMeter& rage, int animId, bool blocked, const CombatTuning& tuning, std::uint64_t nowMs,
                  const RepeatTracker& tracker, bool throwing = false);

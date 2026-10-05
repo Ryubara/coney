@@ -46,7 +46,17 @@ struct CombatInput {
     bool victimMuggable = false;          ///< The held victim may be mugged.
     bool victimInPlace = true;            ///< The held victim stands in its place for a move in the hold.
     bool helpless = false;                ///< Reacting to a hit, stunned, down or held: only the meters run.
-    std::uint64_t nowMs = 0;              ///< Game time, whole milliseconds.
+    /// One of the player's own combat clips is still playing (an attack, a grab's intro or miss, a move in a hold, a
+    /// spin, a throw, the let-go, rage's start): no new move starts until it ends (the chain's own next attack still
+    /// plays at its window).
+    bool movePlaying = false;
+    /// The hold stands: the held victim is attached at its offset (or the player holds no target human). Before that,
+    /// during the grab's intro and connecting clips, a grab reads no command.
+    bool holdReady = true;
+    /// The `+0x08` bits the fighter's clips carry beyond the attack's phases: kPhaseGrabStart while a grab's or
+    /// tackle's intro or miss plays, kPhaseDuck while ducking.
+    std::uint32_t phase = 0;
+    std::uint64_t nowMs = 0; ///< Game time, whole milliseconds.
 };
 
 /// What one update decided.
@@ -72,6 +82,13 @@ class PlayerCombat {
     PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed);
 
     /// One update, in the original's order: the block, the chain, the meters, the state routes, the commands.
+    ///
+    /// When input is read again (docs/research/combat.md#input-return): with `+0x08` (phaseFlags()) in the recovery or
+    /// the run attack the dispatcher reads nothing past the block; a press for the attack playing is buffered by the
+    /// chain (AttackChain); square and cross refuse on kAttackRefusingPhases, circle on kGrabRefusingPhases.
+    /// **Coney choice**: a press that would start a move of its own (square, cross, circle, a move in a grab or on the
+    /// mount) is also ignored while CombatInput::movePlaying, and in a grab until CombatInput::holdReady. The charge
+    /// and dive keep the original's own test.
     /// @orig 0x0027c120 Player_UpdateActions (unknown)
     CombatOutput update(const CombatInput& input, const CombatTuning& tuning);
 
@@ -82,6 +99,9 @@ class PlayerCombat {
     void release();
     /// A hit took the player out of what it was doing: the attack and its chain are lost and the block ends.
     void interrupt();
+    /// The attack's clip has ended: its chain ends with it, as a press is taken again on the first update after the
+    /// clip (docs/research/combat.md#input-return).
+    void endAttack() { m_chain.cancel(); }
     /// The player holds someone without having grabbed them (the reversal of a grab on it): grabbing.
     void startHolding();
     /// Starts the duck's counter `animId` (617-620) as an attack with its hit timing: the block and any chain end.
@@ -98,6 +118,10 @@ class PlayerCombat {
     [[nodiscard]] const std::optional<StereoTheft>& theft() const { return m_theft; }
 
   private:
+    // The record's +0x08 for this update: the attack chain's phase with the bits `input` carries.
+    [[nodiscard]] std::uint32_t phaseFlags(const CombatInput& input) const {
+        return m_chain.phaseFlags() | input.phase;
+    }
     // R1 held in a fight, or L1 released or L1 + R1 short of full rage while blocking: the block. Returns true when
     // the command is R1 held, which ends the update.
     bool updateBlock(const CombatInput& input, CombatOutput& out);

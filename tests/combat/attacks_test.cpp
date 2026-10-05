@@ -184,7 +184,7 @@ TEST_CASE("each attack keeps its measured timing: X1 hits at 8, SSS3 ends at 26,
     CHECK(sss3.hit == 7);
     CHECK(sss3.chainOpen == sss3.chainClose);
     CHECK(sss3.chainClose == 16);
-    CHECK(sss3.recovery == 23);
+    CHECK(sss3.recovery == 22);
     CHECK(sss3.end == 26);
     CHECK(attackTiming(anim_id::kGrabComboStrike3, tuning).end == 23);
     CHECK(attackTiming(anim_id::kSnapRight, tuning).hit == tuning.hitUpdate);

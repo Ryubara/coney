@@ -1271,7 +1271,14 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 **In the player.** `human::Player` runs the street's `CommandMatcher` on the pad's buttons and gives the human the
 command, the buttons and the targets; the human calls the fighter each update it is on the ground and not climbing,
 after the locomotion and stamina. While the fighter holds the body (blocking, holding someone, mugging, or an attack's
-clip playing) the stick does not move it: the clip's root motion does, with the slide an attack starts. Triangle keeps
+clip playing) the stick does not move it: the clip's root motion does, with the slide an attack starts. As
+measured at runtime ([When input returns](#input-return)), a press and the stick come back on the first update after a
+move's clip: the attack's chain ends with its clip, and a move that ends in 389 (`NORMAL_FROM_FIGHT`) holds nothing
+through it, the stick replacing it with the walk start at once. Record `+0x08` gates the presses as traced: the
+recovery and the run attack's bit (`0x5c7fee0`) drop every press past the block, square and cross refuse on
+`0x100101f`, circle on `0xfc7eaf7` (the grab's and tackle's intro and miss carry `0x10`, the duck `0x1000`). Let go of
+R1, the player stands in the idle 5 updates with the stick held but takes a press at once (the source of the 5 is
+not traced). Triangle keeps
 its own order (climb, context action, jump) and is not read while the fighter holds the body; L2 still sprints, but
 not while blocking.
 
@@ -1291,7 +1298,8 @@ multiplied by the throw bonus. The hit is then noted: six square-ended (or six c
 5000 ms of the last, set the flag; each grab or mount strike adds 0.27 to the bonus (up to 2.0), which goes back to 1.0
 every update the player is neither grabbing from the front nor throwing. Being hit gives nothing. **Coney's choice**:
 the counter 76 awards 7 points and the strike back 104 1 point (the rage seen at runtime, back-derived), as the
-events of those two moves are not mapped.
+events of those two moves are not mapped. A throw (147-161) gives two awards of 6 and 5 points, back-derived from its
+8 and 7 rage at runtime (13 and 11 with a throw bonus of 1.54).
 
 **The player hit** (`fighter_victim.cpp`; nothing attacks him yet, so `Human::takeHit()`, `warn()` and
 `catchInGrab()` are the entry points a future attacker and the tests use). An attacker's clip warns him as its events
@@ -1319,12 +1327,13 @@ a won roll: with `t` a quarter of the grabber's maximum (half when it is hurt) a
 grabber's power running out ends the grab, with an escape when the grabber is hurt.
 
 **The clips** (anim ids, played through the human's animator, `AnimState::Attack` returning to the fight idle 358 and
-`AnimState::Hold` keeping its loop): the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15,
+`AnimState::Hold` keeping its loop; an attack returns to the fight idle 358 while the player has a target and through
+389 to the idle 388 when he has none, **Coney's reading** of the runtime runs): the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15,
 `XS2` 14 and the snaps; the run attack 24 and the charge 0 and dive 1, after which the run resumes when the stick is
 still at a run; the block 606, or the shuffle 607 with the stick pushed; rage 643; the grab 71, 72, then the hold 82
 (victim 73, then 83), or from the rear 71, 74, 84 (victim 75, 85); the miss 71, 69, 389; the tackle 4, 5, then 210
 (victim 6 when the player's 5 starts, then 207),
-the tackle's miss 4, 2; the grab strikes and power strikes with the victim's next id (52, 54, 56, 58, 64); the spins
+the tackle's miss 4, 2, 389; the grab strikes and power strikes with the victim's next id (52, 54, 56, 58, 64); the spins
 78 / 79 to the rear hold 84 / 85 and 80 / 81 back to 82 / 83; the throws with the victim's next id, then 196; the
 let-go 95 / 94; the mugging 78, 338, 340 (victim 79, 339, 341) with 342 / 343 while the stick is on target and 344 /
 345, 80 / 81 on success; the mounted strike 212 back to 210.
@@ -1342,7 +1351,8 @@ The tests drive all of this with input scripts played through the pad records at
 `tests/combat/` the core (each attack's timing, the chain, the grab rules, the meters, the reactions, the class damage,
 the victim's decisions, the grabbed player, the lock-on and the rage awards), `tests/human/being_hit_test.cpp` the
 player hit (the duck and its counter, the block, the floor, the armour, the stun, knockdown and mash, held in a grab,
-the rage and repeat tracker, the combat walk and the grab's turn), `tests/human/combat_test.cpp` the human with
+the rage and repeat tracker, the combat walk and the grab's turn), `tests/human/combat_timing_test.cpp` when every
+move takes a press and gives the stick back under button spam and partial stick, with the disc's clip lengths, `tests/human/combat_test.cpp` the human with
 synthetic clips (the combo and its reactions and stun, the stun's 750 ms, the block holding the body while the stick at
 0.6 turns it, the grab, strike and throw with the rise 2 s later, the R1 spin and the L2 let-go, the tackle, the turn
 into an attack, the knockdown, the victim at the front and rear holds' offsets after the connect, a paired clip from the
@@ -1365,11 +1375,12 @@ so the game plays the file's damage for now.
 
 - Inside one trigger table a later matching entry overwrites an earlier one, as the tables do between themselves;
   trigger 4 (query) never matches.
-- Attack timing where a column was not measured: the recovery starts 3 updates before the end (as `S1`'s); an attack
+- Attack timing where a column was not measured: the recovery starts 4 updates before the end (as `S1`'s); an attack
   with no window opening has none; `SS2` closes and ends as `S1`; `SSX3` ends at 30; the run attack ends at 21, the
   charge at 27 and the dive at 60 (their clip lengths seen at runtime); every attack not measured (the snaps, the
   moving attacks, the throws, the grounded and mounted strikes) hits 2 updates in, as `S1`. The attack keeps counting
-  under a held R1.
+  under a held R1 and in a dropping phase; an attack whose clip ends before its counted end (the snaps, the throws)
+  ends its chain with the clip, and every other move of the player's refuses a new one while its clip plays.
 - `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; at a sprint (gait 5) square is
   `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
@@ -1424,8 +1435,8 @@ so the game plays the file's damage for now.
   speed (the 5 slower first updates backward are not known).
 
 **Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests); the
-warnings of the player's own clips to the targets (they never block); the rage of throws and of the attacks beyond
-the chain and moving attacks (their events are not mapped, so the throw bonus changes nothing yet); the hurt
+warnings of the player's own clips to the targets (they never block); the rage of the attacks beyond the chain, the
+moving attacks and the throws (their events are not mapped); the hurt
 multipliers `+0x10` / `+0x14`; weapons, breakables and the theft's car windows (no objects yet); the class damage
 table read from the disc (`CfgChar` waits for the script runner's tables); and the allies and class 13 rules a fight
 between humans needs.

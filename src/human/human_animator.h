@@ -88,6 +88,9 @@ inline constexpr float kLandFade = 0.0F;
 inline constexpr float kCombatFade = 0.1F;
 /// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat.md#attacks).
 inline constexpr std::uint32_t kAnimFightIdle = 358;
+/// 389 `NORMAL_FROM_FIGHT`, which a move ends in with the stick at rest: it holds neither a press nor the stick, which
+/// replaces it at once (docs/research/combat.md#input-return).
+inline constexpr std::uint32_t kAnimNormalFromFight = 389;
 /// The gait blend's value speed, units a second, for the locomotion.
 inline constexpr float kGaitValueSpeed = 10.0F;
 
@@ -151,6 +154,12 @@ class HumanAnimator {
     void playCombatWalk(std::uint32_t clip);
     /// Leaves the combat walk for the idle (the lock is gone); nothing in any other state.
     void leaveCombatWalk();
+    /// Leaves a held combat pose (AnimState::Hold) for the controller's own choice, keeping what plays; nothing in
+    /// any other state.
+    void endHold();
+    /// Whether a move's 389 plays after it (AnimState::Attack): combat holds nothing then, and a stick asking to move
+    /// replaces it at once.
+    [[nodiscard]] bool settling() const;
     /// Whether the anim set has a clip for `id`.
     [[nodiscard]] bool hasClip(std::uint32_t id) const { return m_anims->clip(id) != nullptr; }
 
