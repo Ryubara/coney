@@ -148,7 +148,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x20` | this update's command id ([Buttons](#buttons)), read by `0x00147ef8`; cleared each update for a human without a pad (`0x00146000`) |
 | `+0x24` | a pending command (from table entries whose mask is `0xfe`) |
 
-A second per-human record of 0x2f0 bytes is at `0x006d53f0 + i × 0x2f0` (contents not traced).
+A second per-human record of 0x2f0 bytes at `0x006d53f0 + i × 0x2f0` is the human's **brain** ([AI](ai.md#brain)).
 
 ### The 0x180 record {#the-record}
 
@@ -188,9 +188,10 @@ The three airborne bits (`0x1c00000000`) are cleared on landing.
 
 `CfgPowerClass` fills records of 0x44 bytes at `0x006619a0 + class × 0x44`. A human's class is byte `+0x1b9` for a
 player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at the cited addresses; Rembrandt's
-values confirmed (runtime). A street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms, power
-200, byte `+0x36` 4 (confirmed (runtime)). The other fields (floats `+0x08`, `+0x0c`, `+0x18`, `+0x24`, `+0x32`, the
-bytes from `+0x37`) are not traced:
+values confirmed (runtime). A street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms,
+power 200, byte `+0x36` 4 (confirmed (runtime)). The AI's fields `+0x08` (block chance), `+0x0c` (block chance while
+hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai.md#block); `+0x18`, `+0x32`
+and the bytes after `+0x37` are not traced:
 
 | Field | Rembrandt (class 64) | Use |
 | --- | --- | --- |
@@ -544,21 +545,26 @@ without a `.lev` file.
 
 ### The characters' update {#update}
 
-The task manager's set-up step (`0x003a3148`, called first in mode 1's frame, [Level loading](level-loading.md#a-frame-of-play))
-runs `0x003a3000`, which calls `Humans_Update` (`0x00249108`) whenever 0x4b0000 ticks (about 16.7 ms) have passed.
-`Humans_Update` does its work on every **second** call, so the characters step at 30 Hz with dt = 1/30. In order,
-confirmed (code), each step behind a debug switch that is on in play (`0x005e5350`-`0x005e5368`):
+The task manager's play tick (`0x003a3148` → `0x003a2ea0`, called first in mode 1's frame,
+[Level loading](level-loading.md#a-frame-of-play)) calls `Humans_Update` (`0x00249108`) on each 60 Hz tick, once
+0x4b0000 ticks (about 16.7 ms) have passed, and runs two ticks when it fell behind. `Humans_Update` does its work on
+every **second** call, so the characters step at 30 Hz with dt = 1/30. In order, confirmed (code), each step behind a
+debug switch that is on in play (`0x005e5350`-`0x005e5368`); the full list is on [Tasks](tasks.md#humans-update):
 
-1. Three animation managers (`0x00170c88`, `0x00171d38`, `0x00184568`); `Pads_Update`; the 60 player records
-   (`0x00146078`, below).
-2. For every human with an instance, `0x0023bd78` (the instance's animation step, `0x00175610`), then
+1. Three animation managers (`0x00170c88`, `0x00171d38`, `0x00184568`); `Pads_Update`; the formations; the 60 player
+   records (`0x00146078`, below).
+2. The gangs, then the **brains** (`0x00293b28`, [AI](ai.md#update)), which write an AI human's command into its
+   player record as a pad would.
+3. For every human with an instance, `0x0023bd78` (the instance's animation step, `0x00175610`), then
    `0x00105570`.
-3. Per human: a position 1.3 above the human handed to `0x0019c3f0` for humans with flag `0x4000` (an effect or
+4. Per human: a position 1.3 above the human handed to `0x0019c3f0` for humans with flag `0x4000` (an effect or
    sound, inferred), and checks against the player's gang.
-4. Per human: vtable slot `+0x13c` (its state update) or a flag when it is idle.
-5. The brains, alternating the order (0 → 59, then 59 → 0) on each update: AI decisions, targeting and the actions
-   (`0x00254e78`, `0x00221108`, `0x00256f28`, `0x00265f70`).
-6. The cameras' update (`0x0011e878`) with dt, at least 1/30.
+5. Per human: vtable slot `+0x13c` (its state update: the locomotion) or a flag when it is idle.
+6. The actions, alternating the order (0 → 59, then 59 → 0) on each update: `Human_UpdateActions` (`0x00254e78`),
+   which runs the command dispatcher (`0x0027c120`) for player and AI humans alike; a dead or knocked-out human runs
+   `0x00221108`, `0x00256f28` and `0x00265f70` instead. An earlier reading of this page called this step the
+   brains.
+7. The cameras' update (`0x0011e878`) with dt, at least 1/30.
 
 ### From pad to intent {#input}
 
@@ -1246,7 +1252,9 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   confirmed (code)), so the original's threshold is 0.396 m/s against Coney's 0.407.
 - **Falling**: state 26's builder loops the drop cycle (slot 26, 428) with the idle's 0.15 s fade; a drop lands
   straight into the idle or the move, without the drop land (429), the long-fall cycles or the ground roll.
-- **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip). In the air
+- **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip). Now
+  confirmed (code): the start clip's `0x10000000` zeroes the stick's velocity but is outside `Human_IsBusy`'s mask, so
+  the turn still runs ([Tasks](tasks.md#locomotion-gate)). In the air
   only a jump steers; a fall keeps its velocity, and no clip's root motion moves the body while airborne. Standing
   (no gait blend yet), the update the start clip begins sets no velocity, as at runtime.
 - **The start clips hand over early**: the walk and run starts give way to the gait blend on the update after which
@@ -1380,7 +1388,8 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **The body's shape** (answered): a capsule shape whose walls are a swept sphere ([Walls and steps](#walls)). Still
   open: what the capsule's 1.886 (shape `+0x44`) and the human's `+0x4e8` are used for.
 - **The airborne anim state** (answered): states 25-27 ([Falling and landing](#falling)); air control
-  ([Jumping](#jump)). Still open: whether locomotion turns the human while a start clip plays.
+  ([Jumping](#jump)). Whether locomotion turns the human while a start clip plays (answered: it does,
+  [Tasks](tasks.md#locomotion-gate)).
 - **Step height at runtime** (answered): steps up to 0.245 m are walked onto in one update, from 0.255 m they stop
   the body ([Walls and steps](#walls)), measured on a test step made in the mesh. Still open: a real kerb in a later
   level, as corroboration.
@@ -1406,8 +1415,8 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **Triangle flags `0x4` and `0x80`**: why two climbable flags (one for players only), and which surfaces carry them.
 - **The sprint's other clear** (answered: the block, [Combat](combat.md#dispatch)). Still open: what `0x00230140`,
   called when the sprint is set, does, and the fight test `0x00224f28`.
-- **The rest of the human**: the 0x180 and 0x2f0 records, the state flags tested by `0x002265f0` / `0x00226660`, and
-  `Human_MakePlayer`'s steps.
+- **The rest of the human**: the 0x180 record (the 0x2f0 record is the brain, [AI](ai.md#brain)), the state flags
+  tested by `0x002265f0` / `0x00226660`, and `Human_MakePlayer`'s steps.
 - **Level starts at runtime**: the list is read from the scripts; a runtime check would confirm a few. For each of
   `level2` checkpoint 1, `level95` chapter 1 and `level102` brawl, read player 1's transform (the table at
   `0x00714b00`, index `+0x92` of the human whose `+0x1b0` is 1) on the first frame of play, and again after the

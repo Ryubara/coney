@@ -351,6 +351,10 @@ compiled out, or reaches the string some other way); its code lies somewhere bet
 | `SceneTask.cpp` | `0x0039d278`-`0x0039d618` | 3 | | `0x0039d278`; `0x0039d3a8` (`WarMoveInstance`) |
 | `TaskManager.cpp` | `0x003a2728`-`0x003a2b48` | 2 | `0x003a8678` | `0x003a2728` (`ParticleTaskManager`, `ObjectTaskManager`); `0x003a2a30` |
 
+The functions around `TaskManager.cpp`'s anchors that work on the manager (`0x003a2b48`-`0x003a4288`: phases, the
+timing wheels, messages) and on the base task object (`0x003a1570`-`0x003a2310`) are named on [Tasks](tasks.md);
+that they belong to `TaskManager.cpp` (or a base task file beside it) is inferred from the range only.
+
 ### tolua
 
 | File | Attributed range | Functions | Static-init stub | Anchors (allocation tags they pass) |
@@ -450,7 +454,7 @@ Most of the unknown share is in a few large stretches between anchored files:
 
 | Range | Size | Between | Likely contents |
 | --- | --- | --- | --- |
-| `0x00273fa0`-`0x00321ab8` | 711 KB | `Human/cns/cnsplayertag.cpp` and Lua | more `Human/` (AI behaviours, combat); speculative |
+| `0x00273fa0`-`0x00321ab8` | 711 KB | `Human/cns/cnsplayertag.cpp` and Lua | more `Human/`: the combat paths (to `0x00287a18` at least), then the AI's brains, goals and actions from `0x0028a360` to at least `0x00306630` ([AI](ai.md)); contents confirmed (code), directory speculative |
 | `0x003a8698`-`0x00407798` | 389 KB | `TaskEngine/TaskManager.cpp` and tolua | more `TaskEngine/` or a directory without path strings; unknown |
 | `0x00386f58`-`0x00397a48` | 68 KB | `StringTable/` and `TaskEngine/ObjectTaskManager.cpp` | unknown |
 | `0x00341a68`-`0x00350688` | 60 KB | `Physics/physics.cpp` and `RayCast/CollisionMesh.cpp` | the rest of `Physics/` (rodata between them lists `MATERIAL_*` names); inferred |

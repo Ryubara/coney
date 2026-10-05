@@ -78,6 +78,8 @@ nav:
           - World flags: research/flags.md
           - Characters: research/characters.md
           - Combat: research/combat.md
+          - Tasks (the TaskEngine): research/tasks.md
+          - AI humans: research/ai.md
           - Camera: research/camera.md
           - Feel comparison: research/feel.md
           - Collision: research/collision.md

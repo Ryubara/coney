@@ -470,8 +470,10 @@ the only presses taken earlier are the chain's.
 - The grab or tackle (`0x00284920`) refuses while `+0x08` has any of `0xfc7eaf7`, which includes `0x10`.
 
 So a press in `0x4` is dropped by its path, and one in `0x40000` by the dispatcher. During a grab or tackle miss
-(`0x10`) every path refuses. Nothing refuses 389. What holds the stick until the clip's end, and the block's extra
-5 updates, is not traced (the locomotion side, [Characters](characters.md#locomotion)).
+(`0x10`) every path refuses. Nothing refuses 389. What holds the stick until the clip's end is the **locomotion gate**
+([Tasks](tasks.md#locomotion-gate)): the recovery `0x40000` is in its velocity mask `0x110c0880`, the phases `0x1`,
+`0x2`, `0x4` and the grab's `0x10` make the human busy (`0x00223cb0`), and the clip's task clears them as it ends
+([Tasks](tasks.md#held-flags)). The block's extra 5 updates are the state code `+0x14` = 5, which the same gate tests.
 
 ### Block (and no dodge) {#block}
 
@@ -511,7 +513,7 @@ type 3 throws the attacker into 629. A blocked hit gives the attacker half the r
   the human is not both in state `0x100000` and flagged `0x8000000` (human `+0xe0`), asks whether to counter: a
   player when its current command (per-player `+0x20`, `0x00147ef8`) is one of `0xf`, `0x11`, `0x15` (square) or
   `0x10`, `0x12`, `0x16` (cross) (`0x0027b988`), so square or cross pressed or held during the window; an AI human
-  asks its current tactic (`0x0028c6a8`, tactic types `0x17`, `0x1b` and `0x85`). Yes sets record `+0x14` =
+  asks its reaction goal or top goal (`0x0028c6a8`, goal types `0x17`, `0x1b` and `0x85`). Yes sets record `+0x14` =
   **`0xe`**.
 - On its next update `0x00254e78` handles `0xe` (`0x002550f4`): nothing while the human holds an object of class 8
   (`0x00231a38`); `+0x14` cleared and nothing else when `0x00225498` refuses; otherwise it keeps its target
@@ -543,12 +545,15 @@ update of 616):
 
 **An AI human's answer** (`0x0028c6a8`, confirmed (code)):
 
-- When the brain's `+0x3c` holds a tactic of type `0x17`, the answer is no (`0x002b4aa0` returns 0).
+- When the brain's `+0x3c` holds a reaction goal of type `0x17`, the knocked-down goal, the answer is no
+  (`0x002b4aa0` returns 0). (An earlier reading called `+0x3c` a tactic; it is the reaction goal,
+  [AI](ai.md#reaction-goals).)
 - Otherwise the brain's active entry (`brain + 0x40` indexed by `brain + 0x2c`) answers:
     - Type `0x1b` (`0x002b5698`), the block goal built by `0x002b54d8` and pushed by `0x0029f098` with a random
       block chance (a quarter of it for brain type 3). It says yes when the human is ducking (record `+0x08` has
       `0x1000`, `0x00223b28`) and the goal's bytes `+0x14` and `+0x16` are both 1. `+0x16` is 1 from construction;
-      the writer of `+0x14` was not found.
+      `+0x14` is written by the goal's Start (`0x002b5520`): 1 when a second roll under the block chance succeeds
+      ([AI](ai.md#block)).
     - Type `0x85`, `Goal_BigFighter` (`0x002eab50`, vtable `0x00542940`, built by `0x002e9cd0`). It says yes when
       the human's body scale (`+0x65c`) is at most 1.1, it is ducking, and the goal's u16 `+0x28` is `0x0101`.
 - Yes writes command `0x10` into the human's per-player record (`0x00147ef0`). From there the counter takes the
@@ -1375,12 +1380,14 @@ so the game plays the file's damage for now.
 
 - Inside one trigger table a later matching entry overwrites an earlier one, as the tables do between themselves;
   trigger 4 (query) never matches.
-- Attack timing where a column was not measured: the recovery starts 4 updates before the end (as `S1`'s); an attack
-  with no window opening has none; `SS2` closes and ends as `S1`; `SSX3` ends at 30; the run attack ends at 21, the
-  charge at 27 and the dive at 60 (their clip lengths seen at runtime); every attack not measured (the snaps, the
-  moving attacks, the throws, the grounded and mounted strikes) hits 2 updates in, as `S1`. The attack keeps counting
-  under a held R1 and in a dropping phase; an attack whose clip ends before its counted end (the snaps, the throws)
-  ends its chain with the clip, and every other move of the player's refuses a new one while its clip plays.
+- Attack timing where a column was not measured (**to be replaced**: the phases come from the clip's events `0x2c`,
+  `0x2d` and `0x48` and end with its task, [Tasks](tasks.md#held-flags)): the recovery starts 4 updates before the
+  end (as `S1`'s); an attack with no window opening has none; `SS2` closes and ends as `S1`; `SSX3` ends at 30; the
+  run attack ends at 21, the charge at 27 and the dive at 60 (their clip lengths seen at runtime); every attack not
+  measured (the snaps, the moving attacks, the throws, the grounded and mounted strikes) hits 2 updates in, as `S1`.
+  The attack keeps counting under a held R1 and in a dropping phase; an attack whose clip ends before its counted end
+  (the snaps, the throws) ends its chain with the clip, and every other move of the player's refuses a new one while
+  its clip plays (both confirmed (code) by the held flags, [Tasks](tasks.md#readers)).
 - `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; at a sprint (gait 5) square is
   `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
@@ -1434,18 +1441,19 @@ so the game plays the file's damage for now.
 - The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full
   speed (the 5 slower first updates backward are not known).
 
-**Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests); the
+**Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests; the
+AI that would is on [AI](ai.md)); the
 warnings of the player's own clips to the targets (they never block); the rage of the attacks beyond the chain, the
 moving attacks and the throws (their events are not mapped); the hurt
 multipliers `+0x10` / `+0x14`; weapons, breakables and the theft's car windows (no objects yet); the class damage
-table read from the disc (`CfgChar` waits for the script runner's tables); and the allies and class 13 rules a fight
-between humans needs.
+table read from the disc (`CfgChar` waits for the script runner's tables; the values `level99` needs are on
+[AI](ai.md#damage-tables)); and the allies and class 13 rules a fight between humans needs.
 
 ## Open questions
 
 - **The block**: whether a strength-3 hit can still break a block. (Answered: `+0x14` = `0xe`, message `0xa5`, is
-  the duck counter, [Blocking](#block); seen at runtime, and the AI tactics' answer traced.) Still open: who sets the
-  block goal's byte `+0x14`.
+  the duck counter, [Blocking](#block); seen at runtime, and the AI goals' answer traced.) The block goal's byte `+0x14`
+  (answered): its Start rolls it against the block chance ([AI](ai.md#block)).
 - **The shared Anim Range List**: whether the overwrite by the newest human is intended, and which humans share a
   list ([Being hit](#being-hit-runtime)). Coney does not reproduce it.
 - **A blocked `SSS3`'s rage**: 0 at runtime ([Rage](#rage)) where the two awards' formula gives 1 (3 >> 1 = 1 point,
@@ -1453,7 +1461,7 @@ between humans needs.
 - **The stun after a knockdown**: it ends at the rise + 200 ms, before 199 ends, yet after 653 the player stood in
   356 for 7 updates before 357 ([Being hit](#being-hit-runtime)); Coney plays 357 as 199 ends.
 - **The halved rage** (answered): the repeat tracker and the throw bonus, both seen at runtime ([Rage](#rage)).
-  Still open: whether the brain type 3 that also notes hits is the ally brain.
+  Brain type 3 (answered): the Warriors' brain, so an ally's ([AI](ai.md#types)).
 - **The backward combat walk** (answered): 3.429 m/s like every direction, after 5 slower updates
   ([Target selection](#targets)). Still open: what slows those 5 updates.
 - **Class 13**: which character class it is (it gets hit armour and adds 2 s to a knockdown).
@@ -1469,6 +1477,7 @@ between humans needs.
 - **The timing columns not measured**: `SS2`'s window close and end, `SSX3`'s end, and the hit of the snaps, the
   moving attacks, the throws and the grounded and mounted strikes.
 - **Input and the stick after a move** (answered at runtime, [When input and the stick come back](#input-return)).
-  Still open: the locomotion gate that holds the stick until the clip ends, and the block's 5 updates after release.
+  The locomotion gate (answered, [Tasks](tasks.md#locomotion-gate)). The block's 5 updates after release (partly
+  answered): the state code `+0x14` = 5 holds the stick; who sets and clears it after a block is open.
 - **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are
   the fields the alignment writes (human `+0x2e0`-`+0x332`, victim `+0xa0` / `+0xb0`).
