@@ -972,9 +972,19 @@ keeps falling through it, up to 0.38 m below in one phase. The unshifted jump (t
 trace is this, not a sampling artefact. The code path is the sweep's landing contact (`0x0023e408`, run from
 `0x0033d340` when body flag `0x40` is set; segment from feet + `+0x4e8` − 0.16 × scale, 0.880 m for the player,
 to the moved feet), which records the contact's fraction as `(hit − 1.0) / (length − 1.0)`, or 0 when the hit is
-nearer than 1.0 m (the human's vtable `+0x5c`); why the hit is not taken until the feet are about 0.17 m under is not
-traced (inferred: a contact at fraction 0 is discarded by the contact resolution, `0x0033d9d8`, but the 0.17 m does not
-follow from the 0.88 / 1.0 m geometry alone).
+nearer than 1.0 m (the human's vtable `+0x5c`, the constant 1.0 at `0x004ed818`); why the hit is not taken until the
+feet are about 0.17 m under is not traced. What the code shows (confirmed (code)):
+
+- the segment's upper point is `0x00226a20`: the feet + `+0x4e8` − 0.16 × the scale;
+- only a hit with a normal `z` above 0.65 records a landing contact;
+- `0x0033d340` marks the contact (`+0xb0` = `0x80`) and its handler `0x00219d50` calls `Land(1, 1)`;
+- contacts are kept sorted by fraction (`0x0033d718`), and the resolution `0x0033d9d8` acts on the first contact
+  whose handler returns a code that is not 0, then returns;
+- the body's move loop `0x0033e278` runs the sweep up to 3 times.
+
+Read alone, this lands on the update the moved feet pass the ground, which the runtime contradicts; the 0.17 m does
+not follow from the 0.88 / 1.0 m geometry either. A log of the contacts (a code patch that copies each contact's
+fraction and handler code to free memory) would settle it.
 
 **A fall at runtime** (PCSX2 2.9.94, `level99`, no stick input; Rembrandt raised 10 m by writing the transform table's
 `z`). Confirmed (runtime):
@@ -1090,6 +1100,12 @@ belong to the AI's jump (`0x0029ade0`, inferred from its callees).
   and record `+0x08` gets `0x40` (the fences stop blocking, [Walls and steps](#walls)); on failure the climb ends
   in the idle or the combat idle. A running climb ends in a gait blend, a standing one in the idle.
 - While clips 437-460 play, `+0x5b9` is 1 (`Human_StateUpdate`).
+- **The first clip runs during the move.** The same call sets the move to the start point (`0x0023d2b8`: over 1/60 s,
+  or 1/15 s when the turn `0x0023cf88` takes 1/30 s) and installs the three clip tasks (`0x00105990`, `0x001754e8`),
+  so P1's clock starts on the climb's first update, not after the move. Confirmed (code). At runtime (the slot 7
+  fence from a run, [Feel comparison](feel.md)) 440 lasted 11 updates: the start update still at run speed, the two
+  snap updates (1.11 and 1.17 m), then 8 updates of the clip's root motion at full speed from the first (5.79 m/s
+  falling to 0.36 m/s), with no fade-in. The first update of 441 and of 442 moved the body 0 m. Confirmed (runtime).
 
 **What gets climbed**, from the rules above (heights above the feet; inferred from the code, the three rows marked
 runtime were seen):
@@ -1368,14 +1384,15 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **What builds the run stop** (417): it plays after a run's skid as well as a sprint's (confirmed (runtime),
   [Feel comparison](feel.md)); the builder is not traced.
 - **The landing's threshold**: why the landing contact is taken only once the feet start an update about 0.17 m
-  below the floor ([When the landing happens](#falling)); the contact resolution `0x0033d9d8` and what it does with a
-  contact at fraction 0 would settle it.
+  below the floor ([When the landing happens](#falling)). The contact path is traced (the resolution `0x0033d9d8`
+  acts on the first contact by fraction) and does not explain it; a runtime log of the contacts is needed.
 - **The landing's fade** and the gait blend value 436 hands over to; the drop land (429) and the long falls are not
   built in Coney.
-- **The climb's details**: the fade before its first clip; when record `+0x08` `0x40` is cleared; whether the
-  re-probe needs a climbable triangle; how a fence climb's second clip moves the body (Coney: its root motion).
-- **The camera during a fence climb** (answered at runtime: the fence does not pull the camera in,
-  [Feel comparison](feel.md)); which test in the camera's collision skips it (material 30, a flag) is not traced.
+- **The climb's details** (the first clip's timing answered: it runs during the move to the start point, with no
+  fade, [Climbing](#climb)): when record `+0x08` `0x40` is cleared; whether the re-probe needs a climbable triangle;
+  how a fence climb's second clip moves the body (Coney: its root motion).
+- **The camera during a fence climb** (answered: the camera's rays exclude materials 30, 122 and 107,
+  [Camera](camera.md#collision)).
 - **Triangle flags `0x4` and `0x80`**: why two climbable flags (one for players only), and which surfaces carry them.
 - **The sprint's other clear** (answered: the block, [Combat](combat.md#dispatch)). Still open: what `0x00230140`,
   called when the sprint is set, does, and the fight test `0x00224f28`.

@@ -432,6 +432,47 @@ circle + cross at a victim getting up played 359 and then `X1`.
 the charge stopped at the fence, and about 1.4 s later a cutscene placed the player on the far side. Confirmed
 (runtime). That the break is a script trigger reacting to the charge is inferred.
 
+### When input and the stick come back {#input-return}
+
+**At runtime** (confirmed (runtime)), PCSX2 2.9.94, a copy of slot 1 (the street, Rembrandt, nobody within 14 m),
+read every update. Presses were scripted pad input; the left stick was held at **60 % up** (raw 38), which walks.
+Updates are counted from the clip's first update (k = 0), and a press counts from the update its command reached
+the per-player record.
+
+| Move | Clips, updates | Presses during it | First press taken again | The stick moves him again |
+| --- | --- | --- | --- | --- |
+| `S1` (12) | 20: `0x1` 0-5, `0x2` 6-14, `0x4` 15, `0x40000` 16-19 | buffered in `0x1` / `0x2` (the chain), dropped in `0x4` / `0x40000` | **k = 20**: a new `S1` that update (presses at k = 16 and 18 dropped) | k = 20, 413 walk start at 0.9 m/s |
+| `X1` (11) | 30: `0x1` 0-9, `0x2` 10-19, `0x4` 20, `0x40000` 21-29 | a cross in the window plays `XX2` that update (k = 19) | | k = 30 (413) |
+| `XX2` (13) after `X1` | 30: `0x1` 0-16, `0x4` 17-18, `0x40000` 19-29 | all dropped (the chain ends) | not reached (the presses stopped at k = 21) | |
+| `S1` → `SS2` → `SSS3`, square every 2 updates | `S1` 6 (cut when its window opens), `SS2` 6, `SSS3` (20) **32**: `0x1` 0-23, `0x4` 24, `0x40000` 25-31 | a press in each wind-up is buffered (`+0xb8` = 2) and plays when the window opens; all dropped in `SSS3` | k = 32 of `SSS3`: a new `S1` | k = 32 of `SSS3` (413) |
+| run attack (24), stick 100 % | 21, `+0x08` `0x1000000` throughout, 7.09 m/s | all dropped | k = 22: another 24 | k = 21: the run (410) at once, at 7.80 m/s |
+| block (606), R1 released | `0x8001`, `+0x08` `0x80000` for its first 5 updates, then 0 | | the update after the release: square gave `S1` at once | **5 updates** after the release: the idle 388 (state 0, `+0x14` = 5) for 5, then 413 |
+| grab miss: 71, then 69 `GRAB_MISS` | 71 5, 69 16; state `0x1`, `+0x08` `0x10`; the lunge peaks at 4.3 m/s on 69's first updates | circle every 3 updates: all dropped, no restart and no cut | **k = 21**, the update after 69: a new 71 | k = 21 (413) |
+| tackle miss: circle held | 4 `TACKLE_PLAYER_INTRO` 7, then 2 for **59** (sliding at 6.4 m/s, to 0 over about 20); `+0x08` `0x10` | circle taps all dropped | k = 66 | k = 66 (413) |
+
+Without the stick each of these ends in **389** (state 0, `+0x08` `0x40000000`) for 26 updates, then the idle 388.
+389 does not hold input: a circle during it started 71 the next update, and with the stick held the walk start
+replaces it at once (389 never played). Holding circle after a grab miss does nothing: `0xe` comes once, on the
+7th held update, and was lost inside 69. The walk start (413) reaches the walk (408, 1.56 m/s) 13 updates later.
+
+So, apart from the block, **a press and the stick both come back on the first update after the clip ends**, and
+the only presses taken earlier are the chain's.
+
+**The gates** (confirmed (code)):
+
+- The dispatcher (`0x0027c120`) returns before the chain and every command while record `+0x08` has any bit of
+  **`0x5c7fee0`**. That covers the recovery `0x40000` and the run attack's `0x1000000`, but not the phases
+  `0x1`, `0x2`, `0x4`, the grab bit `0x10` or 389's `0x40000000`.
+- The chain (`0x00280630`) takes the press while `+0x08` has any of `0x7` ([Attacks](#attacks)). When it refuses,
+  the command falls through to its path.
+- Square and cross (`0x00286cc8`, `0x00287a18`) refuse while `+0x08` has any of **`0x100101f`** (`0x1`, `0x2`,
+  `0x4`, `0x8`, `0x10`, `0x1000`, `0x1000000`) or the state word any of `0x7bf9e9f4300`.
+- The grab or tackle (`0x00284920`) refuses while `+0x08` has any of `0xfc7eaf7`, which includes `0x10`.
+
+So a press in `0x4` is dropped by its path, and one in `0x40000` by the dispatcher. During a grab or tackle miss
+(`0x10`) every path refuses. Nothing refuses 389. What holds the stick until the clip's end, and the block's extra
+5 updates, is not traced (the locomotion side, [Characters](characters.md#locomotion)).
+
 ### Block (and no dodge) {#block}
 
 **R1 held** in a fight stance blocks: anim state 21 then 606 `BLOCK_SUSTAIN` (605 `BLOCK_START` was not seen as the
@@ -484,7 +525,34 @@ type 3 throws the attacker into 629. A blocked hit gives the attacker half the r
   the window can still find one.
 
 So a block that ducks an attack (616) can be turned into a counter-attack by pressing square or cross during the
-duck's frames 6-13. Confirmed (code) at the cited addresses; not yet seen at runtime.
+duck's frames 6-13. Confirmed (code) at the cited addresses.
+
+**The counter at runtime** (confirmed (runtime), PCSX2, a copy of slot 6: Rembrandt holding R1 against a puppet
+civilian doing `SSX`, square or cross tapped for two updates at a chosen update; k counts updates from the first
+update of 616):
+
+- 616 played for 28 updates (0.93 s for the 0.7 s clip, so it runs at about 0.75 speed; inferred from the count).
+- A square whose command `0xf` first reached the per-player record at **k = 7 to 17** started **617
+  `BLOCK_COUNTER_FRONT`** that update or the next. At k = 6 or k = 18 nothing happened and 616 ran out. Frames 6-13
+  at 0.75 speed fall on k ≈ 8-17, which fits.
+- Cross (`0x12`) at k = 9 did the same. So did square with R1 already released at k = 2: the block flag `0x8000`
+  was gone (state word `0x1`) and the counter still came, because the window needs only the duck's flag `0x1000`.
+- 617 lasted 27 updates. On its first update the state word went from `0x8001` to `0x1` and record `+0x08` from
+  `0x1000` to `0x2000`. It hit the civilian once, for 50 damage, on its eighth update; the civilian played 288.
+  The block (606) came back the update after 617 ended while R1 was held.
+
+**An AI human's answer** (`0x0028c6a8`, confirmed (code)):
+
+- When the brain's `+0x3c` holds a tactic of type `0x17`, the answer is no (`0x002b4aa0` returns 0).
+- Otherwise the brain's active entry (`brain + 0x40` indexed by `brain + 0x2c`) answers:
+    - Type `0x1b` (`0x002b5698`), the block goal built by `0x002b54d8` and pushed by `0x0029f098` with a random
+      block chance (a quarter of it for brain type 3). It says yes when the human is ducking (record `+0x08` has
+      `0x1000`, `0x00223b28`) and the goal's bytes `+0x14` and `+0x16` are both 1. `+0x16` is 1 from construction;
+      the writer of `+0x14` was not found.
+    - Type `0x85`, `Goal_BigFighter` (`0x002eab50`, vtable `0x00542940`, built by `0x002e9cd0`). It says yes when
+      the human's body scale (`+0x65c`) is at most 1.1, it is ducking, and the goal's u16 `+0x28` is `0x0101`.
+- Yes writes command `0x10` into the human's per-player record (`0x00147ef0`). From there the counter takes the
+  player's path.
 
 The events on the disc (the clips' event lists, frame in brackets) match the runtime ducks exactly (confirmed
 (runtime), [Being hit](#being-hit-runtime)): Rembrandt (`warr_re_cv`) has `0x24` on 11 `X1` (3), 13 `XX2` (5) and
@@ -963,10 +1031,20 @@ stored. `0x00254e78` puts the bonus back to 1.0 every update unless the human is
 
 So **the sixth hit of the same kind in a row, each within 5 s of the last, halves the rage of every later hit** of
 that run until the kind changes, and **each strike in a grab raises the following throw's rage** by 27 %, up to
-double. Confirmed (runtime), puppet civilian, `X1` tapped every second: the first six hits gave 5 rage each and the
-counts at `+0x9` went 1, 2, 3, 4, 5, 5 with the flag set by the sixth; the seventh and eighth gave 2 each
-(`trunc(5.76 × 0.5)`); with 5.17 s between hits the count stayed at 1 and every hit gave 5. The earlier reading that the
-game rewrote a written flag "on the next update" is the clear at the next noted hit.
+double. **The throw bonus at runtime** (confirmed (runtime), slot 6 copy, Rembrandt grabbing the civilian with
+circle):
+
+- Grab strikes 51 and 53 (square) each raised `+0x4` by 0.27, from 1.0 to 1.27 to 1.54. They set the kind
+  (`+0xb`) to 3.
+- A throw (stick 60 % up, circle tapped, 149 `THROW_01_FROM_GRAB_RIGHT` on this camera) set the kind to 4 when it
+  started. Its two awards, 13 and 11 rage, came with the bonus still 1.54; without the strikes the same throw gave
+  8 and 7. That fits `trunc(x × 1.54)` for both awards.
+- The bonus went back to 1.0 on the update of the second award, when the throw ended.
+
+**The repeat flag at runtime** (confirmed (runtime)), puppet civilian, `X1` tapped every second: the first six hits gave
+5 rage each and the counts at `+0x9` went 1, 2, 3, 4, 5, 5 with the flag set by the sixth; the seventh and eighth gave 2
+each (`trunc(5.76 × 0.5)`); with 5.17 s between hits the count stayed at 1 and every hit gave 5. The earlier reading
+that the game rewrote a written flag "on the next update" is the clear at the next noted hit.
 
 **The points** come from the stats system, which also adds them to the per-player score at `0x006fe490 + player ×
 0xc0`: `0x002653d8` maps the attack to an event (`X1` event 1, `S1` event 2, ...; a blocked hit is halved through
@@ -1355,15 +1433,16 @@ between humans needs.
 ## Open questions
 
 - **The block**: whether a strength-3 hit can still break a block. (Answered: `+0x14` = `0xe`, message `0xa5`, is
-  the duck counter, [Blocking](#block).) Still open: the counter at runtime, and the AI tactics' answer.
+  the duck counter, [Blocking](#block); seen at runtime, and the AI tactics' answer traced.) Still open: who sets the
+  block goal's byte `+0x14`.
 - **The shared Anim Range List**: whether the overwrite by the newest human is intended, and which humans share a
   list ([Being hit](#being-hit-runtime)). Coney does not reproduce it.
 - **A blocked `SSS3`'s rage**: 0 at runtime ([Rage](#rage)) where the two awards' formula gives 1 (3 >> 1 = 1 point,
   as `SSX3`'s blocked 1); Coney gives 1.
 - **The stun after a knockdown**: it ends at the rise + 200 ms, before 199 ends, yet after 653 the player stood in
   356 for 7 updates before 357 ([Being hit](#being-hit-runtime)); Coney plays 357 as 199 ends.
-- **The halved rage** (answered): the repeat tracker ([Rage](#rage)). Still open: the throw bonus at runtime, and
-  whether the brain type 3 that also notes hits is the ally brain.
+- **The halved rage** (answered): the repeat tracker and the throw bonus, both seen at runtime ([Rage](#rage)).
+  Still open: whether the brain type 3 that also notes hits is the ally brain.
 - **The backward combat walk** (answered): 3.429 m/s like every direction, after 5 slower updates
   ([Target selection](#targets)). Still open: what slows those 5 updates.
 - **Class 13**: which character class it is (it gets hit armour and adds 2 s to a knockdown).
@@ -1378,5 +1457,7 @@ between humans needs.
   anim id, as the damage table's index → id map does for the damage.
 - **The timing columns not measured**: `SS2`'s window close and end, `SSX3`'s end, and the hit of the snaps, the
   moving attacks, the throws and the grounded and mounted strikes.
+- **Input and the stick after a move** (answered at runtime, [When input and the stick come back](#input-return)).
+  Still open: the locomotion gate that holds the stick until the clip ends, and the block's 5 updates after release.
 - **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are
   the fields the alignment writes (human `+0x2e0`-`+0x332`, victim `+0xa0` / `+0xb0`).

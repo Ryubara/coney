@@ -327,12 +327,13 @@ set-up](#rumble-setup)). Confirmed (code) for the C++ steps; the Lua steps infer
    "Menu.startRumbleMode", 1)`. `RumbleMenu_Show` (`0x00155228`) keeps the two names (`0x005e67c0` cancel,
    `0x005e67c4` start; `0x0015e838`), stores "opened from the front end" (1, at `0x0063ef64`) and pushes **mode 0x11**,
    the Rumble set-up menu, unless it is on top.
-3. **Mode 0x11** (`Enter` `0x0015e8b0`, `Exit` `0x0015ea40`) runs the Rumble menu screens (`RumbleModeGUI/`). They
-   write the set-up the arena will read: 23 16-bit values from `0x0063eec0` (game type, gangs, options; one screen's
-   confirm, `0x001f8d80`, fills several). Backing out sets "cancelled" (`0x0050f4dc`); the last screen's confirm
-   (`0x001ebb90`) sets "started" (`0x0050f4e0`) and the chosen arena's **level number** (`0x0050f4e8`, the `+0x04` of
-   its level record). When the menu pops, `Exit` calls `Menu.cancelRumbleMode()` if cancelled, else, when started,
-   `Menu.startRumbleMode(levelNumber)`; it also asks for an autosave when `0x0063f1d0` is set (`0x00155308`).
+3. **Mode 0x11** (`Enter` `0x0015e8b0`, `Exit` `0x0015ea40`) runs the Rumble menu screens (`RumbleModeGUI/`). They write
+   the set-up the arena will read: 23 16-bit values from `0x0063eec0` (game type, gangs, options; the Game Mode screen's
+   input handler, `0x001f8d80`, fills several). Backing out sets "cancelled" (`0x0050f4dc`); the Choose Area screen's
+   launch (`0x001ebb90`, [the screens' code](#rumble-data)) sets "started" (`0x0050f4e0`) and the chosen arena's **level
+   number** (`0x0050f4e8`, the `+0x04` of its level record). When the menu pops, `Exit` calls `Menu.cancelRumbleMode()`
+   if cancelled, else, when started, `Menu.startRumbleMode(levelNumber)`; it also asks for an autosave when `0x0063f1d0`
+   is set (`0x00155308`).
 4. **`Menu.startRumbleMode(n)`**: `SetCheckPoint(1)`, stop the music and the menu scene, `MenuLoadLevel("level" ..
    n)`: state 3 and mode 8's `+0x20` = the arena's record ([Starting a story game](#story-start), step 2).
 5. **Mode 8** is on top again: its `Resume` does not reload the front end (a level is chosen); its `Update` finishes
@@ -371,7 +372,7 @@ them, and the default 1 ON 1 set-up read at runtime once the gangs were confirme
 
 | Index | Lua | Written by | Meaning | Default |
 | --- | --- | --- | --- | --- |
-| 0 | `gameMode` | Game Type screen (`0x001fd1c8`) | players: 3 one player against the computer, 2 two players (needs pad 2), 1 co-op; 255 no menu choice, 254 a special path (`PakCleanup`) | 3 |
+| 0 | `gameMode` | Game Type screen (`0x001fd1c8`) | players: 3 one player against the computer, 2 co-op, 1 versus (both two players, needing pad 2); 255 no menu choice, 254 a special path (`PakCleanup`) | 3 |
 | 1 | `gameType` | mode list (`0x001f8d80`), entry `+0x0c` | the mode: an `RM_*` number (`RM_Brawl1` 12 "1 ON 1", `RM_Brawl5` 14, `RM_Brawl` 1, `RM_Koth` 2, ...); `RumbleInfo[gameType]` names the rules file (`brawl` for 1, 12 and 14) | 12 |
 | 2 | `gangSize` | mode list, entry `+0x1c` | fighters per side; 0 takes the "no gangs" path | 1 |
 | 3 | `gang1Pak` − 1 | gang screen (`0x001ef7c0`) | side 1's gang: its record's `[0]` − 1 (255 for the preset gangs) | 4 |
@@ -391,6 +392,111 @@ level number **102**.
 `0x001fe0d8`: `strncpy` of at most 32 bytes from the chosen gang record's name pointer, its shorts `[2..3]`). Runtime:
 `"BASEBALL FURIES"` and `"ORPHANS"`, empty until the gangs are confirmed. `ParseLuaData` asks for them only when
 `gameMode` is not 255 (`Rumble.gang1Name`, `gang2Name`). Confirmed (code), confirmed (runtime).
+
+### Where the Rumble data lives {#rumble-data}
+
+The menu's lists are not tables in the executable. Each screen runs a Lua chunk from the disc when it opens, and the
+chunk's `CfgRumble*` calls build the list ([Config bindings](../references/bindings/config.md)). Confirmed (code) for
+the C++ side; the chunks' calls are read from the disc (inferred from their disassembly, as for the other scripts).
+
+| Screen (source file) | Init | Chunk | Calls | List | Record |
+| --- | --- | --- | --- | --- | --- |
+| Game Mode (`RM_GameMode.cpp`) | `0x001f85c0` | `rumble_data.lua` | 9 `CfgRumbleGame` | `0x0063ee84` | 0x1b4 bytes |
+| Game Type (`RM_NumPlayers.cpp`) | `0x001fc5b0` | none | three fixed entries | | |
+| Choose Gangs (`RM_ChooseGangs.cpp`) | `0x001ecae0` | `rumble_gang.lua` | 46 `CfgRumbleGang` | `0x0063ee4c` | 0x54 bytes |
+| Choose Area (`RM_ChooseArea.cpp`) | `0x001eb0c8` | `rumble_arena.lua` | 29 `CfgRumbleArena` | `0x0063ee40` | |
+
+Each chunk sets a per-language string table, calls `GetLanguage`, then calls its own `CfgRumble...Data` function.
+The Game Mode screen runs its chunk through the script system's slot `+0x44` and keeps the list at screen `+0x8c`.
+The arenas are levels 101-134.
+
+**A mode** (`0x001f8110`) is added only when the unlockables manager says it is unlocked (`0x00424130(0x006fe998,
+1, mode)`). Its record:
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00`, `+0x04` | 0 |
+| `+0x08` | the title |
+| `+0x0c` | the mode id (`RM_*`), copied to `gameType` |
+| `+0x10` / `+0x14` / `+0x18` | bools: offer one player, co-op, versus (copied to `0x0063ef6c` / `70` / `74`) |
+| `+0x1c` | fighters per side, copied to `gangSize` |
+| `+0x20` / `+0x22` | u16 preset character types for sides 1 and 2 (0 = the player chooses gangs) |
+| `+0x24` | the text widget (the title over the description) |
+
+The nine entries on the disc, in list order (the argument the binding calls `unused` always equals the size):
+
+| Mode | Id | 1P, co-op, versus | Size | Presets |
+| --- | --- | --- | --- | --- |
+| `RM_Brawl1` "1 ON 1" | 12 | yes, no, yes | 1 | none |
+| `RM_Brawl5` "WAR PARTY" | 14 | yes, yes, yes | 5 | none |
+| `RM_Brawl` | 1 | yes, yes, yes | 9 | none |
+| `RM_Surv` | 9 | yes, no, yes | 1 | none |
+| `RM_Mercy` | 23 | no, no, yes | 1 | none |
+| `RM_TagBt` | 19 | yes, no, yes | 1 | none |
+| `RM_Royal` | 3 | yes, yes, yes | 9 | none |
+| `RM_Wchair` | 24 | yes, no, yes | 1 | 458, 459 |
+| `RM_Koth` | 2 | yes, yes, yes | 3 | none |
+
+`global.lua` defines more `RM_*` ids that no entry uses (`RM_Hifi` 11, `RM_Food` 7, `RM_Run` 10, `RM_Caps` 4,
+`RM_Car` 6, `RM_Shoot` 8, `RM_Snuff` 15, `RM_Last` 16, `RM_Muggr` 18; `RM_MaxGangs` 47), and the ranks `RM_SOLDIER`
+0, `RM_LT` 1, `RM_WARCHIEF` 2, `RM_BOSS` 3, `RM_BUM` 4, `RM_CIVILIAN` 5.
+
+So **WAR PARTY** writes `gameType` 14, `gangSize` 5, `":WAR PARTY"` to `0x0063ef30`, 1, 1, 1 to `0x0063ef6c` /
+`70` / `74`, and 0 to `0x0063ef78` (no presets). Confirmed (code) for the copy; the values are the disc's.
+
+**The Game Type screen** (input `0x001fd1c8`, confirmed (code)) lists up to three entries, each only when the mode
+offers it: id 0 "1 Player : Vs." (global string `0x34`), id 1 (`0x35`), id 2 (`0x36`). Confirm maps id 0 to
+`gameMode` 3, id 1 to **2 (co-op)** and id 2 to **1 (versus)**. The runtime list order (one player, co-op, versus
+for WAR PARTY; one player, versus for 1 ON 1) fits (confirmed (runtime) for the order). For ids 1 and 2:
+
+- the first confirm shows a message (global string `0x77`) for 1.5 s, flagged at screen `+0x90`;
+- with no second pad (`0x001fe5d0` < 0) the next screen is 4, the no-second-controller screen.
+
+When the mode has presets (`0x0063ef78`) the screen writes 255 to both packs and moves to screen 3.
+
+**A gang** (`0x001ec980`) is added when its id is negative or the unlockables manager says it is unlocked (kind 3).
+Its record:
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00` | the gang id (pack = id − 1) |
+| `+0x04` | the name, interned in the Rumble string pool |
+| `+0x08` | side 1's roster: nine u32 character types |
+| `+0x2c` | side 2's roster: a copy, rotated on its own |
+| `+0x50` | the entry's index in the list |
+
+Each type passes through `0x001ec490`: a type not yet unlocked (kind 4) is replaced by a stand-in. The pairs
+(locked → used): `0xb2`→`0xc4`, `0xba`→`0xc7`, `0xb9`→`0xc0`, `0xc4`→`0xc5`, `0xdc`→`0xe1`, `0xdf`→`0xe2`,
+`0x64`→`0x65`, `0x63`→`0x66`, `0x59`→`0x5b`, `0x5a`→`0x5e`, `0xed`→`0xf1`, `0x4d`→`0x51`, `0x87`→`0x8d`,
+`0x89`→`0x8a`, `0x6a`→`0x6e`, `0xa1`→`0xa4`, `0xa0`→`0xa2`, `0x80`→`0x82`, `0x7b`→`0x7c`, `0x77`→`0x7e`,
+`0x7a`→`0x7d`, `0x9a`→`0x9c`, `0x79`→`0x1a1`, `0x1a5`→`0x1a2`, `0x13b`→`0x1a3`, `0x103`→`0xfd`, `0x106`→`0xff`,
+`0x105`→`0x102`. Confirmed (code). This explains the runtime defaults: gang 5's disc roster 89, 90, 91, 92, 93, 94,
+91, 92, 93 becomes 91, 94, 91, 92, 93, 94, 91, 92, 93 without a save, and gang 3's 220, 223, ... becomes 225, 226,
+224, ... (confirmed (runtime), [the 23 values](#rumble-setup)).
+
+**The screens' code** (confirmed (code); names suggested for the `@orig` tags):
+
+| Address | Role | Suggested name |
+| --- | --- | --- |
+| `0x001f8d80` | Game Mode input: event 4 confirms (next-screen code `+0x74` = 0, copies the entry, sound 8); event 5 backs out (from the front end, `0x0063ef64` set: "cancelled" `0x0050f4dc`; else `+0x74` = `0xffffff01`; sound `0xf`) | `RM_GameMode_OnInput` |
+| `0x001fd1c8` | Game Type input (above) | `RM_NumPlayers_OnInput` |
+| `0x001ef7c0` | Choose Gangs input | `RM_ChooseGangs_OnInput` |
+| `0x001fe070` / `0x001fe0d8` | copy side 1's / side 2's gang name to `0x0063eef0` / `0x0063ef10` | `RumbleMode_SetGang1Name` / `2Name` |
+| `0x001eb9f8` | Choose Area input: event 4 sets byte `+0xc4` = 1 and plays sound 8; event 5 sets `+0x74` = `0xffffff01`, sound `0xf` | `RM_ChooseArea_OnInput` |
+| `0x001ebb90` | Choose Area launch: the selected entry's level index (`+0x60`) picks the level record (`*(0x0051489c)` + index × 0x84 + `0x14d8`); it writes the level number and "started" (`0x001fe1d8`, `0x001fe218`) | `RM_ChooseArea_Launch` |
+
+`0x001ebb90` is called by the Choose Area update (`0x001ebc10`) one update after the input set `+0xc4`; it is not an
+input handler.
+
+The Choose Gangs input, by event: 0 / 1 move the cursor; 2 / 3 rotate the active side's roster left or right
+(`0x001ec130` / `0x001ec028`), which picks the warchief, except in co-op (`gameMode` 2); 4 locks the active side, and
+when both sides are locked (the pair at `+0x138` reads `0x0000000100000001`) writes the packs and types and calls
+the two name copies, otherwise it switches to the other side; 5 unlocks or backs out.
+
+**The "vs" title** is not part of the menu. `ShowRumbleModeIntro` (in the arena) calls `0x001b5f88`, which opens the
+RM_Intro screen (`0x001b3880(0x600840)`, the HUD's screen at `+0xe530`, `0x001f9418`, init `0x001f9558`). That screen
+makes a text widget for each name in the Lua table it is given (up to 10) with a separator widget (a `BaseWidget`,
+code `0x1d0000`) between two names, and plays the announcer's `dj_vs` voice. Confirmed (code).
 
 ### InitLevel
 
@@ -845,10 +951,10 @@ What the implementer still needs:
 
 - **Mode 6 at boot** (answered for an unformatted card: no dialog, see [the flow](#mode-flow)): still open with no
   card, a formatted card without a save and a card with a save.
-- **Rumble mode** (answered for the entry, the way to the arena, the screens and the 23 values,
-  [The Rumble set-up](#rumble-setup)): where the mode list and the gang records live (so Coney can read the entries'
-  names and values from the executable rather than list them), what WAR PARTY's entry writes, and whether the "vs"
-  title belongs to the menu or to the arena's `ShowRumbleModeIntro`.
+- **Rumble mode** (answered for the entry, the way to the arena, the screens, the 23 values, the data's source, WAR
+  PARTY and the "vs" title, [Where the Rumble data lives](#rumble-data)). Still open: the text of the Game Type
+  entries `0x35` / `0x36` and of message `0x77`, what screen 4 shows, and which unlock ids the story sets for the
+  other modes, gangs and arenas.
 - **Global string ids** (answered for the front end: `GSTRING.HUD` entries are set with explicit indices, so the
   disassembly gives each id's text; the texts are quoted above). Originally: the text behind `0x76`, `0x78`, `0x79`,
   `0x8a`, `0x1f` and the memory-card ids needs a

@@ -82,7 +82,7 @@ manager, `Cam_Follow.cpp` the follow camera. Names are ours unless a class strin
 | `+0x3c8` | a band saved by another zoom (`0x00126558` / `0x00126878`, not the sprint); while it is set the sprint zoom leaves the band alone | 0 | 0 |
 | `+0x3e0` / `+0x3e8` / `+0x3e4` | the sprint zoom's saved band near edge, zoom distance and target pitch (`+0x3e4` −FLT_MAX for none) | | 4.8 / 6.6 / 13° |
 | `+0x448` | sprint zoom state: 0 off, 1 zoomed in, otherwise the game time (ms) at which to zoom back out | 0 | |
-| `+0x45b` / `+0x45d` | set by the collision step when its main ray is blocked (`+0x45b`) or in a second blocked case (`+0x45d`); either stops auto-follow on the next update | 0 | 0 in the open |
+| `+0x45b` / `+0x45c` / `+0x45d` | `+0x45b`: the collision step's main ray was blocked this update; `+0x45c`: a sticky copy of it; `+0x45d`: a sticky "the view was blocked" latch. The latches hold until the player stops, and auto-follow stays off while they are set ([Heading](#heading)) | 0 | 0 in the street; 1 for the whole run at checkpoint 1 |
 | `+0x466` / `+0x467` / `+0x468` | sprint zoom latched / armed for this sprint / enabled (`CamEnable(5, on)`) | | 0 / 0 / 1 |
 | `+0x474` | auto-centre latch: cleared while the stick points more than 157.5° from up, set again when the target moves | | 1 |
 | `+0x350` | heading target (a direction; −FLT_MAX for none) | | |
@@ -219,7 +219,13 @@ The yaw rotation is done by `0x0012d688(angle)`, about the look-at point. Four r
   input, the top animation task's clip without descriptor flag `0x8000` (`0x00175be8`), none of the human flags
   `0x18003ff0`, and the collision bytes `+0x45b` and `+0x45d` clear: the collision step sets `+0x45b` when its main
   ray from the look-at point is blocked ([World collision](#collision)), so **auto-follow stops on the update after
-  one in which the view was blocked**. Confirmed (runtime), slot 1, stick 100 % sideways: the rule turned
+  one in which the view was blocked**. `+0x45d` is a latch: it is set at `0x00132fa4` when the step's local "view
+  blocked" (`sp + 0x364`, set at `0x001327a0` from the blocked local `sp + 0x368`, which `0x0013207c`, `0x001321e4`
+  and the swing-away give-up `0x001325a4` set) is true, and `+0x45c` copies `+0x45b` the same way (`0x00132fb4`).
+  Both are cleared only on one branch (`0x00133140` / `0x0013314c`) and by `0x00124778` (`0x00124980`); at runtime
+  that was when the player stopped (confirmed (code) for the writes; when the branch runs is inferred from the
+  runtime). So **one blocked update keeps auto-follow off until the player stops**
+  ([Runtime checks](#runtime-checks)). Confirmed (runtime), slot 1, stick 100 % sideways: the rule turned
   110-129°/s every update at gait 4; with `+0x45b` written to 1 before each of 21 updates it turned 0 on each of them,
   and 129°/s again on the next. The gaits explain what [In the street](#street) saw: no turn in the walk and run
   start clips (gait 0-1 while the walk start moves at 0.76 m/s, 3 in the run start's middle) or the landing clip
@@ -236,7 +242,11 @@ The yaw rotation is done by `0x0012d688(angle)`, about the look-at point. Four r
 - The **lower limit** `+0x3b0 = atan((1 − offset.z) / far)`, at least −20° (`0x0012d7a8`, run when the distance band
   moves); the target pitch is raised to it.
 - The **upper limit** `+0x3ac` follows the zoom step (`0x001254f0`): 50° at the minimum distance, 40° above the
-  default, and 30° at the default when the camera option `0x0050b19c` is 1 (50° otherwise). The same function sets the
+  default, and 30° at the default when `0x0050b19c` is 1 (50° otherwise). `0x0050b19c` is not an option: it is the
+  **number of player cameras**, counted by `0x00122ed0` (written at `0x00123248`) over the camera slots from
+  `0x005d9148` up to the player count (`*(0x0051489c) + 0x224`), so 1 means one player and the 30° limit is the
+  single-player case. Beside it, `0x0050b198` is the number of split-screen views in use and `0x0050b1a8` /
+  `0x0050b1aa` the views' grid (from `0x0050b1a0`). Confirmed (code). The same function sets the
   zoom distance `+0x400` to the minimum, maximum or default.
 - Without input the pitch is driven back to the target at most 85°/s (step 9).
 
@@ -249,21 +259,23 @@ back 250 ms after the sprint ends. Confirmed (code) at the cited addresses and c
 1. **Detecting the sprint** (in the update, `0x0012b310`-`0x0012b3f4`): the target's stored gait `+0x1a8` is 5
    with no blocking record flags (`0x00223a98`) → "sprinting" this update (a local, `sp + 0x1e8`). On the first such
    update of a sprint (`+0x36c`, the run time, still 0) the switch `+0x468` is copied to the arm byte `+0x467`.
-2. **Latching** (in the update, between the right-stick step and the band's ease): while sprinting and armed, when the
-   per-player record's `+0x152` is 0 (or the target is within 12 m of a point it holds), `+0x467` is cleared and
-   `+0x466` set; with `+0x466` set and `+0x448` 0, `+0x448` = 1. On the first update **not** sprinting with `+0x466`
-   set: `+0x466` = 0 and `+0x448` = the game time + **250 ms**. (A time left in `+0x448` by an earlier sprint, as in
-   the save, also lets the function run; it then has nothing to do until the next sprint.)
+2. **Latching** (in the update, between the right-stick step and the band's ease, `0x0012b504`-`0x0012b5d8`): while
+   sprinting and armed, when the player's **brain** (`0x0021d408`) has no enemies (byte `+0x152`, the one `BrHasEnemies`
+   reads) or the nearest of its up to 16 enemies (handles at `+0x164`, `0x004db5b0` with the squared distance of
+   `0x00336ce0`, FLT_MAX `0x00548ad8` for none) is closer than **12 m** (squared distance < 144), `+0x467` is cleared
+   and `+0x466` set; with `+0x466` set and `+0x448` 0, `+0x448` = 1. On the first update **not** sprinting with `+0x466`
+   set: `+0x466` = 0 and `+0x448` = the game time + **250 ms**. (A time left in `+0x448` by an earlier sprint, as in the
+   save, also lets the function run; it then has nothing to do until the next sprint.)
 3. **The zoom function** `0x00128cf0(camera, sprinting, 0)` runs every update once the game time has passed `+0x448`
    (so at once for 1, after 250 ms for a time; call at `0x0012c5c8`).
-    - **Sprinting**, with no other zoom's band saved (`+0x3c8` = 0): the first time, it saves the band's near edge
-      in `+0x3e0`, the zoom distance in `+0x3e8` and sets the timer `+0x40c` to **0.5 s**; with the camera option
-      `0x0050b19c` = 1 (as in the street) it sets the wanted near edge `+0x34c` to the **minimum distance** (`+0x300`,
+    - **Sprinting**, with no other zoom's band saved (`+0x3c8` = 0): the first time, it saves the band's near edge in
+      `+0x3e0`, the zoom distance in `+0x3e8` and sets the timer `+0x40c` to **0.5 s**; with one player camera
+      (`0x0050b19c` = 1, [Pitch](#pitch)) it sets the wanted near edge `+0x34c` to the **minimum distance** (`+0x300`,
       3.0) and steps the zoom distance to the default (`0x001254f0`, which also sets the upper pitch limit to 30°);
-      with the option 0 it leaves the band and sets `+0x3e0` to the maximum − 0.5 and `+0x3e8` to the default. It then
-      saves the target pitch in `+0x3e4` and moves the target pitch toward **7°** (0.122173 rad): on the update the
-      timer reads 0.5 nothing; then by `|7° − pitch| / +0x40c × dt` per update, which is a straight line arriving as
-      the timer runs out (without a timer, 30°/s).
+      otherwise (two players) it leaves the band and sets `+0x3e0` to the maximum − 0.5 and `+0x3e8` to the default.
+      It then saves the target pitch in `+0x3e4` and moves the target pitch toward **7°** (0.122173 rad): on the
+      update the timer reads 0.5 nothing; then by `|7° − pitch| / +0x40c × dt` per update, which is a straight line
+      arriving as the timer runs out (without a timer, 30°/s).
     - **Not sprinting**: `+0x34c` = the saved `+0x3e0`, `+0x3e0` = 0, the zoom distance back to `+0x3e8`, `+0x40c` =
       0.5 s; the target pitch moves back to `+0x3e4` the same way while the timer runs. Once both the band and the
       pitch are within 10⁻⁵ of their goals, `+0x448` = 0 and `+0x3e4` = −FLT_MAX: the zoom is over.
@@ -315,6 +327,10 @@ camera options `0x0050b1b0` and `0x0050b1b8` allow it.
 `0x00130990` (about 3,000 lines decompiled) runs after the camera's wanted position is known. Confirmed (code) for the
 calls and constants; the overall reading is inferred:
 
+- **Materials it ignores**: at `0x00130a5c` it copies a list from `0x00548ab0` to `sp + 0x40`: **30 `LOW_FENCE`,
+  122 `RAILING`, 107 `CHAINLINK_NOCLIMB`**, ended by 1. Every `CollisionMesh_RayCast` of the step passes it as its
+  fourth argument, the materials to skip (`0x001311a8`, `0x001312e0`, `0x00131730`, ...). So the camera sees
+  through low fences, railings and unclimbable chain-link. Confirmed (code).
 - **A height ray** (`0x00130c28`) straight down from the look-at point (`0x00511770`, (0, 0, −1)), as long as the
   look-at offset plus 0.5 m (1.9 m), mask `0x200`: when it hits a face whose normal's `z` is at most cos 15° (a slope,
   or the top of something under the look-at), `0x0012f3e0` adjusts the camera's height (what it changes is not traced).
@@ -369,7 +385,7 @@ PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt, read over PINE once per update;
   after 0.4 s, and coasts for a few updates after release. The 0.334 s hold timer `+0x368` read 0.301 (one update
   counted down) while the stick was held.
 - **Right stick pitch.** Full deflection up: `+0x3b8` = 85°/s; the pitch target `+0x3b4` stopped at the upper limit
-  `+0x3ac` = 30°, which is the option `0x0050b19c` = 1 case at the default zoom distance 4.8. The view's pitch eased
+  `+0x3ac` = 30°, which is the one-player (`0x0050b19c` = 1) case at the default zoom distance 4.8. The view's pitch eased
   from 15° to 30° behind it.
 - **Auto-follow was not seen.** Running at 7.8 m/s (gait 4) with the facing held 63-78° away from the view for
   1.5 s, in the open, the wanted position turned only as the moving look-at point dragged it: no rotation of its own,
@@ -377,12 +393,17 @@ PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt, read over PINE once per update;
   rule should then turn about 3.4° (auto-centre) or 2° (default) per update. Every gate listed under
   [Heading](#heading) that can be read over PINE passed (`+0x444` = 1, record words `+0x00` and `+0x08` zero,
   `+0x460` = 0, `+0x320` = −1, `+0x368` = 0, `+0x455` = 0, `+0x474` = 1, the run clip's descriptor flags 0); the
-  condition that blocks it was not found (the update's locals cannot be read without breakpoints). So at
-  checkpoint 1 the camera turns only with the right stick and the leash. The gates found since
-  ([Heading](#heading)) give a likely cause, inferred and not yet checked there: the collision bytes `+0x45b` /
-  `+0x45d`, which stop auto-follow on every update after one in which the collision step's main ray was blocked.
-  At the start spot the walls held the camera at 1.85 m and it was still recovering toward the band during the run,
-  which is when its ray is blocked. Reading `+0x458` (bytes 3 and 5) during such a run would settle it.
+  condition that blocks it was not found then (the update's locals cannot be read without breakpoints).
+- **Why: the blocked-view latch.** A later run from the same spot (left stick 100 % up for 35 updates, then 70 %
+  up and 70 % left, then released) read `+0x458`-`+0x45f` every update. `+0x45b` was 1 for the first 19 updates,
+  while the walls held the camera at 1.85 m, and 0 after. `+0x45c` and `+0x45d` were 1 from the start and stayed 1
+  through the whole run, clearing on the second update after the player stopped (gait 0). The camera's wanted
+  position turned 0° of its own on every update (its angle about the new look-at point, before and after the
+  update). The same run with `+0x45c` and `+0x45d` written to 0 before every update: they came back while `+0x45b`
+  was 1, stayed 0 after, and once the stick went diagonal the wanted position turned **0.6-1.6° per update** of its
+  own (18-47°/s), the auto-follow rule at work. So a blocked view at the start of a run keeps auto-follow off until
+  the player stops. In the street the run starts in the open, nothing is latched, and the rule turns. Confirmed
+  (runtime).
 
 ### In the street {#street}
 
@@ -427,16 +448,16 @@ rule) and `0x0050b19c` was 1. Confirmed (runtime) unless marked:
 - **Look-at height after a climb's rise** (slot 8, the feet rising 1.28 m onto a trash can and 2.64 m onto a roof):
   the look-at point moved **20 % of the way** to feet + 1.4 m per update for 4-7 updates, then covered the last
   0.5-0.6 m in 2 updates, so the view's pitch stayed at 3.6° or more. During a jump it follows the feet directly.
-- **Fences.** Through a running fence climb (slot 7, material 30) the camera stayed 4.9-5.3 m away while the fence
-  stood between it and the player, and passed through the fence afterwards without pulling in: its collision does
-  not see that fence (which test skips it is not traced). Nor did the face that pulled Coney's camera in 0.19 m
-  behind the player: it is not a low face but a **disabled** two-sided panel of `level99`'s mesh (triangle 27,
-  material 91, flags `0xf442`: bit 0 clear, 4.1 m wide and 2.65 m tall across the run's path at `y` = 31.17),
-  read from the save's RAM; slot 7 has 8 disabled triangles (that panel, two of material 187 `STOREDOOR_GLASS`,
-  four of material 2 `GLASS`) and slot 1 none, while every triangle on the disc is enabled, so the game switched them
-  off ([Collision](collision.md#chunks), `0x0034fba0`). The main ray tests disabled triangles but recasts without
-  them when the look-at point is within 0.5 m of the plane ([World collision](#collision)), which is the case
-  here (inferred; the panel's data and the disabled counts are confirmed (runtime), read from the saves' RAM).
+- **Fences.** Through a running fence climb (slot 7, material 30) the camera stayed 4.9-5.3 m away while the fence stood
+  between it and the player, and passed through the fence afterwards without pulling in: its collision does not see that
+  fence, because every ray of the collision step excludes its material ([World collision](#collision)). Nor did the face
+  that pulled Coney's camera in 0.19 m behind the player: it is not a low face but a **disabled** two-sided panel of
+  `level99`'s mesh (triangle 27, material 91, flags `0xf442`: bit 0 clear, 4.1 m wide and 2.65 m tall across the run's
+  path at `y` = 31.17), read from the save's RAM; slot 7 has 8 disabled triangles (that panel, two of material 187
+  `STOREDOOR_GLASS`, four of material 2 `GLASS`) and slot 1 none, while every triangle on the disc is enabled, so the
+  game switched them off ([Collision](collision.md#chunks), `0x0034fba0`). The main ray tests disabled triangles but
+  recasts without them when the look-at point is within 0.5 m of the plane ([World collision](#collision)), which is the
+  case here (inferred; the panel's data and the disabled counts are confirmed (runtime), read from the saves' RAM).
 
 ### Scenes take the camera and give it back {#scenes}
 
@@ -532,14 +553,14 @@ The world viewer keeps its own free camera with the player camera's lens
   unless its distance to the look-at point leaves the 3.0-3.5 m band, then move it along that line to the band; move
   22% of the way to the wanted position each 30 Hz step; hold a 13° pitch; 65° horizontal field of view, near 0.1,
   far 115.
-- **Heading**: in the street the auto-centre rule ([Heading](#heading)) turns the camera toward the facing whenever
-  the player moves, with the angle measured from the camera's position at the start of the update
+- **Heading**: in the street the auto-centre rule ([Heading](#heading)) turns the camera toward the facing whenever the
+  player moves, with the angle measured from the camera's position at the start of the update
   ([In the street](#street)); with the stick held sideways the player runs in a circle. At `level99`'s checkpoint 1 it
-  was not seen. Implement it, with the leash and the right stick. The player's stick is turned by the camera's
-  heading before it reaches the character ([Characters](characters.md#input)), so the camera must ease, never snap.
-  Gate it on the gait (walk, run or sprint; not idle, sneak speed or jog), not on which clip plays, and hold it off
-  on the update after a blocked main ray. With the stick held sideways the original circles at about 190°/s at a
-  run and 143°/s at a walk, the rule's turn plus the leash's drag.
+  was not seen. Implement it, with the leash and the right stick. The player's stick is turned by the camera's heading
+  before it reaches the character ([Characters](characters.md#input)), so the camera must ease, never snap. Gate it on
+  the gait (walk, run or sprint; not idle, sneak speed or jog), not on which clip plays, and hold it off from a blocked
+  main ray until the player stops (the `+0x45d` latch; this is why checkpoint 1 has none). With the stick held sideways
+  the original circles at about 190°/s at a run and 143°/s at a walk, the rule's turn plus the leash's drag.
 - **Sprint zoom** ([Sprint zoom](#sprint-zoom)): on the first update at the sprint gait save the band, zoom and
   target pitch and start a 0.5 s timer; the band's near edge moves by `d × |d| / T × dt` toward the minimum distance
   (`d` what is left, `T` the timer, after it has counted down once), the target pitch in a straight line to 7°;
@@ -549,10 +570,10 @@ The world viewer keeps its own free camera with the player camera's lens
   what the original does.
 - **Right stick**: yaw 60-150°/s outside a ±48 raw dead zone, applied to the wanted position at once (the lag
   smooths it); pitch only near the ends of the travel; 0.334 s of no auto-follow after any input.
-- **Collision**: start with a ray from the look-at point and pull in to the hit, with the main ray's mask and its
-  disabled-triangle rule ([World collision](#collision)); the triangles' enabled bits must follow the game (doors,
-  glass and barriers the game switches off), or a disabled panel pulls the camera in. The side probes and swing-away
-  rules can come later.
+- **Collision**: start with a ray from the look-at point and pull in to the hit, with the main ray's mask, its
+  disabled-triangle rule and the excluded materials 30, 122 and 107 ([World collision](#collision)); the triangles'
+  enabled bits must follow the game (doors, glass and barriers the game switches off), or a disabled panel pulls the
+  camera in. The side probes and swing-away rules can come later.
 - **Update order**: the cameras update at the end of the characters' 30 Hz step, after movement
   ([Characters](characters.md#update)), and the device takes the lens once per frame.
 - Keep the camera deterministic (no real time) so the test mode can compare frames.
@@ -561,22 +582,21 @@ The world viewer keeps its own free camera with the player camera's lens
 
 - **The tutorial's camera calls**: which call set `+0x32c` / `+0x330` to 3.0 / 3.5 (probably `P1.SetupCam` in
   `level99_combat.lua` through `CamSetFollowZoom`; inferred).
-- **Why auto-follow did not run** at checkpoint 1 ([Runtime checks](#runtime-checks)) when it runs in the street
-  ([In the street](#street)): most likely the blocked-view bytes `+0x45b` / `+0x45d` ([Heading](#heading),
-  inferred); reading `+0x458` there during a run would settle it. (The option bytes are 1 by default,
-  [Feel](feel.md#details-behind-the-table), so they do not explain it.)
+- **Why auto-follow did not run** at checkpoint 1 (answered: the blocked-view latch `+0x45d` / `+0x45c`, set by
+  the walls at the start spot and held until the player stops, [Runtime checks](#runtime-checks)). Still open: the
+  exact condition of the clearing branch at `0x00133140`.
 - **The circling rate** (answered): the original circles at about 190°/s at a run and 143°/s at a walk; the 122°/s
   and 127°/s first given were the rule's share ([In the street](#street)). Still open: why the rule's measured turn
   is 3-10°/s above the formula (the exact forward vector of vtable slot `+0x224`).
-- **The sprint zoom** (answered, [Sprint zoom](#sprint-zoom)). Still open: what the per-player record's `+0x152`
-  and the point at `+0x164` that gate the latch are, and what `0x0050b19c` (set by `0x00122ed0`) means beyond the
-  zoom's two branches.
+- **The sprint zoom** (answered, [Sprint zoom](#sprint-zoom), with its gates: no enemies or the nearest within 12 m,
+  and `0x0050b19c` the number of player cameras).
 - **Look-at height easing** (answered): the 20% is the look-at point's distance limit (step 1); the 30% is the
   camera's height hold (step 7).
 - **The fourth argument of the auto-centre rule** (`sp + 0x1d4` in the update), which keeps 200°/s above 100°, and
   state flag 4, which allows a turn beyond 157.5°.
 - **The collision step** (`0x00130990`) beyond its rays (partly answered: the main ray, its recast and the side
-  probes' angles, [World collision](#collision)): the second blocked case `+0x45d`, the table of fractions, what
+  probes' angles, the excluded materials and the `+0x45d` latch, [World collision](#collision)): the table of
+  fractions, what
   `0x0012f3e0` changes after the height ray, and what `+0x10a`-`+0x10c` (side angle history) feed.
 - **The target state** that lifts the look-at point to 1.65 m, and the two modes of `0x00125588`.
 - **The slow-motion factor** `0x005148a0`: what slows down, and when.

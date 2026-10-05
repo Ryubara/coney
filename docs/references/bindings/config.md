@@ -1885,13 +1885,13 @@ CfgRumbleGame(title, mode, flagA, flagB, flagC, unused, n7, n8, n9, description)
 | --- | --- | --- | --- |
 | 1 | `title` | string | Game-mode title text (from the Rumble string table). |
 | 2 | `mode` | number, truncated to an unsigned integer | Rumble game mode id (RM_* constants); the mode is added only if the unlockables manager reports it unlocked. |
-| 3 | `flagA` | boolean (nil or 0 is false) | Boolean stored in the mode record (+0x10). |
-| 4 | `flagB` | boolean (nil or 0 is false) | Boolean stored at +0x14. |
-| 5 | `flagC` | boolean (nil or 0 is false) | Boolean stored at +0x18. |
+| 3 | `flagA` | boolean (nil or 0 is false) | Offers the one-player entry (against the computer) on the Game Type screen; record +0x10, copied to 0x0063ef6c. |
+| 4 | `flagB` | boolean (nil or 0 is false) | Offers the co-op entry (two players, gameMode 2); record +0x14, copied to 0x0063ef70. |
+| 5 | `flagC` | boolean (nil or 0 is false) | Offers the versus entry (two players, gameMode 1); record +0x18, copied to 0x0063ef74. |
 | 6 | `unused` | number, truncated to an unsigned integer | Ignored: never stored (the scripts pass the same value as the next argument). |
-| 7 | `n7` | number, truncated to an unsigned integer | Number stored at +0x1c (1, 3, 5 or 9: perhaps the number of fighters). |
-| 8 | `n8` | number, truncated to an unsigned integer | 16-bit value at +0x20 (0, or a string id such as 458). |
-| 9 | `n9` | number, truncated to an unsigned integer | 16-bit value at +0x22. |
+| 7 | `n7` | number, truncated to an unsigned integer | Fighters per side (1, 3, 5 or 9), record +0x1c, copied to the set-up's gangSize (index 2). |
+| 8 | `n8` | number, truncated to an unsigned integer | Preset character type for side 1 (0 = choose gangs; RM_Wchair passes 458), record +0x20; when not 0 it fills all nine members of side 1 and no gangs are chosen (packs 255). |
+| 9 | `n9` | number, truncated to an unsigned integer | Preset character type for side 2 (459 for RM_Wchair), record +0x22. |
 | 10 | `description` | string | Description text; formatted with the title into the mode widget's text (size tags around a big-font title). |
 
 **Returns** nothing.
@@ -1922,6 +1922,10 @@ CfgRumbleGang(gang, name, members)
 **Returns** nothing.
 
 Adds a gang with its nine-member roster to the Rumble gang chooser (RM_ChooseGangsWidget list at 0x0063ee4c).
+
+**Notes.** The 0x54-byte record keeps the gang id (+0x00), the name (+0x04) and two copies of the roster (+0x08 and
++0x2c, one per side, rotated separately to choose the warchief). Each type passes through 0x001ec490, which replaces a
+locked character type (unlockables kind 4) with a fixed stand-in.
 
 - **Evidence:** confirmed (code) at `0x001ec980`; detail: brief
 - **Wrapper** `0x0036b790` (registered by `RegisterBindings`); **calls** `0x001ec980`

@@ -1461,13 +1461,13 @@
   args:
     - {name: title, lua: string, desc: "Game-mode title text (from the Rumble string table)."}
     - {name: mode, lua: number, ctype: unsigned, desc: "Rumble game mode id (RM_* constants); the mode is added only if the unlockables manager reports it unlocked."}
-    - {name: flagA, lua: boolean, desc: "Boolean stored in the mode record (+0x10)."}
-    - {name: flagB, lua: boolean, desc: "Boolean stored at +0x14."}
-    - {name: flagC, lua: boolean, desc: "Boolean stored at +0x18."}
+    - {name: flagA, lua: boolean, desc: "Offers the one-player entry (against the computer) on the Game Type screen; record +0x10, copied to 0x0063ef6c."}
+    - {name: flagB, lua: boolean, desc: "Offers the co-op entry (two players, gameMode 2); record +0x14, copied to 0x0063ef70."}
+    - {name: flagC, lua: boolean, desc: "Offers the versus entry (two players, gameMode 1); record +0x18, copied to 0x0063ef74."}
     - {name: unused, lua: number, ctype: unsigned, desc: "Ignored: never stored (the scripts pass the same value as the next argument)."}
-    - {name: n7, lua: number, ctype: unsigned, desc: "Number stored at +0x1c (1, 3, 5 or 9: perhaps the number of fighters)."}
-    - {name: n8, lua: number, ctype: unsigned, desc: "16-bit value at +0x20 (0, or a string id such as 458)."}
-    - {name: n9, lua: number, ctype: unsigned, desc: "16-bit value at +0x22."}
+    - {name: n7, lua: number, ctype: unsigned, desc: "Fighters per side (1, 3, 5 or 9), record +0x1c, copied to the set-up's gangSize (index 2)."}
+    - {name: n8, lua: number, ctype: unsigned, desc: "Preset character type for side 1 (0 = choose gangs; RM_Wchair passes 458), record +0x20; when not 0 it fills all nine members of side 1 and no gangs are chosen (packs 255)."}
+    - {name: n9, lua: number, ctype: unsigned, desc: "Preset character type for side 2 (459 for RM_Wchair), record +0x22."}
     - {name: description, lua: string, desc: "Description text; formatted with the title into the mode widget's text (size tags around a big-font title)."}
   description: >-
     Adds one game mode to the Rumble mode menu (an RM_GameModeWidget record on the list at 0x0063ee84), if that mode
@@ -1507,6 +1507,10 @@
     Adds a gang with its nine-member roster to the Rumble gang chooser (RM_ChooseGangsWidget list at 0x0063ee4c).
   evidence: confirmed-code
   depth: brief
+  notes: >-
+    The 0x54-byte record keeps the gang id (+0x00), the name (+0x04) and two copies of the roster (+0x08 and +0x2c,
+    one per side, rotated separately to choose the warchief). Each type passes through 0x001ec490, which replaces a
+    locked character type (unlockables kind 4) with a fixed stand-in.
   usage: {chunks: 1, calls: 46, boot: false, mission1: false, result_used: false}
 
 - name: CfgRumbleChar

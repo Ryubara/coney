@@ -173,8 +173,9 @@ The fixes in order of how much they change the feel:
    ease full at 2.0 rad; carry 0.8 as now. The air turn stays at 4°.
 2. **Camera auto-follow**: the auto-centre rule of [Camera](camera.md#heading), with `a` measured from the camera's
    position at the start of the update; only at the walk, run and sprint gaits (2, 4, 5), which leaves out standing,
-   the start clips and the landing clip without testing the clip; not on the update after the camera's main ray was
-   blocked; held off 0.334 s after right-stick input. Holding the stick sideways must make the player circle at about
+   the start clips and the landing clip without testing the clip; not from an update on which the camera's main ray
+   was blocked until the player stops (the `+0x45d` latch, [Camera](camera.md#runtime-checks)); held off 0.334 s
+   after right-stick input. Holding the stick sideways must make the player circle at about
    190°/s running and 143°/s walking, which Coney's rule plus the leash's drag already gives.
 3. **Camera distance**: leash band = default distance and default + 0.5 (4.8-5.3 m with `CfgFollowCamera`'s 4.8),
    hard band as now; the sprint zoom (3.0-3.5 m and 7° over 14 updates, back over 14, by the timer rule of
@@ -183,14 +184,16 @@ The fixes in order of how much they change the feel:
    too.
 5. **Walls**: the player's walking sphere 0.485 m; keep the slid velocity, so running into a wall at a steep angle
    brakes to a near stop and the idle.
-6. **Camera collision**: the ray skips the fence materials (at least 30) and keeps the main ray's rule for disabled
+6. **Camera collision**: the rays skip materials 30 (`LOW_FENCE`), 122 (`RAILING`) and 107 (`CHAINLINK_NOCLIMB`)
+   and keep the main ray's rule for disabled
    triangles; the look-at point's move per update is limited by its length (20 % above 0.8 m, a share falling from
    100 % at 0.4 m to 20 % at 0.8 m in between), except in the air.
 7. **Small timings**: no body speed on the update a start clip begins; start clips one update shorter; root motion
    × the body scale (0.97) from the clip's first moving update, with no ramp; jump allowed during a start clip; land
    on the first update that starts with the feet 0.17 m or more below the floor, with the horizontal speed kept on
    that update ([Characters](characters.md#falling)); the fence climb's first clip ends against the fence
-   (0.485 m).
+   (0.485 m), and its clock runs from the climb's first update, through the two snap updates, with no fade-in (11
+   updates in all); the first update of 441 and 442 does not move the body ([Characters](characters.md#climb)).
 
 ## Open questions
 
@@ -201,15 +204,16 @@ The fixes in order of how much they change the feel:
   ([Characters](characters.md#walls)). A real kerb in a later level would corroborate it.
 - **The auto-follow option's default** (answered): 1 for both bytes, so the auto-centre rule runs on a fresh boot
   ([Details](#details-behind-the-table)); the default rule (`0x0012a400`) runs only after the options menu turns it
-  off. Still open: what a new profile saves. The "not seen" reading at `level99` checkpoint 1 is most likely the
-  blocked-view gate (`+0x45b`, inferred, [Camera](camera.md#runtime-checks)).
+  off. Still open: what a new profile saves. The "not seen" reading at `level99` checkpoint 1 is the blocked-view
+  latch `+0x45d`, set by the walls at the start spot and held until the player stops (confirmed (runtime),
+  [Camera](camera.md#runtime-checks)).
 - **The sprint camera's code** (answered): `0x00128cf0` with the band's ease `0x0012aae0`, started by gait 5 and
   ended 250 ms after it ([Camera](camera.md#sprint-zoom)).
 - **The look-at height's ease** (answered): the 20 % is the look-at point's distance limit (`0x00127d88`); the 30 %
   read before is the camera's height hold, a different ease ([Camera](camera.md#update)).
-- **The camera's collision** (partly answered): the face that pulled Coney's camera in is a disabled panel, which the
-  original's ray skips near the look-at point ([Camera](camera.md#street)); which test skips the fence (material
-  30) is still open.
+- **The camera's collision** (answered): the face that pulled Coney's camera in is a disabled panel, which the
+  original's ray skips near the look-at point ([Camera](camera.md#street)), and the fence is skipped by material: the
+  camera's rays exclude 30, 122 and 107 ([Camera](camera.md#collision)).
 - **The landing update** (answered at runtime): the feet go on below the floor until an update starts 0.17 m or more
   under it, so the 0.19 m dip is real ([Characters](characters.md#falling)); why 0.17 m in the code is open.
 - **The circling rate** (answered): about 191°/s running and 143°/s walking in the original, the rule's turn plus the
@@ -219,4 +223,6 @@ The fixes in order of how much they change the feel:
   walk-start and run-start updates are 0.75 of the original's (0.57 / 0.762 and 2.04 / 2.77), the start clips'
   playback rate, which points at Coney's first root-motion sample covering 0.75 of an update (speculative); its run
   stop's 0.31 and 1.97 against 2.24 and 5.00 m/s are its 0.1333 s fade, which the original's speeds show no trace of.
-- **The fence climb's first clip** (440: 11 updates in the original, 13 in Coney): not looked at in this pass.
+- **The fence climb's first clip** (answered: 440 is 11 updates in the original and 13 in Coney because the original
+  starts the clip with the move to the start point and does not fade it in, while Coney holds it for the 2-update
+  move and then fades it, [Characters](characters.md#climb)).
