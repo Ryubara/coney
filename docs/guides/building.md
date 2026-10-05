@@ -136,8 +136,9 @@ allows and centred; a window of another shape gets black bars at the sides or at
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
-      [--view-world NAME] [--view-character [NAME]] [--anim CLIP] [--play-level NAME] [--fps-cap N]
-      [--vsync on|off] [--show-fps]
+      [--view-world NAME] [--view-character [NAME]] [--anim CLIP] [--play-level NAME [--spawn NAME]]
+      [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--only NAME]... [--names FILE]]
+      [--fps-cap N] [--vsync on|off] [--show-fps]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -343,6 +344,16 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fra
 A script drives it like a player, with partial deflections: `stick right 60 0` orbits at 60 % of the full rate,
 `stick left 0 35` moves in at 35 %.
 
+### The sandbox {#the-sandbox}
+
+`--sandbox [NAME]` flies a free camera round one of Coney's own test worlds of textured shapes (slopes, stairs,
+ledges, fences, gaps), with no disc needed. It is Coney's feature, not the original's; the layouts, their format and
+how to add one are in [The sandbox](sandbox.md).
+
+```sh
+build/dev/src/platform/coney --sandbox parkour
+```
+
 ### Playing a level {#playing-a-level}
 
 `--play-level NAME` puts you in a level as Rembrandt, driven with a gamepad's analog sticks, with the follow camera
@@ -378,6 +389,16 @@ rate ([Frame rate](#frame-rate)). Scripts drive it with partial deflections, as 
 forward at 30 %, `stick left 50 87` runs along an arc to the right, `stick right 60 0` turns the camera at 60 % of its
 full rate.
 
+`--play-level sandbox` (or `sandbox:NAME` for another layout) plays a [sandbox](sandbox.md) test world in place of a
+level: the same player, follow camera and character, on the sandbox's collision mesh. Only the scenery differs.
+Rembrandt starts at the layout's first spawn point, or at the one `--spawn NAME` names. Nothing streams; the far clip
+is the layout's fog end. The disc is still needed, for the character.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox:parkour --spawn lane
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox --spawn stairs --frames 120 --input-script tests/support/sandbox_walk_short.txt --screenshot ../../scratch/stairs.png
+```
+
 ### Character reference images {#character-reference-images}
 
 `--render-references DIR` writes one 256x256 PNG per character into `DIR` (made if missing) and exits: the small
@@ -409,7 +430,7 @@ batch goes on, and the exit status is 1.
 In a window, Coney reads the keyboard and any gamepad SDL3 recognises, and turns them into the PS2 pad the game
 expects ([Front end](../research/frontend.md#coneys-implementation)). The legal screen ignores input, as in the
 original; the menus, [the world viewer](#the-world-viewer), [the character viewer](#the-character-viewer) and
-[a played level](#playing-a-level) read port 1.
+[a played level](#playing-a-level) and [the sandbox](sandbox.md) read port 1.
 
 | PS2 pad | Gamepad (SDL3 names) | Keyboard (port 1) |
 | --- | --- | --- |

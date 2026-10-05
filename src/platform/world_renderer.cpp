@@ -63,6 +63,8 @@ rw::Atomic* atomicOf(const chunk::LoadedObject* object) { return levelAtomic(obj
 
 } // namespace
 
+void placeWorldCamera(rw::Camera* camera, const WorldView& view) { placeCamera(camera, view); }
+
 world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowMs) {
     // Each row, and the position, turned about y: (x, y, z) -> (x cos a + z sin a, y, -x sin a + z cos a).
     const float angle = static_cast<float>(nowMs % 377'000'000ULL) * kCloudRadiansPerMs; // a whole number of turns

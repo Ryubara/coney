@@ -84,6 +84,9 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     }
     // Plugins are registered between init and open, as librw requires: the streamed world's (platform/world_atomic.h).
     attachWorldPlugins();
+    // Anisotropic filtering per texture, which the sandbox's grid floor needs to stay sharp at grazing angles
+    // (platform/sandbox_renderer.h); it only takes effect on textures that ask for it.
+    rw::registerAnisotropyPlugin();
     rw::EngineOpenParams params{};
     params.window = reinterpret_cast<SDL_Window**>(&engine->m_sdlWindow);
     params.fullscreen = 0;

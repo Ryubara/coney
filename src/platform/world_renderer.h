@@ -32,6 +32,10 @@ struct WorldView {
 /// docs/research/graphics.md#device-object).
 inline constexpr float kFogStart = 0.5F;
 
+/// Places librw's camera at `view` (RenderWare's axes): its frame, view window, the near clip and the draw distance as
+/// the far clip, and the fog plane at kFogStart of it. Shared by the world renderer and the sandbox's.
+void placeWorldCamera(rw::Camera* camera, const WorldView& view);
+
 /// Draws a level with librw in the order of the original's viewport pass, as far as Coney has its parts: the level's
 /// background (LevelObject_RenderBackground: sky box, turning cloud box, skyline, then a Z-only clear), then the world
 /// pass (WorldManager_Render): the level world's light glows, the `s` world's collected sectors and the `d` world's,

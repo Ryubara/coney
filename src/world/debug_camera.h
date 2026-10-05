@@ -28,8 +28,9 @@ class DebugCamera {
     /// How far up or down it can look, in radians, short of straight up so the view never flips.
     static constexpr float kMaxPitch = 1.5F;
 
-    /// A camera at `position` looking along +z, level.
-    explicit DebugCamera(Vec3 position) : m_position(position) {}
+    /// A camera at `position` looking along +z, level, flying at `speed` world units a second (kSpeed by default; the
+    /// sandbox flies slower, its world being metres at human scale).
+    explicit DebugCamera(Vec3 position, float speed = kSpeed) : m_position(position), m_speed(speed) {}
 
     /// Moves and turns the camera by what `pad` holds, over `seconds`.
     void update(const Pad& pad, float seconds);
@@ -47,6 +48,7 @@ class DebugCamera {
 
   private:
     Vec3 m_position;
+    float m_speed = kSpeed;
     float m_yaw = 0.0F;
     float m_pitch = 0.0F;
 };

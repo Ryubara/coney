@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <expected>
+#include <filesystem>
 #include <format>
 #include <functional>
 #include <memory>
@@ -18,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_main.h>
 
 #include "core/chunk_system.h"
@@ -43,12 +45,14 @@
 #include "platform/play_level_mode.h"
 #include "platform/reference_renderer.h"
 #include "platform/render_engine.h"
+#include "platform/sandbox_viewer_mode.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 #include "platform/texture_viewer_mode.h"
 #include "platform/window.h"
 #include "platform/world_viewer_mode.h"
+#include "sandbox/sandbox_world.h"
 #include "scripting/config_strings.h"
 #include "world/sector_budget.h"
 
@@ -147,6 +151,35 @@ std::expected<std::string, coney::Error> resolveViewText(const coney::io::Wad& w
         return coney::fail(coney::ErrorCode::NotFound, std::format("no UI string has the id {:#x}", id));
     }
     return std::string(text);
+}
+
+// The folder of sandbox layouts: `sandbox` in the folder --assets names, or in the `assets` folder the build copies
+// beside the executable.
+std::filesystem::path sandboxFolder(const coney::Options& options) {
+    if (const std::optional<std::string> assets = options.assetsDir; assets) {
+        return std::filesystem::path(*assets) / "sandbox";
+    }
+    const char* base = SDL_GetBasePath(); // owned by SDL; null when the platform cannot tell
+    const std::filesystem::path executableFolder =
+        base != nullptr ? std::filesystem::path(base) : std::filesystem::path(".");
+    return executableFolder / "assets" / "sandbox";
+}
+
+// Loads sandbox layout `name` from the sandbox folder and prints its size: counts only.
+std::expected<coney::sandbox::SandboxWorld, coney::Error> loadSandbox(const coney::Options& options,
+                                                                      std::string_view name) {
+    auto world = coney::sandbox::SandboxWorld::load(sandboxFolder(options), name);
+    if (!world) {
+        return world;
+    }
+    const coney::sandbox::BakeStats& bake = world->bakeStats();
+    printText(std::format("sandbox {}: {} primitives, {} spawn points, {} viewpoints; {} vertices, {} triangles; {} "
+                          "collision triangles; light baked with {} occlusion and {} shadow rays\n",
+                          name, world->layout().primitives.size(), world->layout().spawns.size(),
+                          world->layout().views.size(), world->mesh().vertices.size(), world->mesh().triangles.size(),
+                          world->collision() != nullptr ? world->collision()->triangles().size() : 0,
+                          bake.occlusionRays, bake.shadowRays));
+    return world;
 }
 
 } // namespace
@@ -264,6 +297,7 @@ int main(int argc, char** argv) {
     std::unique_ptr<coney::platform::WorldViewerMode> worldViewer;
     std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
     std::unique_ptr<coney::platform::PlayLevelMode> playLevel;
+    std::unique_ptr<coney::platform::SandboxViewerMode> sandboxViewer;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
             return 2; // parseOptions refuses --view-txd without --disc, so this is never reached
@@ -336,13 +370,34 @@ int main(int argc, char** argv) {
         if (!wad) {
             return 2; // parseOptions refuses --play-level without --disc, so this is never reached
         }
-        auto playMode = coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText);
+        // A level, or a sandbox layout (`sandbox:NAME`) with the same player and camera on its collision mesh.
+        std::expected<std::unique_ptr<coney::platform::PlayLevelMode>, coney::Error> playMode =
+            coney::fail(coney::ErrorCode::NotFound, "no level");
+        if (const std::optional<std::string> layout = coney::sandboxOfPlayLevel(*playName); layout) {
+            auto world = loadSandbox(*options, *layout);
+            playMode = world ? coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world),
+                                                                               options->spawn, printText)
+                             : std::unexpected(std::move(world.error()));
+        } else {
+            playMode = coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText);
+        }
         if (!playMode) {
             std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), playMode.error().message.c_str());
             return 1;
         }
         playLevel = std::move(*playMode);
         modes.push(*playLevel);
+    } else if (const std::optional<std::string> sandboxName = options->sandbox; sandboxName) {
+        // The sandbox with the free camera: no disc needed.
+        auto world = loadSandbox(*options, *sandboxName);
+        auto viewerMode = world ? coney::platform::SandboxViewerMode::create(renderer, std::move(*world), printText)
+                                : std::unexpected(std::move(world.error()));
+        if (!viewerMode) {
+            std::fprintf(stderr, "coney: %s: %s\n", sandboxName->c_str(), viewerMode.error().message.c_str());
+            return 1;
+        }
+        sandboxViewer = std::move(*viewerMode);
+        modes.push(*sandboxViewer);
     } else if (wad) {
         // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
         // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first; the level
@@ -416,6 +471,9 @@ int main(int argc, char** argv) {
     }
     if (playLevel) {
         printText(playLevel->summary());
+    }
+    if (sandboxViewer) {
+        printText(sandboxViewer->summary());
     }
 
     // Report the screenshot: where it went and a summary that says whether anything was drawn.

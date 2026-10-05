@@ -1,0 +1,6 @@
+# Rembrandt in the sandbox (tests/sandbox/disc_sandbox_player_test.cpp), walking straight ahead (+y, away from the
+# camera) with the left stick at partial deflections: up a slope or a stair set and onto the platform at its top.
+# Frames are 1/30 s.
+# Stand for half a second, then walk at 60 % for eight seconds, then let go.
+15 stick left 0 60
+255 stick left 0 0

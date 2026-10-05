@@ -1,0 +1,12 @@
+# Flies the sandbox's free camera as a player would, with partial stick deflections: forward at 50 % while looking
+# right at 30 %, then a short rise on R1 while drifting left at 40 %, then triangle for the layout's next viewpoint.
+0 stick left 0 50
+10 stick right 30 0
+25 stick right 0 0
+25 stick left -40 0
+25 press r1
+32 release r1
+35 stick left 0 0
+40 tap triangle
+45 stick left 0 70
+55 stick left 0 0

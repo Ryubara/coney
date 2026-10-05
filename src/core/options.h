@@ -51,6 +51,16 @@ struct Options {
     /// `--play-level`: a level the player plays (`level99`). Requires discPath; cannot be combined with `--load` or
     /// the viewers.
     std::optional<std::string> playLevel;
+    /// `--sandbox`: a sandbox layout to fly round with the free camera, by name (`default`, `parkour`) or as a path to
+    /// a `.layout` file; kDefaultSandbox when given without one. Needs no disc; cannot be combined with `--load`, the
+    /// viewers or `--play-level`.
+    std::optional<std::string> sandbox;
+    /// `--spawn`: the spawn point of a sandbox layout the player starts at (`--play-level sandbox:NAME`); the layout's
+    /// first when unset. Requires playLevel to name a sandbox.
+    std::optional<std::string> spawn;
+    /// `--assets`: the folder holding Coney's own assets (its `sandbox` folder of layouts and textures), in place of
+    /// the `assets` folder beside the executable.
+    std::optional<std::string> assetsDir;
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;
@@ -92,6 +102,17 @@ inline constexpr int kMaxFpsCap = 1000;
 
 /// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).
 inline constexpr std::string_view kDefaultViewCharacter = "warr_re_cv";
+
+/// The sandbox layout `--sandbox` flies round without a name.
+inline constexpr std::string_view kDefaultSandbox = "default";
+
+/// What `--play-level` takes to play a sandbox layout instead of a level: `sandbox` alone (kDefaultSandbox), or
+/// `sandbox:NAME` for another layout.
+inline constexpr std::string_view kSandboxLevelPrefix = "sandbox";
+
+/// The sandbox layout a `--play-level` name stands for (`sandbox` gives kDefaultSandbox, `sandbox:parkour` gives
+/// `parkour`), or nothing for a level name.
+[[nodiscard]] std::optional<std::string> sandboxOfPlayLevel(std::string_view name);
 
 /// Largest accepted `--frames` value: about 4.6 hours at 60 Hz, far beyond any test, and well inside `int`.
 inline constexpr int kMaxFrameLimit = 1'000'000;

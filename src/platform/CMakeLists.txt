@@ -6,8 +6,10 @@ add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_di
 target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
-# Playing a level as Rembrandt (docs/guides/building.md#playing-a-level).
-target_sources(coney_platform PRIVATE play_level_mode.cpp)
+# Playing a level as Rembrandt (docs/guides/building.md#playing-a-level), in a level's scenery or a sandbox's.
+target_sources(coney_platform PRIVATE play_level_mode.cpp play_scenery.cpp)
+# The sandbox: Coney's own test worlds, drawn and flown round (docs/guides/sandbox.md).
+target_sources(coney_platform PRIVATE sandbox_renderer.cpp sandbox_viewer_mode.cpp)
 # The character reference images (docs/guides/building.md#character-reference-images).
 target_sources(coney_platform PRIVATE reference_renderer.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
@@ -75,4 +77,32 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 390 --play-level level99
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
     set_tests_properties(coney.plays_level PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded")
+    # Rembrandt in the parkour sandbox headless: the same play mode and script on the sandbox's collision mesh, from
+    # the run-up lane's spawn point (docs/guides/sandbox.md). Counts only.
+    add_test(NAME coney.plays_sandbox
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 390 --play-level sandbox:parkour --spawn lane
+                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
+    set_tests_properties(coney.plays_sandbox PROPERTIES TIMEOUT 60
+                         PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded.*respawns 0.*sandbox \"Traversal course\"")
 endif()
+
+# Coney's own assets (the sandbox's layouts and textures, assets/sandbox) copied beside the executable on every build,
+# where coney looks for them at run time unless --assets names another folder.
+add_custom_target(coney_assets ALL
+                  COMMAND "${CMAKE_COMMAND}" -E copy_directory_if_different "${PROJECT_SOURCE_DIR}/assets"
+                          "$<TARGET_FILE_DIR:coney>/assets"
+                  VERBATIM)
+add_dependencies(coney coney_assets)
+# The sandbox needs no disc: fly round each shipped layout headless, the free camera driven by partial stick
+# deflections and a viewpoint change (docs/guides/sandbox.md). Counts only.
+add_test(NAME coney.flies_sandbox
+         COMMAND coney --headless --frames 60 --sandbox --input-script "${PROJECT_SOURCE_DIR}/tests/support/sandbox_fly.txt")
+set_tests_properties(coney.flies_sandbox PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "sandbox: 60 frames.*view overview")
+add_test(NAME coney.flies_parkour_sandbox
+         COMMAND coney --headless --frames 60 --sandbox parkour
+                 --input-script "${PROJECT_SOURCE_DIR}/tests/support/sandbox_fly.txt")
+set_tests_properties(coney.flies_parkour_sandbox PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "sandbox: 60 frames")
+add_test(NAME coney.rejects_unknown_sandbox COMMAND coney --headless --frames 1 --sandbox no-such-layout)
+set_tests_properties(coney.rejects_unknown_sandbox PROPERTIES WILL_FAIL TRUE)
+add_test(NAME coney.play_sandbox_needs_disc COMMAND coney --play-level sandbox:parkour)
+set_tests_properties(coney.play_sandbox_needs_disc PROPERTIES WILL_FAIL TRUE)

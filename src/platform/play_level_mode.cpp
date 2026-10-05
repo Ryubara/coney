@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/play_level_mode.h"
 
-#include <algorithm>
-#include <array>
 #include <cmath>
 #include <format>
 #include <numbers>
@@ -16,23 +14,13 @@
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "human/human_animator.h"
-#include "world/view_frustum.h"
-#include "world/world_streamer.h"
 
 namespace coney::platform {
 
 namespace {
 
-// The stand-in start drops from this high above the first part's sectors.
-constexpr float kStandInDrop = 500.0F;
-// The character's directional light shines down and away from the usual camera side (game axes, z up).
-constexpr anim::Vec3 kLightDirection{0.3F, 0.5F, -0.8F};
-
 // Game time in milliseconds from GameTimer ticks.
 std::uint64_t millisecondsOf(std::uint64_t ticks) { return ticks / (GameTimer::kTicksPerSecond / 1000); }
-
-// A direction in RenderWare's axes, as toRenderWare() turns points.
-anim::Vec3 directionToRenderWare(anim::Vec3 game) { return anim::Vec3{game.x, game.z, -game.y}; }
 
 // The gait's name for the summary.
 const char* gaitName(human::Gait gait) {
@@ -55,29 +43,29 @@ const char* gaitName(human::Gait gait) {
 
 } // namespace
 
-world::Vec3 toRenderWare(anim::Vec3 game) { return world::Vec3{game.x, game.z, -game.y}; }
-
-human::PlayerStart playLevelStandInStart(const WorldSet& set, const raycast::CollisionMesh& mesh) {
-    // The world viewer's start is in RenderWare's axes: back to the game's, (x, y, z) -> (x, -z, y).
-    const world::Vec3 top = viewerStartPosition(*set.worlds().front());
-    raycast::Vec3 point{top.x, -top.z, top.y + 1.0F};
-    if (!raycast::dropToGround(mesh, kStandInDrop, point)) {
-        point.z = top.y;
-    }
-    return human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z}, .headingDegrees = 0.0F};
-}
-
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
                       std::function<void(std::string_view)> print) {
-    // The scenery first, as LoadLevel reads it; a level needs its level file for the ground.
-    auto scenery = loadLevelScenery(engine, wad, name, budget, print);
+    auto scenery = LevelPlayScenery::load(engine, wad, name, budget, print);
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
     }
-    if (!scenery->level || !scenery->level->collision) {
-        return fail(ErrorCode::NotFound, std::format("{} has no level file to stand on", name));
+    return createWith(engine, wad, std::move(*scenery), std::move(print));
+}
+
+std::expected<std::unique_ptr<PlayLevelMode>, Error>
+PlayLevelMode::createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox::SandboxWorld world,
+                               const std::optional<std::string>& spawn, std::function<void(std::string_view)> print) {
+    auto scenery = SandboxPlayScenery::create(engine, std::move(world), spawn);
+    if (!scenery) {
+        return std::unexpected(std::move(scenery.error()));
     }
+    return createWith(engine, wad, std::move(*scenery), std::move(print));
+}
+
+std::expected<std::unique_ptr<PlayLevelMode>, Error>
+PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
+                          std::function<void(std::string_view)> print) {
     // The player's character and its texture.
     chunk::ChunkHandlerTable table = chunk::ChunkHandlerTable::withDefaults();
     characters::addCharacterDataHandlers(table);
@@ -97,30 +85,25 @@ PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view
             }
         }
     }
-    // Where the player starts.
-    const std::optional<human::PlayerStart> researched = human::researchedPlayerStart(name);
-    const human::PlayerStart start =
-        researched ? *researched : playLevelStandInStart(*scenery->set, *scenery->level->collision);
+    // Where the player starts, which the scenery decides.
+    const human::PlayerStart start = scenery->start();
     const human::Speeds speeds = human::speedsOf((*character)->anims(), human::AnimSlots::player());
     print(std::format("player: {} at ({:.2f}, {:.2f}, {:.2f}) heading {:.0f} ({}); speeds walk {:.3f}, jog {:.3f}, run "
                       "{:.3f}, sprint {:.3f} m/s\n",
                       human::kPlayerModel, start.position.x, start.position.y, start.position.z, start.headingDegrees,
-                      researched ? "the level's start" : "Coney's stand-in start", speeds.walk, speeds.jog, speeds.run,
-                      speeds.sprint));
-    return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, std::move(*scenery), std::move(*character),
-                                                            std::move(*dictionaries), budget, start, std::move(print)));
+                      scenery->startSource(), speeds.walk, speeds.jog, speeds.run, speeds.sprint));
+    return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, std::move(scenery), std::move(*character),
+                                                            std::move(*dictionaries), std::move(print)));
 }
 
-PlayLevelMode::PlayLevelMode(RenderEngine& engine, LevelScenery scenery,
+PlayLevelMode::PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> scenery,
                              std::unique_ptr<human::PlayerCharacter> character,
-                             std::vector<TextureDictionary> dictionaries, world::SectorBudget& budget,
-                             const human::PlayerStart& start, std::function<void(std::string_view)> print)
+                             std::vector<TextureDictionary> dictionaries, std::function<void(std::string_view)> print)
     : m_engine(engine), m_scenery(std::move(scenery)), m_character(std::move(character)),
-      m_dictionaries(std::move(dictionaries)), m_budget(budget),
-      m_player(std::make_unique<human::Player>(*m_character, m_scenery.level->collision.get(), start)),
-      m_renderer(WorldViewerMode::kAmbient), m_print(std::move(print)),
-      m_positions(m_character->assets().model.vertices.size()), m_normals(m_character->assets().model.vertices.size()),
-      m_drawDistance(camera::kPlayerCameraLens.farClip) {
+      m_dictionaries(std::move(dictionaries)),
+      m_player(std::make_unique<human::Player>(*m_character, &m_scenery->collision(), m_scenery->start())),
+      m_print(std::move(print)), m_positions(m_character->assets().model.vertices.size()),
+      m_normals(m_character->assets().model.vertices.size()), m_drawDistance(m_scenery->drawDistance()) {
     // The texture: the character's dictionary holds one, which every material uses.
     rw::Texture* texture = nullptr;
     if (!m_dictionaries.empty()) {
@@ -129,7 +112,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, LevelScenery scenery,
     }
     m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture);
     m_lights = std::make_unique<CharacterLights>(kCharacterAmbient, kCharacterDirectional,
-                                                 directionToRenderWare(kLightDirection));
+                                                 directionToRenderWare(m_scenery->lightDirection()));
 }
 
 PlayLevelMode::~PlayLevelMode() {
@@ -162,15 +145,7 @@ WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot, float drawD
                      .drawDistance = drawDistance};
 }
 
-void PlayLevelMode::enter() {
-    const std::array<world::Vec3, 1> cameras{toRenderWare(m_player->camera().position())};
-    const world::PreloadResult preload =
-        world::preloadWorlds(m_scenery.set->worlds(), cameras, m_drawDistance.current(), m_budget, *m_scenery.set, 0);
-    m_stats.unloads += preload.unloaded;
-    m_stats.failures += preload.failed;
-    m_print(std::format("preload: {} parts read, {} freed, {} failed; {} atomics resident\n", preload.loaded,
-                        preload.unloaded, preload.failed, m_scenery.set->residentAtomics()));
-}
+void PlayLevelMode::enter() { m_scenery->preload(toRenderWare(m_player->camera().position())); }
 
 void PlayLevelMode::skin(const human::PlayerSnapshot& snapshot) {
     // The pose, skinned in the character's space (game axes, the feet at the origin, facing +y).
@@ -200,14 +175,12 @@ void PlayLevelMode::drawCharacter() const {
 }
 
 ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
-    const auto seconds = static_cast<float>(frame.seconds);
+    // The draw distance render() blends moves on a step.
     m_drawDistance.commit();
-    const std::uint64_t nowMs = millisecondsOf(frame.gameTicks);
-    const raycast::CollisionMesh* mesh = m_scenery.level->collision.get();
 
     // The characters' update, then the cameras' (human::Player keeps that order).
     const anim::Vec3 before = m_player->human().position();
-    m_player->update(stack.pads().port(0), mesh);
+    m_player->update(stack.pads().port(0), &m_scenery->collision());
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
     if (const std::uint32_t id = m_player->human().animator().animId(); id != m_lastAnimId) {
@@ -215,43 +188,12 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_lastAnimId = id;
     }
 
-    // One streaming decision around the camera, then the draw distance.
-    WorldSet& set = *m_scenery.set;
-    const std::array<world::Vec3, 1> cameras{toRenderWare(m_player->camera().position())};
-    const world::StreamStep step =
-        world::updateStreaming(set.worlds(), cameras, m_drawDistance.current(), m_budget, set, nowMs);
-    switch (step.result) {
-    case world::StreamResult::Loaded:
-        ++m_stats.loads;
-        break;
-    case world::StreamResult::Unloaded:
-        ++m_stats.unloads;
-        break;
-    case world::StreamResult::Failed:
-        ++m_stats.failures;
-        m_print(std::format("frame {}: part {} failed: {}\n", frame.index, step.part, step.error));
-        break;
-    case world::StreamResult::NoRoom:
-    case world::StreamResult::Idle:
-        break;
-    }
-    m_pending = world::nearestPendingDistance(set.worlds(), cameras);
-    m_drawDistance.current() = world::adjustDrawDistance(
-        m_drawDistance.current(), world::DrawDistanceInputs{.pending = m_pending,
-                                                            .farClip = camera::kPlayerCameraLens.farClip,
-                                                            .seconds = seconds,
-                                                            .frameRate = 30.0F,
-                                                            .viewports = 1,
-                                                            .lowRateMode = false});
-
-    // The visibility pass, from the newest step's camera: the next step's streaming reads it, so it belongs to the
+    // The scenery's step around the camera (for a level: one streaming decision and the draw distance), then its
+    // visibility pass from the newest step's camera: the next step's streaming reads it, so it belongs to the
     // simulation, not to the blended render.
-    const WorldView newest = view(m_player->current(), m_drawDistance.current());
-    const world::ViewFrustum frustum(newest.pose, newest.halfWidth, newest.halfHeight, newest.nearClip,
-                                     newest.drawDistance);
-    for (world::StreamedWorld* world : set.worlds()) {
-        world->findVisibleSectors(frustum, true);
-    }
+    m_scenery->step(toRenderWare(m_player->camera().position()), frame);
+    m_drawDistance.current() = m_scenery->drawDistance();
+    m_scenery->findVisible(view(m_player->current(), m_drawDistance.current()));
     ++m_stats.frames;
     return ModeResult::Stay;
 }
@@ -265,9 +207,8 @@ void PlayLevelMode::render(const RenderTime& time) {
         skin(snapshot);
         m_mesh->update(m_positions, m_normals);
     }
-    // The world draws the sectors its own view sees (WorldRenderer::render), with the character among the objects.
-    m_renderer.render(m_engine, *m_scenery.set, m_scenery.level.get(), blended, kFogColour, m_pending,
-                      millisecondsOf(time.gameTicks), [this] { drawCharacter(); });
+    // The scenery draws itself through the blended view, with the character among its objects.
+    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this] { drawCharacter(); });
 }
 
 std::string PlayLevelMode::summary() const {
@@ -276,11 +217,10 @@ std::string PlayLevelMode::summary() const {
     const anim::Vec3 c = m_player->camera().position();
     return std::format(
         "play: {} frames, player at ({:.2f}, {:.2f}, {:.2f}) heading {:.1f} speed {:.2f} gait {} clip {} "
-        "{}, travelled {:.2f} m, respawns {}; camera {:.2f} m away; parts read {}, freed {}, failed {}\n",
+        "{}, travelled {:.2f} m, respawns {}; camera {:.2f} m away{}\n",
         m_stats.frames, p.x, p.y, p.z, human.heading() * 180.0F / std::numbers::pi_v<float>, human.speed(),
         gaitName(human.gait()), human.animator().animId(), human.airborne() ? "airborne" : "grounded",
-        m_stats.travelled, m_player->respawns(), anim::distance(c, m_player->camera().lookAt()), m_stats.loads,
-        m_stats.unloads, m_stats.failures);
+        m_stats.travelled, m_player->respawns(), anim::distance(c, m_player->camera().lookAt()), m_scenery->summary());
 }
 
 } // namespace coney::platform

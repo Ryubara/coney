@@ -1,0 +1,5 @@
+# Rembrandt in the sandbox (tests/sandbox/disc_sandbox_player_test.cpp), walking straight ahead (+y, away from the
+# camera) with the left stick at a partial deflection for five seconds, about 8 m. Frames are 1/30 s.
+# Stand for half a second, then walk at 55 %, then let go.
+15 stick left 0 55
+165 stick left 0 0

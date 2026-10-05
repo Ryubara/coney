@@ -20,7 +20,7 @@ constexpr std::string_view kUsage =
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
-    "             [--play-level NAME]\n"
+    "             [--play-level NAME [--spawn NAME]] [--sandbox [NAME]] [--assets DIR]\n"
     "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--show-fps]\n"
     "\n"
@@ -40,8 +40,13 @@ constexpr std::string_view kUsage =
     "                     show a character playing a clip: a model name such as warr_re_cv (the default,\n"
     "                     Rembrandt); needs --disc\n"
     "  --anim CLIP        the clip --view-character plays: an anim id or a clip name\n"
-    "  --play-level NAME  play a level as Rembrandt with a gamepad and the follow camera: level99;\n"
-    "                     needs --disc\n"
+    "  --play-level NAME  play a level as Rembrandt with a gamepad and the follow camera: level99,\n"
+    "                     or sandbox:NAME for a sandbox layout (sandbox alone: default); needs --disc\n"
+    "  --spawn NAME       with --play-level sandbox:NAME: the layout's spawn point to start at\n"
+    "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
+    "                     .layout file; needs no disc\n"
+    "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
+    "                     of the assets folder beside the executable\n"
     "  --render-references DIR\n"
     "                     write a 256x256 PNG of every character, standing, into DIR and exit;\n"
     "                     needs --disc and a display (the window stays hidden)\n"
@@ -140,6 +145,23 @@ std::expected<void, Error> checkPlayLevel(const Options& options) {
     return {};
 }
 
+// Refuses the sandbox's options in combinations that cannot work: part of checkCombinations().
+std::expected<void, Error> checkSandbox(const Options& options) {
+    if (options.spawn.has_value() && !(options.playLevel && sandboxOfPlayLevel(*options.playLevel))) {
+        return invalidArgument("--spawn needs --play-level sandbox:NAME: it names a sandbox layout's spawn point");
+    }
+    if (!options.sandbox.has_value()) {
+        return {};
+    }
+    if (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value() ||
+        options.viewText.has_value() || options.viewWorld.has_value() || options.viewCharacter.has_value() ||
+        options.playLevel.has_value()) {
+        return invalidArgument("--sandbox cannot be combined with --load, the viewers or --play-level (to play a "
+                               "sandbox, use --play-level sandbox:NAME)");
+    }
+    return {};
+}
+
 // Refuses the reference renderer's options in combinations that cannot work: part of checkCombinations().
 std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     if (!options.renderReferences.has_value()) {
@@ -156,7 +178,7 @@ std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     }
     if (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value() ||
         options.viewText.has_value() || options.viewWorld.has_value() || options.viewCharacter.has_value() ||
-        options.playLevel.has_value()) {
+        options.playLevel.has_value() || options.sandbox.has_value()) {
         return invalidArgument("--render-references cannot be combined with --load or the viewers");
     }
     if (options.frameLimit.has_value() || options.screenshotPath.has_value() || options.inputScript.has_value()) {
@@ -193,6 +215,9 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     }
     if (auto play = checkPlayLevel(options); !play) {
         return play;
+    }
+    if (auto sandbox = checkSandbox(options); !sandbox) {
+        return sandbox;
     }
     if (!options.loads.empty() && !options.discPath.has_value()) {
         return invalidArgument("--load needs --disc to say where the game's files are");
@@ -310,6 +335,21 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             if (auto value = takeValue(args, i, options.playLevel, "--play-level", "a level name"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--spawn") {
+            if (auto value = takeValue(args, i, options.spawn, "--spawn", "a spawn point's name"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--assets") {
+            if (auto value = takeValue(args, i, options.assetsDir, "--assets", "a folder"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--sandbox") {
+            // The name is optional: without one (the end, or another option next) the default layout.
+            if (options.sandbox.has_value()) {
+                return invalidArgument("--sandbox given twice");
+            }
+            const bool named = i + 1 < args.size() && !args[i + 1].empty() && !args[i + 1].starts_with("--");
+            options.sandbox = named ? std::string(args[++i]) : std::string(kDefaultSandbox);
         } else if (arg == "--view-character") {
             // The name is optional: without one (the end, or another option next) the viewer shows Rembrandt.
             if (options.viewCharacter.has_value()) {
@@ -404,5 +444,16 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
 }
 
 std::string_view usageText() { return kUsage; }
+
+std::optional<std::string> sandboxOfPlayLevel(std::string_view name) {
+    if (name == kSandboxLevelPrefix) {
+        return std::string(kDefaultSandbox);
+    }
+    if (name.starts_with(kSandboxLevelPrefix) && name.size() > kSandboxLevelPrefix.size() + 1 &&
+        name[kSandboxLevelPrefix.size()] == ':') {
+        return std::string(name.substr(kSandboxLevelPrefix.size() + 1));
+    }
+    return std::nullopt;
+}
 
 } // namespace coney

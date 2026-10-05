@@ -309,3 +309,50 @@ TEST_CASE("the frame pacing options refuse bad values and test mode", "[options]
     CHECK(coney::isTestMode(*script));
     CHECK(coney::usageText().find("--fps-cap") != std::string_view::npos);
 }
+
+TEST_CASE("the sandbox option takes a layout or defaults to the default one, and needs no disc", "[options][sandbox]") {
+    auto bare = parse(std::array<std::string_view, 1>{"--sandbox"});
+    REQUIRE(bare.has_value());
+    CHECK(bare->sandbox == std::string(coney::kDefaultSandbox));
+    auto named = parse(std::array<std::string_view, 4>{"--sandbox", "parkour", "--frames", "2"});
+    REQUIRE(named.has_value());
+    CHECK(named->sandbox == "parkour");
+    CHECK(named->frameLimit == 2);
+    // An option next is not a name.
+    auto followed = parse(std::array<std::string_view, 2>{"--sandbox", "--headless"});
+    REQUIRE(followed.has_value());
+    CHECK(followed->sandbox == std::string(coney::kDefaultSandbox));
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--sandbox", "--sandbox"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 5>{"--sandbox", "--disc", "x", "--play-level", "a"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--sandbox", "--disc", "x", "--view-character"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 5>{"--sandbox", "--disc", "x", "--load", "a"}).has_value());
+    CHECK(coney::usageText().find("--sandbox") != std::string_view::npos);
+}
+
+TEST_CASE("the play option names a sandbox as sandbox or sandbox:NAME, with a spawn point", "[options][sandbox]") {
+    CHECK(coney::sandboxOfPlayLevel("sandbox") == std::string(coney::kDefaultSandbox));
+    CHECK(coney::sandboxOfPlayLevel("sandbox:parkour") == "parkour");
+    CHECK_FALSE(coney::sandboxOfPlayLevel("sandbox:").has_value());
+    CHECK_FALSE(coney::sandboxOfPlayLevel("sandboxes").has_value());
+    CHECK_FALSE(coney::sandboxOfPlayLevel("level99").has_value());
+
+    auto play =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "sandbox:parkour", "--spawn", "lane"});
+    REQUIRE(play.has_value());
+    CHECK(play->playLevel == "sandbox:parkour");
+    CHECK(play->spawn == "lane");
+    // A spawn point belongs to a sandbox.
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--spawn", "a"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--spawn", "a"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "sandbox", "--spawn"}).has_value());
+}
+
+TEST_CASE("the assets option takes a folder", "[options][sandbox]") {
+    auto assets = parse(std::array<std::string_view, 3>{"--sandbox", "--assets", "some/folder"});
+    REQUIRE(assets.has_value());
+    CHECK(assets->assetsDir == "some/folder");
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--assets"}).has_value());
+    CHECK(coney::usageText().find("--assets") != std::string_view::npos);
+}

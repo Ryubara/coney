@@ -123,6 +123,7 @@ nav:
           - Debug: references/bindings/debug.md
   - Guides:
       - Building and testing: guides/building.md
+      - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md
       - The coney-tools command line: guides/coney-tools.md
       - Conventions: guides/conventions.md

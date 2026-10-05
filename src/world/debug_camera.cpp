@@ -28,7 +28,7 @@ void DebugCamera::update(const Pad& pad, float seconds) {
 
     // Moving: the left stick along the view and across it, L1 and R1 straight down and up.
     const CameraPose view = pose();
-    const float speed = kSpeed * (pad.held(pad::kCross) ? kFastFactor : 1.0F) * seconds;
+    const float speed = m_speed * (pad.held(pad::kCross) ? kFastFactor : 1.0F) * seconds;
     const float ahead = pad.leftY() * speed;
     const float aside = pad.leftX() * speed;
     float rise = 0.0F;
