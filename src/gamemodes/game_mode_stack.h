@@ -31,6 +31,7 @@ struct FrameHooks {
 struct LoopCounts {
     std::uint64_t frames = 0; ///< Real frames: each renders once.
     std::uint64_t steps = 0;  ///< Fixed 1/30 s simulation steps.
+    std::uint64_t held = 0;   ///< Steps the step gate held (paused, slow motion): due, but not run.
 };
 
 /// The stack of game modes. Its run loop is the game's main loop: every simulation step the mode on top updates
@@ -83,8 +84,9 @@ class GameModeStack {
     /// would.
     ///
     /// The limit counts **steps**, which is what `--frames N` means: in lockstep (test mode) every frame is one step
-    /// and one render, so N frames are N steps and N renders whatever the machine's speed. Step indexes
-    /// (FrameTime::index, which scripted input is keyed by) carry on from one call to the next.
+    /// and one render, so N frames are N steps and N renders whatever the machine's speed. Steps the step gate holds
+    /// count towards the limit too, so a paused run still ends. Step indexes (FrameTime::index) carry on from one
+    /// call to the next.
     /// @orig 0x0015e6b8 GameModeStack_RunUntilEmpty (unknown)
     LoopCounts runUntilEmpty(GameTimer& timer, FrameClock& clock, const FrameHooks& hooks,
                              std::optional<std::uint64_t> stepLimit);
@@ -93,6 +95,12 @@ class GameModeStack {
     /// FrameHooks::beginFrame. Returns the number of steps (= frames) run.
     std::uint64_t runUntilEmpty(GameTimer& timer, const std::function<bool()>& beginFrame,
                                 std::optional<std::uint64_t> stepLimit);
+
+    /// Sets what decides, for each step the clock calls for, whether it runs: the debug menus' time controls
+    /// (src/debug/time_control.h). A step `gate` refuses still samples the pads, so the menus keep working, but the
+    /// timer does not advance and no mode updates; the frame still renders, at alpha 1, so the game's last picture
+    /// stays on screen. An empty `gate` runs every step.
+    void setStepGate(std::function<bool()> gate) { m_stepGate = std::move(gate); }
 
     /// Sets where the pad samples come from: SDL devices, a script, or null for none (the records then stay
     /// disconnected). The source is not owned and must outlive its use by the stack.
@@ -122,6 +130,9 @@ class GameModeStack {
     GameMode* m_lastUpdated = nullptr; // the mode the last step ran, while it is on the stack: what render() draws
     FrameTime m_lastStep;              // the last step's time, for the render's game time
     std::uint64_t m_steps = 0;         // steps runUntilEmpty() has run, over every call: the next FrameTime::index
+    std::uint64_t m_samples = 0;       // pad samples taken, held steps included: the input source's index
+    std::function<bool()> m_stepGate;  // whether a due step runs; empty: always
+    bool m_holding = false;            // the gate held the last due step: render the newest step at alpha 1
 
     std::uint64_t m_renders = 0; // renders so far, for RenderTime::index
     bool m_popPending = false;   // the last update returned Leave and the pop has not happened yet

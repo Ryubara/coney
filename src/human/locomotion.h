@@ -33,6 +33,22 @@ inline constexpr float kTurnReverseCarry = -0.5F;
 inline constexpr float kSkidStick = 0.2F;
 inline constexpr float kSkidDot = -0.5F;
 
+/// The locomotion values the debug menus may edit while the game runs (Coney's tunables,
+/// docs/guides/debug-menu.md#tunables). Each defaults to the researched constant above; the game reads them through
+/// locomotionTuning(), and the tunables registry changes them only between two steps, so a run stays deterministic.
+struct LocomotionTuning {
+    float stickDeadZone = kStickDeadZone; ///< kStickDeadZone.
+    float runThreshold = kRunThreshold;   ///< kRunThreshold.
+    float acceleration = kAcceleration;   ///< kAcceleration, m/s each second.
+    float walkTurnDegrees = 12.0F;        ///< maxTurn() walking, standing or sneaking, degrees an update.
+    float jogTurnDegrees = 6.0F;          ///< maxTurn() jogging.
+    float runTurnDegrees = 4.0F;          ///< maxTurn() running.
+    float sprintTurnDegrees = 2.5F;       ///< maxTurn() sprinting.
+};
+
+/// The one LocomotionTuning the game uses; at its defaults unless a debug menu changed it.
+[[nodiscard]] LocomotionTuning& locomotionTuning();
+
 /// Gaits, as the original numbers them (0x0022aeb0, 0x00221760).
 enum class Gait : std::uint8_t { Standing = 0, Sneak = 1, Walk = 2, Jog = 3, Run = 4, Sprint = 5 };
 

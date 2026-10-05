@@ -222,6 +222,12 @@ Untested; for a later runtime pass. Addresses are NTSC-U.
 Coney may add its own debug tools (a free camera, overlays). They are ours, not the original's, and do not belong
 in an `@orig` tag.
 
+## Coney's implementation
+
+Coney's debug menu is its own ([The debug menus](../guides/debug-menu.md)), opened with L3 and R3 together, a chord no
+retail control uses (see [Not present](#not-present)). Its Cheats page calls the script's cheat callback with a code's
+index, as the checker does on a match; the checker itself is not in Coney yet.
+
 ## Open questions
 
 - What `W_GameState + 0x410` is (it blocks the cheat check).

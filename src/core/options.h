@@ -70,6 +70,9 @@ struct Options {
     /// `--view-text FONT TEXT`: lay out and draw a text. Requires discPath; cannot be combined with `--load`,
     /// `--view-txd` or `--view-sheet`.
     std::optional<TextView> viewText;
+    /// `--tunables`: the debug menus' overrides file (docs/guides/debug-menu.md#tunables), loaded at start-up and
+    /// written by the Tunables page; unset: `coney-tunables.ini` in the user's config folder.
+    std::optional<std::string> tunablesFile;
     /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
     Language language = Language::English;
     /// `--render-references`: the folder to write a reference image of every character into, then exit. Requires

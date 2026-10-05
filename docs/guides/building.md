@@ -95,14 +95,16 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and fifteen smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
+`ctest` runs the Catch2 unit tests (`coney_tests`) and seventeen smoke tests of the `coney` executable itself: it
+starts and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
 `--view-text`, `--view-world`, `--view-character`, `--play-level` or `--render-references` without `--disc`, refuses a
 disc that does not exist, refuses `--fps-cap` in test mode, plays a synthetic input script
-(`tests/support/menu_input.txt`) and refuses one that does not exist. With `CONEY_DISC` set when CMake configures, three
-more run `coney --disc`: to the main menu (`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a
-scripted orbit (`coney.views_character`, `tests/support/character_orbit.txt`), and level99 played headless under a
-scripted pad (`coney.plays_level`, `tests/support/play_walk.txt`). The unit tests build their disc images, archives,
+(`tests/support/menu_input.txt`) and refuses one that does not exist, opens [the debug menu](debug-menu.md) with the
+pad chord and walks it to a native call (`coney.debug_menu_by_pad`, `tests/support/debug_menu.txt`), and refuses a
+tunables file that is not one. With `CONEY_DISC` set when CMake configures, three more run `coney --disc`: to the
+main menu (`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a scripted orbit
+(`coney.views_character`, `tests/support/character_orbit.txt`), and level99 played headless under a scripted pad
+(`coney.plays_level`, `tests/support/play_walk.txt`). The unit tests build their disc images, archives,
 RenderWare texture dictionaries, streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or
 a GPU (the librw tests run librw on its NULL device). Twelve tests check your own disc: every texture dictionary; every
 sprite sheet, font and the sheet table; every streamed world with the atomics of its parts (`[world]`, about a second);
@@ -138,7 +140,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP] [--play-level NAME [--spawn NAME]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--only NAME]... [--names FILE]]
-      [--fps-cap N] [--vsync on|off] [--show-fps]
+      [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -399,6 +401,20 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox:p
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox --spawn stairs --frames 120 --input-script tests/support/sandbox_walk_short.txt --screenshot ../../scratch/stairs.png
 ```
 
+### The debug menus {#the-debug-menus}
+
+Every run has Coney's debug menu, a trainer-style menu of its own (the original has none): press L3 and R3 together
+(F4 on the keyboard) to open it over whatever is running. It pauses and single-steps the game, edits tunable values
+live, calls any script binding with arguments you choose, runs Lua in the game's script state and shows the pad's live
+state. `--tunables FILE` names the file its tunable overrides are loaded from at start-up and saved to; without it a
+windowed run uses `coney-tunables.ini` in your config folder and a headless run none. [The debug menus](debug-menu.md)
+has the pages, the controls and how to add to it.
+
+```sh
+build/dev/src/platform/coney --tunables ../../scratch/tunables.ini
+build/dev/src/platform/coney --headless --frames 30 --input-script tests/support/debug_menu.txt
+```
+
 ### Character reference images {#character-reference-images}
 
 `--render-references DIR` writes one 256x256 PNG per character into `DIR` (made if missing) and exits: the small
@@ -446,9 +462,11 @@ original; the menus, [the world viewer](#the-world-viewer), [the character viewe
 | L1, R1 | left and right shoulder | Q, E |
 | L2, R2 | left and right trigger (held from a quarter of the travel) | 1, 3 |
 | L3, R3 | stick presses | F, H |
+| L3 and R3 together (the debug menu) | both stick presses | F4, or F and H together |
 
 The first gamepad connected plays on port 1, the second on port 2; the keyboard always plays on port 1, alongside
-the first gamepad. Escape quits. A headless run reads no devices.
+the first gamepad. Escape quits. A headless run reads no devices. L3 and R3 pressed together open and close
+[the debug menu](debug-menu.md); the game never sees that chord.
 
 A gamepad's sticks are squared off like a DualShock 2's: a modern stick reports a circle, about 0.71 on each axis at a
 full diagonal, which the game's per-axis dead zone turns into a walk; the DualShock 2 reaches both extremes there, so

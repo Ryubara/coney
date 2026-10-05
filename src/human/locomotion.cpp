@@ -14,6 +14,11 @@ constexpr float kDegrees = kPi / 180.0F;
 
 } // namespace
 
+LocomotionTuning& locomotionTuning() {
+    static LocomotionTuning tuning;
+    return tuning;
+}
+
 float wrapAngle(float radians) {
     float wrapped = std::remainder(radians, 2.0F * kPi); // in [-π, π]
     if (wrapped <= -kPi) {
@@ -41,10 +46,10 @@ StickIntent stickIntent(float stickX, float stickY, anim::Vec3 cameraForward, bo
 }
 
 float targetSpeed(float magnitude, const Speeds& speeds) {
-    if (magnitude <= kStickDeadZone) {
+    if (magnitude <= locomotionTuning().stickDeadZone) {
         return 0.0F;
     }
-    return magnitude > kRunThreshold ? speeds.run : speeds.walk;
+    return magnitude > locomotionTuning().runThreshold ? speeds.run : speeds.walk;
 }
 
 Gait gaitOfSpeed(float speed, const Speeds& speeds) {
@@ -80,17 +85,17 @@ Gait gaitForSpeed(float speed, const Speeds& speeds) {
 float maxTurn(Gait gait) {
     switch (gait) {
     case Gait::Jog:
-        return 6.0F * kDegrees;
+        return locomotionTuning().jogTurnDegrees * kDegrees;
     case Gait::Run:
-        return 4.0F * kDegrees;
+        return locomotionTuning().runTurnDegrees * kDegrees;
     case Gait::Sprint:
-        return 2.5F * kDegrees;
+        return locomotionTuning().sprintTurnDegrees * kDegrees;
     case Gait::Standing:
     case Gait::Sneak:
     case Gait::Walk:
         break;
     }
-    return 12.0F * kDegrees;
+    return locomotionTuning().walkTurnDegrees * kDegrees;
 }
 
 float turnToward(float heading, float target, float limit, TurnState& state) {
@@ -115,12 +120,13 @@ float approachSpeed(float current, float target, float seconds) {
     if (current >= target) {
         return target;
     }
-    return std::min(target, current + kAcceleration * seconds);
+    return std::min(target, current + locomotionTuning().acceleration * seconds);
 }
 
 bool skids(Gait gait, float speed, const Speeds& speeds, float lastMagnitude, float magnitude,
            anim::Vec3 velocityDirection, anim::Vec3 stickDirection) {
-    if ((gait != Gait::Run && gait != Gait::Sprint) || speed < speeds.run || lastMagnitude <= kRunThreshold) {
+    if ((gait != Gait::Run && gait != Gait::Sprint) || speed < speeds.run ||
+        lastMagnitude <= locomotionTuning().runThreshold) {
         return false;
     }
     return magnitude < kSkidStick || anim::dot(velocityDirection, stickDirection) < kSkidDot;

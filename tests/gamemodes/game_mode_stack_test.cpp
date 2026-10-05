@@ -277,3 +277,60 @@ TEST_CASE("the frame limit counts steps", "[game_mode_stack]") {
     CHECK(counts.steps == 6);
     CHECK(timer.ticks() == 6 * GameTimer::kFixedStepTicks);
 }
+
+namespace {
+
+// An input source that only notes which sample indexes it was asked for.
+class CountingInput final : public coney::InputSource {
+  public:
+    [[nodiscard]] coney::PortSamples sample(std::uint64_t frame) override {
+        asked.push_back(frame);
+        return {};
+    }
+    std::vector<std::uint64_t> asked;
+};
+
+} // namespace
+
+TEST_CASE("a step gate holds steps: the pads are read, but no update runs and no game time passes",
+          "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode mode("a", 1, log, 100);
+    GameModeStack stack;
+    stack.push(mode);
+    CountingInput input;
+    stack.setInput(&input);
+    // Every other step runs, as half-speed slow motion does.
+    bool run = true;
+    stack.setStepGate([&run] {
+        const bool now = run;
+        run = !run;
+        return now;
+    });
+    GameTimer timer;
+    // The limit counts held steps too, so a paused run still ends.
+    CHECK(stack.runUntilEmpty(timer, {}, 6) == 3);
+    CHECK(mode.seconds.size() == 3);
+    CHECK(timer.ticks() == 3 * GameTimer::kFixedStepTicks); // whole fixed steps only
+    CHECK(input.asked == std::vector<std::uint64_t>{0, 1, 2, 3, 4, 5});
+    CHECK(mode.alphas == std::vector<float>(6, 1.0F));
+}
+
+TEST_CASE("while the gate holds, the render shows the newest step and does not drift", "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode mode("a", 1, log, 100);
+    GameModeStack stack;
+    stack.push(mode);
+    // The first step runs, then the game is paused.
+    bool first = true;
+    stack.setStepGate([&first] { return std::exchange(first, false); });
+    GameTimer timer;
+    coney::FrameClock clock(coney::FramePacing::Interpolated);
+    FakeFrames frames{{kStepNs, kStepNs / 5, kStepNs / 5}};
+    const coney::LoopCounts counts = stack.runUntilEmpty(timer, clock, frames.hooks(), std::nullopt);
+    CHECK(counts.steps == 1);
+    CHECK(counts.held == 1);
+    // The first frame blends as any frame does; every frame after the held step shows the newest step as it is.
+    REQUIRE(mode.alphas.size() == 4);
+    CHECK(std::vector<float>(mode.alphas.begin() + 1, mode.alphas.end()) == std::vector<float>(3, 1.0F));
+}

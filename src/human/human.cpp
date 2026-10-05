@@ -325,7 +325,7 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     // 8. The animation state for what the human now does.
     m_animator.choose(AnimInputs{.speed = speed(),
                                  .wantsMove = targetSpeed(m_intent.magnitude, speeds()) > 0.0F,
-                                 .wantsRun = m_intent.magnitude > kRunThreshold,
+                                 .wantsRun = m_intent.magnitude > locomotionTuning().runThreshold,
                                  .airborne = m_airborne});
 }
 

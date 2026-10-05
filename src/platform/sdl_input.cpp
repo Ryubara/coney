@@ -49,7 +49,7 @@ constexpr std::array<Binding<SDL_GamepadButton>, 14> kGamepadButtons{{
 // The keyboard on port 1, a Coney choice (docs/guides/building.md#controls). Scancodes are key positions, so the
 // layout is the same on a QWERTY, AZERTY or any other keyboard: arrows for the d-pad, the I J K L diamond for the
 // face buttons as they sit on the pad, Q and E for the shoulders above them.
-constexpr std::array<Binding<SDL_Scancode>, 18> kKeyboardButtons{{
+constexpr std::array<Binding<SDL_Scancode>, 20> kKeyboardButtons{{
     {SDL_SCANCODE_UP, pad::kUp},
     {SDL_SCANCODE_RIGHT, pad::kRight},
     {SDL_SCANCODE_DOWN, pad::kDown},
@@ -68,6 +68,9 @@ constexpr std::array<Binding<SDL_Scancode>, 18> kKeyboardButtons{{
     {SDL_SCANCODE_F, pad::kL3},
     {SDL_SCANCODE_H, pad::kR3},
     {SDL_SCANCODE_SPACE, pad::kCross},
+    // F4 holds both sticks in: the debug menu's chord (src/debug/input_gate.h).
+    {SDL_SCANCODE_F4, pad::kL3},
+    {SDL_SCANCODE_F4, pad::kR3},
 }};
 
 // Full pressure on every pressure-sensitive button in `buttons`, as a digital button gives; existing pressures that

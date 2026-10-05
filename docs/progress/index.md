@@ -25,7 +25,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- |
 | **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,936 bytes, 226 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
-| **[Milestones](../roadmap.md)** | `██████▋░░░░░░░░░░░░░` | 4 of 12 done |
+| **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
 89 reimplemented function(s) have no size yet and add no bytes.
 
@@ -40,6 +40,7 @@ at the top of the repository's `README.md`.
 | [Scripts](../roadmap.md#scripts) | in progress |
 | [Characters](../roadmap.md#characters) | in progress |
 | [Gameplay](../roadmap.md#gameplay) | in progress |
+| [Debug menu and test levels](../roadmap.md#debug-menu-and-test-levels) | in progress |
 | [Sound and video](../roadmap.md#sound-and-video) | not started |
 | [Enhancements](../roadmap.md#enhancements) | not started |
 | [Script mods](../roadmap.md#script-mods) | not started |

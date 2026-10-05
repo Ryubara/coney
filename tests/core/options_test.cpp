@@ -356,3 +356,12 @@ TEST_CASE("the assets option takes a folder", "[options][sandbox]") {
     CHECK_FALSE(parse(std::array<std::string_view, 1>{"--assets"}).has_value());
     CHECK(coney::usageText().find("--assets") != std::string_view::npos);
 }
+
+TEST_CASE("the tunables option takes the debug menus' overrides file once", "[options]") {
+    auto tuned = parse(std::array<std::string_view, 2>{"--tunables", "my.ini"});
+    REQUIRE(tuned.has_value());
+    CHECK(tuned->tunablesFile == "my.ini");
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--tunables"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--tunables", "a", "--tunables", "b"}).has_value());
+    CHECK(coney::usageText().find("--tunables FILE") != std::string_view::npos);
+}

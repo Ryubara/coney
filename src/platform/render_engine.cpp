@@ -345,6 +345,9 @@ void RenderEngine::drawTexture(rw::Texture* texture, graphics::ScreenRect rect) 
 
 void RenderEngine::present() {
     CONEY_ASSERT(m_inFrame);
+    if (m_presentOverlay) {
+        m_presentOverlay(*this);
+    }
     m_inFrame = false;
     const bool captureThisFrame = m_captureFrame.has_value() && *m_captureFrame == m_presented;
     if (m_camera != nullptr) {

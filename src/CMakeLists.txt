@@ -100,6 +100,24 @@ target_sources(coney_core PRIVATE
     sandbox/sandbox_lighting.cpp
     sandbox/sandbox_mesh.cpp
     sandbox/sandbox_world.cpp)
+# The debug menus: the model every front end renders, and its pages (docs/guides/debug-menu.md).
+target_sources(coney_core PRIVATE
+    debug/debug_session.cpp
+    debug/game_tunables.cpp
+    debug/input_gate.cpp
+    debug/lua_console.cpp
+    debug/menu_model.cpp
+    debug/menu_navigator.cpp
+    debug/native_caller.cpp
+    debug/native_signatures.cpp
+    debug/pad_menu_input.cpp
+    debug/pages_engine.cpp
+    debug/pages_scripts.cpp
+    debug/time_control.cpp
+    debug/time_series.cpp
+    debug/tunables.cpp)
+# The pad debug menu's renderer: the in-game list in the game's font or Coney's bitmap font.
+target_sources(coney_core PRIVATE graphics/bitmap_font.cpp gui/debug_menu_view.cpp gui/debug_text_painter.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_subdirectory(platform)

@@ -185,6 +185,17 @@ entry, or names a binding the masterlist lacks. With `--check` it writes nothing
 stale; CI runs it that way.
 
 ```sh
+uv run --project python coney-tools natives cpp [--check]
+```
+
+Writes `src/debug/native_signatures.cpp`, the C++ table the [debug menus](debug-menu.md#natives) build their argument
+editors from: every binding's name, category, the type of each argument (number, integer, handle, boolean, string, a
+table of numbers or strings with its fixed count, userdata) with its default, and the types of its results. A number
+argument whose description says it is a handle gets the handle editor. Only names, types and defaults go in, never a
+description. Run it after editing the YAML and commit the file with the change; with `--check` it writes nothing and
+exits with 1 when the file is stale, as CI runs it.
+
+```sh
 uv run --project python coney-tools natives stats
 ```
 

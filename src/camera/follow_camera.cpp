@@ -60,6 +60,16 @@ float rightStickPitchRate(std::uint8_t rawY) {
     return 0.0F;
 }
 
+FollowTuning& followTuning() {
+    static FollowTuning tuning;
+    return tuning;
+}
+
+FollowSettings& followDefaults() {
+    static FollowSettings settings;
+    return settings;
+}
+
 FollowCamera::FollowCamera(anim::Vec3 targetFeet, float targetHeading, const FollowSettings& settings)
     : m_settings(settings), m_targetPitch(settings.pitchDegrees * kRadians),
       m_lowerPitch(
@@ -113,7 +123,7 @@ void FollowCamera::collide(const raycast::CollisionMesh& mesh) {
                            .direction = raycast::Vec3{direction.x, direction.y, direction.z},
                            .length = distance};
     if (const auto hit = mesh.rayCast(ray, {}, kCameraRayMask); hit) {
-        const float pulled = std::max(kMinCollisionDistance, hit->t - kCollisionMargin);
+        const float pulled = std::max(followTuning().minCollisionDistance, hit->t - followTuning().collisionMargin);
         m_position = anim::add(m_lookAt, anim::scale(direction, std::min(pulled, distance)));
     }
 }
@@ -154,7 +164,7 @@ void FollowCamera::update(anim::Vec3 targetFeet, std::uint8_t rawRightX, std::ui
     }
 
     // 11. The position lag: 22% of the wanted move each update.
-    const anim::Vec3 move = anim::scale(anim::subtract(m_wanted, m_position), kPositionLag);
+    const anim::Vec3 move = anim::scale(anim::subtract(m_wanted, m_position), followTuning().positionLag);
     if (anim::length(move) >= kMinMove) {
         m_position = anim::add(m_position, move);
     }

@@ -77,7 +77,7 @@ void GameModeStack::render(const RenderTime& time) {
 LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, const FrameHooks& hooks,
                                         std::optional<std::uint64_t> stepLimit) {
     LoopCounts counts;
-    const auto belowLimit = [&counts, stepLimit] { return !stepLimit || counts.steps < *stepLimit; };
+    const auto belowLimit = [&counts, stepLimit] { return !stepLimit || counts.steps + counts.held < *stepLimit; };
     while (!empty() && belowLimit()) {
         // Wait out the frame cap first and then read the events, so the steps see the freshest input.
         const std::uint64_t elapsed = hooks.waitForFrame ? hooks.waitForFrame() : 0;
@@ -88,13 +88,20 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
 
         // The steps the real time calls for. A Leave from the step before is carried out first.
         std::uint32_t ran = 0;
-        for (; ran < plan.steps && belowLimit(); ++ran) {
+        for (std::uint32_t due = 0; due < plan.steps && belowLimit(); ++due) {
             finishPop();
             if (empty()) {
                 break;
             }
-            // The pads are read once per step, after the window's events.
-            samplePads(m_steps);
+            // The pads are read once per step, after the window's events; a held step reads them too, for the menus.
+            samplePads(m_samples++);
+            if (m_stepGate && !m_stepGate()) {
+                m_holding = true;
+                ++counts.held;
+                continue;
+            }
+            ++ran;
+            m_holding = false;
             const std::uint64_t advanced = timer.update();
             updateTop(FrameTime{m_steps, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
             ++m_steps;
@@ -102,10 +109,11 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
         }
 
         // One render between the last two steps, by alpha (exactly the newest step at alpha 1); then the last step's
-        // Leave, if any.
-        const auto behind = static_cast<std::uint64_t>((1.0 - static_cast<double>(plan.alpha)) *
-                                                       static_cast<double>(m_lastStep.stepTicks));
-        render(RenderTime{.alpha = plan.alpha, .gameTicks = m_lastStep.gameTicks - behind, .index = m_renders});
+        // Leave, if any. While the gate holds the steps, the newest step shows as it is, so a paused game stands still.
+        const float alpha = m_holding ? 1.0F : plan.alpha;
+        const auto behind =
+            static_cast<std::uint64_t>((1.0 - static_cast<double>(alpha)) * static_cast<double>(m_lastStep.stepTicks));
+        render(RenderTime{.alpha = alpha, .gameTicks = m_lastStep.gameTicks - behind, .index = m_renders});
         finishPop();
         ++counts.frames;
         if (hooks.endFrame) {

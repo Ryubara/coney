@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from coney_tools import natives, natives_render
+from coney_tools import natives, natives_cpp, natives_render
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 
@@ -281,3 +281,31 @@ def test_set_coney_statuses_writes_only_non_defaults() -> None:
         "# header\n\n- name: A\n  depth: brief\n\n- name: B  # note\n  depth: brief\n  coney: implemented\n"
     )
     assert natives.set_coney_statuses(text, {"A": "partial"}) == text
+
+
+def test_cpp_table(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """`cpp` writes the C++ signature table with each argument's editor type and default; `--check` finds it stale."""
+    _checkout(tmp_path, GOOD)
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "src" / "debug").mkdir(parents=True)
+    assert main(["natives", "cpp", "--check"]) == 1
+    assert main(["natives", "cpp"]) == 0
+    assert main(["natives", "cpp", "--check"]) == 0
+    text = (tmp_path / natives_cpp.CPP_FILE).read_text(encoding="utf-8")
+    assert (
+        'kArgs_MakeThing{{{"label", A::String, "", 0}, {"pos", A::NumberTable, "", 3}, '
+        '{"visible", A::Boolean, "true", 0}}}' in text
+    )
+    assert '{"PlayIt", "sound", kArgs_PlayIt, {}, 1},' in text
+    assert "A::Integer" in text and "kResults_MakeThing{R::Number}" in text
+    # Categories in page order: world before sound before debug.
+    assert text.index('{"MakeThing"') < text.index('{"PlayIt"') < text.index('{"unusedThing"')
+    (tmp_path / natives_cpp.CPP_FILE).write_text("stale\n", encoding="utf-8")
+    assert main(["natives", "cpp", "--check"]) == 1
+    assert "stale" in capsys.readouterr().out
+
+
+def test_cpp_marks_handles() -> None:
+    """A number argument whose description says handle gets the handle editor."""
+    masterlist = natives.parse(GOOD.replace('desc: "Track id."', 'desc: "Handle of the track."'))
+    assert "A::Handle" in natives_cpp.render_cpp(masterlist)

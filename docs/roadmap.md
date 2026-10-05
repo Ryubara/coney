@@ -16,6 +16,7 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [Scripts](#scripts) | in progress |
 | [Characters](#characters) | in progress |
 | [Gameplay](#gameplay) | in progress |
+| [Debug menu and test levels](#debug-menu-and-test-levels) | in progress |
 | [Sound and video](#sound-and-video) | not started |
 | [Enhancements](#enhancements) | not started |
 | [Script mods](#script-mods) | not started |
@@ -122,6 +123,23 @@ Combat, AI, missions, game modes, the front end and menus, cameras and saving.
 
 - Done: the start-up modes, the legal screen and the menus up to the main menu, with the game's text and fonts and
   pad input ([Front end](research/frontend.md), [GUI](research/gui.md)).
+
+## Debug menu and test levels
+
+Coney's own touch, with no counterpart in the original ([Debug features](research/debug.md#not-present)): a
+trainer-style debug menu usable from a gamepad alone, and test levels to practise movement in (running, jumping,
+mounting over fences, climbing) away from the missions. Both serve the work on the milestones around them, and neither
+changes how the game plays when unused.
+
+**Done when** the debug menu can teleport the player, spawn characters and objects, edit the movement and camera values
+live and call any binding, in a story level and in a test level, from a gamepad.
+
+- Done: the menu's model and its pad front end ([The debug menus](guides/debug-menu.md)): time controls (pause, single
+  step, slow motion in whole steps), tunables with a saved overrides file (the player's movement and the follow
+  camera's values first), every script binding callable with an argument editor built from the masterlist, a Lua
+  console, the cheat codes, level loading by name, display overlays and the live pad.
+- Next: a developer overlay over the same model, then the player, camera, spawner and debug-draw pages and the test
+  levels.
 
 ## Sound and video
 

@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools natives ...` commands: render and coney (both with --check), and stats."""
+"""The `coney-tools natives ...` commands: render, coney and cpp (all with --check), and stats."""
 
 from __future__ import annotations
 
 import collections
 from pathlib import Path
 
-from coney_tools import natives, natives_render
+from coney_tools import natives, natives_cpp, natives_render
 from coney_tools.config import ConfigError, find_repo_root
 
 
@@ -55,6 +55,33 @@ def run_render(check_only: bool) -> int:
         print(f"natives: stale: {', '.join(stale)}; run `uv run --project python coney-tools natives render`")
         return 1
     print(f"natives: {'updated ' + ', '.join(stale) if stale else 'up to date'} ({len(masterlist.bindings)} bindings)")
+    return 0
+
+
+def run_cpp(check_only: bool) -> int:
+    """Write the C++ signature table (src/debug/native_signatures.cpp); with `check_only`, write nothing and return 1
+    when it is stale."""
+    root = find_repo_root(Path.cwd())
+    masterlist = _load_checked(root)
+    if masterlist is None:
+        return 1
+    text = natives_cpp.render_cpp(masterlist)
+    path = root / natives_cpp.CPP_FILE
+    try:
+        current = path.read_bytes().decode("utf-8").replace("\r\n", "\n") if path.exists() else None
+    except (OSError, UnicodeDecodeError) as error:
+        raise ConfigError(f"{path}: cannot be read ({error})") from error
+    stale = current != text
+    if check_only and stale:
+        print(
+            f"natives: {natives_cpp.CPP_FILE.as_posix()} is stale;"
+            " run `uv run --project python coney-tools natives cpp`"
+        )
+        return 1
+    if stale:
+        path.write_bytes(text.encode("utf-8"))
+    state = "updated" if stale else "up to date"
+    print(f"natives: {natives_cpp.CPP_FILE.as_posix()} {state} ({len(masterlist.bindings)} bindings)")
     return 0
 
 

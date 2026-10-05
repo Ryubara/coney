@@ -126,6 +126,7 @@ nav:
       - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md
       - The coney-tools command line: guides/coney-tools.md
+      - The debug menus: guides/debug-menu.md
       - Conventions: guides/conventions.md
       - Research workflow: guides/research-workflow.md
       - Ghidra + ghidra-mcp: guides/ghidra.md

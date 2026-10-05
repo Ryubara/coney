@@ -18,7 +18,7 @@ namespace {
 constexpr std::string_view kUsage =
     "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
     "             [--screenshot PATH] [--headless] [--help]\n"
-    "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE]\n"
+    "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "             [--play-level NAME [--spawn NAME]] [--sandbox [NAME]] [--assets DIR]\n"
     "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
@@ -63,6 +63,8 @@ constexpr std::string_view kUsage =
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
     "  --input-script FILE\n"
     "                     play the pad input in FILE instead of the keyboard and gamepads\n"
+    "  --tunables FILE    the debug menus' tunable overrides to load and save (default: coney-tunables.ini\n"
+    "                     in your config folder)\n"
     "  --headless         run with no window and no GPU (nothing is drawn)\n"
     "  --help             show this text and exit\n";
 
@@ -378,6 +380,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--input-script") {
             if (auto value = takeValue(args, i, options.inputScript, "--input-script", "the path of an input script");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--tunables") {
+            if (auto value = takeValue(args, i, options.tunablesFile, "--tunables", "the path of a tunables file");
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }

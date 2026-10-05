@@ -1,0 +1,11 @@
+# Opens the debug menu with the L3+R3 chord, moves to Cheats (the sixth item of the root page), opens it and sends
+# code 0 to the script's cheat callback (docs/guides/debug-menu.md). Synthetic input; no game data.
+5 tap l3 r3
+8 tap down
+10 tap down
+12 tap down
+14 tap down
+16 tap down
+18 tap cross
+21 tap down
+24 tap cross

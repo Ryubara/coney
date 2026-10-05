@@ -8,6 +8,7 @@ written by hand.
 
 from __future__ import annotations
 
+import textwrap
 from pathlib import Path
 from urllib.parse import quote
 
@@ -95,7 +96,8 @@ def _current(progress: Progress, roadmap_link: str) -> str:
     if not current:
         return ""
     names = ", ".join(f"[{m.name}]({roadmap_link}#{m.anchor})" for m in current)
-    return f"Working on: {names}."
+    # Wrapped at 120 columns, as the docs' line-length rule asks; a link may break between words.
+    return textwrap.fill(f"Working on: {names}.", width=120, break_long_words=False, break_on_hyphens=False)
 
 
 def render_readme(progress: Progress) -> str:

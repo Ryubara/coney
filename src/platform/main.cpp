@@ -29,6 +29,9 @@
 #include "core/input_script.h"
 #include "core/language.h"
 #include "core/options.h"
+#include "debug/debug_session.h"
+#include "debug/game_tunables.h"
+#include "debug/tunables.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
@@ -41,6 +44,7 @@
 #include "gui/global_strings.h"
 #include "gui/text_layout.h"
 #include "platform/character_viewer_mode.h"
+#include "platform/debug_menus.h"
 #include "platform/frame_pacer.h"
 #include "platform/play_level_mode.h"
 #include "platform/reference_renderer.h"
@@ -431,7 +435,50 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "coney: %s; running without pads\n", devices.error().message.c_str());
         }
     }
-    modes.setInput(input.get());
+
+    // The debug menus (docs/guides/debug-menu.md), Coney's own tools: a session over the game's services whose input
+    // gate sits between the pads and the game, drawn over every frame by the pad menu overlay.
+    coney::debug::DebugServices debugServices;
+    if (startUp) {
+        debugServices.scripts = [&startUp] { return &startUp->scripts(); };
+        debugServices.recorded = [&startUp] { return &startUp->recorded(); };
+        debugServices.gameState = [&startUp] { return &startUp->state(); };
+        // The level flow starts the chosen level next (MenuLoadLevel); a level in play waits for player-movement.
+        debugServices.loadLevel = [&startUp](std::string_view name) {
+            startUp->menuLoadLevel(name);
+            return true;
+        };
+    }
+    // The overrides file: --tunables, or the default in the user's config folder when there is a window (a headless
+    // run touches no user folder).
+    debugServices.tunablesFile =
+        options->tunablesFile.value_or(renderer.window() ? coney::platform::defaultTunablesPath() : std::string{});
+    coney::debug::TunableRegistry& tunables = coney::debug::globalTunables();
+    coney::debug::registerGameTunables(tunables);
+    if (!debugServices.tunablesFile.empty()) {
+        auto loaded = tunables.load(debugServices.tunablesFile);
+        if (loaded) {
+            printText(std::format("tunables: {} overrides from {}\n", *loaded, debugServices.tunablesFile));
+        } else if (loaded.error().code != coney::ErrorCode::NotFound) {
+            std::fprintf(stderr, "coney: %s\n", loaded.error().message.c_str());
+            return 1;
+        }
+    }
+    coney::debug::DebugSession debugSession(tunables, debugServices, input.get(), printText);
+    modes.setInput(&debugSession.gate());
+    std::optional<coney::graphics::Font> debugFont;
+    if (wad) {
+        if (auto sheet = loadSheet(coney::gui::kTextFontSheet); sheet) {
+            if (auto font = coney::graphics::Font::fromSheet(std::move(*sheet)); font) {
+                debugFont = std::move(*font);
+            }
+        }
+    }
+    coney::platform::PadMenuOverlay padMenu(debugSession, std::move(debugFont));
+    renderer.setPresentOverlay([&padMenu](coney::graphics::RenderDevice& device) { padMenu.draw(device); });
+    // The time controls hold steps (pause, slow motion); a held step still reads the pads for the menus, and the
+    // frame still renders the game's last step.
+    modes.setStepGate([&debugSession] { return debugSession.time().shouldStep(); });
 
     // A screenshot is of the last frame, so it needs the frame limit (parseOptions makes sure of it).
     const std::optional<std::string> screenshotPath = options->screenshotPath;

@@ -16,6 +16,8 @@ target_sources(coney_platform PRIVATE reference_renderer.cpp)
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
+# The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
+target_sources(coney_platform PRIVATE debug_menus.cpp)
 coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core SDL3::SDL3-static librw::librw)
 
@@ -57,6 +59,14 @@ add_test(NAME coney.plays_input_script
 set_tests_properties(coney.plays_input_script PROPERTIES TIMEOUT 30)
 add_test(NAME coney.rejects_missing_input_script COMMAND coney --headless --frames 1 --input-script no-such-script.txt)
 set_tests_properties(coney.rejects_missing_input_script PROPERTIES WILL_FAIL TRUE)
+# The pad debug menu, headless: the chord opens it, the pad walks to Cheats and sends a code through the script state
+# (docs/guides/debug-menu.md). Without a disc the menus' sandbox state has no cheat callback, which the log reports.
+add_test(NAME coney.debug_menu_by_pad
+         COMMAND coney --headless --frames 30 --input-script "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
+set_tests_properties(coney.debug_menu_by_pad PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION "> DbgEnterCheat\\(0\\)")
+add_test(NAME coney.rejects_bad_tunables COMMAND coney --headless --frames 1
+                                                 --tunables "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
+set_tests_properties(coney.rejects_bad_tunables PROPERTIES WILL_FAIL TRUE)
 
 # With CONEY_DISC set when CMake configures, a headless run from the legal screen to the main menu: START on PM_Greet
 # must reach PM_Mode (docs/research/frontend.md#coneys-implementation). It prints states only, never game data.

@@ -156,6 +156,8 @@ def _add_natives_commands(groups: Any) -> None:
     render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a page is stale")
     coney = commands.add_parser("coney", help="set each entry's coney status from src/scripting/script_bindings.cpp")
     coney.add_argument("--check", action="store_true", help="change nothing; exit 1 when a status is stale")
+    cpp = commands.add_parser("cpp", help="write the debug menus' C++ signature table, src/debug/native_signatures.cpp")
+    cpp.add_argument("--check", action="store_true", help="change nothing; exit 1 when the table is stale")
     commands.add_parser("stats", help="print the counts by category, evidence level and usage")
 
 
@@ -223,6 +225,8 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "natives":
         if args.command == "render":
             return natives_cli.run_render(args.check)
+        if args.command == "cpp":
+            return natives_cli.run_cpp(args.check)
         return natives_cli.run_coney(args.check) if args.command == "coney" else natives_cli.run_stats()
     if args.group == "refs":
         if args.command == "render":

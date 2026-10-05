@@ -26,6 +26,22 @@ struct FollowSettings {
     float upperPitchDegrees = 30.0F; ///< `+0x3ac` at the default zoom with the camera option set, as at runtime.
 };
 
+/// The follow camera's values the debug menus may edit while the game runs (Coney's tunables,
+/// docs/guides/debug-menu.md#tunables), defaulting to FollowCamera's constants; read every update through
+/// followTuning().
+struct FollowTuning {
+    float positionLag = 0.22F;         ///< FollowCamera::kPositionLag.
+    float collisionMargin = 0.2F;      ///< FollowCamera::kCollisionMargin.
+    float minCollisionDistance = 0.5F; ///< FollowCamera::kMinCollisionDistance.
+};
+
+/// The one FollowTuning the game uses; at its defaults unless a debug menu changed it.
+[[nodiscard]] FollowTuning& followTuning();
+
+/// The settings a new follow camera starts with when none are given: FollowSettings' defaults (level99's values)
+/// unless a debug menu changed them. A change applies when the camera is next placed (a level start or a reset).
+[[nodiscard]] FollowSettings& followDefaults();
+
 /// Yaw rate from the right stick's raw x byte (0-255, 128 at rest), radians a second: 150°/s at 0 falling to 60°/s
 /// at 64, nothing between 65 and 175, -60°/s at 176 to -150°/s at 255. Positive turns the view anticlockwise (left).
 [[nodiscard]] float rightStickYawRate(std::uint8_t rawX);
@@ -57,7 +73,7 @@ class FollowCamera {
     /// A camera on a target whose feet are at `targetFeet` facing `targetHeading` (radians, 0 facing +y): placed behind
     /// it at the leash band's near edge and the target pitch (**Coney's choice** for the reset, which is not traced;
     /// at runtime the camera stood 3.0 m away at the start).
-    FollowCamera(anim::Vec3 targetFeet, float targetHeading, const FollowSettings& settings = {});
+    FollowCamera(anim::Vec3 targetFeet, float targetHeading, const FollowSettings& settings = followDefaults());
 
     /// One update of `seconds`: look-at point; right stick; leash; pitch; position lag; hard band; world collision.
     /// `rawRightX` / `rawRightY` are the pad's raw right-stick bytes; `mesh` may be null (no collision).

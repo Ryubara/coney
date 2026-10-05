@@ -33,6 +33,7 @@ add_executable(coney_tests
     graphics/screen_test.cpp
     graphics/sprite_batch_test.cpp
     graphics/texture_grid_test.cpp
+    gui/debug_menu_view_test.cpp
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
@@ -101,6 +102,14 @@ target_sources(coney_tests PRIVATE
     sandbox/sandbox_world_test.cpp)
 # The shipped sandbox layouts are Coney's own (assets/sandbox), so the tests may read them.
 target_compile_definitions(coney_tests PRIVATE CONEY_ASSETS_DIR="${PROJECT_SOURCE_DIR}/assets")
+# The debug menus (docs/guides/debug-menu.md).
+target_sources(coney_tests PRIVATE
+    debug/debug_session_test.cpp
+    debug/input_gate_test.cpp
+    debug/menu_navigator_test.cpp
+    debug/native_caller_test.cpp
+    debug/pad_menu_input_test.cpp
+    debug/tunables_test.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")

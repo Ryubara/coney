@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <span>
@@ -108,6 +109,12 @@ class RenderEngine final : public graphics::RenderDevice {
     void setVsync(bool on) { m_vsync = on; }
     /// Whether present() waits for the vertical blank.
     [[nodiscard]] bool vsync() const { return m_vsync; }
+    /// Sets what present() draws over every frame just before it ends it: the debug menus' overlay
+    /// (src/gui/debug_menu_view.h), which so draws over whatever mode runs. Empty for nothing. It is called with this
+    /// device, still inside the frame, so it may draw quads.
+    void setPresentOverlay(std::function<void(graphics::RenderDevice&)> overlay) {
+        m_presentOverlay = std::move(overlay);
+    }
 
     /// Asks for the frame shown by the `frameIndex`-th present() (counting from 0) to be read back, summarised and
     /// saved as a PNG at `path`. The result is in capture() once that frame has been presented.
@@ -151,6 +158,7 @@ class RenderEngine final : public graphics::RenderDevice {
     std::optional<std::uint64_t> m_captureFrame;
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;
+    std::function<void(graphics::RenderDevice&)> m_presentOverlay; // drawn at the end of every frame
 };
 
 } // namespace coney::platform
