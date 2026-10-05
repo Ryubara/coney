@@ -238,7 +238,7 @@ def test_render_reports_a_bad_list(
 def test_image_cells_point_below_the_images_folder() -> None:
     characters = next(item for item in TOPICS if item.key == "characters")
     cell = refs_render.cell(characters.field_map()["image"], "characters/warr_re_cv.png", "characters")
-    assert cell == '![characters/warr_re_cv.png](images/characters/warr_re_cv.png){ width="64" }'
+    assert cell == '![characters/warr_re_cv.png](images/characters/warr_re_cv.png){ width="96" }'
 
 
 def test_compress_image_keeps_size_and_alpha_and_is_deterministic(tmp_path: Path) -> None:
