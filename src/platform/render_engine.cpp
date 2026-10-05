@@ -129,6 +129,11 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
         return failure; // the destructor stops librw and releases our own reference to SDL
     }
+    // librw's GL3 device always shows the window it makes; a tool that draws only into offscreen buffers hides it
+    // again (the OpenGL context stays usable).
+    if (desc.hidden) {
+        SDL_HideWindow(static_cast<SDL_Window*>(engine->m_sdlWindow));
+    }
     int width = 0;
     int height = 0;
     SDL_GetWindowSize(static_cast<SDL_Window*>(engine->m_sdlWindow), &width, &height);

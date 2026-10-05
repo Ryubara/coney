@@ -12,6 +12,7 @@ struct WindowDesc {
     std::string_view title = "Coney"; ///< The title bar text.
     int width = 960;                  ///< Client area width in pixels: 4:3, the shape of the logical screen.
     int height = 720;                 ///< Client area height in pixels.
+    bool hidden = false;              ///< Keep the window off the screen, for tools that draw offscreen.
 };
 
 /// The game's window, as the main loop sees it: a source of events.

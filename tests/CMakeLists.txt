@@ -77,6 +77,7 @@ target_sources(coney_tests PRIVATE
     characters/character_list_test.cpp
     characters/character_model_test.cpp
     characters/character_rig_test.cpp
+    characters/reference_render_test.cpp
     characters/disc_characters_test.cpp
     characters/orbit_camera_test.cpp
     platform/character_mesh_test.cpp)

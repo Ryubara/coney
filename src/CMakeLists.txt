@@ -80,7 +80,8 @@ target_sources(coney_core PRIVATE
     characters/character_model.cpp
     characters/character_rig.cpp
     characters/clump_reader.cpp
-    characters/orbit_camera.cpp)
+    characters/orbit_camera.cpp
+    characters/reference_render.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_subdirectory(platform)

@@ -37,6 +37,7 @@
 #include "gui/global_strings.h"
 #include "gui/text_layout.h"
 #include "platform/character_viewer_mode.h"
+#include "platform/reference_renderer.h"
 #include "platform/render_engine.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
@@ -199,9 +200,12 @@ int main(int argc, char** argv) {
 
     // The renderer: OpenGL in a window, or the headless NULL renderer for --headless and for --load, a console job.
     // librw runs either way, because the texture dictionary handlers read through it.
+    // --render-references draws offscreen with OpenGL, so its window stays hidden.
     const bool headless = options->headless || !options->loads.empty();
+    coney::platform::WindowDesc windowDesc;
+    windowDesc.hidden = options->renderReferences.has_value();
     auto engine = coney::platform::RenderEngine::start(
-        headless ? coney::platform::RenderBackend::Null : coney::platform::RenderBackend::OpenGl, {});
+        headless ? coney::platform::RenderBackend::Null : coney::platform::RenderBackend::OpenGl, windowDesc);
     if (!engine) {
         std::fprintf(stderr, "coney: %s\n", engine.error().message.c_str());
         return 1;
@@ -216,6 +220,24 @@ int main(int argc, char** argv) {
         modes.push(loader);
         modes.runUntilEmpty(timer, {}, frameLimit);
         return loader.failures() == 0 ? 0 : 1;
+    }
+
+    // --render-references: one image per character, then exit (docs/guides/building.md#character-reference-images).
+    if (const std::optional<std::string> outDir = options->renderReferences; outDir) {
+        if (!wad) {
+            return 2; // parseOptions refuses --render-references without --disc, so this is never reached
+        }
+        coney::platform::ReferenceRenderSettings settings;
+        settings.outDir = *outDir;
+        settings.only = options->only;
+        settings.namesFile = options->namesFile.value_or(std::string{});
+        auto report = coney::platform::renderCharacterReferences(renderer, *wad, settings, printText);
+        if (!report) {
+            std::fprintf(stderr, "coney: %s\n", report.error().message.c_str());
+            return 1;
+        }
+        std::printf("reference images: %zu rendered, %zu failed\n", report->rendered, report->failed);
+        return report->failed == 0 ? 0 : 1;
     }
 
     // The modes. Declared after the renderer, so they are destroyed before it: their textures are librw's.

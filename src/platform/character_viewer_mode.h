@@ -18,15 +18,10 @@
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
+#include "platform/character_lights.h"
 #include "platform/character_mesh.h"
 #include "platform/render_engine.h"
 #include "platform/texture_dictionary.h"
-
-namespace rw {
-struct Light;
-struct World;
-struct Frame;
-} // namespace rw
 
 namespace coney::platform {
 
@@ -108,9 +103,7 @@ class CharacterViewerMode final : public GameMode {
     std::vector<anim::Vec3> m_positions;
     std::vector<anim::Vec3> m_normals;
     std::unique_ptr<CharacterMesh> m_mesh;
-    rw::World* m_lights = nullptr;      // owned: librw lights atomics from the current world
-    rw::Light* m_ambient = nullptr;     // owned
-    rw::Light* m_directional = nullptr; // owned, with its frame
+    std::unique_ptr<CharacterLights> m_lights;
     std::uint64_t m_frames = 0;
     std::uint64_t m_loops = 0;
     float m_lastMismatch = 0.0F;

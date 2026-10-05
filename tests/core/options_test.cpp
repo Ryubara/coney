@@ -235,3 +235,27 @@ TEST_CASE("the character viewer takes a name or defaults to Rembrandt, and a cli
                .has_value());
     CHECK(coney::usageText().find("--view-character [NAME]") != std::string_view::npos);
 }
+
+TEST_CASE("the reference renderer takes a folder, characters to render and a name list, and needs a disc",
+          "[options]") {
+    auto all = parse(std::array<std::string_view, 4>{"--disc", "x", "--render-references", "out"});
+    REQUIRE(all.has_value());
+    CHECK(all->renderReferences.value_or("") == "out");
+    CHECK(all->only.empty());
+    CHECK_FALSE(all->namesFile.has_value());
+    auto some = parse(std::array<std::string_view, 10>{"--disc", "x", "--render-references", "out", "--only",
+                                                       "warr_re_cv", "--only", "0x1234abcd", "--names", "names.txt"});
+    REQUIRE(some.has_value());
+    CHECK(some->only == std::vector<std::string>{"warr_re_cv", "0x1234abcd"});
+    CHECK(some->namesFile.value_or("") == "names.txt");
+
+    CHECK(!parse(std::array<std::string_view, 2>{"--render-references", "out"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 2>{"--only", "warr_re_cv"}).has_value());
+    CHECK(
+        !parse(std::array<std::string_view, 5>{"--disc", "x", "--render-references", "out", "--headless"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 6>{"--disc", "x", "--render-references", "out", "--frames", "3"})
+               .has_value());
+    CHECK(!parse(std::array<std::string_view, 5>{"--disc", "x", "--render-references", "out", "--view-character"})
+               .has_value());
+    CHECK(coney::usageText().find("--render-references DIR") != std::string_view::npos);
+}

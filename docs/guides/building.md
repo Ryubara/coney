@@ -95,10 +95,10 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and twelve smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
-`--view-text`, `--view-world` or `--view-character` without `--disc`, refuses a disc that does not exist, plays a
-synthetic input script (`tests/support/menu_input.txt`) and refuses one that does not exist; with `CONEY_DISC` set when
+`ctest` runs the Catch2 unit tests (`coney_tests`) and thirteen smoke tests of the `coney` executable itself: it
+starts and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
+`--view-text`, `--view-world`, `--view-character` or `--render-references` without `--disc`, refuses a disc that does
+not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and refuses one that does not exist; with `CONEY_DISC` set when
 CMake configures, two more run `coney --disc` to the main menu (`coney.reaches_main_menu`) and play Rembrandt's clips in
 the character viewer under a scripted orbit (`coney.views_character`, `tests/support/character_orbit.txt`). The unit
 tests build their disc images, archives, RenderWare texture dictionaries, streamed worlds and PS2 geometry byte by byte;
@@ -306,6 +306,32 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fra
 
 A script drives it like a player, with partial deflections: `stick right 60 0` orbits at 60 % of the full rate,
 `stick left 0 35` moves in at 35 %.
+
+### Character reference images {#character-reference-images}
+
+`--render-references DIR` writes one 256x256 PNG per character into `DIR` (made if missing) and exits: the small
+reference screenshots of models that `LEGAL.md` allows for the docs. Every Character List record is rendered once,
+standing as the character viewer's first frame shows it (its default clip, id 408 or else its first clip, at time 0),
+textured, under the viewer's fixed lights, from a fixed three-quarter front camera framed on the model, on a
+transparent background ([Characters](../research/characters.md#coneys-implementation)). It draws offscreen with
+OpenGL, so it needs a display and a GPU, but the window stays hidden; `--headless` is refused.
+
+- `--only NAME` renders just that character: a model name, or a `0x` name hash; repeatable.
+- `--names FILE` names the images: a text file of model names, one per line (`#` starts a comment). An image is named
+  after its model name when that name is in the file or given to `--only`, otherwise after its name hash
+  (`cbe1bfc3.png`).
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs
+build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs --only warr_re_cv --only warr_ty_cv
+```
+
+The images are deterministic: no clock or randomness, a fixed camera and 4x4 supersampling averaged with integer
+arithmetic, so a re-render on the same machine and driver gives byte-identical files (a different GPU driver may
+differ by a few pixel values). Coney prints one line per image (hashes and file names only). On the US disc it
+renders 541 images in about 35 seconds: the list has 543 records, and one name hash appears three times, so its
+first record's image is kept and the repeats are reported. A record that fails to load is reported and counted, the
+batch goes on, and the exit status is 1.
 
 ### Controls {#controls}
 

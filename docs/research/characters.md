@@ -495,6 +495,9 @@ Coney loads a character's three resources and plays its clips, without the human
   · the inverse bind matrix) and skins on the CPU.
 - `--view-character [NAME] [--anim CLIP]` ([Building](../guides/building.md#the-character-viewer)) shows a skinned
   character playing a clip in place on the fixed 30 Hz step, with a pad-driven orbit camera.
+- `--render-references DIR` ([Building](../guides/building.md#character-reference-images)) writes a 256x256
+  transparent PNG of every character, posed at its default clip's first frame, from a fixed three-quarter camera
+  (`src/characters/reference_render.*` frames and reduces; `src/platform/reference_renderer.*` draws offscreen).
 
 **Disc test** (`[characters]`, counts only): all 543 records load (128 models, 52 character data resources, 507
 dictionaries); 150,509 vertices and 155,493 triangles; 1,692 clips and 2,843 resolved ids; the joint mismatch of a
@@ -502,8 +505,8 @@ clip's first pose against the bind skeleton averages 0.054 m (worst 0.106 m).
 
 **Coney choices** where the research is silent: the material takes its dictionary's only texture; bones 0 and 1
 rest at the identity; slots set to the default (`0xffffffff`) stay unresolved, since the resource manager's default
-table is not decoded; weights are used as stored, not renormalised; the viewer's lights, camera and clip keys are
-Coney's own.
+table is not decoded; weights are used as stored, not renormalised; the viewer's lights, camera and clip keys, and the
+reference images' pose, camera and lights, are Coney's own.
 
 ## Notes for implementers
 

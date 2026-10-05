@@ -58,6 +58,16 @@ struct Options {
     std::optional<TextView> viewText;
     /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
     Language language = Language::English;
+    /// `--render-references`: the folder to write a reference image of every character into, then exit. Requires
+    /// discPath and a window (not headless); cannot be combined with `--load`, the viewers, `--frames`,
+    /// `--screenshot` or `--input-script`.
+    std::optional<std::string> renderReferences;
+    /// `--only`, in the order given: the characters `--render-references` renders, each a model name or a `0x` name
+    /// hash; empty renders every one. Requires renderReferences.
+    std::vector<std::string> only;
+    /// `--names`: a text file of model names, one per line, that `--render-references` files images under. Requires
+    /// renderReferences.
+    std::optional<std::string> namesFile;
 };
 
 /// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).

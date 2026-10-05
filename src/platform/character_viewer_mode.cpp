@@ -148,38 +148,13 @@ CharacterViewerMode::CharacterViewerMode(RenderEngine& engine, characters::Chara
     m_mesh = std::make_unique<CharacterMesh>(m_assets.model, texture);
 
     // The stand-in lights: an ambient one and a directional one on a frame of its own.
-    m_lights = rw::World::create();
-    m_ambient = rw::Light::create(rw::Light::AMBIENT);
-    m_ambient->setColor(kAmbient, kAmbient, kAmbient);
-    m_lights->addLight(m_ambient);
-    m_directional = rw::Light::create(rw::Light::DIRECTIONAL);
-    m_directional->setColor(kDirectional, kDirectional, kDirectional);
-    rw::Frame* lightFrame = rw::Frame::create();
-    const anim::Vec3 at = anim::normalise(kLightDirection);
-    const anim::Vec3 right = anim::normalise(anim::cross(anim::Vec3{0.0F, 0.0F, 1.0F}, at));
-    rw::Matrix matrix;
-    matrix.setIdentity();
-    matrix.right = toRw(right);
-    matrix.up = toRw(anim::cross(at, right));
-    matrix.at = toRw(at);
-    matrix.update();
-    lightFrame->transform(&matrix, rw::COMBINEREPLACE);
-    m_directional->setFrame(lightFrame);
-    m_lights->addLight(m_directional);
+    m_lights = std::make_unique<CharacterLights>(kAmbient, kDirectional, kLightDirection);
 
     startClip(clipIndex);
 }
 
 CharacterViewerMode::~CharacterViewerMode() {
-    m_lights->removeLight(m_directional);
-    m_lights->removeLight(m_ambient);
-    rw::Frame* lightFrame = m_directional->getFrame();
-    m_directional->destroy();
-    if (lightFrame != nullptr) {
-        lightFrame->destroy();
-    }
-    m_ambient->destroy();
-    m_lights->destroy();
+    m_lights.reset();
     m_mesh.reset(); // before the dictionaries, whose texture it holds
 }
 
@@ -211,7 +186,7 @@ void CharacterViewerMode::render() {
     const float aspect = size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 1.0F;
     placeCamera(camera, m_camera.pose(), aspect);
     camera->beginUpdate();
-    rw::engine->currentWorld = m_lights;
+    m_lights->use();
     rw::SetRenderState(rw::ZTESTENABLE, 1);
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);

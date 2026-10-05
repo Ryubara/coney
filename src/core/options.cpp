@@ -20,6 +20,7 @@ constexpr std::string_view kUsage =
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
+    "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -37,6 +38,12 @@ constexpr std::string_view kUsage =
     "                     show a character playing a clip: a model name such as warr_re_cv (the default,\n"
     "                     Rembrandt); needs --disc\n"
     "  --anim CLIP        the clip --view-character plays: an anim id or a clip name\n"
+    "  --render-references DIR\n"
+    "                     write a 256x256 PNG of every character, standing, into DIR and exit;\n"
+    "                     needs --disc and a display (the window stays hidden)\n"
+    "  --only NAME        with --render-references: render only this character (a model name or a\n"
+    "                     0x name hash); repeatable\n"
+    "  --names FILE       with --render-references: model names, one per line, to name the images by\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
     "  --input-script FILE\n"
@@ -108,10 +115,37 @@ std::expected<void, Error> checkCharacterViewer(const Options& options) {
     return {};
 }
 
+// Refuses the reference renderer's options in combinations that cannot work: part of checkCombinations().
+std::expected<void, Error> checkReferenceRenderer(const Options& options) {
+    if (!options.renderReferences.has_value()) {
+        if (!options.only.empty() || options.namesFile.has_value()) {
+            return invalidArgument("--only and --names need --render-references");
+        }
+        return {};
+    }
+    if (!options.discPath.has_value()) {
+        return invalidArgument("--render-references needs --disc to say where the game's files are");
+    }
+    if (options.headless) {
+        return invalidArgument("--render-references needs OpenGL, so it cannot be combined with --headless");
+    }
+    if (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value() ||
+        options.viewText.has_value() || options.viewWorld.has_value() || options.viewCharacter.has_value()) {
+        return invalidArgument("--render-references cannot be combined with --load or the viewers");
+    }
+    if (options.frameLimit.has_value() || options.screenshotPath.has_value() || options.inputScript.has_value()) {
+        return invalidArgument("--render-references cannot be combined with --frames, --screenshot or --input-script");
+    }
+    return {};
+}
+
 // Refuses options that cannot work together, once the whole command line is read.
 std::expected<void, Error> checkCombinations(const Options& options) {
     if (auto character = checkCharacterViewer(options); !character) {
         return character;
+    }
+    if (auto references = checkReferenceRenderer(options); !references) {
+        return references;
     }
     if (!options.loads.empty() && !options.discPath.has_value()) {
         return invalidArgument("--load needs --disc to say where the game's files are");
@@ -214,6 +248,21 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.viewCharacter = named ? std::string(args[++i]) : std::string(kDefaultViewCharacter);
         } else if (arg == "--anim") {
             if (auto value = takeValue(args, i, options.animClip, "--anim", "an anim id or a clip name"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--render-references") {
+            if (auto value = takeValue(args, i, options.renderReferences, "--render-references",
+                                       "the folder to write the images into");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--only") {
+            if (i + 1 == args.size() || args[i + 1].empty()) {
+                return invalidArgument("--only needs a model name or a 0x name hash");
+            }
+            options.only.emplace_back(args[++i]);
+        } else if (arg == "--names") {
+            if (auto value = takeValue(args, i, options.namesFile, "--names", "the path of a name list"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--input-script") {

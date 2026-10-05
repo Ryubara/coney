@@ -5,7 +5,9 @@ add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_di
 # The streamed-world viewer (docs/research/world.md#coneys-implementation).
 target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
-target_sources(coney_platform PRIVATE character_mesh.cpp character_viewer_mode.cpp)
+target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
+# The character reference images (docs/guides/building.md#character-reference-images).
+target_sources(coney_platform PRIVATE reference_renderer.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 coney_target_defaults(coney_platform)
@@ -32,6 +34,8 @@ add_test(NAME coney.view_text_needs_disc COMMAND coney --view-text big_font hell
 set_tests_properties(coney.view_text_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.view_world_needs_disc COMMAND coney --view-world level2)
 set_tests_properties(coney.view_world_needs_disc PROPERTIES WILL_FAIL TRUE)
+add_test(NAME coney.render_references_needs_disc COMMAND coney --render-references out)
+set_tests_properties(coney.render_references_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.view_character_needs_disc COMMAND coney --view-character)
 set_tests_properties(coney.view_character_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.rejects_missing_disc COMMAND coney --disc "${CMAKE_CURRENT_BINARY_DIR}/no-such-disc" --load x)
