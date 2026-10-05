@@ -124,8 +124,8 @@ class HumanAnimator {
     /// The run stop after a run's or a sprint's skid (slot 33, 417), then the idle. **Coney's**: what plays it is not
     /// traced; the move fade of 0.1333 s is Coney's too.
     void startRunStop();
-    /// A climb: the chain `firstId`, + 1, + 2, then a gait blend at the run (`running`) or the idle. **Coney's
-    /// choice**: the move fade of 0.1333 s before it.
+    /// A climb: the chain `firstId`, + 1, + 2, then a gait blend at the run (`running`) or the idle, with no fade-in
+    /// (docs/research/characters.md#climb).
     void startClimb(std::uint32_t firstId, bool running);
     /// Ends whatever plays with the idle (a climb that cannot go on).
     void stopToIdle();

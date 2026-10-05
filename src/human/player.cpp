@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -25,14 +26,15 @@ bool stickPulledBack(float x, float y) {
 }
 
 // What the follow camera needs of the human after its update: where it is and faces, its stored gait (which the
-// auto-follow rules and the sprint zoom read, docs/research/camera.md#heading), whether it is in the air, and the
-// stick.
-camera::FollowTarget followTargetOf(const Human& human, const Pad& pad) {
+// auto-follow rules and the sprint zoom read, docs/research/camera.md#heading), whether it is in the air, the stick,
+// and the nearest enemy's distance (none with no enemies).
+camera::FollowTarget followTargetOf(const Human& human, const Pad& pad, std::optional<float> nearestEnemy) {
     return camera::FollowTarget{.feet = human.position(),
                                 .heading = human.heading(),
                                 .gait = static_cast<std::uint8_t>(human.gait()),
                                 .airborne = human.airborne(),
-                                .stickBack = stickPulledBack(pad.leftX(), pad.leftY())};
+                                .stickBack = stickPulledBack(pad.leftX(), pad.leftY()),
+                                .nearestEnemy = nearestEnemy};
 }
 
 } // namespace
@@ -153,7 +155,7 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
         ++m_respawns;
     }
     const auto& raw = pad.rawSticks(); // right x, right y, left x, left y
-    m_camera.update(followTargetOf(m_human, pad), raw[0], raw[1], mesh, kStepSeconds);
+    m_camera.update(followTargetOf(m_human, pad, m_nearestEnemy), raw[0], raw[1], mesh, kStepSeconds);
     // What drawing will read: this step's state, and the last one's to interpolate from.
     m_previous = m_current;
     m_current = capture();

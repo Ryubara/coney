@@ -36,7 +36,8 @@ float wantedYaw(const FollowCamera& camera) {
 
 // A target at `feet` facing `heading` at the stored gait `gait` (0 standing, 2 walk, 4 run, 5 sprint), on the ground.
 FollowTarget moving(Vec3 feet, float heading, std::uint8_t gait) {
-    return FollowTarget{.feet = feet, .heading = heading, .gait = gait, .airborne = false, .stickBack = false};
+    return FollowTarget{
+        .feet = feet, .heading = heading, .gait = gait, .airborne = false, .stickBack = false, .nearestEnemy = {}};
 }
 
 // A target standing at `feet` facing +y: nothing the automatic rules follow.
@@ -231,7 +232,7 @@ TEST_CASE("the right stick holds the auto-centre rule off for 0.334 s", "[camera
     CHECK(held == 10);
 }
 
-TEST_CASE("a blocked view or a stick pulled back stops auto-follow on the next update", "[camera]") {
+TEST_CASE("a blocked view stops auto-follow until the player stops; so does a stick pulled back", "[camera]") {
     // A wall across y = 37 facing +y (toward the player at y = 40): the camera, 4.8 m behind, is past it.
     const auto wall = coney::test::makeMesh(coney::test::wallFacingPlusY(37.0F, 0.0F, 80.0F, -5.0F, 10.0F));
     const float facing = 60.0F * kDegree;
@@ -240,12 +241,19 @@ TEST_CASE("a blocked view or a stick pulled back stops auto-follow on the next u
     camera.update(running(Vec3{40.0F, 40.0F, 0.0F}, facing), kRest, kRest, wall.get(), kStep);
     CHECK(camera.lastAutoTurn() != 0.0F);
     CHECK(camera.viewBlocked());
-    // So the next one does not turn; once the view is clear again, the one after that does.
-    camera.update(running(Vec3{40.0F, 40.0F, 0.0F}, facing), kRest, kRest, wall.get(), kStep);
-    CHECK(camera.lastAutoTurn() == 0.0F);
-    camera.update(running(Vec3{40.0F, 40.0F, 0.0F}, facing), kRest, kRest, nullptr, kStep);
-    CHECK(camera.lastAutoTurn() == 0.0F);
+    // From then on it does not turn, even with the view clear again: the latch holds while the player moves.
+    CHECK(camera.viewLatched());
+    for (int i = 0; i < 10; ++i) {
+        camera.update(running(Vec3{40.0F, 40.0F, 0.0F}, facing), kRest, kRest, i < 2 ? wall.get() : nullptr, kStep);
+        CHECK(camera.lastAutoTurn() == 0.0F);
+    }
     CHECK_FALSE(camera.viewBlocked());
+    CHECK(camera.viewLatched());
+    // The player stops: the latch clears on the second update standing, and the next run turns the camera again.
+    camera.update(standing(Vec3{40.0F, 40.0F, 0.0F}), kRest, kRest, nullptr, kStep);
+    CHECK(camera.viewLatched());
+    camera.update(standing(Vec3{40.0F, 40.0F, 0.0F}), kRest, kRest, nullptr, kStep);
+    CHECK_FALSE(camera.viewLatched());
     camera.update(running(Vec3{40.0F, 40.0F, 0.0F}, facing), kRest, kRest, nullptr, kStep);
     CHECK(camera.lastAutoTurn() != 0.0F);
     // The stick pulled back toward the camera holds it off too.
@@ -261,7 +269,7 @@ TEST_CASE("the sprint zoom eases the band to 3.0 m and the pitch to 7 degrees ov
     FollowCamera camera(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
     const FollowTarget sprint = running(Vec3{40.0F, 40.0F, 0.0F}, 0.0F, true);
     // The first update at the sprint gait sets the timer and the goal; nothing moves yet. The zoom steps to the
-    // default distance, whose upper pitch limit is 30° with the camera option.
+    // default distance, whose upper pitch limit is 30° with one player camera.
     camera.update(sprint, kRest, kRest, nullptr, kStep);
     CHECK(camera.sprintZoomActive());
     CHECK(camera.bandNear() == Approx(4.8F));
@@ -301,6 +309,31 @@ TEST_CASE("the sprint zoom eases the band to 3.0 m and the pitch to 7 degrees ov
     CHECK_FALSE(runOnly.sprintZoomActive());
 }
 
+TEST_CASE("a sprint zooms in only with no enemies or the nearest within 12 m", "[camera]") {
+    FollowTarget sprint = running(Vec3{40.0F, 40.0F, 0.0F}, 0.0F, true);
+    // The nearest enemy 15 m away: the sprint does not zoom, however long it lasts.
+    sprint.nearestEnemy = 15.0F;
+    FollowCamera camera(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    for (int i = 0; i < 20; ++i) {
+        camera.update(sprint, kRest, kRest, nullptr, kStep);
+    }
+    CHECK_FALSE(camera.sprintZoomActive());
+    CHECK(camera.bandNear() == Approx(4.8F));
+    // It comes within 12 m during the same sprint: the arm has waited, and the zoom starts.
+    sprint.nearestEnemy = 11.9F;
+    camera.update(sprint, kRest, kRest, nullptr, kStep);
+    CHECK(camera.sprintZoomActive());
+    // An enemy at 12 m exactly is out of range; with none at all the sprint zooms.
+    sprint.nearestEnemy = 12.0F;
+    FollowCamera atRange(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    atRange.update(sprint, kRest, kRest, nullptr, kStep);
+    CHECK_FALSE(atRange.sprintZoomActive());
+    sprint.nearestEnemy.reset();
+    FollowCamera none(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    none.update(sprint, kRest, kRest, nullptr, kStep);
+    CHECK(none.sprintZoomActive());
+}
+
 TEST_CASE("CamEnable(5, off) stops the sprint zoom from starting and cancels one under way", "[camera]") {
     const FollowTarget sprint = running(Vec3{40.0F, 40.0F, 0.0F}, 0.0F, true);
     FollowCamera off(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
@@ -324,9 +357,9 @@ TEST_CASE("CamEnable(5, off) stops the sprint zoom from starting and cancels one
     CHECK_FALSE(cut.sprintZoomActive());
 }
 
-TEST_CASE("without the camera option the sprint zoom keeps the band and only lowers the pitch", "[camera]") {
+TEST_CASE("with two player cameras the sprint zoom keeps the band and only lowers the pitch", "[camera]") {
     const TuningGuard guard;
-    coney::camera::followTuning().cameraOption = false;
+    coney::camera::followTuning().onePlayerCamera = false;
     FollowCamera camera(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
     const FollowTarget sprint = running(Vec3{40.0F, 40.0F, 0.0F}, 0.0F, true);
     for (int i = 0; i < 20; ++i) {
@@ -409,15 +442,17 @@ TEST_CASE("a wall between the player and the camera pulls the camera in, 0.2 m s
     CHECK_FALSE(clear.viewBlocked());
 }
 
-TEST_CASE("the camera's ray passes through a low fence (material 30) but not another wall", "[camera]") {
+TEST_CASE("the camera's rays pass through low fences, railings and unclimbable chain-link but not another wall",
+          "[camera]") {
     // A wall across y = 40 facing +y, the player 2 m in front of it facing +y: the camera wants to stand behind it.
-    constexpr std::uint8_t kLowFence = 30;
-    const auto fence =
-        coney::test::makeMesh(coney::test::wallFacingPlusY(40.0F, 0.0F, 80.0F, -5.0F, 10.0F, 0, kLowFence));
+    for (const std::uint8_t material : {std::uint8_t{30}, std::uint8_t{122}, std::uint8_t{107}}) {
+        const auto fence =
+            coney::test::makeMesh(coney::test::wallFacingPlusY(40.0F, 0.0F, 80.0F, -5.0F, 10.0F, 0, material));
+        FollowCamera throughFence(Vec3{40.0F, 42.0F, 0.0F}, 0.0F);
+        throughFence.update(standing(Vec3{40.0F, 42.0F, 0.0F}), kRest, kRest, fence.get(), kStep);
+        CHECK(coney::anim::distance(throughFence.position(), throughFence.lookAt()) == Approx(4.8F).margin(1e-3));
+    }
     const auto wall = coney::test::makeMesh(coney::test::wallFacingPlusY(40.0F, 0.0F, 80.0F, -5.0F, 10.0F));
-    FollowCamera throughFence(Vec3{40.0F, 42.0F, 0.0F}, 0.0F);
-    throughFence.update(standing(Vec3{40.0F, 42.0F, 0.0F}), kRest, kRest, fence.get(), kStep);
-    CHECK(coney::anim::distance(throughFence.position(), throughFence.lookAt()) == Approx(4.8F).margin(1e-3));
     FollowCamera blocked(Vec3{40.0F, 42.0F, 0.0F}, 0.0F);
     blocked.update(standing(Vec3{40.0F, 42.0F, 0.0F}), kRest, kRest, wall.get(), kStep);
     CHECK(coney::anim::distance(blocked.position(), blocked.lookAt()) < 2.2F);

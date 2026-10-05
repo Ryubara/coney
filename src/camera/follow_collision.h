@@ -22,9 +22,9 @@ inline constexpr std::uint32_t kViewRayMask = 0x200U | 0x800U | 0x1U;
 inline constexpr std::uint32_t kViewRecastMask = 0x200U | 0x800U;
 /// The recast is made when the look-at point is less than this in front of the disabled triangle's plane.
 inline constexpr float kRecastNearPlane = 0.5F;
-/// Materials the camera's rays pass through: 30 `LOW_FENCE`, which the camera was seen to ignore through a fence climb
-/// (docs/research/camera.md#street; the test that skips it is not traced).
-inline constexpr std::array<std::uint8_t, 1> kSeeThroughMaterials{30};
+/// Materials every ray of the collision step skips: 30 `LOW_FENCE`, 122 `RAILING` and 107 `CHAINLINK_NOCLIMB`
+/// (docs/research/camera.md#collision).
+inline constexpr std::array<std::uint8_t, 3> kSeeThroughMaterials{30, 122, 107};
 
 /// The probe angle, radians: 7° at the near edge of the distance band down to 4° at its far edge, `7° − 3° × t` with
 /// `t` the camera's place in the band (clamped to it).

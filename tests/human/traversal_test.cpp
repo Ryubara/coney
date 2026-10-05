@@ -405,9 +405,29 @@ TEST_CASE("a fence stops a walk, and a running climb carries the body through it
         REQUIRE(human.traversal() == Traversal::Climbing);
         CHECK(human.animator().animId() == 446U); // the short fence's running chain
         float highest = 0.0F;
+        // Each update's move along +y, and the clip it ended in.
+        std::vector<float> moved;
+        std::vector<std::uint32_t> clips;
         for (int i = 0; i < 60 && human.traversal() == Traversal::Climbing; ++i) {
+            const float before = human.position().y;
             human.step(pad(0.0F, 1.0F), mesh.get());
+            moved.push_back(human.position().y - before);
+            clips.push_back(human.animator().animId());
             highest = std::max(highest, human.position().z);
+        }
+        // The first clip ran through the 2-update move to the start point, unfaded: on the next update its root
+        // motion moves the body at its full 3 m/s × 0.75. The second and third clips move nothing on their first
+        // update, then go at their own speed (docs/research/characters.md#climb).
+        REQUIRE(moved.size() > 3);
+        CHECK(clips[2] == 446U);
+        CHECK(moved[2] == Approx(3.0F * 0.75F / 30.0F).margin(1e-4));
+        for (const std::uint32_t id : {447U, 448U}) {
+            const auto first = std::ranges::find(clips, id);
+            REQUIRE(first != clips.end());
+            const auto index = static_cast<std::size_t>(first - clips.begin());
+            CHECK(moved[index] == Approx(0.0F).margin(1e-5));
+            REQUIRE(index + 1 < moved.size());
+            CHECK(moved[index + 1] > 0.01F);
         }
         CHECK(human.traversal() == Traversal::None);
         CHECK(human.position().y > 40.3F);

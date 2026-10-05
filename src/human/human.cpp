@@ -526,6 +526,7 @@ void Human::followClimb(const raycast::CollisionMesh* mesh) {
     }
     while (run.phase < id - run.firstId) {
         ++run.phase;
+        run.clipChanged = true;
         if (run.phase == 2) {
             // The last clip: fences block the body again.
             run.over = false;
@@ -558,12 +559,10 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     if (m_outOfWorld) {
         return;
     }
-    // 2. The animation's step (a climb follows its clips), and the root motion its pose carries. While a climb moves
-    // the body to its start point its first clip waits: at runtime the running fence climb's first clip played its
-    // whole length after that move (**Coney's reading**).
-    if (!m_climbRun || m_climbRun->moveUpdates == 0) {
-        m_animator.advance(kStepSeconds);
-    }
+    // 2. The animation's step (a climb follows its clips), and the root motion its pose carries. A climb's first clip
+    // runs during the move to the start point, as the original installs it with that move (0x0023d2b8,
+    // docs/research/characters.md#climb).
+    m_animator.advance(kStepSeconds);
     followClimb(mesh);
     const anim::Pose pose = m_animator.pose(m_bindRotations);
     // 3. The state function sets the velocity: a climb's move to its start point or its clips' root motion; a jump's
@@ -575,8 +574,13 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
         m_velocity = anim::Vec3{left.x / (updates * kStepSeconds), left.y / (updates * kStepSeconds), 0.0F};
         --m_climbRun->moveUpdates;
     } else if (m_climbRun) {
+        // The update the chain goes on to its next clip moves nothing: at runtime the first update of 441 and of 442
+        // moved the body 0 m (confirmed (runtime); the reason is not traced).
         m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
-        applyRootMotion(pose);
+        if (!m_climbRun->clipChanged) {
+            applyRootMotion(pose);
+        }
+        m_climbRun->clipChanged = false;
     } else if (m_airborne) {
         if (m_jumping) {
             airControl();

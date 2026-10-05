@@ -196,7 +196,9 @@ void HumanAnimator::startClimb(std::uint32_t firstId, bool running) {
     std::unique_ptr<anim::AnimTask> chain = clipThen(firstId + 2, std::move(after));
     chain = clipThen(firstId + 1, std::move(chain));
     chain = clipThen(firstId, std::move(chain));
-    m_tasks.change(std::move(chain), kMoveFadeMoving);
+    // No fade-in: the first clip moves the body at its full root speed from its first update, as at runtime
+    // (docs/research/characters.md#climb).
+    m_tasks.change(std::move(chain), 0.0F);
     m_state = AnimState::Climb;
 }
 

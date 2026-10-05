@@ -37,7 +37,7 @@ struct LocomotionClip {
 
 /// The synthetic climb clips: for each of the four climbs (437 fence, 443 short fence, 449 wall, 455 short wall), a
 /// standing chain (reach 0.8) and a running one three ids on (reach 2.0, the first clip moving 3 m/s forward). A
-/// fence's second and third clips move the body by their root (2 m/s, 1 m/s); a wall's second clip has a 1 m
+/// fence's second and third clips move the body by their root (3 m/s, 1 m/s); a wall's second clip has a 1 m
 /// displacement and no root velocity, as the disc's wall clips have. All play at rate 0.75 (no range flag).
 inline std::vector<LocomotionClip> climbClips() {
     std::vector<LocomotionClip> clips;
@@ -54,7 +54,7 @@ inline std::vector<LocomotionClip> climbClips() {
             clips.push_back({.id = first + form + 1,
                              .speed = fence ? 0.0F : 1.0F / 0.6F,
                              .duration = 0.6F,
-                             .rootVelocity = fence ? 2.0F : 0.0F,
+                             .rootVelocity = fence ? 3.0F : 0.0F,
                              .rangeFlags = 0,
                              .reach = 0.5F});
             clips.push_back({.id = first + form + 2,

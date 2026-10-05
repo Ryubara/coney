@@ -170,10 +170,11 @@ class Human {
     struct ClimbRun {
         std::uint32_t firstId = 0;
         bool running = false;
-        std::uint32_t phase = 0; // 0, 1 or 2: the clip of the chain playing
-        int moveUpdates = 0;     // updates left of the move to the start point
-        anim::Vec3 start;        // the start point (feet)
-        bool over = false;       // record +0x08 bit 0x40: fences do not block the body
+        std::uint32_t phase = 0;  // 0, 1 or 2: the clip of the chain playing
+        int moveUpdates = 0;      // updates left of the move to the start point
+        bool clipChanged = false; // the chain went on to its next clip this update: the body does not move
+        anim::Vec3 start;         // the start point (feet)
+        bool over = false;        // record +0x08 bit 0x40: fences do not block the body
     };
 
     // The locomotion: target speed, skid, turn, acceleration; sets the horizontal velocity.

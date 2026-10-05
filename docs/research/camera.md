@@ -340,12 +340,12 @@ calls and constants; the overall reading is inferred:
   (mask bit 0); one-sided faces are hit only from their front. When the hit is a disabled triangle (flag bit 0 clear,
   and not `0x800`) and either the target's point (`+0x1e0`) is not in front of its plane or the look-at point is less
   than **0.5 m** in front of it, the ray is cast again without mask bit 0, so the disabled triangle is ignored; a hit
-  sets `+0x45b` (which stops auto-follow on the next update, [Heading](#heading)) and its distance becomes the limit the
-  rest of the step works from. When that ray hits something that is not a ceiling (normal `z` above cos 150°), a second
-  ray (`0x001314d0`) from the target's point to the look-at point checks whether the obstacle is between them; if so
-  (and the latch `+0x479` is not −1), the main ray is cast again from a point moved along the view by `0.8 / tan(3 ×
-  probe angle)` and that distance is added to its hit. Confirmed (code) for the masks, the 0.5 m and the recast; the
-  meaning of the second ray inferred.
+  sets `+0x45b` (which latches auto-follow off until the player stops, `+0x45d`, [Heading](#heading)) and its distance
+  becomes the limit the rest of the step works from. When that ray hits something that is not a ceiling (normal `z`
+  above cos 150°), a second ray (`0x001314d0`) from the target's point to the look-at point checks whether the obstacle
+  is between them; if so (and the latch `+0x479` is not −1), the main ray is cast again from a point moved along the
+  view by `0.8 / tan(3 × probe angle)` and that distance is added to its hit. Confirmed (code) for the masks, the 0.5 m
+  and the recast; the meaning of the second ray inferred.
 - **Side probes** (casts from `0x00131744`): the main ray turned about the vertical through the look-at point by **3, 2
   and 1 × the probe angle** to each side (the loop counts down from 2), each as long as the main ray, with the same mask
   and the same disabled-triangle recast. The probe angle is 7° at the near edge of the distance band down to 4° at the
@@ -512,13 +512,16 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
 - **auto-follow** (`0x00129c78`): the auto-centre rule ([Heading](#heading)) turns the wanted position toward the
   player's facing at the rule's rate of the angle `a` between the facing and the camera's view at the start of the
   update, at the stored gaits 2, 4 and 5 (walk, run, sprint; so not standing, not in the walk start at 0.76 m/s nor
-  at a jog's speed, whatever clip plays). It is skipped on the update after the main ray was blocked (`+0x45b`), for
-  0.334 s after right-stick input, and while the left stick points more than 157.5° from up (`+0x474`). With the
+  at a jog's speed, whatever clip plays). It is held off from a blocked main ray until the player stops (the `+0x45d`
+  latch, set by `+0x45b` and cleared on the second update standing, as at runtime), for 0.334 s after right-stick
+  input, and while the left stick points more than 157.5° from up (`+0x474`). With the
   option off (the debug menu's *Auto-centre*) the default rule (`0x0012a400`) runs instead, at the run and sprint
   gaits only. With the stick held sideways the player runs in a circle: Rembrandt in the sandbox turns about 197°/s
   at a run and 144°/s at a 35 % walk, against the original's 191°/s and 143°/s (disc test `[disc][player][sandbox]`);
 - the **sprint zoom** ([Sprint zoom](#sprint-zoom)) with the page's fields: the first update at the sprint gait arms
-  and latches it (`+0x467`, `+0x466`); the zoom function (`0x00128cf0`) saves the band, the zoom distance and the
+  and latches it (`+0x467`, `+0x466`) when the player has no enemies or the nearest is within 12 m (the brain's query
+  is a hook, `Player::setNearestEnemy()`, with no enemies until Coney has brains; out of range the arm waits); the
+  zoom function (`0x00128cf0`) saves the band, the zoom distance and the
   target pitch, starts the 0.5 s timer, sets the wanted near edge to the minimum distance and steps the zoom to the
   default (upper pitch limit 30°); the band's ease (`0x0012aae0`, early in the next updates) moves the near edge by
   `d × |d| / T × dt`, which gives the street's 4.569, 4.379, … 3.216, 3.0 to 0.001 m over 15 updates; the target
@@ -527,13 +530,14 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   back, and on the 15th update the zoom is over. `enableSprintZoom()` is `CamEnable(5, on)` (`0x00126a30`);
 - the pitch eases toward its target at 85°/s, between the lower limit (the larger of -20° and the slope of 0.4 m over
   6.6 m) and the upper one of the zoom distance (`0x001254f0`): 50° at the minimum, 40° above the default, 30° at the
-  default with the camera option on;
+  default with one player camera (`0x0050b19c` = 1);
 - the **height hold** (step 7): `holdHeight()` eases the wanted position's height 30 % × `+0x398` of the way an
   update toward the height above the look-at point it held;
 - the right stick turns the wanted position at the raw rates (yaw up to 150°/s outside the ±48 dead zone, pitch near
   the ends of the travel) and holds off for 0.334 s after any input;
 - **collision** ([World collision](#collision)): the main ray from the look-at point to the camera with mask
-  `0x200 | 0x800 | 1`, so it tests disabled triangles, and passing through material 30 (`LOW_FENCE`); a hit on a
+  `0x200 | 0x800 | 1`, so it tests disabled triangles, and every ray passing through materials 30 `LOW_FENCE`, 122
+  `RAILING` and 107 `CHAINLINK_NOCLIMB` (`0x00548ab0`); a hit on a
   disabled triangle is cast again without them when the look-at point is less than 0.5 m in front of its plane or the
   player's feet are not in front of it. A hit that stands sets `+0x45b` and pulls the camera to 0.2 m short of it,
   never nearer than 0.5 m. The **side probes** turn the main ray about the look-at point's vertical by 1, 2 and 3 ×
@@ -547,17 +551,16 @@ The world viewer keeps its own free camera with the player camera's lens
 
 **Coney choices** where the research is silent:
 
-- **The camera option** `0x0050b19c` is on (the debug menu's *Camera option*): it was 1 in every save of normal play,
-  and is 0 only in the executable's `.data`, so something early in play (`0x00122ed0`, not traced) sets it. With it
-  off the sprint keeps the band and only lowers the pitch, and the way back goes to the maximum distance less 0.5,
-  as the page says.
+- **One player camera**: `0x0050b19c`, the number of player cameras (`0x00122ed0`), is 1 (the debug menu's *One
+  player camera*), as Coney has no split screen. Off is the two-player case: the sprint keeps the band and only lowers
+  the pitch, and the way back goes to the maximum distance less 0.5, as the page says.
 - **The zoom distance** starts at the maximum (6.6 m, upper pitch limit 40°), as read in the street. The band's own
   zoom step in `0x0012aae0` is left out: the thresholds as read would give 40° and then 50° during the sprint, where
   30° was read.
 - **The sprint time** `+0x36c` counts only at the sprint gait and is zeroed off it, so every sprint arms the zoom (a
-  run before the sprint, as in the street's runs, would otherwise keep it from arming). The record's `+0x152` gate is
-  taken as always passing. A sprint that starts while the band is still going back saves the band it was going back
-  to, so a quick second sprint does not keep a band left half-way.
+  run before the sprint, as in the street's runs, would otherwise keep it from arming). A sprint that starts while
+  the band is still going back saves the band it was going back to, so a quick second sprint does not keep a band
+  left half-way.
 - **The side probes** give each side's room as the largest clear multiple of the probe angle with every smaller one
   clear; when the two differ by more than 7.5° the wanted position turns toward the roomier side by 20 % of half the
   difference (the turn that would even them up) each update. The fully blocked view's 480°/s turn, the side factors
@@ -571,6 +574,8 @@ The world viewer keeps its own free camera with the player camera's lens
 - Beyond 157.5° the auto-centre rule's falling line is carried on for a running player (5°/s at 180°). The other
   gates of [Heading](#heading) (human flags, the clip's descriptor flag `0x8000`, state flag 4, the watched target)
   are not modelled.
+- **The blocked-view latch** clears on the second update the player stands (gait 0, on the ground), as at runtime;
+  the condition of the clearing branch (`0x00133140`) is not traced, and `+0x45c` is not modelled apart from it.
 - **A fresh camera** (at the start, or after the player is put back) sits behind the player at 4.8 m and 13°.
 
 ## Notes for implementers

@@ -158,12 +158,13 @@ The fixes below are in Coney ([Characters](characters.md#coneys-implementation),
 | Jump during the run start | from 3.3 m/s | the same |
 | Run jump: air time, last airborne height, landing update | 24 updates, −0.19 m, 7.80 m/s | 24, −0.19 m, 7.80 m/s, then 436 at 4.23 m/s for 10 more |
 | Landing | the first update that starts 0.17 m or more below the floor | the same |
+| Running fence climb clips | 440 for 11 updates from the tap's, unfaded, 5.79 m/s on the first update after the snap; 441 15 and 442 13, each still on its first update | the same (11, 15, 13 on the sandbox's 2 m fence; 5.79 m/s after the snap); the snap moves 0.68 m twice, as Coney's start point differs |
 | Camera band; distance running | 4.8-5.3 m; 5.65 m | the same |
 | Sprint camera | the timer rule: band 4.569 … 3.216, 3.0 and pitch to 7° over 14 updates; back 250 ms after the sprint | the same rule and fields; 4.70 m, 5.2° in a sprint |
 | Upper pitch limit | 40°, 30° in a sprint | the same |
-| Auto-follow | the auto-centre rule at gaits 2, 4 and 5, not after a blocked view | the same |
+| Auto-follow | the auto-centre rule at gaits 2, 4 and 5, latched off by a blocked view until the player stops | the same; the latch clears on the second update standing |
 | Stick held 90° to the side | about 191°/s running, 143°/s walking | about 197°/s and 144°/s (Rembrandt in the sandbox) |
-| Fence climb camera | 4.9-5.3 m throughout | the ray passes through material 30 |
+| Fence climb camera | 4.9-5.3 m throughout | every ray passes through materials 30, 122 and 107 |
 | Look-at point after a climb's rise | 20 % per update, then 2 updates | the distance limit: 20 % beyond 0.8 m, then `1 − 2 (d − 0.4)`, then all |
 | Disabled panel 0.19 m behind the player | ignored by the camera's ray | the ray's rule is in place, but Coney does not know which triangles the game disables, so the panel is enabled and still pulls the camera in |
 
@@ -237,6 +238,6 @@ The fixes in order of how much they change the feel:
   the nearest frame, and every per-update speed of the three clips fits that reading (inferred from the runtime
   speeds, [Coney's implementation](#coneys-implementation)). Still open: which way the original's half-frame ties
   go, and why.
-- **The fence climb's first clip** (answered: 440 is 11 updates in the original and 13 in Coney because the original
-  starts the clip with the move to the start point and does not fade it in, while Coney holds it for the 2-update
-  move and then fades it, [Characters](characters.md#climb)).
+- **The fence climb's first clip** (answered: 440 is 11 updates in the original because it starts the clip with the
+  move to the start point and does not fade it in, [Characters](characters.md#climb); Coney now does the same and
+  gives 11). Still open: why the first update of 441 and 442 moves nothing.

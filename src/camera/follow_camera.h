@@ -40,10 +40,10 @@ struct FollowTuning {
     /// The per-pad auto-follow option bytes (`0x0050b240` / `0x0050b248`), 1 by default: the auto-centre rule; off,
     /// the default rule.
     bool autoCentre = true;
-    /// The camera option byte `0x0050b19c`: on, the sprint zoom pulls the band in to the minimum distance and the
-    /// default zoom's upper pitch limit is 30°. **Coney's choice**: on, as in every save of normal play (it is 0 in
-    /// the executable's `.data`, and what sets it, `0x00122ed0`, is not traced).
-    bool cameraOption = true;
+    /// One player camera (`0x0050b19c` = 1, the count `0x00122ed0` makes): the sprint zoom pulls the band in to the
+    /// minimum distance and the default zoom's upper pitch limit is 30°. Off is the split-screen case, which Coney
+    /// does not have yet.
+    bool onePlayerCamera = true;
 };
 
 /// The one FollowTuning the game uses; at its defaults unless a debug menu changed it.
@@ -88,6 +88,10 @@ struct FollowTarget {
     std::uint8_t gait = 0;
     bool airborne = false;  ///< Jumping or falling: the look-at point follows the feet without its distance limit.
     bool stickBack = false; ///< The left stick points more than 157.5° from up: no auto-follow (`+0x474`).
+    /// The distance to the target's nearest enemy, from its brain (`0x0021d408`), or none when it has no enemies (byte
+    /// `+0x152`): a sprint zooms in only with no enemies or the nearest within 12 m
+    /// (docs/research/camera.md#sprint-zoom).
+    std::optional<float> nearestEnemy;
 };
 
 /// The follow camera.
@@ -116,10 +120,15 @@ class FollowCamera {
     static constexpr float kZoomSeconds = 0.5F;
     static constexpr float kZoomBackDelay = 0.25F;
     static constexpr float kZoomPitchRate = 0.5236F;
+    /// A sprint zooms in only when the nearest enemy is closer than this, metres (or there are none).
+    static constexpr float kZoomEnemyRange = 12.0F;
     /// The band's ease toward its wanted near edge when no timer runs: this share of what is left a second, during a
     /// zoom and otherwise.
     static constexpr float kBandEaseZoom = 3.5F;
     static constexpr float kBandEaseFree = 4.5F;
+    /// The blocked-view latch clears once the target has stood this many updates (**inferred** from the runtime: it
+    /// cleared on the second update after the player stopped; the clearing branch's condition is not traced).
+    static constexpr int kLatchClearUpdates = 2;
     /// Within this the band's edge and the zoom's pitch have arrived.
     static constexpr float kArrived = 1e-5F;
     /// The hard band eases back by this share of the difference per update when it shrinks (**Coney's reading** of
@@ -168,7 +177,7 @@ class FollowCamera {
     /// The lower pitch limit, radians (`+0x3b0`).
     [[nodiscard]] float lowerPitch() const { return m_lowerPitch; }
     /// The upper pitch limit, radians (`+0x3ac`), from the zoom distance: 50° at the minimum, 40° above the default,
-    /// at the default 30° with the camera option on and 50° otherwise.
+    /// at the default 30° with one player camera and 50° otherwise.
     [[nodiscard]] float upperPitch() const;
     /// The zoom distance (`+0x400`): the minimum, default or maximum distance. **Coney's choice**: the maximum to
     /// start with, as read in the street.
@@ -180,8 +189,10 @@ class FollowCamera {
     [[nodiscard]] float bandFar() const { return m_bandNear + m_bandWidth; }
     /// Whether the sprint zoom is under way (`+0x448` not 0): zoomed in, or waiting or easing to go back.
     [[nodiscard]] bool sprintZoomActive() const { return m_zoomActive; }
-    /// Whether the main ray was blocked in the last update (`+0x45b`): auto-follow then skips the next one.
+    /// Whether the main ray was blocked in the last update (`+0x45b`).
     [[nodiscard]] bool viewBlocked() const { return m_viewBlocked; }
+    /// The blocked-view latch (`+0x45d`): set by a blocked main ray, it keeps auto-follow off until the player stops.
+    [[nodiscard]] bool viewLatched() const { return m_viewLatch; }
     /// The yaw the auto-follow rule turned the camera by in the last update, radians (positive anticlockwise).
     [[nodiscard]] float lastAutoTurn() const { return m_lastAutoTurn; }
 
@@ -210,7 +221,7 @@ class FollowCamera {
     // @orig 0x00129c78 Cam_Follow_AutoFollow (Cam_Follow.cpp)
     void autoFollow(anim::Vec3 view, const FollowTarget& target, float seconds);
     // The sprint gait's arm and latch, which start the zoom and, 250 ms after the sprint, its way back.
-    void latchSprint(bool sprinting, float seconds);
+    void latchSprint(bool sprinting, const FollowTarget& target, float seconds);
     // The sprint zoom's step: in toward the minimum distance and the sprint pitch while sprinting, back otherwise.
     // @orig 0x00128cf0 Cam_Follow_SprintZoom (Cam_Follow.cpp)
     void sprintZoom(bool sprinting, float seconds);
@@ -250,6 +261,8 @@ class FollowCamera {
     float m_heldHeight = 0.0F;         // the wanted position's height above the look-at point the hold keeps
     float m_heightHoldScale = 1.0F;    // +0x398
     bool m_viewBlocked = false;        // +0x45b
+    bool m_viewLatch = false;          // +0x45d
+    int m_standingUpdates = 0;         // updates in a row the target has stood (gait 0, on the ground)
     float m_lastAutoTurn = 0.0F;
 };
 

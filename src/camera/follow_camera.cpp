@@ -165,7 +165,7 @@ float FollowCamera::upperPitch() const {
     if (m_zoomDistance > m_settings.defaultDistance + kSameZoom) {
         return kUpperAboveDefault * kRadians;
     }
-    return (followTuning().cameraOption ? kUpperAtDefault : kUpperAtMinimum) * kRadians;
+    return (followTuning().onePlayerCamera ? kUpperAtDefault : kUpperAtMinimum) * kRadians;
 }
 
 void FollowCamera::enableSprintZoom(bool on) {
@@ -251,8 +251,9 @@ void FollowCamera::followLookAt(const FollowTarget& target) {
 }
 
 void FollowCamera::autoFollow(anim::Vec3 view, const FollowTarget& target, float seconds) {
-    // The gates: no camera input lately, the view not blocked on the last update, the stick not pulled back.
-    if (m_inputHold > 0.0F || m_viewBlocked || target.stickBack || std::hypot(view.x, view.y) < 1e-6F) {
+    // The gates: no camera input lately, no blocked view since the player last stopped (the latch, which the last
+    // update's blocked ray sets), the stick not pulled back.
+    if (m_inputHold > 0.0F || m_viewBlocked || m_viewLatch || target.stickBack || std::hypot(view.x, view.y) < 1e-6F) {
         return;
     }
     // The auto-centre rule follows a walk, run or sprint; the default rule only a run or sprint.
@@ -274,16 +275,18 @@ void FollowCamera::autoFollow(anim::Vec3 view, const FollowTarget& target, float
     yaw(m_lastAutoTurn);
 }
 
-void FollowCamera::latchSprint(bool sprinting, float seconds) {
+void FollowCamera::latchSprint(bool sprinting, const FollowTarget& target, float seconds) {
     // The first update of a sprint arms the zoom (when it is switched on); the time at the sprint gait counts from
     // there (**Coney's reading** of `+0x36c`: zeroed off the sprint gait, so every sprint arms afresh).
     if (sprinting && m_sprintTime == 0.0F) {
         m_zoomArmed = m_zoomOn;
     }
     m_sprintTime = sprinting ? m_sprintTime + seconds : 0.0F;
-    // Armed and sprinting: latch, and run the zoom from now on. The first update off the sprint gait unlatches, and
-    // the zoom goes back once 250 ms have passed.
-    if (sprinting && m_zoomArmed) {
+    // Armed and sprinting, with no enemies or the nearest within 12 m (the squared distance under 144, 0x0012b504):
+    // latch, and run the zoom from now on. The first update off the sprint gait unlatches, and the zoom goes back once
+    // 250 ms have passed. Out of the enemies' range the arm waits, and latches when one comes near.
+    const bool enemiesAllow = !target.nearestEnemy || *target.nearestEnemy < kZoomEnemyRange;
+    if (sprinting && m_zoomArmed && enemiesAllow) {
         m_zoomArmed = false;
         m_zoomLatched = true;
     }
@@ -311,14 +314,14 @@ void FollowCamera::sprintZoom(bool sprinting, float seconds) {
     const FollowTuning& tuning = followTuning();
     if (sprinting) {
         // The first time: save the band and the zoom, start the timer, and pull the band in to the minimum distance
-        // (with the camera option; without it the band stays and the way back goes to the maximum less 0.5). A way
+        // (with one player camera; with two the band stays and the way back goes to the maximum less 0.5). A way
         // back still under way is saved by where it was going (**Coney's choice**, so a quick second sprint does not
         // keep a band left half-way).
         if (m_savedNear == 0.0F) {
             m_savedNear = m_wantedNear > 0.0F ? m_wantedNear : m_bandNear;
             m_savedZoom = m_zoomDistance;
             m_timer = kZoomSeconds;
-            if (tuning.cameraOption) {
+            if (tuning.onePlayerCamera) {
                 m_wantedNear = m_settings.minDistance;
                 stepZoom(m_settings.defaultDistance);
             } else {
@@ -400,7 +403,7 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
 
     // The sprint zoom: latched by the sprint gait; its function runs once the game time has passed its start.
     const bool sprinting = target.gait == kGaitSprint;
-    latchSprint(sprinting, seconds);
+    latchSprint(sprinting, target, seconds);
     if (m_zoomActive && m_clock > m_zoomFrom) {
         sprintZoom(sprinting, seconds);
     }
@@ -448,10 +451,17 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
         m_position = anim::add(m_lookAt, withLength(fromLookAt, m_hardNear));
     }
 
-    // 13. The world: swing away from it, pull in when it hides the camera from the look-at point.
+    // 13. The world: swing away from it, pull in when it hides the camera from the look-at point. A blocked view
+    // latches until the target has stood a moment.
     m_viewBlocked = false;
     if (mesh != nullptr) {
         collide(*mesh, target.feet);
+    }
+    m_standingUpdates = target.gait == 0 && !target.airborne ? m_standingUpdates + 1 : 0;
+    if (m_viewBlocked) {
+        m_viewLatch = true;
+    } else if (m_standingUpdates >= kLatchClearUpdates) {
+        m_viewLatch = false;
     }
 
     // 14. Timers and the camera's clock.

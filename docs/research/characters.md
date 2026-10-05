@@ -1280,8 +1280,9 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   (wall) and 0.78 / 1.55 m (short wall), which give a running fence climb from 1.23 to 5.09 m: the runtime tap at
   about 4.4 m started one and the one at 4.9 m did not (the 4.5 m ray). The chain's first two clips would give
   about 1.2 m and no running climb from 4.4 m.
-- **The climb's move** to its start point takes 2 updates from a run and 1 standing; the first clip waits until it
-  is done (the runtime's 440 played its whole length after the snap).
+- **The climb's move** to its start point takes 2 updates from a run and 1 standing; the first clip's clock runs
+  through it, as the original installs the clips with the move, but its root motion moves the body only once the
+  move is done. On the sandbox's 2 m fence 440 lasts 11 updates from the tap's, as at runtime.
 - **The rise**: walls and short walls move at once at the second clip's start, by its root displacement (450 and
   456 carry none in section A; their whole displacement, 0.98 and 1.06 m, as at runtime) and up to the top the probe
   found; fences go by the second clip's own root motion, as the runtime's 441 carried the body through.
@@ -1289,7 +1290,9 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   runtime 441 had record `+0x08` `0x40` and 442 did not). Meanwhile the fence materials (30, 31, 122) are not walls,
   and not ground for the snap and the landing, so a low fence's top does not lift the feet.
 - **The re-probe** at the first clip's end accepts any triangle, not only a climbable one.
-- **The climb's fade** is the 0.1333 s move fade.
+- **The climb's fade**: none; the first clip moves the body at its full root speed from its first update after the
+  move (5.79 m/s on the 2 m fence, as at runtime). The update the chain goes on to its second or third clip moves
+  nothing, as the first update of 441 and of 442 did at runtime; why is not traced.
 - **The lean**: the four limits go with walk (and standing), jog, run and sprint; the drawing rolls the body by the
   lean about its forward axis through the feet.
 - **Context and object actions** (triangle's second and fourth tries) are hooks that never succeed yet, so triangle

@@ -193,6 +193,19 @@ int firstFrameOf(const Run& run, std::uint32_t animId, std::size_t from = 0) {
     return -1;
 }
 
+// How many frames of `run` played the clip `animId`.
+int framesWithClip(const Run& run, std::uint32_t animId) {
+    return static_cast<int>(
+        std::ranges::count_if(run.frames, [animId](const FrameRecord& r) { return r.animId == animId; }));
+}
+
+// How far the feet moved over the ground on frame `index` of `run` (from the frame before).
+float movedOn(const Run& run, int index) {
+    const coney::anim::Vec3 from = run.frames[static_cast<std::size_t>(index) - 1].position;
+    const coney::anim::Vec3 to = run.frames[static_cast<std::size_t>(index)].position;
+    return std::hypot(to.x - from.x, to.y - from.y);
+}
+
 // The player's walking sphere (0.485 m): how far short of a wall's face his feet stop.
 const float kBodyRadius = coney::human::playerWalkingRadius(coney::human::kPlayerBodyScale);
 
@@ -295,6 +308,16 @@ TEST_CASE("Rembrandt climbs over a short fence and a fence from a run, not one o
     SECTION("a 2 m fence: the running fence climb (440), through it") {
         const Run run = runScript(course, "fence", "parkour_fence_tall.txt", {-30.0F, 8.0F, 0.0F}, 150);
         CHECK(firstFrameOf(run, 440) > 0);
+        // The original's clip lengths (docs/research/characters.md#climb): 440 runs from the tap's update through the
+        // move to the start point, unfaded, for 11 updates; 441 and 442 move nothing on their first update.
+        CHECK(framesWithClip(run, 440) == 11);
+        CHECK(framesWithClip(run, 441) == 15);
+        CHECK(framesWithClip(run, 442) == 13);
+        REQUIRE(firstFrameOf(run, 441) > 0);
+        REQUIRE(firstFrameOf(run, 442) > 0);
+        CHECK(movedOn(run, firstFrameOf(run, 441)) == Approx(0.0F).margin(1e-4));
+        CHECK(movedOn(run, firstFrameOf(run, 442)) == Approx(0.0F).margin(1e-4));
+        CHECK(movedOn(run, firstFrameOf(run, 441) + 1) > 0.05F);
         CHECK(framesOf(run, Traversal::Climbing) > 20);
         CHECK(highest(run) == Approx(0.0F).margin(0.02));
         CHECK(run.frames.back().position.y > 21.0F);
