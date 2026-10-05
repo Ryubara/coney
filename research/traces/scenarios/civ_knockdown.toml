@@ -1,0 +1,46 @@
+# The AI's reaction goals: the fighter of civ_fight knocked down by the player's square chain (S1, SS2, SSS3: square
+# every 2 updates), three times, so its brain makes the knocked-down reaction goal (0x17) and drops it when it
+# stands. Research: docs/research/ai.md#reaction-goals.
+description = "slot 6: PoizoCiv as a type-2 fighter knocked down by SSS3 three times; the reaction goal"
+research = "docs/research/ai.md#reaction-goals"
+input = "civ_knockdown.txt"
+updates = 330
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "call-brains", "set-command"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  # Wake the brain as a type-2 (gang soldier) brain: not dead, type 2, the type's three handlers (8 bytes each from
+  # the tables at 0x00715530, 0x00715568 and 0x007155a0), and a threat response of 2.
+  { address = "brain(enemy) + 0x09", type = "u8", value = "0", frame = 0 },
+  { address = "brain(enemy) + 0x04", type = "s32", value = "2", frame = 0 },
+  { address = "brain(enemy) + 0x14", type = "u32", value = "u32(0x00715540)", frame = 0 },
+  { address = "brain(enemy) + 0x18", type = "u32", value = "u32(0x00715544)", frame = 0 },
+  { address = "brain(enemy) + 0x1c", type = "u32", value = "u32(0x00715578)", frame = 0 },
+  { address = "brain(enemy) + 0x20", type = "u32", value = "u32(0x0071557c)", frame = 0 },
+  { address = "brain(enemy) + 0x24", type = "u32", value = "u32(0x007155b0)", frame = 0 },
+  { address = "brain(enemy) + 0x28", type = "u32", value = "u32(0x007155b4)", frame = 0 },
+  { address = "brain(enemy) + 0x21c", type = "s32", value = "2", frame = 0 },
+  # The player at full health, so the fight lasts.
+  { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0 },
+  # 1.2 m in front of the player, facing him, until the fight starts.
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.2 * sin(heading(player))", until = 3 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.2 * cos(heading(player))", until = 3 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 3 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 3 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 3 },
+]
+calls = [
+  # BrFlush's goal half (Brain_ClearGoals); GoalFight clears the actions itself.
+  { function = "0x0028d910", args = ["brain(enemy)"], frame = 1 },
+  # GangMakeEnemies(its gang, the player's gang): gang ids from the gang records at 0x005e6e30 + id * 0xb10.
+  { function = "0x0016acf0", args = ["(u32(brain(enemy) + 0x20c) - 0x005e6e30) // 0xb10", "(u32(brain(player) + 0x20c) - 0x005e6e30) // 0xb10"], frame = 2 },
+  # GoalFight(enemy, player): Brain_StartFight takes the two handles (human +0x90).
+  { function = "0x002b2b90", args = ["u32(enemy + 0x90)", "u32(player + 0x90)"], frame = 3 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]

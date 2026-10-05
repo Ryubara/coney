@@ -157,3 +157,248 @@ hidden = true
 name = "target_pitch"                     # +0x3b4, in degrees
 formula = "deg(target_pitch_rad)"
 digits = 3
+
+# What holds a move: the record's state word (+0x00, two words), its state code (+0x14, setter 0x002266a8) and the
+# animation tasks on the character instance's stack (human +0xd8; the stack's pointers at +0x2bc, its count at +0x2ac),
+# each task's type (+0x14) and the record +0x08 bits it holds (+0x24, clip tasks of types 1, 3 and 6). Slots at or
+# above the count are stale; the tasks' fields are read through the stack at each sample (`follow`). Research: docs/research/tasks.md#held-flags, docs/research/formats/animation.md#task-stack.
+[[held]]
+name = "state"
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[held]]
+name = "state_hi"
+address = "rec(player) + 0x4"
+type = "u32"
+
+[[held]]
+name = "code"
+address = "rec(player) + 0x14"
+type = "s32"
+
+[[held]]
+name = "tasks"
+address = "u32(player + 0xd8) + 0x2ac"
+type = "u16"
+
+[[held]]
+name = "t0_type"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x14"
+type = "s32"
+follow = true
+
+[[held]]
+name = "t0_holds"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x24"
+type = "u32"
+follow = true
+
+[[held]]
+name = "t1_type"
+address = "u32(u32(player + 0xd8) + 0x2c0) + 0x14"
+type = "s32"
+follow = true
+
+[[held]]
+name = "t1_holds"
+address = "u32(u32(player + 0xd8) + 0x2c0) + 0x24"
+type = "u32"
+follow = true
+
+[[held]]
+name = "t2_type"
+address = "u32(u32(player + 0xd8) + 0x2c4) + 0x14"
+type = "s32"
+follow = true
+
+[[held]]
+name = "t2_holds"
+address = "u32(u32(player + 0xd8) + 0x2c4) + 0x24"
+type = "u32"
+follow = true
+
+[[held]]
+name = "t3_type"
+address = "u32(u32(player + 0xd8) + 0x2c8) + 0x14"
+type = "s32"
+follow = true
+
+[[held]]
+name = "t3_holds"
+address = "u32(u32(player + 0xd8) + 0x2c8) + 0x24"
+type = "u32"
+follow = true
+
+[[held]]
+name = "t4_type"
+address = "u32(u32(player + 0xd8) + 0x2cc) + 0x14"
+type = "s32"
+follow = true
+
+[[held]]
+name = "t4_holds"
+address = "u32(u32(player + 0xd8) + 0x2cc) + 0x24"
+type = "u32"
+follow = true
+
+# An AI human the scenario names `enemy` (its `let`): its brain (docs/research/ai.md#brain) and what it does. Goal and
+# action vtables name their classes (docs/research/ai.md#goals: 0x005402d0 the fight goal, 0x0053feb0 the block
+# goal; #attack-action: 0x00542ce0 the attack action, 0x005431e0 move-to-human). The brain's times are in the game's
+# milliseconds (`now`).
+[[enemy]]
+name = "now"
+address = "u32(0x0050b734) + 0x48"
+type = "u32"
+follow = true
+
+[[enemy]]
+name = "e_top"                            # brain +0x2c, the goal stack's top index (-1 empty)
+address = "brain(enemy) + 0x2c"
+type = "s8"
+
+[[enemy]]
+name = "e_goal"                           # the top goal's vtable
+address = "u32(brain(enemy) + 0x40 + 4 * max(0, s8(brain(enemy) + 0x2c))) + 0xc"
+type = "u32"
+follow = true
+
+[[enemy]]
+name = "e_goal0"                          # the bottom goal's vtable (stale when the stack is empty)
+address = "u32(brain(enemy) + 0x40) + 0xc"
+type = "u32"
+follow = true
+
+[[enemy]]
+name = "e_goal1"                          # the second goal's vtable (stale below two goals)
+address = "u32(brain(enemy) + 0x44) + 0xc"
+type = "u32"
+follow = true
+
+[[enemy]]
+name = "e_goal_10"                        # the top goal's +0x10 (the block goal: the time it blocks until, ms)
+address = "u32(brain(enemy) + 0x40 + 4 * max(0, s8(brain(enemy) + 0x2c))) + 0x10"
+type = "u32"
+follow = true
+
+[[enemy]]
+name = "e_goal_14"                        # the top goal's +0x14 (the block goal: whether this block may counter)
+address = "u32(brain(enemy) + 0x40 + 4 * max(0, s8(brain(enemy) + 0x2c))) + 0x14"
+type = "u8"
+follow = true
+
+[[enemy]]
+name = "e_goal_16"                        # the top goal's +0x16 (the block goal's second counter flag)
+address = "u32(brain(enemy) + 0x40 + 4 * max(0, s8(brain(enemy) + 0x2c))) + 0x16"
+type = "u8"
+follow = true
+
+[[enemy]]
+name = "e_actions"                        # brain +0x2e, the actions queued
+address = "brain(enemy) + 0x2e"
+type = "s8"
+
+[[enemy]]
+name = "e_action"                         # the front action's vtable (stale when no action is queued)
+address = "u32(brain(enemy) + 0x68 + 4 * u8(brain(enemy) + 0x2f)) + 0x8"
+type = "u32"
+follow = true
+
+[[enemy]]
+name = "e_react"                          # brain +0x3c, the reaction goal (0 none)
+address = "brain(enemy) + 0x3c"
+type = "u32"
+
+[[enemy]]
+name = "e_react_vt"                       # the reaction goal's vtable (stale when there is none)
+address = "u32(brain(enemy) + 0x3c) + 0xc"
+type = "u32"
+follow = true
+
+[[enemy]]
+name = "e_move_angle"                     # brain +0x110, the heading a move action asks for (radians)
+address = "brain(enemy) + 0x110"
+type = "f32"
+
+[[enemy]]
+name = "e_move_speed"                     # brain +0x114, the speed it asks for (0x0028ab28; the gait's speed)
+address = "brain(enemy) + 0x114"
+type = "f32"
+
+[[enemy]]
+name = "e_speed"                          # human +0x1ac, its speed across the ground
+address = "enemy + 0x1ac"
+type = "f32"
+
+[[enemy]]
+name = "e_gait"                           # human +0x1a8
+address = "enemy + 0x1a8"
+type = "s32"
+
+[[enemy]]
+name = "e_target"                         # brain +0x124, the target's handle
+address = "brain(enemy) + 0x124"
+type = "u32"
+
+[[enemy]]
+name = "e_next_attack"                    # brain +0x1e8, the earliest time it may attack again (ms)
+address = "brain(enemy) + 0x1e8"
+type = "u32"
+
+[[enemy]]
+name = "e_warned"                         # brain +0x200, an attack on it was announced this update
+address = "brain(enemy) + 0x200"
+type = "u8"
+
+[[enemy]]
+name = "e_command"                        # its per-player record +0x20, the command of this update
+address = "prec(enemy) + 0x20"
+type = "u32"
+
+[[enemy]]
+name = "e_clip"
+address = "rec(enemy) + 0x20"
+type = "s32"
+
+[[enemy]]
+name = "e_phase"                          # its record +0x08
+address = "rec(enemy) + 0x08"
+type = "u32"
+
+[[enemy]]
+name = "e_state"                          # its record +0x00, the state word's low half
+address = "rec(enemy) + 0x0"
+type = "u32"
+
+[[enemy]]
+name = "e_health"
+address = "rec(enemy) + 0x144"
+type = "s16"
+
+[[enemy]]
+name = "e_x"
+address = "tf(enemy) + 0x0"
+type = "f32"
+hidden = true
+
+[[enemy]]
+name = "e_y"
+address = "tf(enemy) + 0x4"
+type = "f32"
+hidden = true
+
+[[enemy]]
+name = "e_stick_angle"                    # its per-player record's stick angle (radians), the current buffer (+0x18)
+address = "prec(enemy) + 0x08 + 4 * u8(prec(enemy) + 0x18)"
+type = "f32"
+follow = true
+
+[[enemy]]
+name = "e_stick"                          # the stick's magnitude, clamped to 1
+address = "prec(enemy) + 0x10 + 4 * u8(prec(enemy) + 0x18)"
+type = "f32"
+follow = true
+
+[[enemy]]
+name = "e_distance"                       # from the player, metres (the player set's x and y come first)
+formula = "hypot(e_x - x, e_y - y)"

@@ -1,0 +1,4 @@
+# The player stands still while the AI fights him, then circles it: the stick at 60 % to the left (the combat walk
+# round his target) for 150 updates, then let go. Frames are character updates of 1/30 s.
+150 stick left -60 0
+300 stick left 0 0

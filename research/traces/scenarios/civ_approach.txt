@@ -1,0 +1,3 @@
+# The player stands still; nothing is pressed.
+# Frames are character updates of 1/30 s.
+180 stick left 0 0

@@ -1,8 +1,9 @@
 # Tasks (the TaskEngine and when a move hands control back)
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra
-only (2026-10-05); every claim is confirmed (code) at the cited address unless it says otherwise. Runtime checks this
-page needs are listed at the end ([Runtime checks wanted](#runtime-checks)).
+(2026-10-05); every claim is confirmed (code) at the cited address unless it says otherwise. The five runtime checks
+were run in PCSX2 the same day with the trace harness and its call hooks ([Runtime checks](#runtime-checks)); their
+results are in the body, marked confirmed (runtime).
 
 ## Purpose
 
@@ -15,7 +16,7 @@ In one paragraph: the `TaskEngine` is the game's object scheduler. A singleton `
 wheels** of 256 buckets (one per phase: play and pause), a set of sub-managers (objects, particles, lights, glass,
 scenes, cars) and the clocks. Every world object is a *task*: an object with a position, a rotation, velocities, a
 flags word and a vtable whose slot `+0x13c` is its update. The wheel runs one bucket per 60 Hz tick and re-inserts
-each object at its update interval. The **characters** are not stepped by the wheel but by `Humans_Update`, which
+each object at its update interval. The **characters** are not on the wheel but stepped by `Humans_Update`, which
 the play tick calls on every 60 Hz tick and which works on every second one (30 Hz): pads, player records, gangs,
 **brains**, animation, locomotion and then **actions** (the command dispatcher). A move does not decide its own
 length: the clip's **animation task** holds bits of the record's `+0x08` flags while it plays, the clip's events
@@ -135,12 +136,19 @@ Event types seen: `0xb` a new enemy (to the gang's tactic), `0xd` the brain's go
 
 `TaskManager_Tick(mgr, 0)` → `TaskManager_TickGame` (`0x003a2ea0`), once per frame. Confirmed (code):
 
-1. Read the bus clock. **While more than `0x95ffff` ticks** (two 60 Hz ticks) have passed since the last step, run
-   **two** 60 Hz ticks; otherwise one.
+1. Read the bus clock. **While at least `0x960000` ticks** (two 60 Hz ticks) have passed since the last step, run
+   **two** 60 Hz ticks and take `0x960000` off; with less, run **none** this frame (the time carries over). So the
+   ticks always come in pairs.
 2. Each 60 Hz tick: set the phase's time, call **`Humans_Update`** (`0x00249108`), run the wheel's current bucket
    (`TaskWheel_RunBucket`), then the physics step (`0x00340918`).
 3. After the ticks: the game state (`0x0041a370`) and the object spawns (`ObjectTaskManager_UpdateSpawns`, objects
    within 70 m of a player, 4900 = 70²).
+
+At runtime (confirmed (runtime), street, no input, 1198 frames with hooks on `0x003a2ea0` and `0x00249108`): the
+bus clock is the COP0 `Count` (`0x4b0000` per 60 Hz tick), `TaskManager_TickGame` runs once per frame at 29.97 Hz,
+and each frame runs exactly **two** `Humans_Update` calls, the body on the first (the counter `0x005104f4` turns even).
+Because a frame (two 59.94 Hz fields) is slightly longer than two ticks, the clock gains on the game: one frame in
+about 1000 (every ~33 s) runs **four** ticks, so two character steps. No frame ran none.
 
 Phase 1 (`0x003a3000`) runs one tick on the UI clock and calls `Humans_Update` only when `0x005104f4` is 1, else just
 the pads and the camera. `TaskManager_UpdateManagers` (`0x003a31a8`) runs the sub-managers of the phase: for play the
@@ -156,6 +164,11 @@ interval adjusted by a ground ray (`0x003a1f40`). Then the bucket index advances
 interval 1 updates every tick (60 Hz), one with interval 6 ten times a second. `TaskManager_Schedule` sets `+0x60`
 to the phase; an object whose class flags have `0x800` always goes on wheel 0.
 
+**Humans are not on the wheel.** Confirmed (runtime): a hook on the wheel's update call logged 2428 updates over 120
+ticks in the street, from four vtables only (`0x00545660`, `0x005453a0`, `0x005458c8`, `0x00544c08`), never the
+human's `0x0053f088`. A human's task head has flags `+0x54` = `0x42005001` (no `0x2000`), phase `+0x60` = 2, bucket
+`+0x62` = -1 and interval `+0x6e` = 255, and no wheel bucket of the save state lists one.
+
 ### Humans_Update: the characters' step {#humans-update}
 
 Called on every 60 Hz tick; its body runs only when `0x005104f4` is even, so **the characters step at 30 Hz**. Each
@@ -170,7 +183,8 @@ before on [Characters](characters.md#update):
 4. With `0x005e5358`, the **gangs** (`0x0016d170`: 32 records of 0xb10 at `0x005e6e30`, a fifth of them per step;
    the gang's tactic through `0x00306630`).
 5. With `0x005e535c`, the **brains** (`Brains_Update`, `0x00293b28`, [AI](ai.md#update)): each enabled brain thinks on
-   one step in five and updates every step. Brains write their human's **command** into its per-player record
+   one step in five (brain *i* when *i* mod 5 = (`0x005104f4` >> 1) mod 5, confirmed (runtime)) and updates every
+   step. Brains write their human's **command** into its per-player record
    `+0x20`, as a pad would.
 6. With `0x005e5360`, each human's animation step (`0x0023bd78`), then `0x00105570` (refresh the playing anim ids).
 7. Per human: an effect for flag `0x4000`, the player gang checks.
@@ -183,7 +197,11 @@ before on [Characters](characters.md#update):
 10. The cameras (`0x0011e878`).
 
 So an AI human's command is written in step 5 and taken by the same dispatcher as the player's in step 9 of the same
-update; the player's pad command reaches the record in step 3.
+update; the player's pad command reaches the record in step 3. Confirmed (runtime) with a civilian fighting the player:
+the attack action's start (the call at `0x002fac98`) writes the command through `0x00147ef0`, the dispatcher
+(`Player_UpdateActions`, return addresses in `0x0027b5d0`-`0x0027c73c`) reads it through `0x00147ef8` in the same
+character step, and the next step's record update (`0x00146000`, the AI has no pad) has cleared it. The command is
+written once per attack, not again while the action waits ([AI](ai.md#attack-action)).
 
 ### Held flags: how a move ends {#held-flags}
 
@@ -201,6 +219,14 @@ release ([Animation](formats/animation.md#animation-tasks)). For the attacks, co
 - A press while `0x2` is set with a combo count of 1-2 swaps the clip in place (task vtable `+0x8c`) rather than
   pushing a new task.
 - When the clip ends, the task clears what it still holds, so `0x40000` goes and the dispatcher's gate opens.
+
+At runtime (confirmed (runtime), street, square once, the stick at 60 % up throughout): S1 (clip 12) lasts 20
+updates. Record `+0x08` shows `0x1` on k = 0-5, `0x2` on k = 6-14, `0x4` on k = 15 and `0x40000` on k = 16-19; the
+clip task (type 3) **keeps holding `0x7`** in its `+0x24` through k = 0-15 while `+0x08` shows one phase bit at a time
+(the events change `+0x08`, not the task's copy), then holds `0x40000` from k = 16 (event `0x48` replaces it) and the
+two agree. On k = 20 the clip has ended, `+0x08` is clear and the walk start (413, holding `0x10000000`) begins with
+the body at 0.89 m/s: **the stick comes back on the first update after the clip**. The instance's task stack drops to
+one task after the first update (the fade has finished).
 
 So every attack's timing (wind-up, window, end, recovery) comes from its clip's events, and its length from the clip.
 The same holds for any move whose builder hands flags to its task (grab `0x10`, start clips `0x10000000`, run stop and
@@ -239,8 +265,18 @@ and before that, the whole stick step is skipped (turning included) when:
 Read against the runtime table on [Combat](combat.md#input-return): the wind-up, window and end bits (`0x1`, `0x2`,
 `0x4`) make the human busy, the recovery `0x40000` zeroes the stick's velocity, and 389's `0x40000000` is in neither
 mask, so **the stick moves the human on the first update after the clip has cleared its bits**, and 389 never holds
-it. The block's **5 updates** after R1's release are the state code `+0x14` = 5 seen at runtime (the idle 388 with
-`+0x14` = 5): the gate holds the stick while it lasts. Who sets and clears 5 after a block is not traced.
+it.
+
+**The 5 updates after a block** are not the state code but the **fade** into the idle. Confirmed (runtime), hooks on
+the state code's setter (`0x002266ac`): after R1's release with the stick held at 60 % right, the idle 388 is pushed
+with a type-9 fade task holding **`0x10000000`** for 5 updates. That bit is in the velocity gate, so the stick turns
+the human on the spot (about 20° per update) but does not move him; the locomotion's call at `0x002419a0` writes code
+5 on each of those updates. When the fade ends the walk start 413 begins (its call sites `0x0025b9cc` and
+`0x0025f750` set code 3). A walk stop (408 → 388) gives the same 5-update fade with `0x10000000`; from a settled idle
+413 starts at once. So **code 5 means turning in place**: nothing clears it, the walk start overwrites it with 3 and
+the stop (`0x0025fa2c`) with 0. This corrects the earlier reading that code 5 itself held the stick for those 5
+updates. On the first update of a start the locomotion's site sets 5 and then the dispatcher's call (`0x0027cbcc`)
+sets 1.
 
 ## What an implementer needs {#implementer}
 
@@ -255,9 +291,13 @@ it. The block's **5 updates** after R1's release are the state code `+0x14` = 5 
   attack paths, the locomotion and the AI's attack action read the bits with the masks in [Who reads](#readers). This
   replaces the per-attack timing tables and the "every other move refuses while its clip plays" choice.
 - **The locomotion gate** as one predicate: `IsBusy` (skip the stick step) and the velocity gate (`0x110c0880`, state
-  code 5 or 6).
+  code 5 or 6). The pause after a block or a stop comes from the fade into the idle holding `0x10000000` for its 5
+  updates ([gate](#locomotion-gate)), not from a timer and not from code 5: a fade task must be able to hold bits.
 - **Objects**: a scheduler with an update interval per object is enough until the world objects (doors, pick-ups,
-  cars) come; the wheel's exact bucket order matters only for runtime diffs of objects other than humans.
+  cars) come; the wheel's exact bucket order matters only for runtime diffs of objects other than humans, which are
+  never on it.
+- **Catch-up steps.** A runtime diff against the original sees two character steps in one frame about every 1000
+  frames ([The play tick](#tick)); a trace keyed on the tick counter, not the frame, lines up.
 - **Messages are synchronous**: a hit's warning (`0xa4`, `0xa6`) is handled inside the attacker's event, before the
   sender's next line ([Combat](combat.md#block)).
 
@@ -271,32 +311,17 @@ it. The block's **5 updates** after R1's release are the state code `+0x14` = 5 
   ([Animation](formats/animation.md#coneys-implementation)); the readers' masks are in `src/combat/` and
   `src/human/locomotion_gate.*` ([Combat](combat.md#coneys-implementation)).
 
-## Runtime checks wanted {#runtime-checks}
+## Runtime checks {#runtime-checks}
 
-For the runtime-traces harness. Addresses are of `SLUS_212.15`; "the record" is the human's 0x180 record (human
-`+0xd4`).
-
-1. **The tick split.** In the street (slot 1 copy), no input, sample `0x005104f4`, `0x0050b734` and Rembrandt's
-   position every frame for 120 frames. Expect `Humans_Update`'s body on alternate 60 Hz ticks and two ticks on a
-   frame that ran late.
-2. **Held flags through an attack.** Square once, the stick at 60 % up from k = 0 to k = 40. Each update sample
-   record `+0x08`, `+0x14`, `+0x20`, the top animation task's `+0x24` (the instance's stack `+0x2bc`, count `+0x2ac`)
-   and the velocity. Expect the task's `+0x24` and record `+0x08` to agree, `0x40000` cleared on the update the clip
-   ends, and the velocity to come back that update.
-3. **The block's 5.** Hold R1 for 30 updates, release, the stick at 60 % right from the release. Sample record
-   `+0x14`, `+0x08` and the state word each update: who sets 5 (a watch on `+0x14`) and on which update it is
-   cleared.
-4. **Humans on the wheel?** Break on `TaskWheel_RunBucket`'s update call (`0x003a3588`) and log the vtables it calls
-   for 60 ticks in the street: whether any human (vtable `0x0053f088`) is on the wheel as well as in `Humans_Update`.
-5. **Brain then dispatcher.** With a civilian fighting the player (slot 6 copy, the puppet set to fight), watch the
-   civilian's per-player `+0x20` (`0x00660f50 + i × 0x2c + 0x20`): written by `0x00147ef0` from the brain's step and
-   read by `0x00147ef8` in the dispatcher in the same update.
+All five were run (2026-10-05) with the scenarios in `repo:research/traces/scenarios/` (`tick_split`,
+`wheel_objects`, `held_attack`, `block_release`, `turn_on_spot`, `civ_fight`) and the call hooks in
+`repo:research/traces/patches.toml`; the results are in the body above: [the tick split](#tick), [humans on the
+wheel](#wheel), [held flags through an attack](#held-flags), [the block's 5](#locomotion-gate) and [brain then
+dispatcher](#humans-update). None is left.
 
 ## Open questions {#open-questions}
 
-- Whether humans are also scheduled on a wheel (check 4); their `+0x6e` was not read.
 - The file split of `0x003a1570`-`0x003a4288` between `TaskManager.cpp` and a base task file.
 - What the sub-managers at `+0x844`-`+0x850` and `0x00390e20` update, and the `SceneTask` (`WarMoveInstance`).
-- The anim events `0x3e`, `0x3f` and the one that sets `0x2000`; who sets and clears state code 5 after a block, and
-  what code 6 is.
-- The event types `0`, `1`, `7`, `0x10` and `0x17`.
+- The anim events `0x3e`, `0x3f` and the one that sets `0x2000`; what state code 6 is.
+- The event types `0`, `1`, `7` and `0x17` (`0x10` is the attack warning, [AI](ai.md#block)).

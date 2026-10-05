@@ -1,0 +1,19 @@
+# The block's 5: R1 held for 30 updates, then released with the stick at 60 % right from the release. Research:
+# docs/research/tasks.md#locomotion-gate (state code 5 holds the stick after a block). Slot 1 (the street, nobody
+# near). The state-code hook logs every write of record +0x14 with its caller.
+description = "level99 street: R1 held 30 updates, released with the stick at 60 % right; who sets and clears code 5"
+research = "docs/research/tasks.md#locomotion-gate"
+input = "block_release.txt"
+updates = 110
+fields = ["player", "held"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "state-code"]
+
+[coney]
+level = "level99"
+
+[diff]
+columns = ["clip", "phase", "gait", "speed"]
+tolerance = { clip = 0, phase = 0, gait = 0, speed = 0.05 }

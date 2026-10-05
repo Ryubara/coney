@@ -1,0 +1,5 @@
+# Square once; the stick at 60 % up from the update S1 starts (k = 0, the tap's update) to k = 40, then let go.
+# Frames are character updates of 1/30 s.
+40 tap square
+40 stick left 0 60
+81 stick left 0 0

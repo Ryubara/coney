@@ -1,0 +1,1 @@
+# No input: the player stands in the street while the play step and the character step are logged.

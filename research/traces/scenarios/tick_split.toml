@@ -1,0 +1,15 @@
+# The tick split: how a frame of play runs the 60 Hz ticks and the 30 Hz character step. Research:
+# docs/research/tasks.md#tick. Slot 1 (the street), no input; the hooks log every call of the play step
+# (TaskManager_TickGame) and of Humans_Update with the EE's cycle counter, so each frame's ticks can be counted.
+description = "level99 street, no input: frames, 60 Hz ticks and character updates from call logs"
+research = "docs/research/tasks.md#tick"
+input = "tick_split.txt"
+updates = 1200
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "tick-game", "humans-update"]
+
+[coney]
+level = "level99"

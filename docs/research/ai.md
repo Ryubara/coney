@@ -1,9 +1,10 @@
 # AI humans (brains, goals and actions)
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra
-only (2026-10-05); every claim is confirmed (code) at the cited address unless it says otherwise. The script calls of
-`level99` were read from the disc's compiled scripts with `coney-tools` (ids, names and values only). Runtime checks
-this page needs are at the end ([Runtime checks wanted](#runtime-checks)).
+(2026-10-05); every claim is confirmed (code) at the cited address unless it says otherwise. The script calls of
+`level99` were read from the disc's compiled scripts with `coney-tools` (ids, names and values only). The five
+runtime checks were run in PCSX2 the same day ([Runtime checks](#runtime-checks)); their results are in the body,
+marked confirmed (runtime).
 
 ## Purpose
 
@@ -204,7 +205,9 @@ or 8. The kinds follow the [damage table](combat.md#damage-table)'s indices (0 `
 is enabled (`+0x08`) and whose human passes `0x0023d790`:
 
 - **Think** (`Brain_Think`, handler B) when `index % 5 == (counter >> 1) % 5`: each brain thinks once every five
-  character steps (6 Hz), staggered across brains.
+  character steps (6 Hz), staggered across brains. Confirmed (runtime): a hook on `0x0028f6c0` over 215 steps matched
+  the formula on every step, with `counter` the tick counter `0x005104f4`; brains whose human fails `0x0023d790`
+  (in the street save, Vermin and the suspended Ash) do not think at all.
 - **Update** (`Brain_Update`, handler A) every step.
 
 Then 20 records of 0x90 at `0x006cde30` (mask `0x006ce970`, `0x00299778`; not traced). Formations (step 2) and gangs
@@ -259,12 +262,19 @@ The stack's goals `0x1f`, `0x92`, `0x89` and `0x4f`, and the character classes `
 `0xb2`, `0x87` and `0x62`, can hold it off. This corrects [Combat](combat.md#block): `+0x3c` is the reaction goal, not
 a tactic, and type `0x17` is the knocked-down goal, which is why a downed AI never counters.
 
+Confirmed (runtime), a civilian fighting the player: the knocked-down goal `0x17` (vtable `0x00540210`) appeared on
+the update after the state word took `0x80000` and stayed until the update after it cleared (88 updates), then the
+fight goal resumed from the stack; the stunned goal `0x18` came with `0x100000`, the tackling `0x13` and grabbing
+`0x12` goals with the civilian's own tackle and grab. So the reaction goal lags the state by one update, because the
+brains run before the human's state update ([Tasks](tasks.md#humans-update)).
+
 ### Events {#events}
 
 `Brain_OnEvent` (`0x0028f928`) runs the perception's handler (`0x00299100` on `+0xf8`), then the reaction goal's
-event slot if one is active (`0x0028f988`), then handler C. Handler C is where a brain answers the world: the
-civilian's (`0x002ffb30`) takes event `0x14` (violence nearby) and may start a fight through `Brain_Fight`; the type
-event handlers are among `Brain_Fight`'s callers.
+event slot if one is active (`0x0028f988`), then handler C. Event `0x10` is the **attack warning**
+([below](#block)). Handler C is where a brain answers the world: the civilian's (`0x002ffb30`) takes event `0x14`
+(violence nearby) and may start a fight through `Brain_Fight`; the type event handlers are among `Brain_Fight`'s
+callers.
 
 ### Starting a fight and choosing the target {#targets}
 
@@ -301,21 +311,48 @@ event handlers are among `Brain_Fight`'s callers.
 
 The attack action (vtable `0x00542ce0`, `AttackAction_Init` `0x002fa918`):
 
-- **Start** (`0x002fa9a8`): checks the target, then sets the brain's `+0x1e8` (its next attack) and the target
-  brain's `+0x1ec` (when it may be attacked next) to now + **the attack delay** (`Human_AttackDelay`, `0x00223800`:
-  `CfgAttackDelay` (`0x00228870`) × the power class's `+0x1c`, or `+0x20` when the target is down), then writes the
-  command (`AttackKind_ToCommand`) into the per-player record `+0x20` (`PlayerRecord_SetCommand`, `0x00147ef0`) and,
-  when the action has one, a stick of magnitude 1.0 at an angle.
-- **Update** (`0x002fad70`): writes the command again while waiting, and is done once the record's `+0x08` has none
-  of **`0x5c0221f`**: the attack's held flags ([Tasks](tasks.md#held-flags)) decide when the AI is free again.
+- **Start** (`0x002fa9a8`): checks the target and keeps the start time in the action's `+0x18`. It sets the brain's
+  `+0x1e8` (its next attack, `0x00290e48`) to now + **the attack delay** (`Human_AttackDelay`, `0x00223800`:
+  `CfgAttackDelay` (`0x00228870`) × the power class's `+0x1c`, or `+0x20` when the target is down), **halved** when
+  the target's own target is this human or the brain is type 3. When neither human is busy, it sets the target
+  brain's `+0x1ec` (when it may be attacked next, `0x00290e78`) from a **separate per-kind time** (`0x00231590`),
+  scaled by `0x00510ad0` / the target brain's spacing byte `+0x14a` (or `+0x14b`, by `0x00223b48`) when that is not 0.
+  This corrects the earlier reading that both took the attack delay. Then it writes the command
+  (`AttackKind_ToCommand`) into the per-player record `+0x20` (`PlayerRecord_SetCommand`, `0x00147ef0`) and, when
+  the action has an angle (`+0x1c` ≥ 0), a stick of magnitude 1.0 at that angle.
+- **Update** (`0x002fad70`): re-writes the command only while now < the action's `+0x18`, which Start set to now, so
+  **never**: the command is written **once** (confirmed (runtime), below). It is done at once when the action's
+  `+0x14` is 1, otherwise once the record's `+0x08` has none of **`0x5c0221f`**: the attack's held flags
+  ([Tasks](tasks.md#held-flags)) decide when the AI is free again. This corrects the earlier "writes the command again
+  while waiting".
 - **Abort** (`0x002fad30`): refused while `+0x08` has any of `0x5c0221f`.
 
 So an AI attack is a press and a wait on the same flags the player's moves hold, and its chain timing is the
 player's.
 
+Confirmed (runtime), the street civilian (`PoizoCiv`, class 417, `Att_Normal`, power class 2) made a type-2 brain and
+set on the player with `GangMakeEnemies` and `GoalFight` (no save reaches `level99`'s `CombatWarriors` fight, so this
+is a stand-in with the same attack table). Hooks on `0x00147ef0` and `0x00147ef8`:
+
+- The goal stack was `0x41`, `0x08` (fight), `0x0f`; the front action was the attack action, the move-to-human
+  action or, when far, a move action (goal `0x0b`).
+- Commands seen: `0xd` (grab, then a throw with a stick of 1.0), `0xf`, `0x10`, `0x11`, `0x12`, `0xe` and `0x20`
+  (charge). Each is written once, in the attack action's Start, and read by the dispatcher in the same step; the next
+  step's record update clears it ([Tasks](tasks.md#humans-update)).
+- **Chains**: the second press came 9 updates after `S1`'s (`0xf` → `0x11` or `0x12`), 12 after `SS2`'s, 13 after
+  `X1`'s (`0x10` → `0x12`), inside the chain window as `AttackKind_ChainDelay` plans.
+- `+0x1e8` was set to now + 700 ms at a chain's first press, + 1100 ms at the second, about + 1400 ms at the third,
+  and + 1750 ms for `0xe` and `0x20`: each press of a chain pushes the next attack further.
+
 ### Blocking and countering {#block}
 
-- **When** (`Goal_TryBlock`, `0x0029f098`): only when the brain's `+0x200` is set, that is when an attack on the
+- **The warning.** `+0x200` is a **count** of attack warnings since the last update: the default event handler
+  (`0x00292d80`) adds one for each event `0x10`, as do `0x002ff898`, `0x00302ff0` and `0x00304070`, and
+  `Brain_Update` clears it (`0x0028f914`). Event `0x10` comes from `0x0021d5c0`, called by `Attack_Start` (call at
+  `0x0026267c`) and the square path (`0x00287594`), which sends it to a human only if `0x002223e8` passes: within the
+  brain's range `+0x130` and its **field of view** `+0x12c` (half-angle, radians), or 2 m when the attacker's brain
+  `+0x2d4` is set, and then a line of sight (`0x00222288`). Confirmed (code); the counting confirmed (runtime).
+- **When** (`Goal_TryBlock`, `0x0029f098`): only when the brain's `+0x200` is not 0, that is when an attack on the
   human was announced this update. The chance is `Human_BlockChance` (`0x00223628`: the power class's `+0x08`, or
   `+0x0c` while hurt, × the global `0x00510ac8`), **a quarter of it for brain type 3**. A player attacker whose
   pattern meets the class's `+0x37` threshold (`0x002236c8`, `0x00418398` on human `+0x5d0`) is always blocked. Yes
@@ -325,7 +362,19 @@ player's.
   whether this block may counter. Process (`0x002b5808`) writes command **4 (R1 held) every update** and, when
   rand100 < `Human_CounterChance` (`0x002235f8`: the power class's `+0x24` × 100), **3 (R1 pressed)**.
 - **The counter** after a duck is the block goal's answer to message `0xa5` ([Combat](combat.md#block)): yes when the
-  human is ducking and `+0x14` and `+0x16` are both 1.
+  human is ducking and `+0x14` and `+0x16` are both 1. On a closer reading of Process the counter roll (command 3)
+  happens only after the block time `+0x10` has run out and while `+0x15` is 0; Start sets the human's `+0xe0` flag
+  `0x800` and `+0x15` (the pattern flag) and keeps in `+0x18` whether `0x800` was already set.
+
+At runtime (confirmed (runtime)), the civilian at 1.2 m, the player pressing square every 20 updates:
+
+- With the civilian's field of view `+0x12c` = 1.5708 (its class's), the player's attacks, aimed at it from in front
+  but outside that test, sent no event `0x10`: `+0x200` stayed 0 and it never blocked.
+- With `+0x12c` set to π, six events `0x10` arrived; `Goal_TryBlock` saw `+0x200` = 2 once and pushed the block goal
+  `0x1b`: `+0x10` = now + 1981 ms, `+0x14` = 1, `+0x16` = 1, and Process (`0x002b5a74`) wrote command 4 every update.
+- But the civilian **never entered a block state** (state `0x3`, clips 358 or 272) and kept taking hits, and no
+  command 3 came. Why command 4 had no effect is not known; the AI has no pad (per-player `+0x19` = 255) and the
+  dispatcher's R1-held path may read the pad rather than the command (speculative).
 
 New power-class fields (confirmed (code)): `+0x08` block chance, `+0x0c` block chance while hurt, `+0x24` counter
 chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#power-classes)).
@@ -336,9 +385,14 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   level's path areas: `0x002fc158` → `0x002fbef0` → `0x0024f718` tests a segment against the path polygons, and
   `0x00250708` finds the next point ([Level loading](level-loading.md#path-data)).
 - **Steering** around other humans: `0x00289138`.
-- The **speed** of a gait: `0x0022ae40`. The action writes a stick (angle and magnitude) into the per-player record,
-  so the human's own locomotion moves it, with the same turn limits and gaits as the player (inferred from the attack
-  action's stick write and the shared input path; the move action's write was not read in full).
+- The **speed** of a gait: `0x0022ae40`. The move actions do **not** write a stick: they write the brain's `+0x110`
+  (the heading to move along), `+0x114` (the speed, set through `0x0028aac0` → `0x0028ab28` from the gait: 1.6286 m/s
+  walking, 7.8012 m/s running) and `+0x90` (the point aimed at), and the human's state update moves it from those.
+  Confirmed (runtime): the civilian's per-player stick magnitude stayed 0 throughout its move and move-to-human
+  actions; only the attack action wrote a stick (1.0, for throws). This corrects the earlier inferred stick write.
+- From 8 m behind the player (confirmed (runtime)): a turn on the spot (clip 398), the run start 414, the run 410 at
+  7.80 m/s, then at 1.29 m a charge (`0x20`). Closer, the move-to-human action walks in the fight-stance clips
+  372-380 at about 2.3 m/s.
 - `GoalMoveToFlag` (type 1) and `GoalMoveToHuman` (type 6) queue these actions; the FlagNet goals (`0x69`, `0x73`)
   traverse the flag network.
 
@@ -421,37 +475,37 @@ Build in this order; each step is testable without the game.
    action queue of 8 with a delay, Start, Update and a refusable Abort; goals start only on an empty queue.
 5. **The fight goal and the attack action** for `level99`'s fights: target, attack slots, the attack delay, the
    weighted pick from the class's `Att_*` table, move-to-human when out of reach, `Brain_QueueAttack`'s chains, and
-   the attack action's wait on `0x5c0221f`.
-6. **The block goal** and the counter, driven by the attacker's warning (`+0x200`).
-7. **Reaction goals** for the states a fight produces (stunned, knocked down, grabbed).
+   the attack action's wait on `0x5c0221f`. The command is written **once**, in Start (not every update); the attack
+   delay is halved when the target targets the attacker; the target's `+0x1ec` takes a separate per-kind time, not
+   the attack delay ([The attack action](#attack-action)). The move actions steer by a heading and speed in the brain
+   (`+0x110`, `+0x114`), not by a stick ([Moving](#moving)).
+6. **The block goal** and the counter, driven by the attacker's warning: `+0x200` counts events `0x10`, sent only to
+   a human whose range and field of view (`+0x130`, `+0x12c`) take in the attacker ([Blocking](#block)).
+7. **Reaction goals** for the states a fight produces (stunned, knocked down, grabbed), one update after the state.
 8. **Scripted goals** for `level99`: `GoalMoveToFlag` along the path data, `GoalFight`, `BrFlush`, `GangBrDead`,
    `GangSetThreatResponse`, follow slots.
 
-## Runtime checks wanted {#runtime-checks}
+## Runtime checks {#runtime-checks}
 
-For the runtime-traces harness; brain *i* is at `0x006d53f0 + i × 0x2f0`, its per-player record at
-`0x00660f50 + i × 0x2c`.
+All five were run (2026-10-05) with the scenarios `civ_fight`, `civ_block`, `civ_block_fov`, `civ_approach`,
+`civ_knockdown` and `tick_split` in `repo:research/traces/scenarios/` and the call hooks in
+`repo:research/traces/patches.toml`. Brain *i* is at `0x006d53f0 + i × 0x2f0`, its per-player record at
+`0x00660f50 + i × 0x2c`. The results are in the body: [the fight and attack action](#attack-action), [think
+staggering](#update), [the block](#block), [moving](#moving) and [reaction goals](#reaction-goals).
 
-1. **A sparring fight** (`level99`, the first `CombatWarriors` fight, a save just before `GoalFight`): the player
-   still, then circling with the stick at 60 %. Per update for the enemy's brain: `+0x2c`, the top goal's type
-   (`+0x40[+0x2c]`, vtable `+0xc`), `+0x2e`, the front action's vtable, `+0x124`, `+0x1e8`, `+0x200`, and its
-   per-player `+0x20`. Expect the attack commands of [Attack kinds](#attack-kinds) at the intervals of the attack
-   delay, and pairs like `0x12` after `0x10` for kind 2.
-2. **Think staggering**: log the update counter `0x005104f4` and which brains run `Brain_Think` (`0x0028f6c0`) for 20
-   steps: one brain in five per step.
-3. **The block**: the player attacks a type-2 enemy with square every 20 updates. Sample the enemy's `+0x200`, the
-   block goal's `+0x10`, `+0x14`, `+0x16` and the command it writes (4, and 3 at the counter chance).
-4. **Moving**: an enemy far from the player in the yard, the player still. Sample the enemy's per-player stick angle
-   and magnitude each update while its move-to-human action runs: whether it writes a stick and at what magnitude.
-5. **Reaction goals**: knock an enemy down (`SSS3`) and sample `+0x3c` and its vtable until it stands.
+One check was only partly possible: no save reaches `level99`'s first `CombatWarriors` fight, so the fight was run
+with the street civilian as a stand-in (same `Att_Normal` table, type 2 set by hand). A save at that fight would let
+the same scenario confirm the Warriors' power class and the fight's script set-up.
 
 ## Open questions {#open-questions}
 
-- How a move action plans its path beyond the segment test, and whether it writes the stick or the velocity.
+- How a move action plans its path beyond the segment test.
+- Why the block goal's command 4 did not make the civilian block (check 3), and whether a type-2 Warrior blocks.
+- The per-kind time `0x00231590` that sets the target's `+0x1ec`, and the spacing bytes `+0x14a`, `+0x14b`.
 - The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.
 - The tactic layer (gang `+0x40`, `TacticCrowd`, `0x00306630`) and the formations (`0x00293c68`), which `level99`'s
   fence fight and follow slots use.
 - The records at `0x006cde30` updated after the brains.
-- The perception struct (`+0xf8`) and the field of view's use.
+- The perception struct (`+0xf8`).
 - The think handlers of types 2, 3 and 5 in detail; what goals the Warriors' think pushes for an ally.
 - Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)).

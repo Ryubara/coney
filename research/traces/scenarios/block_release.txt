@@ -1,0 +1,6 @@
+# R1 held for 30 updates, then released; the stick at 60 % right from the release's update on.
+# Frames are character updates of 1/30 s.
+40 press r1
+70 release r1
+70 stick left 60 0
+100 stick left 0 0

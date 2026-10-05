@@ -1,0 +1,19 @@
+# Code 5 without a block: the stick at 60 % right from standing (a quarter turn), then a block released with the stick
+# at 60 % up (no turn). Research: docs/research/tasks.md#locomotion-gate. Slot 1 (the street, nobody near). With
+# block_release, it shows that the updates of code 5 after a block are the turn on the spot towards the stick.
+description = "level99 street: a quarter turn from standing, then a block released with the stick ahead; code 5"
+research = "docs/research/tasks.md#locomotion-gate"
+input = "turn_on_spot.txt"
+updates = 170
+fields = ["player", "held"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "state-code"]
+
+[coney]
+level = "level99"
+
+[diff]
+columns = ["clip", "gait", "speed", "heading"]
+tolerance = { clip = 0, gait = 0, speed = 0.05, heading = 1.0 }

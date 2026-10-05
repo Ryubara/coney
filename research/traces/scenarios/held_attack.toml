@@ -1,0 +1,20 @@
+# Held flags through an attack: S1 with the stick held at 60 % up through it. Research:
+# docs/research/tasks.md#held-flags. Slot 1 (the street, nobody near). Each update: the record's +0x08 bits, state code
+# and clip, the animation tasks on the stack and the bits each holds, and the speed; whether the clip's task and
+# +0x08 agree, and on which update the stick moves him again.
+description = "level99 street: S1 with the stick at 60 % up from its first update, the held flags each update"
+research = "docs/research/tasks.md#held-flags"
+input = "held_attack.txt"
+updates = 110
+fields = ["player", "held"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "state-code"]
+
+[coney]
+level = "level99"
+
+[diff]
+columns = ["clip", "phase", "gait", "speed"]
+tolerance = { clip = 0, phase = 0, gait = 0, speed = 0.05 }

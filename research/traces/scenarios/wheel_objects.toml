@@ -1,0 +1,15 @@
+# What the play wheel updates: every object TaskWheel_RunBucket runs, logged just before its update call, in the street
+# for 60 character updates (120 ticks). Research: docs/research/tasks.md#wheel (are the humans on the wheel too?).
+# The humans are the 60 objects of 0x6d0 bytes from 0x00640c80; their vtable is 0x0053f088.
+description = "level99 street, no input: the objects the play wheel updates, from a call log"
+research = "docs/research/tasks.md#wheel"
+input = "tick_split.txt"
+updates = 60
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "wheel-update", "humans-update"]
+
+[coney]
+level = "level99"

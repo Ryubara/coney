@@ -1,0 +1,8 @@
+# From standing, the stick at 60 % right for 30 updates, then let go. Then R1 held for 30 updates and released with
+# the stick at 60 % up (where he faces after the turn's walk, roughly). Frames are character updates of 1/30 s.
+40 stick left 60 0
+70 stick left 0 0
+100 press r1
+130 release r1
+130 stick left 0 60
+160 stick left 0 0

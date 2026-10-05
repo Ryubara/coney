@@ -1,0 +1,17 @@
+# Square every 20 updates from frame 30, the stick at rest (auto lock-on turns him to face his target).
+# Frames are character updates of 1/30 s.
+30 tap square
+50 tap square
+70 tap square
+90 tap square
+110 tap square
+130 tap square
+150 tap square
+170 tap square
+190 tap square
+210 tap square
+230 tap square
+250 tap square
+270 tap square
+290 tap square
+310 tap square
