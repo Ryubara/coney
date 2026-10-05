@@ -587,9 +587,16 @@ Confirmed (code) for the steps; the state predicates are named by what they test
    record's walk speed `+0x170` unscaled, and two others (`0x00228340`, or the global `0x0051031c`) the base speed. With
    `0x00510258` set, run and sprint come from an analog button's pressure instead (more than 100 sprints); it is 0
    in play. Below the dead zone the target is 0.
-3. **Skid.** In gait 4 or 5, at run speed or above, after a stick that was over 0.95, a stick under 0.2 or one
-   pointing more than 120° away from the velocity (dot product below -0.5) zeroes the velocity and changes state
-   (`0x002266a8`; a skid or stop, inferred).
+3. **Skid** (the test at `0x00241300`). When the stored gait `+0x1a8` is 4 or 5, the current speed is **at least the
+   run speed** (`0x00221670`: human `+0x3a4` × record `+0x178`, compared as floats, `c.le.S`) and the previous
+   update's stick (the per-player record's other buffer) was over 0.95 (`0x005102e8`), then a stick now under 0.2,
+   or one pointing more than 120° away from the velocity (dot product below -0.5; the dot is worked out only for
+   some camera modes, `0x0011f9b0`), zeroes the velocity and sets the state code to **9** (the call at
+   `0x00241530`), unless the human is airborne (`0x00227f90`) or `0x00227f68` holds. Code 9 is what plays the
+   **run stop**: the idle builder (`Human_BuildIdleTasks`, `0x0025f770`) builds the run stop (`0x0025c0e8`: slot
+   33, 417, holding `0x80000`, the idle after it, a 0.1 s fade) instead of the idle when the code is 9, and the anim
+   state choice (`0x00259578`) picks state 0 for code 9. Confirmed (code); the code 9 and its caller confirmed
+   (runtime).
 4. **Turn.** Target heading = stick angle − π/2; current heading = the facing from the rotation. The error is
    wrapped to (−π, π]. The limit per update comes from `Human_MaxTurn` (`0x002213d8`) through the gait lookup
    `0x002212d0`, which reads the table's player word for a pad-controlled human: in play **20° walking or standing,
@@ -625,7 +632,8 @@ speed is `+0x1ac` sampled every 5 ms, the clip is record `+0x20`). Confirmed (ru
 | 0.13, 0.5, 0.94 | **walk start** (413) at a steady 0.76 m/s for about 0.45 s, then **walk** (408) at 1.63 m/s, gait 2: the walk speed does not depend on how far the stick is pushed |
 | 0.96, 1.0 | **run start** (414) for about 0.36 s, the speed following the clip (2.77, 2.49, 2.56, 2.63, 2.84, 3.35, 3.90, 4.54, 5.11, 5.40, 5.61, 5.69 m/s, one value per update), then **run** (410), gaining 0.8 m/s per update up to 7.80 |
 | released from a walk | speed 0 at once and **idle** (388) |
-| released from a run (7.80 m/s) or a sprint (10.245 m/s) | **run stop** (417) for 24 updates (0.8 s), moved by the clip 1.63 m with the facing held, then the idle ([Sprint](#sprint)); the scripted pad's release (one update from full to centred) showed it after a run as well, where an earlier keyboard release had not |
+| released from a sprint (10.245 m/s) | **run stop** (417) for 24 updates (0.8 s), moved by the clip 1.63 m with the facing held, then the idle ([Sprint](#sprint)) |
+| released from a run (7.80 m/s) | the run stop only when the speed that update is not below the run speed by a rounding error, about one release in ten; otherwise the idle (388) at once, at 0 m/s ([The run stop](#run-stop)) |
 | reversed (180°) at a run | one turn step (18°), then the same skid and run stop, sliding 1.63 m the old way; then the walk or run start toward the stick |
 
 So the start clips drive the speed while they play (their root motion, [Animation](formats/animation.md#root-motion)),
@@ -654,6 +662,31 @@ The 35 % and 60 % runs were identical update for update. There is no ramp on the
 the three clips: it is the clip's own root speed (times 0.97). A walk released stops at once (the idle on the next
 update, 0 m/s). The gaits matter to the camera, whose auto-follow runs only at gait 2, 4 or 5
 ([Camera](camera.md#heading)).
+
+#### The run stop at a run {#run-stop}
+
+Whether a run released plays the run stop is decided by the skid's speed test ([Locomotion](#locomotion) step 3),
+and at a steady run that test compares two floats that are equal to within a few units in the last place.
+Confirmed (runtime), scenario `run_stop` (slot 1, a straight run released, then a run circling behind the camera
+released, as `run_circle`), with hooks on the state-code setter and on the skid test logging the gait, both stick
+buffers, the run speed and the speed register `f28` as raw words:
+
+- The run speed is `0x40f9a3ad` (7.8012300). The speed the locomotion measures at a steady run (the length of the
+  velocity, `0x0023fea8`'s vtable `+0x94`) jitters between `0x40f9a3aa` and `0x40f9a3ae`: of 93 updates at the run
+  in one recording, 10 were at or above the run speed and 83 one to three units below it.
+- On every release seen the gait was 4, the previous stick 1.0 and the stick 0. Where the speed on the release update
+  was below (`0x40f9a3ab`, `0x40f9a3ac`, straight and circling alike, three recordings) no code 9 was set and the
+  idle 388 began on the next update at 0 m/s, holding `0x10000000` for 5 updates; where it was not (one circling
+  release), the state code went to 9 from `0x00241538`, the idle builder set it back to 0 (`0x0025fa2c`) and the
+  run stop 417 played for 24 updates with `0x80000`, at the speeds in the table above.
+- So **turning has nothing to do with it**: the circling run of `run_circle` (step 192) and a straight run both go
+  either way. After a sprint (10.245 m/s) the speed is far above the run speed, so a sprint always ends in the run
+  stop; a jog or walk (gait 3 or less) never does.
+
+In the idle that follows a release without the run stop, the stick's last angle and magnitude (`+0x5d8`, `+0x5dc`)
+keep turning the body: while the idle's fade holds `0x10000000`, the locomotion turns toward the last stick angle with
+a magnitude × 0.8 each update (`0x002411cc` onward), which is the 0.7°, 1.1°, 1.4°, 1.5° seen after `run_circle`'s
+release.
 
 ### Buttons {#buttons}
 
@@ -804,8 +837,9 @@ record `+0xdc` × 4/π (a direction, inferred); for the four-clip task, speed / 
 **Idle (state 0).** `Human_BuildIdleTasks` (`0x0025f770`) calls `0x0025f1b8` with **slot 0** (388) as a looping
 clip with no task flags, after a fade of **0.15 s**; if a start clip is still playing (flag `0x10000000`) the fade is
 1/15 s when less than 0.1333 s of it has played and 0.2 s otherwise. Some ids replace slot 0 in special cases (355,
-357, 394, 634). **Slot 33 (run to neutral, 417) is not used** by this path: releasing the stick fades straight to the
-idle, which matches the runtime samples below.
+357, 394, 634). With the state code 9 (the [skid](#locomotion)) it builds the **run stop** instead (`0x0025c0e8`, slot
+33, 417); otherwise releasing the stick fades straight to the idle, which matches the runtime samples below. This
+corrects the earlier reading that slot 33 is not used.
 
 **At runtime** (PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt; the task stack read from the instance every 50 ms).
 Confirmed (runtime):
@@ -1414,8 +1448,6 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **Climb reaches** (partly answered): Coney reads Rembrandt's type-8 vectors ([Coney's implementation](#coneys-implementation));
   still open: which two clips `r1` and `r2` belong to (Coney's reading: the standing and running first clips), and
   `CfgClimbWithGhetto`'s effect.
-- **What builds the run stop** (417): it plays after a run's skid as well as a sprint's (confirmed (runtime),
-  [Feel comparison](feel.md)); the builder is not traced.
 - **The landing's threshold**: why the landing contact is taken only once the feet start an update about 0.17 m
   below the floor ([When the landing happens](#falling)). The contact path is traced (the resolution `0x0033d9d8`
   acts on the first contact by fraction) and does not explain it; a runtime log of the contacts is needed.

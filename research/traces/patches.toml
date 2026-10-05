@@ -166,3 +166,18 @@ address = 0x0021d5c0
 # addiu sp,sp,-0x80; sq s0,0x60(sp)
 original = [0x27bdff80, 0x7fb00060]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "warned" }, { value = "a1", name = "attacker" }, "a2"]
+
+[hook.skid-test]
+description = "The locomotion's skid test (Human_PlayerLocomotion, at 0x00241300 just before it): the gait, both stick buffers, the speed scale and run speed it compares with, and the speed (f28)."
+research = "docs/research/characters.md#locomotion"
+address = 0x00241300
+# sw zero,0x8(s5); lw v0,0x1a8(s1)
+original = [0xaea00008, 0x8e2201a8]
+log = [
+    { value = "[s1 + 0x1a8]", name = "gait", type = "s32" },
+    { value = "[s2 + 0x10]", name = "stick0", type = "f32" },
+    { value = "[s2 + 0x14]", name = "stick1", type = "f32" },
+    { value = "[s1 + 0x3a4]", name = "scale", type = "f32" },
+    { value = "[[s1 + 0xd4] + 0x178]", name = "run" },
+    { value = "f28", name = "speed" },
+]

@@ -1,0 +1,6 @@
+# A straight run and its release, then the circling run of run_circle and its release. Frames are updates of 1/30 s.
+40 stick left 0 100
+100 stick left 0 0
+150 stick left 0 100
+180 stick left -100 0
+260 stick left 0 0

@@ -402,3 +402,42 @@ follow = true
 [[enemy]]
 name = "e_distance"                       # from the player, metres (the player set's x and y come first)
 formula = "hypot(e_x - x, e_y - y)"
+
+# What decides a run stop: the locomotion's skid test (Human_PlayerLocomotion 0x00240e38, at 0x00241300) reads the
+# gait (human +0x1a8), the speed against the run speed, and the previous update's stick (the per-player record's other
+# buffer); the stick's last angle and magnitude (+0x5d8, +0x5dc) and the turn step and error (+0x5e0, +0x5e4) carry
+# over between updates. Research: docs/research/characters.md#locomotion.
+[[stop]]
+name = "s_gait"
+address = "player + 0x1a8"
+type = "s32"
+
+[[stop]]
+name = "s_buffer"
+address = "prec(player) + 0x18"
+type = "u8"
+
+[[stop]]
+name = "s_stick0"
+address = "prec(player) + 0x10"
+type = "f32"
+
+[[stop]]
+name = "s_stick1"
+address = "prec(player) + 0x14"
+type = "f32"
+
+[[stop]]
+name = "s_last_mag"
+address = "player + 0x5dc"
+type = "f32"
+
+[[stop]]
+name = "s_turn_step"
+address = "player + 0x5e0"
+type = "f32"
+
+[[stop]]
+name = "s_turn_error"
+address = "player + 0x5e4"
+type = "f32"

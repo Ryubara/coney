@@ -1,0 +1,19 @@
+# When the run stop plays: a straight run released, then a run circling behind the camera released (as run_circle).
+# Research: docs/research/characters.md#locomotion. Slot 1 (the street). The state-code hook shows whether the skid
+# (code 9, call at 0x00241530) fired; the stop set and the skid-test hook show the values its test reads.
+description = "level99 street: a straight run released, then a circling run released; which one plays the run stop"
+research = "docs/research/characters.md#locomotion"
+input = "run_stop.txt"
+updates = 300
+fields = ["player", "held", "stop"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "state-code", "skid-test"]
+
+[coney]
+level = "level99"
+
+[diff]
+columns = ["clip", "gait", "speed", "heading"]
+tolerance = { clip = 0, gait = 0, speed = 0.05, heading = 1.0 }

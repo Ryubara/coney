@@ -82,6 +82,8 @@ No source file names this code: it lies in the unnamed stretch after `Human/cns/
 | `0x00244e78` / `0x00245310` | `Human_MoveAttached` / `Human_MoveGrabbing` | movement states of the held victim and of a grabbing player | confirmed (code) |
 | `0x00277958` | `Pair_CheckPlace` | a move in the hold needs the victim within 0.3 m of the move's offset | confirmed (code) |
 | `0x0023cf88` / `0x0023d2b8` | `Human_TurnToOver` / `Human_MoveToOver` | turn to a heading, or move to a point, over a time | confirmed (code) |
+| `0x002761c8` / `0x00276008` | `Attack_SteerToTarget` / `Attack_TurnToTarget` | an attack's turn and slide onto its target up to the clip's first event, or the turn alone ([Target selection](#targets)) | confirmed (code), runtime |
+| `0x0023f5e0` | `Human_ApplyTurnAndSlide` | each step, applies a stored turn rate and slide velocity until their time runs out | confirmed (code) |
 
 ## Data
 
@@ -645,7 +647,7 @@ grabber's heading.
      has none: `T` = 0.1 × 0.467 / 0.75 = 0.062 s, two updates.
    - The turn (`0x0023cf88`) stores a turn rate (angle / `T`) for `T` seconds and is skipped below 0.01 rad; the slide
      (`0x0023d2b8`) stores a velocity (offset / `T`) for `T` seconds, snaps under 0.01 m and is dropped at 13 m or
-     more, or above 50 m/s. Which update applies them is not traced (fields `+0x2e0`-`+0x332` of the human).
+     more, or above 50 m/s. The human's state update applies them each step (`0x0023f5e0`, [Target selection](#targets)).
    - When the grabber's id has a script-loaded clip (`0x002219b8`), the reach is instead the horizontal length of the
      clip's [type 8 event](formats/animation.md#paired-tasks) and the gate is the largest of 1.875 m, reach + 0.25 and
      reach × 1.25 (not seen in play).
@@ -1165,6 +1167,40 @@ walk speed.
 the target (`0x0021d5c0`) and steers with `0x002761c8`: turn and slide so that the target, moved by its velocity over
 the time to the hit + 0.1 s, sits at the clip's reach (+0.07 m for a target scaled above 1.1, -0.1 m from behind).
 Beyond the range it only turns (`0x00276008`), capped at 8. Confirmed (code).
+
+**The steer in detail** (`Attack_SteerToTarget`, `0x002761c8`; confirmed (code) unless marked):
+
+- **Its inputs.** `Attack_Start` passes the human, the target (`0x00226e60`, its locked target) and a time `T` = the
+  time to the clip's **first event** of types 9, `0xf`, `0x13`, `0x2c`, `0x34`, `0x36` or `0x41` (its frame / 30
+  divided by the clip's rate; with none, the clip's length; `0x00101658`). The steer clamps `T` to that time + 0.1 s,
+  so `T` is the time to the first event. The per-kind numbers come from the record's attack table (record `+0x160`,
+  16 bytes per kind): `+0x4` the **reach** (`0x002544a0`), `+0x8` the **far range** in mm (`0x00254508`; when it is
+  not above the reach, reach × 1.25), `+0x0`/`+0x2` an offset in mm (`0x00254418`) and `+0xc` flags (`0x00254d60`).
+  `Attack_Start` steers only when a target is locked and its distance (`0x00229960`) is within the far range; with
+  flag `0x8` and the global `0x005102c4` set it uses the variant `0x00275678` instead.
+- **The goal.** The target's position plus its velocity × (`T` + 0.1) (only half that lead when the full lead would
+  carry it more than 1 m and farther away), minus the reach along the line from the human: the human should stand
+  at the reach from where the target will be.
+- **The turn** (`0x0023cf88`): the heading to the goal minus the current facing, wrapped to (−π, π]; skipped under
+  0.01 rad. It stores the rate (angle / `T`) in human `+0x308` and `T` in `+0x304` (flag `+0x332`).
+- **The slide** (`0x0023d2b8`): a velocity (goal − position) / `T` in human `+0x2e0`, with `T` in `+0x300` (flag
+  `+0x331`); none when the goal is under 0.01 m away (snapped), none at 13 m or more, and none when it would exceed
+  50 m/s with `T` above 1/30 s.
+- **Applied** each character step by the human's state update (`0x0023fea8` → `0x0023f5e0`): the rotation turns by
+  rate × dt (dt = `0x005102cc`, 1/30 s; the last step only by the time left), and the slide velocity is copied to
+  `+0x2f0` (scaled by the time left / dt on the last step), which moves the body on top of the clip's root motion
+  (inferred: the add itself was not read). Both count `T` down by dt and stop at 0. So the steer lasts
+  **ceil(`T` / dt) updates**, at a **constant rate**: no easing.
+- **When it starts.** `Attack_Start` runs in the dispatcher (step 9 of [Humans_Update](tasks.md#humans-update)), after
+  the human's state update (step 8), so the first turn and slide show on the update after the attack's clip starts.
+
+At runtime (`combat_cross`, the original, X1 at a target 1.36 m away; confirmed (runtime)): clip 11 starts on step 42
+with the body still; from step 43 the heading turns **2.533° per update for 9 updates** and 0.633° on the 10th (step
+52), 23.43° in all, then stops, on the update the chain window opens (phase 2: event `0x2c`, the clip's first event).
+That is a rate of 76°/s over `T` ≈ 0.308 s (9.25 updates). The body moves at 0.53, 0.71, 0.73, 0.74, 0.67, 0.77, then
+1.34, 1.34, 1.25, 0.81 m/s (the clip's root motion plus the slide), and the distance to the target falls from 1.364 to
+0.825 m. So Coney should neither snap the facing nor spread the reach over the whole clip: turn at angle / `T` and
+slide at (goal − position) / `T` for the `T` up to the first event, starting the update after the clip.
 
 ### Breakables {#breakables}
 
