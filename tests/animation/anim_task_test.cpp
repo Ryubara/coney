@@ -2,8 +2,10 @@
 #include "animation/anim_task.h"
 
 #include <array>
+#include <cmath>
 #include <memory>
 #include <numbers>
+#include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
