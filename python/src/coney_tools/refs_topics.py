@@ -232,6 +232,48 @@ LEVELS = Topic(
     nav="Levels",
 )
 
+LEVEL_STARTS = Topic(
+    "level-starts",
+    "id",
+    "start",
+    (
+        F(
+            "id",
+            "str",
+            "`<level>-<checkpoint>` for a story level, `<level>-<mode>` for a Rumble arena.",
+            "Start",
+            required=True,
+        ),
+        F("level", "str", "The level's name (a [level](levels.md) record's name).", "Level"),
+        F(
+            "checkpoint",
+            "int",
+            "Checkpoint (`GetCheckPoint`, `W_GameState + 0x33a`) the start belongs to.",
+            "Checkpoint",
+        ),
+        F("mode", "str", "Rumble mode whose flag script holds the start (`level<N>_<mode>_init.lua`).", "Mode"),
+        F("character", "str", "The name the script gives player 1's human (`HuCreate`'s first argument).", "Name"),
+        F(
+            "type",
+            "int",
+            "Player 1's [character type](characters.md); a Rumble arena's comes from the chosen gang.",
+            "Type",
+            link="characters.md#char",
+        ),
+        F("pos", "list", "Position `{x, y, z}` in metres, game axes (z up), before the ground snap.", "Position"),
+        F("heading", "float", "Facing in degrees about z, as `HuCreate` or the flag gives it.", "Heading"),
+        F("via", "str", "Where the value comes from: the creating function or the flag."),
+        F(
+            "script",
+            "str",
+            "The script the start loads: the checkpoint's chapter script or the mode's flag script.",
+            "Script",
+        ),
+    ),
+    compact=True,
+    nav="Level starts",
+)
+
 ANIMATIONS = Topic(
     "animations",
     "id",
@@ -398,6 +440,7 @@ TOPICS: tuple[Topic, ...] = (
     OBJECTS,
     OBJECT_GROUPS,
     LEVELS,
+    LEVEL_STARTS,
     ANIMATIONS,
     ANIM_IDS,
     CONTROLS,

@@ -1,7 +1,8 @@
 # Collision
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). One runtime claim (PCSX2
-2.9.94, 2026-10-05, `level99`'s mesh read over PINE, counts only) says so. The disc-side checks (2026-10-04) read all 64 `.lev` files of the NTSC-U disc's WAD with
+2.9.94, 2026-10-05, `level99`'s mesh read over PINE, counts only) says so. The disc-side checks (2026-10-04) read all 64
+`.lev` files of the NTSC-U disc's WAD with
 throwaway scripts outside the repository and are reported as counts, ranges and invariants only.
 
 ## Purpose

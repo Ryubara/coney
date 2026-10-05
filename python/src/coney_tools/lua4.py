@@ -4,7 +4,8 @@
 The game's scripts ship as Lua 4.0.1 bytecode (header `1B 4C 75 61 40`, little-endian, 4-byte ints and
 instructions, 8-byte doubles). This module parses a chunk into its function prototypes and walks each one's code
 with a small symbolic stack, so that a call such as `CfgChar(32, ..., "warr_re_cv", ...)` comes out as the callee's
-name and its arguments, each a number, a string, a table of constants, the name of a global, or "unknown". It never
+name and its arguments, each a number, a string, a table of constants, the name of a global, a call's result (with
+that call's arguments), a function the chunk defines, or "unknown". It never
 runs a script and never reproduces one: the reference tools keep only names and numbers from what it returns.
 
 The walk is linear: it visits every instruction once, in order, and follows both sides of a branch. That suits the
@@ -184,9 +185,18 @@ class Global:
 
 @dataclass(frozen=True)
 class CallResult:
-    """What a call returned."""
+    """What a call returned, with the arguments the call was given (so `f = AddFlag("f1", {x, y, z}, ...)` keeps
+    the flag's position; two results of the same callee compare equal whatever their arguments)."""
 
     callee: str
+    args: tuple[Value, ...] = field(default=(), compare=False)
+
+
+@dataclass(frozen=True)
+class Function:
+    """A function a chunk defines (`CLOSURE`), by its path among the chunk's prototypes ("main/3")."""
+
+    path: str
 
 
 @dataclass
@@ -214,7 +224,7 @@ UNKNOWN = _Unknown()
 #: Lua's nil, as a Python value distinct from UNKNOWN.
 NIL = None
 
-type Value = float | str | Global | CallResult | Table | _Unknown | None
+type Value = float | str | Global | CallResult | Function | Table | _Unknown | None
 
 
 @dataclass
@@ -246,6 +256,13 @@ class ChunkFacts:
     #: The last table each global was given (kept when the global is later set to nil), so that `T = {}` followed
     #: by `T.X = 1` fills the table, and the reference tools can read the finished tables (`MATERIAL`, `CL`).
     tables: dict[str, Table] = field(default_factory=dict)
+    #: Every table a constructor built, with the function that built it, including tables only ever held in locals
+    #: (a level script's `local gangs = {AddWarriors1, ...}` indexed by the checkpoint).
+    constructed: list[tuple[str, Table]] = field(default_factory=list)
+
+    def functions(self) -> dict[str, str]:
+        """Global name -> path of the function last assigned to it (`function Main() ... end` at any depth)."""
+        return {a.name: a.value.path for a in self.assignments if isinstance(a.value, Function)}
 
     def target(self, value: Value) -> Value:
         """`value` itself, or the table a global names when the code writes into it."""
@@ -343,9 +360,10 @@ class _Walker:
             if len(self.stack) < a + 1:
                 self.stack.extend([UNKNOWN] * (a + 1 - len(self.stack)))
             callee = _name_of(self.stack[a])
-            self.facts.calls.append(Call(self.path, pc, callee, self.stack[a + 1 :]))
+            args = self.stack[a + 1 :]
+            self.facts.calls.append(Call(self.path, pc, callee, args))
             results = 1 if b == _MULTRET else b
-            self.stack = self.stack[:a] + [CallResult(callee)] * (results if op == "CALL" else 0)
+            self.stack = self.stack[:a] + [CallResult(callee, tuple(args))] * (results if op == "CALL" else 0)
             return op == "TAILCALL"
         if op == "PUSHNIL":
             self.stack.extend([NIL] * u)
@@ -378,6 +396,7 @@ class _Walker:
             self.push(obj)
         elif op == "CREATETABLE":
             self.push(Table())
+            self.facts.constructed.append((self.path, self.stack[-1]))  # type: ignore[arg-type]
         elif op == "SETLOCAL":
             value = self.pop()[0]
             if u < len(self.stack):
@@ -447,8 +466,9 @@ class _Walker:
         elif op == "LFORLOOP":
             self.pop(3)
         elif op == "CLOSURE":
+            # A is the index of the child prototype, B the number of upvalues on the stack.
             self.pop(b)
-            self.push(UNKNOWN)
+            self.push(Function(f"{self.path}/{a}"))
         return False
 
     def _settable(self, a: int, b: int) -> None:

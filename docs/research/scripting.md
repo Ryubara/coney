@@ -274,6 +274,54 @@ disassembly:
 
 So a **new game** starts `level99` at checkpoint 1 ([Front end](frontend.md#story-start)).
 
+**Who calls it.** The front end's `Menu.startGame` calls `runNextMission(1)` for a new or loaded story game. After a
+mission, the mission-complete mode (0xb, `MissionComplete_Launch` `0x0015d420` pushes it) calls the Lua function
+**`UnlockAndLoad`** from its `Enter` (`0x0015cf70`, the name at `0x0054f528`; confirmed (code)), a `global.lua` helper
+(function 59) that calls `MissionCompleteUnlocks()`, releases the players' assets (`LiquidizeAssets`) and calls
+`runNextMission(1)` (inferred from the disassembly). The failure and pause menus call `runNextMission(0)`
+(`0x00155408`, `0x00155648`, `0x001557f8`: the name at `0x0054e798`, one number argument 0 or 1; confirmed (code)).
+
+**The story order**, from this table and the hub's `fRunMission` ([The hub](#the-hub)); inferred from the
+disassembly, and it matches the level records' `+0x0c` (`order` 1-18 in [Levels](../references/levels.md)):
+
+| # | Level | # | Level | # | Level |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `level99` | 7 | `level5` | 13 | `level9` |
+| 2 | `level80` | 8 | `level81` | 14 | `level51` |
+| 3 | `level87` | 9 | `level86` | 15 | `level52` |
+| 4 | `level34` | 10 | `level93` | 16 | `level54` |
+| 5 | `level2` | 11 | `level31` | 17 | `level55` |
+| 6 | `level3` | 12 | `level14` | 18 | `level84` |
+
+`level95` (the hub) comes between missions 3-4, 4-5, 5-6, 6-7, 7-8, 8-9, 10-11, 11-12, 12-13 and 13-14 (its
+checkpoints 1-10) and after mission 18 (11); its checkpoint 12 follows `level64`.
+
+### The hub (`level95`) {#the-hub}
+
+`level95` is the **Warriors' clubhouse and the streets of Coney around it**, where the story returns between
+missions: its functions set up a clubhouse (`SetupClubhouseEnvironment`, `AddClubhouseFlagsBoxesPaths`) and Coney
+(`SetupConeyEnvironment`), and it loads `level95_clubhouse.lua` (the clubhouse: the Warchief, the Warriors and their
+girls at their spots, workouts, the trophies that start flashbacks, the mission and Rumble menus) and
+`level95_coney.lua` (preLoadFile with `env.FinishClubhouseLua` / `env.FinishLoadConeyLua`). Inferred from the
+disassembly. Its `Main` loads **`level95_chapter<checkpoint>.lua`** (12 files, names recovered by their CRC) with
+the callback `RunLevel`; each chapter sets the numbers of Warriors and girls, the radio track, the Warchief's type
+(`WarchiefTable`) and the chapter's **mission actions** (`MissionAction`: red circles, cut-scenes, `MA_MISSION`
+errands, ending in `MA_LOADLEVEL`). `MA_LOADLEVEL` calls `story.LoadLevel(fRunMission[checkpoint].level)`:
+
+| Hub checkpoint | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Next mission | 34 | 2 | 3 | 5 | 81 | 86 | 31 | 14 | 9 | 51 | none | none |
+
+**Flashbacks**: the clubhouse's trophies (`flashback.PlayMission`, action `MA_LOADFBLEVEL`) load `FBMission[k].level`:
+`level82`, `level92`, `level83`, `level20`, `level11`, and `level60` once those five are complete (its `req`). Levels
+60-64 are the **Armies of the Night** bonus game (`SndLoadMatrix("armies")`, the `_a` models): each one's last
+checkpoint script loads the next (`level60_mothers` → `level61`, ... `level63_moonrunners` → `level64`). The mission
+menu itself (`menu.BeginChosenLevel(level, checkpoint)` in `level95_clubhouse.lua`) clears the save data, calls
+`SetCheckPoint(checkpoint)`, starts a save and `MenuLoadLevel("level" .. level)`. Inferred from the disassembly.
+
+**Not the hideout:** `level2_clubhouse.lua` is checkpoint 3 of story mission 5 (`level2`), a clubhouse full of
+Orphans (`orph_*` models named `Clubhouse1` ...): another gang's (inferred).
+
 ### Cameras from Lua {#cameras-from-lua}
 
 `CameraCreateFollow(name, target)` is a `global.lua` helper (function 15), not a binding: it calls
@@ -404,7 +452,10 @@ of the original).
   `global.lua` and `level100.lua` run without errors in Coney's fresh state.)
 - The scene system (`SuperRunScene`): how a scripted scene takes the player's control and gives it back. The camera
   side is on [Camera](camera.md#scenes).
-- `RegisterUpdate`, and what `preLoadFile`'s completion routine (`0x00356d00`) does with the callback name.
+- `RegisterUpdate`. (Answered: `preLoadFile`'s completion routine `0x00356d00` runs the loaded chunk through slot
+  `+0x3c`, then, when a callback name was given, finds it (slot `+0x4c`) and calls it with no arguments (slot `+0x8c`);
+  confirmed (code).) Still open: whether the checkpoint scripts arrive during `InitLevel`'s preload, which services the
+  file manager, or in the first frames of play.
 - **`CfgLevelName`'s arguments:** which of the twelve numbers after the level number fills which field (`+0x08`
   sections, `+0x0c`, the three flags at `+0x0d`, `+0x10`, `+0x6c`-`+0x80`), and why the scripts pass 18 arguments where
   the writer (`0x0041f118`) is described with 17 values. The section count does not simply equal the number of

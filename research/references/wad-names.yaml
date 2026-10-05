@@ -7,7 +7,7 @@ about: |
   `./ee_files/<name>` ([WARRIORS.DIR](../research/formats/wad-dir.md)), so a name is known once a candidate
   string hashes to an entry. Each name here was checked against its hash.
 complete: |
-  3,991 of 10,701 names are known; the streamed world and most early entries are still unnamed.
+  4,059 of 10,701 names are known; the streamed world and most early entries are still unnamed.
 defaults: {source: "name recovery (coney-tools wad names and the WAD survey)", evidence: confirmed-code}
 entries:
   - {crc: 0x10ce8a36, name: accoustic.anm, kind: anm, index: 3615}
@@ -663,33 +663,62 @@ entries:
   - {crc: 0x8cf2af54, name: level100.lua, kind: lua, index: 6867}
   - {crc: 0x2cd7d64b, name: level100main.lua, kind: lua, index: 6872}
   - {crc: 0xb19286e4, name: level101.lua, kind: lua, index: 6898}
+  - {crc: 0xa04e1750, name: level101_kinghill_init.lua, kind: lua, index: 6913}
   - {crc: 0xda6a4a2b, name: level101_strings.lua, kind: lua, index: 6915}
   - {crc: 0xf632fc34, name: level102.lua, kind: lua, index: 6917}
+  - {crc: 0x26b8cdc8, name: level102_brawl_init.lua, kind: lua, index: 6930}
   - {crc: 0x67a026e5, name: level102_strings.lua, kind: lua, index: 6934}
   - {crc: 0xcb52d584, name: level103.lua, kind: lua, index: 6936}
+  - {crc: 0x88d05c59, name: level103_brawl_init.lua, kind: lua, index: 6951}
+  - {crc: 0xb31e8ac4, name: level103_mercy_init.lua, kind: lua, index: 6952}
   - {crc: 0xba36ff60, name: level103_strings.lua, kind: lua, index: 6954}
+  - {crc: 0x8a728abb, name: level103_wchair_init.lua, kind: lua, index: 6955}
   - {crc: 0x79720994, name: level104.lua, kind: lua, index: 6957}
+  - {crc: 0x7529a42c, name: level104_brawl_init.lua, kind: lua, index: 6978}
+  - {crc: 0x4ee772b1, name: level104_mercy_init.lua, kind: lua, index: 6979}
+  - {crc: 0xaae0f6f0, name: level104_wchair_init.lua, kind: lua, index: 6981}
   - {crc: 0x44122024, name: level105.lua, kind: lua, index: 6983}
+  - {crc: 0xdb4135bd, name: level105_brawl_init.lua, kind: lua, index: 6991}
   - {crc: 0x1ad320bd, name: level105_strings.lua, kind: lua, index: 6993}
   - {crc: 0x3ed27344, name: level107.lua, kind: lua, index: 7007}
+  - {crc: 0x5ce110de, name: level107_brawl_init.lua, kind: lua, index: 7019}
+  - {crc: 0xdf2bc7e1, name: level107_caps_init.lua, kind: lua, index: 7020}
   - {crc: 0x7a8f95f6, name: level107_strings.lua, kind: lua, index: 7022}
+  - {crc: 0xcfb9a165, name: level107_tagbt_init.lua, kind: lua, index: 7023}
   - {crc: 0xbc82e495, name: level108.lua, kind: lua, index: 7025}
+  - {crc: 0xd20b77e4, name: level108_brawl_init.lua, kind: lua, index: 7044}
+  - {crc: 0xe9c5a179, name: level108_mercy_init.lua, kind: lua, index: 7045}
   - {crc: 0x5dff40c3, name: level108_strings.lua, kind: lua, index: 7047}
+  - {crc: 0x3ff89ea1, name: level108_wchair_init.lua, kind: lua, index: 7048}
   - {crc: 0x81e2cd25, name: level109.lua, kind: lua, index: 7050}
+  - {crc: 0x7c63e675, name: level109_brawl_init.lua, kind: lua, index: 7068}
   - {crc: 0x80699946, name: level109_strings.lua, kind: lua, index: 7070}
   - {crc: 0x51dbface, name: level11.lua, kind: lua, index: 7072}
   - {crc: 0x47ae7cf1, name: level110.lua, kind: lua, index: 7074}
+  - {crc: 0x26be23e8, name: level110_brawl_init.lua, kind: lua, index: 7083}
   - {crc: 0x9af372d8, name: level110_strings.lua, kind: lua, index: 7085}
   - {crc: 0x7ace5541, name: level111.lua, kind: lua, index: 7087}
+  - {crc: 0x304fafcd, name: level111_car_init.lua, kind: lua, index: 7103}
+  - {crc: 0xc4b35476, name: level111_hifi_init.lua, kind: lua, index: 7104}
+  - {crc: 0xb31864e4, name: level111_mercy_init.lua, kind: lua, index: 7106}
   - {crc: 0x3d6e2f91, name: level112.lua, kind: lua, index: 7109}
+  - {crc: 0x9ad0d016, name: level112_mercy_init.lua, kind: lua, index: 7135}
+  - {crc: 0xe286f719, name: level112_wchair_init.lua, kind: lua, index: 7137}
   - {crc: 0x000e0621, name: level113.lua, kind: lua, index: 7139}
+  - {crc: 0x0f76971a, name: level113_brawl_init.lua, kind: lua, index: 7152}
   - {crc: 0x27391e16, name: level113_strings.lua, kind: lua, index: 7154}
   - {crc: 0xb22eda31, name: level114.lua, kind: lua, index: 7156}
+  - {crc: 0xa1c40db1, name: level114_muggr_init.lua, kind: lua, index: 7176}
   - {crc: 0x5a4a184e, name: level114_strings.lua, kind: lua, index: 7178}
+  - {crc: 0x45b24011, name: level114_wchair_init.lua, kind: lua, index: 7179}
   - {crc: 0x8f4ef381, name: level115.lua, kind: lua, index: 7181}
+  - {crc: 0x5ce7fefe, name: level115_brawl_init.lua, kind: lua, index: 7197}
   - {crc: 0xc8ee8951, name: level116.lua, kind: lua, index: 7200}
+  - {crc: 0x752f4a0c, name: level116_brawl_init.lua, kind: lua, index: 7210}
   - {crc: 0x77de3730, name: level118.lua, kind: lua, index: 7219}
+  - {crc: 0x55adbca7, name: level118_brawl_init.lua, kind: lua, index: 7230}
   - {crc: 0x4abe1e80, name: level119.lua, kind: lua, index: 7233}
+  - {crc: 0xfbc52d36, name: level119_brawl_init.lua, kind: lua, index: 7268}
   - {crc: 0x5464cf92, name: level11_chapter1.lua, kind: lua, index: 7335}
   - {crc: 0x13c4b542, name: level11_chapter2.lua, kind: lua, index: 7336}
   - {crc: 0x2ea49cf2, name: level11_chapter3.lua, kind: lua, index: 7337}
@@ -698,25 +727,52 @@ entries:
   - {crc: 0xe6441382, name: level11_chapter6.lua, kind: lua, index: 7340}
   - {crc: 0x2f6d8e3f, name: level11_scenetest.lua, kind: lua, index: 7342}
   - {crc: 0xc13a0e5f, name: level120.lua, kind: lua, index: 7344}
+  - {crc: 0x7524786c, name: level120_brawl_init.lua, kind: lua, index: 7379}
+  - {crc: 0x4eeaaef1, name: level120_mercy_init.lua, kind: lua, index: 7380}
   - {crc: 0xfc5a27ef, name: level121.lua, kind: lua, index: 7383}
+  - {crc: 0xdb4ce9fd, name: level121_brawl_init.lua, kind: lua, index: 7393}
+  - {crc: 0x7a713670, name: level121_caps_init.lua, kind: lua, index: 7394}
+  - {crc: 0xe0823f60, name: level121_mercy_init.lua, kind: lua, index: 7395}
   - {crc: 0xbbfa5d3f, name: level122.lua, kind: lua, index: 7398}
+  - {crc: 0xf2845d0f, name: level122_brawl_init.lua, kind: lua, index: 7408}
   - {crc: 0x86cee248, name: level122_strings.lua, kind: lua, index: 7410}
+  - {crc: 0xeb36d17e, name: level122_survival_init.lua, kind: lua, index: 7411}
+  - {crc: 0x61dcecb4, name: level122_tagbt_init.lua, kind: lua, index: 7412}
   - {crc: 0x869a748f, name: level123.lua, kind: lua, index: 7414}
+  - {crc: 0x5ceccc9e, name: level123_brawl_init.lua, kind: lua, index: 7422}
   - {crc: 0x34baa89f, name: level124.lua, kind: lua, index: 7425}
+  - {crc: 0xa11534eb, name: level124_brawl_init.lua, kind: lua, index: 7434}
   - {crc: 0x4e7afbff, name: level126.lua, kind: lua, index: 7444}
+  - {crc: 0x26b51188, name: level126_brawl_init.lua, kind: lua, index: 7465}
   - {crc: 0x731ad24f, name: level127.lua, kind: lua, index: 7468}
+  - {crc: 0x88dd8019, name: level127_brawl_init.lua, kind: lua, index: 7479}
+  - {crc: 0xd5bc5cc4, name: level127_survival_init.lua, kind: lua, index: 7481}
   - {crc: 0xf14a459e, name: level128.lua, kind: lua, index: 7483}
+  - {crc: 0x0637e723, name: level128_brawl_init.lua, kind: lua, index: 7495}
+  - {crc: 0x9623ca0a, name: level128_survival_init.lua, kind: lua, index: 7497}
   - {crc: 0xcc2a6c2e, name: level129.lua, kind: lua, index: 7499}
+  - {crc: 0x63217c59, name: level129_kinghill_init.lua, kind: lua, index: 7514}
   - {crc: 0x0a66ddfa, name: level130.lua, kind: lua, index: 7517}
+  - {crc: 0xf282b32f, name: level130_brawl_init.lua, kind: lua, index: 7527}
+  - {crc: 0xd805dac2, name: level130_kinghill_init.lua, kind: lua, index: 7528}
+  - {crc: 0xfae5ecc9, name: level130_survival_init.lua, kind: lua, index: 7530}
   - {crc: 0x3706f44a, name: level131.lua, kind: lua, index: 7532}
+  - {crc: 0x85244dfc, name: level131_royal_init.lua, kind: lua, index: 7544}
   - {crc: 0xa60b6ff0, name: level131_strings.lua, kind: lua, index: 7545}
   - {crc: 0x70a68e9a, name: level132.lua, kind: lua, index: 7547}
+  - {crc: 0xacecf90e, name: level132_royal_init.lua, kind: lua, index: 7557}
   - {crc: 0x4dc6a72a, name: level133.lua, kind: lua, index: 7559}
+  - {crc: 0x0284689f, name: level133_royal_init.lua, kind: lua, index: 7584}
   - {crc: 0xffe67b3a, name: level134.lua, kind: lua, index: 7586}
+  - {crc: 0x26b3ffa8, name: level134_brawl_init.lua, kind: lua, index: 7601}
+  - {crc: 0x9a2bd5c2, name: level134_shoot_init.lua, kind: lua, index: 7603}
   - {crc: 0xbb24dce3, name: level134_strings.lua, kind: lua, index: 7604}
+  - {crc: 0x138de12b, name: level134_survival_init.lua, kind: lua, index: 7605}
   - {crc: 0x8526285a, name: level136.lua, kind: lua, index: 7623}
+  - {crc: 0xf752d6b9, name: level136_run4life_init.lua, kind: lua, index: 7637}
   - {crc: 0xdb7869a8, name: level136_strings.lua, kind: lua, index: 7638}
   - {crc: 0xb84601ea, name: level137.lua, kind: lua, index: 7640}
+  - {crc: 0x20b056e1, name: level137_run4life_init.lua, kind: lua, index: 7652}
   - {crc: 0x993b75be, name: level14.lua, kind: lua, index: 7654}
   - {crc: 0xd6aabc00, name: level14_dirtycop.lua, kind: lua, index: 7694}
   - {crc: 0xc0bc831b, name: level14_jsb.lua, kind: lua, index: 7695}
@@ -872,6 +928,18 @@ entries:
   - {crc: 0x4808de63, name: level95.lua, kind: lua, index: 9400}
   - {crc: 0x78f8d083, name: level95_apephibian.lua, kind: lua, index: 9497}
   - {crc: 0x3b5cc9f4, name: level95_busted.lua, kind: lua, index: 9498}
+  - {crc: 0x82418c0e, name: level95_chapter1.lua, kind: lua, index: 9499}
+  - {crc: 0xdc192437, name: level95_chapter10.lua, kind: lua, index: 9500}
+  - {crc: 0xe1790d87, name: level95_chapter11.lua, kind: lua, index: 9501}
+  - {crc: 0xa6d97757, name: level95_chapter12.lua, kind: lua, index: 9502}
+  - {crc: 0xc5e1f6de, name: level95_chapter2.lua, kind: lua, index: 9503}
+  - {crc: 0xf881df6e, name: level95_chapter3.lua, kind: lua, index: 9504}
+  - {crc: 0x4aa1037e, name: level95_chapter4.lua, kind: lua, index: 9505}
+  - {crc: 0x77c12ace, name: level95_chapter5.lua, kind: lua, index: 9506}
+  - {crc: 0x3061501e, name: level95_chapter6.lua, kind: lua, index: 9507}
+  - {crc: 0x0d0179ae, name: level95_chapter7.lua, kind: lua, index: 9508}
+  - {crc: 0x8f51ee7f, name: level95_chapter8.lua, kind: lua, index: 9509}
+  - {crc: 0xb231c7cf, name: level95_chapter9.lua, kind: lua, index: 9510}
   - {crc: 0x4e9b812b, name: level95_clubhouse.lua, kind: lua, index: 9511}
   - {crc: 0xaa7dbfe6, name: level95_coney.lua, kind: lua, index: 9512}
   - {crc: 0x48974456, name: level95_coney_strings_de.lua, kind: lua, index: 9513}

@@ -8,9 +8,9 @@ string hashes to an entry. Each name here was checked against its hash.
 
 !!! info "What is complete"
 
-    3,991 of 10,701 names are known; the streamed world and most early entries are still unnamed.
+    4,059 of 10,701 names are known; the streamed world and most early entries are still unnamed.
 
-3,991 entries. Data: `research/references/wad-names.yaml`.
+4,059 entries. Data: `research/references/wad-names.yaml`.
 
 ## anm {#anm}
 
@@ -687,7 +687,7 @@ string hashes to an entry. Each name here was checked against its hash.
 
 ## lua {#lua}
 
-275 entries.
+343 entries.
 
 | CRC | Name | Entry |
 | --- | --- | --- |
@@ -713,33 +713,62 @@ string hashes to an entry. Each name here was checked against its hash.
 | <span id="wad-8cf2af54"></span>`0x8cf2af54` | `level100.lua` | 6867 |
 | <span id="wad-2cd7d64b"></span>`0x2cd7d64b` | `level100main.lua` | 6872 |
 | <span id="wad-b19286e4"></span>`0xb19286e4` | `level101.lua` | 6898 |
+| <span id="wad-a04e1750"></span>`0xa04e1750` | `level101_kinghill_init.lua` | 6913 |
 | <span id="wad-da6a4a2b"></span>`0xda6a4a2b` | `level101_strings.lua` | 6915 |
 | <span id="wad-f632fc34"></span>`0xf632fc34` | `level102.lua` | 6917 |
+| <span id="wad-26b8cdc8"></span>`0x26b8cdc8` | `level102_brawl_init.lua` | 6930 |
 | <span id="wad-67a026e5"></span>`0x67a026e5` | `level102_strings.lua` | 6934 |
 | <span id="wad-cb52d584"></span>`0xcb52d584` | `level103.lua` | 6936 |
+| <span id="wad-88d05c59"></span>`0x88d05c59` | `level103_brawl_init.lua` | 6951 |
+| <span id="wad-b31e8ac4"></span>`0xb31e8ac4` | `level103_mercy_init.lua` | 6952 |
 | <span id="wad-ba36ff60"></span>`0xba36ff60` | `level103_strings.lua` | 6954 |
+| <span id="wad-8a728abb"></span>`0x8a728abb` | `level103_wchair_init.lua` | 6955 |
 | <span id="wad-79720994"></span>`0x79720994` | `level104.lua` | 6957 |
+| <span id="wad-7529a42c"></span>`0x7529a42c` | `level104_brawl_init.lua` | 6978 |
+| <span id="wad-4ee772b1"></span>`0x4ee772b1` | `level104_mercy_init.lua` | 6979 |
+| <span id="wad-aae0f6f0"></span>`0xaae0f6f0` | `level104_wchair_init.lua` | 6981 |
 | <span id="wad-44122024"></span>`0x44122024` | `level105.lua` | 6983 |
+| <span id="wad-db4135bd"></span>`0xdb4135bd` | `level105_brawl_init.lua` | 6991 |
 | <span id="wad-1ad320bd"></span>`0x1ad320bd` | `level105_strings.lua` | 6993 |
 | <span id="wad-3ed27344"></span>`0x3ed27344` | `level107.lua` | 7007 |
+| <span id="wad-5ce110de"></span>`0x5ce110de` | `level107_brawl_init.lua` | 7019 |
+| <span id="wad-df2bc7e1"></span>`0xdf2bc7e1` | `level107_caps_init.lua` | 7020 |
 | <span id="wad-7a8f95f6"></span>`0x7a8f95f6` | `level107_strings.lua` | 7022 |
+| <span id="wad-cfb9a165"></span>`0xcfb9a165` | `level107_tagbt_init.lua` | 7023 |
 | <span id="wad-bc82e495"></span>`0xbc82e495` | `level108.lua` | 7025 |
+| <span id="wad-d20b77e4"></span>`0xd20b77e4` | `level108_brawl_init.lua` | 7044 |
+| <span id="wad-e9c5a179"></span>`0xe9c5a179` | `level108_mercy_init.lua` | 7045 |
 | <span id="wad-5dff40c3"></span>`0x5dff40c3` | `level108_strings.lua` | 7047 |
+| <span id="wad-3ff89ea1"></span>`0x3ff89ea1` | `level108_wchair_init.lua` | 7048 |
 | <span id="wad-81e2cd25"></span>`0x81e2cd25` | `level109.lua` | 7050 |
+| <span id="wad-7c63e675"></span>`0x7c63e675` | `level109_brawl_init.lua` | 7068 |
 | <span id="wad-80699946"></span>`0x80699946` | `level109_strings.lua` | 7070 |
 | <span id="wad-51dbface"></span>`0x51dbface` | `level11.lua` | 7072 |
 | <span id="wad-47ae7cf1"></span>`0x47ae7cf1` | `level110.lua` | 7074 |
+| <span id="wad-26be23e8"></span>`0x26be23e8` | `level110_brawl_init.lua` | 7083 |
 | <span id="wad-9af372d8"></span>`0x9af372d8` | `level110_strings.lua` | 7085 |
 | <span id="wad-7ace5541"></span>`0x7ace5541` | `level111.lua` | 7087 |
+| <span id="wad-304fafcd"></span>`0x304fafcd` | `level111_car_init.lua` | 7103 |
+| <span id="wad-c4b35476"></span>`0xc4b35476` | `level111_hifi_init.lua` | 7104 |
+| <span id="wad-b31864e4"></span>`0xb31864e4` | `level111_mercy_init.lua` | 7106 |
 | <span id="wad-3d6e2f91"></span>`0x3d6e2f91` | `level112.lua` | 7109 |
+| <span id="wad-9ad0d016"></span>`0x9ad0d016` | `level112_mercy_init.lua` | 7135 |
+| <span id="wad-e286f719"></span>`0xe286f719` | `level112_wchair_init.lua` | 7137 |
 | <span id="wad-000e0621"></span>`0x000e0621` | `level113.lua` | 7139 |
+| <span id="wad-0f76971a"></span>`0x0f76971a` | `level113_brawl_init.lua` | 7152 |
 | <span id="wad-27391e16"></span>`0x27391e16` | `level113_strings.lua` | 7154 |
 | <span id="wad-b22eda31"></span>`0xb22eda31` | `level114.lua` | 7156 |
+| <span id="wad-a1c40db1"></span>`0xa1c40db1` | `level114_muggr_init.lua` | 7176 |
 | <span id="wad-5a4a184e"></span>`0x5a4a184e` | `level114_strings.lua` | 7178 |
+| <span id="wad-45b24011"></span>`0x45b24011` | `level114_wchair_init.lua` | 7179 |
 | <span id="wad-8f4ef381"></span>`0x8f4ef381` | `level115.lua` | 7181 |
+| <span id="wad-5ce7fefe"></span>`0x5ce7fefe` | `level115_brawl_init.lua` | 7197 |
 | <span id="wad-c8ee8951"></span>`0xc8ee8951` | `level116.lua` | 7200 |
+| <span id="wad-752f4a0c"></span>`0x752f4a0c` | `level116_brawl_init.lua` | 7210 |
 | <span id="wad-77de3730"></span>`0x77de3730` | `level118.lua` | 7219 |
+| <span id="wad-55adbca7"></span>`0x55adbca7` | `level118_brawl_init.lua` | 7230 |
 | <span id="wad-4abe1e80"></span>`0x4abe1e80` | `level119.lua` | 7233 |
+| <span id="wad-fbc52d36"></span>`0xfbc52d36` | `level119_brawl_init.lua` | 7268 |
 | <span id="wad-5464cf92"></span>`0x5464cf92` | `level11_chapter1.lua` | 7335 |
 | <span id="wad-13c4b542"></span>`0x13c4b542` | `level11_chapter2.lua` | 7336 |
 | <span id="wad-2ea49cf2"></span>`0x2ea49cf2` | `level11_chapter3.lua` | 7337 |
@@ -748,25 +777,52 @@ string hashes to an entry. Each name here was checked against its hash.
 | <span id="wad-e6441382"></span>`0xe6441382` | `level11_chapter6.lua` | 7340 |
 | <span id="wad-2f6d8e3f"></span>`0x2f6d8e3f` | `level11_scenetest.lua` | 7342 |
 | <span id="wad-c13a0e5f"></span>`0xc13a0e5f` | `level120.lua` | 7344 |
+| <span id="wad-7524786c"></span>`0x7524786c` | `level120_brawl_init.lua` | 7379 |
+| <span id="wad-4eeaaef1"></span>`0x4eeaaef1` | `level120_mercy_init.lua` | 7380 |
 | <span id="wad-fc5a27ef"></span>`0xfc5a27ef` | `level121.lua` | 7383 |
+| <span id="wad-db4ce9fd"></span>`0xdb4ce9fd` | `level121_brawl_init.lua` | 7393 |
+| <span id="wad-7a713670"></span>`0x7a713670` | `level121_caps_init.lua` | 7394 |
+| <span id="wad-e0823f60"></span>`0xe0823f60` | `level121_mercy_init.lua` | 7395 |
 | <span id="wad-bbfa5d3f"></span>`0xbbfa5d3f` | `level122.lua` | 7398 |
+| <span id="wad-f2845d0f"></span>`0xf2845d0f` | `level122_brawl_init.lua` | 7408 |
 | <span id="wad-86cee248"></span>`0x86cee248` | `level122_strings.lua` | 7410 |
+| <span id="wad-eb36d17e"></span>`0xeb36d17e` | `level122_survival_init.lua` | 7411 |
+| <span id="wad-61dcecb4"></span>`0x61dcecb4` | `level122_tagbt_init.lua` | 7412 |
 | <span id="wad-869a748f"></span>`0x869a748f` | `level123.lua` | 7414 |
+| <span id="wad-5ceccc9e"></span>`0x5ceccc9e` | `level123_brawl_init.lua` | 7422 |
 | <span id="wad-34baa89f"></span>`0x34baa89f` | `level124.lua` | 7425 |
+| <span id="wad-a11534eb"></span>`0xa11534eb` | `level124_brawl_init.lua` | 7434 |
 | <span id="wad-4e7afbff"></span>`0x4e7afbff` | `level126.lua` | 7444 |
+| <span id="wad-26b51188"></span>`0x26b51188` | `level126_brawl_init.lua` | 7465 |
 | <span id="wad-731ad24f"></span>`0x731ad24f` | `level127.lua` | 7468 |
+| <span id="wad-88dd8019"></span>`0x88dd8019` | `level127_brawl_init.lua` | 7479 |
+| <span id="wad-d5bc5cc4"></span>`0xd5bc5cc4` | `level127_survival_init.lua` | 7481 |
 | <span id="wad-f14a459e"></span>`0xf14a459e` | `level128.lua` | 7483 |
+| <span id="wad-0637e723"></span>`0x0637e723` | `level128_brawl_init.lua` | 7495 |
+| <span id="wad-9623ca0a"></span>`0x9623ca0a` | `level128_survival_init.lua` | 7497 |
 | <span id="wad-cc2a6c2e"></span>`0xcc2a6c2e` | `level129.lua` | 7499 |
+| <span id="wad-63217c59"></span>`0x63217c59` | `level129_kinghill_init.lua` | 7514 |
 | <span id="wad-0a66ddfa"></span>`0x0a66ddfa` | `level130.lua` | 7517 |
+| <span id="wad-f282b32f"></span>`0xf282b32f` | `level130_brawl_init.lua` | 7527 |
+| <span id="wad-d805dac2"></span>`0xd805dac2` | `level130_kinghill_init.lua` | 7528 |
+| <span id="wad-fae5ecc9"></span>`0xfae5ecc9` | `level130_survival_init.lua` | 7530 |
 | <span id="wad-3706f44a"></span>`0x3706f44a` | `level131.lua` | 7532 |
+| <span id="wad-85244dfc"></span>`0x85244dfc` | `level131_royal_init.lua` | 7544 |
 | <span id="wad-a60b6ff0"></span>`0xa60b6ff0` | `level131_strings.lua` | 7545 |
 | <span id="wad-70a68e9a"></span>`0x70a68e9a` | `level132.lua` | 7547 |
+| <span id="wad-acecf90e"></span>`0xacecf90e` | `level132_royal_init.lua` | 7557 |
 | <span id="wad-4dc6a72a"></span>`0x4dc6a72a` | `level133.lua` | 7559 |
+| <span id="wad-0284689f"></span>`0x0284689f` | `level133_royal_init.lua` | 7584 |
 | <span id="wad-ffe67b3a"></span>`0xffe67b3a` | `level134.lua` | 7586 |
+| <span id="wad-26b3ffa8"></span>`0x26b3ffa8` | `level134_brawl_init.lua` | 7601 |
+| <span id="wad-9a2bd5c2"></span>`0x9a2bd5c2` | `level134_shoot_init.lua` | 7603 |
 | <span id="wad-bb24dce3"></span>`0xbb24dce3` | `level134_strings.lua` | 7604 |
+| <span id="wad-138de12b"></span>`0x138de12b` | `level134_survival_init.lua` | 7605 |
 | <span id="wad-8526285a"></span>`0x8526285a` | `level136.lua` | 7623 |
+| <span id="wad-f752d6b9"></span>`0xf752d6b9` | `level136_run4life_init.lua` | 7637 |
 | <span id="wad-db7869a8"></span>`0xdb7869a8` | `level136_strings.lua` | 7638 |
 | <span id="wad-b84601ea"></span>`0xb84601ea` | `level137.lua` | 7640 |
+| <span id="wad-20b056e1"></span>`0x20b056e1` | `level137_run4life_init.lua` | 7652 |
 | <span id="wad-993b75be"></span>`0x993b75be` | `level14.lua` | 7654 |
 | <span id="wad-d6aabc00"></span>`0xd6aabc00` | `level14_dirtycop.lua` | 7694 |
 | <span id="wad-c0bc831b"></span>`0xc0bc831b` | `level14_jsb.lua` | 7695 |
@@ -922,6 +978,18 @@ string hashes to an entry. Each name here was checked against its hash.
 | <span id="wad-4808de63"></span>`0x4808de63` | `level95.lua` | 9400 |
 | <span id="wad-78f8d083"></span>`0x78f8d083` | `level95_apephibian.lua` | 9497 |
 | <span id="wad-3b5cc9f4"></span>`0x3b5cc9f4` | `level95_busted.lua` | 9498 |
+| <span id="wad-82418c0e"></span>`0x82418c0e` | `level95_chapter1.lua` | 9499 |
+| <span id="wad-dc192437"></span>`0xdc192437` | `level95_chapter10.lua` | 9500 |
+| <span id="wad-e1790d87"></span>`0xe1790d87` | `level95_chapter11.lua` | 9501 |
+| <span id="wad-a6d97757"></span>`0xa6d97757` | `level95_chapter12.lua` | 9502 |
+| <span id="wad-c5e1f6de"></span>`0xc5e1f6de` | `level95_chapter2.lua` | 9503 |
+| <span id="wad-f881df6e"></span>`0xf881df6e` | `level95_chapter3.lua` | 9504 |
+| <span id="wad-4aa1037e"></span>`0x4aa1037e` | `level95_chapter4.lua` | 9505 |
+| <span id="wad-77c12ace"></span>`0x77c12ace` | `level95_chapter5.lua` | 9506 |
+| <span id="wad-3061501e"></span>`0x3061501e` | `level95_chapter6.lua` | 9507 |
+| <span id="wad-0d0179ae"></span>`0x0d0179ae` | `level95_chapter7.lua` | 9508 |
+| <span id="wad-8f51ee7f"></span>`0x8f51ee7f` | `level95_chapter8.lua` | 9509 |
+| <span id="wad-b231c7cf"></span>`0xb231c7cf` | `level95_chapter9.lua` | 9510 |
 | <span id="wad-4e9b812b"></span>`0x4e9b812b` | `level95_clubhouse.lua` | 9511 |
 | <span id="wad-aa7dbfe6"></span>`0xaa7dbfe6` | `level95_coney.lua` | 9512 |
 | <span id="wad-48974456"></span>`0x48974456` | `level95_coney_strings_de.lua` | 9513 |

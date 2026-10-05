@@ -120,7 +120,7 @@ The modes, each a static object built by a static constructor (or a constructor 
 | 7 | `0x005e6800` | `0x005388b8` | `0x0015f830` | `Gm_XboxSaveSystem.cpp` | save-system screens | confirmed (code) (anchor) |
 | 8 | `0x005e5d90` | `0x005385c8` | `0x0015c688` | `GameModes/` | **level flow**: bottom of the stack in `main`; loads the front end, then pushes mode 1 with the chosen level ([Front end](frontend.md#mode-flow)) | confirmed (code); role inferred |
 | 0xa | `0x005e6550` | `0x005386e8` | `0x0015dbb8` | `GameModes/` | | confirmed (code) id |
-| 0xb | `0x005e5df8` | `0x00538658` | `0x0015cf70` | `GameModes/` | **in-game**: runs the game world on `GameTimer` | confirmed (code); role inferred |
+| 0xb | `0x005e5df8` | `0x00538658` | `0x0015cf70` | `GameModes/` | **mission complete**: pushed by `MissionComplete_Launch` (`0x0015d420`); `Enter` calls the Lua `UnlockAndLoad`, `Update` runs the game world on `GameTimer` until its `+0x24` (the kind) is set, then pops ([Front end](frontend.md#story-start)) | confirmed (code); role inferred |
 | 0xc | `0x005e5dc0` | `0x00538610` | `0x0015cae0` | `GameModes/` | | confirmed (code) id |
 | 0xd | `0x005e53a0` | `0x00538360` | `0x00155b30` | `GameModes/` (own unit, before the base class's) | | confirmed (code) id |
 | 0xe | (ctor `0x00157e48`) | `0x00538438` | `0x00157e88` | `GameModes/` | | confirmed (code) id |
@@ -384,7 +384,10 @@ frame at most every second vertical blank (the limit 2 is set at start-up), so t
 (29.97 on NTSC) and slows down rather than skipping when a frame takes longer. Confirmed (code); the details are on
 [Graphics](graphics.md#frame-rate). This holds for mode 0xb's frame; in a Quick Rumble fight the stack held modes 8
 and 1, not 0xb, and the clock ran on real time with the 40 ms clamp ([Timers](#timers), confirmed (runtime)).
-Which levels, if any, run mode 0xb is open.
+Which levels run mode 0xb (answered): none as their play mode. It is the **mission-complete** mode that
+`HUDLaunchMissionComplete(kind)` (`MissionComplete_Launch`, `0x0015d420`) pushes over mode 1 at the end of a mission,
+and once over mode 8 when a story game starts; the reason in `+0x24` (step 14) is that call's `kind`, and `Enter`
+calls the Lua function `UnlockAndLoad` ([Front end](frontend.md#story-start)). Confirmed (code).
 
 ### Shutdown
 

@@ -407,6 +407,72 @@ section's pack holds them), the instance is made at once (`0x00177b80`) and atta
 resource manager's update (`0x001897a8`) loads them later and attaches them then; the dynamic animations a script asks
 for (`SetDynamicAnimation`) go the same way into the slots at `+0x3c8`. Confirmed (code) for both paths.
 
+### Where a level puts the player {#level-starts}
+
+**No data file holds a player start.** The `.lev` file's 18 chunks ([Level loading](level-loading.md#the-level-file))
+and the level record ([the record](level-loading.md#the-level-record)) carry none, and nothing in `InitLevel` places
+a player (confirmed (code) for those readers). The **level script** creates player 1 with `HuCreate` while
+`InitLevel` runs it, before the preload ([Level loading](level-loading.md#initlevel)); the values are in the
+[Level starts](../references/level-starts.md) reference list, one entry per checkpoint (inferred from the
+disassembly of the 29 level scripts that create a player; the list's values are read from the disc).
+
+**The checkpoint** is `W_GameState + 0x33a` (16 bits), confirmed (code):
+
+- the game state's constructor (`0x00418588`) sets it to **1**;
+- `SetCheckPoint(n)` (`0x0037b760` → `0x0041abc0` → `0x0041ce98`) stores `n` and tells the inventory, the stats and
+  the world objects (`0x0041e0b8`, `0x00422c60`, `0x00397e88`); scripts call it before `MenuLoadLevel` to enter a level
+  at a checkpoint, and during a mission to mark progress, so a retry restarts there;
+- `0x0041cef0(gameState, 1)` puts it back to 1 without the bookkeeping: on the paths that restart a mission or
+  leave it (the failure menu `0x00155408`, `0x00155648`, `0x001557f8`, the mission-complete mode's `Update`
+  `0x0015d160`, and `0x00160d38`, which also selects level index 0, the front end);
+- `GetCheckPoint` (`0x0037b798` → `0x0041abe8`) reads it. `InitLevel` uses it as the section: the pack
+  `<level>_<checkpoint>.pak` and the intro movie only at 1 ([Level loading](level-loading.md#the-level-record)).
+
+So a level loaded without a `SetCheckPoint` starts at checkpoint 1, or at whatever the last one left (inferred).
+
+**The pattern of a story level's script** (inferred from the disassembly; 28 story levels follow it):
+
+1. The main chunk defines the helpers, the flags (`AddFlagsBoxesPaths`), the objects, then runs `Main`.
+2. `Main` reads `GetCheckPoint()` into a global (`checkpoint`, `CHAPTER` or `mState`; `level84` turns 0 into 1) and
+   indexes a list with it. The list holds either the **creator** functions themselves (`PlayerGang = {AddWarriors1,
+   AddWarriors2, ...}`, sometimes a local) or rows `{creator, start function, chapter script}` (`tMission`, as in
+   `level99`, [Scripts](scripting.md#level99)).
+3. The creator makes the Warriors' gang (`GangCreate(0, "Warriors...", 0, 0)`) and its humans, **player 1** among
+   them: `HuCreate(name, type, {x, y, z}, heading, model, 1, gang)`, the position and heading literal numbers. It
+   returns the table of humans and the gang; `Main` then sets `player = Warriors.<name>` (the name differs by
+   checkpoint: `level3` plays Rembrandt for checkpoints 1-2 and Snow for 3-5).
+4. `preLoadFile(chapter script, start function)` loads the checkpoint's own script; when it arrives the game runs it and
+   calls the start function by name (`0x00356d00`, confirmed (code)). A start function may move the player again: in
+   five checkpoints it, or a function it calls, teleports the player (`Teleport` or `TeleportToFlag`, noted in the
+   list).
+
+`Teleport(object, {x, y, z}, heading)` (`0x00385bb8`) sets the transform; a heading of −1 keeps the rotation. Its
+`TeleportToFlag(object, flag, heading)` sibling (`0x00385db0`) takes the flag's position and, with −1, the flag's
+heading (`0x00416258`), and for a human also calls its vtable slot `+0x14c`. Confirmed (code). Neither snaps to the
+ground; `HuCreate` does (above).
+
+**Interiors are below the street.** Starts with `z` near −195 to −215 (`level5` checkpoint 2, `level11` 1 and 2,
+`level20` 1 and 3, the hub ...) are rooms placed about 200 m under the city in the same world (inferred from the values
+and the hub's clubhouse at `z` −194.3).
+
+**The hub** (`level95`, [Scripts](scripting.md#the-hub)): `AddWarchief` creates the player at the flag
+`fWchiefStart_1` (−188.6, 95, −194.3), heading 222, as the type the chapter script's `WarchiefTable` names (Cleon,
+Rembrandt, Ajax, Cochise, Cowboy or Swan by chapter). `StartLevel` then either opens the quick map (when unlockable
+`(6, 3)` is unlocked, or `LoadLight` is set) or makes the **door walk**: `TeleportToFlag(player, fWchiefStart_<n>)`
+and a walk to `fWchiefEnd_<n>`, where `n` = `WCLoc`, `random(1, 5)` from the main chunk, or 5 when chapter 1 runs
+before unlockable `(6, 4)` (the tutorial). The five start flags: 1 (−188.6, 95, −194.3) 89°; 2 (−188.6, 102.7,
+−197.5) 89°; 3 (−163.7, 80.7, −197.5) 358°; 4 (−174.4, 80.5, −194.3) 358°; 5 (−185.2, 112.7, −193.7) 182°.
+Inferred from the disassembly.
+
+**A Rumble arena** (`level101`-`level137`): the level script runs `doFile("level" .. Level .. "_" ..
+RumbleInfo[Rumble.gameType] .. "_init")`, which adds the mode's flags, among them the list `fP1` (player 1's gang)
+and `fP2`. `AddRumbleGang1` creates `P11` with `HuCreate("P11", Rumble.gang1[1], FlagPos(fP1[1]), 270, nil, 1,
+gang, true)` and teleports it to `fP1[1]` with heading −1, so it stands on the first flag facing the flag's heading
+(inferred from the disassembly). The gang, and so the type, comes from the Rumble menu.
+
+**No player**: `level100` (the front end), `level1` (its script only calls `MenuLoadLevel("menu")`), and the levels
+without a `.lev` file.
+
 ### The characters' update {#update}
 
 The task manager's set-up step (`0x003a3148`, called first in mode 1's frame, [Level loading](level-loading.md#a-frame-of-play))
@@ -983,8 +1049,10 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 - **Out of the world** (20 m below the mesh's lowest point): the human is put back at the start instead of failing
   the mission.
 - **The gait blend's leading clip** uses a tolerance of 0.001 when it compares the value with its target.
-- **Other levels' starts**: only level99's is researched; elsewhere Rembrandt starts above the middle of the first
-  world's part 1. The character's lights (ambient 0.45, one directional 0.7) stand in for the LightManager, and he is
+- **Other levels' starts**: only level99's is used; elsewhere Rembrandt starts above the middle of the first
+  world's part 1. Every level's start is now researched ([Where a level puts the player](#level-starts) and the
+  [Level starts](../references/level-starts.md) list), for the implementer to take up. The character's lights (ambient
+  0.45, one directional 0.7) stand in for the LightManager, and he is
   drawn between the level's two worlds.
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
@@ -993,7 +1061,9 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 
 - **Make the player first.** For `level99`, checkpoint 1: one human named `Rembrandt`, model `warr_re_cv` (found
   through the Character List), at `(-284.4, 120.4, 0.3)` heading 0°, snapped to the ground with a 2.5 m ray from 1 m
-  above; pad 0; the follow camera targeting it ([Camera](camera.md)).
+  above; pad 0; the follow camera targeting it ([Camera](camera.md)). Any other level: its entry for the checkpoint
+  in [Level starts](../references/level-starts.md) (checkpoint 1 by default, the first mode's flag in a Rumble arena,
+  `fWchiefStart_1` in the hub), with that entry's character type.
 - **Step at 30 Hz.** Movement, turning and the animation step all use dt = 1/30 and per-update limits; a PC build
   that runs faster should keep a fixed 30 Hz step (or scale every limit) so speeds and turn rates match.
 - **Speeds per human** come from the clips: for each locomotion slot, the clip's horizontal root displacement over
@@ -1052,3 +1122,13 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   the sprint is set, does.
 - **The rest of the human**: the 0x180 and 0x2f0 records, the state flags tested by `0x002265f0` / `0x00226660`, and
   `Human_MakePlayer`'s steps.
+- **Level starts at runtime**: the list is read from the scripts; a runtime check would confirm a few. For each of
+  `level2` checkpoint 1, `level95` chapter 1 and `level102` brawl, read player 1's transform (the table at
+  `0x00714b00`, index `+0x92` of the human whose `+0x1b0` is 1) on the first frame of play, and again after the
+  checkpoint script's start function has run (the hub's door walk, the arena's teleport).
+- **Start functions that move the player later**: the list notes only teleports made directly by a checkpoint's start
+  function (or one function down). Scene callbacks and chapter steps teleport the player too (99 `Teleport` /
+  `TeleportToFlag` calls on `player` in the story scripts in all); which of them run before the first frame the player
+  controls is not traced.
+- **Four Rumble arenas without a known mode script**: their `level<N>_<mode>_init.lua` names are not recovered, so
+  they have no entry ([Levels](../references/levels.md) lists the modes found per arena).

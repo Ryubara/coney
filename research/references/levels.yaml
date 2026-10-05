@@ -6,9 +6,11 @@ about: |
   The 111 level records of `levelNames` (`CfgLevelName`), in the order the game keeps them. A level loads
   from `<name>.lev` and its section packs `<name>_<k>.pak` ([Level loading](../research/level-loading.md)).
 complete: |
-  Every record is listed with every field. `.lev` and pack counts come from the WAD names list, so a
-  level whose files have no recovered name shows none. Kinds are hand-written: only the front end and
-  the test levels so far.
+  Every record is listed with every field. `.lev` and pack counts come from the WAD names list,
+  so a level whose files have no recovered name shows none. Kinds are hand-written: the story order
+  is `global.lua`'s `runNextMission` and the hub's `fRunMission`, the flashbacks the hub's
+  `FBMission` ([Scripts](../research/scripting.md#run-next-mission)); a Rumble arena lists the modes
+  whose flag scripts were found. Where each level puts the player: [Level starts](level-starts.md).
 defaults: {source: "config_preload3.lua, levelNames", evidence: inferred}
 entries:
   - index: 0
@@ -31,6 +33,7 @@ entries:
     name: level99
     world: level99
     number: 99
+    kind: "story mission 1 (the tutorial)"
     sections: 3
     order: 1
     flag1: LT_NONE
@@ -47,6 +50,7 @@ entries:
     name: level80
     world: level80
     number: 80
+    kind: "story mission 2"
     sections: 4
     order: 2
     flag1: LT_NONE
@@ -63,6 +67,7 @@ entries:
     name: level87
     world: level87
     number: 87
+    kind: "story mission 3"
     sections: 5
     order: 3
     flag1: LT_NONE
@@ -79,6 +84,7 @@ entries:
     name: level34
     world: level34
     number: 34
+    kind: "story mission 4"
     sections: 5
     order: 4
     flag1: LT_NONE
@@ -95,6 +101,7 @@ entries:
     name: level2
     world: level2
     number: 2
+    kind: "story mission 5"
     sections: 4
     order: 5
     flag1: LT_NONE
@@ -111,6 +118,7 @@ entries:
     name: level3
     world: level3
     number: 3
+    kind: "story mission 6"
     sections: 5
     order: 6
     flag1: LT_NONE
@@ -127,6 +135,7 @@ entries:
     name: level5
     world: level5
     number: 5
+    kind: "story mission 7"
     sections: 4
     order: 7
     flag1: LT_NONE
@@ -143,6 +152,7 @@ entries:
     name: level81
     world: level81
     number: 81
+    kind: "story mission 8"
     sections: 5
     order: 8
     flag1: LT_NONE
@@ -159,6 +169,7 @@ entries:
     name: level86
     world: level86
     number: 86
+    kind: "story mission 9"
     sections: 4
     order: 9
     flag1: LT_NONE
@@ -175,6 +186,7 @@ entries:
     name: level93
     world: level93
     number: 93
+    kind: "story mission 10"
     sections: 6
     order: 10
     flag1: LT_NONE
@@ -191,6 +203,7 @@ entries:
     name: level31
     world: level31
     number: 31
+    kind: "story mission 11"
     sections: 6
     order: 11
     flag1: LT_NONE
@@ -207,6 +220,7 @@ entries:
     name: level14
     world: level14
     number: 14
+    kind: "story mission 12"
     sections: 3
     order: 12
     flag1: LT_NONE
@@ -223,6 +237,7 @@ entries:
     name: level9
     world: level9
     number: 9
+    kind: "story mission 13"
     sections: 3
     order: 13
     flag1: LT_NONE
@@ -239,6 +254,7 @@ entries:
     name: level51
     world: level51
     number: 51
+    kind: "story mission 14"
     sections: 7
     order: 14
     flag1: LT_NONE
@@ -255,6 +271,7 @@ entries:
     name: level52
     world: level52
     number: 52
+    kind: "story mission 15"
     sections: 4
     order: 15
     flag1: LT_NONE
@@ -271,6 +288,7 @@ entries:
     name: level54
     world: level54
     number: 54
+    kind: "story mission 16"
     sections: 5
     order: 16
     flag1: LT_NONE
@@ -287,6 +305,7 @@ entries:
     name: level55
     world: level55
     number: 55
+    kind: "story mission 17"
     sections: 3
     order: 17
     flag1: LT_NONE
@@ -303,6 +322,7 @@ entries:
     name: level84
     world: level84
     number: 84
+    kind: "story mission 18"
     sections: 3
     order: 18
     flag1: LT_NONE
@@ -319,6 +339,7 @@ entries:
     name: level82
     world: level82
     number: 82
+    kind: "flashback mission 1 (from the clubhouse)"
     sections: 4
     order: 19
     flag1: LT_NONE
@@ -335,6 +356,7 @@ entries:
     name: level92
     world: level92
     number: 92
+    kind: "flashback mission 2 (from the clubhouse)"
     sections: 3
     order: 20
     flag1: LT_NONE
@@ -351,6 +373,7 @@ entries:
     name: level83
     world: level83
     number: 83
+    kind: "flashback mission 3 (from the clubhouse)"
     sections: 6
     order: 21
     flag1: LT_NONE
@@ -367,6 +390,7 @@ entries:
     name: level20
     world: level20
     number: 20
+    kind: "flashback mission 4 (from the clubhouse)"
     sections: 6
     order: 22
     flag1: LT_NONE
@@ -383,6 +407,7 @@ entries:
     name: level11
     world: level11
     number: 11
+    kind: "flashback mission 5 (from the clubhouse)"
     sections: 6
     order: 23
     flag1: LT_NONE
@@ -399,6 +424,7 @@ entries:
     name: level60
     world: level60
     number: 60
+    kind: "Armies of the Night bonus game, stage 1"
     sections: 3
     order: 25
     flag1: LT_NONE
@@ -414,6 +440,7 @@ entries:
     name: level61
     world: level61
     number: 61
+    kind: "Armies of the Night bonus game, stage 2"
     sections: 3
     order: 25
     flag1: LT_NONE
@@ -429,6 +456,7 @@ entries:
     name: level62
     world: level62
     number: 62
+    kind: "Armies of the Night bonus game, stage 3"
     sections: 3
     order: 25
     flag1: LT_NONE
@@ -444,6 +472,7 @@ entries:
     name: level63
     world: level63
     number: 63
+    kind: "Armies of the Night bonus game, stage 4"
     sections: 3
     order: 25
     flag1: LT_NONE
@@ -459,6 +488,7 @@ entries:
     name: level64
     world: level64
     number: 64
+    kind: "Armies of the Night bonus game, stage 5"
     sections: 4
     order: 25
     flag1: LT_NONE
@@ -474,6 +504,7 @@ entries:
     name: level95
     world: level95
     number: 95
+    kind: "hub: the Warriors' clubhouse and Coney, between missions"
     sections: 12
     order: 24
     flag1: LT_NONE
@@ -489,6 +520,7 @@ entries:
     name: level90
     world: level90
     number: 90
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -504,6 +536,7 @@ entries:
     name: level91
     world: level91
     number: 91
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -519,6 +552,7 @@ entries:
     name: level94
     world: level94
     number: 94
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -534,6 +568,7 @@ entries:
     name: level96
     world: level96
     number: 96
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -549,6 +584,7 @@ entries:
     name: level97
     world: level97
     number: 97
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -564,6 +600,7 @@ entries:
     name: level98
     world: level98
     number: 98
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -579,6 +616,7 @@ entries:
     name: level70
     world: level70
     number: 70
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -594,6 +632,7 @@ entries:
     name: level71
     world: level71
     number: 71
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -609,6 +648,7 @@ entries:
     name: level72
     world: level72
     number: 72
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -624,6 +664,7 @@ entries:
     name: level73
     world: level73
     number: 73
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -639,6 +680,7 @@ entries:
     name: level74
     world: level74
     number: 74
+    kind: "world only, no level file"
     sections: 1
     order: 0
     flag1: LT_NONE
@@ -654,6 +696,7 @@ entries:
     name: level1
     world: level1
     number: 1
+    kind: "intro movie level (its script returns to the menu)"
     sections: 0
     order: 0
     flag1: LT_NONE
@@ -669,6 +712,7 @@ entries:
     name: level101
     world: level101
     number: 101
+    kind: "Rumble arena (kinghill)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -685,6 +729,7 @@ entries:
     name: level102
     world: level102
     number: 102
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -701,6 +746,7 @@ entries:
     name: level103
     world: level103
     number: 103
+    kind: "Rumble arena (brawl, mercy, wchair)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -717,6 +763,7 @@ entries:
     name: level104
     world: level104
     number: 104
+    kind: "Rumble arena (brawl, mercy, wchair)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -733,6 +780,7 @@ entries:
     name: level105
     world: level105
     number: 105
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -749,6 +797,7 @@ entries:
     name: level106
     world: level106
     number: 106
+    kind: "Rumble arena"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -765,6 +814,7 @@ entries:
     name: level107
     world: level107
     number: 107
+    kind: "Rumble arena (brawl, caps, tagbt)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -781,6 +831,7 @@ entries:
     name: level108
     world: level108
     number: 108
+    kind: "Rumble arena (brawl, mercy, wchair)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -797,6 +848,7 @@ entries:
     name: level109
     world: level109
     number: 109
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -813,6 +865,7 @@ entries:
     name: level110
     world: level110
     number: 110
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -829,6 +882,7 @@ entries:
     name: level111
     world: level111
     number: 111
+    kind: "Rumble arena (car, hifi, mercy)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -845,6 +899,7 @@ entries:
     name: level112
     world: level112
     number: 112
+    kind: "Rumble arena (mercy, wchair)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -861,6 +916,7 @@ entries:
     name: level113
     world: level113
     number: 113
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -877,6 +933,7 @@ entries:
     name: level114
     world: level114
     number: 114
+    kind: "Rumble arena (muggr, wchair)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -893,6 +950,7 @@ entries:
     name: level115
     world: level115
     number: 115
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -909,6 +967,7 @@ entries:
     name: level116
     world: level116
     number: 116
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -925,6 +984,7 @@ entries:
     name: level117
     world: level117
     number: 117
+    kind: "Rumble arena"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -941,6 +1001,7 @@ entries:
     name: level118
     world: level118
     number: 118
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -957,6 +1018,7 @@ entries:
     name: level119
     world: level119
     number: 119
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -973,6 +1035,7 @@ entries:
     name: level120
     world: level120
     number: 120
+    kind: "Rumble arena (brawl, mercy)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -989,6 +1052,7 @@ entries:
     name: level121
     world: level121
     number: 121
+    kind: "Rumble arena (brawl, caps, mercy)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1005,6 +1069,7 @@ entries:
     name: level122
     world: level122
     number: 122
+    kind: "Rumble arena (brawl, survival, tagbt)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1021,6 +1086,7 @@ entries:
     name: level123
     world: level123
     number: 123
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1037,6 +1103,7 @@ entries:
     name: level124
     world: level124
     number: 124
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1053,6 +1120,7 @@ entries:
     name: level125
     world: level125
     number: 125
+    kind: "Rumble arena"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1069,6 +1137,7 @@ entries:
     name: level126
     world: level126
     number: 126
+    kind: "Rumble arena (brawl)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1085,6 +1154,7 @@ entries:
     name: level127
     world: level127
     number: 127
+    kind: "Rumble arena (brawl, survival)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1101,6 +1171,7 @@ entries:
     name: level128
     world: level128
     number: 128
+    kind: "Rumble arena (brawl, survival)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1117,6 +1188,7 @@ entries:
     name: level129
     world: level129
     number: 129
+    kind: "Rumble arena (kinghill)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1133,6 +1205,7 @@ entries:
     name: level130
     world: level130
     number: 130
+    kind: "Rumble arena (brawl, kinghill, survival)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1149,6 +1222,7 @@ entries:
     name: level131
     world: level131
     number: 131
+    kind: "Rumble arena (royal)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1165,6 +1239,7 @@ entries:
     name: level132
     world: level132
     number: 132
+    kind: "Rumble arena (royal)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1181,6 +1256,7 @@ entries:
     name: level133
     world: level133
     number: 133
+    kind: "Rumble arena (royal)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1197,6 +1273,7 @@ entries:
     name: level134
     world: level134
     number: 134
+    kind: "Rumble arena (brawl, shoot, survival)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1213,6 +1290,7 @@ entries:
     name: level135
     world: level135
     number: 135
+    kind: "Rumble arena"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1229,6 +1307,7 @@ entries:
     name: level136
     world: level136
     number: 136
+    kind: "Rumble arena (run4life)"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1245,6 +1324,7 @@ entries:
     name: level137
     world: level137
     number: 137
+    kind: "Rumble arena (run4life)"
     sections: 0
     order: 26
     flag1: LT_NONE

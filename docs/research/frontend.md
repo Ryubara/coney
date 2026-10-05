@@ -253,18 +253,39 @@ level and pushes **mode 1** (gameplay), whose `Enter` loads it with `InitLevel`.
 What `Menu.startGame` leads to on a new profile, from the script side ([Scripts](scripting.md#run-next-mission)) to
 the first frame of mode 1 ([Level loading](level-loading.md#mode-1)):
 
-1. `runNextMission(1)` (`global.lua`) finds the last level completed (none on a new profile), looks up the next
-   mission, **`level99` with checkpoint 1**, and calls `SetCheckPoint(1)` (`0x0037b760`: `W_GameState + 0x33a` = 1,
-   the section), `SoundStopMusicTrack()` and `MenuLoadLevel("level99")`, then `HUDLaunchMissionComplete(4)`.
-   Inferred from the disassembly of `global.lua`; the bindings' effects confirmed (code).
-2. `MenuLoadLevel` sets `W_GameState + 0x14c` = 3 and mode 8's `+0x20` to the index of `level99` (record 1).
-   The profile manager pops; mode 8's next `Update` (`0x0015c858`) sees `+0x20` ≥ 0, calls `LevelFlow_FinishFrontEnd`
-   (because `+0x24` is 1), selects the level (`0x0041ce88`), sets `+0x20` = -1 and pushes **mode 1**. Confirmed
-   (code).
-3. Mode 1's `Enter` runs `InitLevel` for `level99`, section 1: the loading screen, the intro movie `L99_IN` (record
-   flag `0x02`, section 1), the level script, the preload ([Level loading](level-loading.md#initlevel)). The level
-   script's start callback (`SetStartGameCallback("StartAmbient")`, step 13 of `InitLevel`) then starts the
-   in-engine intro scene.
+0. **The menus.** STORY (code 0) in `PM_Mode` leads to `PM_Profile` (or `PM_NumPlayers` with two pads); a new
+   profile goes `PM_Create` → `PM_Difficulty` → `PM_Light` → `PM_Subtitles`, a saved one `PM_Load` or `PM_Continue`
+   ([the transitions](#profile-manager)). When the screen flow empties, mode 0x12's `Update` returns 0 and the loop
+   pops it; its `Exit` (`0x0015e130`) calls `Menu.startGame` (the second `ShowProfileManager` callback, `0x005e6694`)
+   when the controller finished normally and Rumble mode was not chosen. Confirmed (code) for the C++ side; how
+   `PM_Subtitles` (and `PM_Load` / `PM_Continue`) empty the flow is not traced.
+1. `Menu.startGame` stops the music and the Wonder Wheel scene and calls `runNextMission(1)` (`global.lua`), which
+   finds the last level completed (none on a new profile), looks up the next mission, **`level99` with checkpoint 1**,
+   and calls `SetCheckPoint(1)` (`0x0037b760`: `W_GameState + 0x33a` = 1, the checkpoint and section),
+   `SoundStopMusicTrack()` and `MenuLoadLevel("level99")`, then `HUDLaunchMissionComplete(4)`. Inferred from the
+   disassembly of `global.lua`; the bindings' effects confirmed (code).
+2. `MenuLoadLevel` (`0x00160d78`) sets `W_GameState + 0x14c` = 3 and mode 8's `+0x20` to the index of `level99`
+   (record 1, a name search `0x0015c7b0`). **`HUDLaunchMissionComplete(4)`** (`MissionComplete_Launch`, `0x0015d420`)
+   finds mode 8 on top (the pop has already taken 0x12 off before calling `Exit`) and so **pushes mode 0xb**, the
+   mission-complete mode, and stores 4 in its `+0x24` (`0x005e5e1c`). Confirmed (code).
+3. **Mode 0xb, one frame.** The loop enters it: `Enter` (`0x0015cf70`) takes `GameTimer`, puts every live human into a still
+   state (inferred; there is none at the front end) and calls the Lua function `UnlockAndLoad`, which runs
+   `MissionCompleteUnlocks()` and
+   `runNextMission(1)` again (the same `SetCheckPoint(1)` and `MenuLoadLevel("level99")`; mode 0xb is on top now, so
+   no second push). Its `Update` (`0x0015d160`) runs one world frame (task manager, cameras, `WorldManager_Update`,
+   the resource manager, the passes, the scripts, `Present`), sees `+0x24` ≠ 0 and pops itself; 4 is none of the kinds
+   it acts on (1: checkpoint 1; 2: reload the current level; 3: the next record), so it only services the save
+   system, rebuilds the two inventories (`0x0041e420` / `0x0041e398`) and asks for an **autosave** (`0x00155308`: pushes
+   mode 6 when the save system is on and the level index is not 0 or `0x00204008` says so). Confirmed (code) for the
+   C++ side; the Lua side inferred.
+4. Mode 8 is on top again (`Resume`; it does not reload the front end, since `+0x28` is 0). Its next `Update`
+   (`0x0015c858`) sees `+0x20` ≥ 0, calls `LevelFlow_FinishFrontEnd` (because `+0x24` is 1: `Menu.onFinish`,
+   `UnloadLevel(0)`), selects the level (`0x0041ce88`), sets `+0x20` = -1 and pushes **mode 1**. Confirmed (code).
+5. Mode 1's `Enter` runs `InitLevel` for `level99`, checkpoint 1: the loading screen, `global.lua` and `level99.lua`
+   (which create Rembrandt, Ash and the follow camera and ask for `level99_combat.lua`), the object and dependency
+   lists, the preload around the camera, the music, the intro movie `L99_IN` (record flag `0x02`, section 1), then the
+   start callback `StartAmbient`, which starts the in-engine intro scene. The order, step by step, is on
+   [Level loading](level-loading.md#story-into-level99).
 
 **Level record 1**, read from `W_GameState + 0x14d4 + 0x84` in PCSX2 2.9.94 with the `level99` level loaded
 (`W_GameState` = `0x01fd8400`, from the pointer at `0x0051489c`; confirmed (runtime)):
@@ -701,9 +722,13 @@ What the implementer still needs:
   `0x8a`, `0x1f` and the memory-card ids needs a
   decoder for `config_strings_*.lua` (the entries' order in the `GSTRING.HUD` table gives the id; a string that
   occurs twice is stored once among the constants, so the constants alone do not give the order).
-- **`InitLevel` details**: what the script system's slot `+0x24` loads for a level (which `.lua` files), and the
-  meaning of the remaining level record fields (the ones known are on
-  [Level loading](level-loading.md#the-level-record)).
+- **`InitLevel` details** (answered for the scripts: `global.lua`, then `<level>.lua`,
+  [Scripts](scripting.md#life-of-the-lua-state)): the meaning of the remaining level record fields (the ones known are
+  on [Level loading](level-loading.md#the-level-record)).
+- **The new-game screens**: how `PM_Subtitles`, `PM_Load` and `PM_Continue` end the screen flow (they have no
+  transitions in the table), and what `0x00204008` (asked by the autosave check after the mission-complete mode)
+  reports. A runtime check: break on `0x0015e130` and `0x0015cf70` after choosing STORY on a new profile and note the
+  mode stack (`0x005e66a0`, top index `0x0050c784`) each time.
 - **The device flag `0x02`** hides `PM_Extras` and selects other layouts; it is still unidentified (see
   [Graphics](graphics.md#open-questions)).
 - **Script system slots** (answered: [Scripts](scripting.md#vtable-slots); update is `+0x14`, its adjust word

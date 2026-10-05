@@ -619,6 +619,115 @@ def topic_levels(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
     return entries
 
 
+#: A story level's main script, and a Rumble arena's per-mode flag script (`level<N>_<mode>_init.lua`).
+_LEVEL_MAIN = re.compile(r"^level(\d+)\.lua$")
+_RUMBLE_INIT = re.compile(r"^level(\d+)_([a-z0-9]+)_init\.lua$", re.IGNORECASE)
+#: Tables a level script keeps its per-checkpoint scripts in: `tMission[k][3]` or `Mission[k]` / `Chapter[k]`.
+_CHAPTER_TABLES = ("Mission", "Chapter", "tChapters")
+#: The flag list a Rumble arena puts player 1 on the first of (`fP1[1]`, docs/research/characters.md#level-starts).
+RUMBLE_PLAYER_FLAGS = "fP1"
+
+
+def _player_creates(facts: lua4.ChunkFacts) -> dict[str, lua4.Call]:
+    """Function path -> its first `HuCreate` for player 1 (sixth argument 1) at a literal position."""
+    found: dict[str, lua4.Call] = {}
+    for call in facts.calls:
+        if call.callee != "HuCreate" or len(call.args) < 6 or call.args[5] != 1.0:
+            continue
+        pos = call.args[2]
+        if isinstance(pos, lua4.Table) and len(_numbers(pos) or []) == 3 and isinstance(call.args[3], float):
+            found.setdefault(call.path, call)
+    return found
+
+
+def _checkpoint_creators(facts: lua4.ChunkFacts, creators: set[str]) -> dict[int, str]:
+    """Checkpoint -> the function that creates the Warriors for it.
+
+    A level script indexes a list by `GetCheckPoint()` and calls the entry: either the function itself
+    (`PlayerGang = {AddWarriors1, ...}`) or a row whose first item is it (`tMission = {{AddWarriors2,
+    "Checkpoint1", "level99_combat"}, ...}`). The list is the one, global or local, naming the most creators.
+    """
+    best: dict[int, str] = {}
+    for table in [*facts.tables.values(), *(table for _, table in facts.constructed)]:
+        found = {}
+        for key, item in table.items.items():
+            head = item.items.get(1) if isinstance(item, lua4.Table) else item
+            if isinstance(head, lua4.Global) and head.name in creators:
+                found[key] = head.name
+        if len(found) > len(best):
+            best = found
+    return best
+
+
+def _chapter_scripts(facts: lua4.ChunkFacts) -> dict[int, str]:
+    """Checkpoint -> the script it loads (`preLoadFile`), from `tMission[k][3]` or a `Mission` / `Chapter` list."""
+    scripts: dict[int, str] = {}
+    mission = facts.tables.get("tMission")
+    if mission is not None:
+        for key, row in mission.items.items():
+            if isinstance(row, lua4.Table) and isinstance(row.items.get(3), str):
+                scripts[key] = str(row.items[3])
+    for name in _CHAPTER_TABLES:
+        table = facts.tables.get(name)
+        if table is not None:
+            for key, item in table.items.items():
+                if isinstance(item, str):
+                    scripts.setdefault(key, item)
+    return scripts
+
+
+def level_starts(scripts: dict[str, lua4.ChunkFacts]) -> list[dict[str, Any]]:
+    """Where each level puts player 1: per checkpoint of a story level, and per mode of a Rumble arena."""
+    entries: list[dict[str, Any]] = []
+    for script, facts in scripts.items():
+        match = _LEVEL_MAIN.match(script)
+        if not match:
+            continue
+        level = f"level{match.group(1)}"
+        functions = facts.functions()
+        creates = _player_creates(facts)
+        creators = {name for name, path in functions.items() if path in creates}
+        chapters = _chapter_scripts(facts)
+        for checkpoint, creator in sorted(_checkpoint_creators(facts, creators).items()):
+            call = creates[functions[creator]]
+            entries.append(
+                {
+                    "id": f"{level}-{checkpoint}",
+                    "level": level,
+                    "checkpoint": checkpoint,
+                    "character": call.args[0] if isinstance(call.args[0], str) else None,
+                    "type": _int(call.args[1]) if isinstance(call.args[1], float) else None,
+                    "pos": [_int(round(v, 4)) for v in _numbers(call.args[2]) or []],
+                    "heading": _int(call.args[3]),
+                    "via": f"HuCreate in {creator}",
+                    "script": chapters.get(checkpoint),
+                }
+            )
+    for script, facts in scripts.items():
+        match = _RUMBLE_INIT.match(script)
+        flags = facts.tables.get(RUMBLE_PLAYER_FLAGS)
+        flag = flags.items.get(1) if match and flags is not None else None
+        if not isinstance(flag, lua4.CallResult) or flag.callee != "AddFlag" or len(flag.args) < 3:
+            continue
+        entries.append(
+            {
+                "id": f"level{match.group(1)}-{match.group(2).lower()}",
+                "level": f"level{match.group(1)}",
+                "mode": match.group(2).lower(),
+                "pos": [_int(round(v, 4)) for v in _numbers(flag.args[1]) or []],
+                "heading": _number(flag.args[2]),
+                "via": f"flag {flag.args[0]}" if isinstance(flag.args[0], str) else "flag",
+                "script": script.removesuffix(".lua"),
+            }
+        )
+    return sorted(entries, key=lambda e: (int(e["level"][5:]), e.get("checkpoint") or 0, e.get("mode") or ""))
+
+
+def topic_level_starts(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
+    """Player 1's start per level and checkpoint (story) or mode (Rumble), from the level scripts."""
+    return level_starts(facts.scripts)
+
+
 def topic_animations(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
     """Every distinct clip on the disc, with its length, its displacement and where it is found."""
     seen: collections.Counter[str] = collections.Counter()
@@ -862,6 +971,7 @@ EXTRACTORS: dict[str, Callable[[DiscFacts, Path | None], list[dict[str, Any]]]] 
     "objects": topic_objects,
     "object-groups": topic_object_groups,
     "levels": topic_levels,
+    "level-starts": topic_level_starts,
     "animations": topic_animations,
     "anim-ids": topic_anim_ids,
     "controls": topic_controls,

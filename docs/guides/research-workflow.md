@@ -184,8 +184,9 @@ An entry of `level.yaml`:
 ## Reference lists {#reference-lists}
 
 The [Game references](../references/index.md) are lists of the things scripts, mods and Coney's code name:
-characters, gangs, objects, levels, clips, anim ids, controls, colours, text tags, script constants, sounds,
-script events and WAD entry names. Each is a YAML file in `research/references/<list>.yaml`, and its page in
+characters, gangs, objects, levels and their player starts, clips, anim ids, controls, colours, text tags, script
+constants, sounds, script events and WAD entry names. Each is a YAML file in `research/references/<list>.yaml`, and its
+page in
 `docs/references/` is generated from it. They hold only names, ids, numbers and our own short descriptions
 (`LEGAL.md`, "Reference lists"): never game text, script source or a file from the disc.
 

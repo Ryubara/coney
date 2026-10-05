@@ -222,8 +222,22 @@ STARTERS: dict[str, dict[str, Any]] = {
         "A level loads from `<name>.lev` and its section packs `<name>_<k>.pak`\n"
         "([Level loading](../research/level-loading.md)).",
         "complete": "Every record is listed with every field. `.lev` and pack counts come from the WAD names list,\n"
-        "so a level whose files have no recovered name shows none. Kinds are hand-written: only the front end\n"
-        "and the test levels so far.",
+        "so a level whose files have no recovered name shows none. Kinds are hand-written: the story order\n"
+        "is `global.lua`'s `runNextMission` and the hub's `fRunMission`, the flashbacks the hub's\n"
+        "`FBMission` ([Scripts](../research/scripting.md#run-next-mission)); a Rumble arena lists the modes\n"
+        "whose flag scripts were found. Where each level puts the player: [Level starts](level-starts.md).",
+    },
+    "level-starts": {
+        "title": "Level starts",
+        "source": "the level scripts, HuCreate and AddFlag",
+        "about": "Where each level puts player 1 when it starts: one entry per checkpoint of a story level (the\n"
+        "`HuCreate` for player 1 in the function the level script calls for `GetCheckPoint()`) and one per mode of a\n"
+        "Rumble arena (the first flag of the list `fP1` in `level<N>_<mode>_init.lua`, which the arena teleports\n"
+        "player 1 to).\n"
+        "How the game gets there: [Characters](../research/characters.md#level-starts).",
+        "complete": "Every story level whose script creates player 1 at a literal position, and every Rumble flag\n"
+        "script whose name is known. The hub (`level95`) places the Warchief at a flag and is hand-written.\n"
+        "A checkpoint's own script may move the player again once it has loaded (see each entry's notes).",
     },
     "animations": {
         "title": "Animation clips",

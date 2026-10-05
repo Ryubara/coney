@@ -329,6 +329,50 @@ where not stated.
     (`W_GameState + 0x14c` = 3, `0x00160d78`).
 15. Remember the level and section (`0x0050c7c0`, `0x0050c7c4`); distortion effects, HUD per player.
 
+### From STORY to the player in level99 {#story-into-level99}
+
+What happens between choosing STORY and controlling Rembrandt, in order. The front-end half (the profile screens,
+`Menu.startGame`, `runNextMission`, the one frame of the mission-complete mode, mode 8 pushing mode 1) is on
+[Front end](frontend.md#story-start); this is mode 1's half. C++ steps are confirmed (code) at `InitLevel`
+(`0x0015fe90`); the script steps are inferred from the disassembly of `global.lua` and `level99.lua`
+([Scripts](scripting.md#level99)).
+
+1. **Mode 1 `Enter`** ([above](#mode-1)): audio, timers, then `InitLevel` with record 1 (`level99`) and
+   checkpoint 1 (`W_GameState + 0x33a`, set by `runNextMission`'s `SetCheckPoint(1)`).
+2. **Reset and load the world** (`InitLevel` steps 1-5): the systems reset, 3,200,000 bytes reserved for the intro
+   movie (record flag `0x02`, checkpoint 1), `LoadLevel("level99")` (the two worlds' layouts and textures, then
+   `level99.lev`), the AI, path and character tables reset, the `load` and `Wind_Manager` objects.
+3. **The level script** (step 6): the script system runs `global.lua` (its helpers, `CfgAmbient()`,
+   `SetupLevelInventory()`), then `level99.lua`. Its main chunk adds the flags, boxes and paths
+   (`AddFlagsBoxesPaths`), registers the objects and runs `Main`: `GetCheckPoint()` (1), the fog colour, `ReportCrime(0)`,
+   the HUD calls, the `tMission` table, then `RunLevel`:
+    - `CfgSetStatValue`, six `SetDynamicAnimation` clips (loaded later by the resource manager);
+    - **the player**: `AddWarriors2` creates the gang `Warriors2` and `HuCreate("Rembrandt", 32, {-284.4, 120.4,
+      0.3}, 0, ..., 1, gang)`, then Ash as player 2's character (index 2); `player = Warriors.Rembrandt`. The human is
+      made, snapped to the ground and bound to pad 0 here ([Characters](characters.md#creation)); its model is
+      attached once its resources are resident;
+    - `preLoadFile("level99_combat", "Checkpoint1")`: an asynchronous read; the file manager delivers it later, and
+      then the chunk runs and `Checkpoint1` is called ([Scripts](scripting.md#bindings-the-front-end-and-the-script-system-depend-on));
+    - **the camera**: `AddCameras` makes the follow camera on `player` and activates it
+      ([Camera](camera.md)); `SetStartGameCallback("StartAmbient")`; demigod mode for both, mugging off, commands 37
+      and 38 off for the tutorial.
+4. **Objects and resources** (steps 7-8): `level99_objs.txt` into the task manager, `CrimeScene` and `GangCall`, then
+   the dependency list of `level99`, blocking.
+5. **Camera and preload** (steps 9-10): the cameras update once (`0x0011e878(0.17)`), which puts the follow camera
+   behind Rembrandt (inferred), and `WorldManager_Preload` loads `level99_1.pak` and streams the world within the
+   camera's draw distance for up to 15 s (record `+0x04` = 99, below 101). The preload services the file manager, so
+   the checkpoint script requested in step 3 may arrive here (inferred; not traced).
+6. **Music, movie, start** (steps 11-13): the level's music; the intro movie `L99_IN`; then the start callback
+   `StartAmbient`, which at checkpoint 1 runs `SuperRunScene(IntroScene)`, the in-engine intro (the scene is defined
+   in `level99_combat.lua`, so that script must have run by now).
+7. **The first frame of play**: mode 1's `Update` ([A frame of play](#a-frame-of-play)). The intro scene holds the
+   camera and gives it back; `Checkpoint1` (`P1.SetupCombat`) has set up the tutorial's sections, objective and
+   training enemies.
+
+**For an implementer** the order that matters: the player and the follow camera exist **before** the preload, so the
+preload streams the world around the player's start; the checkpoint script and the start callback come after, and
+anything they reference (the intro scene) must be loaded by then.
+
 ### WorldManager::LoadLevel {#worldmanager-loadlevel}
 
 `0x0040dbb8(worldManager, name, headerOnly)`, confirmed (code):
@@ -535,6 +579,9 @@ What the implementer still needs:
   `+0x14` (level) and `+0x39` (world); in practice both are `level<N>`.
 - **`LoadLevel`** in the order above: the worlds, then the level file (done, above); still missing are the path
   records' and subtitles' meaning, and handing the level object to a world manager.
+- **The player's start**: no file holds it; the level script creates player 1 for the current checkpoint before the
+  preload ([Characters](characters.md#level-starts), values in [Level starts](../references/level-starts.md)), and
+  [From STORY to the player in level99](#story-into-level99) gives the order.
 - **The level's lighting, fog colour and camera** from the level script and the player camera
   ([The streamed world](world.md#lighting)).
 - **The preload** as the first frame's precondition: load the section's pack, then stream world parts until the

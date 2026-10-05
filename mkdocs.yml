@@ -95,6 +95,7 @@ nav:
       - Objects and weapons: references/objects.md
       - Object groups: references/object-groups.md
       - Levels: references/levels.md
+      - Level starts: references/level-starts.md
       - Animation clips: references/animations.md
       - Anim ids: references/anim-ids.md
       - Controls: references/controls.md

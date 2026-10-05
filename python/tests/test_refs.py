@@ -69,6 +69,122 @@ def test_lua4_reads_calls_and_assignments() -> None:
     assert lua4.all_strings(lua4.parse_chunk(CHUNK)) == ["CfgChar", "warr_re_cv", "LEVEL"]
 
 
+def _proto(strings: list[str], code: list[int], children: list[bytes] | None = None) -> bytes:
+    """One function prototype (no parameters, locals or numbers) with the given child prototypes."""
+    kids = children or []
+    body = _string(None) + struct.pack("<iiBi", 0, 0, 0, 8)
+    body += struct.pack("<ii", 0, 0)
+    body += struct.pack("<i", len(strings)) + b"".join(_string(s) for s in strings)
+    body += struct.pack("<ii", 0, len(kids)) + b"".join(kids)
+    return body + struct.pack("<i", len(code)) + b"".join(struct.pack("<I", word) for word in code)
+
+
+def _int(value: int) -> int:
+    """`PUSHINT value`."""
+    return _op("PUSHINT", value + _MAXARG_S)
+
+
+def _facts(main: bytes) -> lua4.ChunkFacts:
+    """Walk a chunk whose main function is `main`."""
+    return lua4.walk_chunk(lua4.parse_chunk(lua4.HEADER + struct.pack("<d", 3.14159265358979e8) + main))
+
+
+# function AddWarriors1() HuCreate("Ajax", 11, {1, 2, 0}, 90, nil, 1, g) end; PlayerGang = {AddWarriors1}
+STORY_LEVEL = _proto(
+    ["AddWarriors1", "PlayerGang"],
+    [
+        _op("CLOSURE", a=0, b=0),
+        _op("SETGLOBAL", 0),
+        _op("CREATETABLE", 1),
+        _op("GETGLOBAL", 0),
+        _op("SETLIST", a=0, b=1),
+        _op("SETGLOBAL", 1),
+        _op("END"),
+    ],
+    [
+        _proto(
+            ["HuCreate", "Ajax", "g"],
+            [
+                _op("GETGLOBAL", 0),
+                _op("PUSHSTRING", 1),
+                _int(11),
+                _op("CREATETABLE", 3),
+                _int(1),
+                _int(2),
+                _int(0),
+                _op("SETLIST", a=0, b=3),
+                _int(90),
+                _op("PUSHNIL", 1),
+                _int(1),
+                _op("GETGLOBAL", 2),
+                _op("CALL", a=0, b=0),
+                _op("END"),
+            ],
+        )
+    ],
+)
+
+# fP1 = {AddFlag("fP1_1", {3, 4, 0}, 45, 0, 0)}
+RUMBLE_FLAGS = _proto(
+    ["AddFlag", "fP1_1", "fP1"],
+    [
+        _op("CREATETABLE", 1),
+        _op("GETGLOBAL", 0),
+        _op("PUSHSTRING", 1),
+        _op("CREATETABLE", 3),
+        _int(3),
+        _int(4),
+        _int(0),
+        _op("SETLIST", a=0, b=3),
+        _int(45),
+        _int(0),
+        _int(0),
+        _op("CALL", a=1, b=1),
+        _op("SETLIST", a=0, b=1),
+        _op("SETGLOBAL", 2),
+        _op("END"),
+    ],
+)
+
+
+def test_lua4_names_functions_and_keeps_call_arguments() -> None:
+    story = _facts(STORY_LEVEL)
+    assert story.functions() == {"AddWarriors1": "main/0"}
+    assert [table for path, table in story.constructed if path == "main"] == [story.tables["PlayerGang"]]
+    flags = _facts(RUMBLE_FLAGS).tables["fP1"].items[1]
+    assert isinstance(flags, lua4.CallResult) and flags.callee == "AddFlag"
+    assert [lua4.plain(arg) for arg in flags.args] == ["fP1_1", [3, 4, 0], 45, 0, 0]
+    assert flags == lua4.CallResult("AddFlag")  # the arguments do not take part in comparisons
+
+
+def test_level_starts_read_story_checkpoints_and_rumble_flags() -> None:
+    from coney_tools.refs_extract import level_starts
+
+    starts = level_starts({"level7.lua": _facts(STORY_LEVEL), "level101_brawl_init.lua": _facts(RUMBLE_FLAGS)})
+    assert starts == [
+        {
+            "id": "level7-1",
+            "level": "level7",
+            "checkpoint": 1,
+            "character": "Ajax",
+            "type": 11,
+            "pos": [1, 2, 0],
+            "heading": 90,
+            "via": "HuCreate in AddWarriors1",
+            "script": None,
+        },
+        {
+            "id": "level101-brawl",
+            "level": "level101",
+            "mode": "brawl",
+            "pos": [3, 4, 0],
+            "heading": 45,
+            "via": "flag fP1_1",
+            "script": "level101_brawl_init",
+        },
+    ]
+
+
 def test_lua4_refuses_other_data() -> None:
     with pytest.raises(lua4.LuaError, match="header"):
         lua4.parse_chunk(b"\x1bLua\x50" + bytes(40))

@@ -7,9 +7,11 @@ from `<name>.lev` and its section packs `<name>_<k>.pak` ([Level loading](../res
 
 !!! info "What is complete"
 
-    Every record is listed with every field. `.lev` and pack counts come from the WAD names list, so a
-    level whose files have no recovered name shows none. Kinds are hand-written: only the front end and
-    the test levels so far.
+    Every record is listed with every field. `.lev` and pack counts come from the WAD names list,
+    so a level whose files have no recovered name shows none. Kinds are hand-written: the story order
+    is `global.lua`'s `runNextMission` and the hub's `fRunMission`, the flashbacks the hub's
+    `FBMission` ([Scripts](../research/scripting.md#run-next-mission)); a Rumble arena lists the modes
+    whose flag scripts were found. Where each level puts the player: [Level starts](level-starts.md).
 
 111 entries. Data: `research/references/levels.yaml`.
 
@@ -18,84 +20,84 @@ from `<name>.lev` and its section packs `<name>_<k>.pak` ([Level loading](../res
 | Index | Name | World | Number | Kind | Sections | Intro | Outro | Lock | Subway | .lev |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | <span id="level-0"></span>0 | `level100` | `level100` | 100 | front end (menus) | 0 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
-| <span id="level-1"></span>1 | `level99` | `level99` | 99 | | 3 | `LT_PLAY` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-2"></span>2 | `level80` | `level80` | 80 | | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-3"></span>3 | `level87` | `level87` | 87 | | 5 | `LT_NONE` | `LT_PLAY` | `LOCKED` | `SUBWAY_BROWN` | yes |
-| <span id="level-4"></span>4 | `level34` | `level34` | 34 | | 5 | `LT_NONE` | `LT_PLAY` | `LOCKED` | `SUBWAY_BLUE` | yes |
-| <span id="level-5"></span>5 | `level2` | `level2` | 2 | | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-6"></span>6 | `level3` | `level3` | 3 | | 5 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BLUE` | yes |
-| <span id="level-7"></span>7 | `level5` | `level5` | 5 | | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-8"></span>8 | `level81` | `level81` | 81 | | 5 | `LT_NONE` | `LT_PLAY` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-9"></span>9 | `level86` | `level86` | 86 | | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-10"></span>10 | `level93` | `level93` | 93 | | 6 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BROWN` | yes |
-| <span id="level-11"></span>11 | `level31` | `level31` | 31 | | 6 | `LT_PLAY` | `LT_PLAY` | `LOCKED` | `SUBWAY_GREEN` | yes |
-| <span id="level-12"></span>12 | `level14` | `level14` | 14 | | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-13"></span>13 | `level9` | `level9` | 9 | | 3 | `LT_PLAY` | `LT_PLAY` | `LOCKED` | `SUBWAY_GREEN` | yes |
-| <span id="level-14"></span>14 | `level51` | `level51` | 51 | | 7 | `LT_PLAY` | `LT_NONE` | `LOCKED` | `SUBWAY_GREEN` | yes |
-| <span id="level-15"></span>15 | `level52` | `level52` | 52 | | 4 | `LT_PLAY` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-16"></span>16 | `level54` | `level54` | 54 | | 5 | `LT_PLAY` | `LT_NONE` | `LOCKED` | `SUBWAY_BLUE` | yes |
-| <span id="level-17"></span>17 | `level55` | `level55` | 55 | | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_GREEN` | yes |
-| <span id="level-18"></span>18 | `level84` | `level84` | 84 | | 3 | `LT_NONE` | `LT_PLAY` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-19"></span>19 | `level82` | `level82` | 82 | | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BROWN` | yes |
-| <span id="level-20"></span>20 | `level92` | `level92` | 92 | | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-21"></span>21 | `level83` | `level83` | 83 | | 6 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BROWN` | yes |
-| <span id="level-22"></span>22 | `level20` | `level20` | 20 | | 6 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BLUE` | yes |
-| <span id="level-23"></span>23 | `level11` | `level11` | 11 | | 6 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BLUE` | yes |
-| <span id="level-24"></span>24 | `level60` | `level60` | 60 | | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
-| <span id="level-25"></span>25 | `level61` | `level61` | 61 | | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
-| <span id="level-26"></span>26 | `level62` | `level62` | 62 | | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
-| <span id="level-27"></span>27 | `level63` | `level63` | 63 | | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
-| <span id="level-28"></span>28 | `level64` | `level64` | 64 | | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
-| <span id="level-29"></span>29 | `level95` | `level95` | 95 | | 12 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
-| <span id="level-30"></span>30 | `level90` | `level90` | 90 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-31"></span>31 | `level91` | `level91` | 91 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-32"></span>32 | `level94` | `level94` | 94 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-33"></span>33 | `level96` | `level96` | 96 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-34"></span>34 | `level97` | `level97` | 97 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-35"></span>35 | `level98` | `level98` | 98 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-36"></span>36 | `level70` | `level70` | 70 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-37"></span>37 | `level71` | `level71` | 71 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-38"></span>38 | `level72` | `level72` | 72 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-39"></span>39 | `level73` | `level73` | 73 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-40"></span>40 | `level74` | `level74` | 74 | | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
-| <span id="level-41"></span>41 | `level1` | `level1` | 1 | | 0 | `LT_PLAY` | `LT_NONE` | `LOCKED` | | yes |
-| <span id="level-42"></span>42 | `level101` | `level101` | 101 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_GREEN` | yes |
-| <span id="level-43"></span>43 | `level102` | `level102` | 102 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-44"></span>44 | `level103` | `level103` | 103 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_BROWN` | yes |
-| <span id="level-45"></span>45 | `level104` | `level104` | 104 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_BLUE` | yes |
-| <span id="level-46"></span>46 | `level105` | `level105` | 105 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_GREEN` | yes |
-| <span id="level-47"></span>47 | `level106` | `level106` | 106 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_BROWN` | no |
-| <span id="level-48"></span>48 | `level107` | `level107` | 107 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_BLUE` | yes |
-| <span id="level-49"></span>49 | `level108` | `level108` | 108 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-50"></span>50 | `level109` | `level109` | 109 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-51"></span>51 | `level110` | `level110` | 110 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-52"></span>52 | `level111` | `level111` | 111 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-53"></span>53 | `level112` | `level112` | 112 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-54"></span>54 | `level113` | `level113` | 113 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-55"></span>55 | `level114` | `level114` | 114 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-56"></span>56 | `level115` | `level115` | 115 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-57"></span>57 | `level116` | `level116` | 116 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-58"></span>58 | `level117` | `level117` | 117 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | no |
-| <span id="level-59"></span>59 | `level118` | `level118` | 118 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-60"></span>60 | `level119` | `level119` | 119 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-61"></span>61 | `level120` | `level120` | 120 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-62"></span>62 | `level121` | `level121` | 121 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-63"></span>63 | `level122` | `level122` | 122 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-64"></span>64 | `level123` | `level123` | 123 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-65"></span>65 | `level124` | `level124` | 124 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-66"></span>66 | `level125` | `level125` | 125 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | no |
-| <span id="level-67"></span>67 | `level126` | `level126` | 126 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-68"></span>68 | `level127` | `level127` | 127 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-69"></span>69 | `level128` | `level128` | 128 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-70"></span>70 | `level129` | `level129` | 129 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-71"></span>71 | `level130` | `level130` | 130 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-72"></span>72 | `level131` | `level131` | 131 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-73"></span>73 | `level132` | `level132` | 132 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-74"></span>74 | `level133` | `level133` | 133 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-75"></span>75 | `level134` | `level134` | 134 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-76"></span>76 | `level135` | `level135` | 135 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | no |
-| <span id="level-77"></span>77 | `level136` | `level136` | 136 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
-| <span id="level-78"></span>78 | `level137` | `level137` | 137 | | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-1"></span>1 | `level99` | `level99` | 99 | story mission 1 (the tutorial) | 3 | `LT_PLAY` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-2"></span>2 | `level80` | `level80` | 80 | story mission 2 | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-3"></span>3 | `level87` | `level87` | 87 | story mission 3 | 5 | `LT_NONE` | `LT_PLAY` | `LOCKED` | `SUBWAY_BROWN` | yes |
+| <span id="level-4"></span>4 | `level34` | `level34` | 34 | story mission 4 | 5 | `LT_NONE` | `LT_PLAY` | `LOCKED` | `SUBWAY_BLUE` | yes |
+| <span id="level-5"></span>5 | `level2` | `level2` | 2 | story mission 5 | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-6"></span>6 | `level3` | `level3` | 3 | story mission 6 | 5 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BLUE` | yes |
+| <span id="level-7"></span>7 | `level5` | `level5` | 5 | story mission 7 | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-8"></span>8 | `level81` | `level81` | 81 | story mission 8 | 5 | `LT_NONE` | `LT_PLAY` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-9"></span>9 | `level86` | `level86` | 86 | story mission 9 | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-10"></span>10 | `level93` | `level93` | 93 | story mission 10 | 6 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BROWN` | yes |
+| <span id="level-11"></span>11 | `level31` | `level31` | 31 | story mission 11 | 6 | `LT_PLAY` | `LT_PLAY` | `LOCKED` | `SUBWAY_GREEN` | yes |
+| <span id="level-12"></span>12 | `level14` | `level14` | 14 | story mission 12 | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-13"></span>13 | `level9` | `level9` | 9 | story mission 13 | 3 | `LT_PLAY` | `LT_PLAY` | `LOCKED` | `SUBWAY_GREEN` | yes |
+| <span id="level-14"></span>14 | `level51` | `level51` | 51 | story mission 14 | 7 | `LT_PLAY` | `LT_NONE` | `LOCKED` | `SUBWAY_GREEN` | yes |
+| <span id="level-15"></span>15 | `level52` | `level52` | 52 | story mission 15 | 4 | `LT_PLAY` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-16"></span>16 | `level54` | `level54` | 54 | story mission 16 | 5 | `LT_PLAY` | `LT_NONE` | `LOCKED` | `SUBWAY_BLUE` | yes |
+| <span id="level-17"></span>17 | `level55` | `level55` | 55 | story mission 17 | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_GREEN` | yes |
+| <span id="level-18"></span>18 | `level84` | `level84` | 84 | story mission 18 | 3 | `LT_NONE` | `LT_PLAY` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-19"></span>19 | `level82` | `level82` | 82 | flashback mission 1 (from the clubhouse) | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BROWN` | yes |
+| <span id="level-20"></span>20 | `level92` | `level92` | 92 | flashback mission 2 (from the clubhouse) | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-21"></span>21 | `level83` | `level83` | 83 | flashback mission 3 (from the clubhouse) | 6 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BROWN` | yes |
+| <span id="level-22"></span>22 | `level20` | `level20` | 20 | flashback mission 4 (from the clubhouse) | 6 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BLUE` | yes |
+| <span id="level-23"></span>23 | `level11` | `level11` | 11 | flashback mission 5 (from the clubhouse) | 6 | `LT_NONE` | `LT_NONE` | `LOCKED` | `SUBWAY_BLUE` | yes |
+| <span id="level-24"></span>24 | `level60` | `level60` | 60 | Armies of the Night bonus game, stage 1 | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
+| <span id="level-25"></span>25 | `level61` | `level61` | 61 | Armies of the Night bonus game, stage 2 | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
+| <span id="level-26"></span>26 | `level62` | `level62` | 62 | Armies of the Night bonus game, stage 3 | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
+| <span id="level-27"></span>27 | `level63` | `level63` | 63 | Armies of the Night bonus game, stage 4 | 3 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
+| <span id="level-28"></span>28 | `level64` | `level64` | 64 | Armies of the Night bonus game, stage 5 | 4 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
+| <span id="level-29"></span>29 | `level95` | `level95` | 95 | hub: the Warriors' clubhouse and Coney, between missions | 12 | `LT_NONE` | `LT_NONE` | `LOCKED` | | yes |
+| <span id="level-30"></span>30 | `level90` | `level90` | 90 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-31"></span>31 | `level91` | `level91` | 91 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-32"></span>32 | `level94` | `level94` | 94 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-33"></span>33 | `level96` | `level96` | 96 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-34"></span>34 | `level97` | `level97` | 97 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-35"></span>35 | `level98` | `level98` | 98 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-36"></span>36 | `level70` | `level70` | 70 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-37"></span>37 | `level71` | `level71` | 71 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-38"></span>38 | `level72` | `level72` | 72 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-39"></span>39 | `level73` | `level73` | 73 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-40"></span>40 | `level74` | `level74` | 74 | world only, no level file | 1 | `LT_NONE` | `LT_NONE` | `LOCKED` | | no |
+| <span id="level-41"></span>41 | `level1` | `level1` | 1 | intro movie level (its script returns to the menu) | 0 | `LT_PLAY` | `LT_NONE` | `LOCKED` | | yes |
+| <span id="level-42"></span>42 | `level101` | `level101` | 101 | Rumble arena (kinghill) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_GREEN` | yes |
+| <span id="level-43"></span>43 | `level102` | `level102` | 102 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-44"></span>44 | `level103` | `level103` | 103 | Rumble arena (brawl, mercy, wchair) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_BROWN` | yes |
+| <span id="level-45"></span>45 | `level104` | `level104` | 104 | Rumble arena (brawl, mercy, wchair) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_BLUE` | yes |
+| <span id="level-46"></span>46 | `level105` | `level105` | 105 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_GREEN` | yes |
+| <span id="level-47"></span>47 | `level106` | `level106` | 106 | Rumble arena | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_BROWN` | no |
+| <span id="level-48"></span>48 | `level107` | `level107` | 107 | Rumble arena (brawl, caps, tagbt) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_BLUE` | yes |
+| <span id="level-49"></span>49 | `level108` | `level108` | 108 | Rumble arena (brawl, mercy, wchair) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-50"></span>50 | `level109` | `level109` | 109 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-51"></span>51 | `level110` | `level110` | 110 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-52"></span>52 | `level111` | `level111` | 111 | Rumble arena (car, hifi, mercy) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-53"></span>53 | `level112` | `level112` | 112 | Rumble arena (mercy, wchair) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-54"></span>54 | `level113` | `level113` | 113 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-55"></span>55 | `level114` | `level114` | 114 | Rumble arena (muggr, wchair) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-56"></span>56 | `level115` | `level115` | 115 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-57"></span>57 | `level116` | `level116` | 116 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-58"></span>58 | `level117` | `level117` | 117 | Rumble arena | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | no |
+| <span id="level-59"></span>59 | `level118` | `level118` | 118 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-60"></span>60 | `level119` | `level119` | 119 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-61"></span>61 | `level120` | `level120` | 120 | Rumble arena (brawl, mercy) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-62"></span>62 | `level121` | `level121` | 121 | Rumble arena (brawl, caps, mercy) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-63"></span>63 | `level122` | `level122` | 122 | Rumble arena (brawl, survival, tagbt) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-64"></span>64 | `level123` | `level123` | 123 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-65"></span>65 | `level124` | `level124` | 124 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-66"></span>66 | `level125` | `level125` | 125 | Rumble arena | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | no |
+| <span id="level-67"></span>67 | `level126` | `level126` | 126 | Rumble arena (brawl) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-68"></span>68 | `level127` | `level127` | 127 | Rumble arena (brawl, survival) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-69"></span>69 | `level128` | `level128` | 128 | Rumble arena (brawl, survival) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-70"></span>70 | `level129` | `level129` | 129 | Rumble arena (kinghill) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-71"></span>71 | `level130` | `level130` | 130 | Rumble arena (brawl, kinghill, survival) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-72"></span>72 | `level131` | `level131` | 131 | Rumble arena (royal) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-73"></span>73 | `level132` | `level132` | 132 | Rumble arena (royal) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-74"></span>74 | `level133` | `level133` | 133 | Rumble arena (royal) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-75"></span>75 | `level134` | `level134` | 134 | Rumble arena (brawl, shoot, survival) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-76"></span>76 | `level135` | `level135` | 135 | Rumble arena | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | no |
+| <span id="level-77"></span>77 | `level136` | `level136` | 136 | Rumble arena (run4life) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
+| <span id="level-78"></span>78 | `level137` | `level137` | 137 | Rumble arena (run4life) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | `SUBWAY_ORANGE` | yes |
 | <span id="level-79"></span>79 | `combatselect` | `level5` | 422 | test level (by its name) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | | no |
 | <span id="level-80"></span>80 | `test_car` | `test_combat2` | 420 | test level (by its name) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | | no |
 | <span id="level-81"></span>81 | `test_combat3` | `test_combat3` | 403 | test level (by its name) | 0 | `LT_NONE` | `LT_NONE` | `UNLOCKED` | | no |
