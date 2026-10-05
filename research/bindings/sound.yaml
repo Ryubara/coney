@@ -1,0 +1,819 @@
+# The Warriors' script bindings, category `sound`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: StartObjectSound
+  wrapper: 0x0036dd08
+  calls:
+    - {addr: 0x00397998}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object that has a sound attached (see PreLoadObjectSound)."}
+  description: >-
+    Starts the sound previously preloaded on a world object.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: PreLoadObjectSound
+  wrapper: 0x0036dd40
+  calls:
+    - {addr: 0x003978d0}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (a vehicle, for example)."}
+    - {name: sound, lua: string, desc: "Name of the sound to load for it (a path such as a cutscene sound)."}
+  description: >-
+    Loads a sound positioned on a world object so that it can be started later (StartObjectSound); any sound the
+    object already had is stopped and replaced.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: SndFadeOut
+  wrapper: 0x00370f28
+  calls:
+    - {addr: 0x00113340}
+  args:
+    - {name: sound, lua: number, ctype: unsigned, desc: "Handle of a playing sound (as returned by SoundPlay or SoundPlay2D)."}
+    - {name: time, lua: number, ctype: unsigned, desc: "Fade time, passed to the sound's fade (units not traced; probably milliseconds)."}
+  description: >-
+    Fades a playing sound out and stops it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SndEnableMusicDuck
+  wrapper: 0x00370fa0
+  calls:
+    - {addr: 0x00113390}
+  args:
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) lets other sounds (speech) lower the music; false disables ducking. Stored as given (one script passes 16)."}
+  description: >-
+    Turns music ducking on or off (audio manager +0x3fab4).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: SndCfgMusicInfo
+  wrapper: 0x00370fd0
+  calls:
+    - {addr: 0x00113438}
+  args:
+    - {name: track, lua: string, desc: "Music track name (such as \"music/<name>\")."}
+    - {name: time, lua: number, ctype: unsigned, desc: "A time in milliseconds stored with the track (the configuration uses about 1,890-3,780); inferred to be its fade or beat length."}
+    - {name: volume, lua: number, ctype: float, desc: "The track's volume, 0-1 (clamped)."}
+    - {name: arg4, lua: number, ctype: float, desc: "A float read but not passed on by 0x00113438 (the configuration never passes it)."}
+  description: >-
+    Configures one music track's volume and timing in the music player's track list; called for every track by
+    config_preload.lua at the legal screen. Tracks not in the list cannot play.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x0010d870 finds the track by name hash and stores the volume and the time.
+  usage: {chunks: 1, calls: 303, boot: true, mission1: false, result_used: false}
+
+- name: SndLoadMatrix
+  wrapper: 0x00371090
+  calls:
+    - {addr: 0x00113490}
+  args:
+    - {name: name, lua: string, desc: "Name of the sound matrix, a script that configures the level's sounds: global.lua passes \"armies\" for levels 60-64 and \"sound\" otherwise."}
+  description: >-
+    Selects the level's sound matrix: when the name differs from the current one, the previous set is released and the
+    script <name>_preload is run (through doFile, so <name>_preload.lua).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00114628: compares with the stored name (64 bytes at audio manager +0x1e0 + 0x23d64), formats "%s_preload"
+    (0x00547d00) and calls 0x003579a0 (doFile's code).
+  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false}
+
+- name: SndSetPitchMod
+  wrapper: 0x003710c0
+  calls:
+    - {addr: 0x00113370}
+  args:
+    - {name: pitch, lua: number, ctype: float, desc: "Pitch multiplier for game sounds, 1 normal (one script uses 0.65 for a slowed-down effect)."}
+  description: >-
+    Sets a global pitch modifier for sound effects (audio manager +0x3fa5c).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: SndSetNIDuck
+  wrapper: 0x003710f8
+  calls:
+    - {addr: 0x001133b0}
+  args:
+    - {name: level, lua: number, ctype: float, desc: "Volume factor (0-1) other sounds are lowered to; the scripts use 0.2 and 0.35."}
+  description: >-
+    Sets a ducking level stored at audio manager +0x3faac (what 'NI' ducks is not traced).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: SndLoadBank
+  wrapper: 0x00371130
+  calls:
+    - {addr: 0x001133d0}
+  args:
+    - {name: bank, lua: string, desc: "Name of a sound bank (such as a level's or a boss's bank)."}
+  description: >-
+    Loads an extra sound bank for the level, unless the audio manager is in a state that forbids it, in which case it
+    loads the bank "none".
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false}
+
+- name: SoundSetSoundVolume
+  wrapper: 0x00371160
+  calls:
+    - {addr: 0x001140d0}
+  args:
+    - {name: volume, lua: number, ctype: float, desc: "Read but ignored."}
+  description: >-
+    Does nothing in this build: the function it calls (0x001140d0) returns at once.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: SoundSetMusicVolume
+  wrapper: 0x00371198
+  calls:
+    - {addr: 0x001134b8}
+  args:
+    - {name: volume, lua: number, ctype: float, desc: "Music volume, 0 (silent) to 1 (full); values outside are clamped (one script passes 100, which is full volume)."}
+  description: >-
+    Sets the music player's volume; the change is applied by the music player's update.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x0010e710 stores it at music player +0x5c and sets a changed flag.
+  usage: {chunks: 50, calls: 67, boot: true, mission1: false, result_used: false}
+
+- name: SoundPlayMusicTrack
+  wrapper: 0x00371230
+  calls:
+    - {addr: 0x00113510}
+  args:
+    - {name: track, lua: string, desc: "Music track name; it must have been configured with SndCfgMusicInfo."}
+    - {name: callback, lua: string, desc: "Name of a Lua function to call when the track ends, or nil."}
+  overloads:
+  - wrapper: 0x003711d0
+    calls:
+      - {addr: 0x001134e0}
+    args:
+      - {name: trackHash, lua: number, ctype: unsigned, desc: "The track's name hash (a number) instead of its name."}
+      - {name: callback, lua: string, desc: "Name of a Lua function to call when the track ends, or nil."}
+    note: >-
+      Used when the first argument is not a string or there are more than two arguments: the same call with a
+      precomputed hash.
+  description: >-
+    Plays a music track once (not looped), with an optional callback when it finishes. Does nothing while the game
+    state forbids music, or when the track is not in the configured list.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    0x00113510 → 0x0010d8e8 with loop off. The string form is the one the scripts use.
+  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false}
+  coney: partial
+
+- name: SoundLoopMusicTrack
+  wrapper: 0x00371348
+  calls:
+    - {addr: 0x00113590}
+  args:
+    - {name: track, lua: string, desc: "Music track name (such as \"music/wonderwheel_132b\"); must have been configured with SndCfgMusicInfo."}
+    - {name: flag, lua: number, ctype: unsigned, default: 1, desc: "A byte passed to the music player with the track (default 1); the scripts never pass it, and its meaning is not traced."}
+  overloads:
+  - wrapper: 0x003712d8
+    calls:
+      - {addr: 0x00113560}
+    args:
+      - {name: trackHash, lua: number, ctype: unsigned, desc: "The track's name hash (a number) instead of its name."}
+      - {name: flag, lua: number, ctype: unsigned, default: 1, desc: "As in the main form (default 1)."}
+    note: >-
+      Used when the first argument is not a string or there are more than two arguments.
+  description: >-
+    Starts a music track playing in a loop, replacing what is playing; the front end loops MenuTrack and the Wonder
+    Wheel theme with it. Does nothing while the game state forbids music or when the track is not configured.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00113590 → 0x00112de0 → 0x0010d8e8 (loop on); 0x0041cf30 is the game-state check.
+  usage: {chunks: 87, calls: 183, boot: true, mission1: true, result_used: false}
+  coney: partial
+
+- name: SoundStopMusicTrack
+  wrapper: 0x003713f8
+  calls:
+    - {addr: 0x001135e0}
+  description: >-
+    Stops the music: each of the music player's three channels that is playing or fading is stopped or faded out
+    according to its state (0x0010d9a0).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 90, calls: 189, boot: true, mission1: true, result_used: false}
+  coney: partial
+
+- name: SoundDisableCombatMusic
+  wrapper: 0x00371418
+  calls:
+    - {addr: 0x00113e30}
+  description: >-
+    Turns the automatic (system) music off, as SoundEnableSystemMusic(false) does.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: SoundSetSystemMusicState
+  wrapper: 0x00371438
+  calls:
+    - {addr: 0x00113e60}
+  args:
+    - {name: state, lua: number, ctype: int, desc: "3 switches the state flag (game state +0x3f4) off; any other value switches it on."}
+  description: >-
+    Sets the system (automatic, mood-driven) music's state and updates it (0x00419fc8); the scripts use 0, 1 and 3.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 8, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: SoundEnableSystemMusic
+  wrapper: 0x00371470
+  calls:
+    - {addr: 0x00113ea8}
+  args:
+    - {name: "on", lua: boolean, desc: "true lets the game choose music automatically by the situation (ambient, tension, fight); false turns that off so the script controls the music."}
+  description: >-
+    Turns the system music, the game's automatic mood music, on or off (0x0041a008).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 89, calls: 154, boot: false, mission1: false, result_used: false}
+
+- name: SoundSetMusicTrack
+  wrapper: 0x003714a0
+  calls:
+    - {addr: 0x00113ed0}
+  args:
+    - {name: slot, lua: number, ctype: int, desc: "Which system-music mood the tracks are for: 0, 1 and 2 (inferred: ambient, tension and fight)."}
+    - {name: track1, lua: string, desc: "Track name, or nil/empty for none."}
+    - {name: track2, lua: string, desc: "A second track for the same mood, or nil."}
+    - {name: track3, lua: string, desc: "A third track, or nil."}
+  description: >-
+    Sets up to three music tracks for one mood of the system music and turns the system music on.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    0x00113ed0; what the three slots mean is inferred from the scripts' track names.
+  usage: {chunks: 73, calls: 275, boot: false, mission1: false, result_used: false}
+
+- name: SoundSetMusicStateCallback
+  wrapper: 0x00371540
+  calls:
+    - {addr: 0x00113ff0}
+  args:
+    - {name: callback, lua: string, desc: "Name of a Lua function called when the system music changes state, or nil to clear it."}
+  description: >-
+    Registers a Lua function to be told when the system music changes state (0x0041b4c0).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: SoundPlayAmbientTrack
+  wrapper: 0x00371570
+  calls:
+    - {addr: 0x00113608}
+  args:
+    - {name: track, lua: string, desc: "Name of a looping ambient sound (such as \"vags/ambient/city/distant_traffic_loop\")."}
+  description: >-
+    Starts the level's background ambience loop, stopping the current one unless it is the same track; the new one
+    fades in over 2 s. In level 82 one particular track is swapped for another.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00110b18 → 0x00110b60; the ambient track's sound handle is kept at audio manager +0x24274.
+  usage: {chunks: 84, calls: 139, boot: false, mission1: true, result_used: false}
+
+- name: SoundStopAmbientTrack
+  wrapper: 0x003715a0
+  calls:
+    - {addr: 0x00113630}
+  description: >-
+    Stops the background ambience loop (0x00110c70).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 28, calls: 50, boot: false, mission1: true, result_used: false}
+
+- name: SetAmbientTrackVolume
+  wrapper: 0x003715c0
+  calls:
+    - {addr: 0x00113658}
+  args:
+    - {name: volume, lua: number, ctype: float, desc: "Volume of the ambience loop, 0-1 (clamped)."}
+  description: >-
+    Sets the volume of the background ambience loop that is playing; does nothing when none is (0x00110cc0).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 8, calls: 15, boot: true, mission1: true, result_used: false}
+
+- name: SoundPlay
+  wrapper: 0x003715f8
+  calls:
+    - {addr: 0x00113680}
+  args:
+    - {name: sound, lua: string, desc: "Sound name (such as \"vags/doors/opengate_01\")."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} the sound plays at; written back to the table."}
+  results:
+    - {lua: number, desc: "The sound's handle (a number) for SoundStop or SndFadeOut."}
+  description: >-
+    Plays a sound once at a position in the world, at normal volume and pitch.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 17, calls: 27, boot: false, mission1: false, result_used: true}
+
+- name: SoundPlay2D
+  wrapper: 0x003716f8
+  calls:
+    - {addr: 0x001137a8}
+  args:
+    - {name: sound, lua: string, desc: "Sound name (such as \"vags/misc/menu8\")."}
+  results:
+    - {lua: number, desc: "The sound's handle, or the 'no sound' handle (0x00598690) when the sound could not start."}
+  description: >-
+    Plays a sound once without a position (2D, same volume in both speakers), for menus and interface cues.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x001137a8 → 0x0010fcd8.
+  usage: {chunks: 50, calls: 233, boot: true, mission1: false, result_used: false}
+
+- name: SoundPreLoad
+  wrapper: 0x00371768
+  calls:
+    - {addr: 0x00113700}
+  args:
+    - {name: sound, lua: string, desc: "Sound name."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} it will play at; written back."}
+  results:
+    - {lua: number, desc: "The prepared sound's handle, to start with SoundStart."}
+  description: >-
+    Loads and positions a sound without starting it, so that SoundStart can play it later without delay.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true}
+
+- name: SoundStart
+  wrapper: 0x00371868
+  calls:
+    - {addr: 0x00113780}
+  args:
+    - {name: sound, lua: number, ctype: unsigned, desc: "Handle from SoundPreLoad."}
+  description: >-
+    Starts a sound prepared with SoundPreLoad.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: SoundStop
+  wrapper: 0x003718a0
+  calls:
+    - {addr: 0x001137e8}
+  args:
+    - {name: sound, lua: number, ctype: unsigned, desc: "Handle of a playing sound."}
+  description: >-
+    Stops a sound at once.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: AddAmbientSound
+  wrapper: 0x003718d8
+  calls:
+    - {addr: 0x00113810}
+  args:
+    - {name: index, lua: number, ctype: int, desc: "Entry in the ambient sound table (0 upwards); global.lua fills hundreds of entries."}
+    - {name: sound, lua: string, desc: "Sound name for that entry."}
+  description: >-
+    Puts a sound into the ambient sound table that the ambient emitters pick their random sounds from
+    (AddAmbientSoundEmitter2's index and count).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x0010d3c8 stores the name hash at ambient manager +0x1a014 + 4 × index; the index is not range-checked.
+  usage: {chunks: 1, calls: 1077, boot: true, mission1: false, result_used: false}
+
+- name: AddAmbientSoundEmitter
+  wrapper: 0x00371b18
+  calls:
+    - {addr: 0x00113840}
+  args:
+    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "First corner/end {x, y, z} of the emitter's area; written back."}
+    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Second corner/end {x, y, z}; the same as pos1 for a point source."}
+    - {name: index, lua: number, ctype: int, desc: "First ambient-table entry to pick from, or -1 to use the sound name."}
+    - {name: sound, lua: string, desc: "Sound name when index is -1 (such as a music loop for a radio)."}
+    - {name: count, lua: number, ctype: unsigned, desc: "Number of consecutive table entries to pick from."}
+    - {name: range, lua: number, ctype: float, desc: "Audible range in metres, -1 for the default (inferred)."}
+    - {name: arg7, lua: number, ctype: int, desc: "A number (the scripts pass 0); meaning not traced."}
+    - {name: minDelay, lua: number, ctype: unsigned, desc: "Shortest pause between plays (the scripts pass 1 or 500) (inferred)."}
+    - {name: maxDelay, lua: number, ctype: unsigned, desc: "Longest pause between plays (inferred)."}
+    - {name: arg10, lua: number, ctype: unsigned, desc: "A small number (the scripts pass 3); meaning not traced."}
+    - {name: arg11, lua: number, ctype: int, desc: "A small number (the scripts pass 0 or 3); meaning not traced."}
+  results:
+    - {lua: number, desc: "The emitter's id, for EnableAmbientEmitter and SetAmbientEmitterVolumeMod."}
+  description: >-
+    Adds an unnamed ambient sound emitter (a looping or repeating sound in an area), the older form of
+    AddAmbientSoundEmitter2.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: true}
+
+- name: AddAmbientSoundEmitter2
+  wrapper: 0x00371db0
+  calls:
+    - {addr: 0x00113920}
+  args:
+    - {name: name, lua: string, desc: "The emitter's name (such as \"tCrickets01\"), used by SetAmbientEmitterPositions; a name already used refers to the existing emitter."}
+    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "First point {x, y, z} of the emitter (one end of the line or corner of the area the sound comes from); written back."}
+    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Second point {x, y, z}; the same as pos1 for a point source; written back."}
+    - {name: index, lua: number, ctype: int, desc: "First entry of the ambient sound table (AddAmbientSound) to pick from, or -1 to play the sound named by sound."}
+    - {name: sound, lua: string, desc: "Sound name used when index is -1; the scripts pass \"\" otherwise."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many consecutive table entries, starting at index, the emitter picks from at random."}
+    - {name: range, lua: number, ctype: float, desc: "A float stored with the emitter (the scripts use 25-70, or -1); inferred to be the audible range in metres, -1 for the default."}
+    - {name: arg8, lua: number, ctype: int, desc: "A number the scripts pass as -1; meaning not traced."}
+    - {name: minDelay, lua: number, ctype: unsigned, desc: "Shortest pause between two plays, in seconds (inferred from the random range the emitter draws from)."}
+    - {name: maxDelay, lua: number, ctype: unsigned, desc: "Longest pause between two plays, in seconds (inferred)."}
+    - {name: arg11, lua: number, ctype: unsigned, desc: "A small number stored as a byte (the scripts pass 3 or 4); meaning not traced."}
+    - {name: mode, lua: number, ctype: int, desc: "A mode byte 0-2 (larger values become 0); the scripts pass 0. Meaning not traced."}
+  results:
+    - {lua: number, desc: "The emitter's id."}
+  description: >-
+    Adds a named ambient sound emitter: at random intervals it plays a random sound from part of the ambient table (or
+    one named sound) somewhere between two points. The levels place their crickets, dogs, wind and machinery this way.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00113920 → 0x0010cf58. Which argument lands in which emitter field is confirmed (code); the meaning of the
+    numbers is inferred from the scripts' values. Names containing certain substrings get a special type (0x0010cf58
+    compares against 0x00546ce0, 0x00546ce8, 0x00546cf0).
+  usage: {chunks: 58, calls: 2230, boot: false, mission1: true, result_used: true}
+
+- name: SetAmbientEmitterPositions
+  wrapper: 0x00372058
+  calls:
+    - {addr: 0x00113a58}
+  args:
+    - {name: name, lua: string, desc: "Name of an emitter made with AddAmbientSoundEmitter2."}
+    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z}; written back."}
+    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z}; written back."}
+    - {name: pos3, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z}; written back."}
+    - {name: pos4, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z}; written back."}
+    - {name: pos5, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z}; written back."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many of the five positions are used (at most 5)."}
+  description: >-
+    Gives a named ambient emitter up to five positions it plays its sounds from, instead of its two points.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00113a58 → 0x0010d590.
+  usage: {chunks: 53, calls: 421, boot: false, mission1: true, result_used: false}
+
+- name: AddAmbientEmitter
+  wrapper: 0x00372350
+  calls:
+    - {addr: 0x00113b28}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z}; written back."}
+    - {name: index, lua: number, ctype: int, desc: "Ambient-table entry (or sound id) to play."}
+    - {name: arg3, lua: number, ctype: unsigned, desc: "A number passed on; meaning not traced."}
+    - {name: range, lua: number, ctype: float, desc: "A float passed on; inferred to be the range in metres."}
+    - {name: arg5, lua: number, ctype: unsigned, desc: "A number passed on; meaning not traced."}
+    - {name: arg6, lua: number, ctype: unsigned, desc: "A number passed on; meaning not traced."}
+  results:
+    - {lua: number, desc: "The emitter's id."}
+  description: >-
+    Adds a point ambient emitter at one position (the same code as AddAmbientSoundEmitter with both points equal).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SetAmbientEmitterVolumeMod
+  wrapper: 0x003725f0
+  calls:
+    - {addr: 0x00113c00}
+  args:
+    - {name: emitter, lua: number, ctype: int, desc: "Emitter id (from AddAmbientSoundEmitter)."}
+    - {name: volume, lua: number, ctype: float, desc: "Volume factor, 0-1."}
+  description: >-
+    Scales the volume of one ambient emitter, for example a radio turned down.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: PlayAmbientEmitter
+  wrapper: 0x00372668
+  calls:
+    - {addr: 0x00113c30}
+  args:
+    - {name: emitter, lua: number, ctype: int, desc: "Emitter id."}
+  description: >-
+    Makes an ambient emitter play now, without waiting for its timer.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: EnableAmbientEmitter
+  wrapper: 0x003726a0
+  calls:
+    - {addr: 0x00113bc8}
+  args:
+    - {name: emitter, lua: number, ctype: int, desc: "Emitter id."}
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) enables the emitter, false silences it."}
+  description: >-
+    Switches an ambient emitter on or off.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 15, calls: 43, boot: false, mission1: false, result_used: false}
+
+- name: NewMaterialSlots
+  wrapper: 0x00372700
+  calls:
+    - {addr: 0x00113c58}
+  args:
+    - {name: material1, lua: number, ctype: unsigned, desc: "First material id (MATERIAL.* from enum_preload.lua), such as a weapon or fist."}
+    - {name: material2, lua: number, ctype: unsigned, desc: "Second material id, such as the body part or surface hit."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many alternative sounds the pair has (one is picked at random)."}
+    - {name: columns, lua: number, ctype: unsigned, default: 1, desc: "How many sound columns each alternative has, 1-3 (default 1); NewMaterialSound fills them."}
+    - {name: tune1, lua: number, ctype: float, default: 1, desc: "A float stored with the pair (default 1); inferred to be a volume or pitch factor."}
+    - {name: tune2, lua: number, ctype: float, default: 1, desc: "A float stored with the pair (default 1)."}
+    - {name: tune3, lua: number, ctype: float, default: 1, desc: "A float stored with the pair (default 1)."}
+    - {name: tune4, lua: number, ctype: float, desc: "A float (default 0); passed on, where it is stored is not traced."}
+    - {name: tune5, lua: number, ctype: float, desc: "A float (default 0); as tune4."}
+    - {name: tune6, lua: number, ctype: float, desc: "A float (default 0); as tune4."}
+  description: >-
+    Allocates the sound table for one pair of materials (what hits what): count alternatives with up to three columns
+    of sound names each; config_preload.lua and the sound matrix call it thousands of times.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00115cb0; the table is a 2D array indexed by the two materials (row stride 0x2fc) in the audio manager's sound
+    table at +0x1e0, allocated from the Level Dynamic & LUA pool.
+  usage: {chunks: 3, calls: 2227, boot: true, mission1: false, result_used: false}
+
+- name: NewMaterialSound
+  wrapper: 0x003728c8
+  calls:
+    - {addr: 0x00113c98}
+  args:
+    - {name: index, lua: number, ctype: unsigned, desc: "Which alternative to set, 0 to count - 1."}
+    - {name: material1, lua: number, ctype: unsigned, desc: "First material id of the pair."}
+    - {name: material2, lua: number, ctype: unsigned, desc: "Second material id of the pair."}
+    - {name: sound1, lua: string, desc: "Sound name for column 1; \"none\" stores no sound, nil leaves it unchanged."}
+    - {name: sound2, lua: string, desc: "Sound name for column 2, as sound1."}
+    - {name: sound3, lua: string, desc: "Sound name for column 3, as sound1."}
+  description: >-
+    Sets the sounds of one alternative of a material pair made with NewMaterialSlots; each named sound is also
+    registered with the audio manager (0x00110db0).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00115ee8.
+  usage: {chunks: 3, calls: 3296, boot: true, mission1: false, result_used: false}
+
+- name: DuplicateSoundMaterials
+  wrapper: 0x003729c0
+  calls:
+    - {addr: 0x00113ce8}
+  args:
+    - {name: material1, lua: number, ctype: unsigned, desc: "First material id."}
+    - {name: material2, lua: number, ctype: unsigned, desc: "Second material id."}
+  description: >-
+    Makes the reverse pair share the sounds of a material pair, so B hitting A sounds like A hitting B; nothing
+    happens when both are the same.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00116438 copies the slot pointer between the two transposed table cells.
+  usage: {chunks: 3, calls: 2225, boot: true, mission1: false, result_used: false}
+
+- name: SetNumberOfMaterialSlots
+  wrapper: 0x00372a38
+  calls:
+    - {addr: 0x00113d18}
+  args:
+    - {name: material1, lua: number, ctype: unsigned, desc: "First material id."}
+    - {name: material2, lua: number, ctype: unsigned, desc: "Second material id."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many of the allocated alternatives are used (no more than NewMaterialSlots allocated)."}
+  description: >-
+    Changes how many alternatives a material pair picks from, and restarts its choice.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00116480.
+  usage: {chunks: 6, calls: 18, boot: true, mission1: false, result_used: false}
+
+- name: NewAnimSlots
+  wrapper: 0x00372ad8
+  calls:
+    - {addr: 0x00113d50}
+  args:
+    - {name: animSound, lua: number, ctype: unsigned, desc: "Animation sound event id (SA.* from enum_preload.lua, such as SA.play_sound_grunt)."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many alternative sounds the event has."}
+    - {name: columns, lua: number, ctype: unsigned, default: 1, desc: "How many sound columns each alternative has, 1-3 (default 1)."}
+    - {name: tune1, lua: number, ctype: float, default: 1, desc: "A float stored with the event (default 1); the scripts pass 0.9 for some; inferred to be a volume or chance factor."}
+    - {name: tune2, lua: number, ctype: float, default: 1, desc: "A float (default 1)."}
+    - {name: tune3, lua: number, ctype: float, default: 1, desc: "A float (default 1)."}
+    - {name: tune4, lua: number, ctype: float, desc: "A float (default 0); where it is stored is not traced."}
+    - {name: tune5, lua: number, ctype: float, desc: "A float (default 0); as tune4."}
+    - {name: tune6, lua: number, ctype: float, desc: "A float (default 0); as tune4."}
+  description: >-
+    Allocates the sound table for one animation sound event (a sound an animation triggers, such as a grunt or a death
+    cry): count alternatives with up to three columns each.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00116080.
+  usage: {chunks: 3, calls: 260, boot: true, mission1: false, result_used: false}
+
+- name: NewAnimSound
+  wrapper: 0x00372c78
+  calls:
+    - {addr: 0x00113d88}
+  args:
+    - {name: index, lua: number, ctype: unsigned, desc: "Which alternative to set, 0 to count - 1."}
+    - {name: animSound, lua: number, ctype: unsigned, desc: "Animation sound event id (SA.*)."}
+    - {name: sound1, lua: string, desc: "Sound name for column 1; \"none\" stores no sound, nil leaves it unchanged."}
+    - {name: sound2, lua: string, desc: "Sound name for column 2, as sound1."}
+    - {name: sound3, lua: string, desc: "Sound name for column 3, as sound1."}
+  description: >-
+    Sets the sounds of one alternative of an animation sound event made with NewAnimSlots.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x001162a0.
+  usage: {chunks: 3, calls: 507, boot: true, mission1: false, result_used: false}
+
+- name: SndAllocateCharacterVoices
+  wrapper: 0x00372d48
+  calls:
+    - {addr: 0x00113dd0}
+  args:
+    - {name: count, lua: number, ctype: unsigned, desc: "Number of characters to allocate voices for (config_preload.lua passes 350)."}
+  description: >-
+    Allocates the character voice table and, for every character and each of its 207 speech commands, counts how many
+    lines exist in the sound data by probing names of the form vags/character/voices/<character>/<command>_<nn> (up to
+    54 each).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x001164a8; each character's record is 0x26d bytes (3 bytes per command: count, ..., percent defaulting to 100).
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: SndSetCommandSoundPercent
+  wrapper: 0x00372d80
+  calls:
+    - {addr: 0x00113df8}
+  args:
+    - {name: character, lua: number, ctype: int, desc: "Character index in the voice table, or -1 for every character."}
+    - {name: command, lua: number, ctype: unsigned, desc: "Speech command id (0-206)."}
+    - {name: percent, lua: number, ctype: unsigned, desc: "Chance in percent (0-100) that the character says a line when the command fires."}
+  description: >-
+    Sets how often characters speak for a speech command.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00115bb0 writes byte 2 of the command's 3-byte record.
+  usage: {chunks: 1, calls: 13, boot: true, mission1: false, result_used: false}
+
+- name: SndSetListener
+  wrapper: 0x00372e20
+  calls:
+    - {addr: 0x00114018}
+  args:
+    - {name: listener, lua: number, ctype: unsigned, desc: "What the 3D sound is heard from, stored at audio manager +0x60; the scripts pass 0 (normal) and 1, and once a script value; the meaning of each value is not traced (inferred: 0 the camera, 1 the player)."}
+  description: >-
+    Chooses the listener position for 3D sound.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only the store is confirmed (code); the reader of +0x60 is not traced.
+  usage: {chunks: 20, calls: 53, boot: true, mission1: true, result_used: false}
+
+- name: SoundSetEffect
+  wrapper: 0x00372e58
+  calls:
+    - {addr: 0x00114028}
+  args:
+    - {name: effect, lua: number, ctype: int, desc: "Reverb type in the PS2 sound library's numbering (inferred): the scripts use 1 (room) and 5 (hall)."}
+    - {name: depth, lua: number, ctype: float, desc: "Effect depth (wet level), a float such as 0.1-0.2."}
+    - {name: delay, lua: number, ctype: int, desc: "Effect delay, an integer (0 or 50), for the echo/delay types (inferred)."}
+    - {name: feedback, lua: number, ctype: int, desc: "Effect feedback, an integer (0 or 50) (inferred)."}
+  description: >-
+    Sets the reverb effect applied to game sound, on both sound processor cores.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00114028 → 0x00113000 calls the sound device twice (cores 0 and 1). The argument meanings follow the PS2 reverb
+    parameters and are inferred.
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: SoundCfgInterfaceSound
+  wrapper: 0x00372f20
+  calls:
+    - {addr: 0x001141b0}
+  args:
+    - {name: id, lua: number, ctype: int, desc: "Interface sound id (config_preload2.lua sets 1 upwards: 1 AI health, 2 HUD alarm, 3 checkpoint, then menu sounds)."}
+    - {name: sound, lua: string, desc: "Sound name for that id."}
+  description: >-
+    Assigns a sound to one of the interface sound cues the HUD and menus play, and registers it with the audio
+    manager.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x001167b8 stores the hash at sound table +0x23cc4 + 4 × id.
+  usage: {chunks: 1, calls: 39, boot: true, mission1: false, result_used: false}
+
+- name: SoundEnableEffects
+  wrapper: 0x00372f80
+  calls:
+    - {addr: 0x00114060}
+  args:
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) enables the sound effects processing (reverb); false turns it off at once."}
+  description: >-
+    Turns the reverb effect on or off.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x001130c8.
+  usage: {chunks: 14, calls: 15, boot: true, mission1: false, result_used: false}
+
+- name: SoundPauseSound
+  wrapper: 0x00372fb0
+  calls:
+    - {addr: 0x00114088}
+  args:
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) pauses all game sound, false resumes it."}
+  description: >-
+    Pauses or resumes all game sound, for example around a scripted pause.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 36, calls: 139, boot: false, mission1: false, result_used: false}
+
+- name: SoundPlayCommand
+  wrapper: 0x00372fe0
+  calls:
+    - {addr: 0x001140d8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who speaks."}
+    - {name: command, lua: number, ctype: unsigned, desc: "Speech command id (0-206), the kind of line (taunt, cheer and so on)."}
+    - {name: sound, lua: string, desc: "Optional explicit sound name; nil lets the game pick a line for the command."}
+    - {name: flag1, lua: boolean, default: true, desc: "A flag passed to the speech call (default true); meaning not traced."}
+    - {name: target, lua: number, ctype: unsigned, default: 4294967295, desc: "Handle the line is addressed to (default 0xffffffff, no target)."}
+    - {name: flag2, lua: boolean, default: true, desc: "A second flag (default true); meaning not traced."}
+  results:
+    - {lua: number, desc: "The speech sound's handle, or the 'no sound' handle when the human is not found."}
+  description: >-
+    Makes a human say a line of the given speech command.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 60, calls: 97, boot: false, mission1: false, result_used: true}
+
+- name: SoundPreLoadScene
+  wrapper: 0x00373118
+  calls:
+    - {addr: 0x00114178}
+  args:
+    - {name: sound, lua: string, desc: "Name of a scene's sound."}
+  description: >-
+    Preloads a cutscene's sound (0x0010ff68).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SetupRadio
+  wrapper: 0x00379ea0
+  calls:
+    - {addr: 0x003ac4d0}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the radio (boom box) world object."}
+    - {name: callback, lua: string, desc: "Name of a Lua function to call (when the radio is interacted with, inferred), or nil."}
+    - {name: track, lua: number, ctype: int, desc: "Radio track number; 0 or less means none."}
+    - {name: callback2, lua: string, desc: "Name of a second Lua function, or nil."}
+    - {name: checkpoint, lua: number, ctype: int, desc: "When not 0, a second mode is used with this number stored (the scripts pass the checkpoint); meaning not traced."}
+  description: >-
+    Sets up a world object as a playable radio: its callbacks and the track it plays.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    0x003ac4d0.
+  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false}

@@ -1,0 +1,290 @@
+# The Warriors' script bindings, category `scene`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: ScenePreload
+  wrapper: 0x00367448
+  calls:
+    - {addr: 0x00353f88, name: Scene_Preload}
+  args:
+    - {name: name, lua: string, desc: "Scene name from the level's scene list (for example `l11_c2`)."}
+    - {name: onLoaded, lua: string, desc: "Optional name of a Lua function called when the scene has loaded."}
+  results:
+    - {lua: number, desc: "The scene's id (its index in the level's scene table), used by the other Scene bindings. An unknown name gives 0, the first scene."}
+  description: >-
+    Starts loading a scripted scene (in-engine cutscene or animation set) into one of 12 scene slots and returns its
+    id; a scene already loaded or loading is not loaded again.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Scene table at 0x006eba10 (0x18-byte entries, count at 0x00512aec); slots at 0x006eba18 (0x40 bytes each).
+  usage: {chunks: 110, calls: 256, boot: true, mission1: true, result_used: true}
+
+- name: SceneIsPreloaded
+  wrapper: 0x003674d0
+  calls:
+    - {addr: 0x00354178}
+  args:
+    - {name: name, lua: string, desc: "Scene name."}
+  results:
+    - {lua: boolean, desc: "true (1) when a slot holds that scene fully loaded and idle, else nil."}
+  description: >-
+    Reports whether a scene has finished loading.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 3, calls: 6, boot: true, mission1: false, result_used: true}
+
+- name: SceneUnload
+  wrapper: 0x00367518
+  calls:
+    - {addr: 0x00353fc8}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id from ScenePreload."}
+  description: >-
+    Frees a loaded scene's slot, but only while the scene is loaded and not playing.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 8, calls: 9, boot: true, mission1: false, result_used: false}
+
+- name: SceneSetCallback
+  wrapper: 0x00367550
+  calls:
+    - {addr: 0x00354710}
+  args:
+    - {name: name, lua: string, desc: "Name of a Lua function; nil or an empty string clears it."}
+  description: >-
+    Sets a global scene callback name (interned, at 0x00512af4) that scenes call at a scripted point (used for bus and
+    chase set-ups and the credits).
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    When the scene system calls it is not traced.
+  usage: {chunks: 6, calls: 14, boot: false, mission1: false, result_used: false}
+
+- name: ScenePlayCinematic
+  wrapper: 0x00367580
+  calls:
+    - {addr: 0x00353c68, name: Scene_PlayCinematic}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id from ScenePreload."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts (global.lua passes the scene table's Delay; level scripts 0)."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when the scene ends, or nil."}
+    - {name: bars, lua: boolean, desc: "true shows the letterbox bars."}
+    - {name: skippable, lua: boolean, desc: "true lets the player skip it (global.lua passes `not NoSkip`)."}
+    - {name: looping, lua: boolean, desc: "true loops the scene."}
+    - {name: freeze, lua: boolean, default: true, desc: "true (default) freezes the world while the scene plays."}
+    - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time when the scene starts and ends (seconds, inferred)."}
+    - {name: final, lua: boolean, desc: "global.lua passes the scene table's Final flag; when true it sets a global (0x00510174), inferred to mark the level's last scene."}
+    - {name: chain, lua: boolean, desc: "global.lua passes the scene table's Chain field; its use is not traced."}
+  results:
+    - {lua: boolean, desc: "true (1) when the scene started, nil when it could not."}
+  description: >-
+    Plays a loaded scene as a cinematic at its authored position, taking over the camera and optionally the player's
+    control until it ends or is skipped.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Argument names follow global.lua's scene-table fields; their exact effects inside the scene player (0x00353818 →
+    0x003a13d0) are inferred.
+  usage: {chunks: 9, calls: 14, boot: true, mission1: false, result_used: false}
+
+- name: ScenePlayFixedScene
+  wrapper: 0x00367708
+  calls:
+    - {addr: 0x00353d60, name: Scene_PlayFixed}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id from ScenePreload."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts (scripts pass 0)."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when it ends, or nil (level99 passes 0)."}
+    - {name: looping, lua: boolean, desc: "true loops it."}
+    - {name: freeze, lua: boolean, desc: "true freezes the world while it plays."}
+    - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time (seconds, inferred)."}
+  results:
+    - {lua: boolean, desc: "true (1) when the scene started."}
+  description: >-
+    Plays a loaded scene at its authored position without the cinematic extras (no bars, not skippable); level99 uses
+    it for its intro.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: false}
+
+- name: ScenePlay
+  wrapper: 0x00367a20
+  calls:
+    - {addr: 0x00353e70}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id from ScenePreload."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres to play the scene at."}
+    - {name: heading, lua: number, ctype: float, desc: "Heading in degrees."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when it ends."}
+    - {name: flag1, lua: boolean, desc: "A flag passed to the scene player (inferred: looping)."}
+    - {name: flag2, lua: boolean, default: true, desc: "A flag, default true (inferred: freeze)."}
+    - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time (inferred)."}
+  results:
+    - {lua: boolean, desc: "true (1) when the scene started."}
+  overloads:
+  - wrapper: 0x00367810
+    calls:
+      - {addr: 0x00353e38}
+    args:
+      - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+      - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z}."}
+      - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation as a quaternion {i, j, k, r}."}
+      - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts."}
+      - {name: onEnd, lua: string, desc: "Name of the Lua function called when it ends."}
+      - {name: flag1, lua: boolean, desc: "A flag (inferred: looping)."}
+      - {name: flag2, lua: boolean, default: true, desc: "A flag, default true (inferred: freeze)."}
+      - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time (inferred)."}
+    results:
+      - {lua: boolean, desc: "true (1) when the scene started."}
+    note: >-
+      The quaternion form is used when argument 3 is a table; the heading form's type check fails then and it falls
+      back to this one.
+  description: >-
+    Plays a loaded scene at a given world position and orientation instead of its authored one.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: ScenePlayAnimation
+  wrapper: 0x00367cd8
+  calls:
+    - {addr: 0x00353f40, name: Scene_PlayAnimation}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id from ScenePreload."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when it ends."}
+    - {name: looping, lua: boolean, desc: "true loops it."}
+    - {name: flag, lua: boolean, desc: "A flag (global.lua passes false)."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts."}
+    - {name: flag2, lua: boolean, desc: "A flag (global.lua passes false)."}
+    - {name: freeze, lua: boolean, desc: "true freezes the world while it plays."}
+    - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time (inferred)."}
+  results:
+    - {lua: boolean, desc: "true (1) when the scene started."}
+  description: >-
+    Plays a loaded scene as an animation only (no position or orientation override), for global.lua's scene helpers.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: SceneStop
+  wrapper: 0x00367e20
+  calls:
+    - {addr: 0x00354038, name: Scene_Stop}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+    - {name: force, lua: boolean, desc: "true stops it at once; false lets a scene marked to finish its current part do so."}
+  description: >-
+    Stops a playing scene (state 4 or 5); nothing happens when it is not playing.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The non-forced path for such scenes calls 0x003a0be8; what it waits for is not traced.
+  usage: {chunks: 53, calls: 62, boot: true, mission1: false, result_used: false}
+
+- name: SceneDone
+  wrapper: 0x00367e80
+  calls:
+    - {addr: 0x00354058}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+  results:
+    - {lua: boolean, desc: "nil while that scene is starting or playing, else true (1), including when it is not loaded."}
+  description: >-
+    Reports whether a scene has finished. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SceneLength
+  wrapper: 0x00367ed0
+  calls:
+    - {addr: 0x003540b8}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+  results:
+    - {lua: number, desc: "The scene's length in milliseconds, or 0 when it has none."}
+  description: >-
+    Returns a scene's length. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SceneAddObject
+  wrapper: 0x00367f48
+  calls:
+    - {addr: 0x00354280, name: Scene_BindObject}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the world object (or human) the scene should animate."}
+    - {name: slot, lua: number, ctype: unsigned, desc: "The scene's object slot, from 0; ignored when the scene has fewer slots."}
+  description: >-
+    Binds a world object to one of a scene's object slots, so the scene moves that object when it plays.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 9, calls: 12, boot: true, mission1: true, result_used: false}
+
+- name: SceneInvokeInPlace
+  wrapper: 0x00367fe8
+  calls:
+    - {addr: 0x00354c00}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when it ends."}
+    - {name: flag, lua: boolean, desc: "A flag passed to the scene player."}
+  results:
+    - {lua: boolean, desc: "true (1) when the scene started."}
+  description: >-
+    Starts a scene where it is, through the scene player with no delay. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SceneInvoke
+  wrapper: 0x00368078
+  calls:
+    - {addr: 0x00354bb8}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z}."}
+    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation quaternion {i, j, k, r}."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when it ends."}
+    - {name: flag, lua: boolean, desc: "A flag passed to the scene player."}
+  results:
+    - {lua: boolean, desc: "true (1) when the scene started."}
+  description: >-
+    Starts a scene at a given position and orientation. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SceneTerminate
+  wrapper: 0x00368240
+  calls:
+    - {addr: 0x00354c48}
+  args:
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+  description: >-
+    Stops a scene without forcing it: the same as SceneStop(scene, false).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: PlayMovie
+  wrapper: 0x0036c258
+  calls:
+    - {addr: 0x0042a938, name: Movie_Play}
+  args:
+    - {name: name, lua: string, desc: "Movie name (level100 passes `TRAILER` or `L1_IN`)."}
+    - {name: flag, lua: boolean, default: true, desc: "A flag passed to the player, default true; its effect is not traced."}
+  description: >-
+    Plays a full-screen movie and returns when it ends; when subtitles are on it also loads `<name>_sub.scn` for them.
+    The front end uses it for the trailer and the attract movie.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The movie player (0x0042a938) stops other streaming first; the subtitle check is the global 0x0050ea74.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: partial

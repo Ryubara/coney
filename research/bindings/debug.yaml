@@ -1,0 +1,70 @@
+# The Warriors' script bindings, category `debug`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: SetBugstarIP
+  wrapper: 0x0036b4c0
+  calls:
+    - {addr: 0x0041d5e8}
+  args:
+    - {name: address, lua: string, desc: "An IP address string."}
+  description: >-
+    Development tool: sets the address of Rockstar's bug-reporting server (`0x00418bf0`). No shipped script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: setDetailFlag
+  wrapper: 0x0036c620
+  calls:
+    - {addr: 0x0041d830}
+  args:
+    - {name: index, lua: number, ctype: int, desc: "Which flag byte (0-3 in the scripts)."}
+    - {name: mask, lua: number, ctype: unsigned, desc: "Bits to set (a byte)."}
+  description: >-
+    Sets bits in one of the game state's detail-flag bytes (`W_GameState + 0x3e8 + index`), switching optional level
+    details on.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    What reads the bytes is not traced; the 'level details' reading is speculative.
+  usage: {chunks: 18, calls: 26, boot: false, mission1: false, result_used: false}
+
+- name: clearDetailFlag
+  wrapper: 0x0036c698
+  calls:
+    - {addr: 0x0041d860}
+  args:
+    - {name: index, lua: number, ctype: int, desc: "Which flag byte."}
+    - {name: mask, lua: number, ctype: unsigned, desc: "Bits to clear."}
+  description: >-
+    Clears bits in a detail-flag byte (the reverse of setDetailFlag).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false}
+
+- name: CapturePVSSamplePoint
+  wrapper: 0x0036c868
+  calls:
+    - {addr: 0x0040cc68}
+  description: >-
+    Development tool for building visibility (PVS) data: calls `0x0040cc68`. No shipped script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: DoorCRCCheck
+  wrapper: 0x00379978
+  calls:
+    - {addr: 0x00397330}
+  args:
+    - {name: a, lua: number, ctype: int, desc: "Byte 1 of a checksum, ignored."}
+    - {name: b, lua: number, ctype: int, desc: "Byte 2, ignored."}
+    - {name: c, lua: number, ctype: int, desc: "Byte 3, ignored."}
+    - {name: d, lua: number, ctype: int, desc: "Byte 4, ignored."}
+  description: >-
+    Does nothing in this build: its callee `0x00397330` returns at once. Every level script calls it once with four
+    bytes, presumably a checksum of the level's door data in development builds.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 62, calls: 62, boot: false, mission1: true, result_used: false}

@@ -1,0 +1,1328 @@
+# The Warriors' script bindings, category `level`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: SetSpawnMax
+  wrapper: 0x0035b0a0
+  calls:
+    - {addr: 0x00299510}
+  args:
+    - {name: count, lua: number, ctype: int, desc: "Most ambient pedestrians and gang members the spawners may have alive at once in this level (the scripts use 3 to 70)."}
+  description: >-
+    Sets the level's cap on spawned characters: the game state's 16-bit spawn maximum (`W_GameState + 0x434`).
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Level scripts call it once while setting up; what reads the cap is not traced.
+  usage: {chunks: 48, calls: 48, boot: false, mission1: false, result_used: false}
+
+- name: SetCopSpawnMax
+  wrapper: 0x0035b0d8
+  calls:
+    - {addr: 0x00299520}
+  args:
+    - {name: count, lua: number, ctype: int, desc: "Most police officers that may be spawned at once."}
+  description: >-
+    Sets the cap on spawned police (`W_GameState + 0x326`, 16-bit).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GetProfileDifficulty
+  wrapper: 0x0035c770
+  calls:
+    - {addr: 0x0041d820}
+  results:
+    - {lua: number, desc: "The profile's difficulty byte (`W_GameState + 0x43c`): 0 easy, 1 normal, 2 hard, 3 fury, 4 rumble, as for `SetDifficulty`; 1 at the front end."}
+  description: >-
+    Returns the difficulty stored with the player's profile, as opposed to the one currently in force
+    (`GetDifficulty`). `global.lua` reads it to pick which `config_<difficulty>` file to run.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: true}
+  coney: implemented
+
+- name: AdjustBossLizzies
+  wrapper: 0x00362768
+  calls:
+    - {addr: 0x0029fb60}
+  args:
+    - {name: boss, lua: number, ctype: unsigned, desc: "Handle of the boss; read but not used by the callee."}
+    - {name: a, lua: number, ctype: int, desc: "First tuning value (16-bit), meaning not traced."}
+    - {name: b, lua: number, ctype: int, desc: "Second tuning value (16-bit)."}
+    - {name: c, lua: number, ctype: int, desc: "Third tuning value (16-bit)."}
+    - {name: d, lua: number, ctype: int, desc: "Fourth tuning value (16-bit)."}
+  description: >-
+    Stores four tuning values for the Lizzies boss fight in globals (`0x006e9424`-`0x006e942a`) and resets three
+    companions to 1000, 50 and 1000. No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The first argument is ignored by `0x0029fb60`; what reads the globals is not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: EnterStore
+  wrapper: 0x00368480
+  calls:
+    - {addr: 0x0018e6b8}
+  args:
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Table {r, g, b, a}, each 0-1 (scaled to 0-255); the scripts pass {0, 0, 0, 0}. Written back unchanged."}
+  description: >-
+    Called when the player enters a store: sets colour preset 10 of the two per-player colour controllers at
+    `0x005fdeb8` to the given colour and switches both to it with a 0.25 s blend. `ExitStore` switches them back to
+    preset 9.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The code is confirmed (code) at `0x0018e6b8`; that the two controllers are the players' screen tint is inferred
+    from the 0.25 s colour blend and their being indexed per player.
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: ExitStore
+  wrapper: 0x00368530
+  calls:
+    - {addr: 0x0018e780}
+  description: >-
+    Called when the player leaves a store: switches both per-player colour controllers at `0x005fdeb8` back to preset
+    9 with a 0.25 s blend, undoing `EnterStore`.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Code confirmed at `0x0018e780`; the screen-tint reading is inferred, as for EnterStore.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: GetRumbleModeData
+  wrapper: 0x0036b9f0
+  calls:
+    - {addr: 0x001f26e0}
+  args:
+    - {name: data, lua: table, elem: number, count: 23, written_back: true, desc: "A table the binding fills with 23 numbers (indices 1-23): the Rumble (versus) mode set-up chosen in the menu, copied from `0x0063eec0`. Any contents on entry are overwritten."}
+  description: >-
+    Copies the Rumble mode set-up (23 unsigned 16-bit values: game type, gangs, players and options chosen on the
+    Rumble menu) into the given table. `level101.lua` and the other Rumble arenas read it at start-up.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The meaning of each of the 23 fields is not traced; the arena scripts index the table by name constants of their
+    own.
+  usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: false}
+
+- name: GetRumbleModeGangName
+  wrapper: 0x0036bac0
+  calls:
+    - {addr: 0x001f26a8}
+  args:
+    - {name: side, lua: number, ctype: unsigned, desc: "1 for the first side's gang, any other value for the second side's."}
+  results:
+    - {lua: string, desc: "The chosen gang's name (a string)."}
+  description: >-
+    Returns the name of the gang a Rumble side chose (`0x001fe048` for side 1, `0x001fe0c8` otherwise).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 33, calls: 66, boot: false, mission1: false, result_used: true}
+
+- name: SetGameMode
+  wrapper: 0x0036c2b0
+  calls:
+    - {addr: 0x0041d788}
+  args:
+    - {name: mode, lua: number, ctype: unsigned, desc: "Game mode number (`W_GameState + 0x158`); 0 is the story. 1 and 2 also set the flag at `+0x56f0` (inferred: a two-player or versus mode); the Rumble arenas pass their own mode."}
+    - {name: a, lua: number, ctype: unsigned, desc: "First mode parameter (`+0x15c`); the Rumble arenas pass 3."}
+    - {name: b, lua: number, ctype: unsigned, desc: "Second mode parameter (`+0x160`); the Rumble arenas pass 19."}
+    - {name: gangSize, lua: number, ctype: unsigned, desc: "Third mode parameter (`+0x164`); the Rumble arenas pass their gang size."}
+  description: >-
+    Sets the game mode and its three parameters in the game state; modes 1 and 2 set a flag at `+0x56f0`, every other
+    mode clears it. Used by the Rumble arenas.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The parameter meanings are inferred from the arena scripts' arguments.
+  usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: false}
+
+- name: GetGameMode
+  wrapper: 0x0036c378
+  calls:
+    - {addr: 0x0041d7e0}
+  results:
+    - {lua: number, desc: "The game mode set by `SetGameMode` (`W_GameState + 0x158`); 0 in the story."}
+  description: >-
+    Returns the current game mode.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+
+- name: GetDifficulty
+  wrapper: 0x0036c3d8
+  calls:
+    - {addr: 0x0041d800}
+  results:
+    - {lua: number, desc: "The difficulty in force (`W_GameState + 0x154`): 0 easy, 1 normal, 2 hard, 3 fury, 4 rumble (the values the `config_<difficulty>` scripts pass to SetDifficulty); 1 at the front end."}
+  description: >-
+    Returns the current difficulty level. `global.lua` reads it to tune its helpers.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Value names follow the five config scripts (`config_easy` 0, `config_normal` 1, `config_hard` 2, `config_fury` 3,
+    `config_rumble` 4); runtime value at the front end confirmed (runtime), see scripting.md.
+  usage: {chunks: 23, calls: 31, boot: true, mission1: true, result_used: true}
+  coney: implemented
+
+- name: SetDifficulty
+  wrapper: 0x0036c440
+  calls:
+    - {addr: 0x0041d810}
+  args:
+    - {name: level, lua: number, ctype: unsigned, desc: "0 easy, 1 normal, 2 hard, 3 fury, 4 rumble (stored as a byte)."}
+  description: >-
+    Sets the difficulty in force (`W_GameState + 0x154`). Each `config_<difficulty>.lua` calls it with its own level;
+    `global.lua` runs the one matching the profile.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 6, calls: 6, boot: true, mission1: false, result_used: false}
+
+- name: GetLanguage
+  wrapper: 0x0036c478
+  calls:
+    - {addr: 0x0041d7f0}
+  results:
+    - {lua: number, desc: "The language (`W_GameState + 0x120`): 0 English, 1 Spanish, 2 French, 3 Italian, 4 German (the order of `LanguageExt` in `config_preload2.lua`); 0 on the NTSC-U disc."}
+  description: >-
+    Returns the game's text language. `config_preload2.lua` uses it to choose which `config_strings_<lang>` file to
+    run and `global.lua` to keep that language's string tables.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Values confirmed (runtime), see scripting.md.
+  usage: {chunks: 92, calls: 126, boot: true, mission1: true, result_used: true}
+  coney: implemented
+
+- name: GetNumberOfLevelsPacked
+  wrapper: 0x0036c4d8
+  calls:
+    - {addr: 0x0041d690}
+  results:
+    - {lua: number, desc: "A count kept in the game state (`+0x56d8`); inferred: the number of level records."}
+  description: >-
+    Returns the count at `W_GameState + 0x56d8`. No shipped script calls it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    The level-record table at `+0x14d4` has its own count at `+0x56d4` (used by StatGetHighScore); how `+0x56d8`
+    differs is not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GetLevelNamePacked
+  wrapper: 0x0036c518
+  calls:
+    - {addr: 0x0041d6a8}
+  args:
+    - {name: level, lua: number, ctype: unsigned, desc: "A level number (as in `level<n>`), looked up in the level records by `0x0041f4d0`."}
+  results:
+    - {lua: string, desc: "The name stored in that level's record (record `+0x14`)."}
+  description: >-
+    Returns the stored name of a level record found by level number. No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    What `0x0041f4d0` returns when the level is not found is not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GetLevelId
+  wrapper: 0x0036c568
+  calls:
+    - {addr: 0x0041d6f0}
+  args:
+    - {name: index, lua: number, ctype: unsigned, desc: "Index of a level record (0-based), as `GetCurrentLevelIndex` returns; record 0 is the front end."}
+  results:
+    - {lua: number, desc: "That record's level number (record `+0x04`, the n of `level<n>`): 100 for record 0."}
+  description: >-
+    Returns the level number of a level record. `global.lua` combines it with `GetCurrentLevelIndex` to learn which
+    level is running.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Records are 0x84 bytes from `W_GameState + 0x14d4`; there is no bounds check. Values confirmed (runtime), see
+    scripting.md.
+  usage: {chunks: 2, calls: 8, boot: true, mission1: false, result_used: true}
+  coney: implemented
+
+- name: GetCurrentLevelIndex
+  wrapper: 0x0036c5c0
+  calls:
+    - {addr: 0x0041d718}
+  results:
+    - {lua: number, desc: "Index of the current level's record (`W_GameState + 0x56dc`, 16-bit); 0 at the front end."}
+  description: >-
+    Returns which level record is loaded; pass it to `GetLevelId` for the level number.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 3, calls: 9, boot: true, mission1: false, result_used: true}
+  coney: implemented
+
+- name: EnableGameOverCheck
+  wrapper: 0x0036c710
+  calls:
+    - {addr: 0x0041d890}
+  args:
+    - {name: "on", lua: boolean, desc: "true to let the game end the mission when the player is beaten, false to suspend that check (for scripted defeats)."}
+  description: >-
+    Sets the game-over check flag (`W_GameState + 0x155`).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    The store is confirmed (code); its use as the game-over check is inferred from the name and the scripts that clear
+    it around scripted fights.
+  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: PrecacheWorld
+  wrapper: 0x0036c7a0
+  calls:
+    - {addr: 0x0040c948}
+  args:
+    - {name: a, lua: number, ctype: float, desc: "First tuning number; every call passes 10000 (inferred: a time budget or limit)."}
+    - {name: b, lua: number, ctype: float, desc: "Second tuning number; the scripts pass 50 or 500."}
+    - {name: name, lua: string, desc: "Name of the precache set, such as a level section's name or a Rumble pack name."}
+  description: >-
+    Asks the world streamer to precache a named set of world data (calls `0x0040c948`). Level scripts call it before
+    moving the player to another part of the map.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Its callee `0x0040c948` is in the address range the draft's callee filter drops (0x00408000-0x0040d000), so the
+    draft entry has no `calls`.
+  usage: {chunks: 36, calls: 136, boot: false, mission1: false, result_used: false}
+
+- name: QueueFileToPrecache
+  wrapper: 0x0036c838
+  calls:
+    - {addr: 0x0040cc40}
+  args:
+    - {name: file, lua: string, desc: "A WAD file name with extension, such as a `.pak` pack."}
+  description: >-
+    Adds a file to the precache queue (calls `0x0040cc40`), so a later PrecacheWorld or level change finds it loaded.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Callee `0x0040cc40` is outside the draft's callee list for the same reason as PrecacheWorld.
+  usage: {chunks: 34, calls: 167, boot: false, mission1: false, result_used: false}
+
+- name: ResetStore
+  wrapper: 0x0036da10
+  calls:
+    - {addr: 0x0041ddd8}
+  args:
+    - {name: store, lua: number, ctype: unsigned, desc: "Handle of a store object."}
+  description: >-
+    Restocks a store: clears a flag bit of the store object, then, if the player is within 7 m (squared distance under
+    49), sends it message 0x13 through the world's message queue.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    What message 0x13 does to the store is not traced.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: MissionComplete
+  wrapper: 0x0036df28
+  calls:
+    - {addr: 0x00160d00}
+  description: >-
+    Ends the mission as completed: sets the level-end state (`W_GameState + 0x14c`) to 2 and asks for the next level
+    record (current index + 1) to be loaded. No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: MenuLoadLevel
+  wrapper: 0x0036df48
+  calls:
+    - {addr: 0x00160d78}
+  args:
+    - {name: level, lua: string, desc: "The level's name, such as `level99` or `menu`."}
+  description: >-
+    Leaves the current level and loads the named one: sets the level-end state (`W_GameState + 0x14c`) to 3 and passes
+    the name to the level-change mode (`0x0015c7b0`). The front end's `startRumbleMode` and `global.lua`'s
+    `runNextMission` use it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The level unload remakes the Lua state (scripting.md), so code after this call in the same script runs only until
+    the change happens.
+  usage: {chunks: 44, calls: 81, boot: true, mission1: false, result_used: false}
+  coney: implemented
+
+- name: Quit
+  wrapper: 0x0036df78
+  calls:
+    - {addr: 0x00160d38}
+  description: >-
+    Ends the game session: calls `0x0041ce88` and `0x0041cef0` on the game state and sets the level-end state to 3
+    (inferred: back to the front end). No shipped script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GetGameTime
+  wrapper: 0x0036e050
+  calls:
+    - {addr: 0x003864b0}
+  results:
+    - {lua: number, desc: "The game timer in milliseconds (the timer object at `0x0050b734`, the clock the schedule uses)."}
+  description: >-
+    Returns the current game time in milliseconds, for scripts that time things themselves.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Read through the timer's vtable slot `+0x34`; inferred to be the same clock as `+0x48`, which the schedule uses.
+  usage: {chunks: 2, calls: 14, boot: false, mission1: false, result_used: true}
+
+- name: CheckMultiplayer
+  wrapper: 0x0036e468
+  calls:
+    - {addr: 0x0041dd90}
+  description: >-
+    Re-checks whether a second player has joined or left and adds or removes their character accordingly (`0x0041a460`
+    with -1). `level95.lua` calls it in the hub.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    The callee handles the player list at `W_GameState + 0x224`; the join/leave reading is inferred.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: SetLoadPriority
+  wrapper: 0x0036e630
+  calls:
+    - {addr: 0x0040c938}
+  args:
+    - {name: priority, lua: number, ctype: float, desc: "A fraction; the only call passes 0.01."}
+  description: >-
+    Sets the world streamer's load priority (calls `0x0040c938`).
+  evidence: speculative
+  depth: brief
+  notes: >-
+    Callee outside the draft's callee list (address-range filter).
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: SetCrimeLevel
+  wrapper: 0x003702f0
+  calls:
+    - {addr: 0x0041ad90}
+  args:
+    - {name: level, lua: number, ctype: int, desc: "The crime (police heat) level, stored as a byte (`W_GameState + 0x291`)."}
+    - {name: seconds, lua: number, ctype: unsigned, desc: "How long it lasts, in seconds; 0 for no time limit."}
+  description: >-
+    Sets the police heat level, optionally expiring after a number of seconds (the expiry time, game time plus
+    `seconds × 1000`, goes to `+0x2a8`). No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SetCopStation
+  wrapper: 0x00370368
+  calls:
+    - {addr: 0x0016db30}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id of the police gang."}
+    - {name: spawner, lua: string, desc: "Name of one of that gang's spawners."}
+    - {name: v1, lua: number, ctype: int, desc: "First station setting (16-bit), meaning not traced."}
+    - {name: v2, lua: number, ctype: int, desc: "Station setting 2."}
+    - {name: v3, lua: number, ctype: int, desc: "Station setting 3."}
+    - {name: v4, lua: number, ctype: int, desc: "Station setting 4."}
+    - {name: v5, lua: number, ctype: int, desc: "Station setting 5."}
+    - {name: v6, lua: number, ctype: int, desc: "Station setting 6."}
+    - {name: v7, lua: number, ctype: int, desc: "Station setting 7."}
+    - {name: v8, lua: number, ctype: int, desc: "Station setting 8."}
+    - {name: v9, lua: number, ctype: int, desc: "Station setting 9."}
+    - {name: v10, lua: number, ctype: int, desc: "Station setting 10."}
+    - {name: v11, lua: number, ctype: int, desc: "Station setting 11."}
+    - {name: v12, lua: number, ctype: int, desc: "Station setting 12."}
+  description: >-
+    Writes twelve 16-bit settings into a police gang's named spawner record (records of 0x130 bytes, fields
+    `+0x90`-`+0xa6`). No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Arguments 9-14 are passed to `0x0016db30` on the stack.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: W_SetStopWatch
+  wrapper: 0x00370d98
+  calls:
+    - {addr: 0x004235f0}
+  args:
+    - {name: time, lua: number, ctype: int, desc: "Starting time in milliseconds."}
+    - {name: target, lua: number, ctype: int, desc: "Target time in milliseconds; the scripts pass 0 (a countdown to zero)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function (dotted names allowed) to call when the stopwatch reaches the target."}
+  description: >-
+    Sets up the mission stopwatch (the object at 0x0051504c): it stores the start time at +0x08 and the target at
+    +0x0c, keeps the callback name (0x004235a8), and resets its tick state (+0x48 = 1000 ms per step, +0x40 = 0).
+    Start it with W_StartStopWatch and show it with W_ShowStopWatch.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    That the callback fires when the time reaches the target is inferred from the scripts; the stores are confirmed
+    (0x004235f0).
+  usage: {chunks: 32, calls: 39, boot: false, mission1: true, result_used: false}
+
+- name: W_GetStopWatchTime
+  wrapper: 0x00370e28
+  calls:
+    - {addr: 0x00423638}
+  results:
+    - {lua: number, desc: "The stopwatch's current time in milliseconds."}
+  description: >-
+    Returns the stopwatch's remaining (or elapsed) time.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: true}
+
+- name: W_StartStopWatch
+  wrapper: 0x00370e68
+  calls:
+    - {addr: 0x00423648}
+  args:
+    - {name: run, lua: boolean, desc: "true to start (or resume) the stopwatch, false to stop it."}
+  description: >-
+    Starts or stops the mission stopwatch (`0x004233a8`).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The run/stop reading of the flag is inferred from the scripts' pairs of calls.
+  usage: {chunks: 37, calls: 78, boot: false, mission1: true, result_used: false}
+
+- name: W_ShowStopWatch
+  wrapper: 0x00370e98
+  calls:
+    - {addr: 0x00423670}
+  args:
+    - {name: show, lua: boolean, desc: "true to show the stopwatch on the HUD, false to hide it."}
+    - {name: label, lua: string, desc: "Text shown with the time (may carry text-format tags); nil for none."}
+    - {name: warnMs, lua: number, ctype: int, default: 10000, desc: "Milliseconds before the end at which the display starts warning (default 10000)."}
+  description: >-
+    Shows or hides the stopwatch on the HUD with an optional label; when shown, the warning point is set to `warnMs`
+    (stored with 1000 added at `+0x48`).
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    That the third value is a warning threshold is inferred from its default and use.
+  usage: {chunks: 30, calls: 64, boot: false, mission1: false, result_used: false}
+
+- name: ProcessTag
+  wrapper: 0x00379540
+  calls:
+    - {addr: 0x0039bd50}
+  args:
+    - {name: tag, lua: number, ctype: unsigned, desc: "Handle of a tag (graffiti) object."}
+    - {name: second, lua: boolean, desc: "Selects the other variant of the message: with `instant` false, message 0x19 is sent after setting the tag's state to 6 (true) or 4 (false); with `instant` true, message 0x39 (true) or 0x3a (false)."}
+    - {name: instant, lua: boolean, desc: "Chooses between the two message families above."}
+  description: >-
+    Marks a tag object as sprayed (or resets it) by sending it a message through the world's message queue.
+    `global.lua`'s tag helpers call it when the player finishes a tag.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The object must report type bit 0x10 (a tag); otherwise nothing happens. The exact visual effect of each message
+    is not traced.
+  usage: {chunks: 10, calls: 15, boot: true, mission1: false, result_used: false}
+
+- name: CrimeIsHappening
+  wrapper: 0x0037a2f8
+  calls:
+    - {addr: 0x0041b6e0}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}, the crime's position in world units (metres); written back unchanged."}
+    - {name: kind, lua: number, ctype: int, desc: "Crime kind (16-bit); the scripts pass 1 and 7."}
+    - {name: radius, lua: number, ctype: float, desc: "A number read as a float but not passed on (the callee ignores it)."}
+    - {name: severity, lua: number, ctype: int, desc: "A value the scripts pass 0 or 100 (inferred: how much heat the crime adds)."}
+    - {name: offender, lua: number, ctype: unsigned, desc: "Handle of the human committing the crime."}
+    - {name: victim, lua: number, ctype: unsigned, desc: "Handle of the victim, or NilHandle."}
+    - {name: flags, lua: number, ctype: int, desc: "A 16-bit value the scripts pass 0."}
+  description: >-
+    Reports a crime at a position so police and witnesses react (`0x0041b8b0` on the game state). Used for scripted
+    crimes such as a mugging.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The position is transformed (`0x00252ae0`) before being passed on; the meaning of kind and severity values is
+    inferred.
+  usage: {chunks: 12, calls: 18, boot: true, mission1: false, result_used: false}
+
+- name: SpawnCustomCrime
+  wrapper: 0x0037a4a8
+  calls:
+    - {addr: 0x0041b7a0}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}, the crime's position; written back unchanged."}
+    - {name: offender, lua: number, ctype: unsigned, desc: "Handle of the offender."}
+    - {name: responders, lua: number, ctype: unsigned, desc: "Number of police to send (the scripts pass 1, 2 or a constant)."}
+    - {name: sound, lua: string, desc: "Optional name of a sound or speech to play for the offender; nil for none."}
+  description: >-
+    Raises a crime of kind 4 at a position that police respond to, optionally playing a sound for the offender.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The responders reading is inferred from the scripts.
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: SetCrimeSceneTimeLength
+  wrapper: 0x0037a5c8
+  calls:
+    - {addr: 0x0041b6c8}
+  args:
+    - {name: seconds, lua: number, ctype: int, desc: "How long a crime scene stays active (units inferred)."}
+  description: >-
+    Sets the crime-scene duration (`W_GameState + 0x2b0`). No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ReportCrime
+  wrapper: 0x0037a600
+  calls:
+    - {addr: 0x0041b6a8}
+  args:
+    - {name: "on", lua: boolean, desc: "true: crimes the player commits are reported to the police; false: they are not."}
+  description: >-
+    Turns crime reporting on or off (`W_GameState + 0x288`). `level99.lua` turns it off for the tutorial.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The store is confirmed (code); its effect on the police is inferred from the name.
+  usage: {chunks: 9, calls: 12, boot: false, mission1: true, result_used: false}
+
+- name: ForceCrimeLevel
+  wrapper: 0x0037a630
+  calls:
+    - {addr: 0x0041d8d0}
+  args:
+    - {name: "on", lua: boolean, default: true, desc: "true (default) to hold the crime level where it is, false to release it."}
+  description: >-
+    Sets the forced-crime-level flag (`W_GameState + 0x28c`).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 9, calls: 9, boot: false, mission1: false, result_used: false}
+
+- name: SetCopGuardArrestedRange
+  wrapper: 0x0037a660
+  calls:
+    - {addr: 0x0041b6b8}
+  args:
+    - {name: range, lua: number, ctype: int, desc: "Distance (world units, inferred metres) within which a guarding officer keeps an arrested character; `global.lua` passes 25."}
+  description: >-
+    Sets the police guard range for arrests (`W_GameState + 0x320`, 16-bit).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The meaning of the range is inferred from the name.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: InvGetSpraycanCharges
+  wrapper: 0x0037b038
+  calls:
+    - {addr: 0x0041f000}
+  args:
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  results:
+    - {lua: number, desc: "How many spray-paint charges the player has (inventory item 3)."}
+  description: >-
+    Returns a player's spray-can charges, the paint used for tags.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Inventory: two players of 23 item slots (0-22) at `W_GameState + 0x480`; a player number other than 1 or 2 returns
+    0.
+  usage: {chunks: 9, calls: 18, boot: true, mission1: false, result_used: true}
+
+- name: InvPlayerHasItem
+  wrapper: 0x0037b090
+  calls:
+    - {addr: 0x0041ed88}
+  args:
+    - {name: item, lua: number, ctype: int, desc: "Inventory item id (0-22): 1 revive, 2 money, 3 spray-paint charges, 5 handcuffs, 6 handcuff keys; 7 is used by level 11."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  results:
+    - {lua: boolean, desc: "true if the player has at least one of the item."}
+  description: >-
+    Tests whether a player holds an inventory item.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: InvSetSpraycanCharges
+  wrapper: 0x0037b108
+  calls:
+    - {addr: 0x0041f030}
+  args:
+    - {name: charges, lua: number, ctype: int, desc: "New number of charges (negative becomes 0)."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  description: >-
+    Sets a player's spray-paint charges, clamped to the item's limits (table at `0x0058b300`). Setting a positive
+    amount the first time sets a game-state flag that later triggers a one-off HUD hint.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 10, calls: 19, boot: true, mission1: false, result_used: false}
+
+- name: InvGiveRevive
+  wrapper: 0x0037b178
+  calls:
+    - {addr: 0x0041edb8}
+  args:
+    - {name: count, lua: number, ctype: int, desc: "How many revives to add (negative removes)."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  description: >-
+    Adds revives (item 1) to a player's inventory, clamped to the item's limits; with a certain unlockable (type 6,
+    data 7) the cap is 4. Runs the inventory's item-added Lua callbacks when they are set.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 12, calls: 43, boot: true, mission1: false, result_used: false}
+
+- name: InvNumberRevives
+  wrapper: 0x0037b1e8
+  calls:
+    - {addr: 0x0041edf0}
+  args:
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  results:
+    - {lua: number, desc: "How many revives the player has."}
+  description: >-
+    Returns a player's revive count.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: true}
+
+- name: InvGiveSkeletonKey
+  wrapper: 0x0037b268
+  calls:
+    - {addr: 0x0041ee20}
+  args:
+    - {name: count, lua: number, ctype: int, desc: "How many handcuff keys to add (negative removes)."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  description: >-
+    Adds handcuff (skeleton) keys, item 6, to a player's inventory, clamped to the item's limits.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: InvNumberSkeletonKeys
+  wrapper: 0x0037b2d8
+  calls:
+    - {addr: 0x0041ee58}
+  args:
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  results:
+    - {lua: number, desc: "How many handcuff keys the player has."}
+  description: >-
+    Returns a player's handcuff-key count.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: true}
+
+- name: InvGetMoney
+  wrapper: 0x0037b358
+  calls:
+    - {addr: 0x0041ee88}
+  args:
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  results:
+    - {lua: number, desc: "The player's money in dollars (item 2)."}
+  description: >-
+    Returns how much money a player carries.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 12, calls: 48, boot: false, mission1: true, result_used: true}
+
+- name: InvSetMoney
+  wrapper: 0x0037b3b0
+  calls:
+    - {addr: 0x0041eeb8}
+  args:
+    - {name: amount, lua: number, ctype: int, desc: "New amount in dollars (negative becomes 0)."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  description: >-
+    Sets a player's money, clamped to the item's limits, and clears a field of that player's object (`+0xe20`,
+    inferred: the HUD's money-change display).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 7, calls: 16, boot: true, mission1: true, result_used: false}
+
+- name: AddMoneyToBank
+  wrapper: 0x0037b420
+  calls:
+    - {addr: 0x0041ef38}
+  args:
+    - {name: amount, lua: number, ctype: unsigned, desc: "Dollars to add to the bank."}
+  description: >-
+    Adds an amount to the bank total, the first word of the inventory block (`W_GameState + 0x480`). No shipped script
+    calls it.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    That the word is a bank is inferred from the name; UM_UnlockAll sets it to 1,000,000.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GiveMoney
+  wrapper: 0x0037b458
+  calls:
+    - {addr: 0x0041ef00}
+  args:
+    - {name: amount, lua: number, ctype: int, desc: "Dollars to give (negative takes)."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1); 0 or a value above 2 does nothing."}
+  description: >-
+    Adds money to a player, clamped to the item's limits, then runs the inventory's money-changed Lua callback with
+    (player index, amount) when one is set.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The money-changed callback is a name kept at inventory `+0x1034`; it receives the 0-based player index.
+  usage: {chunks: 3, calls: 7, boot: false, mission1: true, result_used: false}
+
+- name: TakeMoney
+  wrapper: 0x0037b4c8
+  calls:
+    - {addr: 0x0041ef60}
+  args:
+    - {name: amount, lua: number, ctype: int, desc: "Dollars to take."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  description: >-
+    Takes money from a player (GiveMoney with the amount negated); the total never goes below 0.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 17, boot: false, mission1: false, result_used: false}
+
+- name: InvNumberOf
+  wrapper: 0x0037b538
+  calls:
+    - {addr: 0x0041efd0}
+  args:
+    - {name: item, lua: number, ctype: int, desc: "Inventory item id (0-22), as for InvPlayerHasItem."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  results:
+    - {lua: number, desc: "How many of the item the player has (0 for a bad item or player)."}
+  description: >-
+    Returns a player's count of any inventory item.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 7, calls: 32, boot: true, mission1: true, result_used: true}
+
+- name: InvGiveItem
+  wrapper: 0x0037b5d8
+  calls:
+    - {addr: 0x0041ef98}
+  args:
+    - {name: item, lua: number, ctype: int, desc: "Inventory item id (0-22), as for InvPlayerHasItem."}
+    - {name: count, lua: number, ctype: int, desc: "How many to add (negative removes)."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+  description: >-
+    Adds any inventory item to a player, clamped to the item's limits, with the same side effects as the specific Give
+    bindings.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 6, calls: 46, boot: true, mission1: false, result_used: false}
+
+- name: GameIsOver
+  wrapper: 0x0037b670
+  calls:
+    - {addr: 0x0041ddb8}
+  results:
+    - {lua: boolean, desc: "true when a level end is pending (the level-end state `W_GameState + 0x14c` is not 0); false also when there is no game state."}
+  description: >-
+    Tells a script that the level is already ending (mission complete, failed or a level change requested).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: SSMC_StartSaveSequence
+  wrapper: 0x0037b6a8
+  calls:
+    - {addr: 0x00155308}
+  description: >-
+    Opens the memory-card save screens (pushes game mode `0x005e5810`), if the save system is ready, the player is in
+    a level other than the front end (or another check passes) and the save screens are not already up.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The hub (`level95.lua`) calls it.
+  usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: SSMC_StartLoadSequence
+  wrapper: 0x0037b6c8
+  calls:
+    - {addr: 0x00155378}
+  description: >-
+    Opens the memory-card load screens (pushes game mode `0x005e5810` in load mode) unless they are already up. The
+    front end's menu calls it.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: SSMC_StartDeleteSequence
+  wrapper: 0x0037b6e8
+  calls:
+    - {addr: 0x001553c0}
+  description: >-
+    Opens the memory-card delete screens (game mode `0x005e5810` in delete mode) unless they are already up. Called
+    from the front end's menu.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: SSMC_detect
+  wrapper: 0x0037b708
+  calls:
+    - {addr: 0x00422380}
+  description: >-
+    Asks the PS2 save system to detect memory cards (save-system vtable slot `+0xf4`). No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The binding pushes nothing even though detection presumably has a result.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SSMC_format
+  wrapper: 0x0037b728
+  calls:
+    - {addr: 0x004223b0}
+  results:
+    - {lua: boolean, desc: "The save system's answer to a format request (slot `+0x11c`), true on success (inferred)."}
+  description: >-
+    Asks the PS2 save system to format the memory card. No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SetCheckPoint
+  wrapper: 0x0037b760
+  calls:
+    - {addr: 0x0041abc0}
+  args:
+    - {name: checkpoint, lua: number, ctype: int, desc: "Checkpoint number within the level (1-based; each level script defines its own, for example 1-3 in level 99)."}
+  description: >-
+    Sets the checkpoint the level will start from (`W_GameState + 0x33a`) and records it: the inventory and the stats
+    take a checkpoint copy and the world objects are told the checkpoint. Call it before MenuLoadLevel to enter a
+    level at a checkpoint.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Calls `0x0041e0b8` (inventory), `0x00422c60` (stats) and `0x00397e88` (world objects).
+  usage: {chunks: 64, calls: 76, boot: true, mission1: true, result_used: false}
+  coney: implemented
+
+- name: GetCheckPoint
+  wrapper: 0x0037b798
+  calls:
+    - {addr: 0x0041abe8}
+  results:
+    - {lua: number, desc: "The current checkpoint number (`W_GameState + 0x33a`)."}
+  description: >-
+    Returns the checkpoint the level was entered at; level scripts branch on it to set up the right part of the
+    mission.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 32, calls: 48, boot: true, mission1: true, result_used: true}
+  coney: implemented
+
+- name: SetLUASaveDataFloat
+  wrapper: 0x0037b7d8
+  calls:
+    - {addr: 0x0041acd8}
+  args:
+    - {name: slot, lua: number, ctype: int, desc: "Slot number, 1-8."}
+    - {name: value, lua: number, ctype: float, desc: "Number to store (as a 32-bit float)."}
+  description: >-
+    Stores a number in the saved script data (eight float slots at `W_GameState + 0x570c`), which goes into the save
+    game so scripts keep progress between sessions.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    No bounds check: slots outside 1-8 overwrite the neighbouring game-state fields (slot 9 is the first word of the
+    saved flags).
+  usage: {chunks: 21, calls: 67, boot: true, mission1: false, result_used: false}
+
+- name: GetLUASaveDataFloat
+  wrapper: 0x0037b850
+  calls:
+    - {addr: 0x0041ad00}
+  args:
+    - {name: slot, lua: number, ctype: int, desc: "Slot number, 1-8."}
+  results:
+    - {lua: number, desc: "The number stored in that slot."}
+  description: >-
+    Reads a number from the saved script data.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 19, calls: 51, boot: false, mission1: false, result_used: true}
+
+- name: SetLUASaveDataBool
+  wrapper: 0x0037b8a8
+  calls:
+    - {addr: 0x0041ad28}
+  args:
+    - {name: flag, lua: number, ctype: int, desc: "Flag number, 1 upwards (the scripts use up to about 130: 100 + n for tags)."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears a saved script flag: bit `flag - 1` of the bit array at `W_GameState + 0x572c`, saved with the
+    game.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The size of the bit array is not traced.
+  usage: {chunks: 1, calls: 3, boot: true, mission1: false, result_used: false}
+
+- name: GetLUASaveDataBool
+  wrapper: 0x0037b910
+  calls:
+    - {addr: 0x0041ad60}
+  args:
+    - {name: flag, lua: number, ctype: int, desc: "Flag number, 1 upwards."}
+  results:
+    - {lua: boolean, desc: "true if the flag is set."}
+  description: >-
+    Reads a saved script flag.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 4, boot: true, mission1: false, result_used: true}
+
+- name: IsDongleValid
+  wrapper: 0x0037b960
+  calls:
+    - {addr: 0x00418518}
+  results:
+    - {lua: boolean, desc: "Always true."}
+  description: >-
+    A left-over of a development copy-protection dongle: always returns true (`0x00418518`).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+
+- name: CreateDongle
+  wrapper: 0x0037b998
+  calls:
+    - {addr: 0x00418520}
+  args:
+    - {name: key, lua: string, desc: "A string, ignored."}
+  results:
+    - {lua: number, desc: "Always 0."}
+  description: >-
+    Development dongle stub: ignores its argument and returns 0.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+
+- name: CreateDongleChallengeKey
+  wrapper: 0x0037b9e8
+  calls:
+    - {addr: 0x00418528}
+  results:
+    - {lua: number, desc: "Always 0."}
+  description: >-
+    Development dongle stub: returns 0.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+
+- name: StatAdd
+  wrapper: 0x0037c960
+  calls:
+    - {addr: 0x004224d8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human the statistic belongs to (the player)."}
+    - {name: group, lua: number, ctype: unsigned, desc: "Statistic group 0-5, each handled by its own function of the stats object; other values do nothing."}
+    - {name: stat, lua: number, ctype: unsigned, desc: "Statistic id within the group (16-bit)."}
+    - {name: amount, lua: number, ctype: unsigned, default: 1, desc: "How much to add (default 1)."}
+  description: >-
+    Adds to one of a player's statistics (the stats object at `0x006fe490`), for the end-of-mission stats screen;
+    `global.lua` adds tag statistics with it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Group meanings are not traced; nothing happens if the handle is not a human.
+  usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: false}
+
+- name: StatGetRank
+  wrapper: 0x0037ca20
+  calls:
+    - {addr: 0x004225f0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+  results:
+    - {lua: number, desc: "The player's rank from the stats object."}
+  description: >-
+    Returns a player's rank as the stats object computes it. No shipped script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: StatGetTotal
+  wrapper: 0x0037ca78
+  calls:
+    - {addr: 0x004226a0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+    - {name: stat, lua: number, ctype: unsigned, desc: "Statistic id."}
+  results:
+    - {lua: number, desc: "The statistic's total (16-bit), 0 when the handle is not a human."}
+  description: >-
+    Returns one statistic's value for a player. No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: StatGetScore
+  wrapper: 0x0037cb20
+  calls:
+    - {addr: 0x00422630}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+  results:
+    - {lua: number, desc: "The player's score."}
+  description: >-
+    Returns a player's score from the stats object; `global.lua` reads it for the end-of-mission screen.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Computed by `0x00422998`; the formula is not traced.
+  usage: {chunks: 6, calls: 12, boot: true, mission1: false, result_used: true}
+
+- name: StatGetPreviousHiScore
+  wrapper: 0x0037cb98
+  calls:
+    - {addr: 0x00422670}
+  args:
+    - {name: level, lua: number, ctype: unsigned, desc: "A level number or index (not traced which)."}
+  results:
+    - {lua: number, desc: "The previous high score for it."}
+  description: >-
+    Returns the high score that stood before the current run. No shipped script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: StatReset
+  wrapper: 0x0037cc10
+  calls:
+    - {addr: 0x004226f8}
+  description: >-
+    Clears all statistics (stats object `0x006fe490`). The hub calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: StatResetPlayer
+  wrapper: 0x0037cc30
+  calls:
+    - {addr: 0x00422718}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+  description: >-
+    Clears one player's statistics.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: StatGetHighScore
+  wrapper: 0x0037cc68
+  calls:
+    - {addr: 0x00422758}
+  args:
+    - {name: level, lua: number, ctype: unsigned, desc: "A level number (as in `level<n>`), looked up in the level records."}
+  results:
+    - {lua: number, desc: "The best score recorded for that level."}
+  description: >-
+    Returns the stored high score of a level. No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: UM_Reset
+  wrapper: 0x0037cce0
+  calls:
+    - {addr: 0x004236d0}
+  description: >-
+    Resets the unlockables manager (`0x006fe998`), dropping its records. `global.lua` calls it before rebuilding the
+    table.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What `0x00423b88` frees is not traced in detail.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: UM_SetNumUnlockables
+  wrapper: 0x0037cd00
+  calls:
+    - {addr: 0x004236f0}
+  args:
+    - {name: count, lua: number, ctype: unsigned, desc: "Number of unlockable records to allocate (at most 640, the size of the lock bit sets)."}
+  description: >-
+    Sets how many unlockable records the manager will hold; ignored once the records exist.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: UM_SetUnlockable
+  wrapper: 0x0037cd38
+  calls:
+    - {addr: 0x00423718}
+  args:
+    - {name: index, lua: number, ctype: int, desc: "Record index (0-based)."}
+    - {name: level, lua: number, ctype: unsigned, desc: "Record byte 0: the level the unlock belongs to (matched by UM_Unlock and UM_GetUnlockables)."}
+    - {name: group, lua: number, ctype: unsigned, desc: "Record byte 1: a group within the level."}
+    - {name: item, lua: number, ctype: unsigned, desc: "Record byte 2: the item within the group (0 is the level-complete record)."}
+    - {name: type, lua: number, ctype: unsigned, desc: "Record byte 3: the unlockable's type (matched by the ByType and Data bindings)."}
+    - {name: extra, lua: number, ctype: unsigned, desc: "Record 16-bit field `+4`."}
+    - {name: data, lua: number, ctype: unsigned, desc: "Record 32-bit data id `+8` (matched by UM_IsDataUnlocked)."}
+  description: >-
+    Fills one 12-byte record of the unlockables table (manager 0x006fe998), allocating the table first if it does not
+    exist yet: level, group, item and type bytes, a 16-bit extra field and a 32-bit data id. global.lua fills the
+    whole table this way from its Unlockables list, passing the list position minus one as the index.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Records are found by index through 0x00423cf0; an index past the table is ignored (the store returns false). The
+    record fields are matched by the other UM_ bindings.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: UM_GetUnlockables
+  wrapper: 0x0037ce78
+  calls:
+    - {addr: 0x00423768}
+  args:
+    - {name: level, lua: number, ctype: unsigned, desc: "Record byte 0 to match."}
+    - {name: group, lua: number, ctype: unsigned, desc: "Record byte 1 to match."}
+    - {name: out, lua: table, elem: number, count: 32, written_back: true, desc: "A table the binding fills with 32 numbers: the indices of matching records (unused entries are filled by the manager, inferred -1)."}
+  description: >-
+    Lists the unlockable records of a level and group into a table. The front end's records screen uses it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: UM_GetUnlockablesByType
+  wrapper: 0x0037cf78
+  calls:
+    - {addr: 0x004237a8}
+  args:
+    - {name: type, lua: number, ctype: unsigned, desc: "Record type byte to match."}
+    - {name: out, lua: table, elem: number, count: 32, written_back: true, desc: "A table the binding fills with 32 record indices."}
+  description: >-
+    Lists the unlockable records of one type into a table.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: UM_Unlock
+  wrapper: 0x0037d050
+  calls:
+    - {addr: 0x004237e8}
+  args:
+    - {name: level, lua: number, ctype: unsigned, desc: "Record byte 0: the level number."}
+    - {name: group, lua: number, ctype: unsigned, desc: "Record byte 1."}
+    - {name: item, lua: number, ctype: unsigned, desc: "Record byte 2 (0: the level itself)."}
+  description: >-
+    Unlocks every record whose first three bytes match, and marks the newly unlocked ones as new ('dirty') so menus
+    can highlight them. `global.lua` uses it when a level is completed.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 28, calls: 71, boot: true, mission1: false, result_used: false}
+
+- name: UM_IsUnlocked
+  wrapper: 0x0037d0f0
+  calls:
+    - {addr: 0x00423828}
+  args:
+    - {name: index, lua: number, ctype: int, desc: "Record index."}
+  results:
+    - {lua: boolean, desc: "true if that record is unlocked (false when the manager has no records)."}
+  description: >-
+    Tests one unlockable record by index.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+
+- name: UM_IsDataUnlocked
+  wrapper: 0x0037d140
+  calls:
+    - {addr: 0x00423868}
+  args:
+    - {name: type, lua: number, ctype: unsigned, desc: "Record type byte."}
+    - {name: data, lua: number, ctype: unsigned, desc: "Record data id."}
+  results:
+    - {lua: boolean, desc: "true if the first record with that type and data id is unlocked; false if none matches."}
+  description: >-
+    Tests an unlockable by type and data id, the usual way scripts ask whether an extra (a move, an outfit, a cheat)
+    is available.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 22, calls: 83, boot: true, mission1: false, result_used: true}
+
+- name: UM_IsLevelComplete
+  wrapper: 0x0037d1c0
+  calls:
+    - {addr: 0x004238a8}
+  args:
+    - {name: level, lua: number, ctype: unsigned, desc: "A level number (as in `level<n>`)."}
+  results:
+    - {lua: boolean, desc: "true if the level's completion record (level, group 0, item 0) is unlocked; false when it has none or the manager is absent."}
+  description: >-
+    Tells whether a story level has been completed. The front end and `runNextMission` use it to find where the story
+    stands.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 3, calls: 33, boot: true, mission1: false, result_used: true}
+  coney: implemented
+
+- name: UM_IsTypeDirty
+  wrapper: 0x0037d210
+  calls:
+    - {addr: 0x00423988}
+  args:
+    - {name: type, lua: number, ctype: unsigned, desc: "Record type byte."}
+    - {name: clear, lua: boolean, default: true, desc: "true (default) also clears the 'new' marks of that type."}
+  results:
+    - {lua: boolean, desc: "true if any record of the type was newly unlocked."}
+  description: >-
+    Asks whether anything of a type was unlocked since last asked, optionally clearing the marks.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 2, calls: 16, boot: true, mission1: false, result_used: true}
+
+- name: UM_IsDataDirty
+  wrapper: 0x0037d280
+  calls:
+    - {addr: 0x004239b0}
+  args:
+    - {name: type, lua: number, ctype: unsigned, desc: "Record type byte."}
+    - {name: data, lua: number, ctype: unsigned, desc: "Record data id."}
+    - {name: clear, lua: boolean, default: true, desc: "true (default) also clears the mark."}
+  results:
+    - {lua: boolean, desc: "true if that record was newly unlocked."}
+  description: >-
+    Asks whether one unlockable (by type and data id) is newly unlocked, optionally clearing the mark.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 9, boot: false, mission1: false, result_used: true}
+
+- name: UM_GetRecordData
+  wrapper: 0x0037d318
+  calls:
+    - {addr: 0x004238e8}
+  args:
+    - {name: index, lua: number, ctype: int, desc: "Record index."}
+    - {name: field, lua: number, ctype: int, desc: "0 level, 1 group, 2 item, 3 type, 4 the 16-bit extra, 5 the data id."}
+  results:
+    - {lua: number, desc: "The field's value; 0 for a bad index or field."}
+  description: >-
+    Reads one field of an unlockable record.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: true}
+
+- name: UM_UnlockAll
+  wrapper: 0x0037d3c0
+  calls:
+    - {addr: 0x004239e0}
+  args:
+    - {name: unlock, lua: boolean, desc: "true unlocks every record and marks all as new; false locks every record and clears the marks."}
+  description: >-
+    A cheat/debug helper: unlocks or locks all 640 records at once, and in both cases sets the bank (inventory word at
+    `W_GameState + 0x480`) to 1,000,000.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}

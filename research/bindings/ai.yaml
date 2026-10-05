@@ -1,0 +1,2485 @@
+# The Warriors' script bindings, category `ai`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: SetInterrogateParam
+  wrapper: 0x0035d808
+  calls:
+    - {addr: 0x002854b0, name: Brain_SetInterrogateOverride}
+  args:
+    - {name: valueA, lua: number, ctype: unsigned, desc: "First byte-sized tuning value (0-255). The game's own defaults put 160 here; the mission-1 tutorial passes 160. Its role in the shake-down is not traced (inferred: a threshold or chance)."}
+    - {name: valueB, lua: number, ctype: unsigned, desc: "Second byte-sized tuning value (0-255); default 75 in the game's own table."}
+    - {name: valueC, lua: number, ctype: unsigned, desc: "Third byte-sized tuning value (0-255); default 255 in the game's own table."}
+    - {name: timeA, lua: number, ctype: unsigned, desc: "A time in milliseconds (the tutorial passes 5000). Doubles as the switch: when it is 0 the override is off and the game computes its own values from the victim's character class."}
+    - {name: timeB, lua: number, ctype: unsigned, desc: "A time in milliseconds (the tutorial passes 2500)."}
+    - {name: timeC, lua: number, ctype: unsigned, desc: "A time in milliseconds (the tutorial passes 20000; the game's own tables use 50000 here)."}
+    - {name: angleA, lua: number, ctype: float, desc: "An angle in degrees (converted to radians; the tutorial passes 40)."}
+    - {name: angleB, lua: number, ctype: float, desc: "An angle in degrees (converted to radians; the tutorial passes 60)."}
+    - {name: timeD, lua: number, ctype: unsigned, desc: "A time in milliseconds (the tutorial passes 20000; the game's defaults range from 4500 to 13000 depending on the victim's class)."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "A byte flag stored with the set (the tutorial passes 0)."}
+    - {name: set, lua: number, ctype: unsigned, desc: "Which override set to write: 0-2 the first set (used by the routine at 0x00284ca0), 3-5 the second (0x002853a8); 6 or more is ignored."}
+  description: >-
+    Overrides the tuning the game uses when a player interrogates (shakes down) a held human: three byte values, four
+    times in milliseconds, two angles in degrees and a flag, stored in one of two global override sets (0x00510a18,
+    0x00510a38). While a set's `timeA` is non-zero the interrogation code uses it instead of the per-class defaults it
+    otherwise computes; calling again with all zeros restores the defaults, which is what the mission-1 tutorial
+    (`level99_lesson1`) does after its interrogation lesson.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage and the default/override switch are confirmed (code) at 0x002854b0, 0x00284ca0 and 0x002853a8; what each
+    value controls in the interrogation is inferred from the defaults and is an open question.
+  usage: {chunks: 1, calls: 2, boot: false, mission1: true, result_used: false}
+
+- name: SetGlobalPedRules
+  wrapper: 0x0035d9e0
+  calls:
+    - {addr: 0x002feeb0, name: Peds_SetGlobalRules}
+  args:
+    - {name: rule1A, lua: number, ctype: int, desc: "Rule 1, first value (stored as is). `global.lua` passes 1."}
+    - {name: rule1Range, lua: number, ctype: int, desc: "Rule 1 range in metres (stored squared, so it is compared with squared distances). `global.lua` passes 1."}
+    - {name: rule1B, lua: number, ctype: int, desc: "Rule 1, third value. `global.lua` passes 1."}
+    - {name: rule2A, lua: number, ctype: int, desc: "Rule 2, first value. `global.lua` passes 1."}
+    - {name: rule2Range, lua: number, ctype: int, desc: "Rule 2 range in metres (stored squared). `global.lua` passes 1."}
+    - {name: rule2B, lua: number, ctype: int, desc: "Rule 2, third value. `global.lua` passes 2."}
+    - {name: rule3A, lua: number, ctype: int, desc: "Rule 3, first value. `global.lua` passes 1."}
+    - {name: rule3Range, lua: number, ctype: int, desc: "Rule 3 range in metres (stored squared). `global.lua` passes 1."}
+    - {name: rule3B, lua: number, ctype: int, desc: "Rule 3, third value. `global.lua` passes 3."}
+    - {name: rule4A, lua: number, ctype: int, desc: "Rule 4, first value. `global.lua` passes 1."}
+    - {name: rule4Range, lua: number, ctype: int, desc: "Rule 4 range in metres (stored squared). `global.lua` passes 1."}
+    - {name: rule4B, lua: number, ctype: int, desc: "Rule 4, third value. `global.lua` passes 4."}
+  description: >-
+    Sets four global pedestrian rules, each a triple (value, range, value) stored as 16-bit numbers at
+    0x006ea188-0x006ea19e with the range squared. `global.lua` calls it once for every level with (1,1,1, 1,1,2,
+    1,1,3, 1,1,4).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x002feeb0; which pedestrian behaviour reads these rules is not traced (inferred: how
+    pedestrians keep their distance or react to each other).
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: BrDead
+  wrapper: 0x0035eb78
+  calls:
+    - {addr: 0x00292330, name: Brain_SetDead}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (from `HuCreate` or a level's human list)."}
+    - {name: dead, lua: boolean, default: true, desc: "true (the default when omitted) switches the brain off; false switches it back on."}
+  description: >-
+    Switches a human's brain off or on. It first clears the brain's queued actions, then stores the flag (brain
+    `+0x09`) and rebuilds the brain's three behaviour handlers: when off, fixed do-nothing handlers; when on, the
+    handlers of the brain's type (see `BrSetType`). For a player brain (type 0) switching it off also takes the pad
+    away, so the player cannot move the character, and switching it on gives the pad back; scripts use `BrDead(player,
+    true)` around scripted moments and `BrDead(player, false)` to hand control back.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Brain refresh at 0x0028c1a8: off installs the handlers 0x0028fbb0/0x004edd40/0x004edd48 and, for type 0, clears
+    the player record's control byte (+0x1b); on reads the handlers from the per-type tables at
+    0x00715530/0x00715568/0x007155a0 (seven types) and, for type 0, sets control again.
+  usage: {chunks: 120, calls: 894, boot: true, mission1: true, result_used: false}
+
+- name: BrSuspend
+  wrapper: 0x0035ebd8
+  calls:
+    - {addr: 0x002923a0, name: Brain_SetSuspended}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: suspended, lua: boolean, default: true, desc: "true (the default) suspends the brain; false resumes it."}
+  description: >-
+    Pauses or resumes a human's brain without changing its type: it clears the queued actions and sets the brain's
+    suspended byte (`+0x0a`). The mission-1 scripts use it to hold the AI partner (`player2`) still during tutorial
+    steps and release him afterwards.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Unlike `BrDead` it does not swap the brain's handlers or touch the pad.
+  usage: {chunks: 11, calls: 22, boot: false, mission1: true, result_used: false}
+
+- name: BrSetType
+  wrapper: 0x0035ec38
+  calls:
+    - {addr: 0x00292410, name: Brain_SetType}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: brainType, lua: number, ctype: int, desc: "Brain type 0-6. 0 is the pad-driven player brain; scripts use 2 for gang members who fight alongside the player and 4 for some story characters."}
+  description: >-
+    Changes the kind of brain a human has (brain `+0x04`) and rebuilds its behaviour handlers from that type's table,
+    as `BrDead(human, false)` would. Setting type 0 makes the human pad-controlled.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Seven types (tables at 0x00715530); the meaning of each type beyond 0 is inferred from the scripts' use.
+  usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false}
+
+- name: BrSetPedType
+  wrapper: 0x0035ecb0
+  calls:
+    - {addr: 0x00292460, name: Brain_SetPedType}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: pedType, lua: number, ctype: unsigned, desc: "Pedestrian type, kept as a 16-bit number; scripts use 1 (market shoppers), 2 and 3 (bouncers, street vendors)."}
+  description: >-
+    Sets the pedestrian type stored in the human's brain (`+0x26c`), which `BrGetPedType` reads back.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00292460; what the types change is inferred from the scripts' calls.
+  usage: {chunks: 12, calls: 26, boot: false, mission1: false, result_used: false}
+
+- name: BrGetPedType
+  wrapper: 0x0035ed28
+  calls:
+    - {addr: 0x002924a8, name: Brain_GetPedType}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The pedestrian type set by `BrSetPedType` (brain `+0x26c`), or 4294967295 (-1 as unsigned) for a bad handle."}
+  description: >-
+    Reads the pedestrian type of a human's brain. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: BrEnable
+  wrapper: 0x0035ed80
+  calls:
+    - {addr: 0x002924e8, name: Brain_SetEnabled}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enabled, lua: boolean, desc: "true to enable the brain, false to disable it."}
+  description: >-
+    Sets the brain's enabled byte (`+0x08`). No script calls it; `BrDead` and `BrSuspend` are what the levels use.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x002924e8; the effect of the byte is not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: BrFlush
+  wrapper: 0x0035ede0
+  calls:
+    - {addr: 0x00292530, name: Brain_FlushAll}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Clears everything a human's brain was doing: it pops every goal off the goal stack (ending each one) and then
+    empties the action queue. Scripts call it before giving a human a new goal so the new goal starts from a clean
+    state.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Goals: 0x0028d910 pops until the stack index (`+0x2c`) is -1. Actions: 0x0028db20 removes the up to eight queued
+    actions (`+0x2e` count, ring at `+0x68`).
+  usage: {chunks: 124, calls: 520, boot: true, mission1: true, result_used: false}
+
+- name: BrFlushActions
+  wrapper: 0x0035ee18
+  calls:
+    - {addr: 0x00292590, name: Brain_FlushActions}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Empties a human's queue of low-level actions (turns, moves, attacks, the `Act*` bindings) and leaves its goals in
+    place, so the current goal plans again on its next update.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 34, calls: 67, boot: false, mission1: false, result_used: false}
+
+- name: BrHasGoals
+  wrapper: 0x0035ee50
+  calls:
+    - {addr: 0x002925d0, name: Brain_HasGoals}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "true (1) if the human's goal stack is not empty; false (nil) if it is empty or the handle is bad."}
+  description: >-
+    Tells whether a human still has any goal to pursue.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+
+- name: BrFlushGoals
+  wrapper: 0x0035eea0
+  calls:
+    - {addr: 0x00292618, name: Brain_FlushGoals}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Pops every goal off a human's goal stack, ending each one, but leaves already queued actions to finish.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 40, calls: 84, boot: false, mission1: false, result_used: false}
+
+- name: BrPopGoal
+  wrapper: 0x0035eed8
+  calls:
+    - {addr: 0x00292658, name: Brain_PopGoal}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Ends the human's current (top) goal and resumes the one below it, if any; does nothing when the stack is empty.
+    When the last goal goes, the brain sends its owner an idle message.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: BrProcessGoal
+  wrapper: 0x0035ef10
+  calls:
+    - {addr: 0x002926a8, name: Brain_ProcessTopGoal}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Runs one update of the human's current goal immediately instead of waiting for the next brain update, so a goal
+    just given takes effect in the same frame.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 4, calls: 13, boot: false, mission1: false, result_used: false}
+
+- name: BrSetThreatResponse
+  wrapper: 0x0035ef48
+  calls:
+    - {addr: 0x00292708, name: Brain_SetThreatResponse}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: response, lua: number, ctype: int, desc: "Threat response mode (brain `+0x21c`). 0 means the human does not respond to threats at all (shopkeepers, bartenders, scripted extras); scripts also use 2 and 3. `GoalFight` does nothing while it is 0."}
+  description: >-
+    Sets how a human reacts when threatened or attacked; 0 turns fighting back off.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00292708; the 0 case is confirmed by `GoalFight` (0x0028d2e8). Meanings of the other
+    values are inferred.
+  usage: {chunks: 43, calls: 116, boot: false, mission1: false, result_used: false}
+
+- name: BrCanUseWorldFlags
+  wrapper: 0x0035efc0
+  calls:
+    - {addr: 0x00292c10, name: Brain_SetWorldFlagUse}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: allowed, lua: boolean, default: true, desc: "true (the default) lets the human use world flags (benches, trash cans, phones and other usable spots placed in the level); false stops it."}
+    - {name: chance, lua: number, ctype: unsigned, default: 10, desc: "Likelihood of using a flag, as a percentage (default 10; scripts use 50-100). Forced to 0 when `allowed` is false."}
+  description: >-
+    Lets an idle human wander over to and use the level's world flags, with the given likelihood (brain `+0x2d1`
+    allowed, `+0x2d2` chance). `global.lua`'s human set-up calls it with true and 100.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x00292c10; that the chance is a percentage is inferred from the values the scripts
+    pass.
+  usage: {chunks: 6, calls: 15, boot: true, mission1: false, result_used: false}
+
+- name: BrHasEnemies
+  wrapper: 0x0035f050
+  calls:
+    - {addr: 0x00292c68, name: Brain_HasEnemies}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "true (1) if the brain currently has an enemy (brain byte `+0x152`); false (nil) otherwise or for a bad handle."}
+  description: >-
+    Tells whether a human currently considers anyone an enemy.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: true}
+
+- name: BrHasAttackers
+  wrapper: 0x0035f0a0
+  calls:
+    - {addr: 0x00292ca8, name: Brain_HasAttackers}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "true (1) if the brain's attacker list (`+0x1a4`) is not empty; false (nil) otherwise."}
+  description: >-
+    Tells whether anyone is currently attacking the human. One script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: BrClearBackoff
+  wrapper: 0x0035f0f0
+  calls:
+    - {addr: 0x00292cf0, name: Brain_ClearBackoff}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    If the human's current goal is a back-off goal (goal type 0x9b, the one `GoalBackoff` gives), pops it so the human
+    stops backing away; otherwise does nothing. `global.lua` uses it in its fight helpers.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: BrSetDamageResponse
+  wrapper: 0x0035f278
+  calls:
+    - {addr: 0x00292758, name: Brain_SetDamageResponse}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: response, lua: number, ctype: int, desc: "Damage response mode (brain `+0x220`); scripts use 0, 3 and 4. 0 is inferred to mean no reaction to being hit."}
+  description: >-
+    Sets how a human reacts to taking damage.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00292758.
+  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: BrSetInvestigateResponse
+  wrapper: 0x0035f370
+  calls:
+    - {addr: 0x002927a8, name: Brain_SetInvestigateResponse}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: response, lua: number, ctype: int, desc: "Investigate response mode (brain `+0x224`): 0 stops the human from going to look at disturbances (scripts use it for vendors, bartenders and set-piece extras); 1 lets it."}
+  description: >-
+    Sets whether and how a human goes to investigate noises and fights it notices. `global.lua` sets 0 in its set-up
+    helpers.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x002927a8; the meaning of 0 and 1 is inferred from the scripts' use.
+  usage: {chunks: 29, calls: 74, boot: true, mission1: false, result_used: false}
+
+- name: BrSetPlayerResponse
+  wrapper: 0x0035f468
+  calls:
+    - {addr: 0x002927f8, name: Brain_SetPlayerResponse}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: response, lua: number, ctype: int, desc: "Player response mode, a byte (brain `+0x228`); scripts use 0 and 1."}
+  description: >-
+    Sets how a human reacts to the player specifically.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x002927f8.
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: BrSetThugWantsWeapon
+  wrapper: 0x0035f990
+  calls:
+    - {addr: 0x00292848, name: Brain_SetWantsWeapon}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: wants, lua: boolean, desc: "true (or 1) lets the human go and pick up weapons; false (or 0) stops it."}
+  description: >-
+    Sets whether a thug looks for and picks up weapons lying in the level (brain `+0x265`). `global.lua` turns it off
+    in its set-up helpers; `GoalManWeaponPile` sets it too.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x00292848; the behaviour behind the byte is inferred from the name.
+  usage: {chunks: 37, calls: 78, boot: true, mission1: true, result_used: false}
+
+- name: BrSetThugWantsHat
+  wrapper: 0x0035f9f0
+  calls:
+    - {addr: 0x00292890, name: Brain_SetWantsHat}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: wants, lua: boolean, desc: "true to let the thug go for hats, false to stop it."}
+  description: >-
+    Sets whether a thug goes after hats knocked off in fights (brain `+0x266`).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 12, boot: false, mission1: false, result_used: false}
+
+- name: BrSetFOV
+  wrapper: 0x0035fa50
+  calls:
+    - {addr: 0x002928d8, name: Brain_SetFieldOfView}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: degrees, lua: number, ctype: float, desc: "Field of view in degrees (converted to radians); 360 lets the human see all around it, scripts also use 45-270."}
+  description: >-
+    Sets how wide a cone a human can see in (brain `+0x12c`), which governs whether it notices the player in stealth
+    sections.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 19, calls: 114, boot: false, mission1: false, result_used: false}
+
+- name: BrSetMeleeRange
+  wrapper: 0x0035fac8
+  calls:
+    - {addr: 0x00292938, name: Brain_SetMeleeRange}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: near, lua: number, ctype: float, desc: "First range in metres (brain `+0x13c`; inferred: the closest melee distance)."}
+    - {name: far, lua: number, ctype: float, desc: "Second range in metres (brain `+0x140`; inferred: the farthest melee distance)."}
+  description: >-
+    Sets the two distances the brain uses for melee fighting. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: BrSetNumAttackSlots
+  wrapper: 0x0035fb68
+  calls:
+    - {addr: 0x002929a8, name: Brain_SetAttackSlotCount}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human being attacked."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many attackers may engage this human at once (up to 16)."}
+  description: >-
+    Limits how many enemies can attack the human at the same time; shrinking the number drops the attackers beyond it.
+    No script calls it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Confirmed (code) at 0x0028db88 that it trims the brain's slot list and stores the count at `+0x1e4`; the gameplay
+    meaning is inferred.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: BrSetAttackWeight
+  wrapper: 0x0035fbe0
+  calls:
+    - {addr: 0x002929f8, name: Brain_SetAttackWeight}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: attack, lua: number, ctype: int, desc: "Attack or move id (an index into a per-brain byte table at `+0x298`); the Rumble modes use 38, 39 and 41."}
+    - {name: weight, lua: number, ctype: unsigned, desc: "How likely the human is to choose that attack (0 never; the scripts use 50)."}
+  description: >-
+    Sets how often an AI fighter picks a given attack, used by the Rumble modes to bias or forbid moves.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: BrSetNumFollowSlots
+  wrapper: 0x0035fc80
+  calls:
+    - {addr: 0x00292a60, name: Follow_SetSlotCount}
+  args:
+    - {name: leader, lua: number, ctype: unsigned, desc: "Handle of the human others follow (in mission 1, the player)."}
+    - {name: count, lua: number, ctype: int, desc: "Number of follow slots around the leader (mission 1 uses 4)."}
+    - {name: count2, lua: number, ctype: int, default: -1, desc: "A second slot count; -1 (the default) uses `count` for it too."}
+  description: >-
+    Sets how many formation slots a leader has for followers such as the player's gang. The slots belong to the
+    leader's follow formation, made on first use (`+0x1a4`).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Confirmed (code) at 0x00295dd8 (`+0x271`, `+0x272`). Why there are two counts is an open question.
+  usage: {chunks: 3, calls: 4, boot: true, mission1: true, result_used: false}
+
+- name: BrSetFollowSlotSet
+  wrapper: 0x0035fd18
+  calls:
+    - {addr: 0x00292ac0, name: Follow_SelectSlotSet}
+  args:
+    - {name: leader, lua: number, ctype: unsigned, desc: "Handle of the leader."}
+    - {name: set, lua: number, ctype: int, desc: "Index of the slot set (formation layout) to use; mission 1 uses 0."}
+  description: >-
+    Chooses which of the leader's formation layouts the followers take up, and makes them recompute their places.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
+
+- name: BrSetFollowSlot
+  wrapper: 0x0035fd90
+  calls:
+    - {addr: 0x00292b10, name: Follow_SetSlotOffset}
+  args:
+    - {name: leader, lua: number, ctype: unsigned, desc: "Handle of the leader."}
+    - {name: slot, lua: number, ctype: int, desc: "Slot index within the set, from 0."}
+    - {name: offset, lua: table, elem: number, count: 2, written_back: true, desc: "Table {x, y}: the slot's offset from the leader in metres, on the ground plane (mission 1 places four slots at 1 m, then 2 m, in front, to the sides and behind: {0, 1}, {1, 0}, {0, -1}, {-1, 0}). The values are written back into the table."}
+    - {name: set, lua: number, ctype: int, desc: "The slot set to edit; the current set is restored afterwards."}
+  description: >-
+    Places one follower slot of a leader's formation. Followers using that slot stand at that offset from the leader.
+    Offsets are kept in fixed point with a sixteenth of a metre as the unit.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Confirmed (code) at 0x00292b10 and 0x00295ec8 (nine slots of 12 bytes per set). Whether +y is the leader's forward
+    direction is inferred.
+  usage: {chunks: 2, calls: 12, boot: true, mission1: true, result_used: false}
+
+- name: BrSetReactToViolence
+  wrapper: 0x0035feb8
+  calls:
+    - {addr: 0x00292bc8, name: Brain_SetReactsToViolence}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: reacts, lua: boolean, default: true, desc: "true (the default) makes the human react to fights it sees (flee, cower or join in); false (or nil) makes it ignore them."}
+  description: >-
+    Sets whether a human reacts to violence nearby (brain `+0x267`). `global.lua` passes nil (false) in its set-up
+    helpers.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x00292bc8; the reactions themselves are inferred.
+  usage: {chunks: 33, calls: 85, boot: true, mission1: false, result_used: false}
+
+- name: GoalMoveToFlag
+  wrapper: 0x0035ff18
+  calls:
+    - {addr: 0x002da2c0, name: Goal_MoveToFlag}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to move."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the destination flag (a named point placed in the level, found with `FindFlag` or a level's flag table)."}
+    - {name: gait, lua: number, ctype: int, desc: "How fast to go: the gait id, 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters.md#locomotion))."}
+    - {name: angle, lua: number, ctype: float, desc: "Direction in degrees of an offset from the flag's point (0 with `distance` 0 means the flag itself)."}
+    - {name: distance, lua: number, ctype: float, desc: "Length of that offset in metres: the human goes to the point `distance` metres from the flag in direction `angle`."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres; the goal is reached within this distance (scripts use 0.3-0.5)."}
+    - {name: intervalMs, lua: number, ctype: unsigned, desc: "If non-zero, every this many milliseconds on the way the human, when the brain's check at 0x00291ed0 says so, plays a short reaction (inferred: a shout to followers); 0 for none."}
+    - {name: faceFlag, lua: boolean, desc: "true: on arrival the human also turns to the flag's own heading if it is more than 15 degrees off."}
+    - {name: option, lua: boolean, desc: "A flag handed to the move action (inferred: whether the human may break into a faster pace or path round obstacles); scripts leave it nil."}
+  description: >-
+    Gives the human a goal to walk or run to a flag (or a point offset from it) and stop within the arrival radius,
+    optionally turning to the flag's heading. When it arrives the flag is notified (message 8, so a usable flag can
+    start its use), and the goal ends.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002da3b0, start 0x002da408 (offset point by angle and distance, 0x003376c0), update 0x002da588. The
+    meaning of the last argument is inferred.
+  usage: {chunks: 84, calls: 304, boot: false, mission1: true, result_used: false}
+
+- name: GoalMoveToExitFlag
+  wrapper: 0x00360090
+  calls:
+    - {addr: 0x002da810, name: Goal_MoveToExitFlag}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (a pedestrian or vendor leaving the scene)."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the exit flag to go to."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk, 3 jog, 4 run, 5 sprint."}
+    - {name: angle, lua: number, ctype: float, desc: "Direction in degrees of an offset from the flag (0)."}
+    - {name: distance, lua: number, ctype: float, desc: "Length of the offset in metres (0)."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres (scripts use 0.3)."}
+  description: >-
+    Sends a human to an exit flag, used to clear pedestrians and vendors out of a scene; before pushing the goal it
+    switches the human's brain off (as `BrDead`) unless the brain is type 1.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    That the human is removed on arrival is inferred from the name.
+  usage: {chunks: 10, calls: 26, boot: false, mission1: false, result_used: false}
+
+- name: GoalMoveToUseFlag
+  wrapper: 0x003601a8
+  calls:
+    - {addr: 0x002db6b0, name: Goal_MoveToUseFlag}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of a usable world flag (a phone, a chair, a trash can, a strip pole ...)."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk, 3 jog, 4 run, 5 sprint."}
+    - {name: delay, lua: number, ctype: float, desc: "A float stored with the goal (scripts pass 0)."}
+    - {name: duration, lua: number, ctype: float, desc: "A float stored with the goal (scripts pass 0 or 0.5; inferred: how long to use the flag, or a random spread)."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres (scripts use 0.5)."}
+    - {name: reserve, lua: boolean, desc: "true when the scripts want the human to keep using the flag (inferred); scripts pass true or nothing."}
+  description: >-
+    Sends a human to a usable world flag and has it use the flag (sit, phone, rummage) when it gets there. The flag is
+    reserved for the human when the goal is made.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002db768 (reserves the flag through 0x004161b0). Mission-1 scripts use it to seat and position
+    extras. The roles of the two floats and the flag are inferred.
+  usage: {chunks: 28, calls: 97, boot: false, mission1: true, result_used: false}
+
+- name: GoalMoveToHuman
+  wrapper: 0x003602e0
+  calls:
+    - {addr: 0x002dc458, name: Goal_MoveToHuman}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human that moves."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to go to."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk ... 5 sprint (scripts use 5)."}
+    - {name: radius, lua: number, ctype: float, desc: "How close to get, in metres (scripts use 1-3)."}
+  description: >-
+    Sends a human to another human, stopping within the given distance.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Argument order confirmed (code) at 0x002dc458 (the goal goes on the first human's brain); the arrival behaviour is
+    inferred.
+  usage: {chunks: 3, calls: 11, boot: false, mission1: false, result_used: false}
+
+- name: GoalAddressPerson
+  wrapper: 0x003603a8
+  calls:
+    - {addr: 0x002cc348, name: Goal_AddressPerson}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who speaks."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human addressed (usually the player)."}
+    - {name: approach, lua: number, ctype: float, desc: "A distance in metres (scripts use 0-100; inferred: how far the human will walk to reach the target, 0 to stay put)."}
+    - {name: range, lua: number, ctype: float, desc: "A distance in metres (scripts use 15-50; inferred: the range within which the human starts talking)."}
+    - {name: speech, lua: number, ctype: int, default: -1, desc: "A speech or line id; -1 (the default) for the human's default line (inferred)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function to call when the goal ends, or nil."}
+  description: >-
+    Makes a human turn to and address another human, typically to call out to the player, then call back the script.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002cc408 interns the callback name through the script system (slot +0xcc). It resolves the speaker
+    without checking it is a human. Argument roles beyond the handles and callback are inferred.
+  usage: {chunks: 9, calls: 15, boot: false, mission1: true, result_used: false}
+
+- name: GoalGetItem
+  wrapper: 0x003604b0
+  calls:
+    - {addr: 0x002dc708, name: Goal_GetItem}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id (scripts use 5, sprint)."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object to fetch (a level object such as a guitar)."}
+  description: >-
+    Sends a human to pick up a particular object.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: GoalEngageEnemy
+  wrapper: 0x00360550
+  calls:
+    - {addr: 0x002af528, name: Goal_EngageEnemy}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enemy, lua: number, ctype: unsigned, desc: "Handle of the human to fight."}
+  description: >-
+    Makes a human start fighting a given enemy.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: GoalFollowPlayer
+  wrapper: 0x003605c8
+  calls:
+    - {addr: 0x002de2c8, name: Goal_FollowPlayer}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the follower."}
+    - {name: leader, lua: number, ctype: unsigned, desc: "Handle of the human to follow (usually the player)."}
+    - {name: distance, lua: number, ctype: float, desc: "Follow distance in metres (stored squared); scripts use 2-5."}
+    - {name: mode, lua: number, ctype: int, desc: "A follow mode number stored with the goal (scripts use 0 and 1)."}
+  description: >-
+    Makes a human follow a leader, keeping within the given distance and taking a slot in the leader's follow
+    formation (see `BrSetFollowSlot`). `global.lua`'s gang helpers use it to have Warriors follow the player.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002de380; its start (0x002de498) widens the follower's field of view and joins the leader's
+    formation (0x00296028). The meaning of `mode` is inferred.
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: GoalTrackHuman
+  wrapper: 0x00360690
+  calls:
+    - {addr: 0x002df1a8, name: Goal_TrackHuman}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human that tracks."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human tracked (in mission 1, the player)."}
+    - {name: distance, lua: number, ctype: float, desc: "How far, in metres, the human may drift from its place before walking back to it (the tutorial passes 0.5)."}
+  description: >-
+    Makes a human stay with another human and keep facing it: it takes a slot in the target's follow formation (see
+    `BrSetFollowSlot`), walks back to that slot (or to the target when it has none) whenever it is more than
+    `distance` metres away, and otherwise turns to face the target when it is more than 15 degrees off. The goal ends
+    when the target is gone. The mission-1 combat tutorial uses it for a sparring partner.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002df250, start 0x002df288 (joins the formation), update 0x002df3c0 (walks at gait 2; also refreshes
+    its actions every 40 updates).
+  usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
+
+- name: GoalFollowObject
+  wrapper: 0x00360730
+  calls:
+    - {addr: 0x002df6c0, name: Goal_FollowObject}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object to follow (a moving blocker in a chase)."}
+    - {name: distance, lua: number, ctype: float, desc: "Follow distance in metres (scripts use 0-1)."}
+    - {name: mode, lua: number, ctype: unsigned, desc: "A mode number (scripts use 1 and 2)."}
+  description: >-
+    Makes a human follow a moving object, as in scripted chases.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: GoalFollowFormation
+  wrapper: 0x003607f8
+  calls:
+    - {addr: 0x002dfb00, name: Goal_FollowFormation}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the follower."}
+    - {name: leader, lua: number, ctype: unsigned, desc: "Handle of the leader whose formation it joins."}
+  description: >-
+    Makes a human take a place in another human's follow formation.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GoalTravelPath
+  wrapper: 0x00360870
+  calls:
+    - {addr: 0x002e05a8, name: Goal_TravelPath}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: path, lua: userdata, desc: "The path object (a `Path_...` value from the level's path table)."}
+    - {name: start, lua: number, ctype: int, desc: "Index of the path point to start from (scripts use 0 and 1)."}
+    - {name: reverse, lua: boolean, desc: "true to walk the path backwards (inferred)."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk ... 5 sprint."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius at each point in metres (scripts use 0.5-1)."}
+  description: >-
+    Makes a human travel along a level path from a given point.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 6, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: GoalTravelPath2
+  wrapper: 0x00360988
+  calls:
+    - {addr: 0x002e0670, name: Goal_TravelPath2}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: path, lua: userdata, desc: "The path object."}
+    - {name: start, lua: number, ctype: int, desc: "Starting path point index."}
+    - {name: reverse, lua: boolean, desc: "true to travel backwards (inferred)."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres."}
+    - {name: endPoint, lua: number, ctype: int, desc: "A path point index; -1 for the end of the path (inferred: where to stop)."}
+  description: >-
+    As `GoalTravelPath`, with an extra point index (inferred: the point to stop at).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: GoalLeadChase
+  wrapper: 0x00360ac8
+  calls:
+    - {addr: 0x002e0a78, name: Goal_LeadChase}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human being chased."}
+    - {name: path, lua: userdata, desc: "The path the runner follows."}
+    - {name: chaser, lua: number, ctype: unsigned, desc: "Handle of the chaser (the player)."}
+    - {name: distance1, lua: number, ctype: float, desc: "First distance threshold in metres (the only call passes 30, 50, 70, 90 for the four; inferred: distances at which the runner speeds up or waits)."}
+    - {name: distance2, lua: number, ctype: float, desc: "Second distance threshold in metres."}
+    - {name: distance3, lua: number, ctype: float, desc: "Third distance threshold in metres."}
+    - {name: distance4, lua: number, ctype: float, desc: "Fourth distance threshold in metres."}
+  description: >-
+    Makes a human run a path ahead of a chaser, pacing itself by how far behind the chaser is.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GoalRunCarrotRun
+  wrapper: 0x00360c10
+  calls:
+    - {addr: 0x002e1140, name: Goal_RunCarrot}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the runner."}
+    - {name: path, lua: userdata, desc: "The path to run."}
+    - {name: start, lua: number, ctype: int, desc: "Starting path point index."}
+    - {name: reverse, lua: boolean, desc: "true to run it backwards (inferred)."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id (scripts use 4 or 5)."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres."}
+    - {name: chasers, lua: number, ctype: int, desc: "The gang chasing (scripts pass the Warriors' gang)."}
+    - {name: distance, lua: number, ctype: float, desc: "A distance in metres (scripts use 4-25; inferred: the lead the runner keeps)."}
+    - {name: option, lua: boolean, desc: "A flag (scripts leave it unset)."}
+  description: >-
+    Makes a human run a path just ahead of a chasing gang, the 'carrot' in chase missions.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false}
+
+- name: GoalDevilRun
+  wrapper: 0x00360d98
+  calls:
+    - {addr: 0x002e1760, name: Goal_DevilRun}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the runner."}
+    - {name: path, lua: userdata, desc: "The path to run."}
+    - {name: gang, lua: number, ctype: int, desc: "The gang it races or chases (scripts pass the Warriors' gang)."}
+    - {name: speed, lua: number, ctype: int, desc: "Base speed (a gait id or speed; scripts use constants such as 5)."}
+    - {name: attackDistance, lua: number, ctype: float, desc: "Distance in metres at which it attacks (inferred)."}
+    - {name: boostDistance, lua: number, ctype: float, desc: "Distance in metres at which it speeds up (inferred)."}
+    - {name: maxSpeed, lua: number, ctype: float, desc: "Maximum speed (scripts use 10-13)."}
+    - {name: urgency, lua: number, ctype: float, desc: "Urgency factor (scripts use 0.5-3)."}
+    - {name: hostile, lua: boolean, desc: "true for a pursuer that attacks, false for a friendly runner (inferred)."}
+  description: >-
+    A rooftop and street chase runner that keeps pace with a gang along a path, speeding up when it falls behind and
+    attacking when close.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 6, calls: 33, boot: false, mission1: false, result_used: false}
+
+- name: GoalGuardFlag
+  wrapper: 0x00360f28
+  calls:
+    - {addr: 0x002b79b8, name: Goal_GuardFlag}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the guard."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to guard."}
+    - {name: radius, lua: number, ctype: float, desc: "Guard radius in metres (scripts use 0.5-1)."}
+    - {name: heading, lua: number, ctype: int, desc: "Heading in degrees to face while guarding; -1 to keep the flag's own (inferred)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called when the goal ends or times out, or nil."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "Time limit in milliseconds; -1 (the default) for none."}
+  description: >-
+    Makes a human stand guard at a flag, facing a direction, optionally for a limited time with a callback.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 14, boot: false, mission1: false, result_used: false}
+
+- name: GoalArrestHuman
+  wrapper: 0x00361030
+  calls:
+    - {addr: 0x002c0f58, name: Goal_ArrestHuman}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the arresting human (a cop)."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to arrest."}
+  description: >-
+    Makes a human (a cop) go and arrest another human.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GoalFight
+  wrapper: 0x003610a8
+  calls:
+    - {addr: 0x002b2b90, name: Brain_StartFight}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who fights."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to fight."}
+    - {name: unused, lua: number, ctype: unsigned, default: 4294967295, desc: "Read (default `NilHandle`) but not used by the code."}
+  description: >-
+    Makes a human attack another human at once: its queued actions are cleared and the brain takes the target as its
+    enemy. Not a goal on the stack despite its name. It does nothing when the human's threat response is 0 (see
+    `BrSetThreatResponse`).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x002b2b90 calls 0x0028d2e8, which returns at once when brain `+0x21c` is 0.
+  usage: {chunks: 15, calls: 33, boot: false, mission1: true, result_used: false}
+
+- name: GoalMelee
+  wrapper: 0x00361150
+  calls:
+    - {addr: 0x002add08, name: Goal_Melee}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: target, lua: number, ctype: unsigned, default: 4294967295, desc: "Handle of an opponent; `NilHandle` (the default) to pick one (inferred)."}
+  description: >-
+    Makes a human brawl in melee, with a given opponent or with whoever is near.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: GoalPlayAnimation
+  wrapper: 0x003611d0
+  calls:
+    - {addr: 0x002e48e8, name: Goal_PlayAnimation}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: anim, lua: number, ctype: unsigned, desc: "Animation id (an anim id from the character's data)."}
+    - {name: loop, lua: boolean, desc: "true to loop it (inferred)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called when it ends, or nil."}
+  description: >-
+    Plays one of the character's own animations by id as a goal. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalJoinScene
+  wrapper: 0x00361280
+  calls:
+    - {addr: 0x002e4cf0, name: Goal_JoinScene}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: scene, lua: number, ctype: unsigned, desc: "Handle of the scene (from `ScenePreload`)."}
+    - {name: role, lua: number, ctype: unsigned, desc: "Role index of the human in the scene, from 0."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}: a position in metres; written back."}
+    - {name: heading, lua: number, ctype: float, desc: "Heading in degrees (inferred)."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id for walking into place."}
+    - {name: processNow, lua: boolean, default: true, desc: "true (the default) to run the goal's first update at once."}
+  description: >-
+    Puts a human into a scene at a role, walking it to a given position first (inferred). No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalJoinFixedScene
+  wrapper: 0x00361418
+  calls:
+    - {addr: 0x002e5048, name: Goal_JoinFixedScene}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: scene, lua: number, ctype: unsigned, desc: "Handle of the scene (from `ScenePreload`)."}
+    - {name: role, lua: number, ctype: unsigned, desc: "Role index of the human in the scene, from 0 (the helpers pass their loop index minus 1)."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id used to walk to the scene's start mark (the scene table's `Speed`)."}
+    - {name: processNow, lua: boolean, default: true, desc: "true (the default) runs the new goal's first update immediately."}
+  description: >-
+    Gives a human the goal of taking part in a fixed-position scene in the given role; the scene is told about the
+    human and its role at once. `global.lua`'s scene helpers call it for each human of a scene table.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002e5128 registers (scene, human, role) with the scene through 0x003541a0.
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: GoalJoinCinematic
+  wrapper: 0x003614f8
+  calls:
+    - {addr: 0x002e5300, name: Goal_JoinCinematic}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (the player's characters too)."}
+    - {name: scene, lua: number, ctype: unsigned, desc: "Handle of the cinematic scene (from `ScenePreload`)."}
+    - {name: role, lua: number, ctype: unsigned, desc: "Role index in the scene, from 0."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id for walking into place (scripts use 2, walk)."}
+    - {name: processNow, lua: boolean, default: true, desc: "true (the default) runs the goal's first update immediately."}
+  description: >-
+    Gives a human the goal of taking part in a cinematic scene in the given role. If the human is pad-controlled
+    (brain type 0) its brain is switched off first, as `BrDead(human, true)` does, so the player cannot move during
+    the cinematic.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002e53e0.
+  usage: {chunks: 7, calls: 22, boot: true, mission1: false, result_used: false}
+
+- name: GoalJoinAnimation
+  wrapper: 0x003615d8
+  calls:
+    - {addr: 0x002e5650, name: Goal_JoinAnimation}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: scene, lua: number, ctype: unsigned, desc: "Handle of the animation scene (from `ScenePreload`)."}
+    - {name: role, lua: number, ctype: unsigned, desc: "Role index in the scene, from 0."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id for walking into place."}
+    - {name: processNow, lua: boolean, default: true, desc: "Read (default true) but, unlike the other `GoalJoin*` bindings, not used."}
+  description: >-
+    Gives a human the goal of taking part in an animation scene in the given role, registering it with the scene at
+    once. `global.lua`'s scene helpers use it for animation-type scenes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002e56f0; 0x002e5650 never runs the first update.
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: GoalHooker
+  wrapper: 0x003616b8
+  calls:
+    - {addr: 0x002a5360, name: Goal_Hooker}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to work from (inferred)."}
+  description: >-
+    Street-walker ambient behaviour around a flag. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalPedestrianPath
+  wrapper: 0x00361730
+  calls:
+    - {addr: 0x002a60e0, name: Goal_PedestrianPath}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the pedestrian."}
+    - {name: path, lua: userdata, desc: "The path object."}
+    - {name: start, lua: number, ctype: int, desc: "Starting point index (inferred)."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id (inferred)."}
+  description: >-
+    Ambient pedestrian walking along a path. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalPedestrianFlag
+  wrapper: 0x00361808
+  calls:
+    - {addr: 0x002a66c0, name: Goal_PedestrianFlag}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the pedestrian."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of a flag."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id (inferred)."}
+    - {name: value, lua: number, ctype: int, desc: "A number (inferred: a wait time)."}
+  description: >-
+    Ambient pedestrian walking to a flag. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalCopperGuard
+  wrapper: 0x003618d8
+  calls:
+    - {addr: 0x002c0910, name: Goal_CopGuard}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the cop."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to guard."}
+    - {name: value1, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+    - {name: value2, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+  description: >-
+    A cop guarding a spot. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalCopperRespond
+  wrapper: 0x003619a8
+  calls:
+    - {addr: 0x002c0c20, name: Goal_CopRespondSimple}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the cop."}
+    - {name: value1, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+    - {name: value2, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+  description: >-
+    A cop responding to a crime. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalManWeaponPile
+  wrapper: 0x00361b80
+  calls:
+    - {addr: 0x002a31f0, name: Goal_ManWeaponPile}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
+    - {name: pile, lua: number, ctype: int, desc: "Which weapon pile or object type to take from; scripts pass -1 (any, inferred)."}
+    - {name: minRange, lua: number, ctype: float, desc: "Distance in metres (scripts use 2; inferred: the closest target range)."}
+    - {name: maxRange, lua: number, ctype: float, desc: "Distance in metres (scripts use 40; inferred: the farthest target range)."}
+    - {name: maxThrows, lua: number, ctype: int, desc: "A count (scripts use 12-14; inferred: how many objects to throw)."}
+    - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 1 and 5)."}
+    - {name: value3, lua: number, ctype: int, desc: "A number (scripts use 1)."}
+    - {name: wantsWeapon, lua: boolean, desc: "Sets the brain's wants-weapon flag (as `BrSetThugWantsWeapon`)."}
+    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called when the goal ends, or nil."}
+    - {name: delayMs, lua: number, ctype: unsigned, default: 500, desc: "A time in milliseconds (default 500; inferred: delay between throws)."}
+  overloads:
+  - wrapper: 0x00361a50
+    calls:
+      - {addr: 0x002a30e8}
+    args:
+      - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
+      - {name: pile, lua: number, ctype: int, desc: "Which pile or object type; -1 for any (inferred)."}
+      - {name: minRange, lua: number, ctype: float, desc: "Distance in metres (inferred: closest target range)."}
+      - {name: maxRange, lua: number, ctype: float, desc: "Distance in metres (inferred: farthest target range)."}
+      - {name: maxThrows, lua: number, ctype: int, desc: "A count (inferred: how many to throw)."}
+      - {name: wantsWeapon, lua: boolean, desc: "Sets the brain's wants-weapon flag."}
+      - {name: callback, lua: string, desc: "Name of a Lua function, or nil."}
+    note: >-
+      The 7-argument form (0x00361a50). The 11-argument form is used when arguments 1-7 are numbers, 8 is a `bool`
+      (tolua type), 9 an optional bool, 10 an optional string, 11 an optional number and there is no 12th; any other
+      call falls back to this form.
+  description: >-
+    Makes a human stand by a pile of throwable objects and throw them at enemies in range. Before pushing the goal it
+    clears the human's current action, sets its threat and damage responses to 0 and its wants-weapon flag.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Both forms build the same goal (0x002a3320); argument roles past the ranges are inferred.
+  usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: GoalCopperPatrol
+  wrapper: 0x00361ea0
+  calls:
+    - {addr: 0x002c1060, name: Goal_CopPatrol}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the cop."}
+    - {name: path, lua: userdata, desc: "The patrol path object."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id (scripts use 2, walk)."}
+    - {name: start, lua: number, ctype: int, desc: "Starting point index (scripts use 0)."}
+    - {name: option, lua: number, ctype: int, desc: "A number (scripts use 0)."}
+  description: >-
+    Makes a cop patrol along a path.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: GoalAreaWalker
+  wrapper: 0x00361fa0
+  calls:
+    - {addr: 0x002a4cb8, name: Goal_AreaWalker}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag at the centre of the area."}
+    - {name: radius, lua: number, ctype: int, desc: "Radius of the area in metres (scripts use 20-30)."}
+    - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 0)."}
+    - {name: value2, lua: number, ctype: unsigned, desc: "A handle or number (scripts use 0)."}
+    - {name: gait, lua: number, ctype: int, desc: "A number (scripts use 3 or 5; inferred: the gait id)."}
+  description: >-
+    Makes a human walk around within an area around a flag, as cops searching do.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 13, calls: 33, boot: false, mission1: false, result_used: false}
+
+- name: GoalObjectThrower
+  wrapper: 0x003620c0
+  calls:
+    - {addr: 0x002a3e50, name: Goal_ObjectThrower}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
+    - {name: objectType, lua: number, ctype: int, desc: "Object type to throw; -1 for any (inferred)."}
+    - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 1-4)."}
+    - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 1-5)."}
+    - {name: value3, lua: number, ctype: int, desc: "A number (scripts use 0.1-1)."}
+    - {name: target1, lua: number, ctype: unsigned, desc: "Handle of a target flag or human."}
+    - {name: target2, lua: number, ctype: unsigned, desc: "Handle of a second target, or `NilHandle`."}
+    - {name: target3, lua: number, ctype: unsigned, desc: "Handle of a third target, or `NilHandle`."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called when the goal ends, or nil."}
+  description: >-
+    Makes a human throw objects at up to three targets, as boss throwers do.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: GoalPathBlocker
+  wrapper: 0x00362360
+  calls:
+    - {addr: 0x002a58a8, name: Goal_PathBlocker}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: value1, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+    - {name: value2, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+    - {name: value3, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function, or nil."}
+  overloads:
+  - wrapper: 0x00362250
+    calls:
+      - {addr: 0x002a57e8}
+    args:
+      - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+      - {name: flag, lua: number, ctype: unsigned, desc: "Handle of a flag to block at."}
+      - {name: value1, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+      - {name: value2, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+      - {name: value3, lua: number, ctype: int, desc: "A number (meaning not traced)."}
+      - {name: callback, lua: string, desc: "Name of a Lua function, or nil."}
+    note: >-
+      The form with a flag (0x00362250). The 5-argument form is used when arguments 1-4 are numbers, 5 a string and
+      there is no 6th; anything else falls back to this one.
+  description: >-
+    Makes a human block a path, optionally at a flag. No script calls either form.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Both forms build the same goal (0x002a5958), the 5-argument one with no flag.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalHoldPosition
+  wrapper: 0x003624e0
+  calls:
+    - {addr: 0x002be590, name: Goal_HoldPosition}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}: the position to hold, in metres; written back."}
+    - {name: radius, lua: number, ctype: float, desc: "Radius in metres (the only call passes 2)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function, or nil."}
+  description: >-
+    Makes a human stay at a position, returning to it if pushed away.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GoalBossDiego
+  wrapper: 0x00362600
+  calls:
+    - {addr: 0x002a1aa8, name: Goal_BossDiego}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the boss."}
+    - {name: value1, lua: number, ctype: unsigned, desc: "A handle or number (meaning not traced)."}
+    - {name: value2, lua: number, ctype: unsigned, desc: "A handle or number (meaning not traced)."}
+    - {name: value3, lua: number, ctype: unsigned, desc: "A handle or number (meaning not traced)."}
+    - {name: value4, lua: number, ctype: unsigned, desc: "A handle or number (meaning not traced)."}
+  description: >-
+    The boss behaviour for Diego. No script calls it (the fight uses `TacticBossScenarioA`).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalBossLizzies
+  wrapper: 0x003626f0
+  calls:
+    - {addr: 0x0029fba8, name: Goal_BossLizzies}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the boss."}
+    - {name: value, lua: number, ctype: unsigned, desc: "A handle or number (meaning not traced)."}
+  description: >-
+    The Lizzies' boss behaviour. No script calls it (the fight uses `TacticBossScenarioB`).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalStartParlay
+  wrapper: 0x00362868
+  calls:
+    - {addr: 0x00299248, name: Goal_StartParlay}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human starting the parley."}
+    - {name: other, lua: number, ctype: unsigned, desc: "Handle of the other party."}
+    - {name: anim1, lua: string, desc: "A name (inferred: an animation or a callback)."}
+    - {name: anim2, lua: string, desc: "A name (inferred)."}
+    - {name: anim3, lua: string, desc: "A name (inferred)."}
+    - {name: option, lua: boolean, desc: "A flag."}
+  results:
+    - {lua: boolean, desc: "true (1) if the parley goal was started, false (nil) otherwise (inferred)."}
+  description: >-
+    Starts a parley (a stand-off talk) between two humans. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalTag
+  wrapper: 0x00362960
+  calls:
+    - {addr: 0x002cce88, name: Goal_Tag}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who sprays."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to stand at."}
+    - {name: tag, lua: number, ctype: unsigned, desc: "Handle of the tag object (the wall graffiti to spray)."}
+    - {name: extra, lua: number, ctype: unsigned, desc: "A handle, usually `NilHandle`."}
+  description: >-
+    Makes a human go to a spot and spray a graffiti tag.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: GoalTagEx
+  wrapper: 0x00362a28
+  calls:
+    - {addr: 0x002ccf30, name: Goal_TagEx}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who sprays."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to stand at."}
+    - {name: tag, lua: number, ctype: unsigned, desc: "Handle of the tag object."}
+    - {name: extra, lua: number, ctype: unsigned, desc: "A handle."}
+    - {name: extra2, lua: number, ctype: unsigned, desc: "A handle or number."}
+  description: >-
+    As `GoalTag` with one more argument. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalThrowObject
+  wrapper: 0x00362b18
+  calls:
+    - {addr: 0x002cf480, name: Goal_ThrowObject}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the flag or human to throw at."}
+    - {name: range, lua: number, ctype: float, default: 16, desc: "A distance in metres (default 16)."}
+    - {name: count, lua: number, ctype: int, default: 2, desc: "A number (default 2; inferred: how many throws)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called when done, or nil."}
+  description: >-
+    Makes a human throw an object (a molotov, a chair) at a target and call back the script.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: GoalAvoidEnemies
+  wrapper: 0x00362c00
+  calls:
+    - {addr: 0x002e3090, name: Goal_AvoidEnemies}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: useThrowables, lua: boolean, desc: "true to let it throw things while avoiding (inferred)."}
+    - {name: minRange, lua: number, ctype: float, default: 7, desc: "Distance in metres (default 7; inferred: when to start backing off)."}
+    - {name: maxRange, lua: number, ctype: float, default: 14, desc: "Distance in metres (default 14; inferred: the distance it keeps)."}
+    - {name: value1, lua: number, ctype: float, desc: "A number (scripts use 0 or 6000; inferred: a duration in ms)."}
+    - {name: value2, lua: number, ctype: float, desc: "A number."}
+    - {name: value3, lua: number, ctype: unsigned, desc: "A handle or number."}
+    - {name: value4, lua: number, ctype: unsigned, desc: "A handle or number (scripts use 3)."}
+  description: >-
+    Makes a human keep its distance from enemies.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: GoalCopRespond
+  wrapper: 0x00362d68
+  calls:
+    - {addr: 0x002c2d38, name: Goal_CopRespond}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the cop."}
+    - {name: crime, lua: number, ctype: int, desc: "A crime type number (inferred)."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}: where the crime happened, in metres; written back."}
+    - {name: criminal, lua: number, ctype: unsigned, desc: "Handle of the offender, or `NilHandle`."}
+    - {name: victim, lua: number, ctype: unsigned, desc: "Handle of the victim (inferred)."}
+  description: >-
+    Sends a cop to respond to a crime at a place. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalCallPolice
+  wrapper: 0x00362ec0
+  calls:
+    - {addr: 0x002a7d08, name: Goal_CallPolice}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the witness."}
+    - {name: crime, lua: number, ctype: int, desc: "A crime type number (scripts use 0 and 13)."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}: where the crime happened, in metres; written back."}
+    - {name: criminal, lua: number, ctype: unsigned, desc: "Handle of the offender, or `NilHandle`."}
+    - {name: other, lua: number, ctype: unsigned, desc: "A handle (scripts pass a local human)."}
+  description: >-
+    Makes a witness go and call the police about a crime.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: GoalDealer
+  wrapper: 0x00363018
+  calls:
+    - {addr: 0x002c6c88, name: Goal_Dealer}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the dealer."}
+    - {name: dealerType, lua: number, ctype: int, desc: "Dealer type 0, 1 or 2; overridden by the human's character class when it is one of the dealer classes (0x1aa-0x1ae give 0, 0x1af-0x1b3 give 2, 0x1b4-0x1b8 give 1)."}
+    - {name: range, lua: number, ctype: float, default: 10, desc: "A distance in metres (default 10; inferred: how close the player must come to deal)."}
+    - {name: runChance, lua: number, ctype: unsigned, default: 50, desc: "Percentage chance (0-100, default 50) stored with the goal; scripts call it `chance2Run` (inferred: the dealer runs when approached)."}
+    - {name: dirtyChance, lua: number, ctype: unsigned, desc: "Percentage chance (0-100) that this dealer is dirty: the goal rolls it once when made; scripts call it `chance2BDirty`."}
+    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+  description: >-
+    Makes a human act as a street dealer the player can buy flash from; whether this dealer is dirty is decided by a
+    random roll against `dirtyChance` when the goal is made. Levels use it for the flash dealers, including the
+    mission-1 area.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Wrapper 0x002c6c88 remaps the type by class; constructor 0x002c6d90 rolls `random(100) < dirtyChance` into
+    `+0x41`. The other arguments' roles are inferred from the scripts' field names.
+  usage: {chunks: 21, calls: 27, boot: false, mission1: true, result_used: false}
+
+- name: GoalShopkeeper
+  wrapper: 0x00363128
+  calls:
+    - {addr: 0x002e5a00, name: Goal_Shopkeeper}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the shopkeeper."}
+    - {name: store, lua: number, ctype: unsigned, desc: "Handle of the store's volume (a `VolumeBox` the level defines)."}
+    - {name: value, lua: number, ctype: int, desc: "A number (scripts use 1 and 3)."}
+    - {name: option, lua: boolean, desc: "A flag (scripts pass false)."}
+    - {name: range, lua: number, ctype: float, default: 9, desc: "A distance in metres (default 9)."}
+    - {name: anim1, lua: string, desc: "An animation name, or nil."}
+    - {name: anim2, lua: string, desc: "An animation name, or nil."}
+    - {name: option2, lua: boolean, default: true, desc: "A flag (default true)."}
+  description: >-
+    Makes a human run a store: stay behind the counter, greet and react to the player in the store's volume.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: GoalRiot
+  wrapper: 0x00363268
+  calls:
+    - {addr: 0x002d0e98, name: Goal_Riot}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the rioter."}
+    - {name: radius, lua: number, ctype: float, default: 15, desc: "A distance in metres (default 15)."}
+    - {name: value1, lua: number, ctype: unsigned, default: 30, desc: "A number (default 30)."}
+    - {name: value2, lua: number, ctype: unsigned, default: 1, desc: "A number (default 1)."}
+    - {name: chance1, lua: number, ctype: unsigned, default: 20, desc: "A percentage (default 20; scripts use 0 and 75)."}
+    - {name: chance2, lua: number, ctype: unsigned, default: 10, desc: "A percentage (default 10; scripts use 0 and 25)."}
+    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+  description: >-
+    Makes a human riot: smash, loot and fight in an area.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false}
+
+- name: GoalBumLogic
+  wrapper: 0x003633a8
+  calls:
+    - {addr: 0x002abd38, name: Goal_Bum}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the bum."}
+    - {name: bumType, lua: number, ctype: unsigned, desc: "Behaviour type 0, 1 or 2 (scripts give each bum of a group a different one; type 2 calls come with a chance and an extra number)."}
+    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+    - {name: chance, lua: number, ctype: unsigned, desc: "A percentage, clamped to 100 (scripts use 75; inferred: the chance to beg or react)."}
+    - {name: value, lua: number, ctype: int, default: 3, desc: "A number (default 3)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called by the goal, or nil."}
+    - {name: option2, lua: boolean, default: true, desc: "A flag (default true)."}
+  description: >-
+    Gives a homeless human its ambient behaviour (begging, rummaging, sleeping by type), with an optional Lua
+    callback. `global.lua` sets bums up with it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002abef8 (clamps the chance to 100, interns the callback). What each type does is inferred.
+  usage: {chunks: 26, calls: 71, boot: false, mission1: true, result_used: false}
+
+- name: GoalBumLogicTrigger
+  wrapper: 0x003634c8
+  calls:
+    - {addr: 0x002abe08, name: Goal_BumTrigger}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a bum running `GoalBumLogic`."}
+  description: >-
+    Pokes a bum's ambient goal into its triggered reaction (inferred).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: GoalPlayDynAnimation
+  wrapper: 0x00363530
+  calls:
+    - {addr: 0x002d2df8, name: Goal_PlayDynamicAnimation}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: anim, lua: string, desc: "File name of a dynamic animation (`.anm`), loaded for the level with `SetDynamicAnimation`. An empty or missing name makes the binding do nothing."}
+    - {name: callback, lua: string, desc: "Name of a Lua function to call when the animation goal ends, or nil."}
+    - {name: option, lua: boolean, default: true, desc: "A flag stored with the goal (default true; inferred: return to normal behaviour afterwards)."}
+  description: >-
+    Plays a dynamic (level-loaded) animation on a human as a goal and calls the script back when it ends. The name is
+    copied into the human (`+0x468`) for the animation system to pick up. Mission 1 uses it for the tutorial's
+    demonstration moves.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002d2eb0. The flag's effect is inferred.
+  usage: {chunks: 22, calls: 49, boot: false, mission1: true, result_used: false}
+
+- name: GoalPlayDynIdle
+  wrapper: 0x003635d0
+  calls:
+    - {addr: 0x002d3940, name: Goal_PlayDynamicIdle}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to idle at (it walks there first)."}
+    - {name: startAnim, lua: string, desc: "Start animation file name (`.anm`), or nil."}
+    - {name: loopAnim, lua: string, desc: "Looping idle animation file name."}
+    - {name: endAnim, lua: string, desc: "End animation file name, or nil."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "How long to idle in milliseconds; -1 (the default) for ever (inferred)."}
+  description: >-
+    Makes a human go to a flag and play a start, loop and end animation there (leaning, writing on a pad, working on a
+    car).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 21, calls: 99, boot: false, mission1: false, result_used: false}
+
+- name: GoalPlayGenAnim
+  wrapper: 0x003636c8
+  calls:
+    - {addr: 0x002d4628, name: Goal_PlayGenericAnimation}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: anim, lua: number, ctype: unsigned, desc: "A generic animation number (scripts use 0 and 1)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called when it ends, or nil."}
+  description: >-
+    Plays one of a few generic animations on a human and calls the script back.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: GoalStandIdle
+  wrapper: 0x00363758
+  calls:
+    - {addr: 0x002d48a0, name: Goal_StandIdle}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: callback, lua: string, desc: "A name (inferred: a callback)."}
+  description: >-
+    Makes a human stand idle. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalStationaryThrower
+  wrapper: 0x003637b8
+  calls:
+    - {addr: 0x002eee50, name: Goal_StationaryThrower}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
+    - {name: value, lua: number, ctype: unsigned, desc: "A number (scripts use 5-13; inferred: range in metres)."}
+    - {name: objects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object type ids to throw; written back."}
+  description: >-
+    Makes a human stay put and throw objects at enemies (bartenders throwing bottles).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: GoalCallGang
+  wrapper: 0x003638b8
+  calls:
+    - {addr: 0x002d5c28, name: Goal_CallGang}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the caller."}
+    - {name: gang, lua: number, ctype: unsigned, desc: "The gang to call for help."}
+    - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 1)."}
+    - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 0)."}
+    - {name: value3, lua: number, ctype: float, desc: "A number (scripts use 0)."}
+    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+  description: >-
+    Makes a human call its gang for help.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: GoalMark
+  wrapper: 0x003639c8
+  calls:
+    - {addr: 0x002d87b0, name: Goal_Mark}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of a flag."}
+    - {name: value, lua: number, ctype: float, desc: "A number (scripts use 0 and 10)."}
+  description: >-
+    Makes a human wait at a flag as a mark (in the marketplace mission, the accountant's pick-up points).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: GoalPeddler
+  wrapper: 0x00363a68
+  calls:
+    - {addr: 0x002ad2c0, name: Goal_Peddler}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the vendor."}
+    - {name: range, lua: number, ctype: float, desc: "A distance in metres (scripts use 5)."}
+    - {name: option, lua: boolean, desc: "A flag."}
+    - {name: greetAnim, lua: string, desc: "Greeting animation file name (`.anm`)."}
+    - {name: idleAnim, lua: string, desc: "Idle animation file name (`.anm`)."}
+  description: >-
+    Makes a human act as a street vendor that greets passers-by within range.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 9, boot: false, mission1: false, result_used: false}
+
+- name: GoalBigLedgeThrower
+  wrapper: 0x00363b38
+  calls:
+    - {addr: 0x002edf20, name: Goal_BigLedgeThrower}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
+    - {name: targets, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three target flag handles (`NilHandle` for unused); written back."}
+    - {name: objects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object ids (-1 for unused); written back."}
+    - {name: cycles, lua: number, ctype: unsigned, desc: "Number of throw cycles."}
+    - {name: delayMs, lua: number, ctype: unsigned, desc: "Delay between throws in milliseconds."}
+    - {name: option, lua: boolean, desc: "A flag."}
+    - {name: callback, lua: string, desc: "Name of a Lua function, or nil."}
+  description: >-
+    A boss that throws objects from a ledge at up to three targets.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: GoalBackoff
+  wrapper: 0x00363d70
+  calls:
+    - {addr: 0x002d9238, name: Goal_Backoff}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who backs off."}
+    - {name: from, lua: number, ctype: unsigned, desc: "Handle of the human to back away from."}
+    - {name: distance, lua: number, ctype: float, desc: "Distance in metres to keep (scripts use 1-15)."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "The goal's time field: how long to keep backing off in milliseconds; -1 (the default) for no limit."}
+    - {name: option, lua: boolean, default: true, desc: "A flag (default true); forced true for human kinds the brain checks at 0x00228340 / 0x00228228 (inferred: player-side characters)."}
+  description: >-
+    Makes a human back away from another and keep its distance, for a time or until `BrClearBackoff` or `BrFlush` ends
+    it (goal type 0x9b). `global.lua`'s fight helpers use it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002d92e8. The flag's meaning is inferred.
+  usage: {chunks: 8, calls: 23, boot: true, mission1: false, result_used: false}
+
+- name: GoalLutherShooter
+  wrapper: 0x00363e50
+  calls:
+    - {addr: 0x002f3118, name: Goal_LutherShooter}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of Luther (the gun boss)."}
+    - {name: shots, lua: number, ctype: unsigned, default: 6, desc: "A count (default 6; inferred: bullets per clip)."}
+    - {name: value1, lua: number, ctype: float, default: 10, desc: "A number (default 10)."}
+    - {name: value2, lua: number, ctype: float, default: 10, desc: "A number (default 10)."}
+    - {name: timeMs1, lua: number, ctype: unsigned, default: 100, desc: "A time in milliseconds (default 100)."}
+    - {name: timeMs2, lua: number, ctype: int, default: 500, desc: "A time in milliseconds (default 500)."}
+    - {name: name1, lua: string, desc: "A name, or nil."}
+    - {name: name2, lua: string, desc: "A name, or nil."}
+    - {name: name3, lua: string, desc: "A name, or nil."}
+    - {name: name4, lua: string, desc: "A name, or nil."}
+  description: >-
+    Luther's gunfire behaviour in the final missions.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: GoalBoxer
+  wrapper: 0x00363ff8
+  calls:
+    - {addr: 0x002d97c0, name: Goal_Boxer}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: bag, lua: number, ctype: unsigned, desc: "Handle of the heavy bag object."}
+  description: >-
+    Makes a human work out on a heavy bag (the hideout's training bag).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: GoalBigBrawler
+  wrapper: 0x00364070
+  calls:
+    - {addr: 0x002e81b8, name: Goal_BigBrawler}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the brawler."}
+    - {name: target, lua: number, ctype: unsigned, desc: "A handle (inferred: the opponent)."}
+    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z} in metres; written back."}
+    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z} in metres; written back."}
+    - {name: pos3, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z} in metres; written back."}
+    - {name: callback, lua: string, desc: "A name (inferred: a callback)."}
+  description: >-
+    A big brawler boss behaviour. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalBigFighter
+  wrapper: 0x003642f0
+  calls:
+    - {addr: 0x002e9c60, name: Goal_BigFighter}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the fighter."}
+  description: >-
+    A big fighter behaviour. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalBigThrower
+  wrapper: 0x00364328
+  calls:
+    - {addr: 0x002ecfe8, name: Goal_BigThrower}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
+    - {name: value1, lua: number, ctype: unsigned, desc: "A handle or number."}
+    - {name: value2, lua: number, ctype: unsigned, desc: "A handle or number."}
+    - {name: value3, lua: number, ctype: unsigned, desc: "A handle or number."}
+    - {name: value4, lua: number, ctype: unsigned, desc: "A handle or number."}
+    - {name: objects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object ids; written back."}
+  description: >-
+    A big thrower boss behaviour. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GoalCower
+  wrapper: 0x003644a0
+  calls:
+    - {addr: 0x002d4c38, name: Goal_Cower}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: option, lua: boolean, desc: "A flag (scripts pass false)."}
+  description: >-
+    Makes a human cower in fear.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 11, boot: false, mission1: false, result_used: false}
+
+- name: GoalGrabTarget
+  wrapper: 0x00364500
+  calls:
+    - {addr: 0x002bb3d0, name: Goal_GrabTarget}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the grabber."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to grab."}
+  description: >-
+    Makes a human grab another human.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: ActTurn
+  wrapper: 0x00364578
+  calls:
+    - {addr: 0x002fdde8, name: Action_Turn}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: degrees, lua: number, ctype: int, desc: "Angle to turn by, in degrees (inferred: relative to the current heading)."}
+    - {name: turnSpeed, lua: number, ctype: float, desc: "Largest turn per update (scripts use 0.1-1 for the other turn actions; inferred: radians per update)."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "A time limit in milliseconds; -1 (the default) for none (inferred)."}
+  description: >-
+    Queues an action that turns the human by an angle. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ActTurnTo
+  wrapper: 0x00364640
+  calls:
+    - {addr: 0x002fdf70, name: Action_TurnToTarget}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: target, lua: userdata, desc: "Something to face, passed as a Lua userdata (the one call passes a local value)."}
+    - {name: turnSpeed, lua: number, ctype: float, desc: "Largest turn per update (the call passes 0.1)."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "A time limit in milliseconds; -1 (the default) for none (inferred)."}
+  description: >-
+    Queues an action that turns the human to face a target.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: ActTurnToDir
+  wrapper: 0x00364708
+  calls:
+    - {addr: 0x002fdb90, name: Action_TurnToHeading}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: heading, lua: number, ctype: int, desc: "World heading to face, in degrees (scripts use values such as 250 and 270)."}
+    - {name: turnSpeed, lua: number, ctype: float, desc: "Largest turn per update (scripts use 0.1 and 1)."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "A time limit in milliseconds; -1 (the default) for none (inferred)."}
+  description: >-
+    Queues an action that turns the human to a world heading.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: ActLookAt
+  wrapper: 0x003647d8
+  calls:
+    - {addr: 0x002fe0c8, name: Action_LookAt}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who turns."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the object or human to face (any valid handle; only the first must be a human)."}
+    - {name: turnSpeed, lua: number, ctype: float, desc: "Largest turn per update, the same quantity the game's own movement gets from the human's turn limit (`Human_MaxTurn`, 0x002213d8); scripts use 0.1 (slow) to 1."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "Passed to the turn action as its last value; -1 (the default) in all scripts (inferred: no time limit)."}
+  description: >-
+    Queues an action that turns the human to face another object or human and keeps it facing it. Scripts use it to
+    make extras look at the player while they talk.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Wrapper 0x002fe0c8, action set-up 0x002fe160 (a turn action, 0x002fdc28, with the target kept at `+0x1c`, vtable
+    0x005430a0). The unit of `turnSpeed` and the role of `timeMs` are inferred.
+  usage: {chunks: 37, calls: 112, boot: false, mission1: true, result_used: false}
+
+- name: ActGiveWay
+  wrapper: 0x003648a0
+  calls:
+    - {addr: 0x002fe4b0, name: Action_GiveWay}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human that steps aside."}
+    - {name: other, lua: number, ctype: unsigned, desc: "Handle of the human to let past."}
+  description: >-
+    Queues an action that makes a human step out of another's way.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: ActMoveTo
+  wrapper: 0x00364918
+  calls:
+    - {addr: 0x002fb918, name: Action_MoveTo}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}: the point to move to, in metres; written back."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk ... 5 sprint."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres (inferred)."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "A time limit in milliseconds; -1 (the default) for none (inferred)."}
+  description: >-
+    Queues an action that moves the human straight to a point. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ActExecuteAttack
+  wrapper: 0x00364a70
+  calls:
+    - {addr: 0x002fa878, name: Action_ExecuteAttack}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the attacker."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to attack."}
+    - {name: attack, lua: number, ctype: int, desc: "Attack or move id (inferred)."}
+    - {name: value, lua: number, ctype: int, default: -1, desc: "A number; -1 by default."}
+  description: >-
+    Queues an action that performs one attack on a target. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticGetString
+  wrapper: 0x00374a30
+  calls:
+    - {addr: 0x00315c58, name: Tactic_EventName}
+  args:
+    - {name: event, lua: number, ctype: int, desc: "A tactic event code, 0-18."}
+  results:
+    - {lua: string, desc: "The event's name: 0 `TacRunning`, 1 `TacFinished`, 2 `TacTimeOut`, 3 `TacSeeEnemy`, 4 `TacSeePlayer`, 5 `TacDamage`, 6 `TacAttacked`, 7 `TacInRange`, 8 `TacArrived`, 9 `TacNoEnemies`, 10 `TacError`, 11 `TacHumanToDefendDead`, 12 `TacBehindLine`, 13 `TacMemberDied`, 14 `TacObjectsThrown`, 15 `TacAnimDone`, 16 `TacObjectDestroyed`, 17 `TacSpeed`, 18 `TacAnimStart`; `unknown` for any other number."}
+  description: >-
+    Turns a tactic event code (what a tactic's Lua callback receives) into its name, for debugging. No script calls
+    it.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticClear
+  wrapper: 0x00374a80
+  calls:
+    - {addr: 0x00315d70, name: Gang_ClearTactic}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (from `GangCreate` or a level's gang global)."}
+  description: >-
+    Ends the gang's current tactic, if it has one, and frees it, leaving the gang's members to their own goals.
+    `global.lua` calls it before giving a gang a new plan.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x001655e0 shuts the tactic down, returns it to the pool and clears gang `+0x40`; a status byte from the tactic is
+    kept at gang `+0xdd`.
+  usage: {chunks: 92, calls: 208, boot: true, mission1: false, result_used: false}
+
+- name: TacticHoldTheLine
+  wrapper: 0x00374ab8
+  calls:
+    - {addr: 0x00313e30, name: Tactic_HoldTheLine}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: flag1, lua: number, ctype: unsigned, desc: "Handle of the first flag of the line."}
+    - {name: flag2, lua: number, ctype: unsigned, desc: "Handle of the second flag of the line."}
+    - {name: flag3, lua: number, ctype: unsigned, desc: "Handle of the third flag of the line."}
+    - {name: value1, lua: number, ctype: unsigned, default: 5, desc: "A number (default 5; scripts pass 1)."}
+    - {name: value2, lua: number, ctype: unsigned, default: 20, desc: "A number (default 20; scripts pass 0)."}
+    - {name: value3, lua: number, ctype: float, default: 10, desc: "A number (default 10; scripts pass 5)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Has a gang hold a line between up to three flags and stop enemies crossing it (event `TacBehindLine`).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 18, calls: 18, boot: false, mission1: false, result_used: false}
+
+- name: TacticDefend
+  wrapper: 0x00374c18
+  calls:
+    - {addr: 0x00315d98, name: Tactic_Defend}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (or object) to defend; must be a valid human for the tactic to be set."}
+    - {name: range, lua: number, ctype: float, default: 2.25, desc: "Defend range in metres (default 2.25)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Has a gang stay near and defend a human (event `TacHumanToDefendDead` when it dies).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 23, calls: 25, boot: false, mission1: false, result_used: false}
+
+- name: TacticWalkinTall
+  wrapper: 0x00374cd0
+  calls:
+    - {addr: 0x00315e48, name: Tactic_WalkinTall}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the flag or object to walk to."}
+    - {name: range, lua: number, ctype: float, desc: "A range in metres."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Has a gang walk together, swaggering, to a flag or object.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 18, calls: 36, boot: false, mission1: false, result_used: false}
+
+- name: TacticPursue
+  wrapper: 0x00374d90
+  calls:
+    - {addr: 0x00315ee8, name: Tactic_Pursue}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: targetGang, lua: number, ctype: int, default: -1, desc: "Gang index to pursue (default -1)."}
+    - {name: range, lua: number, ctype: float, default: 5, desc: "A distance in metres (default 5)."}
+    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id (default 2)."}
+    - {name: angle1, lua: number, ctype: float, default: 90, desc: "An angle in degrees (default 90)."}
+    - {name: angle2, lua: number, ctype: float, default: 45, desc: "An angle in degrees (default 45)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: searchMs, lua: number, ctype: unsigned, default: 30000, desc: "Search time in milliseconds (default 30000)."}
+  description: >-
+    Has a gang chase another gang, searching for it for a time when it loses sight.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 22, calls: 23, boot: false, mission1: false, result_used: false}
+
+- name: TacticHanginOut
+  wrapper: 0x00374f00
+  calls:
+    - {addr: 0x00315fc8, name: Tactic_HanginOut}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the hang-out flag."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: range, lua: number, ctype: float, default: 6, desc: "Range in metres (default 6)."}
+    - {name: banter, lua: boolean, default: true, desc: "true (the default) lets members banter."}
+    - {name: respond, lua: boolean, desc: "true to respond to the player (scripts' `RespondOff` negated)."}
+    - {name: fullAware, lua: boolean, desc: "true for full awareness of the surroundings."}
+    - {name: harass, lua: boolean, default: true, desc: "true (the default) lets members harass passers-by."}
+  description: >-
+    Has a gang hang out around a flag, chatting and reacting to what passes.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 28, calls: 72, boot: false, mission1: false, result_used: false}
+
+- name: TacticWander
+  wrapper: 0x00375038
+  calls:
+    - {addr: 0x003160a8, name: Tactic_Wander}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id (default 2)."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "A delay (scripts pass 0 or a table field)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: buffer, lua: number, ctype: float, default: 10, desc: "A distance in metres (default 10)."}
+    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Follow slot set to use; -1 (the default) for the leader's current one (inferred)."}
+    - {name: banter, lua: boolean, default: true, desc: "true (the default) lets members banter."}
+    - {name: worldFlags, lua: boolean, default: true, desc: "true (the default) lets members use world flags."}
+    - {name: vandal, lua: boolean, desc: "true to let them vandalise."}
+    - {name: steal, lua: boolean, desc: "true to let them steal."}
+  description: >-
+    Has a gang wander the streets in formation.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 19, calls: 20, boot: false, mission1: false, result_used: false}
+
+- name: TacticTravelPath
+  wrapper: 0x003751d0
+  calls:
+    - {addr: 0x003161a0, name: Tactic_TravelPath}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: path, lua: userdata, desc: "The path object, or nil."}
+    - {name: reverse, lua: boolean, desc: "true to travel it backwards."}
+    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id (default 2)."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "A delay (scripts pass 5 or a table field)."}
+    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Follow slot set; -1 (the default) for the current one (inferred)."}
+    - {name: startPoint, lua: number, ctype: int, default: -1, desc: "Starting point index; -1 (the default) for the nearest (inferred)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: banter, lua: boolean, default: true, desc: "true (the default) lets members banter."}
+    - {name: loop, lua: boolean, default: true, desc: "true (the default) to loop the path."}
+  description: >-
+    Has a gang travel along a path in formation.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 20, calls: 38, boot: false, mission1: false, result_used: false}
+
+- name: TacticAttack
+  wrapper: 0x00375370
+  calls:
+    - {addr: 0x00307548, name: Tactic_Attack}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events (such as `TacNoEnemies`), or nil."}
+  description: >-
+    Has a gang attack its enemies.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Constructor 0x003075c8 also sets two timers 1 s and 3 s ahead.
+  usage: {chunks: 54, calls: 184, boot: false, mission1: false, result_used: false}
+
+- name: TacticMoveToFlag
+  wrapper: 0x003753d0
+  calls:
+    - {addr: 0x00316298, name: Tactic_MoveToFlag}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the destination flag."}
+    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id (default 2)."}
+    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Follow slot set; -1 (the default) for the current one (inferred)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events (`TacArrived`), or nil."}
+    - {name: banter, lua: boolean, desc: "true lets members banter on the way."}
+  description: >-
+    Has a gang move together to a flag.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 28, calls: 69, boot: false, mission1: false, result_used: false}
+
+- name: TacticAddress
+  wrapper: 0x003754d8
+  calls:
+    - {addr: 0x00316350, name: Tactic_Address}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: value, lua: number, ctype: int, desc: "A number."}
+    - {name: name1, lua: string, desc: "A name."}
+    - {name: approach, lua: number, ctype: unsigned, default: 3, desc: "A distance (default 3)."}
+    - {name: range, lua: number, ctype: unsigned, default: 6, desc: "A distance (default 6)."}
+    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+    - {name: target, lua: number, ctype: unsigned, desc: "A handle."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: option2, lua: boolean, default: true, desc: "A flag (default true)."}
+  description: >-
+    Has a gang address a target as a group. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticCrowd
+  wrapper: 0x00375648
+  calls:
+    - {addr: 0x00316450, name: Tactic_Crowd}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index of the crowd."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil (all scripts pass nil)."}
+    - {name: option, lua: boolean, desc: "A flag stored with the tactic (scripts pass true; inferred: the crowd reacts / cheers)."}
+  description: >-
+    Turns a gang into a watching crowd, as around Rumble fights and street fights; `TacticTrigger` then switches its
+    reactions. The crowd tactic is type 0x1b.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0030f4d0 (vtable 0x005437a0, a timer 2 s ahead).
+  usage: {chunks: 31, calls: 50, boot: false, mission1: true, result_used: false}
+
+- name: TacticVandalize
+  wrapper: 0x003756c8
+  calls:
+    - {addr: 0x003164e0, name: Tactic_Vandalize}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: zone, lua: number, ctype: unsigned, desc: "Zone or object type to vandalise (scripts pass a zone value or object type ids such as 29 and 51)."}
+    - {name: delayMs, lua: number, ctype: unsigned, default: 3000, desc: "Time in milliseconds (default 3000)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: leaderRange, lua: number, ctype: float, default: -1, desc: "Distance from the leader in metres; -1 (the default) for no limit (inferred)."}
+  description: >-
+    Has a gang smash things in a zone.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 20, calls: 31, boot: false, mission1: false, result_used: false}
+
+- name: TacticVandalizeCars
+  wrapper: 0x003757b8
+  calls:
+    - {addr: 0x00316590, name: Tactic_VandalizeCars}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: cars, lua: table, elem: number, count: 4, written_back: true, desc: "Table of four car object handles (`NilHandle` for unused); written back."}
+    - {name: delayMs, lua: number, ctype: unsigned, default: 3000, desc: "Time in milliseconds (default 3000)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Has a gang wreck up to four given cars.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: TacticSteal
+  wrapper: 0x00375930
+  calls:
+    - {addr: 0x00316638, name: Tactic_Steal}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: zone, lua: number, ctype: unsigned, desc: "Zone or object type to loot."}
+    - {name: delayMs, lua: number, ctype: unsigned, default: 1000, desc: "Time in milliseconds (default 1000)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: leaderRange, lua: number, ctype: float, default: -1, desc: "Distance from the leader in metres; -1 (the default) for no limit (inferred)."}
+  description: >-
+    Has a gang loot a zone.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false}
+
+- name: TacticShadow
+  wrapper: 0x00375a20
+  calls:
+    - {addr: 0x003166e8, name: Tactic_Shadow}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: targetGang, lua: number, ctype: int, desc: "Gang index to shadow (inferred)."}
+    - {name: range, lua: number, ctype: float, default: 5, desc: "A distance (default 5)."}
+    - {name: value, lua: number, ctype: int, default: -1, desc: "A number (default -1)."}
+    - {name: name1, lua: string, desc: "A name."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: option, lua: boolean, desc: "A flag."}
+  description: >-
+    Has a gang shadow (follow unseen) a target. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticInfo
+  wrapper: 0x00375b48
+  calls:
+    - {addr: 0x003167b8, name: Tactic_Info}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: value, lua: number, ctype: int, desc: "A number."}
+    - {name: name1, lua: string, desc: "A name."}
+    - {name: name2, lua: string, desc: "A name."}
+    - {name: name3, lua: string, desc: "A name."}
+    - {name: name4, lua: string, desc: "A name."}
+    - {name: name5, lua: string, desc: "A name."}
+    - {name: value2, lua: number, ctype: float, default: 4, desc: "A number (default 4)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    An information-giving gang tactic. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticRiotCop
+  wrapper: 0x00375ca0
+  calls:
+    - {addr: 0x003168e8, name: Tactic_RiotCop}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (of cops)."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z} in metres; written back."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Riot police behaviour around a point. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticAvoidEnemies
+  wrapper: 0x00375d98
+  calls:
+    - {addr: 0x00316988, name: Tactic_AvoidEnemies}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: useThrowables, lua: boolean, desc: "true to let members throw things."}
+    - {name: minRange, lua: number, ctype: float, default: 7, desc: "Distance in metres (default 7)."}
+    - {name: maxRange, lua: number, ctype: float, default: 14, desc: "Distance in metres (default 14)."}
+    - {name: minAllyRange, lua: number, ctype: float, desc: "Distance in metres from allies (inferred)."}
+    - {name: maxAllyRange, lua: number, ctype: float, desc: "Distance in metres from allies (inferred)."}
+    - {name: value, lua: number, ctype: unsigned, desc: "A number."}
+  description: >-
+    Has a gang keep away from enemies, optionally throwing things.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 25, calls: 32, boot: false, mission1: false, result_used: false}
+
+- name: TacticManWeaponPile
+  wrapper: 0x00375ef8
+  calls:
+    - {addr: 0x00316a68, name: Tactic_ManWeaponPile}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: range, lua: number, ctype: float, desc: "Range in metres."}
+    - {name: maxThrow, lua: number, ctype: float, desc: "Throw distance or count limit (scripts' `MaxThrow`)."}
+    - {name: delay, lua: number, ctype: int, desc: "Delay between throws."}
+    - {name: value, lua: number, ctype: int, desc: "A number (scripts use 0 and 5)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events (`TacObjectsThrown`), or nil."}
+  description: >-
+    Has a gang man piles of throwable objects and bombard enemies.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 20, calls: 20, boot: false, mission1: false, result_used: false}
+
+- name: TacticDomination
+  wrapper: 0x00376008
+  calls:
+    - {addr: 0x00316b30, name: Tactic_Domination}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to hold (the king-of-the-hill top)."}
+    - {name: range, lua: number, ctype: float, default: 3, desc: "Range in metres (default 3)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Has a gang take and hold an area around a flag (king of the hill).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 10, boot: false, mission1: false, result_used: false}
+
+- name: TacticRing
+  wrapper: 0x003760c0
+  calls:
+    - {addr: 0x00316bd0, name: Tactic_Ring}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: centre, lua: number, ctype: unsigned, desc: "Handle of the centre human or flag."}
+    - {name: radius, lua: number, ctype: float, default: 15, desc: "Ring radius (default 15)."}
+    - {name: target, lua: number, ctype: unsigned, desc: "A handle."}
+    - {name: value, lua: number, ctype: float, desc: "A number."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: option, lua: boolean, desc: "A flag."}
+  description: >-
+    Has a gang form a ring around a centre. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticUseFlag
+  wrapper: 0x003761e8
+  calls:
+    - {addr: 0x00316ca0, name: Tactic_UseFlag}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the usable flag (a hiding place, a world flag)."}
+    - {name: range, lua: number, ctype: float, default: 4, desc: "Range in metres (default 4)."}
+    - {name: view, lua: number, ctype: float, default: 10, desc: "A view distance or angle (default 10)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: banter, lua: boolean, desc: "true lets members banter."}
+  description: >-
+    Has a gang go to and use a flag, such as a hiding place.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 21, calls: 23, boot: false, mission1: false, result_used: false}
+
+- name: TacticStandGround
+  wrapper: 0x003762f0
+  calls:
+    - {addr: 0x00316d58, name: Tactic_StandGround}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Has a gang stand its ground where it is.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: TacticBoss
+  wrapper: 0x00376350
+  calls:
+    - {addr: 0x00308870, name: Tactic_Boss}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: boss, lua: number, ctype: unsigned, desc: "Handle of the boss (inferred)."}
+    - {name: other, lua: number, ctype: unsigned, desc: "A handle."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    A generic boss tactic. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticConfront
+  wrapper: 0x00376408
+  calls:
+    - {addr: 0x00316dd8, name: Tactic_Confront}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: targetGang, lua: number, ctype: int, default: -1, desc: "Gang index to confront (default -1)."}
+    - {name: approachRange, lua: number, ctype: float, default: 10, desc: "Approach range in metres (default 10)."}
+    - {name: criticalRange, lua: number, ctype: float, default: 2, desc: "Critical range in metres (default 2)."}
+    - {name: confrontation, lua: number, ctype: unsigned, desc: "Confrontation type number."}
+    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Follow slot set; -1 (the default) for the current one (inferred)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: anim1, lua: string, desc: "Confrontation animation name, or nil."}
+    - {name: anim2, lua: string, desc: "Confrontation animation name, or nil."}
+    - {name: anim3, lua: string, desc: "Confrontation animation name, or nil."}
+    - {name: anim4, lua: string, desc: "Confrontation animation name, or nil."}
+    - {name: anim5, lua: string, desc: "Confrontation animation name, or nil."}
+    - {name: angle, lua: number, ctype: unsigned, default: 135, desc: "An angle in degrees (default 135)."}
+  description: >-
+    Has a gang square up to another gang: approach, posture with up to five animations, and fight when the other side
+    comes within the critical range.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 26, calls: 35, boot: false, mission1: false, result_used: false}
+
+- name: TacticTaunt
+  wrapper: 0x00376608
+  calls:
+    - {addr: 0x0031c358, name: Tactic_Taunt}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: range, lua: number, ctype: float, default: 2, desc: "A distance (default 2)."}
+    - {name: anim1, lua: string, desc: "Taunt animation name."}
+    - {name: anim2, lua: string, desc: "Taunt animation name."}
+    - {name: anim3, lua: string, desc: "Taunt animation name."}
+    - {name: anim4, lua: string, desc: "Taunt animation name."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Has a gang taunt its enemies with animations. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: TacticIdle
+  wrapper: 0x00376718
+  calls:
+    - {addr: 0x00316ee8, name: Tactic_Idle}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: banter, lua: boolean, default: true, desc: "true (the default) lets members banter."}
+    - {name: respond, lua: boolean, desc: "true to respond to the player."}
+    - {name: clearAnims, lua: boolean, desc: "true to clear running animations first."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: dynIdle, lua: boolean, desc: "true to use dynamic idle animations."}
+  description: >-
+    Has a gang stand idle where it is.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 21, calls: 22, boot: false, mission1: false, result_used: false}
+
+- name: TacticBossScenarioA
+  wrapper: 0x003767f8
+  calls:
+    - {addr: 0x00309a40, name: Tactic_BossDiegoVargas}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (Diego's)."}
+    - {name: stage, lua: number, ctype: unsigned, desc: "Fight stage number."}
+    - {name: flags, lua: table, elem: number, count: 2, written_back: true, desc: "Table of two flag handles; written back."}
+    - {name: vargasObjects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object type ids; written back."}
+    - {name: minionObjects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object type ids; written back."}
+    - {name: diegoFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three numbers (fatigue times); written back."}
+    - {name: vargasFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three numbers; written back."}
+    - {name: diegoDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three damage percentages; written back."}
+    - {name: vargasDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three damage percentages; written back."}
+    - {name: diegoProne, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three prone percentages; written back."}
+    - {name: vargasProne, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three prone percentages; written back."}
+    - {name: diegoCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three cycle counts; written back."}
+    - {name: vargasCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three cycle counts; written back."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+  description: >-
+    The Diego and Vargas boss fight, tuned per stage by the tables.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: TacticBossScenarioB
+  wrapper: 0x00376e78
+  calls:
+    - {addr: 0x0030a878, name: Tactic_BossLizzies}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (the Lizzies')."}
+    - {name: maxBullets, lua: number, ctype: unsigned, default: 6, desc: "Bullets per clip (default 6)."}
+    - {name: criticalRange, lua: number, ctype: float, default: 5, desc: "Range in metres (default 5)."}
+    - {name: hSpread, lua: number, ctype: float, default: 20, desc: "Horizontal shot spread (default 20)."}
+    - {name: vSpread, lua: number, ctype: float, default: 10, desc: "Vertical shot spread (default 10)."}
+    - {name: fireRate, lua: number, ctype: unsigned, default: 250, desc: "Fire rate (default 250)."}
+    - {name: shotDamage, lua: number, ctype: int, default: 100, desc: "Damage per shot (default 100)."}
+    - {name: reloadTime, lua: number, ctype: unsigned, default: 5, desc: "Reload time (default 5)."}
+    - {name: trackTime, lua: number, ctype: unsigned, default: 4, desc: "Tracking time (default 4)."}
+    - {name: warnTime, lua: number, ctype: unsigned, default: 3, desc: "Warning time (default 3)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: mark, lua: number, ctype: unsigned, default: -1, desc: "Handle of a flag; -1 (the default) for none."}
+  description: >-
+    The Lizzies' gunfight, with the shooting tuned by the arguments.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: TacticBossScenarioC
+  wrapper: 0x003770a0
+  calls:
+    - {addr: 0x0030ae98, name: Tactic_BossMoe}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: stage, lua: number, ctype: unsigned, desc: "Fight stage number."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+  description: >-
+    Moe's boss fight.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: TacticBossScenarioD
+  wrapper: 0x00377130
+  calls:
+    - {addr: 0x0030b6f8, name: Tactic_BossRoof}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: stage, lua: number, ctype: unsigned, default: 1, desc: "Fight stage number (default 1)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+  description: >-
+    A rooftop boss fight (the Destroyers' roof).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: TacticBossScenarioE
+  wrapper: 0x003771c0
+  calls:
+    - {addr: 0x0030c2a8, name: Tactic_BossLuther}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (Luther's)."}
+    - {name: stage, lua: number, ctype: unsigned, default: 1, desc: "Fight stage number (default 1)."}
+    - {name: shots, lua: number, ctype: unsigned, default: 6, desc: "A count (default 6)."}
+    - {name: value1, lua: number, ctype: float, default: 20, desc: "A number (default 20)."}
+    - {name: value2, lua: number, ctype: float, default: 10, desc: "A number (default 10)."}
+    - {name: timeMs1, lua: number, ctype: unsigned, default: 100, desc: "A time in milliseconds (default 100)."}
+    - {name: timeMs2, lua: number, ctype: int, default: 500, desc: "A time in milliseconds (default 500)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+  description: >-
+    Luther's gunfight in the final mission.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: TacticBossScenarioF
+  wrapper: 0x00377338
+  calls:
+    - {addr: 0x0030cbd8, name: Tactic_BossBirdie}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (Birdie's)."}
+    - {name: boss, lua: number, ctype: unsigned, desc: "Handle of the boss."}
+    - {name: positions, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three flag handles; written back."}
+    - {name: shots, lua: number, ctype: unsigned, default: 6, desc: "A count (default 6)."}
+    - {name: value1, lua: number, ctype: float, default: 20, desc: "A number (default 20)."}
+    - {name: value2, lua: number, ctype: float, default: 10, desc: "A number (default 10)."}
+    - {name: timeMs1, lua: number, ctype: unsigned, default: 100, desc: "A time in milliseconds (default 100)."}
+    - {name: timeMs2, lua: number, ctype: int, default: 500, desc: "A time in milliseconds (default 500)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+  description: >-
+    Birdie's boss fight, moving between three positions.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: TacticBossScenarioG
+  wrapper: 0x00377590
+  calls:
+    - {addr: 0x0030d6f8, name: Tactic_BossVirgil}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: stage, lua: number, ctype: unsigned, desc: "Fight stage number."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of a target flag."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+  description: >-
+    Virgil's boss fight.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: TacticBossScenarioH
+  wrapper: 0x00377648
+  calls:
+    - {addr: 0x0030e028, name: Tactic_BossChatterbox}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: stage, lua: number, ctype: unsigned, default: 1, desc: "Fight stage number (default 1)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+  description: >-
+    Chatterbox's boss fight.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: TacticScout
+  wrapper: 0x003776d8
+  calls:
+    - {addr: 0x0031a268, name: Tactic_Scout}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 0 and 5)."}
+    - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 0 and 15)."}
+    - {name: range, lua: number, ctype: float, default: 40, desc: "A distance in metres (default 40)."}
+    - {name: value3, lua: number, ctype: float, default: 10, desc: "A number (default 10)."}
+    - {name: value4, lua: number, ctype: float, default: 30, desc: "A number (default 30)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+  description: >-
+    Has a gang scout around for enemies (stealth sections).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: TacticPathScout
+  wrapper: 0x00377810
+  calls:
+    - {addr: 0x0031a340, name: Tactic_PathScout}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
+    - {name: gait, lua: number, ctype: int, desc: "A number (scripts use 4; inferred: the gait id)."}
+    - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 5)."}
+    - {name: range, lua: number, ctype: float, desc: "A distance in metres (scripts use 15)."}
+    - {name: flags, lua: table, elem: number, count: 16, written_back: true, desc: "Table of sixteen flag handles making the route (`NilHandle` for unused); written back."}
+    - {name: loop, lua: boolean, default: true, desc: "true (the default) to loop the route (inferred)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: option, lua: boolean, desc: "A flag."}
+  description: >-
+    Has a gang scout along a route of up to sixteen flags.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: TacticTrigger
+  wrapper: 0x00377a10
+  calls:
+    - {addr: 0x00316fa0, name: Tactic_TriggerCrowd}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "The gang index; -1 is ignored."}
+    - {name: what, lua: number, ctype: int, desc: "0 sets the crowd's first switch (tactic byte `+0x2a`); 1 sets its second switch through 0x0030fe58; other values do nothing."}
+    - {name: enabled, lua: number, ctype: int, desc: "Non-zero for on, 0 for off. It is read as a number; the game's scripts pass `true`, which `global.lua` defines as 1."}
+  description: >-
+    Switches a reaction of a gang running a crowd tactic (`TacticCrowd`, type 0x1b); does nothing for other tactics.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Confirmed (code) at 0x00316fa0. What the two switches do is inferred (cheering, joining in).
+  usage: {chunks: 3, calls: 15, boot: false, mission1: false, result_used: false}

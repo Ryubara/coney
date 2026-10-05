@@ -1,0 +1,632 @@
+# The Warriors' script bindings, category `camera`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: CameraSetClipping
+  wrapper: 0x00365600
+  calls:
+    - {addr: 0x0011bb98}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance in metres (not applied to the player's follow camera)."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip (draw) distance in metres, at most 150."}
+  description: >-
+    Sets a camera's near and far clip distances; levels use it to set their draw distance.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 19, calls: 23, boot: false, mission1: false, result_used: false}
+
+- name: CameraMakeActive
+  wrapper: 0x003656a0
+  calls:
+    - {addr: 0x0011b770, name: Camera_MakeActiveByHandle}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "Handle of the camera to make current."}
+    - {name: seconds, lua: number, ctype: float, desc: "Blend time from the current camera in seconds; 0 switches at once."}
+    - {name: name, lua: string, desc: "Optional string given to the camera (scripts pass nil); its use is not traced."}
+    - {name: forHuman, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional human whose player gets the camera (default NilHandle: the camera's own player)."}
+    - {name: fromHuman, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional human whose player's previous camera is the blend source (default: the same player)."}
+  description: >-
+    Makes a camera the current camera of a player, blending from the previous one over the given time. See
+    [Camera](../../research/camera.md#setting-up).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 193, calls: 629, boot: true, mission1: true, result_used: false}
+
+- name: CameraGetActive
+  wrapper: 0x003657a0
+  calls:
+    - {addr: 0x0011b838}
+  args:
+    - {name: player, lua: number, ctype: int, desc: "Player index (0 or 1, default 0)."}
+  results:
+    - {lua: number, desc: "Handle of that player's current camera, or NilHandle."}
+  description: >-
+    Returns a player's current camera.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: true}
+
+- name: CamDelete
+  wrapper: 0x00365818
+  calls:
+    - {addr: 0x0011b888}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
+  description: >-
+    Deletes a fixed or locked camera; the shared camera kinds (follow, rail, hood and the others) are kept.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 57, calls: 90, boot: false, mission1: false, result_used: true}
+
+- name: CamGetPos
+  wrapper: 0x00365850
+  calls:
+    - {addr: 0x0011b920}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
+  results:
+    - {lua: usertype, desc: "The camera's position as a constant M_Vector4 (x, y, z, w); a shared zero vector when the handle is not a camera."}
+  description: >-
+    Returns a camera's world position.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: CameraTransform
+  wrapper: 0x003658c0
+  calls:
+    - {addr: 0x0011ba20}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object."}
+  description: >-
+    Sets an object's matrix to its matrix combined with the camera's (attaching it to the view). No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CameraTransformPoint
+  wrapper: 0x00365938
+  calls:
+    - {addr: 0x0011b970}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z} overwritten with the point transformed by the camera's matrix."}
+  description: >-
+    Transforms a point by a camera's matrix and writes it back into the table. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CameraReset
+  wrapper: 0x00365a10
+  calls:
+    - {addr: 0x0011bad8, name: Camera_ResetByHandle}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
+  description: >-
+    Resets a camera to its starting state (camera vtable slot `+0x13c`); for a follow camera the other player's follow
+    camera is reset too. level99 resets its follow camera after making it current.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 167, calls: 310, boot: true, mission1: true, result_used: false}
+
+- name: CamSetupFollow
+  wrapper: 0x00365a48
+  calls:
+    - {addr: 0x0011bfa8, name: Camera_SetupFollow}
+  args:
+    - {name: name, lua: string, desc: "Camera name."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to follow (the player)."}
+  results:
+    - {lua: number, desc: "The follow camera's handle, or NilHandle when the target or camera is missing."}
+  description: >-
+    Puts the player's follow camera on a target, places it behind the target and returns its handle; used through
+    global.lua's CameraCreateFollow. See [Camera](../../research/camera.md#setting-up).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: true}
+
+- name: CamTarget
+  wrapper: 0x00365ad8
+  calls:
+    - {addr: 0x0011c270, name: Camera_TargetList}
+  args:
+    - {name: mode, lua: number, ctype: unsigned, desc: "0 add the human to the camera target list, 1 remove it, 2 clear the list."}
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle; read but not used."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to add or remove (ignored for mode 2)."}
+  results:
+    - {lua: boolean, desc: "true (1) when the list changed (always for modes 1 and 2), nil when the human was missing or the list (at most 4) was full."}
+  description: >-
+    Edits the shared list of humans the cameras keep in frame (at 0x005d91a8), used for fights with several
+    characters.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 42, calls: 214, boot: false, mission1: true, result_used: false}
+
+- name: CamSetFollowHeading
+  wrapper: 0x00365b80
+  calls:
+    - {addr: 0x0011c2f0}
+  args:
+    - {name: degrees, lua: number, ctype: float, desc: "Heading in degrees for the follow cameras."}
+  description: >-
+    Swings every player's follow camera round to the given heading at once (the level scripts set the starting view
+    with it).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 68, calls: 85, boot: false, mission1: false, result_used: false}
+
+- name: CamSetFollowAngle
+  wrapper: 0x00365bb8
+  calls:
+    - {addr: 0x0011c3b8, name: Camera_SetFollowPitch}
+  args:
+    - {name: degrees, lua: number, ctype: float, desc: "Pitch in degrees (positive looks down on the player), clamped to the camera's pitch limits."}
+  description: >-
+    Sets the pitch of every player's follow camera and moves the camera to it at once.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 76, calls: 94, boot: false, mission1: true, result_used: false}
+
+- name: CamSetFollowZoom
+  wrapper: 0x00365bf0
+  calls:
+    - {addr: 0x0011c470, name: Camera_SetFollowZoom}
+  args:
+    - {name: preset, lua: number, ctype: unsigned, desc: "0 close (the minimum distance), 1 the default distance, 2 far (the maximum distance); in two-player games 0 resets to the default."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (the default) for every player."}
+  description: >-
+    Moves the follow camera to one of its three zoom distances (set by CfgFollowCamera).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The preset meanings come from the getters it reads (+0x300 minimum, +0x304 maximum, +0x308 default); confirmed
+    (code) for the reads, the player-facing names are inferred.
+  usage: {chunks: 13, calls: 17, boot: false, mission1: true, result_used: false}
+
+- name: CamSetFollowPos
+  wrapper: 0x00365c60
+  calls:
+    - {addr: 0x0011c638}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres."}
+    - {name: player, lua: number, ctype: int, desc: "Player index (default 0)."}
+  description: >-
+    Puts a player's follow camera at a world position at once (used at checkpoints).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 12, calls: 17, boot: false, mission1: false, result_used: false}
+
+- name: CameraCreateLocked
+  wrapper: 0x00365d38
+  calls:
+    - {addr: 0x0011bc48, name: Camera_CreateLocked}
+  args:
+    - {name: name, lua: string, desc: "Camera name."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
+    - {name: heading, lua: number, ctype: float, desc: "Heading in degrees."}
+    - {name: pitch, lua: number, ctype: float, desc: "Pitch in degrees."}
+    - {name: roll, lua: number, ctype: float, desc: "Roll in degrees."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance in metres."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance in metres, at most 150."}
+  results:
+    - {lua: number, desc: "The new camera's handle, or NilHandle when it could not be made."}
+  description: >-
+    Creates a locked camera: one at a fixed position looking in a fixed direction. The front end's black camera is
+    one.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Argument order checked against the callee's slots: fov through slot +0x194, the three angles stored at +0x200,
+    near slot +0x1a4, far slot +0x1ac.
+  usage: {chunks: 86, calls: 360, boot: true, mission1: true, result_used: true}
+
+- name: CameraCreateThird
+  wrapper: 0x00365f28
+  calls:
+    - {addr: 0x0011be18}
+  args:
+    - {name: name, lua: string, desc: "Camera name."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to follow."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
+    - {name: distance, lua: number, ctype: float, desc: "Distance behind the target (inferred)."}
+    - {name: height, lua: number, ctype: float, desc: "Height (inferred)."}
+    - {name: angle, lua: number, ctype: float, desc: "Heading offset in degrees (inferred)."}
+    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} from the target."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
+  results:
+    - {lua: number, desc: "The camera's handle, or NilHandle."}
+  description: >-
+    Creates a third-person camera that follows a target from a set distance and height.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+
+- name: CameraCreateFixed
+  wrapper: 0x00366140
+  calls:
+    - {addr: 0x0011c6b8}
+  args:
+    - {name: name, lua: string, desc: "Camera name."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human or object to look at."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Camera position {x, y, z} in metres."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
+    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} from the target."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
+  results:
+    - {lua: number, desc: "The camera's handle, or NilHandle."}
+  description: >-
+    Creates a fixed camera: it stays at one position and turns to keep a target in view.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 9, calls: 12, boot: false, mission1: false, result_used: true}
+
+- name: CameraCreateWin
+  wrapper: 0x00366360
+  calls:
+    - {addr: 0x0011c858}
+  args:
+    - {name: name, lua: string, desc: "Camera name."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to frame."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
+    - {name: a, lua: number, ctype: float, desc: "Camera parameter (level101 passes 3)."}
+    - {name: b, lua: number, ctype: float, desc: "Camera parameter (level101 passes -19)."}
+    - {name: c, lua: number, ctype: float, desc: "Camera parameter (level101 passes 40)."}
+    - {name: d, lua: number, ctype: float, desc: "Camera parameter (level101 passes 1.1)."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
+    - {name: direction, lua: number, ctype: int, default: 1, desc: "1 (default) or less: sets the orbit direction to +1 or -1 (inferred)."}
+  results:
+    - {lua: number, desc: "The camera's handle, or NilHandle."}
+  description: >-
+    Sets up the win camera that circles the winner at the end of a Rumble match.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: true}
+
+- name: CamSetupRail
+  wrapper: 0x00366518
+  calls:
+    - {addr: 0x0011cce8}
+  args:
+    - {name: name, lua: string, desc: "Camera name."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to follow."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
+    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} from the target."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+  results:
+    - {lua: number, desc: "The rail camera's handle, or NilHandle."}
+  description: >-
+    Sets up a player's rail camera: it slides along a path of points (CamAddRailPoint) while watching the target.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 27, calls: 48, boot: false, mission1: false, result_used: true}
+
+- name: CamLeadRail
+  wrapper: 0x003666e8
+  calls:
+    - {addr: 0x0011cf70}
+  args:
+    - {name: lead, lua: number, ctype: float, desc: "How far ahead along the rail the camera leads (metres, inferred)."}
+    - {name: value, lua: number, ctype: float, desc: "A second rail value (forced to 0 in some states)."}
+    - {name: mode, lua: boolean, default: true, desc: "true (default) or false: one of two rail modes."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+  description: >-
+    Sets how a rail camera leads its target along the rail.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 9, calls: 15, boot: false, mission1: false, result_used: false}
+
+- name: CamAddRailPoint
+  wrapper: 0x003667a0
+  calls:
+    - {addr: 0x0011d098}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} of the next rail point."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+  results:
+    - {lua: boolean, desc: "true (1) when the point was added, nil when there is no rail camera."}
+  description: >-
+    Appends a point to a rail camera's path.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 27, calls: 132, boot: false, mission1: false, result_used: false}
+
+- name: CamLockRail
+  wrapper: 0x00366880
+  calls:
+    - {addr: 0x0011d180}
+  args:
+    - {name: "on", lua: boolean, desc: "true locks the rail camera in place, false releases it (inferred)."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+  description: >-
+    Locks or releases a rail camera.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 15, calls: 118, boot: false, mission1: false, result_used: false}
+
+- name: CamModifyRail
+  wrapper: 0x003668e8
+  calls:
+    - {addr: 0x0011d228}
+  args:
+    - {name: param, lua: number, ctype: unsigned, desc: "Which rail setting to change (0, 1, 2, 3, 4 ... 9; 2 is the field of view in the scripts)."}
+    - {name: value, lua: number, ctype: float, desc: "The new value."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time to blend to it (inferred)."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+  description: >-
+    Changes one of a rail camera's settings, optionally over time.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 26, calls: 132, boot: false, mission1: false, result_used: false}
+
+- name: CamSetupHood
+  wrapper: 0x003669b0
+  calls:
+    - {addr: 0x0011d808}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the player human riding the vehicle."}
+    - {name: vehicle, lua: number, ctype: unsigned, desc: "Handle of the vehicle object the camera is mounted on."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
+    - {name: lookOffset, lua: table, elem: number, count: 3, written_back: true, desc: "Offset {x, y, z} (scripts pass zeros)."}
+    - {name: mountOffset, lua: table, elem: number, count: 3, written_back: true, desc: "Camera offset {x, y, z} from the vehicle (scripts put it a few metres up and forward)."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
+  results:
+    - {lua: number, desc: "The hood camera's handle, or NilHandle."}
+  description: >-
+    Sets up the camera mounted on a vehicle (the bus and car chases), for every player.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: true}
+
+- name: CamUseDeathCamera
+  wrapper: 0x00366bd8
+  calls:
+    - {addr: 0x0011daa8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who died."}
+    - {name: ms, lua: number, ctype: unsigned, default: 6500, desc: "Duration in milliseconds (default 6500), used for the screen fade."}
+    - {name: ms2, lua: number, ctype: unsigned, default: 1500, desc: "A second time in milliseconds (default 1500)."}
+  description: >-
+    Switches to the death camera on a human, fades the screen, hides the HUD and stops the players.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: false}
+
+- name: CamSetupPoizo
+  wrapper: 0x00366c80
+  calls:
+    - {addr: 0x0011c9e0}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "The camera the path starts from."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time of the first segment (inferred)."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when the path ends."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees; 0 takes the start camera's."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance; 0 takes the start camera's."}
+    - {name: human, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional human whose player's own camera is used as the start."}
+  results:
+    - {lua: number, desc: "The path camera's handle, or NilHandle."}
+  description: >-
+    Starts a scripted camera path (the `Poizo` camera) from an existing camera; points are added with
+    CamAddPoizoPoint.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: true}
+
+- name: CamReversePoizo
+  wrapper: 0x00366dd0
+  calls:
+    - {addr: 0x0011cb70}
+  args:
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when the reversed path ends, or nil."}
+  results:
+    - {lua: boolean, desc: "true (1) when there is a path camera."}
+  description: >-
+    Plays the scripted camera path backwards.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: CamAddPoizoPoint
+  wrapper: 0x00366e18
+  calls:
+    - {addr: 0x0011cbb0}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} of the point."}
+    - {name: heading, lua: number, ctype: float, desc: "Heading in degrees."}
+    - {name: pitch, lua: number, ctype: float, desc: "Pitch in degrees."}
+    - {name: roll, lua: number, ctype: float, desc: "Roll in degrees."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time to reach this point."}
+    - {name: onReach, lua: string, desc: "Optional name of a Lua function called at the point."}
+  results:
+    - {lua: boolean, desc: "true (1) when there is a path camera."}
+  description: >-
+    Adds a point to the scripted camera path.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 6, calls: 10, boot: false, mission1: false, result_used: false}
+
+- name: CamAddPoizoPointCam
+  wrapper: 0x00366f90
+  calls:
+    - {addr: 0x0011cc68}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "A camera whose view becomes the point."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time to reach it."}
+    - {name: onReach, lua: string, desc: "Optional Lua function name called at the point."}
+  results:
+    - {lua: boolean, desc: "true (1) when the point was added."}
+  description: >-
+    Adds a point to the scripted camera path taken from an existing camera.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CamLockLocked
+  wrapper: 0x00367030
+  calls:
+    - {addr: 0x0011bdc0}
+  args:
+    - {name: camera, lua: number, ctype: unsigned, desc: "Handle of a locked camera."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a human."}
+    - {name: "on", lua: boolean, desc: "true adds the human to the camera's tracked list, false removes it."}
+  description: >-
+    Adds or removes a human from the humans a locked camera tracks.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: CamSetSecondary
+  wrapper: 0x003670c0
+  calls:
+    - {addr: 0x0011dcf0, name: Camera_SetFollowSecondary}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the secondary target; NilHandle clears it."}
+    - {name: range, lua: number, ctype: float, desc: "A range value stored with it (scripts pass 0)."}
+    - {name: player, lua: number, ctype: int, desc: "Player index (default 0)."}
+  description: >-
+    Gives a player's follow camera a secondary target to keep in view alongside the player (the tutorial points it at
+    Vermin).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Stores the target at follow camera +0x320 and the range at +0x3fc, and the target in the player's type-7 camera
+    too.
+  usage: {chunks: 7, calls: 26, boot: false, mission1: true, result_used: false}
+
+- name: CamCanSee
+  wrapper: 0x00367160
+  calls:
+    - {addr: 0x0011dd78}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a human or object."}
+    - {name: margin, lua: number, ctype: float, desc: "A size or margin for the visibility test."}
+  results:
+    - {lua: boolean, desc: "true (1) when any player's current camera can see a point just above the object, else nil."}
+  description: >-
+    Tests whether an object is in view of a player's camera (used to spawn enemies out of sight).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 19, calls: 179, boot: false, mission1: false, result_used: true}
+
+- name: CamEnable
+  wrapper: 0x003671e0
+  calls:
+    - {addr: 0x0011de58, name: Camera_EnableFeature}
+  args:
+    - {name: feature, lua: number, ctype: unsigned, desc: "Which camera switch, 0-13. 0 is per player; 2 sets a rail-camera flag; 3 re-lays out the views; 5 enables or disables the follow camera's automatic behaviour (turning it off resets its state); the others set global flags whose meaning is not traced."}
+    - {name: "on", lua: boolean, desc: "true turns the switch on."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index for the per-player switches (0, 2, 5), or -1 (default) for every player."}
+  description: >-
+    Turns one of the camera system's switches on or off. The scripts use 0, 3, 4, 7 and 13 most.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Flags: 0 → 0x0050b1b8[player], 1 → 0x0050b1cc, 3 → 0x0050b1c0, 4 → 0x0050b1c8, 6 → 0x0050b1d0, 7 → 0x0050b2ac, 8 →
+    0x0050b2b0, 9 → 0x0050b1d4, 10 → 0x0050b248, 11 → 0x0050b23c, 12 → 0x0050b2b4, 13 → 0x0050b1e0.
+  usage: {chunks: 85, calls: 405, boot: false, mission1: true, result_used: false}
+
+- name: CamSetSplitMode
+  wrapper: 0x00367270
+  calls:
+    - {addr: 0x0011e0a8}
+  args:
+    - {name: mode, lua: number, ctype: unsigned, desc: "0 or 1: the two-player split-screen layout; other values are ignored."}
+  description: >-
+    Sets the split-screen layout and re-lays out the views.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: CamAssignRevCamButton
+  wrapper: 0x003672a8
+  calls:
+    - {addr: 0x0011e198}
+  args:
+    - {name: button, lua: number, ctype: unsigned, desc: "Button id used for the reverse (look-behind) camera."}
+  description: >-
+    Sets which button shows the reverse camera (0x0050b230).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CamSetGameAspect
+  wrapper: 0x003672e0
+  calls:
+    - {addr: 0x0011e0e0}
+  args:
+    - {name: aspect, lua: number, ctype: float, desc: "Aspect ratio (inferred: width over height)."}
+  description: >-
+    Sets the game view's aspect ratio. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CamSetHUDAspect
+  wrapper: 0x00367318
+  calls:
+    - {addr: 0x0011e100}
+  args:
+    - {name: aspect, lua: number, ctype: float, desc: "Aspect ratio (inferred)."}
+  description: >-
+    Sets the HUD's aspect ratio. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CamSetHUDScale
+  wrapper: 0x00367350
+  calls:
+    - {addr: 0x0011e120}
+  args:
+    - {name: scale, lua: number, ctype: float, desc: "HUD scale factor (stored at 0x0050b20c)."}
+  description: >-
+    Sets the HUD scale. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CamRegisterObject
+  wrapper: 0x00367388
+  calls:
+    - {addr: 0x0011e130}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object."}
+    - {name: "on", lua: boolean, desc: "true registers it with the camera system, false unregisters it."}
+  description: >-
+    Registers or unregisters an object with the camera system (inferred: for camera collision or fading). No script
+    calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CamGetLastTarget
+  wrapper: 0x003673e8
+  calls:
+    - {addr: 0x0011e188}
+  results:
+    - {lua: number, desc: "A handle kept by the camera system (0x005d91b8), inferred to be the last camera target."}
+  description: >-
+    Returns the camera system's last target. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CamGhostDoor
+  wrapper: 0x00379be8
+  calls:
+    - {addr: 0x003973a0}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of a door."}
+  description: >-
+    Sets render flag 0x200 on both parts of a door, inferred to let the camera see through it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}

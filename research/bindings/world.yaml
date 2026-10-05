@@ -1,0 +1,1227 @@
+# The Warriors' script bindings, category `world`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: FreezeWorld
+  wrapper: 0x0036c740
+  calls:
+    - {addr: 0x00158218, name: GameMode_PushFreeze}
+  args:
+    - {name: value, lua: number, ctype: unsigned, desc: "Number stored at 0x005e5690 for the freeze game mode before it is pushed; its meaning is not traced."}
+    - {name: name, lua: string, desc: "String argument; not used by the callee as decompiled."}
+  description: >-
+    Pushes the game mode object at 0x005e5670 (a freeze or pause mode) onto the game-mode stack after storing the
+    first argument in it. No script calls it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Unused by the shipped scripts. What the pushed mode does on screen is not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GetHitpoints
+  wrapper: 0x0036c900
+  calls:
+    - {addr: 0x00385918, name: Object_GetHitpoints}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (a breakable or damageable object, not a human)."}
+  results:
+    - {lua: number, desc: "The object's remaining hitpoints (+0x128), or 0 when the handle is not a live object."}
+  description: >-
+    Returns a world object's remaining hitpoints, for scripts that wait for something to be broken.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+
+- name: GetObjectName
+  wrapper: 0x0036c9c8
+  calls:
+    - {addr: 0x003859f0, name: Obj_GetTypeName}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object (prop, door, pickup ...)."}
+  results:
+    - {lua: string, desc: "The object's type name as defined by the object configuration (for example a `dyn_...` name), or the string `<null>` when the handle does not resolve to an object."}
+  description: >-
+    Returns the type name of a game object, read from the object type table (type record +0x28).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 8, calls: 26, boot: false, mission1: false, result_used: true}
+
+- name: OrientObject
+  wrapper: 0x0036ccc0
+  calls:
+    - {addr: 0x00385c90, name: Obj_SetAxisAngle}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object to rotate."}
+    - {name: degrees, lua: number, ctype: float, desc: "Rotation angle in degrees."}
+    - {name: axis, lua: table, elem: number, count: 3, written_back: true, desc: "Rotation axis as `{x, y, z}` (world space; z is up). Written back unchanged."}
+  description: >-
+    Sets a game object's orientation to a rotation of `degrees` about `axis`, keeping its position (the quaternion is
+    built from half the angle in radians and applied through the object's set-transform method).
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: PathValid
+  wrapper: 0x0036cf88
+  calls:
+    - {addr: 0x00386010, name: Obj_PathExists}
+  args:
+    - {name: from, lua: number, ctype: unsigned, desc: "Handle of the first game object (usually a human)."}
+    - {name: to, lua: number, ctype: unsigned, desc: "Handle of the second game object."}
+  results:
+    - {lua: boolean, desc: "True when the navigation query (0x0024e078) finds a route between the two objects' positions; false (nil) when it does not or either handle is invalid."}
+  description: >-
+    Asks the navigation system whether a walkable route exists between two objects.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    That 0x0024e078 is a path query is inferred from its arguments (two positions, a mask); not traced further.
+  usage: {chunks: 16, calls: 17, boot: false, mission1: false, result_used: true}
+
+- name: TriggerSphereEnable
+  wrapper: 0x0036d008
+  calls:
+    - {addr: 0x00414ae0, name: TriggerSphere_Enable}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object (a flag, human or prop) that carries the trigger sphere."}
+    - {name: enable, lua: boolean, desc: "True switches the sphere on (creating it with default settings if the object has none); false switches it off and removes it."}
+  description: >-
+    Switches an object's trigger sphere on or off. A trigger sphere is a radius around an object that reports to the
+    scripts when something enters it; `TriggerSphereCfg` sets it up.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    On: the sphere component's enabled word (+0x180) becomes 1; off: 0x004144d0 releases the component. Does nothing
+    for an object without a component container.
+  usage: {chunks: 30, calls: 58, boot: true, mission1: false, result_used: false}
+
+- name: TriggerSphereSetRadius
+  wrapper: 0x0036d068
+  calls:
+    - {addr: 0x00414a28, name: TriggerSphere_SetRadius}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object carrying the trigger sphere."}
+    - {name: radius, lua: number, ctype: float, desc: "New radius in metres."}
+  description: >-
+    Changes the radius of an object's trigger sphere (component +0x174), creating the component if needed.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: TriggerSphereCfg
+  wrapper: 0x0036d0e0
+  calls:
+    - {addr: 0x00414bc0, name: TriggerSphere_Configure}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object that gets the sphere (a flag, human or prop)."}
+    - {name: enable, lua: boolean, desc: "True to arm the sphere at once, false to configure it disarmed."}
+    - {name: radius, lua: number, ctype: float, desc: "Radius in metres around the object."}
+    - {name: mode, lua: number, ctype: int, desc: "Integer stored with the sphere (+0x17c); the scripts pass 0, 1 (true) or 2. Its meaning (who can trigger it, or once versus repeating) is not traced."}
+    - {name: interval, lua: number, ctype: unsigned, desc: "Number handed to the sphere's set-up method (vtable +0x44); the scripts pass 1, 100, 250, 500 or 1000, which suggests a check interval in milliseconds."}
+  description: >-
+    Creates or reconfigures the trigger sphere of an object: its radius, whether it is armed, a mode value and a
+    timing value. Scripts use it for objectives, talk-to points and pickups.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The meaning of `mode` and `interval` is speculative; the stores (+0x174 radius, +0x180 enabled, +0x17c mode) are
+    confirmed (code) at 0x00414bc0. How the sphere reports to Lua (a message handler) is not traced here.
+  usage: {chunks: 70, calls: 172, boot: true, mission1: true, result_used: false}
+
+- name: ObjScriptArgStart
+  wrapper: 0x0036daf0
+  calls:
+    - {addr: 0x003a2600, name: ObjMsg_Begin}
+  description: >-
+    Starts building an argument list for a message to a game object (object manager message begin, 0x003a2d20). Follow
+    with `ObjScriptPushInt` / `ObjScriptPushObject`, then `ObjScriptSignal`, then `ObjScriptArgEnd`.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    No shipped script uses the ObjScript family; it exposes the object message mechanism the other object bindings use
+    internally.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ObjScriptArgEnd
+  wrapper: 0x0036db10
+  calls:
+    - {addr: 0x003a2628, name: ObjMsg_End}
+  description: >-
+    Finishes the message argument list started by `ObjScriptArgStart` (object manager message end, 0x003a2d40).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ObjScriptPushInt
+  wrapper: 0x0036db30
+  calls:
+    - {addr: 0x003a2660, name: ObjMsg_PushInt}
+  args:
+    - {name: value, lua: number, ctype: int, desc: "Integer to append to the message's argument list."}
+  description: >-
+    Appends an integer to the object message being built.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ObjScriptSignal
+  wrapper: 0x0036db68
+  calls:
+    - {addr: 0x003a2688, name: ObjMsg_Send}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object that receives the message; nothing happens if it does not resolve."}
+    - {name: message, lua: number, ctype: int, desc: "Message id. Ids used by other bindings include 0x0a show/hide, 0x12 start particle, 0x13 end particle, 0x15 destroy, 0x22 state command and 0x42 open a door to an angle."}
+  description: >-
+    Sends a message with the arguments built so far to a game object, which handles it according to its type.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ObjScriptPushObject
+  wrapper: 0x0036dbe0
+  calls:
+    - {addr: 0x003a26e0, name: ObjMsg_PushObject}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object to append as an argument; skipped if it does not resolve."}
+  description: >-
+    Appends an object reference to the object message being built.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: BreakGlassInRadius
+  wrapper: 0x0036dc18
+  calls:
+    - {addr: 0x003966c8, name: World_BreakGlassInRadius}
+  args:
+    - {name: centre, lua: number, ctype: unsigned, desc: "Handle of a flag or object giving the centre."}
+    - {name: radius, lua: number, ctype: float, desc: "Radius in metres (scripts use 0.5-10)."}
+  description: >-
+    Breaks every breakable pane of glass within the radius of a flag or object, for scripted smashes.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: BreakObjectsInRadius
+  wrapper: 0x0036dc90
+  calls:
+    - {addr: 0x00396390, name: World_BreakObjectsInRadius}
+  args:
+    - {name: centre, lua: number, ctype: unsigned, desc: "Handle of a flag or object giving the centre."}
+    - {name: radius, lua: number, ctype: float, desc: "Radius in metres (scripts use 0.5-1)."}
+  description: >-
+    Breaks every breakable object within the radius of a flag or object (a molotov's blast, a scripted smash).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 12, calls: 22, boot: false, mission1: false, result_used: false}
+
+- name: UnloadTimedObjects
+  wrapper: 0x0036dda0
+  calls:
+    - {addr: 0x003978a8, name: ObjMgr_UnloadTimed}
+  description: >-
+    Asks the object manager's spawn table (object manager +0x840) to unload its timed objects (0x00399b20). Used once,
+    by the final level.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    What makes an object 'timed' is not traced.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CarSetPartOpen
+  wrapper: 0x0036ddc0
+  calls:
+    - {addr: 0x0038d5b8, name: Car_SetPartOpen}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car object."}
+    - {name: part, lua: number, ctype: unsigned, desc: "Which opening: 0-5 map to the car's internal part ids 5, 4, 14, 16, 18 and 20 (doors, bonnet and boot; the exact part per number is not traced). Other values do nothing."}
+    - {name: open, lua: boolean, desc: "True to open the part, false to close it."}
+  description: >-
+    Opens or closes a door, bonnet or boot of a car.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The number-to-part mapping is confirmed (code) at 0x0038d5b8; which physical panel each id is, is inferred from
+    the name.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CarSpawnRadio
+  wrapper: 0x0036de50
+  calls:
+    - {addr: 0x0038d690, name: Car_SpawnRadio}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of a car spawned in the level (scripts pass entries of `Objects`)."}
+  description: >-
+    Puts a stealable car radio into a car (0x00389848 finds the car's part, 0x0038c868 creates the radio), so the
+    player can break in and take it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The 'stealable radio' meaning is inferred from the name and the game's car-radio theft; the call chain is
+    confirmed (code).
+  usage: {chunks: 15, calls: 37, boot: false, mission1: true, result_used: false}
+
+- name: ObjIsAlive
+  wrapper: 0x0036de88
+  calls:
+    - {addr: 0x00397598, name: Obj_Exists}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object."}
+  results:
+    - {lua: boolean, desc: "True when the handle still resolves to a live object; false (nil) after it has been destroyed or for NilHandle."}
+  description: >-
+    Tests whether a game object handle is still valid.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: ObjGetIndex
+  wrapper: 0x0036ded8
+  calls:
+    - {addr: 0x00397780, name: ObjType_FindIndex}
+  args:
+    - {name: typeName, lua: string, desc: "Object type name, such as a `dyn_...` name from the object configuration."}
+  results:
+    - {lua: number, desc: "The type's index in the object type table (0x003913d8 on the table at 0x00512c04)."}
+  description: >-
+    Looks up an object type by name and returns its index.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The value returned for an unknown name is not traced.
+  usage: {chunks: 7, calls: 51, boot: false, mission1: false, result_used: true}
+
+- name: ObjSetTrainPoint
+  wrapper: 0x0036e0b0
+  calls:
+    - {addr: 0x00413770, name: Train_SetPoint}
+  args:
+    - {name: train, lua: number, ctype: unsigned, desc: "Train slot index (0 or 1 in the scripts); each slot is a 0x150-byte record at 0x006f3a10."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object placed on the route (scripts pass particle or prop objects)."}
+    - {name: index, lua: number, ctype: unsigned, desc: "Position of this point in the route, from 0."}
+    - {name: flag, lua: number, ctype: int, desc: "Integer stored with the point; the scripts set 1 on the last point. Meaning not traced."}
+  description: >-
+    Adds or sets one point of a scripted 'train': a sequence of objects that are triggered one after another along a
+    route (used for moving light or effect chains).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    The per-slot storage is confirmed (code) at 0x00413770; the 'chain of objects' reading is inferred from the
+    scripts' use.
+  usage: {chunks: 7, calls: 68, boot: false, mission1: false, result_used: false}
+
+- name: ObjStartTrain
+  wrapper: 0x0036e178
+  calls:
+    - {addr: 0x004137d8, name: Train_Start}
+  args:
+    - {name: train, lua: number, ctype: unsigned, desc: "Train slot index set up with `ObjSetTrainPoint`."}
+    - {name: speed, lua: number, ctype: float, desc: "Rate or interval stored in the slot (+0x144); the scripts pass 1.4 or 2.5. Likely seconds per step or points per second."}
+  description: >-
+    Resets and starts a scripted train set up with `ObjSetTrainPoint`.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 7, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: ObjStopTrain
+  wrapper: 0x0036e1f0
+  calls:
+    - {addr: 0x00413828, name: Train_Stop}
+  args:
+    - {name: train, lua: number, ctype: unsigned, desc: "Train slot index."}
+  description: >-
+    Stops a running scripted train (clears its running flag).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: ConvertJumpToDoor
+  wrapper: 0x0036e228
+  calls:
+    - {addr: 0x00250db0, name: NavLink_ConvertJumpToDoor}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying a navigation link near it."}
+  description: >-
+    Changes the AI navigation link at a position from a jump link into a door link (0x00250bb8 with types 4 and 0x10),
+    so the AI uses it as a doorway.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Link types are inferred from the name and the constants.
+  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: DisableDoorLink
+  wrapper: 0x0036e2d8
+  calls:
+    - {addr: 0x00250e00, name: NavLink_DisableDoor}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying the door link."}
+  description: >-
+    Closes the AI navigation door link at a position, so the AI no longer routes through it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: EnableDoorLink
+  wrapper: 0x0036e388
+  calls:
+    - {addr: 0x00250e48, name: NavLink_EnableDoor}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying the door link."}
+  description: >-
+    Re-opens the AI navigation door link at a position.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: ObjIsA
+  wrapper: 0x00377ab0
+  calls:
+    - {addr: 0x00397838, name: Obj_IsType}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object."}
+    - {name: typeName, lua: string, desc: "Object type name to compare with, such as `dyn_speaker`."}
+  results:
+    - {lua: boolean, desc: "True when the object's type id equals the id the name hashes to (0x00143f68 on the table at 0x005d91e0); false (nil) otherwise or for an invalid handle."}
+  description: >-
+    Tests whether a game object is of a given type.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 20, boot: false, mission1: false, result_used: true}
+
+- name: ObjEnableZone
+  wrapper: 0x00377b20
+  calls:
+    - {addr: 0x00396778, name: ObjZone_Enable}
+  args:
+    - {name: zone, lua: number, ctype: unsigned, desc: "Zone number (the scripts use globals such as `Zone31`). Zones group the level's placed objects so whole areas can be switched in and out."}
+    - {name: enable, lua: boolean, desc: "True to enable the zone, false to disable it."}
+  description: >-
+    Enables or disables an object zone: sets or clears bit `zone` of the spawn table's zone mask (object manager
+    +0x840, mask at +0x20) and marks the table for an update, so the objects of that zone are spawned or removed.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    That the dirty flag (+0x67e8) causes spawning or removal is inferred from the names; the bit operation is
+    confirmed (code) at 0x00398348.
+  usage: {chunks: 95, calls: 305, boot: true, mission1: true, result_used: false}
+
+- name: ObjIsZoneEnabled
+  wrapper: 0x00377b80
+  calls:
+    - {addr: 0x003967a8, name: ObjZone_IsEnabled}
+  args:
+    - {name: zone, lua: number, ctype: unsigned, desc: "Zone number."}
+  results:
+    - {lua: boolean, desc: "True when the zone's bit is set in the zone mask."}
+  description: >-
+    Tests whether an object zone is enabled.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: ObjMarkZone
+  wrapper: 0x00377bd0
+  calls:
+    - {addr: 0x003967e0, name: ObjZone_Mark}
+  args:
+    - {name: zone, lua: number, ctype: unsigned, desc: "Zone number."}
+    - {name: kind, lua: number, ctype: int, desc: "Must be 0; any other value makes the call do nothing."}
+    - {name: mark, lua: number, ctype: int, desc: "Non-zero sets the zone's mark, 0 clears it (a second per-zone bit set, 0x003983b0)."}
+  description: >-
+    Sets or clears a second per-zone flag in the spawn table; the scripts call it with (zone, 0, 0).
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    What the mark means (for example 'already visited, do not respawn') is not traced.
+  usage: {chunks: 12, calls: 27, boot: false, mission1: false, result_used: false}
+
+- name: ObjGetZone
+  wrapper: 0x00377c70
+  calls:
+    - {addr: 0x00396810, name: Obj_GetZone}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object."}
+  results:
+    - {lua: number, desc: "The zone number the object was spawned in, or -1 when it has no spawn record."}
+  description: >-
+    Returns the object zone a game object belongs to.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: ObjSpawn
+  wrapper: 0x00377cc8
+  calls:
+    - {addr: 0x00396858, name: Obj_Spawn}
+  args:
+    - {name: typeName, lua: string, desc: "Object type name from the object configuration (`config_preload3.lua`'s `CfgObj` entries), such as `dyn_w_mission` or `dyn_s_neon_a`."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` in metres. Written back unchanged."}
+    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation as a quaternion `{x, y, z, w}` (the scripts pass `{0, 0, 0, -1}` or rotations about z). Written back unchanged."}
+    - {name: unused, lua: number, ctype: int, desc: "Not used by the callee; the scripts always pass -1."}
+    - {name: zone, lua: number, ctype: unsigned, desc: "Object zone number the object belongs to (stored in the spawn record's top bits); 0 for none."}
+    - {name: flags, lua: number, ctype: unsigned, desc: "Spawn flags: bit 0 (1) keeps the extra value below, bit 1 (2) a physics-related bit for most types, bit 6 (64) another record bit; the scripts pass 0, 64 and similar."}
+    - {name: extra, lua: number, ctype: unsigned, default: 4294967295, desc: "Extra value kept only with flag bit 0; default 4294967295 (all bits set, which the scripts also pass)."}
+    - {name: flagName, lua: string, desc: "Optional name of a flag (marker) the object is linked to; nil for none."}
+  results:
+    - {lua: number, desc: "The new object's handle, or NilHandle when it was not spawned."}
+  description: >-
+    Spawns a game object of a configured type at a position and orientation and returns its handle. Key pickups
+    (`dyn_key...`) and the power cuffs (`dyn_powercuffs`) are suppressed unless the matching unlockable is set
+    (0x00424130 on the unlockables manager at 0x006fe998).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Callee 0x00396858 builds a spawn record through 0x00398940. The meaning of the flag bits and of `extra` is
+    inferred from how the record is filled. The power cuffs are additionally suppressed when 0x0041d160 on the game
+    state is non-zero.
+  usage: {chunks: 123, calls: 2875, boot: true, mission1: true, result_used: true}
+
+- name: ObjDestroy
+  wrapper: 0x00377f18
+  calls:
+    - {addr: 0x00396c58, name: Obj_Destroy}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
+    - {name: viaMessage, lua: boolean, desc: "False deletes the object at once; true sends it the destroy message (0x15) so it is removed through its own handling (scripts usually omit it)."}
+  description: >-
+    Removes a game object. If a human is holding it, the human first lets go of it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The release path chooses by the object type's class byte (+0x65): 6 and 5 call different release routines
+    (0x00258330, 0x0024ce40), others 0x00257f38.
+  usage: {chunks: 93, calls: 265, boot: true, mission1: true, result_used: true}
+
+- name: ObjEnablePhysics
+  wrapper: 0x00377f78
+  calls:
+    - {addr: 0x00396a90, name: Obj_EnablePhysics}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
+    - {name: enable, lua: boolean, desc: "True makes the object physically simulated (it can fall, be pushed or knocked over); false freezes it in place."}
+  description: >-
+    Turns physics simulation on or off for a game object.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    On calls 0x00391d48 and wakes the object's physics body; off calls 0x003924d8. The labels are inferred from the
+    name.
+  usage: {chunks: 12, calls: 73, boot: false, mission1: false, result_used: false}
+
+- name: ObjShow
+  wrapper: 0x00377fd8
+  calls:
+    - {addr: 0x00396a08, name: Obj_Show}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
+    - {name: fadeDist, lua: number, ctype: float, desc: "Value stored in the object's spawn record (+0x138); the scripts pass a fade-in distance (`FadeInDist`) or nothing."}
+  description: >-
+    Makes a hidden game object visible again (show/hide message 0x0a with 1).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    That +0x138 is a fade distance in metres is inferred from the scripts' field name.
+  usage: {chunks: 70, calls: 181, boot: true, mission1: true, result_used: false}
+
+- name: ObjHide
+  wrapper: 0x00378050
+  calls:
+    - {addr: 0x00396b68, name: Obj_Hide}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
+  description: >-
+    Hides a game object without destroying it (show/hide message 0x0a with 0).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 50, calls: 154, boot: true, mission1: false, result_used: false}
+
+- name: ObjColor
+  wrapper: 0x00378088
+  calls:
+    - {addr: 0x00396bd0, name: Obj_SetColour}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour `{r, g, b, a}`; each component is multiplied by 255, so components are meant as 0-1 (the one script call passes 0-255 values). Written back unchanged."}
+  description: >-
+    Sets a tint colour on a game object (stored twice in the object, +0xc8 and +0xcc).
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The components are passed to the colour packer 0x0017aca8 in reverse order (a, b, g, r).
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: FlagGetOwner
+  wrapper: 0x00378160
+  calls:
+    - {addr: 0x00416ed0, name: Flag_GetOwner}
+  args:
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of a flag (marker) or an object carrying flag data."}
+  results:
+    - {lua: number, desc: "Handle of the flag's current owner (the human or object using it, record +0xdc), or NilHandle."}
+  description: >-
+    Returns who currently owns a flag, for example which human is using a phone or a chair marker.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: true}
+
+- name: CarSpawn
+  wrapper: 0x00378320
+  calls:
+    - {addr: 0x0038dde8, name: Car_Spawn}
+  args:
+    - {name: typeName, lua: string, desc: "Car type name, such as `car_van`, `car_osedan`, `car_coupe` or `car_wagon`."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` in metres. Written back unchanged."}
+    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation quaternion `{x, y, z, w}`. Written back unchanged."}
+    - {name: unused, lua: number, ctype: int, desc: "Not used by the callee; the scripts pass -1."}
+    - {name: unused2, lua: number, ctype: unsigned, desc: "Not used by the callee; the scripts pass 0."}
+  results:
+    - {lua: number, desc: "The new car's handle, or NilHandle when no car could be made."}
+  description: >-
+    Creates a parked car of a given type from the car pool (object manager +0x844), places it and returns its handle.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 26, calls: 118, boot: false, mission1: true, result_used: true}
+
+- name: CarDestroy
+  wrapper: 0x003784f0
+  calls:
+    - {addr: 0x0038dea8, name: Car_Destroy}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+  description: >-
+    Deletes a car (its destroy method, vtable +0x4c).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false}
+
+- name: CarSetPartDamage
+  wrapper: 0x00378528
+  calls:
+    - {addr: 0x0038dee8, name: Car_SetPartDamage}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+    - {name: part, lua: number, ctype: unsigned, desc: "Car part id (see `CarRemovePart`)."}
+    - {name: damage, lua: number, ctype: float, desc: "Damage amount for the part; the scale is not traced."}
+  description: >-
+    Applies damage to one part of a car (0x0038a7e8). No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CarSetColor
+  wrapper: 0x003785c8
+  calls:
+    - {addr: 0x0038df38, name: Car_SetColour}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Four components 0-1; the scripts pass `{1, blue, green, red}` (alpha first, then blue, green, red). Written back unchanged."}
+  description: >-
+    Sets a car's paint colour (stored at +0x12e8 / +0x12ec, with a 'colour set' flag at +0x1308).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Component order is read from the scripts' calls; the packing (0x0017aca8) is confirmed (code).
+  usage: {chunks: 15, calls: 23, boot: false, mission1: true, result_used: false}
+
+- name: CarExplode
+  wrapper: 0x003786a0
+  calls:
+    - {addr: 0x0038dfa0, name: Car_Explode}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+    - {name: flag, lua: boolean, desc: "Passed through to the explosion routine (0x0038ab18); scripts pass true or nothing. Meaning not traced."}
+  description: >-
+    Blows up a car.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: CarRemovePart
+  wrapper: 0x00378700
+  calls:
+    - {addr: 0x0038dfe0, name: Car_RemovePart}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+    - {name: part, lua: number, ctype: unsigned, desc: "Car part id; the scripts use 5, 17, 18 and 19 (internal part ids, as in `CarSetPartOpen`'s table)."}
+    - {name: flag, lua: boolean, desc: "Passed to 0x0038c7d8; scripts pass true (likely: detach the part as debris)."}
+  description: >-
+    Removes a part (a door, bonnet or similar) from a car.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: CarCanBeDamagedBy
+  wrapper: 0x00378790
+  calls:
+    - {addr: 0x0038e030, name: Car_SetDamageFilter}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+    - {name: who, lua: number, ctype: int, desc: "Value stored as a 16-bit damage filter (+0x12d8); meaning not traced."}
+  description: >-
+    Restricts what can damage a car. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CarMakeGoodAsNew
+  wrapper: 0x00378808
+  calls:
+    - {addr: 0x0038e068, name: Car_Repair}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+  description: >-
+    Repairs a car completely: every one of its 26 damageable parts is reset (0x003873c8) and its damage counters and
+    broken flags are cleared (0x003875e8). A handle that is not a car does nothing.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 2, calls: 2, boot: false, mission1: true, result_used: false}
+
+- name: CarPlaceInTrunk
+  wrapper: 0x00378840
+  calls:
+    - {addr: 0x0038e098, name: Car_PlaceInTrunk}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object (a weapon or item) put into the boot."}
+  description: >-
+    Puts an object into a car's boot at once (0x0038d538 with 1). No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CarPlaceInTrunkOnDetach
+  wrapper: 0x003788b8
+  calls:
+    - {addr: 0x0038e0f0, name: Car_PlaceInTrunkOnDetach}
+  args:
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object (a weapon such as `dyn_pipe_a`) that appears when the boot is forced open; NilHandle when `itemKind` is used instead."}
+    - {name: itemKind, lua: number, ctype: unsigned, desc: "When non-zero, a built-in item kind (low 8 bits) is stored instead of an object; the scripts pass 5 with NilHandle."}
+  description: >-
+    Sets what a car's boot holds when the player breaks it open: a given object, or a built-in item kind.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Both branches are confirmed (code) at 0x0038e0f0; the 'when the boot is forced open' reading is inferred from the
+    name.
+  usage: {chunks: 12, calls: 34, boot: false, mission1: false, result_used: false}
+
+- name: GetPTank
+  wrapper: 0x00378bf8
+  calls:
+    - {addr: 0x0039c388, name: PTank_Create}
+  args:
+    - {name: resource, lua: number, ctype: int, desc: "Packed resource id: the sprite sheet (particle page) index in the top 16 bits and an entry in the low bits (the front end passes 786437 and 1835027)."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Origin `{x, y, z}` of the batch. Written back unchanged."}
+    - {name: count, lua: number, ctype: int, desc: "Integer passed to the batch set-up; the front end passes 1 or 10."}
+    - {name: distance, lua: number, ctype: float, desc: "Number passed to the batch set-up; the front end passes 9000 or 100000 (a draw distance or lifetime; not traced)."}
+    - {name: capacity, lua: number, ctype: int, desc: "Integer the scripts pass as 256; read but the callee passes a fixed 0xff in its place."}
+  results:
+    - {lua: number, desc: "Handle of the sprite batch (its slot index shifted left 16 bits); keep it for `ReleasePTank`."}
+  description: >-
+    Creates a PTank, a RenderWare particle-tank sprite batch, from a sprite sheet. The front end uses two for the menu
+    background and releases them when it finishes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Callee 0x0039c388 → 0x003a4e88 → 0x0018aec0 on the resource manager (0x0050cd4c). See [GUI](../../research/gui.md)
+    for PTank instances. The meaning of `count` and `distance` is not traced.
+  usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: true}
+
+- name: ReleasePTank
+  wrapper: 0x00378d78
+  calls:
+    - {addr: 0x0039c3d0, name: PTank_Release}
+  args:
+    - {name: ptank, lua: number, ctype: unsigned, desc: "Handle returned by `GetPTank`."}
+  description: >-
+    Frees a sprite batch made by `GetPTank` (0x003a4f78 releases the resource manager slot `handle >> 16`).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: false}
+
+- name: SpawnBreakableGlass
+  wrapper: 0x00378db0
+  calls:
+    - {addr: 0x0039c0e0, name: Glass_Spawn}
+  args:
+    - {name: glassType, lua: number, ctype: int, desc: "Glass type number; the object spawned is the type named by this number as text (format `%d`), such as type 1 or 13."}
+    - {name: corner, lua: table, elem: number, count: 3, written_back: true, desc: "First corner `{x, y, z}` of the pane in world metres."}
+    - {name: cornerU, lua: table, elem: number, count: 3, written_back: true, desc: "Corner along the pane's width `{x, y, z}`."}
+    - {name: cornerV, lua: table, elem: number, count: 3, written_back: true, desc: "Corner along the pane's height `{x, y, z}`."}
+    - {name: uv0, lua: table, elem: number, count: 2, written_back: true, desc: "Texture coordinates `{u, v}` at the first corner."}
+    - {name: uv1, lua: table, elem: number, count: 2, written_back: true, desc: "Texture coordinates `{u, v}` at the opposite corner."}
+    - {name: flag, lua: number, ctype: int, desc: "Integer passed with the pane; the scripts pass 0."}
+    - {name: id1, lua: number, ctype: int, desc: "Integer id passed with the pane (consecutive numbers per pane in the scripts, such as 765)."}
+    - {name: id2, lua: number, ctype: int, desc: "Second integer id (the next number, such as 766)."}
+  results:
+    - {lua: number, desc: "Handle of the glass object."}
+  description: >-
+    Creates a breakable glass pane from three corners and texture coordinates and returns its handle; levels place
+    hundreds of these for windows and shop fronts.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What the two ids identify (likely the collision triangles or a pair of links the pane replaces) is not traced.
+  usage: {chunks: 32, calls: 929, boot: false, mission1: true, result_used: true}
+
+- name: ObjectChangeState
+  wrapper: 0x00379210
+  calls:
+    - {addr: 0x003976c8, name: Obj_ChangeState}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
+    - {name: state, lua: number, ctype: int, desc: "State number for the object's state command (message 0x22); for doors 2 opens, 3 closes, 5 removes collision, 10 and 11 make it pickable or not."}
+  description: >-
+    Sends a state command to a game object; the door bindings are shorthands for particular states. One script calls it
+    directly.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: SpawnDoor
+  wrapper: 0x003796b8
+  calls:
+    - {addr: 0x00397230, name: Door_Spawn}
+  args:
+    - {name: typeName, lua: string, desc: "Door type name, such as `dyn_door_cabin_a` or `dyn_door_store`."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` of the door. Written back unchanged."}
+    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation quaternion `{x, y, z, w}`. Written back unchanged."}
+    - {name: ids, lua: table, elem: number, count: 2, written_back: true, desc: "Two integers `{a, b}` passed with the door, consecutive per door in the scripts (such as `{328, 329}`); likely the ids of its two leaves or navigation links."}
+    - {name: lockType, lua: number, ctype: unsigned, desc: "Integer passed with the door (1-7 in the scripts); meaning not traced (a lock or door class)."}
+  results:
+    - {lua: number, desc: "Handle of the door object; `GetLeftDoorHandle` / `GetRightDoorHandle` give its leaves."}
+  description: >-
+    Creates a door object of a configured type at a position and returns its handle.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The spawn passes position, rotation and the three integers as message arguments to 0x003a2e60.
+  usage: {chunks: 46, calls: 484, boot: false, mission1: true, result_used: true}
+
+- name: DoorOpenDegree
+  wrapper: 0x00379900
+  calls:
+    - {addr: 0x00396e28, name: Door_OpenToAngle}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+    - {name: degrees, lua: number, ctype: int, desc: "Opening angle in degrees; the sign picks the swing direction (scripts use values such as -170, 130, 180)."}
+  description: >-
+    Swings a door open to a given angle (message 0x42 with the angle).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 50, calls: 97, boot: false, mission1: true, result_used: false}
+
+- name: DoorOpen
+  wrapper: 0x00379a50
+  calls:
+    - {addr: 0x00396f08, name: Door_OpenBy}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who opens it (the player or an AI character)."}
+  description: >-
+    Has a human open a door: the door receives message 0x0b with the human, then 0x00396d78 updates the human's side.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 19, calls: 31, boot: false, mission1: false, result_used: false}
+
+- name: OpenDoor
+  wrapper: 0x00379ac8
+  calls:
+    - {addr: 0x00396ea0, name: Door_Open}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+  description: >-
+    Opens a door (state command 2).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 46, calls: 85, boot: false, mission1: false, result_used: false}
+
+- name: OpenDoorAnimated
+  wrapper: 0x00379b00
+  calls:
+    - {addr: 0x00396fa8, name: Door_OpenAnimated}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the door or button object to use."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who uses it."}
+  description: >-
+    Makes a human walk up to and use a door or button with an animation: the human's target becomes the object
+    (0x00227080) and it is given action 0x1a (0x002266a8).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 6, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: CloseDoor
+  wrapper: 0x00379b78
+  calls:
+    - {addr: 0x00397010, name: Door_Close}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+  description: >-
+    Closes a door (state command 3).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 53, calls: 84, boot: false, mission1: true, result_used: false}
+
+- name: DisableDoorCollision
+  wrapper: 0x00379bb0
+  calls:
+    - {addr: 0x00397338, name: Door_DisableCollision}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+  description: >-
+    Turns off a door's collision (state command 5). No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ChangeCollision
+  wrapper: 0x00379c20
+  calls:
+    - {addr: 0x0034fba0, name: CollisionMesh_SetEnabledInVolume}
+  args:
+    - {name: box, lua: number, ctype: unsigned, desc: "Handle of a volume box (from `AddVolumeBox`)."}
+    - {name: enable, lua: boolean, desc: "True enables, false (or nil) disables the world collision triangles inside the box."}
+  description: >-
+    Switches the level's static collision on or off inside a volume box: every collision triangle whose three vertices
+    lie in the box gets its enabled bit set or cleared ([Collision](../../research/collision.md)).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: ChangeBlocker
+  wrapper: 0x00379c80
+  calls:
+    - {addr: 0x00252c28, name: NavLink_SetBlocked}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying the navigation link or node nearest to it."}
+    - {name: open, lua: boolean, desc: "False sets the blocked bit (0x08) on it, true clears it."}
+  description: >-
+    Blocks or unblocks an AI navigation link at a position.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    The bit operation is confirmed (code) at 0x00252c28; that the record is a navigation link is inferred from the
+    neighbouring door-link bindings.
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: GetLeftDoorHandle
+  wrapper: 0x00379d50
+  calls:
+    - {addr: 0x00397400, name: Door_GetLeftLeaf}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of a door made with `SpawnDoor`."}
+  results:
+    - {lua: number, desc: "Handle of the door's left leaf object (from the reply to message 0x10)."}
+  description: >-
+    Returns the left leaf of a double door, which scripts then open, close or attach cameras to.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    If the door does not resolve, the reply object of the previous query is read (0x003a50c0); a NilHandle result is
+    not guaranteed.
+  usage: {chunks: 42, calls: 74, boot: false, mission1: true, result_used: true}
+
+- name: GetRightDoorHandle
+  wrapper: 0x00379dc8
+  calls:
+    - {addr: 0x00397478, name: Door_GetRightLeaf}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of a door made with `SpawnDoor`."}
+  results:
+    - {lua: number, desc: "Handle of the door's right leaf object, or NilHandle when there is none."}
+  description: >-
+    Returns the right leaf of a double door.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 29, calls: 47, boot: false, mission1: false, result_used: true}
+
+- name: SetDoorPickable
+  wrapper: 0x00379e40
+  calls:
+    - {addr: 0x00397078, name: Door_SetPickable}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+    - {name: pickable, lua: boolean, default: true, desc: "True (the default) lets the player pick the lock (state command 10); false makes it unpickable (state 11) and first stops any human currently picking it."}
+  description: >-
+    Sets whether the player can pick a door's lock.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The 'lock picking' reading is inferred from the name; the human loop over the game state's human list (+0x224
+    count, +0x228 handles) is confirmed (code).
+  usage: {chunks: 16, calls: 24, boot: false, mission1: false, result_used: false}
+
+- name: IsDoorOpen
+  wrapper: 0x00379f80
+  calls:
+    - {addr: 0x00397508, name: Door_IsOpen}
+  args:
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+  results:
+    - {lua: boolean, desc: "True when the door reports itself open (query 0x0c on the object); false (nil) otherwise or for an invalid handle."}
+  description: >-
+    Tests whether a door is open.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: AddFlag
+  wrapper: 0x00379fd0
+  calls:
+    - {addr: 0x00415c18, name: Flag_Add}
+  args:
+    - {name: name, lua: string, desc: "Flag name (the scripts use names like `fP1_01`); `FindFlag` looks flags up by it."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` in metres. Written back unchanged."}
+    - {name: heading, lua: number, ctype: float, desc: "Facing in degrees (the scripts pass values such as 45, 89, 270), used when a human is placed at or uses the flag."}
+    - {name: kind, lua: number, ctype: int, desc: "Integer stored with the flag (16-bit); scripts usually pass 0. Meaning not traced."}
+    - {name: kind2, lua: number, ctype: int, desc: "Second integer stored with the flag (16-bit); usually 0."}
+  results:
+    - {lua: number, desc: "Handle of the new flag."}
+  description: >-
+    Creates a flag: a named marker point with a facing, used as a spawn point, waypoint, objective or interaction
+    point. Levels create thousands of them.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Callee 0x00415c18 → 0x00415b68 (a flag from the flag pool, 0x00415af0, initialised by 0x00415e70 with NilHandle as
+    owner).
+  usage: {chunks: 94, calls: 7058, boot: false, mission1: true, result_used: true}
+
+- name: SetFlagPos
+  wrapper: 0x0037a150
+  calls:
+    - {addr: 0x00416b68, name: Flag_SetPosition}
+  args:
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "New world position `{x, y, z}`. Written back unchanged."}
+  description: >-
+    Moves a flag to a new position.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 19, calls: 37, boot: false, mission1: false, result_used: false}
+
+- name: FlagEnable
+  wrapper: 0x0037a228
+  calls:
+    - {addr: 0x00415ce8, name: Flag_Enable}
+  args:
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag (or of an object carrying flag data)."}
+    - {name: enable, lua: boolean, desc: "True to enable the flag for use, false to disable it."}
+  description: >-
+    Enables or disables a flag, so AI and interactions stop or resume using it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 15, boot: false, mission1: false, result_used: false}
+
+- name: GetFlagPos
+  wrapper: 0x0037a288
+  calls:
+    - {addr: 0x00416bb8, name: Flag_GetPosition}
+  args:
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag."}
+  results:
+    - {lua: usertype, desc: "The flag's position as an `M_Vector4` (`x y z w`); when the flag has a live owner object, that object's current position instead."}
+  description: >-
+    Returns where a flag is, following its owner when it has one.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 14, calls: 25, boot: true, mission1: false, result_used: true}
+
+- name: FindFlag
+  wrapper: 0x0037a770
+  calls:
+    - {addr: 0x00415c48, name: Flag_FindByName}
+  args:
+    - {name: name, lua: string, desc: "Flag name given to `AddFlag`."}
+  results:
+    - {lua: number, desc: "Handle of the first flag with that name, or NilHandle."}
+  description: >-
+    Looks up a flag by name (linear search over all flags). Three scripts call it, once each.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: FlagNetAddLink
+  wrapper: 0x0037a7e0
+  calls:
+    - {addr: 0x002a7458, name: FlagNet_AddNode}
+  args:
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag that becomes a node of the flag network."}
+    - {name: link1, lua: number, ctype: unsigned, desc: "Handle of a linked flag, or NilHandle."}
+    - {name: link2, lua: number, ctype: unsigned, desc: "Handle of a linked flag, or NilHandle."}
+    - {name: link3, lua: number, ctype: unsigned, desc: "Handle of a linked flag, or NilHandle."}
+    - {name: link4, lua: number, ctype: unsigned, desc: "Handle of a linked flag, or NilHandle."}
+  description: >-
+    Adds a node with up to four neighbours to the level's flag network, the graph of flags that wandering pedestrians
+    and gang members walk along. The network holds at most 128 nodes; extra nodes are ignored.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Nodes are 20-byte records at 0x006e9440 (flag plus four links), with a 16-bit field per node at 0x006e9e40 and the
+    last index at 0x006e9f40.
+  usage: {chunks: 29, calls: 774, boot: false, mission1: true, result_used: false}
+
+- name: FlagNetTraverse
+  wrapper: 0x0037a968
+  calls:
+    - {addr: 0x002a78c8, name: FlagNet_StartTraverse}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who starts walking the flag network."}
+    - {name: mode, lua: number, ctype: int, desc: "Movement mode: 0 keeps the human's current one; 1 (and 6-9) walk, 2 a faster pace (speed value 20), 3 a third mode. The scripts pass 1 or 7."}
+    - {name: chance, lua: number, ctype: unsigned, desc: "Percentage 0-100: a random number below it picks one traversal variant, otherwise another (0x002aae30 gets 2 or 4)."}
+    - {name: flagA, lua: boolean, desc: "Boolean passed to the traversal; meaning not traced."}
+    - {name: flagB, lua: boolean, desc: "Boolean passed to the traversal; meaning not traced."}
+  overloads:
+  - wrapper: 0x0037a8d0
+    calls:
+      - {addr: 0x002a7810}
+    args:
+      - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+      - {name: flag, lua: boolean, desc: "Read but not used."}
+      - {name: "n", lua: number, ctype: int, desc: "Read but not used."}
+    note: >-
+      Used when the arguments do not fit the first form (argument 1 a number, 2-3 numbers or absent, 4-5 booleans or
+      absent, nothing after 5). Starts the traversal with default settings.
+  description: >-
+    Sends a human wandering along the flag network built with `FlagNetAddLink`. The player's own character (brain type
+    1) is handled separately and is not sent wandering.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Both forms release the human's current goal (0x0028d758). The mode-to-speed reading is inferred from the stored
+    values.
+  usage: {chunks: 27, calls: 60, boot: true, mission1: true, result_used: false}
+
+- name: FlagNetValidate
+  wrapper: 0x0037aaf8
+  calls:
+    - {addr: 0x002a7c48, name: FlagNet_Validate}
+  description: >-
+    Checks every link of the flag network (0x002a73a8 per non-empty link); a debugging aid used once.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: FlagNetClear
+  wrapper: 0x0037ab18
+  calls:
+    - {addr: 0x002a7328, name: FlagNet_Clear}
+  description: >-
+    Empties the flag network: all 128 nodes and their links become NilHandle.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: AddPath
+  wrapper: 0x0037ab38
+  calls:
+    - {addr: 0x00415740, name: Path_Add}
+  args:
+    - {name: name, lua: string, desc: "Path name (such as `WheelChairRace`)."}
+    - {name: flags, lua: table, elem: number, count: 8, written_back: true, desc: "Exactly eight flag handles `{f1, ..., f8}` in order; NilHandle entries are skipped. Written back unchanged."}
+  results:
+    - {lua: usertype, desc: "The path object (a tolua usertype); 0/nil when all 32 path slots are taken."}
+  description: >-
+    Creates a named path through up to eight flags, used for races and scripted walks. At most 32 paths exist at once
+    (slots at 0x006fd870).
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The result is pushed as a usertype; what scripts can do with it (it is passed to goal bindings) belongs to the AI
+    slice.
+  usage: {chunks: 15, calls: 42, boot: false, mission1: false, result_used: true}
+
+- name: AddVolumeBox
+  wrapper: 0x0037ac70
+  calls:
+    - {addr: 0x004125b8, name: VolumeBox_Add}
+  args:
+    - {name: name, lua: string, desc: "Box name, for scripts' own reference (such as `vFinishLine`)."}
+    - {name: kind, lua: number, ctype: int, desc: "Box kind: 0 a plain trigger box, 2 another pooled kind, 3 a kind made by a factory (the turf boxes use 3); 1 is refused and returns NilHandle."}
+    - {name: corner, lua: table, elem: number, count: 3, written_back: true, desc: "Minimum corner `{x, y, z}` in world metres. Written back unchanged."}
+    - {name: size, lua: table, elem: number, count: 3, written_back: true, desc: "Extent `{dx, dy, dz}` in metres, added to the corner to give the opposite corner. Written back unchanged."}
+    - {name: enable, lua: boolean, default: true, desc: "True (default) creates the box enabled."}
+    - {name: flags, lua: number, ctype: unsigned, desc: "Byte stored in the box (+0x6a); the scripts never pass it. Meaning not traced."}
+  results:
+    - {lua: number, desc: "Handle of the box, or NilHandle for kind 1 (and possibly when a pool is empty)."}
+  description: >-
+    Creates an axis-aligned volume box, used to test whether characters are inside an area (`IsInsideBox`), to switch
+    collision (`ChangeCollision`) and to mark turf.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Kinds 0 and 2 come from two pools (0x0051483c, 0x00514814); kind 3 from the factory at 0x00514834. What
+    distinguishes the kinds in play is not traced. Rotate the box about the vertical axis with `RotateVolumeBox`.
+  usage: {chunks: 53, calls: 974, boot: false, mission1: true, result_used: true}
+
+- name: RotateVolumeBox
+  wrapper: 0x0037ae68
+  calls:
+    - {addr: 0x00412c40, name: VolumeBox_SetRotation}
+  args:
+    - {name: box, lua: number, ctype: unsigned, desc: "Handle of the volume box."}
+    - {name: m00, lua: number, ctype: float, desc: "First element of a 2 × 2 rotation about the vertical axis (cos of the angle)."}
+    - {name: m01, lua: number, ctype: float, desc: "Second element (-sin)."}
+    - {name: m10, lua: number, ctype: float, desc: "Third element (sin)."}
+    - {name: m11, lua: number, ctype: float, desc: "Fourth element (cos). The scripts pass values like `0, -1, 1, 0` (90 degrees) or `0.707, -0.707, 0.707, 0.707` (45 degrees)."}
+  description: >-
+    Gives a volume box a rotation about the vertical axis, stored as a 2 × 2 matrix in the box (+0x48 to +0x54).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    That the four numbers form a cos/sin matrix is inferred from the scripts' values; the stores are confirmed (code)
+    at 0x00412c40.
+  usage: {chunks: 31, calls: 211, boot: false, mission1: true, result_used: false}
+
+- name: EnableVolumeBox
+  wrapper: 0x0037af58
+  calls:
+    - {addr: 0x00412bf8, name: VolumeBox_Enable}
+  args:
+    - {name: box, lua: number, ctype: unsigned, desc: "Handle of the volume box."}
+    - {name: enable, lua: boolean, desc: "True to enable, false to disable the box."}
+  description: >-
+    Enables or disables a volume box (its enable method, vtable +0x5c).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 43, calls: 173, boot: false, mission1: false, result_used: false}
+
+- name: IsInsideBox
+  wrapper: 0x0037afb8
+  calls:
+    - {addr: 0x00413198, name: VolumeBox_ContainsObject}
+  args:
+    - {name: box, lua: number, ctype: unsigned, desc: "Handle of the volume box."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a human or other game object."}
+  results:
+    - {lua: boolean, desc: "True when the object's position is inside the box (taking its rotation into account); false (nil) otherwise or when either handle is invalid."}
+  description: >-
+    Tests whether a character or object stands inside a volume box.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 75, calls: 297, boot: true, mission1: false, result_used: true}
+
+- name: SetPositionOfWater
+  wrapper: 0x0037ba48
+  calls:
+    - {addr: 0x0040ca18, name: Water_Set}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Centre `{x, y, z}` of the water plane in world metres (z is the water height)."}
+    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation `{x, y, z, w}` of the plane; the scripts pass `{0, 0, 0, -1}` or `{-0.01, -0.01, -1, 1}`."}
+    - {name: width, lua: number, ctype: float, desc: "Size of the plane along x in metres (110-300 in the scripts)."}
+    - {name: length, lua: number, ctype: float, desc: "Size of the plane along y in metres (110-1339)."}
+    - {name: colour, lua: table, elem: number, count: 3, written_back: true, desc: "Water colour `{r, g, b}`, components 0-1."}
+    - {name: param1, lua: number, ctype: float, desc: "Number such as 0, 0.1 or 1; likely a wave or reflection strength. Not traced."}
+    - {name: param2, lua: number, ctype: float, desc: "Number such as 0.1 or 0.25; likely a scroll speed or transparency. Not traced."}
+  description: >-
+    Places and colours the level's water surface (0x0040ca18), used by the river and dock levels.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    The wrapper calls 0x0040ca18 directly; the meaning of the size and last two values is inferred from the scripts'
+    numbers.
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}

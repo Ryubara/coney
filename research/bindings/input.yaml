@@ -1,0 +1,36 @@
+# The Warriors' script bindings, category `input`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: PadSetHandler
+  wrapper: 0x0036d878
+  calls:
+    - {addr: 0x00145698}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "0 for player 1; any other value for player 2 (mapped to the controller port that player uses)."}
+    - {name: button, lua: number, ctype: unsigned, desc: "A button mask; the handler is stored under its highest set bit (16 slots per pad). The scripts pass single bits 1, 2, 4 ... 32768."}
+    - {name: callback, lua: string, desc: "Name of the Lua function to call when the button is pressed, or nil to remove."}
+  description: >-
+    Sets a Lua handler for a pad button (the table at `0x005dda90`: 8 pads × 16 buttons), used by menus and pop-ups
+    made in Lua.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Which bit is which PS2 button is not traced here (the pad layer's button order).
+  usage: {chunks: 16, calls: 135, boot: true, mission1: true, result_used: false}
+
+- name: PadSetHandlerEx
+  wrapper: 0x0036d908
+  calls:
+    - {addr: 0x00148210}
+  args:
+    - {name: callback, lua: string, desc: "Name of the Lua function, or nil to remove."}
+  description: >-
+    Sets one global Lua handler (kept at `0x0050b73c`) that a player-input routine (`0x001480e0`) calls with three
+    arguments when the player acts on a target; the tutorial uses it to notice targeting and flash moves.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The store and the call are confirmed (code); the event that triggers it is inferred from the scripts' handler
+    names.
+  usage: {chunks: 4, calls: 12, boot: false, mission1: true, result_used: false}

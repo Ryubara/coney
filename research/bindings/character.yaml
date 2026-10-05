@@ -1,0 +1,3003 @@
+# The Warriors' script bindings, category `character`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: HuCreate
+  wrapper: 0x00358428
+  calls:
+    - {addr: 0x00233d60, name: Human_Create}
+  args:
+    - {name: name, lua: string, desc: "The human's name (15 characters kept); HuFind and scripts use it."}
+    - {name: type, lua: number, ctype: int, desc: "Character type id, the CfgChar record (32 Rembrandt, 40 Ash); remapped to a behaviour class at creation."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} in metres, game axes with z up; written back with the ground-snapped position."}
+    - {name: heading, lua: number, ctype: float, desc: "Facing in degrees, a rotation about the vertical axis."}
+    - {name: unused, lua: string, desc: "A string the scripts pass (\"warr_sw\", \"warr_cl\", nil); not read by Human_Create."}
+    - {name: player, lua: number, ctype: int, desc: "Player index: 0 for an AI human, 1 for player 1 (takes pad 1, the HUD and the camera), 2 for player 2."}
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (as returned by GangCreate) the human belongs to."}
+    - {name: flag, lua: boolean, desc: "Stored at +0x19d of the human; the Rumble scripts pass true. Meaning not traced."}
+  results:
+    - {lua: number, desc: "The new human's handle, or NilHandle when no slot is free (60 humans at most)."}
+  description: >-
+    Creates a human (character) in the world, snaps it to the ground and, for a player index of 1, makes it player 1's
+    character. This is how every level script puts the Warriors, enemies and civilians into the world.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Steps and offsets: Characters, creation. The model loads later if its files are not yet resident.
+  usage: {chunks: 100, calls: 3411, boot: false, mission1: true, result_used: true}
+
+- name: HuDelete
+  wrapper: 0x00358608
+  calls:
+    - {addr: 0x00233ef0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to remove."}
+  description: >-
+    Removes a human from the world at once and frees its slot.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    From the callee 0x00233ef0: marks the human for removal, releases it and frees the handle.
+  usage: {chunks: 80, calls: 213, boot: false, mission1: false, result_used: true}
+
+- name: HuKill
+  wrapper: 0x00358640
+  calls:
+    - {addr: 0x00237e70}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; not checked, so pass a live handle."}
+  description: >-
+    Kills the human outright.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 29, calls: 46, boot: false, mission1: false, result_used: false}
+
+- name: SwapPlayerControl
+  wrapper: 0x00358678
+  calls:
+    - {addr: 0x00233f60, name: Human_SwapPlayerControl}
+  args:
+    - {name: from, lua: number, ctype: unsigned, desc: "Handle of the human the player controls now."}
+    - {name: to, lua: number, ctype: unsigned, desc: "Handle of the human to give the pad to."}
+  description: >-
+    Moves a player's pad, player index and camera target from one human to another. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetNoThrowWeapon
+  wrapper: 0x003586f0
+  calls:
+    - {addr: 0x00237468, name: Human_SetNoThrowWeapon}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x4000000000 of the human's flag word; from the name, the human never throws the weapon it
+    holds.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x00237468; the effect is inferred from the name.
+  usage: {chunks: 1, calls: 5, boot: false, mission1: true, result_used: false}
+
+- name: HuSetNoTarget
+  wrapper: 0x00358750
+  calls:
+    - {addr: 0x00234038, name: Human_SetNoTarget}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x100000000000 of the human's flag word, which from the name keeps other characters (and
+    the player's targeting) from picking this human as a target. The tutorial uses it on bystanders.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x00234038; the effect is inferred from the name.
+  usage: {chunks: 31, calls: 322, boot: false, mission1: true, result_used: false}
+
+- name: HuSetNoAutoLock
+  wrapper: 0x003587b0
+  calls:
+    - {addr: 0x002340a8, name: Human_SetNoAutoLock}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x8000000000 of the human's flag word; from the name, the player's automatic target lock
+    skips this human.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: HuSetAutoCombat
+  wrapper: 0x00358810
+  calls:
+    - {addr: 0x00234118}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, desc: "True lets the human fight on its own."}
+  description: >-
+    Lets the human join fights automatically (flag 0x200000000000 at +0xe0).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: HuSetAccurate
+  wrapper: 0x00358870
+  calls:
+    - {addr: 0x00234d08}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: accurate, lua: boolean, desc: "True sets the flag."}
+  description: >-
+    Sets the human's accuracy flag (0x40000 at +0xe0).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetWheelchairControl
+  wrapper: 0x003588d0
+  calls:
+    - {addr: 0x00234188, name: Human_SetWheelchairControl}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the player human."}
+    - {name: "on", lua: boolean, desc: "true switches the player to wheelchair control; false switches back."}
+  description: >-
+    Switches a player between normal and wheelchair control: it sets or clears flag bit 0x80000000000, swaps the
+    human's locomotion and removes (on) or restores (off) the player commands 46 and 47.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: HuSetButtonTapControl
+  wrapper: 0x00358930
+  calls:
+    - {addr: 0x00234318}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+    - {name: enable, lua: boolean, desc: "True starts the tap control, false ends it and restores the commands."}
+    - {name: goal, lua: table, elem: number, count: 16, written_back: true, desc: "A table of up to 16 numbers configuring the tap goal."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the object the human acts on (the bus in the scripts)."}
+  description: >-
+    Starts or ends a button-tapping action on an object (pushing a bus): while on, the human's normal commands are
+    disabled and command 45 is bound to presses of cross.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 19, boot: false, mission1: false, result_used: false}
+
+- name: HuRender
+  wrapper: 0x00358aa0
+  calls:
+    - {addr: 0x00237e98}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Re-applies render state to the human's model and related objects.
+  evidence: speculative
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuShadow
+  wrapper: 0x00358ad8
+  calls:
+    - {addr: 0x00238030, name: Human_SetShadow}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true draws the human's shadow, false hides it."}
+  description: >-
+    Turns the human's shadow on or off (+0x2b4 of its character instance).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 10, calls: 38, boot: false, mission1: false, result_used: false}
+
+- name: HuRubberNeck
+  wrapper: 0x00358b38
+  calls:
+    - {addr: 0x0023a258}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, desc: "True enables rubbernecking."}
+  description: >-
+    Lets the human stop and stare at nearby events (flag 0x1000000 at +0xe0).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: HuBlockLook
+  wrapper: 0x00358b98
+  calls:
+    - {addr: 0x0023a2c0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: block, lua: boolean, desc: "True stops the human turning its head to look at things."}
+  description: >-
+    Blocks or allows the human's head-look behaviour (flag 0x1000 at +0xe0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 46, calls: 127, boot: false, mission1: false, result_used: false}
+
+- name: HuForceLook
+  wrapper: 0x00358bf8
+  calls:
+    - {addr: 0x0023a328}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: force, lua: boolean, desc: "True sets the force-look flag."}
+  description: >-
+    Sets or clears the human's force-look flag (0x10000 at +0xe0).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: HuClearLook
+  wrapper: 0x00358c58
+  calls:
+    - {addr: 0x0023a460}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (ignored)."}
+  description: >-
+    Does nothing in this build: the function it calls returns immediately.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: HuSetScale
+  wrapper: 0x00358c90
+  calls:
+    - {addr: 0x0023b0e0, name: Human_SetScale}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: scale, lua: number, ctype: float, desc: "Size factor, 1 for normal (scripts use 0.97 to 1.28)."}
+  description: >-
+    Stores a size factor for the human (+0x65c) and updates its physics body (0x00219608), making bosses and henchmen
+    bigger or smaller.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 17, calls: 29, boot: false, mission1: false, result_used: false}
+
+- name: HuSetLookPos
+  wrapper: 0x00358d08
+  calls:
+    - {addr: 0x0023a390, name: Human_SetLookPos}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} in metres; written back unchanged."}
+  description: >-
+    Does nothing in this build: it looks the human up and returns (0x0023a390).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetLookTarget
+  wrapper: 0x00358de0
+  calls:
+    - {addr: 0x0023a3b8, name: Human_SetLookTarget}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human that turns its head."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of what to look at: another human or an object (a flag works too, as the scripts pass flags)."}
+    - {name: ms, lua: number, ctype: unsigned, default: 2000, desc: "How long to look, in milliseconds (default 2000); the scripts pass -1 for no limit."}
+    - {name: weight, lua: number, ctype: float, default: 1, desc: "Number passed to the head-look controller (default 1), probably the blend weight or turn speed (inferred)."}
+    - {name: flagA, lua: boolean, desc: "true adds look option 0x20 (meaning not traced)."}
+    - {name: flagB, lua: boolean, desc: "true adds look option 0x40 (meaning not traced)."}
+  description: >-
+    Makes the human look at a target for a time, through the head-look controller at +0x284 (0x0029a000). Nothing
+    happens unless both the human and the target exist.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The two option bits are passed on as 0x20 / 0x40 but what they change in the controller is not traced.
+  usage: {chunks: 41, calls: 160, boot: false, mission1: true, result_used: false}
+
+- name: HuSetName
+  wrapper: 0x00358ef0
+  calls:
+    - {addr: 0x00238078, name: Human_SetName}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: name, lua: string, desc: "New name (up to 15 characters, stored at +0x80)."}
+  description: >-
+    Renames the human (0x0021cda8), so lookups by name find it under the new one.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuIsAimingAt
+  wrapper: 0x00358f50
+  calls:
+    - {addr: 0x0023a468}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the object or human to test."}
+  results:
+    - {lua: boolean, desc: "True when the player is targeting exactly that object (+0x634)."}
+  description: >-
+    Tells whether a player is aiming at the given target.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: HuGetControlName
+  wrapper: 0x00358fd0
+  calls:
+    - {addr: 0x002380c0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: string, desc: "A name string from the human (0x0023fb00), or nil for an invalid handle."}
+  description: >-
+    Returns the name of the human's current controller.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: true}
+
+- name: HuBlockJump
+  wrapper: 0x00359020
+  calls:
+    - {addr: 0x00237958}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: block, lua: boolean, desc: "True stops the human from jumping."}
+  description: >-
+    Blocks or allows jumping for the human (flag 0x10000000 at +0xe0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: HuBlockClimb
+  wrapper: 0x00359080
+  calls:
+    - {addr: 0x002379c0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: block, lua: boolean, desc: "True stops the human from climbing, false allows it again."}
+  description: >-
+    Blocks or allows climbing for the human (bit 0x20000000 of its behaviour flags at +0xe0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HuBlockGrab
+  wrapper: 0x003590e0
+  calls:
+    - {addr: 0x00237a28}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: block, lua: boolean, desc: "True blocks grabs from both front and rear."}
+  description: >-
+    Blocks or allows all grabs on this human; it sets both the front and rear grab flags at once.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuBlockRearGrab
+  wrapper: 0x00359140
+  calls:
+    - {addr: 0x00237b00}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: block, lua: boolean, desc: "True stops the human being grabbed from behind."}
+  description: >-
+    Blocks or allows grabs from behind on this human (flag 0x80000000 at +0xe0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuBlockFrontGrab
+  wrapper: 0x003591a0
+  calls:
+    - {addr: 0x00237a98}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: block, lua: boolean, desc: "True stops the human being grabbed from the front."}
+  description: >-
+    Blocks or allows grabs from the front on this human (flag 0x40000000 at +0xe0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuBlockTackle
+  wrapper: 0x00359200
+  calls:
+    - {addr: 0x00237b70}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: block, lua: boolean, desc: "True stops the human being tackled."}
+  description: >-
+    Blocks or allows tackles on this human (flag 0x100000000 at +0xe0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: HuSetTireless
+  wrapper: 0x00359260
+  calls:
+    - {addr: 0x002350c8, name: Human_SetTireless}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x4000000 of the human's flag word; from the name, the human never tires when sprinting.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x002350c8; the effect is inferred from the name.
+  usage: {chunks: 50, calls: 144, boot: true, mission1: true, result_used: false}
+
+- name: HuSetManualStun
+  wrapper: 0x003592c0
+  calls:
+    - {addr: 0x00235130, name: Human_SetManualStun}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x8000000 of the human's flag word; from the name, the human's stun is controlled by
+    script rather than by its own timer.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetNoReact
+  wrapper: 0x00359320
+  calls:
+    - {addr: 0x00235198, name: Human_SetNoReact}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x800 of the human's flag word; from the name, the human shows no hit reactions.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: false}
+
+- name: HuSetAutoEscape
+  wrapper: 0x00359380
+  calls:
+    - {addr: 0x00235200}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, desc: "True lets the human break free on its own."}
+  description: >-
+    Lets the human escape grabs automatically (flag 0x20000 at +0xe0).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 8, calls: 13, boot: false, mission1: false, result_used: false}
+
+- name: HuMakeBeatUp
+  wrapper: 0x003593e0
+  calls:
+    - {addr: 0x00234d70}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Puts the human into the beaten-down state: drops what it holds and sets it lying on the ground with 1 hitpoint.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HuMakeGrounded
+  wrapper: 0x00359418
+  calls:
+    - {addr: 0x00234e58}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: down, lua: boolean, desc: "True knocks the human to the ground (unless already down); false lets it get up."}
+  description: >-
+    Knocks the human down or lets it get up.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 10, boot: false, mission1: false, result_used: false}
+
+- name: HuSetRageMode
+  wrapper: 0x00359478
+  calls:
+    - {addr: 0x00237128, name: Human_SetRageMode}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true starts rage; false ends it if the player of that human is raging."}
+  description: >-
+    Starts rage mode (0x00236d28, then flag bit 0x80000) or ends it (0x00236fb8). Ending looks at the player human
+    with the same player index, not at `human` itself.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 9, calls: 18, boot: false, mission1: false, result_used: false}
+
+- name: HuSetBlurMode
+  wrapper: 0x003594d8
+  calls:
+    - {addr: 0x002371d8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+    - {name: blur, lua: boolean, desc: "True turns the blur on, false off."}
+    - {name: param, lua: number, ctype: unsigned, desc: "Passed to the effect when turning it on."}
+  description: >-
+    Turns a blur effect on or off for the player's view, like being dazed.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: HuSetLockedRage
+  wrapper: 0x00359570
+  calls:
+    - {addr: 0x00236b38, name: Human_SetLockedRage}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (normally a player)."}
+    - {name: "on", lua: boolean, desc: "true locks the rage meter; false unlocks it and restarts its timers."}
+  description: >-
+    Sets flag bit 0x100000 of the human's flag word, which keeps the rage meter where it is. Clearing it also clears
+    the drain counter (+0x654), restarts the meter's timer (+0x64c) and, if the human is raging (bit 0x80000), clears
+    +0x648.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    That the bit freezes the meter is inferred from the name; the writes are confirmed (code) at 0x00236b38.
+  usage: {chunks: 3, calls: 9, boot: true, mission1: true, result_used: false}
+
+- name: HuSetPreventRage
+  wrapper: 0x003595d0
+  calls:
+    - {addr: 0x00236ad0, name: Human_SetPreventRage}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (normally a player)."}
+    - {name: "on", lua: boolean, desc: "true clears flag bit 0x2000000; false (or nil) sets it. Note the inversion."}
+  description: >-
+    Writes flag bit 0x2000000 of the human's flag word, inverted: `true` clears the bit and `false` sets it. Given the
+    name, the bit therefore means rage is allowed, and HuSetPreventRage(h, true) stops the human from raging.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The inversion is confirmed (code) at 0x00236ad0; what the bit gates is inferred from the name.
+  usage: {chunks: 44, calls: 93, boot: false, mission1: true, result_used: false}
+
+- name: HuSetRageFrac
+  wrapper: 0x00359630
+  calls:
+    - {addr: 0x002369b8, name: Human_SetRageFrac}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (normally a player)."}
+    - {name: fraction, lua: number, ctype: float, desc: "Share of the full rage meter, 0 to 1 (0.5 is half)."}
+  description: >-
+    Sets the human's rage meter to `fraction` of its maximum (+0x650), clears the drain counter and restarts the
+    meter's timer. The tutorial uses 0.5.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 2, boot: false, mission1: true, result_used: false}
+
+- name: HuSetFullRage
+  wrapper: 0x003596a8
+  calls:
+    - {addr: 0x00236a68, name: Human_SetFullRage}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (normally a player)."}
+  description: >-
+    Fills the human's rage meter: the current rage (+0x650) becomes the human's maximum (0x00223260), the drain
+    counter (+0x654) is cleared and the meter's timer (+0x648) is set to now plus a global delay (0x00510290).
+    `global.lua` uses it to fill both players' meters.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: HuDrop
+  wrapper: 0x003596e0
+  calls:
+    - {addr: 0x002360f8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: first, lua: boolean, desc: "True drops one kind of carried item (0x00258330)."}
+    - {name: second, lua: boolean, desc: "True drops a second kind (0x0024ce40)."}
+    - {name: held, lua: boolean, desc: "True drops what the human holds in its hands (the same routine as HuDropWeapon)."}
+  description: >-
+    Makes the human drop the kinds of items selected by the three flags.
+  evidence: speculative
+  depth: brief
+  notes: >-
+    Which item kinds the first two flags drop is not traced. No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetKeepHat
+  wrapper: 0x00359780
+  calls:
+    - {addr: 0x00237388, name: Human_SetKeepHat}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x10000000000 of the human's flag word; from the name, the human's hat is not knocked off.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 7, calls: 9, boot: false, mission1: false, result_used: false}
+
+- name: HuSetKeepWeapon
+  wrapper: 0x003597e0
+  calls:
+    - {addr: 0x00237328, name: Human_SetKeepWeapon}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x2000 of the human's flag word; from the name, the human does not drop its weapon when
+    hit.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x00237328; the effect is inferred from the name.
+  usage: {chunks: 12, calls: 18, boot: true, mission1: true, result_used: false}
+
+- name: HuSetFastClimber
+  wrapper: 0x00359840
+  calls:
+    - {addr: 0x00235b68, name: Human_SetFastClimber}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x2 of the human's flag word; from the name, the human climbs (fences, ladders) faster.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The bit is confirmed (code) at 0x00235b68; its effect on climbing is inferred from the name.
+  usage: {chunks: 12, calls: 22, boot: false, mission1: true, result_used: false}
+
+- name: HuSetUngrabbable
+  wrapper: 0x003598a0
+  calls:
+    - {addr: 0x00235bc8, name: Human_SetUngrabbable}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x40 of the human's flag word; from the name, nobody can grab the human.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x00235bc8; the effect is inferred from the name.
+  usage: {chunks: 23, calls: 30, boot: true, mission1: true, result_used: false}
+
+- name: HuSetUngroundable
+  wrapper: 0x00359900
+  calls:
+    - {addr: 0x00235c28, name: Human_SetUngroundable}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x80 of the human's flag word; from the name, the human cannot be knocked to the ground.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x00235c28; the effect is inferred from the name.
+  usage: {chunks: 29, calls: 261, boot: true, mission1: true, result_used: false}
+
+- name: HuSetUnstunnable
+  wrapper: 0x00359960
+  calls:
+    - {addr: 0x00235c88, name: Human_SetUnstunnable}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x100 of the human's flag word; from the name, the human cannot be stunned.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x00235c88; the effect is inferred from the name.
+  usage: {chunks: 40, calls: 113, boot: true, mission1: true, result_used: false}
+
+- name: HuSetIncreasedReact
+  wrapper: 0x003599c0
+  calls:
+    - {addr: 0x00235ce8, name: Human_SetIncreasedReact}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x200000 of the human's flag word; from the name, the human reacts more strongly to hits
+    (staggers and falls more).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x00235ce8; the effect is inferred from the name. The counterpart is HuSetReducedReact
+    (bit 0x200).
+  usage: {chunks: 2, calls: 4, boot: true, mission1: true, result_used: false}
+
+- name: HuSetReducedReact
+  wrapper: 0x00359a20
+  calls:
+    - {addr: 0x00235d50, name: Human_SetReducedReact}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x200 of the human's flag word; from the name, the human reacts less to hits (staggers
+    less).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bit confirmed (code) at 0x00235d50; the effect is inferred from the name.
+  usage: {chunks: 7, calls: 10, boot: true, mission1: true, result_used: false}
+
+- name: HuSetDoubleDamage
+  wrapper: 0x00359a80
+  calls:
+    - {addr: 0x00235e10, name: Human_SetDoubleDamage}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x4000 of the human's flag word; from the name, the human then deals double damage.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuSetUnarrestable
+  wrapper: 0x00359ae0
+  calls:
+    - {addr: 0x00235e70, name: Human_SetUnarrestable}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true makes the human unarrestable, false arrestable again."}
+  description: >-
+    Sets or clears flag bit 0x8000 of the human's flag word and calls a virtual function on it (slot +0x124 when set,
+    +0x12c when cleared); from the name, the police cannot arrest the human.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: HuIsOnFire
+  wrapper: 0x00359b40
+  calls:
+    - {addr: 0x00235f80}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True while the human burns."}
+  description: >-
+    Tells whether the human is on fire.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: HuSetOnFire
+  wrapper: 0x00359b90
+  calls:
+    - {addr: 0x00235f20, name: Human_SetOnFire}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the human on fire, false puts the fire out."}
+  description: >-
+    Sets the human on fire (0x0022fce8) or puts it out (0x0022fe10). Lighting fails silently when the human is
+    fire-proof, raging or in certain states.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: HuSetFireProof
+  wrapper: 0x00359bf0
+  calls:
+    - {addr: 0x00235fc0, name: Human_SetFireProof}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true makes the human fire-proof and puts out any fire on it; false clears the flag."}
+  description: >-
+    Sets or clears flag bit 0x800000 of the human's flag word; setting it also extinguishes the human (0x0022fe10).
+    Setting a human on fire (HuSetOnFire) does nothing while the bit is set.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 8, calls: 27, boot: false, mission1: false, result_used: false}
+
+- name: HuAttachGear
+  wrapper: 0x00359c50
+  calls:
+    - {addr: 0x00236188, name: Human_SetUnlockedGear}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human; others are ignored."}
+    - {name: attach, lua: boolean, desc: "True attaches the gear, false removes it."}
+  description: >-
+    Gives a player's character the unlockable fighting gear: brass knuckles on both hands (dyn_brassknkl) and
+    steel-toe boots on both feet (dyn_steeltoe), each pair only when the unlockables manager says it is unlocked.
+    False deletes the gear objects again.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    On: 0x0024cef0 checks unlockables 5 and 6 of group 6 (0x00424130 on 0x006fe998) and spawns each pair only if the
+    slots are empty. Off: 0x0024d340 deletes the four objects. Only exactly 1 attaches. global.lua calls it when a
+    player is created.
+  usage: {chunks: 2, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: HuApplyDamageModifier
+  wrapper: 0x00359cb0
+  calls:
+    - {addr: 0x00236038}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: factor, lua: number, ctype: float, desc: "Damage multiplier (1 normal; scripts use 0.35 to make the Warriors much tougher in a fight). For a player it is further scaled by a per-player percentage from the player's record."}
+  description: >-
+    Sets how much of the damage the human receives actually applies.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Inferred from the name, the callee 0x00236038 and the scripts' values.
+  usage: {chunks: 8, calls: 30, boot: false, mission1: false, result_used: false}
+
+- name: HuGiveCuffs
+  wrapper: 0x0035aa28
+  calls:
+    - {addr: 0x002372a8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many handcuffs to give (scripts pass 1 to 3)."}
+  description: >-
+    Gives the human handcuffs; for a player it goes through the player's HUD (message 5), so the pickup is shown.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: HuSetWounded
+  wrapper: 0x0035aaa0
+  calls:
+    - {addr: 0x00237628, name: Human_SetWounded}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true puts the human into its wounded state, false takes it out."}
+  description: >-
+    Starts (0x0022fa78) or ends (0x0022fc00) the human's wounded state.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HuSetWoundable
+  wrapper: 0x0035ab00
+  calls:
+    - {addr: 0x002376a0, name: Human_SetWoundable}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x8 of the human's flag word; from the name, the human can be wounded (left limping on low
+    health).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 20, calls: 117, boot: false, mission1: false, result_used: false}
+
+- name: HuSetRevivable
+  wrapper: 0x0035ab60
+  calls:
+    - {addr: 0x00235db0, name: Human_SetRevivable}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x4 of the human's flag word; from the name, a downed human can be revived (as fallen
+    Warriors are) instead of dying.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 56, calls: 107, boot: false, mission1: false, result_used: false}
+
+- name: HuLockMovement
+  wrapper: 0x0035abc0
+  calls:
+    - {addr: 0x00234ef8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: lock, lua: boolean, desc: "True stops the human moving."}
+  description: >-
+    Locks or unlocks the human's movement (flag 0x200000000 at +0xe0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 35, calls: 38, boot: false, mission1: false, result_used: false}
+
+- name: HuSetNormalMode
+  wrapper: 0x0035ac20
+  calls:
+    - {addr: 0x0023a210, name: Human_SetNormalMode}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: full, lua: boolean, default: true, desc: "Default true: also revive and reset the human (health back to at least 1, special states and held objects dropped, state reset). false only ends grabs, stuns, fire and similar states."}
+  description: >-
+    Returns a human to its normal state (0x002325e0): it ends any grab or hold with its partner, puts out fire, ends
+    stun, wound and rage states, ends the slow motion a player caused, and with `full` also clears the down/dying
+    state, drops what it holds and restarts its state machine. Scripts call it before scenes and when handing a
+    character back to the AI.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The order of the checks and which pair states end is long; the summary follows the calls made (0x0022fe10
+    extinguish, 0x0022fc00 unwound, 0x0022f3c8 / 0x0022f8d8 for bits 0x80000 / 0x100000, 0x002266a8 state 0) and is
+    not exhaustive.
+  usage: {chunks: 82, calls: 169, boot: false, mission1: true, result_used: false}
+
+- name: HuSetStunned
+  wrapper: 0x0035ac80
+  calls:
+    - {addr: 0x002354b8, name: Human_SetStunned}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true stuns the human, false ends the stun."}
+  description: >-
+    Puts the human into its stunned state (0x0022f658) or takes it out (0x0022f8d8).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HuSetConscious
+  wrapper: 0x0035ace0
+  calls:
+    - {addr: 0x00237778}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: conscious, lua: boolean, desc: "False knocks the human out; true wakes it."}
+  description: >-
+    Knocks the human unconscious or brings it round.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: HuSetArrested
+  wrapper: 0x0035ad40
+  calls:
+    - {addr: 0x00237700, name: Human_SetArrested}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: arrested, lua: boolean, desc: "True puts the human in the arrested state; false releases it."}
+  description: >-
+    Arrests or releases the human, as the police do; a released human gets back up.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 51, calls: 60, boot: true, mission1: false, result_used: false}
+
+- name: HuForceEnableReticule
+  wrapper: 0x0035ada0
+  calls:
+    - {addr: 0x00236978}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a live human (only checked for validity)."}
+    - {name: enable, lua: boolean, desc: "True forces the targeting reticule on."}
+  description: >-
+    Forces the targeting reticule on or off; the setting is one global (0x005104f8), not per human.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 9, boot: false, mission1: false, result_used: false}
+
+- name: HuGiveWeapon
+  wrapper: 0x0035ae00
+  calls:
+    - {addr: 0x00299470}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: weapon, lua: number, ctype: int, desc: "Weapon id, stored as a pending weapon (+0x3a8, with 0x80 set)."}
+  description: >-
+    Queues a weapon for the human to be given.
+  evidence: speculative
+  depth: brief
+  notes: >-
+    No script calls it; what consumes +0x3a8 is not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuDropWeapon
+  wrapper: 0x0035ae78
+  calls:
+    - {addr: 0x002994b8, name: Human_DropWeapon}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Makes the human drop the object in its hands, but only if that object is a weapon (its object class has a weapon
+    type); the dropped object becomes a free world object again.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Checks the held object's class byte +0x86 (0x00231a38) before calling the drop routine 0x00257f38.
+  usage: {chunks: 29, calls: 66, boot: true, mission1: true, result_used: false}
+
+- name: HuAttachSpinningIcon
+  wrapper: 0x0035aeb0
+  calls:
+    - {addr: 0x00238a88, name: Human_AttachSpinningIcon}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to mark."}
+    - {name: object, lua: string, desc: "Name of the icon object to spawn above the head, such as dyn_rockstar (the mission-target star) or dyn_crown. dyn_p_one and dyn_p_two are swapped for the language's own player-one/two icon."}
+    - {name: param, lua: number, ctype: int, desc: "A number passed to the object spawner with the icon (0 in every script)."}
+  description: >-
+    Spawns a spinning marker object attached to the human, the icon that shows mission targets and important
+    characters. If the human already has the same icon nothing happens; a different one is replaced.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The icon's handle is kept at +0x360; remove it with HuRemoveSpinningIcon.
+  usage: {chunks: 18, calls: 34, boot: false, mission1: true, result_used: false}
+
+- name: HuRemoveSpinningIcon
+  wrapper: 0x0035af48
+  calls:
+    - {addr: 0x00238ae0, name: Human_RemoveSpinningIcon}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Removes the marker icon attached with HuAttachSpinningIcon.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 55, calls: 105, boot: false, mission1: true, result_used: false}
+
+- name: HuSetSpinningIconColor
+  wrapper: 0x0035af80
+  calls:
+    - {addr: 0x00238b18, name: Human_SetSpinningIconColor}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human with the icon."}
+    - {name: colour, lua: number, ctype: unsigned, desc: "Packed colour (32-bit number)."}
+    - {name: colour2, lua: number, ctype: unsigned, default: 4294967040, desc: "Second packed colour (default 0xFFFFFF00)."}
+  description: >-
+    Changes the colours of the spinning icon shown over a human by rebuilding its effect with two packed colours. No
+    script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuHasHat
+  wrapper: 0x0035b028
+  calls:
+    - {addr: 0x00235530}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The handle of the human's hat object (+0x364), or NilHandle when it has none."}
+  description: >-
+    Returns the human's hat, if it wears one.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Despite the name it returns a handle, not a boolean; compare with NilHandle.
+  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: true}
+
+- name: HuGet
+  wrapper: 0x0035b110
+  calls:
+    - {addr: 0x00234f68}
+  args:
+    - {name: index, lua: number, ctype: int, desc: "Human slot index, 0 to 59."}
+  results:
+    - {lua: number, desc: "The handle of the human in that slot, or NilHandle if the slot is empty."}
+  description: >-
+    Returns the human in a slot of the human table, for scripts that loop over all humans.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuGetPlayer
+  wrapper: 0x0035b188
+  calls:
+    - {addr: 0x00234fb8}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "Player index, 0 for player 1 and 1 for player 2."}
+  results:
+    - {lua: number, desc: "The handle of that player's human, or NilHandle."}
+  description: >-
+    Returns the human a player controls, from the game state's player list (+0x228).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetPushable
+  wrapper: 0x0035b200
+  calls:
+    - {addr: 0x00235268, name: Human_SetPushable}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true lets other characters push the human aside; false makes it hold its ground."}
+  description: >-
+    Sets whether the human can be pushed (0x0021d848): it clears (true) or sets (false) bit 0x200 of its physics
+    body's flags (+0x40 of the body at +0x1a0) and stores the value at +0x3bf.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 48, calls: 197, boot: true, mission1: true, result_used: false}
+
+- name: HuFind
+  wrapper: 0x0035b260
+  calls:
+    - {addr: 0x00235010}
+  args:
+    - {name: name, lua: string, desc: "The name given to HuCreate."}
+  results:
+    - {lua: number, desc: "The handle of the first human with that name, or NilHandle."}
+  description: >-
+    Looks a human up by name among the 60 human slots.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuGetPosition
+  wrapper: 0x0035b2d0
+  calls:
+    - {addr: 0x002352b0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: usertype, desc: "An M_Vector4 (fields x, y, z, w) with the position in metres; the zero vector for an invalid handle."}
+  description: >-
+    Returns the human's position.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 11, boot: false, mission1: false, result_used: true}
+
+- name: HuGetHeading
+  wrapper: 0x0035b340
+  calls:
+    - {addr: 0x002352f8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The facing in degrees, 0 to 360, the same convention as HuCreate's heading; 0 for an invalid handle."}
+  description: >-
+    Returns the direction the human faces.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuGetGang
+  wrapper: 0x0035b398
+  calls:
+    - {addr: 0x00235438, name: Human_GetGangId}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The id of the human's gang (gang record +0x30), or 65535 for an invalid handle."}
+  description: >-
+    Returns the gang id the human belongs to, comparable with the ids GangCreate gives; scripts use it to tell friends
+    from enemies.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 104, calls: 245, boot: true, mission1: false, result_used: true}
+
+- name: HuGetGangType
+  wrapper: 0x0035b3f0
+  calls:
+    - {addr: 0x00235478, name: Human_GetGangType}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The type of the human's gang (gang record +0x2c), or 65535 for an invalid handle."}
+  description: >-
+    Returns the type of the human's gang (which faction it is: the Warriors, a rival gang, police...), as opposed to
+    the id of the particular gang.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The values come from the gang's configuration; the list of types is with the gang bindings.
+  usage: {chunks: 35, calls: 75, boot: true, mission1: false, result_used: true}
+
+- name: HuTeleportFollowers
+  wrapper: 0x0035b448
+  calls:
+    - {addr: 0x0023a058, name: Human_TeleportFollowers}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the leader."}
+  description: >-
+    Moves the members of the leader's gang (up to 16) to positions around the leader.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuTeleportNearHuman
+  wrapper: 0x0035b480
+  calls:
+    - {addr: 0x0023b138, name: Human_TeleportNear}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to move."}
+    - {name: near, lua: number, ctype: unsigned, desc: "Handle of the human to put it next to."}
+  description: >-
+    Moves `human` to a free spot beside `near`, using both humans' collision radii to keep them apart. The tutorial
+    uses it to bring Ash to Rembrandt. Nothing happens if either is missing or both are the same.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The checks and the radii (0x00219860) are confirmed (code) at 0x0023b138; how the free spot is searched is not
+    traced.
+  usage: {chunks: 7, calls: 7, boot: false, mission1: true, result_used: false}
+
+- name: HuSetSlowMo
+  wrapper: 0x0035b4f8
+  calls:
+    - {addr: 0x0023b778, name: Human_SetSlowMo}
+  args:
+    - {name: fraction, lua: number, ctype: float, desc: "Speed of time, above 0 and below 1 (0.5 is half speed); any other value (the scripts use -1 or 1) returns to normal speed."}
+    - {name: human, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional player human to mark as the cause (default NilHandle)."}
+  description: >-
+    Slows the whole game: the characters' time step (0x005102cc, normally 1/30 s) becomes `fraction` × 1/30, and a
+    player human given is marked (+0x3bb) so the effect can be ended with it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: HuIsGrabbed
+  wrapper: 0x0035b578
+  calls:
+    - {addr: 0x002355e0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True while someone holds the human in a grab."}
+  description: >-
+    Tells whether the human is being grabbed.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: HuIsAlive
+  wrapper: 0x0035b5c8
+  calls:
+    - {addr: 0x00235628, name: Human_IsAlive}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the handle is a live human that is not dead and not down; nil otherwise, including for an invalid handle."}
+  description: >-
+    Tells whether the human is alive and on its feet: false when it is dead or in a down state (knocked out, beaten,
+    arrested and similar, flags 0x180050000).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 157, calls: 1535, boot: true, mission1: false, result_used: true}
+
+- name: HuIsDead
+  wrapper: 0x0035b618
+  calls:
+    - {addr: 0x00235688, name: Human_IsDead}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the human is dead (flag 0x100000000) or the handle no longer resolves."}
+  description: >-
+    Tells whether the human is dead; a deleted human also counts as dead.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: true}
+
+- name: HuIsInScene
+  wrapper: 0x0035b668
+  calls:
+    - {addr: 0x002356c8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True while the human takes part in a scripted scene."}
+  description: >-
+    Tells whether the human is in a scene.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: HuIsArrested
+  wrapper: 0x0035b6b8
+  calls:
+    - {addr: 0x00235718, name: Human_IsArrested}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the human is under arrest (state flag 0x20000)."}
+  description: >-
+    Tells whether the police have arrested (cuffed) the human.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 13, calls: 51, boot: true, mission1: false, result_used: true}
+
+- name: HuIsAPlayer
+  wrapper: 0x0035b708
+  calls:
+    - {addr: 0x00235758, name: Human_IsPlayer}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the human has a player index (+0x1b0 not -1); nil for AI humans and invalid handles."}
+  description: >-
+    Tells whether a human is controlled by a player.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 167, calls: 1132, boot: true, mission1: true, result_used: true}
+
+- name: HuIsHidden
+  wrapper: 0x0035b758
+  calls:
+    - {addr: 0x00235798}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the human is hidden."}
+  description: >-
+    Tells whether the human is hiding (a flag in its AI record).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: true}
+
+- name: HuIsMugged
+  wrapper: 0x0035b7a8
+  calls:
+    - {addr: 0x002357d8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the human is being (or has been) mugged."}
+  description: >-
+    Tells whether the human has been mugged.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuIsProne
+  wrapper: 0x0035b7f8
+  calls:
+    - {addr: 0x00235818}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the human lies on the ground (either of two prone states)."}
+  description: >-
+    Tells whether the human is lying down.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuGetCharType
+  wrapper: 0x0035b848
+  calls:
+    - {addr: 0x00235890}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The human's behaviour class (+0xcc, the type after the remapping at creation), or 0 for an invalid handle."}
+  description: >-
+    Returns the human's character class.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 7, calls: 14, boot: false, mission1: false, result_used: true}
+
+- name: HuSetDamage
+  wrapper: 0x0035b8a0
+  calls:
+    - {addr: 0x002358c8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to hurt."}
+    - {name: amount, lua: number, ctype: int, desc: "Damage in hitpoints."}
+    - {name: attacker, lua: number, ctype: unsigned, desc: "Handle of the attacker, or NilHandle/0 for none."}
+    - {name: kind, lua: number, ctype: unsigned, desc: "A damage kind passed on to the damage routine."}
+    - {name: useHeld, lua: boolean, desc: "With no attacker, true makes the human's own held object the source."}
+  description: >-
+    Applies damage to the human, as if hit by the attacker.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HuSetKillerMode
+  wrapper: 0x0035b980
+  calls:
+    - {addr: 0x00235a88, name: Human_SetKillerMode}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x20 of the human's flag word; from the name, the human fights to kill rather than to
+    knock down.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: HuSetGodMode
+  wrapper: 0x0035b9e0
+  calls:
+    - {addr: 0x00235a28, name: Human_SetGodMode}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true makes the human invulnerable, false or nil makes it vulnerable again."}
+  description: >-
+    Sets or clears flag bit 0x10 of the human's flag word, which makes the human take no damage. Scripts use it to
+    protect story characters and the players during scenes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The bit is confirmed (code) at 0x00235a28; that it blocks damage is inferred from the name and how the scripts use
+    it. Only an `on` of exactly 1 sets the bit.
+  usage: {chunks: 81, calls: 496, boot: true, mission1: true, result_used: false}
+
+- name: HuSetDemiGodMode
+  wrapper: 0x0035ba40
+  calls:
+    - {addr: 0x002359a0, name: Human_SetDemiGodMode}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (from HuCreate)."}
+    - {name: "on", lua: boolean, desc: "true sets demi-god mode, false clears it."}
+    - {name: fraction, lua: number, ctype: float, desc: "Stored only when turning the mode on, in one global shared by every human (0x0051024c); the scripts pass 0.25. Most likely the share of health the human cannot be taken below (inferred)."}
+  description: >-
+    Sets or clears flag bit 0x20000000000 of the human's flag word; turning it on also stores `fraction` in a single
+    global, so the last call wins for every demi-god human. The tutorial gives it to Rembrandt and Ash so they can be
+    hurt but not killed.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The in-game effect of the bit (a health floor) is inferred from the name and the 0.25 the scripts pass; its
+    readers are not traced. Only an `on` of exactly 1 sets the bit.
+  usage: {chunks: 8, calls: 21, boot: false, mission1: true, result_used: false}
+
+- name: HuSetHealth
+  wrapper: 0x0035bad8
+  calls:
+    - {addr: 0x00237848, name: Human_SetHealth}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: health, lua: number, ctype: int, desc: "New health in hit points (a 16-bit value); anything above the human's maximum gives full health."}
+  description: >-
+    Sets the human's current health (+0x144 of its 0x180-byte record), capped at its maximum (+0x146).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 23, calls: 57, boot: false, mission1: false, result_used: false}
+
+- name: HuSetHealthPercent
+  wrapper: 0x0035bb50
+  calls:
+    - {addr: 0x002378a8, name: Human_SetHealthPercent}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: percent, lua: number, ctype: float, desc: "Health as a percentage of the maximum, above 0 and up to 100; 0 or less, or above 100, gives full health."}
+  description: >-
+    Sets the human's current health to `percent` per cent of its maximum (truncated to whole hit points). A value
+    outside (0, 100] restores full health rather than killing the human.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 17, calls: 29, boot: false, mission1: true, result_used: false}
+
+- name: HuSetMaxHealth
+  wrapper: 0x0035bbc8
+  calls:
+    - {addr: 0x00237be0, name: Human_SetMaxHealth}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: health, lua: number, ctype: int, desc: "New maximum health in hit points (16-bit)."}
+  description: >-
+    Sets the human's maximum health (+0x146 of its record) and fills its current health to the same value.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 39, calls: 205, boot: false, mission1: false, result_used: false}
+
+- name: HuGetHealthPercent
+  wrapper: 0x0035bc40
+  calls:
+    - {addr: 0x00237c38, name: Human_GetHealthPercent}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "Health as a percentage, 0 to 100 (current hitpoints at record +0x144 over the maximum); 0 for an invalid handle."}
+  description: >-
+    Returns how much health the human has left, as a percentage of its maximum. The tutorial uses it to wait for the
+    training enemies to be beaten down.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 25, calls: 28, boot: false, mission1: true, result_used: true}
+
+- name: HuRevive
+  wrapper: 0x0035bc98
+  calls:
+    - {addr: 0x002377f8, name: Human_Revive}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Brings a downed human back: ends the knocked-out or beaten state, restores full health and gets it back on its
+    feet.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Calls 0x0022eb40 with full=1: health (record +0x144) set to the maximum.
+  usage: {chunks: 55, calls: 73, boot: true, mission1: false, result_used: false}
+
+- name: HuSetStrong
+  wrapper: 0x0035bcd0
+  calls:
+    - {addr: 0x002355a0, name: Human_SetStrong}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true or false, stored as a byte at +0x3b9."}
+  description: >-
+    Stores a strength flag for the human (+0x3b9). No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetNoEscape
+  wrapper: 0x0035bd30
+  calls:
+    - {addr: 0x002374d8, name: Human_SetNoEscape}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x2000000000 of the human's flag word; from the name, the human cannot break free of a
+    grab or flee. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetCanBlockKD
+  wrapper: 0x0035bd90
+  calls:
+    - {addr: 0x00237548}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, desc: "True sets the flag."}
+  description: >-
+    Lets the human block knock-down attacks (flag 0x400000000 at +0xe0).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetBlockFromReact
+  wrapper: 0x0035bdf0
+  calls:
+    - {addr: 0x002375b8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: block, lua: boolean, desc: "True blocks the reactions."}
+  description: >-
+    Stops the human reacting to hits (flag 0x800000000 at +0xe0).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetHardToStun
+  wrapper: 0x0035be50
+  calls:
+    - {addr: 0x002373f8, name: Human_SetHardToStun}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+  description: >-
+    Sets or clears flag bit 0x1000000000 of the human's flag word; from the name, the human is stunned less easily.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetMass
+  wrapper: 0x0035beb0
+  calls:
+    - {addr: 0x00237c78, name: Human_SetMass}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: heavy, lua: boolean, desc: "true gives the human a huge mass (1e9) so nothing can push it; false restores a mass of 1."}
+  description: >-
+    Sets the mass of the human's physics body through a virtual call: 1e9 when `heavy` is exactly true, 1.0 otherwise.
+    No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuWhatAmIHolding
+  wrapper: 0x0035bf10
+  calls:
+    - {addr: 0x00237d08, name: Human_GetHeldObjectType}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "Type number of the object the human holds (a byte from the object's type record, +0x86), or 0 when it holds nothing."}
+  description: >-
+    Tells a script what kind of object (weapon, bottle, bag) the human is holding.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true}
+
+- name: HuGetHeldObject
+  wrapper: 0x0035bf68
+  calls:
+    - {addr: 0x00237d48, name: Human_GetHeldObject}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The handle of the object in the human's hands (kept at +0x338), or NilHandle when its hands are empty."}
+  description: >-
+    Returns the object (weapon or item) the human is holding.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    NilHandle is a number, so test the result against NilHandle, not for nil.
+  usage: {chunks: 23, calls: 59, boot: false, mission1: true, result_used: true}
+
+- name: HuInCombat
+  wrapper: 0x0035bfe0
+  calls:
+    - {addr: 0x00237db8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the human's AI is in combat."}
+  description: >-
+    Tells whether the human is fighting.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: HuSetCombatMode
+  wrapper: 0x0035c030
+  calls:
+    - {addr: 0x0023a1b0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: combat, lua: boolean, desc: "True puts it in combat mode, false takes it out."}
+  description: >-
+    Switches the human into or out of combat mode (fighting stance).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: HuSetIdleAnim
+  wrapper: 0x0035c090
+  calls:
+    - {addr: 0x00237e00, name: Human_SetIdleAnim}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: slot, lua: number, ctype: unsigned, desc: "Dynamic animation slot 0-3 (larger values use slot 3)."}
+    - {name: anim, lua: string, desc: "Animation file name such as `fidget_crossarms.anm`; it must have been requested with SetDynamicAnimation."}
+  description: >-
+    Puts an animation file into one of the human's dynamic animation slots (+0x3c8 + slot × 0x28) without binding it
+    to an animation id. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuEnableController
+  wrapper: 0x0035c120
+  calls:
+    - {addr: 0x002384f8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+    - {name: enable, lua: boolean, desc: "True gives the human back to its pad; false hands it to the AI."}
+  description: >-
+    Switches a player's human between pad control and AI control (player record +0x1b).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 7, calls: 30, boot: false, mission1: false, result_used: false}
+
+- name: HuCanSee
+  wrapper: 0x0035c180
+  calls:
+    - {addr: 0x00238288}
+  args:
+    - {name: viewer, lua: number, ctype: unsigned, desc: "Handle of the human looking."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of a human or object to look for."}
+  results:
+    - {lua: boolean, desc: "True when the viewer can see the target."}
+  description: >-
+    A sight test from the viewer to a human or object, using a range of 9 m (and 4 for humans) from the viewer's
+    perception settings.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: HuSetLOSRange
+  wrapper: 0x0035c200
+  calls:
+    - {addr: 0x002383a0, name: Human_SetLOSRange}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: range, lua: number, ctype: float, desc: "Sight distance in metres (scripts use 1 to 60)."}
+  description: >-
+    Sets how far the human's AI can see (+0x130 of its AI record).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 27, calls: 71, boot: false, mission1: false, result_used: false}
+
+- name: HuSetHearRange
+  wrapper: 0x0035c278
+  calls:
+    - {addr: 0x002383e8, name: Human_SetHearRange}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: range, lua: number, ctype: float, desc: "Hearing distance in metres (scripts use 0 to 9); 0 makes it deaf."}
+  description: >-
+    Sets how far the human's AI hears noises (+0x134 of its AI record, 0x0021d408).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 5, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: HuSetHelpHearRange
+  wrapper: 0x0035c2f0
+  calls:
+    - {addr: 0x00238430, name: Human_SetHelpHearRange}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: range, lua: number, ctype: float, desc: "Distance in metres."}
+  description: >-
+    Sets how far the human's AI hears calls for help from its allies (+0x138 of its AI record).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: HuExitWorld
+  wrapper: 0x0035c368
+  calls:
+    - {addr: 0x00238478}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to send away."}
+  description: >-
+    Sends the human to a nearby exit point and away, the way civilians leave a scene.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    From the callee 0x00238478: it looks for a nearby flag of type 8 and gives the human a travel goal to it.
+  usage: {chunks: 41, calls: 85, boot: false, mission1: false, result_used: false}
+
+- name: HuSetMoney
+  wrapper: 0x0035c3a0
+  calls:
+    - {addr: 0x00238100, name: Human_SetMoney}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: dollars, lua: number, ctype: int, desc: "Cash the human carries, in dollars; clamped to 0-999."}
+  description: >-
+    Sets how much money the human carries (+0x370), clamped to 0-999. This is the cash a player gets by mugging or
+    beating the human; scripts often set 0 so a character drops nothing.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    That the amount is what the human drops or is mugged for is inferred from the name and the scripts.
+  usage: {chunks: 55, calls: 109, boot: false, mission1: true, result_used: false}
+
+- name: HuGetMoney
+  wrapper: 0x0035c418
+  calls:
+    - {addr: 0x00238158}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The money the human carries (+0x370), or 0."}
+  description: >-
+    Returns how much money the human carries.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+
+- name: HuSetCarriedItem
+  wrapper: 0x0035c470
+  calls:
+    - {addr: 0x00238230, name: Human_SetCarriedItemName}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: object, lua: string, desc: "Object name of the item the human carries (31 characters kept); \"none\" for nothing."}
+  description: >-
+    Sets the item a human carries and will drop, by object name; the first mission's training enemies are given "none"
+    so they drop nothing.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Stores the name at +0x257 and sets +0x278 to 100 (likely the drop chance in percent, inferred).
+  usage: {chunks: 37, calls: 72, boot: false, mission1: true, result_used: false}
+
+- name: HuPutItemInPocket
+  wrapper: 0x0035c4d0
+  calls:
+    - {addr: 0x00238190}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: item, lua: number, ctype: int, desc: "Item id (0 empties the pocket)."}
+    - {name: count, lua: number, ctype: int, default: 1, desc: "How many (default 1)."}
+  description: >-
+    Puts an item (such as loot or a key item) in the human's pocket, to be dropped or taken when the human is beaten
+    or mugged.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 28, calls: 78, boot: false, mission1: false, result_used: false}
+
+- name: HuRemoveItemInPocket
+  wrapper: 0x0035c568
+  calls:
+    - {addr: 0x002381f0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Empties the human's pocket.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 36, calls: 69, boot: false, mission1: false, result_used: false}
+
+- name: HuSetWorkoutParams
+  wrapper: 0x0035c7d8
+  calls:
+    - {addr: 0x002345d8, name: Human_SetWorkoutParams}
+  args:
+    - {name: a, lua: number, ctype: float, desc: "First workout parameter (a number)."}
+    - {name: b, lua: number, ctype: float, desc: "Second workout parameter (a number)."}
+    - {name: count, lua: number, ctype: int, desc: "Integer parameter, probably a repetition count."}
+  description: >-
+    Stores three workout tuning values in globals (0x00510680-0x00510688). No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetWorkoutCallbacks
+  wrapper: 0x0035c878
+  calls:
+    - {addr: 0x002345f8, name: Human_SetWorkoutCallbacks}
+  args:
+    - {name: onStart, lua: string, desc: "Lua function called when the workout starts."}
+    - {name: onRep, lua: string, desc: "Lua function called for each repetition."}
+    - {name: onQuit, lua: string, desc: "Lua function called when the player quits the workout."}
+  description: >-
+    Stores three Lua callback names for the clubhouse workout (globals 0x0051023c, 0x00510234, 0x00510238); roles
+    taken from level95_workout's handler names.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuWorkout
+  wrapper: 0x0035c8f0
+  calls:
+    - {addr: 0x00238bd8, name: Human_StartWorkout}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who works out."}
+    - {name: equipment, lua: number, ctype: unsigned, desc: "Handle of the workout object (level95_workout passes the player itself)."}
+    - {name: anim1, lua: string, desc: "Animation file for anim id 0x2b3."}
+    - {name: anim2, lua: string, desc: "Animation file for anim id 0x2b4."}
+    - {name: anim3, lua: string, desc: "Animation file for anim id 0x2b5."}
+    - {name: anim4, lua: string, desc: "Animation file for anim id 0x2b6."}
+    - {name: anim5, lua: string, desc: "Animation file for anim id 0x2b7."}
+  description: >-
+    Starts a workout in the clubhouse: binds five animation files to the workout anim ids, sets the equipment as the
+    human's target and enters the workout state (0x1b).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuStopWorkout
+  wrapper: 0x0035ca00
+  calls:
+    - {addr: 0x00238d30, name: Human_StopWorkout}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Ends the human's workout (state 0x1c), or returns it to state 0 when it is still walking to the equipment.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: HuSetWorkoutBlend
+  wrapper: 0x0035ca38
+  calls:
+    - {addr: 0x00238cd8, name: Human_SetWorkoutBlend}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human working out."}
+    - {name: blend, lua: number, ctype: float, desc: "Blend value, stored at +0x670 (0 to 1 is likely)."}
+  description: >-
+    Sets the blend of the workout animation (+0x670) while the human is working out; does nothing otherwise.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuSpecial
+  wrapper: 0x0035cab0
+  calls:
+    - {addr: 0x00234bf8, name: Human_StartSpecial}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: animA, lua: string, desc: "Animation file for anim id 0x2a0."}
+    - {name: animB, lua: string, desc: "Animation file for anim id 0x2a1."}
+    - {name: animC, lua: string, desc: "Animation file for anim id 0x29f."}
+    - {name: animD, lua: string, desc: "Animation file for anim id 0x2a2."}
+  description: >-
+    Binds four animation files to the human's special-move anim ids and puts it into the special state (state 0x1d);
+    HuStopSpecial ends it. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuStopSpecial
+  wrapper: 0x0035cb70
+  calls:
+    - {addr: 0x00234cb0, name: Human_StopSpecial}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  description: >-
+    Ends the special state started by HuSpecial (state 0x1e) when the human is in it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetSpecialCallbacks
+  wrapper: 0x0035cba8
+  calls:
+    - {addr: 0x002348f8, name: Human_SetSpecialCallbacks}
+  args:
+    - {name: onStart, lua: string, desc: "Lua function name, interned into 0x00510248."}
+    - {name: onStep, lua: string, desc: "Lua function name, interned into 0x00510240."}
+    - {name: onEnd, lua: string, desc: "Lua function name, interned into 0x00510244."}
+  description: >-
+    Stores three Lua callback names used by the special move set up with HuSpecial (global, not per human). No script
+    calls it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Which callback fires when is inferred from the order and from HuSetWorkoutCallbacks, which has the same shape.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuTag
+  wrapper: 0x0035cc50
+  calls:
+    - {addr: 0x00238db0, name: Human_Tag}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who sprays."}
+    - {name: tag, lua: number, ctype: unsigned, desc: "Handle of the tag object to spray (the level's tag spot)."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag (marker) the human sprays from."}
+  description: >-
+    Starts the tagging action: the human goes to the flag and sprays the tag (state 0x17). A player with no spray
+    paint (inventory item 3) only plays a refusal reaction instead.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The inventory check (0x0041e420 on item 3) is confirmed (code); that item 3 is the spray can is inferred.
+  usage: {chunks: 10, calls: 12, boot: true, mission1: false, result_used: false}
+
+- name: HuTagColor
+  wrapper: 0x0035ccf0
+  calls:
+    - {addr: 0x00239080, name: Human_SetTagColour}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the tagger."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour {r, g, b, a}; each element is multiplied by 255 before packing, so 0-1 values are expected, though the scripts pass 0-255 values. Written back unchanged."}
+  description: >-
+    Sets the colour of the human's spray paint (packed into +0x640).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 9, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: HuTagPattern
+  wrapper: 0x0035cdc8
+  calls:
+    - {addr: 0x00239188, name: Tag_SetPattern}
+  args:
+    - {name: count, lua: number, ctype: unsigned, desc: "Number of points in the pattern."}
+    - {name: points, lua: table, elem: number, count: 256, written_back: true, desc: "The pattern's points as a flat list of numbers (x1, y1, x2, y2, ...); the wrapper reads 256 entries and writes them back, but only the first 128 (64 points) are copied."}
+  description: >-
+    Loads the stick pattern for the next spray tag: `count` goes to 0x00510914 and 64 (x, y) pairs to 0x006cd978.
+    `global.lua`'s tag helper calls it before HuTag. The player follows the pattern with the analog stick (inferred).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The copy is confirmed (code) at 0x00274188; that the player traces it with the stick is inferred from the tagging
+    minigame.
+  usage: {chunks: 7, calls: 13, boot: true, mission1: false, result_used: false}
+
+- name: HuTagDifficulty
+  wrapper: 0x0035cea0
+  calls:
+    - {addr: 0x002391a8, name: Human_SetTagDifficulty}
+  args:
+    - {name: a, lua: number, ctype: unsigned, default: 15000, desc: "Default 15000; most likely a time in milliseconds."}
+    - {name: b, lua: number, ctype: unsigned, default: 1000, desc: "Default 1000; most likely a time in milliseconds."}
+    - {name: tolerance, lua: number, ctype: float, default: 0.06, desc: "Default 0.06."}
+  description: >-
+    Stores three tagging-minigame tuning values in globals (0x0051093c-0x00510944). No script calls it, so the
+    defaults are what the game uses.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuPlaceItemInHand
+  wrapper: 0x0035cf60
+  calls:
+    - {addr: 0x00238540, name: Human_PlaceItemInHand}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: object, lua: string, desc: "Object name to spawn in its hand, such as dyn_bat, dyn_pipe_a, dyn_machet or dyn_beerbottle."}
+  results:
+    - {lua: number, desc: "The new object's handle, or NilHandle when the human is invalid, already holds something, or cannot take an item."}
+  description: >-
+    Spawns a weapon or item and puts it in the human's hand, which is how levels arm enemies and the Warriors.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 62, calls: 265, boot: true, mission1: true, result_used: true}
+
+- name: HuPlaceHatOnHead
+  wrapper: 0x0035cff0
+  calls:
+    - {addr: 0x002385f8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: hat, lua: string, desc: "Name of the hat object to put on."}
+  description: >-
+    Puts a hat object on the human's head.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetPedReaction
+  wrapper: 0x0035d050
+  calls:
+    - {addr: 0x00238640, name: Human_SetPedReaction}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (a pedestrian)."}
+    - {name: reaction, lua: number, ctype: int, desc: "Reaction type number (16-bit); level95 uses 3. The values are not listed."}
+  description: >-
+    Stores the pedestrian reaction type in the human's AI record (+0x270), choosing how it reacts to the player (flee,
+    fight, ignore).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HuGetHUD
+  wrapper: 0x0035d0c8
+  calls:
+    - {addr: 0x00239850}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+  results:
+    - {lua: number, desc: "The human's HUD index (+0x380), or -1 (as 4294967295) for an invalid handle."}
+  description: >-
+    Returns which player HUD belongs to this human.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetWarChiefHUD
+  wrapper: 0x0035d120
+  calls:
+    - {addr: 0x00239888, name: GameState_SetWarChiefHUD}
+  args:
+    - {name: mode, lua: number, ctype: int, desc: "Number passed to the game state (0x00419a68); meaning not traced."}
+  description: >-
+    Sets the game state's war-chief HUD mode. No script calls it.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HuSetWarChief
+  wrapper: 0x0035d158
+  calls:
+    - {addr: 0x002398b0, name: Human_SetWarChief}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the gang member to make war chief."}
+  results:
+    - {lua: boolean, desc: "true when the change was made, false (nil) when the human does not exist or taking control failed."}
+  description: >-
+    Makes the human its gang's war chief, the leader who gives the Warrior commands: the previous chief loses the role
+    (+0x3ac), and a non-player human takes over the previous chief's pad and HUD. Used when Snow takes over the gang.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: HuChangePlayerGang
+  wrapper: 0x0035d1a8
+  calls:
+    - {addr: 0x00239b80, name: Players_ChangeGang}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (the gang's index, as created by GangCreate) whose members the players take over."}
+    - {name: stamp, lua: boolean, desc: "True also records the current game time at 0x0051054c (the moment of the switch)."}
+  results:
+    - {lua: boolean, desc: "Always true."}
+  description: >-
+    Moves player control to the members of another gang: the current players' humans are handed back to the AI and the
+    same pads take over humans of the new gang, pulling a member from the gang when it has too few. Missions use it
+    when the story switches which group of Warriors you play.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Returns at once if player 1 is already in that gang. Pad indices are kept in order.
+  usage: {chunks: 12, calls: 15, boot: false, mission1: true, result_used: false}
+
+- name: HuSwitchPlayer
+  wrapper: 0x0035d218
+  calls:
+    - {addr: 0x00239e08, name: GameState_SwitchPlayer}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player-controlled human."}
+  results:
+    - {lua: number, desc: "Handle of the gang member who now has the player's pad, or NilHandle when there is no one to switch to."}
+  description: >-
+    Hands the player's control from `human` to another member of its gang (the first free one, by gang order), moving
+    the pad and the camera target. Used in Rumble mode and when a player character is out.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 34, calls: 266, boot: false, mission1: false, result_used: true}
+
+- name: HuSetVoiceIndex
+  wrapper: 0x0035d290
+  calls:
+    - {addr: 0x0023ad88, name: Human_SetVoiceIndex}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: voice, lua: number, ctype: int, desc: "Voice set number (level93 uses 156)."}
+  description: >-
+    Stores the voice set the human speaks with (+0x3b0).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HuGetVoiceIndex
+  wrapper: 0x0035d308
+  calls:
+    - {addr: 0x0023adc8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: number, desc: "The human's voice index (+0x3b0), or -1 (as 4294967295) for an invalid handle."}
+  description: >-
+    Returns which voice set the human speaks with, for choosing speech files.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 30, boot: false, mission1: false, result_used: true}
+
+- name: HuSetStateRespVoiceIndex
+  wrapper: 0x0035d360
+  calls:
+    - {addr: 0x0023ae00, name: Human_SetStateRespVoiceIndex}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: voice, lua: number, ctype: int, desc: "Voice set number (the scripts use 325 to 338)."}
+  description: >-
+    Stores the voice set the human uses for its state responses (+0x3b4), the lines it says when attacked, knocked
+    down and so on.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false}
+
+- name: HuSetMugCallback
+  wrapper: 0x0035d3d8
+  calls:
+    - {addr: 0x00239e78, name: Human_SetMugCallback}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human doing the mugging (the scripts set it on the players)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function (dotted names work), or nil to remove it."}
+  description: >-
+    Stores the interned name of a Lua function (+0x5a4) that is called when this human mugs someone; the tutorial uses
+    it to notice the player's first mugging.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The storage is confirmed (code) at 0x00239e78; when the name is called is inferred from the scripts (`PedMugged`
+    handlers set on the players).
+  usage: {chunks: 6, calls: 20, boot: false, mission1: true, result_used: false}
+
+- name: HuSetMug
+  wrapper: 0x0035d438
+  calls:
+    - {addr: 0x00239ee0, name: Human_SetMug}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: "on", lua: boolean, desc: "Stored as given: true lets the human be mugged, false (or nil) prevents it (inferred from the name; the scripts pass false for bosses)."}
+  description: >-
+    Stores whether the human can be mugged (+0x5b0).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 18, calls: 111, boot: false, mission1: false, result_used: false}
+
+- name: HuSetInterrogation
+  wrapper: 0x0035d498
+  calls:
+    - {addr: 0x00239f20, name: Human_SetInterrogation}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to be interrogated."}
+    - {name: line1, lua: string, desc: "First speech file (a path such as `vags/speeches/l2/l2_t3_016`), or nil."}
+    - {name: line2, lua: string, desc: "Second speech file, or nil."}
+    - {name: line3, lua: string, desc: "Third speech file, or nil."}
+    - {name: line4, lua: string, desc: "Fourth speech file, or nil."}
+    - {name: callback, lua: string, desc: "Name of the Lua function to call when the interrogation succeeds (dotted names such as `P2.JesseGivesUp` work), or nil."}
+    - {name: icon, lua: number, ctype: unsigned, default: 1, desc: "Non-zero (the default 1, or the scripts' ICON_* values) also shows an icon over the human; 0 shows none. Only zero or non-zero matters."}
+  results:
+    - {lua: boolean, desc: "true when the human exists, false (nil) otherwise."}
+  description: >-
+    Makes a human interrogable: the four speech lines are looked up by name and stored with the callback (+0x590 to
+    +0x5a0), and an icon is put over the human when `icon` is non-zero. Calling it with nil lines clears the set-up.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    The icon value itself is not passed on; the call uses one fixed icon (0x0055c6e0).
+  usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false}
+
+- name: HuMarkReachable
+  wrapper: 0x0035d5b0
+  calls:
+    - {addr: 0x00239e30}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: reachable, lua: boolean, desc: "True marks it reachable."}
+  description: >-
+    Marks whether other characters' AI may treat the human as reachable (a byte in its AI record).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: false}
+
+- name: HuButtonMiniGame
+  wrapper: 0x0035d610
+  calls:
+    - {addr: 0x0023aee0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the player's human doing the mini-game."}
+    - {name: buttons, lua: number, ctype: unsigned, desc: "The button (pad mask, low 8 bits kept) the player must press."}
+    - {name: startMs, lua: number, ctype: unsigned, desc: "When the press window opens, in milliseconds from now."}
+    - {name: endMs, lua: number, ctype: unsigned, desc: "When it closes, in milliseconds from now."}
+    - {name: callback, lua: string, desc: "Name of the Lua function told the outcome."}
+    - {name: successAnim, lua: string, desc: "Dynamic animation (.anm name) played on success."}
+    - {name: failAnim, lua: string, desc: "Dynamic animation played on failure."}
+  description: >-
+    Starts a timed button-press mini-game (the dance contests): the player must press the given button inside the
+    window, and the matching animation plays.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Inferred from the callee 0x0023aee0 and the scripts' calls; the outcome passed to the callback is not traced.
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: HuColor
+  wrapper: 0x0035d730
+  calls:
+    - {addr: 0x00239100}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: rgba, lua: table, elem: number, count: 4, written_back: true, desc: "Table {r, g, b, a}, each 0 to 1; {1, 1, 1, 1} is the normal colour, {0.3, 0.3, 0.3, 1} darkens the model."}
+  description: >-
+    Tints the human's model by the given colour.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 6, calls: 84, boot: false, mission1: false, result_used: false}
+
+- name: GetDistanceTweenHumans
+  wrapper: 0x0035dc08
+  calls:
+    - {addr: 0x002fee38, name: Objects_GetDistance}
+  args:
+    - {name: a, lua: number, ctype: unsigned, desc: "Handle of the first human (any object with a position works)."}
+    - {name: b, lua: number, ctype: unsigned, desc: "Handle of the second human or object."}
+  results:
+    - {lua: number, desc: "The straight-line distance between the two positions, in metres."}
+  description: >-
+    Returns the straight-line distance in metres between two humans (or any two objects with a position). Both handles
+    are resolved without a check and each position is read through the object's own position method, then measured
+    with the engine's vector distance (0x00336d88).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    No handle check: a dead or wrong handle is dereferenced, so pass live handles only (compare TestDistance, which
+    checks).
+  usage: {chunks: 6, calls: 12, boot: true, mission1: false, result_used: true}
+
+- name: AddAnimCallback
+  wrapper: 0x0035e9f8
+  calls:
+    - {addr: 0x0023a9f8, name: AnimCallback_Add}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to watch (from HuCreate or similar)."}
+    - {name: anim, lua: number, ctype: unsigned, desc: "Animation id (an ANIM_* constant such as the fight idle or a grab hold) that triggers the callback."}
+    - {name: callback, lua: string, desc: "Name of the Lua function to call, dotted names allowed (\"P1.ExplainGrappling\"); stored interned through the script system and looked up by name when it fires."}
+  results:
+    - {lua: boolean, desc: "True when a free slot was found and the callback stored; nil when all 16 slots of the table at 0x006b6710 are taken."}
+  description: >-
+    Registers a Lua function to be called when this human plays the given animation; the first mission's tutorial uses
+    it to react to the player idling, mounting or holding a grab. Entries live in a 16-slot table of {human, anim/all
+    flag, interned name}.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storing is confirmed at 0x0023a9f8; the dispatch (when the callback runs, and its arguments) is not traced. A slot
+    counts as free when its human handle no longer resolves, so entries of deleted humans are reused.
+  usage: {chunks: 3, calls: 11, boot: false, mission1: true, result_used: false}
+
+- name: AddAllAnimCallback
+  wrapper: 0x0035ea90
+  calls:
+    - {addr: 0x0023aab0, name: AnimCallback_AddForAll}
+  args:
+    - {name: anim, lua: number, ctype: unsigned, desc: "Animation id (an ANIM_* constant the level script defines) to watch for, on any human."}
+    - {name: callback, lua: string, desc: "Name of the Lua function to call, dotted names allowed (\"C1.ThrowTalk\"); stored interned and looked up when it fires."}
+  results:
+    - {lua: boolean, desc: "True when the callback was stored; nil when all 16 callback slots are in use."}
+  description: >-
+    Registers a Lua function to be called when any human plays the given animation. Shares the 16-slot callback table
+    at 0x006b6710 with AddAnimCallback.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    When and with which arguments the callback fires is not traced; the slot is marked as an all-humans entry. Remove
+    it with DelAnimCallback(0, anim).
+  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: DelAnimCallback
+  wrapper: 0x0035eb00
+  calls:
+    - {addr: 0x0023ab80, name: AnimCallback_Remove}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human the callback was registered for; 0 (or any value) also removes an all-humans entry for the animation."}
+    - {name: anim, lua: number, ctype: unsigned, desc: "The animation id given to AddAnimCallback or AddAllAnimCallback."}
+  description: >-
+    Removes the animation callback for this human and animation (or the all-humans one for the animation), freeing its
+    slot.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only the first matching slot is removed.
+  usage: {chunks: 3, calls: 11, boot: false, mission1: true, result_used: false}
+
+- name: LoadBumAnims
+  wrapper: 0x00363500
+  calls:
+    - {addr: 0x002abe98, name: LoadBumAnims}
+  args:
+    - {name: "on", lua: boolean, desc: "true requests the bum animations; false (or nil) releases them."}
+  description: >-
+    Requests or releases the thirteen dynamic animations the bums use (a table starting with `puke_fidget.anm` at
+    0x00510ff8), each through the same call as SetDynamicAnimation.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 8, calls: 9, boot: false, mission1: false, result_used: false}
+
+- name: HuSetLookAtTarget
+  wrapper: 0x00364b30
+  calls:
+    - {addr: 0x00299238, name: Human_SetLookAtTarget}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (ignored)."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the target (ignored)."}
+  description: >-
+    Does nothing in this build: the function it calls (0x00299238) returns at once. Use HuSetLookTarget instead.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: HuShutUp
+  wrapper: 0x00364ba8
+  calls:
+    - {addr: 0x00239558, name: Human_ShutUp}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the speaking human."}
+    - {name: force, lua: boolean, desc: "true stops the current line in any case; false (the usual call) stops it only when the human's speech-allowed byte (+0x194) is set."}
+  description: >-
+    Stops the line the human is saying (the speech handle at +0x178) and marks it as finished. Scripts call it before
+    a scene or a new line.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What +0x194 means exactly is not traced; the stop itself is confirmed (code) at 0x0021ec38.
+  usage: {chunks: 39, calls: 126, boot: false, mission1: true, result_used: false}
+
+- name: HuSay
+  wrapper: 0x00364c08
+  calls:
+    - {addr: 0x00239340}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: line, lua: string, desc: "Name of the speech (audio) line."}
+  description: >-
+    Makes the human say a speech line.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: HuEnableSpeaking
+  wrapper: 0x00364c68
+  calls:
+    - {addr: 0x00239200}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, default: true, desc: "True (the default) lets the human speak."}
+  description: >-
+    Allows or silences the human's ambient speech (byte +0x198).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 21, calls: 125, boot: false, mission1: false, result_used: false}
+
+- name: HuEnableSoundCommands
+  wrapper: 0x00364cc8
+  calls:
+    - {addr: 0x00239240}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, default: true, desc: "True (the default) enables them."}
+  description: >-
+    Enables or disables the human's spoken command sounds (byte +0x199).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 57, calls: 196, boot: false, mission1: false, result_used: false}
+
+- name: HuEnableTagDone
+  wrapper: 0x00364d28
+  calls:
+    - {addr: 0x002392c0}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, default: true, desc: "True (the default) enables it."}
+  description: >-
+    Enables or disables the human's tag-finished reaction (byte +0x19a).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: HuEnableTagCheer
+  wrapper: 0x00364d88
+  calls:
+    - {addr: 0x00239300}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, default: true, desc: "True (the default) enables it."}
+  description: >-
+    Enables or disables the human's cheer after tagging (byte +0x19c).
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuEnableOnFire
+  wrapper: 0x00364de8
+  calls:
+    - {addr: 0x00239280}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: enable, lua: boolean, default: true, desc: "True (the default) lets the human be set on fire."}
+  description: >-
+    Allows or prevents the human catching fire (byte +0x19b).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuSpeak
+  wrapper: 0x00364e48
+  calls:
+    - {addr: 0x00239370, name: Human_Speak}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the speaker."}
+    - {name: line, lua: string, desc: "Speech file name (a path such as `vags/speeches/l31/l31_t7_001`), looked up by name; nil only runs the callback."}
+    - {name: callback, lua: string, desc: "Name of a Lua function to call when the line ends (dotted names work), or nil."}
+    - {name: arg, lua: number, ctype: int, desc: "Number passed to the callback; 0 (the default) calls it with no argument."}
+    - {name: flag, lua: boolean, default: true, desc: "Default true; passed on to the sound system with the line (meaning not traced)."}
+    - {name: listener, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional handle of a human to look at; the speaker turns its head to it for the line's length plus 0.5 s. Default NilHandle."}
+  description: >-
+    Makes a human say a line unless it is already speaking: the line plays at the speaker and the callback runs when
+    it ends. If the human does not exist, the line is nil, speech is off in the game state (+0x410) or another line is
+    playing, the callback runs at once instead.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    HuSpeakNI is the same but cuts off the current line instead of giving up.
+  usage: {chunks: 43, calls: 142, boot: false, mission1: true, result_used: false}
+
+- name: HuSpeakNI
+  wrapper: 0x00364f50
+  calls:
+    - {addr: 0x002395a0, name: Human_SpeakInterrupt}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the speaker."}
+    - {name: line, lua: string, desc: "Speech file name, as for HuSpeak; nil only runs the callback."}
+    - {name: callback, lua: string, desc: "Name of a Lua function to call when the line ends, or nil."}
+    - {name: arg, lua: number, ctype: int, desc: "Number passed to the callback; 0 (the default) calls it with no argument."}
+    - {name: flag, lua: boolean, default: true, desc: "Default true; passed on to the sound system (meaning not traced)."}
+    - {name: listener, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional handle of a human to look at while speaking. Default NilHandle."}
+  description: >-
+    Like HuSpeak, but interrupts: it stops whatever the human is saying (as HuShutUp does) and plays the new line.
+    Only a missing human or line, or speech off in the game state, makes it run the callback at once instead. The most
+    used speech binding in the scripts.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    NI is read as 'interrupt' from the behaviour (0x0021e698 stops the current line first); the expansion of the
+    letters is not known.
+  usage: {chunks: 101, calls: 627, boot: false, mission1: true, result_used: false}
+
+- name: HuSetIdleDialogMaxIter
+  wrapper: 0x00365058
+  calls:
+    - {addr: 0x002391c0, name: Human_SetIdleDialogMaxIter}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: count, lua: number, ctype: int, desc: "How many times the idle chatter may repeat (0-255); scripts use 0 to 2."}
+  description: >-
+    Stores a byte at +0x197 of the human that, from the name, limits how often it repeats its idle dialogue.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: HuActionDialog
+  wrapper: 0x003650d0
+  calls:
+    - {addr: 0x00239788}
+  args:
+    - {name: a, lua: number, ctype: unsigned, desc: "Handle of the first speaker."}
+    - {name: lineA, lua: string, desc: "Speech (audio) name for the first speaker's line."}
+    - {name: b, lua: number, ctype: unsigned, desc: "Handle of the second speaker."}
+    - {name: lineB, lua: string, desc: "Speech name for the second speaker's line."}
+    - {name: callback, lua: string, desc: "Name of a Lua function passed with the second line, presumably called when the exchange ends."}
+  description: >-
+    Starts a two-person spoken exchange: each human says a line and is linked to the other as its conversation
+    partner.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Inferred from the callee 0x00239788 (two calls to the speech routine 0x002395a0, each storing the partner's handle
+    at +0x18c) and the scripts' calls.
+  usage: {chunks: 7, calls: 21, boot: false, mission1: false, result_used: false}
+
+- name: HuPlayDynAnim
+  wrapper: 0x003651a0
+  calls:
+    - {addr: 0x00238948}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: anim, lua: string, desc: "Name of a dynamic animation (.anm) loaded for the level with SetDynamicAnimation."}
+  description: >-
+    Plays a level-specific animation on the human, unless it is dead or busy.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuPlayDynPair
+  wrapper: 0x00365200
+  calls:
+    - {addr: 0x00238828}
+  args:
+    - {name: a, lua: number, ctype: unsigned, desc: "Handle of the first human."}
+    - {name: b, lua: number, ctype: unsigned, desc: "Handle of the second human."}
+    - {name: animA, lua: string, desc: "Dynamic animation (.anm) for the first."}
+    - {name: animB, lua: string, desc: "Dynamic animation for the second."}
+  description: >-
+    Plays a paired animation on two humans that face each other (money_take and money_give, for example), linking them
+    for its duration.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HuPlayDynamicAnim
+  wrapper: 0x003652b0
+  calls:
+    - {addr: 0x002389e8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: unused, lua: number, ctype: unsigned, desc: "Not used by the callee (scripts pass 0)."}
+    - {name: anim, lua: string, desc: "Name of a dynamic animation (.anm)."}
+    - {name: unused2, lua: number, ctype: int, desc: "Not used by the callee (scripts pass 1)."}
+  description: >-
+    Plays a dynamic animation on the human, like HuPlayDynAnim.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HuUseAnim
+  wrapper: 0x00365370
+  calls:
+    - {addr: 0x00238690, name: Human_UseAnim}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: slot, lua: number, ctype: unsigned, desc: "Which animation to replace: 0 the idle / fidget animation (anim id 0x184; the scripts almost always use this), 1 anim id 0x198, 2 anim id 0x19a, 3 anim id 0x29c. Any other value does nothing."}
+    - {name: anim, lua: string, desc: "Animation file name such as `fidget_crossarms.anm`, requested earlier with SetDynamicAnimation; nil removes the replacement."}
+  results:
+    - {lua: boolean, desc: "true when the clip is loaded (it plays at once if the human is in that animation); false (nil) when it is not loaded yet, the human is missing or no slot is free."}
+  description: >-
+    Replaces one of the human's animations with a dynamic animation file, using one of its seven override slots
+    (+0x3c8). For slot 0 it also makes the human unpushable while the replacement is set.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 103, calls: 625, boot: false, mission1: true, result_used: false}
+
+- name: HuUseAnyAnim
+  wrapper: 0x00365408
+  calls:
+    - {addr: 0x00238748, name: Human_UseAnyAnim}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: animId, lua: number, ctype: unsigned, desc: "Animation id to replace (the scripts use constants such as ANIM_SPECIAL_OPEN_DOOR)."}
+    - {name: anim, lua: string, desc: "Animation file name, or nil to remove the replacement."}
+  results:
+    - {lua: boolean, desc: "true when the clip is loaded, false (nil) otherwise."}
+  description: >-
+    Like HuUseAnim, but for any animation id.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: HuAreActionsBlocked
+  wrapper: 0x003654a0
+  calls:
+    - {addr: 0x002387a8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True when the human is in a state that blocks its actions; nil otherwise or for an invalid handle."}
+  description: >-
+    Tells whether the human currently cannot act (busy in a state that blocks actions).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: true}
+
+- name: HuIsTagging
+  wrapper: 0x003654f0
+  calls:
+    - {addr: 0x002387e8}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+  results:
+    - {lua: boolean, desc: "True while the human sprays a tag."}
+  description: >-
+    Tells whether the human is tagging (spraying graffiti).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: true}
+
+- name: HuLockPad
+  wrapper: 0x00365540
+  calls:
+    - {addr: 0x0023ae40, name: Human_LockPad}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+    - {name: lock, lua: boolean, desc: "True locks the player's pad input, false unlocks it."}
+  description: >-
+    Locks or unlocks the gamepad of the player controlling this human, so scripted moments can take control without
+    handing the character to the AI.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Writes the player record's +0x1e; HuLockPadMovement writes the neighbouring +0x1f, which locks only the analog
+    stick movement. That +0x1e locks the buttons is inferred from the pair.
+  usage: {chunks: 37, calls: 52, boot: false, mission1: true, result_used: false}
+
+- name: HuLockPadMovement
+  wrapper: 0x003655a0
+  calls:
+    - {addr: 0x0023ae90}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
+    - {name: lock, lua: boolean, desc: "True locks movement from the left analog stick."}
+  description: >-
+    Locks the stick movement of the player controlling this human: while set, the stick reads as centred, so the
+    character stands still but can still act.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Player record +0x1f (Characters, per-player record).
+  usage: {chunks: 10, calls: 28, boot: false, mission1: false, result_used: false}
+
+- name: AddCommand
+  wrapper: 0x00369518
+  calls:
+    - {addr: 0x00147430, name: PlayerCommand_Add}
+  args:
+    - {name: command, lua: number, ctype: int, desc: "Command id, 1 to 57 (others are ignored); the scripts assign the ids (global.lua binds 37 to 44 to the d-pad, for example). An existing binding of the same id is removed first."}
+    - {name: trigger, lua: number, ctype: int, desc: "How the buttons must be used, 1 to 9: 1 held, 2 newly pressed, 3 released, 4 a pad query at 0x00144c38, 5 tapped, 6 held for a while, 7 a hold over the 8-sample history, 8 a combination with every button of both masks held, 9 a combination with one newly pressed. Other values add nothing."}
+    - {name: buttons, lua: number, ctype: int, desc: "Button mask in the pad word layout (0x1000 up, 0x2000 right, 0x4000 down, 0x8000 left, 0x0010 triangle, 0x0020 circle, 0x0040 cross, 0x0080 square, 0x0004 L1, 0x0008 R1, 0x0001 L2, 0x0002 R2, 0x0100 select, 0x0800 start)."}
+    - {name: extra, lua: number, ctype: int, desc: "For triggers 8 and 9 the second button mask of the combination; for triggers 1, 2 and 6 a minimum hold count the button must exceed (0 for none)."}
+  description: >-
+    Binds a player command id to a gamepad button pattern; each frame the pad-controlled humans' pads are matched
+    against the nine trigger tables and the matching command becomes the human's command for that update. New bindings
+    start enabled for every pad.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Tables at 0x005ddd10 onwards, counts at 0x0050b740-0x0050b760, matched by 0x00147940. Commands are global (not per
+    human); EnableCommand masks them per pad.
+  usage: {chunks: 2, calls: 35, boot: true, mission1: false, result_used: false}
+
+- name: ResetCommands
+  wrapper: 0x003695e0
+  calls:
+    - {addr: 0x001461e0, name: Commands_Reset}
+  description: >-
+    Empties the nine player command lists that AddCommand fills (12-byte entries at 0x005ddd10 onwards, counts at
+    0x0050b740-0x0050b760), so no scripted button command is left. Called on the boot-to-menu path.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: DelCommand
+  wrapper: 0x00369600
+  calls:
+    - {addr: 0x00146b90, name: PlayerCommand_Remove}
+  args:
+    - {name: command, lua: number, ctype: int, desc: "Command id, 1 to 57, as given to AddCommand."}
+  description: >-
+    Removes a command's button binding, so its buttons no longer produce it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 6, calls: 11, boot: false, mission1: false, result_used: false}
+
+- name: EnableCommand
+  wrapper: 0x00369638
+  calls:
+    - {addr: 0x001467a8, name: PlayerCommand_EnableForHuman}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a pad-controlled human (a player); other humans are ignored."}
+    - {name: command, lua: number, ctype: int, desc: "Command id, 1 to 57, as bound with AddCommand."}
+    - {name: enable, lua: number, ctype: int, desc: "Non-zero enables the command for this human's pad, 0 disables it."}
+  description: >-
+    Enables or disables one player command for the pad that controls this human. The first mission turns two commands
+    (37 and 38) off for its tutorial.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Sets or clears the pad's bit in the per-binding pad mask; a disabled command is not given to the human when its
+    buttons are used. Has no effect while the human is AI-controlled (player record +0x1b clear).
+  usage: {chunks: 19, calls: 96, boot: false, mission1: true, result_used: false}
+
+- name: EnableCommands
+  wrapper: 0x003696d8
+  calls:
+    - {addr: 0x001463e0, name: PlayerCommand_EnableAllForHuman}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a pad-controlled human (a player)."}
+    - {name: enable, lua: number, ctype: int, desc: "Non-zero enables every bound command for this human's pad, 0 disables them all."}
+  description: >-
+    Enables or disables all player commands at once for the pad that controls this human, for cutscenes and scripted
+    moments.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 8, calls: 19, boot: false, mission1: true, result_used: false}
+
+- name: ForceCommand
+  wrapper: 0x00369750
+  calls:
+    - {addr: 0x00147660, name: PlayerCommand_ForceForHuman}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a pad-controlled human."}
+    - {name: command, lua: number, ctype: int, desc: "Command id, 1 to 57."}
+    - {name: ms, lua: number, ctype: int, desc: "How long to force it, in milliseconds of game time."}
+  description: >-
+    Makes a player's human act as if the command's buttons were used, for the given time, regardless of the pad.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Stores the command and an end time (game timer + ms) in the player record; no script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: IsAHuman
+  wrapper: 0x0036cb70
+  calls:
+    - {addr: 0x00385b90, name: IsHumanHandle}
+  args:
+    - {name: handle, lua: number, ctype: unsigned, desc: "Any handle."}
+  results:
+    - {lua: boolean, desc: "true when the handle belongs to a living human slot, false (nil) otherwise (an object, a flag or NilHandle)."}
+  description: >-
+    Tests whether a handle is a human's.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+
+- name: Teleport
+  wrapper: 0x0036cbc0
+  calls:
+    - {addr: 0x00385bb8, name: Object_Teleport}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of any world object: a human, a car, a prop or an effect."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Destination {x, y, z} in metres, game axes (z up); written back unchanged."}
+    - {name: heading, lua: number, ctype: int, default: -1, desc: "New heading in whole degrees about the z axis; -1 (the default) keeps the current rotation."}
+  description: >-
+    Moves an object to a position (and optionally turns it) through the object's own position setter.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 54, calls: 140, boot: false, mission1: false, result_used: false}
+
+- name: TeleportToFlag
+  wrapper: 0x0036cdc0
+  calls:
+    - {addr: 0x00385db0, name: Object_TeleportToFlag}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of any world object, usually a human."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag (a placed marker from the level's flags)."}
+    - {name: heading, lua: number, ctype: int, default: -1, desc: "Heading in whole degrees; -1 (the default) uses the flag's own heading."}
+  description: >-
+    Moves an object to a flag's position and turns it to the flag's heading (or the one given). For a human it also
+    resets its movement state (virtual slot +0x14c) so it does not carry on its old move. The most used placement
+    binding in the scripts.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 162, calls: 1471, boot: false, mission1: true, result_used: false}
+
+- name: WalkingDistance
+  wrapper: 0x0036cf00
+  calls:
+    - {addr: 0x00385f60, name: WalkingDistance}
+  args:
+    - {name: from, lua: number, ctype: unsigned, desc: "Handle of the first object (a human, an object or a flag)."}
+    - {name: to, lua: number, ctype: unsigned, desc: "Handle of the second object."}
+  results:
+    - {lua: number, desc: "The walking distance in metres along the navigation paths, or -1000000000 when either handle is invalid or no route is found."}
+  description: >-
+    Measures how far one object would have to walk to reach another, along the path network (0x0024e478) rather than
+    in a straight line.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    The -1e9 failure value is confirmed (code) at 0x00385f60.
+  usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: true}
+
+- name: KillHumans
+  wrapper: 0x0036d990
+  calls:
+    - {addr: 0x0016d5c0, name: KillHumans_Stub}
+  args:
+    - {name: seconds, lua: number, ctype: float, desc: "Read as a number but ignored."}
+  description: >-
+    Does nothing in this build: the function it calls (0x0016d5c0) returns at once. `global.lua` still calls it with
+    5.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: CullCorpses
+  wrapper: 0x0036d9c8
+  calls:
+    - {addr: 0x00232230, name: Humans_CullCorpses}
+  args:
+    - {name: all, lua: boolean, default: true, desc: "True (the default) removes every corpse; false removes only the one corpse found by a distance test against the camera."}
+  results:
+    - {lua: boolean, desc: "True when at least one corpse was marked for removal."}
+  description: >-
+    Removes dead humans from the world to free their slots. Scripts call it during large fights.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Inferred from the callee 0x00232230: it walks the human table, skips the living, and marks corpses with the
+    removal flag. Any number counts as true (one script passes 88).
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: SetDeathTimer
+  wrapper: 0x0036da48
+  calls:
+    - {addr: 0x0023a4e0, name: SetDeathTimer}
+  args:
+    - {name: a, lua: number, ctype: int, desc: "First time in milliseconds (config_preload2 passes 14000)."}
+    - {name: b, lua: number, ctype: int, desc: "Second time in milliseconds (500; level84_end raises it to 35000)."}
+    - {name: c, lua: number, ctype: int, desc: "Third time in milliseconds (500; level84_end raises it to 35000)."}
+  description: >-
+    Stores three death-related times in globals: `a` in 0x00510794, `b` in 0x00510790, `c` in 0x0051078c. From the
+    name and values, how long a downed character lies before it dies or vanishes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The stores are confirmed (code) at 0x0023a4e0; what each time controls is inferred, and which reader uses which is
+    not traced. The arguments are read as 16-bit values.
+  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false}
+
+- name: ClimbFilter
+  wrapper: 0x0036e438
+  calls:
+    - {addr: 0x002511b8, name: Climb_SetFilter}
+  args:
+    - {name: enabled, lua: boolean, desc: "true to turn the filter on, false to turn it off."}
+  description: >-
+    Sets a global switch (0x0051059c) read by the human climbing code (0x00251260, 0x002518ac). Only one level calls
+    it, with true.
+  evidence: speculative
+  depth: brief
+  notes: >-
+    What the filter excludes is not traced (speculative: which ledges or objects count as climbable).
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: SetDynamicAnimation
+  wrapper: 0x0036e668
+  calls:
+    - {addr: 0x0040cd78, name: ResourceManager_SetDynamicAnimation}
+  args:
+    - {name: anim, lua: string, desc: "Animation file name such as `gen_tagging_cycle.anm`."}
+    - {name: release, lua: boolean, desc: "false or nil requests the file; true releases it."}
+  description: >-
+    Adds an animation file to the level's list of dynamic animations (64 entries) so the resource manager loads it;
+    when the list is full, the largest loaded entry is replaced. With `release` true the entry is removed. HuUseAnim
+    and HuUseAnyAnim can only use files requested this way.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    See characters.md#creation for how dynamic animations are loaded later.
+  usage: {chunks: 88, calls: 381, boot: false, mission1: true, result_used: false}
+
+- name: SetCharacterModel
+  wrapper: 0x0036e6c0
+  calls:
+    - {addr: 0x0040cda8, name: ResourceManager_SetCharacterModel}
+  args:
+    - {name: type, lua: number, ctype: int, desc: "Character type number, as given to HuCreate and CfgChar (for example 32 for Rembrandt)."}
+    - {name: release, lua: boolean, desc: "false or nil asks for the type's model to be loaded and kept; true releases it."}
+  description: >-
+    Asks the resource manager to keep a character type's model loaded for the level, so humans of that type can be
+    created later without a wait; up to 32 models at once. The model comes from the type's class record (+0x112).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 61, calls: 294, boot: false, mission1: false, result_used: false}
+
+- name: TurnWarriorCommands
+  wrapper: 0x00374780
+  calls:
+    - {addr: 0x0041c2b0, name: GameState_TurnWarriorCommands}
+  args:
+    - {name: "on", lua: number, ctype: int, desc: "Non-zero enables all Warrior commands, 0 disables them."}
+  description: >-
+    Same as WCEnableAllCommands(on ~= 0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: IssueWarriorCommand
+  wrapper: 0x003747b8
+  calls:
+    - {addr: 0x0041c2d0, name: GameState_IssueWarriorCommand}
+  args:
+    - {name: command, lua: number, ctype: int, desc: "Warrior command number (0-6, the entries of the command menu)."}
+    - {name: "on", lua: boolean, desc: "true issues the command; passed on as for WCIssueCommand."}
+  description: >-
+    Issues a Warrior command for player 1, as WCIssueCommand does with player 1's human.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 7, calls: 15, boot: false, mission1: false, result_used: false}
+
+- name: WCEnableAllCommands
+  wrapper: 0x00374820
+  calls:
+    - {addr: 0x0041db08, name: GameState_EnableAllWarriorCommands}
+  args:
+    - {name: "on", lua: boolean, desc: "true enables every Warrior command, false (or nil) disables them all."}
+  description: >-
+    Enables or disables all seven Warrior commands for each player who is a war chief (7 bytes per player at game
+    state +0x41e) and updates that player's command HUD. The tutorial turns them off until it teaches them.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 20, calls: 30, boot: false, mission1: true, result_used: false}
+
+- name: WCEnableCommand
+  wrapper: 0x00374850
+  calls:
+    - {addr: 0x0041dbe8, name: GameState_EnableWarriorCommand}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "Handle of a player human."}
+    - {name: command, lua: number, ctype: int, desc: "Warrior command number 0-6."}
+    - {name: "on", lua: boolean, desc: "true enables the command, false disables it."}
+  description: >-
+    Enables or disables one Warrior command for the player who controls `player`, and refreshes that player's command
+    HUD when enabling.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 25, calls: 133, boot: false, mission1: false, result_used: false}
+
+- name: WCIssueCommand
+  wrapper: 0x003748e0
+  calls:
+    - {addr: 0x0041dc80, name: GameState_IssueWarriorCommandFor}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "Handle of the war chief (a player human)."}
+    - {name: command, lua: number, ctype: int, desc: "Warrior command number 0-6."}
+    - {name: "on", lua: boolean, desc: "true issues the command (the scripts always pass true)."}
+  description: >-
+    Issues a Warrior command for a player, as if the player had chosen it from the command menu (dispatcher
+    0x0041c4e0). Nothing happens while commands are locked (game state +0x411), when the human is not a player, or
+    when that command is disabled for the player; otherwise the command is recorded as the player's last one and the
+    crew's gang tactic is changed to match.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Command numbers 0-6 are the seven entries of the command menu; which tactic each starts is in the dispatcher's
+    switch and is described by name only (inferred). The third argument is passed through as the dispatcher's 'forced'
+    flag; the scripts always pass true.
+  usage: {chunks: 25, calls: 45, boot: false, mission1: true, result_used: false}
+
+- name: WCLockCommands
+  wrapper: 0x00374970
+  calls:
+    - {addr: 0x0041dcf0, name: GameState_LockWarriorCommands}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "Handle of a player human."}
+    - {name: locked, lua: boolean, desc: "true locks the command menu, false unlocks it (byte at game state +0x418 + player index)."}
+  description: >-
+    Locks or unlocks the Warrior command menu for the player who controls `player`.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 10, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: WCSetCallback
+  wrapper: 0x003749d0
+  calls:
+    - {addr: 0x0041dd40, name: GameState_SetWarriorCommandCallback}
+  args:
+    - {name: callback, lua: string, desc: "Name of a Lua function (up to 31 characters), or nil to clear it."}
+  description: >-
+    Stores the name of a Lua function to call when the player issues a Warrior command (game state +0x2fc).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 12, boot: false, mission1: false, result_used: false}
+
+- name: WCEnableAutomaticSwitching
+  wrapper: 0x00374a00
+  calls:
+    - {addr: 0x0041dd68, name: GameState_SetAutoSwitch}
+  args:
+    - {name: "on", lua: boolean, default: true, desc: "Default true; stored at game state +0x431."}
+  description: >-
+    Stores whether the game may switch the player automatically to another gang member (inferred from the name).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}

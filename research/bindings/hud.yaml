@@ -1,0 +1,1072 @@
+# The Warriors' script bindings, category `hud`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: GetScreenDimensions
+  wrapper: 0x00368320
+  calls:
+    - {addr: 0x0017a4f8, name: Device_GetScreenSize}
+  args:
+    - {name: size, lua: table, elem: number, count: 2, written_back: true, desc: "A table {w, h} that is overwritten with the display's width and height (from the device object at 0x0050cdb4)."}
+  description: >-
+    Writes the screen's width and height into the table it is given. Only the unused Lua menu `level100main.lua` calls
+    it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: ShowOptionMenu
+  wrapper: 0x0036c238
+  calls:
+    - {addr: 0x0041dd78, name: GameState_RequestOptionMenu}
+  description: >-
+    Sets the game state's options-menu request flag (`W_GameState + 0x11c` = 1). No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    What reads the flag is not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GetDefaultFont
+  wrapper: 0x0036e720
+  calls:
+    - {addr: 0x001798f8, name: Font_GetDefault}
+  args:
+    - {name: scale, lua: number, ctype: float, desc: "A number; read but the callee shown takes only the table (inferred to be ignored)."}
+    - {name: info, lua: table, elem: number, count: 5, written_back: true, desc: "A table of five numbers overwritten with the default font's metrics; the fifth is always 3.0."}
+  description: >-
+    Fills a table with the default font's metrics. Only the unused `level100main.lua` calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HUDShowWarCommand
+  wrapper: 0x0036e7f8
+  calls:
+    - {addr: 0x001b4948}
+  args:
+    - {name: "on", lua: boolean, default: true, desc: "true (the default when omitted) shows the Warrior-command display, false hides it."}
+    - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index, 0 or 1 (default 0)."}
+  description: >-
+    Shows or hides the Warrior-command element (the squad-order display) on one player's HUD.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 9, calls: 32, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetAnnounceMsg
+  wrapper: 0x0036e858
+  calls:
+    - {addr: 0x001b5b08, name: HUD_SetAnnounceMessage}
+  args:
+    - {name: kind, lua: number, ctype: unsigned, desc: "Announcement type. 5 shows the custom `text`; any other value shows that type's built-in message (a table of message pointers at 0x00622e20) and ignores `text`."}
+    - {name: text, lua: string, desc: "The text to show when `kind` is 5 (scripts pass a string from the level's string table, or GSTRING.CHEAT)."}
+    - {name: flag, lua: boolean, desc: "Stored in a HUD global (0x00617fe8) that the announcement display reads; the Armies of the Night levels pass true. Meaning not traced."}
+  description: >-
+    Shows a centre-screen announcement: the custom text for kind 5, or one of the built-in announcement messages (with
+    its sound cue) for the other kinds. global.lua uses it to announce an entered cheat.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Kind 5 goes to a separate text widget (0x0060e990); the other kinds restart the HUD manager's announcement widget
+    (+0xe340) and start a sound (id 0x14).
+  usage: {chunks: 17, calls: 50, boot: true, mission1: true, result_used: false}
+
+- name: HUDSetANBossTexture
+  wrapper: 0x0036e8d8
+  calls:
+    - {addr: 0x001b5b80}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the boss human in an Armies of the Night level."}
+    - {name: texture, lua: number, ctype: unsigned, desc: "Portrait texture id for the boss (scripts pass ids around 1966080, 0x1e0000 + n)."}
+    - {name: "on", lua: boolean, default: true, desc: "true (default) shows the boss portrait, false removes it."}
+  description: >-
+    Shows or removes a boss portrait on both players' Armies of the Night HUDs (the arcade mini-game, levels 60-64).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 15, calls: 38, boot: false, mission1: false, result_used: false}
+
+- name: HUDEnableClubActionText
+  wrapper: 0x0036e968
+  calls:
+    - {addr: 0x001b5ea8, name: HUD_SetActionTextHigh}
+  args:
+    - {name: "on", lua: boolean, desc: "true moves the action-prompt text near the top of the screen (y 0.125), false back near the bottom (y 0.86); both are adjusted for the video mode."}
+  description: >-
+    Moves the HUD's context action-prompt text between its normal low position and a high position used in the
+    clubhouse (level95 turns it on; global.lua turns it off on every level load). The position is a fraction of screen
+    height.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Writes the y fraction to 0x00607d74 and 0x006077e4; other video modes use 0.08, 0.2/0.78 or 0.15/0.8.
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: HUDGetNewPH
+  wrapper: 0x0036e998
+  calls:
+    - {addr: 0x001b4790, name: HUD_PanelAlloc}
+  args:
+    - {name: kind, lua: number, ctype: unsigned, desc: "Panel layout: 0 value with a suffix, 1 a single value, 2 `got / needed`, 3 a bar. Scripts use 2 for counters and 3 for bars."}
+    - {name: label, lua: string, desc: "The panel's label text (copied)."}
+    - {name: width, lua: number, ctype: float, default: 0.22, desc: "Bar width for kind 3, as a fraction of the screen (default 0.22)."}
+  results:
+    - {lua: number, desc: "The panel's index (0-4) to pass to HUDSetPHValue and HUDReleasePH, or 4294967295 (-1 as unsigned) when all five panels are in use."}
+  description: >-
+    Takes one of the HUD's five counter panels (the on-screen objective counters such as `Tags 2/6`) and gives it a
+    label and layout. The panel stays hidden until a value is set.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Panels live in the HUD object at 0x0060b4f0, 0xa50 bytes each.
+  usage: {chunks: 20, calls: 40, boot: true, mission1: true, result_used: true}
+
+- name: HUDReleasePH
+  wrapper: 0x0036ea40
+  calls:
+    - {addr: 0x001b47b8, name: HUD_PanelRelease}
+  args:
+    - {name: panel, lua: number, ctype: int, desc: "Panel index returned by HUDGetNewPH."}
+  description: >-
+    Frees a counter panel and hides it.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 16, calls: 37, boot: true, mission1: true, result_used: false}
+
+- name: HUDSetPHValue
+  wrapper: 0x0036ea78
+  calls:
+    - {addr: 0x001b47e0, name: HUD_PanelSetValue}
+  args:
+    - {name: panel, lua: number, ctype: int, desc: "Panel index returned by HUDGetNewPH."}
+    - {name: field, lua: number, ctype: int, desc: "1 sets the current value (and redraws), 2 sets the target value of a `got / needed` panel without redrawing."}
+    - {name: value, lua: number, ctype: float, desc: "The number to show (for a bar panel, the fill as a fraction 0-1)."}
+    - {name: show, lua: boolean, desc: "Scripts always pass true; passed on to the panel code, its effect is not traced."}
+    - {name: ms, lua: number, ctype: unsigned, default: 3000, desc: "How long the panel stays on screen after the change, in milliseconds (default 3000); 0 keeps it up. Scripts pass 4000000000 for `forever`."}
+    - {name: sound, lua: boolean, desc: "true plays the menu bonus sound (vags/interface/menu/bonuspart_01) with the change."}
+  description: >-
+    Changes a counter panel's value, redraws its text (or bar) and shows it for a while. Used for every objective
+    counter in the game (global.lua's Objective and TagInfo helpers).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 53, calls: 239, boot: true, mission1: true, result_used: false}
+
+- name: HUDSetPHLabelFlashing
+  wrapper: 0x0036eb80
+  calls:
+    - {addr: 0x001b4808}
+  args:
+    - {name: panel, lua: number, ctype: int, desc: "Panel index."}
+    - {name: "on", lua: boolean, desc: "true makes the label flash, false stops it (inferred from the name)."}
+  description: >-
+    Makes a counter panel's label flash. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ForceShowPlayerHud
+  wrapper: 0x0036ebe0
+  calls:
+    - {addr: 0x001b3f30, name: HUD_ForceShowPlayer}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index, 0 or 1."}
+    - {name: "on", lua: boolean, desc: "true keeps that player's HUD (health and rage bars) on screen permanently, false lets it fade out when idle again."}
+  description: >-
+    Forces one player's status HUD to stay visible (sets player HUD +0x4104). global.lua turns it on for fights and
+    off afterwards.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    That the flag means `do not auto-hide` is inferred from its use; the write is confirmed.
+  usage: {chunks: 43, calls: 131, boot: true, mission1: true, result_used: false}
+
+- name: HUDShowMissionSelect
+  wrapper: 0x0036ec40
+  calls:
+    - {addr: 0x00155180, name: MissionSelect_Show}
+  args:
+    - {name: onCancel, lua: string, desc: "Name of the Lua function called when the player backs out (at most 31 characters)."}
+    - {name: onChoose, lua: string, desc: "Name of the Lua function called with the chosen level (at most 31 characters)."}
+  description: >-
+    Opens the clubhouse mission-select screen (game mode 0x10) unless it is already open. level95 uses it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: ShowGameStatsInterface
+  wrapper: 0x0036ec98
+  calls:
+    - {addr: 0x001551e0}
+  args:
+    - {name: onClose, lua: string, desc: "Name of the Lua function called when the screen closes (interned)."}
+  description: >-
+    Opens the game statistics screen (game mode 0x13) unless it is already open.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: ShowRumbleModeInterface
+  wrapper: 0x0036ecc8
+  calls:
+    - {addr: 0x00155228, name: RumbleMenu_Show}
+  args:
+    - {name: onCancel, lua: string, desc: "Name of the Lua function called when the player backs out of the Rumble menu."}
+    - {name: onStart, lua: string, desc: "Name of the Lua function called with the chosen Rumble level number when a match starts."}
+    - {name: fromFrontEnd, lua: number, ctype: unsigned, desc: "1 when opened from the main menu (level100), 0 when opened in game (clubhouse, level101); any other value leaves the previous setting."}
+  description: >-
+    Opens the Rumble mode set-up menu (game mode 0x11) unless it is already open, keeping both callback names
+    (interned, so they are looked up by name when they fire).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The names go to 0x005e67c0 / 0x005e67c4; the 0/1 flag to 0x0063ef64.
+  usage: {chunks: 37, calls: 71, boot: true, mission1: false, result_used: false}
+  coney: partial
+
+- name: ShowRumbleModeIntro
+  wrapper: 0x0036ed48
+  calls:
+    - {addr: 0x001b5f88}
+  args:
+    - {name: onDone, lua: string, desc: "Name of the Lua function called when the intro finishes."}
+    - {name: names, lua: table, elem: string, count: 10, written_back: true, desc: "Table of up to 10 strings (the two gang names first, the rest empty in the scripts)."}
+  description: >-
+    Shows the Rumble match introduction with the competing gangs' names.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: false}
+
+- name: PreloadCredits
+  wrapper: 0x0036ee08
+  calls:
+    - {addr: 0x001b5fb0}
+  description: >-
+    Loads what the end credits need ahead of ShowCredits (called by level84_end).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: ShowCredits
+  wrapper: 0x0036ee28
+  calls:
+    - {addr: 0x001b5fd0}
+  description: >-
+    Starts the end credits on the HUD (called by level84_end).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HUDEnableGameTutorialText
+  wrapper: 0x0036eec8
+  calls:
+    - {addr: 0x001b5ff0, name: GameState_SetTutorialText}
+  args:
+    - {name: "on", lua: boolean, desc: "true enables the game's built-in tutorial hints, false disables them."}
+  description: >-
+    Sets the game state's tutorial-hints flag (`W_GameState + 0x56e2`). The first mission's combat tutorial turns it
+    on; Rumble levels turn it off.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What reads the flag is not traced.
+  usage: {chunks: 36, calls: 38, boot: false, mission1: true, result_used: false}
+
+- name: ShowProfileManager
+  wrapper: 0x0036eef8
+  calls:
+    - {addr: 0x001552b0, name: ProfileManager_Show}
+  args:
+    - {name: onQuickRumble, lua: string, desc: "Name of the Lua function the main menu calls for QUICK RUMBLE (level100 passes `Menu.fadeToRMI`)."}
+    - {name: onStartGame, lua: string, desc: "Name of the Lua function called when a story game is started (`Menu.startGame`)."}
+  description: >-
+    Opens the profile manager, the front end's menu flow (game mode 0x12), unless it is already on top, keeping both
+    callback names interned. See [Front end](../../research/frontend.md#profile-manager).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+  coney: implemented
+
+- name: HUDCenterComponents
+  wrapper: 0x0036ef50
+  calls:
+    - {addr: 0x001b5dd8}
+  args:
+    - {name: count, lua: number, ctype: unsigned, desc: "How many widths to use (at most 10)."}
+    - {name: widths, lua: table, elem: number, count: 10, written_back: true, desc: "Table of up to 10 widths."}
+    - {name: centres, lua: table, elem: number, count: 10, written_back: true, desc: "Table of 10 numbers overwritten with each item's centre."}
+    - {name: centre, lua: number, ctype: float, desc: "The centre to lay the row out around (screen fraction)."}
+  description: >-
+    Lays a row of items with the given widths side by side around a centre point and writes each item's centre back
+    into the second table. Only the unused `level100main.lua` calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HUDShowMissionSummaryText
+  wrapper: 0x0036f0d0
+  calls:
+    - {addr: 0x001b4768}
+  args:
+    - {name: text, lua: string, desc: "Summary text."}
+    - {name: "n", lua: number, ctype: unsigned, desc: "A number (scripts pass 4 or 6)."}
+  description: >-
+    Does nothing in this build: the function it calls (0x001b3878) returns at once.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    global.lua still calls it after scenes; Coney can implement it as a no-op.
+  usage: {chunks: 3, calls: 3, boot: true, mission1: false, result_used: false}
+
+- name: HUDLaunchMissionFailed
+  wrapper: 0x0036f130
+  calls:
+    - {addr: 0x001d1f88, name: MissionFailed_Launch}
+  args:
+    - {name: reason, lua: string, desc: "The failure text shown on the mission-failed screen."}
+  description: >-
+    Ends the mission as failed: sets the game state's mission result (`+0x118` = 2), gives the reason to the
+    mission-failed screen and pushes it (game mode 0xc).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 24, calls: 38, boot: false, mission1: false, result_used: false}
+
+- name: HUDLaunchRumbleWin
+  wrapper: 0x0036f160
+  calls:
+    - {addr: 0x001dfe20}
+  args:
+    - {name: winner, lua: string, desc: "Text naming the winner."}
+    - {name: reason, lua: string, desc: "Second line (how the match was won, or the survival time)."}
+  description: >-
+    Shows the Rumble result screen (game mode 0x14) with the two lines of text.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 33, calls: 66, boot: false, mission1: false, result_used: false}
+
+- name: HUDLaunchANGameOver
+  wrapper: 0x0036f1b8
+  calls:
+    - {addr: 0x001cede8}
+  args:
+    - {name: "on", lua: boolean, desc: "Read but not used by the callee (scripts pass true)."}
+  description: >-
+    Pushes the Armies of the Night game-over screen (game mode 0xd).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetMissionFailedCallbacks
+  wrapper: 0x0036f1e8
+  calls:
+    - {addr: 0x001d1ff0}
+  args:
+    - {name: onRetry, lua: string, desc: "Name of the Lua function (at most 31 characters) called when the player retries from the mission-failed screen; nil clears it."}
+  description: >-
+    Sets the Lua function the mission-failed screen calls to restart the current chapter instead of reloading the
+    level.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false}
+
+- name: HUDLaunchMissionComplete
+  wrapper: 0x0036f218
+  calls:
+    - {addr: 0x0015d420, name: MissionComplete_Launch}
+  args:
+    - {name: kind, lua: number, ctype: unsigned, desc: "Which mission-complete screen to show (stored at 0x005e5e1c); runNextMission passes 4. 0 (or no argument) also sets a flag at 0x0050c754."}
+  description: >-
+    Pushes the mission-complete screen (game mode 0xb) unless it is already showing. See
+    [runNextMission](../../research/scripting.md#run-next-mission).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What each kind changes on the screen and what the 0x0050c754 flag does are not traced.
+  usage: {chunks: 10, calls: 12, boot: true, mission1: false, result_used: false}
+
+- name: HUDEnableFixedCamIcon
+  wrapper: 0x0036f250
+  calls:
+    - {addr: 0x001b4740}
+  args:
+    - {name: "on", lua: boolean, desc: "true shows the fixed-camera icon on both players' HUDs, false hides it."}
+  description: >-
+    Shows or hides the HUD icon that marks a fixed (non-player) camera.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetObjective
+  wrapper: 0x0036f280
+  calls:
+    - {addr: 0x001dad88, name: HUD_SetObjective}
+  args:
+    - {name: slot, lua: number, ctype: int, desc: "Objective line: 0 or 1 (two objective slots; each has its own heading string)."}
+    - {name: text, lua: string, desc: "The objective text."}
+    - {name: mode, lua: number, ctype: int, desc: "0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it complete (announce `<heading> complete: text`), 3 replace the text and flash it."}
+    - {name: silent, lua: boolean, desc: "With mode 0, true sets the text without the centre-screen announcement."}
+    - {name: ms, lua: number, ctype: unsigned, default: 8000, desc: "How long it stays on screen, in milliseconds (default 8000)."}
+  description: >-
+    Sets, completes or clears one of the two objective lines in the HUD's goal text, with an optional centre-screen
+    announcement. It is the most-used HUD binding (global.lua's Objective helpers and most level scripts).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The mode meanings are inferred from the code paths (mode 2 builds a string from global strings 0xe5 / 0xe6); the
+    goal text lives in the object at 0x0050eddc.
+  usage: {chunks: 149, calls: 675, boot: true, mission1: true, result_used: false}
+
+- name: HUDRemoveAllGoalText
+  wrapper: 0x0036f360
+  calls:
+    - {addr: 0x001db248}
+  description: >-
+    Clears the HUD's goal text (objective slot 0).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 7, calls: 7, boot: false, mission1: true, result_used: false}
+
+- name: HUDSetTutorialText
+  wrapper: 0x0036f380
+  calls:
+    - {addr: 0x001b4980, name: Tutorial_QueueText}
+  args:
+    - {name: text, lua: string, desc: "The hint text to show; nil clears the current hint when the game is not paused."}
+    - {name: priority, lua: number, ctype: unsigned, default: 1, desc: "Priority 1-3 (default 1): a hint with a lower number than the one showing interrupts it; others wait in the queue."}
+  description: >-
+    Queues a tutorial hint in the hint box (the text panel used by the tutorial and for gameplay tips).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The hint box is the object at 0x00609250.
+  usage: {chunks: 53, calls: 244, boot: true, mission1: true, result_used: false}
+
+- name: HUDCheckTutorialText
+  wrapper: 0x0036f3e8
+  calls:
+    - {addr: 0x001b49a8}
+  args:
+    - {name: text, lua: string, desc: "A hint string previously given to HUDSetTutorialText."}
+  results:
+    - {lua: boolean, desc: "true (1) when that hint is showing or queued, else nil. The test compares the string object, which works because Lua 4 interns strings."}
+  description: >-
+    Reports whether a tutorial hint is still on screen or waiting.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+
+- name: HUDFlushTutorialText
+  wrapper: 0x0036f430
+  calls:
+    - {addr: 0x001b49d0, name: Tutorial_Flush}
+  args:
+    - {name: priority, lua: number, ctype: unsigned, default: 4, desc: "Remove the queued and showing hints of this priority; 4 (the default) removes all."}
+  description: >-
+    Clears tutorial hints from the hint box, by priority or all of them.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 13, calls: 55, boot: true, mission1: true, result_used: false}
+
+- name: HUDSetChaseHUDState_NORMAL
+  wrapper: 0x0036f468
+  calls:
+    - {addr: 0x001b49f8}
+  description: >-
+    Puts the chase HUD (the pursuit distance display, object 0x00609e80) into its normal state. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetChaseHUDState_TIMEOUT
+  wrapper: 0x0036f488
+  calls:
+    - {addr: 0x001b4a28}
+  args:
+    - {name: "n", lua: number, ctype: unsigned, desc: "A number passed to the chase HUD state change."}
+    - {name: seconds, lua: number, ctype: float, desc: "A time value; negated when `positive` is false."}
+    - {name: positive, lua: boolean, desc: "false negates the time."}
+    - {name: label, lua: string, desc: "Text shown by the chase HUD."}
+  description: >-
+    Puts the chase HUD into its timeout state with a time and a label. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetChaseHUDState_DESTROY
+  wrapper: 0x0036f538
+  calls:
+    - {addr: 0x001b4a88}
+  description: >-
+    Puts the chase HUD into its destroy state (removes it).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetChaseHUDState_CREATE
+  wrapper: 0x0036f558
+  calls:
+    - {addr: 0x001b4ab8}
+  args:
+    - {name: "n", lua: number, ctype: unsigned, desc: "A number passed to the chase HUD."}
+    - {name: label, lua: string, desc: "The chase HUD's label."}
+  description: >-
+    Creates the chase HUD if it does not exist yet. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDEnableBar
+  wrapper: 0x0036f5b8
+  calls:
+    - {addr: 0x001b53b0}
+  args:
+    - {name: kind, lua: number, ctype: unsigned, desc: "Bar kind: 0 a textured bar (sprites `texA`, `texB`), 1 a boss health bar labelled `labels[1]`, 2 a plain bar, 3 one bar per name in `labels` (Rumble and two-player damage bars)."}
+    - {name: "on", lua: boolean, desc: "true creates/shows the bar, false removes it."}
+    - {name: labels, lua: table, elem: string, count: 4, written_back: true, desc: "Table of up to 4 strings (bar labels)."}
+    - {name: count, lua: number, ctype: unsigned, default: 1, desc: "For kind 3, how many bars (default 1)."}
+    - {name: flag, lua: boolean, desc: "For kind 3, a flag passed on (scripts pass true or false)."}
+    - {name: texA, lua: number, ctype: unsigned, default: 1703940, desc: "For kind 0, a sprite id (default 1703940)."}
+    - {name: texB, lua: number, ctype: unsigned, default: 1703936, desc: "For kind 0, a sprite id (default 1703936)."}
+  description: >-
+    Creates or removes a HUD bar: boss health, vehicle damage, Rumble score bars.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 28, calls: 100, boot: false, mission1: false, result_used: false}
+
+- name: HUDEnableGenBar
+  wrapper: 0x0036f748
+  calls:
+    - {addr: 0x001b4c98}
+  args:
+    - {name: "on", lua: boolean, desc: "true creates the bar, false removes it."}
+    - {name: label, lua: string, desc: "The bar's label."}
+    - {name: index, lua: number, ctype: unsigned, desc: "Which generic bar (0 or 1)."}
+    - {name: style, lua: number, ctype: unsigned, default: 1, desc: "1 (default) or 0: picks one of two y positions and fill styles."}
+  description: >-
+    Creates or removes one of the generic labelled bars (the Rumble tag-battle bars).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetBarPercentage
+  wrapper: 0x0036f7f8
+  calls:
+    - {addr: 0x001b5450}
+  args:
+    - {name: kind, lua: number, ctype: unsigned, desc: "The bar kind given to HUDEnableBar (0-3)."}
+    - {name: fill, lua: number, ctype: float, desc: "Fill fraction, 0-1."}
+    - {name: fill2, lua: number, ctype: float, default: 1, desc: "Second fill fraction for kinds 1 and 2 (default 1; scripts pass 1 or the same value)."}
+    - {name: index, lua: number, ctype: unsigned, desc: "Which bar for kinds 1 and 3 (0 or 1)."}
+    - {name: f5, lua: number, ctype: float, desc: "Extra value for kinds 1 and 3 (scripts pass 0)."}
+  description: >-
+    Sets how full a HUD bar is.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 28, calls: 103, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetBarProperty
+  wrapper: 0x0036f8e8
+  calls:
+    - {addr: 0x001b54f0}
+  args:
+    - {name: index, lua: number, ctype: unsigned, desc: "Generic bar index (0 or 1); ignored when that bar does not exist."}
+    - {name: flag, lua: boolean, desc: "Passed on with the width (scripts pass true)."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Table {r, g, b, a}, each 0-255."}
+    - {name: width, lua: number, ctype: float, desc: "Bar width as a screen fraction."}
+  description: >-
+    Sets a generic bar's colour and width.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 21, calls: 39, boot: false, mission1: false, result_used: false}
+
+- name: HUDEnableTextProgress
+  wrapper: 0x0036fa28
+  calls:
+    - {addr: 0x001b5590}
+  args:
+    - {name: "on", lua: boolean, desc: "true creates the rows, false removes them."}
+    - {name: labels, lua: table, elem: string, count: 6, written_back: true, desc: "Table of up to 6 row labels (gang names)."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many rows."}
+    - {name: flag, lua: number, ctype: unsigned, default: 1, desc: "true (default) or false: which of two row-count slots to set."}
+  description: >-
+    Creates or removes the text scoreboard (up to six labelled rows) used in Rumble and king-of-the-hill fights.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetTextProgress
+  wrapper: 0x0036fb38
+  calls:
+    - {addr: 0x001b57c8}
+  args:
+    - {name: label, lua: string, desc: "The row's label, as given to HUDEnableTextProgress."}
+    - {name: value, lua: number, ctype: unsigned, desc: "The row's new score."}
+    - {name: colour, lua: table, elem: number, count: 3, written_back: true, desc: "Table {r, g, b}, each 0-255, for the row's text."}
+    - {name: flag, lua: number, ctype: unsigned, default: 1, desc: "true (default) or false: which row-count slot to sort by."}
+  description: >-
+    Updates a scoreboard row's score and colour and re-sorts the rows by score, highest first.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 4, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: HUDTurnOnActionCycleAnim
+  wrapper: 0x0036fc80
+  calls:
+    - {addr: 0x001b5a90}
+  args:
+    - {name: "n", lua: number, ctype: unsigned, desc: "A count or slot (scripts pass 3 or 4)."}
+    - {name: seconds, lua: number, ctype: float, desc: "Frame time of the cycle (scripts pass 0.1 or 0.15)."}
+    - {name: kind, lua: number, ctype: unsigned, desc: "A number (scripts pass 2 or 6)."}
+    - {name: iconA, lua: number, ctype: unsigned, desc: "First button-icon id of the cycle (scripts pass 73 or 79)."}
+    - {name: iconB, lua: number, ctype: unsigned, desc: "Second button-icon id."}
+    - {name: player, lua: number, ctype: unsigned, desc: "Player index (0 or 1)."}
+  description: >-
+    Shows an animated button prompt that alternates between two icons (the `mash this button` prompts in chases and
+    workouts).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 7, calls: 13, boot: false, mission1: false, result_used: false}
+
+- name: HUDTurnOffActionCycleAnim
+  wrapper: 0x0036fd98
+  calls:
+    - {addr: 0x001b5ae0}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "Player index (0 or 1)."}
+  description: >-
+    Removes the animated button prompt for a player.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 8, calls: 27, boot: false, mission1: false, result_used: false}
+
+- name: HUDEnableInstArrow
+  wrapper: 0x0036fdd0
+  calls:
+    - {addr: 0x001b5c30, name: HUD_EnableInstructionArrow}
+  args:
+    - {name: "on", lua: boolean, desc: "true shows the instruction arrow, false hides it."}
+    - {name: x, lua: number, ctype: float, desc: "Screen x as a fraction of the width."}
+    - {name: "y", lua: number, ctype: float, desc: "Screen y as a fraction of the height."}
+    - {name: angle, lua: number, ctype: float, desc: "The arrow's rotation in radians (the tutorial uses 3.14)."}
+  description: >-
+    Shows or hides the tutorial's on-screen arrow pointing at a HUD element; position and rotation apply only when
+    turning it on.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
+
+- name: HUDSetInstArrowAnimSpeed
+  wrapper: 0x0036fe90
+  calls:
+    - {addr: 0x001b5cc8}
+  args:
+    - {name: speed, lua: number, ctype: unsigned, desc: "Animation speed value for the arrow."}
+  description: >-
+    Sets the instruction arrow's animation speed. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetInstArrowLocation
+  wrapper: 0x0036ff40
+  calls:
+    - {addr: 0x001b5d78}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object; the arrow is placed over its screen position (raised 0.03)."}
+  overloads:
+  - wrapper: 0x0036fec8
+    calls:
+      - {addr: 0x001b5d38}
+    args:
+      - {name: x, lua: number, ctype: float, desc: "Screen x fraction."}
+      - {name: "y", lua: number, ctype: float, desc: "Screen y fraction."}
+    note: >-
+      The two-number form places the arrow at a screen position; it is the fallback when the arguments do not match
+      the one-handle form's type check.
+  description: >-
+    Moves the instruction arrow, either onto a world object or to a screen position. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetInstArrowColor
+  wrapper: 0x0036ffb8
+  calls:
+    - {addr: 0x001b5cf0}
+  args:
+    - {name: colour, lua: table, elem: number, count: 3, written_back: true, desc: "Table {r, g, b}, each 0-255 (alpha is always 255)."}
+  description: >-
+    Sets the instruction arrow's colour. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetTutorialCallback
+  wrapper: 0x00370098
+  calls:
+    - {addr: 0x001b5e90, name: Tutorial_SetCallback}
+  args:
+    - {name: name, lua: string, desc: "Name of the Lua function the tutorial calls (for example `P1.BasicAttacks`); nil clears it."}
+  description: >-
+    Sets the Lua function the tutorial system calls back, used by the first mission's combat tutorial to move to its
+    next lesson. The pointer is stored as given (0x006095f0), not interned.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    When the tutorial calls it is not traced. Because the name is not interned, the original relies on the script
+    keeping the string alive (constants in a chunk are).
+  usage: {chunks: 2, calls: 20, boot: false, mission1: true, result_used: false}
+
+- name: HUDTurnOnRadar
+  wrapper: 0x003700c8
+  calls:
+    - {addr: 0x001b4328, name: HUD_RadarOn}
+  args:
+    - {name: player, lua: number, ctype: int, default: 2, desc: "0 or 1 for one player's radar, 2 (the default) for both."}
+  description: >-
+    Shows the radar (minimap) for one or both players.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Also sets the radar-on global 0x00617fec and the HUD manager's flag +0x177b0.
+  usage: {chunks: 52, calls: 87, boot: false, mission1: true, result_used: false}
+
+- name: HUDTurnOffRadar
+  wrapper: 0x00370100
+  calls:
+    - {addr: 0x001b43a8, name: HUD_RadarOff}
+  args:
+    - {name: player, lua: number, ctype: int, default: 2, desc: "0 or 1 for one player's radar, 2 (the default) for both."}
+  description: >-
+    Hides the radar for one or both players.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 67, calls: 121, boot: false, mission1: true, result_used: false}
+
+- name: HUDSetNumIndicator
+  wrapper: 0x00370138
+  calls:
+    - {addr: 0x001b4438}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "0 or 1 for a player HUD's indicator, 2 for the shared one."}
+    - {name: "on", lua: boolean, desc: "true shows the indicator."}
+    - {name: gang, lua: number, ctype: int, default: -1, desc: "Gang id whose count it shows (default -1: none, which also forces it off)."}
+  description: >-
+    Shows a number indicator (the remaining members of a gang) on a player's HUD or the shared HUD, as Rumble brawls
+    do.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 9, boot: false, mission1: false, result_used: false}
+
+- name: HUDANEnableJoinMsg
+  wrapper: 0x003701c8
+  calls:
+    - {addr: 0x001b46a0}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index (0 or 1)."}
+    - {name: "on", lua: boolean, desc: "true shows the message, false hides it."}
+  description: >-
+    Shows or hides the `press start to join` message on a player's Armies of the Night HUD.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 10, calls: 78, boot: false, mission1: false, result_used: false}
+
+- name: HUDANLaunchEndScreen
+  wrapper: 0x00370228
+  calls:
+    - {addr: 0x001b44d8}
+  args:
+    - {name: "on", lua: boolean, desc: "true creates the end-screen sprite and hides the HUD; false removes it and restores the HUD."}
+  description: >-
+    Shows or removes the Armies of the Night end screen.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: HUDANSetCredit
+  wrapper: 0x00370258
+  calls:
+    - {addr: 0x001b46e0, name: HUD_ANSetCredits}
+  args:
+    - {name: credits, lua: number, ctype: unsigned, desc: "Number of credits (continues) left in the Armies of the Night mini-game."}
+  description: >-
+    Sets the Armies of the Night credit counter (0x00619910). global.lua sets it to 99 on every level load.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 7, calls: 23, boot: true, mission1: false, result_used: false}
+
+- name: HUDANGetCredit
+  wrapper: 0x00370290
+  calls:
+    - {addr: 0x001b4700}
+  results:
+    - {lua: number, desc: "The Armies of the Night credit counter."}
+  description: >-
+    Returns the Armies of the Night credit counter.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 30, boot: false, mission1: false, result_used: true}
+
+- name: HUDSetRadarObjectFlash
+  wrapper: 0x00370690
+  calls:
+    - {addr: 0x001b4298, name: HUD_RadarFlash}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the human or object whose radar blip changes."}
+    - {name: "on", lua: boolean, desc: "true makes the blip flash; false or nil returns it to its steady mode."}
+    - {name: "n", lua: number, ctype: unsigned, desc: "A value passed to the radar with the change (scripts pass 1 or omit it)."}
+  description: >-
+    Makes an object's radar blip flash, or stops it, on both radars.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 9, calls: 18, boot: false, mission1: true, result_used: false}
+
+- name: HUDSetRadarZoomScale
+  wrapper: 0x00370728
+  calls:
+    - {addr: 0x001b40e0}
+  args:
+    - {name: scale, lua: number, ctype: float, desc: "Radar zoom factor (1 normal; scripts use 0.35 and 0.5 to show more of the map)."}
+  description: >-
+    Sets both radars' zoom scale.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: HUDAddRadarMissionObjective
+  wrapper: 0x00370760
+  calls:
+    - {addr: 0x001b3f98, name: HUD_RadarAddObjective}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the human, object or flag to mark."}
+  description: >-
+    Adds a mission-objective blip for an object to both radars (blip type 10). Pair with HUDSetRadarItemTexture to
+    choose its icon.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 66, calls: 129, boot: true, mission1: true, result_used: false}
+
+- name: HUDAddSecondaryRadarMissionObjective
+  wrapper: 0x00370798
+  calls:
+    - {addr: 0x001b3fc0}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the human or object to mark."}
+  description: >-
+    Adds a secondary-objective blip (blip type 1) for an object to both radars.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 6, calls: 9, boot: false, mission1: true, result_used: false}
+
+- name: HUDChangeRadarMissionObjective
+  wrapper: 0x003707d0
+  calls:
+    - {addr: 0x001b3fe8}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the marked object."}
+    - {name: colour, lua: table, elem: number, count: 3, written_back: true, desc: "Table {r, g, b}, each 0-255."}
+  description: >-
+    Recolours an object's objective blip. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDSetRadarItemTexture
+  wrapper: 0x003708c8
+  calls:
+    - {addr: 0x001b4038, name: HUD_RadarSetIcon}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of an object that already has a blip."}
+    - {name: icon, lua: number, ctype: unsigned, desc: "Radar icon id (scripts use 27 and 28 for objective markers, 34 for items; icon 22 is drawn at 0.7 scale, icons 29-31 tinted green)."}
+    - {name: scale, lua: number, ctype: float, default: 1, desc: "Icon scale (default 1)."}
+    - {name: flag, lua: boolean, desc: "A per-blip flag passed to both radars (scripts sometimes pass 1)."}
+  description: >-
+    Changes the icon (and scale) of an object's radar blip on both radars.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 70, calls: 154, boot: true, mission1: true, result_used: false}
+
+- name: HUDDeleteRadarMissionObjective
+  wrapper: 0x00370980
+  calls:
+    - {addr: 0x001b4098, name: HUD_RadarRemove}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the marked object."}
+  description: >-
+    Removes every radar blip of an object from both radars (the same function as HUDDeleteRadarObject).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 63, calls: 149, boot: true, mission1: true, result_used: false}
+
+- name: HUDRadarSetRange
+  wrapper: 0x003709b8
+  calls:
+    - {addr: 0x001b40c0}
+  args:
+    - {name: near, lua: number, ctype: float, desc: "A distance (level3 passes 25)."}
+    - {name: far, lua: number, ctype: float, desc: "A distance (level3 passes 35)."}
+  description: >-
+    Sets the radar's range (inferred). The function it calls takes only the HUD manager, so both numbers may be
+    ignored.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: HUDDeleteRadarObject
+  wrapper: 0x00370a30
+  calls:
+    - {addr: 0x001b4300}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the human or object."}
+  description: >-
+    Removes every radar blip of an object (the same function as HUDDeleteRadarMissionObjective); level99 removes Ash's
+    blip with it.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 16, calls: 25, boot: false, mission1: true, result_used: false}
+
+- name: HUDAddRadarHuman
+  wrapper: 0x00370a68
+  calls:
+    - {addr: 0x001b4168, name: HUD_RadarAddHuman}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to show on the radar."}
+  description: >-
+    Adds a radar blip for a human whose look depends on the human's radar class (from its character data): a team
+    mate, an enemy, a neutral (grey) or a special marker shown to both players.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 9, calls: 25, boot: false, mission1: true, result_used: false}
+
+- name: HUDAddRadarObject
+  wrapper: 0x00370aa0
+  calls:
+    - {addr: 0x001b40f8}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object."}
+    - {name: colour, lua: table, elem: number, count: 3, written_back: true, desc: "Table {r, g, b}, each 0-255."}
+  results:
+    - {lua: number, desc: "A number from the radar (the blip, inferred)."}
+  description: >-
+    Adds a coloured blip for an object to both radars. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDDeleteRadarItem
+  wrapper: 0x00370bc8
+  calls:
+    - {addr: 0x001b42d8}
+  args:
+    - {name: item, lua: number, ctype: unsigned, desc: "A radar item (inferred: the value HUDAddRadarObject returns)."}
+  description: >-
+    Removes a radar item. No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: HUDANSetGOSignMode
+  wrapper: 0x00370c00
+  calls:
+    - {addr: 0x001b4690}
+  args:
+    - {name: mode, lua: number, ctype: unsigned, desc: "Mode of the `GO` arrow sign in Armies of the Night (scripts use 0, 1 and 2)."}
+  description: >-
+    Sets the Armies of the Night `GO` sign mode (a byte at 0x0060f260).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 19, calls: 136, boot: false, mission1: false, result_used: false}
+
+- name: HUDANEnableChkIndicator
+  wrapper: 0x00370c38
+  calls:
+    - {addr: 0x001b4720}
+  args:
+    - {name: "on", lua: boolean, desc: "true shows the checkpoint indicator."}
+  description: >-
+    Turns the Armies of the Night checkpoint indicator on or off. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: ShowHud
+  wrapper: 0x00370c68
+  calls:
+    - {addr: 0x001b3ec8}
+  args:
+    - {name: "n", lua: number, ctype: int, desc: "Ignored."}
+  description: >-
+    Does nothing in this build: the function it calls (0x001b3ec8) returns at once. Use RestoreHud to show the HUD.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    level99's Main calls ShowHud(0) then RestoreHud().
+  usage: {chunks: 5, calls: 5, boot: false, mission1: true, result_used: false}
+
+- name: HideHud
+  wrapper: 0x00370ca0
+  calls:
+    - {addr: 0x001b3ed0, name: HUD_HideAll}
+  description: >-
+    Hides the whole HUD (player panels, radars, goal text, counters and bars), unless the game state forbids it;
+    RestoreHud shows it again.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Skipped when 0x0041d110 is true and `W_GameState + 0x14c` is 1; clears the HUD manager's visible flag +0x177a0.
+  usage: {chunks: 56, calls: 97, boot: true, mission1: true, result_used: false}
+
+- name: RestoreHud
+  wrapper: 0x00370cc0
+  calls:
+    - {addr: 0x001b3f78, name: HUD_ShowAll}
+  description: >-
+    Shows the whole HUD again after HideHud.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 82, calls: 199, boot: false, mission1: true, result_used: false}
+
+- name: HidePlayerHud
+  wrapper: 0x00370ce0
+  calls:
+    - {addr: 0x001b3ef0}
+  description: >-
+    Hides both players' status panels (health and rage) only.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 44, calls: 50, boot: false, mission1: false, result_used: false}
+
+- name: ShowPlayerHud
+  wrapper: 0x00370d00
+  calls:
+    - {addr: 0x001b3f10}
+  description: >-
+    Shows both players' status panels again.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: FlashRageBar
+  wrapper: 0x00370d20
+  calls:
+    - {addr: 0x001b3f58, name: HUD_FlashRageBar}
+  args:
+    - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index (0 or 1)."}
+    - {name: "n", lua: number, ctype: unsigned, desc: "Flash value stored in the player HUD (+0x4114); the tutorial passes 5 to start the flashing and 0 to stop it."}
+  description: >-
+    Makes a player's rage bar flash to draw attention to it (used by the first mission's rage tutorial).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Whether n is a count or a mode is not traced.
+  usage: {chunks: 1, calls: 2, boot: false, mission1: true, result_used: false}
+
+- name: CNSEnableMissionInfo
+  wrapper: 0x0037d3f0
+  calls:
+    - {addr: 0x0023b128}
+  args:
+    - {name: "on", lua: boolean, desc: "true enables the hub's mission information, false disables it."}
+  description: >-
+    Sets a global flag (0x005109ac) that enables mission information in the hub (level95 turns it on, level101 off).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 34, calls: 35, boot: false, mission1: false, result_used: false}

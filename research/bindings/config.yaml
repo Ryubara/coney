@@ -1,0 +1,1970 @@
+# The Warriors' script bindings, category `config`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: CfgClimbWithGhetto
+  wrapper: 0x00359d28
+  calls:
+    - {addr: 0x00235f10}
+  args:
+    - {name: enabled, lua: boolean, desc: "true lets climbing be started with the 'ghetto' (context) control; false turns that path off. Stored as a global flag."}
+  description: >-
+    Sets a global player-control flag (0x00510250) that one combat/locomotion routine (0x00281c20) tests before taking
+    its climb branch. No script calls it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00235f10; what the flag means in play is inferred from the name and the single
+    reader.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgGearData
+  wrapper: 0x00359d58
+  calls:
+    - {addr: 0x002361e8, name: Cfg_SetGearData}
+  args:
+    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "Ignored: overwritten with a built-in offset {x, y, z} (metres) and written back into the table."}
+    - {name: rot1, lua: table, elem: number, count: 4, written_back: true, desc: "Ignored: overwritten with a built-in rotation quaternion {i, j, k, r} and written back."}
+    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Ignored: overwritten with a built-in offset and written back."}
+    - {name: rot2, lua: table, elem: number, count: 4, written_back: true, desc: "Ignored: overwritten with a built-in quaternion and written back."}
+    - {name: pos3, lua: table, elem: number, count: 3, written_back: true, desc: "Third attachment offset {x, y, z} in metres, relative to the attach bone."}
+    - {name: rot3, lua: table, elem: number, count: 4, written_back: true, desc: "Third attachment rotation as a quaternion {i, j, k, r}."}
+    - {name: pos4, lua: table, elem: number, count: 3, written_back: true, desc: "Fourth attachment offset {x, y, z} in metres."}
+    - {name: rot4, lua: table, elem: number, count: 4, written_back: true, desc: "Fourth attachment rotation as a quaternion {i, j, k, r}."}
+  description: >-
+    Stores four attachment transforms (offset and rotation pairs) for carried gear in a global table at 0x00715480
+    (0x20 bytes each), read by one character routine (0x0024cef0). The first two pairs are replaced by constants
+    compiled into the game before being stored, so only the last two pairs take effect.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The constants overwrite the caller's tables in place (the wrapper writes all eight tables back), so a script
+    reading pos1..rot2 afterwards sees the built-in values. What the four 'gear' slots attach (hands, back) is not
+    traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgAutoCloseMode
+  wrapper: 0x0035a188
+  calls:
+    - {addr: 0x00233c40}
+  args:
+    - {name: mode, lua: number, ctype: unsigned, desc: "0 off; 1 or more enables automatic closing; values above 1 enable an extra case for doors with the default handler. Stored as a global."}
+  description: >-
+    Sets the auto-close mode (0x00510228) read by the door routine 0x00233c50, which closes a door the player has
+    passed through when the mode is non-zero.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00233c40; the door reading is inferred from the reader's use of the level object at
+    game state +0x228. Never called by the scripts.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgGrabCounterWithAttack
+  wrapper: 0x0035a1c0
+  calls:
+    - {addr: 0x00236450}
+  args:
+    - {name: enabled, lua: boolean, desc: "true makes the attack button counter (break) a grab; false uses the default control."}
+  description: >-
+    Sets a global combat flag (0x00510254) that the grab-counter routines (0x00270560, 0x0026c1d8) test to choose
+    which button breaks a grab. Never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00236450.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgPlayerCombatWalkOnly
+  wrapper: 0x0035a1f0
+  calls:
+    - {addr: 0x00236480, name: Cfg_SetPlayerCombatWalkOnly}
+  args:
+    - {name: enabled, lua: boolean, desc: "true: a player-controlled human may only walk while in combat (no running or sprinting); false (the default from global.lua) allows the normal gait choice."}
+  description: >-
+    Sets the global flag 0x0051031c, which the locomotion and combat routines check together with 'is this human
+    pad-controlled' to keep players at walking pace while fighting. global.lua turns it off and the armies levels
+    (60-64) turn it on.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Readers: 0x00240e38, 0x00287a18, 0x0025f4d0, 0x00286cc8, 0x0025d390; each tests the flag with the human's
+    pad-controlled byte (+0x1b of its pad record).
+  usage: {chunks: 13, calls: 15, boot: true, mission1: false, result_used: false}
+
+- name: CfgPlayerRunButton
+  wrapper: 0x0035a220
+  calls:
+    - {addr: 0x00236460, name: Cfg_SetPlayerRunButton}
+  args:
+    - {name: enabled, lua: boolean, desc: "true: running needs a run button held as well as the left stick pushed past the run deflection; false (what config_preload2.lua sets): running comes from the stick deflection alone."}
+  description: >-
+    Sets the global flag 0x00510258 read by the walk/run/sprint predicates (0x00225a50, 0x00225c10, 0x00225dc0). With
+    it set, those predicates also require the human's 'run button' input bit.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    With gamepad input the shipped setting (false) means the analog stick alone picks walk or run.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgStickDeflection
+  wrapper: 0x0035a250
+  calls:
+    - {addr: 0x00236470, name: Cfg_SetStickDeflection}
+  args:
+    - {name: creepDeflection, lua: number, ctype: float, desc: "Ignored: the callee does not store it (global.lua passes DefCreepDeflection)."}
+    - {name: runDeflection, lua: number, ctype: float, desc: "Left-stick magnitude (0 to 1) above which a human runs instead of walking."}
+  description: >-
+    Sets the left-stick deflection threshold for running (0x005102e8), compared against the pad record's stick
+    magnitude by the locomotion predicates. The first argument is read from Lua but never stored.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Callee 0x00236470 stores only its second float. Readers include 0x00225a50, 0x00225c10, 0x00225dc0, 0x00240e38,
+    0x00259578.
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: CfgJumpIsAction
+  wrapper: 0x0035a2c8
+  calls:
+    - {addr: 0x0023a970, name: Cfg_SetJumpIsAction}
+  args:
+    - {name: enabled, lua: boolean, desc: "true: jumping is done with the action button (global.lua sets true); false: a separate jump control."}
+  description: >-
+    Sets the global flag 0x0051099c that decides whether jump is mapped onto the context action button.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x0023a970; the control meaning follows the name and its pairing with
+    CfgPickupIsAction (readers not traced).
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgObjectValueMod
+  wrapper: 0x0035a2f8
+  calls:
+    - {addr: 0x0041d618}
+  args:
+    - {name: factor, lua: number, ctype: float, desc: "Multiplier on the money value of stolen or sold objects (1 normal, 0.5 half)."}
+  description: >-
+    Stores a value multiplier in the game state (+0x380); level scripts set 0.5 or 1.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0041d618; the money meaning is inferred from the name and the levels that call it.
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: CfgCharClassAttribs
+  wrapper: 0x0035a330
+  calls:
+    - {addr: 0x0041d428, name: Cfg_SetCharClassAttribs}
+  args:
+    - {name: classId, lua: number, ctype: int, desc: "Character class index (1-12 in config_preload2.lua); selects a 16-byte record at game state + classId x 16."}
+    - {name: a, lua: number, ctype: int, desc: "Small integer stored as a byte at record +0x08 (5-10 in the scripts)."}
+    - {name: b, lua: number, ctype: int, desc: "Small integer stored as a byte at record +0x09 (4-20 in the scripts)."}
+    - {name: chance, lua: number, ctype: float, desc: "Fraction 0-1 stored as a float at record +0x0c (0.1-0.25)."}
+    - {name: c, lua: number, ctype: int, desc: "Integer stored as a byte at record +0x10 (0, 20 or 100)."}
+    - {name: d, lua: number, ctype: int, desc: "Integer stored as a byte at record +0x11 (0 or 1)."}
+    - {name: e, lua: number, ctype: float, desc: "Number stored as a float at record +0x14 (1 or 5)."}
+  description: >-
+    Fills one character-class attribute record in the game state (W_GameState + classId x 16, fields +0x08 to +0x14)
+    with two byte values, a fraction, two more bytes and a float. config_preload2.lua sets classes 1 to 12.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Layout confirmed (code) at 0x0041d428. The meaning of the fields (perhaps money carried min/max, a drop chance, a
+    percentage) is not traced; the readers of these records were not found.
+  usage: {chunks: 1, calls: 16, boot: true, mission1: false, result_used: false}
+
+- name: CfgPickupIsGrab
+  wrapper: 0x0035a480
+  calls:
+    - {addr: 0x0023a990, name: Cfg_SetPickupIsGrab}
+  args:
+    - {name: enabled, lua: boolean, desc: "true: picking up objects uses the grab button; false (global.lua): it does not."}
+  description: >-
+    Sets the global flag 0x005109a4 choosing whether object pickup is mapped to grab.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x0023a990; the control meaning follows the name (readers not traced).
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgPickupIsAction
+  wrapper: 0x0035a4b0
+  calls:
+    - {addr: 0x0023a980, name: Cfg_SetPickupIsAction}
+  args:
+    - {name: enabled, lua: boolean, desc: "true (global.lua): picking up objects uses the action button."}
+  description: >-
+    Sets the global flag 0x005109a0 choosing whether object pickup is mapped to the context action button.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x0023a980; the control meaning follows the name.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgQueueGrappleCombos
+  wrapper: 0x0035a4e0
+  calls:
+    - {addr: 0x00236490}
+  args:
+    - {name: enabled, lua: boolean, desc: "true lets grapple combo inputs be queued during a grapple animation."}
+  description: >-
+    Sets the global flag 0x0051025c; never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00236490; meaning from the name.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgAnimSpeeds
+  wrapper: 0x0035a510
+  calls:
+    - {addr: 0x002364a0, name: Cfg_SetAnimSpeeds}
+  args:
+    - {name: speed1, lua: number, ctype: float, desc: "First animation playback-rate factor (0.75 in config_preload2.lua), global 0x00510260."}
+    - {name: speed2, lua: number, ctype: float, desc: "Second factor (0.8), 0x00510264."}
+    - {name: speed3, lua: number, ctype: float, desc: "Third factor (1), 0x00510268."}
+    - {name: speed4, lua: number, ctype: float, desc: "Fourth factor (0.9), 0x0051026c."}
+  description: >-
+    Stores four animation playback-rate factors in globals 0x00510260-0x0051026c, set once by config_preload2.lua.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Which animations each factor scales is not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgButtonHeldFrames
+  wrapper: 0x0035a5d8
+  calls:
+    - {addr: 0x00236420, name: Cfg_SetButtonHeldFrames}
+  args:
+    - {name: frames, lua: number, ctype: unsigned, desc: "How many consecutive input frames a button must be down to count as held; clamped to 2-7 (config_preload2.lua sets 7)."}
+  description: >-
+    Sets the hold length (0x0050b708) used by the pad 'button held' test (0x00144e50), which ANDs that many entries of
+    the pad's 8-frame button history.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgAttackFromIdle
+  wrapper: 0x0035a610
+  calls:
+    - {addr: 0x002364d8, name: Cfg_SetAttackFromIdle}
+  args:
+    - {name: enabled, lua: boolean, desc: "true lets AI or player attacks start straight from idle; config_preload2.lua sets false."}
+  description: >-
+    Sets the global combat flag 0x00510270.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x002364d8; the combat meaning follows the name.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgDamageEndurance
+  wrapper: 0x0035a640
+  calls:
+    - {addr: 0x002364e8}
+  args:
+    - {name: factor, lua: number, ctype: float, desc: "Damage endurance factor (float)."}
+  description: >-
+    Stores a global float (0x00510274), presumably how much damage resistance a human has; never called by the
+    scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x002364e8.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgPowerEndurance
+  wrapper: 0x0035a678
+  calls:
+    - {addr: 0x002364f8, name: Cfg_SetPowerEndurance}
+  args:
+    - {name: factor, lua: number, ctype: float, desc: "Power-attack endurance factor (config_preload2.lua sets 0.25)."}
+  description: >-
+    Stores a global float (0x00510278) beside CfgDamageEndurance's, set once by config_preload2.lua.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What it scales is not traced (the name points to resistance against power attacks).
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgBurnTime
+  wrapper: 0x0035a6b0
+  calls:
+    - {addr: 0x0023a9a0, name: Cfg_SetBurnTime}
+  args:
+    - {name: ms, lua: number, ctype: unsigned, desc: "Duration in milliseconds (global.lua 3000, one level 1500)."}
+  description: >-
+    Sets the duration (0x00510220) that 0x00219238 adds to the game timer to arm a per-human timer (+0x10c of the
+    human's state block), presumably how long a human stays on fire.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The 'burning' meaning is inferred from the name; the timer use is confirmed (code).
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetLockPickHandler
+  wrapper: 0x0035a6e8
+  calls:
+    - {addr: 0x002365f0}
+  args:
+    - {name: startFn, lua: string, desc: "Name of a Lua function (dotted names allowed) called when lock-picking starts, or nil."}
+    - {name: stopFn, lua: string, desc: "Name of a Lua function called when lock-picking stops or is abandoned, or nil."}
+    - {name: successFn, lua: string, desc: "Name of a Lua function called when the lock is picked, or nil."}
+  description: >-
+    Registers three script callbacks for the lock-picking minigame; the names are interned (script-system slot +0xcc)
+    and kept in globals 0x00510288, 0x00510284 and 0x00510280.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x002365f0; which moment fires each callback is inferred from the names the levels
+    pass (e.g. a 'picked' function as the third).
+  usage: {chunks: 7, calls: 12, boot: false, mission1: false, result_used: false}
+
+- name: CfgSetLockPickStageFailHandler
+  wrapper: 0x0035a760
+  calls:
+    - {addr: 0x00236698}
+  args:
+    - {name: fn, lua: string, desc: "Name of a Lua function called when a lock-picking stage fails, or nil."}
+  description: >-
+    Registers a script callback (interned name at 0x0051028c) for a failed lock-picking stage; no script calls it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00236698.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgSetSteroTheftHandler
+  wrapper: 0x0035a790
+  calls:
+    - {addr: 0x00236508, name: Cfg_SetStereoTheftHandler}
+  args:
+    - {name: fn, lua: string, desc: "Name of a Lua function (dotted allowed) called when a car stereo is stolen, or nil to clear."}
+  description: >-
+    Registers the script callback for stealing a car stereo; the name is interned through the script system (slot
+    +0xcc) and stored at 0x0051027c. The tutorial (level99_lesson1) uses it to count the stolen radio.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    'Stero' is the binding's own spelling. When the callback fires is inferred from the name and the scripts.
+  usage: {chunks: 6, calls: 11, boot: false, mission1: true, result_used: false}
+
+- name: CfgBreathingSound
+  wrapper: 0x0035a7c0
+  calls:
+    - {addr: 0x0041d480, name: Cfg_SetBreathingSound}
+  args:
+    - {name: threshold, lua: number, ctype: float, desc: "Float stored in the game state at +0x24c (config_preload2.lua passes 1)."}
+    - {name: intervalMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored at game state +0x250 (5000)."}
+    - {name: durationMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored at game state +0x254 (2000)."}
+    - {name: sound, lua: string, desc: "Sound name (a 'vags/...' path); looked up in the sound bank and the resulting id stored at game state +0x258."}
+  description: >-
+    Configures the angry breathing sound: the sound (resolved by name), two times in milliseconds and a float
+    threshold, all stored in the game state (+0x24c to +0x258).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Which timer is the repeat interval and which the play time is inferred from the values.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgRagePowerMode
+  wrapper: 0x0035a878
+  calls:
+    - {addr: 0x00236c48, name: Cfg_SetRagePowerMode}
+  args:
+    - {name: mode, lua: number, ctype: unsigned, desc: "Rage power mode number (global.lua sets 1)."}
+  description: >-
+    Stores the rage power mode in the global 0x00510298.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What each mode does is not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgRagePoints
+  wrapper: 0x0035a8b0
+  calls:
+    - {addr: 0x00236c28, name: Cfg_SetRagePoints}
+  args:
+    - {name: points, lua: number, ctype: float, desc: "Rage points (25 in config_preload2.lua), global 0x005108d8."}
+    - {name: gain, lua: number, ctype: float, desc: "Rage gain factor (1), global 0x005108e0."}
+    - {name: decay, lua: number, ctype: float, desc: "Rage decay factor (0.1), global 0x005108e4."}
+  description: >-
+    Stores three rage-meter tuning floats in globals 0x005108d8, 0x005108e0 and 0x005108e4.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The names of the three values are inferred; the readers are not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgRageHandlers
+  wrapper: 0x0035a950
+  calls:
+    - {addr: 0x00236c58, name: Cfg_SetRageHandlers}
+  args:
+    - {name: enterFn, lua: string, desc: "Lua function name (up to 31 characters) called when rage mode starts, or nil."}
+    - {name: exitFn, lua: string, desc: "Lua function name called when rage mode ends, or nil."}
+    - {name: fullFn, lua: string, desc: "Lua function name called when the rage meter is full (or checked), or nil."}
+    - {name: durationMs, lua: number, ctype: unsigned, desc: "Milliseconds (20000 in global.lua and the tutorial), global 0x00510294."}
+    - {name: warnMs, lua: number, ctype: unsigned, desc: "Milliseconds (5000), global 0x00510290."}
+  description: >-
+    Registers the three rage-mode script callbacks by name (copied into 32-byte buffers at 0x006b6830, 0x006b6850 and
+    0x006b6810) and two times in milliseconds. global.lua installs SetRageMode/ClrRageMode/RageFull and the tutorial
+    replaces them.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Unlike most callback setters the names are copied, not interned. That the times are the rage duration and a
+    warning period is inferred.
+  usage: {chunks: 2, calls: 3, boot: true, mission1: true, result_used: false}
+
+- name: CfgWorkoutParams
+  wrapper: 0x0035c5a0
+  calls:
+    - {addr: 0x00234530, name: Cfg_SetWorkoutParams}
+  args:
+    - {name: rates1, lua: table, elem: number, count: 3, written_back: true, desc: "Three floats copied to 0x00510690: per-step progress increments for the workout minigame."}
+    - {name: rates2, lua: table, elem: number, count: 3, written_back: true, desc: "Three floats copied to 0x005106a0."}
+    - {name: rates3, lua: table, elem: number, count: 3, written_back: true, desc: "Three floats copied to 0x005106b0."}
+    - {name: factor, lua: boolean, desc: "Read as a boolean in Lua, then stored as a float at 0x005106ac (config_preload2.lua passes 1.8, which arrives as 1)."}
+  description: >-
+    Stores the workout (training) minigame's tuning: three 3-float tables and a factor, read by the workout routine
+    0x00255540, which adds the first table's values to a progress value clamped to 1.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The fourth argument goes through the boolean helper, so any non-nil value other than 0 becomes 1.0: the 1.8 the
+    script passes is lost. Likely a bug in the binding.
+  usage: {chunks: 2, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: CfgTagStartCallback
+  wrapper: 0x0035cc20
+  calls:
+    - {addr: 0x00238f10, name: Cfg_SetTagStartCallback}
+  args:
+    - {name: fn, lua: string, desc: "Lua function name called when the player starts spraying a tag, or nil (global.lua clears it)."}
+  description: >-
+    Registers the script callback (interned, stored at 0x006b6870) fired when a tag (graffiti) starts.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    When exactly it fires is inferred from the name and the levels that use it.
+  usage: {chunks: 6, calls: 8, boot: true, mission1: false, result_used: false}
+
+- name: CfgBurnRates
+  wrapper: 0x0035dc90
+  calls:
+    - {addr: 0x0023a658, name: Cfg_SetBurnRates}
+  args:
+    - {name: rate1, lua: number, ctype: unsigned, desc: "Rate used in one movement state, global 0x005101e4 (0 in config_preload2.lua)."}
+    - {name: rate2, lua: number, ctype: unsigned, desc: "Rate for another state, 0x005101e8 (15)."}
+    - {name: rate3, lua: number, ctype: unsigned, desc: "Rate for another state, 0x005101ec (15)."}
+    - {name: rate4, lua: number, ctype: unsigned, desc: "Rate for another state, 0x005101f0 (2)."}
+    - {name: rate5, lua: number, ctype: unsigned, desc: "Rate for another state, 0x005101f4 (20)."}
+  description: >-
+    Stores five whole-number rates as floats; 0x00223280 picks one of them by the human's current movement state (and
+    returns 0 otherwise).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What is 'burned' (stamina, rage) per state is not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgSnap
+  wrapper: 0x0035dd80
+  calls:
+    - {addr: 0x0023a550, name: Cfg_SetSnap}
+  args:
+    - {name: enabled, lua: number, ctype: unsigned, desc: "Non-zero turns on snapping of attack direction onto targets (config_preload2.lua sets 1)."}
+  description: >-
+    Stores a 0/1 flag at 0x005102b4 that the player attack routines (0x00280708, 0x00286cc8) use when choosing an
+    attack direction from the left stick.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Read as a number (not a boolean) and normalised to 0/1.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgCombo
+  wrapper: 0x0035ddb8
+  calls:
+    - {addr: 0x0023a540}
+  args:
+    - {name: mode, lua: number, ctype: unsigned, desc: "Combo setting stored in global 0x005102b0."}
+  description: >-
+    Stores a combo setting; never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0023a540.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgButtonMash
+  wrapper: 0x0035ddf0
+  calls:
+    - {addr: 0x0023a560, name: Cfg_SetButtonMash}
+  args:
+    - {name: perPress, lua: number, ctype: int, desc: "Integer at 0x005102bc (15 in config_preload2.lua)."}
+    - {name: decay, lua: number, ctype: int, desc: "Integer at 0x005102c0, used halved by 0x0027e6d8 (250)."}
+    - {name: target, lua: number, ctype: int, desc: "Integer at 0x005102b8: the meter total that completes the mash (1000); 0x00255f08 compares a counter with it and draws the fraction."}
+  description: >-
+    Configures button-mash prompts (grapple struggles and similar): the value a mash counter must reach and two tuning
+    integers.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The target's use is confirmed (code); the meanings of the first two are inferred.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgStrafe
+  wrapper: 0x0035de90
+  calls:
+    - {addr: 0x0023a588}
+  args:
+    - {name: enabled, lua: boolean, desc: "Strafe setting flag (global 0x005104a8)."}
+  description: >-
+    Stores a strafe flag for the player controls; never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0023a588.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgStrafeRStick
+  wrapper: 0x0035dec0
+  calls:
+    - {addr: 0x0023a5e8}
+  args:
+    - {name: enabled, lua: boolean, desc: "true would make the right stick strafe (global 0x005104d0)."}
+  description: >-
+    Stores a right-stick strafe flag; never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0023a5e8.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgAutoCombat
+  wrapper: 0x0035def0
+  calls:
+    - {addr: 0x0023a5b8}
+  args:
+    - {name: enabled, lua: boolean, desc: "Auto-combat flag (global 0x005104b0)."}
+  description: >-
+    Stores the auto-combat flag tested by the player target routine 0x00241b90 after the lock-on and auto-lock flags;
+    never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0023a5b8.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgAutoLock
+  wrapper: 0x0035df20
+  calls:
+    - {addr: 0x0023a598}
+  args:
+    - {name: enabled, lua: boolean, desc: "Auto-lock flag (global 0x005104b4)."}
+  description: >-
+    Stores the auto-lock flag tested by 0x00241b90; never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0023a598.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgAutoLockAndCombat
+  wrapper: 0x0035df50
+  calls:
+    - {addr: 0x0023a5a8, name: Cfg_SetAutoLockAndCombat}
+  args:
+    - {name: enabled, lua: boolean, desc: "true (config_preload2.lua): the player automatically locks onto and fights the nearest enemy."}
+  description: >-
+    Stores the flag 0x005104b8, one of four targeting modes (lock-on, auto-lock, auto-lock-and-combat, auto-combat)
+    that the player targeting routine 0x00241b90 tests in order.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgLockOn
+  wrapper: 0x0035df80
+  calls:
+    - {addr: 0x0023a5c8}
+  args:
+    - {name: enabled, lua: boolean, desc: "Manual lock-on flag (global 0x005104ac)."}
+  description: >-
+    Stores the lock-on flag tested first by 0x00241b90; never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0023a5c8.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgCombatTimeout
+  wrapper: 0x0035dfb0
+  calls:
+    - {addr: 0x0023a5d8}
+  args:
+    - {name: seconds, lua: number, ctype: float, desc: "Combat timeout (float, global 0x00510994)."}
+  description: >-
+    Stores how long combat mode lasts without a fight; never called by the scripts.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0023a5d8; unit not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgTurnRate
+  wrapper: 0x0035dfe8
+  calls:
+    - {addr: 0x0023a5f8, name: Cfg_SetTurnRate}
+  args:
+    - {name: modeA, lua: boolean, desc: "Flag at 0x00510308 (config_preload2.lua: true); with it clear the turn amount is scaled by the angle divided by maxAngle."}
+    - {name: modeB, lua: boolean, desc: "Flag at 0x00510304 (false); either flag enables the turn-rate code."}
+    - {name: maxAngle, lua: number, ctype: float, desc: "Angle (radians) stored at 0x00510310 and doubled at 0x00510318 (2)."}
+    - {name: rate, lua: number, ctype: float, desc: "Rate factor stored at 0x0051030c and 0x00510314 (0.8)."}
+  description: >-
+    Configures how fast a pad-controlled human turns toward the left stick's direction; the locomotion routines
+    (0x00240898, 0x00240e38, 0x00245310) read these values.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Exact roles of the two flags are inferred from the readers' branches.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgDistances
+  wrapper: 0x0035e0a0
+  calls:
+    - {addr: 0x0023a630, name: Cfg_SetCombatDistances}
+  args:
+    - {name: near, lua: number, ctype: float, desc: "Distance in metres (2 in config_preload2.lua); stored squared at 0x005104bc."}
+    - {name: mid, lua: number, ctype: float, desc: "Distance in metres (2.5); stored squared at 0x005104c0."}
+    - {name: far, lua: number, ctype: float, desc: "Distance in metres (3); stored squared at 0x005104c4."}
+  description: >-
+    Stores three combat distances, squared, which the player combat routine 0x0027ce90 compares against squared
+    distances to the target.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetTurnRates
+  wrapper: 0x0035e140
+  calls:
+    - {addr: 0x0023a7a0, name: Cfg_SetTurnRates}
+  args:
+    - {name: rate1, lua: number, ctype: float, desc: "Degrees (0 to under 90); converted to radians into 0x005101b0. Out-of-range values leave the old value."}
+    - {name: rate2, lua: number, ctype: float, desc: "Degrees, into 0x005101b8."}
+    - {name: rate3, lua: number, ctype: float, desc: "Degrees, into 0x005101c0."}
+    - {name: rate4, lua: number, ctype: float, desc: "Degrees, into 0x005101c8."}
+    - {name: rate5, lua: number, ctype: float, desc: "Degrees, into 0x005101d0."}
+    - {name: rate6, lua: number, ctype: float, desc: "Degrees, into 0x005101d8."}
+  description: >-
+    Sets six turn-rate angles (config_preload2.lua: 11, 16, 18, 18, 20, 24 degrees), converted to radians; each is
+    accepted only in the range 0 to 90.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Probably one per gait or state (walk to sprint); the readers are not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgBaseChanceToBlock
+  wrapper: 0x0035e258
+  calls:
+    - {addr: 0x002947f0, name: Cfg_SetBaseChanceToBlock}
+  args:
+    - {name: percent, lua: number, ctype: unsigned, desc: "Base chance (0-100) that an AI fighter blocks an attack; values above 100 are ignored."}
+  description: >-
+    Sets the AI's base block chance (0x00510ac8). global.lua sets it from BaseChanceToBlock and the armies levels
+    raise it per gang (0 to 70).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 16, calls: 18, boot: true, mission1: false, result_used: false}
+
+- name: CfgVerticalSightModifier
+  wrapper: 0x0035e290
+  calls:
+    - {addr: 0x00294808, name: Cfg_SetVerticalSightModifier}
+  args:
+    - {name: factor, lua: number, ctype: float, desc: "Multiplier on the AI's vertical sight range (1.2 default; levels use 0.75 to 8)."}
+  description: >-
+    Stores the AI vertical sight modifier (0x00510ad4).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    How the sight test uses it is not traced.
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: CfgCanBeAttackedModifier
+  wrapper: 0x0035e2c8
+  calls:
+    - {addr: 0x00294818, name: Cfg_SetCanBeAttackedModifier}
+  args:
+    - {name: factor, lua: number, ctype: float, desc: "Float modifier (config_preload2.lua sets 1)."}
+  description: >-
+    Stores an AI modifier (0x00510ad0) for how readily a human can be attacked.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Meaning from the name; readers not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgCivilianAggression
+  wrapper: 0x0035e300
+  calls:
+    - {addr: 0x00294828, name: Cfg_SetCivilianAggression}
+  args:
+    - {name: percentA, lua: number, ctype: unsigned, desc: "Percentage 0-100 stored as a byte at 0x00510ad8 (20 by default; levels use 0, 25, 100)."}
+    - {name: percentB, lua: number, ctype: unsigned, desc: "Percentage 0-100 stored at 0x00510ad9 (20 by default)."}
+  description: >-
+    Sets two civilian aggression percentages (how likely civilians fight back), stored as bytes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Which situation each percentage covers is not traced.
+  usage: {chunks: 6, calls: 11, boot: true, mission1: false, result_used: false}
+
+- name: CfgSearchTimes
+  wrapper: 0x0035e378
+  calls:
+    - {addr: 0x00294840, name: Cfg_SetSearchTimes}
+  args:
+    - {name: time1, lua: number, ctype: unsigned, desc: "Search time stored as a byte at 0x00510ada (6)."}
+    - {name: time2, lua: number, ctype: unsigned, desc: "Search time at 0x00510adb (10)."}
+    - {name: time3, lua: number, ctype: unsigned, desc: "Search time at 0x00510adc (20)."}
+  description: >-
+    Stores three AI search durations (bytes) used when enemies look for a player they lost.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Unit (probably seconds) and the use are inferred.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgEnableDispatcher
+  wrapper: 0x0035e418
+  calls:
+    - {addr: 0x0041d8e0}
+  args:
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) turns the police dispatcher on; false off. Game state +0x32a."}
+    - {name: value, lua: number, ctype: int, default: -1, desc: "Dispatcher value stored at game state +0x328; -1 (the default) means 125."}
+  description: >-
+    Turns the police dispatcher on or off and sets its 16-bit parameter (default 125).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0041d8e0 and 0x0041d0a8; the police meaning is inferred from the name and the crime
+    fields beside it.
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: CfgSetMaxThrowError
+  wrapper: 0x0035e480
+  calls:
+    - {addr: 0x0041d940}
+  args:
+    - {name: horizontalDeg, lua: number, ctype: float, desc: "Maximum aiming error in degrees for thrown objects, one axis (stored in radians at 0x005148b0)."}
+    - {name: verticalDeg, lua: number, ctype: float, desc: "Maximum aiming error in degrees on the other axis (radians at 0x005148b4)."}
+  description: >-
+    Sets how far (in degrees) a thrown object may deviate from its aim; one level sets 5 and 5.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage and the degree-to-radian conversion confirmed (code) at 0x0041d940; which axis is which is inferred.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CfgGangSizeForCombatMusic
+  wrapper: 0x0035e4f8
+  calls:
+    - {addr: 0x0041d920}
+  args:
+    - {name: count, lua: number, ctype: int, desc: "Number of enemies that must be fighting before the combat music starts (levels use 1-3)."}
+  description: >-
+    Stores the enemy-count threshold for combat music (0x005148a8).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0041d920; meaning from the name.
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: CfgDisableMusicForScenes
+  wrapper: 0x0035e530
+  calls:
+    - {addr: 0x0041d930, name: Cfg_SetDisableMusicForScenes}
+  args:
+    - {name: enabled, lua: boolean, desc: "true: music is stopped while a cutscene plays (global.lua sets true); false or nil leaves it playing."}
+  description: >-
+    Sets the global flag 0x005148ac that tells the scene code to silence the level music during cutscenes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage confirmed (code) at 0x0041d930; the scene behaviour follows the name (readers not traced).
+  usage: {chunks: 21, calls: 35, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetTimeScale
+  wrapper: 0x0035e560
+  calls:
+    - {addr: 0x0041d968}
+  args:
+    - {name: scale, lua: number, ctype: float, desc: "Game-timer speed factor (1 normal speed)."}
+  description: >-
+    Writes a speed factor into the game timer object (0x0050b734 + 0x50), slowing or speeding up game time; no script
+    calls it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0041d968; that +0x50 scales the timer is inferred from the name.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgExcludedVandalizeZone
+  wrapper: 0x0035e598
+  calls:
+    - {addr: 0x0041d978}
+  args:
+    - {name: zone, lua: number, ctype: int, default: -1, desc: "Zone index in which vandalism is not counted; -1 (the default) for none."}
+  description: >-
+    Stores a 16-bit zone index (0x005148bc) excluded from vandalism (tagging, smashing) checks; one level uses it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0041d978.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CfgHUDMessage
+  wrapper: 0x0035e5d0
+  calls:
+    - {addr: 0x0041d988}
+  args:
+    - {name: id, lua: number, ctype: int, desc: "Global string id (an index into GlobalStrings: GSTRING.HUD's index)."}
+    - {name: text, lua: string, desc: "The text; copied into the Lua pool."}
+  description: >-
+    Stores a HUD string: copies the text and keeps its pointer at 0x00600048 + id x 4, where GlobalString_Get
+    (0x0019ee70) finds it ([GUI strings](../../research/gui.md#strings)).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The language set-up fills GSTRING.HUD through it on the boot-to-menu path, its one call in the scripts ([Front
+    end](../../research/frontend.md)).
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
+
+- name: CfgTutorialMessage
+  wrapper: 0x0035e630
+  calls:
+    - {addr: 0x0041d9a8, name: Cfg_SetTutorialMessage}
+  args:
+    - {name: id, lua: number, ctype: int, desc: "Tutorial string id (TSTRING index)."}
+    - {name: text, lua: string, desc: "The text; copied (0x003864e0) and its pointer kept at 0x00622fd0 + id x 4."}
+  description: >-
+    Stores one tutorial message string by id for the HUD's tutorial prompts; config_preload2.lua fills the table from
+    the language file.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
+
+- name: CfgCrimeMessage
+  wrapper: 0x0035e690
+  calls:
+    - {addr: 0x0041d9c8}
+  args:
+    - {name: id, lua: number, ctype: int, desc: "Crime string id (CRIME index)."}
+    - {name: text, lua: string, desc: "The text; copied and its pointer kept at 0x006007f8 + id x 4."}
+  description: >-
+    Stores one crime-message string by id: the text is copied (0x003864e0) and the copy's pointer kept in the table at
+    0x006007f8 + id x 4, which the HUD reads when a crime is reported. config_preload2.lua fills the table in a loop
+    over its CRIME strings.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    No range check on the id. The scripts call it inside a `for` loop, which an earlier call-site survey missed; the
+    reference counts are by name reference.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
+
+- name: CfgAnnounceMessage
+  wrapper: 0x0035e6f0
+  calls:
+    - {addr: 0x001b5c10, name: Cfg_SetAnnounceMessage}
+  args:
+    - {name: id, lua: number, ctype: int, desc: "Announcement string id (ANNOUNCE index)."}
+    - {name: text, lua: string, desc: "The text; copied and its pointer kept at 0x00622e20 + id x 4."}
+  description: >-
+    Stores one announcer message string by id; config_preload2.lua fills the table from the language file.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
+
+- name: CfgHUDColor
+  wrapper: 0x0035e750
+  calls:
+    - {addr: 0x0041d9e8, name: Cfg_SetHUDColour}
+  args:
+    - {name: id, lua: number, ctype: int, desc: "Colour slot 1-9 (button, cash, warriors, text, grey, bonus, blue, orange, big money in config_preload2.lua)."}
+    - {name: colour, lua: string, desc: "Colour as a string from global.lua's CL table; copied and its pointer kept at 0x00600660 + id x 4."}
+  description: >-
+    Stores a named HUD colour string by slot, used by the HUD text code; config_preload2.lua sets slots 1 to 9 from
+    the CL table.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The string's format (a colour tag for the text layout) is inferred.
+  usage: {chunks: 1, calls: 10, boot: true, mission1: false, result_used: false}
+
+- name: CfgSubtitles
+  wrapper: 0x0035e7b0
+  calls:
+    - {addr: 0x0041da30, name: Cfg_SetSubtitles}
+  args:
+    - {name: enabled, lua: boolean, desc: "true shows cutscene subtitles (global.lua passes SCENESUBTITLES)."}
+  description: >-
+    Stores the subtitle switch in the game state (+0x438).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgLanguage
+  wrapper: 0x0035e7e0
+  calls:
+    - {addr: 0x0041da40, name: Cfg_SetLanguage}
+  args:
+    - {name: language, lua: number, ctype: int, desc: "Language number: 0 English, 1 Spanish, 2 French, 3 Italian, 4 German (global.lua passes SCENELANGUAGE)."}
+  description: >-
+    Writes the game state's language (+0x120), the value GetLanguage returns.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgMultiplayerJoin
+  wrapper: 0x0035e818
+  calls:
+    - {addr: 0x0041da08, name: Cfg_SetMultiplayerJoin}
+  args:
+    - {name: enabled, lua: boolean, desc: "true allows a second player to join (drop-in co-op); false forbids it."}
+  description: >-
+    Sets the game state's 'second player may join' flag (+0x56e8); when it changes to true it also calls 0x0041a460
+    with -1 to reset the join state. The tutorial and most missions switch it per section.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What 0x0041a460 resets is not traced.
+  usage: {chunks: 52, calls: 69, boot: false, mission1: true, result_used: false}
+
+- name: CfgWarriorCommand
+  wrapper: 0x0035e848
+  calls:
+    - {addr: 0x0041dad8, name: Cfg_SetWarriorCommandText}
+  args:
+    - {name: id, lua: number, ctype: int, desc: "Warrior command id (COMMAND index)."}
+    - {name: text, lua: string, desc: "The command's display text; copied and its pointer kept at 0x006007c0 + id x 4."}
+  description: >-
+    Stores the display text of one squad command (the orders given to the other Warriors) by id; config_preload2.lua
+    fills the table.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
+
+- name: CfgMercyStruggleDamage
+  wrapper: 0x0035e8a8
+  calls:
+    - {addr: 0x00294860}
+  args:
+    - {name: damage, lua: number, ctype: int, desc: "Damage dealt per mercy-struggle step (integer)."}
+  description: >-
+    Stores the mercy-struggle damage (0x00510acc); one level sets it.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x00294860.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CfgSearchCounts
+  wrapper: 0x0035e8e0
+  calls:
+    - {addr: 0x00294870, name: Cfg_SetSearchCounts}
+  args:
+    - {name: countA, lua: number, ctype: unsigned, desc: "Count stored as a byte at 0x00510ade (2)."}
+    - {name: countB, lua: number, ctype: unsigned, desc: "Count stored as a byte at 0x00510add (2)."}
+  description: >-
+    Stores two AI search counts (how many searchers or search points), set by config_preload2.lua.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Meaning inferred; note the bytes are stored in reverse order.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgChanceToGetHelp
+  wrapper: 0x0035e958
+  calls:
+    - {addr: 0x00294888}
+  args:
+    - {name: percent, lua: number, ctype: unsigned, desc: "Chance 0-100 that a civilian victim calls for help; values above 100 become 100."}
+  description: >-
+    Stores the call-for-help chance (byte at 0x00510adf).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage and clamp confirmed (code) at 0x00294888.
+  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: CfgPedInteractDelay
+  wrapper: 0x0035e990
+  calls:
+    - {addr: 0x002948a0}
+  args:
+    - {name: delay, lua: number, ctype: unsigned, desc: "Delay between pedestrian interactions (one level sets 2)."}
+  description: >-
+    Stores the pedestrian interaction delay (0x00510fcc).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x002948a0; unit not traced.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CfgPlayerMugging
+  wrapper: 0x0035e9c8
+  calls:
+    - {addr: 0x0041daf8, name: Cfg_SetPlayerMugging}
+  args:
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets the player mug civilians; false disables it (the first mission turns it off)."}
+  description: >-
+    Stores the player-mugging switch in the game state (+0x5708).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 9, calls: 9, boot: false, mission1: true, result_used: false}
+
+- name: CfgRaindrops
+  wrapper: 0x00368550
+  calls:
+    - {addr: 0x0018dd58}
+  args:
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Raindrop colour {r, g, b, a}, each 0-255; packed into one word."}
+    - {name: kind, lua: number, ctype: unsigned, desc: "Integer stored at +0x08 of the rain object (levels pass 1-3)."}
+    - {name: scale, lua: number, ctype: float, desc: "Float stored at +0x0c of the rain object (0.75 or 1)."}
+  description: >-
+    Sets the colour and two parameters of the rain effect object (0x005971a8).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Storage confirmed (code) at 0x0018dd58 / 0x00183630; the meaning of kind and scale is inferred.
+  usage: {chunks: 9, calls: 21, boot: false, mission1: false, result_used: false}
+
+- name: CfgAttackDelay
+  wrapper: 0x003697f0
+  calls:
+    - {addr: 0x00228ca8, name: Cfg_SetAttackDelay}
+  args:
+    - {name: attack, lua: number, ctype: int, desc: "Attack or move index 0-44."}
+    - {name: ms, lua: number, ctype: int, desc: "Delay in milliseconds (200 for most; 0 to 1000 for some)."}
+  description: >-
+    Stores one attack's delay in the table at 0x006b6658 (one int per index), set for 44 indices by
+    config_preload2.lua.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    No range check on the index. That the unit is milliseconds is inferred from the values.
+  usage: {chunks: 1, calls: 44, boot: true, mission1: false, result_used: false}
+
+- name: CfgPowerClass
+  wrapper: 0x00369868
+  calls:
+    - {addr: 0x002288c0, name: Cfg_SetPowerClass}
+  args:
+    - {name: classId, lua: number, ctype: int, desc: "Power class index; selects a 0x44-byte record at 0x006619a0 + classId x 0x44 (0-66 in the difficulty configs)."}
+    - {name: p2, lua: number, ctype: int, desc: "16-bit value at +0x28 (e.g. 180-650: probably hit points)."}
+    - {name: p3, lua: number, ctype: int, desc: "16-bit value at +0x2a (30-110)."}
+    - {name: p4, lua: number, ctype: int, desc: "16-bit value at +0x2c (80-135)."}
+    - {name: p5, lua: number, ctype: int, desc: "16-bit value at +0x2e (10-40)."}
+    - {name: p6, lua: number, ctype: int, desc: "16-bit value at +0x34 (2000-2750: a time in ms, inferred)."}
+    - {name: p7, lua: number, ctype: int, desc: "16-bit value at +0x30 (200-750)."}
+    - {name: p8, lua: number, ctype: int, desc: "16-bit value at +0x32 (300-750)."}
+    - {name: f9, lua: number, ctype: float, desc: "Float at +0x00."}
+    - {name: f10, lua: number, ctype: float, desc: "Float at +0x04."}
+    - {name: f11, lua: number, ctype: float, desc: "Float at +0x08."}
+    - {name: f12, lua: number, ctype: float, desc: "Float at +0x0c."}
+    - {name: f13, lua: number, ctype: float, desc: "Float at +0x10."}
+    - {name: f14, lua: number, ctype: float, desc: "Float at +0x14."}
+    - {name: f15, lua: number, ctype: float, desc: "Float at +0x18."}
+    - {name: f16, lua: number, ctype: float, desc: "Float at +0x1c."}
+    - {name: f17, lua: number, ctype: float, desc: "Float at +0x20."}
+    - {name: n18, lua: number, ctype: int, desc: "Byte at +0x36, at least 1."}
+    - {name: n19, lua: number, ctype: int, desc: "Byte at +0x37, clamped 0-15."}
+    - {name: f20, lua: number, ctype: float, desc: "Float at +0x24, clamped to 0-1."}
+    - {name: n21, lua: number, ctype: int, desc: "Byte at +0x38, clamped 0-127."}
+    - {name: flag22, lua: number, ctype: int, desc: "Byte at +0x39, clamped 0-1."}
+    - {name: n23, lua: number, ctype: int, desc: "Byte at +0x3a."}
+    - {name: n24, lua: number, ctype: int, desc: "Byte at +0x3b."}
+    - {name: n25, lua: number, ctype: int, desc: "Byte at +0x3c."}
+    - {name: n26, lua: number, ctype: int, desc: "Byte at +0x3d."}
+    - {name: n27, lua: number, ctype: int, desc: "Byte at +0x3f (-1, 0 or 1 in the scripts)."}
+    - {name: n28, lua: number, ctype: int, desc: "Byte at +0x3e (-1, 0 or 1)."}
+    - {name: percent29, lua: number, ctype: int, desc: "Byte at +0x40, clamped 0-100 (30-85 in the scripts)."}
+    - {name: flag30, lua: number, ctype: int, desc: "Byte at +0x41, clamped 0-1."}
+    - {name: flag31, lua: number, ctype: int, desc: "Byte at +0x42, clamped 0-1."}
+  description: >-
+    Fills one power class, the combat-strength profile a character type refers to: seven 16-bit values, nine floats,
+    and a run of small bytes, with the clamps listed per argument; it also marks the record as set (+0x43 = 1). The
+    difficulty scripts (config_easy/normal/hard/fury and Rumble) each define the whole set, so the profile depends on
+    difficulty.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Layout and clamps confirmed (code) at 0x002288c0. The readers use computed addresses, so no field's game meaning
+    has been traced; meanings in the argument list are guesses from the values. The record has 31 fields; Coney needs
+    all of them stored even before their meaning is known.
+  usage: {chunks: 6, calls: 311, boot: true, mission1: false, result_used: false}
+
+- name: CfgWarriorClass
+  wrapper: 0x00369d10
+  calls:
+    - {addr: 0x00228a70, name: Cfg_SetWarriorClass}
+  args:
+    - {name: classId, lua: number, ctype: int, desc: "Warrior index 0-8 (one per playable Warrior); selects a 14-byte record at 0x006b65c0 + classId x 14."}
+    - {name: s1, lua: number, ctype: unsigned, desc: "Stat stored as a byte at +0x05."}
+    - {name: s2, lua: number, ctype: unsigned, desc: "Stat stored as a byte at +0x06."}
+    - {name: s3, lua: number, ctype: unsigned, desc: "Stat stored as 16 bits at +0x00."}
+    - {name: s4, lua: number, ctype: unsigned, desc: "Stat byte at +0x02."}
+    - {name: s5, lua: number, ctype: unsigned, desc: "Stat byte at +0x03."}
+    - {name: s6, lua: number, ctype: unsigned, desc: "Stat byte at +0x04."}
+    - {name: s7, lua: number, ctype: unsigned, desc: "Byte at +0x07 (1-2)."}
+    - {name: s8, lua: number, ctype: unsigned, desc: "Byte at +0x08 (1-3)."}
+    - {name: s9, lua: number, ctype: unsigned, desc: "Byte at +0x09 (1-3)."}
+    - {name: s10, lua: number, ctype: unsigned, desc: "Byte at +0x0a."}
+    - {name: s11, lua: number, ctype: unsigned, desc: "Byte at +0x0b."}
+    - {name: s12, lua: number, ctype: unsigned, desc: "Byte at +0x0c."}
+    - {name: s13, lua: number, ctype: unsigned, desc: "Byte at +0x0d."}
+  description: >-
+    Fills one playable Warrior's class record (stats as bytes and one 16-bit value) for the current difficulty; the
+    difficulty configs set all nine.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Layout confirmed (code) at 0x00228a70; the stat meanings are not traced.
+  usage: {chunks: 6, calls: 55, boot: true, mission1: false, result_used: false}
+
+- name: CfgWarriorUpgrade
+  wrapper: 0x00369f38
+  calls:
+    - {addr: 0x00228ad8, name: Cfg_SetWarriorUpgrade}
+  args:
+    - {name: u1, lua: number, ctype: unsigned, desc: "Byte at 0x006b6650 (10)."}
+    - {name: u2, lua: number, ctype: unsigned, desc: "Byte at 0x006b6651 (20)."}
+    - {name: u3, lua: number, ctype: unsigned, desc: "Byte at 0x006b6652 (10)."}
+    - {name: u4, lua: number, ctype: unsigned, desc: "Byte at 0x006b6653 (20)."}
+  description: >-
+    Stores four upgrade amounts (bytes at 0x006b6650-0x006b6653), read through the getter 0x00228860;
+    config_preload2.lua sets 10, 20, 10, 20.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Which stat each upgrade raises is not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgHat
+  wrapper: 0x0036a000
+  calls:
+    - {addr: 0x00228d70, name: Cfg_AddHatFit}
+  args:
+    - {name: set, lua: number, ctype: int, desc: "Hat-fit set index (1-48): selects a 0xa90-byte record at 0x00662b70 + set x 0xa90, one per head shape."}
+    - {name: owner, lua: number, ctype: int, desc: "Number stored once per set at record +0xa80 (a character type or model number, inferred)."}
+    - {name: hat, lua: string, desc: "Hat object name (as given to CfgObj, e.g. a 'dyn_' name); put into the first free slot of the set's 48 name slots."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Offset {x, y, z} in metres of the hat relative to the head."}
+    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Rotation quaternion {i, j, k, r} of the hat."}
+  description: >-
+    Adds one hat fitting to a hat-fit set: the hat's name goes into the first slot still named 'none' and its offset
+    and rotation into the matching transform. config_preload2.lua makes 908 such calls (41 hats per set).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    A set holds at most 48 hats; when all slots are used the slot index is -1 and the write lands before the record
+    (no check).
+  usage: {chunks: 1, calls: 908, boot: true, mission1: false, result_used: false}
+
+- name: CfgObj
+  wrapper: 0x0036a1a0
+  calls:
+    - {addr: 0x00390f18, name: Cfg_AddObjectType}
+  args:
+    - {name: name, lua: string, desc: "Object type name (e.g. a 'dyn_' prop or hat name); its hash also picks the model (+0x8c)."}
+    - {name: className, lua: string, desc: "Object class name (e.g. 'hat_object'); converted to a class id at +0x5c."}
+    - {name: v3, lua: number, ctype: int, desc: "16-bit value at +0x58."}
+    - {name: v4, lua: number, ctype: int, desc: "Byte at +0x5a."}
+    - {name: v5, lua: number, ctype: int, desc: "Byte at +0x5b."}
+    - {name: v6, lua: number, ctype: int, desc: "16-bit value at +0x62."}
+    - {name: centre, lua: table, elem: number, count: 3, written_back: true, desc: "Collision centre offset {x, y, z} in metres."}
+    - {name: size, lua: table, elem: number, count: 3, written_back: true, desc: "Collision box size {x, y, z} in metres (+0x78)."}
+    - {name: shape, lua: number, ctype: unsigned, desc: "Physics shape (PHYS table: NONE, OBB, ...), byte at +0x84."}
+    - {name: axis, lua: number, ctype: unsigned, desc: "Main axis (AXIS table), byte at +0x85."}
+    - {name: mass, lua: number, ctype: float, desc: "Float at +0x88 (0.1 for hats; mass or weight, inferred)."}
+    - {name: material, lua: number, ctype: unsigned, desc: "Surface material (MATERIAL table), 16 bits at +0x5e."}
+    - {name: pickupAnim, lua: number, ctype: unsigned, desc: "Animation used to pick it up (ANIM table), byte at +0x64."}
+    - {name: v14, lua: number, ctype: unsigned, desc: "Byte at +0x65."}
+    - {name: f15, lua: number, ctype: float, desc: "Float at +0x68."}
+    - {name: f16, lua: number, ctype: float, desc: "Float at +0x6c."}
+    - {name: f17, lua: number, ctype: float, desc: "Float at +0x70."}
+    - {name: f18, lua: number, ctype: float, desc: "Float at +0x74."}
+    - {name: objectType, lua: number, ctype: unsigned, desc: "Object kind (OBJECT table: TYPE_HAT, TYPE_RIOT_HAT, ...), byte at +0x86."}
+    - {name: animSet, lua: number, ctype: int, desc: "Animation set (ANIM table, e.g. NONE_SET), byte at +0x87."}
+    - {name: holdPos, lua: table, elem: number, count: 3, written_back: true, desc: "Offset {x, y, z} in metres when held or worn."}
+    - {name: holdRot, lua: table, elem: number, count: 4, written_back: true, desc: "Rotation quaternion {i, j, k, r} when held or worn."}
+  description: >-
+    Defines one object type in the object database (0x00512c04): name, class, collision shape and size, physics,
+    material, pickup animation, kind and the transform used when it is carried. config_preload2.lua and
+    config_preload3.lua's CfgObjectsAtoC..TtoZ make about 1,370 calls.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Layout confirmed (code) at 0x00390f18; argument meanings for the enum-typed fields come from the scripts' table
+    names (PHYS, AXIS, MATERIAL, ANIM, OBJECT). The fields at +0x58-+0x74 are not interpreted yet.
+  usage: {chunks: 2, calls: 1371, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetGlobalTimeToLive
+  wrapper: 0x0036a658
+  calls:
+    - {addr: 0x0041d4f8, name: Cfg_SetGlobalTimeToLive}
+  args:
+    - {name: ms, lua: number, ctype: int, desc: "Lifetime in milliseconds (config_preload2.lua 30000; the tutorial's second lesson sets 1000 and 10000)."}
+  description: >-
+    Stores a global lifetime (game state +0x26c) for temporary things such as dropped items or bodies.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What expires after this time is inferred from the name.
+  usage: {chunks: 2, calls: 3, boot: true, mission1: true, result_used: false}
+
+- name: CfgSetCollisionLengths
+  wrapper: 0x0036a690
+  calls:
+    - {addr: 0x003910f0}
+  args:
+    - {name: objectName, lua: string, desc: "Name of an object type already defined with CfgObj."}
+    - {name: lengthA, lua: number, ctype: float, desc: "Float stored at the type's +0x68."}
+    - {name: lengthB, lua: number, ctype: float, desc: "Float stored at the type's +0x6c."}
+  description: >-
+    Overrides two collision lengths of an existing object type found by name; no script calls it.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    0x003910f0 does not check the lookup result.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgGangMusic
+  wrapper: 0x0036a728
+  calls:
+    - {addr: 0x0016b108, name: Cfg_SetGangMusic}
+  args:
+    - {name: gang, lua: number, ctype: unsigned, desc: "Gang id (0-23 in config_preload2.lua)."}
+    - {name: tracks, lua: table, elem: string, count: 3, written_back: true, desc: "Table of three music track names (stream paths like 'music/...'), each up to 35 characters."}
+  description: >-
+    Sets the three music tracks played when fighting a gang, stored in the gang configuration table (0x0050caa8, 0x7a
+    bytes per gang).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    When each of the three tracks is chosen is not traced.
+  usage: {chunks: 1, calls: 24, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetMeleeRange
+  wrapper: 0x0036a7f0
+  calls:
+    - {addr: 0x00294690, name: Cfg_SetMeleeRange}
+  args:
+    - {name: near, lua: number, ctype: float, desc: "Distance in metres (3), global 0x00510ab4."}
+    - {name: far, lua: number, ctype: float, desc: "Distance in metres (5), global 0x00510ab8."}
+  description: >-
+    Stores the AI's two melee ranges (config_preload2.lua sets 3 and 5).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Unit inferred from the values.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetTargetingPoints
+  wrapper: 0x0036a868
+  calls:
+    - {addr: 0x002946c0, name: Cfg_SetTargetingPoints}
+  args:
+    - {name: f1, lua: number, ctype: float, desc: "Float score weight at 0x00510b4c."}
+    - {name: n2, lua: number, ctype: int, desc: "Integer weight at 0x00510b58."}
+    - {name: n3, lua: number, ctype: int, desc: "Integer weight at 0x00510b5c."}
+    - {name: n4, lua: number, ctype: int, desc: "Integer weight at 0x00510b60."}
+    - {name: n5, lua: number, ctype: int, desc: "Integer weight at 0x00510b64."}
+    - {name: n6, lua: number, ctype: int, desc: "Ignored: read but not stored."}
+    - {name: n7, lua: number, ctype: int, desc: "Integer weight at 0x00510b74."}
+    - {name: n8, lua: number, ctype: int, desc: "Integer weight at 0x00510b6c."}
+    - {name: n9, lua: number, ctype: int, desc: "Integer weight at 0x00510b84."}
+  description: >-
+    Stores the point weights the AI uses to score targets; config_preload2.lua sets them once. The sixth argument has
+    no effect.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Callee 0x002946c0 never stores its sixth parameter. What each weight scores is not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetTargetingPointsEx
+  wrapper: 0x0036a9f8
+  calls:
+    - {addr: 0x00294718, name: Cfg_SetTargetingPointsEx}
+  args:
+    - {name: f1, lua: number, ctype: float, desc: "Float score weight at 0x00510b50."}
+    - {name: n2, lua: number, ctype: int, desc: "Integer weight at 0x00510b54."}
+    - {name: n3, lua: number, ctype: int, desc: "Integer weight at 0x00510b68."}
+    - {name: n4, lua: number, ctype: int, desc: "Integer weight at 0x00510b70."}
+    - {name: n5, lua: number, ctype: int, desc: "Integer weight at 0x00510b78."}
+    - {name: n6, lua: number, ctype: int, desc: "Integer weight at 0x00510b7c."}
+    - {name: n7, lua: number, ctype: int, desc: "Integer weight (may be negative) at 0x00510b90."}
+    - {name: n8, lua: number, ctype: int, desc: "Integer weight at 0x00510b94."}
+    - {name: n9, lua: number, ctype: int, desc: "Integer weight at 0x00510b80."}
+  description: >-
+    Stores the remaining AI target-scoring weights, beside CfgSetTargetingPoints'.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: CfgFollowCamera
+  wrapper: 0x0036ab88
+  calls:
+    - {addr: 0x0011c0b8, name: Cam_ConfigureFollow}
+  args:
+    - {name: minDist, lua: number, ctype: float, desc: "Minimum follow distance in metres (global.lua: 3)."}
+    - {name: maxDist, lua: number, ctype: float, desc: "Maximum follow distance in metres (6.6)."}
+    - {name: defaultDist, lua: number, ctype: float, desc: "Default distance in metres (4.8)."}
+    - {name: pitchDeg, lua: number, ctype: float, desc: "Pitch in degrees (13), stored in radians."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees (65)."}
+    - {name: nearPlane, lua: number, ctype: float, desc: "Near clip plane in metres (0.1)."}
+    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} in metres from the target's feet ({0, 0, 1.4})."}
+    - {name: slowmo, lua: number, ctype: float, desc: "Global slow-motion factor (0.2), stored at 0x005148a0."}
+  description: >-
+    Configures the player's follow camera: distance limits and default, pitch, field of view, near plane, look-at
+    offset and the slow-motion factor ([Camera](../../research/camera.md#setting-up)). Usually called through
+    global.lua's CameraCreateFollow and CameraNormal.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 13, calls: 28, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetOutdoorMode
+  wrapper: 0x0036ad50
+  calls:
+    - {addr: 0x0041d728, name: Cfg_SetOutdoorMode}
+  args:
+    - {name: outdoor, lua: boolean, desc: "true for an outdoor area, false for indoors."}
+  description: >-
+    Stores the outdoor flag in the game state (+0x3e4); global.lua switches it as the player moves between areas.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What the flag changes (lighting, weather, camera) is not traced.
+  usage: {chunks: 15, calls: 29, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetGlassProperties
+  wrapper: 0x0036ad80
+  calls:
+    - {addr: 0x0039c290, name: Cfg_SetGlassProperties}
+  args:
+    - {name: glassType, lua: number, ctype: unsigned, desc: "Glass type index (0-11 in config_preload2.lua); selects a 16-byte entry."}
+    - {name: flagA, lua: boolean, desc: "Boolean stored at entry +0x14."}
+    - {name: flagB, lua: boolean, desc: "Boolean stored at entry +0x18."}
+    - {name: soundA, lua: number, ctype: unsigned, desc: "Number stored at entry +0x1c (65556 or 65558: a sound id, inferred)."}
+    - {name: soundB, lua: number, ctype: unsigned, desc: "Number stored at entry +0x20 (65557 or 65559)."}
+  description: >-
+    Sets one breakable-glass type's two flags and two ids in the world object's glass table (0x00512c7c + 0x84c).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The ids look like bank << 16 | index sound ids; not confirmed.
+  usage: {chunks: 1, calls: 19, boot: true, mission1: false, result_used: false}
+
+- name: CfgScrFx
+  wrapper: 0x0036b020
+  calls:
+    - {addr: 0x0018e530}
+  args:
+    - {name: effect, lua: number, ctype: unsigned, desc: "Screen effect type; this numeric form is meant for type 5 (whose fourth number also sets a frame count)."}
+    - {name: inMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored as seconds at the effect's +0x10."}
+    - {name: outMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored as seconds at +0x14."}
+    - {name: ms, lua: number, ctype: unsigned, desc: "For type 5: milliseconds converted to 60 Hz frames (x 0.06) at +0x98."}
+    - {name: "n", lua: number, ctype: unsigned, desc: "Integer stored at +0x148."}
+    - {name: f1, lua: number, ctype: float, desc: "Float stored at +0x14c (0.002 for type 5)."}
+    - {name: f2, lua: number, ctype: float, desc: "Float stored at +0x150 (0.003)."}
+  overloads:
+  - wrapper: 0x0036ae60
+    calls:
+      - {addr: 0x0018e470}
+    args:
+      - {name: effect, lua: number, ctype: unsigned, desc: "Screen effect type (0-12): selects a 0x18-byte slot in both screen-effect managers."}
+      - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Effect colour {r, g, b, a}, each 0-255."}
+      - {name: inMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored as seconds at slot +0x10."}
+      - {name: outMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored as seconds at slot +0x14."}
+      - {name: value, lua: number, ctype: unsigned, desc: "Integer stored at slot +0x18."}
+      - {name: ms, lua: number, ctype: unsigned, desc: "Milliseconds converted to 60 Hz frames at slot +0x20."}
+      - {name: value2, lua: number, ctype: unsigned, desc: "Integer stored at slot +0x1c."}
+    note: >-
+      Used when the arguments do not match the numeric form exactly (the scripts pass a colour table as argument 2 for
+      every type but 5): sets the colour and timings of one screen-effect type.
+  description: >-
+    Configures a full-screen effect (fades, flashes, blur) in both screen-effect managers (0x005fdeb8, one per view).
+    The registered form takes seven numbers (used for type 5); when argument 2 is a table the call falls back to the
+    colour form.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Which effect each type number is (fade, damage flash, rage) is not traced.
+  usage: {chunks: 1, calls: 11, boot: true, mission1: false, result_used: false}
+
+- name: CfgLevelName
+  wrapper: 0x0036b220
+  calls:
+    - {addr: 0x0041d510, name: Cfg_SetLevelRecord}
+  args:
+    - {name: index, lua: number, ctype: int, desc: "Level record index 0-127 (config_preload3.lua passes position - 1, so level100 is record 0); record at W_GameState + 0x14d4 + index x 0x84."}
+    - {name: name, lua: string, desc: "Level name such as 'level100' (15 characters, record +0x14): the name MenuLoadLevel and the level flow use."}
+    - {name: name2, lua: string, desc: "Second name (20 characters, +0x24); always empty in the shipped scripts."}
+    - {name: worldName, lua: string, desc: "Streamed world name (15 characters, +0x39), see [Level loading](../../research/level-loading.md#the-level-record)."}
+    - {name: name4, lua: string, desc: "Fourth name (31 characters, +0x49); always empty in the shipped scripts."}
+    - {name: levelId, lua: number, ctype: int, desc: "Level number (record +0x04), what GetLevelId returns (100 for level100)."}
+    - {name: v7, lua: number, ctype: int, desc: "Integer at record +0x08."}
+    - {name: v8, lua: number, ctype: unsigned, desc: "Byte at record +0x0c."}
+    - {name: flag1, lua: number, ctype: unsigned, desc: "1 sets bit 0 of the flags byte (+0x0d)."}
+    - {name: flag2, lua: number, ctype: unsigned, desc: "1 sets bit 1 of the flags byte."}
+    - {name: flag4, lua: number, ctype: unsigned, desc: "1 sets bit 2 of the flags byte."}
+    - {name: v12, lua: number, ctype: int, desc: "Integer at record +0x10."}
+    - {name: f13, lua: number, ctype: float, desc: "Float at record +0x6c."}
+    - {name: f14, lua: number, ctype: float, desc: "Float at record +0x70."}
+    - {name: f15, lua: number, ctype: float, desc: "Float at record +0x74."}
+    - {name: v16, lua: number, ctype: unsigned, desc: "Integer at record +0x78."}
+    - {name: v17, lua: number, ctype: unsigned, desc: "Byte at record +0x7c."}
+    - {name: v18, lua: number, ctype: unsigned, desc: "Integer at record +0x80."}
+  description: >-
+    Writes one record of the level table (128 records of 0x84 bytes in the game state) and raises the level count
+    (+0x56d4) to include it. config_preload3.lua calls it for each of the 111 entries of levelNames ([Front
+    end](../../research/frontend.md#the-level-table)).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only the flag values exactly 1 set a bit. Meanings of the numeric fields beyond the level number are open; the
+    flags and floats likely describe the level type, lock state and map position.
+  usage: {chunks: 1, calls: 2, boot: true, mission1: false, result_used: false}
+  coney: implemented
+
+- name: CfgRumbleGame
+  wrapper: 0x0036b4f0
+  calls:
+    - {addr: 0x001f8110}
+  args:
+    - {name: title, lua: string, desc: "Game-mode title text (from the Rumble string table)."}
+    - {name: mode, lua: number, ctype: unsigned, desc: "Rumble game mode id (RM_* constants); the mode is added only if the unlockables manager reports it unlocked."}
+    - {name: flagA, lua: boolean, desc: "Boolean stored in the mode record (+0x10)."}
+    - {name: flagB, lua: boolean, desc: "Boolean stored at +0x14."}
+    - {name: flagC, lua: boolean, desc: "Boolean stored at +0x18."}
+    - {name: unused, lua: number, ctype: unsigned, desc: "Ignored: never stored (the scripts pass the same value as the next argument)."}
+    - {name: n7, lua: number, ctype: unsigned, desc: "Number stored at +0x1c (1, 3, 5 or 9: perhaps the number of fighters)."}
+    - {name: n8, lua: number, ctype: unsigned, desc: "16-bit value at +0x20 (0, or a string id such as 458)."}
+    - {name: n9, lua: number, ctype: unsigned, desc: "16-bit value at +0x22."}
+    - {name: description, lua: string, desc: "Description text; formatted with the title into the mode widget's text (size tags around a big-font title)."}
+  description: >-
+    Adds one game mode to the Rumble mode menu (an RM_GameModeWidget record on the list at 0x0063ee84), if that mode
+    is unlocked.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Unlock check 0x00424130 on the unlockables manager (0x006fe998) with kind 1. Only the Rumble data script calls it.
+  usage: {chunks: 1, calls: 9, boot: false, mission1: false, result_used: false}
+
+- name: CfgRumbleArena
+  wrapper: 0x0036b670
+  calls:
+    - {addr: 0x001eaa30}
+  args:
+    - {name: levelId, lua: number, ctype: unsigned, desc: "Arena level number (101-199); must be unlocked (unlockables kind 2)."}
+    - {name: value, lua: number, ctype: unsigned, desc: "Number stored in the arena entry (9 in all calls)."}
+    - {name: modes, lua: table, elem: number, count: 16, written_back: true, desc: "Up to 16 game-mode ids allowed in this arena, ended by 0 or -1."}
+  description: >-
+    Adds an arena to the Rumble arena menu (RM_ChooseAreaWidget list at 0x0063ee40) when it is unlocked and allows the
+    currently chosen mode (0x0063eec2); the entry keeps the arena's level-table index.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    A modes table whose first value is 0 allows every mode.
+  usage: {chunks: 1, calls: 29, boot: false, mission1: false, result_used: false}
+
+- name: CfgRumbleGang
+  wrapper: 0x0036b790
+  calls:
+    - {addr: 0x001ec980}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id; added only if unlocked (unlockables kind 3), or always when negative."}
+    - {name: name, lua: string, desc: "Gang display name (interned in the Rumble string pool)."}
+    - {name: members, lua: table, elem: number, count: 9, written_back: true, desc: "Nine character type ids making up the gang's Rumble roster."}
+  description: >-
+    Adds a gang with its nine-member roster to the Rumble gang chooser (RM_ChooseGangsWidget list at 0x0063ee4c).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 46, boot: false, mission1: false, result_used: false}
+
+- name: CfgRumbleChar
+  wrapper: 0x0036b8a8
+  calls:
+    - {addr: 0x001f0e60}
+  args:
+    - {name: charType, lua: number, ctype: unsigned, desc: "Character type id; the key of the Rumble character map."}
+    - {name: name, lua: string, desc: "Character display name (stored upper-cased)."}
+    - {name: gangName, lua: string, desc: "Gang name text (stored as given)."}
+    - {name: gang, lua: number, ctype: unsigned, desc: "Gang id (byte at +0x0c)."}
+    - {name: rank, lua: number, ctype: unsigned, desc: "Rank (RM_WARCHIEF, RM_LT, RM_SOLDIER), byte at +0x0d."}
+    - {name: n6, lua: number, ctype: unsigned, desc: "16-bit value at +0x0e (0 in the scripts)."}
+    - {name: n7, lua: number, ctype: unsigned, desc: "Byte at +0x10 (20-80: a strength rating, inferred)."}
+    - {name: bio, lua: string, desc: "Description text (stored upper-cased)."}
+  description: >-
+    Registers one character's Rumble data (RM_CharData) under its type id in a sorted map, replacing an earlier entry
+    with the same id.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 732, boot: false, mission1: false, result_used: false}
+
+- name: CfgSetDatabaseSizes
+  wrapper: 0x0036bb10
+  calls:
+    - {addr: 0x0041d628, name: Cfg_SetDatabaseSizes}
+  virtual_calls: 2
+  args:
+    - {name: objectTasks, lua: number, ctype: unsigned, desc: "Number of object task records for the level; the pool gets this many plus 500 (ObjectTaskManager)."}
+    - {name: worldFlags, lua: number, ctype: unsigned, desc: "Number of world flags (positions named in the level); the pool holds this many plus 4."}
+    - {name: boxes, lua: table, elem: number, count: 4, written_back: true, desc: "Table {volumeBoxes, unused, playerBoxes, turfBoxes}: pool sizes for volume boxes, (ignored), player boxes and turf boxes; 0 makes no pool."}
+  description: >-
+    Allocates the level's script-object pools: object tasks, world flags, volume boxes, player boxes and turf boxes.
+    Every level script calls it first (level100.lua included).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The second table entry goes to 0x00413200, which does nothing. Allocation names: ObjectTaskRec, WorldFlag,
+    FreeList<VolumeBox>, FreeList<PlayerBox>, FreeListContainer<TurfBox>. Calling it twice leaks the old pools
+    (inferred: no free is made).
+  usage: {chunks: 90, calls: 90, boot: true, mission1: true, result_used: false}
+
+- name: CfgSetDefaultFollowSlotSet
+  wrapper: 0x0036bcb8
+  calls:
+    - {addr: 0x00294788, name: Cfg_SetDefaultFollowSlotSet}
+  args:
+    - {name: set, lua: number, ctype: int, desc: "Slot set 0 or 1."}
+    - {name: slots, lua: table, elem: number, count: 20, written_back: true, desc: "Table of 20 numbers: (x, y) pairs in metres giving formation positions relative to the leader (x to the side, negative y behind)."}
+  description: >-
+    Sets the default formation slots that followers (the other Warriors) take around their leader, for every human
+    record (0x006ceaf0 onwards); the first nine positions are converted and stored.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00294bf8 converts the floats with the VU0 to fixed point; nine of the ten pairs are used. Which human records
+    use set 0 or 1 is not traced.
+  usage: {chunks: 2, calls: 4, boot: true, mission1: true, result_used: false}
+
+- name: CfgSetEnemySpotting
+  wrapper: 0x0036bd90
+  calls:
+    - {addr: 0x0041d738, name: Cfg_SetEnemySpotting}
+  args:
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets enemies spot the player; false makes them ignore the player until provoked."}
+  description: >-
+    Stores the enemy-spotting switch in the game state (+0x56f8).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 24, calls: 44, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetWarriorSpotting
+  wrapper: 0x0036bdc0
+  calls:
+    - {addr: 0x0041d748, name: Cfg_SetWarriorSpotting}
+  args:
+    - {name: enabled, lua: boolean, default: true, desc: "Meant to switch whether the Warriors spot enemies; ignored: the game always stores 0."}
+  description: >-
+    Clears the game state's warrior-spotting switch (+0x56fc). Whatever the argument, the callee writes 0, so the
+    binding can only turn the feature off.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Bug in the original: 0x0041d748 ignores its parameter. Scripts call it with both true and false.
+  usage: {chunks: 25, calls: 45, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetWarriorVandalize
+  wrapper: 0x0036bdf0
+  calls:
+    - {addr: 0x0041d758}
+  args:
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets the Warriors vandalise."}
+  description: >-
+    Stores the warrior-vandalise switch in the game state (+0x5700).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CfgWarriorWeapons
+  wrapper: 0x0036be20
+  calls:
+    - {addr: 0x0041d770}
+  args:
+    - {name: enabled, lua: boolean, desc: "true allows the Warriors to use weapons; false forbids them."}
+  description: >-
+    Stores the warrior-weapons switch in the game state (+0x5704).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: CfgCrimeResponders
+  wrapper: 0x0036be50
+  calls:
+    - {addr: 0x0041d8a0}
+  args:
+    - {name: crime, lua: number, ctype: unsigned, desc: "Crime type index."}
+    - {name: count, lua: number, ctype: unsigned, desc: "Number of responders (police) sent for that crime (0-2 in the scripts)."}
+  description: >-
+    Sets how many responders a crime type draws (byte at game state + 0x294 + crime); the difficulty configs and some
+    levels set it.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    No range check on the crime index.
+  usage: {chunks: 10, calls: 37, boot: false, mission1: false, result_used: false}
+
+- name: CfgEnableCrimeType
+  wrapper: 0x0036bec8
+  calls:
+    - {addr: 0x0041da80}
+  args:
+    - {name: crime, lua: number, ctype: int, desc: "Crime type 0-14; larger values are ignored."}
+    - {name: enabled, lua: boolean, desc: "true enables the crime type; false disables it."}
+  description: >-
+    Enables or disables one crime type (byte at game state + 0x32b + crime).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: CfgSetCrimeCallback
+  wrapper: 0x0036bf28
+  calls:
+    - {addr: 0x0041dab0}
+  args:
+    - {name: fn, lua: string, desc: "Lua function name (up to 31 characters) called when a crime is committed, or nil to clear."}
+  description: >-
+    Stores the crime script callback name in the game state (+0x2dc).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: CfgInventoryItem
+  wrapper: 0x0036bf58
+  calls:
+    - {addr: 0x0041eca0, name: Cfg_SetInventoryItem}
+  args:
+    - {name: objectName, lua: string, desc: "Object type name of the item (e.g. a 'dyn_' name), up to 31 characters."}
+    - {name: slot, lua: number, ctype: int, desc: "Inventory slot / item id (1-12 in config_preload2.lua)."}
+    - {name: count, lua: number, ctype: int, desc: "Integer stored with the item (0 in the scripts; negative becomes 0)."}
+    - {name: sound, lua: string, desc: "Pickup sound name ('vags/interface/...'), stored as its hash."}
+    - {name: ms, lua: number, ctype: unsigned, default: 10000, desc: "Duration in milliseconds (default 10000), for timed power-ups."}
+  description: >-
+    Defines one inventory item kind in both players' inventories (game state +0x480, two blocks of 0x3f4 bytes): its
+    object, count, pickup sound and duration.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Slot entries are 0x2c bytes from +0x04. That the duration is how long a power-up lasts is inferred.
+  usage: {chunks: 2, calls: 18, boot: true, mission1: false, result_used: false}
+
+- name: CfgInventoryCallback
+  wrapper: 0x0036c038
+  calls:
+    - {addr: 0x0041ece8, name: Cfg_SetInventoryCallback}
+  args:
+    - {name: fn, lua: string, desc: "Lua function name (up to 31 characters) called when the player picks up an inventory item, or nil."}
+  description: >-
+    Stores the inventory pickup callback name (inventory +0xfd4). The tutorial uses it to count loot.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 9, calls: 12, boot: false, mission1: true, result_used: false}
+
+- name: CfgHuInventoryCallback
+  wrapper: 0x0036c068
+  calls:
+    - {addr: 0x0041ed10}
+  args:
+    - {name: fn, lua: string, desc: "Lua function name called when a human (not only the player) picks up an item, or nil."}
+  description: >-
+    Stores the per-human inventory callback name in the inventory block (0x0041e490).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 12, calls: 30, boot: false, mission1: false, result_used: false}
+
+- name: CfgHuInventoryCallback2
+  wrapper: 0x0036c098
+  calls:
+    - {addr: 0x0041ed38}
+  args:
+    - {name: fn, lua: string, desc: "Lua function name for a second per-human inventory event, or nil."}
+  description: >-
+    Stores a second per-human inventory callback name (0x0041e4c0); no script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgMoneyCallback
+  wrapper: 0x0036c0c8
+  calls:
+    - {addr: 0x0041ed60}
+  args:
+    - {name: fn, lua: string, desc: "Lua function name called when the player's money changes, or nil."}
+  description: >-
+    Stores the money callback name in the inventory block (0x0041e4f0).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false}
+
+- name: CfgBreakAndEnterDelay
+  wrapper: 0x0036c0f8
+  calls:
+    - {addr: 0x0041d910, name: Cfg_SetBreakAndEnterDelay}
+  args:
+    - {name: delay, lua: number, ctype: unsigned, desc: "Delay before a break-in is reported (easy 15, normal 10, fury 7)."}
+  description: >-
+    Stores the break-and-enter delay (0x005148a4), set by each difficulty config.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Unit (seconds) and meaning inferred from the values and name.
+  usage: {chunks: 6, calls: 6, boot: true, mission1: false, result_used: false}
+
+- name: CfgActionDistance
+  wrapper: 0x0036c130
+  calls:
+    - {addr: 0x00417af0, name: Cfg_SetActionDistance}
+  args:
+    - {name: action, lua: number, ctype: unsigned, desc: "Action kind index 0-5 (no range check)."}
+    - {name: metres, lua: number, ctype: float, desc: "Distance in metres within which the action prompt is offered; stored squared."}
+  description: >-
+    Sets the reach of one context action (stored squared at 0x00514878 + action x 4). global.lua sets kinds 0-5 (2,
+    1.1, 2, 2, 1.75, 1.5 m) and levels widen kind 1.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Which action each index is is not traced.
+  usage: {chunks: 6, calls: 30, boot: true, mission1: false, result_used: false}
+
+- name: CfgEnableTurfInvasion
+  wrapper: 0x0036c1a8
+  calls:
+    - {addr: 0x0041da50, name: Cfg_SetTurfInvasion}
+  args:
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets rival gangs invade turf; global.lua sets false."}
+  description: >-
+    Stores the turf-invasion switch (byte at game state +0x56e1).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false}
+
+- name: CfgEnableGrappleCounters
+  wrapper: 0x0036c1d8
+  calls:
+    - {addr: 0x0041da60}
+  args:
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) allows countering grapples."}
+  description: >-
+    Stores the grapple-counter switch (byte at game state +0x56e3).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: CfgPowerupPickup
+  wrapper: 0x0036c208
+  calls:
+    - {addr: 0x0041da70}
+  args:
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets power-ups be picked up."}
+  description: >-
+    Stores the power-up pickup switch (byte at game state +0x56e5).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: CfgCredits
+  wrapper: 0x0036ee48
+  calls:
+    - {addr: 0x001a8fb8}
+  args:
+    - {name: style, lua: number, ctype: unsigned, desc: "Line style (4 is treated as 2)."}
+    - {name: role, lua: string, desc: "First text (a heading or role)."}
+    - {name: name, lua: string, desc: "Second text (a person's name), or nil."}
+  description: >-
+    Adds one line to the credits list (a CreditData record, texts interned in the credits string pool); credits.lua
+    makes 578 calls.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 578, boot: false, mission1: false, result_used: false}
+
+- name: CfgSteam
+  wrapper: 0x003792c0
+  calls:
+    - {addr: 0x0039be28}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a particle object (from the level's Objects table)."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour {r, g, b, a}, each 0-255."}
+    - {name: n3, lua: number, ctype: unsigned, desc: "Integer parameter."}
+    - {name: n4, lua: number, ctype: unsigned, desc: "Integer parameter."}
+    - {name: f5, lua: number, ctype: float, desc: "Float (start size or rate, inferred)."}
+    - {name: f6, lua: number, ctype: float, desc: "Float."}
+    - {name: f7, lua: number, ctype: float, desc: "Float."}
+    - {name: f8, lua: number, ctype: float, desc: "Float."}
+    - {name: f9, lua: number, ctype: float, desc: "Float."}
+    - {name: f10, lua: number, ctype: float, desc: "Float."}
+    - {name: f11, lua: number, ctype: float, desc: "Float."}
+    - {name: flag, lua: boolean, desc: "Boolean parameter."}
+  description: >-
+    Sends a steam/smoke configuration message (id 0x27) to a particle object: colour, two integers, two float ranges
+    and a flag.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Message built with the world message helpers at 0x003a2d20-0x003a2e00; parameter meanings not traced.
+  usage: {chunks: 13, calls: 36, boot: false, mission1: false, result_used: false}
+
+- name: CfgTagSettings
+  wrapper: 0x003795c0
+  calls:
+    - {addr: 0x0039bc28}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a tag (graffiti) object."}
+    - {name: n2, lua: number, ctype: unsigned, desc: "Number sent as message 0x27 (a texture or tag id, inferred)."}
+    - {name: f3, lua: number, ctype: float, default: 0.5, desc: "Float sent as message 0x37 (default 0.5)."}
+    - {name: f4, lua: number, ctype: float, default: 0.005, desc: "Float sent as message 0x38 (default 0.005)."}
+    - {name: f5, lua: number, ctype: float, default: 1, desc: "Float sent as message 0x3b (default 1)."}
+  description: >-
+    Configures a graffiti tag object through four object messages (ids 0x27, 0x37, 0x38, 0x3b), if the handle is a
+    tag.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 9, calls: 47, boot: false, mission1: false, result_used: false}
+
+- name: CfgSetStatTypeMax
+  wrapper: 0x0037c7a8
+  calls:
+    - {addr: 0x004223e8, name: Cfg_SetStatTypeMax}
+  args:
+    - {name: combat, lua: number, ctype: unsigned, desc: "Maximum combat points (16-bit)."}
+    - {name: crime, lua: number, ctype: unsigned, desc: "Maximum crime points."}
+    - {name: harmony, lua: number, ctype: unsigned, desc: "Maximum harmony points."}
+    - {name: style, lua: number, ctype: unsigned, desc: "Maximum style points."}
+    - {name: mission, lua: number, ctype: unsigned, desc: "Maximum mission points."}
+    - {name: bonus, lua: number, ctype: unsigned, desc: "Maximum bonus points."}
+  description: >-
+    Sets the six statistic categories' maximum points for the mission rating (six 16-bit values at 0x00715840).
+    global.lua sets them per level from its points matrix.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Stored in the order mission, bonus, style, combat, crime, harmony. Category names come from global.lua's points
+    matrix fields.
+  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false}
+
+- name: CfgSetStatValue
+  wrapper: 0x0037c8c0
+  calls:
+    - {addr: 0x00422430, name: Cfg_SetStatValue}
+  args:
+    - {name: table, lua: number, ctype: unsigned, desc: "Statistic table 0-5; other values are ignored."}
+    - {name: index, lua: number, ctype: unsigned, desc: "Entry index in that table."}
+    - {name: value, lua: number, ctype: unsigned, desc: "Value (16-bit), e.g. points awarded for an event."}
+  description: >-
+    Writes one 16-bit entry of a statistics points table; config_preload2.lua fills tables 0-5 and level99 sets table
+    0 entry 0 to 1000.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Tables: 0 at 0x005971b8, 1 at 0x005971c0, 2 at 0x00715510, 3 at 0x00715500, 4 at 0x00715818, 5 at 0x00715830. No
+    index check.
+  usage: {chunks: 2, calls: 46, boot: true, mission1: true, result_used: false}
+
+- name: CfgChar
+  registered_by: ScriptSystem
+  wrapper: 0x00383f38
+  calls:
+    - {addr: 0x00228af8, name: Cfg_SetCharacterClass}
+  args:
+    - {name: charType, lua: number, ctype: int, desc: "Character type id (the number HuCreate takes); record at 0x00684620 + charType x 0x1ac ([Characters](../../research/characters.md#classes))."}
+    - {name: v2, lua: number, ctype: int, desc: "Byte at +0x11a (3 for the Warriors)."}
+    - {name: v3, lua: number, ctype: int, desc: "Byte at +0x11b (14)."}
+    - {name: speedClass, lua: number, ctype: int, desc: "Speed class (see CfgSpeedClass), byte at +0x11c."}
+    - {name: v5, lua: number, ctype: int, desc: "Byte at +0x11d (7)."}
+    - {name: v6, lua: number, ctype: int, desc: "16-bit value at +0x116 (1800: probably hit points)."}
+    - {name: damage, lua: table, elem: number, count: 45, written_back: true, desc: "Table of 45 numbers (a damage table such as DamageWarriors), each multiplied by damageScale and stored as 16 bits from +0xb8."}
+    - {name: attacks, lua: table, elem: number, count: 45, written_back: true, desc: "Table of 45 numbers (an attack table such as Att_Warrior), stored as bytes from +0x11e."}
+    - {name: damageScale, lua: number, ctype: float, desc: "Multiplier applied to the damage table (1)."}
+    - {name: model, lua: string, desc: "Model name (e.g. 'warr_re_cv'); its model index goes to +0x112 and that of '<model>_a' (the armies variant) to +0x114."}
+    - {name: str11, lua: string, desc: "String (31 characters) at +0x14c ('none' for most)."}
+    - {name: warrior, lua: number, ctype: int, desc: "16-bit value at +0x118: the Warrior index for playable characters (Rembrandt 7), inferred."}
+    - {name: v13, lua: number, ctype: int, desc: "Byte at +0x14b."}
+    - {name: ranges, lua: table, elem: number, count: 45, written_back: true, desc: "Table of 45 numbers (a range table such as RangeNormal), divided by 100 and stored as floats from +0x00."}
+    - {name: str15, lua: string, desc: "String (31 characters) at +0x16c."}
+    - {name: v16, lua: number, ctype: int, desc: "Integer at +0xb4 (0 or 5)."}
+    - {name: str17, lua: string, desc: "String (31 characters) at +0x18c."}
+  description: >-
+    Fills one character class: speed class, health-like values, the 45-entry damage, attack and range tables, the
+    model (and its armies variant) and three strings. The difficulty configs call it for every character type.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Layout confirmed (code) at 0x00228af8; argument meanings beyond speed class, model and the tables are inferred
+    from the values.
+  usage: {chunks: 6, calls: 764, boot: true, mission1: false, result_used: false}
+
+- name: CfgObjectGroup
+  registered_by: ScriptSystem
+  wrapper: 0x00384398
+  calls:
+    - {addr: 0x00390e88}
+  args:
+    - {name: group, lua: number, ctype: unsigned, desc: "Object group index."}
+    - {name: name, lua: string, desc: "Group name."}
+    - {name: members, lua: table, elem: string, count: 5, written_back: true, desc: "Up to five object type names; a name that is not found ends the list."}
+  description: >-
+    Defines a named group of up to five object types in the object database (0x003915d0); no script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: CfgGang
+  registered_by: ScriptSystem
+  wrapper: 0x00384480
+  calls:
+    - {addr: 0x0016b178, name: Cfg_SetGang}
+  args:
+    - {name: gang, lua: number, ctype: unsigned, desc: "Gang id (0-24)."}
+    - {name: v2, lua: number, ctype: unsigned, desc: "Byte at gang record +0x6c."}
+    - {name: v3, lua: number, ctype: unsigned, desc: "Byte at +0x6d."}
+    - {name: v4, lua: number, ctype: unsigned, desc: "Byte at +0x6e."}
+    - {name: v5, lua: number, ctype: unsigned, desc: "Byte at +0x6f."}
+    - {name: strategy, lua: table, elem: number, count: 7, written_back: true, desc: "Table of seven numbers (a strategy table such as StratNormal), stored as bytes from +0x73."}
+    - {name: v7, lua: number, ctype: unsigned, desc: "Byte at +0x70."}
+    - {name: v8, lua: number, ctype: unsigned, desc: "Byte at +0x71."}
+    - {name: v9, lua: number, ctype: unsigned, desc: "Byte at +0x72 (0 or 50)."}
+  description: >-
+    Fills one gang's configuration record (0x0050caa8, 0x7a bytes per gang): six small values and its seven-entry
+    fighting strategy. config_preload2.lua sets every gang.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Field meanings (group sizes, aggression) are not traced.
+  usage: {chunks: 1, calls: 25, boot: true, mission1: false, result_used: false}
+
+- name: CfgSpeedClass
+  registered_by: ScriptSystem
+  wrapper: 0x003842c0
+  calls:
+    - {addr: 0x00228888, name: Cfg_SetSpeedClass}
+  args:
+    - {name: class, lua: number, ctype: int, desc: "Speed class 0-4; record at 0x006b6548 + class x 0x18."}
+    - {name: speeds, lua: table, elem: number, count: 6, written_back: true, desc: "Six speeds in metres per second: base, (no getter), walk, jog, run, sprint."}
+  description: >-
+    Fills one speed class's six speeds ([Characters](../../research/characters.md#speed-classes)). In play the humans'
+    own per-human values are used instead while 0x005101e0 is set.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 5, boot: true, mission1: false, result_used: false}

@@ -1,0 +1,673 @@
+# The Warriors' script bindings, category `effects`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: EnableHeat
+  wrapper: 0x00368278
+  calls:
+    - {addr: 0x0018dcc0, name: ScreenFx_EnableHeat}
+  args:
+    - {name: enable, lua: boolean, desc: "True starts, false stops the heat-haze screen effect."}
+  description: >-
+    Switches the heat-haze screen effect (screen effect 7) on or off on both screen-effects managers.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: ScreenQueueEffect
+  wrapper: 0x003682a8
+  calls:
+    - {addr: 0x0018b168, name: ScreenFx_Queue}
+  args:
+    - {name: effect, lua: number, ctype: int, desc: "Effect type 0-5: 0 fades the screen in from black, 1 fades it out to black; 2-5 are other effects (not traced). Values 6 and above do nothing."}
+    - {name: seconds, lua: number, ctype: float, desc: "Duration in seconds (0 makes the change immediate)."}
+  description: >-
+    Queues a full-screen effect, usually a fade, on both screen-effects managers. A running fade blocks some menu
+    input and is what the front end waits on ([Front end](../../research/frontend.md#profile-manager)).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Dispatch is a six-entry jump table at 0x00552f70 (0x0018d450); fade in/out for 0/1 is confirmed (code) through
+    0x0018cc60 and the front end's use.
+  usage: {chunks: 169, calls: 660, boot: true, mission1: true, result_used: false}
+  coney: implemented
+
+- name: SetLevelColour
+  wrapper: 0x003683d0
+  calls:
+    - {addr: 0x0018e5f0, name: ScreenFx_SetColourOverlay}
+  args:
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Overlay colour `{r, g, b, a}`, components 0-1 (scaled to 0-255); `a` sets how strongly it tints the screen. Written back unchanged."}
+  description: >-
+    Sets a full-screen colour overlay (screen effect 9) that tints the whole level, used for each level's lighting
+    mood.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: StartRain
+  wrapper: 0x00368670
+  calls:
+    - {addr: 0x0018dda0, name: ScreenFx_StartRain}
+  args:
+    - {name: texture1, lua: number, ctype: unsigned, desc: "Packed texture or sprite resource id for the first rain layer (sheet in the top 16 bits)."}
+    - {name: param1, lua: number, ctype: unsigned, desc: "Small integer for layer 1 (1 or 2 in the scripts; likely a density or blend mode)."}
+    - {name: param2, lua: number, ctype: unsigned, desc: "Small integer for layer 1 (6 or 7; likely a drop count or size)."}
+    - {name: speed1, lua: number, ctype: float, desc: "Number for layer 1 (0.01-0.015; likely a speed or size)."}
+    - {name: length1, lua: number, ctype: float, desc: "Number for layer 1 (0.07-0.3; likely streak length)."}
+    - {name: colour1, lua: table, elem: number, count: 4, written_back: true, desc: "Layer 1 colour `{r, g, b, a}`, 0-255."}
+    - {name: texture2, lua: number, ctype: unsigned, desc: "Resource id for the second rain layer."}
+    - {name: param3, lua: number, ctype: unsigned, desc: "Small integer for layer 2."}
+    - {name: param4, lua: number, ctype: unsigned, desc: "Small integer for layer 2."}
+    - {name: speed2, lua: number, ctype: float, desc: "Number for layer 2."}
+    - {name: length2, lua: number, ctype: float, desc: "Number for layer 2."}
+    - {name: colour2, lua: table, elem: number, count: 4, written_back: true, desc: "Layer 2 colour `{r, g, b, a}`, 0-255."}
+  description: >-
+    Starts the two-layer rain screen effect (screen effect 0) on both views with the given textures, sizes and
+    colours.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Which number controls what is inferred from the values; the packing into the effect's parameter block is confirmed
+    (code) at 0x0018dda0.
+  usage: {chunks: 10, calls: 22, boot: false, mission1: false, result_used: false}
+
+- name: EndRain
+  wrapper: 0x00368970
+  calls:
+    - {addr: 0x0018deb0, name: ScreenFx_EndRain}
+  description: >-
+    Stops the rain screen effect (effect 0) on both screen-effects managers. `global.lua` calls it when it resets a
+    level's weather.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 43, calls: 45, boot: true, mission1: false, result_used: false}
+
+- name: SpawnRainPlane
+  wrapper: 0x00368990
+  calls:
+    - {addr: 0x0018dd38, name: ScreenFx_SpawnRainPlane}
+  args:
+    - {name: corner, lua: table, elem: number, count: 3, written_back: true, desc: "First corner `{x, y, z}` of the rain plane in world metres."}
+    - {name: cornerU, lua: table, elem: number, count: 3, written_back: true, desc: "Corner along the plane's width."}
+    - {name: cornerV, lua: table, elem: number, count: 3, written_back: true, desc: "Corner along the plane's height."}
+    - {name: uv0, lua: table, elem: number, count: 2, written_back: true, desc: "Texture coordinates `{u, v}` at the first corner (the scripts pass `{0, 0}`)."}
+    - {name: uv1, lua: table, elem: number, count: 2, written_back: true, desc: "Texture coordinates at the opposite corner (`{1, 1}`)."}
+  description: >-
+    Adds a vertical sheet of falling rain in the world (for doorways and awnings), handled by the screen-effects code
+    (0x0018be58).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 27, boot: false, mission1: false, result_used: false}
+
+- name: StartFog
+  wrapper: 0x00368c40
+  calls:
+    - {addr: 0x0018df00, name: ScreenFx_StartFog}
+  args:
+    - {name: texture, lua: number, ctype: unsigned, desc: "Resource id of the fog texture."}
+    - {name: colour, lua: table, elem: number, count: 5, written_back: true, desc: "Five numbers: colour `{r, g, b, a}` 0-255 and a fifth byte."}
+    - {name: p1, lua: number, ctype: float, desc: "Fog parameter (number)."}
+    - {name: p2, lua: number, ctype: float, desc: "Fog parameter (number)."}
+    - {name: p3, lua: number, ctype: float, desc: "Fog parameter (number)."}
+    - {name: p4, lua: number, ctype: float, desc: "Fog parameter (number)."}
+    - {name: p5, lua: number, ctype: float, desc: "Fog parameter (number)."}
+    - {name: p6, lua: number, ctype: float, desc: "Fog parameter (number)."}
+    - {name: p7, lua: number, ctype: float, desc: "Fog parameter (number)."}
+    - {name: p8, lua: number, ctype: unsigned, desc: "Integer parameter."}
+    - {name: p9, lua: number, ctype: unsigned, desc: "Integer parameter."}
+  description: >-
+    Starts the screen-space fog effect (screen effect 1) on both views. No script calls it; levels use `Start3DFog`
+    and the world fog colour instead.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Parameter meanings are not traced.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: EndFog
+  wrapper: 0x00368ea0
+  calls:
+    - {addr: 0x0018dfa8, name: ScreenFx_EndFog}
+  description: >-
+    Stops the screen fog effect (effect 1) on both screen-effects managers; `global.lua` calls it when resetting
+    effects.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 34, calls: 34, boot: true, mission1: false, result_used: false}
+
+- name: StartRoomSmoke
+  wrapper: 0x00368ec0
+  calls:
+    - {addr: 0x0018e070, name: ScreenFx_StartRoomSmoke}
+  args:
+    - {name: colour, lua: table, elem: number, count: 5, written_back: true, desc: "Five numbers 0-255: colour `{r, g, b, a}` and a fifth value (the scripts pass `{120, 120, 140, 220, 240}`)."}
+    - {name: amount, lua: number, ctype: float, desc: "Number such as 0.5 (strength or speed)."}
+  description: >-
+    Starts the indoor smoke haze screen effect (screen effect 3) on both views.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 8, calls: 8, boot: false, mission1: false, result_used: false}
+
+- name: EndRoomSmoke
+  wrapper: 0x00368fb8
+  calls:
+    - {addr: 0x0018e0f8, name: ScreenFx_EndRoomSmoke}
+  description: >-
+    Stops the room smoke screen effect (effect 3) on both screen-effects managers.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 39, calls: 39, boot: true, mission1: false, result_used: false}
+
+- name: StartFilmGrain
+  wrapper: 0x00368fd8
+  calls:
+    - {addr: 0x0018dff8, name: ScreenFx_StartFilmGrain_Stub}
+  args:
+    - {name: texture, lua: number, ctype: unsigned, desc: "Read but ignored."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Read but ignored."}
+    - {name: p1, lua: number, ctype: unsigned, desc: "Read but ignored."}
+    - {name: p2, lua: number, ctype: unsigned, desc: "Read but ignored."}
+  description: >-
+    Does nothing in this build: its callee (0x0018dff8) is empty.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: EndFilmGrain
+  wrapper: 0x00369120
+  calls:
+    - {addr: 0x0018e048, name: ScreenFx_EndFilmGrain}
+  description: >-
+    Stops the film grain screen effect (effect 2) on the first screen-effects manager only. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: Start3DFog
+  wrapper: 0x00369140
+  calls:
+    - {addr: 0x0018e148, name: Fog3D_Start}
+  args:
+    - {name: texture, lua: number, ctype: unsigned, desc: "Resource id of the fog particle texture (such as 34734080, sheet in the top 16 bits)."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Fog colour `{r, g, b, a}`, 0-255."}
+    - {name: size, lua: number, ctype: float, desc: "Number such as 0.4-4.6 (particle size or spread)."}
+    - {name: speed, lua: number, ctype: float, desc: "Number such as 0.3-1 (drift speed or density)."}
+    - {name: height, lua: number, ctype: float, desc: "Number such as 1-7 (layer height or count)."}
+  description: >-
+    Starts drifting volumetric fog: replaces any existing fog object of each screen-effects manager with a new
+    particle object (template at 0x00552fb8) built from the texture, colour and three numbers.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Meanings of the three numbers are inferred from the values.
+  usage: {chunks: 17, calls: 17, boot: false, mission1: false, result_used: false}
+
+- name: MaxFogParticles
+  wrapper: 0x003692b0
+  calls:
+    - {addr: 0x0018e2f0, name: Fog3D_SetMaxParticles}
+  args:
+    - {name: count, lua: number, ctype: unsigned, desc: "Maximum number of fog particles (10 or 15 in the scripts)."}
+  description: >-
+    Limits the particle count of the current 3D fog objects (message 0x22 with the count).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: End3DFog
+  wrapper: 0x003692e8
+  calls:
+    - {addr: 0x0018e3c8, name: Fog3D_End}
+  description: >-
+    Destroys the 3D fog objects of both screen-effects managers (message 0x15) and clears their handles; `global.lua`
+    calls it when resetting effects.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 40, calls: 40, boot: true, mission1: false, result_used: false}
+
+- name: SetGammaRamp
+  wrapper: 0x00369308
+  calls:
+    - {addr: 0x0018e7d0, name: Gamma_SetRamp_Stub}
+  args:
+    - {name: red, lua: table, elem: number, count: 256, written_back: true, desc: "Read (256 numbers) but ignored."}
+    - {name: green, lua: table, elem: number, count: 256, written_back: true, desc: "Read (256 numbers) but ignored."}
+    - {name: blue, lua: table, elem: number, count: 256, written_back: true, desc: "Read (256 numbers) but ignored."}
+  description: >-
+    Does nothing in this build: its callee (0x0018e7d0) is empty.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SpawnAreaEffect
+  wrapper: 0x0036ca88
+  calls:
+    - {addr: 0x00385b08, name: AreaEffect_Spawn}
+  args:
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human at the centre of the effect."}
+    - {name: radius, lua: number, ctype: float, desc: "Radius in metres (20 in the one script call)."}
+    - {name: amount, lua: number, ctype: unsigned, desc: "Integer strength or duration (100 in the script call)."}
+    - {name: flag, lua: boolean, desc: "Boolean passed through (true in the script call)."}
+    - {name: kind, lua: number, ctype: int, desc: "Effect kind number (6 in the script call)."}
+  description: >-
+    Applies an area effect around a human (0x00392638), such as a shockwave that affects nearby characters; used once,
+    in a boss fight.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: SetWorldAmbient
+  wrapper: 0x0036e4b8
+  calls:
+    - {addr: 0x0017f218, name: LightManager_SetWorldAmbient}
+  args:
+    - {name: r, lua: number, ctype: float, desc: "Red, 0-1."}
+    - {name: g, lua: number, ctype: float, desc: "Green, 0-1."}
+    - {name: b, lua: number, ctype: float, desc: "Blue, 0-1."}
+  description: >-
+    Sets the world's ambient light colour; the game adds 0.07 to each component, so (0, 0, 0) still leaves a little
+    light.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Stored in the light manager (0x0050cce4) at +0x50..+0x5c.
+  usage: {chunks: 3, calls: 3, boot: true, mission1: false, result_used: false}
+
+- name: SetFogColor
+  wrapper: 0x0036e558
+  calls:
+    - {addr: 0x0040c868, name: Level_SetFogColour}
+  args:
+    - {name: r, lua: number, ctype: float, desc: "Red, 0-1."}
+    - {name: g, lua: number, ctype: float, desc: "Green, 0-1."}
+    - {name: b, lua: number, ctype: float, desc: "Blue, 0-1."}
+  description: >-
+    Sets the colour of the world's distance fog (packed to bytes with alpha 255 and handed to the fog object at
+    0x0050cdb4). `level99.lua`'s `Main` calls it first.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 66, calls: 67, boot: false, mission1: true, result_used: false}
+
+- name: SetFogDistance
+  wrapper: 0x0036e5f8
+  calls:
+    - {addr: 0x0040c908, name: Level_SetFogDistance}
+  args:
+    - {name: distance, lua: number, ctype: float, desc: "Fog distance value (the scripts pass 0 or 0.5)."}
+  description: >-
+    Sets the world fog's distance parameter (0x0040c908).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    The scale (metres or a 0-1 fraction of the far plane) is not traced.
+  usage: {chunks: 14, calls: 14, boot: false, mission1: false, result_used: false}
+
+- name: AddStatRespEmitter
+  wrapper: 0x00371938
+  calls:
+    - {addr: 0x00113a08, name: AmbientSound_AddStatResponse}
+  args:
+    - {name: name, lua: string, desc: "Emitter name."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}`."}
+    - {name: params, lua: table, elem: number, count: 5, written_back: true, desc: "Five numbers passed to the audio manager."}
+    - {name: p1, lua: number, ctype: unsigned, desc: "Number passed to the audio manager."}
+    - {name: p2, lua: number, ctype: unsigned, desc: "Number passed to the audio manager."}
+    - {name: p3, lua: number, ctype: int, desc: "Integer passed to the audio manager."}
+  results:
+    - {lua: number, desc: "Number returned by the audio manager (an emitter handle)."}
+  description: >-
+    Adds a sound emitter that responds to a game statistic, through the audio manager (0x00110e28 on 0x0050aa84). No
+    script calls it.
+  evidence: speculative
+  depth: brief
+  notes: >-
+    Belongs with the sound bindings; left in this category because of its name. The 'statistic response' reading is a
+    guess from the name.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: AddOneOffEmitter
+  wrapper: 0x003724d8
+  calls:
+    - {addr: 0x00113b78, name: AmbientSound_AddOneOff}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}`."}
+    - {name: sound, lua: number, ctype: int, desc: "Sound id."}
+    - {name: volume, lua: number, ctype: float, desc: "Number passed to the audio manager (volume or radius)."}
+  results:
+    - {lua: number, desc: "Number returned by the audio manager (an emitter handle)."}
+  description: >-
+    Plays a one-off positional sound through the audio manager (0x00110e58). No script calls it.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: InitFallingEmbers
+  wrapper: 0x003781d8
+  calls:
+    - {addr: 0x00179758, name: Embers_Init}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the flag or object where the embers fall."}
+    - {name: p1, lua: number, ctype: unsigned, desc: "Number such as 80 (count or radius)."}
+    - {name: p2, lua: number, ctype: unsigned, desc: "Number such as 110 (count or height)."}
+  description: >-
+    Starts falling embers at an object's position (0x00179310), used in a burning building.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: TermFallingEmbers
+  wrapper: 0x00378278
+  calls:
+    - {addr: 0x001797e8, name: Embers_Term}
+  description: >-
+    Stops the falling embers effect (0x001790a8).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: StartGarbage
+  wrapper: 0x00378298
+  calls:
+    - {addr: 0x003977a8, name: Garbage_Start}
+  args:
+    - {name: kind, lua: number, ctype: unsigned, desc: "Litter kind 0-3, each with its own sprite set and sizes (0 is the one `global.lua` uses); other values do nothing."}
+  description: >-
+    Starts the blowing-litter camera effect (`ICameraGarbage`, 0x005971a0): 64 litter particles drifting around the
+    camera.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+
+- name: EndGarbage
+  wrapper: 0x003782d0
+  calls:
+    - {addr: 0x003977d0, name: Garbage_End}
+  description: >-
+    Stops the blowing-litter camera effect.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 7, calls: 7, boot: true, mission1: false, result_used: false}
+
+- name: EnableGroundFog
+  wrapper: 0x003782f0
+  calls:
+    - {addr: 0x003977f8, name: GroundFog_Enable}
+  args:
+    - {name: enable, lua: boolean, desc: "True to start, false to stop the ground fog camera effect."}
+  description: >-
+    Switches the ground-fog camera effect (`ICameraGroundFog`, 0x005971a4) on or off. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SpawnParticle
+  wrapper: 0x00378958
+  calls:
+    - {addr: 0x0039bfb0, name: Particle_Spawn}
+  args:
+    - {name: typeName, lua: string, desc: "Particle object type name, such as `part_spray_tag`."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}`. Written back unchanged."}
+    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation quaternion `{x, y, z, w}`. Written back unchanged."}
+    - {name: attachTo, lua: number, ctype: unsigned, desc: "Handle of an object to attach the particle system to, or NilHandle for none."}
+  results:
+    - {lua: number, desc: "Handle of the particle object."}
+  description: >-
+    Creates a particle-system object of a configured type at a position, optionally attached to another object, and
+    returns its handle.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 36, calls: 596, boot: false, mission1: true, result_used: true}
+
+- name: WidgetSetColour
+  wrapper: 0x00378b00
+  calls:
+    - {addr: 0x0039c2e0}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (scripts pass light objects)."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Table {r, g, b, a}, each 0-255."}
+    - {name: viaLights, lua: boolean, desc: "true sets the colour through the world's light manager (0x00512c7c); false sets it on the object directly."}
+  description: >-
+    Changes the colour of a world object such as a coloured light in the funfair levels.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: StartParticle
+  wrapper: 0x00379128
+  calls:
+    - {addr: 0x003975c0, name: Particle_Start}
+  args:
+    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of a particle object (or an object with an effect, such as a disco light)."}
+  description: >-
+    Starts a particle object's emission (message 0x12).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 20, calls: 48, boot: false, mission1: false, result_used: false}
+
+- name: EndParticle
+  wrapper: 0x00379160
+  calls:
+    - {addr: 0x00397610, name: Particle_End}
+  args:
+    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle object."}
+  description: >-
+    Stops a particle object's emission, letting live particles die out (message 0x13).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 16, calls: 39, boot: false, mission1: false, result_used: false}
+
+- name: ParticleChangeState
+  wrapper: 0x00379198
+  calls:
+    - {addr: 0x00397660, name: Particle_ChangeState}
+  args:
+    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle or effect object."}
+    - {name: state, lua: number, ctype: int, desc: "State number for the object (message 0x19); the one script call passes a hit count."}
+  description: >-
+    Changes the state of a particle or effect object.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: KillParticle
+  wrapper: 0x00379288
+  calls:
+    - {addr: 0x00397730, name: Particle_Kill}
+  args:
+    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle object."}
+  description: >-
+    Destroys a particle object at once (message 0x15).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 11, calls: 297, boot: false, mission1: false, result_used: true}
+
+- name: SetGamma
+  wrapper: 0x0037bc98
+  calls:
+    - {addr: 0x001b4838, name: Gamma_Set}
+  args:
+    - {name: level, lua: number, ctype: unsigned, desc: "Brightness 0-255 (larger values are clamped to 255); stored in the game state (+0x57a4) and applied as level/255 to the light manager."}
+  description: >-
+    Sets the display brightness from the options screen.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: GetGamma
+  wrapper: 0x0037bcd0
+  calls:
+    - {addr: 0x001b48d0, name: Gamma_Get}
+  results:
+    - {lua: number, desc: "Current brightness 0-255 (the light manager's value × 255)."}
+  description: >-
+    Returns the display brightness. No script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: SetGammaOffset
+  wrapper: 0x0037bd30
+  calls:
+    - {addr: 0x001b4908, name: LightManager_SetColourOffset}
+  args:
+    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Colour offset `{r, g, b}` (small values; `global.lua` passes the level's `LightData.goffset`). Written back unchanged."}
+  description: >-
+    Sets a colour offset in the light manager (0x0017ec80), shifting the level's overall colour balance.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Exactly how the offset enters the lighting is not traced.
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: SetMotionAlpha
+  wrapper: 0x0037bde0
+  calls:
+    - {addr: 0x0040cc70, name: ScreenFx_SetMotionAlpha}
+  args:
+    - {name: alpha, lua: number, ctype: unsigned, desc: "Motion-blur strength 0-255 (0 off, 255 strongest); the scripts use 15 normally."}
+  description: >-
+    Sets the motion-blur (frame trail) strength on both screen-effects managers at once (+0x1a4 and +0x1a8), unless a
+    game-state check (0x0041d110) blocks it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The wrapper calls 0x0040cc70 directly.
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false}
+
+- name: QueueMotionBlurEffect
+  wrapper: 0x0037be90
+  calls:
+    - {addr: 0x0040cd28, name: ScreenFx_QueueMotionBlurColour}
+  args:
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Blur colour `{r, g, b, a}` (0-255) to blend to. Written back unchanged."}
+    - {name: seconds, lua: number, ctype: float, desc: "Blend time in seconds."}
+  overloads:
+  - wrapper: 0x0037be18
+    calls:
+      - {addr: 0x0040cce8}
+    args:
+      - {name: alpha, lua: number, ctype: unsigned, desc: "Target motion-blur strength 0-255."}
+      - {name: seconds, lua: number, ctype: float, desc: "Blend time in seconds."}
+    note: >-
+      Used when the first argument is not a table (the form every script uses, such as `QueueMotionBlurEffect(150, 1)`
+      in the first mission's tutorial).
+  description: >-
+    Blends the motion-blur effect of the first screen-effects manager to a new strength (or colour) over a time, for
+    hit and slow-motion moments.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Both forms end in 0x0018c8c8 on the manager at 0x005fdeb8 (0x0040cd28 for the colour form, 0x0040cce8 for the
+    alpha form).
+  usage: {chunks: 4, calls: 14, boot: true, mission1: true, result_used: false}
+
+- name: SetLight
+  wrapper: 0x0037c348
+  calls:
+    - {addr: 0x0017f160, name: Light_SetState}
+  args:
+    - {name: light, lua: number, ctype: unsigned, desc: "Handle of a light made by the long form."}
+    - {name: state, lua: number, ctype: unsigned, desc: "0 switches the light off, 1 (any non-zero but 2) on, 2 removes it."}
+  results:
+    - {lua: number, desc: "The light's handle, or 0 when it was removed or the handle was 0."}
+  overloads:
+  - wrapper: 0x0037bfb8
+    calls:
+      - {addr: 0x0017ef20}
+    args:
+      - {name: light, lua: number, ctype: unsigned, desc: "0 to create a new light, or the handle of an existing light to change."}
+      - {name: type, lua: number, ctype: unsigned, desc: "Light type: 0 point, 1 spot, 2 directional, 3 ambient (RenderWare light types; values above 3 are refused)."}
+      - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position `{x, y, z}` in world metres (point and spot lights). Written back unchanged."}
+      - {name: dir, lua: table, elem: number, count: 3, written_back: true, desc: "Direction `{x, y, z}` (spot and directional lights). Written back unchanged."}
+      - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour `{r, g, b, a}`, components 0-1 (such as `{1, 0.75, 0, 1}`). Written back unchanged."}
+      - {name: radius, lua: number, ctype: float, desc: "Radius in metres for point and spot lights (must not be negative)."}
+      - {name: coneAngle, lua: number, ctype: float, desc: "Cone angle for spot lights (must not be negative); the scripts pass 1 for other types."}
+      - {name: p3, lua: number, ctype: float, desc: "Number stored with the light; scripts pass 0."}
+      - {name: flickerA, lua: number, ctype: float, desc: "Flicker parameter, checked to be non-negative when a flicker pattern is set; scripts pass 0."}
+      - {name: flickerB, lua: number, ctype: float, desc: "Second flicker parameter, same rule."}
+      - {name: group, lua: number, ctype: unsigned, desc: "Integer 0-3 (refused above 3); scripts pass 1. Likely which objects the light affects."}
+      - {name: priority, lua: number, ctype: unsigned, desc: "Integer 0-32 (refused above 32); scripts pass 0."}
+      - {name: flicker, lua: number, ctype: unsigned, desc: "Flicker pattern 0-6: 0 steady, 1-6 select a pattern (stored as 0-5)."}
+      - {name: state, lua: number, ctype: unsigned, desc: "1 creates or leaves the light on, 0 off, 2 removes an existing light."}
+    results:
+      - {lua: number, desc: "The light's handle (new or existing), or 0 when the arguments were refused or the light was removed."}
+    note: >-
+      The long form, which every script uses (always 14 arguments); the short form is selected only when exactly two
+      numbers are passed.
+  description: >-
+    Creates, changes, switches or removes a dynamic light in the light manager. `global.lua` builds each level's
+    moonlight, reflected light and ambient light with it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Long form 0x0017ef20, short form 0x0017f160, both on the light manager at 0x0050cce4. The type mapping to
+    RenderWare (0 → 0x80 point, 1 → 0x81 spot, 2 → 1 directional, 3 → 2 ambient) is confirmed (code); the names of p3,
+    group and priority are inferred.
+  usage: {chunks: 61, calls: 5301, boot: true, mission1: true, result_used: true}
+
+- name: SetLightFlicker
+  wrapper: 0x0037c438
+  calls:
+    - {addr: 0x0017f1b8, name: Light_SetFlicker}
+  args:
+    - {name: light, lua: number, ctype: unsigned, desc: "Handle of a light made by `SetLight`."}
+    - {name: p1, lua: number, ctype: unsigned, desc: "Flicker parameter (the scripts pass 100)."}
+    - {name: p2, lua: number, ctype: unsigned, desc: "Flicker parameter (0)."}
+    - {name: p3, lua: number, ctype: unsigned, desc: "Flicker parameter (100)."}
+    - {name: p4, lua: number, ctype: unsigned, desc: "Flicker parameter."}
+    - {name: p5, lua: number, ctype: unsigned, desc: "Flicker parameter."}
+    - {name: p6, lua: number, ctype: unsigned, desc: "Flicker parameter."}
+    - {name: p7, lua: number, ctype: unsigned, desc: "Flicker parameter."}
+    - {name: p8, lua: number, ctype: unsigned, desc: "Flicker parameter."}
+    - {name: p9, lua: number, ctype: unsigned, desc: "Flicker parameter."}
+    - {name: p10, lua: number, ctype: unsigned, desc: "Flicker parameter."}
+  description: >-
+    Sets a light's flicker timing (0x0017d0b0, 16-bit values); does nothing for light 0.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Typical calls pass (light, 100, 0, 100, 0, ...), which suggests on/off durations; not traced.
+  usage: {chunks: 9, calls: 163, boot: false, mission1: false, result_used: false}
+
+- name: SetShadowColor
+  wrapper: 0x0037c608
+  calls:
+    - {addr: 0x0017f260, name: Shadow_SetColour_Stub}
+  args:
+    - {name: r, lua: number, ctype: float, desc: "Ignored."}
+    - {name: g, lua: number, ctype: float, desc: "Ignored."}
+    - {name: b, lua: number, ctype: float, desc: "Ignored."}
+  description: >-
+    Does nothing in this build: its callee (0x0017f260) is empty, although `global.lua` calls it.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: SetShadowLightOffset
+  wrapper: 0x0037c6a8
+  calls:
+    - {addr: 0x0017f268, name: Shadow_SetLightOffset_Stub}
+  args:
+    - {name: x, lua: number, ctype: float, desc: "Ignored."}
+    - {name: "y", lua: number, ctype: float, desc: "Ignored."}
+    - {name: z, lua: number, ctype: float, desc: "Ignored."}
+  description: >-
+    Does nothing in this build: its callee (0x0017f268) is empty, although `global.lua` calls it.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+
+- name: EnableShadow
+  wrapper: 0x0037c748
+  calls:
+    - {addr: 0x0017f270, name: Shadow_Enable_Stub}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Ignored."}
+    - {name: enable, lua: boolean, desc: "Ignored."}
+  description: >-
+    Does nothing in this build: its callee (0x0017f270) is empty. Scripts call it to hide characters' shadows, with no
+    effect.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 4, calls: 23, boot: false, mission1: true, result_used: false}

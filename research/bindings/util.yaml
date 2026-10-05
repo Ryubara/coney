@@ -1,0 +1,123 @@
+# The Warriors' script bindings, category `util`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: GetRTTI
+  wrapper: 0x0036c888
+  calls:
+    - {addr: 0x00385950}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Any object handle."}
+  results:
+    - {lua: number, desc: "The object's type bits (vtable `+0x24`) with bit 1 cleared; 0 for a bad handle. Bit 0x10 marks a tag object (see ProcessTag)."}
+  description: >-
+    Returns an object's run-time type flags.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+
+- name: GetName
+  wrapper: 0x0036c978
+  calls:
+    - {addr: 0x003859a0}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Any object handle."}
+  results:
+    - {lua: string, desc: "The object's name (vtable `+0x14`), or a fixed string (`0x0057de50`) for a bad handle."}
+  description: >-
+    Returns an object's name. No shipped script calls it.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GetPosition
+  wrapper: 0x0036ca18
+  calls:
+    - {addr: 0x00385a50}
+  args:
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a human or any other object."}
+  results:
+    - {lua: usertype, desc: "An `M_Vector4` (x, y, z, w) with the position in world units; the origin vector when the handle is bad."}
+  description: >-
+    Returns an object's position. For a human it is the character's position, for other objects their vtable position.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The vector is one static buffer (`0x006ebd20`): every call overwrites it, so copy x, y, z before calling again.
+  usage: {chunks: 71, calls: 193, boot: true, mission1: false, result_used: true}
+
+- name: TestDistance
+  wrapper: 0x0036ce58
+  calls:
+    - {addr: 0x00385ea8}
+  args:
+    - {name: a, lua: number, ctype: unsigned, desc: "First object handle."}
+    - {name: b, lua: number, ctype: unsigned, desc: "Second object handle."}
+    - {name: distance, lua: number, ctype: float, desc: "Distance in world units (metres)."}
+  results:
+    - {lua: boolean, desc: "true if the objects are closer than `distance`; false otherwise or when a handle is bad."}
+  description: >-
+    Tests whether two objects are closer than a distance: both handles are resolved (a bad one gives false), their
+    positions read, and the squared distance compared with the squared limit, so exactly at the limit counts as not
+    closer.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 16, calls: 38, boot: true, mission1: false, result_used: true}
+
+- name: isRelease
+  wrapper: 0x0036d5a8
+  calls:
+    - {addr: 0x00357990}
+  results:
+    - {lua: boolean, desc: "Always true (1)."}
+  description: >-
+    Tells the scripts this is a release build (`0x00357990`), which turns off their debug helpers.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 36, calls: 72, boot: true, mission1: false, result_used: true}
+  coney: implemented
+
+- name: GetPlatform
+  wrapper: 0x0036d5e0
+  calls:
+    - {addr: 0x00357998}
+  results:
+    - {lua: number, desc: "Always 1 on the PS2 (`0x00357998`); the scripts test 2 for another platform."}
+  description: >-
+    Returns the platform number; `config_preload2.lua` stores it as `Platform` to choose PS2 wording such as button
+    names.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: true}
+  coney: implemented
+
+- name: ToInt
+  wrapper: 0x0036d938
+  args:
+    - {name: x, lua: number, ctype: float, desc: "A number."}
+  results:
+    - {lua: number, desc: "x truncated toward zero, after a round trip through a 32-bit float (so values above 2^24 lose precision)."}
+  description: >-
+    Converts a number to an integer by truncation.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 6, calls: 7, boot: true, mission1: false, result_used: true}
+  coney: implemented
+
+- name: random
+  wrapper: 0x0036dfc8
+  calls:
+    - {addr: 0x00386488}
+  args:
+    - {name: low, lua: number, ctype: int, desc: "Lowest value."}
+    - {name: high, lua: number, ctype: int, desc: "Highest value."}
+  results:
+    - {lua: number, desc: "A whole number from the game's own random generator (state at `0x006eb880`) between low and high."}
+  description: >-
+    Returns a random whole number in a range; replaces the math library's `random`.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Whether `high` is included is not traced (`0x003353f0`). A test mode should seed this generator.
+  usage: {chunks: 111, calls: 343, boot: true, mission1: true, result_used: true}
+  coney: implemented

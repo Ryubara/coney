@@ -1,0 +1,878 @@
+# The Warriors' script bindings, category `gang`: one entry per Lua global the game registers.
+# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# files by `coney-tools natives render`; edit them here, then render.
+
+- name: GangAttachSpinningIcon
+  wrapper: 0x0035f128
+  calls:
+    - {addr: 0x0016b2c8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31, as returned by GangCreate); -1 does nothing."}
+    - {name: icon, lua: string, desc: "Name of the icon model to attach above each member's head; two special names are swapped for a language-dependent variant when the game's language is not English (0x002271f0)."}
+    - {name: arg, lua: number, ctype: int, desc: "A number passed on to the icon spawn for each member (meaning not traced)."}
+  description: >-
+    Attaches a spinning marker icon above the head of every current member of a gang, replacing any icon a member
+    already has.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Calls 0x002271f0 for each of the 16 member slots.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GangRemoveSpinningIcon
+  wrapper: 0x0035f1c0
+  calls:
+    - {addr: 0x0016b358}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+  description: >-
+    Removes the spinning marker icon from every member of a gang (the counterpart of GangAttachSpinningIcon).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GangSetThreatResponse
+  wrapper: 0x0035f1f8
+  calls:
+    - {addr: 0x0016b3d0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: response, lua: number, ctype: int, desc: "Threat response mode written to every current member's AI (+0x21c of the member's AI controller); the scripts use 0 (ignore threats) and 2 (react to them); the full set of values is not traced."}
+  description: >-
+    Sets how the gang's current members react to a threat (someone squaring up to or menacing them). Members added
+    later keep their own setting.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only members present at the call are changed (a loop over the 16 member slots); the meaning of each mode value is
+    inferred from the scripts' use.
+  usage: {chunks: 20, calls: 43, boot: true, mission1: true, result_used: false}
+
+- name: GangSetDamageResponse
+  wrapper: 0x0035f2f0
+  calls:
+    - {addr: 0x0016b460}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: response, lua: number, ctype: int, desc: "Damage response mode written to every current member's AI (+0x220); values as for GangSetThreatResponse (not traced)."}
+  description: >-
+    Sets how the gang's current members react when they take damage.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+
+- name: GangSetInvestigateResponse
+  wrapper: 0x0035f3e8
+  calls:
+    - {addr: 0x0016b4f0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: response, lua: number, ctype: int, desc: "Investigate response mode written to every current member's AI (+0x224); the scripts mostly pass 0 (do not investigate) and a per-gang table value."}
+  description: >-
+    Sets whether and how the gang's current members go to investigate disturbances (noises, fights) they notice.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Same per-member loop as GangSetThreatResponse; value meanings beyond 0 are inferred.
+  usage: {chunks: 42, calls: 112, boot: true, mission1: false, result_used: false}
+
+- name: GangSetRespondPercentage
+  wrapper: 0x0035f4e0
+  calls:
+    - {addr: 0x0016a2e8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: percent, lua: number, ctype: unsigned, desc: "Chance in percent (0-100, stored as a byte at gang +0xd7) that the gang responds when called for help."}
+  description: >-
+    Sets how likely the gang is to respond to a call for help or an alarm; the scripts use 0 to keep a gang out of
+    responses and 100 to make it always come.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 10, calls: 23, boot: false, mission1: false, result_used: false}
+
+- name: GangSetCustomSpotDialog
+  wrapper: 0x0035f558
+  calls:
+    - {addr: 0x0016b280}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: sound, lua: string, desc: "Name of the speech sound members say when they spot the player; empty or nil clears it."}
+  description: >-
+    Gives the gang a custom line of dialogue for when its members spot the player, replacing the default (hash stored
+    at gang +0x608).
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GangIsWanted
+  wrapper: 0x0035f5c0
+  calls:
+    - {addr: 0x0016b580}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31)."}
+    - {name: current, lua: boolean, default: true, desc: "true (the default) asks about one wanted flag (+0x5e8), false about the other (+0x5f0); the two are inferred to be 'wanted now' and 'wanted pending' by the police."}
+  results:
+    - {lua: boolean, desc: "true (1) when the chosen wanted flag is set; nil when it is not, when the gang id is -1 or when the slot is not in use."}
+  description: >-
+    Asks whether a gang is wanted by the police. With the second argument true (the default) it tests the gang's flag
+    at +0x5e8, with false the one at +0x5f0; a gang id of -1 or a slot not in use gives false. global.lua asks it
+    about the player's gang.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Which flag means 'wanted now' and which 'wanted pending' is inferred from the police code that sets them; the
+    reads are confirmed (0x0016b580).
+  usage: {chunks: 13, calls: 25, boot: true, mission1: false, result_used: true}
+
+- name: GangClearWanted
+  wrapper: 0x0035f630
+  calls:
+    - {addr: 0x0016b5e0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+  description: >-
+    Clears the gang's wanted status: makes the police gangs neutral towards it again and, when the gang is the
+    player's, resets the wanted part of the HUD and the police state (0x00169a20).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    global.lua calls it on GangWarriors. It also calls the script system's find-function slot, so a script callback
+    may run (which one is not traced).
+  usage: {chunks: 11, calls: 14, boot: true, mission1: false, result_used: false}
+
+- name: GangClearResponders
+  wrapper: 0x0035f668
+  calls:
+    - {addr: 0x0016b8b0}
+  description: >-
+    Dismisses every gang that was sent in response to a call for help or a crime: responding non-police gangs with no
+    wanted state are deleted, police responders are stood down (0x0016cc60).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 17, calls: 17, boot: true, mission1: false, result_used: false}
+
+- name: GangCanSaveAllys
+  wrapper: 0x0035f688
+  calls:
+    - {addr: 0x0016b980}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: "on", lua: boolean, desc: "true lets the members come to the rescue of allies under attack; false stops them."}
+  description: >-
+    Sets whether the gang's current members help allies who are being attacked (a byte in each member's AI, +0x2d6).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 5, calls: 15, boot: false, mission1: false, result_used: false}
+
+- name: GangBrFlush
+  wrapper: 0x0035f6f0
+  calls:
+    - {addr: 0x0016ba18}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+  description: >-
+    Flushes the AI brain of every current member: all queued goals and actions are removed, so each member stands idle
+    until given new goals.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Per member it calls 0x0028d910 (pop every goal) and 0x0028db20 (pop every action).
+  usage: {chunks: 35, calls: 82, boot: true, mission1: true, result_used: false}
+
+- name: GangSetTargetable
+  wrapper: 0x0035f728
+  calls:
+    - {addr: 0x0016bac0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) lets the player lock on to the members; false (or nil) makes them impossible to target."}
+  description: >-
+    Sets whether the gang's current members can be targeted (locked on to) by the player (a byte in each member's AI,
+    +0x120).
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 4, calls: 7, boot: false, mission1: true, result_used: false}
+
+- name: GangSetAttackable
+  wrapper: 0x0035f790
+  calls:
+    - {addr: 0x0016bb58}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) lets others attack the members; false makes them not attackable."}
+  description: >-
+    Sets whether the gang's current members can be attacked (a byte in each member's AI, +0x11f).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false}
+
+- name: GangSetHearRange
+  wrapper: 0x0035f7f8
+  calls:
+    - {addr: 0x0016bbf0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+    - {name: second, lua: boolean, desc: "Which range to set: true sets the second range (+0x138, default 20 m), false the first (+0x134, default 50 m)."}
+    - {name: range, lua: number, ctype: float, desc: "Range in metres; -1 restores the default (20 or 50)."}
+  description: >-
+    Sets how far the gang's current members can hear noises, used for stealth sections; -1 puts the default back.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    Which of the two ranges is hearing and which is another sense is inferred from the name.
+  usage: {chunks: 7, calls: 75, boot: false, mission1: false, result_used: false}
+
+- name: GangCanFlee
+  wrapper: 0x0035f890
+  calls:
+    - {addr: 0x0016bcf0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+    - {name: "on", lua: boolean, desc: "true allows the gang's members to run away when beaten; false keeps them fighting."}
+  description: >-
+    Sets whether the gang may flee (a byte at gang +0xdf).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: GangSetMoney
+  wrapper: 0x0035f8f8
+  calls:
+    - {addr: 0x0016bd38}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+    - {name: money, lua: number, ctype: int, desc: "Money each member carries, in dollars; clamped to 0-999."}
+  description: >-
+    Sets the money every current member carries (what the player can mug or loot from them), at +0x370 of each human.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 15, calls: 23, boot: false, mission1: false, result_used: false}
+
+- name: GangClearBums
+  wrapper: 0x0035f970
+  calls:
+    - {addr: 0x0016b8d0}
+  description: >-
+    Removes the bums (homeless characters, character class 6) from the player's gang, so recruited bums leave the
+    player.
+  evidence: inferred
+  depth: brief
+  notes: >-
+    Looks up the player's human (game state +0x228), takes its gang and releases every member whose class byte (+0x11b
+    of its character record) is 6.
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: GangCreate
+  wrapper: 0x00373148
+  calls:
+    - {addr: 0x0016a1c8}
+  args:
+    - {name: type, lua: number, ctype: int, desc: "Gang type id (stored at gang +0x2c): selects the gang's configuration from the gang table (the CfgGang data); 0 is the Warriors and 1 the police. Type 1 also makes the new police gang enemies of every gang that is currently wanted."}
+    - {name: name, lua: string, desc: "Unique name of the gang (up to about 28 characters); creation fails if a gang with this name already exists."}
+    - {name: flag1, lua: boolean, desc: "Read but not used by the C++ side (0x0016cdf0 takes only the type and the name)."}
+    - {name: flag2, lua: boolean, desc: "Read but not used, as flag1."}
+  results:
+    - {lua: number, desc: "The new gang's id (slot 0-31), or -1 when the name is already in use or all 32 slots are taken."}
+  description: >-
+    Creates a gang: takes a free slot, gives it a name and a type, clears its members and spawners, and sets up the
+    type's default animation and response tables. Members are added afterwards (HuCreate's gang argument,
+    GangAddMember, spawners).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x0016cdf0. A gang holds at most 10 members, or 16 for police (type 1) and type 0x17 (0x00166308).
+  usage: {chunks: 119, calls: 1391, boot: false, mission1: true, result_used: true}
+
+- name: GangDelete
+  wrapper: 0x00373200
+  calls:
+    - {addr: 0x0016a1e8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); values of 32 and above (including -1) do nothing."}
+  description: >-
+    Deletes a gang: every other gang stops treating it as friend or enemy, and the slot is freed (0x0016d068).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    What happens to members still in the world (0x00164738) is not traced.
+  usage: {chunks: 49, calls: 146, boot: true, mission1: false, result_used: false}
+
+- name: GangSuspend
+  wrapper: 0x00373238
+  calls:
+    - {addr: 0x0016a220}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: "on", lua: boolean, desc: "true suspends the gang, false resumes it."}
+  description: >-
+    Suspends or resumes a gang (a flag at gang +0xd4); the scripts suspend gangs that are not part of the current
+    scene, for example GangWarriors around cutscenes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only the flag write is confirmed; what the gang update skips while it is set is inferred.
+  usage: {chunks: 75, calls: 357, boot: true, mission1: true, result_used: true}
+
+- name: GangInvincible
+  wrapper: 0x003732a0
+  calls:
+    - {addr: 0x0016a260}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: "on", lua: boolean, desc: "true makes the members invincible, false mortal again."}
+  description: >-
+    Makes every current member of a gang invincible or mortal and remembers the setting at gang +0xd8, so members
+    added later get it too (0x0016a000 walks the 16 member slots; 0x00166308 applies it to a new member). The first
+    mission's combat tutorial uses it to keep the player's crew alive.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 3, calls: 17, boot: false, mission1: true, result_used: false}
+
+- name: GangEnableAttackStrategies
+  wrapper: 0x00373308
+  calls:
+    - {addr: 0x0016a2a8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) lets the gang use group attack strategies; false turns them off."}
+  description: >-
+    Turns the gang's coordinated attack strategies (flanking, taking turns) on or off (a flag at gang +0xd9).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The flag write is confirmed; what the strategies are is inferred from the name.
+  usage: {chunks: 4, calls: 11, boot: true, mission1: false, result_used: false}
+
+- name: GangSetMsgHandler
+  wrapper: 0x00373370
+  calls:
+    - {addr: 0x0016ab38}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: message, lua: number, ctype: int, desc: "Gang message id: an index into the gang's handler table (gang +0xe4 + 4 × id). The scripts use, for example, 1 for a member being hit, 2 for a member dying, 17 for an arrest and 18 for a death."}
+    - {name: handler, lua: string, desc: "Name of the Lua function to call (dotted names such as \"Menu.onHit\" allowed), or nil to clear the handler."}
+  description: >-
+    Registers the Lua function the gang calls when the given event happens to it or its members. The name is interned
+    and looked up when the event fires, so the function can be defined or replaced later.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00164bb8 stores the interned name (script-system slot +0xcc). The message ids are inferred from the scripts'
+    handler names.
+  usage: {chunks: 140, calls: 1155, boot: true, mission1: true, result_used: false}
+
+- name: GangClearHandlers
+  wrapper: 0x00373400
+  calls:
+    - {addr: 0x0016ab90}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+  description: >-
+    Removes all of the gang's message handlers and the per-member handlers of its current members.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false}
+
+- name: GangAddTurfBox
+  wrapper: 0x00373438
+  calls:
+    - {addr: 0x0016a328}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: box, lua: number, ctype: unsigned, desc: "Handle of a volume box (from AddVolumeBox); anything else is ignored."}
+  description: >-
+    Adds a volume box to a gang's turf, the area its members defend and keep to: the handle must resolve to an object
+    whose type is 3 (a volume box), and it goes into the first free one of 8 slots at gang +0x15c (count at +0x17c). A
+    ninth box is ignored silently.
+  evidence: confirmed-code
+  depth: thorough
+  usage: {chunks: 28, calls: 87, boot: true, mission1: false, result_used: false}
+
+- name: GangRemoveTurfBox
+  wrapper: 0x003734b0
+  calls:
+    - {addr: 0x0016a3a8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: box, lua: number, ctype: unsigned, desc: "Handle of a volume box previously added with GangAddTurfBox."}
+  description: >-
+    Removes a volume box from the gang's turf.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 5, calls: 23, boot: false, mission1: false, result_used: false}
+
+- name: GangAddMember
+  wrapper: 0x00373528
+  calls:
+    - {addr: 0x0016a3f8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: index, lua: number, ctype: int, desc: "Read but not used by the C++ side; the scripts pass 0 or -1."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to add."}
+  description: >-
+    Moves a human into a gang: it leaves its previous gang (its goals and actions are flushed), takes the gang's
+    invincibility setting and may become its leader. If the gang is full (10 members, 16 for police) a member is
+    dropped first.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    0x00166308.
+  usage: {chunks: 39, calls: 128, boot: false, mission1: false, result_used: false}
+
+- name: GangGetHeadCount
+  wrapper: 0x003735d0
+  calls:
+    - {addr: 0x0016a458}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31)."}
+    - {name: living, lua: boolean, desc: "false (default): count every member slot in use; true: count only members that are not out of the fight (0x00227e60)."}
+  results:
+    - {lua: number, desc: "The number of members (0-16); 0 for gang id -1."}
+  description: >-
+    Counts a gang's members, all of them or only those still fighting; the scripts use it to tell when a group of
+    enemies is beaten.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x00166158.
+  usage: {chunks: 63, calls: 160, boot: true, mission1: false, result_used: true}
+
+- name: GangGetStandingCount
+  wrapper: 0x00373648
+  calls:
+    - {addr: 0x0016a4a8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31)."}
+  results:
+    - {lua: number, desc: "The number of members still on their feet: not knocked down, not dead and not in a third disabled state (0x00227dd8, 0x00227eb0, 0x00227d98); 0 for gang id -1."}
+  description: >-
+    Counts the gang's members that are still standing.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 29, calls: 133, boot: false, mission1: false, result_used: true}
+
+- name: GangGoodToGo
+  wrapper: 0x003736a0
+  calls:
+    - {addr: 0x0016a4e8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31)."}
+    - {name: ignoreBusy, lua: boolean, desc: "false: also require every member's AI to be free (0x002904a0); true: skip that check."}
+  results:
+    - {lua: boolean, desc: "true (1) when no member (bums excepted) is down, hurt or busy; nil otherwise or for gang id -1."}
+  description: >-
+    Asks whether every member of the gang is ready to move on, for example before a scripted walk.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+
+- name: GangSetLeader
+  wrapper: 0x00373710
+  calls:
+    - {addr: 0x0016a538}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who becomes the gang's leader (stored at gang +0x44)."}
+  description: >-
+    Makes a human the gang's leader; the leader is the one the other members follow and the one GangGetLeader returns.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The handle is stored without checking membership.
+  usage: {chunks: 6, calls: 8, boot: true, mission1: false, result_used: false}
+
+- name: GangGetLeader
+  wrapper: 0x00373788
+  calls:
+    - {addr: 0x0016a578}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31)."}
+  results:
+    - {lua: number, desc: "The leader's human handle, or NilHandle when the gang id is -1 or the gang has no leader."}
+  description: >-
+    Returns the gang's current leader.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x0016a578 asks the leader object for its handle through its vtable.
+  usage: {chunks: 6, calls: 32, boot: true, mission1: false, result_used: true}
+
+- name: GangSetLOS
+  wrapper: 0x00373808
+  calls:
+    - {addr: 0x0016a5e8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: range, lua: number, ctype: float, desc: "Line-of-sight (vision) distance in metres, written to every current member's AI (+0x130)."}
+  description: >-
+    Sets how far the gang's current members can see.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 6, calls: 16, boot: false, mission1: false, result_used: false}
+
+- name: GangExitWorld
+  wrapper: 0x00373880
+  calls:
+    - {addr: 0x0016a670}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: exit, lua: number, ctype: unsigned, desc: "Handle of the flag (path point) the members walk to before leaving; NilHandle sends them towards the player instead (0x004172c8)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called when the last member has gone, or nil."}
+    - {name: deleteGang, lua: boolean, default: true, desc: "true (the default) deletes the gang once it is empty; false keeps the empty gang."}
+  description: >-
+    Sends every member of the gang to an exit point to leave the level. When the gang is already empty, the callback
+    (if any) runs at once and the gang is deleted unless deleteGang is false.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x0016a670; the per-member goal it gives is given through vtables and is not fully traced.
+  usage: {chunks: 24, calls: 48, boot: true, mission1: false, result_used: false}
+
+- name: GangEngageEnemy
+  wrapper: 0x00373930
+  calls:
+    - {addr: 0x0016a870}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human (or object) to attack."}
+  description: >-
+    Tells every current member of the gang to attack the given target.
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 10, calls: 18, boot: false, mission1: false, result_used: false}
+
+- name: GangLookAt
+  wrapper: 0x003739a8
+  calls:
+    - {addr: 0x0016a910}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the object or human to look at."}
+  description: >-
+    Makes every current member stop what it is doing and turn to look at a target, each after a short random delay (up
+    to 500 ms).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GangBrDead
+  wrapper: 0x00373a20
+  calls:
+    - {addr: 0x0016aa98}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: "on", lua: boolean, desc: "true switches the members' AI off (brain dead: they stand still and do nothing), false switches it back on."}
+  description: >-
+    Switches the AI of every current member off or on; each member's actions are flushed first. The scripts switch
+    whole gangs off during cutscenes and set-ups.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Per member 0x00292330: flush actions (0x0028db20) and set the brain's off flag (+0x09, 0x0028ced8).
+  usage: {chunks: 76, calls: 325, boot: false, mission1: true, result_used: false}
+
+- name: GangSetFriend
+  wrapper: 0x00373a88
+  calls:
+    - {addr: 0x0016ac40}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31) whose attitude changes; -1 does nothing."}
+    - {name: other, lua: number, ctype: int, desc: "Gang id that the first gang now treats as a friend."}
+  description: >-
+    One-way relation: the first gang treats the second as a friend (its bit set in the friend mask, cleared in the
+    enemy mask). Use GangMakeFriends for both directions.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GangSetEnemy
+  wrapper: 0x00373b00
+  calls:
+    - {addr: 0x0016ac98}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31) whose attitude changes; -1 does nothing."}
+    - {name: other, lua: number, ctype: int, desc: "Gang id that the first gang now treats as an enemy."}
+  description: >-
+    One-way relation: the first gang treats the second as an enemy (bit set in the enemy mask, cleared in the friend
+    mask). Use GangMakeEnemies for both directions.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    One script calls it.
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+
+- name: GangMakeEnemies
+  wrapper: 0x00373b78
+  calls:
+    - {addr: 0x0016acf0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: other, lua: number, ctype: int, desc: "The other gang id; -1 does nothing."}
+  description: >-
+    Makes two gangs enemies of each other, both ways, so their members fight on sight.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    GangSetEnemy in both directions (0x001690c8).
+  usage: {chunks: 119, calls: 355, boot: true, mission1: true, result_used: false}
+
+- name: GangMakeFriends
+  wrapper: 0x00373bf0
+  calls:
+    - {addr: 0x0016ad80}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: other, lua: number, ctype: int, desc: "The other gang id; -1 does nothing."}
+  description: >-
+    Makes two gangs friends of each other, both ways.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    GangSetFriend in both directions (0x00169060).
+  usage: {chunks: 37, calls: 135, boot: true, mission1: true, result_used: false}
+
+- name: GangMakeEnemiesOfType
+  wrapper: 0x00373c68
+  calls:
+    - {addr: 0x0016ae60}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: type, lua: number, ctype: int, desc: "Gang type id (as given to GangCreate); every gang in use with this type is affected."}
+  description: >-
+    Makes the gang an enemy of every existing gang of the given type, in both directions (0x0016c3a8 with both-ways
+    set).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false}
+
+- name: GangMakeNeutralOfType
+  wrapper: 0x00373ce0
+  calls:
+    - {addr: 0x0016ae90}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: type, lua: number, ctype: int, desc: "Gang type id; every gang in use with this type is affected."}
+  description: >-
+    Makes the gang neutral (neither friend nor enemy) towards every existing gang of the given type, both ways.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: GangSetNeutral
+  wrapper: 0x00373d58
+  calls:
+    - {addr: 0x0016ae10}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31) whose attitude changes; -1 does nothing."}
+    - {name: other, lua: number, ctype: int, desc: "Gang id the first gang now treats as neither friend nor enemy."}
+  description: >-
+    One-way relation: clears the second gang's bit in both of the first gang's masks (0x00169130).
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+
+- name: GangAddSpawner
+  wrapper: 0x00373dd0
+  calls:
+    - {addr: 0x0016aec0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31) that owns the spawner and receives the spawned humans; -1 does nothing."}
+    - {name: name, lua: string, desc: "Name of the spawner, used by GangStartSpawner and the other spawner bindings."}
+    - {name: arg3, lua: number, ctype: int, desc: "A number stored with the spawner (the scripts pass 0); meaning not traced."}
+    - {name: types, lua: table, elem: number, count: 10, written_back: true, desc: "Table of up to 10 character type ids the spawner picks from (the scripts pass lists such as CharGenSpawner1)."}
+    - {name: model, lua: string, desc: "Name of the model/outfit the spawned characters use (such as \"warr_sw\"); GangSetSpawnerModel changes it."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Spawn position {x, y, z} in world units (metres)."}
+    - {name: heading, lua: number, ctype: int, desc: "Heading of the spawned characters, in degrees."}
+    - {name: total, lua: number, ctype: int, desc: "How many characters the spawner makes in all; the scripts use -1 for no limit (inferred)."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Delay between spawns, in milliseconds (the scripts pass 1, 500 or 1000) (inferred)."}
+    - {name: maxConcurrent, lua: number, ctype: int, desc: "How many of its characters may be alive at once (spawner +0x5a; GangSetMaxConcurrent changes it)."}
+    - {name: kind, lua: number, ctype: int, desc: "Spawner behaviour id (spawner +0x52): 2 is timed (it starts a timer of value seconds); 4 and others select other behaviours not traced."}
+    - {name: target, lua: number, ctype: unsigned, desc: "A handle stored with the spawner (the scripts pass NilHandle); meaning not traced."}
+    - {name: arg13, lua: number, ctype: int, desc: "A number stored with the spawner (the scripts pass 0); meaning not traced."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called for each character spawned, or nil."}
+    - {name: value, lua: number, ctype: int, desc: "A number used by the behaviour (seconds for the timed kind 2); GangStartSpawner's last argument replaces it."}
+    - {name: arg16, lua: number, ctype: unsigned, desc: "A handle stored with the spawner (the scripts pass NilHandle); meaning not traced."}
+    - {name: anim, lua: string, desc: "Name of an animation or behaviour given to spawned characters; \"nothing\" for none (inferred)."}
+  description: >-
+    Adds a spawner to a gang: a point that creates gang members over time from a list of character types. A gang has
+    at most 4 spawners; the call is ignored when all four are used. The spawner does nothing until GangStartSpawner
+    starts it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    0x0016aec0 → 0x00166ff8. The layout (which argument goes to which spawner field) is confirmed (code); the meaning
+    of the numeric arguments is inferred from the stored fields and the scripts' values. Default per-spawner timers
+    (10, 20, 30, 60 ...) are set at creation.
+  usage: {chunks: 37, calls: 221, boot: false, mission1: true, result_used: false}
+
+- name: GangIsASpawner
+  wrapper: 0x00374108
+  calls:
+    - {addr: 0x0016b618}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31)."}
+    - {name: name, lua: string, desc: "Spawner name."}
+  results:
+    - {lua: boolean, desc: "true (1) when the gang has a spawner in use with this name; nil otherwise or for gang id -1."}
+  description: >-
+    Asks whether a gang owns a spawner of the given name.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: true}
+
+- name: GangSetSpawnerModel
+  wrapper: 0x00374178
+  calls:
+    - {addr: 0x0016b018}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: spawner, lua: string, desc: "Spawner name."}
+    - {name: model, lua: string, desc: "New model/outfit name for the characters it spawns from now on."}
+  description: >-
+    Changes the model a gang's spawner gives to new characters.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+
+- name: GangSetSpawnerMustBeOffScreen
+  wrapper: 0x00374200
+  calls:
+    - {addr: 0x0016b070}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: spawner, lua: string, desc: "Spawner name."}
+    - {name: "on", lua: boolean, desc: "true: only spawn while the spawn point is off screen; false: spawn anywhere."}
+  description: >-
+    Sets whether a spawner may only create characters where the player cannot see it appear (spawner +0x8c).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 12, calls: 29, boot: false, mission1: false, result_used: false}
+
+- name: GangStartSpawner
+  wrapper: 0x00374288
+  calls:
+    - {addr: 0x0016afc8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: spawner, lua: string, desc: "Spawner name; an unknown name does nothing."}
+    - {name: mode, lua: number, ctype: int, desc: "New spawner state: 0 stops it, 1 starts it; 2-5, 7, 8, 9 and 11 select other states (the scripts use 7 and 8); other values leave the state unchanged."}
+    - {name: value, lua: number, ctype: int, desc: "Replaces the spawner's value (GangAddSpawner's 15th argument) unless -1."}
+  description: >-
+    Starts, stops or switches the state of a gang's spawner, and records the time of the change.
+  evidence: confirmed-code
+  depth: brief
+  notes: >-
+    0x00168cd0; the meaning of each state other than 0 and 1 is not traced.
+  usage: {chunks: 45, calls: 229, boot: false, mission1: false, result_used: false}
+
+- name: GangSetMaxConcurrent
+  wrapper: 0x00374350
+  calls:
+    - {addr: 0x0016b0b0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
+    - {name: spawner, lua: string, desc: "Spawner name."}
+    - {name: count, lua: number, ctype: int, desc: "How many of its characters may be alive at once."}
+  description: >-
+    Changes how many characters a spawner keeps alive at the same time.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 8, calls: 34, boot: false, mission1: false, result_used: false}
+
+- name: GangQueueResponders
+  wrapper: 0x003743f0
+  calls:
+    - {addr: 0x0016b678}
+  args:
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} the responders go to; written back to the table."}
+    - {name: arg2, lua: number, ctype: unsigned, desc: "A number passed to the responder queue (0x0016e0f0); meaning not traced."}
+    - {name: arg3, lua: number, ctype: unsigned, desc: "A number passed to the responder queue; meaning not traced."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who called for help; when it is in a gang, that gang gets a 10 s response timer."}
+  description: >-
+    Queues a response (gangs coming to help) to a position, as when a character calls for backup; only when the
+    responder system is free (0x0016cb78).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+
+- name: GangRespond
+  wrapper: 0x00374518
+  calls:
+    - {addr: 0x0016b728}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31) that responds; -1 or an unused slot does nothing."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} to respond to; written back to the table."}
+    - {name: caller, lua: number, ctype: unsigned, desc: "Handle of the human who called; must be a valid human, and its gang gets a 10 s timer."}
+  description: >-
+    Sends every current member of the gang to respond to an incident at a position (each gets a respond goal);
+    non-police gangs also get a lost-target search animation set.
+  evidence: confirmed-code
+  depth: brief
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: GangSetAlwaysSeen
+  wrapper: 0x00374620
+  calls:
+    - {addr: 0x0016bde8}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+    - {name: "on", lua: boolean, desc: "true: the gang is always treated as seen; false: normal visibility."}
+  description: >-
+    Sets whether the gang counts as always visible to others (a flag at gang +0xdc), for example for radar or AI
+    awareness.
+  evidence: speculative
+  depth: brief
+  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false}
+
+- name: GangCanUseWorldFlags
+  wrapper: 0x00374688
+  calls:
+    - {addr: 0x0016be30}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) lets the members use the level's world flags (ambient points where characters idle, sit or lean); false stops them."}
+    - {name: percent, lua: number, ctype: unsigned, default: 10, desc: "Chance in percent that a member uses a world flag (default 10; the scripts pass 75 or 100); forced to 0 when on is false."}
+  description: >-
+    Lets the gang's current members wander to and use the level's world flags (ambient behaviour points), with a given
+    likelihood; used for civilians and idle gangs.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Writes +0x2d1 (on) and +0x2d2 (percent) in each member's AI; the world-flag behaviour itself is inferred from the
+    name.
+  usage: {chunks: 17, calls: 37, boot: true, mission1: false, result_used: false}
+
+- name: GangSetReactToViolence
+  wrapper: 0x00374718
+  calls:
+    - {addr: 0x0016bee0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
+    - {name: "on", lua: boolean, desc: "true: members react to violence they witness; false: they ignore it."}
+  description: >-
+    Sets whether the gang's current members react to fights and violence nearby (a byte in each member's AI, +0x267).
+  evidence: inferred
+  depth: brief
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+
+- name: GangCallForHelp
+  wrapper: 0x0037a698
+  calls:
+    - {addr: 0x00416be0}
+  args:
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31) calling for help."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} help is called to; written back to the table."}
+  description: >-
+    Makes a gang call for help at a position, if no call is already in progress; the game state remembers the caller
+    and the time (0x00416be0).
+  evidence: inferred
+  depth: brief
+  notes: >-
+    No script calls it.
+  usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
