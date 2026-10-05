@@ -134,7 +134,52 @@ The database keeps three things in step:
   `rekit ghidra export` brings new names back, never overwriting an entry that has a higher evidence level.
 
 The database **arrives with Rekit**. Until then, findings are recorded on the research pages only, and the YAML
-is seeded from them when it arrives.
+is seeded from them when it arrives. One file is already there, because it is Coney's own: the script bindings.
+
+### The script bindings {#bindings}
+
+The files `research/bindings/<category>.yaml` list every function the game registers with its Lua state, one entry
+per name: the masterlist of the game's script bindings (what FiveM calls natives), which is also the reference for
+script mods. There is one file per category, named by the category's id (the ids are in `coney_tools/natives.py`), so
+an entry has no `category` key; moving a binding to another category means moving its entry to that file.
+`coney-tools natives render` checks the files and generates the reference pages in `docs/references/bindings/` from
+them; the pages are never edited by hand, and CI runs `natives render --check` ([coney-tools](coney-tools.md#natives)).
+An entry of `level.yaml`:
+
+```yaml
+- name: GetLevelId                 # the Lua global's name
+  origin: game                     # game (default) | coney: a binding Coney adds for mods, with no wrapper or usage
+  registered_by: RegisterBindings  # RegisterBindings (default) | ScriptSystem (the four Cfg* of the constructor)
+  wrapper: 0x0036c568              # the tolua wrapper
+  calls:                           # the functions of the game the wrapper calls, with our name when we have one
+    - {addr: 0x0041d6f0}           # add `name: ...` once the function has one of ours
+  args:                            # in the order the wrapper reads them (Lua argument 1, 2, ...)
+    - {name: index, lua: number, ctype: unsigned, desc: "Index of a level record (0 is the front end)."}
+  results:                         # what the wrapper pushes
+    - {lua: number, desc: "The record's level number, as in levelNN.lua."}
+  overloads:                       # only for the ten names registered twice: the first registration, same keys
+    - {wrapper: 0x..., calls: [...], args: [...], results: [...], note: "when it is used"}
+  description: "What the binding does, in one to four sentences."
+  evidence: confirmed-code         # the level of the description and meanings; the signature is always confirmed (code)
+  depth: thorough                  # thorough (the callee was traced) | brief (a shorter description)
+  notes: "Caveats: ignored arguments, edge cases."
+  usage: {chunks: 2, calls: 8, boot: true, mission1: false, result_used: true}
+  coney: not implemented           # not implemented (default) | partial | implemented
+```
+
+- `lua` is how the wrapper reads an argument: `number`, `boolean`, `string`, `table` (with `elem: number` or `string`
+  and, when fixed, `count`) or `userdata`; a number's `ctype` is what it becomes (`int`, `unsigned`, `float` or
+  `double`). `default` is the value an argument left off takes, and `written_back: true` marks a table the binding
+  writes into (every table argument of the game's bindings is). A result's `lua` is `number`, `boolean` (1 or nil),
+  `string` or `usertype` (with `type`).
+- `usage` is counted from the disc's compiled Lua chunks: how many chunks reference the binding's global name and
+  how many references there are (`calls`), whether the boot-to-menu scripts or the first mission's scripts
+  reference it, and whether a traced call keeps its result (a lower bound). It holds counts only.
+- `coney` is never edited by hand: `coney-tools natives coney` sets it from Coney's binding table
+  (`src/scripting/script_bindings.cpp`), writing the key only when it is not the default
+  ([coney-tools](coney-tools.md#natives)).
+- `depth: mechanical` (signature only, no description) is accepted so a new entry can land before it is described;
+  the masterlist has none.
 
 ## Tools
 

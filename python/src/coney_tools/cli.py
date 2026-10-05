@@ -11,7 +11,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from coney_tools import progress_cli, wad_cli, xbox_cli
+from coney_tools import natives_cli, progress_cli, wad_cli, xbox_cli
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.repo_checks import check_pointer_files, check_title, first_line, load_title_rules
 
@@ -76,6 +76,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_wad_commands(groups)
     _add_xbox_commands(groups)
     _add_progress_commands(groups)
+    _add_natives_commands(groups)
     return parser
 
 
@@ -146,6 +147,17 @@ def _add_progress_commands(groups: Any) -> None:
     sizes.add_argument("--fill", action="store_true", help="write the estimated size of entries that have none")
 
 
+def _add_natives_commands(groups: Any) -> None:
+    """Register `coney-tools natives ...`."""
+    group = groups.add_parser("natives", help="the script-binding masterlist (research/bindings/)")
+    commands = group.add_subparsers(dest="command", required=True)
+    render = commands.add_parser("render", help="check the YAML and regenerate docs/references/bindings/")
+    render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a page is stale")
+    coney = commands.add_parser("coney", help="set each entry's coney status from src/scripting/script_bindings.cpp")
+    coney.add_argument("--check", action="store_true", help="change nothing; exit 1 when a status is stale")
+    commands.add_parser("stats", help="print the counts by category, evidence level and usage")
+
+
 def _run_progress(args: argparse.Namespace) -> int:
     """Dispatch a `progress` command."""
     if args.command == "show":
@@ -191,6 +203,10 @@ def _run(args: argparse.Namespace) -> int:
         return _run_xbox(args)
     if args.group == "progress":
         return _run_progress(args)
+    if args.group == "natives":
+        if args.command == "render":
+            return natives_cli.run_render(args.check)
+        return natives_cli.run_coney(args.check) if args.command == "coney" else natives_cli.run_stats()
     if args.group == "config":
         return _config_show()
     if args.command == "check-title":

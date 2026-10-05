@@ -11,13 +11,13 @@ scripts run in which order and in which state, how C++ calls back into Lua, and 
 It is what an implementer needs to run `enum_preload.lua`, the `config_preload*.lua` scripts, `global.lua` and a
 level script (`level100.lua` for the front end) the way the game does.
 
-In one paragraph: there is **one** Lua 4.0.1 state, owned by a script-system object. It is made at start-up and
-**remade every time a level is unloaded**. It has the standard `string`, base and `math` libraries (no `io`), the
-tolua support table and **956 game bindings**. Script errors are silent (`_ERRORMESSAGE` and `_ALERT` do nothing). The
-legal screen runs `enum_preload.lua`, then `config_preload.lua`, `config_preload2.lua` and `config_preload3.lua`;
-loading a level runs `global.lua` and then `<level>.lua`, all in the same state, so a level script sees the
-preloads' globals and `global.lua`'s helpers. C++ calls Lua functions **by name** (dotted, such as `Menu.onStart`),
-never by reference.
+In one paragraph: there is **one** Lua 4.0.1 state, owned by a script-system object. It is made at start-up and **remade
+every time a level is unloaded**. It has the standard `string`, base and `math` libraries (no `io`), the tolua support
+table and **956 game bindings** (every one in the [script bindings](../references/bindings/index.md) reference). Script
+errors are silent (`_ERRORMESSAGE` and `_ALERT` do nothing). The legal screen runs `enum_preload.lua`, then
+`config_preload.lua`, `config_preload2.lua` and `config_preload3.lua`; loading a level runs `global.lua` and then
+`<level>.lua`, all in the same state, so a level script sees the preloads' globals and `global.lua`'s helpers. C++ calls
+Lua functions **by name** (dotted, such as `Menu.onStart`), never by reference.
 
 ## Original structure
 
@@ -111,13 +111,17 @@ confirmed (code); the count confirmed (runtime).
 | `Scene` | 15 | cutscenes |
 | other | 257 | world objects (`Obj`, `Car`, doors, flags, paths, particles, weather), scheduling, pad and message handlers, level flow, menus, lighting |
 
-Counts are by name prefix (a name goes in the first row that matches); 956 in all. confirmed (code). The full list is
-the executable's
-registration table; it is not copied here.
+Counts are by name prefix (a name goes in the first row that matches); 956 in all. confirmed (code). Every binding, with
+its arguments, result, effect, evidence and usage counts, is in the [script bindings](../references/bindings/index.md)
+reference, generated from `research/bindings/`.
 
-**Survey (disc, counts only):** the 467 compiled Lua chunks in the WAD call 792 of the 956 bindings; 164 are never
-called by any script. The scripts on the boot-to-front-end path (`enum_preload.lua`, the three `config_preload*.lua`,
-`config_strings_en.lua`, `global.lua`, `level100.lua`) call 256 distinct bindings; 37 of them have their result used.
+**Survey (disc, counts only):** the 467 compiled Lua chunks in the WAD reference 802 of the 956 bindings by their
+global names; 154 are never used by any script. The scripts on the boot-to-front-end path (`enum_preload.lua`, the
+three `config_preload*.lua`, `config_strings_en.lua`, `global.lua`, `level100.lua`) use 266 distinct bindings, at least
+37 of them for their result. The first mission's four scripts (`level99.lua` and its `_combat`, `_lesson1` and
+`_lesson2` scripts) use 175; the two paths together need 366. An earlier count of 792, 256 and 171 traced calls through
+the stack and missed calls made inside `for` loops (`CfgHUDMessage` in `config_preload2.lua`, for one); counting
+references does not. Per-binding counts are in the reference.
 
 ### Argument and result conventions
 
@@ -138,32 +142,31 @@ default (0, `false` or `NULL`), a wrong type as whatever Lua's conversion gives.
 
 The scripts follow the same convention: `global.lua` sets `true = 1` and `false = nil` before anything else.
 
-### Bindings whose results the front end needs
+### Bindings the front end and the script system depend on
 
-| Binding | Returns | Source | Evidence |
-| --- | --- | --- | --- |
-| `GetPlatform()` | always **1** (`0x00357998`) | constant | confirmed (code) |
-| `isRelease()` | always true (1) (`0x00357990`) | constant | confirmed (code) |
-| `GetLanguage()` | the game state's language (`+0x120`): 0 English, 1 Spanish, 2 French, 3 Italian, 4 German (`LanguageExt` in `config_preload2.lua`); 0 on the NTSC-U disc | `0x0041d7f0` | confirmed (code); values confirmed (runtime) |
-| `GetCurrentLevelIndex()` | the current level record's index (`+0x56dc`); 0 on the front end | `0x0041d718` | confirmed (code); values confirmed (runtime) |
-| `GetLevelId(i)` | record `i`'s level number (record `+0x04`); 100 for record 0 | `0x0041d6f0` | confirmed (code); values confirmed (runtime) |
-| `GetDifficulty()` / `GetProfileDifficulty()` | game state `+0x154` / `+0x43c` (1 at the front end) | `0x0041d800` / `0x0041d820` | confirmed (code); values confirmed (runtime) |
-| `GetCheckPoint()` | game state `+0x33a` | `0x0041abe8` | confirmed (code) |
-| `UM_IsLevelComplete(n)` | true if the unlockables manager has level `n` done; false when the manager is absent | `0x004238a8` | confirmed (code) |
-| `ToInt(x)` | `x` truncated | `0x0036d938` | confirmed (code) |
-| `ScenePreload(name, ...)`, `GetPTank(...)`, `ObjSpawn(...)`, `CameraCreateLocked(...)` | a handle (a number) | | confirmed (code) |
-
-### Bindings that drive the script system
-
-| Binding | Does | Evidence |
-| --- | --- | --- |
-| `doFile(name)` | runs `name .. ".lua"` (`0x003579a0`: formats `"%s.lua"`, `0x00579058`) through slot `+0x34`, synchronously; the PC-style `../levels/<level>/` path is dead as for the level entry | confirmed (code) |
-| `preLoadFile(name, callback)` | requests `name .. ".lua"` from the file manager asynchronously (`0x00357a68`); when it arrives the completion routine `0x00356d00` runs it with the interned callback name | confirmed (code); what `0x00356d00` does with the name is not traced |
-| `ScheduleFunc(name, ms)` / `ScheduleFuncArg1(name, ms, n)` | slot `+0x94` / `+0x9c` (`0x003863d8`, `0x00386410`) | confirmed (code) |
-| `FlushScheduledFuncs(name)` | slot `+0xac` (`0x00386450`) | confirmed (code) |
-| `gc()` | slot `+0x1c` (`0x00386370`) | confirmed (code) |
-| `PadSetHandler(pad, button, name)` | stores a handler name for a pad button (`0x00145698`) | confirmed (code) for the arguments |
-| `ShowProfileManager(first, second)` | interns both names (slot `+0xcc`) into `0x005e6690` / `0x005e6694` and pushes the profile manager mode `0x12` unless it is already on top (`0x001552b0`, `0x0015dfd0`); the first is the one `PM_Mode` calls for code 1 ([Front end](frontend.md#profile-manager)) | confirmed (code) |
+The front end needs the results of [`GetPlatform`](../references/bindings/util.md#getplatform),
+[`isRelease`](../references/bindings/util.md#isrelease), [`GetLanguage`](../references/bindings/level.md#getlanguage),
+[`GetCurrentLevelIndex`](../references/bindings/level.md#getcurrentlevelindex),
+[`GetLevelId`](../references/bindings/level.md#getlevelid),
+[`GetDifficulty`](../references/bindings/level.md#getdifficulty),
+[`GetProfileDifficulty`](../references/bindings/level.md#getprofiledifficulty),
+[`GetCheckPoint`](../references/bindings/level.md#getcheckpoint),
+[`UM_IsLevelComplete`](../references/bindings/level.md#um_islevelcomplete),
+[`ToInt`](../references/bindings/util.md#toint), [`ScenePreload`](../references/bindings/scene.md#scenepreload),
+[`GetPTank`](../references/bindings/world.md#getptank), [`ObjSpawn`](../references/bindings/world.md#objspawn) and
+[`CameraCreateLocked`](../references/bindings/camera.md#cameracreatelocked) (the last four return handles); a script
+runs other scripts and schedules calls through [`doFile`](../references/bindings/script.md#dofile),
+[`preLoadFile`](../references/bindings/script.md#preloadfile),
+[`ScheduleFunc`](../references/bindings/script.md#schedulefunc),
+[`ScheduleFuncArg1`](../references/bindings/script.md#schedulefuncarg1),
+[`FlushScheduledFuncs`](../references/bindings/script.md#flushscheduledfuncs),
+[`gc`](../references/bindings/script.md#gc), [`PadSetHandler`](../references/bindings/input.md#padsethandler) and
+[`ShowProfileManager`](../references/bindings/hud.md#showprofilemanager). Their arguments, results and addresses are in
+the [script bindings](../references/bindings/index.md) reference. Two facts matter for the order of things: `doFile`
+runs its script synchronously through slot `+0x34`, and `preLoadFile` loads asynchronously and runs the script, then
+calls the callback, when the file arrives (completion routine `0x00356d00`). `ScheduleFuncArg1` takes `(name, arg, ms)`:
+the number comes before the delay (slot `+0x9c`, `0x003572e8`, adds its last argument to the game time). confirmed
+(code).
 
 ### Scheduled calls
 
@@ -309,23 +312,26 @@ calls `Main()`:
   `SetupBasicAttacks`, ...), `HUDSetObjective`, `HUDTurnOffRadar` and the training enemies (`AddCombatEnemy`).
 
 The player therefore exists and the follow camera is active before the first frame of mode 1; the intro scene takes
-the camera over and gives it back. The bindings these calls reach are below.
+the camera over and gives it back.
 
-| Binding | Address | Does | Evidence |
-| --- | --- | --- | --- |
-| `HuCreate(name, type, {x,y,z}, heading, str, player, gang, flag)` | `0x00358428` → `0x00233d60` | creates a human, returns its handle or `NilHandle` ([Characters](characters.md#creation)) | confirmed (code) |
-| `GangCreate(id, name, a, b)` | `0x00373148` → `0x0016a1c8` | creates a gang, returns its handle | confirmed (code) for the call |
-| `CamSetupFollow(name, target)` | `0x00365a48` → `0x0011bfa8` | sets up the player's follow camera ([Camera](camera.md#setting-up)) | confirmed (code) |
-| `CfgFollowCamera(min, max, default, angle, fov, near, {offset}, slowmo)` | `0x0036ab88` → `0x0011c0b8` | configures it | confirmed (code) |
-| `CameraMakeActive(cam, seconds, ...)` | `0x003656a0` → `0x0011b770` | makes a camera current, blending over `seconds` | confirmed (code) |
-| `CameraReset(cam)` | `0x00365a10` | camera slot `+0x13c` | confirmed (code) |
-| `CamSetFollowZoom` / `Angle` / `Heading` / `Pos` | `0x00365bf0` / `0x00365bb8` / `0x00365b80` / `0x00365c60` | change the follow camera at run time | confirmed (code) for the addresses |
-| `SetStartGameCallback(name)` | `0x0036df98` → `0x0015fe50` | stores the name (32 bytes) at `0x005e6d88`, which `InitLevel` calls at its end | confirmed (code) |
-| `SetCheckPoint(n)` / `GetCheckPoint()` | `0x0037b760` / `0x0037b798` (→ `0x0041abe8`) | write / read `W_GameState + 0x33a` | confirmed (code) |
-| `SetDynamicAnimation(...)` | `0x0036e668` | asks for an animation to be loaded for the level ([Characters](characters.md#files)) | confirmed (code) for the address |
-| `HuSetDemiGodMode(h, on, f)`, `EnableCommand(h, id, on)`, `CfgPlayerMugging(on)` | `0x0035ba40`, `0x00369638`, `0x0035e9c8` | player flags | confirmed (code) for the addresses |
-| `ShowHud(on)`, `RestoreHud()`, `ReportCrime(n)` | `0x00370c68`, `0x00370cc0`, `0x0037a600` | HUD and police state | confirmed (code) for the addresses |
-| `MenuLoadLevel(name)`, `HUDLaunchMissionComplete(n)` | `0x0036df48`, `0x0036f218` | level change; the mission-complete screen | confirmed (code) for the addresses |
+These calls reach [`HuCreate`](../references/bindings/character.md#hucreate),
+[`GangCreate`](../references/bindings/gang.md#gangcreate),
+[`CamSetupFollow`](../references/bindings/camera.md#camsetupfollow),
+[`CfgFollowCamera`](../references/bindings/config.md#cfgfollowcamera),
+[`CameraMakeActive`](../references/bindings/camera.md#cameramakeactive),
+[`CameraReset`](../references/bindings/camera.md#camerareset),
+[`SetStartGameCallback`](../references/bindings/script.md#setstartgamecallback),
+[`SetCheckPoint`](../references/bindings/level.md#setcheckpoint),
+[`SetDynamicAnimation`](../references/bindings/character.md#setdynamicanimation),
+[`HuSetDemiGodMode`](../references/bindings/character.md#husetdemigodmode),
+[`EnableCommand`](../references/bindings/character.md#enablecommand),
+[`CfgPlayerMugging`](../references/bindings/config.md#cfgplayermugging),
+[`ShowHud`](../references/bindings/hud.md#showhud), [`RestoreHud`](../references/bindings/hud.md#restorehud),
+[`ReportCrime`](../references/bindings/level.md#reportcrime),
+[`MenuLoadLevel`](../references/bindings/level.md#menuloadlevel) and
+[`HUDLaunchMissionComplete`](../references/bindings/hud.md#hudlaunchmissioncomplete), among the 175 bindings the first
+mission uses; each is described in the [script bindings](../references/bindings/index.md) reference (`ShowHud`, for
+one, does nothing in this build).
 
 ## Notes for implementers
 
@@ -416,3 +422,9 @@ of the original).
   `SetUpdateFunction`, the binding wrapper `0x0036eef8` `ShowProfileManager_Binding`, `0x0041f118`
   `W_GameState_SetLevelRecord`, `0x00160d78` `MenuLoadLevel_Choose`, `0x0015c7b0` `LevelFlow_ChooseLevel` and
   `0x0020a268` `PM_Mode::HandleCommand`, until the research database names them.
+- Binding arguments the [script bindings](../references/bindings/index.md) reference marks as not understood yet:
+  which bit of `PadSetHandler`'s mask is which PS2 button; what each message number of `SetMsgHandler` means; the 23
+  values `GetRumbleModeData` returns; the scene-play flags (`ScenePlay` and its relatives) beyond their `global.lua`
+  names; when animation callbacks (`AddAnimCallback`) fire and with what arguments; most fields of the large `Cfg*`
+  records (`CfgChar`, `CfgPowerClass`, `CfgWarriorClass`), which are written through computed addresses with no reader
+  found yet. Each would move up from inferred once a reader or a runtime observation is found.

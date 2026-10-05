@@ -1,11 +1,11 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers three groups:
-`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
-[`xbox`](#xbox), which reads the Xbox disc's archive, and [`progress`](#progress), which keeps the progress tables of
-the README and the docs current. Everything is read in
-place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
-[WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers four groups:
+`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`xbox`](#xbox), which
+reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
+current, and [`natives`](#natives), which renders the script-binding masterlist. Everything is read in place and
+streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR /
+.WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -156,3 +156,37 @@ before the padding, or an address no call reaches, is a warning. `--fill` writes
 The span is an upper bound: a function that nothing calls directly and no pointer in `.data` names (one reached
 only by a tail jump) is not seen as a start, and the span of the function before it includes it. When `--fill`
 gives a size that looks too large for what the research page describes, ask an analyst for the size Ghidra shows.
+
+## natives {#natives}
+
+The script-binding reference (`docs/references/bindings/`, under Game references) is generated from
+`research/bindings/<category>.yaml` (schema: [Research workflow](research-workflow.md#bindings)).
+
+```sh
+uv run --project python coney-tools natives render [--check]
+```
+
+Checks the YAML and writes `docs/references/bindings/`: `index.md` and one page per category, each binding under an
+anchor of its name in lower case (`hud.md#hudsetobjective`). A page left over from a removed category is deleted. Run it
+after editing the YAML and commit the pages with the change. With `--check` it writes nothing and exits with 1 when a
+page is stale; CI runs it that way. Either way it refuses to go on while the YAML has problems, and lists them: an
+unknown key, a file that is not a category, a missing description on a described entry, a thorough entry with an
+argument left unexplained, an argument name used twice, usage counts that contradict each other, a name listed twice.
+
+```sh
+uv run --project python coney-tools natives coney [--check]
+```
+
+Sets the `coney` key of every entry from Coney's binding table, `kBindings` in `src/scripting/script_bindings.cpp`:
+`real` is *implemented*, `routed` (handed to a stand-in for a subsystem Coney lacks) is *partial*, `stub` and
+`recording` are *not implemented*, and so is a binding the table does not list; the default is written as no key. Run
+it, then `natives render`, after changing the table. It fails when a line of the table is not one `kind("Name", ...)`
+entry, or names a binding the masterlist lacks. With `--check` it writes nothing and exits with 1 when a status is
+stale; CI runs it that way.
+
+```sh
+uv run --project python coney-tools natives stats
+```
+
+Prints the counts by category, evidence level, detail and Coney status, and how many bindings the game's scripts
+call.

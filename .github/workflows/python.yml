@@ -33,3 +33,7 @@ jobs:
       - run: uv run --project python coney-tools repo check
       # The README's and the docs' progress tables must match their inputs (docs/progress/, the @orig tags, the roadmap).
       - run: uv run --project python coney-tools progress update --check
+      # The script-binding pages (docs/references/bindings/) must match research/bindings/, which must be valid.
+      - run: uv run --project python coney-tools natives render --check
+      # Their Coney status must match Coney's binding table (src/scripting/script_bindings.cpp).
+      - run: uv run --project python coney-tools natives coney --check

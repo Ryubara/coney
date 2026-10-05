@@ -4,13 +4,14 @@ version = "0.1.0"
 description = "Coney's own automation: local configuration and repository checks, later the WAD and emulator tools"
 requires-python = ">=3.12"
 license = "GPL-3.0-or-later"
-dependencies = []
+# PyYAML reads the research database (research/*.yaml) for `coney-tools natives`.
+dependencies = ["pyyaml>=6"]
 
 [project.scripts]
 coney-tools = "coney_tools.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "types-pyyaml>=6"]
 
 [build-system]
 requires = ["hatchling"]

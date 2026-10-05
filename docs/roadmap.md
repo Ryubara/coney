@@ -95,7 +95,8 @@ functions the game exposes to its scripts.
 - Done: the front end runs the game's own preload, `global.lua` and `level100.lua` scripts and the menu callbacks in
   one script system, with no error and no call of a missing binding on the NTSC-U disc; STORY reaches the level request
   for `level99` and quick rumble fades out and back ([Scripts](research/scripting.md#coneys-implementation)).
-- In progress: a [masterlist of every script binding](#script-mods), in the style of FiveM's natives reference.
+- Done: the [script bindings](references/bindings/index.md) reference: all 956 bindings with their arguments,
+  results and effects, in the style of FiveM's natives reference, for the game and for [script mods](#script-mods).
 
 ## Characters
 
@@ -142,8 +143,9 @@ A way for players to write their own scripts and mods, in the spirit of ScriptHo
 game's own logic is already Lua calling engine bindings, mods can use the same language and the same bindings:
 Coney loads Lua files from a mods folder into the game's script state at documented points (start-up, each level
 start, each frame), and they call the bindings the game's scripts call. The bindings are documented in a masterlist
-in the style of FiveM's natives reference: every binding's arguments, result and effect, and whether Coney implements
-it yet. Later, Coney may add bindings of its own for mods (marked as Coney's, never confused with the original's)
+in the style of FiveM's natives reference ([Script bindings](references/bindings/index.md)): every binding's
+arguments, result and effect, and whether Coney implements it yet. Later, Coney may add bindings of its own for
+mods (marked as Coney's, never confused with the original's)
 and a native plugin interface. Coney ships only the loader and the documentation, never a mod; the game's behaviour
 without mods is unchanged.
 
