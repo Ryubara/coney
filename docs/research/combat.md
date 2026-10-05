@@ -68,6 +68,15 @@ No source file names this code: it lies in the unnamed stretch after `Human/cns/
 | `0x00241b90` | `Human_FightStanceMove` | movement in a fight stance; lock-on | confirmed (code), runtime |
 | `0x00287730` | `Player_Special` | cross + square, circle + cross, circle + triangle outside a grab | confirmed (code), runtime |
 | `0x002878b8` | `Player_TheftTiming` | theft mode 2 | confirmed (code) |
+| `0x0026c548` | `Grab_Start` | the grab's intro: 71 (or 70), then 69 and the idle; turns towards the target | confirmed (code) |
+| `0x0026c1d8` | `Grab_IntroEnd` | end of the intro clip: grab from the front or rear, or a counter | confirmed (code) |
+| `0x0026be68` | `Grab_Connect` | aligns the pair and starts 72 / 73 (74 / 75 from the rear), then the holds | confirmed (code) |
+| `0x00276998` | `Pair_AlignStart` | range gate, then turns and slides the attacker so the victim stands at the clip's reach | confirmed (code) |
+| `0x0026bad8` | `Grab_ConnectEnd` | end of 72 / 74: distance check, snap and attach in the hold | confirmed (code) |
+| `0x00276d98` / `0x002802a0` | `Pair_SnapAttach` / `Pair_Attach` | puts the victim at the hold's offset and ties its movement to the grabber | confirmed (code) |
+| `0x00244e78` / `0x00245310` | `Human_MoveAttached` / `Human_MoveGrabbing` | movement states of the held victim and of a grabbing player | confirmed (code) |
+| `0x00277958` | `Pair_CheckPlace` | a move in the hold needs the victim within 0.3 m of the move's offset | confirmed (code) |
+| `0x0023cf88` / `0x0023d2b8` | `Human_TurnToOver` / `Human_MoveToOver` | turn to a heading, or move to a point, over a time | confirmed (code) |
 
 ## Data
 
@@ -481,6 +490,94 @@ a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x
 strike 236 → 135 with its 57 damage on the same update. The grab also ends when the victim drifts beyond the larger of
 reach + 0.2 m and reach × 1.2, or 0.2 m up or down.
 
+### Posing a grab {#grab-posing}
+
+How the two bodies of a grab are placed and kept together. The reference frame is always the **grabber's**: before
+the connecting clips the grabber is turned and slid to the victim, after them the victim is snapped to the hold's
+offset and then follows the grabber. The clips themselves are drawn like any other clip, each body in its own frame,
+with nothing stripped from or composed into their root ([Paired tasks](formats/animation.md#paired-tasks)). Confirmed
+(code) at the cited addresses unless marked; the clip and range values are Rembrandt's set (the generic set has the
+same for these ids), read from the disc as numbers only.
+
+**Axes.** A heading `h` faces `(-sin h, cos h)`: 0 faces `+y`, and it grows to the left (the heading of a direction
+`(dx, dy)` is `atan2(-dx, dy)`, `0x003357a8`). An offset "in the grabber's frame" is `(x right, y ahead)` turned by the
+grabber's heading.
+
+1. **Intro** (`Grab_Start`, `0x0026c548`): the grabber's stack becomes 71 `GRAB_PLAYER_INTRO` (70 for some AI
+   grabbers), then 69 `GRAB_MISS`, then its idle; the base id `0x48` (72) is kept at record `+0xb4`. With a target, the
+   grabber turns to face it over the intro's playing time (`0x00221cd8`: 0.133 s / 0.75 = 0.18 s). 71's end callback
+   (`Grab_IntroEnd`, `0x0026c1d8`) decides: no grab (69 plays on), a counter by the victim (76, through
+   `Attack_StartPaired` with state flag `0x400000`, when the victim has flag `0x20000` and in some AI cases), or a grab,
+   **from the rear** when `0x002672d0` puts the grabber on the victim's side 2, otherwise from the front.
+2. **Alignment** (`Pair_AlignStart`, `0x00276998`, called first by `Grab_Connect`, `0x0026be68`, with 72 from the
+   front or 74 from the rear):
+   - `d` = the 3D distance between the two. The grab fails (69 plays on) when `d` is beyond the clip's **far range**
+     (72 and 74: 2.5 m), × 1.25 when the grabber's controller record (`0x0021d408`) has kind 0 (inferred: a player),
+     so 3.125 m, or × 1.5 for kind 1 and anim id 7.
+   - `h` = the heading from the grabber to the victim. Over a time `T` the **grabber turns to `h`**, and when `d`
+     differs from the clip's **reach** `r` (72: 0.999 m, 74: 1.018 m) it **slides** to `victim − r·(−sin h, cos h, 0)`,
+     so that the victim stands `r` straight ahead at the victim's height. The **victim does not move**: its own
+     movement is stopped (virtual `+0x14c`) and it turns over the same `T` to `h + π` (front: facing the grabber) or to
+     `h` (rear: facing away).
+   - `T` = 0.1 × the time of the clip's first contact event (types 9, `0xf`, `0x13`, `0x2c`, `0x34`, `0x36`, `0x41`;
+     its frame / 30) or, with none, the clip's duration, divided by the clip's rate (`0x00101658`, `0x00101a00`). 72
+     has none: `T` = 0.1 × 0.467 / 0.75 = 0.062 s, two updates.
+   - The turn (`0x0023cf88`) stores a turn rate (angle / `T`) for `T` seconds and is skipped below 0.01 rad; the slide
+     (`0x0023d2b8`) stores a velocity (offset / `T`) for `T` seconds, snaps under 0.01 m and is dropped at 13 m or
+     more, or above 50 m/s. Which update applies them is not traced (fields `+0x2e0`-`+0x332` of the human).
+   - When the grabber's id has a script-loaded clip (`0x002219b8`), the reach is instead the horizontal length of the
+     clip's [type 8 event](formats/animation.md#paired-tasks) and the gate is the largest of 1.875 m, reach + 0.25 and
+     reach × 1.25 (not seen in play).
+3. **Connect** (`Grab_Connect`): `0x0022c730` links the two (each other's handle at `+0xc4`, flags `0x40` / `0x10`
+   front or `0x80` / `0x20` rear), then **both stacks switch on the same update with no fade**: the grabber plays 72
+   (74) as a type 3 task holding state flag `0x200`, then its four-clip hold (type 11 from its record `+0x28`: 82,
+   flags `0xc1`); the victim plays **73 (75) from the grabber's set** as a type 6 task holding state flag `0x10000`,
+   then its own hold (83, flags `0xc1`). The connecting clips have no task flags, so their root motion moves both
+   bodies; the holds have none (`0xc1` includes `0x1`, no root velocity).
+4. **The connecting clips carry the pair to the hold** (inferred from the clip data): 73's displacement is
+   (−0.380, −0.028) in the victim's frame, which faces the grabber, so the victim drifts 0.38 m to the grabber's right
+   while 72 moves the grabber 0.024 m ahead; from the rear 75 (−0.098, −0.617) and 74 (0, 0.181) close the gap from
+   1.018 m to 0.22 m. Both end where the hold's offset below says.
+5. **Snap and attach** at the end of 72 (74) (`Grab_ConnectEnd`, `0x0026bad8`): the grab is released (`0x0026c7e0`)
+   if the victim is more than the larger of reach(82) + 0.2 and reach(82) × 1.2 away (1.297 m), or 0.2 m up or down
+   (`0x00229a10`); otherwise `Pair_SnapAttach` (`0x00276d98`) puts the victim at **grabber position + the grabber's
+   rotation applied to (direction × reach of the hold id, 0)** (82 from the front, 84 from the rear), with heading
+   grabber + π (front) or the grabber's (rear). `Pair_Attach` (`0x002802a0`) then stores that place as an offset and a
+   relative rotation in the grabber's frame (victim `+0xa0`, `+0xb0`; the grabber's handle at `+0xc0`) and switches
+   the victim's movement to `Human_MoveAttached` (`0x00244e78`), and a grabber with a player's controls
+   (`0x0021d3e8 +0x1b`) to `Human_MoveGrabbing` (`0x00245310`).
+6. **In the hold** the victim's movement each update is the grabber's transform × the stored offset, swept against
+   the world up to three times (`0x0033e278`); its own root motion does not move it (inferred: the state computes the
+   place from the grabber). The grabbing player's movement state turns the grabber from the stick, so the pair turns
+   together (inferred; how the stick drives it is not traced).
+7. **Moves in the hold** (`Attack_StartPaired`, `0x00262ac8`): a strike, power strike or throw is refused unless the
+   victim stands within **0.3 m** of grabber position + rotation × (direction × reach of the move's id)
+   (`Pair_CheckPlace`, `0x00277958`; 51: (0.348, 0.937) × 1.082 m, the hold's point). The attacker plays the id as a
+   type 3 task, the victim **id + 1 from the attacker's set** as a type 6 task (fade 0); neither snaps. The **spins**
+   (78 / 79, `0x0026d570`, and 80 / 81) end the same way as the connect: their end callback (`0x0026d510` for 78)
+   snaps and attaches at the rear hold 84 (80 / 81 at the front hold 82, inferred). `0x0026d078`, `0x0026d8c8`, `0x0026eba0` and
+   `0x00272918` also end in `Pair_SnapAttach` (not traced further).
+
+**The offsets** (from the Anim Range List record of the grabber's id, [direction and reach](formats/animation.md#anim-range-list);
+each matches the clip's type 8 event):
+
+| Moment | Id (grabber) | Direction × reach | Victim in the grabber's frame | Victim's heading |
+| --- | --- | --- | --- | --- |
+| alignment, front | 72 | (0, 1) × 0.999 m | (0, 0.999) | grabber + 180° |
+| alignment, rear | 74 | (0, 1) × 1.018 m | (0, 1.018) | grabber's |
+| front hold, strikes 51 / 53, spin 78 | 82 (51, 78 the same) | (0.351, 0.936) × 1.081 m | (0.380, 1.012): 1.08 m, 20.6° to the right | grabber + 180° |
+| rear hold | 84 | (−0.399, 0.916) × 0.242 m | (−0.097, 0.222): 0.24 m, 23.5° to the left | grabber's |
+| mounted (tackle) | 210, 213 | (−0.965, 0.259) × 0.124 m | (−0.120, 0.032) | not traced |
+
+So Coney's guess of 0.8 m straight ahead is replaced by the table: 1.0 m straight ahead when the connecting clips
+start, 1.08 m at 20.6° right in the front hold, 0.24 m in the rear hold. For the mount the record puts the victim's
+point 0.12 m from the attacker, who sits on it; how the tackle places the pair (`0x00270270` calls the same
+alignment; the mount uses a [type 4](formats/animation.md#animation-tasks) task, `0x00270b38`, `0x00271ef0`) is not
+traced, so the mount's offset is inferred from the record only.
+
+**The pose** of every one of these clips is ordinary; what they share is that most leave out the bone 2 channel, which
+the original fills from its fixed reference pose ([Animation](formats/animation.md#reference-pose)).
+
 ### Grabbed, and breaking free {#grabbed}
 
 **When the player is grabbed** (`Player_UpdateGrabbed`, `0x0027fd68`, the grabber at human `+0xc4`), confirmed
@@ -823,7 +920,8 @@ script runner keeps table arguments as nil), so the game plays the file's damage
   second missed); within the far range the attacker faces the target and slides so that it stands at the clip's reach,
   spread over the updates to the hit, on top of the clip's root motion; beyond it the attacker turns at most 8°
   (read as degrees).
-- A held victim stands 0.8 m in front (0.9 m mounted), facing the player, or facing away in a rear hold.
+- A held victim stands 0.8 m in front (0.9 m mounted), facing the player, or facing away in a rear hold (the
+  research now gives the original's offsets: [Posing a grab](#grab-posing)).
 - The mugging: the 50° tolerance; a random first target; each move between the tolerance plus 20° and 360° less that;
   the period counts game time. The theft: clockwise steps neither add nor take away; the 250 ms pause ignores the
   stick. The mash: the first press counts, a press's gain is truncated, and other commands are ignored.
@@ -853,6 +951,10 @@ the disc, and the hit armour, allies and class 13 rules a fight between humans n
   anim id, as the damage table's index → id map does for the damage.
 - **The timing columns not measured**: `SS2`'s window close and end, `SSX3`'s end, and the hit of the snaps, the
   moving attacks, the throws and the grounded and mounted strikes.
-- **The grab clips' pose**: in Coney the grab, hold and grab strike clips (71-85, 51-58) pose both humans rolled
-  on their side, where the attacks and reactions look right; the paired task types 4 and 6
-  ([Animation](formats/animation.md#animation-tasks)) that play them are not researched.
+- **The grab at runtime**: the alignment and the attachment ([Posing a grab](#grab-posing)) are confirmed (code)
+  only. To check in PCSX2: break at `0x00276998`'s return and read the grabber's slide (human `+0x2e0`, time
+  `+0x300`) and the victim's turn (`+0x304`, `+0x308`); after `0x00276d98` read the victim's stored offset `+0xa0`
+  (expect about (0.38, 1.01, 0)), its relative rotation `+0xb0` (a half turn about `z`) and its movement state
+  `+0x1c0` (`0x00244e78`); during the hold check that the CharacterInstance's (human `+0xd8`) default pose pointer
+  `+0x70` is `0x00598420`. Also how `0x00245310` turns the pair from the stick (try the stick at 0.6 to the right),
+  and how the tackle places the mount.

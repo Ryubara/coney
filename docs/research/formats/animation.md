@@ -44,6 +44,11 @@ skeleton's `bip_sw_*` bone names) and in `Animation/AnimationBlend.cpp` and `Ani
 | `0x00106c80`, `0x00105678`, `0x00105990`, `0x0010a310` | task constructors: fade, clip, clip-then-next, gait blend | see [Animation tasks](#animation-tasks) | confirmed (code) |
 | `0x002364a0` (binding `CfgAnimSpeeds`, `0x0035a510`) | sets the four playback rates | `0x00510260`-`0x0051026c` | confirmed (code) |
 | `0x0023f238` | `Human_ApplyRootMotion` | the pose's root velocity and turn into the human's velocity and heading | confirmed (code) |
+| `0x00100200` | `Pose_InitReference` | writes the 34-rotation [reference pose](#reference-pose) that fills bones a clip has no channel for | confirmed (code) |
+| `0x00104630` | `Instance_BuildBoneMatrices` | the pose into model-space bone transforms, from the pelvis down ([Bone transforms](#bone-transforms)) | confirmed (code) |
+| `0x00176d60` | `CharacterInstance_Sample` | samples the task stack and calls `0x00104630`; picks the default pose | confirmed (code) |
+| `0x00108450` / `0x00108a78` | `PairedTask_Init` (type 4 / type 6) | a clip of **another** human's character played on this one ([Paired tasks](#paired-tasks)) | confirmed (code) |
+| `0x00108bd0`, `0x00108c80`, `0x00108ba8`, `0x00108dd0`, `0x00108f10` | type 6 methods: advance and hand over, sample, advance only, cut off, end | as type 3's | confirmed (code) |
 
 ## Data
 
@@ -97,13 +102,28 @@ channel. Confirmed (code) at `0x001041f8`, `0x00104110`; every clip on the disc 
 **Events** (24 bytes each): `+0` u16 frame, `+2` u16 type, `+6` u16, `+8`-`+0xc` three s16 (a position, scaled
 `/1023`, `/1023`, `/2047`), `+0xe`-`+0x12` three s16 (a quaternion's `x, y, z`). Types 8, 9 and 10 use the position
 and rotation (a transform); the others' fields are not traced. Confirmed (code) for the layout at `0x00101dd8`;
-the type meanings are open. Survey: type 11 is the most common (4,287 events).
+the type meanings are open, except type 8, the **partner's place** in a paired clip ([Paired tasks](#paired-tasks)),
+read by `0x00101558`, and types 9 and 10, effects. Survey: type 11 is the most common (4,287 events).
 
 ### The pose
 
 A sampled pose is `0x240` bytes: two translations (the root velocity and the root translation) and 34 rotations, one
-per bone 0-33 (bones without a channel keep the bind rotation). The player keeps a stack of seven. Confirmed (code)
-at `0x00104ce0`.
+per bone 0-33. The player keeps a stack of seven. Confirmed (code) at `0x00104ce0`.
+
+**Bones without a channel** do not keep the model's bind rotation: the sampler copies them from the instance's
+**default pose** (`CharacterInstance +0x70`), which is the game's fixed [reference pose](#reference-pose) at
+`0x00598420` (confirmed (code) at `0x00104ce0`, the pointer set at `0x00174d00` and `0x00176d60`). The same holds for
+a clip without section B (the root translation then comes from the instance, `+0x90`), and bone 0 without a channel
+is the identity. Each value taken from the default is **tagged** by setting the lowest bit of its `y` word (`| 1` on
+the second 32-bit float); sampled values have the bit cleared. In one case the default is another pose: when the
+instance has queued tasks (count at `+0x2ae`) and a human test (`0x00223440`) passes, `0x00176d60` samples the queued
+tasks first into a second buffer (`0x005fd040`, initialised with the same reference pose) and uses that as the default
+for the frame (confirmed (code); what the test means is not traced).
+
+**Blending uses the tag** (`Pose_BlendPartial`, `0x00105158`, confirmed (code)): for bones 1-33 two tagged
+rotations stay as they are (the result keeps the lower pose's), and otherwise the two are slerped, even when one of
+them is a default; for the root velocity and bone 0 (the motion channels) a tagged side is ignored and the other side
+is copied, so a clip without root motion does not damp the motion of the one it blends with.
 
 **Parent table** (`0x00597200`, 34 entries, filled by `0x00101120`), bone → parent:
 
@@ -113,6 +133,58 @@ at `0x00104ce0`.
 
 Confirmed (code). Bone 0 is the root, 1 the pelvis; the clump's 32 HAnim bones and its 33 frames match bones 1-33
 of this table with the root above them (inferred).
+
+#### Bone transforms {#bone-transforms}
+
+`Instance_BuildBoneMatrices` (`0x00104630`) turns the pose into one `{position, rotation}` per bone, in the
+character's model space (confirmed (code)):
+
+- **Entry 0 is motion, not a bone**: it holds the root velocity and bone 0's rotation (the turn per 1/30 s), or the
+  identity when the pose's value is tagged as a default (flags at instance `+0x461` / `+0x462`). Nothing is parented
+  to it.
+- **Entry 1, the pelvis, is absolute**: its position is the pose's root translation (section B, with the bind height
+  added by the sampler) and its rotation is bone 1's rotation **as is**, not composed with bone 0's.
+- **Bones 2-33** are composed down the parent table: rotation = parent rotation × local rotation, position = parent
+  position + parent rotation · the bone's offset (from the character data's offset table).
+
+So bone 0's channel moves and turns the human ([Root motion](#root-motion)) but never tilts the drawn body.
+
+#### The reference pose {#reference-pose}
+
+`Pose_InitReference` (`0x00100200`) writes the same 34 rotations into `0x00598420` and `0x005fd040` at start-up
+(`0x001048a0`). They are constants of the code, `(x, y, z, w)` per pose bone, rounded here to four places
+(confirmed (code); every one is a unit quaternion):
+
+| Bone | x | y | z | w | Bone | x | y | z | w |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | 0 | 0 | 1 | 17 | 0.0452 | -0.0282 | 0.1112 | 0.9924 |
+| 1 | -0.4912 | -0.5087 | 0.4912 | 0.5087 | 18 | 0 | 0.1174 | 0 | 0.9931 |
+| 2 | -0.5000 | 0.5000 | -0.5000 | 0.5000 | 19 | -0.6951 | -0.0567 | 0.0262 | 0.7162 |
+| 3 | 0.4793 | -0.5199 | 0.5199 | -0.4793 | 20 | -0.0004 | -0.2858 | 0.0001 | 0.9583 |
+| 4 | 0 | -0.0298 | 0 | 0.9996 | 21 | -0.0811 | -0.3223 | -0.0030 | 0.9431 |
+| 5 | 0 | -0.1757 | 0 | 0.9844 | 22 | -0.6200 | -0.7643 | 0.1281 | 0.1227 |
+| 6 | 0 | 0.1172 | 0 | 0.9931 | 23 | -0.0452 | -0.0282 | -0.1112 | 0.9924 |
+| 7 | 0.5274 | -0.4710 | 0.4710 | 0.5274 | 24 | 0 | 0.1174 | 0 | 0.9931 |
+| 8 | 0.6590 | 0 | 0.7521 | 0 | 25 | 0.6951 | -0.0567 | -0.0262 | 0.7162 |
+| 9 | 0 | -0.2983 | 0 | 0.9545 | 26 | 0.0004 | -0.2858 | -0.0001 | 0.9583 |
+| 10 | 0.6081 | -0.5780 | 0.3635 | 0.4050 | 27 | 0.0811 | -0.3223 | 0.0030 | 0.9431 |
+| 11 | 0 | 0.6425 | 0 | 0.7663 | 28 | -0.0066 | -0.1154 | 0.9910 | -0.0678 |
+| 12 | 0.4043 | -0.3602 | 0.5801 | 0.6085 | 29 | 0 | 0.0340 | 0 | 0.9994 |
+| 13 | -0.0036 | -0.6166 | 0.0054 | 0.7873 | 30 | -0.0030 | -0.0194 | -0.0700 | 0.9974 |
+| 14 | 0.7393 | 0 | 0.6733 | 0 | 31 | -0.0066 | 0.1154 | 0.9910 | 0.0678 |
+| 15 | 0.5247 | -0.4805 | 0.4743 | 0.5186 | 32 | 0 | 0.0340 | 0 | 0.9994 |
+| 16 | 0.6200 | -0.7643 | -0.1281 | 0.1227 | 33 | 0.0030 | -0.0194 | 0.0700 | 0.9974 |
+
+**Why it matters: many clips leave bone 2 out.** Bone 2 is the parent of the spine (3) and of both legs (28, 31).
+Every clip that animates it on the disc holds the constant `(-0.5, 0.5, -0.5, 0.5)` there, the reference pose's
+value, so the animators left it out of many clips (disc check of Rembrandt's set, ids only): the grab clips 69-75
+and 82-85, the grab strikes 51-56, the spins 78-81, the tackle 4-6, the grounded idle 196 and the let-go 94 / 95 have
+no bone 2 channel, where the attacks (11, 12), the fight idle 358, the block 606 and the power strike 57 / 58 have
+one. A
+player that fills a missing bone with anything but this value turns the whole body below the pelvis; filling it from
+the model's bind rotation is the likely cause of the grab clips posing "rolled on the side" in Coney (inferred: only
+clips without bone 2 show it). Bones 7-15 (the fingers) are also left out by most clips, bone 0 by most clips that do
+not turn.
 
 ### The cursor (`WarAnimInstance`)
 
@@ -221,7 +293,8 @@ anim id the task reports (inferred from `0x001752c8`).
 | 12 | `0x00534790` | `0x0010a310` | the **gait blend**: five clips on a scale 0-4 ([Gait blend](#gait-blend)) |
 | 13 | `0x005348b8` | `0x00109210` | an eight-direction blend: three neighbouring clips of eight (ids `base + (dir ± 1) & 7`) |
 | 7 | `0x00534d58` | `0x001069c0` | a scene's clip (made by the scene code, `0x0039d870`) |
-| 4, 6 | `0x00534668`, `0x00534540` | `0x00108450`, `0x00108a78` | as 5 and 3, with the clip taken from another human's character (paired moves; inferred from the handle they resolve) |
+| 6 | `0x00534540` | `0x00108a78` | a **paired** type 3: the clip and its rate come from **another human's** character ([Paired tasks](#paired-tasks)) |
+| 4 | `0x00534668` | `0x00108450` | a paired type 5: the same constructor as 5's first form with the clip from another human's character |
 | 5, 15, 16 | `0x00534e80`, `0x005342f0`, `0x00534418` | `0x00106140` / `0x00106240`, `0x0010b608`, `0x0010b7c8` | not traced |
 
 **Task flags** (`+0x10`, set through `+0xcc`, `0x001058f0`, `0x0010a1f0`):
@@ -236,6 +309,45 @@ anim id the task reports (inferred from `0x001752c8`).
 
 The flags the locomotion uses are `0x2c1` for the gait blend and `0xc1` for the paired idle blends, so **looping gaits
 never move the character by their root**; start and stop clips have no flags and do.
+
+**Fields of the clip tasks** (types 1, 3, 6), confirmed (code) at the constructors and at `0x00108dd0` /
+`0x00108f10`: `+0x1c` the next task (3, 6), `+0x20` the blend time into it, `+0x24` **state flags** the task holds on
+its human (the combat state word at record `+0x08`, [Combat](../combat.md#state-flags)): the caller sets them on the
+human as it pushes the task, and the task clears them from record `+0x08` when it ends or is cut off; `+0x28` the
+handle of the human the task plays on; `+0x2c` a callback called with that human when the clip ends (the hook the
+combat code chains on, [Combat](../combat.md#grab-posing)).
+
+### Paired tasks {#paired-tasks}
+
+Two humans in one move (a grab, a grab strike, a throw) each play their own clip on their own task stack; nothing
+couples the two stacks while they play. What makes a task "paired" is only **where its clip comes from**
+(confirmed (code) at `0x00108a78`, `0x00108450`):
+
+- The constructor takes, besides the instance it plays on, the **handle of another human** (the attacker) and an
+  anim id. It resolves the handle and looks the id up in **that human's** character (`0x00175080` on its
+  `CharacterInstance`, human `+0xd8`), and takes the [playback rate](#playback-rate) from **that human's** Anim Range
+  List flags (`0x00104a38`). The cursor is then bound to the instance it plays on, as for any clip.
+- So the victim of a grab plays the reaction clip **of the grabber's animation set**: a grab by a Rembrandt-class
+  human plays the Rembrandt reaction 73 on a civilian, whatever the civilian's own set holds for 73. The pair's two
+  clips were authored together and play at the attacker's rate, so they stay in step.
+- Type 6 is otherwise type 3: it advances by `rate × dt`, blends into its next task over the given time and hands
+  over at the clip's end, runs the end callback and clears its state flags (`0x00108bd0`, `0x00108c80`, `0x00108ba8`
+  sit in the vtable slots of type 3's `0x00105af0`, `0x00105ba0`, `0x00105ab0` and do the same steps). Type 4 takes the same arguments as type 5's
+  first constructor (`0x00106140`) plus the handle.
+- **No root rotation is stripped, replaced or composed**: the clips are sampled and drawn exactly as a single clip
+  is, each body in its own frame. The task flags are those the caller gives (none for the grab's connecting clips, so
+  their root motion moves both bodies). The two bodies are put in place by the combat code, not by the task:
+  turned and slid together before the clip, snapped to the hold's offset at its end and then attached
+  ([Combat: posing a grab](../combat.md#grab-posing)).
+- **The clips record the pairing**: an attacker's paired clip carries an event of type 8 at frame 0 whose position is
+  where the partner stands in the attacker's frame (`x` right, `y` forward; read by `0x00101558`), and its Anim Range
+  List record holds the same point as a direction and a reach (for the hold 82: event `(0.380, 1.012)`, record
+  direction `(0.351, 0.936)` × 1.081 m). Inferred from the match on every grab clip checked; the code that uses it reads
+  the range record ([Combat](../combat.md#grab-posing)).
+
+Events of type 9, 10 and `0x22` are not pair placements: `0x00101dd8` hands them to the effects system with their
+position and rotation (confirmed (code)); type `0x40` starts a move of the human (`0x0023d2b8`, not traced further);
+type 8 is never dispatched there.
 
 ### The task stack {#task-stack}
 
@@ -360,7 +472,8 @@ pose of the newest task and switched off by its flags (`0x1` velocity, `0x2` tur
 unpaired or sampling to a non-finite pose; 957 clips have no section A, none lacks B; 9,468 events.
 
 **Coney choices**: "entry `+4`" of the bone offset chunk is read literally, the float at byte 4, which is 0 on the
-disc; bones without a channel keep the model's bind rotation; the character viewer plays clips in place at rate 1
+disc; bones without a channel keep the model's bind rotation (the original fills them from its
+[reference pose](#reference-pose), which Coney does not do yet); the character viewer plays clips in place at rate 1
 with no root motion; a looping clip carries its overshoot into the next pass. In the task system:
 
 - **The stack** is kept as a list of layers, newest first; when a fade completes, everything older than it goes. A
@@ -392,6 +505,13 @@ with no root motion; a looping clip carries its overshoot into the next pass. In
   channel split, the scales and the interpolation; no game data is needed. The gait blend's leader rule and the fade
   curve can be tested with two synthetic clips of different lengths.
 - Bones are 0-33 in the clip and the pose, 32 in the HAnim hierarchy: map them once through the parent table.
+- **Fill a bone the clip leaves out from the [reference pose](#reference-pose)**, not from the model's bind rotation,
+  and keep a "default" mark on it for blending. Bone 2 is the one that shows: most grab, tackle and grounded clips
+  leave it out.
+- **Draw from the pelvis**: bone 1 takes the root translation and its own rotation in model space; bone 0's rotation
+  is the turn per frame and is never applied to the skeleton ([Bone transforms](#bone-transforms)).
+- **A paired clip comes from the attacker's set**: look the victim's id up in the attacker's character, at the
+  attacker's rate ([Paired tasks](#paired-tasks)); place the two bodies as [Combat](../combat.md#grab-posing) says.
 
 ## Open questions
 
@@ -402,6 +522,8 @@ with no root motion; a looping clip carries its overshoot into the next pass. In
   sampled at runtime).
 - The exact HAnim bone ↔ pose bone mapping (inferred above; Coney's disc test supports `n + 2`,
   [Character geometry](../characters.md#character-geometry)).
-- Task types 5, 15 and 16, and the paired types 4 and 6 (used by grabs and two-human moves, not by locomotion).
+- Task types 5, 15 and 16 (and so type 4, the paired form of 5, beyond its constructor; it is built by the tackle and
+  mount code, `0x00270b38`, `0x00271ef0`).
+- The human test `0x00223440` that makes `0x00176d60` take the queued tasks' pose as the default pose.
 - The order in which the instance samples its task stack (bottom-up is inferred from the fade's sampler).
 - The type 3 task's blend into its next task when its blend time is not 0.
