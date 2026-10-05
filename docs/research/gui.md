@@ -463,8 +463,8 @@ TODO for the analysts, found while implementing:
 - **`GetPlatform` on the PS2** (answered, 2026-10-04): it returns **1** (`0x00357998`), so the language files take
   their `else` branch: "PRESS THE START BUTTON" for `0x76`, triangle as "back" in `0x1f` (confirmed (code); the
   wording confirmed (runtime) in PCSX2). Coney now returns 1 as well
-  ([Scripts](scripting.md#bindings-whose-results-the-front-end-needs)). The original question: what does the binding
-  return? Each language file has about twenty strings in an
+  ([Scripts](scripting.md#bindings-the-front-end-and-the-script-system-depend-on)). The original question:
+  what does the binding return? Each language file has about twenty strings in an
   `if Platform == 2 then ... else ... end`; the two branches differ mainly in naming triangle or circle as "back"
   (`0x1f` among them). Coney returns 0 (the triangle branch, which matches [Front end](frontend.md#input)'s reading).
   Which platform is 2, and which branch does the NTSC-U game show?
