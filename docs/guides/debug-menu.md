@@ -170,6 +170,10 @@ The first tunables are the player's and the camera's researched values (`src/deb
 
 The leash, pitch and look-at height apply when the camera is next placed (a level start); the others at the next step.
 
+Combat's values (the history hold, the chain timing, power and rage costs and drains, the button mash, the mugging and
+the stereo theft, [Combat](../research/combat.md#coneys-implementation)) have their category, **Combat**, in
+`src/debug/combat_tunables.cpp`; the game registers it once combat is wired into the player.
+
 **Determinism.** A change never lands in the middle of a step: the registry queues it, and the input gate applies the
 queue between two steps (`TunableRegistry::applyPending()`). A run with the same overrides file and the same input is
 the same run.

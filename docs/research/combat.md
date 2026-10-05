@@ -449,8 +449,62 @@ the stick at 100 % stepped anticlockwise every update, under 90° a step (for ex
 
 ## Coney's implementation
 
-Not started: Coney has no combat yet. The command tables, the chain and the damage table are self-contained enough to
-implement first; the Anim Range List already loads with the character data ([Animation](formats/animation.md)).
+`src/combat/` holds the player's combat rules as a self-contained core, not yet wired into the player (it decides; the
+player will play the clips it names and apply the hits). Everything runs on the fixed 1/30 s step; time-based meters
+take game time in whole milliseconds and carry the fraction of a point, as the original does; the coin flips come from
+a seeded generator (`CombatRandom`), so a run with the same seed and input is the same run.
+
+| File | What it does |
+| --- | --- |
+| `commands.*` | the nine trigger tables (`CommandTables::street()` is the street's), and the matcher that turns each update's buttons into one command in the documented order, with the tap (1-6 samples), long hold (4th sample, or a release within 3) and history hold (7) counted per button |
+| `attacks.*` | square's choice (target, snap, run, walk, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, and `AttackChain`: the hit, the chain window, the end and the recovery counted in updates, one buffered press |
+| `anim_ranges.*` | the Anim Range List decoded from the character data's chunk: direction, reach, far range, damage, kind, flags |
+| `meters.*` | health, the pending damage (the update's largest), `strikeDamage()`, the power meter (400, refill 60/s, drain 15/s, `spend()`) and the rage meter (78, the gain formula, start, drain) |
+| `grab.*` | when a grab may start, the search ranges (far range × 1.25), the nearest-candidate search, the throw by stick side and wall, and one update of a grab (strikes, power strike, throw, mug, spin, with their costs) |
+| `stick_games.*` | the mugging, the stereo theft's rotation (mode 3) and the button mash (mode 1) |
+| `player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order |
+| `combat_tuning.*`, `src/debug/combat_tunables.*` | the values above as tunables, category **Combat** |
+
+The tests (`tests/combat/`) drive these with the research's own input scripts, played through the pad records with
+partial stick deflections: S1, SS2, SSS3 a press every 6 updates with the hits 2 updates after each; X1 then XS2; a
+press in recovery dropped; the snap; the block with cross under it; rage with L1 + R1; the charge at a run (and its
+cross falling back to `X1` at a walk); a grab, strike and forward throw with the meter paying 40 and 100; the tackle on
+the 7th sample and the mounted strike; the mugging finished 5 s after it starts with the stick at 0.7 or 0.8 on the
+moving target; the stereo theft in 30° steps through 4 stages of 3 turns, failed by an R1 press.
+
+**Disc test** (`[disc][combat]`, counts only): Rembrandt's list has 722 records, 160 with damage; every attack combat
+starts has one; the grab and tackle ranges come out at 3.12 m and 3.75 m as at runtime. **The file's damage is not
+the runtime damage** (confirmed (Coney's disc check)): no character data on the disc holds `S1` 17, `SS2` 36 or `X1` 26
+(Rembrandt's file says 40, 40, 45). The damage the research measured is the list after the character class's 45-entry
+damage table (`CfgChar`'s `damage` argument, scaled) has overridden it when the human is made
+([Animation](formats/animation.md#anim-range-list), the jump tables `0x0055d640` / `0x0055d6f0`); which entry goes to
+which anim id is not researched, so Coney reads the file's value and `AnimRangeList::setDamage()` waits for the table.
+
+**Coney choices**, where the research is silent or inferred:
+
+- Inside one trigger table a later matching entry overwrites an earlier one, as the tables do between themselves;
+  trigger 4 (query) never matches.
+- Every chain attack takes `S1`'s timing (hit 2, window 6 to 15, end to 17, recovery to 20); the charge, the dive, the
+  run, walk and snap attacks and the grab strikes are timed the same way until their own are measured. The attack keeps
+  counting under a held R1.
+- `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; at a sprint (gait 5) square is
+  `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
+- A side is "front" up to and including 45° and "rear" beyond 135°.
+- Cross strikes in a grab on its `0x10`, circle throws or spins on its press; the power strike spends nothing; a strike
+  or throw with too little power still plays, the meter stopping at 0; a grab plays one move at a time; a throw lets
+  go at once. The power strike's ids are read as anim ids (57, 63 in rage, 80 from the rear).
+- The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone.
+- Rage: the cap splits a hit's points (the part above 25 counts at 0.1); rage drains at the 9.5 a second seen at
+  runtime and ends empty.
+- The mugging: the 50° tolerance; a random first target; each move between the tolerance plus 20° and 360° less that;
+  the period counts game time. The theft: clockwise steps neither add nor take away; the 250 ms pause ignores the
+  stick. The mash: the first press counts, a press's gain is truncated, and other commands are ignored.
+- The block is read only when the player is free (not grabbing, tackling, mugging or in a theft).
+
+**Integration** (next): the player builds a `CommandMatcher` and a `PlayerCombat`, gives it the camera-turned stick in
+the facing frame, its gait, the target found with `nearestTarget()` within `grabSearchRange()`, and game time; plays
+`startAnim` through the animator, applies `hitAnim`'s damage to the target through `PendingDamage`, calls `release()`
+when a grab or tackle ends, and registers the Combat tunables at start-up.
 
 ## Open questions
 
@@ -469,3 +523,11 @@ implement first; the Anim Range List already loads with the character data ([Ani
 - **`CfgAttackDelay`** (`0x006b6658`) and the constants marked not traced above.
 - **The mugging tolerances**: which of 50° and 60° applies, and the frame of the target angle (world or camera).
 - **The fence break** in slot 10: which script reacts to the charge.
+- **The class damage table**: which of `CfgChar`'s 45 damage entries overrides which anim id's damage (the jump tables
+  `0x0055d640` / `0x0055d6f0`), and which class and difficulty give the street's values (`S1` 17 in play, 40 in
+  Rembrandt's file).
+- **The power strike's ids**: whether 57, 63 and 80 are anim ids (80 is `GRAB_REAR_SPIN_VICTIM`, with no damage in the
+  file) or damage values; whether it spends power.
+- **Attack timing** of the attacks other than `S1`, the moving attacks and the grab strikes.
+- **The grab moves' commands**: whether cross strikes on `0x10` or `0x12`, circle throws on `0x1e` or `0xd`, and
+  whether a strike or throw needs the power it costs.

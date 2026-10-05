@@ -239,6 +239,18 @@ name = "PlayerRecord_Update"
 subsystem = "Device/ps2"
 
 [[function]]
+address = 0x00147430
+name = "AddCommand"
+subsystem = "Device/ps2"
+size = 528
+
+[[function]]
+address = 0x00147940
+name = "Commands_Match"
+subsystem = "Device/ps2"
+size = 1456
+
+[[function]]
 address = 0x00148aa0
 name = "PS2StreamFileSys::Open"
 subsystem = "Device/ps2"
@@ -824,6 +836,12 @@ name = "Human_PushOutInAir"
 subsystem = "unattributed"
 
 [[function]]
+address = 0x0021b290
+name = "Strike_Contact"
+subsystem = "unattributed"
+size = 3488
+
+[[function]]
 address = 0x002213d8
 name = "Human_MaxTurn"
 subsystem = "Human"
@@ -837,6 +855,24 @@ subsystem = "Human"
 address = 0x002217f0
 name = "Human_LaunchJump"
 subsystem = "Human"
+
+[[function]]
+address = 0x00222ef0
+name = "Human_HealthPercent"
+subsystem = "Human"
+size = 88
+
+[[function]]
+address = 0x00226448
+name = "Human_SpendPower"
+subsystem = "Human"
+size = 200
+
+[[function]]
+address = 0x00226510
+name = "Human_PowerFraction"
+subsystem = "Human"
+size = 192
 
 [[function]]
 address = 0x0022aeb0
@@ -915,6 +951,12 @@ name = "Human_RefillMeters"
 subsystem = "Human"
 
 [[function]]
+address = 0x002542e8
+name = "AnimRange_Damage"
+subsystem = "Human"
+size = 40
+
+[[function]]
 address = 0x00259578
 name = "Human_ChooseAnimState"
 subsystem = "Human"
@@ -943,11 +985,6 @@ subsystem = "Human"
 address = 0x0025f770
 name = "Human_BuildIdleTasks"
 subsystem = "Human"
-
-[[function]]
-address = 0x0027c120
-name = "Player_UpdateActions"
-subsystem = "unattributed"
 
 [[function]]
 address = 0x0027ce90
@@ -983,6 +1020,108 @@ subsystem = "unattributed"
 address = 0x002829e8
 name = "Player_TryJump"
 subsystem = "unattributed"
+
+[[function]]
+address = 0x002625a8
+name = "Attack_Start"
+subsystem = "Human"
+size = 792
+
+[[function]]
+address = 0x00264178
+name = "Player_ObjectAttack"
+subsystem = "Human"
+size = 744
+
+[[function]]
+address = 0x00264bd8
+name = "Human_AddPendingDamage"
+subsystem = "Human"
+size = 288
+
+[[function]]
+address = 0x00264cf8
+name = "Human_AddRage"
+subsystem = "Human"
+size = 680
+
+[[function]]
+address = 0x0026dd08
+name = "Player_Throw"
+subsystem = "Human"
+size = 2288
+
+[[function]]
+address = 0x0027c120
+name = "Player_UpdateActions"
+subsystem = "unattributed"
+size = 3120
+
+[[function]]
+address = 0x0027d800
+name = "Player_Charge"
+subsystem = "unattributed"
+size = 256
+
+[[function]]
+address = 0x0027d900
+name = "Player_Dive"
+subsystem = "unattributed"
+size = 272
+
+[[function]]
+address = 0x0027e6d8
+name = "Player_UpdateTheft"
+subsystem = "unattributed"
+size = 560
+
+[[function]]
+address = 0x0027f3b0
+name = "Player_UpdateGrabbing"
+subsystem = "unattributed"
+size = 2488
+
+[[function]]
+address = 0x00280630
+name = "Player_UpdateChain"
+subsystem = "unattributed"
+size = 216
+
+[[function]]
+address = 0x00280708
+name = "Player_UpdateChain"
+subsystem = "unattributed"
+size = 1560
+
+[[function]]
+address = 0x002843f8
+name = "Player_StartRage"
+subsystem = "unattributed"
+size = 1320
+
+[[function]]
+address = 0x00284920
+name = "Player_GrabOrTackle"
+subsystem = "unattributed"
+size = 896
+
+[[function]]
+address = 0x002856b8
+name = "Player_UpdateMugging"
+subsystem = "unattributed"
+size = 3736
+
+[[function]]
+address = 0x00286cc8
+name = "Player_Square"
+subsystem = "unattributed"
+size = 2664
+
+[[function]]
+address = 0x00287a18
+name = "Player_Cross"
+subsystem = "unattributed"
+size = 1480
 
 [[function]]
 address = 0x00336a00

@@ -102,6 +102,17 @@ target_sources(coney_core PRIVATE
     human/locomotion.cpp
     human/player.cpp
     human/stamina.cpp)
+# Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat.md).
+target_sources(coney_core PRIVATE
+    combat/anim_ranges.cpp
+    combat/attacks.cpp
+    combat/combat_tuning.cpp
+    combat/commands.cpp
+    combat/grab.cpp
+    combat/meters.cpp
+    combat/player_combat.cpp
+    combat/stick_games.cpp
+    debug/combat_tunables.cpp)
 # The sandbox: Coney's own test worlds of primitives (docs/guides/sandbox.md), and the collision writer they use.
 target_sources(coney_core PRIVATE
     raycast/collision_builder.cpp

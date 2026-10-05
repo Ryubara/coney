@@ -102,6 +102,17 @@ target_sources(coney_tests PRIVATE
     human/locomotion_test.cpp
     human/stamina_test.cpp
     human/traversal_test.cpp)
+# Combat (docs/research/combat.md).
+target_sources(coney_tests PRIVATE
+    combat/anim_ranges_test.cpp
+    combat/commands_test.cpp
+    combat/attacks_test.cpp
+    combat/disc_combat_test.cpp
+    combat/grab_test.cpp
+    combat/meters_test.cpp
+    combat/player_combat_test.cpp
+    combat/stick_games_test.cpp
+    debug/combat_tunables_test.cpp)
 # The sandbox and the collision writer it uses (docs/guides/sandbox.md).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp

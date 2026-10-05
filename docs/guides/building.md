@@ -116,8 +116,9 @@ binding (`[scripts]`); the start-up path from the legal screen to the main menu,
 level request and back, driven by a scripted pad (`[frontend]`); STORY through the mission-complete mode to Rembrandt
 standing at level99's start under the pad, and the level scripts' player starts for a few checkpoints (`[story]`);
 every animation clip in the WAD, parsed and sampled (`[anim]`, about 7 seconds); every Character List record with its
-model, textures, character data and clips, skinned (`[characters]`); and Rembrandt at level99's start, walked, run,
-turned, stopped and run into the scenery by scripted
+model, textures, character data and clips, skinned (`[characters]`); Rembrandt's Anim Range List with a damage for
+every attack and the grab and tackle ranges (`[combat]`); and Rembrandt at level99's start, walked, run, turned,
+stopped and run into the scenery by scripted
 partial stick deflections, with his speeds and clips checked against the research (`[player]`), and played again through
 the main loop at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`). They
 run only when the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts

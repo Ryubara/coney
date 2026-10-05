@@ -19,15 +19,15 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 2.4%](https://img.shields.io/badge/reimplemented-2.4%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 3.2%](https://img.shields.io/badge/reimplemented-3.2%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▌░░░░░░░░░░░░░░░░░░░` | 2.4% of the game's own code (78,640 of 3,342,936 bytes, 253 functions) |
+| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% of the game's own code (107,992 of 3,342,936 bytes, 276 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
-109 reimplemented function(s) have no size yet and add no bytes.
+108 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -56,12 +56,12 @@ at the top of the repository's `README.md`.
 | `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 118,632 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 5 | 32,152 |
+| `Device/ps2` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 7 | 32,152 |
 | `FileIO` | `▋░░░░░░░░░░░░░░░░░░░` | 3.3% | 2 | 6,480 |
 | `GameModes` | `█████░░░░░░░░░░░░░░░` | 24.9% | 28 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 31 | 481,192 |
-| `Human` | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% | 24 | 358,360 |
+| `Human` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 33 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -75,7 +75,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.0% | 8 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% | 46 | 1,524,752 |
+| Unattributed | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 58 | 1,524,752 |
 
 ## Research coverage
 
@@ -142,6 +142,8 @@ at the top of the repository's `README.md`.
 | `0x001454a8` | `Pads_Update` | `unattributed` | not filled in |
 | `0x00145a10` | `GameTimer::Update` | `Device/ps2` | 952 |
 | `0x00146078` | `PlayerRecord_Update` | `Device/ps2` | not filled in |
+| `0x00147430` | `AddCommand` | `Device/ps2` | 528 |
+| `0x00147940` | `Commands_Match` | `Device/ps2` | 1,456 |
 | `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
@@ -241,9 +243,13 @@ at the top of the repository's `README.md`.
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
 | `0x00218008` | `Human_Init` | `unattributed` | not filled in |
 | `0x0021a490` | `Human_PushOutInAir` | `unattributed` | not filled in |
+| `0x0021b290` | `Strike_Contact` | `unattributed` | 3,488 |
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
+| `0x00222ef0` | `Human_HealthPercent` | `Human` | 88 |
+| `0x00226448` | `Human_SpendPower` | `Human` | 200 |
+| `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
@@ -257,6 +263,7 @@ at the top of the repository's `README.md`.
 | `0x00248df0` | `Human_Lean` | `Human` | not filled in |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
+| `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
 | `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
 | `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
 | `0x00259578` | `Human_ChooseAnimState` | `Human` | not filled in |
@@ -265,14 +272,30 @@ at the top of the repository's `README.md`.
 | `0x0025d390` | `Human_BuildLandTasks` | `Human` | not filled in |
 | `0x0025ec28` | `Gait_BlendForSpeed` | `Human` | not filled in |
 | `0x0025f770` | `Human_BuildIdleTasks` | `Human` | not filled in |
-| `0x0027c120` | `Player_UpdateActions` | `unattributed` | not filled in |
+| `0x002625a8` | `Attack_Start` | `Human` | 792 |
+| `0x00264178` | `Player_ObjectAttack` | `Human` | 744 |
+| `0x00264bd8` | `Human_AddPendingDamage` | `Human` | 288 |
+| `0x00264cf8` | `Human_AddRage` | `Human` | 680 |
+| `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
+| `0x0027c120` | `Player_UpdateActions` | `unattributed` | 3,120 |
 | `0x0027ce90` | `Player_UpdateSprint` | `unattributed` | not filled in |
+| `0x0027d800` | `Player_Charge` | `unattributed` | 256 |
+| `0x0027d900` | `Player_Dive` | `unattributed` | 272 |
+| `0x0027e6d8` | `Player_UpdateTheft` | `unattributed` | 560 |
+| `0x0027f3b0` | `Player_UpdateGrabbing` | `unattributed` | 2,488 |
+| `0x00280630` | `Player_UpdateChain` | `unattributed` | 216 |
+| `0x00280708` | `Player_UpdateChain` | `unattributed` | 1,560 |
 | `0x00281450` | `Climb_RunningClipEnd` | `unattributed` | not filled in |
 | `0x00281838` | `Climb_StandingClipEnd` | `unattributed` | not filled in |
 | `0x00281c20` | `Climb_Start` | `unattributed` | not filled in |
 | `0x00282370` | `Climb_ProbeTop` | `unattributed` | not filled in |
 | `0x002826f0` | `Climb_TryStart` | `unattributed` | not filled in |
 | `0x002829e8` | `Player_TryJump` | `unattributed` | not filled in |
+| `0x002843f8` | `Player_StartRage` | `unattributed` | 1,320 |
+| `0x00284920` | `Player_GrabOrTackle` | `unattributed` | 896 |
+| `0x002856b8` | `Player_UpdateMugging` | `unattributed` | 3,736 |
+| `0x00286cc8` | `Player_Square` | `unattributed` | 2,664 |
+| `0x00287a18` | `Player_Cross` | `unattributed` | 1,480 |
 | `0x00336a00` | `QuaternionSlerp` | `unattributed` | 440 |
 | `0x00336bb8` | `VectorLerp` | `unattributed` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `unattributed` | 160 |
