@@ -2,6 +2,9 @@ site_name: Coney
 site_description: An open-source reimplementation of The Warriors (PS2, 2005) for Windows, Linux and macOS.
 docs_dir: docs
 strict: true
+# repo_url and site_url are set at build time by mkdocs_hooks.py, from the build.
+hooks:
+  - mkdocs_hooks.py
 # A page left out of the nav is a warning, which --strict turns into a failure: every page must be reachable.
 validation:
   nav:

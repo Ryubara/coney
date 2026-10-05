@@ -1,4 +1,5 @@
-# Build the documentation site strictly, lint the Markdown, and lint these workflows.
+# Build the documentation site strictly, lint the Markdown, and lint these workflows. A push to main also publishes
+# the site to GitHub Pages, so the published docs always match main.
 # Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: docs
 
@@ -23,7 +24,34 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements-docs.txt
+      # Only main publishes. Pages reports the site's address, which mkdocs_hooks.py makes the site_url, so no file
+      # names it.
+      - id: pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - run: mkdocs build --strict
+        env:
+          CONEY_SITE_URL: ${{ steps.pages.outputs.base_url }}
+      # The built site, kept for the deploy job.
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  deploy:
+    # Publishes the site built by the mkdocs job. Only this job may write to Pages.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: mkdocs
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
   markdownlint:
     runs-on: ubuntu-24.04

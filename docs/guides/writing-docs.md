@@ -17,6 +17,14 @@ py -m venv .venv
 .venv\Scripts\mkdocs build      # static site into site/ (strict: broken links fail the build)
 ```
 
+## Publishing
+
+The site is published on GitHub Pages; its address is in the README (the only file that names it). The `docs`
+workflow builds it on every push and pull
+request, and a push to `main` also deploys that build to GitHub Pages (the `deploy` job), so the published docs are
+always those of `main`. There is nothing to run by hand; a page appears online a minute or two after its commit
+reaches `main`. Pull requests and other branches build the site as a check but never publish it.
+
 ## Page kinds
 
 Each kind of document has one place and one set of rules. Every page on this site is a living document, one per
@@ -36,8 +44,10 @@ subject, updated in place, so a reader never has to work out which of two pages 
    subject; if one does, extend it.
 2. Add it to `nav:` in `mkdocs.yml`. The strict build fails on a page that is missing from the navigation
    (`mkdocs.yml` sets `validation: nav: omitted_files: warn`, and `--strict` turns that warning into a failure).
-3. Link files outside `docs/` (such as `LEGAL.md`) by their GitHub address,
-   `repo:<file>`: the strict build rejects relative links that leave `docs/`.
+3. Link files outside `docs/` (such as `LEGAL.md`) as `repo:<file>`, e.g. `[LEGAL.md](repo:LEGAL.md#clean-room)`:
+   the strict build rejects relative links that leave `docs/`, and `mkdocs_hooks.py` turns these into links to the
+   file on GitHub. Never write the repository's or the site's address into a file, code comment or commit message;
+   the README is the one exception.
 4. On a research page, give every non-obvious claim an address or file offset and an evidence level: confirmed
    (code), confirmed (runtime), inferred or speculative. The levels are defined in
    [Research workflow](research-workflow.md#evidence-levels).
