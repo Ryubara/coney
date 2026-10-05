@@ -1,0 +1,736 @@
+# Anim ids: a Coney game reference list. The page docs/references/anim-ids.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Anim ids"
+about: |
+  The 722 anim ids every character data maps to clips. A character's own slot wins; an unset slot
+  plays the generic character data's clip ([Characters](../research/characters.md#files)). Scripts name ids
+  with the `ANIM_*` constants of `royal.lua`; the locomotion slots are
+  [Characters, Anim slots](../research/characters.md#anim-slots).
+complete: |
+  All 722 ids are listed with the generic clip and Rembrandt's own clip where he has one. Names
+  exist only for the ids `royal.lua` defines.
+defaults: {source: "royal.lua (names); character data (clips); 0x005105d8 (slots)", evidence: inferred}
+entries:
+  - {id: 0, name: ANIM_RUNNING_ATTACK_CHARGE, generic: gen_charge_shoulder}
+  - {id: 1, name: ANIM_RUNNING_ATTACK_DIVE, generic: gen_dive}
+  - {id: 2, name: ANIM_TACKLE_MISS, generic: gen_tackle_miss}
+  - {id: 3, name: ANIM_TACKLE_INTRO, generic: AI_tackle_start}
+  - {id: 4, name: ANIM_TACKLE_PLAYER_INTRO, generic: gen_tackle_start}
+  - {id: 5, name: ANIM_TACKLE_HIT_FROM_FRONT, generic: gen_tackle_front}
+  - {id: 6, name: ANIM_TACKLE_REACT_FROM_FRONT, generic: gen_tackle_front_react}
+  - {id: 7, name: ANIM_TACKLE_HIT_FROM_REAR, generic: gen_tackle_back}
+  - {id: 8, name: ANIM_TACKLE_REACT_FROM_REAR, generic: gen_tackle_back_react}
+  - {id: 9, name: ANIM_TACKLE_FRONT_COUNTER, generic: gen_tackle_counter}
+  - {id: 10, name: ANIM_TACKLE_FRONT_COUNTER_REACT, generic: gen_tackle_counter_react}
+  - {id: 11, name: ANIM_ATTACK_X1, slot: 17, generic: combo2b_X_lo, rembrandt: combo1b_X_hi_r}
+  - {id: 12, name: ANIM_ATTACK_S1, slot: 16, generic: combo2a_S_hi, rembrandt: combo1a_S_hi_b}
+  - {id: 13, name: ANIM_ATTACK_XX2, generic: combo2b_XX_lo, rembrandt: combo1b_XX_hi_l}
+  - {id: 14, name: ANIM_ATTACK_XS2, generic: combo2b_XS_hi, rembrandt: combo1b_XS_hi_l}
+  - {id: 15, name: ANIM_ATTACK_SX2, generic: combo2a_SX_hi, rembrandt: combo1a_SX_hi_b}
+  - {id: 16, name: ANIM_ATTACK_SS2, generic: combo2a_SS_hi, rembrandt: combo1a_SS_hi_b}
+  - {id: 17, name: ANIM_ATTACK_SSX3, generic: combo2a_SSX_hi, rembrandt: combo1a_SSX_lo_b}
+  - {id: 18, name: ANIM_ATTACK_SSX3_HOLD, generic: combo2a_SSSH_hi_b, rembrandt: combo1a_SSSH_lo_b}
+  - {id: 19, name: ANIM_ATTACK_SSS3, generic: combo2a_SSS_hi, rembrandt: combo1a_SSS_lo_b}
+  - {id: 20, name: ANIM_ATTACK_SSS3_HOLD, generic: combo2a_SSSH_hi_b, rembrandt: combo1a_SSSH_lo_b}
+  - {id: 21, name: ANIM_ATTACK_PUSH, generic: gen_push}
+  - {id: 22, name: ANIM_ATTACK_FROM_IDLE, generic: neutral_attack1}
+  - {id: 23, name: ANIM_ATTACK_FROM_WALK, generic: gen_walk_strike}
+  - {id: 24, name: ANIM_ATTACK_FROM_RUN, generic: gen_run_strike}
+  - {id: 25, name: ANIM_SNAP_RIGHT_01, generic: gen_snap_right1}
+  - {id: 26, name: ANIM_SNAP_RIGHT_02, generic: missing_anim_filler}
+  - {id: 27, name: ANIM_SNAP_LEFT_01, generic: gen_snap_left1}
+  - {id: 28, name: ANIM_SNAP_LEFT_02, generic: missing_anim_filler}
+  - {id: 29, name: ANIM_SNAP_BACK_01, generic: gen_snap_back1}
+  - {id: 30, name: ANIM_SNAP_BACK_02, generic: missing_anim_filler}
+  - {id: 31, name: ANIM_STRAFE_RIGHT, generic: player_combat_walk_right_punc}
+  - {id: 32, name: ANIM_STRAFE_LEFT, generic: player_combat_walk_left_punch}
+  - {id: 33, name: ANIM_STRAFE_FRONT, generic: player_combat_walk_forward_pu}
+  - {id: 34, name: ANIM_BAT_COMBO_S1, generic: gen_weapon01_atk01}
+  - {id: 35, name: ANIM_BAT_COMBO_SS2, generic: gen_weapon01_atk02}
+  - {id: 36, name: ANIM_BAT_COMBO_X1, generic: gen_weapon01_slash_atk01}
+  - {id: 37, name: ANIM_BAT_COMBO_GROUNDED_STRIKE_01, generic: gen_weapon01_grnd_atk01}
+  - {id: 38, name: ANIM_BAT_COMBO_GROUNDED_STRIKE_02, generic: gen_weapon01_grnd_atk02}
+  - {id: 39, name: ANIM_BATON_COMBO_S1, generic: baton_1}
+  - {id: 40, name: ANIM_BATON_COMBO_SS2, generic: baton_2}
+  - {id: 41, name: ANIM_BATON_COMBO_X1, generic: baton_3}
+  - {id: 42, name: ANIM_BATON_COMBO_GROUNDED_STRIKE_01, generic: cop_baton_swing_grnd_1}
+  - {id: 43, name: ANIM_BATON_COMBO_MOUNTING_STRIKE_01, generic: cop_baton_swing_grnd_1}
+  - {id: 44, name: ANIM_BATON_COMBO_GRAB_FRONT_STRIKE_01, generic: cop_baton_1}
+  - {id: 45, name: ANIM_KNIFE_COMBO_S1, generic: knife_1}
+  - {id: 46, name: ANIM_KNIFE_COMBO_SS2, generic: knife_2}
+  - {id: 47, name: ANIM_KNIFE_COMBO_X1, generic: knife_3}
+  - {id: 48, name: ANIM_KNIFE_COMBO_GROUNDED_STRIKE_01, generic: gen_knife_attack_grounded}
+  - {id: 49, name: ANIM_KNIFE_COMBO_MOUNTING_STRIKE_01, generic: gen_knife_attack_mounting}
+  - {id: 50, name: ANIM_KNIFE_COMBO_GRAB_FRONT_STRIKE_01, generic: gen_knife_attack_mounting}
+  - {id: 51, name: ANIM_GRAB_COMBO_STRIKE_01, generic: gen_grab_front_strike1}
+  - {id: 52, name: ANIM_GRAB_COMBO_STRIKE_01_REACT, generic: gen_grab_front_strike1_react}
+  - {id: 53, name: ANIM_GRAB_COMBO_STRIKE_02, generic: gen_grab_front_strike2}
+  - {id: 54, name: ANIM_GRAB_COMBO_STRIKE_02_REACT, generic: gen_grab_front_strike2_react}
+  - {id: 55, name: ANIM_GRAB_COMBO_STRIKE_03, generic: gen_grab_front_strike3}
+  - {id: 56, name: ANIM_GRAB_COMBO_STRIKE_03_REACT, generic: gen_grab_front_strike3_react}
+  - {id: 57, name: ANIM_GRAB_POWER_01_STRIKE_01, generic: gen_grab_front_power23_p1, rembrandt: gen_grab_front_power10_p1}
+  - {id: 58, name: ANIM_GRAB_POWER_01_STRIKE_01_REACT, generic: gen_grab_front_power23_react_, rembrandt: gen_grab_front_power10_p1_rea}
+  - {id: 59, name: ANIM_GRAB_POWER_01_STRIKE_02, generic: gen_grab_front_power23_p2, rembrandt: gen_grab_front_power10_p2}
+  - {id: 60, name: ANIM_GRAB_POWER_01_STRIKE_02_REACT, generic: gen_grab_front_power23_react_, rembrandt: gen_grab_front_power10_p2_rea}
+  - {id: 61, name: ANIM_GRAB_POWER_01_STRIKE_03, generic: missing_anim_filler}
+  - {id: 62, name: ANIM_GRAB_POWER_01_STRIKE_03_REACT, generic: missing_anim_filler}
+  - {id: 63, name: ANIM_GRAB_POWER_02_STRIKE_01, generic: gen_grab_front_power2_p1, rembrandt: gen_grab_front_power14_p1}
+  - {id: 64, name: ANIM_GRAB_POWER_02_STRIKE_01_REACT, generic: gen_grab_front_power2_react_p, rembrandt: gen_grab_front_power14_react_}
+  - {id: 65, name: ANIM_GRAB_POWER_02_STRIKE_02, generic: gen_grab_front_power2_p2, rembrandt: gen_grab_front_power14_p2}
+  - {id: 66, name: ANIM_GRAB_POWER_02_STRIKE_02_REACT, generic: gen_grab_front_power2_react_p, rembrandt: gen_grab_front_power14_react_}
+  - {id: 67, name: ANIM_GRAB_POWER_02_STRIKE_03, generic: gen_grab_front_power2_p3}
+  - {id: 68, name: ANIM_GRAB_POWER_02_STRIKE_03_REACT, generic: gen_grab_front_power2_react_p}
+  - {id: 69, name: ANIM_GRAB_MISS, generic: gen_grab_miss}
+  - {id: 70, name: ANIM_GRAB_INTRO, generic: AI_grab_begin}
+  - {id: 71, name: ANIM_GRAB_PLAYER_INTRO, generic: gen_grab_begin}
+  - {id: 72, name: ANIM_GRAB_FRONT_END, generic: gen_grab_front_succeed}
+  - {id: 73, name: ANIM_GRAB_REACT_FROM_FRONT, generic: gen_grab_front_succeed_react}
+  - {id: 74, name: ANIM_GRAB_REAR_END, generic: gen_grab_back_succeed}
+  - {id: 75, name: ANIM_GRAB_REACT_FROM_REAR, generic: gen_grab_back_succeed_react}
+  - {id: 76, name: ANIM_GRAB_FRONT_COUNTER, generic: gen_grab_front_counter}
+  - {id: 77, name: ANIM_GRAB_FRONT_COUNTER_REACT, generic: gen_grab_front_counter_react}
+  - {id: 78, name: ANIM_GRAB_FRONT_SPIN_VICTIM, generic: gen_grab_front_spin}
+  - {id: 79, name: ANIM_GRAB_FRONT_SPIN_VICTIM_REACT, generic: gen_grab_front_spin_react}
+  - {id: 80, name: ANIM_GRAB_REAR_SPIN_VICTIM, generic: gen_grab_spin}
+  - {id: 81, name: ANIM_GRAB_REAR_SPIN_VICTIM_REACT, generic: gen_grab_spin_react}
+  - {id: 82, name: ANIM_GRAB_HOLD_FROM_FRONT, generic: gen_grab_front_idle}
+  - {id: 83, name: ANIM_GRAB_HELD_FROM_FRONT, generic: gen_grab_front_idle_react}
+  - {id: 84, name: ANIM_GRAB_HOLD_FROM_REAR, generic: gen_grab_back_idle}
+  - {id: 85, name: ANIM_GRAB_HELD_FROM_REAR, generic: gen_grab_back_idle_react}
+  - {id: 86, name: ANIM_GRAB_FRONT_WALK_BACKWARD, generic: gen_grab_front_pull}
+  - {id: 87, name: ANIM_GRAB_FRONT_WALK_BACKWARD_REACT, generic: gen_grab_front_pull_react}
+  - {id: 88, name: ANIM_GRAB_REAR_WALK_BACKWARD, generic: gen_grab_back_pull}
+  - {id: 89, name: ANIM_GRAB_REAR_WALK_BACKWARD_REACT, generic: gen_grab_back_pull_react}
+  - {id: 90, name: ANIM_GRAB_FRONT_REVERSAL, generic: gen_grab_front_reversal}
+  - {id: 91, name: ANIM_GRAB_FRONT_REVERSAL_REACT, generic: gen_grab_front_reversal_react}
+  - {id: 92, name: ANIM_GRAB_REAR_REVERSAL, generic: gen_grab_back_reversal}
+  - {id: 93, name: ANIM_GRAB_REAR_REVERSAL_REACT, generic: gen_grab_back_reversal_react}
+  - {id: 94, name: ANIM_GRAB_FRONT_BREAK, generic: gen_grab_front_break}
+  - {id: 95, name: ANIM_GRAB_FRONT_BREAK_REACT, generic: gen_grab_front_break_react}
+  - {id: 96, name: ANIM_GRAB_FRONT_STRUGGLE1, generic: gen_grab_front_struggle}
+  - {id: 97, name: ANIM_GRAB_FRONT_STRUGGLE1_REACT, generic: gen_grab_front_struggle_react}
+  - {id: 98, name: ANIM_GRAB_FRONT_STRUGGLE2, generic: gen_grab_front_struggle}
+  - {id: 99, name: ANIM_GRAB_FRONT_STRUGGLE2_REACT, generic: gen_grab_front_struggle_react}
+  - {id: 100, name: ANIM_GRAB_FRONT_ESCAPE1, generic: gen_grab_front_escape1}
+  - {id: 101, name: ANIM_GRAB_FRONT_ESCAPE1_REACT, generic: gen_grab_front_escape1_react}
+  - {id: 102, name: ANIM_GRAB_FRONT_ESCAPE2, generic: gen_grab_front_escape1}
+  - {id: 103, name: ANIM_GRAB_FRONT_ESCAPE2_REACT, generic: gen_grab_front_escape1_react}
+  - {id: 104, name: ANIM_GRAB_FRONT_ATTACK, slot: 20, generic: gen_grab_front_victim_strike}
+  - {id: 105, name: ANIM_GRAB_FRONT_ATTACK_REACT, generic: gen_grab_front_victim_strike_}
+  - {id: 106, name: ANIM_GRAB_REAR_BREAK, generic: gen_grab_back_break}
+  - {id: 107, name: ANIM_GRAB_REAR_BREAK_REACT, generic: gen_grab_back_break_react}
+  - {id: 108, name: ANIM_GRAB_REAR_STRUGGLE1, generic: gen_grab_back_struggle2}
+  - {id: 109, name: ANIM_GRAB_REAR_STRUGGLE1_REACT, generic: gen_grab_back_struggle2_react}
+  - {id: 110, name: ANIM_GRAB_REAR_STRUGGLE2, generic: gen_grab_back_struggle2}
+  - {id: 111, name: ANIM_GRAB_REAR_STRUGGLE2_REACT, generic: gen_grab_back_struggle2_react}
+  - {id: 112, name: ANIM_GRAB_REAR_ESCAPE1, generic: gen_grab_back_escape_throw}
+  - {id: 113, name: ANIM_GRAB_REAR_ESCAPE1_REACT, generic: gen_grab_back_escape_throw_re}
+  - {id: 114, name: ANIM_GRAB_REAR_ESCAPE2, generic: gen_grab_back_escape_throw}
+  - {id: 115, name: ANIM_GRAB_REAR_ESCAPE2_REACT, generic: gen_grab_back_escape_throw_re}
+  - {id: 116, name: ANIM_GRAB_REAR_ATTACK, generic: gen_grab_back_victim_strike}
+  - {id: 117, name: ANIM_GRAB_REAR_ATTACK_REACT, generic: gen_grab_back_victim_strike_r}
+  - {id: 118, name: ANIM_GRAB_MOUNT, generic: gen_grab_front_to_mount1}
+  - {id: 119, name: ANIM_GRAB_MOUNT_REACT, generic: gen_grab_front_to_mount1_reac}
+  - {id: 120, name: ANIM_GRAB_FRONT_STRIKE_01, generic: gen_attack_mounting}
+  - {id: 121, name: ANIM_GRAB_FRONT_END_01, generic: missing_anim_filler}
+  - {id: 122, name: ANIM_GRAB_FRONT_STRIKE_02, generic: missing_anim_filler}
+  - {id: 123, name: ANIM_GRAB_REAR_HIT_VICTIM_HIGH, generic: gen_grab_back_hit_victim_high}
+  - {id: 124, name: ANIM_GRAB_REAR_HIT_VICTIM_HIGH_REACT, generic: gen_grab_back_hit_victim_high}
+  - {id: 125, name: ANIM_GRAB_REAR_HIT_VICTIM_LOW, generic: gen_grab_back_hit_victim_low}
+  - {id: 126, name: ANIM_GRAB_REAR_HIT_VICTIM_LOW_REACT, generic: gen_grab_back_hit_victim_low_}
+  - {id: 127, name: ANIM_GRAB_REAR_HIT_VICTIM_DIE, generic: gen_grab_back_dead_victim}
+  - {id: 128, name: ANIM_GRAB_REAR_HIT_GRABBER_HIGH, generic: gen_grab_back_hit_high}
+  - {id: 129, name: ANIM_GRAB_REAR_HIT_GRABBER_HIGH_REACT, generic: gen_grab_back_hit_high_react}
+  - {id: 130, name: ANIM_GRAB_REAR_HIT_GRABBER_LOW, generic: gen_grab_back_hit_low}
+  - {id: 131, name: ANIM_GRAB_REAR_HIT_GRABBER_LOW_REACT, generic: gen_grab_back_hit_low_react}
+  - {id: 132, name: ANIM_GRAB_REAR_HIT_GRABBER_DIE, generic: gen_grab_back_dead_attacker}
+  - {id: 133, name: ANIM_GRAB_FRONT_HIT_VICTIM_HIGH, generic: gen_grab_front_hit_victim_low}
+  - {id: 134, name: ANIM_GRAB_FRONT_HIT_VICTIM_HIGH_REACT, generic: gen_grab_front_hit_victim_low}
+  - {id: 135, name: ANIM_GRAB_FRONT_HIT_VICTIM_LOW, generic: gen_grab_front_hit_victim_hig}
+  - {id: 136, name: ANIM_GRAB_FRONT_HIT_VICTIM_LOW_REACT, generic: gen_grab_front_hit_victim_hig}
+  - {id: 137, name: ANIM_GRAB_FRONT_HIT_VICTIM_KNOCKDOWN, generic: gen_attack_front_victim_react}
+  - {id: 138, name: ANIM_GRAB_FRONT_HIT_VICTIM_KNOCKDOWN_REACT, generic: gen_attack_front_victim_react}
+  - {id: 139, name: ANIM_GRAB_FRONT_HIT_VICTIM_DIE, generic: gen_grab_front_dead_victim}
+  - {id: 140, name: ANIM_GRAB_FRONT_HIT_GRABBER_HIGH, generic: gen_grab_front_hit_low}
+  - {id: 141, name: ANIM_GRAB_FRONT_HIT_GRABBER_HIGH_REACT, generic: gen_grab_front_hit_low_react}
+  - {id: 142, name: ANIM_GRAB_FRONT_HIT_GRABBER_LOW, generic: gen_grab_front_hit_high}
+  - {id: 143, name: ANIM_GRAB_FRONT_HIT_GRABBER_LOW_REACT, generic: gen_grab_front_hit_high_react}
+  - {id: 144, name: ANIM_GRAB_FRONT_HIT_GRABBER_KNOCKDOWN, generic: gen_attack_front_grabber_reac}
+  - {id: 145, name: ANIM_GRAB_FRONT_HIT_GRABBER_KNOCKDOWN_REACT, generic: gen_attack_front_grabber_reac}
+  - {id: 146, name: ANIM_GRAB_FRONT_HIT_GRABBER_DIE, generic: gen_grab_front_dead_attacker}
+  - {id: 147, name: ANIM_THROW_01_FROM_GRAB_FRONT, generic: gen_grab_front_throw_front}
+  - {id: 148, name: ANIM_THROW_01_FROM_GRAB_FRONT_REACT, generic: gen_grab_front_throw_front_re}
+  - {id: 149, name: ANIM_THROW_01_FROM_GRAB_RIGHT, generic: gen_grab_front_throw_right}
+  - {id: 150, name: ANIM_THROW_01_FROM_GRAB_RIGHT_REACT, generic: gen_grab_front_throw_right_re}
+  - {id: 151, name: ANIM_THROW_01_FROM_GRAB_REAR, generic: gen_grab_front_throw_back}
+  - {id: 152, name: ANIM_THROW_01_FROM_GRAB_REAR_REACT, generic: gen_grab_front_throw_back_rea}
+  - {id: 153, name: ANIM_THROW_01_FROM_GRAB_LEFT, generic: gen_grab_front_throw_left}
+  - {id: 154, name: ANIM_THROW_01_FROM_GRAB_LEFT_REACT, generic: gen_grab_front_throw_left_rea}
+  - {id: 155, name: ANIM_THROW_02_FROM_GRAB_FRONT, generic: gen_grab_front_wall_front}
+  - {id: 156, name: ANIM_THROW_02_FROM_GRAB_FRONT_REACT, generic: gen_grab_front_wall_front_rea}
+  - {id: 157, name: ANIM_THROW_02_FROM_GRAB_RIGHT, generic: gen_grab_front_wall_right}
+  - {id: 158, name: ANIM_THROW_02_FROM_GRAB_RIGHT_REACT, generic: gen_grab_front_wall_right_rea}
+  - {id: 159, name: ANIM_THROW_02_FROM_GRAB_REAR, generic: gen_grab_front_wall_back}
+  - {id: 160, name: ANIM_THROW_02_FROM_GRAB_REAR_REACT, generic: gen_grab_front_wall_back_reac}
+  - {id: 161, name: ANIM_THROW_02_FROM_GRAB_LEFT, generic: gen_grab_front_wall_left}
+  - {id: 162, name: ANIM_THROW_02_FROM_GRAB_LEFT_REACT, generic: gen_grab_front_wall_left_reac}
+  - {id: 163, name: ANIM_TANDEM_01_GRABBER_INTRO, generic: gen_tandem1_grabber_begin}
+  - {id: 164, name: ANIM_TANDEM_01_VICTIM_INTRO, generic: gen_tandem1_victim_begin}
+  - {id: 165, name: ANIM_TANDEM_01_ATTACKER_INTRO, generic: gen_tandem1_attacker_begin}
+  - {id: 166, name: ANIM_TANDEM_01_GRABBER_END, generic: gen_tandem1_grabber_end}
+  - {id: 167, name: ANIM_TANDEM_01_VICTIM_END, generic: gen_tandem1_victim_end}
+  - {id: 168, name: ANIM_TANDEM_01_ATTACKER_END, generic: gen_tandem1_attacker_end}
+  - {id: 169, name: ANIM_TANDEM_02_GRABBER_INTRO, generic: gen_tandem2_grabber_begin}
+  - {id: 170, name: ANIM_TANDEM_02_VICTIM_INTRO, generic: gen_tandem2_victim_begin}
+  - {id: 171, name: ANIM_TANDEM_02_ATTACKER_INTRO, generic: gen_tandem2_attacker_begin}
+  - {id: 172, name: ANIM_TANDEM_02_GRABBER_END, generic: gen_tandem2_grabber_end}
+  - {id: 173, name: ANIM_TANDEM_02_VICTIM_END, generic: gen_tandem2_victim_end}
+  - {id: 174, name: ANIM_TANDEM_02_ATTACKER_END, generic: gen_tandem2_attacker_end}
+  - {id: 175, name: ANIM_TANDEM_03_GRABBER_INTRO, generic: gen_tandem3_grabber_begin}
+  - {id: 176, name: ANIM_TANDEM_03_VICTIM_INTRO, generic: gen_tandem3_victim_begin}
+  - {id: 177, name: ANIM_TANDEM_03_ATTACKER_INTRO, generic: gen_tandem3_attacker_begin}
+  - {id: 178, name: ANIM_TANDEM_03_GRABBER_END, generic: gen_tandem3_grabber_end}
+  - {id: 179, name: ANIM_TANDEM_03_VICTIM_END, generic: gen_tandem3_victim_end}
+  - {id: 180, name: ANIM_TANDEM_03_ATTACKER_END, generic: gen_tandem3_attacker_end}
+  - {id: 181, name: ANIM_BAT_TANDEM_01_GRABBER_INTRO, generic: gen_tandem_bat_grabber_begin}
+  - {id: 182, name: ANIM_BAT_TANDEM_01_VICTIM_INTRO, generic: gen_tandem_bat_victim_begin}
+  - {id: 183, name: ANIM_BAT_TANDEM_01_ATTACKER_INTRO, generic: gen_tandem_bat_attacker_begin}
+  - {id: 184, name: ANIM_BAT_TANDEM_01_GRABBER_END, generic: gen_tandem_bat_grabber_end}
+  - {id: 185, name: ANIM_BAT_TANDEM_01_VICTIM_END, generic: gen_tandem_bat_victim_end}
+  - {id: 186, name: ANIM_BAT_TANDEM_01_ATTACKER_END, generic: gen_tandem_bat_attacker_end}
+  - {id: 187, name: ANIM_KNIFE_TANDEM_01_GRABBER_INTRO, generic: gen_tandem_knife_grabber_begi}
+  - {id: 188, name: ANIM_KNIFE_TANDEM_01_VICTIM_INTRO, generic: gen_tandem_knife_victim_begin}
+  - {id: 189, name: ANIM_KNIFE_TANDEM_01_ATTACKER_INTRO, generic: gen_tandem_knife_attacker_beg}
+  - {id: 190, name: ANIM_KNIFE_TANDEM_01_GRABBER_END, generic: gen_tandem_knife_grabber_end}
+  - {id: 191, name: ANIM_KNIFE_TANDEM_01_VICTIM_END, generic: gen_tandem_knife_victim_end}
+  - {id: 192, name: ANIM_KNIFE_TANDEM_01_ATTACKER_END, generic: gen_tandem_knife_attacker_end}
+  - {id: 193, name: ANIM_GROUNDED_STRIKE_01, slot: 19, generic: gen_ground_kickB}
+  - {id: 194, name: ANIM_GROUNDED_STRIKE_02, generic: gen_ground_stomp}
+  - {id: 195, name: ANIM_GROUNDED_STRIKE_REACT, generic: gen_ground_hit_react}
+  - {id: 196, name: ANIM_GROUNDED_IDLE, generic: gen_grnd_idle_back}
+  - {id: 197, name: ANIM_GROUNDED_TRANSITION_FROM_FACE_UP, generic: gen_face_up_ground_roll}
+  - {id: 198, name: ANIM_GROUNDED_TRANSITION_FROM_FACE_DOWN, generic: gen_face_down_ground_roll}
+  - {id: 199, name: ANIM_GROUNDED_RISE, generic: gen_face_up_ground_get_up}
+  - {id: 200, name: ANIM_WOUNDED_IDLE, generic: gen_crawl_idle}
+  - {id: 201, name: ANIM_WOUNDED_CRAWL, generic: gen_crawl_forward}
+  - {id: 202, name: ANIM_WOUNDED_HIT_REACT_UP, generic: gen_crawl_hit_low}
+  - {id: 203, name: ANIM_WOUNDED_HIT_REACT_DOWN, generic: gen_crawl_hit_high}
+  - {id: 204, name: ANIM_WOUNDED_HIT_REACT_DIE, generic: gen_crawl_death}
+  - {id: 205, name: ANIM_WOUNDED_TRANSITION_FROM_GROUNDED, generic: gen_crawl_from_back}
+  - {id: 206, name: ANIM_WOUNDED_TRANSITION_FROM_FACE_DOWN, generic: gen_crawl_from_front}
+  - {id: 207, name: ANIM_MOUNTED_IDLE, generic: gen_mounted_idle}
+  - {id: 208, name: ANIM_MOUNTED_DIE, generic: gen_mounted_die}
+  - {id: 209, name: ANIM_MOUNTED_STRIKE_REACT, generic: missing_anim_filler}
+  - {id: 210, name: ANIM_MOUNTING_IDLE, generic: gen_mounting_idle}
+  - {id: 211, name: ANIM_MOUNTING_DIE, generic: gen_mounting_die}
+  - {id: 212, name: ANIM_MOUNTING_STRIKE, slot: 18, generic: gen_attack_mounting}
+  - {id: 213, name: ANIM_MOUNTING_STRIKE_REACT, generic: gen_mounting_get_hit_front}
+  - {id: 214, name: ANIM_MOUNTING_GRAB, generic: gen_grab_mounting}
+  - {id: 215, name: ANIM_MOUNTING_GRAB_REACT, generic: gen_grab_mounting_react}
+  - {id: 216, name: ANIM_MOUNTING_HIT_REACT_RIGHT, generic: gen_attack_mounter_react_righ}
+  - {id: 217, name: ANIM_MOUNTING_HIT_REACT_BACK, generic: gen_attack_mounter_react_back}
+  - {id: 218, name: ANIM_MOUNTING_HIT_REACT_LEFT, generic: gen_attack_mounter_react_left}
+  - {id: 219, name: ANIM_MOUNT_COMBO_STRIKE_01, generic: gen_mounting_punch1}
+  - {id: 220, name: ANIM_MOUNT_COMBO_STRIKE_01_REACT, generic: gen_mounted_punch1_react}
+  - {id: 221, name: ANIM_MOUNT_COMBO_STRIKE_02, generic: gen_mounting_punch2}
+  - {id: 222, name: ANIM_MOUNT_COMBO_STRIKE_02_REACT, generic: gen_mounted_punch2_react}
+  - {id: 223, name: ANIM_MOUNT_COMBO_STRIKE_03, generic: gen_mounting_punch4}
+  - {id: 224, name: ANIM_MOUNT_COMBO_STRIKE_03_REACT, generic: gen_mounted_punch4_react}
+  - {id: 225, name: ANIM_MOUNT_POWER_01_STRIKE_01, generic: gen_mount_power20_p1, rembrandt: gen_mount_power10_p1}
+  - {id: 226, name: ANIM_MOUNT_POWER_01_STRIKE_01_REACT, generic: gen_mount_power20_react_p1, rembrandt: gen_mount_power10_react_p1}
+  - {id: 227, name: ANIM_MOUNT_POWER_01_STRIKE_02, generic: gen_mount_power20_p2, rembrandt: gen_mount_power10_p2}
+  - {id: 228, name: ANIM_MOUNT_POWER_01_STRIKE_02_REACT, generic: gen_mount_power20_react_p2, rembrandt: gen_mount_power10_react_p2}
+  - {id: 229, name: ANIM_MOUNT_POWER_01_STRIKE_03, generic: missing_anim_filler}
+  - {id: 230, name: ANIM_MOUNT_POWER_01_STRIKE_03_REACT, generic: missing_anim_filler}
+  - {id: 231, name: ANIM_MOUNT_POWER_02_STRIKE_01, generic: gen_mount_power6_p1, rembrandt: gen_mount_power13_p1}
+  - {id: 232, name: ANIM_MOUNT_POWER_02_STRIKE_01_REACT, generic: gen_mount_power6_react_p1, rembrandt: gen_mount_power13_react_p1}
+  - {id: 233, name: ANIM_MOUNT_POWER_02_STRIKE_02, generic: gen_mount_power6_p2, rembrandt: gen_mount_power13_p2}
+  - {id: 234, name: ANIM_MOUNT_POWER_02_STRIKE_02_REACT, generic: gen_mount_power6_react_p2, rembrandt: gen_mount_power13_react_p2}
+  - {id: 235, name: ANIM_MOUNT_POWER_02_STRIKE_03, generic: gen_mount_power6_p3}
+  - {id: 236, name: ANIM_MOUNT_POWER_02_STRIKE_03_REACT, generic: gen_mount_power6_react_p3}
+  - {id: 237, name: ANIM_MOUNT_GROUNDED_FROM_FRONT, generic: gen_mounting_from_feet}
+  - {id: 238, name: ANIM_MOUNT_GROUNDED_FROM_RIGHT, generic: gen_mounting_from_right}
+  - {id: 239, name: ANIM_MOUNT_GROUNDED_FROM_BACK, generic: gen_mounting_from_head}
+  - {id: 240, name: ANIM_MOUNT_GROUNDED_FROM_LEFT, generic: gen_mounting_from_left}
+  - {id: 241, name: ANIM_MOUNT_GROUNDED_REACT, generic: gen_mounted_from_prone}
+  - {id: 242, name: ANIM_MOUNT_REVERSAL, generic: gen_mounted_reversal}
+  - {id: 243, name: ANIM_MOUNT_REVERSAL_REACT, generic: gen_mounting_reversal}
+  - {id: 244, name: ANIM_MOUNT_RELEASE, generic: gen_mounting_release}
+  - {id: 245, name: ANIM_MOUNT_RELEASE_REACT, generic: gen_mounted_release}
+  - {id: 246, name: ANIM_MOUNT_BREAK, generic: gen_mounted_escape}
+  - {id: 247, name: ANIM_MOUNT_BREAK_REACT, generic: gen_mounting_escape}
+  - {id: 248, name: ANIM_MOUNT_PICKUP, generic: gen_mounting_to_grab}
+  - {id: 249, name: ANIM_MOUNT_PICKUP_REACT, generic: gen_mounted_to_grab}
+  - {id: 250, name: ANIM_MOUNT_STRUGGLE, generic: gen_mounted_struggle1}
+  - {id: 251, name: ANIM_MOUNT_STRUGGLE_REACT, generic: gen_mounting_struggle1}
+  - {id: 252, name: ANIM_ARRESTING_INTRO, generic: cop_arrest_begin_p1}
+  - {id: 253, name: ANIM_ARRESTING_INTRO_REACT, generic: cop_arrest_begin_react_p1}
+  - {id: 254, name: ANIM_ARRESTING_INTRO_HIT, generic: gen_arrest_stop_p1}
+  - {id: 255, name: ANIM_ARRESTING_INTRO_HIT_REACT, generic: gen_arrest_stop_react_p1}
+  - {id: 256, name: ANIM_ARRESTING_LOOP, generic: arrest_minigame_cycle}
+  - {id: 257, name: ANIM_ARRESTING_LOOP_REACT, generic: arrested_minigame_cycle}
+  - {id: 258, name: ANIM_ARRESTING_STRUGGLE, generic: arrest_minigame_struggle}
+  - {id: 259, name: ANIM_ARRESTING_STRUGGLE_REACT, generic: arrested_minigame_struggle}
+  - {id: 260, name: ANIM_ARRESTING_END, generic: cop_arrest_begin_p2}
+  - {id: 261, name: ANIM_ARRESTING_END_REACT, generic: cop_arrest_begin_react_p2}
+  - {id: 262, name: ANIM_ARRESTING_FAIL, generic: gen_arrest_stop_p2}
+  - {id: 263, name: ANIM_ARRESTING_FAIL_REACT, generic: gen_arrest_stop_react_p2}
+  - {id: 264, name: ANIM_ARRESTING_END_HIT, generic: gen_arrest_stop_p2}
+  - {id: 265, name: ANIM_ARRESTING_END_HIT_REACT, generic: gen_arrest_stop_react_p2}
+  - {id: 266, name: ANIM_ARRESTING_RISE, generic: cop_arrest_end}
+  - {id: 267, name: ANIM_ARRESTING_RISE_REACT, generic: cop_arrest_end_react}
+  - {id: 268, name: ANIM_REACT_SMALL_MID_FRONT, generic: gen_hit_react_low_front}
+  - {id: 269, name: ANIM_REACT_SMALL_MID_RIGHT, generic: gen_hit_react_low_right}
+  - {id: 270, name: ANIM_REACT_SMALL_MID_BACK, generic: gen_hit_react_low_back}
+  - {id: 271, name: ANIM_REACT_SMALL_MID_LEFT, generic: gen_hit_react_low_left}
+  - {id: 272, name: ANIM_REACT_SMALL_HIGH_FRONT, generic: gen_hit_react_high_front}
+  - {id: 273, name: ANIM_REACT_SMALL_HIGH_RIGHT, generic: gen_hit_react_high_right}
+  - {id: 274, name: ANIM_REACT_SMALL_HIGH_BACK, generic: gen_hit_react_high_back}
+  - {id: 275, name: ANIM_REACT_SMALL_HIGH_LEFT, generic: gen_hit_react_high_left}
+  - {id: 276, name: ANIM_REACT_KNOCKBACK_MID_FRONT, generic: gen_hit_react_low_front_1m}
+  - {id: 277, name: ANIM_REACT_KNOCKBACK_MID_RIGHT, generic: gen_hit_react_low_right_1m}
+  - {id: 278, name: ANIM_REACT_KNOCKBACK_MID_BACK, generic: gen_hit_react_low_back_1m}
+  - {id: 279, name: ANIM_REACT_KNOCKBACK_MID_LEFT, generic: gen_hit_react_low_left_1m}
+  - {id: 280, name: ANIM_REACT_KNOCKBACK_HIGH_FRONT, generic: gen_hit_react_high_front_1m}
+  - {id: 281, name: ANIM_REACT_KNOCKBACK_HIGH_RIGHT, generic: gen_hit_react_high_right_1m}
+  - {id: 282, name: ANIM_REACT_KNOCKBACK_HIGH_BACK, generic: gen_hit_react_high_back_1m}
+  - {id: 283, name: ANIM_REACT_KNOCKBACK_HIGH_LEFT, generic: gen_hit_react_high_left_1m}
+  - {id: 284, name: ANIM_REACT_KNOCKDOWN_LOW_FRONT, generic: gen_hit_react_feet_front_down}
+  - {id: 285, name: ANIM_REACT_KNOCKDOWN_LOW_RIGHT, generic: gen_hit_react_feet_right_down}
+  - {id: 286, name: ANIM_REACT_KNOCKDOWN_LOW_BACK, generic: gen_hit_react_feet_back_down}
+  - {id: 287, name: ANIM_REACT_KNOCKDOWN_LOW_LEFT, generic: gen_hit_react_feet_left_down}
+  - {id: 288, name: ANIM_REACT_KNOCKDOWN_MID_FRONT, generic: gen_hit_react_low_front_down}
+  - {id: 289, name: ANIM_REACT_KNOCKDOWN_MID_RIGHT, generic: gen_hit_react_low_right_down}
+  - {id: 290, name: ANIM_REACT_KNOCKDOWN_MID_BACK, generic: gen_hit_react_low_back_down}
+  - {id: 291, name: ANIM_REACT_KNOCKDOWN_MID_LEFT, generic: gen_hit_react_low_left_down}
+  - {id: 292, name: ANIM_REACT_KNOCKDOWN_HIGH_FRONT, generic: gen_hit_react_high_front_down}
+  - {id: 293, name: ANIM_REACT_KNOCKDOWN_HIGH_RIGHT, generic: gen_hit_react_high_right_down}
+  - {id: 294, name: ANIM_REACT_KNOCKDOWN_HIGH_BACK, generic: gen_hit_react_high_back_down}
+  - {id: 295, name: ANIM_REACT_KNOCKDOWN_HIGH_LEFT, generic: gen_hit_react_high_left_down}
+  - {id: 296, name: ANIM_REACT_EXTREME_MID_FRONT, generic: gen_hit_react_low_front_ex}
+  - {id: 297, name: ANIM_REACT_EXTREME_MID_RIGHT, generic: gen_hit_react_low_right_ex}
+  - {id: 298, name: ANIM_REACT_EXTREME_MID_BACK, generic: gen_hit_react_low_back_ex}
+  - {id: 299, name: ANIM_REACT_EXTREME_MID_LEFT, generic: gen_hit_react_low_left_ex}
+  - {id: 300, name: ANIM_REACT_EXTREME_HIGH_FRONT, generic: gen_hit_react_high_front_ex}
+  - {id: 301, name: ANIM_REACT_EXTREME_HIGH_RIGHT, generic: gen_hit_react_high_right_ex}
+  - {id: 302, name: ANIM_REACT_EXTREME_HIGH_BACK, generic: gen_hit_react_high_back_ex}
+  - {id: 303, name: ANIM_REACT_EXTREME_HIGH_LEFT, generic: gen_hit_react_high_left_ex}
+  - {id: 304, name: ANIM_REACT_DIE_LOW_FRONT, generic: gen_hit_react_feet_front_down}
+  - {id: 305, name: ANIM_REACT_DIE_LOW_RIGHT, generic: gen_hit_react_feet_right_down}
+  - {id: 306, name: ANIM_REACT_DIE_LOW_BACK, generic: gen_hit_react_feet_back_down}
+  - {id: 307, name: ANIM_REACT_DIE_LOW_LEFT, generic: gen_hit_react_feet_left_down}
+  - {id: 308, name: ANIM_REACT_DIE_MID_FRONT, generic: gen_die_mid_front}
+  - {id: 309, name: ANIM_REACT_DIE_MID_RIGHT, generic: gen_die_mid_right}
+  - {id: 310, name: ANIM_REACT_DIE_MID_BACK, generic: gen_die_mid_back}
+  - {id: 311, name: ANIM_REACT_DIE_MID_LEFT, generic: gen_die_mid_left}
+  - {id: 312, name: ANIM_REACT_DIE_HIGH_FRONT, generic: gen_die_high_front}
+  - {id: 313, name: ANIM_REACT_DIE_HIGH_RIGHT, generic: gen_die_high_right}
+  - {id: 314, name: ANIM_REACT_DIE_HIGH_BACK, generic: gen_die_high_back}
+  - {id: 315, name: ANIM_REACT_DIE_HIGH_LEFT, generic: gen_die_high_left}
+  - {id: 316, name: ANIM_FIRE_START, generic: fire_react}
+  - {id: 317, name: ANIM_FIRE_IDLE, slot: 32, generic: fire_cycle}
+  - {id: 318, name: ANIM_FIRE_END, generic: fire_out}
+  - {id: 319, name: ANIM_FIRE_DIE, generic: fire_die}
+  - {id: 320, name: ANIM_ARRESTED_IDLE, generic: gen_arrested_idle}
+  - {id: 321, name: ANIM_ARRESTED_HIT_REACT, generic: gen_arrested_idle_hit_react}
+  - {id: 322, name: ANIM_ARRESTED_DIE, generic: gen_arrested_die}
+  - {id: 323, name: ANIM_ARRESTED_DEAD, generic: gen_arrested_dead}
+  - {id: 324, name: ANIM_ARRESTED_DEAD_HIT_REACT, generic: gen_arrested_dead_hit_react}
+  - {id: 325, name: ANIM_ARREST_RELEASE_INTRO_FRONT, generic: gen_release_arrested_begin}
+  - {id: 326, name: ANIM_ARREST_RELEASE_INTRO_FRONT_REACT, generic: gen_arrested_release_begin}
+  - {id: 327, name: ANIM_ARREST_RELEASE_INTRO_REAR, generic: gen_release_arrested_begin}
+  - {id: 328, name: ANIM_ARREST_RELEASE_INTRO_REAR_REACT, generic: gen_arrested_release_begin}
+  - {id: 329, name: ANIM_ARREST_RELEASE_LOOP, generic: gen_release_arrested_cycle}
+  - {id: 330, name: ANIM_ARREST_RELEASE_LOOP_REACT, generic: gen_arrested_release_cycle}
+  - {id: 331, name: ANIM_ARREST_RELEASE_HIT_REACT, generic: gen_mounting_get_hit_front}
+  - {id: 332, name: ANIM_ARREST_RELEASE_END, generic: gen_release_arrested_end}
+  - {id: 333, name: ANIM_ARREST_RELEASE_END_REACT, generic: gen_arrested_release_end}
+  - {id: 334, name: ANIM_TAGGING_INTRO, generic: gen_tagging_start}
+  - {id: 335, name: ANIM_TAGGING_LOOP, generic: gen_tagging_cycle}
+  - {id: 336, name: ANIM_TAGGING_END, generic: gen_tagging_end}
+  - {id: 337, name: ANIM_TAGGING_SHAKE, generic: gen_tagging_shake}
+  - {id: 338, name: ANIM_MUGGING_INTRO, generic: gen_mug_in}
+  - {id: 339, name: ANIM_MUGGING_INTRO_REACT, generic: gen_mug_in_react}
+  - {id: 340, name: ANIM_MUGGING_LOOP, generic: gen_mug_cycle}
+  - {id: 341, name: ANIM_MUGGING_LOOP_REACT, generic: gen_mug_cycle_react}
+  - {id: 342, name: ANIM_MUGGING_STRUGGLE, generic: gen_mug_struggle}
+  - {id: 343, name: ANIM_MUGGING_STRUGGLE_REACT, generic: gen_mug_struggle_react}
+  - {id: 344, name: ANIM_MUGGING_END, generic: gen_mug_success}
+  - {id: 345, name: ANIM_MUGGING_END_REACT, generic: gen_mug_success_react}
+  - {id: 346, name: ANIM_MUGGING_FAIL, generic: gen_mug_fail}
+  - {id: 347, name: ANIM_MUGGING_FAIL_REACT, generic: gen_mug_fail_react}
+  - {id: 348, name: ANIM_DEAD_TRANSITION_FROM_WOUNDED, generic: gen_roll_to_dead}
+  - {id: 349, name: ANIM_DEAD_IDLE, generic: gen_dead_idle}
+  - {id: 350, name: ANIM_DEAD_HIT_REACT, generic: gen_dead_hit_react}
+  - {id: 351, name: ANIM_DEAD_REVIVE_INTRO, generic: gen_revive_begin}
+  - {id: 352, name: ANIM_DEAD_REVIVE_LOOP, generic: gen_revive_cycle}
+  - {id: 353, name: ANIM_DEAD_REVIVE_END, generic: gen_revive_end}
+  - {id: 354, name: ANIM_DEAD_REVIVE_REACT, generic: gen_revive}
+  - {id: 355, name: ANIM_STUNNED_ENTER, generic: gen_stunned_enter}
+  - {id: 356, name: ANIM_STUNNED_IDLE, generic: gen_stunned_cycle}
+  - {id: 357, name: ANIM_STUNNED_EXIT, generic: gen_stunned_exit}
+  - {id: 358, name: ANIM_FIGHT_IDLE, slot: 11, generic: gen_combat_idle_A, rembrandt: gen_combat_idle_rem}
+  - {id: 359, name: ANIM_FIGHT_TRANSITION_FROM_NORMAL, generic: gen_trans_neutral_to_combat, rembrandt: gen_trans_neutral_to_combatB}
+  - {id: 360, name: ANIM_FIGHT_TURN_RIGHT, slot: 15, generic: gen_combat_turn_right}
+  - {id: 361, name: ANIM_FIGHT_TURN_LEFT, generic: gen_combat_turn_left}
+  - {id: 362, name: ANIM_FIGHT_TURN_QUICK_RIGHT, generic: gen_combat_turn_right120}
+  - {id: 363, name: ANIM_FIGHT_TURN_QUICK_LEFT, generic: gen_combat_turn_left120}
+  - {id: 364, name: ANIM_FIGHT_MOVEMENT_STEP_LEFT, generic: gen_combat_shuffle_left}
+  - {id: 365, name: ANIM_FIGHT_MOVEMENT_STEP_RIGHT, generic: gen_combat_shuffle_right}
+  - {id: 366, name: ANIM_FIGHT_MOVEMENT_STEP_FORWARD, slot: 12, generic: gen_combat_shuffle_forward}
+  - {id: 367, name: ANIM_FIGHT_MOVEMENT_STEP_BACKWARD, generic: gen_combat_shuffle_backward}
+  - {id: 368, name: ANIM_FIGHT_MOVEMENT_DASH_FORWARD, slot: 13, generic: gen_combat_dash_forward}
+  - {id: 369, name: ANIM_FIGHT_MOVEMENT_DASH_BACKWARD, generic: gen_combat_dash_backward}
+  - {id: 370, name: ANIM_FIGHT_MOVEMENT_DASH_LEFT, generic: gen_combat_dash_left}
+  - {id: 371, name: ANIM_FIGHT_MOVEMENT_DASH_RIGHT, generic: gen_combat_dash_right}
+  - {id: 372, name: ANIM_FIGHT_MOVEMENT_WALK_FORWARD, slot: 14, generic: gen_combat_walk_forward}
+  - {id: 373, name: ANIM_FIGHT_MOVEMENT_WALK_FORWARD_RIGHT, generic: gen_combat_walk_forward_right}
+  - {id: 374, name: ANIM_FIGHT_MOVEMENT_WALK_RIGHT, generic: gen_combat_walk_right}
+  - {id: 375, name: ANIM_FIGHT_MOVEMENT_WALK_BACKWARD_RIGHT, generic: gen_combat_walk_backward_righ}
+  - {id: 376, name: ANIM_FIGHT_MOVEMENT_WALK_BACKWARD, generic: gen_combat_walk_backward}
+  - {id: 377, name: ANIM_FIGHT_MOVEMENT_WALK_BACKWARD_LEFT, generic: gen_combat_walk_backward_left}
+  - {id: 378, name: ANIM_FIGHT_MOVEMENT_WALK_LEFT, generic: gen_combat_walk_left}
+  - {id: 379, name: ANIM_FIGHT_MOVEMENT_WALK_FORWARD_LEFT, generic: gen_combat_walk_forward_left}
+  - {id: 380, name: ANIM_PLAYER_FIGHT_WALK_FORWARD, generic: player_combat_walk_forward}
+  - {id: 381, name: ANIM_PLAYER_FIGHT_WALK_FORWARD_RIGHT, generic: player_combat_walk_forward_ri}
+  - {id: 382, name: ANIM_PLAYER_FIGHT_WALK_RIGHT, generic: player_combat_walk_right}
+  - {id: 383, name: ANIM_PLAYER_FIGHT_WALK_BACKWARD_RIGHT, generic: player_combat_walk_backward_r}
+  - {id: 384, name: ANIM_PLAYER_FIGHT_WALK_BACKWARD, generic: player_combat_walk_backward}
+  - {id: 385, name: ANIM_PLAYER_FIGHT_WALK_BACKWARD_LEFT, generic: player_combat_walk_backward_l}
+  - {id: 386, name: ANIM_PLAYER_FIGHT_WALK_LEFT, generic: player_combat_walk_left}
+  - {id: 387, name: ANIM_PLAYER_FIGHT_WALK_FORWARD_LEFT, generic: player_combat_walk_forward_le}
+  - {id: 388, name: ANIM_NORMAL_IDLE, slot: 0, generic: gen_neutral_idle_A}
+  - {id: 389, name: ANIM_NORMAL_TRANSITION_FROM_FIGHT, generic: gen_trans_combat_to_neutral, rembrandt: gen_trans_combatB_to_neutral}
+  - {id: 390, name: ANIM_NORMAL_TURN_RIGHT, slot: 8, generic: gen_neutral_slow_turn_right}
+  - {id: 391, name: ANIM_NORMAL_TURN_LEFT, generic: gen_neutral_slow_turn_left}
+  - {id: 392, name: ANIM_NORMAL_TURN_QUICK_RIGHT, generic: gen_neutral_slow_turn_right12}
+  - {id: 393, name: ANIM_NORMAL_TURN_QUICK_LEFT, generic: gen_neutral_slow_turn_left120}
+  - {id: 394, name: ANIM_NORMAL_TRANSITION_FROM_STEALTH, generic: gen_hiding2_exit}
+  - {id: 395, name: ANIM_FAST_TURN_RIGHT, generic: gen_neutral_turn_right}
+  - {id: 396, name: ANIM_FAST_TURN_LEFT, generic: gen_neutral_turn_left}
+  - {id: 397, name: ANIM_FAST_TURN_QUICK_RIGHT, generic: gen_neutral_turn_right120}
+  - {id: 398, name: ANIM_FAST_TURN_QUICK_LEFT, generic: gen_neutral_turn_left120}
+  - {id: 399, name: ANIM_MOVEMENT_STEP_LEFT, generic: gen_step_left}
+  - {id: 400, name: ANIM_MOVEMENT_STEP_RIGHT, generic: gen_step_right}
+  - {id: 401, name: ANIM_MOVEMENT_STEP_FORWARD, slot: 1, generic: gen_step_forward}
+  - {id: 402, name: ANIM_MOVEMENT_STEP_BACKWARD, generic: gen_step_backward}
+  - {id: 403, name: ANIM_MOVEMENT_DASH_FORWARD, slot: 2, generic: gen_dash_forward}
+  - {id: 404, name: ANIM_MOVEMENT_DASH_BACKWARD, generic: gen_dash_backward}
+  - {id: 405, name: ANIM_MOVEMENT_DASH_LEFT, generic: gen_dash_left}
+  - {id: 406, name: ANIM_MOVEMENT_DASH_RIGHT, generic: gen_dash_right}
+  - {id: 407, name: ANIM_MOVEMENT_CREEP, slot: 3, generic: gen_walk_sneak}
+  - {id: 408, name: ANIM_MOVEMENT_WALK, slot: 4, generic: gen_walk, rembrandt: warr_re_walk}
+  - {id: 409, name: ANIM_MOVEMENT_JOG, slot: 5, generic: gen_jog}
+  - {id: 410, name: ANIM_MOVEMENT_RUN, slot: 6, generic: gen_run}
+  - {id: 411, name: ANIM_MOVEMENT_SPRINT, slot: 7, generic: gen_sprint}
+  - {id: 412, name: ANIM_MOVEMENT_CREEP_START, slot: 9, generic: gen_walk_sneak_start}
+  - {id: 413, name: ANIM_MOVEMENT_WALK_START, slot: 10, generic: gen_walk_start, rembrandt: warr_re_walk_start}
+  - {id: 414, name: ANIM_MOVEMENT_RUN_START, generic: gen_run_start}
+  - {id: 415, name: ANIM_MOVEMENT_RUN_START_FROM_FIGHT, generic: gen_combat_run_start}
+  - {id: 416, name: ANIM_MOVEMENT_RUN_TURN_FROM_FIGHT, generic: gen_combat_walkback_2_run_lef}
+  - {id: 417, name: ANIM_MOVEMENT_RUN_STOP, slot: 33, generic: gen_run_to_neutral}
+  - {id: 418, name: ANIM_MOVEMENT_RUN_TURN, generic: gen_run_180_turn}
+  - {id: 419, name: ANIM_MOVEMENT_RUN_TURN_RIGHT, generic: gen_run_to_neutral}
+  - {id: 420, name: ANIM_MOVEMENT_RUN_TURN_LEFT, generic: gen_run_to_neutral}
+  - {id: 421, name: ANIM_MOVEMENT_LONG_FALL_FRONT_START, generic: gen_fall_front_begin}
+  - {id: 422, name: ANIM_MOVEMENT_LONG_FALL_FRONT, generic: gen_fall_front_cycle}
+  - {id: 423, name: ANIM_MOVEMENT_LONG_FALL_FRONT_END, generic: gen_fall_front_land}
+  - {id: 424, name: ANIM_MOVEMENT_LONG_FALL_BACK_START, generic: gen_fall_back_begin}
+  - {id: 425, name: ANIM_MOVEMENT_LONG_FALL_BACK, generic: gen_fall_back_cycle}
+  - {id: 426, name: ANIM_MOVEMENT_LONG_FALL_BACK_END, generic: gen_fall_back_land}
+  - {id: 427, name: ANIM_MOVEMENT_FALL_START, slot: 25, generic: gen_jump_sml_start}
+  - {id: 428, name: ANIM_MOVEMENT_FALL, slot: 26, generic: gen_drop_cycle}
+  - {id: 429, name: ANIM_MOVEMENT_FALL_END, slot: 27, generic: gen_drop_land}
+  - {id: 430, name: ANIM_MOVEMENT_JUMP_FROM_IDLE, generic: gen_jump_building_start_left}
+  - {id: 431, name: ANIM_MOVEMENT_JUMP_FROM_WALK, generic: gen_jump_building_start_right}
+  - {id: 432, name: ANIM_MOVEMENT_JUMP_LEFT_FOOT_START, generic: gen_jump_building_start_left}
+  - {id: 433, name: ANIM_MOVEMENT_JUMP_RIGHT_FOOT_START, generic: gen_jump_building_start_right}
+  - {id: 434, name: ANIM_MOVEMENT_JUMP_LOOP, slot: 30, generic: gen_jump_building_loop}
+  - {id: 435, name: ANIM_MOVEMENT_JUMP_END, generic: gen_jump_building_end_stop}
+  - {id: 436, name: ANIM_MOVEMENT_JUMP_END_RUNNING, generic: gen_jump_building_end}
+  - {id: 437, name: ANIM_FENCE_CLIMB_STANDING_01, generic: gen_fence_climb_from_stand_P1}
+  - {id: 438, name: ANIM_FENCE_CLIMB_STANDING_02, generic: gen_fence_climb_from_stand_P2}
+  - {id: 439, name: ANIM_FENCE_CLIMB_STANDING_03, generic: gen_fence_climb_from_stand_P3}
+  - {id: 440, name: ANIM_FENCE_CLIMB_RUNNING_01, generic: gen_fence_climb_from_run_P1}
+  - {id: 441, name: ANIM_FENCE_CLIMB_RUNNING_02, generic: gen_fence_climb_from_run_P2}
+  - {id: 442, name: ANIM_FENCE_CLIMB_RUNNING_03, generic: gen_fence_climb_from_run_P3}
+  - {id: 443, name: ANIM_SHORT_FENCE_CLIMB_STANDING_01, generic: gen_fence_climb_small_stand_p}
+  - {id: 444, name: ANIM_SHORT_FENCE_CLIMB_STANDING_02, generic: gen_fence_climb_small_stand_p}
+  - {id: 445, name: ANIM_SHORT_FENCE_CLIMB_STANDING_03, generic: gen_fence_climb_small_stand_p}
+  - {id: 446, name: ANIM_SHORT_FENCE_CLIMB_RUNNING_01, generic: gen_fence_climb_small_run_p1}
+  - {id: 447, name: ANIM_SHORT_FENCE_CLIMB_RUNNING_02, generic: gen_fence_climb_small_run_p2}
+  - {id: 448, name: ANIM_SHORT_FENCE_CLIMB_RUNNING_03, generic: gen_fence_climb_small_run_p3}
+  - {id: 449, name: ANIM_WALL_CLIMB_STANDING_01, generic: gen_climb_wall_stand_p1}
+  - {id: 450, name: ANIM_WALL_CLIMB_STANDING_02, generic: gen_climb_wall_stand_p2}
+  - {id: 451, name: ANIM_WALL_CLIMB_STANDING_03, generic: gen_climb_wall_stand_p3}
+  - {id: 452, name: ANIM_WALL_CLIMB_RUNNING_01, generic: gen_climb_wall_run_p1}
+  - {id: 453, name: ANIM_WALL_CLIMB_RUNNING_02, generic: gen_climb_wall_run_p2}
+  - {id: 454, name: ANIM_WALL_CLIMB_RUNNING_03, generic: gen_climb_wall_run_p3}
+  - {id: 455, name: ANIM_SHORT_WALL_CLIMB_STANDING_01, generic: gen_climb_low_wall_stand_p1}
+  - {id: 456, name: ANIM_SHORT_WALL_CLIMB_STANDING_02, generic: gen_climb_low_wall_stand_p2}
+  - {id: 457, name: ANIM_SHORT_WALL_CLIMB_STANDING_03, generic: gen_climb_low_wall_stand_p3}
+  - {id: 458, name: ANIM_SHORT_WALL_CLIMB_RUNNING_01, generic: gen_climb_low_wall_run_p1}
+  - {id: 459, name: ANIM_SHORT_WALL_CLIMB_RUNNING_02, generic: gen_climb_low_wall_run_p2}
+  - {id: 460, name: ANIM_SHORT_WALL_CLIMB_RUNNING_03, generic: gen_climb_low_wall_run_p3}
+  - {id: 461, name: ANIM_ONE_HANDED_OBJECT_PICK_UP, generic: gen_pick_up_1hand_obj}
+  - {id: 462, name: ANIM_ONE_HANDED_OBJECT_PICK_UP_HIGH, generic: gen_pick_up_1hand_from_table}
+  - {id: 463, name: ANIM_ONE_HANDED_OBJECT_PICK_UP_LEFT, generic: gen_one_hand_item_grab}
+  - {id: 464, name: ANIM_ONE_HANDED_OBJECT_PICK_UP_LEFT_HIGH, generic: gen_one_hand_item_grab_table}
+  - {id: 465, name: ANIM_ONE_HANDED_OBJECT_PICK_UP_LEFT_HAT, generic: gen_pickup_hat}
+  - {id: 466, name: ANIM_ONE_HANDED_OBJECT_THROW_START, generic: gen_1hand_throw_enter}
+  - {id: 467, name: ANIM_ONE_HANDED_OBJECT_THROW, generic: gen_1hand_throw}
+  - {id: 468, name: ANIM_ONE_HANDED_OBJECT_THROW_END, generic: gen_1hand_throw_exit}
+  - {id: 469, name: ANIM_ONE_HANDED_OBJECT_THROW_IDLE, generic: gen_1hand_throw_cycle}
+  - {id: 470, name: ANIM_ONE_HANDED_OBJECT_THROW_SHUFFLE, generic: gen_1hand_throw_turn}
+  - {id: 471, name: ANIM_ONE_HANDED_OBJECT_THROW_FROM_WALK, generic: gen_1hand_throw_walk}
+  - {id: 472, name: ANIM_ONE_HANDED_OBJECT_THROW_FROM_RUN, generic: gen_1hand_throw_run}
+  - {id: 473, name: ANIM_ONE_HANDED_OBJECT_SMASH_FRONT, generic: bottle_smash_attacker}
+  - {id: 474, name: ANIM_ONE_HANDED_OBJECT_SMASH_FRONT_REACT, generic: bottle_smash_victim}
+  - {id: 475, name: ANIM_ONE_HANDED_OBJECT_SMASH_REAR, generic: bottle_smash_attacker}
+  - {id: 476, name: ANIM_ONE_HANDED_OBJECT_SMASH_REAR_REACT, generic: bottle_smash_victim_behind}
+  - {id: 477, name: ANIM_ONE_HANDED_OBJECT_DRAW, generic: gen_knife_draw}
+  - {id: 478, name: ANIM_ONE_HANDED_OBJECT_DROP_RIGHT, generic: gen_drop_1hand_obj}
+  - {id: 479, name: ANIM_ONE_HANDED_OBJECT_DROP_LEFT, generic: gen_drop_1hand_obj}
+  - {id: 480, name: ANIM_ONE_HANDED_OBJECT_DROP_HAT, generic: gen_drop_1hand_obj}
+  - {id: 481, name: ANIM_KNIFE_PICK_UP, generic: gen_pick_up_1hand_obj}
+  - {id: 482, name: ANIM_KNIFE_PICK_UP_HIGH, generic: gen_pick_up_1hand_from_table}
+  - {id: 483, name: ANIM_KNIFE_VICTIM_DIE, generic: gen_knife_death}
+  - {id: 484, name: ANIM_KNIFE_GRAB_REAR_ATTACK, generic: gen_grab_back_knife}
+  - {id: 485, name: ANIM_KNIFE_GRAB_REAR_REACT, generic: gen_grab_back_knife_react}
+  - {id: 486, name: ANIM_KNIFE_GRAB_FRONT_ATTACK, generic: gen_grab_front_knife}
+  - {id: 487, name: ANIM_KNIFE_GRAB_FRONT_REACT, generic: gen_grab_front_knife_react}
+  - {id: 488, name: ANIM_KNIFE_MOUNT_ATTACK, generic: gen_knife_mounting}
+  - {id: 489, name: ANIM_KNIFE_MOUNT_REACT, generic: gen_knife_mounting_react}
+  - {id: 490, name: ANIM_KNIFE_ATTACK_FROM_RUN, generic: gen_run_1hand_weapon_atk}
+  - {id: 491, name: ANIM_KNIFE_THROW, generic: gen_knifethrow}
+  - {id: 492, name: ANIM_BROKEN_BOTTLE_GRAB_REAR_ATTACK, generic: gen_grab_back_bottle}
+  - {id: 493, name: ANIM_BROKEN_BOTTLE_GRAB_REAR_REACT, generic: gen_grab_back_bottle_react}
+  - {id: 494, name: ANIM_BROKEN_BOTTLE_GRAB_FRONT_ATTACK, generic: gen_grab_front_bottle}
+  - {id: 495, name: ANIM_BROKEN_BOTTLE_GRAB_FRONT_REACT, generic: gen_grab_front_bottle_react}
+  - {id: 496, name: ANIM_BROKEN_BOTTLE_MOUNT_ATTACK, generic: gen_beerbottle_mounting}
+  - {id: 497, name: ANIM_BROKEN_BOTTLE_MOUNT_REACT, generic: gen_beerbottle_mounting_react}
+  - {id: 498, name: ANIM_SWINGABLE_OBJECT_PICK_UP, generic: gen_pick_up_1hand_obj}
+  - {id: 499, name: ANIM_SWINGABLE_OBJECT_PICK_UP_HIGH, generic: gen_pick_up_1hand_from_table}
+  - {id: 500, name: ANIM_SWINGABLE_OBJECT_DROP, generic: missing_anim_filler}
+  - {id: 501, name: ANIM_SWINGABLE_OBJECT_ATTACK_FROM_RUN, generic: gen_run_1hand_weapon_atk}
+  - {id: 502, name: ANIM_SWINGABLE_OBJECT_THROW, generic: gen_batthrow}
+  - {id: 503, name: ANIM_BARREL_PICK_UP, generic: gen_pickup_large_obj}
+  - {id: 504, name: ANIM_BARREL_PICK_UP_HIGH, generic: gen_pickup_large_obj_table}
+  - {id: 505, name: ANIM_BARREL_THROW, generic: gen_2hand_throw_fwd}
+  - {id: 506, name: ANIM_BARREL_THROW_FROM_WALK, generic: gen_2hand_throw_walk}
+  - {id: 507, name: ANIM_BARREL_THROW_FROM_RUN, generic: gen_run_2hand_weapon_throw}
+  - {id: 508, name: ANIM_BARREL_DROP, generic: gen_drop_2hand_obj}
+  - {id: 509, name: ANIM_BARREL_NORMAL_IDLE, generic: gen_pickup_large_obj_idle}
+  - {id: 510, name: ANIM_BARREL_NORMAL_TRANSITION_FROM_FIGHT, generic: gen_pickup_large_obj_idle}
+  - {id: 511, name: ANIM_BARREL_NORMAL_TURN_RIGHT, generic: gen_lobj_turn_right}
+  - {id: 512, name: ANIM_BARREL_NORMAL_TURN_LEFT, generic: gen_lobj_turn_left}
+  - {id: 513, name: ANIM_BARREL_NORMAL_TURN_QUICK_RIGHT, generic: gen_lobj_turn_right120}
+  - {id: 514, name: ANIM_BARREL_NORMAL_TURN_QUICK_LEFT, generic: gen_lobj_turn_left120}
+  - {id: 515, name: ANIM_BARREL_MOVEMENT_WALK, generic: gen_pickup_large_obj_walk}
+  - {id: 516, name: ANIM_BARREL_MOVEMENT_JOG, generic: gen_pickup_large_obj_run}
+  - {id: 517, name: ANIM_BARREL_MOVEMENT_RUN, generic: gen_pickup_large_obj_run}
+  - {id: 518, name: ANIM_BARREL_MOVEMENT_SPRINT, generic: gen_pickup_large_obj_run}
+  - {id: 519, name: ANIM_BARREL_MOVEMENT_WALK_START, generic: barrel_walk_start}
+  - {id: 520, name: ANIM_BARREL_MOVEMENT_RUN_START, generic: barrel_run_start}
+  - {id: 521, name: ANIM_BARREL_MOVEMENT_RUN_START_FROM_FIGHT, generic: barrel_run_start}
+  - {id: 522, name: ANIM_BARREL_MOVEMENT_RUN_TURN_FROM_FIGHT, generic: barrel_combat_walkback_2_run_}
+  - {id: 523, name: ANIM_BARREL_MOVEMENT_RUN_STOP, generic: gen_lobj_run_to_neutral}
+  - {id: 524, name: ANIM_BARREL_MOVEMENT_RUN_TURN, generic: barrel_run_180_turn}
+  - {id: 525, name: ANIM_BARREL_MOVEMENT_RUN_TURN_RIGHT, generic: missing_anim_filler}
+  - {id: 526, name: ANIM_BARREL_MOVEMENT_RUN_TURN_LEFT, generic: missing_anim_filler}
+  - {id: 527, name: ANIM_BARREL_FIGHT_IDLE, generic: gen_pickup_large_obj_idle}
+  - {id: 528, name: ANIM_BARREL_FIGHT_TRANSITION_FROM_NORMAL, generic: gen_pickup_large_obj_idle}
+  - {id: 529, name: ANIM_BARREL_FIGHT_TURN_RIGHT, generic: gen_lobj_turn_right}
+  - {id: 530, name: ANIM_BARREL_FIGHT_TURN_LEFT, generic: gen_lobj_turn_left}
+  - {id: 531, name: ANIM_BARREL_FIGHT_TURN_QUICK_RIGHT, generic: gen_lobj_turn_right120}
+  - {id: 532, name: ANIM_BARREL_FIGHT_TURN_QUICK_LEFT, generic: gen_lobj_turn_left120}
+  - {id: 533, name: ANIM_BARREL_FIGHT_MOVEMENT_STEP_LEFT, generic: gen_lobj_shuffle_left}
+  - {id: 534, name: ANIM_BARREL_FIGHT_MOVEMENT_STEP_RIGHT, generic: gen_lobj_shuffle_right}
+  - {id: 535, name: ANIM_BARREL_FIGHT_MOVEMENT_STEP_FORWARD, generic: gen_lobj_shuffle_forward}
+  - {id: 536, name: ANIM_BARREL_FIGHT_MOVEMENT_STEP_BACKWARD, generic: gen_lobj_shuffle_backward}
+  - {id: 537, name: ANIM_BARREL_FIGHT_MOVEMENT_DASH_FORWARD, generic: gen_lobj_dash_forward}
+  - {id: 538, name: ANIM_BARREL_FIGHT_MOVEMENT_DASH_BACKWARD, generic: gen_lobj_dash_backward}
+  - {id: 539, name: ANIM_BARREL_FIGHT_MOVEMENT_DASH_LEFT, generic: gen_lobj_dash_left}
+  - {id: 540, name: ANIM_BARREL_FIGHT_MOVEMENT_DASH_RIGHT, generic: gen_lobj_dash_right}
+  - {id: 541, name: ANIM_BARREL_FIGHT_MOVEMENT_WALK_FORWARD, generic: gen_lobj_walk_forward}
+  - {id: 542, name: ANIM_BARREL_FIGHT_MOVEMENT_WALK_FORWARD_RIGHT, generic: gen_lobj_walk_forward_right}
+  - {id: 543, name: ANIM_BARREL_FIGHT_MOVEMENT_WALK_RIGHT, generic: gen_lobj_walk_right}
+  - {id: 544, name: ANIM_BARREL_FIGHT_MOVEMENT_WALK_BACKWARD_RIGHT, generic: gen_lobj_walk_backward_right}
+  - {id: 545, name: ANIM_BARREL_FIGHT_MOVEMENT_WALK_BACKWARD, generic: gen_lobj_walk_backward}
+  - {id: 546, name: ANIM_BARREL_FIGHT_MOVEMENT_WALK_BACKWARD_LEFT, generic: gen_lobj_walk_backward_left}
+  - {id: 547, name: ANIM_BARREL_FIGHT_MOVEMENT_WALK_LEFT, generic: gen_lobj_walk_left}
+  - {id: 548, name: ANIM_BARREL_FIGHT_MOVEMENT_WALK_FORWARD_LEFT, generic: gen_lobj_walk_forward_left}
+  - {id: 549, name: ANIM_GHETTO_PICK_UP, generic: ghetto_pickup}
+  - {id: 550, name: ANIM_GHETTO_PICK_UP_HIGH, generic: ghetto_pickup_table}
+  - {id: 551, name: ANIM_GHETTO_THROW, generic: ghetto_throw}
+  - {id: 552, name: ANIM_GHETTO_THROW_FROM_WALK, generic: ghetto_throw_walk}
+  - {id: 553, name: ANIM_GHETTO_THROW_FROM_RUN, generic: ghetto_throw_run}
+  - {id: 554, name: ANIM_GHETTO_DROP, generic: ghetto_drop}
+  - {id: 555, name: ANIM_GHETTO_NORMAL_IDLE, generic: ghetto_idle}
+  - {id: 556, name: ANIM_GHETTO_NORMAL_TRANSITION_FROM_FIGHT, generic: ghetto_trans_combat_2_neutral}
+  - {id: 557, name: ANIM_GHETTO_NORMAL_TURN_RIGHT, generic: gen_lobj_turn_right}
+  - {id: 558, name: ANIM_GHETTO_NORMAL_TURN_LEFT, generic: gen_lobj_turn_left}
+  - {id: 559, name: ANIM_GHETTO_NORMAL_TURN_QUICK_RIGHT, generic: gen_lobj_turn_right120}
+  - {id: 560, name: ANIM_GHETTO_NORMAL_TURN_QUICK_LEFT, generic: gen_lobj_turn_left120}
+  - {id: 561, name: ANIM_GHETTO_MOVEMENT_WALK, generic: ghetto_walk}
+  - {id: 562, name: ANIM_GHETTO_MOVEMENT_JOG, generic: ghetto_jog}
+  - {id: 563, name: ANIM_GHETTO_MOVEMENT_RUN, generic: ghetto_jog}
+  - {id: 564, name: ANIM_GHETTO_MOVEMENT_SPRINT, generic: ghetto_jog}
+  - {id: 565, name: ANIM_GHETTO_MOVEMENT_WALK_START, generic: ghetto_wlk_strt}
+  - {id: 566, name: ANIM_GHETTO_MOVEMENT_RUN_START, generic: ghetto_jog_start}
+  - {id: 567, name: ANIM_GHETTO_MOVEMENT_RUN_START_FROM_FIGHT, generic: ghetto_jog_start}
+  - {id: 568, name: ANIM_GHETTO_MOVEMENT_RUN_TURN_FROM_FIGHT, generic: ghetto_combat_walkback_2_run_}
+  - {id: 569, name: ANIM_GHETTO_MOVEMENT_RUN_STOP, generic: ghetto_walk}
+  - {id: 570, name: ANIM_GHETTO_MOVEMENT_RUN_TURN, generic: ghetto_run_180_turn}
+  - {id: 571, name: ANIM_GHETTO_MOVEMENT_RUN_TURN_RIGHT, generic: missing_anim_filler}
+  - {id: 572, name: ANIM_GHETTO_MOVEMENT_RUN_TURN_LEFT, generic: missing_anim_filler}
+  - {id: 573, name: ANIM_GHETTO_FIGHT_IDLE, generic: gen_pickup_large_obj_idle}
+  - {id: 574, name: ANIM_GHETTO_FIGHT_TRANSITION_FROM_NORMAL, generic: ghetto_trans_neutral_to_comba}
+  - {id: 575, name: ANIM_GHETTO_FIGHT_TURN_RIGHT, generic: gen_lobj_turn_right}
+  - {id: 576, name: ANIM_GHETTO_FIGHT_TURN_LEFT, generic: gen_lobj_turn_left}
+  - {id: 577, name: ANIM_GHETTO_FIGHT_TURN_QUICK_RIGHT, generic: gen_lobj_turn_right120}
+  - {id: 578, name: ANIM_GHETTO_FIGHT_TURN_QUICK_LEFT, generic: gen_lobj_turn_left120}
+  - {id: 579, name: ANIM_GHETTO_FIGHT_MOVEMENT_STEP_LEFT, generic: gen_lobj_shuffle_left}
+  - {id: 580, name: ANIM_GHETTO_FIGHT_MOVEMENT_STEP_RIGHT, generic: gen_lobj_shuffle_right}
+  - {id: 581, name: ANIM_GHETTO_FIGHT_MOVEMENT_STEP_FORWARD, generic: gen_lobj_shuffle_forward}
+  - {id: 582, name: ANIM_GHETTO_FIGHT_MOVEMENT_STEP_BACKWARD, generic: gen_lobj_shuffle_backward}
+  - {id: 583, name: ANIM_GHETTO_FIGHT_MOVEMENT_DASH_FORWARD, generic: gen_lobj_dash_left}
+  - {id: 584, name: ANIM_GHETTO_FIGHT_MOVEMENT_DASH_BACKWARD, generic: gen_lobj_dash_right}
+  - {id: 585, name: ANIM_GHETTO_FIGHT_MOVEMENT_DASH_LEFT, generic: gen_lobj_dash_forward}
+  - {id: 586, name: ANIM_GHETTO_FIGHT_MOVEMENT_DASH_RIGHT, generic: gen_lobj_dash_backward}
+  - {id: 587, name: ANIM_GHETTO_FIGHT_MOVEMENT_WALK_FORWARD, generic: gen_lobj_walk_forward}
+  - {id: 588, name: ANIM_GHETTO_FIGHT_MOVEMENT_WALK_FORWARD_RIGHT, generic: gen_lobj_walk_forward_right}
+  - {id: 589, name: ANIM_GHETTO_FIGHT_MOVEMENT_WALK_RIGHT, generic: gen_lobj_walk_right}
+  - {id: 590, name: ANIM_GHETTO_FIGHT_MOVEMENT_WALK_BACKWARD_RIGHT, generic: gen_lobj_walk_backward_left}
+  - {id: 591, name: ANIM_GHETTO_FIGHT_MOVEMENT_WALK_BACKWARD, generic: gen_lobj_walk_backward}
+  - {id: 592, name: ANIM_GHETTO_FIGHT_MOVEMENT_WALK_BACKWARD_LEFT, generic: gen_lobj_walk_backward_right}
+  - {id: 593, name: ANIM_GHETTO_FIGHT_MOVEMENT_WALK_LEFT, generic: gen_lobj_walk_left}
+  - {id: 594, name: ANIM_GHETTO_FIGHT_MOVEMENT_WALK_FORWARD_LEFT, generic: gen_lobj_walk_forward_left}
+  - {id: 595, name: ANIM_TAUNT_ADVANCING, generic: taunt_fuck_u}
+  - {id: 596, name: ANIM_TAUNT_RETREATING, generic: taunt_comeon}
+  - {id: 597, name: ANIM_TAUNT_CIRCLING, generic: taunt_fuck_u}
+  - {id: 598, name: ANIM_TAUNT_STOPPED, generic: gen_tnt_cheer1}
+  - {id: 599, name: ANIM_TAUNT_KNOCKDOWN, generic: gen_taunt_grounded_knockdown}
+  - {id: 600, name: ANIM_TAUNT_KO, generic: gen_taunt_grounded_KO}
+  - {id: 601, name: ANIM_TAUNT_LOOPING, generic: taunt_fuck_u}
+  - {id: 602, name: ANIM_TAUNT_CHALLENGE, generic: knife_toss_fidget}
+  - {id: 603, name: ANIM_FIDGET_FIGHT, generic: combat_fidget_boxersdance}
+  - {id: 604, name: ANIM_FIDGET_IDLE, generic: fidget_crossarms}
+  - {id: 605, name: ANIM_BLOCK_START, slot: 21, generic: gen_blockA}
+  - {id: 606, name: ANIM_BLOCK_SUSTAIN, slot: 23, generic: gen_blockA_idle}
+  - {id: 607, name: ANIM_BLOCK_SHUFFLE, slot: 24, generic: gen_block_turn}
+  - {id: 608, name: ANIM_BLOCK_HIGH_FRONT, slot: 22, generic: gen_block_front_high}
+  - {id: 609, name: ANIM_BLOCK_HIGH_RIGHT, generic: gen_block_right_high}
+  - {id: 610, name: ANIM_BLOCK_HIGH_BACK, generic: gen_block_back_high}
+  - {id: 611, name: ANIM_BLOCK_HIGH_LEFT, generic: gen_block_left_high}
+  - {id: 612, name: ANIM_BLOCK_MID_FRONT, generic: gen_block_front_mid}
+  - {id: 613, name: ANIM_BLOCK_MID_RIGHT, generic: gen_block_right_mid}
+  - {id: 614, name: ANIM_BLOCK_MID_BACK, generic: gen_block_back_mid}
+  - {id: 615, name: ANIM_BLOCK_MID_LEFT, generic: gen_block_left_mid}
+  - {id: 616, name: ANIM_BLOCK_DODGE, generic: gen_duck}
+  - {id: 617, name: ANIM_BLOCK_COUNTER_FRONT, generic: gen_block_duck_counter2_front}
+  - {id: 618, name: ANIM_BLOCK_COUNTER_RIGHT, generic: gen_block_duck_counter2_right}
+  - {id: 619, name: ANIM_BLOCK_COUNTER_BACK, generic: gen_block_duck_counter2_back}
+  - {id: 620, name: ANIM_BLOCK_COUNTER_LEFT, generic: gen_block_duck_counter2_left}
+  - {id: 621, name: ANIM_BAT_BLOCK_START, generic: gen_block_with_bat}
+  - {id: 622, name: ANIM_BAT_BLOCK_SUSTAIN, generic: gen_block_with_bat_idle}
+  - {id: 623, name: ANIM_BAT_BLOCK_SHUFFLE, generic: gen_block_with_bat_idle}
+  - {id: 624, name: ANIM_BAT_BLOCK_HIGH_FRONT, generic: missing_anim_filler}
+  - {id: 625, name: ANIM_BAT_BLOCK_HIGH_RIGHT, generic: missing_anim_filler}
+  - {id: 626, name: ANIM_BAT_BLOCK_HIGH_BACK, generic: missing_anim_filler}
+  - {id: 627, name: ANIM_BAT_BLOCK_HIGH_LEFT, generic: missing_anim_filler}
+  - {id: 628, name: ANIM_BAT_BLOCK_DODGE, generic: gen_weapon_slash_blocked_reac}
+  - {id: 629, name: ANIM_BAT_BLOCK_REACT, generic: gen_batblock_dodge_atk}
+  - {id: 630, name: ANIM_STEALTH_IDLE, generic: gen_hiding2_idle}
+  - {id: 631, name: ANIM_STEALTH_WALK_START, generic: gen_hiding_walk_start}
+  - {id: 632, name: ANIM_STEALTH_RUN_START, generic: gen_hiding2_run_start}
+  - {id: 633, name: ANIM_STEALTH_WALK, generic: gen_hiding_walk}
+  - {id: 634, name: ANIM_STEALTH_TRANSITION_FROM_NORMAL, generic: gen_hiding2_enter}
+  - {id: 635, name: ANIM_STEALTH_READY_IDLE, generic: gen_hiding2_idle_ready2kill}
+  - {id: 636, name: ANIM_STEALTH_READY_WALK, generic: Gen_hiding2_walk_ready2kill}
+  - {id: 637, name: ANIM_STEALTH_KILL, generic: player_stealthkill_barehands, rembrandt: player_stealthkill_weak}
+  - {id: 638, name: ANIM_STEALTH_KILL_REACT, generic: player_stealthkill_barehands_, rembrandt: player_stealthkill_weak_react}
+  - {id: 639, name: ANIM_STEALTH_KNIFE_KILL, generic: player_stealthkill_knife, rembrandt: player_stealthkill_weak}
+  - {id: 640, name: ANIM_STEALTH_KNIFE_KILL_REACT, generic: player_stealthkill_knife_reac, rembrandt: player_stealthkill_weak_react}
+  - {id: 641, name: ANIM_STEALTH_BATON_KILL, generic: player_stealthkill_baton, rembrandt: player_stealthkill_weak}
+  - {id: 642, name: ANIM_STEALTH_BATON_KILL_REACT, generic: player_stealthkill_baton_reac, rembrandt: player_stealthkill_weak_react}
+  - {id: 643, name: ANIM_RAGE_START, generic: gen_rage_enter01, rembrandt: gen_rage_enter05}
+  - {id: 644, name: ANIM_RAGE_IDLE, generic: missing_anim_filler}
+  - {id: 645, name: ANIM_RAGE_ATTACK1_FRONT, generic: gen_360clearkick, rembrandt: gen_rage_sweep}
+  - {id: 646, name: ANIM_RAGE_ATTACK1_FRONT_REACT, generic: missing_anim_filler}
+  - {id: 647, name: ANIM_RAGE_ATTACK1_REAR, generic: gen_360clearkick, rembrandt: gen_rage_sweep}
+  - {id: 648, name: ANIM_RAGE_ATTACK1_REAR_REACT, generic: missing_anim_filler}
+  - {id: 649, name: ANIM_RAGE_ATTACK2_FRONT, generic: gen_grab_n_attack_front}
+  - {id: 650, name: ANIM_RAGE_ATTACK2_FRONT_REACT, generic: gen_grab_n_attack_front_react}
+  - {id: 651, name: ANIM_RAGE_ATTACK2_REAR, generic: gen_grab_n_attack_back}
+  - {id: 652, name: ANIM_RAGE_ATTACK2_REAR_REACT, generic: gen_grab_n_attack_back_react}
+  - {id: 653, name: ANIM_SPECIAL_ATTACK1_FRONT, slot: 29, generic: gen_halfmoon_kick, rembrandt: gen_push}
+  - {id: 654, name: ANIM_SPECIAL_ATTACK1_FRONT_REACT, generic: missing_anim_filler}
+  - {id: 655, name: ANIM_SPECIAL_ATTACK1_REAR, generic: gen_halfmoon_kick, rembrandt: gen_push}
+  - {id: 656, name: ANIM_SPECIAL_ATTACK1_REAR_REACT, generic: missing_anim_filler}
+  - {id: 657, name: ANIM_SPECIAL_ATTACK2_FRONT, generic: gen_grab_n_attack_front}
+  - {id: 658, name: ANIM_SPECIAL_ATTACK2_FRONT_REACT, generic: gen_grab_n_attack_front_react}
+  - {id: 659, name: ANIM_SPECIAL_ATTACK2_REAR, generic: gen_grab_n_attack_back}
+  - {id: 660, name: ANIM_SPECIAL_ATTACK2_REAR_REACT, generic: gen_grab_n_attack_back_react}
+  - {id: 661, name: ANIM_SPECIAL_BREAK_OBJECT_LOW, generic: carhit_low}
+  - {id: 662, name: ANIM_SPECIAL_BREAK_OBJECT_MID, generic: carhit_high}
+  - {id: 663, name: ANIM_SPECIAL_BREAK_OBJECT_HIGH, generic: carhit_high}
+  - {id: 664, name: ANIM_SPECIAL_SPRAY, generic: gen_spray}
+  - {id: 665, name: ANIM_SPECIAL_FLASH, generic: gen_flash_use}
+  - {id: 666, name: ANIM_SPECIAL_OPEN_DOOR, generic: gen_dooropen}
+  - {id: 667, name: ANIM_SPECIAL_STEAL_OBJECT, generic: missing_anim_filler}
+  - {id: 668, name: ANIM_SPECIAL_ACTION, slot: 31, generic: missing_anim_filler}
+  - {id: 669, name: ANIM_SPECIAL_ACTION_MISS, generic: missing_anim_filler}
+  - {id: 670, name: ANIM_SPECIAL_COP_SEARCH, generic: cop_lost_target_search}
+  - {id: 671, name: ANIM_SPECIAL_IDLE, generic: missing_anim_filler}
+  - {id: 672, name: ANIM_SPECIAL_IDLE_START, generic: missing_anim_filler}
+  - {id: 673, name: ANIM_SPECIAL_IDLE_END, generic: missing_anim_filler}
+  - {id: 674, name: ANIM_SPECIAL_IDLE_HIT_REACT, generic: gen_hit_react_high_back}
+  - {id: 675, name: ANIM_SPECIAL_FIGHT_COMMAND_DEFEND, generic: cmd_watchmyback_combat}
+  - {id: 676, name: ANIM_SPECIAL_FIGHT_COMMAND_FIGHT, generic: cmd_wreckemall_combat}
+  - {id: 677, name: ANIM_SPECIAL_FIGHT_COMMAND_FOLLOW, generic: missing_anim_filler}
+  - {id: 678, name: ANIM_SPECIAL_FIGHT_COMMAND_STAY, generic: missing_anim_filler}
+  - {id: 679, name: ANIM_SPECIAL_NORMAL_COMMAND_DEFEND, generic: cmd_watchmyback_neutral}
+  - {id: 680, name: ANIM_SPECIAL_NORMAL_COMMAND_FIGHT, generic: cmd_wreckemall_neutral}
+  - {id: 681, name: ANIM_SPECIAL_NORMAL_COMMAND_FOLLOW, generic: missing_anim_filler}
+  - {id: 682, name: ANIM_SPECIAL_NORMAL_COMMAND_STAY, generic: missing_anim_filler}
+  - {id: 683, name: ANIM_STEREO_STEAL_INTRO, generic: steal_stereo_B}
+  - {id: 684, name: ANIM_STEREO_STEAL_LOOP, generic: steal_stereo_C}
+  - {id: 685, name: ANIM_STEREO_STEAL_END, generic: steal_stereo_SE}
+  - {id: 686, name: ANIM_STEREO_STEAL_FAIL, generic: steal_stereo_FE}
+  - {id: 687, name: ANIM_LOCKPICK_INTRO, generic: jimmy_lock_B}
+  - {id: 688, name: ANIM_LOCKPICK_LOOP, generic: jimmy_lock_C}
+  - {id: 689, name: ANIM_LOCKPICK_END, generic: jimmy_lock_SE}
+  - {id: 690, name: ANIM_LOCKPICK_FAIL, generic: jimmy_lock_FE}
+  - {id: 691, name: ANIM_WORKOUT_START, generic: missing_anim_filler}
+  - {id: 692, name: ANIM_WORKOUT_END, generic: missing_anim_filler}
+  - {id: 693, name: ANIM_WORKOUT_LOOP_01, generic: missing_anim_filler}
+  - {id: 694, name: ANIM_WORKOUT_LOOP_02, generic: missing_anim_filler}
+  - {id: 695, name: ANIM_WORKOUT_LOOP_03, generic: missing_anim_filler}
+  - {id: 696, name: ANIM_WORKOUT_LOOP_04, generic: missing_anim_filler}
+  - {id: 697, name: ANIM_WORKOUT_LOOP_05, generic: missing_anim_filler}
+  - {id: 698, name: ANIM_FACE_ANGRY_01, generic: face_emotion_angry_1}
+  - {id: 699, name: ANIM_FACE_ANGRY_02, generic: face_emotion_angry_2}
+  - {id: 700, name: ANIM_FACE_ANGRY_03, generic: face_emotion_angry_2}
+  - {id: 701, name: ANIM_FACE_SPEAKING_ANGRY_01, generic: face_speech_angry_long}
+  - {id: 702, name: ANIM_FACE_SPEAKING_ANGRY_02, generic: face_speech_angry_med}
+  - {id: 703, name: ANIM_FACE_SPEAKING_ANGRY_03, generic: face_speech_angry_small}
+  - {id: 704, name: ANIM_FACE_NEUTRAL_01, generic: face_emotion_neutral_1}
+  - {id: 705, name: ANIM_FACE_NEUTRAL_02, generic: face_emotion_neutral_2}
+  - {id: 706, name: ANIM_FACE_NEUTRAL_03, generic: face_emotion_neutral_3}
+  - {id: 707, name: ANIM_FACE_SPEAKING_NEUTRAL_01, generic: face_speech_neutral_long}
+  - {id: 708, name: ANIM_FACE_SPEAKING_NEUTRAL_02, generic: face_speech_neutral_med}
+  - {id: 709, name: ANIM_FACE_SPEAKING_NEUTRAL_03, generic: face_speech_neutral_small}
+  - {id: 710, name: ANIM_FACE_SCARED_01, generic: face_emotion_scared_1}
+  - {id: 711, name: ANIM_FACE_SCARED_02, generic: face_emotion_scared_1}
+  - {id: 712, name: ANIM_FACE_SCARED_03, generic: face_emotion_scared_1}
+  - {id: 713, name: ANIM_FACE_SPEAKING_SCARED_01, generic: face_speech_scared_long}
+  - {id: 714, name: ANIM_FACE_SPEAKING_SCARED_02, generic: face_speech_scared_med}
+  - {id: 715, name: ANIM_FACE_SPEAKING_SCARED_03, generic: face_speech_scared_small}
+  - {id: 716, name: ANIM_FACE_EXCITED_01, generic: face_emotion_excited_3}
+  - {id: 717, name: ANIM_FACE_EXCITED_02, generic: face_emotion_excited_3}
+  - {id: 718, name: ANIM_FACE_EXCITED_03, generic: face_emotion_excited_3}
+  - {id: 719, name: ANIM_FACE_SPEAKING_EXCITED_01, generic: face_speech_excited_long}
+  - {id: 720, name: ANIM_FACE_SPEAKING_EXCITED_02, generic: face_speech_excited_med}
+  - {id: 721, name: ANIM_FACE_SPEAKING_EXCITED_03, generic: face_speech_excited_small}

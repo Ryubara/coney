@@ -1,0 +1,226 @@
+# Text formatting: a Coney game reference list. The page docs/references/text-formatting.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Text formatting"
+about: |
+  The markup tags text strings may carry, in the order of the executable's tag table
+  ([GUI, Markup tags](../research/gui.md#markup)). A tag with a trailing space takes an argument.
+complete: |
+  All 66 tags are listed; the effects are written from the layout code.
+defaults: {source: "SLUS_212.15, tag table 0x0050d718", evidence: confirmed-code}
+entries:
+  - index: 0
+    tag: "<COLOR "
+    effect: "Colour, `rrggbbaa` hex; alpha is multiplied by the widget's fade."
+  - index: 1
+    tag: "<SIZE "
+    effect: "Font size times the argument."
+  - index: 2
+    tag: "<PULSE"
+    effect: "Colour pulses between 1.5 and 0.5 times with the given period (ms)."
+  - index: 3
+    tag: "<SOUND "
+    effect: "Plays the named sound once, when first shown."
+  - index: 4
+    tag: "<FREEZE "
+    effect: "Ends the display and freezes the game timer for the given ms."
+  - index: 5
+    tag: "<DISPLAYTIME "
+    effect: "The text disappears after the given ms, fading in its last second."
+  - index: 6
+    tag: "<BOLD>"
+    effect: Bold.
+  - index: 7
+    tag: "<BIGFONT>"
+    effect: "Font slot 6 (`big_font`)."
+  - index: 8
+    tag: "<MONEYFONT>"
+    effect: "An icon font."
+  - index: 9
+    tag: "<BGFONT>"
+    effect: "Glyphs on a background."
+  - index: 10
+    tag: "<MONEYPLUS>"
+    effect: "The money-plus icon."
+  - index: 11
+    tag: "<MONEYMINUS>"
+    effect: "The money-minus icon."
+  - index: 12
+    tag: "<CENTER>"
+    effect: Centre.
+  - index: 13
+    tag: "<CCENTER>"
+    effect: "Centre (variant)."
+  - index: 14
+    tag: "<RIGHT>"
+    effect: Right-align.
+  - index: 15
+    tag: "<RRIGHT>"
+    effect: "Right-align (variant)."
+  - index: 16
+    tag: "<LEFT>"
+    effect: Left-align.
+  - index: 17
+    tag: "<CR>"
+    effect: "New line."
+  - index: 18
+    tag: "<CR2>"
+    effect: "New line, single-player only."
+  - index: 19
+    tag: "<CR3"
+    effect: "New line plus the given amount."
+  - index: 20
+    tag: "<CRM>"
+    effect: "Conditional new line."
+  - index: 21
+    tag: "<AUTOINDENT "
+    effect: "Automatic indent."
+  - index: 22
+    tag: "<FIST>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 23
+    tag: "<RARREST>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 24
+    tag: "<RDEAD>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 25
+    tag: "<BOBJ>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 26
+    tag: "<ROBJ>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 27
+    tag: "<YOBJ>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 28
+    tag: "<RFLASH>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 29
+    tag: "<RSPRAY>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 30
+    tag: "<RPEDRAT>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 31
+    tag: "<RCALLGANG>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 32
+    tag: "<BGCIRCLE>"
+    effect: "A HUD icon: one character of the current font."
+  - index: 33
+    tag: "<S>"
+    effect: "Button glyph."
+    char: 0x009f
+  - index: 34
+    tag: "<O>"
+    effect: "Button glyph."
+    char: 0x009d
+  - index: 35
+    tag: "<T>"
+    effect: "Button glyph."
+    char: 0x0096
+  - index: 36
+    tag: "<ST>"
+    effect: "Button glyph."
+    char: 0x006e
+  - index: 37
+    tag: "<X>"
+    effect: "Button glyph."
+    char: 0x009e
+  - index: 38
+    tag: "<START>"
+    effect: "Button glyph."
+    char: 0x0097
+  - index: 39
+    tag: "<SELECT>"
+    effect: "Button glyph."
+    char: 0x0093
+  - index: 40
+    tag: "<R1>"
+    effect: "Button glyph."
+    char: 0x009c
+  - index: 41
+    tag: "<R2>"
+    effect: "Button glyph."
+    char: 0x0094
+  - index: 42
+    tag: "<R3>"
+    effect: "Button glyph."
+    char: 0x0092
+  - index: 43
+    tag: "<L1>"
+    effect: "Button glyph."
+    char: 0x00a0
+  - index: 44
+    tag: "<L2>"
+    effect: "Button glyph."
+    char: 0x0095
+  - index: 45
+    tag: "<L3>"
+    effect: "Button glyph."
+    char: 0x0091
+  - index: 46
+    tag: "<DU>"
+    effect: "Button glyph."
+    char: 0x009b
+  - index: 47
+    tag: "<DD>"
+    effect: "Button glyph."
+    char: 0x0099
+  - index: 48
+    tag: "<DL>"
+    effect: "Button glyph."
+    char: 0x009a
+  - index: 49
+    tag: "<DR>"
+    effect: "Button glyph."
+    char: 0x0098
+  - index: 50
+    tag: "<LAS>"
+    effect: "Left analog stick (no glyph set)."
+  - index: 51
+    tag: "<RAS>"
+    effect: "Right analog stick (no glyph set)."
+  - index: 52
+    tag: "<SDD>"
+    effect: "Animated stick, down (alternates two glyphs every 500 ms)."
+  - index: 53
+    tag: "<SDL>"
+    effect: "Animated stick, left."
+  - index: 54
+    tag: "<SDR>"
+    effect: "Animated stick, right."
+  - index: 55
+    tag: "<SDU>"
+    effect: "Animated stick, up."
+  - index: 56
+    tag: "</COLOR>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 57
+    tag: "</SIZE>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 58
+    tag: "</PULSE>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 59
+    tag: "</BOLD>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 60
+    tag: "</BIGFONT>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 61
+    tag: "</MONEYFONT>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 62
+    tag: "</BGFONT>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 63
+    tag: "</CENTER>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 64
+    tag: "</RIGHT>"
+    effect: "Ends the matching tag and restores the previous state."
+  - index: 65
+    tag: "</LEFT>"
+    effect: "Ends the matching tag and restores the previous state."

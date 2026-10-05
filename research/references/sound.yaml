@@ -1,0 +1,368 @@
+# Sound and music: a Coney game reference list. The page docs/references/sound.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Sound and music"
+about: |
+  The music tracks `SndCfgMusicInfo` configures, the interface sounds of `SoundCfgInterfaceSound`,
+  the sound matrices scripts load and the sounds of inventory items. Gang music is in [Gangs](gangs.md).
+complete: |
+  Every configured sound is listed by name; the two numbers of a music track are not traced.
+defaults: {source: "config_preload.lua and config_preload2.lua", evidence: inferred}
+entries:
+  - {id: "music:music/103_loop", kind: "music track", name: music/103_loop, values: [2034, 0.7]}
+  - {id: "music:music/103synth1_118c", kind: "music track", name: music/103synth1_118c, values: [2034, 0.7]}
+  - {id: "music:music/118c_103a_angry2_a", kind: "music track", name: music/118c_103a_angry2_a, values: [2034, 0.65]}
+  - {id: "music:music/118c_103a_tension_b", kind: "music track", name: music/118c_103a_tension_b, values: [2034, 0.4]}
+  - {id: "music:music/118d_mellow_a", kind: "music track", name: music/118d_mellow_a, values: [2034, 0.4]}
+  - {id: "music:music/118d_mellow_c", kind: "music track", name: music/118d_mellow_c, values: [2034, 0.4]}
+  - {id: "music:music/118e_barry_fight1", kind: "music track", name: music/118e_barry_fight1, values: [2034, 0.4]}
+  - {id: "music:music/118e_barry_idle1", kind: "music track", name: music/118e_barry_idle1, values: [2034, 0.4]}
+  - {id: "music:music/118e_barry_search1", kind: "music track", name: music/118e_barry_search1, values: [2034, 0.4]}
+  - {id: "music:music/118e_idle3", kind: "music track", name: music/118e_idle3, values: [2034, 0.4]}
+  - {id: "music:music/118e_mellow_1d", kind: "music track", name: music/118e_mellow_1d, values: [2034, 0.4], used_by: [level52_chapter1.lua]}
+  - {id: "music:music/118e_mellow_1dv1", kind: "music track", name: music/118e_mellow_1dv1, values: [2034, 0.45]}
+  - {id: "music:music/118e_mellten_1dv1", kind: "music track", name: music/118e_mellten_1dv1, values: [2034, 0.4]}
+  - {id: "music:music/118e_mellten_1dv1b", kind: "music track", name: music/118e_mellten_1dv1b, values: [2034, 0.5], used_by: [level52_chapter1.lua]}
+  - {id: "music:music/118e_mellten_2dv1a", kind: "music track", name: music/118e_mellten_2dv1a, values: [2034, 0.65]}
+  - {id: "music:music/118e_mellten_search2", kind: "music track", name: music/118e_mellten_search2, values: [2034, 0.4]}
+  - {id: "music:music/118e_melltenfight_1", kind: "music track", name: music/118e_melltenfight_1, values: [2034, 0.7]}
+  - {id: "music:music/118e_melltenfight_2", kind: "music track", name: music/118e_melltenfight_2, values: [2034, 0.65]}
+  - {id: "music:music/118e_melltenfight_3", kind: "music track", name: music/118e_melltenfight_3, values: [2034, 0.65]}
+  - {id: "music:music/118e_skeeter3", kind: "music track", name: music/118e_skeeter3, values: [2034, 0.25]}
+  - {id: "music:music/118e_tense_prt2", kind: "music track", name: music/118e_tense_prt2, values: [2034, 0.45]}
+  - {id: "music:music/118e_tensev2_2", kind: "music track", name: music/118e_tensev2_2, values: [2034, 0.45]}
+  - {id: "music:music/118e_tensev2_beat1", kind: "music track", name: music/118e_tensev2_beat1, values: [2034, 0.65]}
+  - {id: "music:music/118e_tensev2_search_1", kind: "music track", name: music/118e_tensev2_search_1, values: [2034, 0.55]}
+  - {id: "music:music/118e_tensev2_tensions1", kind: "music track", name: music/118e_tensev2_tensions1, values: [2034, 0.25]}
+  - {id: "music:music/120f_bit_biz_1", kind: "music track", name: music/120f_bit_biz_1, values: [2000, 0.7]}
+  - {id: "music:music/127c_intense_1a", kind: "music track", name: music/127c_intense_1a, values: [1890, 0.55], used_by: [level92_chapter3.lua]}
+  - {id: "music:music/127c_intense_1c", kind: "music track", name: music/127c_intense_1c, values: [1890, 0.55]}
+  - {id: "music:music/127c_urgent_search_1", kind: "music track", name: music/127c_urgent_search_1, values: [1890, 0.45]}
+  - {id: "music:music/127c_urgent_search_2", kind: "music track", name: music/127c_urgent_search_2, values: [1890, 0.7]}
+  - {id: "music:music/127e_barry_idle1", kind: "music track", name: music/127e_barry_idle1, values: [1890, 0.4]}
+  - {id: "music:music/127e_barry_search1", kind: "music track", name: music/127e_barry_search1, values: [1890, 0.6]}
+  - {id: "music:music/127e_bond_tension_1", kind: "music track", name: music/127e_bond_tension_1, values: [1579, 0.9]}
+  - {id: "music:music/127f_fight1", kind: "music track", name: music/127f_fight1, values: [1890, 0.55]}
+  - {id: "music:music/127f_l14_fight2", kind: "music track", name: music/127f_l14_fight2, values: [1890, 0.7]}
+  - {id: "music:music/127f_l14_idle2", kind: "music track", name: music/127f_l14_idle2, values: [1890, 0.3]}
+  - {id: "music:music/127f_l14_search2", kind: "music track", name: music/127f_l14_search2, values: [1890, 0.5]}
+  - {id: "music:music/140d_generic_chase1", kind: "music track", name: music/140d_generic_chase1, values: [1714, 0.75]}
+  - {id: "music:music/140d_generic_fight", kind: "music track", name: music/140d_generic_fight, values: [1714, 0.55]}
+  - {id: "music:music/140d_generic_idle", kind: "music track", name: music/140d_generic_idle, values: [1714, 0.4]}
+  - {id: "music:music/140e_mgf_fight", kind: "music track", name: music/140e_mgf_fight, values: [1714, 0.75]}
+  - {id: "music:music/140e_mgf_fight2", kind: "music track", name: music/140e_mgf_fight2, values: [1714, 0.75]}
+  - {id: "music:music/140e_mgf_fight3", kind: "music track", name: music/140e_mgf_fight3, values: [1714, 0.75]}
+  - {id: "music:music/140e_mgf_search", kind: "music track", name: music/140e_mgf_search, values: [1714, 0.7]}
+  - {id: "music:music/140e_mgf_search2", kind: "music track", name: music/140e_mgf_search2, values: [1714, 0.7]}
+  - {id: "music:music/142c_huns_boss", kind: "music track", name: music/142c_huns_boss, values: [1690, 0.75], used_by: [level20_bossfight.lua]}
+  - {id: "music:music/142c_huns_fight_1", kind: "music track", name: music/142c_huns_fight_1, values: [1690, 0.7]}
+  - {id: "music:music/142c_huns_fight_2", kind: "music track", name: music/142c_huns_fight_2, values: [1690, 0.7]}
+  - {id: "music:music/142c_huns_fight_3", kind: "music track", name: music/142c_huns_fight_3, values: [1690, 0.7]}
+  - {id: "music:music/142c_huns_search_1", kind: "music track", name: music/142c_huns_search_1, values: [1690, 0.35]}
+  - {id: "music:music/142c_huns_tension_chant1", kind: "music track", name: music/142c_huns_tension_chant1, values: [1690, 0.65]}
+  - {id: "music:music/142c_hunsneak", kind: "music track", name: music/142c_hunsneak, values: [1690, 0.65]}
+  - {id: "music:music/144e_junkies", kind: "music track", name: music/144e_junkies, values: [3380, 0.75]}
+  - {id: "music:music/150g_boarded_idle", kind: "music track", name: music/150g_boarded_idle, values: [1600, 0.5]}
+  - {id: "music:music/152c_generic_m24", kind: "music track", name: music/152c_generic_m24, values: [1579, 0.75]}
+  - {id: "music:music/155e_bomba_01", kind: "music track", name: music/155e_bomba_01, values: [1548, 0.75]}
+  - {id: "music:music/155e_destroyers_chase_2", kind: "music track", name: music/155e_destroyers_chase_2, values: [1548, 0.4]}
+  - {id: "music:music/155e_destroyers_fight2_synths1", kind: "music track", name: music/155e_destroyers_fight2_synths1, values: [1548, 0.4]}
+  - {id: "music:music/155e_destroyers_fight3_synths1", kind: "music track", name: music/155e_destroyers_fight3_synths1, values: [1548, 0.4]}
+  - {id: "music:music/155e_destroyers_fight3_synths2", kind: "music track", name: music/155e_destroyers_fight3_synths2, values: [1548, 0.4]}
+  - {id: "music:music/155e_fight_1", kind: "music track", name: music/155e_fight_1, values: [1548, 0.85], used_by: [level99_combat.lua]}
+  - {id: "music:music/155e_generic_looping_01", kind: "music track", name: music/155e_generic_looping_01, values: [1548, 0.45]}
+  - {id: "music:music/155e_idle1", kind: "music track", name: music/155e_idle1, values: [1548, 0.4]}
+  - {id: "music:music/155e_idle2", kind: "music track", name: music/155e_idle2, values: [1548, 0.45]}
+  - {id: "music:music/155e_idle3", kind: "music track", name: music/155e_idle3, values: [1548, 0.45]}
+  - {id: "music:music/155e_synthfight1", kind: "music track", name: music/155e_synthfight1, values: [1548, 0.6]}
+  - {id: "music:music/155e_synthfight2", kind: "music track", name: music/155e_synthfight2, values: [1548, 0.65]}
+  - {id: "music:music/155g_destroyers_ambient1", kind: "music track", name: music/155g_destroyers_ambient1, values: [1548, 0.4]}
+  - {id: "music:music/160b_risen1", kind: "music track", name: music/160b_risen1, values: [1500, 0.4]}
+  - {id: "music:music/160b_risen2", kind: "music track", name: music/160b_risen2, values: [1500, 0.5]}
+  - {id: "music:music/160b_tension_piano_tense1a", kind: "music track", name: music/160b_tension_piano_tense1a, values: [1500, 0.4]}
+  - {id: "music:music/160b_tension_rising1", kind: "music track", name: music/160b_tension_rising1, values: [1500, 0.4]}
+  - {id: "music:music/160b_tension_rising1_loop", kind: "music track", name: music/160b_tension_rising1_loop, values: [1500, 0.6]}
+  - {id: "music:music/160b_tension_rising2", kind: "music track", name: music/160b_tension_rising2, values: [1500, 0.4]}
+  - {id: "music:music/160b_tension_rising3", kind: "music track", name: music/160b_tension_rising3, values: [1500, 0.4]}
+  - {id: "music:music/160b_tension_rising4", kind: "music track", name: music/160b_tension_rising4, values: [1500, 0.4]}
+  - {id: "music:music/160e_turnbull_fight1", kind: "music track", name: music/160e_turnbull_fight1, values: [3000, 0.7]}
+  - {id: "music:music/160e_turnbull_search_1", kind: "music track", name: music/160e_turnbull_search_1, values: [3000, 0.6]}
+  - {id: "music:music/160e_turnbull_tension_idle_1", kind: "music track", name: music/160e_turnbull_tension_idle_1, values: [3000, 0.6]}
+  - {id: "music:music/168d_satans_synthfight1a", kind: "music track", name: music/168d_satans_synthfight1a, values: [1429, 0.75]}
+  - {id: "music:music/168d_satans_synthfight1b", kind: "music track", name: music/168d_satans_synthfight1b, values: [1429, 0.7]}
+  - {id: "music:music/1moog_a", kind: "music track", name: music/1moog_a, values: [1890, 0.4]}
+  - {id: "music:music/1moog_odd1a_loop", kind: "music track", name: music/1moog_odd1a_loop, values: [2034, 0.4]}
+  - {id: "music:music/1rst_of_hopeloop", kind: "music track", name: music/1rst_of_hopeloop, values: [1890, 0.4]}
+  - {id: "music:music/2moog1a_loop", kind: "music track", name: music/2moog1a_loop, values: [1890, 0.5]}
+  - {id: "music:music/2nd_trialloop", kind: "music track", name: music/2nd_trialloop, values: [2000, 0.4]}
+  - {id: "music:music/2nd_trialloop_120b", kind: "music track", name: music/2nd_trialloop_120b, values: [2000, 0.6]}
+  - {id: "music:music/4th_118c_5", kind: "music track", name: music/4th_118c_5, values: [2034, 0.75]}
+  - {id: "music:music/4th_idle2_118c", kind: "music track", name: music/4th_idle2_118c, values: [2034, 0.15]}
+  - {id: "music:music/4th_idle3_118c", kind: "music track", name: music/4th_idle3_118c, values: [2034, 0.15]}
+  - {id: "music:music/4th_in_line_loop2_118c", kind: "music track", name: music/4th_in_line_loop2_118c, values: [2034, 0.75]}
+  - {id: "music:music/4th_line", kind: "music track", name: music/4th_line, values: [2034, 0.65]}
+  - {id: "music:music/6th_in_line_vari3_120c", kind: "music track", name: music/6th_in_line_vari3_120c, values: [2000, 0.85]}
+  - {id: "music:music/6th_in_line_vari3_80c", kind: "music track", name: music/6th_in_line_vari3_80c, values: [1500, 0.6]}
+  - {id: "music:music/6th_in_line_vari3_idle_80c", kind: "music track", name: music/6th_in_line_vari3_idle_80c, values: [3000, 0.4]}
+  - {id: "music:music/6th_in_line_vari7_80c", kind: "music track", name: music/6th_in_line_vari7_80c, values: [3000, 0.4]}
+  - {id: "music:music/6th_line3", kind: "music track", name: music/6th_line3, values: [2000, 0.65]}
+  - {id: "music:music/6th_vari3_idle_120c", kind: "music track", name: music/6th_vari3_idle_120c, values: [2000, 0.35]}
+  - {id: "music:music/6th_vari3_search_120c", kind: "music track", name: music/6th_vari3_search_120c, values: [2000, 0.5]}
+  - {id: "music:music/7th_in_line_vari5_120c", kind: "music track", name: music/7th_in_line_vari5_120c, values: [2000, 0.4]}
+  - {id: "music:music/80e_idle_l80", kind: "music track", name: music/80e_idle_l80, values: [3000, 0.75]}
+  - {id: "music:music/83a", kind: "music track", name: music/83a, values: [3780, 0.65], used_by: [level51_chapter1.lua]}
+  - {id: "music:music/89c_ambient1a", kind: "music track", name: music/89c_ambient1a, values: [2697, 0.4]}
+  - {id: "music:music/90e_skeeter3", kind: "music track", name: music/90e_skeeter3, values: [2667, 0.25], used_by: ["36763710", level52.lua]}
+  - {id: "music:music/alberto_loop", kind: "music track", name: music/alberto_loop, values: [4068, 0.65], used_by: [level5_chapter1a.lua]}
+  - {id: "music:music/ambient_idle1", kind: "music track", name: music/ambient_idle1, values: [2000, 0.15]}
+  - {id: "music:music/ambient_idle2", kind: "music track", name: music/ambient_idle2, values: [1579, 0.75]}
+  - {id: "music:music/ambient_idle3", kind: "music track", name: music/ambient_idle3, values: [2000, 0.15], used_by: [level55_punkfight.lua]}
+  - {id: "music:music/ambient_idle4", kind: "music track", name: music/ambient_idle4, values: [2000, 0.15]}
+  - {id: "music:music/ambient_idle5", kind: "music track", name: music/ambient_idle5, values: [2000, 0.15]}
+  - {id: "music:music/angry_moody_fight_loop1_105d", kind: "music track", name: music/angry_moody_fight_loop1_105d, values: [2286, 0.75]}
+  - {id: "music:music/angry_moody_fight_loop2_105d", kind: "music track", name: music/angry_moody_fight_loop2_105d, values: [2286, 0.75]}
+  - {id: "music:music/angry_moody_fight_loop3_105d", kind: "music track", name: music/angry_moody_fight_loop3_105d, values: [2286, 0.75]}
+  - {id: "music:music/angry_moody_idle_loop1_105d", kind: "music track", name: music/angry_moody_idle_loop1_105d, values: [2286, 0.35]}
+  - {id: "music:music/angry_moody_idle_loop2_105d", kind: "music track", name: music/angry_moody_idle_loop2_105d, values: [2286, 0.35]}
+  - {id: "music:music/angry_moody_search_loop2_105d", kind: "music track", name: music/angry_moody_search_loop2_105d, values: [2286, 0.75]}
+  - {id: "music:music/angry_moody_search_loop3_105d", kind: "music track", name: music/angry_moody_search_loop3_105d, values: [2286, 0.75]}
+  - {id: "music:music/bar_music_endsabruptly", kind: "music track", name: music/bar_music_endsabruptly, values: [5, 1], used_by: [brawl.lua, level31_reddevil.lua]}
+  - {id: "music:music/bathroom_tension_01", kind: "music track", name: music/bathroom_tension_01, values: [3158, 0.4]}
+  - {id: "music:music/boreded_loop", kind: "music track", name: music/boreded_loop, values: [1600, 0.45]}
+  - {id: "music:music/builtitdownloop", kind: "music track", name: music/builtitdownloop, values: [2000, 0.4]}
+  - {id: "music:music/chanson_loop", kind: "music track", name: music/chanson_loop, values: [4068, 0.75], used_by: [level11_chapter2.lua]}
+  - {id: "music:music/chatterboxactshon1", kind: "music track", name: music/chatterboxactshon1, values: [2000, 0.8]}
+  - {id: "music:music/coneyis", kind: "music track", name: music/coneyis, values: [2000, 0.4]}
+  - {id: "music:music/credit1", kind: "music track", name: music/credit1, values: [2000, 0.65], used_by: [level84_end.lua]}
+  - {id: "music:music/destroyers_fight2_155e", kind: "music track", name: music/destroyers_fight2_155e, values: [1548, 0.4]}
+  - {id: "music:music/echos_in_my_loop_01", kind: "music track", name: music/echos_in_my_loop_01, values: [3556, 1], used_by: [level11_chapter4.lua]}
+  - {id: "music:music/fight2a", kind: "music track", name: music/fight2a, values: [2000, 0.4]}
+  - {id: "music:music/fight_red_devil", kind: "music track", name: music/fight_red_devil, values: [1000, 1], used_by: [level31_reddevil.lua]}
+  - {id: "music:music/furies_generic2_127b", kind: "music track", name: music/furies_generic2_127b, values: [1890, 0.75]}
+  - {id: "music:music/furies_generic_127b", kind: "music track", name: music/furies_generic_127b, values: [1890, 0.7]}
+  - {id: "music:music/furies_generic_idle1_127b", kind: "music track", name: music/furies_generic_idle1_127b, values: [1890, 0.35]}
+  - {id: "music:music/furies_generic_idle1_152e", kind: "music track", name: music/furies_generic_idle1_152e, values: [1579, 0.2]}
+  - {id: "music:music/furies_generic_search1_127b", kind: "music track", name: music/furies_generic_search1_127b, values: [1890, 0.6], used_by: [level54_popsicle.lua]}
+  - {id: "music:music/furies_generic_search2_127b", kind: "music track", name: music/furies_generic_search2_127b, values: [1890, 0.6]}
+  - {id: "music:music/furies_generic_search3_127b", kind: "music track", name: music/furies_generic_search3_127b, values: [1890, 0.6]}
+  - {id: "music:music/furies_metalworks", kind: "music track", name: music/furies_metalworks, values: [1579, 0.7]}
+  - {id: "music:music/generic_boss_140d", kind: "music track", name: music/generic_boss_140d, values: [1714, 1], used_by: [level84_final.lua]}
+  - {id: "music:music/generic_bossintro_140d", kind: "music track", name: music/generic_bossintro_140d, values: [1714, 1], used_by: [level84_final.lua]}
+  - {id: "music:music/get_down_loop", kind: "music track", name: music/get_down_loop, values: [2000, 0.65], used_by: [level11_chapter5.lua]}
+  - {id: "music:music/gloom", kind: "music track", name: music/gloom, values: [2000, 0.4]}
+  - {id: "music:music/here_comes_that_loop", kind: "music track", name: music/here_comes_that_loop, values: [4068, 0.65]}
+  - {id: "music:music/housemaster", kind: "music track", name: music/housemaster, values: [2000, 0.8]}
+  - {id: "music:music/huns_tension4d_160ds", kind: "music track", name: music/huns_tension4d_160ds, values: [1500, 0.4]}
+  - {id: "music:music/huns_tension5c_160ds", kind: "music track", name: music/huns_tension5c_160ds, values: [1500, 0.4]}
+  - {id: "music:music/hurricane17m", kind: "music track", name: music/hurricane17m, values: [1548, 0.7]}
+  - {id: "music:music/hurricanes17_perc", kind: "music track", name: music/hurricanes17_perc, values: [1548, 0.75], used_by: [level5_chapter3.lua]}
+  - {id: "music:music/hurricanes_fight_1_155e", kind: "music track", name: music/hurricanes_fight_1_155e, values: [1548, 0.75]}
+  - {id: "music:music/hurricanes_fight_2_155e", kind: "music track", name: music/hurricanes_fight_2_155e, values: [1548, 0.7]}
+  - {id: "music:music/in_love_with_a_beautiful_loop", kind: "music track", name: music/in_love_with_a_beautiful_loop, values: [2000, 0.55], used_by: [level83_c5_apartment.lua, level83_c6_chase.lua]}
+  - {id: "music:music/jc1_152c", kind: "music track", name: music/jc1_152c, values: [1579, 0.8], used_by: [level81_chatterbox.lua]}
+  - {id: "music:music/jc1a_fight_152c", kind: "music track", name: music/jc1a_fight_152c, values: [1579, 0.4]}
+  - {id: "music:music/jc1a_fightd_152c", kind: "music track", name: music/jc1a_fightd_152c, values: [1579, 0.4]}
+  - {id: "music:music/jc1a_fighte_152c", kind: "music track", name: music/jc1a_fighte_152c, values: [1579, 0.4]}
+  - {id: "music:music/jc1a_idle2_152c", kind: "music track", name: music/jc1a_idle2_152c, values: [1579, 0.4]}
+  - {id: "music:music/jc1a_idle_152c", kind: "music track", name: music/jc1a_idle_152c, values: [1579, 0.4]}
+  - {id: "music:music/jc1b_search_152c", kind: "music track", name: music/jc1b_search_152c, values: [1579, 0.4]}
+  - {id: "music:music/jc_ripbus1", kind: "music track", name: music/jc_ripbus1, values: [2286, 0.75]}
+  - {id: "music:music/jc_ripbus2", kind: "music track", name: music/jc_ripbus2, values: [2286, 0.75]}
+  - {id: "music:music/jc_ripbus3", kind: "music track", name: music/jc_ripbus3, values: [2286, 0.75]}
+  - {id: "music:music/jc_ripbus4", kind: "music track", name: music/jc_ripbus4, values: [2286, 0.75], used_by: [level51_chapter1.lua]}
+  - {id: "music:music/jc_ripping1_152c", kind: "music track", name: music/jc_ripping1_152c, values: [1579, 0.45]}
+  - {id: "music:music/jc_ripping1_fight_152", kind: "music track", name: music/jc_ripping1_fight_152, values: [1579, 0.7]}
+  - {id: "music:music/jc_ripping1_search_152", kind: "music track", name: music/jc_ripping1_search_152, values: [1579, 0.55]}
+  - {id: "music:music/jc_ripping2_152b_variation2", kind: "music track", name: music/jc_ripping2_152b_variation2, values: [1579, 0.4]}
+  - {id: "music:music/jc_ripping2_152d_variation4", kind: "music track", name: music/jc_ripping2_152d_variation4, values: [1579, 0.4]}
+  - {id: "music:music/jc_ripvar5_127d", kind: "music track", name: music/jc_ripvar5_127d, values: [1890, 0.4], used_by: [level51_chapter2a.lua]}
+  - {id: "music:music/knock_on_wood_loop", kind: "music track", name: music/knock_on_wood_loop, values: [4068, 0.65], used_by: [level11_chapter6.lua]}
+  - {id: "music:music/l20_ambient_loop1", kind: "music track", name: music/l20_ambient_loop1, values: [1690, 0.2]}
+  - {id: "music:music/l2_chase_idle1_152e", kind: "music track", name: music/l2_chase_idle1_152e, values: [1579, 0.75]}
+  - {id: "music:music/l2_chase_idle2_152e", kind: "music track", name: music/l2_chase_idle2_152e, values: [1579, 0.7]}
+  - {id: "music:music/l2_fight1_152e", kind: "music track", name: music/l2_fight1_152e, values: [1579, 0.75]}
+  - {id: "music:music/l2_fight2_152e", kind: "music track", name: music/l2_fight2_152e, values: [1579, 0.75]}
+  - {id: "music:music/l2_fight_fury1_152e", kind: "music track", name: music/l2_fight_fury1_152e, values: [1579, 0.75]}
+  - {id: "music:music/l2_fight_warrior_152e", kind: "music track", name: music/l2_fight_warrior_152e, values: [1579, 0.75]}
+  - {id: "music:music/l3_c1synth", kind: "music track", name: music/l3_c1synth, values: [2000, 0.4]}
+  - {id: "music:music/l51_fight1_127e", kind: "music track", name: music/l51_fight1_127e, values: [1890, 0.55]}
+  - {id: "music:music/l5_boss2_155e", kind: "music track", name: music/l5_boss2_155e, values: [1548, 0.85], used_by: [level5_chapter3.lua]}
+  - {id: "music:music/l5_boss3_155e", kind: "music track", name: music/l5_boss3_155e, values: [1548, 2.5], used_by: [level5_chapter3.lua]}
+  - {id: "music:music/l5_boss_idle1_155e", kind: "music track", name: music/l5_boss_idle1_155e, values: [1548, 0.3], used_by: [level5_chapter3.lua]}
+  - {id: "music:music/l80_fight_127g", kind: "music track", name: music/l80_fight_127g, values: [1890, 0.7]}
+  - {id: "music:music/l82_fight1_163e", kind: "music track", name: music/l82_fight1_163e, values: [1472, 0.65]}
+  - {id: "music:music/l82_fight2_163e", kind: "music track", name: music/l82_fight2_163e, values: [1472, 0.85]}
+  - {id: "music:music/l82_idle1_163e", kind: "music track", name: music/l82_idle1_163e, values: [1472, 0.55]}
+  - {id: "music:music/l82_idle3_163e", kind: "music track", name: music/l82_idle3_163e, values: [1472, 0.4]}
+  - {id: "music:music/l82_idle6_163e", kind: "music track", name: music/l82_idle6_163e, values: [1472, 0.3]}
+  - {id: "music:music/l82_idle_start_163e", kind: "music track", name: music/l82_idle_start_163e, values: [1472, 0.2]}
+  - {id: "music:music/l82_search1_163e", kind: "music track", name: music/l82_search1_163e, values: [1472, 0.85]}
+  - {id: "music:music/l82_search2_163e", kind: "music track", name: music/l82_search2_163e, values: [1472, 0.45]}
+  - {id: "music:music/l82_search3_163e", kind: "music track", name: music/l82_search3_163e, values: [1472, 0.6]}
+  - {id: "music:music/l83_donuts_155e", kind: "music track", name: music/l83_donuts_155e, values: [1548, 0.95]}
+  - {id: "music:music/l83_fight_demo1", kind: "music track", name: music/l83_fight_demo1, values: [1548, 0.6]}
+  - {id: "music:music/l83_fightpen_140g", kind: "music track", name: music/l83_fightpen_140g, values: [3428, 0.95]}
+  - {id: "music:music/l83_idle1_155e", kind: "music track", name: music/l83_idle1_155e, values: [1548, 0.45]}
+  - {id: "music:music/l83_idle2_155e", kind: "music track", name: music/l83_idle2_155e, values: [1548, 0.5]}
+  - {id: "music:music/l83_pawnshop_155e", kind: "music track", name: music/l83_pawnshop_155e, values: [1548, 0.65], used_by: [level83_c5_apartment.lua]}
+  - {id: "music:music/l83_search1_155e", kind: "music track", name: music/l83_search1_155e, values: [1548, 0.4]}
+  - {id: "music:music/l83_search2_155e", kind: "music track", name: music/l83_search2_155e, values: [1548, 0.4]}
+  - {id: "music:music/l83_search3_155e", kind: "music track", name: music/l83_search3_155e, values: [1548, 0.4]}
+  - {id: "music:music/l83_smallfight1_155e", kind: "music track", name: music/l83_smallfight1_155e, values: [1548, 0.75]}
+  - {id: "music:music/l83_smallfight2_155e", kind: "music track", name: music/l83_smallfight2_155e, values: [1548, 0.75]}
+  - {id: "music:music/l83_smallfight3_155e", kind: "music track", name: music/l83_smallfight3_155e, values: [1548, 0.75]}
+  - {id: "music:music/l86_molotov_127g", kind: "music track", name: music/l86_molotov_127g, values: [1890, 0.85], used_by: [level86_chapter4.lua]}
+  - {id: "music:music/l87_fight1_118e", kind: "music track", name: music/l87_fight1_118e, values: [2034, 0.6]}
+  - {id: "music:music/l92_kingfight_1", kind: "music track", name: music/l92_kingfight_1, values: [1579, 0.8], used_by: [level92_chapter1.lua]}
+  - {id: "music:music/l93_bossfight1_118c", kind: "music track", name: music/l93_bossfight1_118c, values: [2034, 0.95], used_by: [level93_chapter6.lua]}
+  - {id: "music:music/l93_bossfight2_118c", kind: "music track", name: music/l93_bossfight2_118c, values: [2034, 0.95], used_by: [level93_chapter6.lua]}
+  - {id: "music:music/l93_bossfight3_118c", kind: "music track", name: music/l93_bossfight3_118c, values: [2034, 0.95], used_by: [level93_chapter6.lua]}
+  - {id: "music:music/l99_118c_1", kind: "music track", name: music/l99_118c_1, values: [2034, 0.4]}
+  - {id: "music:music/l9_fight1_152c_a", kind: "music track", name: music/l9_fight1_152c_a, values: [1579, 0.45]}
+  - {id: "music:music/l9_fight1_152c_b", kind: "music track", name: music/l9_fight1_152c_b, values: [1579, 0.45]}
+  - {id: "music:music/l9_fight2_152c_a", kind: "music track", name: music/l9_fight2_152c_a, values: [1579, 0.45]}
+  - {id: "music:music/l9_fight2_152c_b", kind: "music track", name: music/l9_fight2_152c_b, values: [1579, 0.45]}
+  - {id: "music:music/l9_fight3_152c_a", kind: "music track", name: music/l9_fight3_152c_a, values: [1579, 0.45]}
+  - {id: "music:music/l9_idle2_152c", kind: "music track", name: music/l9_idle2_152c, values: [1579, 0.25]}
+  - {id: "music:music/l9_search2_152c", kind: "music track", name: music/l9_search2_152c, values: [1579, 0.4]}
+  - {id: "music:music/latin_perc", kind: "music track", name: music/latin_perc, values: [2000, 0.4]}
+  - {id: "music:music/long_ambience1", kind: "music track", name: music/long_ambience1, values: [2000, 0.4]}
+  - {id: "music:music/love_is_a_fire", kind: "music track", name: music/love_is_a_fire, values: [2000, 0.65], used_by: [level55_lizziesattack.lua, level55_party.lua, level84_end.lua]}
+  - {id: "music:music/militant_panzers10_118e", kind: "music track", name: music/militant_panzers10_118e, values: [2034, 0.4]}
+  - {id: "music:music/mondahloop", kind: "music track", name: music/mondahloop, values: [2000, 0.55]}
+  - {id: "music:music/movin_too_slow_loop1", kind: "music track", name: music/movin_too_slow_loop1, values: [2000, 0.4]}
+  - {id: "music:music/newperctense", kind: "music track", name: music/newperctense, values: [2000, 0.4]}
+  - {id: "music:music/newshonlooping", kind: "music track", name: music/newshonlooping, values: [2000, 0.65]}
+  - {id: "music:music/nowhere_to_run_loop_01", kind: "music track", name: music/nowhere_to_run_loop_01, values: [3556, 0.55], used_by: [level83_c6_chase.lua]}
+  - {id: "music:music/orphans_ambient_1", kind: "music track", name: music/orphans_ambient_1, values: [2000, 0.15]}
+  - {id: "music:music/orphans_cutscene_classical_1b", kind: "music track", name: music/orphans_cutscene_classical_1b, values: [1472, 0.55]}
+  - {id: "music:music/orphans_fight1_163e", kind: "music track", name: music/orphans_fight1_163e, values: [1472, 0.4]}
+  - {id: "music:music/orphans_fight2_163e", kind: "music track", name: music/orphans_fight2_163e, values: [1472, 0.4]}
+  - {id: "music:music/outclinicloop", kind: "music track", name: music/outclinicloop, values: [2000, 0.4]}
+  - {id: "music:music/possessed1", kind: "music track", name: music/possessed1, values: [2000, 0.4]}
+  - {id: "music:music/remember_loop_02", kind: "music track", name: music/remember_loop_02, values: [4068, 0.6]}
+  - {id: "music:music/roller_scatish1_160c", kind: "music track", name: music/roller_scatish1_160c, values: [3000, 0.65], used_by: [level93_chapter5.lua]}
+  - {id: "music:music/rollerskater2", kind: "music track", name: music/rollerskater2, values: [2000, 0.4]}
+  - {id: "music:music/roundwasploop", kind: "music track", name: music/roundwasploop, values: [2000, 0.4]}
+  - {id: "music:music/satans_fight1_168d", kind: "music track", name: music/satans_fight1_168d, values: [1429, 0.65]}
+  - {id: "music:music/satans_search1_168d", kind: "music track", name: music/satans_search1_168d, values: [1429, 0.4]}
+  - {id: "music:music/satans_search2_168d", kind: "music track", name: music/satans_search2_168d, values: [1429, 0.5]}
+  - {id: "music:music/satans_search3_168d", kind: "music track", name: music/satans_search3_168d, values: [1429, 0.4]}
+  - {id: "music:music/satans_tension1_168d", kind: "music track", name: music/satans_tension1_168d, values: [1429, 0.45]}
+  - {id: "music:music/satans_tension3_168d", kind: "music track", name: music/satans_tension3_168d, values: [1429, 0.45]}
+  - {id: "music:music/scared2", kind: "music track", name: music/scared2, values: [2000, 0.4]}
+  - {id: "music:music/scared2loop", kind: "music track", name: music/scared2loop, values: [2000, 0.4]}
+  - {id: "music:music/seebus1_118c", kind: "music track", name: music/seebus1_118c, values: [2034, 0.4]}
+  - {id: "music:music/seebus2_118c", kind: "music track", name: music/seebus2_118c, values: [2034, 0.4]}
+  - {id: "music:music/seebus3_118c", kind: "music track", name: music/seebus3_118c, values: [2034, 0.4]}
+  - {id: "music:music/shake_it_loop", kind: "music track", name: music/shake_it_loop, values: [4068, 0.75]}
+  - {id: "music:music/strangeoneshot1", kind: "music track", name: music/strangeoneshot1, values: [2000, 0.4]}
+  - {id: "music:music/stripped_war", kind: "music track", name: music/stripped_war, values: [2000, 0.65], used_by: [level99_combat.lua]}
+  - {id: "music:music/tense118e1", kind: "music track", name: music/tense118e1, values: [2034, 0.4]}
+  - {id: "music:music/tense160ea", kind: "music track", name: music/tense160ea, values: [3000, 0.4]}
+  - {id: "music:music/tense160eb", kind: "music track", name: music/tense160eb, values: [3000, 0.4]}
+  - {id: "music:music/tense160ec", kind: "music track", name: music/tense160ec, values: [3000, 0.4]}
+  - {id: "music:music/tense160ed", kind: "music track", name: music/tense160ed, values: [3000, 0.4]}
+  - {id: "music:music/tense160ee", kind: "music track", name: music/tense160ee, values: [3000, 0.4]}
+  - {id: "music:music/tense_idle_80b_2b", kind: "music track", name: music/tense_idle_80b_2b, values: [3000, 0.65]}
+  - {id: "music:music/tension1_163e_a", kind: "music track", name: music/tension1_163e_a, values: [1472, 0.4]}
+  - {id: "music:music/tension1_163e_b", kind: "music track", name: music/tension1_163e_b, values: [1472, 0.4]}
+  - {id: "music:music/tension1_163e_c", kind: "music track", name: music/tension1_163e_c, values: [1472, 0.4]}
+  - {id: "music:music/tension1_163e_d", kind: "music track", name: music/tension1_163e_d, values: [1472, 0.4]}
+  - {id: "music:music/tension2118c", kind: "music track", name: music/tension2118c, values: [2034, 0.4]}
+  - {id: "music:music/tension2_163e_a", kind: "music track", name: music/tension2_163e_a, values: [1472, 0.4]}
+  - {id: "music:music/tension2_163e_c", kind: "music track", name: music/tension2_163e_c, values: [1472, 0.4]}
+  - {id: "music:music/tension4d", kind: "music track", name: music/tension4d, values: [2034, 0.4]}
+  - {id: "music:music/the_fight_loop_01", kind: "music track", name: music/the_fight_loop_01, values: [3780, 0.65], used_by: [level54_park.lua, level54_popsicle.lua]}
+  - {id: "music:music/trimal5", kind: "music track", name: music/trimal5, values: [2000, 0.55]}
+  - {id: "music:music/troubleingloop", kind: "music track", name: music/troubleingloop, values: [2000, 0.4]}
+  - {id: "music:music/turnbulls_fight2_160e", kind: "music track", name: music/turnbulls_fight2_160e, values: [3000, 0.4]}
+  - {id: "music:music/turnbulls_fight3_160e", kind: "music track", name: music/turnbulls_fight3_160e, values: [3000, 0.4]}
+  - {id: "music:music/urgent1f", kind: "music track", name: music/urgent1f, values: [2000, 0.4]}
+  - {id: "music:music/urgent_v3a", kind: "music track", name: music/urgent_v3a, values: [1890, 0.4]}
+  - {id: "music:music/urgent_v3b", kind: "music track", name: music/urgent_v3b, values: [1890, 0.4]}
+  - {id: "music:music/used_to_bes", kind: "music track", name: music/used_to_bes, values: [2000, 0.4]}
+  - {id: "music:music/warrior_flinge", kind: "music track", name: music/warrior_flinge, values: [2000, 0.2]}
+  - {id: "music:music/warriors_fight_song3_160b", kind: "music track", name: music/warriors_fight_song3_160b, values: [1500, 0.8], used_by: [level92_chapter3.lua]}
+  - {id: "music:music/warriors_hardrock", kind: "music track", name: music/warriors_hardrock, values: [2000, 0.4]}
+  - {id: "music:music/warriors_idle_01", kind: "music track", name: music/warriors_idle_01, values: [2034, 0.15]}
+  - {id: "music:music/warriors_metalworks", kind: "music track", name: music/warriors_metalworks, values: [1500, 0.85]}
+  - {id: "music:music/warriors_metalworks160_b", kind: "music track", name: music/warriors_metalworks160_b, values: [1500, 0.85]}
+  - {id: "music:music/warriors_metalworks160_c", kind: "music track", name: music/warriors_metalworks160_c, values: [1500, 0.85]}
+  - {id: "music:music/warriors_search1_160b_a", kind: "music track", name: music/warriors_search1_160b_a, values: [1500, 0.4]}
+  - {id: "music:music/warriors_search2_160b_a", kind: "music track", name: music/warriors_search2_160b_a, values: [1500, 0.4]}
+  - {id: "music:music/warriors_tension1_160b_a", kind: "music track", name: music/warriors_tension1_160b_a, values: [1500, 0.4]}
+  - {id: "music:music/warriors_theme_loop", kind: "music track", name: music/warriors_theme_loop, values: [2034, 0.6], used_by: [level86_chapter2_reg.lua, level86_chapter3_reg.lua]}
+  - {id: "music:music/warriors_track1_loop_01", kind: "music track", name: music/warriors_track1_loop_01, values: [2034, 0.6]}
+  - {id: "music:music/warriors_track1_loop_02", kind: "music track", name: music/warriors_track1_loop_02, values: [2034, 0.6]}
+  - {id: "music:music/warriors_track1_loop_03", kind: "music track", name: music/warriors_track1_loop_03, values: [2034, 0.6]}
+  - {id: "music:music/warriors_track8_loop", kind: "music track", name: music/warriors_track8_loop, values: [2034, 0.6]}
+  - {id: "music:music/warriors_track8_loop_01", kind: "music track", name: music/warriors_track8_loop_01, values: [2034, 0.6], used_by: [level54_streets.lua]}
+  - {id: "music:music/warriors_track8_loop_02", kind: "music track", name: music/warriors_track8_loop_02, values: [2034, 0.6], used_by: [level54.lua]}
+  - {id: "music:music/warriors_track8_loop_03", kind: "music track", name: music/warriors_track8_loop_03, values: [2034, 0.6], used_by: [level54.lua, level54_alley.lua]}
+  - {id: "music:music/warriors_track8_loop_04", kind: "music track", name: music/warriors_track8_loop_04, values: [2034, 0.6], used_by: [level51_chapter9.lua, level54.lua, level54_park.lua, level84_chase.lua]}
+  - {id: "music:music/warriorstensionnote1", kind: "music track", name: music/warriorstensionnote1, values: [3000, 0.4]}
+  - {id: "music:music/warriorstensionnote2", kind: "music track", name: music/warriorstensionnote2, values: [3000, 0.4]}
+  - {id: "music:music/warriorstensiontest1f_160b_1", kind: "music track", name: music/warriorstensiontest1f_160b_1, values: [3000, 0.95]}
+  - {id: "music:music/wartensiontest1d", kind: "music track", name: music/wartensiontest1d, values: [1500, 0.4]}
+  - {id: "music:music/wartensiontest1f", kind: "music track", name: music/wartensiontest1f, values: [1500, 0.4]}
+  - {id: "music:music/wartensiontest1g", kind: "music track", name: music/wartensiontest1g, values: [1500, 0.4]}
+  - {id: "music:music/wartensiontest1h", kind: "music track", name: music/wartensiontest1h, values: [1500, 0.4]}
+  - {id: "music:music/wg_fight1_127b", kind: "music track", name: music/wg_fight1_127b, values: [1890, 0.55]}
+  - {id: "music:music/wg_idle_127b", kind: "music track", name: music/wg_idle_127b, values: [1890, 0.4]}
+  - {id: "interface:1", kind: "interface sound", name: vags/misc/aihealth, number: 1}
+  - {id: "interface:2", kind: "interface sound", name: vags/misc/hudalarm, number: 2}
+  - {id: "interface:3", kind: "interface sound", name: vags/misc/checkpoint, number: 3}
+  - {id: "interface:4", kind: "interface sound", name: vags/interface/menu/synthy_12, number: 4}
+  - {id: "interface:5", kind: "interface sound", name: vags/interface/menu/menusynth_22, number: 5}
+  - {id: "interface:6", kind: "interface sound", name: vags/interface/menu/synthy_80, number: 6}
+  - {id: "interface:7", kind: "interface sound", name: vags/interface/menu/synthy_42, number: 7}
+  - {id: "interface:8", kind: "interface sound", name: vags/interface/menu/synthy_03, number: 8}
+  - {id: "interface:9", kind: "interface sound", name: vags/interface/menu/synthy_45, number: 9}
+  - {id: "interface:10", kind: "interface sound", name: vags/interface/menu/synthy_18, number: 10}
+  - {id: "interface:11", kind: "interface sound", name: vags/interface/menu/synthy_01, number: 11}
+  - {id: "interface:12", kind: "interface sound", name: vags/interface/menu/synthy_05, number: 12}
+  - {id: "interface:13", kind: "interface sound", name: vags/interface/menu/synthy_25, number: 13}
+  - {id: "interface:14", kind: "interface sound", name: vags/interface/menu/synthy_26, number: 14}
+  - {id: "interface:15", kind: "interface sound", name: vags/interface/menu/synthy_14, number: 15}
+  - {id: "interface:16", kind: "interface sound", name: vags/misc/count_money2, number: 16}
+  - {id: "interface:17", kind: "interface sound", name: vags/interface/menu/mainobj_01, number: 17}
+  - {id: "interface:18", kind: "interface sound", name: vags/interface/menu/mainobjcomp_01, number: 18}
+  - {id: "interface:19", kind: "interface sound", name: vags/interface/menu/bonusobj_01, number: 19}
+  - {id: "interface:20", kind: "interface sound", name: vags/interface/menu/bonusobjcomp_01, number: 20}
+  - {id: "interface:21", kind: "interface sound", name: vags/misc/bleep50, number: 21}
+  - {id: "interface:22", kind: "interface sound", name: vags/misc/objective_scroll, number: 22}
+  - {id: "interface:23", kind: "interface sound", name: vags/misc/flash, number: 23}
+  - {id: "interface:24", kind: "interface sound", name: vags/misc/usekey_01, number: 24}
+  - {id: "interface:25", kind: "interface sound", name: vags/weapons/brickpickup1, number: 25}
+  - {id: "interface:26", kind: "interface sound", name: vags/weapons/brickpickup1, number: 26}
+  - {id: "interface:27", kind: "interface sound", name: vags/breakable/bottledrop1, number: 27}
+  - {id: "interface:28", kind: "interface sound", name: vags/character/rustles/bomber_jacket_grab3, number: 28}
+  - {id: "interface:29", kind: "interface sound", name: vags/breakable/bottledrop1, number: 29}
+  - {id: "interface:30", kind: "interface sound", name: vags/breakable/bottledrop1, number: 30}
+  - {id: "interface:31", kind: "interface sound", name: vags/weapons/pool_ball1, number: 31}
+  - {id: "interface:32", kind: "interface sound", name: vags/misc/hud_03, number: 32}
+  - {id: "interface:33", kind: "interface sound", name: vags/misc/unscrewing_01, number: 33}
+  - {id: "interface:34", kind: "interface sound", name: vags/misc/screw_drops_01, number: 34}
+  - {id: "interface:35", kind: "interface sound", name: vags/misc/remove_stereo_01, number: 35}
+  - {id: "interface:36", kind: "interface sound", name: vags/misc/remove_stereo_01, number: 36}
+  - {id: "interface:37", kind: "interface sound", name: vags/misc/remove_stereo_01, number: 37}
+  - {id: "interface:38", kind: "interface sound", name: vags/misc/remove_stereo_01, number: 38}
+  - {id: "interface:39", kind: "interface sound", name: vags/misc/remove_stereo_01, number: 39}
+  - {id: "matrix:armies", kind: "sound matrix", name: armies, used_by: [global.lua]}
+  - {id: "matrix:sound", kind: "sound matrix", name: sound, used_by: [global.lua, level95.lua]}
+  - {id: "inventory:1", kind: "inventory item", name: vags/interface/powerup, number: 1, values: [0, 30000], used_by: [dyn_revival]}
+  - {id: "inventory:2", kind: "inventory item", name: vags/interface/powerup, number: 2, values: [0, 10000], used_by: [none]}
+  - {id: "inventory:3", kind: "inventory item", name: vags/interface/powerup, number: 3, values: [0, 20000], used_by: [dyn_spraycan]}
+  - {id: "inventory:4", kind: "inventory item", name: vags/interface/powerup, number: 4, values: [0, 20000], used_by: [dyn_swhbld_super]}
+  - {id: "inventory:5", kind: "inventory item", name: vags/interface/powerup, number: 5, values: [0, 30000], used_by: [dyn_powercuffs]}
+  - {id: "inventory:6", kind: "inventory item", name: vags/interface/powerup, number: 6, values: [0, 30000], used_by: [dyn_key]}
+  - {id: "inventory:7", kind: "inventory item", name: vags/interface/mission_item, number: 7, values: [0, 10000], used_by: [dyn_pass]}
+  - {id: "inventory:8", kind: "inventory item", name: vags/interface/mission_item, number: 8, values: [0, 10000], used_by: [dyn_boltcutter]}
+  - {id: "inventory:9", kind: "inventory item", name: vags/interface/mission_item, number: 9, values: [0, 10000], used_by: [dyn_special_key]}
+  - {id: "inventory:10", kind: "inventory item", name: vags/interface/powerup, number: 10, values: [0, 10000], used_by: [dyn_store_item]}
+  - {id: "inventory:11", kind: "inventory item", name: vags/interface/powerup, number: 11, values: [0, 10000], used_by: [dyn_carstereo]}
+  - {id: "inventory:12", kind: "inventory item", name: vags/interface/mission_item, number: 12, values: [0, 10000], used_by: [dyn_ledger]}
+  - {id: "inventory:13", kind: "inventory item", name: vags/interface/mission_item, number: 13, values: [0, 10000], used_by: [dyn_dragon]}
+  - {id: "inventory:14", kind: "inventory item", name: vags/interface/mission_item, number: 14, values: [0, 10000], used_by: [dyn_bagcoins]}
+  - {id: "inventory:15", kind: "inventory item", name: vags/interface/mission_item, number: 15, values: [0, 10000], used_by: [dyn_brownbag]}

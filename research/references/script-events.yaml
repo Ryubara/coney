@@ -1,0 +1,88 @@
+# Script events: a Coney game reference list. The page docs/references/script-events.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Script events"
+about: |
+  The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`. The meaning of
+  a message is read from the names of the callbacks scripts give it.
+complete: |
+  Every message number a script uses is listed; meanings are inferred from callback names.
+defaults: {source: "every script, SetMsgHandler", evidence: inferred}
+entries:
+  - id: 0
+    handlers: 2
+    clears: 132
+    examples: [PARTY.ActionCatch, C5.OpenAllDoors]
+  - id: 1
+    meaning: "Damage taken (`DamageHandler`, `BossHealth`)."
+    handlers: 131
+    clears: 144
+    examples: [C2.DamageHandler, C5.BossHealth, LCCheer, HotDogGuyDamage, BandMeleeMove]
+  - id: 2
+    meaning: "A scripted object or character finished or broke (`AjaxDead`, `FortBroken`, `LaunchMissionFailed`)."
+    handlers: 132
+    clears: 95
+    examples: [SwitchNodeStack, F1.AjaxDead, F1.SwanDead, C1.FortBroken, LaunchMissionFailed]
+  - id: 3
+    meaning: "Something entered a trigger box (`ObjectiveEnter`, `EnterBoxEvent`)."
+    handlers: 567
+    clears: 486
+    examples: [ObjectiveEnter, GlowGoAway, EnterBoxEvent, GS.RunnerEventTriggered, AddSuspend]
+  - id: 4
+    meaning: "Something left a trigger box (`ObjectiveExit`, `ExitBoxEvent`)."
+    handlers: 137
+    clears: 122
+    examples: [GlowComeBack, ObjectiveExit, ExitBoxEvent, ExitInteriorCam, C7.EndButton]
+  - id: 5
+    handlers: 37
+    clears: 27
+    examples: [ObjectiveEnter, VandalTwiggy, C5.CheckBox, VandalMarcello, VandalChuck]
+  - id: 6
+    meaning: "A store was damaged or vandalised (`StoreDamaged`, `SetStoreBars`)."
+    handlers: 29
+    clears: 31
+    examples: [SetStoreBars, C1.CleonTrashStore, AwardDamage, C3.CHVandleRespond, StoreDamaged]
+  - id: 7
+    meaning: "An object was stolen (`ObjectStolen`)."
+    handlers: 2
+    clears: 2
+    examples: [C2.TheftCallback, ObjectStolen]
+  - id: 8
+    handlers: 121
+    clears: 100
+    examples: [df.RestoreDealersBrains, P1.Walk03, P3.InsideGate, C2.BanterPassive, P3.AccountantDone]
+  - id: 10
+    meaning: "A character saw the player (`SeePlayer`)."
+    handlers: 6
+    clears: 6
+    examples: [coney.SeePlayer, SecuritySeePlayer, P3.AccountantDonePlayer, ch4.StopPornoChat, freedom.CopGoesForPlayer]
+  - id: 11
+    meaning: "A character spotted someone (`PlayerSpotted`, `PlayerSawStalker`)."
+    handlers: 13
+    clears: 22
+    examples: [BopStopTag1, ToolSeePlayer, P3.AccountantDoneSpot, vigilante.PlayerSawStalker, P3.PlayerSpotted]
+  - id: 14
+    meaning: "A tag (graffiti) was finished (`GangTagComplete`)."
+    handlers: 23
+    clears: 15
+    examples: [GangTagComplete, WarrTag1Complete, C4.BonusTagComplete, C1.GangTagComplete, WarrTag2Complete]
+  - id: 16
+    meaning: "A character was attacked (`DealerAttacked`, `DealerHit`)."
+    handlers: 6
+    clears: 13
+    examples: [Brawl, P3.DealerHit, roam.MiniGameDamage, flashhead.DealerAttacked]
+  - id: 17
+    meaning: "Arrested or released from arrest (`ImArrestedAndICantGetUp`, `CochiseUnarrested`)."
+    handlers: 19
+    clears: 17
+    examples: [ImArrestedAndICantGetUp, CochiseUnarrested, VerminUnarrested, C2.ArrestedWarpOut, C4.ArrestedPoolHall]
+  - id: 18
+    meaning: "A human died or was knocked out (`StandardGang1Dead`, `AjaxDead`)."
+    handlers: 162
+    clears: 210
+    examples: [StandardGang1Dead, StandardGang2Dead, F1.AjaxDead, F1.SwanDead, P6.NewWarrior]
+  - id: 19
+    meaning: "A human came back (revived) (`StandardGang1Lives`, `FoxRevived`)."
+    handlers: 73
+    clears: 72
+    examples: [StandardGang1Lives, StandardGang2Lives, FoxRevived, CowboyRevived, AddToMap]

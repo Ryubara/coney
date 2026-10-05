@@ -1,0 +1,109 @@
+# Controls: a Coney game reference list. The page docs/references/controls.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: Controls
+about: |
+  The pad as the game reads it: the 16-bit button word, the analog sticks, and the markup tag that
+  draws each button in text. Coney drives everything as a gamepad with analog sticks; on a PC pad the face
+  buttons are positional (south is cross).
+complete: |
+  Every button bit and both sticks are listed. What each does on foot is still to be written;
+  the front end's accept and back are known ([Front end](../research/frontend.md#input)).
+defaults: {source: "pad record and libpad layout (docs/research/frontend.md#input)", evidence: inferred}
+entries:
+  - id: pad-l2
+    context: pad
+    input: L2
+    bit: 0x0001
+    glyph: "<L2>"
+  - id: pad-r2
+    context: pad
+    input: R2
+    bit: 0x0002
+    glyph: "<R2>"
+  - id: pad-l1
+    context: pad
+    input: L1
+    bit: 0x0004
+    glyph: "<L1>"
+  - id: pad-r1
+    context: pad
+    input: R1
+    bit: 0x0008
+    glyph: "<R1>"
+  - id: pad-triangle
+    context: pad
+    input: triangle
+    action: "Menus: back, on release."
+    bit: 0x0010
+    glyph: "<T>"
+  - id: pad-circle
+    context: pad
+    input: circle
+    action: "Menus: back, on release."
+    bit: 0x0020
+    glyph: "<O>"
+  - id: pad-cross
+    context: pad
+    input: cross
+    action: "Menus: accept, on release."
+    bit: 0x0040
+    glyph: "<X>"
+  - id: pad-square
+    context: pad
+    input: square
+    bit: 0x0080
+    glyph: "<S>"
+  - id: pad-select
+    context: pad
+    input: SELECT
+    bit: 0x0100
+    glyph: "<SELECT>"
+  - id: pad-l3
+    context: pad
+    input: L3
+    bit: 0x0200
+    glyph: "<L3>"
+  - id: pad-r3
+    context: pad
+    input: R3
+    bit: 0x0400
+    glyph: "<R3>"
+  - id: pad-start
+    context: pad
+    input: START
+    bit: 0x0800
+    glyph: "<START>"
+  - id: pad-d-pad-up
+    context: pad
+    input: "d-pad up"
+    action: "Menus: move up (auto-repeat)."
+    bit: 0x1000
+    glyph: "<DU>"
+  - id: pad-d-pad-right
+    context: pad
+    input: "d-pad right"
+    action: "Menus: move right (auto-repeat)."
+    bit: 0x2000
+    glyph: "<DR>"
+  - id: pad-d-pad-down
+    context: pad
+    input: "d-pad down"
+    action: "Menus: move down (auto-repeat)."
+    bit: 0x4000
+    glyph: "<DD>"
+  - id: pad-d-pad-left
+    context: pad
+    input: "d-pad left"
+    action: "Menus: move left (auto-repeat)."
+    bit: 0x8000
+    glyph: "<DL>"
+  - id: pad-left-stick
+    context: pad
+    input: "left stick"
+    action: "On foot: move; speed follows the deflection. Menus: move past half deflection."
+    glyph: "<LAS>"
+  - id: pad-right-stick
+    context: pad
+    input: "right stick"
+    glyph: "<RAS>"

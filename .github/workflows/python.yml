@@ -37,3 +37,5 @@ jobs:
       - run: uv run --project python coney-tools natives render --check
       # Their Coney status must match Coney's binding table (src/scripting/script_bindings.cpp).
       - run: uv run --project python coney-tools natives coney --check
+      # The game reference pages must match their lists (research/references/).
+      - run: uv run --project python coney-tools refs render --check

@@ -1,0 +1,556 @@
+# Character models: a Coney game reference list. The page docs/references/character-models.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Character models"
+about: |
+  The Character List in `warriors.glr`: one record per character model, naming its model, texture
+  dictionary and character data (animations) by hash ([Characters](../research/characters.md#files)). A
+  `<model>_a` record is the variant used in levels 60-64.
+complete: |
+  Every record (543) is listed. Names are recovered by hashing candidate strings; a record
+  without a name has none of its candidates on the disc yet.
+defaults: {source: "warriors.glr, Character List (chunk 0x44)", evidence: confirmed-code}
+entries:
+  - {index: 0, crc: 0x072c630f, name: bopp_bo, data: bopp_bo_header, data_crc: 0x768fb8e3, geo_crc: 0x8f926544, tex_crc: 0x1221fdaa, data_size: 134304, geo_size: 93568, tex_size: 66992, types: [128]}
+  - {index: 433, crc: 0x156c29ab, name: bopp_bo_a, data: bopp_bo_header, data_crc: 0x768fb8e3, geo_crc: 0x8f926544, tex_crc: 0xaee545a3, data_size: 134304, geo_size: 93568, tex_size: 66992}
+  - {index: 2, crc: 0x8aee5b17, name: bopp_fa1, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0xc7317ca3, data_size: 136640, geo_size: 105120, tex_size: 66992, types: [313, 314]}
+  - {index: 1, crc: 0x13ca876d, name: bopp_lt, data: bopp_lt_header, data_crc: 0x9f9c4e0c, geo_crc: 0xa2a8a2a7, tex_crc: 0x3f1b3a49, data_size: 157232, geo_size: 94400, tex_size: 17840, types: [129]}
+  - {index: 434, crc: 0xe5c01209, name: bopp_lt_a, data: bopp_lt_header, data_crc: 0x9f9c4e0c, geo_crc: 0xa2a8a2a7, tex_crc: 0xdeb69fa5, data_size: 157232, geo_size: 94400, tex_size: 17840}
+  - {index: 3, crc: 0x06b75f78, name: bopp_so1a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x70dc76e8, tex_crc: 0xd6eb9810, data_size: 2126704, geo_size: 91296, tex_size: 17840, types: [130]}
+  - {index: 435, crc: 0x5a7dbb86, name: bopp_so1a_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x70dc76e8, tex_crc: 0x8d17528c, data_size: 2126704, geo_size: 91296, tex_size: 17856}
+  - {index: 4, crc: 0x9fbe0ec2, name: bopp_so1b, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x70dc76e8, tex_crc: 0x914be2c0, data_size: 2126704, geo_size: 91296, tex_size: 17840, types: [131]}
+  - {index: 5, crc: 0xe8b93e54, name: bopp_so1c, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x70dc76e8, tex_crc: 0xac2bcb70, data_size: 2126704, geo_size: 91296, tex_size: 17840, types: [132]}
+  - {index: 6, crc: 0x76ddabf7, name: bopp_so1d, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x70dc76e8, tex_crc: 0x1e0b1760, data_size: 2126704, geo_size: 91296, tex_size: 17840, types: [133]}
+  - {index: 7, crc: 0x2d9a0cbb, name: bopp_so2a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x377c0c38, tex_crc: 0xaacf94d6, data_size: 2126704, geo_size: 93568, tex_size: 17840, types: [134]}
+  - {index: 436, crc: 0x48c81468, name: bopp_so2a_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x377c0c38, tex_crc: 0x1901124b, data_size: 2126704, geo_size: 93568, tex_size: 17856}
+  - {index: 8, crc: 0x190060f4, name: char_db1, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0xa975e4d8, data_size: 136640, geo_size: 105120, tex_size: 66992, types: [268]}
+  - {index: 9, crc: 0x8009314e, name: char_db2, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0x61956ba8, data_size: 136640, geo_size: 105120, tex_size: 66992, types: [269]}
+  - {index: 10, crc: 0xe48da58f, name: char_lcgf, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0xe4459f09, data_size: 136640, geo_size: 105120, tex_size: 66992, types: [205]}
+  - {index: 11, crc: 0xb5afb6d3, name: char_lcgf_vest, data_crc: 0xa444878b, geo_crc: 0x5d938d96, tex_crc: 0xc0201578, data_size: 136640, geo_size: 119040, tex_size: 67008, types: [206]}
+  - {index: 12, crc: 0xedb49427, name: char_wheels, data: turn_bd_header, data_crc: 0x2b7662c1, geo_crc: 0xc94a4063, tex_crc: 0x3e6b145a, data_size: 39200, geo_size: 146016, tex_size: 66992, types: [97, 459]}
+  - {index: 13, crc: 0x14b92786, name: civl_abe, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb8d99030, tex_crc: 0x7d6b1e86, data_size: 2126704, geo_size: 91792, tex_size: 66992, types: [121]}
+  - {index: 14, crc: 0x9497b4fd, name: civl_bm_va1, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0xd8f472d1, tex_crc: 0xd8bfb5be, data_size: 96512, geo_size: 85824, tex_size: 17840, types: [270, 285]}
+  - {index: 15, crc: 0x0d9ee547, name: civl_bm_va2, data_crc: 0xcfef81a4, geo_crc: 0xd8f472d1, tex_crc: 0x9f1fcf6e, data_size: 98560, geo_size: 85824, tex_size: 17840, types: [271, 282]}
+  - {index: 16, crc: 0xbfbae73e, name: civl_bm_vb1, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0xb8d99030, tex_crc: 0x5e2bc710, data_size: 96512, geo_size: 91792, tex_size: 17840, types: [272]}
+  - {index: 25, crc: 0x420248fb, name: civl_bm_vb11, data_crc: 0xcfef81a4, geo_crc: 0xb8d99030, tex_crc: 0x228c6968, data_size: 98560, geo_size: 91792, tex_size: 17856, types: [281, 287]}
+  - {index: 17, crc: 0x26b3b684, name: civl_bm_vb2, data_crc: 0xcfef81a4, geo_crc: 0xb8d99030, tex_crc: 0x198bbdc0, data_size: 98560, geo_size: 91792, tex_size: 17840, types: [273, 286]}
+  - {index: 18, crc: 0x51b48612, name: civl_bm_vb3, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0xb8d99030, tex_crc: 0x24eb9470, data_size: 96512, geo_size: 91792, tex_size: 17840, types: [274]}
+  - {index: 19, crc: 0xcfd013b1, name: civl_bm_vb4, data_crc: 0xcfef81a4, geo_crc: 0xb8d99030, tex_crc: 0x96cb4860, data_size: 98560, geo_size: 91792, tex_size: 17840, types: [275]}
+  - {index: 20, crc: 0xb8d72327, name: civl_bm_vb5, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0xb8d99030, tex_crc: 0xabab61d0, data_size: 96512, geo_size: 91792, tex_size: 17840, types: [276, 283]}
+  - {index: 21, crc: 0x21de729d, name: civl_bm_vb6, data_crc: 0xcfef81a4, geo_crc: 0xb8d99030, tex_crc: 0xec0b1b00, data_size: 98560, geo_size: 91792, tex_size: 17840, types: [277]}
+  - {index: 22, crc: 0x56d9420b, name: civl_bm_vb7, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0xb8d99030, tex_crc: 0xd16b32b0, data_size: 96512, geo_size: 91792, tex_size: 17840, types: [278]}
+  - {index: 23, crc: 0xc6665f9a, name: civl_bm_vb8, data_crc: 0xcfef81a4, geo_crc: 0xb8d99030, tex_crc: 0x533ba561, data_size: 98560, geo_size: 91792, tex_size: 17840, types: [279, 284]}
+  - {index: 24, crc: 0xb1616f0c, name: civl_bm_vb9, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0xb8d99030, tex_crc: 0x6e5b8cd1, data_size: 96512, geo_size: 91792, tex_size: 17840, types: [280]}
+  - {index: 26, crc: 0xcf116d5d, name: civl_bn_fa1, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0x86ec15b5, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [368]}
+  - {index: 27, crc: 0x56183ce7, name: civl_bn_fa2, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0xc14c6f65, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [369]}
+  - {index: 28, crc: 0x211f0c71, name: civl_bn_fa3, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0xfc2c46d5, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [370]}
+  - {index: 29, crc: 0xbf7b99d2, name: civl_bn_fa4, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0x4e0c9ac5, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [371]}
+  - {index: 30, crc: 0xc34482bc, name: civl_bn_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x84eb414f, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [372, 377]}
+  - {index: 31, crc: 0x5a4dd306, name: civl_bn_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xc34b3b9f, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [373, 378]}
+  - {index: 32, crc: 0x2d4ae390, name: civl_bn_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xfe2b122f, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [374, 379]}
+  - {index: 33, crc: 0xb32e7633, name: civl_bn_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x4c0bce3f, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [375]}
+  - {index: 34, crc: 0xe869d17f, name: civl_bn_mb1, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0xb8d99030, tex_crc: 0x027f33e1, data_size: 96512, geo_size: 91792, tex_size: 17840, types: [376]}
+  - {index: 35, crc: 0x6661b9e5, name: civl_bt1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9c8dc0e0, tex_crc: 0x3763b630, data_size: 2126704, geo_size: 87456, tex_size: 67008, types: [343]}
+  - {index: 36, crc: 0x65f232c3, name: civl_ch, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb8d99030, tex_crc: 0xffc30076, data_size: 2126704, geo_size: 91792, tex_size: 66992, types: [303, 455]}
+  - {index: 82, crc: 0x1da31044, name: civl_co_di, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x49fa8961, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [291, 441]}
+  - {index: 83, crc: 0xf4c0b571, name: civl_co_do, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xc6ba7cc1, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [292]}
+  - {index: 80, crc: 0x48d88717, name: civl_co_ic, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x22671af0, tex_crc: 0xbfd4821e, data_size: 2126704, geo_size: 102864, tex_size: 17840, types: [289]}
+  - {index: 437, crc: 0x3010d867, name: civl_co_ic_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x22671af0, tex_crc: 0xeef6ef47, data_size: 2126704, geo_size: 102864, tex_size: 17856}
+  - {index: 37, crc: 0x7bfb8459, name: civl_co_lf1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xc720053e, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [300]}
+  - {index: 38, crc: 0xe2f2d5e3, name: civl_co_lf2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x80807fee, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [301]}
+  - {index: 39, crc: 0x95f5e575, name: civl_co_lf3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xbde0565e, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [302]}
+  - {index: 40, crc: 0x357878a9, name: civl_co_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x7c523e32, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [417]}
+  - {index: 41, crc: 0xac712913, name: civl_co_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x3bf244e2, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [418]}
+  - {index: 42, crc: 0xdb761985, name: civl_co_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x06926d52, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [419]}
+  - {index: 43, crc: 0x45128c26, name: civl_co_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xb4b2b142, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [420]}
+  - {index: 44, crc: 0x3215bcb0, name: civl_co_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x89d298f2, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [421]}
+  - {index: 81, crc: 0x6f27a444, name: civl_co_sh, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x6a4992f2, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [290]}
+  - {index: 45, crc: 0xaaeab1d4, name: civl_csg, data_crc: 0xa444878b, geo_crc: 0xd02e8bd6, tex_crc: 0x58be8df1, data_size: 136640, geo_size: 98352, tex_size: 17840, types: [306]}
+  - {index: 46, crc: 0x0719dd81, name: civl_ct_ac, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb8d99030, tex_crc: 0x72562d0e, data_size: 2126704, geo_size: 91792, tex_size: 66992, types: [415]}
+  - {index: 53, crc: 0xd2391bba, name: civl_ct_ck1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xa363baa5, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [411]}
+  - {index: 438, crc: 0xd2005f4d, name: civl_ct_ck1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xc1c53c1d, data_size: 2126704, geo_size: 85824, tex_size: 17856}
+  - {index: 54, crc: 0x4b304a00, name: civl_ct_ck2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xe4c3c075, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [412]}
+  - {index: 55, crc: 0x3c377a96, name: civl_ct_ck3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xd9a3e9c5, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [413]}
+  - {index: 47, crc: 0x14722813, name: civl_ct_eb, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xd4a746a8, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [414]}
+  - {index: 56, crc: 0x2e1d31db, name: civl_ct_fa1, data_crc: 0xa444878b, geo_crc: 0x8820d638, tex_crc: 0x50c0b664, data_size: 136640, geo_size: 101872, tex_size: 17840, types: [402]}
+  - {index: 439, crc: 0x755d3059, name: civl_ct_fa1_a, data_crc: 0xa444878b, geo_crc: 0x8820d638, tex_crc: 0x1a92659a, data_size: 136640, geo_size: 101872, tex_size: 17856}
+  - {index: 57, crc: 0xb7146061, name: civl_ct_fa2, data_crc: 0xa444878b, geo_crc: 0x8820d638, tex_crc: 0x1760ccb4, data_size: 136640, geo_size: 101872, tex_size: 17840, types: [404]}
+  - {index: 58, crc: 0xc01350f7, name: civl_ct_fa3, data_crc: 0xa444878b, geo_crc: 0x8820d638, tex_crc: 0x2a00e504, data_size: 136640, geo_size: 101872, tex_size: 17840, types: [406]}
+  - {index: 59, crc: 0x5e77c554, name: civl_ct_fa4, data_crc: 0xa444878b, geo_crc: 0x8820d638, tex_crc: 0x98203914, data_size: 136640, geo_size: 101872, tex_size: 17840, types: [408]}
+  - {index: 48, crc: 0x2248de3a, name: civl_ct_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x52c7e29e, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [118, 403]}
+  - {index: 440, crc: 0x028d0148, name: civl_ct_ma1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x98c7fb47, data_size: 2126704, geo_size: 85824, tex_size: 17856}
+  - {index: 49, crc: 0xbb418f80, name: civl_ct_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x1567984e, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [405]}
+  - {index: 50, crc: 0xcc46bf16, name: civl_ct_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x2807b1fe, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [407]}
+  - {index: 51, crc: 0x52222ab5, name: civl_ct_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x9a276dee, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [409]}
+  - {index: 52, crc: 0x25251a23, name: civl_ct_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xa747445e, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [410]}
+  - {index: 60, crc: 0x65e8a4ea, name: civl_cw_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x6b4ade5b, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [296]}
+  - {index: 61, crc: 0xfce1f550, name: civl_cw_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x2ceaa48b, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [297]}
+  - {index: 62, crc: 0x4ec5f729, name: civl_cw_mb1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb8d99030, tex_crc: 0xeddeacf5, data_size: 2126704, geo_size: 91792, tex_size: 17840, types: [298]}
+  - {index: 63, crc: 0xd7cca693, name: civl_cw_mb2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb8d99030, tex_crc: 0xaa7ed625, data_size: 2126704, geo_size: 91792, tex_size: 17840, types: [299]}
+  - {index: 64, crc: 0xb00d1b22, name: civl_dr_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xc301806d, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [426]}
+  - {index: 65, crc: 0x29044a98, name: civl_dr_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x84a1fabd, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [427]}
+  - {index: 66, crc: 0x5e037a0e, name: civl_dr_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xb9c1d30d, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [429]}
+  - {index: 67, crc: 0xc067efad, name: civl_dr_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x0be10f1d, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [428]}
+  - {index: 68, crc: 0xb760df3b, name: civl_dr_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x368126ad, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [430]}
+  - {index: 69, crc: 0x5d54a845, name: civl_eh_fa1, data_crc: 0xa444878b, geo_crc: 0xd02e8bd6, tex_crc: 0x172a7746, data_size: 136640, geo_size: 98352, tex_size: 17840, types: [380]}
+  - {index: 70, crc: 0xc45df9ff, name: civl_eh_fa2, data_crc: 0xa444878b, geo_crc: 0xd02e8bd6, tex_crc: 0x508a0d96, data_size: 136640, geo_size: 98352, tex_size: 17840, types: [381]}
+  - {index: 71, crc: 0xb35ac969, name: civl_eh_fa3, data_crc: 0xa444878b, geo_crc: 0xd02e8bd6, tex_crc: 0x6dea2426, data_size: 136640, geo_size: 98352, tex_size: 17840, types: [382]}
+  - {index: 72, crc: 0x510147a4, name: civl_eh_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x152d23bc, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [383]}
+  - {index: 73, crc: 0xc808161e, name: civl_eh_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x528d596c, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [384]}
+  - {index: 74, crc: 0xbf0f2688, name: civl_eh_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x6fed70dc, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [385]}
+  - {index: 75, crc: 0x216bb32b, name: civl_eh_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xddcdaccc, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [386]}
+  - {index: 76, crc: 0x566c83bd, name: civl_eh_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xe0ad857c, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [387]}
+  - {index: 84, crc: 0x97a9c263, name: civl_gc_bt, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb8d99030, tex_crc: 0x0d907d0c, data_size: 2126704, geo_size: 91792, tex_size: 17840, types: [321]}
+  - {index: 77, crc: 0x9897a67d, name: civl_gk, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xbe41a05e, tex_crc: 0x23f238b0, data_size: 2126704, geo_size: 98928, tex_size: 17840, types: [288]}
+  - {index: 78, crc: 0xb6742be8, name: civl_gypsy, data_crc: 0xa444878b, geo_crc: 0x41791f6a, tex_crc: 0xe9040c15, data_size: 136640, geo_size: 106336, tex_size: 17840, types: [312]}
+  - {index: 79, crc: 0x8fb0a723, name: civl_hd, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x50f41db4, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [315]}
+  - {index: 448, crc: 0xb054cc30, name: civl_hd_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xdaaedad1, data_size: 2126704, geo_size: 85824, tex_size: 17840}
+  - {index: 85, crc: 0x4b2cf0fb, name: civl_hl_b1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xea1b1f7a, tex_crc: 0x9b1a7748, data_size: 2126704, geo_size: 89760, tex_size: 17840, types: [293]}
+  - {index: 86, crc: 0xd225a141, name: civl_hl_b2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xea1b1f7a, tex_crc: 0xdcba0d98, data_size: 2126704, geo_size: 89760, tex_size: 17840, types: [294]}
+  - {index: 87, crc: 0xa52291d7, name: civl_hl_b3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xea1b1f7a, tex_crc: 0xe1da2428, data_size: 2126704, geo_size: 89760, tex_size: 17840, types: [295]}
+  - {index: 88, crc: 0x72acf415, name: civl_hl_br1, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0xce35f9dc, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [316]}
+  - {index: 449, crc: 0xcb2aa017, name: civl_hl_br1_a, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0xd0ed83de, data_size: 21856, geo_size: 93360, tex_size: 17856}
+  - {index: 89, crc: 0xeba5a5af, name: civl_hl_br2, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0x8995830c, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [317]}
+  - {index: 450, crc: 0xc96c1e4e, name: civl_hl_br2_a, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0xe1059943, data_size: 21856, geo_size: 93360, tex_size: 17856}
+  - {index: 90, crc: 0x9ca29539, name: civl_hl_br3, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0xb4f5aabc, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [318]}
+  - {index: 91, crc: 0x02c6009a, name: civl_hl_br4, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0x06d576ac, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [319]}
+  - {index: 92, crc: 0x75c1300c, name: civl_hl_br5, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0x3bb55f1c, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [320]}
+  - {index: 93, crc: 0xecc861b6, name: civl_hl_br6, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0x7c1525cc, data_size: 21856, geo_size: 93360, tex_size: 17840}
+  - {index: 111, crc: 0x24f65393, name: civl_hl_bt1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xe7e4438b, tex_crc: 0x186c1ac1, data_size: 2126704, geo_size: 90160, tex_size: 17840, types: [344]}
+  - {index: 112, crc: 0xbdff0229, name: civl_hl_bt2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xe7e4438b, tex_crc: 0x5fcc6011, data_size: 2126704, geo_size: 90160, tex_size: 17840, types: [345]}
+  - {index: 113, crc: 0xcaf832bf, name: civl_hl_bt3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa044395b, tex_crc: 0x62ac49a1, data_size: 2126704, geo_size: 93360, tex_size: 17840, types: [346]}
+  - {index: 114, crc: 0x549ca71c, name: civl_hl_bt4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa044395b, tex_crc: 0xd08c95b1, data_size: 2126704, geo_size: 93360, tex_size: 17840, types: [347]}
+  - {index: 115, crc: 0x239b978a, name: civl_hl_bt5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa044395b, tex_crc: 0xedecbc01, data_size: 2126704, geo_size: 93360, tex_size: 17840, types: [348, 349]}
+  - {index: 116, crc: 0xf43a10fe, name: civl_hl_dj1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xe7e4438b, tex_crc: 0x64cbaaf6, data_size: 2126704, geo_size: 90160, tex_size: 17840, types: [350]}
+  - {index: 441, crc: 0xd1c72ac7, name: civl_hl_dj1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xe7e4438b, tex_crc: 0x4de4e546, data_size: 2126704, geo_size: 90160, tex_size: 17856}
+  - {index: 94, crc: 0xbb7b8639, name: civl_hl_dm1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xea1b1f7a, tex_crc: 0x5f657ca8, data_size: 2126704, geo_size: 89760, tex_size: 17840, types: [322]}
+  - {index: 95, crc: 0x2272d783, name: civl_hl_dm2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xea1b1f7a, tex_crc: 0x18c50678, data_size: 2126704, geo_size: 89760, tex_size: 17840, types: [323]}
+  - {index: 101, crc: 0x3f674e98, name: civl_hl_fb1, data_crc: 0xa444878b, geo_crc: 0xf92e6fb0, tex_crc: 0x654453e6, data_size: 136640, geo_size: 108752, tex_size: 17840, types: [329]}
+  - {index: 102, crc: 0xa66e1f22, name: civl_hl_fb2, data_crc: 0xa444878b, geo_crc: 0xf92e6fb0, tex_crc: 0x22e42936, data_size: 136640, geo_size: 108752, tex_size: 17840, types: [330]}
+  - {index: 106, crc: 0x267c7fd9, name: civl_hl_fc1, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0xf2f00cf1, data_size: 136640, geo_size: 99296, tex_size: 17840, types: [338]}
+  - {index: 442, crc: 0xd60f362d, name: civl_hl_fc1_a, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0x3d10e367, data_size: 136640, geo_size: 99296, tex_size: 17856}
+  - {index: 107, crc: 0xbf752e63, name: civl_hl_fc2, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0xb5507621, data_size: 136640, geo_size: 99296, tex_size: 17840, types: [339]}
+  - {index: 443, crc: 0xd4498874, name: civl_hl_fc2_a, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0x0cf8f9fa, data_size: 136640, geo_size: 99296, tex_size: 17856}
+  - {index: 108, crc: 0xc8721ef5, name: civl_hl_fc3, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0x88305f91, data_size: 136640, geo_size: 99296, tex_size: 17840, types: [340]}
+  - {index: 444, crc: 0xd58be243, name: civl_hl_fc3_a, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0xaa8ff24e, data_size: 136640, geo_size: 99296, tex_size: 17856}
+  - {index: 109, crc: 0x56168b56, name: civl_hl_fc4, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0x3a108381, data_size: 136640, geo_size: 99296, tex_size: 17840, types: [341]}
+  - {index: 445, crc: 0xd0c4f4c6, name: civl_hl_fc4_a, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0x6f28ccc0, data_size: 136640, geo_size: 99296, tex_size: 17856}
+  - {index: 110, crc: 0x2111bbc0, name: civl_hl_fc5, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0x0770aa31, data_size: 136640, geo_size: 99296, tex_size: 17840, types: [342]}
+  - {index: 103, crc: 0x80571ddf, name: civl_hl_ho1, data: hooker_header, data_crc: 0x19c5e38b, geo_crc: 0x7b97d71e, tex_crc: 0xd50db7d7, data_size: 137200, geo_size: 105120, tex_size: 17840, types: [331]}
+  - {index: 104, crc: 0x195e4c65, name: civl_hl_ho2, data: hooker_header, data_crc: 0x19c5e38b, geo_crc: 0x7b97d71e, tex_crc: 0x92adcd07, data_size: 137200, geo_size: 105120, tex_size: 17840, types: [332, 335]}
+  - {index: 96, crc: 0x181ff2ba, name: civl_hl_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xcfec92b8, tex_crc: 0xbd3ff900, data_size: 2126704, geo_size: 96512, tex_size: 17840, types: [324]}
+  - {index: 446, crc: 0x0bd6cfb7, name: civl_hl_ma1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xcfec92b8, tex_crc: 0xfd607ac7, data_size: 2126704, geo_size: 96512, tex_size: 17856}
+  - {index: 97, crc: 0x8116a300, name: civl_hl_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xcfec92b8, tex_crc: 0xfa9f83d0, data_size: 2126704, geo_size: 96512, tex_size: 17840, types: [325]}
+  - {index: 98, crc: 0xf6119396, name: civl_hl_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xcfec92b8, tex_crc: 0xc7ffaa60, data_size: 2126704, geo_size: 96512, tex_size: 17840, types: [326]}
+  - {index: 447, crc: 0x08521bd9, name: civl_hl_ma3_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xcfec92b8, tex_crc: 0x6aff6bee, data_size: 2126704, geo_size: 96512, tex_size: 17856}
+  - {index: 99, crc: 0x68750635, name: civl_hl_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xcfec92b8, tex_crc: 0x75df7670, data_size: 2126704, geo_size: 96512, tex_size: 17840, types: [327]}
+  - {index: 100, crc: 0x1f7236a3, name: civl_hl_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xcfec92b8, tex_crc: 0x48bf5fc0, data_size: 2126704, geo_size: 96512, tex_size: 17840, types: [328]}
+  - {index: 117, crc: 0x6930ba14, name: civl_hl_st1a, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0xeed59e08, data_size: 136640, geo_size: 105120, tex_size: 17840, types: [353]}
+  - {index: 451, crc: 0x4355e65d, name: civl_hl_st1a_a, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0xe66f57de, data_size: 136640, geo_size: 105120, tex_size: 17856}
+  - {index: 118, crc: 0xf039ebae, name: civl_hl_st1b, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0x5cf54218, data_size: 136640, geo_size: 105120, tex_size: 17840, types: [354]}
+  - {index: 452, crc: 0x41135804, name: civl_hl_st1b_a, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0x23c86950, data_size: 136640, geo_size: 105120, tex_size: 17856}
+  - {index: 119, crc: 0x421de9d7, name: civl_hl_st2a, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0xd3b5b7b8, data_size: 136640, geo_size: 105120, tex_size: 17840, types: [355]}
+  - {index: 453, crc: 0x51e049b3, name: civl_hl_st2a_a, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0x40185c6a, data_size: 136640, geo_size: 105120, tex_size: 17856}
+  - {index: 120, crc: 0xdb14b86d, name: civl_hl_st2b, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0x1b5538c8, data_size: 136640, geo_size: 105120, tex_size: 17840, types: [356]}
+  - {index: 454, crc: 0x53a6f7ea, name: civl_hl_st2b_a, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0x122073cd, data_size: 136640, geo_size: 105120, tex_size: 17856}
+  - {index: 121, crc: 0x5b06d896, name: civl_hl_st3a, data_crc: 0xa444878b, geo_crc: 0x7b97d71e, tex_crc: 0x26351178, data_size: 136640, geo_size: 105120, tex_size: 17840, types: [357]}
+  - {index: 105, crc: 0xb8615506, name: civl_hl_tr, data_crc: 0xa444878b, geo_crc: 0xa52b627b, tex_crc: 0x51c6b457, data_size: 136640, geo_size: 99296, tex_size: 17840, types: [337]}
+  - {index: 122, crc: 0x69eca809, name: civl_hud, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x56f3d828, tex_crc: 0xcb4040c6, data_size: 2126704, geo_size: 85504, tex_size: 17840, types: [65, 244, 336, 352]}
+  - {index: 125, crc: 0x6512e48b, name: civl_monk1, data: sava_bo_header, data_crc: 0xf791d7a2, geo_crc: 0x886cd408, tex_crc: 0x7619caca, data_size: 87904, geo_size: 100064, tex_size: 17840, types: [114]}
+  - {index: 126, crc: 0xfc1bb531, name: civl_monk2, data: sava_bo_header, data_crc: 0xf791d7a2, geo_crc: 0x886cd408, tex_crc: 0x31b9b01a, data_size: 87904, geo_size: 100064, tex_size: 17840, types: [115]}
+  - {index: 123, crc: 0xf89b829a, name: civl_monk_bo1, data: sava_bo_header, data_crc: 0xf791d7a2, geo_crc: 0x886cd408, tex_crc: 0xb6198159, data_size: 87904, geo_size: 100064, tex_size: 17856, types: [116]}
+  - {index: 124, crc: 0x6192d320, name: civl_monk_bo2, data: sava_bo_header, data_crc: 0xf791d7a2, geo_crc: 0x886cd408, tex_crc: 0xf1b9fb89, data_size: 87904, geo_size: 100064, tex_size: 17856, types: [117]}
+  - {index: 129, crc: 0x73799da7, name: civl_pimp1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x36a92e7b, tex_crc: 0xb5008eae, data_size: 2126704, geo_size: 98096, tex_size: 17840, types: [442, 444]}
+  - {index: 130, crc: 0xea70cc1d, name: civl_pimp2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x36a92e7b, tex_crc: 0xf2a0f47e, data_size: 2126704, geo_size: 98096, tex_size: 17840, types: [443]}
+  - {index: 131, crc: 0xa2339b14, name: civl_pl_dr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x450856a5, data_size: 2126704, geo_size: 85824, tex_size: 17840}
+  - {index: 132, crc: 0xfbcf9dad, name: civl_pl_fa1, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0x8b416ce6, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [366]}
+  - {index: 133, crc: 0x62c6cc17, name: civl_pl_fa2, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0xcce11636, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [367]}
+  - {index: 134, crc: 0xf79a724c, name: civl_pl_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x8946381c, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [360]}
+  - {index: 135, crc: 0x6e9323f6, name: civl_pl_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xcee642cc, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [361]}
+  - {index: 136, crc: 0x19941360, name: civl_pl_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xf3866b7c, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [362]}
+  - {index: 138, crc: 0xf0f7b655, name: civl_pl_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x7cc69edc, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [363]}
+  - {index: 139, crc: 0x69fee7ef, name: civl_pl_ma6, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x3b66e40c, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [364]}
+  - {index: 141, crc: 0x8e46cae8, name: civl_pl_ma8, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x84565a6d, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [365]}
+  - {index: 143, crc: 0x019541b4, name: civl_pl_pm, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x3fff167b, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [445]}
+  - {index: 144, crc: 0x49be7eae, name: civl_pl_sp, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x211b37e6, data_size: 2126704, geo_size: 85824, tex_size: 17840}
+  - {index: 145, crc: 0xd6971a22, name: civl_pl_st1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xedbc4ca7, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [422]}
+  - {index: 146, crc: 0x4f9e4b98, name: civl_pl_st2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xaa1c3677, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [423]}
+  - {index: 147, crc: 0x38997b0e, name: civl_pl_st3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x977c1fc7, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [424]}
+  - {index: 148, crc: 0x400f5f41, name: civl_pl_we, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x128a6d02, data_size: 2126704, geo_size: 85824, tex_size: 17840}
+  - {index: 152, crc: 0xd4d8f1ee, name: civl_prom_fa, data_crc: 0xa444878b, geo_crc: 0x41791f6a, tex_crc: 0xed7f10be, data_size: 136640, geo_size: 106336, tex_size: 67008, types: [310]}
+  - {index: 153, crc: 0x4dd1a054, name: civl_prom_fb, data_crc: 0xa444878b, geo_crc: 0x41791f6a, tex_crc: 0xaadf6a6e, data_size: 136640, geo_size: 106336, tex_size: 67008, types: [311]}
+  - {index: 150, crc: 0x372c2825, name: civl_prom_ma, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x36a92e7b, tex_crc: 0x87b8e07d, data_size: 2126704, geo_size: 98096, tex_size: 67008, types: [308]}
+  - {index: 151, crc: 0xae25799f, name: civl_prom_mb, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x36a92e7b, tex_crc: 0xc0189aad, data_size: 2126704, geo_size: 98096, tex_size: 67008, types: [309]}
+  - {index: 154, crc: 0x54b73cf5, name: civl_rs_fa1, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0xfccd317b, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [451]}
+  - {index: 155, crc: 0xcdbe6d4f, name: civl_rs_fa2, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0xbb6d4bab, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [452]}
+  - {index: 156, crc: 0xbab95dd9, name: civl_rs_fa3, data_crc: 0xa444878b, geo_crc: 0x7220ef98, tex_crc: 0x860d621b, data_size: 136640, geo_size: 103232, tex_size: 17840, types: [453]}
+  - {index: 157, crc: 0x58e2d314, name: civl_rs_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xfeca6581, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [446]}
+  - {index: 158, crc: 0xc1eb82ae, name: civl_rs_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xb96a1f51, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [447]}
+  - {index: 159, crc: 0xb6ecb238, name: civl_rs_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x840a36e1, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [448]}
+  - {index: 160, crc: 0x2888279b, name: civl_rs_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x362aeaf1, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [449]}
+  - {index: 161, crc: 0x5f8f170d, name: civl_rs_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x0b4ac341, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [450]}
+  - {index: 162, crc: 0xd3a6430e, name: civl_scps, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xd202ba23, data_size: 2126704, geo_size: 85824, tex_size: 66992, types: [425]}
+  - {index: 127, crc: 0x1a6a3130, name: civl_sg1, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0x7807c3a7, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [265, 358]}
+  - {index: 128, crc: 0x8363608a, name: civl_sg2, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0xca271fb7, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [359]}
+  - {index: 163, crc: 0xd5398bef, name: civl_sk_pe, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x3cc76866, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [304, 456]}
+  - {index: 164, crc: 0xffbbb1ce, name: civl_sp_ju, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xdfbbf364, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [307]}
+  - {index: 165, crc: 0xd41e7a61, name: civl_sp_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x2885327a, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [432]}
+  - {index: 170, crc: 0xd41e7a61, name: civl_sp_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x2885327a, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [432]}
+  - {index: 171, crc: 0xd41e7a61, name: civl_sp_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x2885327a, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [432]}
+  - {index: 166, crc: 0x4d172bdb, name: civl_sp_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x6f2548aa, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [434]}
+  - {index: 167, crc: 0x3a101b4d, name: civl_sp_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x5245611a, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [433]}
+  - {index: 168, crc: 0xa4748eee, name: civl_sp_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xe065bd0a, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [435]}
+  - {index: 169, crc: 0xd373be78, name: civl_sp_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xdd0594ba, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [431]}
+  - {index: 172, crc: 0x3b317cdd, name: civl_st, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xc4b6e080, tex_crc: 0x5905786e, data_size: 2126704, geo_size: 100720, tex_size: 17840, types: [416, 454]}
+  - {index: 175, crc: 0xd85e7f30, name: civl_tr_cw, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xa4309b78, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [388]}
+  - {index: 176, crc: 0xbf8ef658, name: civl_tr_fa1, data_crc: 0xa444878b, geo_crc: 0xd02e8bd6, tex_crc: 0xe6a8557f, data_size: 136640, geo_size: 98352, tex_size: 17840, types: [389]}
+  - {index: 177, crc: 0x2687a7e2, name: civl_tr_fa2, data_crc: 0xa444878b, geo_crc: 0xd02e8bd6, tex_crc: 0xa1082faf, data_size: 136640, geo_size: 98352, tex_size: 66992, types: [390]}
+  - {index: 178, crc: 0x51809774, name: civl_tr_fa3, data_crc: 0xa444878b, geo_crc: 0xd02e8bd6, tex_crc: 0x9c68061f, data_size: 136640, geo_size: 98352, tex_size: 17840, types: [391]}
+  - {index: 179, crc: 0xcfe402d7, name: civl_tr_fa4, data_crc: 0xa444878b, geo_crc: 0xd02e8bd6, tex_crc: 0x2e48da0f, data_size: 136640, geo_size: 98352, tex_size: 17840, types: [392]}
+  - {index: 180, crc: 0xb3db19b9, name: civl_tr_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xe4af0185, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [393, 398]}
+  - {index: 181, crc: 0x2ad24803, name: civl_tr_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xa30f7b55, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [394]}
+  - {index: 182, crc: 0x5dd57895, name: civl_tr_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x9e6f52e5, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [395, 399]}
+  - {index: 183, crc: 0xc3b1ed36, name: civl_tr_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x2c4f8ef5, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [396, 400]}
+  - {index: 184, crc: 0xb4b6dda0, name: civl_tr_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x112fa745, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [397, 401]}
+  - {index: 185, crc: 0xed79bba0, name: civl_tw, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x03a03206, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [305, 457]}
+  - {index: 186, crc: 0xe78f2085, name: civl_we_ma1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xc739953e, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [437]}
+  - {index: 187, crc: 0x7e86713f, name: civl_we_ma2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x8099efee, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [436]}
+  - {index: 188, crc: 0x098141a9, name: civl_we_ma3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xbdf9c65e, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [438]}
+  - {index: 189, crc: 0x97e5d40a, name: civl_we_ma4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x0fd91a4e, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [439]}
+  - {index: 190, crc: 0xe0e2e49c, name: civl_we_ma5, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x32b933fe, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [440]}
+  - {index: 205, crc: 0x0ab86664, name: cops_ia1, data_crc: 0x96c43edb, geo_crc: 0x1564f3c5, tex_crc: 0xfdf57c67, data_size: 21856, geo_size: 96864, tex_size: 66992, types: [261]}
+  - {index: 206, crc: 0x93b137de, name: cops_ia2, data_crc: 0x96c43edb, geo_crc: 0x1564f3c5, tex_crc: 0xba5506b7, data_size: 21856, geo_size: 96864, tex_size: 66992, types: [262]}
+  - {index: 191, crc: 0x0fe74e73, name: cops_ty_va1, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0x2588b18a, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [245, 249]}
+  - {index: 192, crc: 0x96ee1fc9, name: cops_ty_va2, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0x6228cb5a, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [246, 250]}
+  - {index: 193, crc: 0x24ca1db0, name: cops_ty_vb1, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0xa31cc324, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [247, 251]}
+  - {index: 194, crc: 0xbdc34c0a, name: cops_ty_vb2, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0xe4bcb9f4, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [248, 252]}
+  - {index: 204, crc: 0x2db25ef2, name: cops_uc1, data_crc: 0xa444878b, geo_crc: 0x1bb06245, tex_crc: 0x8603faab, data_size: 136640, geo_size: 95392, tex_size: 66992, types: [260]}
+  - {index: 195, crc: 0x1dc28229, name: cops_va1, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0x02c790c7, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [253]}
+  - {index: 196, crc: 0x84cbd393, name: cops_va2, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0x4567ea17, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [254]}
+  - {index: 197, crc: 0xf3cce305, name: cops_va3, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0xf7473607, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [255]}
+  - {index: 198, crc: 0x36efd1ea, name: cops_vb1, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0x8453e269, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [256, 266]}
+  - {index: 199, crc: 0xafe68050, name: cops_vb2, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0xc3f398b9, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [257]}
+  - {index: 200, crc: 0xd8e1b0c6, name: cops_vb3, data_crc: 0x96c43edb, geo_crc: 0xa044395b, tex_crc: 0xfe93b109, data_size: 21856, geo_size: 93360, tex_size: 17840, types: [258]}
+  - {index: 201, crc: 0x2ff4e0ab, name: cops_vc1, data_crc: 0x96c43edb, geo_crc: 0x9d2410eb, tex_crc: 0x4f0f31cc, data_size: 21856, geo_size: 94656, tex_size: 17840, types: [259, 267]}
+  - {index: 202, crc: 0x60b5766c, name: cops_vd1, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0x520a0174, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [263]}
+  - {index: 203, crc: 0xf9bc27d6, name: cops_vd2, data_crc: 0x96c43edb, geo_crc: 0xe7e4438b, tex_crc: 0x15aa7ba4, data_size: 21856, geo_size: 90160, tex_size: 17840, types: [264]}
+  - {index: 207, crc: 0x0da598d4, name: dest_bo, data: dest_bo_header, data_crc: 0x73553401, geo_crc: 0xcdc20df1, tex_crc: 0x5071951f, data_size: 104064, geo_size: 99232, tex_size: 66992, types: [178]}
+  - {index: 455, crc: 0x5dcf1462, name: dest_bo_a, data: dest_bo_header, data_crc: 0x73553401, geo_crc: 0xcdc20df1, tex_crc: 0x743eb464, data_size: 104064, geo_size: 99232, tex_size: 66992}
+  - {index: 208, crc: 0x95803202, name: dest_bo_tg, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0xcdc20df1, tex_crc: 0x9186607d, data_size: 75616, geo_size: 99232, tex_size: 66992, types: [179]}
+  - {index: 210, crc: 0x8db7f82f, name: dest_cl, data: warr_cl_header, data_crc: 0x43dbd2ac, geo_crc: 0x413ea484, tex_crc: 0xdc8d3c6a, data_size: 214608, geo_size: 100720, tex_size: 66992, types: [189]}
+  - {index: 217, crc: 0x1bb21614, name: dest_le_bare, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0xa173e4ba, tex_crc: 0x3cc07c54, data_size: 75616, geo_size: 98496, tex_size: 67008, types: [187]}
+  - {index: 211, crc: 0x19437cb6, name: dest_lt, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x32a680da, tex_crc: 0x7d4b52fc, data_size: 75616, geo_size: 95568, tex_size: 17840, types: [180, 207]}
+  - {index: 215, crc: 0x5f3e8806, name: dest_lt_be, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x4a69bc9a, tex_crc: 0xd7da2474, data_size: 75616, geo_size: 98352, tex_size: 66992, types: [185, 213]}
+  - {index: 456, crc: 0xf376f100, name: dest_lt_be_a, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x4a69bc9a, tex_crc: 0x4e5102b9, data_size: 75616, geo_size: 98352, tex_size: 67008}
+  - {index: 229, crc: 0x2602e54b, name: dest_lt_hr, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x32a680da, tex_crc: 0xa4814c80, data_size: 75616, geo_size: 95568, tex_size: 66992, types: [181]}
+  - {index: 216, crc: 0xc1bda588, name: dest_lt_le, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x7063ddea, tex_crc: 0xedd04504, data_size: 75616, geo_size: 98608, tex_size: 66992, types: [186, 212]}
+  - {index: 457, crc: 0x13a98633, name: dest_lt_le_a, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x7063ddea, tex_crc: 0x5bdb108b, data_size: 75616, geo_size: 98608, tex_size: 67008}
+  - {index: 212, crc: 0x1d96cabe, name: dest_lt_v1, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x32a680da, tex_crc: 0x820e0df2, data_size: 75616, geo_size: 95568, tex_size: 17840, types: [182]}
+  - {index: 213, crc: 0x849f9b04, name: dest_lt_v2, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x32a680da, tex_crc: 0xc5ae7722, data_size: 75616, geo_size: 95568, tex_size: 17840, types: [183]}
+  - {index: 458, crc: 0x45fe09fd, name: dest_lt_v2_a, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x32a680da, tex_crc: 0x50d2ea51, data_size: 75616, geo_size: 95568, tex_size: 17856}
+  - {index: 214, crc: 0xf398ab92, name: dest_lt_v3, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x32a680da, tex_crc: 0xf8ce5e92, data_size: 75616, geo_size: 95568, tex_size: 17840, types: [184]}
+  - {index: 219, crc: 0x4e1462b1, name: dest_so1a, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0x98eac1c8, data_size: 39552, geo_size: 95568, tex_size: 17840, types: [192, 208]}
+  - {index: 459, crc: 0x182dd333, name: dest_so1a_a, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0xd641baca, data_size: 39552, geo_size: 95568, tex_size: 17856}
+  - {index: 224, crc: 0x7713fa9f, name: dest_so1a_drnk, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0x32a680da, tex_crc: 0x98eac1c8, data_size: 96512, geo_size: 95568, tex_size: 17840, types: [201]}
+  - {index: 230, crc: 0x02030811, name: dest_so1a_hr, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0x7c5e4b8e, data_size: 39552, geo_size: 95568, tex_size: 67008, types: [193]}
+  - {index: 220, crc: 0xd71d330b, name: dest_so1b, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0xdf4abb18, data_size: 39552, geo_size: 95568, tex_size: 17840, types: [194, 209]}
+  - {index: 225, crc: 0xf1878831, name: dest_so1b_drnk, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0x32a680da, tex_crc: 0xdf4abb18, data_size: 96512, geo_size: 95568, tex_size: 17840, types: [202]}
+  - {index: 231, crc: 0x10b6a7ff, name: dest_so1b_hr, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0xf2d14c6d, data_size: 39552, geo_size: 95568, tex_size: 67008, types: [195]}
+  - {index: 221, crc: 0xa01a039d, name: dest_so1c, data_crc: 0x0d30d95b, geo_crc: 0x7506fa0a, tex_crc: 0xe22a92a8, data_size: 39552, geo_size: 92032, tex_size: 66992, types: [196]}
+  - {index: 460, crc: 0x1ba9075d, name: dest_so1c_a, data_crc: 0x0d30d95b, geo_crc: 0x7506fa0a, tex_crc: 0x41deabe3, data_size: 39552, geo_size: 92032, tex_size: 67008}
+  - {index: 222, crc: 0x65393172, name: dest_so2a, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0x1e7eb366, data_size: 39552, geo_size: 95568, tex_size: 17840, types: [197, 210]}
+  - {index: 461, crc: 0x0a987cdd, name: dest_so2a_a, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0x58cebd29, data_size: 39552, geo_size: 95568, tex_size: 17856}
+  - {index: 226, crc: 0x46fbe002, name: dest_so2a_drnk, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0x32a680da, tex_crc: 0x1e7eb366, data_size: 96512, geo_size: 95568, tex_size: 17840, types: [204]}
+  - {index: 232, crc: 0x45a372c1, name: dest_so2a_hr, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0x45d3774b, data_size: 39552, geo_size: 95568, tex_size: 67008, types: [198]}
+  - {index: 223, crc: 0xfc3060c8, name: dest_so2b, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0x59dec9b6, data_size: 39552, geo_size: 95568, tex_size: 17840, types: [199, 211]}
+  - {index: 227, crc: 0xc06f92ac, name: dest_so2b_drnk, data: civl_bm_header, data_crc: 0x429172d9, geo_crc: 0x32a680da, tex_crc: 0x59dec9b6, data_size: 96512, geo_size: 95568, tex_size: 17840, types: [203]}
+  - {index: 233, crc: 0x5716dd2f, name: dest_so2b_hr, data_crc: 0x0d30d95b, geo_crc: 0x32a680da, tex_crc: 0xcb5c70a8, data_size: 39552, geo_size: 95568, tex_size: 67008, types: [200]}
+  - {index: 228, crc: 0xc3dea69f, name: dest_ve, data: warr_ve_header, data_crc: 0xbac3ceb9, geo_crc: 0xf0de4aa9, tex_crc: 0x8286cd33, data_size: 217296, geo_size: 110544, tex_size: 66992, types: [191]}
+  - {index: 234, crc: 0xed2f341a, name: dj, data_crc: 0xa444878b, geo_crc: 0xea54a279, tex_crc: 0x77e73a97, data_size: 136640, geo_size: 74272, tex_size: 66992, types: [351]}
+  - {index: 235, crc: 0xaeb3cfac, name: elec_bo, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x59fdfa32, tex_crc: 0xc44e62dc, data_size: 2126704, geo_size: 99312, tex_size: 66992, types: [172]}
+  - {index: 462, crc: 0x4f2680dd, name: elec_bo_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x59fdfa32, tex_crc: 0xb730c369, data_size: 2126704, geo_size: 99312, tex_size: 66992}
+  - {index: 236, crc: 0xba552bce, name: elec_lt, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x74c73dd1, tex_crc: 0xe974a53f, data_size: 2126704, geo_size: 102080, tex_size: 17840, types: [173]}
+  - {index: 463, crc: 0xbf8abb7f, name: elec_lt_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x74c73dd1, tex_crc: 0xc763196f, data_size: 2126704, geo_size: 102080, tex_size: 17840}
+  - {index: 237, crc: 0x41f67afc, name: elec_so1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x91772b0c, tex_crc: 0x716d152c, data_size: 2126704, geo_size: 101600, tex_size: 17840, types: [174]}
+  - {index: 464, crc: 0x4e9675cf, name: elec_so1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x91772b0c, tex_crc: 0x6ded7368, data_size: 2126704, geo_size: 101600, tex_size: 17840}
+  - {index: 238, crc: 0xd8ff2b46, name: elec_so2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x91772b0c, tex_crc: 0x36cd6ffc, data_size: 2126704, geo_size: 101600, tex_size: 17840, types: [175]}
+  - {index: 465, crc: 0x4cd0cb96, name: elec_so2_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x91772b0c, tex_crc: 0x5c0569f5, data_size: 2126704, geo_size: 101600, tex_size: 17840}
+  - {index: 239, crc: 0xaff81bd0, name: elec_so3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x91772b0c, tex_crc: 0x0bad464c, data_size: 2126704, geo_size: 101600, tex_size: 17840, types: [176]}
+  - {index: 240, crc: 0x319c8e73, name: elec_so4, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x91772b0c, tex_crc: 0xb98d9a5c, data_size: 2126704, geo_size: 101600, tex_size: 17840, types: [177]}
+  - {index: 241, crc: 0x56e67a0b, name: fury_bo, data: fury_bo_header, data_crc: 0x760d571e, geo_crc: 0x3e7e344a, tex_crc: 0xa3cdaca4, data_size: 57616, geo_size: 100432, tex_size: 66992, types: [89]}
+  - {index: 466, crc: 0x156b15a5, name: fury_bo_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x3e7e344a, tex_crc: 0x2c0ab8a3, data_size: 2126704, geo_size: 100432, tex_size: 66992}
+  - {index: 242, crc: 0x42009e69, name: fury_lt, data: fury_lt_header, data_crc: 0x9f1ea1f1, geo_crc: 0xcd0b161a, tex_crc: 0x8ef76b47, data_size: 18096, geo_size: 99568, tex_size: 66992, types: [90]}
+  - {index: 467, crc: 0xe5c72e07, name: fury_lt_a, data: fury_lt_header, data_crc: 0x9f1ea1f1, geo_crc: 0xcd0b161a, tex_crc: 0x5c5962a5, data_size: 18096, geo_size: 99568, tex_size: 66992}
+  - {index: 243, crc: 0x09bc1902, name: fury_so1, data_crc: 0x312adcb1, geo_crc: 0xcd0b161a, tex_crc: 0x2fd46fec, data_size: 18096, geo_size: 99568, tex_size: 66992, types: [91]}
+  - {index: 468, crc: 0x1012c154, name: fury_so1_a, data_crc: 0x312adcb1, geo_crc: 0xcd0b161a, tex_crc: 0x16c762bd, data_size: 18096, geo_size: 99568, tex_size: 66992}
+  - {index: 244, crc: 0x90b548b8, name: fury_so2, data_crc: 0x312adcb1, geo_crc: 0xcd0b161a, tex_crc: 0x6874153c, data_size: 18096, geo_size: 99568, tex_size: 66992, types: [92, 95]}
+  - {index: 469, crc: 0x12547f0d, name: fury_so2_a, data_crc: 0x312adcb1, geo_crc: 0xcd0b161a, tex_crc: 0x272f7820, data_size: 18096, geo_size: 99568, tex_size: 66992}
+  - {index: 245, crc: 0xe7b2782e, name: fury_so3, data_crc: 0x312adcb1, geo_crc: 0xcd0b161a, tex_crc: 0x55143c8c, data_size: 18096, geo_size: 99568, tex_size: 66992, types: [93]}
+  - {index: 246, crc: 0x79d6ed8d, name: fury_so4, data_crc: 0x312adcb1, geo_crc: 0xcd0b161a, tex_crc: 0xe734e09c, data_size: 18096, geo_size: 99568, tex_size: 66992, types: [94]}
+  - {index: 247, crc: 0xcd3033e5, name: hiha_bo, data: hiha_bo_header, data_crc: 0x61313dac, geo_crc: 0xc72a9c5b, tex_crc: 0x5a9904b5, data_size: 144512, geo_size: 106016, tex_size: 66992, types: [135]}
+  - {index: 470, crc: 0xda96a925, name: hiha_bo_a, data: hiha_bo_header, data_crc: 0x61313dac, geo_crc: 0xc72a9c5b, tex_crc: 0xa7de493d, data_size: 144512, geo_size: 106016, tex_size: 66992}
+  - {index: 248, crc: 0xd9d6d787, name: hiha_lt, data: hiha_lt_header, data_crc: 0x8822cb43, geo_crc: 0xea105bb8, tex_crc: 0x77a3c356, data_size: 28096, geo_size: 96608, tex_size: 17840, types: [136]}
+  - {index: 471, crc: 0x2a3a9287, name: hiha_lt_a, data: hiha_lt_header, data_crc: 0x8822cb43, geo_crc: 0xea105bb8, tex_crc: 0xd78d933b, data_size: 28096, geo_size: 96608, tex_size: 17840}
+  - {index: 249, crc: 0xb9dde07e, name: hiha_lt_ft, data: hiha_lt_header, data_crc: 0x8822cb43, geo_crc: 0x9e1c4913, tex_crc: 0x03afd1fd, data_size: 28096, geo_size: 97040, tex_size: 66992, types: [137]}
+  - {index: 472, crc: 0x57f90d77, name: hiha_lt_ft_a, data: hiha_lt_header, data_crc: 0x8822cb43, geo_crc: 0x9e1c4913, tex_crc: 0x69c7f35d, data_size: 28096, geo_size: 97040, tex_size: 67008}
+  - {index: 250, crc: 0xfafb3dd5, name: hiha_so_va1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0fa04d65, tex_crc: 0x309f7a94, data_size: 2126704, geo_size: 92448, tex_size: 17840, types: [138]}
+  - {index: 473, crc: 0xe268851a, name: hiha_so_va1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0fa04d65, tex_crc: 0x9cfc6ae3, data_size: 2126704, geo_size: 92448, tex_size: 17856}
+  - {index: 251, crc: 0x63f26c6f, name: hiha_so_va2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0fa04d65, tex_crc: 0x773f0044, data_size: 2126704, geo_size: 92448, tex_size: 17840, types: [139]}
+  - {index: 252, crc: 0xd1d66e16, name: hiha_so_vb1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0fa04d65, tex_crc: 0xb60b083a, data_size: 2126704, geo_size: 92448, tex_size: 17840, types: [140]}
+  - {index: 474, crc: 0xf0dd2af4, name: hiha_so_vb1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0fa04d65, tex_crc: 0x12736d00, data_size: 2126704, geo_size: 92448, tex_size: 17856}
+  - {index: 253, crc: 0x48df3fac, name: hiha_so_vb2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0fa04d65, tex_crc: 0xf1ab72ea, data_size: 2126704, geo_size: 92448, tex_size: 17840, types: [141]}
+  - {index: 254, crc: 0xc2aaafa9, name: hook_01, data: hooker_header, data_crc: 0x19c5e38b, geo_crc: 0x28726703, tex_crc: 0xe16b0df1, data_size: 137200, geo_size: 98000, tex_size: 17840, types: [333]}
+  - {index: 256, crc: 0x2ca4ce85, name: hook_03, data: hooker_header, data_crc: 0x19c5e38b, geo_crc: 0x52b23463, tex_crc: 0xaca3acfa, data_size: 137200, geo_size: 98672, tex_size: 17840, types: [334]}
+  - {index: 258, crc: 0x6757c8cf, name: hurr_de, data: hurr_de_header, data_crc: 0x7c6de098, geo_crc: 0xad8bf8a6, tex_crc: 0x30386048, data_size: 183904, geo_size: 97184, tex_size: 66992, types: [120]}
+  - {index: 475, crc: 0x9f92e4fe, name: hurr_de_a, data: hurr_de_header, data_crc: 0x7c6de098, geo_crc: 0xad8bf8a6, tex_crc: 0x4c13192d, data_size: 183904, geo_size: 97184, tex_size: 66992}
+  - {index: 260, crc: 0xc53e6235, name: hurr_lt, data: hurr_lt_header, data_crc: 0x77a47335, geo_crc: 0x1c58c4f9, tex_crc: 0x81eb5c17, data_size: 133408, geo_size: 94352, tex_size: 17840, types: [123]}
+  - {index: 476, crc: 0x47c20556, name: hurr_lt_a, data: hurr_lt_header, data_crc: 0x77a47335, geo_crc: 0x1c58c4f9, tex_crc: 0x5e5f95e2, data_size: 133408, geo_size: 94352, tex_size: 17840}
+  - {index: 261, crc: 0x65b98840, name: hurr_sa, data: hurr_lt_header, data_crc: 0x77a47335, geo_crc: 0x46d86c45, tex_crc: 0xdb6bf4ab, data_size: 133408, geo_size: 95152, tex_size: 66992, types: [122]}
+  - {index: 477, crc: 0x55552304, name: hurr_sa_a, data: hurr_lt_header, data_crc: 0x77a47335, geo_crc: 0x46d86c45, tex_crc: 0xce22050c, data_size: 133408, geo_size: 95152, tex_size: 66992}
+  - {index: 262, crc: 0xa4b54827, name: hurr_so1a, data_crc: 0x3f361fca, geo_crc: 0x98e44bd1, tex_crc: 0x89062825, data_size: 87120, geo_size: 96960, tex_size: 17840, types: [124]}
+  - {index: 478, crc: 0xe48dddd8, name: hurr_so1a_a, data_crc: 0x3f361fca, geo_crc: 0x98e44bd1, tex_crc: 0xe4477c5b, data_size: 87120, geo_size: 96960, tex_size: 17856}
+  - {index: 263, crc: 0x3dbc199d, name: hurr_so1b, data_crc: 0x3f361fca, geo_crc: 0x98e44bd1, tex_crc: 0xcea652f5, data_size: 87120, geo_size: 96960, tex_size: 17840, types: [125]}
+  - {index: 479, crc: 0xe6cb6381, name: hurr_so1b_a, data_crc: 0x3f361fca, geo_crc: 0x98e44bd1, tex_crc: 0xd5af66c6, data_size: 87120, geo_size: 96960, tex_size: 17856}
+  - {index: 264, crc: 0x8f981be4, name: hurr_so2a, data_crc: 0x3f361fca, geo_crc: 0xdf443101, tex_crc: 0x0f925a8b, data_size: 87120, geo_size: 95712, tex_size: 17840, types: [126]}
+  - {index: 265, crc: 0x16914a5e, name: hurr_so2b, data_crc: 0x3f361fca, geo_crc: 0xdf443101, tex_crc: 0x4832205b, data_size: 87120, geo_size: 95712, tex_size: 17840, types: [127]}
+  - {index: 266, crc: 0x18ce7c05, name: hurr_va, data: hurr_va_header, data_crc: 0x7a118495, geo_crc: 0x1615fdf6, tex_crc: 0x8ba66518, data_size: 171072, geo_size: 110208, tex_size: 66992, types: [119]}
+  - {index: 480, crc: 0x628bd336, name: hurr_va_a, data: hurr_va_header, data_crc: 0x7a118495, geo_crc: 0x1615fdf6, tex_crc: 0x86c20b68, data_size: 171072, geo_size: 110208, tex_size: 66992}
+  - {index: 267, crc: 0x48428484, name: jsbs_bo, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x047a8873, tex_crc: 0x99c9109d, data_size: 2126704, geo_size: 91776, tex_size: 66992, types: [154]}
+  - {index: 481, crc: 0xf375509e, name: jsbs_bo_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x047a8873, tex_crc: 0xe059f0ba, data_size: 2126704, geo_size: 91776, tex_size: 66992}
+  - {index: 268, crc: 0x5ca460e6, name: jsbs_lt, data: jsbs_lt_header, data_crc: 0xfbb95a79, geo_crc: 0x29404f90, tex_crc: 0xb4f3d77e, data_size: 18096, geo_size: 96048, tex_size: 17840, types: [155]}
+  - {index: 482, crc: 0x03d96b3c, name: jsbs_lt_a, data: jsbs_lt_header, data_crc: 0xfbb95a79, geo_crc: 0x29404f90, tex_crc: 0x900a2abc, data_size: 18096, geo_size: 96048, tex_size: 17840}
+  - {index: 269, crc: 0x74a5234d, name: jsbs_so1, data_crc: 0x61f698d0, geo_crc: 0xccf0594d, tex_crc: 0x70ebe358, data_size: 45024, geo_size: 92032, tex_size: 17840, types: [156]}
+  - {index: 270, crc: 0xedac72f7, name: jsbs_so2, data_crc: 0x61f698d0, geo_crc: 0xccf0594d, tex_crc: 0x374b9988, data_size: 45024, geo_size: 92032, tex_size: 17840, types: [157]}
+  - {index: 483, crc: 0xa3b9886c, name: jsbs_so2_a, data_crc: 0x61f698d0, geo_crc: 0xccf0594d, tex_crc: 0x438883a8, data_size: 45024, geo_size: 92032, tex_size: 17840}
+  - {index: 271, crc: 0x9aab4261, name: jsbs_so3, data_crc: 0x61f698d0, geo_crc: 0xccf0594d, tex_crc: 0x0a2bb038, data_size: 45024, geo_size: 92032, tex_size: 17840, types: [158]}
+  - {index: 484, crc: 0xa27be25b, name: jsbs_so3_a, data_crc: 0x61f698d0, geo_crc: 0xccf0594d, tex_crc: 0xe5ff881c, data_size: 45024, geo_size: 92032, tex_size: 17840}
+  - {index: 272, crc: 0x04cfd7c2, name: jsbs_so4, data_crc: 0x61f698d0, geo_crc: 0xccf0594d, tex_crc: 0xb80b6c28, data_size: 45024, geo_size: 92032, tex_size: 17840, types: [159]}
+  - {index: 273, crc: 0xeb4b0d2d, name: juda_bo, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x44e0b7e8, tex_crc: 0xd9532f06, data_size: 2126704, geo_size: 97136, tex_size: 66992, types: [166]}
+  - {index: 274, crc: 0xffade94f, name: juda_lt, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb8d99030, tex_crc: 0xf469e8e5, data_size: 2126704, geo_size: 91792, tex_size: 17840, types: [167]}
+  - {index: 275, crc: 0x79311666, name: juda_so_va1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x4ee4dfbf, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [168]}
+  - {index: 276, crc: 0xe03847dc, name: juda_so_va2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x0944a56f, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [169]}
+  - {index: 277, crc: 0x521c45a5, name: juda_so_vb1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xc870ad11, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [170]}
+  - {index: 278, crc: 0xcb15141f, name: juda_so_vb2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x8fd0d7c1, data_size: 2126704, geo_size: 85824, tex_size: 17840, types: [171]}
+  - {index: 279, crc: 0xa447038a, name: lizz_bo, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0xd414a853, tex_crc: 0x49a730bd, data_size: 162512, geo_size: 131952, tex_size: 66992, types: [237]}
+  - {index: 485, crc: 0x1e2a8796, name: lizz_bo_a, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0xd414a853, tex_crc: 0x4eb324be, data_size: 162512, geo_size: 131952, tex_size: 66992}
+  - {index: 280, crc: 0xb0a1e7e8, name: lizz_lt, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0xf92e6fb0, tex_crc: 0x649df75e, data_size: 162512, geo_size: 108752, tex_size: 66992, types: [238]}
+  - {index: 486, crc: 0xee86bc34, name: lizz_lt_a, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0xf92e6fb0, tex_crc: 0x3ee0feb8, data_size: 162512, geo_size: 108752, tex_size: 66992}
+  - {index: 281, crc: 0xe9c509dd, name: lizz_so_va1, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0x133a4c50, tex_crc: 0x13324594, data_size: 162512, geo_size: 108400, tex_size: 66992, types: [239]}
+  - {index: 487, crc: 0x0b05e899, name: lizz_so_va1_a, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0x133a4c50, tex_crc: 0x2a9a6473, data_size: 162512, geo_size: 108400, tex_size: 67008}
+  - {index: 282, crc: 0x70cc5867, name: lizz_so_va2, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0x133a4c50, tex_crc: 0x54923f44, data_size: 162512, geo_size: 108400, tex_size: 66992, types: [240]}
+  - {index: 488, crc: 0x094356c0, name: lizz_so_va2_a, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0x133a4c50, tex_crc: 0x1b727eee, data_size: 162512, geo_size: 108400, tex_size: 67008}
+  - {index: 283, crc: 0x07cb68f1, name: lizz_so_va3, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0x133a4c50, tex_crc: 0x69f216f4, data_size: 162512, geo_size: 108400, tex_size: 66992, types: [241]}
+  - {index: 284, crc: 0xc2e85a1e, name: lizz_so_vb1, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0x549a3680, tex_crc: 0x95a6373a, data_size: 162512, geo_size: 111840, tex_size: 66992, types: [242]}
+  - {index: 285, crc: 0x5be10ba4, name: lizz_so_vb2, data: lizz_bo_header, data_crc: 0x1569825b, geo_crc: 0x549a3680, tex_crc: 0xd2064dea, data_size: 162512, geo_size: 111840, tex_size: 66992, types: [243]}
+  - {index: 286, crc: 0xa3123319, name: moon_bo, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x06223f3b, tex_crc: 0x9b91a7d5, data_size: 2126704, geo_size: 99408, tex_size: 66992, types: [214]}
+  - {index: 489, crc: 0x629f69b6, name: moon_bo_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x06223f3b, tex_crc: 0x8dfc11c0, data_size: 2126704, geo_size: 99408, tex_size: 66992}
+  - {index: 287, crc: 0xb7f4d77b, name: moon_lt, data: moon_lt_header, data_crc: 0x4b0467ba, geo_crc: 0x2b18f8d8, tex_crc: 0xb6ab6036, data_size: 40560, geo_size: 103824, tex_size: 17840, types: [215]}
+  - {index: 490, crc: 0x92335214, name: moon_lt_a, data: moon_lt_header, data_crc: 0x4b0467ba, geo_crc: 0x2b18f8d8, tex_crc: 0xfdafcbc6, data_size: 40560, geo_size: 103824, tex_size: 17840}
+  - {index: 288, crc: 0x71441f65, name: moon_so1a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa4445f5e, tex_crc: 0xf43d1680, data_size: 2126704, geo_size: 100384, tex_size: 17840, types: [216]}
+  - {index: 491, crc: 0xd3cde1f9, name: moon_so1a_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa4445f5e, tex_crc: 0xf6565467, data_size: 2126704, geo_size: 100384, tex_size: 17856}
+  - {index: 289, crc: 0xe84d4edf, name: moon_so1b, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa4445f5e, tex_crc: 0xb39d6c50, data_size: 2126704, geo_size: 100384, tex_size: 17840, types: [217]}
+  - {index: 290, crc: 0x5a694ca6, name: moon_so2a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa4445f5e, tex_crc: 0x72a9642e, data_size: 2126704, geo_size: 100384, tex_size: 17840, types: [218]}
+  - {index: 492, crc: 0xc1784e17, name: moon_so2a_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa4445f5e, tex_crc: 0x78d95384, data_size: 2126704, geo_size: 100384, tex_size: 17856}
+  - {index: 291, crc: 0xc3601d1c, name: moon_so2b, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa4445f5e, tex_crc: 0x35091efe, data_size: 2126704, geo_size: 100384, tex_size: 17840, types: [219]}
+  - {index: 292, crc: 0x4c1e6cfa, name: orph_bo, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x39080885, tex_crc: 0x1b8b2e0a, data_size: 2126704, geo_size: 103552, tex_size: 66992}
+  - {index: 294, crc: 0xcc537835, name: orph_bo_va1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x39080885, tex_crc: 0x3e23e48e, data_size: 2126704, geo_size: 103552, tex_size: 66992, types: [220]}
+  - {index: 493, crc: 0xbaa0f541, name: orph_bo_va1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x39080885, tex_crc: 0x3b6620c7, data_size: 2126704, geo_size: 103552, tex_size: 67008}
+  - {index: 296, crc: 0x684dbe5c, name: orph_lt_va, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x72904544, tex_crc: 0xef23ddaa, data_size: 2126704, geo_size: 97360, tex_size: 66992, types: [223]}
+  - {index: 494, crc: 0x7c98e634, name: orph_lt_va_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x72904544, tex_crc: 0x958b9869, data_size: 2126704, geo_size: 97360, tex_size: 67008}
+  - {index: 297, crc: 0xf144efe6, name: orph_lt_vb, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x35303f94, tex_crc: 0xa883a77a, data_size: 2126704, geo_size: 99456, tex_size: 17840, types: [224]}
+  - {index: 495, crc: 0x7ede586d, name: orph_lt_vb_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x35303f94, tex_crc: 0xa46382f4, data_size: 2126704, geo_size: 99456, tex_size: 17856}
+  - {index: 298, crc: 0x2b53992b, name: orph_me, data_crc: 0xa444878b, geo_crc: 0x82eea2f1, tex_crc: 0x1f5d3a1f, data_size: 136640, geo_size: 119856, tex_size: 66992, types: [221]}
+  - {index: 496, crc: 0xb9ecff70, name: orph_me_a, data_crc: 0xa444878b, geo_crc: 0x82eea2f1, tex_crc: 0x32574531, data_size: 136640, geo_size: 119856, tex_size: 66992}
+  - {index: 299, crc: 0x2481f6ac, name: orph_me_vb, data_crc: 0xa444878b, geo_crc: 0x925a1a62, tex_crc: 0x0fe9828c, data_size: 136640, geo_size: 116752, tex_size: 66992, types: [222]}
+  - {index: 300, crc: 0x04d9a90b, name: orph_so_va1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2038e599, tex_crc: 0xf1b93d29, data_size: 2126704, geo_size: 98448, tex_size: 17840, types: [225]}
+  - {index: 497, crc: 0x0ab1c4f4, name: orph_so_va1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2038e599, tex_crc: 0x252faf03, data_size: 2126704, geo_size: 98448, tex_size: 17856}
+  - {index: 301, crc: 0x9dd0f8b1, name: orph_so_va2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2038e599, tex_crc: 0xb61947f9, data_size: 2126704, geo_size: 98448, tex_size: 17840, types: [226]}
+  - {index: 498, crc: 0x08f77aad, name: orph_so_va2_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2038e599, tex_crc: 0x14c7b59e, data_size: 2126704, geo_size: 98448, tex_size: 17856}
+  - {index: 302, crc: 0x2ff4fac8, name: orph_so_vb1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2038e599, tex_crc: 0x772d4f87, data_size: 2126704, geo_size: 98448, tex_size: 17840, types: [227]}
+  - {index: 303, crc: 0xb6fdab72, name: orph_so_vb2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2038e599, tex_crc: 0x308d3557, data_size: 2126704, geo_size: 98448, tex_size: 17840, types: [228]}
+  - {index: 499, crc: 0x1a42d543, name: orph_so_vb2_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2038e599, tex_crc: 0x9a48b27d, data_size: 2126704, geo_size: 98448, tex_size: 17856}
+  - {index: 304, crc: 0x7d0a461f, name: panz_bo, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9203add6, tex_crc: 0x0fb03538, data_size: 2126704, geo_size: 97520, tex_size: 66992, types: [148]}
+  - {index: 305, crc: 0x69eca27d, name: panz_lt, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xbf396a35, tex_crc: 0x228af2db, data_size: 2126704, geo_size: 110432, tex_size: 17840, types: [149]}
+  - {index: 306, crc: 0xafd20c58, name: panz_so_va1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0a60e4ff, tex_crc: 0x5542a145, data_size: 2126704, geo_size: 101024, tex_size: 17840, types: [150]}
+  - {index: 307, crc: 0x36db5de2, name: panz_so_va2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0a60e4ff, tex_crc: 0x12e2db95, data_size: 2126704, geo_size: 101024, tex_size: 17840, types: [151]}
+  - {index: 308, crc: 0x84ff5f9b, name: panz_so_vb1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x4dc09e2f, tex_crc: 0xd3d6d3eb, data_size: 2126704, geo_size: 103232, tex_size: 17840, types: [152]}
+  - {index: 309, crc: 0x1df60e21, name: panz_so_vb2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x4dc09e2f, tex_crc: 0x9476a93b, data_size: 2126704, geo_size: 103232, tex_size: 17840, types: [153]}
+  - {index: 312, crc: 0x81bfbc7d, name: punchbag, data: punchbag_header, data_crc: 0xb084633c, geo_crc: 0x96c68092, tex_crc: 0x0b75187c, data_size: 28640, geo_size: 18096, tex_size: 3504, types: [460]}
+  - {index: 310, crc: 0x0de83668, name: punk_bo, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0c57bdf1, tex_crc: 0x91e4251f, data_size: 2126704, geo_size: 90976, tex_size: 66992, types: [229]}
+  - {index: 500, crc: 0x24d17b74, name: punk_bo_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x0c57bdf1, tex_crc: 0xbf5fc67d, data_size: 2126704, geo_size: 90976, tex_size: 66992}
+  - {index: 311, crc: 0x23710f31, name: punk_bo_vb, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xedbd1f5a, tex_crc: 0x91e4251f, data_size: 2126704, geo_size: 111168, tex_size: 66992, types: [230]}
+  - {index: 313, crc: 0x190ed20a, name: punk_lt, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xbcdee2fc, data_size: 2126704, geo_size: 85824, tex_size: 66992, types: [231]}
+  - {index: 501, crc: 0xd47d40d6, name: punk_lt_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xcf0c1c7b, data_size: 2126704, geo_size: 85824, tex_size: 66992}
+  - {index: 315, crc: 0x370a0da7, name: punk_so1a, data_crc: 0x07043cae, geo_crc: 0xd8f472d1, tex_crc: 0xbde1b3a1, data_size: 46288, geo_size: 85824, tex_size: 66992, types: [233]}
+  - {index: 502, crc: 0xd9b86333, name: punk_so1a_a, data_crc: 0x07043cae, geo_crc: 0xd8f472d1, tex_crc: 0xdc755f3f, data_size: 46288, geo_size: 85824, tex_size: 67008}
+  - {index: 316, crc: 0xae035c1d, name: punk_so1b, data_crc: 0x07043cae, geo_crc: 0xd8f472d1, tex_crc: 0xfa41c971, data_size: 46288, geo_size: 85824, tex_size: 66992, types: [234]}
+  - {index: 503, crc: 0xdbfedd6a, name: punk_so1b_a, data_crc: 0x07043cae, geo_crc: 0xd8f472d1, tex_crc: 0xed9d45a2, data_size: 46288, geo_size: 85824, tex_size: 67008}
+  - {index: 317, crc: 0x1c275e64, name: punk_so2a, data_crc: 0x07043cae, geo_crc: 0xd8f472d1, tex_crc: 0x3b75c10f, data_size: 46288, geo_size: 85824, tex_size: 66992, types: [235]}
+  - {index: 318, crc: 0x852e0fde, name: punk_so2b, data_crc: 0x07043cae, geo_crc: 0xd8f472d1, tex_crc: 0x7cd5bbdf, data_size: 46288, geo_size: 85824, tex_size: 66992, types: [236]}
+  - {index: 319, crc: 0xbc2fa22f, name: riff_bo_va1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x4974d29f, tex_crc: 0xd4c74a71, data_size: 2126704, geo_size: 109072, tex_size: 66992, types: [64]}
+  - {index: 504, crc: 0x6c8b442c, name: riff_bo_va1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x4974d29f, tex_crc: 0x992cb9be, data_size: 2126704, geo_size: 109072, tex_size: 66992}
+  - {index: 321, crc: 0xc1b6f2ad, name: riff_cy, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x6d886318, tex_crc: 0xf03bfbf6, data_size: 2126704, geo_size: 206544, tex_size: 66992, types: [62]}
+  - {index: 322, crc: 0xb6699001, name: riff_cy_ghost, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x6d886318, tex_crc: 0x74147f4a, data_size: 2126704, geo_size: 206544, tex_size: 67008, types: [63]}
+  - {index: 506, crc: 0xaf5b16c6, name: riff_cy_ghost_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x6d886318, tex_crc: 0xf32d3276, data_size: 2126704, geo_size: 206544, tex_size: 67008}
+  - {index: 323, crc: 0x8d368156, name: riff_em, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2eb1b147, tex_crc: 0xb30229a9, data_size: 2126704, geo_size: 93424, tex_size: 66992, types: [67]}
+  - {index: 320, crc: 0x389f92df, name: riff_lt, data: riff_lt_header, data_crc: 0xfcadeb29, geo_crc: 0x644e157c, tex_crc: 0xf9fd8d92, data_size: 101760, geo_size: 97616, tex_size: 66992, types: [66]}
+  - {index: 505, crc: 0x5eee118d, name: riff_lt_a, data: riff_lt_header, data_crc: 0xfcadeb29, geo_crc: 0x644e157c, tex_crc: 0xe97f63b8, data_size: 101760, geo_size: 97616, tex_size: 66992}
+  - {index: 324, crc: 0x74a57311, name: riff_so_va1, data_crc: 0xea4efde3, geo_crc: 0x13edd3cd, tex_crc: 0x9d8c7df2, data_size: 104304, geo_size: 97136, tex_size: 17840, types: [68, 70]}
+  - {index: 507, crc: 0xdc9a7599, name: riff_so_va1_a, data_crc: 0xea4efde3, geo_crc: 0x13edd3cd, tex_crc: 0x313f9e72, data_size: 104304, geo_size: 97136, tex_size: 17856}
+  - {index: 325, crc: 0xedac22ab, name: riff_so_va2, data_crc: 0xea4efde3, geo_crc: 0x13edd3cd, tex_crc: 0xda2c0722, data_size: 104304, geo_size: 97136, tex_size: 17840, types: [69]}
+  - {index: 508, crc: 0xdedccbc0, name: riff_so_va2_a, data_crc: 0xea4efde3, geo_crc: 0x13edd3cd, tex_crc: 0x00d784ef, data_size: 104304, geo_size: 97136, tex_size: 17856}
+  - {index: 327, crc: 0x5f8820d2, name: riff_so_vb1, data_crc: 0xea4efde3, geo_crc: 0x544da91d, tex_crc: 0x1b180f5c, data_size: 104304, geo_size: 99552, tex_size: 17840, types: [71]}
+  - {index: 328, crc: 0xc6817168, name: riff_so_vb2, data_crc: 0xea4efde3, geo_crc: 0x544da91d, tex_crc: 0x5cb8758c, data_size: 104304, geo_size: 99552, tex_size: 17840, types: [72]}
+  - {index: 329, crc: 0x46931193, name: riff_so_vc1, data_crc: 0xea4efde3, geo_crc: 0xd8f472d1, tex_crc: 0xd044dcf9, data_size: 104304, geo_size: 85824, tex_size: 17840, types: [73]}
+  - {index: 330, crc: 0xdf9a4029, name: riff_so_vc2, data_crc: 0xea4efde3, geo_crc: 0xd8f472d1, tex_crc: 0x97e4a629, data_size: 104304, geo_size: 85824, tex_size: 17840, types: [74]}
+  - {index: 331, crc: 0xa89d70bf, name: riff_so_vc3, data_crc: 0xea4efde3, geo_crc: 0xd8f472d1, tex_crc: 0xaa848f99, data_size: 104304, geo_size: 85824, tex_size: 17840, types: [75]}
+  - {index: 332, crc: 0x36f9e51c, name: riff_so_vc4, data_crc: 0xea4efde3, geo_crc: 0xd8f472d1, tex_crc: 0x18a45389, data_size: 104304, geo_size: 85824, tex_size: 17840, types: [76]}
+  - {index: 333, crc: 0x85ec4461, name: rogu_bo, data: rogu_bo_header, data_crc: 0x19ea2cbe, geo_crc: 0xa1258053, tex_crc: 0x3c9618bd, data_size: 121184, geo_size: 111008, tex_size: 66992, types: [77]}
+  - {index: 509, crc: 0x4b185829, name: rogu_bo_a, data: rogu_bo_header, data_crc: 0x19ea2cbe, geo_crc: 0xa1258053, tex_crc: 0x7b06f975, data_size: 121184, geo_size: 111008, tex_size: 66992}
+  - {index: 334, crc: 0x9ce0a294, name: rogu_bo_gun, data: rogu_bo_gun_header, data_crc: 0x0750344b, geo_crc: 0xe3a2ce57, tex_crc: 0x7e1156b9, data_size: 47840, geo_size: 118048, tex_size: 66992, types: [79]}
+  - {index: 510, crc: 0x6bba1390, name: rogu_bo_gun_a, data: rogu_bo_gun_header, data_crc: 0x0750344b, geo_crc: 0xe3a2ce57, tex_crc: 0x8e0e1261, data_size: 47840, geo_size: 118048, tex_size: 67008}
+  - {index: 335, crc: 0x36c4eb5b, name: rogu_bo_vb, data: rogu_bo_header, data_crc: 0x19ea2cbe, geo_crc: 0xe3a2ce57, tex_crc: 0x7e1156b9, data_size: 121184, geo_size: 118048, tex_size: 66992, types: [78]}
+  - {index: 336, crc: 0x910aa003, name: rogu_lt, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x8c1f47b0, tex_crc: 0x11acdf5e, data_size: 2126704, geo_size: 97504, tex_size: 66992, types: [80]}
+  - {index: 511, crc: 0xbbb4638b, name: rogu_lt_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x8c1f47b0, tex_crc: 0x0b552373, data_size: 2126704, geo_size: 97504, tex_size: 66992}
+  - {index: 337, crc: 0x9cf421dd, name: rogu_so_va1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x1fb9e2b5, tex_crc: 0xc35ed0cd, data_size: 2126704, geo_size: 101280, tex_size: 17840, types: [81]}
+  - {index: 512, crc: 0x3eb03552, name: rogu_so_va1_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x1fb9e2b5, tex_crc: 0xc18635c9, data_size: 2126704, geo_size: 101280, tex_size: 17856}
+  - {index: 341, crc: 0x3890c439, name: rogu_so_va1_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x1fb9e2b5, tex_crc: 0xe540ddbb, data_size: 2126704, geo_size: 101280, tex_size: 67008, types: [85]}
+  - {index: 338, crc: 0x05fd7067, name: rogu_so_va2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x1fb9e2b5, tex_crc: 0x84feaa1d, data_size: 2126704, geo_size: 101280, tex_size: 17840, types: [82]}
+  - {index: 513, crc: 0x3cf68b0b, name: rogu_so_va2_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x1fb9e2b5, tex_crc: 0xf06e2f54, data_size: 2126704, geo_size: 101280, tex_size: 17856}
+  - {index: 342, crc: 0x2a256bd7, name: rogu_so_va2_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x1fb9e2b5, tex_crc: 0x6bcfda58, data_size: 2126704, geo_size: 101280, tex_size: 67008, types: [86]}
+  - {index: 339, crc: 0xb7d9721e, name: rogu_so_vb1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x58199865, tex_crc: 0x45caa263, data_size: 2126704, geo_size: 97024, tex_size: 17840, types: [83]}
+  - {index: 343, crc: 0x7f30bee9, name: rogu_so_vb1_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x58199865, tex_crc: 0xdccde17e, data_size: 2126704, geo_size: 97024, tex_size: 67008, types: [87]}
+  - {index: 340, crc: 0x2ed023a4, name: rogu_so_vb2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x58199865, tex_crc: 0x026ad8b3, data_size: 2126704, geo_size: 97024, tex_size: 17840, types: [84]}
+  - {index: 344, crc: 0x6d851107, name: rogu_so_vb2_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x58199865, tex_crc: 0x5242e69d, data_size: 2126704, geo_size: 97024, tex_size: 67008, types: [88]}
+  - {index: 345, crc: 0x6c8581ff, name: samo_bo, data: samo_bo_header, data_crc: 0xd86db556, geo_crc: 0x0637c85d, tex_crc: 0x9b8450b3, data_size: 34336, geo_size: 105200, tex_size: 66992, types: [160]}
+  - {index: 514, crc: 0x4fd420eb, name: samo_bo_a, data: samo_bo_header, data_crc: 0xd86db556, geo_crc: 0x0637c85d, tex_crc: 0x9d82ba4b, data_size: 34336, geo_size: 105200, tex_size: 66992}
+  - {index: 350, crc: 0x7863659d, name: samo_lt, data: samo_lt_header, data_crc: 0x317e43b9, geo_crc: 0x2b0d0fbe, tex_crc: 0xb6be9750, data_size: 154656, geo_size: 102416, tex_size: 17840, types: [161]}
+  - {index: 515, crc: 0xbf781b49, name: samo_lt_a, data: samo_lt_header, data_crc: 0x317e43b9, geo_crc: 0x2b0d0fbe, tex_crc: 0xedd1604d, data_size: 154656, geo_size: 102416, tex_size: 17840}
+  - {index: 346, crc: 0x3be669d3, name: samo_so_va1, data_crc: 0x6e59f051, geo_crc: 0xde3e7b5d, tex_crc: 0x6d4e3d1e, data_size: 99488, geo_size: 94992, tex_size: 17840, types: [162]}
+  - {index: 347, crc: 0xa2ef3869, name: samo_so_va2, data_crc: 0x6e59f051, geo_crc: 0xde3e7b5d, tex_crc: 0x2aee47ce, data_size: 99488, geo_size: 94992, tex_size: 17840, types: [163]}
+  - {index: 348, crc: 0xd5e808ff, name: samo_so_va3, data_crc: 0x6e59f051, geo_crc: 0xde3e7b5d, tex_crc: 0x178e6e7e, data_size: 99488, geo_size: 94992, tex_size: 17840, types: [164]}
+  - {index: 516, crc: 0xdbb0a202, name: samo_so_va3_a, data_crc: 0x6e59f051, geo_crc: 0xde3e7b5d, tex_crc: 0x22b782e9, data_size: 99488, geo_size: 94992, tex_size: 17856}
+  - {index: 349, crc: 0x4b8c9d5c, name: samo_so_va4, data_crc: 0x6e59f051, geo_crc: 0xde3e7b5d, tex_crc: 0xa5aeb26e, data_size: 99488, geo_size: 94992, tex_size: 17840, types: [165]}
+  - {index: 517, crc: 0xdeffb487, name: samo_so_va4_a, data_crc: 0x6e59f051, geo_crc: 0xde3e7b5d, tex_crc: 0xe710bc67, data_size: 99488, geo_size: 94992, tex_size: 17856}
+  - {index: 351, crc: 0x6eeaf69f, name: sara_bo, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x60c457cf, tex_crc: 0xfd77cf21, data_size: 2126704, geo_size: 94096, tex_size: 66992, types: [142]}
+  - {index: 352, crc: 0x7a0c12fd, name: sara_lt, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x4dfe902c, tex_crc: 0xd04d08c2, data_size: 2126704, geo_size: 93264, tex_size: 17840, types: [143]}
+  - {index: 353, crc: 0xf793db6f, name: sara_so1a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xf2c422d6, tex_crc: 0x17089def, data_size: 2126704, geo_size: 91152, tex_size: 17840, types: [144]}
+  - {index: 354, crc: 0x6e9a8ad5, name: sara_so1b, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xf2c422d6, tex_crc: 0x50a8e73f, data_size: 2126704, geo_size: 91152, tex_size: 17840, types: [145]}
+  - {index: 355, crc: 0xdcbe88ac, name: sara_so2a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb5645806, tex_crc: 0x919cef41, data_size: 2126704, geo_size: 90480, tex_size: 17840, types: [146]}
+  - {index: 356, crc: 0x45b7d916, name: sara_so2b, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb5645806, tex_crc: 0xd63c9591, data_size: 2126704, geo_size: 90480, tex_size: 17840, types: [147]}
+  - {index: 357, crc: 0x9b6a505f, name: sava_bo, data: sava_bo_header, data_crc: 0xf791d7a2, geo_crc: 0x36a92e7b, tex_crc: 0xc736b730, data_size: 87904, geo_size: 98096, tex_size: 66992, types: [106]}
+  - {index: 518, crc: 0x100789af, name: sava_bo_a, data: sava_bo_header, data_crc: 0xf791d7a2, geo_crc: 0x36a92e7b, tex_crc: 0xb3425aaa, data_size: 87904, geo_size: 98096, tex_size: 67008}
+  - {index: 358, crc: 0x8f8cb43d, name: sava_lt, data: sava_lt_header, data_crc: 0x1e82214d, geo_crc: 0x1012c120, tex_crc: 0x8da159ce, data_size: 175328, geo_size: 97040, tex_size: 17840, types: [107]}
+  - {index: 359, crc: 0xdb3b2f12, name: sava_lt1, data: sava_lt_header, data_crc: 0x1e82214d, geo_crc: 0x1012c120, tex_crc: 0x43341c25, data_size: 175328, geo_size: 97040, tex_size: 17840, types: [108]}
+  - {index: 360, crc: 0x42327ea8, name: sava_lt2, data: sava_lt_header, data_crc: 0x1e82214d, geo_crc: 0x1012c120, tex_crc: 0x049466f5, data_size: 175328, geo_size: 97040, tex_size: 17840, types: [109]}
+  - {index: 520, crc: 0x972c2a42, name: sava_lt2_a, data: sava_lt_header, data_crc: 0x1e82214d, geo_crc: 0x1012c120, tex_crc: 0xf41b5841, data_size: 175328, geo_size: 97040, tex_size: 17840}
+  - {index: 519, crc: 0xe0abb20d, name: sava_lt_a, data: sava_lt_header, data_crc: 0x1e82214d, geo_crc: 0x1012c120, tex_crc: 0x7ecf1371, data_size: 175328, geo_size: 97040, tex_size: 17840}
+  - {index: 361, crc: 0x03dcff7c, name: sava_so1a, data_crc: 0x3f549c60, geo_crc: 0xf1c219a9, tex_crc: 0xd7b1f779, data_size: 110560, geo_size: 95872, tex_size: 17840, types: [110]}
+  - {index: 521, crc: 0xe8c7d801, name: sava_so1a_a, data_crc: 0x3f549c60, geo_crc: 0xf1c219a9, tex_crc: 0xe425fff1, data_size: 110560, geo_size: 95872, tex_size: 17856}
+  - {index: 362, crc: 0x9ad5aec6, name: sava_so1b, data_crc: 0x3f549c60, geo_crc: 0xf1c219a9, tex_crc: 0x90118da9, data_size: 110560, geo_size: 95872, tex_size: 17840, types: [111]}
+  - {index: 363, crc: 0x28f1acbf, name: sava_so2a, data_crc: 0x3f549c60, geo_crc: 0xf1c219a9, tex_crc: 0xad71a419, data_size: 110560, geo_size: 95872, tex_size: 17840, types: [112]}
+  - {index: 364, crc: 0xb1f8fd05, name: sava_so2b, data_crc: 0x3f549c60, geo_crc: 0xf1c219a9, tex_crc: 0x1f517809, data_size: 110560, geo_size: 95872, tex_size: 17840, types: [113]}
+  - {index: 365, crc: 0xfcbb4142, name: turn_bd, data: turn_bd_header, data_crc: 0x2b7662c1, geo_crc: 0xc94a4063, tex_crc: 0x54f9d88d, data_size: 39200, geo_size: 146016, tex_size: 66992, types: [96, 458]}
+  - {index: 366, crc: 0xf48f62a4, name: turn_bd_gun, data: turn_bd_gun_header, data_crc: 0x5b2bb0dd, geo_crc: 0xc94a4063, tex_crc: 0x54f9d88d, data_size: 58016, geo_size: 146016, tex_size: 66992, types: [98]}
+  - {index: 367, crc: 0x6b6998ca, name: turn_bo, data: turn_lt_header, data_crc: 0x9f0f8878, geo_crc: 0xbe9a7172, tex_crc: 0x2329e99c, data_size: 138928, geo_size: 95504, tex_size: 66992, types: [99]}
+  - {index: 368, crc: 0x7f8f7ca8, name: turn_lt, data: turn_lt_header, data_crc: 0x9f0f8878, geo_crc: 0x93a0b691, tex_crc: 0x0e132e7f, data_size: 138928, geo_size: 95408, tex_size: 17840, types: [100]}
+  - {index: 369, crc: 0xe5e264c6, name: turn_so1, data_crc: 0xf13843a7, geo_crc: 0x704fb09c, tex_crc: 0x07563337, data_size: 51248, geo_size: 99296, tex_size: 17840, types: [101]}
+  - {index: 370, crc: 0x7ceb357c, name: turn_so2, data_crc: 0xf13843a7, geo_crc: 0x704fb09c, tex_crc: 0x40f649e7, data_size: 51248, geo_size: 99296, tex_size: 17840, types: [102]}
+  - {index: 371, crc: 0x0bec05ea, name: turn_so3, data_crc: 0xf13843a7, geo_crc: 0x704fb09c, tex_crc: 0x7d966057, data_size: 51248, geo_size: 99296, tex_size: 17840, types: [103]}
+  - {index: 372, crc: 0x95889049, name: turn_so4, data_crc: 0xf13843a7, geo_crc: 0x704fb09c, tex_crc: 0xcfb6bc47, data_size: 51248, geo_size: 99296, tex_size: 17840, types: [104]}
+  - {index: 373, crc: 0xe28fa0df, name: turn_so5, data_crc: 0xf13843a7, geo_crc: 0x704fb09c, tex_crc: 0xf2d695f7, data_size: 51248, geo_size: 99296, tex_size: 17840, types: [105]}
+  - {index: 374, crc: 0x834e8db1, name: warr_aj, data: warr_aj_header, data_crc: 0xab42f3ad, geo_crc: 0x6c5def5b, tex_crc: 0xf1ee77b5, data_size: 121808, geo_size: 107600, tex_size: 66992, types: [11]}
+  - {index: 522, crc: 0x2898e180, name: warr_aj_a, data: warr_aj_header, data_crc: 0xab42f3ad, geo_crc: 0x6c5def5b, tex_crc: 0x6ed2c2cc, data_size: 121808, geo_size: 107600, tex_size: 66992}
+  - {index: 376, crc: 0xb4c242c7, name: warr_aj_cv, data: warr_aj_header, data_crc: 0xab42f3ad, geo_crc: 0x9771b32e, tex_crc: 0x0ac22bc0, data_size: 121808, geo_size: 98496, tex_size: 66992, types: [13]}
+  - {index: 531, crc: 0x5cf85b8f, name: warr_aj_fury, data: warr_aj_header, data_crc: 0xab42f3ad, geo_crc: 0xcd0b161a, tex_crc: 0x2fd46fec, data_size: 121808, geo_size: 99568, tex_size: 66992}
+  - {index: 375, crc: 0x1b5adfcd, name: warr_aj_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x6c5def5b, tex_crc: 0xf1ee77b5, data_size: 2126704, geo_size: 107600, tex_size: 66992, types: [12]}
+  - {index: 377, crc: 0x89334219, name: warr_aj_ghost, data: warr_aj_header, data_crc: 0xab42f3ad, geo_crc: 0x6c5def5b, tex_crc: 0x99867987, data_size: 121808, geo_size: 107600, tex_size: 67008, types: [14]}
+  - {index: 378, crc: 0xbfa36701, name: warr_cb, data: warr_cb_header, data_crc: 0x5651c09e, geo_crc: 0x11e50591, tex_crc: 0x8c569d7f, data_size: 200448, geo_size: 102848, tex_size: 66992, types: [18]}
+  - {index: 523, crc: 0x8c8278b3, name: warr_cb_a, data: warr_cb_header, data_crc: 0x5651c09e, geo_crc: 0x11e50591, tex_crc: 0x1f188bd6, data_size: 200448, geo_size: 102848, tex_size: 66992}
+  - {index: 379, crc: 0x0bb63948, name: warr_cb_cv, data: warr_cb_header, data_crc: 0x5651c09e, geo_crc: 0x6a62801d, tex_crc: 0xf7d118f3, data_size: 200448, geo_size: 100400, tex_size: 66992, types: [20]}
+  - {index: 532, crc: 0x2734c8cb, name: warr_cb_fury, data: warr_cb_header, data_crc: 0x5651c09e, geo_crc: 0xcd0b161a, tex_crc: 0x55143c8c, data_size: 200448, geo_size: 99568, tex_size: 66992}
+  - {index: 380, crc: 0x66e23507, name: warr_cb_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x11e50591, tex_crc: 0x8c569d7f, data_size: 2126704, geo_size: 102848, tex_size: 66992, types: [19]}
+  - {index: 381, crc: 0x581b4a06, name: warr_cl, data: warr_cl_header, data_crc: 0x43dbd2ac, geo_crc: 0xaed5bbf0, tex_crc: 0x3366231e, data_size: 214608, geo_size: 106768, tex_size: 66992, types: [1]}
+  - {index: 430, crc: 0x3d68db66, name: warr_cl_chase, data: warr_cl_chase_header, data_crc: 0xacddc681, geo_crc: 0xaed5bbf0, tex_crc: 0x3366231e, data_size: 30976, geo_size: 106768, tex_size: 66992, types: [4]}
+  - {index: 540, crc: 0xcfcd11dc, name: warr_cl_chase_fury, data: warr_cl_chase_header, data_crc: 0xacddc681, geo_crc: 0x3e7e344a, tex_crc: 0xa3cdaca4, data_size: 30976, geo_size: 100432, tex_size: 66992}
+  - {index: 533, crc: 0x1d3ea9bb, name: warr_cl_fury, data: warr_cl_header, data_crc: 0x43dbd2ac, geo_crc: 0x3e7e344a, tex_crc: 0xa3cdaca4, data_size: 214608, geo_size: 100432, tex_size: 66992}
+  - {index: 382, crc: 0xd9d28b66, name: warr_cl_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xaed5bbf0, tex_crc: 0x3366231e, data_size: 2126704, geo_size: 106768, tex_size: 66992, types: [2]}
+  - {index: 383, crc: 0xa8c6705e, name: warr_cl_ghost, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xaed5bbf0, tex_crc: 0x9d082d5b, data_size: 2126704, geo_size: 106768, tex_size: 67008, types: [3]}
+  - {index: 524, crc: 0x3272ab8a, name: warr_cl_ghost_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xaed5bbf0, tex_crc: 0x2591c8a2, data_size: 2126704, geo_size: 106768, tex_size: 67008}
+  - {index: 384, crc: 0xc1121bbc, name: warr_co, data: warr_co_header, data_crc: 0xcd54d54f, geo_crc: 0xe975c120, tex_crc: 0x74c659ce, data_size: 227040, geo_size: 113648, tex_size: 66992, types: [15]}
+  - {index: 525, crc: 0x845aebe0, name: warr_co_a, data: warr_co_header, data_crc: 0xcd54d54f, geo_crc: 0xe975c120, tex_crc: 0x7ecfea16, data_size: 227040, geo_size: 113648, tex_size: 66992}
+  - {index: 386, crc: 0xf9dce195, name: warr_co_cv, data: warr_co_header, data_crc: 0xcd54d54f, geo_crc: 0xf16795cc, tex_crc: 0x6cd40d22, data_size: 227040, geo_size: 101760, tex_size: 66992, types: [17]}
+  - {index: 534, crc: 0x9baadb15, name: warr_co_fury, data: warr_co_header, data_crc: 0xcd54d54f, geo_crc: 0xcd0b161a, tex_crc: 0x6874153c, data_size: 227040, geo_size: 99568, tex_size: 66992}
+  - {index: 385, crc: 0x9e72f1b6, name: warr_co_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xe975c120, tex_crc: 0x74c659ce, data_size: 2126704, geo_size: 113648, tex_size: 66992, types: [16]}
+  - {index: 387, crc: 0xf42d3b4a, name: warr_dest_le, data: dest_lt_header, data_crc: 0x9a46c2ee, geo_crc: 0x7063ddea, tex_crc: 0xe1ebb84a, data_size: 75616, geo_size: 98608, tex_size: 67008, types: [61]}
+  - {index: 388, crc: 0xbc65eff9, name: warr_fo, data: warr_fo_header, data_crc: 0x87c39000, geo_crc: 0xb9b85093, tex_crc: 0x240bc87d, data_size: 204000, geo_size: 109552, tex_size: 66992, types: [21]}
+  - {index: 389, crc: 0x538dc52e, name: warr_fo_cv1, data: warr_fo_header, data_crc: 0x87c39000, geo_crc: 0xbbf0d083, tex_crc: 0x0c400c66, data_size: 204000, geo_size: 101712, tex_size: 66992, types: [23]}
+  - {index: 390, crc: 0xca849494, name: warr_fo_cv2, data: warr_fo_header, data_crc: 0x87c39000, geo_crc: 0xbbf0d083, tex_crc: 0x4be076b6, data_size: 204000, geo_size: 101712, tex_size: 66992, types: [24]}
+  - {index: 535, crc: 0xc992f4b2, name: warr_fo_fury, data: warr_fo_header, data_crc: 0x87c39000, geo_crc: 0xcd0b161a, tex_crc: 0x2fd46fec, data_size: 204000, geo_size: 99568, tex_size: 66992}
+  - {index: 391, crc: 0xcebf6005, name: warr_fo_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb9b85093, tex_crc: 0x240bc87d, data_size: 2126704, geo_size: 109552, tex_size: 66992, types: [22]}
+  - {index: 392, crc: 0xd1ce64a7, name: warr_fo_ghost, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb9b85093, tex_crc: 0x9c493c4a, data_size: 2126704, geo_size: 109552, tex_size: 67008, types: [25]}
+  - {index: 526, crc: 0xedd65c0b, name: warr_fo_ghost_a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xb9b85093, tex_crc: 0x1cf8ca01, data_size: 2126704, geo_size: 109552, tex_size: 67008}
+  - {index: 393, crc: 0x67d79063, name: warr_jn, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xdc7c0f07, tex_crc: 0x6ea921b6, data_size: 2126704, geo_size: 97360, tex_size: 66992, types: [41]}
+  - {index: 395, crc: 0xb25eb222, name: warr_ly, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9bdc75d7, tex_crc: 0x6a308939, data_size: 2126704, geo_size: 95552, tex_size: 66992, types: [45]}
+  - {index: 399, crc: 0xb8291b35, name: warr_ma, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xdc7c0f07, tex_crc: 0xf1fc86df, data_size: 2126704, geo_size: 97360, tex_size: 66992, types: [43]}
+  - {index: 401, crc: 0x721ed1b2, name: warr_re, data: warr_re_header, data_crc: 0xe72f9fb5, geo_crc: 0x6b4f08bf, tex_crc: 0xf6fc9051, data_size: 200640, geo_size: 103168, tex_size: 66992, types: [30]}
+  - {index: 527, crc: 0x61685ecc, name: warr_re_a, data: warr_re_header, data_crc: 0xe72f9fb5, geo_crc: 0x6b4f08bf, tex_crc: 0x6aae84ed, data_size: 200640, geo_size: 103168, tex_size: 66992}
+  - {index: 402, crc: 0xcbe1bfc3, name: warr_re_cv, data: warr_re_header, data_crc: 0xe72f9fb5, geo_crc: 0xdb1cdf36, tex_crc: 0x46af47d8, data_size: 200640, geo_size: 96288, tex_size: 66992, types: [32]}
+  - {index: 536, crc: 0xfb986f09, name: warr_re_fury, data: warr_re_header, data_crc: 0xe72f9fb5, geo_crc: 0xcd0b161a, tex_crc: 0x55143c8c, data_size: 200640, geo_size: 99568, tex_size: 66992}
+  - {index: 403, crc: 0x1c483829, name: warr_re_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x6b4f08bf, tex_crc: 0xf6fc9051, data_size: 2126704, geo_size: 103168, tex_size: 66992, types: [31]}
+  - {index: 404, crc: 0xfcd7397b, name: warr_sn, data: warr_sn_header, data_crc: 0xad3e97a0, geo_crc: 0xd7c3ea0b, tex_crc: 0x4a7072e5, data_size: 193872, geo_size: 111744, tex_size: 66992, types: [33]}
+  - {index: 528, crc: 0xd581d648, name: warr_sn_a, data: warr_sn_header, data_crc: 0xad3e97a0, geo_crc: 0xd7c3ea0b, tex_crc: 0xa403d089, data_size: 193872, geo_size: 111744, tex_size: 66992}
+  - {index: 431, crc: 0xd64cfb64, name: warr_sn_chase, data: warr_sn_chase_header, data_crc: 0x09d19d63, geo_crc: 0xd7c3ea0b, tex_crc: 0x4a7072e5, data_size: 30976, geo_size: 111744, tex_size: 66992, types: [36]}
+  - {index: 541, crc: 0x97f12999, name: warr_sn_chase_fury, data: warr_sn_chase_header, data_crc: 0x09d19d63, geo_crc: 0xcd0b161a, tex_crc: 0x2fd46fec, data_size: 30976, geo_size: 99568, tex_size: 66992}
+  - {index: 405, crc: 0x21801172, name: warr_sn_cv, data: warr_sn_header, data_crc: 0xad3e97a0, geo_crc: 0x910dd723, tex_crc: 0x0cbe4fcd, data_size: 193872, geo_size: 107504, tex_size: 66992, types: [35]}
+  - {index: 537, crc: 0x3728947e, name: warr_sn_fury, data: warr_sn_header, data_crc: 0xad3e97a0, geo_crc: 0xcd0b161a, tex_crc: 0x2fd46fec, data_size: 193872, geo_size: 99568, tex_size: 66992}
+  - {index: 406, crc: 0xa0c4da9d, name: warr_sn_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd7c3ea0b, tex_crc: 0x4a7072e5, data_size: 2126704, geo_size: 111744, tex_size: 66992, types: [34]}
+  - {index: 407, crc: 0x1ff8b30b, name: warr_so_va1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xdc7c0f07, tex_crc: 0xe6f2c780, data_size: 2126704, geo_size: 97360, tex_size: 17840, types: [49]}
+  - {index: 413, crc: 0xfb55298b, name: warr_so_va1_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xdc7c0f07, tex_crc: 0x47e1a858, data_size: 2126704, geo_size: 97360, tex_size: 67008, types: [55]}
+  - {index: 408, crc: 0x86f1e2b1, name: warr_so_va2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xdc7c0f07, tex_crc: 0xa152bd50, data_size: 2126704, geo_size: 97360, tex_size: 17840, types: [50]}
+  - {index: 414, crc: 0xe9e08665, name: warr_so_va2_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xdc7c0f07, tex_crc: 0xc96eafbb, data_size: 2126704, geo_size: 97360, tex_size: 67008, types: [56]}
+  - {index: 409, crc: 0xf1f6d227, name: warr_so_va3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xdc7c0f07, tex_crc: 0x9c3294e0, data_size: 2126704, geo_size: 97360, tex_size: 17840, types: [51]}
+  - {index: 415, crc: 0x515ce100, name: warr_so_va3_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xdc7c0f07, tex_crc: 0x05c4af25, data_size: 2126704, geo_size: 97360, tex_size: 67008, types: [57]}
+  - {index: 410, crc: 0x34d5e0c8, name: warr_so_vb1, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9bdc75d7, tex_crc: 0x6066b52e, data_size: 2126704, geo_size: 95552, tex_size: 17840, types: [52]}
+  - {index: 416, crc: 0xbcf5535b, name: warr_so_vb1_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9bdc75d7, tex_crc: 0x7e6c949d, data_size: 2126704, geo_size: 95552, tex_size: 67008, types: [58]}
+  - {index: 411, crc: 0xaddcb172, name: warr_so_vb2, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9bdc75d7, tex_crc: 0x27c6cffe, data_size: 2126704, geo_size: 95552, tex_size: 17840, types: [53]}
+  - {index: 417, crc: 0xae40fcb5, name: warr_so_vb2_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9bdc75d7, tex_crc: 0xf0e3937e, data_size: 2126704, geo_size: 95552, tex_size: 67008, types: [59]}
+  - {index: 412, crc: 0xdadb81e4, name: warr_so_vb3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9bdc75d7, tex_crc: 0x1aa6e64e, data_size: 2126704, geo_size: 95552, tex_size: 17840, types: [54]}
+  - {index: 418, crc: 0x16fc9bd0, name: warr_so_vb3_hr, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9bdc75d7, tex_crc: 0x3c4993e0, data_size: 2126704, geo_size: 95552, tex_size: 67008, types: [60]}
+  - {index: 419, crc: 0x98bc91bb, name: warr_sw, data: warr_sw_header, data_crc: 0xcecabda0, geo_crc: 0xba331ff8, tex_crc: 0x27808716, data_size: 200896, geo_size: 106288, tex_size: 66992, types: [5]}
+  - {index: 529, crc: 0xc6764eb7, name: warr_sw_a, data: warr_sw_header, data_crc: 0xcecabda0, geo_crc: 0xba331ff8, tex_crc: 0x56450994, data_size: 200896, geo_size: 106288, tex_size: 66992}
+  - {index: 432, crc: 0x240a2279, name: warr_sw_chase, data: warr_sw_chase_header, data_crc: 0xc1355e4f, geo_crc: 0xba331ff8, tex_crc: 0x27808716, data_size: 30976, geo_size: 106288, tex_size: 66992, types: [9]}
+  - {index: 542, crc: 0x0640fef4, name: warr_sw_chase_fury, data: warr_sw_chase_header, data_crc: 0xc1355e4f, geo_crc: 0xcd0b161a, tex_crc: 0x8ef76b47, data_size: 30976, geo_size: 99568, tex_size: 66992}
+  - {index: 420, crc: 0x0c910967, name: warr_sw_cv, data: warr_sw_header, data_crc: 0xcecabda0, geo_crc: 0xf2f9fd23, tex_crc: 0x6f4a65cd, data_size: 200896, geo_size: 103808, tex_size: 66992, types: [7]}
+  - {index: 538, crc: 0x13f1c72d, name: warr_sw_fury, data: warr_sw_header, data_crc: 0xcecabda0, geo_crc: 0xcd0b161a, tex_crc: 0x8ef76b47, data_size: 200896, geo_size: 99568, tex_size: 66992}
+  - {index: 421, crc: 0xcd342f6e, name: warr_sw_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xba331ff8, tex_crc: 0x27808716, data_size: 2126704, geo_size: 106288, tex_size: 66992, types: [6]}
+  - {index: 422, crc: 0xb1a48941, name: warr_sw_ghost, data: warr_sw_header, data_crc: 0xcecabda0, geo_crc: 0xba331ff8, tex_crc: 0x1cc78328, data_size: 200896, geo_size: 106288, tex_size: 67008, types: [8]}
+  - {index: 423, crc: 0x30452a7b, name: warr_ty, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x18069121, tex_crc: 0x85b509cf, data_size: 2126704, geo_size: 100080, tex_size: 66992, types: [38]}
+  - {index: 425, crc: 0x5e6ea244, name: warr_ty_cv, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x831282d8, tex_crc: 0x1ea11a36, data_size: 2126704, geo_size: 93024, tex_size: 66992, types: [40]}
+  - {index: 426, crc: 0x167214b6, name: warr_ve, data: warr_ve_header, data_crc: 0xbac3ceb9, geo_crc: 0xf0de4aa9, tex_crc: 0x6d6dd247, data_size: 217296, geo_size: 110544, tex_size: 66992, types: [26, 28]}
+  - {index: 530, crc: 0xee0ac99b, name: warr_ve_a, data: warr_ve_header, data_crc: 0xbac3ceb9, geo_crc: 0xf0de4aa9, tex_crc: 0xeee48a17, data_size: 217296, geo_size: 110544, tex_size: 66992}
+  - {index: 427, crc: 0x3e611903, name: warr_ve_cv, data: warr_ve_header, data_crc: 0xbac3ceb9, geo_crc: 0x86f08e3a, tex_crc: 0x1b4316d4, data_size: 217296, geo_size: 105440, tex_size: 66992, types: [29]}
+  - {index: 539, crc: 0x0fd74b1a, name: warr_ve_fury, data: warr_ve_header, data_crc: 0xbac3ceb9, geo_crc: 0xcd0b161a, tex_crc: 0x6874153c, data_size: 217296, geo_size: 99568, tex_size: 66992}
+  - {index: 428, crc: 0x87d97a3f, name: warr_ve_gen, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xf0de4aa9, tex_crc: 0x6d6dd247, data_size: 2126704, geo_size: 110544, tex_size: 66992, types: [27]}
+  - {index: 137, crc: 0x87f086c3, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x41a6b76c, data_size: 2126704, geo_size: 85824, tex_size: 17840}
+  - {index: 140, crc: 0x1ef9d779, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0x0606cdbc, data_size: 2126704, geo_size: 85824, tex_size: 17840}
+  - {index: 142, crc: 0xf941fa7e, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xd8f472d1, tex_crc: 0xb93673dd, data_size: 2126704, geo_size: 85824, tex_size: 17840}
+  - {index: 149, crc: 0x59fd14be, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x7d4f8017, tex_crc: 0xfbe4e46b, data_size: 2126704, geo_size: 88608, tex_size: 17840}
+  - {index: 173, crc: 0x9ec10057, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xa9b99131, tex_crc: 0x340a09df, data_size: 2126704, geo_size: 83952, tex_size: 17840}
+  - {index: 174, crc: 0x07c851ed, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9ef21270, tex_crc: 0x73aa730f, data_size: 2126704, geo_size: 84752, tex_size: 17840}
+  - {index: 209, crc: 0x6a0fd528, data: warr_cb_header, data_crc: 0x5651c09e, geo_crc: 0x11e50591, tex_crc: 0x63bd820b, data_size: 200448, geo_size: 102848, tex_size: 66992}
+  - {index: 218, crc: 0x297b8b52, data: warr_sn_header, data_crc: 0xad3e97a0, geo_crc: 0x3828f57f, tex_crc: 0xa59b6d91, data_size: 193872, geo_size: 96448, tex_size: 66992}
+  - {index: 255, crc: 0x5ba3fe13, data: hooker_header, data_crc: 0x19c5e38b, geo_crc: 0x6fd21dd3, tex_crc: 0x67ff7f5f, data_size: 137200, geo_size: 88768, tex_size: 17840}
+  - {index: 257, crc: 0xd1d88657, data: hurr_lt_header, data_crc: 0x77a47335, geo_crc: 0xba331ff8, tex_crc: 0xacd19bf4, data_size: 133408, geo_size: 106288, tex_size: 66992}
+  - {index: 259, crc: 0xea4b6425, data: hurr_de_header, data_crc: 0x7c6de098, geo_crc: 0xad8bf8a6, tex_crc: 0x2ce6c7d0, data_size: 183904, geo_size: 97184, tex_size: 66992}
+  - {index: 293, crc: 0xc7b064ef, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x39080885, tex_crc: 0x5c2b54da, data_size: 2126704, geo_size: 103552, tex_size: 66992}
+  - {index: 295, crc: 0x555a298f, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x39080885, tex_crc: 0x79839e5e, data_size: 2126704, geo_size: 103552, tex_size: 66992}
+  - {index: 314, crc: 0xf4a52e90, data_crc: 0x07043cae, geo_crc: 0xba331ff8, tex_crc: 0x6d6dd247, data_size: 46288, geo_size: 106288, tex_size: 66992}
+  - {index: 326, crc: 0x9aab123d, data_crc: 0xea4efde3, geo_crc: 0xba331ff8, tex_crc: 0x6d6dd247, data_size: 104304, geo_size: 106288, tex_size: 66992}
+  - {index: 394, crc: 0x4c70e481, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2c2f5c6c, tex_crc: 0x0cddbbe7, data_size: 2126704, geo_size: 81728, tex_size: 66992}
+  - {index: 396, crc: 0xe77d0edb, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x9bdc75d7, tex_crc: 0xf8b2057a, data_size: 2126704, geo_size: 95552, tex_size: 66992}
+  - {index: 397, crc: 0x1db6846a, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x940a62b1, tex_crc: 0xc4b8a754, data_size: 2126704, geo_size: 78528, tex_size: 66992}
+  - {index: 398, crc: 0x84bfd5d0, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x940a62b1, tex_crc: 0x8318dd84, data_size: 2126704, geo_size: 78528, tex_size: 66992}
+  - {index: 400, crc: 0xa63328c7, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x2c2f5c6c, tex_crc: 0xb19cc482, data_size: 2126704, geo_size: 81728, tex_size: 66992}
+  - {index: 424, crc: 0xb7edd298, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0x18069121, tex_crc: 0xefaae513, data_size: 2126704, geo_size: 100080, tex_size: 66992}
+  - {index: 429, crc: 0x47f80e38, data: generic_header, data_crc: 0x9da2e531, geo_crc: 0xba331ff8, tex_crc: 0x27808716, data_size: 2126704, geo_size: 106288, tex_size: 66992}

@@ -181,6 +181,51 @@ An entry of `level.yaml`:
 - `depth: mechanical` (signature only, no description) is accepted so a new entry can land before it is described;
   the masterlist has none.
 
+## Reference lists {#reference-lists}
+
+The [Game references](../references/index.md) are lists of the things scripts, mods and Coney's code name:
+characters, gangs, objects, levels, clips, anim ids, controls, colours, text tags, script constants, sounds,
+script events and WAD entry names. Each is a YAML file in `research/references/<list>.yaml`, and its page in
+`docs/references/` is generated from it. They hold only names, ids, numbers and our own short descriptions
+(`LEGAL.md`, "Reference lists"): never game text, script source or a file from the disc.
+
+A list file has a fixed shape; the fields of its entries are defined per list in
+`python/src/coney_tools/refs_topics.py`, and each page ends with its list's fields:
+
+```yaml
+title: Characters (humans)
+about: |                                  # Markdown, our own words: what the list is
+  ...
+complete: |                               # Markdown: what is complete and what is not
+  ...
+defaults: {source: "config_preload2.lua, CfgChar", evidence: inferred}
+entries:
+  - id: 32
+    model: warr_re_cv
+    label: Rembrandt (`_cv` model)        # hand-written
+```
+
+- Every entry has a **source** and an **evidence** level (the [levels](#evidence-levels) above, spelled
+  `confirmed-code`, `confirmed-runtime`, `inferred`, `speculative`), its own or the list's `defaults`.
+- Each entry has a stable **anchor**, `<list page>#<prefix>-<key>` (`characters.md#char-32`,
+  `levels.md#level-29`), for links from research pages, issues and mods. A key never changes once published.
+- Fields are either **read from the disc** or **hand-written** (each page's field table says which).
+  `coney-tools refs extract` rewrites the first kind and keeps the second, and keeps entries it did not produce,
+  so a hand-added entry or a name found another way survives a refresh.
+
+Commands ([coney-tools](coney-tools.md#refs)):
+
+```sh
+uv run --project python coney-tools refs extract [DISC] [--only LIST ...] [--names FILE]   # refresh from your disc
+uv run --project python coney-tools refs render [--check]                                 # write or check the pages
+```
+
+To change a list by hand, edit its YAML and run `refs render`; CI fails when a page is out of date with its YAML.
+To add a field or a list, add it in `refs_topics.py` (and its reader in `refs_extract.py` when it comes from the
+disc), then run `refs extract`. **Thumbnails** go in `docs/references/images/` (`characters/<model>.png`,
+`objects/<name>.png`; 256 × 256, transparent, rendered by `coney --render-references` from the player's disc);
+`refs extract` links each one that exists.
+
 ## Tools
 
 - **Ghidra with ghidra-mcp.** Static analysis of `SLUS_212.15`, with the Emotion Engine processor extension; the

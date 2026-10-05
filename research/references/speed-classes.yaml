@@ -1,0 +1,51 @@
+# Speed classes: a Coney game reference list. The page docs/references/speed-classes.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Speed classes"
+about: |
+  The fallback speed table `CfgSpeedClass` fills at `0x006b6548` (six floats per class). In play the
+  game uses each human's own clip speeds instead ([Characters](../research/characters.md#speed-classes)).
+complete: |
+  All five classes are listed.
+defaults: {source: "config_preload2.lua, CfgSpeedClass", evidence: inferred}
+entries:
+  - id: 0
+    base: 3
+    v04: 0.8
+    walk: 1.6
+    jog: 4.1
+    run: 6.5
+    sprint: 8
+    types: 15
+  - id: 1
+    base: 3
+    v04: 0.8
+    walk: 1.6
+    jog: 4.1
+    run: 7.5
+    sprint: 9
+    types: 330
+  - id: 2
+    base: 3
+    v04: 0.8
+    walk: 1.6
+    jog: 1.6
+    run: 1.6
+    sprint: 9.75
+    types: 63
+  - id: 3
+    base: 3
+    v04: 0.8
+    walk: 1.6
+    jog: 4.1
+    run: 7.5
+    sprint: 7.5
+    types: 25
+  - id: 4
+    base: 3
+    v04: 0.964
+    walk: 0.964
+    jog: 0.965
+    run: 2.723
+    sprint: 2.723
+    types: 16

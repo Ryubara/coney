@@ -1,0 +1,71 @@
+# HUD colours: a Coney game reference list. The page docs/references/hud-colours.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "HUD colours"
+about: |
+  The colour table `CL` scripts use in text (`<COLOR rrggbbaa>`) and the HUD slots `CfgHUDColor`
+  assigns from it.
+complete: |
+  Every key of `CL` is listed.
+defaults: {source: "config_preload2.lua, CL and CfgHUDColor", evidence: inferred}
+entries:
+  - id: wht
+    rgba: B2B2B2FF
+    swatch: B2B2B2FF
+    markup: "<COLOR B2B2B2FF>"
+  - id: but
+    rgba: FFFFFFFF
+    swatch: FFFFFFFF
+    markup: "<COLOR FFFFFFFF>"
+    hud_slot: 1
+  - id: cash
+    rgba: "49B749FF"
+    swatch: "49B749FF"
+    markup: "<COLOR 49B749FF>"
+    hud_slot: 2
+  - id: warr
+    rgba: "861A1AFF"
+    swatch: "861A1AFF"
+    markup: "<COLOR 861A1AFF>"
+    hud_slot: 3
+  - id: txt
+    rgba: "806400FF"
+    swatch: "806400FF"
+    markup: "<COLOR 806400FF>"
+    hud_slot: 4
+  - id: gry
+    rgba: "505050FF"
+    swatch: "505050FF"
+    markup: "<COLOR 505050FF>"
+    hud_slot: 5
+  - id: bon
+    rgba: "6A4183FF"
+    swatch: "6A4183FF"
+    markup: "<COLOR 6A4183FF>"
+    hud_slot: 6
+  - id: blu
+    rgba: "2353BCFF"
+    swatch: "2353BCFF"
+    markup: "<COLOR 2353BCFF>"
+    hud_slot: 7
+  - id: orng
+    rgba: "2353BCFF"
+    swatch: "2353BCFF"
+    markup: "<COLOR 2353BCFF>"
+    hud_slot: 8
+  - id: bigmoney
+    markup: "<COLOR 0xA5A98AFF>"
+    hud_slot: 9
+  - id: hudWhite
+    rgba: B2B2B2FF
+    swatch: B2B2B2FF
+    markup: "[178, 178, 178, 255]"
+  - id: selected
+  - id: enabled
+    rgba: "505050FF"
+    swatch: "505050FF"
+    markup: "[80, 80, 80, 255]"
+  - id: disabled
+    rgba: "505050FF"
+    swatch: "505050FF"
+    markup: "[80, 80, 80, 255]"

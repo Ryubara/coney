@@ -84,6 +84,23 @@ nav:
           - Animation: research/formats/animation.md
       - Xbox assets (optional): research/xbox-assets.md
   - Game references:
+      - references/index.md
+      - Characters: references/characters.md
+      - Character models: references/character-models.md
+      - Gangs: references/gangs.md
+      - Speed classes: references/speed-classes.md
+      - Objects and weapons: references/objects.md
+      - Object groups: references/object-groups.md
+      - Levels: references/levels.md
+      - Animation clips: references/animations.md
+      - Anim ids: references/anim-ids.md
+      - Controls: references/controls.md
+      - HUD colours: references/hud-colours.md
+      - Text formatting: references/text-formatting.md
+      - Script enums: references/enums.md
+      - Sound and music: references/sound.md
+      - Script events: references/script-events.md
+      - WAD entry names: references/wad-names.md
       - Script bindings:
           - Overview: references/bindings/index.md
           - Characters: references/bindings/character.md

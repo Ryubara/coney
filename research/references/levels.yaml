@@ -1,0 +1,1766 @@
+# Levels: a Coney game reference list. The page docs/references/levels.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: Levels
+about: |
+  The 111 level records of `levelNames` (`CfgLevelName`), in the order the game keeps them. A level loads
+  from `<name>.lev` and its section packs `<name>_<k>.pak` ([Level loading](../research/level-loading.md)).
+complete: |
+  Every record is listed with every field. `.lev` and pack counts come from the WAD names list, so a
+  level whose files have no recovered name shows none. Kinds are hand-written: only the front end and
+  the test levels so far.
+defaults: {source: "config_preload3.lua, levelNames", evidence: inferred}
+entries:
+  - index: 0
+    name: level100
+    world: level100
+    number: 100
+    kind: "front end (menus)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: true
+    packs: 2
+  - index: 1
+    name: level99
+    world: level99
+    number: 99
+    sections: 3
+    order: 1
+    flag1: LT_NONE
+    intro: LT_PLAY
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [-1.33, 61.55, 95]
+    v78: 0x0019000b
+    subway: SUBWAY_ORANGE
+    v80: 0x0016000b
+    has_lev: true
+    packs: 3
+  - index: 2
+    name: level80
+    world: level80
+    number: 80
+    sections: 4
+    order: 2
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [320.88, 291.59, 215]
+    v78: 0x0019000b
+    subway: SUBWAY_ORANGE
+    v80: 0x00160002
+    has_lev: true
+    packs: 4
+  - index: 3
+    name: level87
+    world: level87
+    number: 87
+    sections: 5
+    order: 3
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_PLAY
+    lock: LOCKED
+    map: [-202.28, 212.19, 370]
+    v78: 0x00190001
+    subway: SUBWAY_BROWN
+    v80: 0x00160008
+    has_lev: true
+    packs: 5
+  - index: 4
+    name: level34
+    world: level34
+    number: 34
+    sections: 5
+    order: 4
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_PLAY
+    lock: LOCKED
+    map: [272.04, -0.4, 280]
+    v78: 0x00190002
+    subway: SUBWAY_BLUE
+    v80: 0x00170004
+    has_lev: true
+    packs: 5
+  - index: 5
+    name: level2
+    world: level2
+    number: 2
+    sections: 4
+    order: 5
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [-310.2, 209, 297.77]
+    v78: 0x00190008
+    subway: SUBWAY_ORANGE
+    v80: 0x00170002
+    has_lev: true
+    packs: 4
+  - index: 6
+    name: level3
+    world: level3
+    number: 3
+    sections: 5
+    order: 6
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [351.48, 439.9, 682.89]
+    v78: 0x00190003
+    subway: SUBWAY_BLUE
+    v80: 0x00170005
+    has_lev: true
+    packs: 5
+  - index: 7
+    name: level5
+    world: level5
+    number: 5
+    sections: 4
+    order: 7
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [213.25, 241.22, 470]
+    v78: 0x00190005
+    subway: SUBWAY_ORANGE
+    v80: 0x0017000a
+    has_lev: true
+    packs: 4
+  - index: 8
+    name: level81
+    world: level81
+    number: 81
+    sections: 5
+    order: 8
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_PLAY
+    lock: LOCKED
+    map: [-1.86, 48.42, 225]
+    v78: 0x0019000b
+    subway: SUBWAY_ORANGE
+    v80: 0x00160003
+    has_lev: true
+    packs: 5
+  - index: 9
+    name: level86
+    world: level86
+    number: 86
+    sections: 4
+    order: 9
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [209.09, 196.58, 280]
+    v78: 0x0019000b
+    subway: SUBWAY_ORANGE
+    v80: 0x00160007
+    has_lev: true
+    packs: 4
+  - index: 10
+    name: level93
+    world: level93
+    number: 93
+    sections: 6
+    order: 10
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [-202.28, 212.19, 370]
+    v78: 0x00190001
+    subway: SUBWAY_BROWN
+    v80: 0x0016000a
+    has_lev: true
+    packs: 6
+  - index: 11
+    name: level31
+    world: level31
+    number: 31
+    sections: 6
+    order: 11
+    flag1: LT_NONE
+    intro: LT_PLAY
+    outro: LT_PLAY
+    lock: LOCKED
+    map: [106.72, 234.19, 279]
+    v78: 0x0019000a
+    subway: SUBWAY_GREEN
+    v80: 0x00170003
+    has_lev: true
+    packs: 6
+  - index: 12
+    name: level14
+    world: level14
+    number: 14
+    sections: 3
+    order: 12
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [168.86, 120.5, 208]
+    v78: 0x00190006
+    subway: SUBWAY_ORANGE
+    v80: 0x00160000
+    has_lev: true
+    packs: 3
+  - index: 13
+    name: level9
+    world: level9
+    number: 9
+    sections: 3
+    order: 13
+    flag1: LT_NONE
+    intro: LT_PLAY
+    outro: LT_PLAY
+    lock: LOCKED
+    map: [171.17, 441.25, 300]
+    v78: 0x00190007
+    subway: SUBWAY_GREEN
+    v80: 0x0017000b
+    has_lev: true
+    packs: 3
+  - index: 14
+    name: level51
+    world: level51
+    number: 51
+    sections: 7
+    order: 14
+    flag1: LT_NONE
+    intro: LT_PLAY
+    outro: LT_NONE
+    lock: LOCKED
+    map: [237.58, 624.3, 503.22]
+    v78: 0x0019000a
+    subway: SUBWAY_GREEN
+    v80: 0x00170006
+    has_lev: true
+    packs: 7
+  - index: 15
+    name: level52
+    world: level52
+    number: 52
+    sections: 4
+    order: 15
+    flag1: LT_NONE
+    intro: LT_PLAY
+    outro: LT_NONE
+    lock: LOCKED
+    map: [-400.28, -47.76, 230]
+    v78: 0x00190008
+    subway: SUBWAY_ORANGE
+    v80: 0x00170007
+    has_lev: true
+    packs: 4
+  - index: 16
+    name: level54
+    world: level54
+    number: 54
+    sections: 5
+    order: 16
+    flag1: LT_NONE
+    intro: LT_PLAY
+    outro: LT_NONE
+    lock: LOCKED
+    map: [1081.84, 499.41, 1130]
+    v78: 0x00190002
+    subway: SUBWAY_BLUE
+    v80: 0x00170008
+    has_lev: true
+    packs: 5
+  - index: 17
+    name: level55
+    world: level55
+    number: 55
+    sections: 3
+    order: 17
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [3.93, 289.53, 560.46]
+    v78: 0x00190009
+    subway: SUBWAY_GREEN
+    v80: 0x00170009
+    has_lev: true
+    packs: 3
+  - index: 18
+    name: level84
+    world: level84
+    number: 84
+    sections: 3
+    order: 18
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_PLAY
+    lock: LOCKED
+    map: [332.45, 200.88, 560.46]
+    v78: 0x0019000b
+    subway: SUBWAY_ORANGE
+    v80: 0x00160006
+    has_lev: true
+    packs: 4
+  - index: 19
+    name: level82
+    world: level82
+    number: 82
+    sections: 4
+    order: 19
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [-157.24, 83.44, 279.09]
+    v78: 0x00190001
+    subway: SUBWAY_BROWN
+    v80: 0x00160004
+    has_lev: true
+    packs: 4
+  - index: 20
+    name: level92
+    world: level92
+    number: 92
+    sections: 3
+    order: 20
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [266.15, 185.57, 230]
+    v78: 0x0019000b
+    subway: SUBWAY_ORANGE
+    v80: 0x00160009
+    has_lev: true
+    packs: 3
+  - index: 21
+    name: level83
+    world: level83
+    number: 83
+    sections: 6
+    order: 21
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [128.24, 213.95, 468]
+    v78: 0x00190001
+    subway: SUBWAY_BROWN
+    v80: 0x00160005
+    has_lev: true
+    packs: 6
+  - index: 22
+    name: level20
+    world: level20
+    number: 20
+    sections: 6
+    order: 22
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [-244.59, 145.07, 364]
+    v78: 0x00190004
+    subway: SUBWAY_BLUE
+    v80: 0x00170001
+    has_lev: true
+    packs: 6
+  - index: 23
+    name: level11
+    world: level11
+    number: 11
+    sections: 6
+    order: 23
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [137.7, 124.23, 340]
+    v78: 0x00190000
+    subway: SUBWAY_BLUE
+    v80: 0x00170000
+    has_lev: true
+    packs: 6
+  - index: 24
+    name: level60
+    world: level60
+    number: 60
+    sections: 3
+    order: 25
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0016000b
+    has_lev: true
+    packs: 2
+  - index: 25
+    name: level61
+    world: level61
+    number: 61
+    sections: 3
+    order: 25
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0016000b
+    has_lev: true
+    packs: 1
+  - index: 26
+    name: level62
+    world: level62
+    number: 62
+    sections: 3
+    order: 25
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0016000b
+    has_lev: true
+    packs: 1
+  - index: 27
+    name: level63
+    world: level63
+    number: 63
+    sections: 3
+    order: 25
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0016000b
+    has_lev: true
+    packs: 1
+  - index: 28
+    name: level64
+    world: level64
+    number: 64
+    sections: 4
+    order: 25
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0016000b
+    has_lev: true
+    packs: 3
+  - index: 29
+    name: level95
+    world: level95
+    number: 95
+    sections: 12
+    order: 24
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [266.15, 185.57, 230]
+    v78: 0x0000
+    v80: 0x0016000b
+    has_lev: true
+    packs: 12
+  - index: 30
+    name: level90
+    world: level90
+    number: 90
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 31
+    name: level91
+    world: level91
+    number: 91
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 32
+    name: level94
+    world: level94
+    number: 94
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 33
+    name: level96
+    world: level96
+    number: 96
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 34
+    name: level97
+    world: level97
+    number: 97
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 35
+    name: level98
+    world: level98
+    number: 98
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 36
+    name: level70
+    world: level70
+    number: 70
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 37
+    name: level71
+    world: level71
+    number: 71
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 38
+    name: level72
+    world: level72
+    number: 72
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 39
+    name: level73
+    world: level73
+    number: 73
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 40
+    name: level74
+    world: level74
+    number: 74
+    sections: 1
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: LOCKED
+    map: [362.25, 339.48, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 41
+    name: level1
+    world: level1
+    number: 1
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_PLAY
+    outro: LT_NONE
+    lock: LOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: true
+    packs: 1
+  - index: 42
+    name: level101
+    world: level101
+    number: 101
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_GREEN
+    v80: 0x021b0000
+    has_lev: true
+    packs: 1
+  - index: 43
+    name: level102
+    world: level102
+    number: 102
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x021c0000
+    has_lev: true
+    packs: 1
+  - index: 44
+    name: level103
+    world: level103
+    number: 103
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [80.93, 51.98, 54.6]
+    v78: 0x0000
+    subway: SUBWAY_BROWN
+    v80: 0x021d0000
+    has_lev: true
+    packs: 1
+  - index: 45
+    name: level104
+    world: level104
+    number: 104
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [18.25, 18.46, 37]
+    v78: 0x0000
+    subway: SUBWAY_BLUE
+    v80: 0x021e0000
+    has_lev: true
+    packs: 1
+  - index: 46
+    name: level105
+    world: level105
+    number: 105
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_GREEN
+    v80: 0x021f0000
+    has_lev: true
+    packs: 1
+  - index: 47
+    name: level106
+    world: level106
+    number: 106
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [11.68, 1.55, 50]
+    v78: 0x0000
+    subway: SUBWAY_BROWN
+    v80: 0x02200000
+    has_lev: false
+    packs: 0
+  - index: 48
+    name: level107
+    world: level107
+    number: 107
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0.53, -5.14, 45]
+    v78: 0x0000
+    subway: SUBWAY_BLUE
+    v80: 0x02210000
+    has_lev: true
+    packs: 1
+  - index: 49
+    name: level108
+    world: level108
+    number: 108
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [103.3, 551.6, 125]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02220000
+    has_lev: true
+    packs: 1
+  - index: 50
+    name: level109
+    world: level109
+    number: 109
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02230000
+    has_lev: true
+    packs: 1
+  - index: 51
+    name: level110
+    world: level110
+    number: 110
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02240000
+    has_lev: true
+    packs: 1
+  - index: 52
+    name: level111
+    world: level111
+    number: 111
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [76.75, 60.38, 132.06]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02250000
+    has_lev: true
+    packs: 1
+  - index: 53
+    name: level112
+    world: level112
+    number: 112
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [209.09, 196.58, 280]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02260000
+    has_lev: true
+    packs: 0
+  - index: 54
+    name: level113
+    world: level113
+    number: 113
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02270000
+    has_lev: true
+    packs: 1
+  - index: 55
+    name: level114
+    world: level114
+    number: 114
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [60.83, 54.34, 120]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02280000
+    has_lev: true
+    packs: 1
+  - index: 56
+    name: level115
+    world: level115
+    number: 115
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02290000
+    has_lev: true
+    packs: 1
+  - index: 57
+    name: level116
+    world: level116
+    number: 116
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x022a0000
+    has_lev: true
+    packs: 1
+  - index: 58
+    name: level117
+    world: level117
+    number: 117
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x022b0000
+    has_lev: false
+    packs: 0
+  - index: 59
+    name: level118
+    world: level118
+    number: 118
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x022c0000
+    has_lev: true
+    packs: 1
+  - index: 60
+    name: level119
+    world: level119
+    number: 119
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x022d0000
+    has_lev: true
+    packs: 1
+  - index: 61
+    name: level120
+    world: level120
+    number: 120
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [204.74, 209.08, 250]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x022e0000
+    has_lev: true
+    packs: 1
+  - index: 62
+    name: level121
+    world: level121
+    number: 121
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [12.67, 5.21, 40]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x022f0000
+    has_lev: true
+    packs: 1
+  - index: 63
+    name: level122
+    world: level122
+    number: 122
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [17.68, 18.9, 36.04]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02300000
+    has_lev: true
+    packs: 1
+  - index: 64
+    name: level123
+    world: level123
+    number: 123
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02310000
+    has_lev: true
+    packs: 1
+  - index: 65
+    name: level124
+    world: level124
+    number: 124
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02320000
+    has_lev: true
+    packs: 1
+  - index: 66
+    name: level125
+    world: level125
+    number: 125
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02330000
+    has_lev: false
+    packs: 0
+  - index: 67
+    name: level126
+    world: level126
+    number: 126
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02340000
+    has_lev: true
+    packs: 1
+  - index: 68
+    name: level127
+    world: level127
+    number: 127
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02350000
+    has_lev: true
+    packs: 1
+  - index: 69
+    name: level128
+    world: level128
+    number: 128
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02360000
+    has_lev: true
+    packs: 1
+  - index: 70
+    name: level129
+    world: level129
+    number: 129
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02370000
+    has_lev: true
+    packs: 1
+  - index: 71
+    name: level130
+    world: level130
+    number: 130
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02380000
+    has_lev: true
+    packs: 1
+  - index: 72
+    name: level131
+    world: level131
+    number: 131
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x02390000
+    has_lev: true
+    packs: 1
+  - index: 73
+    name: level132
+    world: level132
+    number: 132
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x023a0000
+    has_lev: true
+    packs: 1
+  - index: 74
+    name: level133
+    world: level133
+    number: 133
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x023b0000
+    has_lev: true
+    packs: 1
+  - index: 75
+    name: level134
+    world: level134
+    number: 134
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x023c0000
+    has_lev: true
+    packs: 1
+  - index: 76
+    name: level135
+    world: level135
+    number: 135
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x023d0000
+    has_lev: false
+    packs: 0
+  - index: 77
+    name: level136
+    world: level136
+    number: 136
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x023e0000
+    has_lev: true
+    packs: 1
+  - index: 78
+    name: level137
+    world: level137
+    number: 137
+    sections: 0
+    order: 26
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    subway: SUBWAY_ORANGE
+    v80: 0x023f0000
+    has_lev: true
+    packs: 1
+  - index: 79
+    name: combatselect
+    world: level5
+    number: 422
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [191.78, 326.61, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 80
+    name: test_car
+    world: test_combat2
+    number: 420
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 81
+    name: test_combat3
+    world: test_combat3
+    number: 403
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 82
+    name: test_combat4
+    world: test_combat3
+    number: 404
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 83
+    name: test_combat5
+    world: test_combat5
+    number: 405
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 84
+    name: test_combat_ben
+    world: test_combat_ben
+    number: 406
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [192.58, 359.23, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 85
+    name: test_lipsynch
+    world: test_lipsync
+    number: 407
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 86
+    name: test_combat_cop
+    world: test_combat_ben
+    number: 408
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 87
+    name: test_combat_pit
+    world: test_combat2
+    number: 409
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 88
+    name: test_avoidance
+    world: test_combat_ben
+    number: 410
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 89
+    name: combatslow
+    world: level4
+    number: 411
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [345.87, 303.46, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 90
+    name: test_rumble
+    world: level13
+    number: 412
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [263.09, 305.36, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 91
+    name: test_variable
+    world: test_variable
+    number: 413
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [197.29, 331.98, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 92
+    name: test_combat2
+    world: test_combat2
+    number: 421
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 93
+    name: test_jump
+    world: level23
+    number: 414
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [-58.95, 265.25, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 94
+    name: dynarena
+    world: test_combat3
+    number: 415
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 95
+    name: test_train
+    world: level31
+    number: 416
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [245.52, 365.86, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 96
+    name: test_door
+    world: test_door
+    number: 417
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 97
+    name: test_sergei
+    world: test_sergei
+    number: 418
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 98
+    name: buschase
+    world: test_buschase
+    number: 419
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 99
+    name: buschase2
+    world: test_buschase
+    number: 419
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 100
+    name: carchase
+    world: level84
+    number: 419
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 101
+    name: armies
+    world: level60
+    number: 419
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 102
+    name: cichase
+    world: level84
+    number: 419
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 103
+    name: testflags
+    world: test_flags
+    number: 421
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 104
+    name: test_sound
+    world: test_combat2
+    number: 424
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 105
+    name: objarena
+    world: objarena
+    number: 423
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 106
+    name: test4special
+    world: test_combat2
+    number: 425
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 107
+    name: test
+    world: level3
+    number: 425
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 108
+    name: combatselect2
+    world: level2
+    number: 426
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 109
+    name: testclimb
+    world: testclimb
+    number: 427
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0
+  - index: 110
+    name: testcamera
+    world: testcamera
+    number: 428
+    kind: "test level (by its name)"
+    sections: 0
+    order: 0
+    flag1: LT_NONE
+    intro: LT_NONE
+    outro: LT_NONE
+    lock: UNLOCKED
+    map: [0, 0, 560.46]
+    v78: 0x0000
+    v80: 0x0000
+    has_lev: false
+    packs: 0

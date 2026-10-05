@@ -1,0 +1,310 @@
+# Gangs: a Coney game reference list. The page docs/references/gangs.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: Gangs
+about: |
+  Gang types: `CfgGang(type, ...)` configures each, `GangCreate(type, name)` creates a gang in a
+  level script and `CfgGangMusic` gives it three music tracks. Humans join a gang when they are created.
+complete: |
+  Every gang type (25) is listed with its arguments; the meaning of the byte values is not traced.
+  Labels are hand-written.
+defaults: {source: "config_preload2.lua, CfgGang", evidence: inferred}
+entries:
+  - id: 0
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 10
+    v7: 3
+    v8: 4
+    v9: 0
+    music: [music/warriors_hardrock, music/warriors8, music/4x4short]
+    script_names: [Gang0, Warriors, Warriors2, Warriors3, Warriors1, Warriors02, Warriors04, Warriors01]
+  - id: 1
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 3
+    v3: 3
+    v4: 4
+    v5: 0
+    v7: 4
+    v8: 4
+    v9: 0
+    music: [music/eliminator1, music/eliminator1, music/eliminator1]
+    script_names: [Cops, BeatCop, Cops01, SceneCops, RiotCops, RespondCop, Ticketer, Ticketer2]
+  - id: 2
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 0
+    v7: 4
+    v8: 4
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [ENEMY, ENEMY01, Riffs02, Security01, Security02, GamClubBouncer, ScnRiffs, Riffs01]
+  - id: 3
+    strategy: StratOrphans
+    strategy_values: [0, 0, 0, 5, 0, 5, 0]
+    v2: 1
+    v3: 4
+    v4: 1
+    v5: 0
+    v7: 1
+    v8: 0
+    v9: 50
+    music: [music/long_version_mixdownmaster, music/long_version_mixdownmaster, music/long_version_mixdownmaster]
+    script_names: [Gang1, Crowd1, Crowd2, Rumble1Cheer, B3Debbie, CivFight01, CivFight02, ClinicCowards]
+  - id: 4
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 0
+    v7: 0
+    v8: 3
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [RookieCops2, RiotCops, RiotRogues, WantedRogues, SceneRogues, Rogue01, Rogue02, Rogue03]
+  - id: 5
+    strategy: StratLizzies
+    strategy_values: [0, 20, 20, 0, 0, 0, 0]
+    v2: 2
+    v3: 2
+    v4: 1
+    v5: 0
+    v7: 0
+    v8: 1
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [RookieCops, Scnliz, Lizzie01, Lizzie02, Lizzie03, B01, B02, B03]
+  - id: 6
+    strategy: StratPunks
+    strategy_values: [0, 0, 0, 0, 0, 0, 20]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 4
+    v7: 3
+    v8: 3
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [Punks01, Punks02, Hiders2, ScnPunks, Punks, Punks03, Punks04, Punks05]
+  - id: 7
+    strategy: StratTurnbulls
+    strategy_values: [20, 0, 0, 20, 20, 20, 0]
+    v2: 4
+    v3: 4
+    v4: 4
+    v5: 6
+    v7: 3
+    v8: 2
+    v9: 0
+    music: [music/punky, music/punk5, music/gmetal1]
+    script_names: [DevilBand, ArrestedBulls, PlatformBulls, TopsideArrested, TopsideAC, SewerTurnbulls, CopFighters1, OutsideDevil]
+  - id: 8
+    strategy: StratFuries
+    strategy_values: [12, 0, 10, 0, 20, 0, 0]
+    v2: 2
+    v3: 1
+    v4: 4
+    v5: 0
+    v7: 0
+    v8: 0
+    v9: 0
+    music: [music/furies_fightmaster, music/furyorig, music/warriors_hardrock]
+    script_names: [ParkFuries, ParkFuries2, FenceFuries, MFuries, Fur1, MidFur, PFur02, PFur3]
+  - id: 9
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 0
+    v7: 1
+    v8: 2
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+  - id: 10
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 3
+    v7: 1
+    v8: 1
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [Tag02, Crowd01, Crowd02, Eliminators, NP1Gang, HideEliminators1, HideEliminators2, RunnerEliminators1]
+  - id: 11
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 9
+    v7: 1
+    v8: 1
+    v9: 0
+    music: [music/dunt_dunt, music/hatepril, music/furies_fightmaster]
+    script_names: [SRespond, HideMothers, AlleyMothers, StreetMothers, RunnerMothers1, RunnerMothers2, SM06, SM01]
+  - id: 12
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 5
+    v7: 1
+    v8: 4
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [Security, JSB, JSB2, JSB3, Scout02, AptJSB, Scout01, JonesRespond]
+  - id: 13
+    strategy: StratHurricanes
+    strategy_values: [40, 0, 10, 0, 0, 0, 0]
+    v2: 1
+    v3: 1
+    v4: 0
+    v5: 8
+    v7: 3
+    v8: 2
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [Vargus2, HeavyBag, MoeBitches, Bartender, HurrA, HurrB, HurF4, Sanchez]
+  - id: 14
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 2
+    v5: 4
+    v7: 2
+    v8: 2
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [NP3Gang, Bums, Tag01, RiotMoonrunners, WantedMoonrunners, Diago, Moon01, Moon02]
+  - id: 15
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 3
+    v7: 2
+    v8: 2
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [AngeeBum2]
+  - id: 16
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 6
+    v7: 2
+    v8: 2
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [Tag03, StorePanzers1, WantedPanzers, Panzers]
+  - id: 17
+    strategy: StratBoppers
+    strategy_values: [0, 20, 20, 5, 10, 10, 0]
+    v2: 2
+    v3: 2
+    v4: 2
+    v5: 4
+    v7: 0
+    v8: 1
+    v9: 0
+    music: [music/gfunk1, music/gfunk1, music/gfunk1]
+    script_names: [SceneExtras, Pigs, Pigs2, BeatCops, B1Bops, B1Lead, B2Bops, B4Bops]
+  - id: 18
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 5
+    v7: 4
+    v8: 4
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [Hoze]
+  - id: 19
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 3
+    v5: 3
+    v7: 1
+    v8: 1
+    v9: 0
+    music: [music/aggreas, music/aggreas, music/aggreas]
+    script_names: [Gang2, Virgil, LC, DestRoof01, DesRespond, Cleon, MainWarriors, ExtraWarriors]
+  - id: 20
+    strategy: StratHiHats
+    strategy_values: [5, 5, 40, 10, 10, 5, 0]
+    v2: 2
+    v3: 2
+    v4: 2
+    v5: 0
+    v7: 1
+    v8: 1
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [MolotavThrowers, BackalleyUpperLeftCiv, ENEMY, ENEMY01, ENEMY02, B2Tender, B1Tenders, HHAmbush]
+  - id: 21
+    strategy: StratHuns
+    strategy_values: [0, 10, 15, 0, 20, 0, 0]
+    v2: 4
+    v3: 4
+    v4: 0
+    v5: 0
+    v7: 1
+    v8: 1
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [MarkerHolder, StoreHuns1, Ghost, GhostBackup, FinalChaseHuns, Ghost01, NP4Gang, ShadowHuns]
+  - id: 22
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 0
+    v7: 2
+    v8: 2
+    v9: 0
+    music: [music/furies_fightmaster, music/furies_fightmaster, music/furies_fightmaster]
+    script_names: [ExtraChicks, Extra2Chicks, Extra3Chicks, Scene1Saracens, Ralphie, Scene5Saracens, BumFighter4, OtherWarriors]
+  - id: 23
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 2
+    v5: 0
+    v7: 1
+    v8: 0
+    v9: 0
+    music: [music/fight2a, music/fight2a, music/fight2a]
+    script_names: [Civilians, Bums, Spectators, Spectators01, Spectators02, Spectators03, Spectators04, Referee]
+  - id: 24
+    strategy: StratNormal
+    strategy_values: [20, 20, 20, 20, 20, 20, 0]
+    v2: 2
+    v3: 2
+    v4: 4
+    v5: 0
+    v7: 2
+    v8: 3
+    v9: 0
+    script_names: [Dealers, Dealer, Deal, Dealer02, Deal01, Deal02, Flash, Weap]
