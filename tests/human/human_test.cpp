@@ -9,6 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "characters/anim_set.h"
+#include "human/body.h"
 #include "human/human_animator.h"
 #include "support/collision_fixtures.h"
 #include "support/human_fixtures.h"
@@ -182,12 +183,12 @@ TEST_CASE("a wall stops the body a radius away and lets it slide along", "[human
     for (int i = 0; i < 150; ++i) {
         human.step(stick(1.0F, 0.0F), mesh.get());
     }
-    CHECK(human.position().x == Approx(50.0F - coney::human::kBodyRadius).margin(0.02));
+    CHECK(human.position().x == Approx(50.0F - coney::human::walkingRadius(1.0F)).margin(0.02));
     const float y = human.position().y;
     for (int i = 0; i < 30; ++i) {
         human.step(stick(0.7F, 0.7F), mesh.get());
     }
-    CHECK(human.position().x <= 50.0F - coney::human::kBodyRadius + 0.02F);
+    CHECK(human.position().x <= 50.0F - coney::human::walkingRadius(1.0F) + 0.02F);
     CHECK(human.position().y > y + 1.0F);
 }
 

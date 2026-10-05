@@ -113,6 +113,9 @@ gamepad or keyboard.
 - Done: the player in the first mission's level under gamepad control, with the follow camera
   (`--play-level level99`): walking, running, turning, start clips, the gait blend, the idle, kerbs, walls and falls,
   driven by analog sticks and checked by scripted disc tests.
+- Done: traversal as in the original: the sprint on L2 with stamina, the lean, the run stop, the jump from a run or
+  sprint, climbs over fences and onto walls with triangle, and the original's walking body (wall faces under 0.25 m
+  are walked onto), checked on the sandbox's parkour course by scripted disc tests.
 - Next: the level script's start (front end story into level99), objects, and other characters moving in the level.
 
 ## Gameplay

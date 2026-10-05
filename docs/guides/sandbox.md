@@ -51,7 +51,7 @@ They live in `assets/sandbox/` with the textures; that folder's README lists the
 | Name | What it has |
 | --- | --- |
 | `default` | The general movement course: a slope gallery from 10° to 60°, stair sets with rises from 10 to 40 cm, ledges from 10 cm to 3 m, platforms with gaps from 0.5 to 4 m, a room with a doorway, corridors from 0.6 to 2 m wide, a measuring strip and a person-sized capsule for scale |
-| `parkour` | The traversal course: fences from 0.5 to 3 m, low walls from 0.3 to 1.5 m, climb blocks from 1 to 4 m, a raised run of platforms with gaps from 1 to 6 m, drop towers from 2 to 14 m with stairs up, jump-up blocks from 0.5 to 2 m, and a 120 m run-up lane with a mark every metre and a post every 5 m |
+| `parkour` | The traversal course: fences from 0.6 to 3 m, kerbs and low walls from 0.2 to 1.65 m, climb blocks from 1 to 3.5 m, a raised run of platforms with gaps from 1 to 8 m, drop towers from 2 to 14 m with stairs up, jump-up blocks from 0.5 to 2 m, and a 120 m run-up lane with a mark every metre and a post every 5 m. The fences, walls and blocks sit on both sides of each climb threshold (0.69, 1.7, 2.5 and 2.91 m); its spawns `lane`, `fences`, `walls`, `climbs`, `gaps`, `towers` and `blocks` each start in front of one |
 
 The values from the research that the courses are built round (all from
 [Characters](../research/characters.md#ground) unless noted):
@@ -73,18 +73,19 @@ fence has nothing to stand on just behind it, a wall has a top inside the window
 flag bit 2 (`0x4`, players) or bit 7 (`0x80`) are climbable ([Collision](../research/collision.md#triangles)); a
 primitive's `flags=` sets those bits raw.
 
-What a walk over the default course shows today, with the player code merged so far: Rembrandt walks up the 20° ramp
-and the 20 cm stairs onto their 2 m platforms. He steps up onto the 50 cm ledge and back down. The 75 cm ledge stops
-him like a wall, because the human's sideways collision holds him 0.35 m short of its face before the ground snap is
-reached. The disc test `tests/sandbox/disc_sandbox_player_test.cpp` checks these runs and pins that behaviour.
+What the courses show today. Coney's walking body is the original's: a sphere of 0.34 m whose bottom is 0.05 m above
+the feet, and a wall triangle under 0.25 m tall is not a wall ([walls and steps](../research/characters.md#walls)).
 
-**What the original does** (from the code, [walls and steps](../research/characters.md#walls); not yet checked at
-runtime against ledges of these heights): its walking body is a sphere of 0.34 m whose bottom is 0.05 m above the
-feet, and a wall triangle under 0.25 m tall is not a wall. So the 20 cm stairs and the 10 and 20 cm ledges are walked
-up, but the **50 cm and the 75 cm ledges are both walls**: the original has no step-up beyond those 0.25 m. A 75 cm
-ledge is climbed with triangle as a short wall when its face is climbable (from 0.7 m); a 50 cm one is below the
-climbs' 0.69 m ray and is only jumped onto. Coney's sphere sits higher (centre 0.9 m), which is why it walks up the
-50 cm ledge; matching the original means the lower sphere and the 0.25 m rule.
+- **Default course**: Rembrandt walks up the 20° ramp and the 20 cm stairs onto their 2 m platforms. He walks onto
+  the 10 cm ledge and the 25 cm one (its 3 m wide face is two thin triangles the same rule skips), and the 50 cm
+  ledge stops him 0.34 m short of its face. `tests/sandbox/disc_sandbox_player_test.cpp` checks these runs.
+- **Parkour course**: L2 with the stick past 0.95 sprints until stamina runs out; triangle jumps from a run or a sprint
+  and climbs the fences, low walls and blocks inside the windows. The 20 cm kerb is walked onto, and the 30, 50 and
+  65 cm ledges are walls: too low to climb, so only a jump gets onto them. `tests/sandbox/disc_sandbox_traversal_test.cpp`
+  checks a run past each threshold, with the input scripts `tests/support/parkour_*.txt`
+  ([Characters](../research/characters.md#coneys-implementation) lists what each one shows).
+
+Run with `CONEY_TRACE=1`, the traversal test prints every frame: position, speed, stamina, clip and traversal state.
 
 ## The layout format {#the-layout-format}
 
@@ -167,8 +168,8 @@ so a 1.25 m fence shows one and a quarter tiles.
 3. Fly to the view with `coney --sandbox NAME` (no disc needed), then play it with
    `coney --disc ... --play-level sandbox:NAME --spawn ...`.
 4. For a check that runs every time, write an input script with partial stick deflections (as in
-   `tests/support/sandbox_walk_forward.txt`). Then add a run to `tests/sandbox/disc_sandbox_player_test.cpp` that
-   prints positions and a hash only.
+   `tests/support/sandbox_walk_forward.txt`). Then add a run to `tests/sandbox/disc_sandbox_player_test.cpp` (walking)
+   or `disc_sandbox_traversal_test.cpp` (sprints, jumps, climbs) that prints positions and a hash only.
 5. Note in the layout where each size comes from: a research page and anchor, or "Coney's choice".
 
 The layout tests (`tests/sandbox/`) parse and build every shipped layout, so a new layout under `assets/sandbox/`
@@ -194,15 +195,15 @@ the player, and each frame draws the camera blended between the last two steps.
 
 Answered and moved into the text above: whether a 75 cm ledge stops the player (it does in the original, and so does
 a 50 cm one, [walls and steps](../research/characters.md#walls)); which heights choose the climbs
-([climbing](../research/characters.md#climb)); and the climbable flags (bits 2 and 7 and material 30,
-[Collision](../research/collision.md#triangles)).
+([climbing](../research/characters.md#climb)); the climbable flags (bits 2 and 7 and material 30,
+[Collision](../research/collision.md#triangles)); whether Coney's body should match the original's (it does now:
+the lower sphere and the 0.25 m rule); and the parkour ranges (now on both sides of 0.69, 1.7, 2.5 and 2.91 m).
 
-- **Should Coney's body match the original's now?** The disc test pins Coney's 50 cm step-up, which the original
-  does not have. Lowering the sphere and adding the 0.25 m rule changes the default course's results and the test.
-- **Do the course's ranges need the original's limits?** The parkour fences, low walls and climb blocks were spread
-  to bracket unknown thresholds; they can now be placed on both sides of 0.69, 1.7, 2.5 and 2.91 m.
 - **Runtime checks of the step rule**: a kerb and ledges of 0.3, 0.5 and 0.75 m in the game have not been walked into
-  with the patched pad yet.
+  with the patched pad yet; the courses show Coney's reading of the code.
+- **The camera at a fence climb**: the follow camera pulls in close while Rembrandt passes through a fence, because
+  its ray hits the fence; what the original's camera does there is open
+  ([Characters](../research/characters.md#open-questions)).
 
 ## Credits
 

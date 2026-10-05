@@ -132,7 +132,7 @@ float highest(const Run& run) {
 
 } // namespace
 
-TEST_CASE("Rembrandt walks up a slope, a stair set and onto a ledge in the default sandbox",
+TEST_CASE("Rembrandt walks up a slope, a stair set and over low ledges to a wall in the default sandbox",
           "[disc][player][sandbox]") {
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
@@ -161,15 +161,18 @@ TEST_CASE("Rembrandt walks up a slope, a stair set and onto a ledge in the defau
         CHECK(run.respawns == 0);
     }
 
-    SECTION("the ledges at x = 32: up the 50 cm block, down its far side, stopped by the 75 cm one") {
-        const Run run = runScript(course, "ledge", "sandbox_walk_short.txt", {32.0F, -6.0F, 0.0F}, 210);
-        // The ground snap climbs a step of up to 1.0 m in one update (docs/research/characters.md#ground).
-        CHECK(highest(run) == Approx(0.5F).margin(0.02));
-        // The 75 cm block is not stepped onto: the human's sideways collision holds him short of its face at y = -1.5.
+    SECTION("the ledges at x = 32: over the 10 and 25 cm blocks, stopped by the 50 cm one") {
+        const Run run = runScript(course, "ledge", "sandbox_walk_forward.txt", {32.0F, -14.5F, 0.0F}, 300);
+        // Wall faces under 0.25 m do not stop the walking body and the ground snap lifts the feet on; the 25 cm
+        // block's 3 m wide face is two slivers the same rule skips (docs/research/characters.md#walls).
+        CHECK(highest(run) == Approx(0.25F).margin(0.02));
+        // The 50 cm block is a wall: the walking sphere (0.34 m for Rembrandt) holds him short of its face at
+        // y = -5.5.
         const FrameRecord& last = run.frames.back();
         CHECK(last.position.z == Approx(0.0F).margin(0.02));
-        CHECK(last.position.y > -2.5F);
-        CHECK(last.position.y < -1.5F);
+        const float stop = -5.5F - (0.35F * coney::human::kPlayerBodyScale);
+        CHECK(last.position.y > stop - 0.03F);
+        CHECK(last.position.y < stop + 0.03F);
         CHECK(!last.airborne);
         CHECK(run.respawns == 0);
     }

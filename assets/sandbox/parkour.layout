@@ -1,13 +1,15 @@
-# Coney sandbox: the traversal course, for running, jumping, mounting fences and climbing (docs/guides/sandbox.md).
+# Coney sandbox: the traversal course, for running, sprinting, jumping and climbing (docs/guides/sandbox.md).
 # Game axes and units: metres, z up; spawns face +y. One texture tile is 1 m (bright lines every 50 cm).
 #
-# What the research gives (docs/research/characters.md): the ground snap climbs a step of up to 1.0 m and follows a
-# drop of up to 0.5 m; gravity is 15.68 m/s² from the second airborne update; a landing hurts from 14.9 m/s and kills
-# from 20.5 m/s; Rembrandt walks at 1.63 m/s, jogs at 4.86, runs at 7.80 and sprints at 10.25. The game has fence,
-# short-fence, wall and short-wall climbs and a building jump among its animations (research/references/anim-ids.yaml),
-# but the heights and gaps that choose them are not researched yet: the ranges below are Coney's choices, wide enough
-# to bracket whatever they turn out to be. No collision flag for climbable or mountable surfaces is known yet; a
-# primitive's flags= sets the triangle flag bits raw (docs/research/collision.md#triangles) for experiments.
+# What the research gives (docs/research/characters.md): wall faces under 0.25 m do not stop a walking body and the
+# ground snap lifts it on, so a 20 cm kerb is walked onto and anything taller is a wall (#walls); a drop of more than
+# 0.5 m is a fall; gravity is 15.68 m/s² from the second airborne update; a landing hurts from 14.9 m/s and kills from
+# 20.5 m/s; Rembrandt walks at 1.63 m/s, runs at 7.80 and sprints at 10.25 while L2 is held and stamina (135, 20 a
+# second) lasts (#sprint). A jump from a run leaves at 5.5 m/s up, rises 1.06 m and lands about 6.4 m on, about 7.9 m
+# from a sprint (#jump). Climbs (#climb): two forward rays at 0.69 m and 1.7 m and a probe 0.4 m behind the face; a
+# short fence or short wall for a face from 0.69 m to 1.7 m, a fence (lower than 2.5 m) or a wall (top 1.7 to
+# 2.91 m) above that; only material 30 (LOW_FENCE) or flag bits 0x4 (players) and 0x80 are climbable
+# (docs/research/collision.md#triangles). The sizes below sit on both sides of each threshold; the rest are Coney's.
 
 title Traversal course
 
@@ -28,17 +30,17 @@ shadows on
 tessellate edge=1
 
 spawn lane at=60,-62,0 heading=0
-spawn fences at=-39,12,0 heading=0
-spawn walls at=-45,28,0 heading=0
-spawn climbs at=-42,47,0 heading=0
-spawn gaps at=-80,-66,0 heading=0
+spawn fences at=-48,8,0 heading=0
+spawn walls at=-36,32,0 heading=0
+spawn climbs at=-48,51,0 heading=0
+spawn gaps at=-80,-59,2 heading=0
 spawn towers at=18,-52,0 heading=0
 spawn blocks at=15,-6,0 heading=0
 
 view lane at=56,-70,4 yaw=-15 pitch=-10
-view fences at=-39,6,4 yaw=0 pitch=-12
-view walls at=-45,24,4 yaw=0 pitch=-12
-view climbs at=-42,42,5 yaw=0 pitch=-8
+view fences at=-48,2,4 yaw=0 pitch=-12
+view walls at=-36,27,4 yaw=0 pitch=-12
+view climbs at=-48,45,5 yaw=0 pitch=-8
 view gaps at=-90,-70,10 yaw=-25 pitch=-16
 view towers at=18,-66,12 yaw=0 pitch=-14
 view blocks at=15,-10,4 yaw=0 pitch=-14
@@ -47,8 +49,9 @@ view overview at=0,-110,60 yaw=0 pitch=-32
 # The ground: 200 m square, its top at z = 0.
 box at=0,0,-0.5 size=200,200,0.5 texture=floor
 
-# Run lane and long straight, east: 120 m along +y at x = 60, 3 m wide. A tick every metre, a post every 5 m on
-# both sides, a taller one every 10 m: count the ticks passed in a number of frames (30 a second) for the speed.
+# Run lane and long straight, east: 120 m along +y at x = 60, 3 m wide, long enough for a whole sprint (135 stamina at
+# 20 a second is 6.75 s, about 69 m at 10.25 m/s). A tick every metre, a post every 5 m on both sides, a taller one
+# every 10 m: count the ticks passed in a number of frames (30 a second) for the speed.
 box at=60,0,0 size=3,120,0.01 texture=wall solid=no
 box at=60,-60,0 size=3,0.05,0.02 texture=marker solid=no repeat=121 step=0,1,0
 cylinder at=58.2,-60,0 radius=0.08 height=1 segments=8 texture=marker repeat=25 step=0,5,0
@@ -56,36 +59,48 @@ cylinder at=61.8,-60,0 radius=0.08 height=1 segments=8 texture=marker repeat=25 
 cylinder at=58.2,-60,0 radius=0.1 height=2 segments=8 texture=wall repeat=13 step=0,10,0
 cylinder at=61.8,-60,0 radius=0.1 height=2 segments=8 texture=wall repeat=13 step=0,10,0
 
-# Fences, north-west: 4 m wide and 8 cm thick, from 0.5 to 3 m high, with room to run up from the south.
-box at=-60,20,0 size=4,0.08,0.5 texture=marker
-box at=-54,20,0 size=4,0.08,0.75 texture=marker
-box at=-48,20,0 size=4,0.08,1.0 texture=marker
-box at=-42,20,0 size=4,0.08,1.25 texture=marker
-box at=-36,20,0 size=4,0.08,1.5 texture=marker
-box at=-30,20,0 size=4,0.08,2.0 texture=marker
-box at=-24,20,0 size=4,0.08,2.5 texture=marker
-box at=-18,20,0 size=4,0.08,3.0 texture=marker
+# Fences, north-west: 4 m wide and 8 cm thick, of material 30 (LOW_FENCE: climbable, and passed through while
+# climbing over), faces at y = 19.96 with room to run up from the south. 0.6 m is below the low ray (no climb); 0.75,
+# 1.0, 1.5 and 1.65 m are short fences; 1.75, 2.0 and 2.4 m fences; 2.6 and 3.0 m are too tall to climb.
+box at=-66,20,0 size=4,0.08,0.6 texture=marker material=30
+box at=-60,20,0 size=4,0.08,0.75 texture=marker material=30
+box at=-54,20,0 size=4,0.08,1.0 texture=marker material=30
+box at=-48,20,0 size=4,0.08,1.5 texture=marker material=30
+box at=-42,20,0 size=4,0.08,1.65 texture=marker material=30
+box at=-36,20,0 size=4,0.08,1.75 texture=marker material=30
+box at=-30,20,0 size=4,0.08,2.0 texture=marker material=30
+box at=-24,20,0 size=4,0.08,2.4 texture=marker material=30
+box at=-18,20,0 size=4,0.08,2.6 texture=marker material=30
+box at=-12,20,0 size=4,0.08,3.0 texture=marker material=30
 
-# Low walls: 4 m wide and 40 cm thick, from 0.3 to 1.5 m high.
-box at=-60,35,0 size=4,0.4,0.3 texture=wall
-box at=-54,35,0 size=4,0.4,0.5 texture=wall
-box at=-48,35,0 size=4,0.4,0.75 texture=wall
-box at=-42,35,0 size=4,0.4,1.0 texture=wall
-box at=-36,35,0 size=4,0.4,1.25 texture=wall
-box at=-30,35,0 size=4,0.4,1.5 texture=wall
+# Kerbs and low walls: 4 m wide and 1 m deep (faces at y = 34.5), flagged climbable (0x80). The 0.2 m kerb is walked
+# onto; 0.3, 0.5 and 0.65 m stop a walk and are too low to climb (jump onto them); 0.75, 1.0, 1.25, 1.5 and 1.65 m
+# are short walls.
+box at=-66,35,0 size=4,1,0.2 texture=wall flags=0x80
+box at=-60,35,0 size=4,1,0.3 texture=wall flags=0x80
+box at=-54,35,0 size=4,1,0.5 texture=wall flags=0x80
+box at=-48,35,0 size=4,1,0.65 texture=wall flags=0x80
+box at=-42,35,0 size=4,1,0.75 texture=wall flags=0x80
+box at=-36,35,0 size=4,1,1.0 texture=wall flags=0x80
+box at=-30,35,0 size=4,1,1.25 texture=wall flags=0x80
+box at=-24,35,0 size=4,1,1.5 texture=wall flags=0x80
+box at=-18,35,0 size=4,1,1.65 texture=wall flags=0x80
 
-# Climbing blocks: 3 m square, from 1 to 4 m high.
-box at=-60,55,0 size=3,3,1.0 texture=ledge
-box at=-54,55,0 size=3,3,1.5 texture=ledge
-box at=-48,55,0 size=3,3,2.0 texture=ledge
-box at=-42,55,0 size=3,3,2.5 texture=ledge
-box at=-36,55,0 size=3,3,3.0 texture=ledge
-box at=-30,55,0 size=3,3,3.5 texture=ledge
-box at=-24,55,0 size=3,3,4.0 texture=ledge
+# Climbing blocks: 3 m square (faces at y = 53.5), flagged climbable (0x80). 1.0 and 1.5 m are short walls; 1.75,
+# 2.0, 2.5 and 2.85 m walls; 3.0 and 3.5 m are above the wall window (2.91 m) and not climbed.
+box at=-66,55,0 size=3,3,1.0 texture=ledge flags=0x80
+box at=-60,55,0 size=3,3,1.5 texture=ledge flags=0x80
+box at=-54,55,0 size=3,3,1.75 texture=ledge flags=0x80
+box at=-48,55,0 size=3,3,2.0 texture=ledge flags=0x80
+box at=-42,55,0 size=3,3,2.5 texture=ledge flags=0x80
+box at=-36,55,0 size=3,3,2.85 texture=ledge flags=0x80
+box at=-30,55,0 size=3,3,3.0 texture=ledge flags=0x80
+box at=-24,55,0 size=3,3,3.5 texture=ledge flags=0x80
 
-# Jump gaps, west: platforms 2 m high, 3 m wide and 6 m long (a run-up each) along x = -80, with gaps of 1 to 6 m;
-# stairs up to the first. Missing a jump is a 2 m fall to the ground.
-stairs at=-80,-61.2,0 width=3 steps=8 rise=0.25 run=0.3 texture=stairs
+# Jump gaps, west: platforms 2 m high, 3 m wide and 6 m long (a run-up each) along x = -80, with gaps of 1 to 8 m (a
+# run jump clears about 6.4 m, a sprint jump about 7.9 m); stairs (20 cm rises, walked up) to the first. Missing a jump
+# is a 2 m fall to the ground. Not climbable, so nothing refuses a jump.
+stairs at=-80,-61.5,0 width=3 steps=10 rise=0.2 run=0.3 texture=stairs
 box at=-80,-57,0 size=3,6,2 texture=ledge
 box at=-80,-50,0 size=3,6,2 texture=ledge
 box at=-80,-42.5,0 size=3,6,2 texture=ledge
@@ -96,17 +111,19 @@ box at=-80,-7.5,0 size=3,6,2 texture=ledge
 box at=-80,2.5,0 size=3,6,2 texture=ledge
 box at=-80,13.5,0 size=3,6,2 texture=ledge
 box at=-80,25.5,0 size=3,6,2 texture=ledge
+box at=-80,38.5,0 size=3,6,2 texture=ledge
+box at=-80,52.5,0 size=3,6,2 texture=ledge
 
-# Drop towers, south: 3 m square, 2 to 14 m high, each with stairs (25 cm rises) up its south side; step off the north
+# Drop towers, south: 3 m square, 2 to 14 m high, each with stairs (20 cm rises) up its south side; step off the north
 # side to fall. A fall from h lands at about sqrt(2 · 15.68 · h): hurting from about 7.1 m (14.9 m/s) and killing from
 # about 13.4 m (20.5 m/s), inferred from the gravity and thresholds above, so the towers bracket both.
-stairs at=0,-31.2,0 width=2 steps=8 rise=0.25 run=0.3 texture=stairs
-stairs at=6,-32.4,0 width=2 steps=16 rise=0.25 run=0.3 texture=stairs
-stairs at=12,-33.6,0 width=2 steps=24 rise=0.25 run=0.3 texture=stairs
-stairs at=18,-34.2,0 width=2 steps=28 rise=0.25 run=0.3 texture=stairs
-stairs at=24,-34.8,0 width=2 steps=32 rise=0.25 run=0.3 texture=stairs
-stairs at=30,-36,0 width=2 steps=40 rise=0.25 run=0.3 texture=stairs
-stairs at=36,-38.4,0 width=2 steps=56 rise=0.25 run=0.3 texture=stairs
+stairs at=0,-31.5,0 width=2 steps=10 rise=0.2 run=0.3 texture=stairs
+stairs at=6,-33,0 width=2 steps=20 rise=0.2 run=0.3 texture=stairs
+stairs at=12,-34.5,0 width=2 steps=30 rise=0.2 run=0.3 texture=stairs
+stairs at=18,-35.25,0 width=2 steps=35 rise=0.2 run=0.3 texture=stairs
+stairs at=24,-36,0 width=2 steps=40 rise=0.2 run=0.3 texture=stairs
+stairs at=30,-37.5,0 width=2 steps=50 rise=0.2 run=0.3 texture=stairs
+stairs at=36,-40.5,0 width=2 steps=70 rise=0.2 run=0.3 texture=stairs
 box at=0,-28.5,0 size=3,3,2 texture=ledge
 box at=6,-28.5,0 size=3,3,4 texture=ledge
 box at=12,-28.5,0 size=3,3,6 texture=ledge
@@ -115,7 +132,8 @@ box at=24,-28.5,0 size=3,3,8 texture=marker
 box at=30,-28.5,0 size=3,3,10 texture=marker
 box at=36,-28.5,0 size=3,3,14 texture=marker
 
-# Jump-up blocks, centre: 2 m square, 0.5 to 2 m high in quarter metres.
+# Jump-up blocks, centre: 2 m square, 0.5 to 2 m high in quarter metres, not climbable. A run jump rises 1.06 m, so
+# 1 m is about the highest landed on.
 box at=0,0,0 size=2,2,0.5 texture=prop
 box at=5,0,0 size=2,2,0.75 texture=prop
 box at=10,0,0 size=2,2,1.0 texture=prop

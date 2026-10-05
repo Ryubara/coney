@@ -51,7 +51,8 @@ PlayerCharacter::PlayerCharacter(characters::CharacterAssets assets, characters:
       m_skeleton(characters::characterSkeleton(m_assets.model)) {}
 
 Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start)
-    : m_start(start), m_human(character.anims(), AnimSlots::player(), character.skeleton().bindRotations),
+    : m_start(start),
+      m_human(character.anims(), AnimSlots::player(), character.skeleton().bindRotations, kPlayerBodyScale),
       m_camera(start.position, 0.0F) {
     m_human.spawn(mesh, start.position, start.headingDegrees);
     m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
@@ -74,6 +75,7 @@ void Player::resetCamera() {
 PlayerSnapshot Player::capture() const {
     return PlayerSnapshot{.feet = m_human.position(),
                           .heading = m_human.heading(),
+                          .lean = m_human.lean(),
                           .pose = m_human.pose(),
                           .cameraEye = m_camera.position(),
                           .cameraTarget = m_camera.lookAt()};
@@ -90,6 +92,7 @@ PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot&
     return PlayerSnapshot{.feet = anim::lerp(previous.feet, current.feet, alpha),
                           .heading =
                               wrapAngle(previous.heading + wrapAngle(current.heading - previous.heading) * alpha),
+                          .lean = previous.lean + (current.lean - previous.lean) * alpha,
                           .pose = anim::blendPoses(previous.pose, current.pose, alpha),
                           .cameraEye = anim::lerp(previous.cameraEye, current.cameraEye, alpha),
                           .cameraTarget = anim::lerp(previous.cameraTarget, current.cameraTarget, alpha)};
@@ -97,7 +100,13 @@ PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot&
 
 void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh) {
     // The human first, its stick turned by the camera as it stood after the last update; the cameras last.
-    m_human.step(HumanInput{.stickX = pad.leftX(), .stickY = pad.leftY(), .cameraForward = m_camera.forward()}, mesh);
+    // L2 held asks for a sprint; triangle pressed (command 10) climbs or jumps (docs/research/characters.md#buttons).
+    m_human.step(HumanInput{.stickX = pad.leftX(),
+                            .stickY = pad.leftY(),
+                            .cameraForward = m_camera.forward(),
+                            .sprintHeld = pad.held(pad::kL2),
+                            .actionPressed = pad.pressed(pad::kTriangle)},
+                 mesh);
     if (m_human.outOfWorld()) {
         m_human.spawn(mesh, m_start.position, m_start.headingDegrees);
         m_camera = camera::FollowCamera(m_human.position(), m_human.heading());

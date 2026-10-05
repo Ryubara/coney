@@ -1,0 +1,8 @@
+# Rembrandt on the parkour lane (tests/sandbox/disc_sandbox_traversal_test.cpp): L2 held from the start. A walk at
+# 80 % with L2 does not sprint; at 96 % he runs and sprints until stamina is gone, keeps L2 held at the run with no
+# refill, lets go of L2 to refill, then lets go of the stick. Frames are 1/30 s.
+15 press l2
+15 stick left 0 80
+75 stick left 0 96
+330 release l2
+360 stick left 0 0

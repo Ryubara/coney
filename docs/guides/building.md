@@ -366,20 +366,26 @@ behind him ([Characters](../research/characters.md#coneys-implementation),
 [Camera](../research/camera.md#coneys-implementation)). The level's worlds and level file load and stream as in
 [the world viewer](#the-world-viewer); Rembrandt stands at the level's player start (level99's start, from its level
 script, is researched; any other level puts him above the middle of its first world's part 1 for now, Coney's
-stand-in). He walks, runs, turns, stops, steps up kerbs, slides along walls and falls off ledges on the level's
-collision mesh, with the original's speeds, turn rates and clips: the walk or run start, a blend across walk, jog, run
-and sprint, and the idle. There are no level script, objects, other characters, fighting or missions yet; a fall out
-of the world puts him back at the start. Coney prints a line whenever the clip changes and a summary when it stops
-(the player's position, speed, gait, clip, the camera's distance and counts only).
+stand-in). He walks, runs, sprints, turns and leans into turns, stops, steps onto kerbs under 25 cm, slides along
+walls, jumps, climbs fences and walls, and falls off ledges on the level's collision mesh, with the original's speeds,
+turn rates and clips: the walk or run start, a blend across walk, jog, run and sprint, the idle, the run stop, the
+jump and its landing, and the climbs ([Characters](../research/characters.md#sprint)). There are no level script,
+objects, other characters, fighting or missions yet; a fall out of the world puts him back at the start. Coney prints a
+line whenever the clip changes and a summary when it stops (the player's position, speed, gait, clip, traversal
+state, stamina, the camera's distance and counts only).
 
 | Pad | Keyboard | Does |
 | --- | --- | --- |
 | left stick | W A S D (full deflection) | move, relative to the camera: a walk below 95 % of the stick's travel, a run above |
+| L2 held | 1 | sprint, with the stick past 95 %, while stamina lasts (135, 6.75 s); let go to refill it |
+| triangle | I | climb the fence or wall ahead (within reach, stick pushed); otherwise jump from a run or sprint |
 | right stick | none | turn the camera round him, look up and down |
 
 The stick's direction is turned by the camera's heading, so up always moves away from the camera. The game's own
 dead zone (12 %) applies; the walk speed does not depend on how far the stick is pushed, only whether it is pushed
-past 95 %. Let go and he stops at once and settles into the idle.
+past 95 %. Let go and he stops at once and settles into the idle; let go in a sprint and he skids through the run
+stop. The jump needs a run (faster than 3.3 m/s) and is refused within 5.5 m of a climbable face, where triangle climbs
+or does nothing. In a script: `press l2`, `stick left 0 100`, `tap triangle`.
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99

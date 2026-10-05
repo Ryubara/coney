@@ -1,0 +1,4 @@
+# Rembrandt walking at 80 % stick onto a kerb or into a low wall of the parkour course
+# (tests/sandbox/disc_sandbox_traversal_test.cpp). Frames are 1/30 s.
+15 stick left 0 80
+120 stick left 0 0

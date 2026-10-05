@@ -94,11 +94,17 @@ target_sources(coney_tests PRIVATE
     camera/follow_camera_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
-    human/locomotion_test.cpp)
+    human/body_test.cpp
+    human/climb_test.cpp
+    human/jump_test.cpp
+    human/locomotion_test.cpp
+    human/stamina_test.cpp
+    human/traversal_test.cpp)
 # The sandbox and the collision writer it uses (docs/guides/sandbox.md).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp
     sandbox/disc_sandbox_player_test.cpp
+    sandbox/disc_sandbox_traversal_test.cpp
     sandbox/sandbox_layout_test.cpp
     sandbox/sandbox_mesh_test.cpp
     sandbox/sandbox_world_test.cpp)

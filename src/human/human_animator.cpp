@@ -17,11 +17,19 @@ constexpr std::uint32_t kRunStartOffset = 1;
 // The gait blend's value when a move starts: the walk, or the run for a run start.
 constexpr float kWalkValue = 0.0F;
 constexpr float kRunValue = 2.0F;
+// The gait blend a running landing hands over to: the jog (the runtime landing went "from a jog back to the run";
+// **Coney's choice** of the exact value).
+constexpr float kJogValue = 1.0F;
 // The share of the walk start that may have played for a run to replace it.
 constexpr float kRunSwapLimit = 0.5F;
 // Below this share of the walk speed a human that is not asked to move counts as standing (Coney's reading of "a
 // quarter of the speed 0x00221580 returns", which getter that is being open).
 constexpr float kIdleSpeedShare = 0.25F;
+
+// Whether `state` is an action whose clips play out before the controller chooses again.
+bool isAction(AnimState state) {
+    return state == AnimState::Land || state == AnimState::RunStop || state == AnimState::Climb;
+}
 
 } // namespace
 
@@ -36,6 +44,8 @@ AnimSlots AnimSlots::player() {
     slots.ids[kSlotWalkStart] = 413;
     slots.ids[kSlotCombatWalk] = 380;
     slots.ids[kSlotDropCycle] = 428;
+    slots.ids[kSlotJumpLoop] = 434;
+    slots.ids[kSlotRunStop] = 417;
     return slots;
 }
 
@@ -50,11 +60,17 @@ Speeds speedsOf(const characters::AnimSet& anims, const AnimSlots& slots) {
 
 std::size_t HumanAnimator::clipsMissing(const characters::AnimSet& anims, const AnimSlots& slots) {
     std::size_t missing = 0;
-    for (const std::size_t slot :
-         {kSlotIdle, kSlotWalk, kSlotJog, kSlotRun, kSlotSprint, kSlotWalkStart, kSlotDropCycle}) {
+    for (const std::size_t slot : {kSlotIdle, kSlotWalk, kSlotJog, kSlotRun, kSlotSprint, kSlotWalkStart,
+                                   kSlotDropCycle, kSlotJumpLoop, kSlotRunStop}) {
         missing += anims.clip(slots.ids[slot]) == nullptr ? 1 : 0;
     }
     missing += anims.clip(slots.ids[kSlotWalkStart] + kRunStartOffset) == nullptr ? 1 : 0;
+    for (const std::uint32_t id : {kAnimJumpEnd, kAnimJumpEndRunning}) {
+        missing += anims.clip(id) == nullptr ? 1 : 0;
+    }
+    for (std::uint32_t id = kAnimFirstClimb; id <= kAnimLastClimb; ++id) {
+        missing += anims.clip(id) == nullptr ? 1 : 0;
+    }
     return missing;
 }
 
@@ -62,8 +78,7 @@ HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& 
     : m_anims(&anims), m_slots(slots), m_speeds(speedsOf(anims, slots)) {
     CONEY_ASSERT(clipsMissing(anims, slots) == 0);
     // A human is made standing: its idle, with nothing to fade from.
-    const anim::GaitClip idle = slotClip(kSlotIdle);
-    m_tasks.change(std::make_unique<anim::LoopTask>(*idle.clip, idle.animId, m_anims->rate(idle.animId), 0U), 0.0F);
+    m_tasks.change(idleLoop(), 0.0F);
     m_state = AnimState::Idle;
 }
 
@@ -79,10 +94,24 @@ std::unique_ptr<anim::GaitBlendTask> HumanAnimator::gaitBlend(float value, float
     return std::make_unique<anim::GaitBlendTask>(clips, value, kGaitValueSpeed, 1.0F, anim::kGaitBlendFlags, phase);
 }
 
-bool HumanAnimator::startClipPlaying() const {
+std::unique_ptr<anim::AnimTask> HumanAnimator::idleLoop() const {
+    const anim::GaitClip idle = slotClip(kSlotIdle);
+    return std::make_unique<anim::LoopTask>(*idle.clip, idle.animId, m_anims->rate(idle.animId), 0U);
+}
+
+std::unique_ptr<anim::AnimTask> HumanAnimator::clipThen(std::uint32_t id, std::unique_ptr<anim::AnimTask> next) const {
+    // Single clips have no task flags, so their root motion moves the body.
+    return std::make_unique<anim::ClipThenNextTask>(*m_anims->clip(id), id, m_anims->rate(id), 0U, std::move(next));
+}
+
+bool HumanAnimator::drivingClipPlaying() const {
     const anim::AnimTask* top = m_tasks.top();
     return top != nullptr && top->type() == anim::AnimTaskType::ClipThenNext;
 }
+
+bool HumanAnimator::startClipPlaying() const { return m_state == AnimState::Move && drivingClipPlaying(); }
+
+bool HumanAnimator::actionPlaying() const { return isAction(m_state) && drivingClipPlaying(); }
 
 std::uint32_t HumanAnimator::animId() const {
     const anim::AnimTask* top = m_tasks.top();
@@ -103,8 +132,7 @@ void HumanAnimator::buildIdle() {
         const anim::AnimTask& start = *m_tasks.top();
         fade = start.time() / start.rate() < kStartClipEarly ? kIdleFadeEarlyStart : kIdleFadeLateStart;
     }
-    const anim::GaitClip idle = slotClip(kSlotIdle);
-    m_tasks.change(std::make_unique<anim::LoopTask>(*idle.clip, idle.animId, m_anims->rate(idle.animId), 0U), fade);
+    m_tasks.change(idleLoop(), fade);
 }
 
 void HumanAnimator::buildMove(bool run) {
@@ -118,10 +146,7 @@ void HumanAnimator::buildMove(bool run) {
     }
     // From standing: the walk start (or the run start) at once, handing over to a gait blend at the walk (or run).
     const std::uint32_t startId = m_slots.ids[kSlotWalkStart] + (run ? kRunStartOffset : 0U);
-    const anim::AnimClip* start = m_anims->clip(startId);
-    m_tasks.change(std::make_unique<anim::ClipThenNextTask>(*start, startId, m_anims->rate(startId), 0U,
-                                                            gaitBlend(run ? kRunValue : kWalkValue, 0.0F)),
-                   0.0F);
+    m_tasks.change(clipThen(startId, gaitBlend(run ? kRunValue : kWalkValue, 0.0F)), 0.0F);
 }
 
 void HumanAnimator::buildFall() {
@@ -130,7 +155,56 @@ void HumanAnimator::buildFall() {
                    kIdleFade);
 }
 
+void HumanAnimator::startJump() {
+    const anim::GaitClip loop = slotClip(kSlotJumpLoop);
+    m_tasks.change(std::make_unique<anim::LoopTask>(*loop.clip, loop.animId, m_anims->rate(loop.animId), 0U),
+                   kJumpFade);
+    m_state = AnimState::Jump;
+}
+
+void HumanAnimator::startLanding(bool movingOn) {
+    if (movingOn) {
+        m_tasks.change(clipThen(kAnimJumpEndRunning, gaitBlend(kJogValue, 0.0F)), kJumpFade);
+    } else {
+        m_tasks.change(clipThen(kAnimJumpEnd, idleLoop()), kJumpFade);
+    }
+    m_state = AnimState::Land;
+}
+
+void HumanAnimator::startRunStop() {
+    m_tasks.change(clipThen(m_slots.ids[kSlotRunStop], idleLoop()), kMoveFadeMoving);
+    m_state = AnimState::RunStop;
+}
+
+void HumanAnimator::startClimb(std::uint32_t firstId, bool running) {
+    // The three clips in turn, then the run carries on (from a run) or the idle.
+    std::unique_ptr<anim::AnimTask> after =
+        running ? std::unique_ptr<anim::AnimTask>(gaitBlend(kRunValue, 0.0F)) : idleLoop();
+    std::unique_ptr<anim::AnimTask> chain = clipThen(firstId + 2, std::move(after));
+    chain = clipThen(firstId + 1, std::move(chain));
+    chain = clipThen(firstId, std::move(chain));
+    m_tasks.change(std::move(chain), kMoveFadeMoving);
+    m_state = AnimState::Climb;
+}
+
+void HumanAnimator::stopToIdle() {
+    m_tasks.change(idleLoop(), kIdleFade);
+    m_state = AnimState::Idle;
+}
+
 void HumanAnimator::choose(const AnimInputs& inputs) {
+    // An action's clips play out; then the state is whatever they handed over to.
+    if (isAction(m_state)) {
+        if (drivingClipPlaying()) {
+            return;
+        }
+        const anim::AnimTask* top = m_tasks.top();
+        m_state = top != nullptr && top->type() == anim::AnimTaskType::GaitBlend ? AnimState::Move : AnimState::Idle;
+    }
+    // The jump loop plays until the human lands (which starts the landing).
+    if (m_state == AnimState::Jump && inputs.airborne) {
+        return;
+    }
     // The state: falling, moving (asked to, or still going faster than a quarter of the walk), or idle.
     AnimState next = AnimState::Idle;
     if (inputs.airborne) {
@@ -151,6 +225,10 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
             buildFall();
             break;
         case AnimState::None:
+        case AnimState::Jump:
+        case AnimState::Land:
+        case AnimState::RunStop:
+        case AnimState::Climb:
             break;
         }
         m_state = next;

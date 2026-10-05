@@ -9,7 +9,10 @@ namespace coney::debug {
 /// researched value:
 ///
 /// - **Movement** (src/human/locomotion.h, docs/research/characters.md#movement-constants): the stick's dead zone,
-///   the run threshold, the acceleration, and the turn limit of each gait;
+///   the run threshold, the acceleration, the turn limit of each gait, and the lean's factors;
+/// - **Body** (src/human/body.h, docs/research/characters.md#walls): the walking sphere and the 0.25 m step rule;
+/// - **Sprint**, **Jump** and **Climb** (src/human/stamina.h, jump.h, climb.h, docs/research/characters.md#sprint,
+///   #jump, #climb): stamina's maximum, drain and refill; the jump's speeds and checks; the climbs' probes and windows;
 /// - **Follow camera** (src/camera/follow_camera.h, docs/research/camera.md): the position lag, the collision margins,
 ///   and the leash band, the pitch and the look-at height a new camera starts with.
 ///

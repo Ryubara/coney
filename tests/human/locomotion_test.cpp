@@ -151,3 +151,35 @@ TEST_CASE("a run skids to a stop when the stick lets go or turns back", "[locomo
     CHECK_FALSE(coney::human::skids(Gait::Walk, 1.5F, speeds, 1.0F, 0.1F, forward, back));
     CHECK_FALSE(coney::human::skids(Gait::Run, 7.5F, speeds, 0.9F, 0.1F, forward, back));
 }
+
+TEST_CASE("the stick above 0.95 asks for the sprint speed only while sprinting", "[locomotion]") {
+    const Speeds speeds = testSpeeds();
+    CHECK(coney::human::targetSpeed(1.0F, speeds, true) == 10.0F);
+    CHECK(coney::human::targetSpeed(0.96F, speeds, true) == 10.0F);
+    CHECK(coney::human::targetSpeed(0.95F, speeds, true) == 1.5F);
+    CHECK(coney::human::targetSpeed(0.5F, speeds, true) == 1.5F);
+    CHECK(coney::human::targetSpeed(0.1F, speeds, true) == 0.0F);
+}
+
+TEST_CASE("the lean follows the turn by 0.625 a step, clamped by gait", "[locomotion]") {
+    // A run turning left at 4° an update asks for 4° × 0.4 × 7.5 = 12°, clamped to 5°; the lean moves at most 1.3°.
+    float lean = 0.0F;
+    lean = coney::human::leanStep(lean, 4.0F * kDegree, 7.5F, Gait::Run);
+    CHECK(lean == Approx(1.3F * kDegree));
+    for (int i = 0; i < 30; ++i) {
+        lean = coney::human::leanStep(lean, 4.0F * kDegree, 7.5F, Gait::Run);
+    }
+    CHECK(lean == Approx(5.0F * kDegree));
+    // Turning right leans the other way; a walk is clamped to 2°, a sprint to 7°.
+    float walk = 0.0F;
+    float sprint = 0.0F;
+    for (int i = 0; i < 30; ++i) {
+        walk = coney::human::leanStep(walk, -12.0F * kDegree, 1.5F, Gait::Walk);
+        sprint = coney::human::leanStep(sprint, 2.5F * kDegree, 10.0F, Gait::Sprint);
+    }
+    CHECK(walk == Approx(-2.0F * kDegree));
+    CHECK(sprint == Approx(7.0F * kDegree));
+    // No turn: the lean comes back by 0.625 of itself an update, at most the gait's rate.
+    const float back = coney::human::leanStep(0.5F * kDegree, 0.0F, 7.5F, Gait::Run);
+    CHECK(back == Approx(0.5F * kDegree * 0.375F));
+}

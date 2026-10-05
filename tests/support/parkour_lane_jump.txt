@@ -1,0 +1,8 @@
+# Rembrandt on the parkour lane (tests/sandbox/disc_sandbox_traversal_test.cpp): a full-stick run, a jump, then a
+# sprint and a sprint jump. Frames are 1/30 s.
+15 stick left 0 100
+60 tap triangle
+120 press l2
+150 tap triangle
+200 release l2
+200 stick left 0 0

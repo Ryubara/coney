@@ -1,0 +1,6 @@
+# Rembrandt on the parkour course's jump platforms (tests/sandbox/disc_sandbox_traversal_test.cpp): a full-stick run
+# from standing at the start of the 2 m platform, triangle about 0.7 m before its edge to clear the 5 m gap to the
+# next one, then let go on it. Frames are 1/30 s.
+15 stick left 0 100
+42 tap triangle
+75 stick left 0 0

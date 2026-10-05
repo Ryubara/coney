@@ -28,6 +28,10 @@ namespace coney::human {
 /// The player's model: Rembrandt, as `level99.lua` creates him (docs/research/characters.md#creation).
 inline constexpr std::string_view kPlayerModel = "warr_re_cv";
 
+/// Rembrandt's body scale (`+0x65c`) as read at runtime: his walking sphere is 0.35 × 0.97 = 0.34 m
+/// (docs/research/characters.md#walls). How the game derives it is open, so Coney uses the value read.
+inline constexpr float kPlayerBodyScale = 0.97F;
+
 /// Where a level's script puts player 1: the feet (game axes) and the heading in degrees.
 struct PlayerStart {
     anim::Vec3 position;
@@ -73,6 +77,7 @@ class PlayerCharacter {
 struct PlayerSnapshot {
     anim::Vec3 feet;         ///< The human's position (game axes).
     float heading = 0.0F;    ///< Radians, 0 facing +y.
+    float lean = 0.0F;       ///< The body's lean into a turn, radians, positive to the left (Human::lean()).
     anim::Pose pose;         ///< The blended animation pose.
     anim::Vec3 cameraEye;    ///< The follow camera's position.
     anim::Vec3 cameraTarget; ///< Its look-at point.

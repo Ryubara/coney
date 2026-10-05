@@ -1,0 +1,6 @@
+# Rembrandt running at a fence of the parkour course (tests/sandbox/disc_sandbox_traversal_test.cpp): a full-stick
+# run from about 12 m before it, triangle about 2 m from its face (the short fence's running reach), and the run
+# carries on. Frames are 1/30 s.
+15 stick left 0 100
+60 tap triangle
+120 stick left 0 0

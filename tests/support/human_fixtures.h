@@ -29,13 +29,49 @@ struct LocomotionClip {
     float duration = 1.0F;        ///< Seconds.
     float rootVelocity = 0.0F;    ///< Section A's constant y velocity, m/s; 0 for no section A.
     std::uint16_t rangeFlags = 0; ///< The Anim Range List's rate flags.
+    float reach = 0.0F;           ///< A type-8 event's vector along +y (a climb clip's reach); 0 for no event.
 };
+
+/// The synthetic climb clips: for each of the four climbs (437 fence, 443 short fence, 449 wall, 455 short wall), a
+/// standing chain (reach 0.8) and a running one three ids on (reach 2.0, the first clip moving 3 m/s forward). A
+/// fence's second and third clips move the body by their root (2 m/s, 1 m/s); a wall's second clip has a 1 m
+/// displacement and no root velocity, as the disc's wall clips have. All play at rate 0.75 (no range flag).
+inline std::vector<LocomotionClip> climbClips() {
+    std::vector<LocomotionClip> clips;
+    for (const std::uint32_t first : {437U, 443U, 449U, 455U}) {
+        const bool fence = first < 449U;
+        for (const std::uint32_t form : {0U, 3U}) {
+            const bool running = form != 0U;
+            clips.push_back({.id = first + form,
+                             .speed = 0.0F,
+                             .duration = 0.3F,
+                             .rootVelocity = running ? 3.0F : 0.0F,
+                             .rangeFlags = 0,
+                             .reach = running ? 2.0F : 0.8F});
+            clips.push_back({.id = first + form + 1,
+                             .speed = fence ? 0.0F : 1.0F / 0.6F,
+                             .duration = 0.6F,
+                             .rootVelocity = fence ? 2.0F : 0.0F,
+                             .rangeFlags = 0,
+                             .reach = 0.5F});
+            clips.push_back({.id = first + form + 2,
+                             .speed = 0.0F,
+                             .duration = 0.3F,
+                             .rootVelocity = fence ? 1.0F : 0.0F,
+                             .rangeFlags = 0,
+                             .reach = 0.0F});
+        }
+    }
+    return clips;
+}
 
 /// The synthetic set: idle (388), sneak 1.2 (407), walk 1.5 (408), jog 4 (409), run 7.5 (410), sprint 10 (411), all
 /// looping at rate 1 (flag 0x1000) but the idle; the walk start (413, 0.3 s, root velocity 1.0) and the run start
-/// (414, 0.3 s, root velocity 4.0) at rate 0.75; the drop cycle (428).
+/// (414, 0.3 s, root velocity 4.0) at rate 0.75; the run stop (417, 0.6 s, root velocity 2.0); the drop cycle (428);
+/// the jump loop (434), the jump end (435, root velocity 1.0) and the jump end running (436, root velocity 4.0); and
+/// climbClips().
 inline std::vector<LocomotionClip> locomotionClips() {
-    return {
+    std::vector<LocomotionClip> clips{
         {.id = 388, .speed = 0.0F, .duration = 2.0F, .rootVelocity = 0.0F, .rangeFlags = 0},
         {.id = 407, .speed = 1.2F, .duration = 1.0F, .rootVelocity = 0.0F, .rangeFlags = 0x1000},
         {.id = 408, .speed = 1.5F, .duration = 1.0F, .rootVelocity = 0.0F, .rangeFlags = 0x1000},
@@ -44,8 +80,15 @@ inline std::vector<LocomotionClip> locomotionClips() {
         {.id = 411, .speed = 10.0F, .duration = 0.5F, .rootVelocity = 0.0F, .rangeFlags = 0x1000},
         {.id = 413, .speed = 0.3F, .duration = 0.3F, .rootVelocity = 1.0F, .rangeFlags = 0},
         {.id = 414, .speed = 1.2F, .duration = 0.3F, .rootVelocity = 4.0F, .rangeFlags = 0},
+        {.id = 417, .speed = 1.0F, .duration = 0.6F, .rootVelocity = 2.0F, .rangeFlags = 0},
         {.id = 428, .speed = 0.0F, .duration = 0.8F, .rootVelocity = 0.0F, .rangeFlags = 0},
+        {.id = 434, .speed = 0.0F, .duration = 1.0F, .rootVelocity = 0.0F, .rangeFlags = 0},
+        {.id = 435, .speed = 0.5F, .duration = 0.3F, .rootVelocity = 1.0F, .rangeFlags = 0},
+        {.id = 436, .speed = 2.0F, .duration = 0.3F, .rootVelocity = 4.0F, .rangeFlags = 0},
     };
+    const std::vector<LocomotionClip> climbs = climbClips();
+    clips.insert(clips.end(), climbs.begin(), climbs.end());
+    return clips;
 }
 
 /// The bytes of a character data resource holding `clips` in order, its Anim Range List and its Character Data
@@ -61,10 +104,19 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
         const Bytes sectionB = clipKeys({{0, 0, 0, 0}});
         Bytes keys = sectionA;
         keys.append(sectionB.span());
+        // A climb clip's reach: one type-8 event at frame 0 whose vector is (0, reach, 0), stored as a position key.
+        if (clip.reach > 0.0F) {
+            Bytes event;
+            event.u16(0).u16(8).u16(0).u16(0).u16(0);
+            event.u16(static_cast<std::uint16_t>(static_cast<std::int16_t>(clip.reach * 1023.0F))).u16(0);
+            event.u16(0).u16(0).u16(0).u16(0).u16(0);
+            keys.append(event.span());
+        }
         ClipFields fields;
         fields.name = "synthetic";
         fields.displacementY = clip.speed * clip.duration;
         fields.duration = clip.duration;
+        fields.events = clip.reach > 0.0F ? 1 : 0;
         chunks.push_back(chunk(anim::kAnimKeyframesChunk, keys));
         chunks.push_back(chunk(anim::kAnimDataChunk, clipDescriptor(fields, sectionA.size(), sectionB.size(), 0)));
     }

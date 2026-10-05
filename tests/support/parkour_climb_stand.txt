@@ -1,0 +1,6 @@
+# Rembrandt walking up to an obstacle of the parkour course at half stick and pushing into it, then triangle
+# (tests/sandbox/disc_sandbox_traversal_test.cpp): a standing climb when the face is climbable and within the
+# climbs' heights, nothing otherwise. Frames are 1/30 s.
+15 stick left 0 50
+90 tap triangle
+200 stick left 0 0

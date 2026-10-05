@@ -111,8 +111,21 @@ TEST_CASE("removing a tunable drops it and its queued change", "[debug]") {
 TEST_CASE("the game's movement and camera tunables edit the values the game reads", "[debug]") {
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
-    CHECK(registry.inCategory("Movement").size() == 7);
+    CHECK(registry.inCategory("Movement").size() == 9);
+    CHECK(registry.inCategory("Body").size() == 4);
+    CHECK(registry.inCategory("Sprint").size() == 3);
+    CHECK(registry.inCategory("Jump").size() == 4);
+    CHECK(registry.inCategory("Climb").size() == 11);
     REQUIRE(registry.find("Movement/Run threshold") != nullptr);
+    // Each traversal tunable starts at the original's value.
+    REQUIRE(registry.find("Body/Step height") != nullptr);
+    CHECK(registry.find("Body/Step height")->defaultValue() == Catch::Approx(0.25));
+    REQUIRE(registry.find("Sprint/Drain") != nullptr);
+    CHECK(registry.find("Sprint/Drain")->defaultValue() == Catch::Approx(20.0));
+    REQUIRE(registry.find("Jump/Up speed") != nullptr);
+    CHECK(registry.find("Jump/Up speed")->defaultValue() == Catch::Approx(5.5));
+    REQUIRE(registry.find("Climb/High probe") != nullptr);
+    CHECK(registry.find("Climb/High probe")->defaultValue() == Catch::Approx(1.7));
     CHECK(registry.find("Movement/Run threshold")->defaultValue() == Catch::Approx(coney::human::kRunThreshold));
     CHECK(registry.find("Follow camera/Position lag")->defaultValue() ==
           Catch::Approx(coney::camera::FollowCamera::kPositionLag));

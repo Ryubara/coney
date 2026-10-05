@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,936 bytes, 226 functions) |
+| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,936 bytes, 244 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
-89 reimplemented function(s) have no size yet and add no bytes.
+107 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██▏░░░░░░░░░░░░░░░░░` | 10.7% | 22 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 31 | 481,192 |
-| `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 15 | 358,360 |
+| `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -75,7 +75,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.0% | 8 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% | 36 | 1,524,752 |
+| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% | 46 | 1,524,752 |
 
 ## Research coverage
 
@@ -234,21 +234,38 @@ at the top of the repository's `README.md`.
 | `0x0020a268` | `PM_Mode::HandleCommand` | `GUI` | 416 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
 | `0x00218008` | `Human_Init` | `unattributed` | not filled in |
+| `0x0021a490` | `Human_PushOutInAir` | `unattributed` | not filled in |
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
+| `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
+| `0x0023db48` | `Human_BeginJump` | `Human` | not filled in |
 | `0x0023e090` | `Human_Land` | `Human` | not filled in |
 | `0x0023eab8` | `Human_SnapToGround` | `Human` | not filled in |
 | `0x0023f238` | `Human_ApplyRootMotion` | `Human` | not filled in |
 | `0x0023fea8` | `Human_StateUpdate` | `Human` | not filled in |
+| `0x00240898` | `Human_AirControl` | `Human` | not filled in |
 | `0x00240e38` | `Human_PlayerLocomotion` | `Human` | not filled in |
+| `0x00248df0` | `Human_Lean` | `Human` | not filled in |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
+| `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
+| `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
 | `0x00259578` | `Human_ChooseAnimState` | `Human` | not filled in |
 | `0x0025b200` | `Human_BuildMoveTasks` | `Human` | not filled in |
+| `0x0025cf30` | `Human_BuildJumpTasks` | `Human` | not filled in |
+| `0x0025d390` | `Human_BuildLandTasks` | `Human` | not filled in |
 | `0x0025ec28` | `Gait_BlendForSpeed` | `Human` | not filled in |
 | `0x0025f770` | `Human_BuildIdleTasks` | `Human` | not filled in |
+| `0x0027c120` | `Player_UpdateActions` | `unattributed` | not filled in |
+| `0x0027ce90` | `Player_UpdateSprint` | `unattributed` | not filled in |
+| `0x00281450` | `Climb_RunningClipEnd` | `unattributed` | not filled in |
+| `0x00281838` | `Climb_StandingClipEnd` | `unattributed` | not filled in |
+| `0x00281c20` | `Climb_Start` | `unattributed` | not filled in |
+| `0x00282370` | `Climb_ProbeTop` | `unattributed` | not filled in |
+| `0x002826f0` | `Climb_TryStart` | `unattributed` | not filled in |
+| `0x002829e8` | `Player_TryJump` | `unattributed` | not filled in |
 | `0x00336a00` | `QuaternionSlerp` | `unattributed` | 440 |
 | `0x00336bb8` | `VectorLerp` | `unattributed` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `unattributed` | 160 |
@@ -256,6 +273,7 @@ at the top of the repository's `README.md`.
 | `0x00337a60` | `RayTriangle_TwoSided` | `unattributed` | not filled in |
 | `0x0033e278` | `PhysicsBody_Sweep` | `unattributed` | not filled in |
 | `0x003477c0` | `PhysicsBody_PushOutOfWalls` | `unattributed` | not filled in |
+| `0x00347c08` | `PhysicsMesh_SweepCapsule` | `unattributed` | not filled in |
 | `0x0034f740` | `Collision_MarchRay` | `unattributed` | not filled in |
 | `0x0034f950` | `Collision_DropToGround` | `unattributed` | not filled in |
 | `0x0034fa28` | `Collision_DropToMarkedGround` | `unattributed` | not filled in |

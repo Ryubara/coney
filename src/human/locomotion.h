@@ -44,6 +44,8 @@ struct LocomotionTuning {
     float jogTurnDegrees = 6.0F;          ///< maxTurn() jogging.
     float runTurnDegrees = 4.0F;          ///< maxTurn() running.
     float sprintTurnDegrees = 2.5F;       ///< maxTurn() sprinting.
+    float leanFactor = 0.4F;              ///< leanStep(): the turn times this times the speed is the lean asked for.
+    float walkLeanFactor = 8.0F;          ///< leanStep(): the same, walking.
 };
 
 /// The one LocomotionTuning the game uses; at its defaults unless a debug menu changed it.
@@ -90,9 +92,10 @@ struct TurnState {
 /// @orig 0x00146078 PlayerRecord_Update (unknown)
 [[nodiscard]] StickIntent stickIntent(float stickX, float stickY, anim::Vec3 cameraForward, bool locked = false);
 
-/// The speed the stick asks for: 0 inside the dead zone, the run speed above kRunThreshold, otherwise the walk speed
-/// (how far the stick is pushed does not matter beyond that). Jog, sprint and the state overrides are not modelled.
-[[nodiscard]] float targetSpeed(float magnitude, const Speeds& speeds);
+/// The speed the stick asks for: 0 inside the dead zone, otherwise the walk speed (how far the stick is pushed does not
+/// matter beyond that); above kRunThreshold the run speed, or the sprint speed when `sprinting` (state flag
+/// `0x1000000` set and stamina not 0, `0x00225dc0`). Jog and the state overrides are not modelled.
+[[nodiscard]] float targetSpeed(float magnitude, const Speeds& speeds, bool sprinting = false);
 
 /// The gait stored with a velocity (`+0x1a8`): standing below 0.5 m/s, otherwise the gait 1-5 whose speed is nearest.
 /// @orig 0x0022aeb0 Human_GaitOfVelocity (unknown)
@@ -125,6 +128,14 @@ struct TurnState {
 /// The factor a slope scales a grounded human's velocity by: 1 on ground whose normal's z is 0.95 or more,
 /// otherwise clamp(0.6 + 0.3 (n.z - 0.5), 0.5, 1).
 [[nodiscard]] float slopeFactor(float normalZ);
+
+/// The body's lean one update on (`+0x29c`, radians, positive leaning into a turn to the left): the turn this update
+/// (`turn`, radians, positive anticlockwise) times a factor (8 × `speed` walking, 0.4 × `speed` otherwise) is the
+/// target (`+0x298`), clamped to 2°, 3°, 5° or 7°; the lean moves 0.625 of the way toward it, at most 1°, 1.2°, 1.3°
+/// or 1.8° an update. **Coney's reading**: the four limits go with walking (and standing), jogging, running and
+/// sprinting in that order; the page says only "by gait".
+/// @orig 0x00248df0 Human_Lean (unknown)
+[[nodiscard]] float leanStep(float lean, float turn, float speed, Gait gait);
 
 /// The gait blend's target for a speed (0 walk, 1 jog, 2 run, 3 sprint, linear between, clamped to 0-3).
 /// @orig 0x0025ec28 Gait_BlendForSpeed (unknown)

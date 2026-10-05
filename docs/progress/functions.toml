@@ -783,6 +783,11 @@ name = "Human_Init"
 subsystem = "unattributed"
 
 [[function]]
+address = 0x0021a490
+name = "Human_PushOutInAir"
+subsystem = "unattributed"
+
+[[function]]
 address = 0x002213d8
 name = "Human_MaxTurn"
 subsystem = "Human"
@@ -793,6 +798,11 @@ name = "Human_GaitForSpeed"
 subsystem = "Human"
 
 [[function]]
+address = 0x002217f0
+name = "Human_LaunchJump"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022aeb0
 name = "Human_GaitOfVelocity"
 subsystem = "Human"
@@ -800,6 +810,11 @@ subsystem = "Human"
 [[function]]
 address = 0x0023d8c8
 name = "Human_Move"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023db48
+name = "Human_BeginJump"
 subsystem = "Human"
 
 [[function]]
@@ -823,8 +838,18 @@ name = "Human_StateUpdate"
 subsystem = "Human"
 
 [[function]]
+address = 0x00240898
+name = "Human_AirControl"
+subsystem = "Human"
+
+[[function]]
 address = 0x00240e38
 name = "Human_PlayerLocomotion"
+subsystem = "Human"
+
+[[function]]
+address = 0x00248df0
+name = "Human_Lean"
 subsystem = "Human"
 
 [[function]]
@@ -838,6 +863,16 @@ name = "Human_ComputeSpeeds"
 subsystem = "Human"
 
 [[function]]
+address = 0x002562d0
+name = "Human_DrainMeters"
+subsystem = "Human"
+
+[[function]]
+address = 0x00256a60
+name = "Human_RefillMeters"
+subsystem = "Human"
+
+[[function]]
 address = 0x00259578
 name = "Human_ChooseAnimState"
 subsystem = "Human"
@@ -845,6 +880,16 @@ subsystem = "Human"
 [[function]]
 address = 0x0025b200
 name = "Human_BuildMoveTasks"
+subsystem = "Human"
+
+[[function]]
+address = 0x0025cf30
+name = "Human_BuildJumpTasks"
+subsystem = "Human"
+
+[[function]]
+address = 0x0025d390
+name = "Human_BuildLandTasks"
 subsystem = "Human"
 
 [[function]]
@@ -856,6 +901,46 @@ subsystem = "Human"
 address = 0x0025f770
 name = "Human_BuildIdleTasks"
 subsystem = "Human"
+
+[[function]]
+address = 0x0027c120
+name = "Player_UpdateActions"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x0027ce90
+name = "Player_UpdateSprint"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00281450
+name = "Climb_RunningClipEnd"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00281838
+name = "Climb_StandingClipEnd"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00281c20
+name = "Climb_Start"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00282370
+name = "Climb_ProbeTop"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x002826f0
+name = "Climb_TryStart"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x002829e8
+name = "Player_TryJump"
+subsystem = "unattributed"
 
 [[function]]
 address = 0x00336a00
@@ -893,6 +978,11 @@ subsystem = "unattributed"
 [[function]]
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x00347c08
+name = "PhysicsMesh_SweepCapsule"
 subsystem = "unattributed"
 
 [[function]]

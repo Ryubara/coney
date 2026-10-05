@@ -219,13 +219,18 @@ void PlayLevelMode::skin(const human::PlayerSnapshot& snapshot) {
     const auto bones = anim::boneTransforms(m_character->skeleton(), snapshot.pose);
     const std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
     characters::skinVertices(model, matrices, m_positions, m_normals);
-    // Then placed: turned by the heading about z, moved to the feet, and into RenderWare's axes.
+    // Then leaned into the turn about the forward axis at the feet (**Coney's choice** of axis and pivot: the
+    // research gives the lean's angle, not how the body takes it), turned by the heading about z, moved to the feet,
+    // and into RenderWare's axes.
+    const float lc = std::cos(-snapshot.lean);
+    const float ls = std::sin(-snapshot.lean);
+    const auto roll = [lc, ls](anim::Vec3 v) { return anim::Vec3{v.x * lc + v.z * ls, v.y, -v.x * ls + v.z * lc}; };
     const float c = std::cos(snapshot.heading);
     const float s = std::sin(snapshot.heading);
     const anim::Vec3 feet = snapshot.feet;
     for (std::size_t i = 0; i < m_positions.size(); ++i) {
-        const anim::Vec3 p = m_positions[i];
-        const anim::Vec3 n = m_normals[i];
+        const anim::Vec3 p = roll(m_positions[i]);
+        const anim::Vec3 n = roll(m_normals[i]);
         const anim::Vec3 placed{p.x * c - p.y * s + feet.x, p.x * s + p.y * c + feet.y, p.z + feet.z};
         m_positions[i] = anim::Vec3{placed.x, placed.z, -placed.y};
         m_normals[i] = directionToRenderWare(anim::Vec3{n.x * c - n.y * s, n.x * s + n.y * c, n.z});
@@ -378,8 +383,9 @@ float PlayLevelMode::playerSpeed() const { return m_player->human().speed(); }
 
 std::string PlayLevelMode::playerState() const {
     const human::Human& human = m_player->human();
-    return std::format("{}, clip {}, {}", gaitName(human.gait()), human.animator().animId(),
-                       human.airborne() ? "airborne" : "grounded");
+    return std::format("{}, clip {}, {}, {}, stamina {}/{}{}", gaitName(human.gait()), human.animator().animId(),
+                       human.airborne() ? "airborne" : "grounded", human::traversalName(human.traversal()),
+                       human.stamina().value(), human.stamina().maximum(), human.sprinting() ? ", sprint" : "");
 }
 
 void PlayLevelMode::teleport(const debug::Place& place) {
@@ -436,10 +442,11 @@ std::string PlayLevelMode::summary() const {
     const anim::Vec3 c = m_player->camera().position();
     return std::format(
         "play: {} frames, player at ({:.2f}, {:.2f}, {:.2f}) heading {:.1f} speed {:.2f} gait {} clip {} "
-        "{}, travelled {:.2f} m, respawns {}; camera {:.2f} m away{}\n",
+        "{} {} stamina {}, travelled {:.2f} m, respawns {}; camera {:.2f} m away{}\n",
         m_stats.frames, p.x, p.y, p.z, human.heading() * 180.0F / std::numbers::pi_v<float>, human.speed(),
         gaitName(human.gait()), human.animator().animId(), human.airborne() ? "airborne" : "grounded",
-        m_stats.travelled, m_player->respawns(), anim::distance(c, m_player->camera().lookAt()), m_scenery->summary());
+        human::traversalName(human.traversal()), human.stamina().value(), m_stats.travelled, m_player->respawns(),
+        anim::distance(c, m_player->camera().lookAt()), m_scenery->summary());
 }
 
 } // namespace coney::platform

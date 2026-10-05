@@ -161,7 +161,11 @@ The first tunables are the player's and the camera's researched values (`src/deb
 
 | Category | Tunables (default) |
 | --- | --- |
-| Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (12°, 6°, 4°, 2.5° an update) |
+| Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (12°, 6°, 4°, 2.5° an update), lean factor and lean factor walking (0.4, 8) |
+| Body | radius (0.35 × scale), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), air radius (0.5 × scale) |
+| Sprint | stamina maximum (135), drain (20/s), refill (40/s) |
+| Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |
+| Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |
 | Follow camera | position lag (0.22), collision margin (0.2 m), closest after collision (0.5 m), leash near and far (3.0 m, 3.5 m), pitch (13°), look-at height (1.4 m) |
 
 The leash, pitch and look-at height apply when the camera is next placed (a level start); the others at the next step.

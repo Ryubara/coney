@@ -119,6 +119,34 @@ inline std::vector<Tri> wallFacingMinusX(float x, float y0, float y1, float z0, 
             Tri{{x, y0, z0}, {x, y1, z1}, {x, y1, z0}, flags, 5, 1}};
 }
 
+/// A wall in the plane y = `y` over x [x0, x1] and z [z0, z1], facing -y (two triangles), with `flags` and `material`.
+inline std::vector<Tri> wallFacingMinusY(float y, float x0, float x1, float z0, float z1, std::uint16_t flags = 0,
+                                         std::uint8_t material = 5) {
+    return {Tri{{x0, y, z0}, {x1, y, z0}, {x1, y, z1}, flags, material, 1},
+            Tri{{x0, y, z0}, {x1, y, z1}, {x0, y, z1}, flags, material, 1}};
+}
+
+/// The same wall facing +y.
+inline std::vector<Tri> wallFacingPlusY(float y, float x0, float x1, float z0, float z1, std::uint16_t flags = 0,
+                                        std::uint8_t material = 5) {
+    return {Tri{{x1, y, z0}, {x0, y, z0}, {x0, y, z1}, flags, material, 1},
+            Tri{{x1, y, z0}, {x0, y, z1}, {x1, y, z1}, flags, material, 1}};
+}
+
+/// A block across x [x0, x1] from y0 to y1, `height` tall, standing on z = 0: its face toward -y, its top and its back
+/// face, each with `flags` and `material`. A thin one is a fence; a deep one a ledge or a wall to climb.
+inline std::vector<Tri> blockAlongY(float x0, float x1, float y0, float y1, float height, std::uint16_t flags = 0,
+                                    std::uint8_t material = 5) {
+    std::vector<Tri> tris = wallFacingMinusY(y0, x0, x1, 0.0F, height, flags, material);
+    for (Tri top : floorAt(height, x0, x1, y0, y1, 1, flags)) {
+        top.material = material;
+        tris.push_back(top);
+    }
+    const std::vector<Tri> back = wallFacingPlusY(y1, x0, x1, 0.0F, height, flags, material);
+    tris.insert(tris.end(), back.begin(), back.end());
+    return tris;
+}
+
 /// Joins triangle lists.
 inline std::vector<Tri> join(std::vector<Tri> a, const std::vector<Tri>& b) {
     a.insert(a.end(), b.begin(), b.end());

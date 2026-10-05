@@ -45,11 +45,14 @@ StickIntent stickIntent(float stickX, float stickY, anim::Vec3 cameraForward, bo
                        .magnitude = std::min(1.0F, std::hypot(turned.x, turned.y))};
 }
 
-float targetSpeed(float magnitude, const Speeds& speeds) {
+float targetSpeed(float magnitude, const Speeds& speeds, bool sprinting) {
     if (magnitude <= locomotionTuning().stickDeadZone) {
         return 0.0F;
     }
-    return magnitude > locomotionTuning().runThreshold ? speeds.run : speeds.walk;
+    if (magnitude <= locomotionTuning().runThreshold) {
+        return speeds.walk;
+    }
+    return sprinting ? speeds.sprint : speeds.run;
 }
 
 Gait gaitOfSpeed(float speed, const Speeds& speeds) {
@@ -137,6 +140,26 @@ float slopeFactor(float normalZ) {
         return 1.0F;
     }
     return std::clamp(0.6F + 0.3F * (normalZ - 0.5F), 0.5F, 1.0F);
+}
+
+float leanStep(float lean, float turn, float speed, Gait gait) {
+    // The limits by gait: walking (and below), jogging, running, sprinting.
+    constexpr std::array<float, 4> kLeanLimit{2.0F, 3.0F, 5.0F, 7.0F};
+    constexpr std::array<float, 4> kLeanRate{1.0F, 1.2F, 1.3F, 1.8F};
+    std::size_t index = 0;
+    if (gait == Gait::Jog) {
+        index = 1;
+    } else if (gait == Gait::Run) {
+        index = 2;
+    } else if (gait == Gait::Sprint) {
+        index = 3;
+    }
+    const LocomotionTuning& tuning = locomotionTuning();
+    const float factor = (gait == Gait::Walk ? tuning.walkLeanFactor : tuning.leanFactor) * speed;
+    const float limit = kLeanLimit.at(index) * kDegrees;
+    const float target = std::clamp(turn * factor, -limit, limit);
+    const float rate = kLeanRate.at(index) * kDegrees;
+    return lean + std::clamp(0.625F * (target - lean), -rate, rate);
 }
 
 float gaitBlendForSpeed(float speed, const Speeds& speeds) {

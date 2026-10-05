@@ -271,9 +271,11 @@ match the header's counts; `+0x98` equals the lowest vertex `z` everywhere. `lev
   bits, the mask, disabled triangles, material exclusion, a triangle listed in many cells, a long diagonal ray across
   the grid, marked ground and refused data.
 - The human (`src/human/human.*`, [Characters](characters.md#coneys-implementation)) stands, lands and spawns with
-  `rayCast` (mask 0, no exclusions), and is pushed out of walls by its own nearest-triangle test rather than
-  `spherePush`: the body sphere is kept a radius from the closest point of each wall triangle (`|n.z|` ≤ 0.65), so it
-  cannot slip past a convex edge, which the face-only test allowed. The follow camera casts with mask `0x200`.
+  `rayCast` (mask 0; while climbing over, the fence materials 30, 31 and 122 excluded), and is pushed out of walls by
+  its own nearest-triangle test rather than `spherePush` (`src/human/body.*`): the walking sphere is kept a radius
+  from the closest point of each wall triangle (`|n.z|` ≤ 0.65) that the move goes into and that is not under 0.25 m
+  tall, so it cannot slip past a convex edge, which the face-only test allowed. Its climbs read the triangles' flags
+  `0x4` and `0x80` and material 30 ([Climbing](characters.md#climb)). The follow camera casts with mask `0x200`.
 - `src/raycast/collision_builder.h` (Coney's own, for [the sandbox](../guides/sandbox.md)) writes the six chunks
   above from a list of triangles and loads them through `CollisionMesh::build`, so a built mesh passes the same
   checks as a level's. Shared corners become one vertex. The grid's cells are the size asked for; the matrix maps the

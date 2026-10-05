@@ -995,17 +995,34 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   ([CfgAnimSpeeds](formats/animation.md)) and its speed (root displacement × rate / duration).
 - `src/human/locomotion.*` is the pure maths: the camera-relative stick, dead zone and run threshold
   (`PlayerRecord_Update`), the target speed and gait, the per-gait turn limit with its ease and carry, acceleration,
-  the skid rule, the slope factor and the gait blend's target (`0x0025ec28`).
-- `src/human/human_animator.*` is the anim state (idle, move and a fall state) and its builders: the walk or run start
-  played at once and handed to the five-clip gait blend, the 0.1333 s fade between moves, the idle's fade by how much
-  of a start clip has played, and the walk start swapped for the run start in its first half
-  ([Clip selection](#clip-selection)).
+  the skid rule, the slope factor and the gait blend's target (`0x0025ec28`); the sprint's target speed; and the
+  body's lean (`Human_Lean`, `0x00248df0`).
+- `src/human/stamina.*` is the stamina meter ([Sprint and stamina](#sprint)): the drain at the sprint gait, the
+  refill and the gait, airborne and "run with L2" blocks, and `Player_UpdateSprint`'s rule (L2 held and stamina not
+  0, asked again every update).
+- `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale centred 0.05 above
+  its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the 0.25 m low-and-thin rule, the fence
+  materials passed through while climbing over, and the airborne push-out sphere (0.5 × scale for a player).
+- `src/human/jump.*` is the jump's checks and launch ([Jumping](#jump)): faster than 3.3 m/s and the gait at jog or
+  above, refused when a climbable face lies within 5.5 m; the run or sprint speed forward and 5.5 m/s up.
+- `src/human/climb.*` is the climb choice ([Climbing](#climb)): the two forward rays, the climbable test, the probe
+  0.4 m behind the face with its windows, the 2.5 m fence ray, the clip ids, each clip's reach (its type-8 event
+  vector) and the reach window.
+- `src/human/human_animator.*` is the anim state and its builders: idle, move, the jump loop (25), the drop cycle
+  (26), the landing (27: 436 handing over to a gait blend, or 435 and the idle), the run stop and the climb's three
+  clips (Coney's states 101 and 102); the walk or run start played at once and handed to the five-clip gait blend,
+  the 0.1333 s fade between moves, the idle's fade by how much of a start clip has played, and the walk start swapped
+  for the run start in its first half ([Clip selection](#clip-selection)).
 - `src/human/human.*` is the human: spawn (a 2.5 m ray from 1 m above, feet 0.01 above the hit), one update in the
-  order of [Update](#update) (stick, animation, root motion of the start clips, locomotion, gravity, move or fall,
-  then the anim state), the ground snap, the fall and landing, and the body pushed out of walls.
-- `src/human/player.*` is player 1 (the character, the human, the follow camera) and the snapshot drawing reads: the
-  previous and current feet, heading, pose (each bone slerped) and camera, interpolated for a renderer that draws
-  between steps.
+  order of [Update](#update) (stick, animation, root motion of the clips that move the body, locomotion, air control
+  or a climb's move, gravity, move or fall, the meters, triangle's actions, the lean, then the anim state), the
+  ground snap, the fall and landing, the walking body, the airborne push-out, and the climb from its probe to its
+  last clip (the move to the start point, the re-probe at the first clip's end, the rise onto a wall).
+- `src/human/player.*` is player 1 (the character at scale 0.97, the human, the follow camera; L2 held sprints,
+  triangle pressed acts) and the snapshot drawing reads: the previous and current feet, heading, lean, pose (each bone
+  slerped) and camera, interpolated for a renderer that draws between steps.
+- The debug menu's tunables ([Debug menu](../guides/debug-menu.md#tunables)) expose the body, sprint, jump, climb
+  and lean values above, each defaulting to the original's.
 - `--play-level NAME` ([Building](../guides/building.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
   steps the player, streams the level and runs the visibility pass in its update, and draws from the snapshots of the
   last two steps, blended by the frame's alpha, in its render
@@ -1021,7 +1038,24 @@ clip's first pose against the bind skeleton averages 0.054 m (worst 0.106 m).
 4.857, run 7.801, sprint 10.245 m/s); at level99's start he lands at z 0.25, idles in 388, takes the walk start 413
 at a 30 % stick (about 0.79 m/s of root motion), walks in 408 at 1.629 m/s, gains 0.8 m/s per update to the run
 (410), stops at once with the idle on release, and never leaves the ground or passes through the scenery he is run
-into; the same script gives the same path twice.
+into; the same script gives the same path twice. On the default sandbox's ledges he walks onto the 10 and 25 cm
+blocks (the 25 cm block's 3 m wide face is two slivers the 0.25 m rule skips) and stops at the 50 cm one, 0.34 m
+short of its face.
+
+**Disc test** (`[traversal]`, positions and hashes only; Rembrandt on the sandbox's
+[parkour course](../guides/sandbox.md#the-shipped-layouts)), each run against the runtime values above:
+
+- **Sprint** (L2 held, stick 0.8 then 0.96): a walk at 1.629 m/s and no drain at 0.8; 10.245 m/s at 0.96 for about
+  6.75 s until stamina is empty, then 7.801 m/s in one update; stamina held at 0 while L2 stays down and refilled at
+  40 per second once it is let go; letting go of the stick at the run stops at once, with no run stop.
+- **Jumps**: a run jump at 7.801 m/s and a sprint jump at 10.245 m/s, both 5.5 m/s up, rising 1.06 m and landing in
+  436; the sprint jump carries about 8 m; letting go of the stick in the sprint plays the run stop (417). A run jump
+  clears a 5 m gap between two 2 m platforms.
+- **Fences** of material 30, from a run: the 1 m short fence (446) and the 2 m fence (440) are climbed with the feet at
+  ground height, through the fence; the 2.6 m fence is neither climbed nor jumped, and stops the body at its face.
+- **Walls and blocks** with flag `0x80`, standing: the 0.75 and 1.0 m walls are short-wall climbs (455) onto their
+  tops; the 2.0 m block is a wall climb (449) onto its top; the 3.0 m block is not climbed.
+- **Kerbs and ledges**: a 20 cm kerb is walked onto; 30, 50 and 65 cm ledges stop the body at their face.
 
 **Coney choices** where the research is silent: the material takes its dictionary's only texture; bones 0 and 1
 rest at the identity; weights are used as stored, not renormalised; the viewer's lights, camera and clip keys, and the
@@ -1033,16 +1067,42 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 - **Standing**: a human not asked to move counts as moving while faster than a quarter of the walk speed. The
   original's getter `0x00221580` is the **sneak-walk** speed (record `+0x16c` × `+0x3a4`, 1.585 for Rembrandt;
   confirmed (code)), so the original's threshold is 0.396 m/s against Coney's 0.407.
-- **Falling**: a Coney anim state (100) that loops the drop cycle (slot 26, 428) with the idle's 0.15 s fade; the
-  original's are states 25-27 ([Falling and landing](#falling)).
-- **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip), and runs
-  while airborne too (air control). In the original only a jump steers in the air (`Human_AirControl`, which keeps
-  the speed and turns the heading, [Jumping](#jump)); walking off a car's roof, the fall kept its horizontal velocity (runtime).
-- **The body** is a sphere of radius 0.35 m with its centre 0.9 m above the feet, pushed out of the nearest wall
-  triangle (`|n.z|` ≤ 0.65) by the distance to the triangle's closest point; the sweep tries 3 passes, then stops.
-  The original's walking sphere sits lower, its centre `r + 0.05` above the feet, and ignores wall triangles under
-  0.25 m tall ([Walls and steps](#walls)); so Coney walks up ledges the original treats as walls.
+- **Falling**: state 26's builder loops the drop cycle (slot 26, 428) with the idle's 0.15 s fade; a drop lands
+  straight into the idle or the move, without the drop land (429), the long-fall cycles or the ground roll.
+- **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip). In the air
+  only a jump steers; a fall keeps its velocity, and no clip's root motion moves the body while airborne.
+- **The body** is the original's walking sphere ([Walls and steps](#walls)), but pushed out of the nearest wall
+  triangle by the distance to the triangle's closest point rather than swept along the move; the push tries 3
+  passes, then stops. The low-and-thin rule takes the triangle as given, so a 0.25 m face exactly (a sliver) does
+  not stop the body, and a face from 0.26 m does.
 - **Landing** probes from 1.0 m above the feet, as the ground snap does.
+- **Stamina** carries one fraction of a point between updates, started again when the meter changes direction.
+- **The run stop** (417) plays after a skid at the sprint gait only, with the 0.1333 s move fade; the runtime saw it
+  after a sprint and not after a run, and what builds it is not traced.
+- **The landing** uses the jump's 0.1 s fade, and 436 hands over to a gait blend at the jog (1.0).
+- **The air turn** is limited to 4° an update, what a sprint jump turned at runtime; which gait's limit the original
+  uses is not traced.
+- **Climb reach**: `r1` and `r2` are read as the reaches of the standing and the running first clips (for the fence,
+  437 and 440). Rembrandt's type-8 vectors are 0.77 / 2.31 m (fence), 0.64 / 1.39 m (short fence), 0.65 / 2.30 m
+  (wall) and 0.78 / 1.55 m (short wall), which give a running fence climb from 1.23 to 5.09 m: the runtime tap at
+  about 4.4 m started one and the one at 4.9 m did not (the 4.5 m ray). The chain's first two clips would give
+  about 1.2 m and no running climb from 4.4 m.
+- **The climb's move** to its start point takes 2 updates from a run and 1 standing; the first clip waits until it
+  is done (the runtime's 440 played its whole length after the snap).
+- **The rise**: walls and short walls move at once at the second clip's start, by its root displacement (450 and
+  456 carry none in section A; their whole displacement, 0.98 and 1.06 m, as at runtime) and up to the top the probe
+  found; fences go by the second clip's own root motion, as the runtime's 441 carried the body through.
+- **Climbing over** lasts the second clip: from the re-probe at the first clip's end to the third clip's start (at
+  runtime 441 had record `+0x08` `0x40` and 442 did not). Meanwhile the fence materials (30, 31, 122) are not walls,
+  and not ground for the snap and the landing, so a low fence's top does not lift the feet.
+- **The re-probe** at the first clip's end accepts any triangle, not only a climbable one.
+- **The climb's fade** is the 0.1333 s move fade.
+- **The lean**: the four limits go with walk (and standing), jog, run and sprint; the drawing rolls the body by the
+  lean about its forward axis through the feet.
+- **Context and object actions** (triangle's second and fourth tries) are hooks that never succeed yet, so triangle
+  goes on from a refused climb to the jump.
+- **Camera through a fence**: the follow camera's ray is not told about a fence being climbed, so it pulls in close
+  while the body passes through; what the original does there is not researched.
 - **Out of the world** (20 m below the mesh's lowest point): the human is put back at the start instead of failing
   the mission.
 - **The gait blend's leading clip** uses a tolerance of 0.001 when it compares the value with its target.
@@ -1113,8 +1173,15 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **The context action** (`0x002811f0`) and the object action (`0x00226ff0`) that triangle also starts: doors,
   pick-ups, which objects.
 - **The air turn's gait**: a sprint jump turned at about 4° per update (the run's limit, not the sprint's).
-- **Climb reaches**: the clips' type-8 event vectors give each climb's distance window; their values, and
-  `CfgClimbWithGhetto`'s effect, are not read.
+- **Climb reaches** (partly answered): Coney reads Rembrandt's type-8 vectors ([Coney's implementation](#coneys-implementation));
+  still open: which two clips `r1` and `r2` belong to (Coney's reading: the standing and running first clips), and
+  `CfgClimbWithGhetto`'s effect.
+- **What builds the run stop** (417) after a sprint, and whether a run's skid can play it.
+- **The landing's fade** and the gait blend value 436 hands over to; the drop land (429) and the long falls are not
+  built in Coney.
+- **The climb's details**: the fade before its first clip; when record `+0x08` `0x40` is cleared; whether the
+  re-probe needs a climbable triangle; how a fence climb's second clip moves the body (Coney: its root motion).
+- **The camera during a fence climb**: whether its rays skip the fence (mask `0x200`, or a flag on fence triangles).
 - **Triangle flags `0x4` and `0x80`**: why two climbable flags (one for players only), and which surfaces carry them.
 - **The sprint's other clear** (answered: the block, [Combat](combat.md#dispatch)). Still open: what `0x00230140`,
   called when the sprint is set, does, and the fight test `0x00224f28`.

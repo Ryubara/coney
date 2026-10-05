@@ -84,16 +84,20 @@ target_sources(coney_core PRIVATE
     characters/clump_reader.cpp
     characters/orbit_camera.cpp
     characters/reference_render.cpp)
-# The player: animation tasks, the human's locomotion and ground, the follow camera (docs/research/characters.md,
-# docs/research/camera.md).
+# The player: animation tasks, the human's locomotion, body and ground, sprint, jump and climbs, the follow camera
+# (docs/research/characters.md, docs/research/camera.md).
 target_sources(coney_core PRIVATE
     animation/anim_task.cpp
     camera/follow_camera.cpp
     characters/anim_set.cpp
+    human/body.cpp
+    human/climb.cpp
     human/human.cpp
     human/human_animator.cpp
+    human/jump.cpp
     human/locomotion.cpp
-    human/player.cpp)
+    human/player.cpp
+    human/stamina.cpp)
 # The sandbox: Coney's own test worlds of primitives (docs/guides/sandbox.md), and the collision writer they use.
 target_sources(coney_core PRIVATE
     raycast/collision_builder.cpp
