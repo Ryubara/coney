@@ -204,7 +204,7 @@ TEST_CASE("hit armour: in the wind-up the damage lands with no reaction; in the 
         Fight fight(character, 30.0F);
         bool queued = false;
         fight.run("10 tap square\n", 14, [&](std::uint64_t) {
-            if (!queued && fight.human().fighter().combat().chain().phaseFlags() == 0x1) {
+            if (!queued && (fight.human().animator().flags() & 0x7U) == 0x1) {
                 fight.human().takeHit(hitOf(12, 14, 0x0a, 0x800));
                 queued = true;
             }
@@ -218,7 +218,7 @@ TEST_CASE("hit armour: in the wind-up the damage lands with no reaction; in the 
         Fight fight(character, 30.0F);
         bool queued = false;
         fight.run("10 tap square\n", 30, [&](std::uint64_t) {
-            if (!queued && fight.human().fighter().combat().chain().phaseFlags() == 0x4) {
+            if (!queued && (fight.human().animator().flags() & 0x7U) == 0x4) {
                 fight.human().takeHit(hitOf(12, 14, 0x0a, 0x800));
                 queued = true;
             }

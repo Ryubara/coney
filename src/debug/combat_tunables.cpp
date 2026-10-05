@@ -16,12 +16,9 @@ void registerCombatTunables(TunableRegistry& registry) {
         .describe("Samples circle or triangle must be held for the hold commands (tackle)");
     registry.add(kCategory, "Snap attacks", &tuning.snapAttacks).describe("Square snaps to a side or back");
 
-    // The chain attacks' timing, in updates from the press.
+    // The hit of S1 (and of every attack whose hit was not measured), in updates from the press; the phases come from
+    // the clips' events.
     registry.add(kCategory, "Hit update", &tuning.hitUpdate).range(0, 30, 1).units("updates");
-    registry.add(kCategory, "Chain window opens", &tuning.chainOpenUpdate).range(0, 30, 1).units("updates");
-    registry.add(kCategory, "Chain window closes", &tuning.chainCloseUpdate).range(0, 30, 1).units("updates");
-    registry.add(kCategory, "Recovery starts", &tuning.recoveryUpdate).range(0, 30, 1).units("updates");
-    registry.add(kCategory, "Attack ends", &tuning.attackEndUpdate).range(1, 60, 1).units("updates");
 
     // Grabs and the power meter.
     registry.add(kCategory, "Grab search scale", &tuning.grabSearchScale)

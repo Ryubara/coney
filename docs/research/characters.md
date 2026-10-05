@@ -1190,15 +1190,26 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   (26), the landing (27: 436 handing over to a gait blend, or 435 and the idle), the run stop and the climb's three
   clips (Coney's states 101 and 102); the walk or run start played at once and handed to the five-clip gait blend,
   the 0.1333 s fade between moves, the idle's fade by how much of a start clip has played, and the walk start swapped
-  for the run start in its first half ([Clip selection](#clip-selection)).
-- `src/human/human.*` is the human: spawn (a 2.5 m ray from 1 m above, feet 0.01 above the hit), one update in the
-  order of [Update](#update) (stick, animation, root motion of the clips that move the body, locomotion, air control
-  or a climb's move, gravity, move or fall, the meters, triangle's actions, the lean, then the anim state), the
-  ground snap, the fall and landing, the walking body, the airborne push-out, and the climb from its probe to its
+  for the run start in its first half ([Clip selection](#clip-selection)). Its clips hold their record `+0x08` bits
+  while they play ([Tasks](tasks.md#held-flags)): a start clip `0x10000000`, the landing `0x1000000`, the run stop and
+  the climb's first and last clips `0x80000`, the combat moves theirs ([Combat](combat.md#coneys-implementation)).
+- `src/human/locomotion_gate.*` is the locomotion gate ([Tasks](tasks.md#locomotion-gate)): `stickBusy()`
+  (`Human_IsBusy`'s mask `0xaeebf7ff`, in the air or held: no stick step) and `stickVelocityGated()` (`0x110c0880`, or
+  state code 5 or 6: the stick turns the human but sets no velocity).
+- `src/human/human.*` is the human: spawn (a 2.5 m ray from 1 m above, feet 0.01 above the hit), its per-player
+  record (the stick, the camera's forward, the command and the buttons, written by the pad or a brain) and its update
+  in three passes ([Tasks](tasks.md#humans-update)): `animate()` (the animation), `updateState()` (root motion of the
+  clips that move the body, locomotion through the gate, air control or a climb's move, gravity, move or fall, the
+  meters, the lean) and `updateActions()` (the dispatcher from the record, triangle's actions, then the anim state);
+  the ground snap, the fall and landing, the walking body, the airborne push-out, and the climb from its probe to its
   last clip (the move to the start point, the re-probe at the first clip's end, the rise onto a wall).
+- `src/human/humans.*` is the characters' step (`Humans_Update`): every human's record (the commands of those no pad
+  drives cleared), the brains' hook (empty until the AI lands), then the animation of all, the locomotion of all and
+  the actions of all, walked forward and backward on alternate steps. It runs on Coney's fixed 1/30 s step.
 - `src/human/player.*` is player 1 (the character at scale 0.97, the human, the follow camera; L2 held sprints,
-  triangle pressed acts) and the snapshot drawing reads: the previous and current feet, heading, lean, pose (each bone
-  slerped) and camera, interpolated for a renderer that draws between steps.
+  triangle pressed acts): it writes the pad into its human's record and steps the characters, and keeps the snapshot
+  drawing reads: the previous and current feet, heading, lean, pose (each bone slerped) and camera, interpolated for a
+  renderer that draws between steps.
 - The debug menu's tunables ([Debug menu](../guides/debug-menu.md#tunables)) expose the body, sprint, jump, climb
   and lean values above, each defaulting to the original's.
 - `--play-level NAME` ([Building](../guides/building.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
@@ -1252,9 +1263,9 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   confirmed (code)), so the original's threshold is 0.396 m/s against Coney's 0.407.
 - **Falling**: state 26's builder loops the drop cycle (slot 26, 428) with the idle's 0.15 s fade; a drop lands
   straight into the idle or the move, without the drop land (429), the long-fall cycles or the ground roll.
-- **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip). Now
-  confirmed (code): the start clip's `0x10000000` zeroes the stick's velocity but is outside `Human_IsBusy`'s mask, so
-  the turn still runs ([Tasks](tasks.md#locomotion-gate)). In the air
+- **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip), as the
+  locomotion gate gives it (confirmed (code)): the start clip holds `0x10000000`, which zeroes the stick's velocity
+  but is outside `Human_IsBusy`'s mask, so the turn still runs ([Tasks](tasks.md#locomotion-gate)). In the air
   only a jump steers; a fall keeps its velocity, and no clip's root motion moves the body while airborne. Standing
   (no gait blend yet), the update the start clip begins sets no velocity, as at runtime.
 - **The start clips hand over early**: the walk and run starts give way to the gait blend on the update after which
@@ -1278,7 +1289,10 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 - **The run stop** (417) plays after every skid, at a run as at a sprint, after the 0.1333 s move fade, which blends
   only the pose: the gait blend it fades from has no root velocity, so the body moves at the clip's 2.244, 4.996,
   5.101, … m/s from its first update, as at runtime. The skid's own update still turns one step and the run stop then
-  holds the facing; "at the run speed" allows 1 mm/s for rounding. What builds it is not traced.
+  holds the facing; "at the run speed" allows 1 mm/s for rounding. What builds it is not traced. It holds `0x80000`,
+  which the locomotion gate reads (busy and no stick velocity). The skid does not set the state code 5 the original's
+  stop step sets (`0x002419a0`, [Tasks](tasks.md#locomotion-gate)): who clears it is not traced, and the run stop's
+  own bits gate the same updates.
 - **The landing** has no fade, so 436 moves the body at its 4.23 m/s from its first update as at runtime, and hands
   over to a gait blend at the jog (1.0).
 - **The air turn** is limited to 4° an update, what a sprint jump turned at runtime; which gait's limit the original

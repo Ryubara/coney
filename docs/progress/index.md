@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 5.4%](https://img.shields.io/badge/reimplemented-5.4%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 5.5%](https://img.shields.io/badge/reimplemented-5.5%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% of the game's own code (182,132 of 3,342,936 bytes, 379 functions) |
+| **Reimplemented** | `█▏░░░░░░░░░░░░░░░░░░` | 5.5% of the game's own code (184,972 of 3,342,936 bytes, 381 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
-| `Human` | `█▊░░░░░░░░░░░░░░░░░░` | 9.0% | 57 | 358,360 |
+| `Human` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 59 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -288,6 +288,7 @@ at the top of the repository's `README.md`.
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
 | `0x00222ef0` | `Human_HealthPercent` | `Human` | 88 |
 | `0x00223068` | `Human_PowerMax` | `Human` | 288 |
+| `0x00223cb0` | `Human_IsBusy` | `Human` | 136 |
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
@@ -310,6 +311,7 @@ at the top of the repository's `README.md`.
 | `0x00245310` | `Human_MoveGrabbing` | `Human` | 1,552 |
 | `0x00245920` | `Human_HandleMessage` | `Human` | 8,248 |
 | `0x00248df0` | `Human_Lean` | `Human` | not filled in |
+| `0x00249108` | `Humans_Update` | `Human` | 2,704 |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |

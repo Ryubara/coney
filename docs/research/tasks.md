@@ -261,6 +261,16 @@ it. The block's **5 updates** after R1's release are the state code `+0x14` = 5 
 - **Messages are synchronous**: a hit's warning (`0xa4`, `0xa6`) is handled inside the attacker's event, before the
   sender's next line ([Combat](combat.md#block)).
 
+## Coney's implementation {#coneys-implementation}
+
+- `src/human/humans.*` is `Humans_Update`'s order on Coney's fixed 1/30 s step (a Coney choice: no 60 Hz tick and no
+  wheel until the world's objects come). Every human has a per-player record (`human::PlayerRecord`) that a pad or a
+  brain writes; the dispatcher runs from it for every human, so a human no pad drives fights from the command its
+  brain writes ([Characters](characters.md#coneys-implementation)).
+- `src/animation/anim_task.*` holds the held flags and the events that move them
+  ([Animation](formats/animation.md#coneys-implementation)); the readers' masks are in `src/combat/` and
+  `src/human/locomotion_gate.*` ([Combat](combat.md#coneys-implementation)).
+
 ## Runtime checks wanted {#runtime-checks}
 
 For the runtime-traces harness. Addresses are of `SLUS_212.15`; "the record" is the human's 0x180 record (human

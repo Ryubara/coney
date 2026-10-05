@@ -18,15 +18,9 @@ struct CombatTuning {
     /// Square snaps to a side or back attack when the stick is beyond kSnapStick (`CfgSnap`, 1).
     bool snapAttacks = true;
 
-    /// The chain attacks' timing, in updates from the press, read from `S1` at runtime: the hit, the chain window's
-    /// opening and closing, the start of the recovery and the attack's end (the fight idle returns).
-    /// `S1`'s phases at runtime: wind-up 0-5, window 6-14, the end phase (`0x4`) at 15, recovery 16-19
-    /// (docs/research/combat.md#input-return). **Coney choice**: an attack whose phases were not measured uses `S1`'s.
+    /// The update, from the press, at which `S1`'s hit lands at runtime, and every attack's whose hit was not measured
+    /// (combat::attackHitUpdate()). The phases come from the clips' events (docs/research/tasks.md#held-flags).
     int hitUpdate = 2;
-    int chainOpenUpdate = 6;
-    int chainCloseUpdate = 15;
-    int recoveryUpdate = 16;
-    int attackEndUpdate = 20;
 
     /// The grab and tackle search: the far range of anim 70 (grab) or 3 (tackle) times this (`0x00284920`).
     float grabSearchScale = 1.25F;

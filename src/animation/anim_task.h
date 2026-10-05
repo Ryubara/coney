@@ -12,9 +12,11 @@
 #include "animation/anim_pose.h"
 
 // Animation tasks: what a character plays. A task owns one or more clip cursors and answers "advance by dt" and
-// "sample a pose"; the task stack cross-fades from the old tasks to a new one. Pure and deterministic: no clock is
+// "sample a pose"; the task stack cross-fades from the old tasks to a new one. A clip task also holds bits of its
+// human's state flags (record `+0x08`) while it plays: the stack keeps that word, the newest clip's events move the
+// attack's phase in it, and a task gives its bits back when it ends or is cut off. Pure and deterministic: no clock is
 // read, so the same calls give the same poses on every run (test mode).
-// Research: docs/research/formats/animation.md#animation-tasks
+// Research: docs/research/formats/animation.md#animation-tasks, docs/research/tasks.md#held-flags
 
 namespace coney::anim {
 
@@ -28,6 +30,20 @@ inline constexpr std::uint32_t kTaskContinuous = 0x200;     ///< A blend target 
 /// The flags the locomotion gives its gait blend: 0x2c1.
 inline constexpr std::uint32_t kGaitBlendFlags =
     kTaskContinuous | kTaskGaitBlendMark | kTaskLocomotion | kTaskNoRootVelocity;
+
+/// The bits of the human's record `+0x08` the clip events move (docs/research/tasks.md#held-flags): an attack's
+/// wind-up, chain window and end phase, and its recovery.
+inline constexpr std::uint32_t kFlagWindUp = 0x1;
+inline constexpr std::uint32_t kFlagChainWindow = 0x2;
+inline constexpr std::uint32_t kFlagAttackEnd = 0x4;
+inline constexpr std::uint32_t kFlagAttackPhases = kFlagWindUp | kFlagChainWindow | kFlagAttackEnd;
+inline constexpr std::uint32_t kFlagRecovery = 0x40000;
+
+/// The clip event types that move an attack's phase (`Anim_FireEvents`, docs/research/tasks.md#held-flags): the chain
+/// window opens, the attack's end phase starts, the recovery starts.
+inline constexpr std::uint16_t kEventChainWindow = 0x2c;
+inline constexpr std::uint16_t kEventAttackEnd = 0x2d;
+inline constexpr std::uint16_t kEventRecovery = 0x48;
 
 /// The task types Coney plays, by the original's type number.
 enum class AnimTaskType : std::uint8_t {
@@ -68,6 +84,22 @@ class AnimTask {
     /// A task that has finished and hands over to another gives it up here once (ClipThenNextTask); others return
     /// null.
     [[nodiscard]] virtual std::unique_ptr<AnimTask> takeReplacement() { return nullptr; }
+    /// The clip whose events fire as the task plays (a clip task's own); null for a task whose events Coney does not
+    /// fire (a gait blend).
+    [[nodiscard]] virtual const AnimClip* eventClip() const { return nullptr; }
+
+    /// Gives the task `held` bits of its human's record `+0x08` to hold (the task's `+0x24`), of which it sets `set`
+    /// as it starts; the task stack clears what it still holds when it ends or is cut off. Call before it is played.
+    void holdFlags(std::uint32_t held, std::uint32_t set) {
+        m_held = held;
+        m_startFlags = set & held;
+    }
+    /// The bits the task holds now.
+    [[nodiscard]] std::uint32_t heldFlags() const { return m_held; }
+    /// The bits it sets as it starts.
+    [[nodiscard]] std::uint32_t startFlags() const { return m_startFlags; }
+    /// Replaces the bits the task holds (the recovery event's work).
+    void replaceHeldFlags(std::uint32_t held) { m_held = held; }
 
     /// time() over duration(), 0 for an empty clip.
     [[nodiscard]] float normalisedTime() const;
@@ -81,6 +113,8 @@ class AnimTask {
   private:
     float m_rate;
     std::uint32_t m_flags;
+    std::uint32_t m_held = 0;
+    std::uint32_t m_startFlags = 0;
 };
 
 /// Type 1: one clip, looping; the overshoot past the end carries into the next pass.
@@ -95,6 +129,7 @@ class LoopTask final : public AnimTask {
     [[nodiscard]] float time() const override { return m_cursor.time(); }
     [[nodiscard]] float duration() const override { return m_cursor.clip().duration; }
     [[nodiscard]] std::uint32_t animId() const override { return m_animId; }
+    [[nodiscard]] const AnimClip* eventClip() const override { return &m_cursor.clip(); }
 
   private:
     AnimCursor m_cursor;
@@ -119,6 +154,7 @@ class ClipThenNextTask final : public AnimTask {
     [[nodiscard]] float duration() const override { return m_cursor.clip().duration; }
     [[nodiscard]] std::uint32_t animId() const override { return m_animId; }
     [[nodiscard]] std::unique_ptr<AnimTask> takeReplacement() override;
+    [[nodiscard]] const AnimClip* eventClip() const override { return &m_cursor.clip(); }
     /// The task that follows, until it has been taken.
     [[nodiscard]] AnimTask* next() const { return m_next.get(); }
 
@@ -182,11 +218,35 @@ class GaitBlendTask final : public AnimTask {
     float m_phase;
 };
 
+/// Moves the record `+0x08` word `flags` for one event of `type` in the clip of `task`, which holds bits on it
+/// (docs/research/tasks.md#held-flags): kEventChainWindow clears the wind-up and sets the chain window,
+/// kEventAttackEnd clears the attack's phases and sets its end phase, kEventRecovery replaces what the task holds (on
+/// the record and in the task) with the recovery. Other types change nothing. **Coney choice**: an event acts only on
+/// a task that holds the bits it changes (the attack's phases, or anything for the recovery), so a clip played without
+/// an attack's flags (a reaction, another human's paired clip) leaves the record alone and no bit outlives its clip.
+/// The original's cases are inside the event dispatcher: 0x2c at 0x001023d8, 0x2d at 0x00102410, 0x48 at 0x00102358.
+/// @orig 0x00101dd8 Anim_FireEvents (unknown)
+void applyHeldFlagEvent(std::uint16_t type, AnimTask& task, std::uint32_t& flags);
+
+/// The frame a clip's events count as reached `seconds` into it: the nearest whole frame, a tie going to the lower
+/// one, as the sampler reads its keys (docs/research/formats/animation.md#coneys-implementation). An event of frame f
+/// fires on the advance that takes this from below f to f or beyond. **Coney's reading**: with it the events of
+/// Rembrandt's attack clips on the disc fall on the updates measured at runtime (docs/research/tasks.md#held-flags).
+[[nodiscard]] int eventFrame(float seconds);
+
 /// A character's tasks: the newest first, each fading in over the ones older than it. The original keeps one stack of
 /// tasks with fade tasks between them ("new task at the bottom, fade on top",
 /// docs/research/formats/animation.md#task-stack); Coney keeps the same thing as layers, each a task with the fade it
 /// came in with, which samples and cleans up the same way: a fade blends its new task over everything older, and when
 /// it ends everything older goes.
+///
+/// The stack also keeps the human's record `+0x08` word (flags()), whose bits its clip tasks hold
+/// (docs/research/tasks.md#held-flags): a task sets its start bits as it is played (change(), or a clip handing over to
+/// it), the newest task's clip events move the attack's phase (applyHeldFlagEvent()), and a task that ends or is cut
+/// off clears what it still holds. **Coney choices**: a task starting first clears the bits it holds, so a new attack
+/// starts in its wind-up whatever the last one left; a task leaving clears only the bits no remaining task holds, so an
+/// attack fading out under the next one of its chain does not clear its successor's phase; only the newest task's
+/// events fire.
 class AnimTaskStack {
   public:
     /// At most this many tasks before a change finishes the newest fade early, and before any fade ends at once;
@@ -208,6 +268,12 @@ class AnimTaskStack {
     /// The newest task (the original's "top" task, under the fade), or null with none.
     /// @orig 0x00175210 CharacterInstance_TopTask (unknown)
     [[nodiscard]] AnimTask* top() const { return m_layers.empty() ? nullptr : m_layers.front().task.get(); }
+    /// The human's record `+0x08` as the tasks hold it.
+    [[nodiscard]] std::uint32_t flags() const { return m_flags; }
+    /// Sets bits of the record `+0x08` that no task holds (the caller's own).
+    void setFlags(std::uint32_t bits) { m_flags |= bits; }
+    /// Clears bits of the record `+0x08`.
+    void clearFlags(std::uint32_t bits) { m_flags &= ~bits; }
     /// Tasks held, fades included (n layers hold n tasks and n - 1 fades).
     [[nodiscard]] std::size_t taskCount() const { return m_layers.empty() ? 0 : m_layers.size() * 2 - 1; }
     /// Layers held, newest first.
@@ -223,10 +289,19 @@ class AnimTaskStack {
         float fade = 0.0F;    // seconds this task fades in over
         float elapsed = 0.0F; // seconds of that fade run
     };
-    // Drops every layer older than layer `index`, ending its fade.
+    // Drops every layer older than layer `index`, ending its fade; the tasks dropped give back their bits.
     void dropOlderThan(std::size_t index);
+    // A task starts playing: it clears the bits it holds and sets its start bits.
+    void startTask(const AnimTask& task);
+    // A task leaves the stack (ended or cut off): it clears the bits it holds that no task of a layer other than
+    // `except` (the layer it leaves; past the end for none) holds.
+    void releaseTask(const AnimTask& task, std::size_t except);
+    // Fires the events of the newest task's clip passed between `before` and `after` seconds (`wrapped`: the clip
+    // looped in between).
+    void fireEvents(AnimTask& task, const AnimClip& clip, float before, float after, bool wrapped);
 
     std::vector<Layer> m_layers; // newest first
+    std::uint32_t m_flags = 0;   // the human's record +0x08
 };
 
 /// The root's motion in a pose: section A as sampled (already scaled by its task's rate), and bone 0's rotation read

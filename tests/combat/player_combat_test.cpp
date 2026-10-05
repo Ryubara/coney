@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "combat/player_combat.h"
 
+#include <algorithm>
+#include <array>
 #include <bit>
 #include <cmath>
 #include <cstdint>
@@ -45,6 +47,67 @@ struct Frame {
     CombatOutput out;
 };
 
+// What an attack's clip would hold on the record's +0x08 as it plays, standing in for the animator the dispatcher runs
+// beside in the game (docs/research/tasks.md#held-flags): the wind-up, the chain window from `open`, the end phase from
+// `close`, the recovery from `recovery`, nothing from `end`, in updates from the clip's start; the moving attacks hold
+// 0x1000000 to their end. The values are the phases measured at runtime (docs/research/combat.md#attacks), S1's for
+// the attacks not listed.
+class ClipPhases {
+  public:
+    // An attack `animId` started this update.
+    void start(int animId) {
+        static constexpr std::array<Timing, 6> kTimings{{{anim_id::kAttackX1, 10, 20, 21, 30},
+                                                         {anim_id::kAttackSSS3, 16, 16, 22, 26},
+                                                         {anim_id::kAttackXS2, 22, 22, 26, 30},
+                                                         {anim_id::kRunningAttackCharge, 27, 27, 27, 27},
+                                                         {anim_id::kRunningAttackDive, 60, 60, 60, 60},
+                                                         {anim_id::kAttackFromRun, 21, 21, 21, 21}}};
+        const auto found = std::ranges::find(kTimings, animId, &Timing::id);
+        m_timing = found != kTimings.end() ? *found : Timing{animId, 6, 15, 16, 20};
+        m_moving = animId == anim_id::kRunningAttackCharge || animId == anim_id::kRunningAttackDive ||
+                   animId == anim_id::kAttackFromRun;
+        m_age = 0;
+        m_playing = true;
+    }
+    // The bits held at the start of the next update, which ages the clip by one.
+    std::uint32_t next() {
+        if (!m_playing) {
+            return 0;
+        }
+        ++m_age;
+        if (m_age >= m_timing.end) {
+            m_playing = false;
+            return 0;
+        }
+        if (m_moving) {
+            return kPhaseRunAttack;
+        }
+        if (m_age < m_timing.open) {
+            return kPhaseWindUp;
+        }
+        if (m_age < m_timing.close) {
+            return kPhaseChainWindow;
+        }
+        return m_age < m_timing.recovery ? kPhaseEnd : kPhaseRecovery;
+    }
+
+  private:
+    struct Timing {
+        int id, open, close, recovery, end;
+    };
+    Timing m_timing{};
+    int m_age = 0;
+    bool m_playing = false;
+    bool m_moving = false;
+};
+
+// Whether `animId`, started by the dispatcher, is an attack whose clip holds the attack's phases.
+bool isAttack(int animId) {
+    return animId != anim_id::kNone && animId != anim_id::kGrabPlayerIntro && animId != anim_id::kTacklePlayerIntro &&
+           animId != anim_id::kGrabLetGo && animId != anim_id::kRageStart && animId != anim_id::kGrabSpinToRear &&
+           animId != anim_id::kGrabSpinToFront;
+}
+
 // Plays an input script through the street's command tables into a PlayerCombat; `context` fills in what the world
 // would say on each frame (gait, target, reach). Both sticks are the pad's: the camera is behind the player.
 class Runner {
@@ -63,10 +126,14 @@ class Runner {
             input.stick = Stick{pad.leftX, pad.leftY};
             input.padStick = input.stick;
             input.nowMs = frame * 1000 / 30;
+            input.phase = m_clip.next();
             if (context) {
                 context(frame, input);
             }
             out.push_back(Frame{input.command, m_combat.update(input, m_tuning)});
+            if (isAttack(out.back().out.startAnim)) {
+                m_clip.start(out.back().out.startAnim);
+            }
         }
         return out;
     }
@@ -78,6 +145,7 @@ class Runner {
     CommandTables m_tables = CommandTables::street();
     CommandMatcher m_matcher;
     PlayerCombat m_combat;
+    ClipPhases m_clip;
 };
 
 // The frames on which a clip started, in order.

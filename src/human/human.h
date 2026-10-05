@@ -17,15 +17,18 @@
 #include "human/fighter.h"
 #include "human/human_animator.h"
 #include "human/locomotion.h"
+#include "human/locomotion_gate.h"
 #include "human/stamina.h"
 #include "human/target_human.h"
 #include "human/victim.h"
 #include "raycast/collision_mesh.h"
 
-// A human driven by a pad: the player. Its locomotion, sprint and stamina, jump and climbs, its fighting (Fighter), its
-// standing on and falling from the level's collision mesh, and its animation, stepped at the characters' fixed 30 Hz.
-// Platform-neutral and deterministic: no clock, no randomness, so a scripted pad gives the same path on every run (test
-// mode). Research: docs/research/characters.md
+// A human driven through its per-player record, which a pad (the player) or later a brain writes: its locomotion,
+// sprint and stamina, jump and climbs, its fighting (Fighter), its standing on and falling from the level's collision
+// mesh, and its animation, stepped at the characters' fixed 30 Hz in the original's three passes (animation, state
+// update, actions; human/humans.h runs them across every human). Platform-neutral and deterministic: no clock, no
+// randomness, so a scripted pad gives the same path on every run (test mode).
+// Research: docs/research/characters.md, docs/research/tasks.md#humans-update
 
 namespace coney::human {
 
@@ -41,6 +44,22 @@ struct HumanInput {
     std::uint16_t buttons = 0;                          ///< The held buttons (the block reads R1).
     std::span<TargetHuman* const> targets;              ///< The humans that can be fought (the sandbox's targets).
 };
+
+/// A human's per-player record (`0x00660f50 + i × 0x2c`, docs/research/ai.md#brain): what drives it each update. A
+/// pad writes it for the player (human::Player); a brain will write the command and the stick for an AI human, as a
+/// pad would (docs/research/tasks.md#humans-update). The human reads nothing else of its input.
+struct PlayerRecord {
+    float stickX = 0.0F;        ///< Left stick, -1 (left) to 1 (right).
+    float stickY = 0.0F;        ///< Left stick, -1 (down) to 1 (up).
+    anim::Vec3 cameraForward;   ///< The view the stick is turned by (a brain gives the world's axes).
+    bool sprintHeld = false;    ///< L2 held.
+    bool actionPressed = false; ///< Triangle pressed this update.
+    combat::CommandId command = combat::command::kNone; ///< The command (`+0x20`).
+    std::uint16_t buttons = 0;                          ///< The held buttons.
+};
+
+/// The record part of `input`.
+[[nodiscard]] PlayerRecord recordOf(const HumanInput& input);
 
 /// What the human is doing beyond walking and standing, for the debug menus and the tests.
 enum class Traversal : std::uint8_t {
@@ -102,13 +121,27 @@ class Human {
     /// @orig 0x00218008 Human_Init (unknown)
     void spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees);
 
-    /// One update of 1/30 s: the stick turned by the camera; the animation's step (and a climb's moves at its clip
-    /// changes); the locomotion, the jump's air control or the climb's own motion, with the clip's root motion added;
-    /// gravity while airborne; the move against `mesh`'s walls with the ground snap, or the fall and landing; then the
-    /// player's part: stamina, the sprint, triangle's climb or jump, the lean and the animation state.
+    /// One update of 1/30 s for this human alone: `input` written into its record, then animate(), updateState() and
+    /// updateActions() in turn. human::Humans runs the same passes across every human in the original's order.
+    void step(const HumanInput& input, const raycast::CollisionMesh* mesh);
+
+    /// The per-player record the next update reads; a pad or a brain writes it before the update.
+    [[nodiscard]] PlayerRecord& record() { return m_record; }
+    [[nodiscard]] const PlayerRecord& record() const { return m_record; }
+
+    /// The update's first pass, the animation step: every task advances (the clips' events moving the record's
+    /// `+0x08`), and a climb follows its clips. Nothing for a human out of the world.
+    void animate(const raycast::CollisionMesh* mesh);
+    /// The second pass, the state update: the record's stick turned by its camera; the locomotion (through the
+    /// locomotion gate, human/locomotion_gate.h), the jump's air control or the climb's own motion, with the clip's
+    /// root motion added; gravity while airborne; the move against `mesh`'s walls with the ground snap, or the fall
+    /// and landing.
     /// @orig 0x00240e38 Human_PlayerLocomotion (unknown)
     /// @orig 0x0023fea8 Human_StateUpdate (unknown)
-    void step(const HumanInput& input, const raycast::CollisionMesh* mesh);
+    void updateState(const raycast::CollisionMesh* mesh);
+    /// The third pass, the actions: stamina and the sprint, combat's dispatcher from the record's command (against
+    /// `targets`), triangle's climb or jump, the lean and the animation state.
+    void updateActions(std::span<TargetHuman* const> targets, const raycast::CollisionMesh* mesh);
 
     /// The pose to draw now.
     [[nodiscard]] anim::Pose pose() const { return m_animator.pose(m_bindRotations); }
@@ -140,6 +173,11 @@ class Human {
     [[nodiscard]] float lean() const { return m_lean; }
     /// What the human is doing beyond walking.
     [[nodiscard]] Traversal traversal() const;
+    /// What the locomotion gate reads of the human now: the record's `+0x08` and state code, airborne, held.
+    [[nodiscard]] GateInput gateInput() const;
+    /// Whether the stick does not move the human now: combat's states hold the body (Fighter::holdsMovement()), it is
+    /// busy (stickBusy()) or the stick's velocity is gated (stickVelocityGated()).
+    [[nodiscard]] bool stickHeld() const;
     /// The climb in progress, if any.
     [[nodiscard]] const std::optional<ClimbProbe>& climb() const { return m_climbProbe; }
     /// The body's scale (`+0x65c`).
@@ -177,8 +215,8 @@ class Human {
         bool over = false;        // record +0x08 bit 0x40: fences do not block the body
     };
 
-    // The locomotion: target speed, skid, turn, acceleration; sets the horizontal velocity.
-    void locomote();
+    // The locomotion: target speed, skid, turn, acceleration; sets the horizontal velocity, none while `gated`.
+    void locomote(bool gated);
     // The jump's state function: the heading turns toward the stick at the air limit, the speed is kept.
     // @orig 0x00240898 Human_AirControl (unknown)
     void airControl();
@@ -210,15 +248,16 @@ class Human {
     // The materials the body and the snap pass through now: the fences while climbing over.
     [[nodiscard]] std::span<const std::uint8_t> passThrough() const;
 
-    // Combat holds the body: no stick movement; a block turns toward the stick in place (the shuffle); a standing grab
-    // turns and walks the pair by the stick.
+    // The stick step is skipped (combat's states, or the human is busy): the clip and an attack's slide move the body;
+    // a block turns toward the stick in place (the shuffle); a standing grab turns and walks the pair by the stick.
     void holdForCombat();
     // Locked onto `target`: faces it and walks at the combat walk's speed along the stick without turning, in the
-    // combat-walk clip of the stick's angle from the facing.
+    // combat-walk clip of the stick's angle from the facing; with the velocity `gated`, it only faces the target and
+    // the clip playing goes on.
     // @orig 0x00241b90 Human_FightStanceMove (unknown)
-    void combatWalk(const TargetHuman& target);
-    // Combat's update: the stick turned into the facing frame, the game time, the targets.
-    void fight(const HumanInput& input);
+    void combatWalk(const TargetHuman& target, bool gated);
+    // Combat's update from the record: the stick turned into the facing frame, the game time, the targets.
+    void fight(std::span<TargetHuman* const> targets);
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
     void updateMeters(bool sprintHeld);
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
@@ -238,6 +277,7 @@ class Human {
     // Ends a climb.
     void endClimb();
 
+    PlayerRecord m_record;
     HumanAnimator m_animator;
     std::unique_ptr<combat::AnimRangeList> m_ownRanges; // the list with the class's damage, when it has one
     const combat::AnimRangeList* m_ranges;
@@ -265,6 +305,7 @@ class Human {
     bool m_sprinting = false;
     bool m_jumping = false;
     float m_lean = 0.0F;
+    float m_lastTurn = 0.0F; // the heading's change in the last state update, for the lean
     std::optional<ClimbRun> m_climbRun;
     std::optional<ClimbProbe> m_climbProbe;
     std::vector<std::uint16_t> m_nearby; // scratch for the wall test

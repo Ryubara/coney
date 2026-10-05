@@ -48,7 +48,7 @@ void Fighter::startHold(TargetHuman& victim, const FighterInput& input, float& h
         // The tackle faces the victim at once; the intro covers the distance and the victim waits for the hit clip.
         heading = toVictim;
         const std::array<std::uint32_t, 2> tackleClips{id::kTacklePlayerIntro, clips::kTackleHit};
-        animator.playCombat(tackleClips, clips::kMountingIdle, AnimState::Hold);
+        animator.playCombat(tackleClips, clips::kMountingIdle, AnimState::Hold, kCombatFade, clips::kGrabHolds);
         victim.face(input.position);
         victim.play(clips::kNoClips, clips::kIdle, AnimState::Hold, TargetState::Held);
         m_tacklePending = true;
@@ -59,7 +59,8 @@ void Fighter::startHold(TargetHuman& victim, const FighterInput& input, float& h
     m_rear = combat::victimSide(victim.position(), victim.heading(), input.position) == combat::Side::Rear;
     const std::array<std::uint32_t, 2> grabClips{id::kGrabPlayerIntro,
                                                  m_rear ? clips::kGrabRearEnd : clips::kGrabFrontEnd};
-    animator.playCombat(grabClips, m_rear ? clips::kGrabRearHold : clips::kGrabHold, AnimState::Hold);
+    animator.playCombat(grabClips, m_rear ? clips::kGrabRearHold : clips::kGrabHold, AnimState::Hold, kCombatFade,
+                        clips::kGrabHolds);
     // The intro turns the grabber to face the victim over its playing time; the victim's own movement stops.
     const auto intro = static_cast<std::uint32_t>(id::kGrabPlayerIntro);
     const anim::AnimClip* introClip = animator.anims().clip(intro);
@@ -128,7 +129,7 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
     if (!align.inRange) {
         // Too far: the grab fails, the miss plays on and the victim is free.
         const std::array<std::uint32_t, 2> miss{clips::kGrabMiss, clips::kNormalFromFight};
-        animator.playCombat(miss, clips::kIdle, AnimState::Attack, clips::kPairFade);
+        animator.playCombat(miss, clips::kIdle, AnimState::Attack, clips::kPairFade, clips::kGrabHolds);
         m_combat.release();
         m_held->play(clips::kNoClips, clips::kIdle, AnimState::Attack, TargetState::Standing);
         m_held = nullptr;
@@ -189,7 +190,7 @@ anim::Vec3 Fighter::moveGrab(float stickHeading, float stickMagnitude, const Hum
     const combat::CombatTuning& tuning = combat::combatTuning();
     // Only a standing hold turns: no move of the hold playing, the victim attached, the stick nearly full.
     const bool standing = m_combat.mode() == combat::CombatMode::Grabbing && m_held != nullptr &&
-                          m_pair == PairStage::Attached && !animator.drivingClipPlaying();
+                          m_pair == PairStage::Attached && (animator.flags() & combat::kAttackRefusingPhases) == 0;
     if (!standing || stickMagnitude <= tuning.grabTurnStick) {
         m_grabTurn = 0.0F;
         return {};
@@ -208,7 +209,8 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
     switch (out.grabAction) {
     case combat::GrabAction::Strike:
         // The strike and the victim's reaction (the next id), then both back to the hold.
-        animator.playCombat(clips::one(clips::clipOf(out.startAnim)), hold, AnimState::Hold, clips::kPairFade);
+        animator.playCombat(clips::one(clips::clipOf(out.startAnim)), hold, AnimState::Hold, clips::kPairFade,
+                            clips::kAttackHolds);
         if (m_held != nullptr) {
             m_held->playPaired(clips::one(clips::clipOf(out.startAnim) + 1), animator.anims(), held, AnimState::Hold,
                                TargetState::Held);
@@ -220,13 +222,14 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         if (m_rear) {
             const std::array<std::uint32_t, 2> moves{id::kGrabSpinToFront, strike};
             const std::array<std::uint32_t, 2> reacts{id::kGrabSpinToFront + 1, strike + 1};
-            animator.playCombat(moves, clips::kGrabHold, AnimState::Hold, clips::kPairFade);
+            animator.playCombat(moves, clips::kGrabHold, AnimState::Hold, clips::kPairFade, clips::kAttackHolds);
             if (m_held != nullptr) {
                 m_held->playPaired(reacts, animator.anims(), clips::kGrabHeld, AnimState::Hold, TargetState::Held);
             }
             m_rear = false;
         } else {
-            animator.playCombat(clips::one(strike), clips::kGrabHold, AnimState::Hold, clips::kPairFade);
+            animator.playCombat(clips::one(strike), clips::kGrabHold, AnimState::Hold, clips::kPairFade,
+                                clips::kAttackHolds);
             if (m_held != nullptr) {
                 m_held->playPaired(clips::one(strike + 1), animator.anims(), clips::kGrabHeld, AnimState::Hold,
                                    TargetState::Held);
@@ -237,7 +240,7 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
     case combat::GrabAction::Throw:
         // The throw lets go: the victim plays its reaction and lands on its back.
         animator.playCombat(clips::one(clips::clipOf(out.startAnim)), kAnimFightIdle, AnimState::Attack,
-                            clips::kPairFade);
+                            clips::kPairFade, clips::kAttackHolds);
         if (m_held != nullptr) {
             m_held->playPaired(clips::one(clips::clipOf(out.startAnim) + 1), animator.anims(), clips::kGroundedIdle,
                                AnimState::Hold, TargetState::Grounded);
@@ -251,7 +254,7 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         // The spin to the other side, then that side's hold.
         m_rear = out.startAnim == id::kGrabSpinToRear;
         animator.playCombat(clips::one(clips::clipOf(out.startAnim)), m_rear ? clips::kGrabRearHold : clips::kGrabHold,
-                            AnimState::Hold, clips::kPairFade);
+                            AnimState::Hold, clips::kPairFade, clips::kGrabHolds);
         if (m_held != nullptr) {
             m_held->playPaired(clips::one(clips::clipOf(out.startAnim) + 1), animator.anims(),
                                m_rear ? clips::kGrabRearHeld : clips::kGrabHeld, AnimState::Hold, TargetState::Held);
@@ -261,7 +264,8 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
     case combat::GrabAction::Mug: {
         // The victim is spun to a rear hold (unless it is there already), then the mugging loop.
         if (m_rear) {
-            animator.playCombat(clips::one(clips::kMugIntro), clips::kMugLoop, AnimState::Hold);
+            animator.playCombat(clips::one(clips::kMugIntro), clips::kMugLoop, AnimState::Hold, kCombatFade,
+                                clips::kGrabHolds);
             if (m_held != nullptr) {
                 m_held->play(clips::one(clips::kMugIntroReact), clips::kMugLoopReact, AnimState::Hold,
                              TargetState::Held);
@@ -269,7 +273,7 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         } else {
             const std::array<std::uint32_t, 2> mug{id::kGrabSpinToRear, clips::kMugIntro};
             const std::array<std::uint32_t, 2> mugReact{id::kGrabSpinToRear + 1, clips::kMugIntroReact};
-            animator.playCombat(mug, clips::kMugLoop, AnimState::Hold);
+            animator.playCombat(mug, clips::kMugLoop, AnimState::Hold, kCombatFade, clips::kGrabHolds);
             if (m_held != nullptr) {
                 m_held->play(mugReact, clips::kMugLoopReact, AnimState::Hold, TargetState::Held);
             }
@@ -283,7 +287,8 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
             releaseHold(animator, true);
         } else {
             // Holding a grabber the player reversed (no target to let go of): just the let-go.
-            animator.playCombat(clips::one(id::kGrabLetGo), kAnimFightIdle, AnimState::Attack);
+            animator.playCombat(clips::one(id::kGrabLetGo), kAnimFightIdle, AnimState::Attack, kCombatFade,
+                                clips::kGrabHolds);
             m_rear = false;
         }
         break;
@@ -331,7 +336,8 @@ void Fighter::releaseHold(HumanAnimator& animator, bool letGo) {
     const bool mounted = m_held->state() == TargetState::Mounted;
     m_combat.release();
     if (letGo) {
-        animator.playCombat(clips::one(id::kGrabLetGo), kAnimFightIdle, AnimState::Attack);
+        animator.playCombat(clips::one(id::kGrabLetGo), kAnimFightIdle, AnimState::Attack, kCombatFade,
+                            clips::kGrabHolds);
     } else {
         animator.playCombat(clips::kNoClips, kAnimFightIdle, AnimState::Attack);
     }

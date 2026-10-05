@@ -1102,6 +1102,12 @@ subsystem = "Human"
 size = 288
 
 [[function]]
+address = 0x00223cb0
+name = "Human_IsBusy"
+subsystem = "Human"
+size = 136
+
+[[function]]
 address = 0x00226448
 name = "Human_SpendPower"
 subsystem = "Human"
@@ -1220,6 +1226,12 @@ size = 8248
 address = 0x00248df0
 name = "Human_Lean"
 subsystem = "Human"
+
+[[function]]
+address = 0x00249108
+name = "Humans_Update"
+subsystem = "Human"
+size = 2704
 
 [[function]]
 address = 0x0024e720

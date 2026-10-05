@@ -110,6 +110,8 @@ target_sources(coney_core PRIVATE
     human/climb.cpp
     human/human.cpp
     human/human_animator.cpp
+    human/humans.cpp
+    human/locomotion_gate.cpp
     human/jump.cpp
     human/locomotion.cpp
     human/pair_placement.cpp

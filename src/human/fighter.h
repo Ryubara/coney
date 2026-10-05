@@ -56,8 +56,11 @@ inline constexpr float kPickHeight = 2.0F;
 inline constexpr float kAttackTurnCapDegrees = 8.0F;
 /// The player's health (Rembrandt's 900 at runtime, record `+0x146`).
 inline constexpr int kPlayerHealth = 900;
-/// After R1 is let go the player stands in the idle (388) this many updates before the stick moves him; a press is
-/// taken on the first of them (docs/research/combat.md#input-return, confirmed (runtime); its source is not traced).
+/// After R1 is let go the player stands in the idle (388) this many updates with the state code `+0x14` at 5, which
+/// the locomotion gate reads, before the stick moves him; a press is taken on the first of them
+/// (docs/research/combat.md#input-return, confirmed (runtime)). **Coney choice**: the code is set on the release and
+/// cleared 5 updates later, as seen; who sets and clears it after a block is not traced
+/// (docs/research/tasks.md#locomotion-gate).
 inline constexpr int kBlockSettleUpdates = 5;
 
 /// What the fighter is given each update.
@@ -114,13 +117,14 @@ class Fighter {
     /// hits, keeps or drops its target, and puts an attached victim at its offset.
     void update(const FighterInput& input, HumanAnimator& animator, float& heading);
 
-    /// Whether combat moves the body this update rather than the stick: blocking, holding someone or held, mugging, a
-    /// theft, an attack's clips playing, or reacting to a hit (stunned, down, getting up).
+    /// Whether combat's states move the body this update rather than the stick: blocking, holding someone or held,
+    /// mugging, a theft, or reacting to a hit (stunned, down, getting up). These stand for the state word's part of
+    /// the original's busy test (`0x00223cb0`); a move's clip holds the stick through the record's `+0x08` and the
+    /// locomotion gate (human/locomotion_gate.h).
     [[nodiscard]] bool holdsMovement(const HumanAnimator& animator) const;
-    /// Whether one of the player's own combat clips still plays (an attack, a grab's intro or miss, a move in a hold,
-    /// a spin, a throw, the let-go, rage's start, a reaction): a new move waits for it to end
-    /// (docs/research/combat.md#coneys-implementation).
-    [[nodiscard]] static bool movePlaying(const HumanAnimator& animator);
+    /// The record's state code `+0x14` as the locomotion gate reads it: 5 for the idle after a block
+    /// (kBlockSettleUpdates), else 0.
+    [[nodiscard]] int stateCode() const { return m_blockSettle > 0 ? 5 : 0; }
     [[nodiscard]] bool blocking() const { return m_combat.blocking(); }
     [[nodiscard]] const combat::PlayerCombat& combat() const { return m_combat; }
     [[nodiscard]] combat::PlayerCombat& combat() { return m_combat; }
@@ -199,8 +203,7 @@ class Fighter {
     [[nodiscard]] TargetHuman* inFront(const FighterInput& input, float range, bool grounded) const;
     // The strike reach of attack `animId`.
     [[nodiscard]] float reachOf(int animId) const;
-    // The dispatcher's input from the world: square's target, circle's search, the hold, and whether a move of the
-    // player's still plays.
+    // The dispatcher's input from the world: square's target, circle's search, the hold, and the record's +0x08.
     [[nodiscard]] combat::CombatInput combatInput(const FighterInput& input, const HumanAnimator& animator,
                                                   bool helpless);
     // Plays what the dispatcher decided: the block, rage, a grab or tackle, the grab's moves, the mugging, a theft,

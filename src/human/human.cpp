@@ -76,6 +76,16 @@ std::optional<anim::Vec3> slideOut(const raycast::CollisionMesh& mesh, anim::Vec
 
 } // namespace
 
+PlayerRecord recordOf(const HumanInput& input) {
+    return PlayerRecord{.stickX = input.stickX,
+                        .stickY = input.stickY,
+                        .cameraForward = input.cameraForward,
+                        .sprintHeld = input.sprintHeld,
+                        .actionPressed = input.actionPressed,
+                        .command = input.command,
+                        .buttons = input.buttons};
+}
+
 const char* traversalName(Traversal traversal) {
     switch (traversal) {
     case Traversal::None:
@@ -105,6 +115,18 @@ Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
 float Human::speed() const { return std::hypot(m_velocity.x, m_velocity.y); }
 
 Gait Human::gait() const { return gaitOfSpeed(anim::length(m_velocity), m_animator.speeds()); }
+
+GateInput Human::gateInput() const {
+    return GateInput{.flags = m_animator.flags(),
+                     .stateCode = m_fighter.stateCode(),
+                     .airborne = m_airborne,
+                     .attached = m_fighter.grabbed()};
+}
+
+bool Human::stickHeld() const {
+    const GateInput gate = gateInput();
+    return m_fighter.holdsMovement(m_animator) || stickBusy(gate) || stickVelocityGated(gate);
+}
 
 Traversal Human::traversal() const {
     if (m_climbRun) {
@@ -151,7 +173,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_lastGround = position;
 }
 
-void Human::locomote() {
+void Human::locomote(bool gated) {
     const Speeds& speeds = m_animator.speeds();
     const float current = speed();
     const float target = targetSpeed(m_intent.magnitude, speeds, m_sprinting && m_stamina.value() != 0);
@@ -160,24 +182,26 @@ void Human::locomote() {
     float newSpeed = approachSpeed(current, target, kStepSeconds);
 
     // A run stopped hard or turned back skids: the velocity is zeroed and the run stop plays (after a run as after a
-    // sprint, docs/research/feel.md). The run stop holds the facing; the skid's own update still turns one step (a
-    // reversal at a run turned 18° before sliding the old way).
-    const bool stopping = m_animator.state() == AnimState::RunStop && m_animator.actionPlaying();
+    // sprint, docs/research/feel.md). The run stop's 0x80000 then makes the human busy, so it holds the facing; the
+    // skid's own update still turns one step (a reversal at a run turned 18° before sliding the old way). **Coney
+    // choice**: the skid does not set the state code 5 the original's does (`0x002419a0`): who clears it is not traced,
+    // and the run stop's own bits gate the same updates.
     const anim::Vec3 moving =
         current > 1e-6F ? anim::scale(anim::Vec3{m_velocity.x, m_velocity.y, 0.0F}, 1.0F / current) : facing(m_heading);
     if (skids(gaitNow, current, speeds, m_lastMagnitude, m_intent.magnitude, moving, facing(wanted))) {
         newSpeed = 0.0F;
         m_animator.startRunStop();
     }
-    if (target > 0.0F && !stopping) {
+    if (target > 0.0F) {
         // Turn toward the stick, limited by the gait and eased.
         m_heading = turnToward(m_heading, wanted, maxTurn(gaitNow), m_turn);
     }
-    // While a clip moves the body (a start, a landing, a run stop) the clip alone moves it. Standing (no gait blend
-    // yet), the update the start clip begins does not move the body either: at runtime the first update with the stick
-    // pushed began the start clip at speed 0. Otherwise the velocity follows the facing.
+    // The locomotion gate: while a clip moves the body (a start, a landing, a recovery: the record's 0x110c0880) or
+    // the state code is 5 or 6, the clip alone moves it. Standing (no gait blend yet), the update the start clip
+    // begins does not move the body either: at runtime the first update with the stick pushed began the start clip at
+    // speed 0. Otherwise the velocity follows the facing.
     const anim::Vec3 direction = facing(m_heading);
-    const bool clipMoves = m_animator.drivingClipPlaying() || !m_animator.gaitBlendPlaying();
+    const bool clipMoves = gated || !m_animator.gaitBlendPlaying();
     const float horizontal = clipMoves ? 0.0F : newSpeed;
     m_velocity = anim::Vec3{direction.x * horizontal, direction.y * horizontal, m_velocity.z};
 }
@@ -373,13 +397,18 @@ void Human::holdForCombat() {
     }
 }
 
-void Human::combatWalk(const TargetHuman& target) {
+void Human::combatWalk(const TargetHuman& target, bool gated) {
     // Faces the target every update.
     const anim::Vec3 to = anim::subtract(target.position(), m_position);
     if (std::hypot(to.x, to.y) > 1e-4F) {
         m_heading = headingOf(to);
     }
     m_turn = TurnState{};
+    // The gate (a recovery, the idle after a block): no velocity, and the clip playing goes on.
+    if (gated) {
+        m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
+        return;
+    }
     // The stick, normalised, walks the human at one speed whatever its deflection; at rest it stands in the fight idle.
     if (m_intent.magnitude <= locomotionTuning().stickDeadZone) {
         m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
@@ -394,21 +423,21 @@ void Human::combatWalk(const TargetHuman& target) {
     m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
 }
 
-void Human::fight(const HumanInput& input) {
+void Human::fight(std::span<TargetHuman* const> targets) {
     // The stick in the facing frame: x to the player's right, y ahead.
     const float relative = wrapAngle(m_intent.angle - kPi / 2.0F - m_heading);
     const combat::Stick stick{-m_intent.magnitude * std::sin(relative), m_intent.magnitude * std::cos(relative)};
     // Game time from the updates stepped (whole milliseconds, as the original keeps it).
     const std::uint64_t nowMs = m_updates * 1000 / 30;
-    m_fighter.update(FighterInput{.command = input.command,
-                                  .buttons = input.buttons,
+    m_fighter.update(FighterInput{.command = m_record.command,
+                                  .buttons = m_record.buttons,
                                   .stick = stick,
-                                  .padStick = combat::Stick{input.stickX, input.stickY},
+                                  .padStick = combat::Stick{m_record.stickX, m_record.stickY},
                                   .gait = gait(),
                                   .position = m_position,
                                   .heading = m_heading,
                                   .nowMs = nowMs,
-                                  .targets = input.targets},
+                                  .targets = targets},
                      m_animator, m_heading);
 }
 
@@ -484,8 +513,11 @@ bool Human::tryJump(const raycast::CollisionMesh* mesh, anim::Vec3 direction) {
 }
 
 void Human::tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld) {
-    // Nothing in the air, while climbing, or while an action's clip plays (the state and record flags).
-    if (m_airborne || m_climbRun || m_animator.actionPlaying()) {
+    // Nothing in the air or while climbing; nothing while the record's +0x08 drops the dispatcher's commands (a
+    // recovery, a landing) or makes the human busy (an attack's phases, the run stop). **Coney choice**: triangle's
+    // actions take the dispatcher's mask and the stick step's, as they take the stick's direction.
+    if (m_airborne || m_climbRun || (m_animator.flags() & combat::kDispatchDroppingPhases) != 0 ||
+        stickBusy(gateInput())) {
         return;
     }
     const LocomotionTuning& tuning = locomotionTuning();
@@ -552,18 +584,31 @@ void Human::followClimb(const raycast::CollisionMesh* mesh) {
 }
 
 void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
-    // 1. The stick, turned by the camera.
-    ++m_updates;
-    m_lastMagnitude = m_intent.magnitude;
-    m_intent = stickIntent(input.stickX, input.stickY, input.cameraForward);
+    m_record = recordOf(input);
+    animate(mesh);
+    updateState(mesh);
+    updateActions(input.targets, mesh);
+}
+
+void Human::animate(const raycast::CollisionMesh* mesh) {
     if (m_outOfWorld) {
         return;
     }
-    // 2. The animation's step (a climb follows its clips), and the root motion its pose carries. A climb's first clip
-    // runs during the move to the start point, as the original installs it with that move (0x0023d2b8,
-    // docs/research/characters.md#climb).
+    // The animation's step (a climb follows its clips). A climb's first clip runs during the move to the start point,
+    // as the original installs it with that move (0x0023d2b8, docs/research/characters.md#climb).
     m_animator.advance(kStepSeconds);
     followClimb(mesh);
+}
+
+void Human::updateState(const raycast::CollisionMesh* mesh) {
+    // 1. The record's stick, turned by its camera.
+    ++m_updates;
+    m_lastMagnitude = m_intent.magnitude;
+    m_intent = stickIntent(m_record.stickX, m_record.stickY, m_record.cameraForward);
+    if (m_outOfWorld) {
+        return;
+    }
+    // 2. The root motion the animation's pose carries.
     const anim::Pose pose = m_animator.pose(m_bindRotations);
     // 3. The state function sets the velocity: a climb's move to its start point or its clips' root motion; a jump's
     // air control (a drop keeps its velocity); or the locomotion, with the clip's root motion added.
@@ -585,14 +630,15 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
         if (m_jumping) {
             airControl();
         }
-    } else if (m_fighter.holdsMovement(m_animator)) {
+    } else if (const GateInput gate = gateInput(); m_fighter.holdsMovement(m_animator) || stickBusy(gate)) {
+        // The stick step is skipped: combat's states, or the record's +0x08 makes the human busy.
         holdForCombat();
     } else if (const TargetHuman* lock = m_fighter.lockTarget(); lock != nullptr) {
-        combatWalk(*lock);
+        combatWalk(*lock, stickVelocityGated(gate));
     } else {
         // Out of the lock the locomotion's clips come back.
         m_animator.leaveCombatWalk();
-        locomote();
+        locomote(stickVelocityGated(gate));
     }
     const float turn = wrapAngle(m_heading - headingBefore);
     // Clips move the body on the ground only (**Coney's choice**: in the air the jump keeps its launch velocity and a
@@ -636,17 +682,24 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
         endClimb();
         m_animator.stopToIdle();
     }
-    // 8. The player's part: stamina and the sprint (a block clears it), combat, triangle, the lean, and the animation
-    // state. Combat first, as the original's dispatcher reads the block and the chain before the commands; triangle
-    // keeps its climb, context action and jump while combat does not hold the body (in a grab it mugs).
-    updateMeters(input.sprintHeld && !m_fighter.blocking());
+    m_lastTurn = turn;
+}
+
+void Human::updateActions(std::span<TargetHuman* const> targets, const raycast::CollisionMesh* mesh) {
+    if (m_outOfWorld) {
+        return;
+    }
+    // Stamina and the sprint (a block clears it), combat, triangle, the lean, and the animation state. Combat first,
+    // as the original's dispatcher reads the block and the chain before the commands; triangle keeps its climb,
+    // context action and jump while combat does not hold the body (in a grab it mugs).
+    updateMeters(m_record.sprintHeld && !m_fighter.blocking());
     if (!m_airborne && !m_climbRun) {
-        fight(input);
+        fight(targets);
     }
-    if (input.actionPressed && !m_fighter.holdsMovement(m_animator)) {
-        tryActions(mesh, input.sprintHeld);
+    if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator)) {
+        tryActions(mesh, m_record.sprintHeld);
     }
-    m_lean = leanStep(m_lean, turn, speed(), gait());
+    m_lean = leanStep(m_lean, m_lastTurn, speed(), gait());
     m_animator.choose(AnimInputs{.speed = speed(),
                                  .wantsMove = targetSpeed(m_intent.magnitude, speeds()) > 0.0F,
                                  .wantsRun = m_intent.magnitude > locomotionTuning().runThreshold,

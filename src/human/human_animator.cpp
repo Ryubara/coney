@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "core/assert.h"
+#include "human/locomotion_gate.h"
 
 namespace coney::human {
 
@@ -25,6 +26,13 @@ constexpr float kRunSwapLimit = 0.5F;
 // Below this share of the walk speed a human that is not asked to move counts as standing (Coney's reading of "a
 // quarter of the speed 0x00221580 returns", which getter that is being open).
 constexpr float kIdleSpeedShare = 0.25F;
+
+// The bits the locomotion's clips hold on the record +0x08 (docs/research/characters.md#the-record): a move's start
+// clip, a jump's landing, the run stop and the climbs, and 389 after a move.
+constexpr HeldFlags kStartClipHeld{.held = kFlagStartClip, .set = kFlagStartClip};
+constexpr HeldFlags kLandingHeld{.held = kFlagLanding, .set = kFlagLanding};
+constexpr HeldFlags kRunStopHeld{.held = kFlagRunStop, .set = kFlagRunStop};
+constexpr HeldFlags kNormalFromFightHeld{.held = kFlagNormalFromFight, .set = kFlagNormalFromFight};
 
 // Whether `state` is an action whose clips play out before the controller chooses again.
 bool isAction(AnimState state) {
@@ -101,11 +109,13 @@ std::unique_ptr<anim::AnimTask> HumanAnimator::idleLoop() const {
 }
 
 std::unique_ptr<anim::AnimTask> HumanAnimator::clipThen(std::uint32_t id, std::unique_ptr<anim::AnimTask> next,
-                                                        const characters::AnimSet* from) const {
+                                                        const characters::AnimSet* from, HeldFlags held) const {
     // Single clips have no task flags, so their root motion moves the body. A paired clip is the attacker's, at the
     // attacker's rate (the original's type 6 task); it plays on this human like any other.
     const characters::AnimSet& set = from != nullptr ? *from : *m_anims;
-    return std::make_unique<anim::ClipThenNextTask>(*set.clip(id), id, set.rate(id), 0U, std::move(next));
+    auto task = std::make_unique<anim::ClipThenNextTask>(*set.clip(id), id, set.rate(id), 0U, std::move(next));
+    task->holdFlags(held.held, held.set);
+    return task;
 }
 
 bool HumanAnimator::drivingClipPlaying() const {
@@ -156,10 +166,10 @@ void HumanAnimator::buildMove(bool run) {
     // From standing: the walk start (or the run start) at once, handing over to a gait blend at the walk (or run) when
     // less than an update of it is left (13 updates at runtime).
     const std::uint32_t startId = m_slots.ids[kSlotWalkStart] + (run ? kRunStartOffset : 0U);
-    m_tasks.change(std::make_unique<anim::ClipThenNextTask>(*m_anims->clip(startId), startId, m_anims->rate(startId),
-                                                            0U, gaitBlend(run ? kRunValue : kWalkValue, 0.0F), 0.0F,
-                                                            true),
-                   0.0F);
+    auto start = std::make_unique<anim::ClipThenNextTask>(*m_anims->clip(startId), startId, m_anims->rate(startId), 0U,
+                                                          gaitBlend(run ? kRunValue : kWalkValue, 0.0F), 0.0F, true);
+    start->holdFlags(kStartClipHeld.held, kStartClipHeld.set);
+    m_tasks.change(std::move(start), 0.0F);
 }
 
 void HumanAnimator::buildFall() {
@@ -177,15 +187,15 @@ void HumanAnimator::startJump() {
 
 void HumanAnimator::startLanding(bool movingOn) {
     if (movingOn) {
-        m_tasks.change(clipThen(kAnimJumpEndRunning, gaitBlend(kJogValue, 0.0F)), kLandFade);
+        m_tasks.change(clipThen(kAnimJumpEndRunning, gaitBlend(kJogValue, 0.0F), nullptr, kLandingHeld), kLandFade);
     } else {
-        m_tasks.change(clipThen(kAnimJumpEnd, idleLoop()), kLandFade);
+        m_tasks.change(clipThen(kAnimJumpEnd, idleLoop(), nullptr, kLandingHeld), kLandFade);
     }
     m_state = AnimState::Land;
 }
 
 void HumanAnimator::startRunStop() {
-    m_tasks.change(clipThen(m_slots.ids[kSlotRunStop], idleLoop()), kMoveFadeMoving);
+    m_tasks.change(clipThen(m_slots.ids[kSlotRunStop], idleLoop(), nullptr, kRunStopHeld), kMoveFadeMoving);
     m_state = AnimState::RunStop;
 }
 
@@ -193,9 +203,9 @@ void HumanAnimator::startClimb(std::uint32_t firstId, bool running) {
     // The three clips in turn, then the run carries on (from a run) or the idle.
     std::unique_ptr<anim::AnimTask> after =
         running ? std::unique_ptr<anim::AnimTask>(gaitBlend(kRunValue, 0.0F)) : idleLoop();
-    std::unique_ptr<anim::AnimTask> chain = clipThen(firstId + 2, std::move(after));
-    chain = clipThen(firstId + 1, std::move(chain));
-    chain = clipThen(firstId, std::move(chain));
+    std::unique_ptr<anim::AnimTask> chain = clipThen(firstId + 2, std::move(after), nullptr, kRunStopHeld);
+    chain = clipThen(firstId + 1, std::move(chain), nullptr, kRunStopHeld);
+    chain = clipThen(firstId, std::move(chain), nullptr, kRunStopHeld);
     // No fade-in: the first clip moves the body at its full root speed from its first update, as at runtime
     // (docs/research/characters.md#climb).
     m_tasks.change(std::move(chain), 0.0F);
@@ -207,17 +217,18 @@ void HumanAnimator::stopToIdle() {
     m_state = AnimState::Idle;
 }
 
-void HumanAnimator::playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade) {
-    playChain(clips, nullptr, loop, state, fade);
+void HumanAnimator::playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade,
+                               HeldFlags held) {
+    playChain(clips, nullptr, loop, state, fade, held);
 }
 
 void HumanAnimator::playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker,
                                std::uint32_t loop, AnimState state, float fade) {
-    playChain(clips, &attacker, loop, state, fade);
+    playChain(clips, &attacker, loop, state, fade, HeldFlags{});
 }
 
 void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,
-                              AnimState state, float fade) {
+                              AnimState state, float fade, HeldFlags held) {
     // The loop last (this human's own), then each clip handing over to what follows it, built from the end.
     const characters::AnimSet& set = from != nullptr ? *from : *m_anims;
     std::unique_ptr<anim::AnimTask> chain;
@@ -228,18 +239,18 @@ void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const charac
     }
     for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
         if (set.clip(*it) != nullptr) {
-            chain = clipThen(*it, std::move(chain), from);
+            chain = clipThen(*it, std::move(chain), from, *it == kAnimNormalFromFight ? kNormalFromFightHeld : held);
         }
     }
     m_tasks.change(std::move(chain), fade);
     m_state = state;
 }
 
-void HumanAnimator::playCombatThenRun(std::span<const std::uint32_t> clips, float fade) {
+void HumanAnimator::playCombatThenRun(std::span<const std::uint32_t> clips, float fade, HeldFlags held) {
     std::unique_ptr<anim::AnimTask> chain = gaitBlend(kRunValue, 0.0F);
     for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
         if (hasClip(*it)) {
-            chain = clipThen(*it, std::move(chain));
+            chain = clipThen(*it, std::move(chain), nullptr, held);
         }
     }
     m_tasks.change(std::move(chain), fade);

@@ -39,19 +39,7 @@ Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed)
       m_grabbedRandom(seed + 1U) {}
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
-    // A move's closing 389 holds nothing; the settle after the block holds the stick for its updates.
-    return m_combat.blocking() || m_blockSettle > 0 || m_combat.mode() != combat::CombatMode::Free || grabbed() ||
-           helpless(animator) ||
-           (animator.state() == AnimState::Attack && animator.drivingClipPlaying() && !animator.settling());
-}
-
-bool Fighter::movePlaying(const HumanAnimator& animator) {
-    // A combat clip played once (AnimState::Attack, or a move inside a held pose) is still on the stack's top: at
-    // runtime a press is taken again on the first update after the clip (docs/research/combat.md#input-return). The
-    // closing 389 holds nothing.
-    const AnimState state = animator.state();
-    return (state == AnimState::Attack || state == AnimState::Hold) && animator.drivingClipPlaying() &&
-           !animator.settling();
+    return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || helpless(animator);
 }
 
 anim::Vec3 Fighter::takeSlide() {
@@ -163,15 +151,6 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         return;
     }
 
-    // An attack whose clip has given way (to what follows it, or to a move's closing 389) is over: its chain ends with
-    // it, so a press is taken on the first update after the clip as at runtime. **Coney choice** for the attacks whose
-    // end was not measured (the snaps, the throws), whose clips end before S1's 20 updates.
-    const combat::AttackChain& chain = m_combat.chain();
-    if (chain.active() && animator.animId() != clips::clipOf(chain.animId()) &&
-        (!animator.drivingClipPlaying() || animator.settling())) {
-        m_combat.endAttack();
-    }
-
     // 2. A grab's alignment turns, then its pair's moments as the grabber's clips change.
     stepAlignment(heading);
     followPairClips(input, animator, heading);
@@ -262,18 +241,8 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         m_candidate = found != combat::kNoTarget ? input.targets[found] : nullptr;
     }
     in.grabTargetInReach = m_candidate != nullptr;
-    in.movePlaying = movePlaying(animator);
-    // The +0x08 bits of the clips playing: the grab bit on a grab's or tackle's intro and miss, the duck's bit.
-    if (animator.drivingClipPlaying()) {
-        const std::uint32_t clip = animator.animId();
-        if (clip == clips::clipOf(id::kGrabPlayerIntro) || clip == clips::kGrabMiss ||
-            clip == clips::clipOf(id::kTacklePlayerIntro) || clip == clips::kTackleMiss) {
-            in.phase |= combat::kPhaseGrabStart;
-        } else if (clip == clips::clipOf(combat::kBlockDodge)) {
-            in.phase |= combat::kPhaseDuck;
-        }
-    }
-    in.holdReady = m_held == nullptr || m_pair == PairStage::Attached;
+    // The record's +0x08: the bits the clips playing hold (an attack's phases, the grab bit, the duck's).
+    in.phase = animator.flags();
     in.fromRear = m_rear;
     in.victimMuggable = m_held != nullptr && !m_held->health().depleted();
     in.victimInPlace = victimInPlace(input);
@@ -300,7 +269,8 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
     // What the dispatcher started.
     bool consumed = false;
     if (out.rageStarted) {
-        animator.playCombat(clips::one(id::kRageStart), kAnimFightIdle, AnimState::Attack);
+        animator.playCombat(clips::one(id::kRageStart), kAnimFightIdle, AnimState::Attack, kCombatFade,
+                            clips::kAttackHolds);
         consumed = true;
     }
     if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr) {
@@ -311,10 +281,10 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         if (input.command == combat::command::kCircleHeld) {
             const std::array<std::uint32_t, 3> miss{id::kTacklePlayerIntro, clips::kTackleMiss,
                                                     clips::kNormalFromFight};
-            animator.playCombat(miss, clips::kIdle, AnimState::Attack);
+            animator.playCombat(miss, clips::kIdle, AnimState::Attack, kCombatFade, clips::kGrabHolds);
         } else {
             const std::array<std::uint32_t, 3> miss{id::kGrabPlayerIntro, clips::kGrabMiss, clips::kNormalFromFight};
-            animator.playCombat(miss, clips::kIdle, AnimState::Attack);
+            animator.playCombat(miss, clips::kIdle, AnimState::Attack, kCombatFade, clips::kGrabHolds);
         }
         consumed = true;
     }
@@ -331,7 +301,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         if (out.game == combat::GameResult::Succeeded) {
             const std::array<std::uint32_t, 2> end{clips::kMugEnd, id::kGrabSpinToFront};
             const std::array<std::uint32_t, 2> endReact{clips::kMugEndReact, id::kGrabSpinToFront + 1};
-            animator.playCombat(end, clips::kGrabHold, AnimState::Hold);
+            animator.playCombat(end, clips::kGrabHold, AnimState::Hold, kCombatFade, clips::kGrabHolds);
             m_held->play(endReact, clips::kGrabHeld, AnimState::Hold, TargetState::Held);
             m_rear = false;
         } else {
@@ -352,7 +322,8 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
     }
     if (before == combat::CombatMode::Theft) {
         if (out.startAnim != id::kNone) {
-            animator.playCombat(clips::one(clips::clipOf(out.startAnim)), clips::kIdle, AnimState::Attack);
+            animator.playCombat(clips::one(clips::clipOf(out.startAnim)), clips::kIdle, AnimState::Attack, kCombatFade,
+                                clips::kAttackHolds);
         }
         consumed = true;
     }
@@ -372,26 +343,27 @@ void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
 
 void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading) {
     const auto clip = clips::one(clips::clipOf(animId));
+    const HeldFlags held = isMovingAttack(animId) ? clips::kMovingAttackHolds : clips::kAttackHolds;
     // Mounted on a tackled victim, the strike returns to the mount.
     if (m_combat.mode() == combat::CombatMode::Tackling) {
-        animator.playCombat(clip, clips::kMountingIdle, AnimState::Hold);
+        animator.playCombat(clip, clips::kMountingIdle, AnimState::Hold, kCombatFade, held);
         return;
     }
     steer(animId, input, heading);
     // A moving attack with the stick still at a run: the run resumes after it.
     if (isMovingAttack(animId) && input.stick.magnitude() > locomotionTuning().runThreshold) {
-        animator.playCombatThenRun(clip);
+        animator.playCombatThenRun(clip, kCombatFade, held);
         return;
     }
     // With a target the fight idle follows; with none the attack ends in 389, then the idle, as at runtime with
     // nobody near (docs/research/combat.md#input-return). **Coney's reading**: the target kept decides between the
     // two (the original's test is not traced).
     if (m_target != nullptr) {
-        animator.playCombat(clip, kAnimFightIdle, AnimState::Attack);
+        animator.playCombat(clip, kAnimFightIdle, AnimState::Attack, kCombatFade, held);
         return;
     }
     const std::array<std::uint32_t, 2> settle{clips::clipOf(animId), kAnimNormalFromFight};
-    animator.playCombat(settle, clips::kIdle, AnimState::Attack);
+    animator.playCombat(settle, clips::kIdle, AnimState::Attack, kCombatFade, held);
 }
 
 void Fighter::steer(int animId, const FighterInput& input, float& heading) {
@@ -421,7 +393,7 @@ void Fighter::steer(int animId, const FighterInput& input, float& heading) {
     heading = wanted;
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clips::clipOf(animId)) : nullptr;
     const float reach = range != nullptr && range->reach > 0.0F ? range->reach : distance;
-    const int updates = std::max(1, combat::attackTiming(animId, combat::combatTuning()).hit);
+    const int updates = std::max(1, combat::attackHitUpdate(animId, combat::combatTuning()));
     const float perSecond = (distance - reach) / (static_cast<float>(updates) * kStepSeconds);
     m_slide = anim::scale(anim::Vec3{to.x / distance, to.y / distance, 0.0F}, perSecond);
     m_slideUpdates = updates;

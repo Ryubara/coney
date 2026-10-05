@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cmath>
 #include <cstdint>
@@ -20,6 +21,7 @@
 #include "human/human.h"
 #include "human/human_animator.h"
 #include "human/locomotion.h"
+#include "human/locomotion_gate.h"
 #include "human/target_human.h"
 #include "human/victim.h"
 #include "support/fight_fixtures.h"
@@ -80,21 +82,93 @@ coney::test::LocomotionClip timed(std::uint32_t clip, float updates, float veloc
             .knockdown = false};
 }
 
-// The fight's clips with the disc's lengths for the moves timed here.
-// The charge carries the body at 7.45 m/s, as at runtime.
+// A clip `clip` of `frames` frames at the disc's rate flags `rangeFlags`, with the phase events `markers` (frame,
+// type): the chain attacks as Rembrandt's on the disc (flag 0x800, rate 0.8), so their phases fall where the clip's
+// events put them.
+coney::test::LocomotionClip evented(std::uint32_t clip, float frames, std::uint16_t rangeFlags,
+                                    std::vector<std::array<std::uint16_t, 2>> markers) {
+    return {.id = clip,
+            .speed = 0.0F,
+            .duration = frames / 30.0F,
+            .rootVelocity = 0.0F,
+            .rangeFlags = rangeFlags,
+            .reach = 0.0F,
+            .knockdown = false,
+            .pairX = 0.0F,
+            .markers = std::move(markers)};
+}
+
+// The phase events of Rembrandt's clips on the disc: the chain window (0x2c), the end (0x2d) and the recovery (0x48),
+// at their frames (docs/research/tasks.md#held-flags).
+constexpr std::uint16_t kWindow = 0x2c;
+constexpr std::uint16_t kEnd = 0x2d;
+constexpr std::uint16_t kRecovery = 0x48;
+constexpr std::uint16_t kRate08 = 0x800;
+
+// The fight's clips with the disc's lengths for the moves timed here, and the chain attacks' and the snaps' phase
+// events. The charge carries the body at 7.45 m/s, as at runtime.
 std::vector<coney::test::LocomotionClip> timingClips() {
     std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
     const std::vector<coney::test::LocomotionClip> timedClips{
-        timed(0, 26.67F, 7.45F), timed(1, 61.33F),  timed(2, 58.67F),   timed(4, 6.67F),    timed(5, 45.33F),
-        timed(6, 45.33F),        timed(11, 30.0F),  timed(12, 20.0F),   timed(13, 30.0F),   timed(14, 30.0F),
-        timed(15, 20.0F),        timed(16, 25.0F),  timed(17, 33.75F),  timed(19, 26.25F),  timed(23, 24.0F),
-        timed(24, 21.33F),       timed(25, 16.0F),  timed(27, 16.0F),   timed(29, 16.0F),   timed(51, 21.33F),
-        timed(52, 21.33F),       timed(53, 22.67F), timed(54, 22.67F),  timed(55, 22.67F),  timed(56, 22.67F),
-        timed(57, 44.0F),        timed(58, 44.0F),  timed(69, 16.0F),   timed(71, 5.33F),   timed(72, 18.67F),
-        timed(73, 18.67F),       timed(78, 28.0F),  timed(79, 28.0F),   timed(80, 17.33F),  timed(81, 17.33F),
-        timed(94, 26.67F),       timed(95, 26.67F), timed(147, 30.67F), timed(148, 30.67F), timed(199, 28.0F),
-        timed(212, 25.33F),      timed(338, 20.0F), timed(339, 20.0F),  timed(357, 24.0F),  timed(389, 25.33F),
-        timed(617, 26.67F),      timed(643, 64.0F)};
+        timed(0, 26.67F, 7.45F),
+        timed(1, 61.33F),
+        timed(2, 58.67F),
+        timed(4, 6.67F),
+        timed(5, 45.33F),
+        timed(6, 45.33F),
+        timed(11, 30.0F),
+        timed(12, 20.0F),
+        timed(13, 30.0F),
+        timed(14, 30.0F),
+        timed(15, 20.0F),
+        timed(16, 25.0F),
+        timed(17, 33.75F),
+        timed(19, 26.25F),
+        timed(23, 24.0F),
+        timed(24, 21.33F),
+        timed(25, 16.0F),
+        timed(27, 16.0F),
+        timed(29, 16.0F),
+        timed(51, 21.33F),
+        timed(52, 21.33F),
+        timed(53, 22.67F),
+        timed(54, 22.67F),
+        timed(55, 22.67F),
+        timed(56, 22.67F),
+        timed(57, 44.0F),
+        timed(58, 44.0F),
+        timed(69, 16.0F),
+        timed(71, 5.33F),
+        timed(72, 18.67F),
+        timed(73, 18.67F),
+        timed(78, 28.0F),
+        timed(79, 28.0F),
+        timed(80, 17.33F),
+        timed(81, 17.33F),
+        timed(94, 26.67F),
+        timed(95, 26.67F),
+        timed(147, 30.67F),
+        timed(148, 30.67F),
+        timed(199, 28.0F),
+        timed(212, 25.33F),
+        timed(338, 20.0F),
+        timed(339, 20.0F),
+        timed(357, 24.0F),
+        timed(389, 25.33F),
+        timed(617, 26.67F),
+        timed(643, 64.0F),
+        evented(11, 24.0F, kRate08, {{8, kWindow}, {16, kEnd}, {17, kRecovery}}),
+        evented(12, 16.0F, kRate08, {{5, kWindow}, {12, kEnd}, {13, kRecovery}}),
+        evented(13, 24.0F, kRate08, {{14, kEnd}, {15, kRecovery}}),
+        evented(14, 24.0F, kRate08, {{18, kEnd}, {19, kRecovery}}),
+        evented(15, 16.0F, kRate08, {{11, kEnd}, {12, kRecovery}}),
+        evented(16, 20.0F, kRate08, {{5, kWindow}, {15, kEnd}, {16, kRecovery}}),
+        evented(17, 27.0F, kRate08, {{19, kEnd}, {20, kRecovery}}),
+        evented(19, 21.0F, kRate08, {{13, kEnd}, {14, kRecovery}}),
+        evented(25, 12.0F, 0, {{6, kEnd}}),
+        evented(27, 12.0F, 0, {{6, kEnd}}),
+        evented(29, 12.0F, 0, {{6, kEnd}}),
+        evented(57, 33.0F, 0, {{14, kWindow}, {25, kEnd}})};
     // Each replaces the fight's clip of its id, or joins them (an id may appear only once in a set).
     for (const coney::test::LocomotionClip& clip : timedClips) {
         const auto same = std::ranges::find(clips, clip.id, &coney::test::LocomotionClip::id);
@@ -143,7 +217,7 @@ struct Step {
     Vec3 position;
     float speed = 0.0F;
     Gait gait = Gait::Standing;
-    bool holds = false; // combat holds the body (no stick movement) at the end of the update
+    bool holds = false; // the move holds the body (no stick movement) at the end of the update
 };
 
 // What a scripted run left, update by update.
@@ -166,7 +240,11 @@ class Timeline {
             step.position = human.position();
             step.speed = human.speed();
             step.gait = human.gait();
-            step.holds = human.fighter().holdsMovement(animator);
+            // Held by the move: its clip's bits or combat's states, not the walk start the stick then plays.
+            coney::human::GateInput gate = human.gateInput();
+            gate.flags &= ~coney::human::kFlagStartClip;
+            step.holds = human.fighter().holdsMovement(animator) || coney::human::stickBusy(gate) ||
+                         coney::human::stickVelocityGated(gate);
             line.m_steps.push_back(step);
             lastClip = step.clip;
             lastTime = time;
@@ -649,7 +727,7 @@ TEST_CASE("L2 in a hold lets go: 95 plays to its end under circle spam, then the
 TEST_CASE("a tackle plays its intro and hit in full under square spam; mounted, each strike plays to its end",
           "[human][combat][timing]") {
     Fight fight(timingCharacter(), 2.0F);
-    const std::string script = "10 press circle\n24 release circle\n" + taps("square", 20, 140, 3);
+    const std::string script = "10 press circle\n24 release circle\n" + taps("square", 21, 140, 3);
     const Timeline line = Timeline::record(fight, script, 160);
     CHECK(line.startsOf(id::kTacklePlayerIntro) == std::vector<int>{16});
     checkPlayedFully(line, id::kTacklePlayerIntro, 16, 6.67F);
@@ -661,9 +739,9 @@ TEST_CASE("a tackle plays its intro and hit in full under square spam; mounted, 
     // The first square once mounted strikes (212), then each after the last has ended.
     const std::vector<int> strikes = line.startsOf(id::kMountingStrike);
     REQUIRE(strikes.size() >= 2);
-    CHECK(strikes.front() == nextCommand(mounted, 20, 140, 3, 0));
+    CHECK(strikes.front() == nextCommand(mounted, 21, 140, 3, 0));
     checkPlayedFully(line, id::kMountingStrike, strikes[0], 25.33F);
-    CHECK(strikes[1] == nextCommand(line.endOf(id::kMountingStrike, strikes[0]), 20, 140, 3, 0));
+    CHECK(strikes[1] == nextCommand(line.endOf(id::kMountingStrike, strikes[0]), 21, 140, 3, 0));
 }
 
 TEST_CASE("triangle spammed in a hold mugs once: the spin and the intro play to their ends",
@@ -687,7 +765,7 @@ TEST_CASE("rage's start plays to its end under square spam, the body held", "[hu
         rage.add(gain, combat::combatTuning(), 0);
     }
     REQUIRE(rage.full());
-    const std::string script = "10 press l1 r1\n12 release l1 r1\n14 stick left 0 60\n" + taps("square", 14, 90, 3);
+    const std::string script = "10 press l1 r1\n12 release l1 r1\n14 stick left 0 60\n" + taps("square", 15, 90, 3);
     const Timeline line = Timeline::record(fight, script, 120);
     CHECK(line.startsOf(id::kRageStart) == std::vector<int>{10});
     checkPlayedFully(line, id::kRageStart, 10, 64.0F);
@@ -696,7 +774,7 @@ TEST_CASE("rage's start plays to its end under square spam, the body held", "[hu
     CHECK(line.travelled(10, over - 1) < 0.01F);
     // The first square after it attacks: the stick at 60 % walks him at once, so square gives the walk attack (or S1 if
     // he is not yet at a walk).
-    const int attack = nextCommand(over, 14, 90, 3, 0);
+    const int attack = nextCommand(over, 15, 90, 3, 0);
     CHECK((line.nthStart(id::kAttackFromWalk, 0) == attack || line.nthStart(id::kAttackS1, 0) == attack));
     CHECK(fight.human().fighter().combat().rage().raging());
 }

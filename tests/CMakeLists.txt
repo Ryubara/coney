@@ -100,6 +100,7 @@ target_sources(coney_tests PRIVATE
 # The player: animation tasks, locomotion, the human, the follow camera, and level99 driven by scripted pads.
 target_sources(coney_tests PRIVATE
     animation/anim_task_test.cpp
+    animation/held_flags_test.cpp
     camera/follow_camera_test.cpp
     camera/follow_collision_test.cpp
     human/disc_player_test.cpp
@@ -114,7 +115,9 @@ target_sources(coney_tests PRIVATE
     human/pair_placement_test.cpp
     human/player_trace_test.cpp
     human/stamina_test.cpp
-    human/traversal_test.cpp)
+    human/traversal_test.cpp
+    human/humans_test.cpp
+    human/locomotion_gate_test.cpp)
 # Combat (docs/research/combat.md).
 target_sources(coney_tests PRIVATE
     combat/anim_ranges_test.cpp

@@ -3,8 +3,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 #include <utility>
+#include <vector>
 
 #include "core/assert.h"
 
@@ -25,7 +27,46 @@ constexpr float kFallingTolerance = 1e-3F;
 // Seconds `normalised` of the way through `clip`.
 float timeAt(const AnimClip& clip, float normalised) { return normalised * clip.duration; }
 
+// A clip whose time is this close to its length has ended: a clip of a whole number of updates at its rate ends on
+// the update its time reaches its length, as XX2's did at runtime (30 updates for 24 frames at 0.8), not one later
+// when the floats' sum falls a hair short.
+constexpr float kClipEndSlack = 1e-4F;
+
+// Rounding slack for eventFrame(): a time that sums to a whole and a half frame in floats counts as the tie it is.
+constexpr float kEventFrameSlack = 1e-3F;
+
 } // namespace
+
+void applyHeldFlagEvent(std::uint16_t type, AnimTask& task, std::uint32_t& flags) {
+    const std::uint32_t held = task.heldFlags();
+    switch (type) {
+    case kEventChainWindow:
+        // The chain window opens: the wind-up ends.
+        if ((held & kFlagChainWindow) != 0) {
+            flags = (flags & ~kFlagWindUp) | kFlagChainWindow;
+        }
+        break;
+    case kEventAttackEnd:
+        // The attack's end phase: its wind-up and window are over.
+        if ((held & kFlagAttackEnd) != 0) {
+            flags = (flags & ~kFlagAttackPhases) | kFlagAttackEnd;
+        }
+        break;
+    case kEventRecovery:
+        // The recovery replaces whatever the task holds, on the record and in the task.
+        if (held != 0) {
+            flags = (flags & ~held) | kFlagRecovery;
+            task.replaceHeldFlags(kFlagRecovery);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+int eventFrame(float seconds) {
+    return static_cast<int>(std::ceil((seconds * kClipFrameRate) - 0.5F - kEventFrameSlack));
+}
 
 float AnimTask::normalisedTime() const {
     const float total = duration();
@@ -75,9 +116,11 @@ void ClipThenNextTask::advance(float seconds) {
     if (m_finished) {
         return;
     }
-    if (const float overshoot = m_cursor.advance(seconds, rate()); overshoot > 0.0F) {
-        // The clip has ended: the next task starts with the time the clip did not use (overshoot is in the clip's
-        // time, so it is turned back into game time first).
+    const float overshoot = m_cursor.advance(seconds, rate());
+    if (overshoot > 0.0F || m_cursor.clip().duration - m_cursor.time() <= kClipEndSlack) {
+        // The clip has ended (its time has reached its length, give or take the floats' rounding): the next task
+        // starts with the time the clip did not use (overshoot is in the clip's time, so it is turned back into game
+        // time first).
         m_finished = true;
         if (m_next) {
             m_next->advance(rate() > 0.0F ? overshoot / rate() : 0.0F);
@@ -178,9 +221,42 @@ float AnimTaskStack::outgoingWeight(float elapsed, float duration) {
     return (1.0F + std::cos(std::numbers::pi_v<float> * std::max(elapsed, 0.0F) / duration)) * 0.5F;
 }
 
+void AnimTaskStack::startTask(const AnimTask& task) { m_flags = (m_flags & ~task.heldFlags()) | task.startFlags(); }
+
+void AnimTaskStack::releaseTask(const AnimTask& task, std::size_t except) {
+    std::uint32_t kept = 0;
+    for (std::size_t i = 0; i < m_layers.size(); ++i) {
+        if (i != except && m_layers[i].task != nullptr && m_layers[i].task.get() != &task) {
+            kept |= m_layers[i].task->heldFlags();
+        }
+    }
+    m_flags &= ~(task.heldFlags() & ~kept);
+}
+
+void AnimTaskStack::fireEvents(AnimTask& task, const AnimClip& clip, float before, float after, bool wrapped) {
+    const int from = eventFrame(before);
+    const int to = eventFrame(after);
+    for (const ClipEvent& event : clip.events) {
+        const int frame = event.frame;
+        const bool passed = wrapped ? (frame > from || frame <= to) : (frame > from && frame <= to);
+        if (passed) {
+            applyHeldFlagEvent(event.type, task, m_flags);
+        }
+    }
+}
+
 void AnimTaskStack::dropOlderThan(std::size_t index) {
     if (index + 1 < m_layers.size()) {
+        // The dropped tasks are cut off: each gives back what no task left in the stack holds.
+        std::vector<Layer> dropped;
+        dropped.reserve(m_layers.size() - index - 1);
+        for (std::size_t i = index + 1; i < m_layers.size(); ++i) {
+            dropped.push_back(std::move(m_layers[i]));
+        }
         m_layers.erase(m_layers.begin() + static_cast<std::ptrdiff_t>(index) + 1, m_layers.end());
+        for (const Layer& layer : dropped) {
+            releaseTask(*layer.task, m_layers.size());
+        }
     }
     m_layers[index].fade = 0.0F;
     m_layers[index].elapsed = 0.0F;
@@ -192,6 +268,7 @@ void AnimTaskStack::change(std::unique_ptr<AnimTask> task, float fadeSeconds) {
     if (taskCount() > kEarlyFinishTasks) {
         dropOlderThan(0);
     }
+    startTask(*task);
     m_layers.insert(m_layers.begin(), Layer{.task = std::move(task), .fade = fadeSeconds, .elapsed = 0.0F});
     // A fade of no length is over at once: the older tasks go now.
     if (fadeSeconds <= 0.0F) {
@@ -200,11 +277,22 @@ void AnimTaskStack::change(std::unique_ptr<AnimTask> task, float fadeSeconds) {
 }
 
 void AnimTaskStack::advance(float seconds) {
-    // Every task advances, the outgoing ones too; a finished clip-then-next task gives way to its next task.
-    for (Layer& layer : m_layers) {
+    // Every task advances, the outgoing ones too; the newest task's clip fires its events as their frames pass; a
+    // finished clip-then-next task gives back its bits and gives way to its next task, which starts.
+    for (std::size_t i = 0; i < m_layers.size(); ++i) {
+        Layer& layer = m_layers[i];
+        const AnimClip* clip = i == 0 ? layer.task->eventClip() : nullptr;
+        const float before = layer.task->time();
         layer.task->advance(seconds);
+        if (clip != nullptr) {
+            const float after = layer.task->eventClip() == clip ? layer.task->time() : clip->duration;
+            fireEvents(*layer.task, *clip, before, after, after < before);
+        }
         if (std::unique_ptr<AnimTask> next = layer.task->takeReplacement(); next) {
+            std::unique_ptr<AnimTask> ended = std::move(layer.task);
             layer.task = std::move(next);
+            releaseTask(*ended, i);
+            startTask(*layer.task);
         }
         layer.elapsed += seconds;
     }

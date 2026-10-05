@@ -90,6 +90,7 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
     : m_start(start), m_human(character.anims(), AnimSlots::player(), anim::referenceRotations(), kPlayerBodyScale,
                               &character.ranges()),
       m_camera(start.position, 0.0F) {
+    m_humans.add(m_human, true);
     m_human.spawn(mesh, start.position, start.headingDegrees);
     m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
     m_current = capture();
@@ -138,17 +139,17 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     // The command for this sample (docs/research/combat.md#commands).
     const combat::CommandId command =
         m_matcher.update(pad.buttons(), m_tables, combat::combatTuning().historyHoldSamples);
-    // The human first, its stick turned by the camera as it stood after the last update; the cameras last.
+    // The pad into the human's per-player record, its stick turned by the camera as it stood after the last update;
     // L2 held asks for a sprint; triangle pressed (command 10) climbs or jumps (docs/research/characters.md#buttons).
-    m_human.step(HumanInput{.stickX = pad.leftX(),
-                            .stickY = pad.leftY(),
-                            .cameraForward = m_camera.forward(),
-                            .sprintHeld = pad.held(pad::kL2),
-                            .actionPressed = pad.pressed(pad::kTriangle),
-                            .command = command,
-                            .buttons = pad.buttons(),
-                            .targets = targets},
-                 mesh);
+    // Then the characters' step, and the cameras last.
+    m_human.record() = PlayerRecord{.stickX = pad.leftX(),
+                                    .stickY = pad.leftY(),
+                                    .cameraForward = m_camera.forward(),
+                                    .sprintHeld = pad.held(pad::kL2),
+                                    .actionPressed = pad.pressed(pad::kTriangle),
+                                    .command = command,
+                                    .buttons = pad.buttons()};
+    m_humans.update(mesh, targets);
     if (m_human.outOfWorld()) {
         m_human.spawn(mesh, m_start.position, m_start.headingDegrees);
         m_camera = camera::FollowCamera(m_human.position(), m_human.heading());

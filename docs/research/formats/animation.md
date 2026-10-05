@@ -505,7 +505,16 @@ In the task system:
 - **The stack** is kept as a list of layers, newest first; when a fade completes, everything older than it goes. A
   change finishes the newest fade at once when the stack holds more than 6 tasks, and drops the oldest above 12.
 - **The clip that hands over** supports only a blend time of 0 (all the locomotion uses) and carries its overshoot into
-  the next task.
+  the next task. It ends when less than 0.1 ms of its clip is left: a clip of a whole number of updates at its rate
+  ends on the update its time reaches its length (`XX2`'s 24 frames at 0.8 in 30 updates at runtime), not one later
+  when the floats' sum falls a hair short.
+- **Held flags** ([Tasks](../tasks.md#held-flags)): a task holds bits of its human's record `+0x08` and sets its start
+  bits as it starts (first clearing the bits it holds). Events `0x2c` (clear `0x1`, set `0x2`), `0x2d` (clear `0x7`,
+  set `0x4`) and `0x48` (all held bits replaced by `0x40000`) act only on a task that holds the bits they change, and
+  only the newest task's events fire. A clip's event at frame `f` fires on the update whose clip time, rounded to the
+  nearest frame with a tie going down (`ceil(t·30 − 0.5)`, as the key in force), first reaches `f`: on Rembrandt's
+  attack clips this gives the phases measured at runtime. A task that ends, hands over or is faded out and dropped
+  clears the bits it still holds, but not those another task on the stack holds.
 
 ## Notes for implementers
 

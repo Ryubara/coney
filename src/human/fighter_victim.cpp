@@ -59,7 +59,8 @@ void Fighter::takeNotice(const FighterInput& input, HumanAnimator& animator) {
         // for the duck's counter.
         m_duckAttacker = notice.attacker;
         m_counterAsked = false;
-        animator.playCombat(clips::one(clips::clipOf(combat::kBlockDodge)), clips::kBlockSustain, AnimState::Hold);
+        animator.playCombat(clips::one(clips::clipOf(combat::kBlockDodge)), clips::kBlockSustain, AnimState::Hold,
+                            kCombatFade, clips::kDuckHolds);
         return;
     }
     // The early block reaction (+0x14 = 0xc), by the warned attack's code and side.
@@ -124,7 +125,7 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         return;
     }
     // 6. The hit armour: winding up or in the chain window, the player's attack goes on with no reaction.
-    if (combat::hitArmourHolds(m_combat.chain().phaseFlags(), hit.attackAnim, hit.ignoresArmour)) {
+    if (combat::hitArmourHolds(animator.flags(), hit.attackAnim, hit.ignoresArmour)) {
         ++m_hitsArmoured;
         return;
     }
@@ -313,7 +314,8 @@ bool Fighter::duckCounter(const FighterInput& input, HumanAnimator& animator) {
         if (target.has_value()) {
             const int counter = combat::duckCounterClip(combat::victimSide(input.position, input.heading, *target));
             m_combat.startCounter(counter, tuning);
-            animator.playCombat(clips::one(clips::clipOf(counter)), kAnimFightIdle, AnimState::Attack);
+            animator.playCombat(clips::one(clips::clipOf(counter)), kAnimFightIdle, AnimState::Attack, kCombatFade,
+                                clips::kCounterHolds);
             m_counterAsked = false;
             ++m_duckCounters;
             return true;

@@ -1255,7 +1255,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | File | What it does |
 | --- | --- |
 | `combat/commands.*` | the nine trigger tables (`CommandTables::street()` is the street's), and the matcher that turns each update's buttons into one command in the documented order, with the tap (1-6 samples), long hold (4th sample, or a release within 3) and history hold (7) counted per button |
-| `combat/attacks.*` | square's choice (target, snap, run, walk, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, `attackTiming()` (the [timing table](#attacks) per attack) and `AttackChain`: the hit, the chain window, the end and the recovery counted in updates, one buffered press |
+| `combat/attacks.*` | square's choice (target, snap, run, walk, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, `attackHitUpdate()` (the measured hits of the [timing table](#attacks)) and `AttackChain`: the chain read from the record's `+0x08` as the attack's clip holds it ([Tasks](tasks.md#held-flags)), one buffered press, the hit counted in updates, the attack over once its clip has given its bits back |
 | `combat/anim_ranges.*` | the Anim Range List decoded from the character data's chunk (direction, reach, far range, damage, hit code, flags), and `applyClassDamage()`: a class's damage table written over it by the index → anim id table, scaled for a player |
 | `combat/reactions.*` | the hit code taken apart, the victim's side, `hitReaction()` (the strength, height and direction rules, the combo attacks 13-15 and 17-20, and the table at `0x00510798`), the dying reaction, the block reactions and when a block holds |
 | `combat/power_class.h` | a human's power class: the power maximum and refill, the hurt fraction and the power factor while hurt, the stun and ground times and the struggle divisor (`+0x36`); the player's and the street civilian's |
@@ -1273,19 +1273,26 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `human/pair_placement.*` | the pair's geometry: offsets in the grabber's frame from a range record's direction × reach or a clip's type-8 pair event, the alignment (`Pair_AlignStart`), its time, the gate at the connect's end and `Pair_CheckPlace` |
 | `human/target_human.*` | a passive target for the sandbox on `Victim`: health, the reaction, the stun, the knockdown, the ground time and the rise, the dying clip, the root motion of its reactions and throws |
 
-**In the player.** `human::Player` runs the street's `CommandMatcher` on the pad's buttons and gives the human the
-command, the buttons and the targets; the human calls the fighter each update it is on the ground and not climbing,
-after the locomotion and stamina. While the fighter holds the body (blocking, holding someone, mugging, or an attack's
-clip playing) the stick does not move it: the clip's root motion does, with the slide an attack starts. As
-measured at runtime ([When input returns](#input-return)), a press and the stick come back on the first update after a
-move's clip: the attack's chain ends with its clip, and a move that ends in 389 (`NORMAL_FROM_FIGHT`) holds nothing
-through it, the stick replacing it with the walk start at once. Record `+0x08` gates the presses as traced: the
-recovery and the run attack's bit (`0x5c7fee0`) drop every press past the block, square and cross refuse on
-`0x100101f`, circle on `0xfc7eaf7` (the grab's and tackle's intro and miss carry `0x10`, the duck `0x1000`). Let go of
-R1, the player stands in the idle 5 updates with the stick held but takes a press at once (the source of the 5 is
-not traced). Triangle keeps
-its own order (climb, context action, jump) and is not read while the fighter holds the body; L2 still sprints, but
-not while blocking.
+**In the player.** `human::Player` runs the street's `CommandMatcher` on the pad's buttons and writes the command,
+the buttons and the stick into the human's per-player record; the characters' step (`human::Humans`,
+[Tasks](tasks.md#humans-update)) then runs the dispatcher from that record for every human, the player's or not, each
+update the human is on the ground and not climbing, after the animation and the locomotion. **A move's timing is its
+clip's** ([Tasks](tasks.md#held-flags)): the clip's task holds bits of the record's `+0x08` (an attack its phases
+`0x7`, starting in the wind-up `0x1`; the grab's and tackle's clips `0x10`; the duck `0x1000`; its counter `0x2000`;
+the run attack, the charge and the dive `0x1000000`; 389 its `0x40000000`), the clip's events `0x2c`, `0x2d` and
+`0x48` open the chain window, start the end phase and the recovery, and the task gives the bits back when the clip ends
+or is cut off. On Rembrandt's clips the events fall exactly on the updates measured at runtime (`S1`'s window 6, end
+15, recovery 16; `X1`'s 10, 20, 21; `XX2`'s end 17 and recovery 19). Every reader takes the bits with its own mask
+([Tasks](tasks.md#readers)): the recovery and the run attack's bit (`0x5c7fee0`) drop every press past the block, the
+chain buffers while `0x7`, square and cross refuse on `0x100101f`, circle on `0xfc7eaf7`. The stick goes through the
+locomotion gate ([Tasks](tasks.md#locomotion-gate)): the attack's phases and the grab bit make the human busy (no stick
+step, the clip and an attack's slide move the body), the recovery zeroes the stick's velocity, so the stick moves the
+player again on the first update after the clip; 389 holds nothing the gate reads, and the stick replaces it with the
+walk start at once. While the fighter's states hold the body (blocking, holding someone, mugging, held, reacting) the
+stick does not move it either. Let go of R1, the player stands in the idle with the state code `+0x14` at 5 for 5
+updates, which the gate reads, and takes a press at once. Triangle keeps its own order (climb, context action, jump)
+and is refused while the record drops the dispatcher's commands or the human is busy; L2 still sprints, but not while
+blocking.
 
 **Lock-on and the combat walk.** The attack's target search, or L1 when there is none (**Coney's choice**: L1
 searches as far as a target is kept, 2.5 m), gives the player a target. With the original's settings (`CfgLockOn` 0,
@@ -1382,14 +1389,24 @@ so the game plays the file's damage for now.
 
 - Inside one trigger table a later matching entry overwrites an earlier one, as the tables do between themselves;
   trigger 4 (query) never matches.
-- Attack timing where a column was not measured (**to be replaced**: the phases come from the clip's events `0x2c`,
-  `0x2d` and `0x48` and end with its task, [Tasks](tasks.md#held-flags)): the recovery starts 4 updates before the
-  end (as `S1`'s); an attack with no window opening has none; `SS2` closes and ends as `S1`; `SSX3` ends at 30; the
-  run attack ends at 21, the charge at 27 and the dive at 60 (their clip lengths seen at runtime); every attack not
-  measured (the snaps, the moving attacks, the throws, the grounded and mounted strikes) hits 2 updates in, as `S1`.
-  The attack keeps counting under a held R1 and in a dropping phase; an attack whose clip ends before its counted end
-  (the snaps, the throws) ends its chain with the clip, and every other move of the player's refuses a new one while
-  its clip plays (both confirmed (code) by the held flags, [Tasks](tasks.md#readers)).
+- **The held flags** ([Tasks](tasks.md#held-flags)): the bits each move holds where the research names none. Every
+  attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes, power
+  strikes and throws) is built as `Attack_Start`'s (holds `0x7`, sets `0x1`); the charge and dive hold the run attack's
+  `0x1000000`; the grab's connecting clips, its spins, the mugging's clips and the let-go hold the grab bit `0x10`; a
+  start clip `0x10000000`, the landing `0x1000000`, the run stop and the climbs `0x80000`. An event acts only on a
+  task holding the bits it changes; a new task first clears the bits it holds, so the next attack of a chain starts
+  in its wind-up, and one leaving clears only the bits no other task holds; only the newest task's events fire. An
+  event at clip frame `f` fires on the update whose clip time, rounded to the nearest frame (a tie going down), first
+  reaches `f`, which gives the measured phases from Rembrandt's frames. A clip played once ends when less than 0.1 ms
+  of it is left, so `XX2`'s clip ends on its 30th update as measured, not a float's rounding later. The grab's moves
+  and the mount's strike take square's mask (`0x100101f`), so a move in a hold plays out before the next. The chain
+  ends once the record holds none of the attack's phases, the recovery, the counter or the run attack's bit. Every
+  attack whose hit was not measured (the snaps, the moving attacks, the throws, the grounded and mounted strikes) hits
+  2 updates in, as `S1`. The block's 5 updates are the state code 5, set on the release and cleared 5 updates later.
+- **The characters' step** ([Tasks](tasks.md#humans-update)): it runs on Coney's fixed 1/30 s step, the original's
+  30 Hz characters' update, without the 60 Hz tick or the timing wheel, which wait for the world's objects; the brains
+  are an empty hook until the AI lands; the context actions (triangle) are refused while the dispatcher would drop a
+  command or the human is busy.
 - `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; at a sprint (gait 5) square is
   `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
@@ -1476,10 +1493,11 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **The fence break** in slot 10: which script reacts to the charge.
 - **The far ranges' class table** (`0x002545e0`, table `0x0055d640`): which of the class's 45 floats goes to which
   anim id, as the damage table's index → id map does for the damage.
-- **The timing columns not measured**: `SS2`'s window close and end, `SSX3`'s end, and the hit of the snaps, the
-  moving attacks, the throws and the grounded and mounted strikes.
+- **The hits not measured**: the hit of the snaps, the moving attacks, the throws and the grounded and mounted strikes
+  (the phases are the clips' events, [Tasks](tasks.md#held-flags)).
 - **Input and the stick after a move** (answered at runtime, [When input and the stick come back](#input-return)).
   The locomotion gate (answered, [Tasks](tasks.md#locomotion-gate)). The block's 5 updates after release (partly
-  answered): the state code `+0x14` = 5 holds the stick; who sets and clears it after a block is open.
+  answered): the state code `+0x14` = 5 holds the stick; who sets and clears it after a block is open (Coney sets it
+  for 5 updates).
 - **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are
   the fields the alignment writes (human `+0x2e0`-`+0x332`, victim `+0xa0` / `+0xb0`).

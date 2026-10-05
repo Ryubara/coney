@@ -65,6 +65,13 @@ enum class AnimState : std::int8_t {
         105, ///< **Coney's**: locked onto a target, the combat walk (380-387) or the fight idle, set by the human.
 };
 
+/// The bits of the human's record `+0x08` a clip task holds while it plays and sets as it starts
+/// (anim::AnimTask::holdFlags(), docs/research/tasks.md#held-flags). `set` is a part of `held`.
+struct HeldFlags {
+    std::uint32_t held = 0;
+    std::uint32_t set = 0;
+};
+
 /// What the controller decides from, each update.
 struct AnimInputs {
     float speed = 0.0F;     ///< The human's horizontal speed, m/s.
@@ -135,9 +142,10 @@ class HumanAnimator {
     /// Combat: plays `clips` in turn, each once, then `loop` looping, after a fade of `fade`. `state` is
     /// AnimState::Attack (the controller chooses again once the clips are over, the loop standing for the idle) or
     /// AnimState::Hold (nothing changes until combat plays something else). Ids the anim set lacks are skipped; a
-    /// missing loop is the idle's (slot 0).
-    void playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
-                    float fade = kCombatFade);
+    /// missing loop is the idle's (slot 0). Each clip's task holds `held` on the record `+0x08`
+    /// (docs/research/tasks.md#held-flags), but 389, which holds its own `0x40000000` as at runtime.
+    void playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade = kCombatFade,
+                    HeldFlags held = {});
     /// Combat, the victim's side of a paired move: plays `clips` in turn from `attacker`'s anim set at its rates (a
     /// grab's victim plays the grabber's reaction clips, authored with the grabber's), then its own `loop`, after a
     /// fade of `fade` (0: the two humans switch on the same update). `state` as for playCombat(). Ids `attacker`
@@ -146,8 +154,9 @@ class HumanAnimator {
     /// @orig 0x00108a78 PairedTask_Init (unknown)
     void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
                     AnimState state, float fade = 0.0F);
-    /// Combat: plays `clips` in turn, then the gait blend at the run (a run attack after which the run resumes).
-    void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade);
+    /// Combat: plays `clips` in turn, each holding `held`, then the gait blend at the run (a run attack after which
+    /// the run resumes).
+    void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade, HeldFlags held = {});
     /// The combat walk locked onto a target: `clip` (one of 380-387, or the fight idle 358 with the stick at rest)
     /// looping with no root velocity, since the human sets the velocity (docs/research/combat.md#targets). A clip the
     /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays.
@@ -177,6 +186,13 @@ class HumanAnimator {
     [[nodiscard]] bool gaitBlendPlaying() const;
     /// Whether an action's clips are playing (a landing, a run stop or a climb: record `+0x08` is not 0).
     [[nodiscard]] bool actionPlaying() const;
+    /// The human's record `+0x08`: the bits the clips playing hold (docs/research/tasks.md#held-flags), with any the
+    /// human set itself.
+    [[nodiscard]] std::uint32_t flags() const { return m_tasks.flags(); }
+    /// Sets bits of the record `+0x08` no clip holds.
+    void setFlags(std::uint32_t bits) { m_tasks.setFlags(bits); }
+    /// Clears bits of the record `+0x08`.
+    void clearFlags(std::uint32_t bits) { m_tasks.clearFlags(bits); }
     [[nodiscard]] AnimState state() const { return m_state; }
     /// The anim id playing (record `+0x20`): the newest task's.
     [[nodiscard]] std::uint32_t animId() const;
@@ -200,14 +216,16 @@ class HumanAnimator {
     [[nodiscard]] std::unique_ptr<anim::GaitBlendTask> gaitBlend(float value, float phase) const;
     // The idle loop task (slot 0).
     [[nodiscard]] std::unique_ptr<anim::AnimTask> idleLoop() const;
-    // A clip `id` played once (at its range-flag rate, no task flags) that hands over to `next`; the clip and its rate
-    // come from `from` (another human's set, a paired clip), or from this human's own set when null.
+    // A clip `id` played once (at its range-flag rate, no task flags) that hands over to `next`, holding `held` on the
+    // record +0x08; the clip and its rate come from `from` (another human's set, a paired clip), or from this human's
+    // own set when null.
     [[nodiscard]] std::unique_ptr<anim::AnimTask> clipThen(std::uint32_t id, std::unique_ptr<anim::AnimTask> next,
-                                                           const characters::AnimSet* from = nullptr) const;
-    // Combat's chain: `clips` (from `from`, or this human's set when null) handing over in turn, then this human's
-    // `loop`, after a fade of `fade`.
+                                                           const characters::AnimSet* from = nullptr,
+                                                           HeldFlags held = {}) const;
+    // Combat's chain: `clips` (from `from`, or this human's set when null) handing over in turn, each holding `held`
+    // (389 its own), then this human's `loop`, after a fade of `fade`.
     void playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,
-                   AnimState state, float fade);
+                   AnimState state, float fade, HeldFlags held);
     // The clip for slot `slot` with its anim id.
     [[nodiscard]] anim::GaitClip slotClip(std::size_t slot) const;
 

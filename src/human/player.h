@@ -19,12 +19,14 @@
 #include "core/pad.h"
 #include "fileio/wad.h"
 #include "human/human.h"
+#include "human/humans.h"
 #include "human/target_human.h"
 #include "raycast/collision_mesh.h"
 
 // Player 1 in a level: the character it plays, the human the pad drives and the follow camera behind it, stepped
-// together in the characters' order (pad, human, then cameras). Platform-neutral: the play mode draws it, the disc
-// tests drive it headless. Research: docs/research/characters.md#update, docs/research/camera.md
+// together in the characters' order (the pad into the human's record, the characters' step, then cameras).
+// Platform-neutral: the play mode draws it, the disc tests drive it headless.
+// Research: docs/research/characters.md#update, docs/research/tasks.md#humans-update, docs/research/camera.md
 
 namespace coney::human {
 
@@ -102,11 +104,17 @@ class Player {
     /// A player playing `character` (which must outlive it), spawned at `start` on `mesh` (may be null), the camera
     /// set up behind it.
     Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start);
+    Player(const Player&) = delete;
+    Player& operator=(const Player&) = delete;
+    Player(Player&&) = delete;
+    Player& operator=(Player&&) = delete;
+    ~Player() = default;
 
     /// One update of 1/30 s from `pad` (port 1): the buttons turned into a command (combat::CommandMatcher with the
-    /// street's tables), the human with the left stick turned by the camera and `targets` to fight, then the camera
-    /// with the right stick. A human that fell out of the world is put back at the start (**Coney's choice**: the
-    /// original fails the mission, which Coney has no flow for yet).
+    /// street's tables) and written with the left stick and the camera's view into the human's per-player record, the
+    /// characters' step (humans()) with `targets` to fight, then the camera with the right stick. A human that fell
+    /// out of the world is put back at the start (**Coney's choice**: the original fails the mission, which Coney has
+    /// no flow for yet).
     void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<TargetHuman* const> targets = {});
 
     /// Puts the human at `start` on `mesh` (spawned there as at a level start) and the camera behind it, with nothing
@@ -121,6 +129,8 @@ class Player {
 
     [[nodiscard]] const Human& human() const { return m_human; }
     [[nodiscard]] Human& human() { return m_human; }
+    /// The characters' step the player's human is slot 0 of; other humans (and the brains' hook) join it here.
+    [[nodiscard]] Humans& humans() { return m_humans; }
     /// The last update's command.
     [[nodiscard]] combat::CommandId command() const { return m_matcher.command(); }
     [[nodiscard]] const camera::FollowCamera& camera() const { return m_camera; }
@@ -138,6 +148,7 @@ class Player {
     combat::CommandTables m_tables = combat::CommandTables::street();
     combat::CommandMatcher m_matcher;
     Human m_human;
+    Humans m_humans; // holds m_human, which is why the player is neither copied nor moved
     camera::FollowCamera m_camera;
     std::uint32_t m_respawns = 0;
     std::optional<float> m_nearestEnemy; // the distance to the nearest enemy, none with no enemies
