@@ -37,7 +37,7 @@ Per subsystem, the research coverage, the middleware and how it is all measured:
 
 ## Documentation
 
-The documentation is published at **<https://thedegh.github.io/coney/>**, rebuilt from `main` on every push. It
+The documentation is published at **<https://duhdegh.github.io/coney/>**, rebuilt from `main` on every push. It
 is a MkDocs site built from `docs/`. To build it locally:
 
 ```sh
