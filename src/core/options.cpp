@@ -20,6 +20,7 @@ constexpr std::string_view kUsage =
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
+    "             [--play-level NAME]\n"
     "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
@@ -38,6 +39,8 @@ constexpr std::string_view kUsage =
     "                     show a character playing a clip: a model name such as warr_re_cv (the default,\n"
     "                     Rembrandt); needs --disc\n"
     "  --anim CLIP        the clip --view-character plays: an anim id or a clip name\n"
+    "  --play-level NAME  play a level as Rembrandt with a gamepad and the follow camera: level99;\n"
+    "                     needs --disc\n"
     "  --render-references DIR\n"
     "                     write a 256x256 PNG of every character, standing, into DIR and exit;\n"
     "                     needs --disc and a display (the window stays hidden)\n"
@@ -115,6 +118,21 @@ std::expected<void, Error> checkCharacterViewer(const Options& options) {
     return {};
 }
 
+// Refuses the play mode's option in combinations that cannot work: part of checkCombinations().
+std::expected<void, Error> checkPlayLevel(const Options& options) {
+    if (!options.playLevel.has_value()) {
+        return {};
+    }
+    if (!options.discPath.has_value()) {
+        return invalidArgument("--play-level needs --disc to say where the game's files are");
+    }
+    if (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value() ||
+        options.viewText.has_value() || options.viewWorld.has_value() || options.viewCharacter.has_value()) {
+        return invalidArgument("--play-level cannot be combined with --load or the viewers");
+    }
+    return {};
+}
+
 // Refuses the reference renderer's options in combinations that cannot work: part of checkCombinations().
 std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     if (!options.renderReferences.has_value()) {
@@ -130,7 +148,8 @@ std::expected<void, Error> checkReferenceRenderer(const Options& options) {
         return invalidArgument("--render-references needs OpenGL, so it cannot be combined with --headless");
     }
     if (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value() ||
-        options.viewText.has_value() || options.viewWorld.has_value() || options.viewCharacter.has_value()) {
+        options.viewText.has_value() || options.viewWorld.has_value() || options.viewCharacter.has_value() ||
+        options.playLevel.has_value()) {
         return invalidArgument("--render-references cannot be combined with --load or the viewers");
     }
     if (options.frameLimit.has_value() || options.screenshotPath.has_value() || options.inputScript.has_value()) {
@@ -146,6 +165,9 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     }
     if (auto references = checkReferenceRenderer(options); !references) {
         return references;
+    }
+    if (auto play = checkPlayLevel(options); !play) {
+        return play;
     }
     if (!options.loads.empty() && !options.discPath.has_value()) {
         return invalidArgument("--load needs --disc to say where the game's files are");
@@ -237,6 +259,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--view-world") {
             if (auto value = takeValue(args, i, options.viewWorld, "--view-world", "a level or world name"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--play-level") {
+            if (auto value = takeValue(args, i, options.playLevel, "--play-level", "a level name"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--view-character") {

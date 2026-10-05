@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <span>
 #include <vector>
 
@@ -128,8 +129,8 @@ void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEnd
 }
 
 void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level,
-                           const WorldView& view, graphics::Rgba fogColour, float pendingDistance,
-                           std::uint64_t nowMs) {
+                           const WorldView& view, graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs,
+                           const std::function<void()>& drawObjects) {
     m_drawn = 0;
     // 1-4. The camera, with the draw distance as its far clip and the fog from half of it. The frame is begun first:
     // a resized window gets a new camera there, which is then set up and begun again.
@@ -169,9 +170,20 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
     }
 
-    // 6. The `s` world. 7. Objects: none yet. 8. The `d` world, the same way.
+    // 6. The `s` world. 7. The objects, when there are any. 8. The `d` world, the same way as the `s` world.
     const std::span<world::StreamedWorld* const> worlds = set.worlds();
     for (std::size_t w = 0; w < worlds.size(); ++w) {
+        if (w == 1 && drawObjects) {
+            drawObjects();
+            // Put back what the objects may have changed: the world pass's lights and render states.
+            rw::engine->currentWorld = m_lights;
+            rw::SetRenderState(rw::ZTESTENABLE, 1);
+            rw::SetRenderState(rw::ZWRITEENABLE, 1);
+            rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+            rw::SetRenderState(rw::FOGENABLE, 1);
+            rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+            rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+        }
         const std::vector<world::StreamedSector>& sectors = worlds[w]->sectors();
         for (const std::uint32_t sector : worlds[w]->collectSectors(view.pose.position)) {
             if (rw::Atomic* atomic = set.atomic(w, sector); atomic != nullptr) {
@@ -179,6 +191,10 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
                 ++m_drawn;
             }
         }
+    }
+    // A single world (objarena): the objects come after it.
+    if (worlds.size() < 2 && drawObjects) {
+        drawObjects();
     }
     rw::SetRenderState(rw::FOGENABLE, 0);
     engine.present();

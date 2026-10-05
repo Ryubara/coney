@@ -95,24 +95,27 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and thirteen smoke tests of the `coney` executable itself: it starts
-and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
-`--view-text`, `--view-world`, `--view-character` or `--render-references` without `--disc`, refuses a disc that does
-not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and refuses one that does not exist; with
-`CONEY_DISC` set when CMake configures, two more run `coney --disc` to the main menu (`coney.reaches_main_menu`) and
-play Rembrandt's clips in the character viewer under a scripted orbit (`coney.views_character`,
-`tests/support/character_orbit.txt`). The unit tests build their disc images, archives, RenderWare texture dictionaries,
-streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU (the librw tests run librw on its NULL
-device). Ten tests check your own disc: every texture dictionary; every sprite sheet, font and the sheet table; every
-streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds streamed under a scripted
-camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about 30 seconds); the UI strings
-of all five languages, run through the game's own Lua scripts (`[strings]`); the two text fonts with every English UI
-string laid out in them (`[text]`); the front end's scripts (the preloads, `global.lua`, `level100.lua` and the menu
-callbacks) run in the script system with no error and no missing binding (`[scripts]`); the start-up path from the legal
-screen to the main menu, through quick rumble and story to the level request and back, driven by a scripted pad
-(`[frontend]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7 seconds); and every Character
-List record with its model, textures, character data and clips, skinned (`[characters]`). They run only when the
-environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
+`ctest` runs the Catch2 unit tests (`coney_tests`) and fourteen smoke tests of the `coney` executable itself: it
+starts and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
+`--view-text`, `--view-world`, `--view-character`, `--play-level` or `--render-references` without `--disc`, refuses a
+disc that does not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and refuses one that does not
+exist. With `CONEY_DISC` set when CMake configures, three more run `coney --disc`: to the main menu
+(`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a scripted orbit (`coney.views_character`,
+`tests/support/character_orbit.txt`), and level99 played headless under a scripted pad (`coney.plays_level`,
+`tests/support/play_walk.txt`). The unit tests build their disc images, archives, RenderWare texture dictionaries,
+streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or a GPU (the librw tests run
+librw on its NULL device). Eleven tests check your own disc: every texture dictionary; every sprite sheet, font and the
+sheet table; every streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds
+streamed under a scripted camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about
+30 seconds); the UI strings of all five languages, run through the game's own Lua scripts (`[strings]`); the two text
+fonts with every English UI string laid out in them (`[text]`); the front end's scripts (the preloads, `global.lua`,
+`level100.lua` and the menu callbacks) run in the script system with no error and no missing binding (`[scripts]`);
+the start-up path from the legal screen to the main menu, through quick rumble and story to the level request and
+back, driven by a scripted pad (`[frontend]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7
+seconds); every Character List record with its model, textures, character data and clips, skinned (`[characters]`);
+and Rembrandt at level99's start, walked, run, turned, stopped and run into the scenery by scripted partial stick
+deflections, with his speeds and clips checked against the research (`[player]`). They run only when the environment
+variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
@@ -130,7 +133,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
-      [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
+      [--view-world NAME] [--view-character [NAME]] [--anim CLIP] [--play-level NAME]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -307,6 +310,40 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fra
 A script drives it like a player, with partial deflections: `stick right 60 0` orbits at 60 % of the full rate,
 `stick left 0 35` moves in at 35 %.
 
+### Playing a level {#playing-a-level}
+
+`--play-level NAME` puts you in a level as Rembrandt, driven with a gamepad's analog sticks, with the follow camera
+behind him ([Characters](../research/characters.md#coneys-implementation),
+[Camera](../research/camera.md#coneys-implementation)). The level's worlds and level file load and stream as in
+[the world viewer](#the-world-viewer); Rembrandt stands at the level's player start (level99's start, from its level
+script, is researched; any other level puts him above the middle of its first world's part 1 for now, Coney's
+stand-in). He walks, runs, turns, stops, steps up kerbs, slides along walls and falls off ledges on the level's
+collision mesh, with the original's speeds, turn rates and clips: the walk or run start, a blend across walk, jog, run
+and sprint, and the idle. There are no level script, objects, other characters, fighting or missions yet; a fall out
+of the world puts him back at the start. Coney prints a line whenever the clip changes and a summary when it stops
+(the player's position, speed, gait, clip, the camera's distance and counts only).
+
+| Pad | Keyboard | Does |
+| --- | --- | --- |
+| left stick | W A S D (full deflection) | move, relative to the camera: a walk below 95 % of the stick's travel, a run above |
+| right stick | none | turn the camera round him, look up and down |
+
+The stick's direction is turned by the camera's heading, so up always moves away from the camera. The game's own
+dead zone (12 %) applies; the walk speed does not depend on how far the stick is pushed, only whether it is pushed
+past 95 %. Let go and he stops at once and settles into the idle.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --frames 200 --input-script tests/support/play_walk.txt --screenshot ../../scratch/walk.png
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --headless --frames 300 --input-script tests/support/play_wall.txt
+```
+
+The simulation runs on the fixed 1/30 s step and reads only the pads and game time, so a script gives the same path,
+clips and camera every time, in a window or headless. Drawing reads a snapshot of each step and nothing else. Until
+frame pacing lands, a window on a 60 Hz monitor steps once per displayed frame, so play looks about twice as fast as
+it should. Scripts drive it with partial deflections, as a player would: `stick left 0 30` walks forward at 30 %,
+`stick left 50 87` runs along an arc to the right, `stick right 60 0` turns the camera at 60 % of its full rate.
+
 ### Character reference images {#character-reference-images}
 
 `--render-references DIR` writes one 256x256 PNG per character into `DIR` (made if missing) and exits: the small
@@ -337,7 +374,8 @@ batch goes on, and the exit status is 1.
 
 In a window, Coney reads the keyboard and any gamepad SDL3 recognises, and turns them into the PS2 pad the game
 expects ([Front end](../research/frontend.md#coneys-implementation)). The legal screen ignores input, as in the
-original; the menus, [the world viewer](#the-world-viewer) and [the character viewer](#the-character-viewer) read port 1.
+original; the menus, [the world viewer](#the-world-viewer), [the character viewer](#the-character-viewer) and
+[a played level](#playing-a-level) read port 1.
 
 | PS2 pad | Gamepad (SDL3 names) | Keyboard (port 1) |
 | --- | --- | --- |

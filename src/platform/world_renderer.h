@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 
 #include "graphics/render_device.h"
 #include "platform/render_engine.h"
@@ -70,10 +71,13 @@ class WorldRenderer {
     /// first and its light glows open the world pass; `pendingDistance` (the nearest missing scenery,
     /// world::nearestPendingDistance()) brings the skyline's near clip closer. Draws the sectors each world collects
     /// (StreamedWorld::collectSectors), so the visibility pass must have run. `nowMs` is game time for the fade-in and
-    /// the clouds. With the NULL backend the frame is begun and presented and nothing is drawn.
+    /// the clouds. `drawObjects`, when given, draws the objects between the `s` and the `d` world (step 7, where the
+    /// original draws the resource manager's queued objects); it may change the current lights and render states,
+    /// which are put back after it. With the NULL backend the frame is begun and presented and nothing is drawn.
     /// @orig 0x0040e8d8 WorldManager_Render (WorldManagerPS2.cpp)
     void render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level, const WorldView& view,
-                graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs);
+                graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs,
+                const std::function<void()>& drawObjects = {});
 
     /// Atomics drawn by the last render().
     [[nodiscard]] std::uint32_t drawnAtomics() const { return m_drawn; }

@@ -177,6 +177,21 @@ TEST_CASE("the world viewer option takes a name and needs a disc and no other vi
     CHECK(coney::usageText().find("--view-world") != std::string_view::npos);
 }
 
+TEST_CASE("the play option takes a level and needs a disc and no viewer", "[options]") {
+    auto play = parse(std::array<std::string_view, 4>{"--disc", "H:\\", "--play-level", "level99"});
+    REQUIRE(play.has_value());
+    CHECK(play->playLevel == "level99");
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--play-level", "level99"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--play-level"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "a", "--view-world", "b"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "a", "--view-character"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "a", "--render-references", "o"})
+                    .has_value());
+    CHECK(coney::usageText().find("--play-level") != std::string_view::npos);
+}
+
 TEST_CASE("the input script option takes a file and may be given once", "[options]") {
     auto scripted = parse(std::array<std::string_view, 3>{"--input-script", "menu.txt", "--headless"});
     REQUIRE(scripted.has_value());

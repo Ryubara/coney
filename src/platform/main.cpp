@@ -37,6 +37,7 @@
 #include "gui/global_strings.h"
 #include "gui/text_layout.h"
 #include "platform/character_viewer_mode.h"
+#include "platform/play_level_mode.h"
 #include "platform/reference_renderer.h"
 #include "platform/render_engine.h"
 #include "platform/sdl_input.h"
@@ -258,6 +259,7 @@ int main(int argc, char** argv) {
     coney::world::SectorBudget sectorBudget(coney::world::kSectorPoolSize);
     std::unique_ptr<coney::platform::WorldViewerMode> worldViewer;
     std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
+    std::unique_ptr<coney::platform::PlayLevelMode> playLevel;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
             return 2; // parseOptions refuses --view-txd without --disc, so this is never reached
@@ -326,6 +328,17 @@ int main(int argc, char** argv) {
         }
         characterViewer = std::move(*viewerMode);
         modes.push(*characterViewer);
+    } else if (const std::optional<std::string> playName = options->playLevel; playName) {
+        if (!wad) {
+            return 2; // parseOptions refuses --play-level without --disc, so this is never reached
+        }
+        auto playMode = coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText);
+        if (!playMode) {
+            std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), playMode.error().message.c_str());
+            return 1;
+        }
+        playLevel = std::move(*playMode);
+        modes.push(*playLevel);
     } else if (wad) {
         // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
         // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first; the level
@@ -374,6 +387,9 @@ int main(int argc, char** argv) {
     }
     if (characterViewer) {
         printText(characterViewer->summary());
+    }
+    if (playLevel) {
+        printText(playLevel->summary());
     }
 
     // Report the screenshot: where it went and a summary that says whether anything was drawn.

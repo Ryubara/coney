@@ -43,9 +43,9 @@ world::Vec3 viewerStartPosition(const world::StreamedWorld& world) {
     return world::Vec3{(bounds.min.x + bounds.max.x) * 0.5F, bounds.max.y, (bounds.min.z + bounds.max.z) * 0.5F};
 }
 
-std::expected<std::unique_ptr<WorldViewerMode>, Error>
-WorldViewerMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
-                        std::function<void(std::string_view)> print) {
+std::expected<LevelScenery, Error> loadLevelScenery(RenderEngine& engine, const io::Wad& wad, std::string_view name,
+                                                    world::SectorBudget& budget,
+                                                    const std::function<void(std::string_view)>& print) {
     auto names = worldNamesFor(wad, name);
     if (!names) {
         return std::unexpected(std::move(names.error()));
@@ -62,7 +62,6 @@ WorldViewerMode::create(RenderEngine& engine, const io::Wad& wad, std::string_vi
     if (!set) {
         return std::unexpected(std::move(set.error()));
     }
-    const world::Vec3 start = viewerStartPosition(*(*set)->worlds().front());
     std::string text = std::format("{}: {} world{}", name, names->size(), names->size() == 1 ? "" : "s");
     for (const world::StreamedWorld* world : (*set)->worlds()) {
         text += std::format(", {} ({} parts, {} streamed sectors)", world->name(), world->partCount(),
@@ -82,8 +81,19 @@ WorldViewerMode::create(RenderEngine& engine, const io::Wad& wad, std::string_vi
                           name, level->collision->triangles().size(), level->occluders.size(),
                           level->pathHeader.paths));
     }
-    return std::unique_ptr<WorldViewerMode>(
-        new WorldViewerMode(engine, std::move(*set), std::move(level), budget, start, std::move(print)));
+    return LevelScenery{.set = std::move(*set), .level = std::move(level)};
+}
+
+std::expected<std::unique_ptr<WorldViewerMode>, Error>
+WorldViewerMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
+                        std::function<void(std::string_view)> print) {
+    auto scenery = loadLevelScenery(engine, wad, name, budget, print);
+    if (!scenery) {
+        return std::unexpected(std::move(scenery.error()));
+    }
+    const world::Vec3 start = viewerStartPosition(*scenery->set->worlds().front());
+    return std::unique_ptr<WorldViewerMode>(new WorldViewerMode(
+        engine, std::move(scenery->set), std::move(scenery->level), budget, start, std::move(print)));
 }
 
 WorldViewerMode::WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set,

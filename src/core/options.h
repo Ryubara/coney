@@ -47,6 +47,9 @@ struct Options {
     std::optional<std::string> viewCharacter;
     /// `--anim`: the clip the character viewer plays, an anim id or a clip name. Requires viewCharacter.
     std::optional<std::string> animClip;
+    /// `--play-level`: a level the player plays (`level99`). Requires discPath; cannot be combined with `--load` or
+    /// the viewers.
+    std::optional<std::string> playLevel;
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;

@@ -6,6 +6,8 @@ add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_di
 target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
+# Playing a level as Rembrandt (docs/guides/building.md#playing-a-level).
+target_sources(coney_platform PRIVATE play_level_mode.cpp)
 # The character reference images (docs/guides/building.md#character-reference-images).
 target_sources(coney_platform PRIVATE reference_renderer.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
@@ -38,6 +40,8 @@ add_test(NAME coney.render_references_needs_disc COMMAND coney --render-referenc
 set_tests_properties(coney.render_references_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.view_character_needs_disc COMMAND coney --view-character)
 set_tests_properties(coney.view_character_needs_disc PROPERTIES WILL_FAIL TRUE)
+add_test(NAME coney.play_level_needs_disc COMMAND coney --play-level level99)
+set_tests_properties(coney.play_level_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.rejects_missing_disc COMMAND coney --disc "${CMAKE_CURRENT_BINARY_DIR}/no-such-disc" --load x)
 set_tests_properties(coney.rejects_missing_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.plays_input_script
@@ -59,4 +63,10 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 90 --view-character
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/character_orbit.txt")
     set_tests_properties(coney.views_character PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "character viewer: 90 frames")
+    # Playing level99 headless: Rembrandt walked, run, turned and stopped by partial stick deflections, the follow
+    # camera turned by the right stick, 390 frames (docs/guides/building.md#playing-a-level). Counts only.
+    add_test(NAME coney.plays_level
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 390 --play-level level99
+                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
+    set_tests_properties(coney.plays_level PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded")
 endif()

@@ -101,6 +101,21 @@ class WorldViewerMode final : public GameMode {
     WorldViewerStats m_stats;
 };
 
+/// A level's scenery as the world viewer and the play mode load it: its streamed worlds and, when it has one, its level
+/// file's level object.
+struct LevelScenery {
+    std::unique_ptr<WorldSet> set;
+    std::unique_ptr<world::LevelObject> level; ///< Null for a name without a level file.
+};
+
+/// Loads the worlds `name` stands for (worldNamesFor()) from `wad`, charging `budget` first with the pools a running
+/// game holds before them: the `Global Data Pool` for `warriors.glr` and the `World Level Pool` for `<name>.lev`, when
+/// those files exist; then the level file itself, when there is one (loadLevel()). `print` receives a summary (counts
+/// only). Fails as worldNamesFor(), WorldSet::load() and loadLevel() do.
+[[nodiscard]] std::expected<LevelScenery, Error> loadLevelScenery(RenderEngine& engine, const io::Wad& wad,
+                                                                  std::string_view name, world::SectorBudget& budget,
+                                                                  const std::function<void(std::string_view)>& print);
+
 /// **Coney's choice** for where the viewer starts: above the middle of part 1 of the first world, at the top of its
 /// sectors' boxes, looking along +z (no level start position is on the pages yet).
 [[nodiscard]] world::Vec3 viewerStartPosition(const world::StreamedWorld& world);
