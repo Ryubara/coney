@@ -1846,7 +1846,7 @@ currently chosen mode (0x0063eec2); the entry keeps the arena's level-table inde
 - **Evidence:** confirmed (code) at `0x001eaa30`; detail: brief
 - **Wrapper** `0x0036b670` (registered by `RegisterBindings`); **calls** `0x001eaa30`
 - **Used by** 1 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgRumbleChar {#cfgrumblechar}
 
@@ -1873,7 +1873,7 @@ the same id.
 - **Evidence:** confirmed (code) at `0x001f0e60`; detail: brief
 - **Wrapper** `0x0036b8a8` (registered by `RegisterBindings`); **calls** `0x001f0e60`
 - **Used by** 5 of 467 script chunks (732 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgRumbleGame {#cfgrumblegame}
 
@@ -1905,7 +1905,7 @@ calls it.
 - **Evidence:** confirmed (code) at `0x001f8110`; detail: brief
 - **Wrapper** `0x0036b4f0` (registered by `RegisterBindings`); **calls** `0x001f8110`
 - **Used by** 1 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgRumbleGang {#cfgrumblegang}
 
@@ -1930,7 +1930,7 @@ locked character type (unlockables kind 4) with a fixed stand-in.
 - **Evidence:** confirmed (code) at `0x001ec980`; detail: brief
 - **Wrapper** `0x0036b790` (registered by `RegisterBindings`); **calls** `0x001ec980`
 - **Used by** 1 of 467 script chunks (46 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgScrFx {#cfgscrfx}
 

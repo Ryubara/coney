@@ -1333,7 +1333,8 @@ grabber's power running out ends the grab, with an escape when the grabber is hu
 
 **The clips** (anim ids, played through the human's animator, `AnimState::Attack` returning to the fight idle 358 and
 `AnimState::Hold` keeping its loop; an attack returns to the fight idle 358 while the player has a target and through
-389 to the idle 388 when he has none, **Coney's reading** of the runtime runs): the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15,
+389 to the idle 388 when he has none, **Coney's reading** of the runtime runs):
+the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15,
 `XS2` 14 and the snaps; the run attack 24 and the charge 0 and dive 1, after which the run resumes when the stick is
 still at a run; the block 606, or the shuffle 607 with the stick pushed; rage 643; the grab 71, 72, then the hold 82
 (victim 73, then 83), or from the rear 71, 74, 84 (victim 75, 85); the miss 71, 69, 389; the tackle 4, 5, then 210
@@ -1357,7 +1358,8 @@ The tests drive all of this with input scripts played through the pad records at
 the victim's decisions, the grabbed player, the lock-on and the rage awards), `tests/human/being_hit_test.cpp` the
 player hit (the duck and its counter, the block, the floor, the armour, the stun, knockdown and mash, held in a grab,
 the rage and repeat tracker, the combat walk and the grab's turn), `tests/human/combat_timing_test.cpp` when every
-move takes a press and gives the stick back under button spam and partial stick, with the disc's clip lengths, `tests/human/combat_test.cpp` the human with
+move takes a press and gives the stick back under button spam and partial stick,
+with the disc's clip lengths, `tests/human/combat_test.cpp` the human with
 synthetic clips (the combo and its reactions and stun, the stun's 750 ms, the block holding the body while the stick at
 0.6 turns it, the grab, strike and throw with the rise 2 s later, the R1 spin and the L2 let-go, the tackle, the turn
 into an attack, the knockdown, the victim at the front and rear holds' offsets after the connect, a paired clip from the
