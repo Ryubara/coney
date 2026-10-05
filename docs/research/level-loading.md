@@ -214,7 +214,8 @@ Confirmed (code) for the layout; what the areas are used for (AI, triggers) is n
 | Paths | 0x50 each | below |
 | C records | 32 each | `+0x10` pointer to its D records, `+0x14` `s16` their count, `+0x1f` a byte cleared at load |
 | D records | 8 each | `+0x00` an index into the C records, turned into a pointer |
-| Edge lists | `s16`, to the chunk's end | below; the global `0x006ca220` points at their start |
+| Edge lists | `s16` | below; the global `0x006ca220` points at their start |
+| Tail | 4 to 18 bytes | at least 4 bytes, then padding to a multiple of 16 (below) |
 
 **A path is a polygon** (an area on the ground, inferred from the test below):
 
@@ -235,10 +236,31 @@ Confirmed (code) for the layout; what the areas are used for (AI, triggers) is n
 left, by the edge's direction (edges flatter than 0.0001 in y are skipped). The point is inside when the sum is
 positive (a winding number). A path whose first slab start is negative has no lists, and every edge is walked.
 
-**Sizes**: the header, the six record kinds and the edge lists account for each file's chunk. Checked on the 47
-`level<N>.lev` files of the disc (counts only): the last list a path refers to ends within 16 bytes of the chunk's end
-in 42 of them and within 18 bytes in the other 5 (padding, inferred); the lists take 78,448 bytes in all. The
-undescribed bytes found by Coney's disc test were these lists, plus the header's 16 bytes the old description missed.
+**Where each part starts** (confirmed (code) at `0x0024e720`): the A records at chunk `+0x20`, the vertices after
+the A count's records, the paths after the vertex count's, the C records after the paths, the D records after the C
+count's, and the edge lists right after the D count's, where `0x006ca220` ends up once the C records' D pointers are
+handed out. Nothing between the D records and the lists is skipped, and the loader reads nothing after them; it also
+stores the lists' start plus 0x20 in `0x006ca224`, but no code reads that global (no other reference in Ghidra).
+Each path takes the next `+0x4c`-flagged A record in order (the stored value only says whether it has one), and each C
+record the next `+0x14` of the D records.
+
+**Sizes** (disc check, NTSC-U, 2026-10-04, counts only, over all 64 `.lev` files, every one a `level<N>.lev` with
+paths): the header's counts hold in every file: the paths' vertex counts add up to the vertex count, the paths with an
+A record to the A count, and the C records' D counts to the D count. With the edge lists measured to the end of the
+furthest list a path refers to, every chunk is exactly
+
+```text
+align16(0x20 + 16·A + 16·V + 0x50·P + 32·C + 8·D + edge-list bytes + 4)
+```
+
+so the tail after the lists is 4 to 18 bytes, 770 in all: padding left by the tool that wrote the files (inferred; in
+the 12 files without lists it is all zeros in 7 and holds other values in 5, and the loader reads none of it). The
+totals: 10,992 paths, 68,000 vertices, 1,754 A, 43,234 C and 252,896 D records, 4,912 slab lists in 52 of the files (the
+other 12 have none) taking 77,678 bytes.
+
+**The 79,472 bytes** Coney's disc test reported past the counted records (`[disc][level]`, with a 16-byte header) are
+therefore 64 × 16 = 1,024 bytes of the 0x20-byte header, the 77,678 bytes of edge lists and the 770 bytes of tails.
+No record size or count is missing.
 
 ### The world manager (0x60 bytes) {#world-manager}
 
@@ -525,6 +547,15 @@ What the implementer still needs:
 - **A disc test**: every `.lev` loads through the chunk system (64 files, 18 chunks each), and every world loads
   ([The streamed world](world.md#disc-counts)).
 
+**Engine follow-up (path data):** the header check (`inspectPathData`, `src/world/level_object.cpp`; the `.lev`
+reader in `src/platform/level_file.*` only hands the chunk over) counts a 16-byte header, where the original's is 0x20
+bytes ([Path data](#path-data)). With 0x20 the records end where the edge lists begin, and the check could go on to
+walk each path's slab lists (16 `s16` starts at `+0x28`, each list ended by a negative value) and require the chunk to
+be `align16(end of the furthest list + 4)` bytes, which holds for all 64 files. The disc test's "chunk bytes past the
+counted records" would then read 78,448 (lists and tails) with the header fixed, or 770 (tails only) with the lists
+counted too. The doc comment on `inspectPathData` that every chunk "holds more than they add up to" should say what the
+rest is.
+
 ## Open questions
 
 - **Levels without a `.lev`**: `level70`-`74`, `90`, `91`, `94`, `96`-`98`, `106`, `117`, `125`, `135` have worlds but
@@ -538,8 +569,9 @@ What the implementer still needs:
   vtable from elsewhere, or does the pool's destruction alone end the level's RenderWare objects?
 - **The subtitles chunk** (`0x51`) and the path records A, C and D ([Path data](#path-data)): their contents, and
   what the areas are used for.
-- **The path data's size** (answered): the header is 0x20 bytes, and the chunk ends with the paths' edge lists
-  ([Path data](#path-data)).
+- **The path data's size** (answered): the header is 0x20 bytes, and the chunk ends with the paths' edge lists and a
+  4- to 18-byte tail; the 79,472 bytes Coney's disc test left uncounted are the header's second 16 bytes, the lists and
+  the tails ([Path data](#path-data)). Still open: whether the tail's first 4 bytes mean anything (no reader found).
 - **`WorldLevel_Load`** (answered): game code in `World/`. tolua ends at `0x0040c5e0`; the WAD object and
   `WorldLevel_Load` after it call no Lua API, and the source map and the progress totals now say so
   ([Source map](source-map.md#world)).

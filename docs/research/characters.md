@@ -180,20 +180,38 @@ The 0x180 record holds the human's **anim slots**: 35 anim ids at `+0x28`-`+0xb3
 recomputes the speeds. Record `+0x20` is the anim id playing (getter `0x002266b8`). Confirmed (code); Rembrandt's ids
 were read at runtime and named from the clips on the disc (confirmed (runtime)).
 
+**Slots count from 0**, with no offset or remapping: `0x00253608` copies the table's 0x8c bytes (35 words) to record
+`+0x28` as they are, and `0x002535f0` stores slot *s* at `+0x28 + 4s`. The player's slot 14 is the table's fifteenth
+word (372 replaced by 380), and the movement styles write by the same numbers: styles 4 and 6 put their own "run stop"
+ids (523 `ANIM_BARREL_MOVEMENT_RUN_STOP`, 569 `ANIM_GHETTO_MOVEMENT_RUN_STOP`) in slot 33, where the default is 417
+`ANIM_MOVEMENT_RUN_STOP`. Confirmed (code) at `0x00253608`, `0x002535f0` and `0x00253688`. The last slot, 34, holds 0
+in the table and no style writes it; whether 0 there means anim id 0 (`ANIM_RUNNING_ATTACK_CHARGE`) or "no clip" is not
+traced (the [anim id reference](../references/anim-ids.md) treats it as unset).
+
 | Slot | Id | Clip | Slot | Id | Clip |
 | --- | --- | --- | --- | --- | --- |
-| 0 | 388 | neutral idle | 12 | 366 | combat shuffle forward |
-| 1 | 401 | step forward | 13 | 368 | combat dash forward |
-| 2 | 403 | dash forward | 14 | 372 (player 380) | combat walk forward |
-| 3 | 407 | sneak walk | 15 | 360 | combat turn |
-| 4 | 408 | walk | 16-24 | | attacks, grabs, blocks |
-| 5 | 409 | jog | 25 | 427 | jump start |
-| 6 | 410 | run | 26 | 428 | drop cycle |
-| 7 | 411 | sprint | 27 | 429 | drop land |
-| 8 | 390 | slow turn right | 28-33 | | not identified |
-| 9 | 412 | sneak walk start | 34 | 417 | run to neutral |
-| 10 | 413 | walk start | | | |
-| 11 | 358 | combat idle | | | |
+| 0 | 388 | neutral idle | 18 | 212 | mounting strike |
+| 1 | 401 | step forward | 19 | 193 | grounded strike |
+| 2 | 403 | dash forward | 20 | 104 | grab front attack |
+| 3 | 407 | sneak walk | 21 | 605 | block start |
+| 4 | 408 | walk | 22 | 608 | block high front |
+| 5 | 409 | jog | 23 | 606 | block sustain |
+| 6 | 410 | run | 24 | 607 | block shuffle |
+| 7 | 411 | sprint | 25 | 427 | jump start |
+| 8 | 390 | slow turn right | 26 | 428 | drop cycle |
+| 9 | 412 | sneak walk start | 27 | 429 | drop land |
+| 10 | 413 | walk start | 28 | 388 | neutral idle (again) |
+| 11 | 358 | combat idle | 29 | 653 | special attack 1 front |
+| 12 | 366 | combat shuffle forward | 30 | 434 | jump loop |
+| 13 | 368 | combat dash forward | 31 | 668 | special action (`missing_anim_filler` in the generic data) |
+| 14 | 372 (player 380) | combat walk forward | 32 | 317 | fire idle |
+| 15 | 360 | combat turn | 33 | 417 | run to neutral (run stop) |
+| 16 | 12 | attack S1 | 34 | 0 | none, or id 0 (above) |
+| 17 | 11 | attack X1 | | | |
+
+Slots 16-24 and 28-33 are named from the ids' `ANIM_*` constants in `royal.lua` and their generic clips (inferred:
+what each slot is used for has not been traced, only its default id). The full table, with every id's clips, is the
+[anim id reference](../references/anim-ids.md).
 
 Other locomotion ids seen at runtime outside the slots: 414 run start, 418 run 180° turn, 421-426 fall front / back
 begin, cycle and land.
@@ -456,7 +474,7 @@ record `+0xdc` × 4/π (a direction, inferred); for the four-clip task, speed / 
 **Idle (state 0).** `Human_BuildIdleTasks` (`0x0025f770`) calls `0x0025f1b8` with **slot 0** (388) as a looping
 clip with no task flags, after a fade of **0.15 s**; if a start clip is still playing (flag `0x10000000`) the fade is
 1/15 s when less than 0.1333 s of it has played and 0.2 s otherwise. Some ids replace slot 0 in special cases (355,
-357, 394, 634). **Slot 34 (run to neutral, 417) is not used** by this path: releasing the stick fades straight to the
+357, 394, 634). **Slot 33 (run to neutral, 417) is not used** by this path: releasing the stick fades straight to the
 idle, which matches the runtime samples below.
 
 **At runtime** (PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt; the task stack read from the instance every 50 ms).
@@ -613,7 +631,8 @@ reference images' pose, camera and lights, are Coney's own.
   [Animation](formats/animation.md#animation-tasks); the playback rate is never scaled with the speed. Still open:
   the anim states other than idle and move (11, 21, 24 and the combat ones) and the special idle ids.
 - **Jog**: when a pad-controlled human jogs other than when carrying (a movement style, a script).
-- **Slots 28-33** and the movement styles of `0x00253688`.
+- **What slots 16-24 and 28-34 are used for** (their default ids are known, [Anim slots](#anim-slots)), and the
+  movement styles of `0x00253688` beyond the ids they write.
 - **The `+0x65c` scale's source**: what the division in `Human_Init` takes.
 - **How the texture reaches the material**, which names none ([Character geometry](#character-geometry)).
 - **The rest rotations of pose bones 0-2** and why bone 3's parent in the table differs from its frame's.
