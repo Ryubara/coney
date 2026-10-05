@@ -1,7 +1,9 @@
 # Camera (the follow camera)
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Runtime claims were made in
-PCSX2 2.9.94 (2026-10-04) by reading the camera object over PINE in `level99`, checkpoint 1, and say so.
+PCSX2 2.9.94 (2026-10-04) by reading the camera object over PINE in `level99`, checkpoint 1, and say so; those of
+[In the street](#street) (2026-10-05) in the street saves of `level99`'s world, read every update while a scripted
+pad played ([Feel comparison](feel.md)).
 
 ## Purpose
 
@@ -15,10 +17,12 @@ the follow camera with the `global.lua` helper `CameraCreateFollow("follow", pla
 (`CamSetupFollow`) and configures it (`CfgFollowCamera`): distance 3 to 6.6 m (4.8 by default), a pitch of 13°, a 65°
 field of view, a near plane of 0.1 and a look-at point 1.4 m above the player's feet. `CameraMakeActive` makes it
 current with no blend. It is a leash camera: each update it keeps its look-at point on the player, is dragged back into
-a 3.0-3.5 m band when the player moves away, covers 22% of its wanted move per update, has code to swing round behind
-the player's facing once the angle passes 22.5° (not seen running in `level99`, [Runtime checks](#runtime-checks)),
-holds a 13° pitch, turns with the right stick at 60-150°/s, and swings or pulls in when the world is in the way, using
-ray casts and sphere pushes against the collision mesh.
+a band from the default distance to 0.5 m beyond it (4.8-5.3 m in the street; 3.0-3.5 m was read at checkpoint 1)
+when the player moves away, covers 22% of its wanted move per update, swings round toward the player's facing once the
+angle passes 22.5° (seen in the street, not at checkpoint 1, [Runtime checks](#runtime-checks)), holds a 13° pitch,
+pulls in to 3.0-3.5 m and lowers its pitch to 7° while the player sprints, turns with the right stick at
+60-150°/s, and swings or pulls in when the world is in the way, using ray casts and sphere pushes against the
+collision mesh.
 
 ## Original structure
 
@@ -70,7 +74,7 @@ manager, `Cam_Follow.cpp` the follow camera. Names are ours unless a class strin
 | `+0x308` | default distance (also written to `+0x344` and `+0x32c`) | 6 | 4.8 |
 | `+0x30c` (and `+0x3b4`) | pitch, radians | 15° | 0.2269 (13°) |
 | `+0x310` (and `+0x394`) | field of view, degrees | 65 | 65 |
-| `+0x32c` / `+0x330` | the leash band: default and default + min(0.5, max − min) (also `+0x344` / `+0x348`) | 6 / 6.5 | 3.0 / 3.5 (changed by the tutorial's calls, inferred) |
+| `+0x32c` / `+0x330` | the leash band: default and default + min(0.5, max − min) (also `+0x344` / `+0x348`) | 6 / 6.5 | 3.0 / 3.5 at checkpoint 1; **4.8 / 5.3** in the street, and 3.0 / 3.5 while sprinting ([In the street](#street)) |
 | `+0x320` | handle of a human or object the camera keeps in view | | |
 | `+0x33c` / `+0x340` | the hard band: the leash band widened by max(5%, 0.2 m) and max(6%, 0.35 m) | | |
 | `+0x350` | heading target (a direction; −FLT_MAX for none) | | |
@@ -79,7 +83,7 @@ manager, `Cam_Follow.cpp` the follow camera. Names are ours unless a class strin
 | `+0x368` | stick hold timer: 0.334 s after any camera input | | |
 | `+0x380` | recovered distance (eases 10% per update) | | |
 | `+0x388` | position lag: share of the wanted move covered per update | 0.22 | |
-| `+0x3ac` | an upper pitch limit | 50° | |
+| `+0x3ac` | an upper pitch limit | 50° | 30° at checkpoint 1; **40°** in the street (band 4.8-5.3) |
 | `+0x3b0` | a lower pitch limit: `atan((1 − offset.z) / max)`, at least −20° | −20° | |
 | `+0x3b8` | right-stick pitch rate, rad/s | | |
 | `+0x400` | zoom distance: minimum, default or maximum | 6.5 | |
@@ -275,8 +279,42 @@ PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt, read over PINE once per update;
   rule should then turn about 3.4° (auto-centre) or 2° (default) per update. Every gate listed under
   [Heading](#heading) that can be read over PINE passed (`+0x444` = 1, record words `+0x00` and `+0x08` zero,
   `+0x460` = 0, `+0x320` = −1, `+0x368` = 0, `+0x455` = 0, `+0x474` = 1, the run clip's descriptor flags 0); the
-  condition that blocks it was not found (the update's locals cannot be read without breakpoints). So in
-  `level99` the camera turns only with the right stick and the leash.
+  condition that blocks it was not found (the update's locals cannot be read without breakpoints). So at
+  checkpoint 1 the camera turns only with the right stick and the leash.
+
+### In the street {#street}
+
+PCSX2 2.9.94, the street saves (in `level99`'s world, [Feel comparison](feel.md)), Rembrandt, the camera read every
+update while a scripted pad played; the per-pad option bytes `0x0050b240` / `0x0050b248` were 1 (the auto-centre
+rule) and `0x0050b19c` was 1. Confirmed (runtime) unless marked:
+
+- **Band and distance.** The leash band was **4.8-5.3 m** (`CfgFollowCamera`'s default 4.8 and + 0.5), the hard band
+  as described (far edge + 0.35 m): the camera stood 5.30 m from the look-at point, 5.49 m walking and 5.65 m
+  running, at pitches of 13°, 12.6° and 11.1°.
+- **Auto-follow runs.** The wanted position turned about the look-at point by the auto-centre rule's rate
+  (`(a − 45°) × 2.444 + 45°` per second above 22.5°, 200°/s from 90° to 100°, falling to 60°/s at 157.5°) when `a`
+  is the angle between the player's new facing and the camera's view at the start of the update (its position then
+  to its look-at point): within 5°/s on average from 30° to 90°, over 656 updates of walks, runs, sprints and turns;
+  just above 22.5° it turned slightly the other way, as the rule's negative rate says. It turned while walking,
+  running, sprinting and in the air, and not while standing, during the walk and run start clips or during the
+  landing clip 436. Because the stick is turned by the camera, a stick held 90° to the side makes the player run in
+  a circle: facing and camera turned together at about 122°/s running and 127°/s walking (`a` steady near 67°
+  and 73°).
+- **Sprint zoom.** From the first update at the sprint gait the band's near edge went 4.8 → 4.569, 4.379, 4.221,
+  4.085, 3.968, 3.863, 3.770, 3.686, 3.607, 3.533, 3.462, 3.391, 3.315, 3.216, 3.0 (the far edge 0.5 more), and the
+  target pitch `+0x3b4` fell by 0.4286° per update from 13° to **7°**: both over 14 updates. In the sprint the camera
+  settled 4.70 m from the look-at point at a pitch of 5.2°. Both went back the same way over 14 updates, starting
+  8 updates after the run stop began (the body at about 2.5 m/s). A run (gait 4) did not change them.
+- **Right stick.** Yaw at 30, 60 and 100 % to the right (raw x 189, 217, 255): 74.8, 106.7 and 150.0°/s applied to
+  the wanted position from the first update, as the table above gives. Pitch up at 100 %: the target rose 85°/s to
+  the upper limit **40°** and stayed there after release.
+- **Look-at height after a climb's rise** (slot 8, the feet rising 1.28 m onto a trash can and 2.64 m onto a roof):
+  the look-at point moved **20 % of the way** to feet + 1.4 m per update for 4-7 updates, then covered the last
+  0.5-0.6 m in 2 updates, so the view's pitch stayed at 3.6° or more. During a jump it follows the feet directly.
+- **Fences.** Through a running fence climb (slot 7, material 30) the camera stayed 4.9-5.3 m away while the fence
+  stood between it and the player, and passed through the fence afterwards without pulling in: its collision does
+  not see that fence (which test skips it is not traced). A low one-sided face 0.19 m behind the player did not
+  pull it in either.
 
 ### Scenes take the camera and give it back {#scenes}
 
@@ -334,8 +372,9 @@ The world viewer keeps its own free camera with the player camera's lens
 
 **Coney choices** where the research is silent:
 
-- **No auto-follow**: the camera does not swing behind the player by itself, as measured in level99
-  ([Runtime checks](#runtime-checks)).
+- **No auto-follow**: the camera does not swing behind the player by itself, as measured at level99's checkpoint 1
+  ([Runtime checks](#runtime-checks)); in the street the original's auto-centre rule runs ([In the street](#street)),
+  so this choice differs from what the player mostly sees.
 - **Collision** is one ray (collision mask `0x200`) from the look-at point to the camera; a hit pulls the camera to
   0.2 m short of it, never nearer than 0.5 m. The side probes and swing-away rules are not implemented.
 - **The upper pitch limit** is fixed at 30°, the value read at runtime with the camera option set; the zoom
@@ -348,11 +387,11 @@ The world viewer keeps its own free camera with the player camera's lens
   unless its distance to the look-at point leaves the 3.0-3.5 m band, then move it along that line to the band; move
   22% of the way to the wanted position each 30 Hz step; hold a 13° pitch; 65° horizontal field of view, near 0.1,
   far 115.
-- **Heading**: in `level99` as measured the camera does not swing behind the player by itself
-  ([Runtime checks](#runtime-checks)); the leash alone turns it as the player runs across the view. Implement the
-  leash and the right stick first; the auto-follow rates ([Heading](#heading)) can be added behind an option once
-  the condition that enables them is known. The player's stick is turned by the camera's heading before it
-  reaches the character ([Characters](characters.md#input)), so the camera must ease, never snap.
+- **Heading**: in the street the auto-centre rule ([Heading](#heading)) turns the camera toward the facing whenever
+  the player moves, with the angle measured from the camera's position at the start of the update
+  ([In the street](#street)); with the stick held sideways the player runs in a circle. At `level99`'s checkpoint 1 it
+  was not seen. Implement it, with the leash and the right stick. The player's stick is turned by the camera's
+  heading before it reaches the character ([Characters](characters.md#input)), so the camera must ease, never snap.
 - **Right stick**: yaw 60-150°/s outside a ±48 raw dead zone, applied to the wanted position at once (the lag
   smooths it); pitch only near the ends of the travel; 0.334 s of no auto-follow after any input.
 - **Collision**: start with a ray from the look-at point and pull in to the hit; the side probes and swing-away rules in
@@ -365,9 +404,12 @@ The world viewer keeps its own free camera with the player camera's lens
 
 - **The tutorial's camera calls**: which call set `+0x32c` / `+0x330` to 3.0 / 3.5 (probably `P1.SetupCam` in
   `level99_combat.lua` through `CamSetFollowZoom`; inferred).
-- **Why auto-follow did not run** at runtime ([Runtime checks](#runtime-checks)): a gate not yet identified, perhaps
-  in the update's locals (`sp+0x1c8`, the `0x0012e9a8` look-at step) or a mode the tutorial sets. A breakpoint at
-  `0x0012bd80` would settle it.
+- **Why auto-follow did not run** at checkpoint 1 ([Runtime checks](#runtime-checks)) when it runs in the street
+  ([In the street](#street)): a gate not yet identified, perhaps a mode the tutorial sets. A breakpoint at
+  `0x0012bd80` would settle it. Also open: the option bytes' value in a fresh profile.
+- **The sprint zoom** ([In the street](#street)): which code moves the band to the minimum distance and the pitch to
+  7°, its easing (the measured curve is not linear), and what ends it.
+- **Look-at height easing**: 20% per update measured after a climb's rise against the 30% read in the code.
 - **The collision step** (`0x00130990`) in full (Coney casts one ray): the exact probe pattern, its margins, when
   the height ray lowers the camera, and what `+0x10a`-`+0x10c` (side angle history) feed.
 - **The target state** that lifts the look-at point to 1.65 m, and the two modes of `0x00125588`.

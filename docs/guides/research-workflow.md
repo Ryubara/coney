@@ -286,6 +286,16 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   those addresses, and start `pcsx2-qt.exe -fastboot -statefile <copy> -- <iso>`; restart PCSX2 the same way for
   every run. Then write the bytes over PINE (the stick table above gives the magnitude). Find the player as the human
   whose `+0x1b0` is 0: in later levels it is not human 0, and the per-player record is indexed by its `+0x92`.
+- **The right stick, too** (2026-10-05, the feel pass). The right stick's loads are at `0x00149df8` / `0x00149e00`
+  (DualShock 2 path) and `0x00149eb8` / `0x00149ec0` (digital path), offsets 4 and 5; making them 0x24 and 0x25
+  puts the right stick's x and y at `0x005de3ac` / `0x005de3ad`. The stick table at `0x0050b8d0` is the same map as
+  Coney's `pad::stickValue` (dead band 95-160, `(raw − 160) / 95`), so writing the raw bytes Coney makes from an input
+  script's percentages (`160 + round(0.95 × v)`, `95 − round(0.95 × |v|)`, 128 at rest) gives both games the same
+  stick, diagonals included, without touching the table.
+- **One sample per update.** Batch every read of a sample into one PINE message (a list of Read32 commands) and keep
+  a sample only when the game time `*(0x0050b734) + 0x48` (milliseconds) has advanced by a character update
+  (1000 / 30 ms); apply the scripted input as each update is seen. Over PCSX2's TCP PINE this read about 40 words per
+  update with no update missed in 200-update runs.
 - **Leave the quick-save slots alone.** Never save a state to a slot number (PINE's save writes a quick-save slot):
   load existing slots read-only (they may hold someone else's test spots), and keep your own states as files in your
   scratch folder, made as above.
