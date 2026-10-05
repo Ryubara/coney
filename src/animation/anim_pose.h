@@ -34,9 +34,11 @@ struct Pose {
 /// @orig 0x00100200 Pose_InitReference (unknown)
 [[nodiscard]] std::span<const Quat, kPoseBones> referenceRotations();
 
-/// The value of a position channel at `frame` (fractional): lerped between the key at or before it and the next one,
-/// `t = (frame - key) / (next - key)`; the last key holds after it, the first before it. `channel` must not be empty
-/// (checked by CONEY_ASSERT).
+/// The value of a position channel at `frame` (fractional), as the original's cursor samples it: the current key is
+/// the last at or before the nearest whole frame (a tie going down), and the value is lerped from it toward the next
+/// key by `t = (frame - key) / (next - key)`, unclamped, so `t` is negative while `frame` is short of the current key
+/// (frame 0.75 extrapolates back from the key of frame 1). The last key holds after it, the first before it.
+/// `channel` must not be empty (checked by CONEY_ASSERT). Research: docs/research/formats/animation.md#playing-a-clip
 [[nodiscard]] Vec3 sampleChannel(std::span<const PositionKey> channel, float frame);
 
 /// The value of a rotation channel at `frame`, as sampleChannel() but nlerped.

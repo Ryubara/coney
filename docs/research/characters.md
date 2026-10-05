@@ -1169,8 +1169,11 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 - `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale (× 1.4286 for
   the player: 0.485 m) centred 0.05 above its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the
   0.25 m low-and-thin rule, the fence materials passed through while climbing over, and the airborne push-out sphere
-  (0.5 × scale for a player). The human keeps the move the walls left as its velocity, so a wall met at a steep
-  angle brakes the player.
+  (0.5 × scale for a player). The walking sphere is stopped where it touches a triangle, so a face lower than its
+  centre stops it where it meets the face's top edge, `sqrt(0.485² − (0.535 − h)²)` from the face (0.396, 0.400 and
+  0.424 m for 0.255, 0.26 and 0.30 m faces, as at runtime); a face under 0.25 m is walked onto in one update with no
+  change of speed or clip. The human keeps the move the walls left as its velocity, so a wall met at a steep angle
+  brakes the player.
 - `src/human/jump.*` is the jump's checks and launch ([Jumping](#jump)): faster than 3.3 m/s and the stored gait at
   jog or above, refused when a climbable face lies within 5.5 m; the run or sprint speed forward and 5.5 m/s up.
   A start clip does not stop it.
@@ -1212,7 +1215,8 @@ at a 30 % stick (not moving on its first update, then 0.762 m/s: the clip's root
 1.629 m/s, gains 0.8 m/s per update to the run (410), skids into the run stop (417) on release and then idles, and
 never leaves the ground or passes through the scenery he is run into; the same script gives the same path twice.
 On the default sandbox's ledges he walks onto the 10 and 25 cm blocks (the 25 cm block's 3 m wide face is two
-slivers the 0.25 m rule skips) and stops at the 50 cm one, 0.485 m short of its face.
+slivers the 0.25 m rule skips) and stops at the 50 cm one, 0.484 m short of its face, where the sphere meets its
+top edge.
 
 **Disc test** (`[traversal]`, positions and hashes only; Rembrandt on the sandbox's
 [parkour course](../guides/sandbox.md#the-shipped-layouts)), each run against the runtime values above:
@@ -1247,8 +1251,9 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   (no gait blend yet), the update the start clip begins sets no velocity, as at runtime.
 - **The start clips hand over early**: the walk and run starts give way to the gait blend on the update after which
   less than an update of them is left, so they last 13 updates as at runtime (playing to the end would take 14).
-  Their first moving update is slower than the runtime's (0.57 against 0.762 m/s for the walk start, 2.04 against
-  2.77 m/s for the run start): the first root-motion sample is not explained.
+  From their first moving update they move at the clip's root speed × 0.97, as at runtime (0.762 m/s for the walk
+  start, 2.773, 2.486, … for the run start), through the sampler's reading of the clip's keys
+  ([Animation](formats/animation.md#coneys-implementation)).
 - **Root motion** of every clip that moves the body on the ground is scaled by the body scale (0.97 for Rembrandt);
   a wall or short wall climb's rise at its second clip is not (it matched the runtime unscaled).
 - **The jump's gait test** reads the stored gait (`+0x1a8`, the nearest) where the code reading names the "reached"
@@ -1258,12 +1263,14 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   passes, then stops. The low-and-thin rule takes the triangle as given, so a 0.25 m face exactly (a sliver) does
   not stop the body, and a face from 0.26 m does.
 - **Landing** probes from 1.0 m above the feet, as the ground snap does. A floor found on that segment is landed on
-  the **next** update: the feet go on below it for one update (0.19 m after a run jump, as at runtime), then land at
-  the next update's position across the ground, so the landing update keeps the full horizontal speed.
+  by the first update that starts with the feet 0.17 m or more below it ([When the landing happens](#falling)); until
+  then the body falls on through it (0.19 m after a run jump, as at runtime). The landing is at that update's position
+  across the ground, so the landing update keeps the full horizontal speed.
 - **Stamina** carries one fraction of a point between updates, started again when the meter changes direction.
-- **The run stop** (417) plays after every skid, at a run as at a sprint, with the 0.1333 s move fade (which makes
-  its first updates slower than the runtime's: 0.31, 1.97 against 2.24, 5.00 m/s); the skid's own update still turns
-  one step and the run stop then holds the facing. What builds it is not traced.
+- **The run stop** (417) plays after every skid, at a run as at a sprint, after the 0.1333 s move fade, which blends
+  only the pose: the gait blend it fades from has no root velocity, so the body moves at the clip's 2.244, 4.996,
+  5.101, … m/s from its first update, as at runtime. The skid's own update still turns one step and the run stop then
+  holds the facing; "at the run speed" allows 1 mm/s for rounding. What builds it is not traced.
 - **The landing** has no fade, so 436 moves the body at its 4.23 m/s from its first update as at runtime, and hands
   over to a gait blend at the jog (1.0).
 - **The air turn** is limited to 4° an update, what a sprint jump turned at runtime; which gait's limit the original

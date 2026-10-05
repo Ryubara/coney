@@ -127,9 +127,51 @@ name = "GaitBlend_Sample"
 subsystem = "Animation"
 
 [[function]]
+address = 0x001254f0
+name = "Cam_Follow_StepZoom"
+subsystem = "Camera"
+size = 152
+
+[[function]]
+address = 0x00126a30
+name = "Cam_Follow_EnableSprintZoom"
+subsystem = "Camera"
+size = 56
+
+[[function]]
+address = 0x00127d88
+name = "Cam_Follow_LookAt"
+subsystem = "Camera"
+size = 1296
+
+[[function]]
+address = 0x00128cf0
+name = "Cam_Follow_SprintZoom"
+subsystem = "Camera"
+size = 864
+
+[[function]]
+address = 0x00129c78
+name = "Cam_Follow_AutoFollow"
+subsystem = "Camera"
+size = 784
+
+[[function]]
 address = 0x00129f88
 name = "Cam_Follow_AutoCentre"
 subsystem = "Camera"
+
+[[function]]
+address = 0x0012a400
+name = "Cam_Follow_AutoFollowDefault"
+subsystem = "Camera"
+size = 984
+
+[[function]]
+address = 0x0012aae0
+name = "Cam_Follow_EaseBand"
+subsystem = "Camera"
+size = 376
 
 [[function]]
 address = 0x0012ae58

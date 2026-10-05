@@ -101,6 +101,7 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE
     animation/anim_task_test.cpp
     camera/follow_camera_test.cpp
+    camera/follow_collision_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
     human/body_test.cpp

@@ -5,8 +5,8 @@
 30 stick left 0 30
 # Walk forward at 30 % for two seconds, then at 60 % (the walk speed does not depend on how far the stick is pushed).
 90 stick left 0 60
-# Run: full deflection.
-150 stick left 0 100
+# Run: full deflection, up and to the right (the follow camera has swung away from the start spot's wall).
+150 stick left 50 87
 # A turning arc while running: the stick swings to the right and round.
 180 stick left 50 87
 195 stick left 87 50

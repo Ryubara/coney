@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <utility>
@@ -38,6 +39,7 @@ namespace {
 // What one frame of a scripted run left.
 struct FrameRecord {
     coney::anim::Vec3 position;
+    float heading = 0.0F;
     bool airborne = false;
 };
 
@@ -104,7 +106,8 @@ Run runScript(const Course& course, const char* label, const std::string& name, 
         pads.update(input.sample(frame));
         player.update(pads.port(0), mesh);
         const coney::human::Human& human = player.human();
-        run.frames.push_back(FrameRecord{.position = human.position(), .airborne = human.airborne()});
+        run.frames.push_back(
+            FrameRecord{.position = human.position(), .heading = human.heading(), .airborne = human.airborne()});
         // The hash takes positions to the millimetre, so it names the run on every compiler.
         for (const float axis : {human.position().x, human.position().y, human.position().z}) {
             const auto millimetres = static_cast<std::int32_t>(std::lround(axis * 1000.0F));
@@ -177,4 +180,33 @@ TEST_CASE("Rembrandt walks up a slope, a stair set and over low ledges to a wall
         CHECK(!last.airborne);
         CHECK(run.respawns == 0);
     }
+}
+
+TEST_CASE("with the stick held to the side Rembrandt circles at the original's rates, the camera turning with him",
+          "[disc][player][sandbox]") {
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const Course course = loadCourse(discPath);
+
+    // The player's turn averaged over updates 100-158, as the original's was measured (docs/research/camera.md#street):
+    // about 191°/s at a run and 143°/s at a walk (35 % to 80 % sticks), the auto-centre rule's turn plus the leash's
+    // drag. Open ground west of the start.
+    const auto rate = [](const Run& run) {
+        float turned = 0.0F;
+        for (std::size_t i = 100; i < 158; ++i) {
+            turned +=
+                std::remainder(run.frames[i + 1].heading - run.frames[i].heading, 2.0F * std::numbers::pi_v<float>);
+        }
+        return std::abs(turned) / (58.0F / 30.0F) * 180.0F / std::numbers::pi_v<float>;
+    };
+    const Run running = runScript(course, "circle run", "sandbox_circle_run.txt", {-16.0F, -1.0F, 0.0F}, 160);
+    const Run walking = runScript(course, "circle walk", "sandbox_circle_walk.txt", {-16.0F, -1.0F, 0.0F}, 160);
+    std::printf("sandbox circling: %.1f deg/s running, %.1f deg/s walking\n", static_cast<double>(rate(running)),
+                static_cast<double>(rate(walking)));
+    CHECK(rate(running) == Approx(191.0F).margin(10.0F));
+    CHECK(rate(walking) == Approx(143.0F).margin(10.0F));
 }

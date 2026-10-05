@@ -458,8 +458,10 @@ stamina, the camera's distance and counts only).
 The stick's direction is turned by the camera's heading, so up always moves away from the camera. The game's own
 dead zone (12 %) applies; the walk speed does not depend on how far the stick is pushed, only whether it is pushed
 past 95 %. Let go at a walk and he stops at once and settles into the idle; let go (or pull the stick back) at a run
-or a sprint and he skids through the run stop. The camera swings round behind him while he moves (the original's
-auto-centre rule), so a stick held to the side runs him in a circle, and it pulls in and lowers while he sprints.
+or a sprint and he skids through the run stop. The camera swings round behind him while he walks, runs or sprints
+(the original's auto-centre rule), except just after a wall hid him from it, so a stick held to the side runs him in a
+circle; it pulls in to 3 m and lowers to 7° over half a second of a sprint and goes back a quarter of a second after
+it, and it swings away from a wall beside it.
 The jump needs a run (faster than 3.3 m/s) and is refused within 5.5 m of a climbable face, where triangle climbs
 or does nothing. In a script: `press l2`, `stick left 0 100`, `tap triangle`. The fights: `tap square` every 6 frames
 for the square chain, `tap circle` to grab and `press circle` with a `release circle` 7 or more frames later to

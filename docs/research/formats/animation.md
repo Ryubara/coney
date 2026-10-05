@@ -487,8 +487,20 @@ unpaired or sampling to a non-finite pose; 957 clips have no section A, none lac
 
 **Coney choices**: "entry `+4`" of the bone offset chunk is read literally, the float at byte 4, which is 0 on the
 disc; the character viewer plays clips in place at rate 1 with no root motion; a looping clip carries its overshoot
-into the next pass; a clip without section B has the pelvis at its skeleton offset (none on the disc). In the task
-system:
+into the next pass; a clip without section B has the pelvis at its skeleton offset (none on the disc).
+
+**The key in force** (inferred from the runtime speeds, [Characters](../characters.md#locomotion)): the sampler takes
+the key at or before the **nearest** whole frame (a tie going to the lower one) and carries it toward the next key by
+`t = (frame − key) / delta`, not clamped, so `t` is negative while the frame is still short of that key. Every clip's
+section A starts with a speed of 0 at frame 0, and a start clip's first update reaches frame 0.75 (its rate): a lerp
+from frame 0 gave 0.75 of the original's first speed, while this reading gives the walk start's, the run start's and
+the run stop's measured speeds on every update but the two that fall exactly half-way between keys (frames 4.5 and
+7.5), where the original took the lower key and Coney's float time comes out a hair above the half. It is how a
+cursor that steps its channels as each frame is passed ([Playing a clip](#playing-a-clip)) would behave if a frame
+counted as passed from half-way; the code of that step (`0x00104110`) has not been read for it. Every channel,
+rotations included, is sampled this way.
+
+In the task system:
 
 - **The stack** is kept as a list of layers, newest first; when a fade completes, everything older than it goes. A
   change finishes the newest fade at once when the stack holds more than 6 tasks, and drops the oldest above 12.

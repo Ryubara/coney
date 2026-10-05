@@ -150,20 +150,33 @@ The fixes below are in Coney ([Characters](characters.md#coneys-implementation),
 | Released or reversed at a run | run stop 417, 24 updates; a reversal turns 18° first | 417 for 24-25 updates; a reversal turns 18°, then the start toward the stick at 20° per update |
 | First update with the stick pushed | the start clip begins, speed 0 | the same |
 | Walk / run start length | 13 updates | 13 |
-| Walk start speed | 0.762 m/s | 0.762 (the first moving update 0.57) |
+| Walk start speed (35 % and 60 %) | 0.762 m/s on all 12 moving updates | the same |
+| Run start speeds | 2.773, 2.486, 2.558, 2.629, 2.844, 3.346, 3.895, 4.540, 5.112, 5.399, 5.614, 5.686 | the same but the 6th and 10th (3.251, 5.543): see below |
+| Run stop speeds | 2.244, 4.996, 5.101, 5.229, 5.382, 4.193, 3.190, … | 2.244, 4.996, 5.101, 5.229, 5.382, 3.894, 3.190, …: the same but the 6th and 10th |
 | Walking body | 0.485 m sphere, steep walls brake | the same |
+| Step under 0.25 m; stop at a taller face | walked onto in one update, speed and clip unchanged; stops 0.396 / 0.400 / 0.424 m from 0.255 / 0.26 / 0.30 m faces | the same |
 | Jump during the run start | from 3.3 m/s | the same |
 | Run jump: air time, last airborne height, landing update | 24 updates, −0.19 m, 7.80 m/s | 24, −0.19 m, 7.80 m/s, then 436 at 4.23 m/s for 10 more |
+| Landing | the first update that starts 0.17 m or more below the floor | the same |
 | Camera band; distance running | 4.8-5.3 m; 5.65 m | the same |
-| Sprint camera; distance and pitch in a sprint | 14 updates in and out; 4.70 m, 5.2° | the same; 4.70 m, 5.2°; out again 8 updates after the run stop begins |
-| Upper pitch limit | 40° | 40° |
-| Auto-follow | the auto-centre rule | the rule; but circling with the stick sideways about 190°/s against 122°/s ([Camera](camera.md#coneys-implementation)) |
+| Sprint camera | the timer rule: band 4.569 … 3.216, 3.0 and pitch to 7° over 14 updates; back 250 ms after the sprint | the same rule and fields; 4.70 m, 5.2° in a sprint |
+| Upper pitch limit | 40°, 30° in a sprint | the same |
+| Auto-follow | the auto-centre rule at gaits 2, 4 and 5, not after a blocked view | the same |
+| Stick held 90° to the side | about 191°/s running, 143°/s walking | about 197°/s and 144°/s (Rembrandt in the sandbox) |
 | Fence climb camera | 4.9-5.3 m throughout | the ray passes through material 30 |
-| Look-at height after a climb's rise | 20 % per update, then 2 updates | the same |
+| Look-at point after a climb's rise | 20 % per update, then 2 updates | the distance limit: 20 % beyond 0.8 m, then `1 − 2 (d − 0.4)`, then all |
+| Disabled panel 0.19 m behind the player | ignored by the camera's ray | the ray's rule is in place, but Coney does not know which triangles the game disables, so the panel is enabled and still pulls the camera in |
 
-Still different: the first moving update of a start clip and the run stop's first updates (the fades,
-[Characters](characters.md#coneys-implementation)), the circling rate, and the low one-sided face that still pulls the
-camera in (the collision step is one ray).
+The start clips' and the run stop's first updates now match because Coney's sampler takes a clip's keys as the
+original's cursor does ([Animation](formats/animation.md#coneys-implementation)): the key in force is the one at the
+nearest whole frame, and the value is carried from it toward the next key by `(frame − key)`, which is negative at
+frame 0.75 (a start clip's first update at its rate of 0.75). With the old lerp from frame 0, whose root speed is 0
+in every clip, the first moving update was 0.75 of the original's. The run stop's 0.1333 s fade never touched its
+speed (the gait blend it fades from has no root velocity). On a frame that is exactly half-way between two keys
+(frames 4.5 and 7.5 of the run start and the run stop) the original took the lower key and Coney takes the upper:
+the floats of its game time land a hair above the half.
+
+Still different: those half-frame updates, the circling rate by about 6°/s at a run, and the disabled panel.
 
 ## Notes for implementers
 
@@ -219,10 +232,11 @@ The fixes in order of how much they change the feel:
 - **The circling rate** (answered): about 191°/s running and 143°/s walking in the original, the rule's turn plus the
   leash's drag ([Camera](camera.md#street)); Coney's 190°/s matches. The 122°/s compared before was the rule's share.
 - **The slow first updates** (answered): the original's start clips and run stop move the body at the clip's root
-  speed from their first moving update, with no ramp ([Characters](characters.md#locomotion)). Coney's first
-  walk-start and run-start updates are 0.75 of the original's (0.57 / 0.762 and 2.04 / 2.77), the start clips'
-  playback rate, which points at Coney's first root-motion sample covering 0.75 of an update (speculative); its run
-  stop's 0.31 and 1.97 against 2.24 and 5.00 m/s are its 0.1333 s fade, which the original's speeds show no trace of.
+  speed from their first moving update, with no ramp ([Characters](characters.md#locomotion)). Coney's were slow
+  because it lerped from a clip's frame 0, whose root speed is 0; the original's cursor already stands on the key of
+  the nearest frame, and every per-update speed of the three clips fits that reading (inferred from the runtime
+  speeds, [Coney's implementation](#coneys-implementation)). Still open: which way the original's half-frame ties
+  go, and why.
 - **The fence climb's first clip** (answered: 440 is 11 updates in the original and 13 in Coney because the original
   starts the clip with the move to the start point and does not fade it in, while Coney holds it for the 2-update
   move and then fades it, [Characters](characters.md#climb)).

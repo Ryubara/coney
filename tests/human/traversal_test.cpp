@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 #include <vector>
 
@@ -73,23 +74,67 @@ std::vector<coney::test::Tri> ground() { return floorAt(0.0F, 0.0F, 80.0F, 0.0F,
 
 } // namespace
 
-TEST_CASE("a 20 cm kerb is walked onto; 30 and 50 cm ledges are walls the body stops at", "[human][traversal]") {
+TEST_CASE("a step under 0.25 m is walked onto in one update with no change of speed or clip", "[human][traversal]") {
+    // The runtime's test step (docs/research/characters.md#walls): walked at 35 % and 50 % up to 0.24 m, run at 100 %
+    // onto 0.245 m; the feet rise by the step's height on one update, the speed and the clip unchanged.
     const TestCharacter character;
-    for (const float height : {0.2F, 0.3F, 0.5F}) {
-        // Low ground to y = 40, then a ledge `height` high with its face at y = 40.
+    struct Case {
+        float height;
+        float stick;
+    };
+    for (const Case c : {Case{0.10F, 0.35F}, Case{0.20F, 0.5F}, Case{0.24F, 0.35F}, Case{0.245F, 1.0F}}) {
+        // Low ground to y = 40, then a step `height` high with its face at y = 40.
         const auto mesh =
-            makeMesh(join(join(floorAt(0.0F, 0.0F, 80.0F, 0.0F, 40.0F), floorAt(height, 0.0F, 80.0F, 40.0F, 80.0F)),
-                          coney::test::wallFacingMinusY(40.0F, 0.0F, 80.0F, 0.0F, height)));
-        Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 37.0F, 0.0F});
-        hold(human, pad(0.0F, 0.5F), 120, mesh.get());
-        CHECK_FALSE(human.airborne());
-        if (height < 0.25F) {
-            CHECK(human.position().z == Approx(height));
-            CHECK(human.position().y > 40.5F);
-        } else {
-            CHECK(human.position().z == Approx(0.0F).margin(1e-4));
-            CHECK(human.position().y == Approx(40.0F - coney::human::playerWalkingRadius(1.0F)).margin(0.02));
+            makeMesh(join(join(floorAt(0.0F, 0.0F, 80.0F, 0.0F, 40.0F), floorAt(c.height, 0.0F, 80.0F, 40.0F, 80.0F)),
+                          coney::test::wallFacingMinusY(40.0F, 0.0F, 80.0F, 0.0F, c.height)));
+        Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 0.97F);
+        human.spawn(mesh.get(), Vec3{40.0F, 38.0F, 0.0F}, 0.0F);
+        // Toward the step (the walk reaches its steady speed first; the run is still in its start clip), then over it.
+        hold(human, pad(0.0F, c.stick), 15, mesh.get());
+        int rises = 0;
+        for (int i = 0; i < 150 && human.position().y < 41.0F; ++i) {
+            const float zBefore = human.position().z;
+            const float speedBefore = human.speed();
+            const std::uint32_t clipBefore = human.animator().animId();
+            human.step(pad(0.0F, c.stick), mesh.get());
+            if (human.position().z > zBefore + 1e-4F) {
+                ++rises;
+                CHECK(human.position().z == Approx(c.height));
+                CHECK(zBefore == Approx(0.0F).margin(1e-4));
+                CHECK(human.position().y > 40.0F);
+                if (c.stick < 0.95F) {
+                    CHECK(human.speed() == Approx(speedBefore).margin(1e-3));
+                    CHECK(human.animator().animId() == clipBefore);
+                }
+            }
         }
+        CHECK(rises == 1);
+        CHECK_FALSE(human.airborne());
+        CHECK(human.position().y > 41.0F);
+    }
+}
+
+TEST_CASE("a face from 0.25 m stops the body where its 0.485 m sphere meets the face's top edge",
+          "[human][traversal]") {
+    // The runtime's stops (docs/research/characters.md#walls): 0.395, 0.399 and 0.423 m from faces 0.255, 0.26 and
+    // 0.30 m tall, sqrt(0.485² − (0.535 − h)²); a 0.5 m ledge and a full wall about 0.485 m.
+    const TestCharacter character;
+    struct Case {
+        float height;
+        float stick;
+        float stop;
+    };
+    for (const Case c : {Case{0.255F, 1.0F, 0.396F}, Case{0.26F, 0.5F, 0.400F}, Case{0.30F, 0.5F, 0.424F},
+                         Case{0.50F, 0.6F, 0.484F}, Case{3.0F, 0.35F, 0.485F}}) {
+        const auto mesh =
+            makeMesh(join(join(floorAt(0.0F, 0.0F, 80.0F, 0.0F, 40.0F), floorAt(c.height, 0.0F, 80.0F, 40.0F, 80.0F)),
+                          coney::test::wallFacingMinusY(40.0F, 0.0F, 80.0F, 0.0F, c.height)));
+        Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 0.97F);
+        human.spawn(mesh.get(), Vec3{40.0F, 37.0F, 0.0F}, 0.0F);
+        hold(human, pad(0.0F, c.stick), 120, mesh.get());
+        CHECK_FALSE(human.airborne());
+        CHECK(human.position().z == Approx(0.0F).margin(1e-4));
+        CHECK(40.0F - human.position().y == Approx(c.stop).margin(0.003));
     }
 }
 

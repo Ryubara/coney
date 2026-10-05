@@ -4,6 +4,7 @@
 #include <cmath>
 #include <memory>
 #include <numbers>
+#include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -240,4 +241,30 @@ TEST_CASE("the stick is camera-relative: up walks away from the camera", "[human
     CHECK(human.position().x < 38.0F);
     CHECK(human.position().y == Approx(40.0F).margin(0.3));
     CHECK(human.heading() == Approx(std::numbers::pi_v<float> / 2.0F).margin(1e-3));
+}
+
+TEST_CASE("a fall lands on the first update that starts 0.17 m or more below the floor, falling through until then",
+          "[human]") {
+    // Ledges of several heights put the floor at different phases of the fall's steps (docs/research/characters.md
+    // #falling): whatever the phase, the last airborne update ends 0.17 m or more under the floor, and the one before
+    // it ends less than that under it (or above it).
+    const TestCharacter character;
+    for (const float height : {1.0F, 1.3F, 1.6F, 2.0F, 2.45F}) {
+        const auto mesh =
+            coney::test::makeMesh(coney::test::join(coney::test::floorAt(height, 0.0F, 80.0F, 0.0F, 20.0F),
+                                                    coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F)));
+        Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 17.0F, height});
+        std::vector<float> airborneEnds;
+        for (int i = 0; i < 150 && (airborneEnds.empty() || human.airborne()); ++i) {
+            human.step(stick(0.0F, 0.35F), mesh.get());
+            if (human.airborne()) {
+                airborneEnds.push_back(human.position().z);
+            }
+        }
+        REQUIRE(airborneEnds.size() >= 2);
+        CHECK_FALSE(human.airborne());
+        CHECK(human.position().z == Approx(0.0F).margin(1e-4));
+        CHECK(-airborneEnds.back() >= Human::kLandingDepth);
+        CHECK(-airborneEnds[airborneEnds.size() - 2] < Human::kLandingDepth);
+    }
 }

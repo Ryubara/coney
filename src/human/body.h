@@ -52,6 +52,11 @@ struct WallFilter {
     bool skipLow = false;
     /// Materials whose triangles are skipped (the fences while climbing over); empty for none.
     std::span<const std::uint8_t> excludeMaterials;
+    /// Push the sphere only until it touches the triangle, the walking sweep's contact: a face lower than the sphere's
+    /// centre then stops the body where the sphere meets its top edge, `sqrt(r² − (c − h)²)` from the face
+    /// (docs/research/characters.md#walls). Otherwise out of the face's plane by `n × (r − distance)`, as the
+    /// airborne push-out does.
+    bool toContact = false;
 };
 
 /// Whether the triangle `a b c` is too low or too thin to be a wall for a walking body: the edge whose direction is
@@ -64,8 +69,9 @@ struct WallFilter {
 /// kWallNormalZ, that the sphere reaches (by the distance to its closest point: face, edge or corner) from its front
 /// (either side for a two-sided one), and that `filter` keeps. Nearness by the closest point is **Coney's choice**:
 /// the page says "nearest" without saying how it measures, and a face-only test lets a body slip between two walls at
-/// a convex edge. Returns the push that moves the sphere out of it, `n × (radius − plane distance)`, or nothing.
-/// `scratch` is reused between calls to save allocations.
+/// a convex edge. Returns the push along the face's normal that moves the sphere out of it: to `radius` from the
+/// face's plane, or with `filter.toContact` to `radius` from the triangle's closest point; nothing when none is
+/// reached. `scratch` is reused between calls to save allocations.
 /// @orig 0x003477c0 PhysicsBody_PushOutOfWalls (unknown)
 [[nodiscard]] std::optional<anim::Vec3> nearestWallPush(const raycast::CollisionMesh& mesh, anim::Vec3 centre,
                                                         float radius, const WallFilter& filter,

@@ -173,7 +173,14 @@ std::optional<anim::Vec3> nearestWallPush(const raycast::CollisionMesh& mesh, an
             continue;
         }
         nearest = reach;
-        push = anim::scale(n, radius - distance);
+        // The walking sweep stops at contact: along the normal until the closest point (on the face, or on an edge
+        // such as a low face's top) is a radius away. The push-out clears the face's plane.
+        float clear = radius;
+        if (filter.toContact) {
+            const float aside = std::max(reach * reach - distance * distance, 0.0F);
+            clear = std::sqrt(std::max(radius * radius - aside, 0.0F));
+        }
+        push = anim::scale(n, clear - distance);
     }
     return push;
 }

@@ -227,7 +227,8 @@ std::optional<anim::Vec3> Human::sweep(const raycast::CollisionMesh& mesh, anim:
     }
     // The player's walking sphere (0.485 m for Rembrandt), 0.05 m clear of the feet, against the walls the move goes
     // into and that are 0.25 m tall or more; each push slides it along that wall.
-    const WallFilter filter{.move = displacement, .skipLow = true, .excludeMaterials = passThrough()};
+    const WallFilter filter{
+        .move = displacement, .skipLow = true, .excludeMaterials = passThrough(), .toContact = true};
     return slideOut(mesh, anim::add(from, displacement), playerWalkingRadius(m_scale),
                     playerWalkingCentreHeight(m_scale), filter, m_nearby);
 }
@@ -235,7 +236,8 @@ std::optional<anim::Vec3> Human::sweep(const raycast::CollisionMesh& mesh, anim:
 std::optional<anim::Vec3> Human::pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
     // A player's push-out sphere is 0.5 × scale, centred its radius plus 0.05 above the feet, out of every wall.
     const float radius = bodyTuning().airRadius * m_scale;
-    const WallFilter filter{.move = anim::Vec3{}, .skipLow = false, .excludeMaterials = passThrough()};
+    const WallFilter filter{
+        .move = anim::Vec3{}, .skipLow = false, .excludeMaterials = passThrough(), .toContact = false};
     return slideOut(mesh, feet, radius, radius + bodyTuning().footGap, filter, m_nearby);
 }
 
@@ -322,11 +324,11 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
         feet = anim::Vec3{m_position.x, m_position.y, m_position.z + displacement.z};
         ++m_blockedUpdates;
     }
-    // A floor the last update's move passed: land on it now, the whole horizontal move made (at runtime the landing
-    // update still moved at the run's 7.80 m/s, docs/research/feel.md). Nothing under the feet any more (they went
-    // over an edge): no landing, the fall goes on.
-    if (m_landingPending) {
-        m_landingPending = false;
+    // A floor an earlier move passed, now kLandingDepth or more above the feet: land on it, the whole horizontal move
+    // made (at runtime the landing update still moved at the run's 7.80 m/s, docs/research/characters.md#falling).
+    // Shallower, the body falls a whole step more through it. Nothing under the feet any more (they went over an
+    // edge): no landing, the fall goes on.
+    if (m_landingPending && m_landingFloorZ - m_position.z >= kLandingDepth) {
         const raycast::Ray ray{.origin = toMesh(anim::Vec3{feet.x, feet.y, m_landingFloorZ + kSnapAbove}),
                                .direction = raycast::kDown,
                                .length = kSnapLength};
@@ -337,9 +339,9 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
             return;
         }
     }
-    // The landing test: the segment from the body's upper point to the moved feet; a floor on it is a landing, on the
-    // next update (**Coney's reading** of the runtime's last airborne update ending 0.19 m below the ground: the feet
-    // go on below it this update).
+    // The landing test: the segment from the body's upper point to the moved feet; a floor on it is remembered, and
+    // landed on by the first update that starts kLandingDepth or more below it.
+    m_landingPending = false;
     const anim::Vec3 top = anim::add(m_position, anim::Vec3{0.0F, 0.0F, kLandingTestHeight});
     const anim::Vec3 segment = anim::subtract(feet, top);
     const float length = anim::length(segment);

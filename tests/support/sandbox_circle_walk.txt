@@ -1,0 +1,5 @@
+# Rembrandt in the sandbox (tests/sandbox/disc_sandbox_player_test.cpp) walking in a circle: the stick straight up at
+# 35 % for a second, then held 90 degrees to the right at 35 %, as the original's circling was measured
+# (docs/research/camera.md#street). Frames are 1/30 s.
+0 stick left 0 35
+30 stick left 35 0

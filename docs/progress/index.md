@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 4.7%](https://img.shields.io/badge/reimplemented-4.7%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 4.9%](https://img.shields.io/badge/reimplemented-4.9%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█░░░░░░░░░░░░░░░░░░░` | 4.7% of the game's own code (158,164 of 3,342,936 bytes, 356 functions) |
+| **Reimplemented** | `█░░░░░░░░░░░░░░░░░░░` | 4.9% of the game's own code (162,676 of 3,342,936 bytes, 363 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -53,7 +53,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 13 | 37,160 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 31,208 |
-| `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 5 | 118,632 |
+| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 3.8% | 12 | 118,632 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 7 | 32,152 |
@@ -121,7 +121,14 @@ at the top of the repository's `README.md`.
 | `0x0010a558` | `GaitBlend_SetValue` | `Animation` | not filled in |
 | `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
 | `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
+| `0x001254f0` | `Cam_Follow_StepZoom` | `Camera` | 152 |
+| `0x00126a30` | `Cam_Follow_EnableSprintZoom` | `Camera` | 56 |
+| `0x00127d88` | `Cam_Follow_LookAt` | `Camera` | 1,296 |
+| `0x00128cf0` | `Cam_Follow_SprintZoom` | `Camera` | 864 |
+| `0x00129c78` | `Cam_Follow_AutoFollow` | `Camera` | 784 |
 | `0x00129f88` | `Cam_Follow_AutoCentre` | `Camera` | not filled in |
+| `0x0012a400` | `Cam_Follow_AutoFollowDefault` | `Camera` | 984 |
+| `0x0012aae0` | `Cam_Follow_EaseBand` | `Camera` | 376 |
 | `0x0012ae58` | `Cam_Follow_Update` | `Camera` | not filled in |
 | `0x0012d4e8` | `Cam_Follow_Pitch` | `Camera` | not filled in |
 | `0x0012d688` | `Cam_Follow_Yaw` | `Camera` | not filled in |

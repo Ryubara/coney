@@ -100,6 +100,7 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE
     animation/anim_task.cpp
     camera/follow_camera.cpp
+    camera/follow_collision.cpp
     characters/anim_set.cpp
     human/body.cpp
     human/climb.cpp

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "human/player.h"
 
+#include <cmath>
+#include <cstdint>
 #include <format>
 #include <string>
 #include <utility>
@@ -14,18 +16,23 @@ namespace coney::human {
 
 namespace {
 
-// What the follow camera needs of the human after its update: where it is and faces, and whether the auto-centre rule
-// and the sprint zoom follow it. The rule turned the camera while walking, running, sprinting and in the air, and not
-// while standing or while a start or landing clip played (docs/research/camera.md#street); **Coney's choice** extends
-// that to every clip that moves the body (the run stop, a climb, an attack).
-camera::FollowTarget followTargetOf(const Human& human) {
-    const Gait gait = human.gait();
-    const bool moving = human.airborne() || gait != Gait::Standing;
+// Whether the left stick points more than 157.5° from up (pulled back toward the camera), which keeps the auto-follow
+// rules off (`+0x474`, docs/research/camera.md#heading).
+bool stickPulledBack(float x, float y) {
+    constexpr float kCosBehind = -0.92388F; // cos 157.5°
+    const float length = std::hypot(x, y);
+    return length > 0.0F && y / length < kCosBehind;
+}
+
+// What the follow camera needs of the human after its update: where it is and faces, its stored gait (which the
+// auto-follow rules and the sprint zoom read, docs/research/camera.md#heading), whether it is in the air, and the
+// stick.
+camera::FollowTarget followTargetOf(const Human& human, const Pad& pad) {
     return camera::FollowTarget{.feet = human.position(),
                                 .heading = human.heading(),
-                                .turnsCamera = moving && !human.animator().drivingClipPlaying(),
-                                .running = gait == Gait::Run || gait == Gait::Sprint,
-                                .sprinting = gait == Gait::Sprint};
+                                .gait = static_cast<std::uint8_t>(human.gait()),
+                                .airborne = human.airborne(),
+                                .stickBack = stickPulledBack(pad.leftX(), pad.leftY())};
 }
 
 } // namespace
@@ -146,7 +153,7 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
         ++m_respawns;
     }
     const auto& raw = pad.rawSticks(); // right x, right y, left x, left y
-    m_camera.update(followTargetOf(m_human), raw[0], raw[1], mesh, kStepSeconds);
+    m_camera.update(followTargetOf(m_human, pad), raw[0], raw[1], mesh, kStepSeconds);
     // What drawing will read: this step's state, and the last one's to interpolate from.
     m_previous = m_current;
     m_current = capture();

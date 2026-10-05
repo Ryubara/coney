@@ -79,6 +79,10 @@ class Human {
     /// The landing test's segment starts this far above the feet. **Coney's choice** for the body's upper point
     /// (`+0x4e8` − 0.16 × scale, `+0x4e8` not researched).
     static constexpr float kLandingTestHeight = 1.0F;
+    /// A fall or a jump lands on the first update that starts with the feet this far or more below a floor its moves
+    /// have passed; until then the body falls on through it (between 0.161 and 0.176 m at runtime,
+    /// docs/research/characters.md#falling).
+    static constexpr float kLandingDepth = 0.17F;
 
     /// A human playing `anims` (which must outlive it) through `slots`, bones its clips leave out taking
     /// `bindRotations` (the game's reference pose, anim::referenceRotations()), of body scale `scale` (`+0x65c`), its
@@ -248,7 +252,7 @@ class Human {
     TurnState m_turn;
     bool m_airborne = false;
     bool m_outOfWorld = false;
-    bool m_landingPending = false; // the last airborne move passed a floor: land on the next update
+    bool m_landingPending = false; // an airborne move passed a floor: land once the feet start kLandingDepth below it
     float m_landingFloorZ = 0.0F;  // that floor's height where it was passed
     float m_landingSpeed = 0.0F;   // the vertical speed it was passed at
     std::uint32_t m_airborneUpdates = 0;

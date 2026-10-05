@@ -2,6 +2,7 @@
 #include "animation/anim_pose.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "animation/skeleton.h"
 #include "core/assert.h"
@@ -10,18 +11,28 @@ namespace coney::anim {
 
 namespace {
 
-// The index of the key in force at `frame`: the last whose frame is not after it, or 0 before the first.
+// The cursor's whole frame for the fractional `frame`: the nearest, a tie going to the lower one. The cursor steps its
+// channels' keys as each frame is passed (docs/research/formats/animation.md#playing-a-clip); **Coney's reading** of
+// the runtime speeds of the start clips and the run stop (docs/research/characters.md#locomotion) is that a frame
+// counts as passed from half-way to it: at frame 0.75 the key of frame 1 is already the current one.
+float cursorFrame(float frame) { return std::ceil(frame - 0.5F); }
+
+// The index of the key in force at `frame`: the last whose frame is not after the cursor's whole frame, or 0 before
+// the first.
 template <class Key> std::size_t keyAt(std::span<const Key> channel, float frame) {
-    const auto after = std::ranges::upper_bound(channel, frame, std::less<>{},
+    const float whole = cursorFrame(frame);
+    const auto after = std::ranges::upper_bound(channel, whole, std::less<>{},
                                                 [](const Key& key) { return static_cast<float>(key.frame); });
     return after == channel.begin() ? 0 : static_cast<std::size_t>(after - channel.begin()) - 1;
 }
 
-// How far `frame` is from key `i` towards key `i + 1`, in 0 to 1; the caller has checked there is a next key.
+// How far `frame` is from key `i` towards key `i + 1`: `(frame - key) / delta`, not clamped, so it is negative while
+// the frame is still short of a key the cursor has already stepped to (the original's sampler,
+// docs/research/formats/animation.md#playing-a-clip); the caller has checked there is a next key.
 template <class Key> float fraction(std::span<const Key> channel, std::size_t i, float frame) {
     const auto start = static_cast<float>(channel[i].frame);
     const auto span = static_cast<float>(channel[i + 1].frame - channel[i].frame);
-    return span > 0.0F ? std::clamp((frame - start) / span, 0.0F, 1.0F) : 0.0F;
+    return span > 0.0F ? (frame - start) / span : 0.0F;
 }
 
 // The reference pose's rotations, (x, y, z, w) per pose bone, as the research page gives them (rounded to four
@@ -78,8 +89,9 @@ bool inSubtree(std::size_t bone, std::size_t root) {
 Vec3 sampleChannel(std::span<const PositionKey> channel, float frame) {
     CONEY_ASSERT(!channel.empty());
     const std::size_t i = keyAt(channel, frame);
-    if (i + 1 >= channel.size()) {
-        return channel[i].value; // the channel's last key holds
+    // The channel's last key holds after it, and its first before it.
+    if (i + 1 >= channel.size() || frame <= static_cast<float>(channel.front().frame)) {
+        return channel[i].value;
     }
     return lerp(channel[i].value, channel[i + 1].value, fraction(channel, i, frame));
 }
@@ -87,7 +99,7 @@ Vec3 sampleChannel(std::span<const PositionKey> channel, float frame) {
 Quat sampleChannel(std::span<const RotationKey> channel, float frame) {
     CONEY_ASSERT(!channel.empty());
     const std::size_t i = keyAt(channel, frame);
-    if (i + 1 >= channel.size()) {
+    if (i + 1 >= channel.size() || frame <= static_cast<float>(channel.front().frame)) {
         return channel[i].value;
     }
     return nlerp(channel[i].value, channel[i + 1].value, fraction(channel, i, frame));
