@@ -46,6 +46,9 @@ string gives them.
 | `0x00146078` | `PlayerRecord_Update` | pad → stick angle and magnitude | confirmed (code) |
 | `0x00240e38` | `Human_PlayerLocomotion` | stick → velocity and heading | confirmed (code) |
 | `0x00248df0` | `Human_Lean` | a lean from the turn rate | confirmed (code) |
+| `0x00259578` | `Human_ChooseAnimState` | picks the anim state, calls its builder from `0x005106e0` | confirmed (code) |
+| `0x0025b200`, `0x0025b9f8`, `0x0025f770` | move, run-start and idle task builders | see [Clip selection](#clip-selection) | confirmed (code) |
+| `0x0025ec28` | `Gait_BlendForSpeed` | speed → gait blend target 0-3 | confirmed (code) |
 | `0x0023fea8` | `Human_StateUpdate` (vtable `+0x13c`) | per update: state function, gravity, out-of-world, move | confirmed (code) |
 | `0x0023d8c8` | `Human_Move` | slope factor, physics sweep, ground snap | confirmed (code) |
 | `0x0023eab8` | `Human_SnapToGround` | 1.5 m ray down from 1 m above the feet | confirmed (code) |
@@ -368,10 +371,9 @@ Confirmed (code) for the steps; the state predicates are named by what they test
    difference per update, at most 1°, 1.2°, 1.3° or 1.8° per update. What `+0x1ac` holds is not traced.
 
 **Idle, walk, run.** `Human_GaitForSpeed` (`0x00221760`) maps a speed to a gait: 5 (sprint) at or above the sprint
-speed, else 4 (run) at or above the run speed, 3 (jog), 2 (walk), else 0 (idle). Confirmed (code). The code that
-picks the clip for a gait was not found (the slot table has no getter; its readers index it inline). What it does at
-runtime is below. The
-blend itself is the animation player's ([Animation](formats/animation.md#blending)).
+speed, else 4 (run) at or above the run speed, 3 (jog), 2 (walk), else 0 (idle). Confirmed (code). The gait does
+not pick a clip: one gait blend covers walk to sprint ([Clip selection](#clip-selection)), and what happens at runtime
+is below.
 
 **Gaits at runtime** (PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt standing; the left stick held straight up at
 the magnitude given, by the stick-table method in [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2);
@@ -384,14 +386,89 @@ speed is `+0x1ac` sampled every 5 ms, the clip is record `+0x20`). Confirmed (ru
 | 0.96, 1.0 | **run start** (414) for about 0.36 s, the speed following the clip (2.77, 2.49, 2.56, 2.63, 2.84, 3.35, 3.90, 4.54, 5.11, 5.40, 5.61, 5.69 m/s, one value per update), then **run** (410), gaining 0.8 m/s per update up to 7.80 |
 | released | speed 0 at once and **idle** (388); run to neutral (417) is not played on release |
 
-So the start clips drive the speed while they play (inferred: their root motion), and the gait clip's speed is the
-target afterwards. A jog was not reached from the stick alone (it needs a carried object, see the locomotion steps
+So the start clips drive the speed while they play (their root motion, [Animation](formats/animation.md#root-motion)),
+and the gait clip's speed is the target afterwards. The walk start's "about 0.45 s" is its 0.333 s played at rate 0.75
+(0.444 s). The run start's shorter 0.36 s is not explained; it may begin part-way through, as the walk-start-to-run-start
+swap does (speculative). A jog was not reached from the stick alone (it needs a carried object, see the locomotion steps
 above).
 
 **Measured** (PCSX2 2.9.94, the stick held fully forward from a standstill by the W key, magnitude 1.0, positions
 read over PINE): 4.10 m after a
 0.75 s hold, 10.08 m after 1.5 s: 5.98 m in the second 0.75 s, **8.0 m/s**, close to Rembrandt's run speed of
 7.80 m/s (confirmed (runtime); the hold times are those of the key presses, so about ±1 frame).
+
+### Clip selection {#clip-selection}
+
+Each update the human's animation controller `Human_ChooseAnimState` (`0x00259578`, called from the characters'
+update at `0x00255510` and `0x00256c34`) picks an **anim state** and, when it differs from the one in record `+0x18`
+(or human flag `0x20000000` forces it), calls that state's builder from the table at `0x005106e0` (one function per
+state; most entries are an empty stub `0x0025f4c8`). The builders make [animation tasks](formats/animation.md#animation-tasks)
+and change animation by "fade over *d*, new task at the bottom" ([Task stack](formats/animation.md#task-stack)).
+Confirmed (code) at the cited addresses unless marked.
+
+**Choosing the state** (the plain locomotion case; grabs, combat, carried objects and scripted moves test their own
+flags first and are not described here):
+
+| State | When | Builder |
+| --- | --- | --- |
+| 0, idle | speed below a quarter of the speed `0x00221580` returns | `0x0025f770` |
+| 4, move | speed at or above that, or record `+0x14` is 5, 6 or 8 | `0x0025f4d0` |
+| 11 | a combat stance (`0x00228340`) at speed 0.01 or less | `0x0025fa48` |
+| 14 | a combat stance while moving | `0x0025f4d0` |
+| 21, 24 | human flag `0x8000`: 24 when the pending turn `+0x5e4` exceeds `Human_MaxTurn`, else 21 (turns in place, inferred) | `0x0025fc30`, `0x0025fc70` |
+
+**Move (state 4).** `0x0025f4d0` calls `Human_BuildMoveTasks` (`0x0025b200`) with a fade time of 1/15 s (1/6 s when
+record `+0x14` is 18 or human flag `0x40000000` is set), which builds one of:
+
+- **From standing** (the top task is not a gait blend, task flag `0x80` clear): a [gait blend](formats/animation.md#gait-blend)
+  of slots 4, 5, 6, 7, 7 (walk, jog, run, sprint, sprint) at value 0, flags `0x2c1`; then a clip-then-next task
+  (type 3) that plays **slot 10, the walk start** (413), with a blend time of 0, and hands over to the gait blend.
+  The fade before it has a duration of **0**: the start clip replaces the idle at once. Human flag `0x10000000` is set
+  while the start clip plays (it is what stops the locomotion setting a velocity, [Root motion](formats/animation.md#root-motion)).
+- **Run start** (`0x0025b9f8`, when the stick asks for a run and record `+0x14` is 6, 7 or 8, or a carried object of
+  class 4 or 6 and state flag `0x1000000`): the same, but the gait blend starts at 2 (run) and the start clip is
+  **slot 10's id + 1** (414, run start).
+- **Already moving** (the top task is a gait blend): a fade of 0.1333 s and a new gait blend that starts at the old
+  one's value (`0x0025ff50` rounds it down to 0, 1, 2 or 3) and the old one's normalised time, so the cycle carries on.
+- Other cases: a looping single clip of slot 14 (combat walk) when the global `0x0051031c` is set; a four-clip task of
+  slot 0 and slot 4 under `0x00227d98`; a two-clip mix of ids 633 and 636 when carrying (`0x00228188`).
+
+**Walk start to run start.** While the walk start plays (flag `0x10000000`), if the stick asks for a run or sprint
+(`0x00225c10`, `0x00225dc0`) above the magnitude at `0x005102e8`, and less than half of the clip has played, the
+controller swaps it for the run start: a fade of min(0.1333 s, the clip's duration), a gait blend at 2, and the run
+start begun at the walk start's normalised time (`0x00259578`).
+
+**Gait value from the speed.** In states 4 and 14, every update, `0x0025eee0` sets the top gait blend's target to
+`Gait_BlendForSpeed` (`0x0025ec28`), a piecewise-linear map through the [speed getters](#speed-classes):
+
+```text
+speed > run          → 2 + (speed − run) / (sprint − run)
+jog < speed ≤ run    → 1 + (speed − jog) / (run − jog)
+walk < speed ≤ jog   → (speed − walk) / (jog − walk)
+otherwise            → 0                                  (clamped to 0-3)
+```
+
+So the walk clip plays alone up to the walk speed, the blend reaches the run clip at the run speed and the sprint at
+the sprint speed; the fifth slot (sprint again) is never more than a neighbour. The blend's value then eases toward
+the target at 10 units per second. When the top task is the eight-direction blend (type 13), the target is instead
+record `+0xdc` × 4/π (a direction, inferred); for the four-clip task, speed / walk speed clamped to 0-1.
+
+**Idle (state 0).** `Human_BuildIdleTasks` (`0x0025f770`) calls `0x0025f1b8` with **slot 0** (388) as a looping
+clip with no task flags, after a fade of **0.15 s**; if a start clip is still playing (flag `0x10000000`) the fade is
+1/15 s when less than 0.1333 s of it has played and 0.2 s otherwise. Some ids replace slot 0 in special cases (355,
+357, 394, 634). **Slot 34 (run to neutral, 417) is not used** by this path: releasing the stick fades straight to the
+idle, which matches the runtime samples below.
+
+**At runtime** (PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt; the task stack read from the instance every 50 ms).
+Confirmed (runtime):
+
+- Standing: one looping task, idle 388, rate 0.75, no flags.
+- Stick 0.5 straight up: a fade of 0 s and a type-3 task playing the walk start (413, 0.333 s) at rate 0.75 with human
+  flag `0x10000000`; at its end a gait blend (flags `0x2c1`, rate 1.0, speed 10) with target and value 0, the walk
+  clip leading and the jog clip muted.
+- Stick 1.0: the run start (414) the same way, then the gait blend at 2. The first update after the start clip ran
+  at 6.49 m/s, so the target was 1.553 and the value fell to 1.825 (jog and run mixed) before going back to 2.0 at
+  7.80 m/s: the target follows the speed every update.
 
 ### Moving, standing on the ground and falling {#ground}
 
@@ -532,10 +609,9 @@ reference images' pose, camera and lights, are Coney's own.
 
 ## Open questions
 
-- **Clip selection**: the code that turns a gait into a clip (start clip, then gait clip, idle on release) and weights
-  the locomotion blend was not found; the anim-task system (`0x00175610`, the AnimationBlend tasks) is the next
-  place to look. Whether the playback rate is scaled with the speed is not known either (the walk start ran at a
-  constant 0.76 m/s, so the start clips seem to play at their own rate).
+- **Clip selection** (answered): [Clip selection](#clip-selection), with the task system on
+  [Animation](formats/animation.md#animation-tasks); the playback rate is never scaled with the speed. Still open:
+  the anim states other than idle and move (11, 21, 24 and the combat ones) and the special idle ids.
 - **Jog**: when a pad-controlled human jogs other than when carrying (a movement style, a script).
 - **Slots 28-33** and the movement styles of `0x00253688`.
 - **The `+0x65c` scale's source**: what the division in `Human_Init` takes.

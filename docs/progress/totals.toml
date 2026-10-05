@@ -33,7 +33,7 @@ bytes = 423752
 key = "directory"
 label = "Directory inferred"
 kind = "researched"
-bytes = 1076384
+bytes = 1076912
 
 [[coverage]]
 key = "link-once"
@@ -51,7 +51,7 @@ bytes = 1518168
 key = "lua-tolua"
 label = "Middleware: Lua 4.0.1 and tolua"
 kind = "middleware"
-bytes = 94808
+bytes = 94280
 
 [[coverage]]
 key = "middleware"
@@ -143,7 +143,7 @@ ranges = []
 
 [[subsystem]]
 name = "World"
-ranges = [[0x0040c7f0, 0x004124f8]]
+ranges = [[0x0040c5e0, 0x004124f8]]
 
 [[subsystem]]
 name = "WorldObjects"
@@ -165,9 +165,9 @@ ranges = [[0x004da118, 0x004f6578]]
 # the ranges are approximate (the map's `~` ends) and only stop a middleware address being listed as reimplemented.
 [[middleware]]
 name = "Lua 4.0.1 and tolua"
-bytes = 94808
+bytes = 94280
 replaced_by = "a Lua 4.0 interpreter (roadmap: Scripts)"
-ranges = [[0x00321ab8, 0x00335670], [0x004077b8, 0x0040c7f0]]
+ranges = [[0x00321ab8, 0x00335670], [0x004077b8, 0x0040c5e0]]
 
 [[middleware]]
 name = "RenderWare Graphics"

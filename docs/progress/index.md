@@ -23,8 +23,8 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,408 bytes, 193 functions) |
-| **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,432 bytes) |
+| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,936 bytes, 193 functions) |
+| **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▋░░░░░░░░░░░░░` | 4 of 12 done |
 
 56 reimplemented function(s) have no size yet and add no bytes.
@@ -69,7 +69,7 @@ at the top of the repository's `README.md`.
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 23,816 |
+| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 18,648 |
 | `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.0% | 8 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
@@ -82,17 +82,17 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- |
 | File confirmed (code): anchors | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 208,296 |
 | File inferred | `██░░░░░░░░░░░░░░░░░░` | 10.2% | 423,752 |
-| Directory inferred | `█████▏░░░░░░░░░░░░░░` | 25.9% | 1,076,384 |
+| Directory inferred | `█████▏░░░░░░░░░░░░░░` | 25.9% | 1,076,912 |
 | Game link-once code (templates, inlines) | `▌░░░░░░░░░░░░░░░░░░░` | 2.8% | 115,808 |
 | Unknown | `███████▎░░░░░░░░░░░░` | 36.5% | 1,518,168 |
-| Middleware: Lua 4.0.1 and tolua | `▌░░░░░░░░░░░░░░░░░░░` | 2.3% | 94,808 |
+| Middleware: Lua 4.0.1 and tolua | `▌░░░░░░░░░░░░░░░░░░░` | 2.3% | 94,280 |
 | Middleware: C/C++ runtimes, SCE, RenderWare, Bink, crt0 | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 717,520 |
 
 ## Middleware: replaced, not reimplemented
 
 | Library | Share of `.text` | Bytes | Replaced by |
 | --- | --- | --- | --- |
-| Lua 4.0.1 and tolua | 2.3% | 94,808 | a Lua 4.0 interpreter (roadmap: Scripts) |
+| Lua 4.0.1 and tolua | 2.3% | 94,280 | a Lua 4.0 interpreter (roadmap: Scripts) |
 | RenderWare Graphics | 9.1% | 376,960 | librw |
 | SCE libraries, C/C++ runtimes, Bink, crt0 | 8.2% | 340,560 | SDL3 and the C++ standard library; Bink movies not decided yet |
 

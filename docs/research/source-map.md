@@ -70,7 +70,7 @@ named and the chunk type table is labelled `ChunkTypeNameTable`.
 | `0x00100200`-`0x00104630` | game code before `Animation/` with no path string; its rodata holds the `bip_sw_*` bone names | inferred |
 | `0x00104630`-`0x0042af70` | game code, one TU after another, in the order of the tables below | inferred |
 | `~0x00321ab8`-`~0x00335670` | Lua 4.0.1, built as C++ (`lua-4.0.1/src/lmem.cpp`), between `Human/` and `Memory/` | inferred |
-| `~0x004077b8`-`~0x0040c7f0` | tolua, between `TaskEngine/` and `World/` | inferred |
+| `~0x004077b8`-`0x0040c5e0` | tolua, between `TaskEngine/` and `World/` | inferred |
 | `0x0042b040`-`~0x004da118` | libraries: C++ runtime, C library, SCE SDK, RenderWare, Bink (see [Middleware](#middleware)) | inferred |
 | `~0x004da118`-`0x004f6578` | game code from link-once sections: template and inline functions, with `MemoryStl.h`/`FreeList.h` asserts and class tags such as `DS_PS2Device` and `MemoryPoolClump` | inferred |
 
@@ -98,7 +98,7 @@ The top-level directories in `.text` order (from the path strings' order, inferr
 | `Scripting` | `0x00356390`-`0x003865d8` | 1,064 | mostly the Lua bindings around `ScriptLua.inl` |
 | `StringTable` | `0x00386b30`-`0x00386f58` | 2 | |
 | `TaskEngine` | `0x00397a48`-`0x003a8698` | 279 | the 389 KB after it, up to tolua, is unattributed |
-| `World` | `0x0040c7f0`-`0x004124f8` | 56 | |
+| `World` | `0x0040c5e0`-`0x004124f8` | 61 | the first 5 (the WAD object and `WorldLevel_Load`) are placed by their callers, below |
 | `WorldObjects` | `0x00413218`-`0x00417af0` | 107 | |
 | `Warriors` | `0x00417b10`-`0x00424ee8` | 389 | |
 | `Movie` | `0x00429b18`-`0x0042af70` | 10 | |
@@ -367,6 +367,7 @@ compiled out, or reaches the string some other way); its code lies somewhere bet
 
 | File | Attributed range | Functions | Static-init stub | Anchors (allocation tags they pass) |
 | --- | --- | --- | --- | --- |
+| (no path string) | `0x0040c5e0`-`0x0040c7f0` | 5 | | none: the WAD object (`0x0040c5e0`, called from `Game_InitializeSubsystems`, and its methods) and `WorldLevel_Load` (`0x0040c688`, called only by `WorldManager::LoadLevel`); none calls the Lua API, unlike the tolua code before them, so `World/` (inferred); possibly the start of `WorldLevel.cpp` (speculative) |
 | `WorldLevel.cpp` | `0x0040c7f0`-`0x0040c868` | 1 | | `0x0040c7f0` |
 | `WorldManagerLua.cpp` | `0x0040ca18`-`0x0040cc40` | 1 | | `0x0040ca18` (`WaterEffect`, `water_tex`) |
 | `ps2/WorldLevelPS2.cpp` | `0x0040cf40`-`0x0040d088` | 2 | | `0x0040cf80` |
@@ -413,7 +414,7 @@ functions.
 | Range | Library | How it was placed |
 | --- | --- | --- |
 | `~0x00321ab8`-`~0x00335670` | **Lua 4.0.1** core and libraries, compiled as C++ | path `lua-4.0.1/src/lmem.cpp` (anchor `0x0032c758`); Lua's own messages (`_ERRORMESSAGE` at `0x00325800`, `syntax error` at `0x0032e6d0`, `` `for' limit must be a number`` at `0x00334478`) are loaded by 137 functions from `0x00322ba8` to `0x00334478` |
-| `~0x004077b8`-`~0x0040c7f0` | **tolua** (`c:/Warriors/System/tolua/src/lib/`) | anchor `0x0040a5b0` (`tolua_tm.cpp`); the `tolua_tbl_*`/`tolua_tag_*` registry names are loaded by 27 functions from `0x00408e98` to `0x0040c3a8` |
+| `~0x004077b8`-`0x0040c5e0` | **tolua** (`c:/Warriors/System/tolua/src/lib/`) | anchor `0x0040a5b0` (`tolua_tm.cpp`); the `tolua_tbl_*`/`tolua_tag_*` registry names are loaded by 27 functions from `0x00408e98` to `0x0040c3a8`; the last function that calls the Lua API is `0x0040c538` |
 | `0x0042b040`-`~0x00432000` | GCC 2.x C++ runtime (exceptions, `type_info` and its `__si_type_info`/`__class_type_info` family) | its type-name strings, the only RTTI names in the executable |
 | `~0x00432000`-`~0x0043a000` | C library (locale tables `C-SJIS`/`C-EUCJP`, `printf` family) | strings |
 | `~0x0043a000`-`~0x00446000` | SCE: `libcdvd` (`SceCdNcmdSema`, `0x0043bca0`), `libkernel` (named syscall stubs `0x0043cca0`-`0x0043d510`), SIF RPC, stdio, `libmc` (`sceMc_sema_regs`, `0x00444ea0`) | strings and Ghidra's syscall names |
@@ -435,13 +436,13 @@ Bytes of `.text` (4,154,744) and functions (13,789), each counted once, in the f
 | --- | --- | --- | --- |
 | Anchors: file confirmed (code) | 302 | 208,296 | 5.0% |
 | File inferred (steps 4 to 6) | 1,752 | 423,752 | 10.2% |
-| Directory inferred (step 7) | 4,390 | 1,076,384 | 25.9% |
-| Lua 4.0.1 and tolua | 543 | 94,808 | 2.3% |
+| Directory inferred (step 7) | 4,395 | 1,076,912 | 25.9% |
+| Lua 4.0.1 and tolua | 538 | 94,280 | 2.3% |
 | Other middleware and crt0 (C/C++ runtime, SCE, RenderWare, Bink) | 2,016 | 717,520 | 17.3% |
 | Game link-once code (templates, inlines) | 603 | 115,808 | 2.8% |
 | Unknown | 4,183 | 1,518,168 | 36.5% |
 
-So 15.2% of `.text` is tied to a named file, 41.1% to at least a directory, and 19.6% is middleware or runtime. Of
+So 15.2% of `.text` is tied to a named file, 41.1% to at least a directory, and 19.5% is middleware or runtime. Of
 the file-level share, 5.1% comes from extending files to their static-init stubs (step 6); without it the attributed
 ranges in the tables cover 418,984 bytes (10.1%). RenderWare alone is 376,960 bytes (9.1%).
 

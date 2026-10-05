@@ -312,7 +312,7 @@ calls `Main()`:
   `SetupBasicAttacks`, ...), `HUDSetObjective`, `HUDTurnOffRadar` and the training enemies (`AddCombatEnemy`).
 
 The player therefore exists and the follow camera is active before the first frame of mode 1; the intro scene takes
-the camera over and gives it back.
+the camera over and gives it back ([Camera](camera.md#scenes)).
 
 These calls reach [`HuCreate`](../references/bindings/character.md#hucreate),
 [`GangCreate`](../references/bindings/gang.md#gangcreate),
@@ -402,8 +402,8 @@ of the original).
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,
   `global.lua` and `level100.lua` run without errors in Coney's fresh state.)
-- `IntroScene` and the scene system (`SuperRunScene`): how a scripted scene takes the camera and the player's control
-  and gives them back.
+- The scene system (`SuperRunScene`): how a scripted scene takes the player's control and gives it back. The camera
+  side is on [Camera](camera.md#scenes).
 - `RegisterUpdate`, and what `preLoadFile`'s completion routine (`0x00356d00`) does with the callback name.
 - **`CfgLevelName`'s arguments:** which of the twelve numbers after the level number fills which field (`+0x08`
   sections, `+0x0c`, the three flags at `+0x0d`, `+0x10`, `+0x6c`-`+0x80`), and why the scripts pass 18 arguments where

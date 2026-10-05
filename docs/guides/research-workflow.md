@@ -201,7 +201,8 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
 - **Set-up.** Enable PINE in `inis/PCSX2.ini` (`[EmuCore]` `EnablePINE = true`, `PINESlot = 28011`) before launching.
   Start `pcsx2-qt.exe -fastboot -- <iso>` in the background. In our run PCSX2 2.9.94 failed to open the ISO whose path
   holds commas and parentheses ("Requested filename ... does not exist"); an NTFS hard link with a plain name in your
-  scratch folder (`New-Item -ItemType HardLink`) boots fine and copies nothing.
+  scratch folder (`New-Item -ItemType HardLink`) boots fine and copies nothing. Pass the path with backslashes (start
+  it from PowerShell): the same link given as `C:/Users/...` from Git Bash was refused with the same error.
 - **What PINE gives.** Memory reads and writes, game info and save/load state slots. No breakpoints, registers,
   pause or frame capture. PCSX2 serves one PINE client at a time, so a second client (a script of your own) blocks
   while the MCP server is connected.

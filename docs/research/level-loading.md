@@ -203,12 +203,42 @@ is at least -50.0 (`0x0050ccc4`; which coordinate that is was not traced). The w
 
 ### Path data (chunk `0x40`) {#path-data}
 
-`0x0024e720`, confirmed (code) for the layout; the meaning of the record kinds is not traced. A header (`+0x00` path
-count, `+0x04` B count, `+0x08` `s16` C count, `+0x0a` `s16` A count, `+0x0c` D count), then A records (16 bytes), B
-records (16 bytes), the paths (0x50 bytes each: next pointers at `+0x20`/`+0x24`, flags `+0x48`, an optional A pointer
-`+0x4c`), C records (32 bytes: `+0x10` pointer into D, `+0x14` count) and D records (8 bytes: an index turned into a
-pointer). Offsets are fixed up into pointers in place; `0x00510584` = chunk + 0x10, `0x0051058c` = the chunk; it ends
-with `0x00251188`.
+`0x0024e720` fixes the chunk up in place; `0x0024eef0`, `0x0024ea60`, `0x0024f290` and `0x0024f718` read it.
+Confirmed (code) for the layout; what the areas are used for (AI, triggers) is not traced. In order:
+
+| Part | Size | Contents |
+| --- | --- | --- |
+| Header | 0x20 | `+0x00` path count P, `+0x04` vertex count, `+0x08` `s16` C count, `+0x0a` `s16` A count, `+0x0c` D count; `0x00510584` = chunk + 0x10, and `+0x14` is overwritten with a pointer to the C records |
+| A records | 16 each | pointed to by the paths that have one (`+0x4c`) |
+| Vertices ("B") | 16 each | x, y at `+0x00`, `+0x04`; each path owns the next `+0x00` of them |
+| Paths | 0x50 each | below |
+| C records | 32 each | `+0x10` pointer to its D records, `+0x14` `s16` their count, `+0x1f` a byte cleared at load |
+| D records | 8 each | `+0x00` an index into the C records, turned into a pointer |
+| Edge lists | `s16`, to the chunk's end | below; the global `0x006ca220` points at their start |
+
+**A path is a polygon** (an area on the ground, inferred from the test below):
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00` | `s16` vertex count *n* |
+| `+0x04` | pointer to its first vertex |
+| `+0x08` / `+0x0c` | x minimum / maximum |
+| `+0x10` / `+0x14` | y minimum / maximum |
+| `+0x20` / `+0x24` | next pointers (two chains, built at load) |
+| `+0x28` | 16 `s16`: the start of each **slab**'s edge list, −1 when there are none |
+| `+0x48` | flags (bit `0x10` cleared at load) |
+| `+0x4c` | A record or 0 |
+
+**Inside test** (`0x0024eef0`, called from `0x00250100`): reject a point outside the box; take its **slab**, `floor((y
+− ymin) × 16 / (ymax − ymin))`; walk that slab's list of edge numbers (an edge *k* runs from vertex *k* to vertex
+`(k + 1) mod n`) up to the next negative value, and add +1 or −1 for each edge that crosses the point's row to its
+left, by the edge's direction (edges flatter than 0.0001 in y are skipped). The point is inside when the sum is
+positive (a winding number). A path whose first slab start is negative has no lists, and every edge is walked.
+
+**Sizes**: the header, the six record kinds and the edge lists account for each file's chunk. Checked on the 47
+`level<N>.lev` files of the disc (counts only): the last list a path refers to ends within 16 bytes of the chunk's end
+in 42 of them and within 18 bytes in the other 5 (padding, inferred); the lists take 78,448 bytes in all. The
+undescribed bytes found by Coney's disc test were these lists, plus the header's 16 bytes the old description missed.
 
 ### The world manager (0x60 bytes) {#world-manager}
 
@@ -506,13 +536,13 @@ What the implementer still needs:
   world ([The level in a frame](#render-order)). The "shadow" model is a skyline backdrop (inferred).
 - **The level object's destructor** (`0x0040cf80`): no caller on the unload path was found; is it called through the
   vtable from elsewhere, or does the pool's destruction alone end the level's RenderWare objects?
-- **The subtitles chunk** (`0x51`) and the path records (A to D in [Path data](#path-data)): their contents.
-- **The path data's size**: in all 64 files the records the header counts (16 + 16 A + 16 B + 0x50 per path + 32 C + 8
-  D bytes) add up to less than the chunk: 79,472 bytes in all are not described (32 of `level1`'s 3,008; 3,160 of
-  `level2`'s 215,088). A record size or a count is missing from [Path data](#path-data) (found by Coney's disc test,
-  2026-10-04).
-- **`WorldLevel_Load`** (`0x0040c688`): the progress tool's source map counts that address as middleware (the tolua
-  range), while this page places the function in `World/`. Which is right?
+- **The subtitles chunk** (`0x51`) and the path records A, C and D ([Path data](#path-data)): their contents, and
+  what the areas are used for.
+- **The path data's size** (answered): the header is 0x20 bytes, and the chunk ends with the paths' edge lists
+  ([Path data](#path-data)).
+- **`WorldLevel_Load`** (answered): game code in `World/`. tolua ends at `0x0040c5e0`; the WAD object and
+  `WorldLevel_Load` after it call no Lua API, and the source map and the progress totals now say so
+  ([Source map](source-map.md#world)).
 - **`Sector Pool 2`** (answered): nothing; it is created at its 4 KB minimum in practice and never read
   ([Memory](memory.md#the-pool-tree)).
 - **The script entry** (answered, confirmed (code)): `global.lua`, then `<level>.lua`, in the Lua state the last

@@ -10,14 +10,15 @@ made current, and what its update does as far as it has been read. It is what th
 show the player walking. The lens (field of view, clip planes, view window) is on
 [The streamed world](world.md#player-camera); the other camera kinds (locked, scene, mugging, power) are not covered.
 
-In one paragraph: there is one **`Cam_Follow`** object per player, a singleton made on first use. `level99.lua`
-creates the follow camera with the `global.lua` helper `CameraCreateFollow("follow", player)`, which sets it up on the
-player (`CamSetupFollow`) and configures it (`CfgFollowCamera`): distance 3 to 6.6 m (4.8 by default), a pitch of 13°,
-a 65° field of view, a near plane of 0.1 and a look-at point 1.4 m above the player's feet. `CameraMakeActive` makes it
-current with no blend. It is a leash camera: each update it keeps its look-at point on the player, is dragged back
-into a 3.0-3.5 m band when the player moves away, covers 22% of its wanted move per update, swings round behind the
-player's facing at up to 60-120°/s once the angle passes 22.5°, holds a 13° pitch, turns with the right stick at 60-150°/s,
-and swings or pulls in when the world is in the way, using ray casts and sphere pushes against the collision mesh.
+In one paragraph: there is one **`Cam_Follow`** object per player, a singleton made on first use. `level99.lua` creates
+the follow camera with the `global.lua` helper `CameraCreateFollow("follow", player)`, which sets it up on the player
+(`CamSetupFollow`) and configures it (`CfgFollowCamera`): distance 3 to 6.6 m (4.8 by default), a pitch of 13°, a 65°
+field of view, a near plane of 0.1 and a look-at point 1.4 m above the player's feet. `CameraMakeActive` makes it
+current with no blend. It is a leash camera: each update it keeps its look-at point on the player, is dragged back into
+a 3.0-3.5 m band when the player moves away, covers 22% of its wanted move per update, has code to swing round behind
+the player's facing once the angle passes 22.5° (not seen running in `level99`, [Runtime checks](#runtime-checks)),
+holds a 13° pitch, turns with the right stick at 60-150°/s, and swings or pulls in when the world is in the way, using
+ray casts and sphere pushes against the collision mesh.
 
 ## Original structure
 
@@ -47,6 +48,9 @@ manager, `Cam_Follow.cpp` the follow camera. Names are ours unless a class strin
 | `0x0012a7d8` | height probe | short ray cast (flag `0x200`) | confirmed (code) for the call |
 | `0x0012e170` | keep the watched target in view | yaw toward it, at most 270°/s | confirmed (code) |
 | `0x0011e878(dt)` | cameras' update | run at the end of the characters' update ([Characters](characters.md#update)) | confirmed (code) |
+| `0x00120450` / `0x00120488` | push / pop the camera stack | the camera to return to after a scene; array `0x005d9190`, index `0x0050b180` | confirmed (code) |
+| `0x00367580` → `0x00353818` | `ScenePlayCinematic` (binding) | starts a scene; stores `BlendCam` at the scene's `+0x94` | confirmed (code) |
+| `0x0039d870` / `0x0039f450` | scene start / scene end | take the camera over, give it back | confirmed (code) |
 | `0x001562c8` | cameras to the device | the lens and draw distance each frame ([The streamed world](world.md#player-camera)) | confirmed (code) |
 
 ## Data
@@ -112,10 +116,11 @@ The far clip is 115 for this camera ([The streamed world](world.md#player-camera
 
 ### The follow update {#update}
 
-`0x0012ae58` runs once per character step (30 Hz, `dt` at `+0x3a0`) for each follow camera. It is a **leash camera**:
-the camera does not sit at a fixed spot behind the player but stays where it is until the player drags it, and a few
-separate rules turn it. The steps below are in the order the update runs them. Confirmed (code) at the cited
-addresses unless marked; angles are given in degrees, the code holds radians.
+`0x0012ae58` runs once per character step (30 Hz; it stores its `dt` argument at `+0x1a0`, where the heading rules read
+it) for each follow camera. It is a **leash camera**: the camera does not sit at a fixed spot behind the player but
+stays where it is until the player drags it, and a few separate rules turn it. The steps below are in the order the
+update runs them. Confirmed (code) at the cited addresses unless marked; angles are given in degrees, the code holds
+radians.
 
 1. **Look-at point** (`+0x180`): the target's position plus the offset `+0x210` (runtime: feet + 1.4 m). The offset
    itself eases toward its wanted value by 15% per update (`+0x200` toward `+0x210`). In one target state (the flag the
@@ -166,8 +171,20 @@ The yaw rotation is done by `0x0012d688(angle)`, about the look-at point. Four r
   player's facing. Nothing happens below 22.5° or above 157.5°, so running towards the camera does not spin it. The
   rate is `(a − 22.5°) × 2.667` per second below 45° (0 to 60°/s), 60°/s from 45° to 135°, and above 135° it falls
   from 120°/s back to 60°/s at 157.5°. Each update turns by `min(a, rate × dt)` toward the facing.
-- **Auto-centre option** (`0x00129f88`, used when the per-pad option at `0x0050b240` / `0x0050b248` is on): the same
-  idea with steeper rates, up to 200°/s (`3.4907` rad/s); when the player is moving it also acts beyond 157.5°.
+- **Auto-centre option** (`0x00129f88`, used instead when the per-pad option bytes `0x0050b240` and `0x0050b248` are
+  both set; they are 1 in the `level99` save used at runtime): nothing below 22.5°; from 22.5° to 90° the rate is
+  `(a − 45°) × 2.444 + 45°` per second (negative below 26.6°, so the step is then a small turn the other way; 45°/s at
+  45°, 155°/s at 90°); 200°/s (`3.4907` rad/s) from 90° to 100°; from 100° to 157.5° it falls linearly
+  (`(157.5° − a) × 2.435 + 60°`) from 200°/s to 60°/s; beyond 157.5° only when the player is moving (an argument
+  the update sets from the gait). Each update turns by `min(a, rate × dt)` toward the facing. The cosine of each
+  threshold is computed with `0x004b8a70` (cosine, inferred from the thresholds' use).
+- **When either rule runs** (`0x0012ae58`, the call at `0x0012bd80`): one target (`+0x444` = 1), the target passes
+  `0x00123500` (not in states `0x180050000` of record word `+0x00`), no camera flags in `+0x460 & 0xffff0000`, nothing
+  watched (`+0x320` = −1), no yaw from earlier steps this update, and no camera input in the last 0.334 s
+  (`+0x368` = 0). Inside `0x00129c78` the default rule also needs the "moving" argument, which is set when the
+  target's gait `+0x1a8` is 4 or 5 (run, sprint) with record flags `+0x08` clear (`0x00223a60`, `0x00223a98`); the
+  auto-centre rule needs `+0x474` = 1, `+0x455` = 0, no right-stick input, the top animation task's clip without
+  descriptor flag `0x8000` (`0x00175be8`), and none of the human flags `0x18003ff0`.
 - **Keep the target in view** (`0x0012e170(factor)`, called with 0.4 or 0.25): when the human or object the camera
   watches (`+0x320`) leaves `fov × factor` of the view, the camera yaws 35% of the excess per update, at most 270°/s
   (`4.712` rad/s). A ray test (mask `0x200`) skips it when the world hides the target.
@@ -227,10 +244,76 @@ calls and constants; the overall reading is inferred:
 - **Recovered distance** `+0x380` eases toward the distance the probes allow by 10% per update. The side factors
   `+0x434` / `+0x438` drop toward 0.125 on a blocked side and go back to 1 when it is clear.
 
-**At runtime**, after running for 1.2 s (a run needs a stick magnitude of at least 0.95,
-[method](../guides/research-workflow.md#driving-pcsx2)): the camera was 3.16 m from the look-at point (3.08 m
-horizontally) and 0.70 m above it, a pitch of about −12.8°, which is the 3.0-3.5 m leash band and the 13° target
+**At runtime** (stick magnitude 1.0, `level99` checkpoint 1), after running for 1.2 s (a run needs a stick magnitude of
+at least 0.95, [method](../guides/research-workflow.md#driving-pcsx2)): the camera was 3.16 m from the look-at point
+(3.08 m horizontally) and 0.70 m above it, a pitch of about −12.8°, which is the 3.0-3.5 m leash band and the 13° target
 pitch. Confirmed (runtime).
+
+### Runtime checks {#runtime-checks}
+
+PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt, read over PINE once per update; stick magnitudes by the
+[stick-table method](../guides/research-workflow.md#driving-pcsx2), right stick by the keyboard (full deflection).
+"Wanted position" is `+0x250`, the camera's own position `+0x10`. Confirmed (runtime) unless marked:
+
+- **Position lag.** With the player moved 2 m away in one write, the gap between the camera and its wanted position
+  shrank by a factor of 0.78 per update (0.120, 0.094, 0.074, 0.057, 0.045 m), with `+0x388` reading 0.226: 22% per
+  update. `+0x388` was 0.157 standing at the start spot (pulled in by a wall) and climbed to 0.227 within 0.5 s of
+  running into the open, the 0.5%-per-update drift of [World collision](#collision).
+- **Leash band.** While running, the wanted position stays 3.50 m from the look-at point (the band's far edge);
+  standing, it stays wherever it was inside the band (3.00 m at the start). At the start spot the camera itself is
+  pulled in to 1.85 m by the walls and recovers toward 3.5 m over about 1.5 s of running.
+- **Right stick yaw.** Full deflection right (raw x = 255): the wanted position turns by exactly 5.00° per update
+  (150°/s) from the first update; the camera's own yaw follows with the position lag, reaching about 5° per update
+  after 0.4 s, and coasts for a few updates after release. The 0.334 s hold timer `+0x368` read 0.301 (one update
+  counted down) while the stick was held.
+- **Right stick pitch.** Full deflection up: `+0x3b8` = 85°/s; the pitch target `+0x3b4` stopped at the upper limit
+  `+0x3ac` = 30°, which is the option `0x0050b19c` = 1 case at the default zoom distance 4.8. The view's pitch eased
+  from 15° to 30° behind it.
+- **Auto-follow was not seen.** Running at 7.8 m/s (gait 4) with the facing held 63-78° away from the view for
+  1.5 s, in the open, the wanted position turned only as the moving look-at point dragged it: no rotation of its own,
+  with the auto-centre option on (as saved) and with `0x0050b240` written to 0 (the default rule). By the code either
+  rule should then turn about 3.4° (auto-centre) or 2° (default) per update. Every gate listed under
+  [Heading](#heading) that can be read over PINE passed (`+0x444` = 1, record words `+0x00` and `+0x08` zero,
+  `+0x460` = 0, `+0x320` = −1, `+0x368` = 0, `+0x455` = 0, `+0x474` = 1, the run clip's descriptor flags 0); the
+  condition that blocks it was not found (the update's locals cannot be read without breakpoints). So in
+  `level99` the camera turns only with the right stick and the leash.
+
+### Scenes take the camera and give it back {#scenes}
+
+`level99` starts with `SuperRunScene(IntroScene)` at checkpoint 1 ([Scripts](scripting.md)); `IntroScene` is a table
+(`SceneId` `l99_c1`, the humans and objects that take part, `ReturnFunc` = `P1.StartTraining`). The `global.lua`
+helpers fill in defaults and call the engine. Confirmed (code) for the script (`global.lua`, read as bytecode) and the
+engine at the cited addresses:
+
+1. **`SuperRunScene(t)`** hides the HUD, clears the gang's wanted level, blacks the screen at once
+   (`ScreenQueueEffect(1, 0)`), revives the scene's humans, and preloads the scene (`ScenePreload(id,
+   "gPlayCutScene")`), keeping `t` in `tblScene[id]`.
+2. **`gPlayCutScene(id)`** sets defaults: `Bars` true, `Delay` 0, and when `BlendCam` is not given, **`BlendCam` = −1
+   and `FadeIn` true** (a given `BlendCam` sets `FadeIn` false). It joins each human to the scene (`GoalJoinCinematic`,
+   or the animation / fixed-scene variants), adds the objects, and calls `ScenePlayCinematic(id, Delay,
+   "PreCashTheWorld", Bars, not NoSkip, Looping, Freeze, BlendCam, Final, Chain)`.
+3. **Scene start** (`0x00353818` → `0x0039d870`). When the scene has its own camera (scene data `+0x22`), a scene
+   camera (type 4, `0x0011e1b0(4, …)`) is made or reused, given the current camera's view (slot `+0xac` → `+0xb4`),
+   and **the current camera is pushed** on the camera stack (`0x00120450`; for a blend, locked or other wrapper camera,
+   types 5-8, the camera inside it). The scene camera then becomes current at once (`0x0011ee08` with 0 seconds).
+   A scene without a camera keeps the current one, saves its position (scene `+0x80`, the camera at `+0x90`) and
+   moves it to the scene's anchor.
+4. **While a scene camera is current**, `CameraMakeActive` for player 1 does not switch: it replaces the camera on the
+   stack, so the script changes what the scene returns to (`0x0011ee08`, when the global at `0x0051489c + 0x410` is
+   set; inferred to mean "a scene is playing").
+5. **Scene end** (`0x0039f450`): the camera is **popped** (`0x00120488`), reset (slot `+0x13c`, as `CameraReset`) and
+   made current with **`BlendCam` seconds**: above 0 the blend camera (type 5) runs between the scene camera and it;
+   0 or −1 is a cut. In one game-mode case (the mode object at `0x0015e718` reporting 8) it first takes the scene
+   camera's view, field of view and near plane. The scene camera is then released (`0x0011e440`) and **the cameras'
+   update runs once with dt = 0.17 s** (`0x0011e878(0.17)`), so the follow camera settles before the next frame. A
+   scene without a camera puts the kept camera back at its saved position and resets it (`0x0039ec60`).
+6. **The script's end callback** (`global.lua`, run when the scene ends) calls `ReturnFunc` (for the intro,
+   `P1.StartTraining`), turns gang spotting back on unless `BlendCam` was 0, and with `FadeIn` fades the screen in over
+   0.5 s (`ScreenQueueEffect(0, 0.5)`).
+
+So the intro hands back to the follow camera with a **cut hidden by a 0.5 s fade-in**, the follow camera having been
+reset and run for 0.17 s. Confirmed (runtime): after the intro the stack index `0x0050b180` is −1, its slot 0 still
+holds the popped follow camera, and the follow camera is the current and previous camera of player 1.
 
 ## Coney's implementation
 
@@ -243,11 +326,13 @@ None yet. Coney's world viewer has a free camera with the player camera's lens
   unless its distance to the look-at point leaves the 3.0-3.5 m band, then move it along that line to the band; move
   22% of the way to the wanted position each 30 Hz step; hold a 13° pitch; 65° horizontal field of view, near 0.1,
   far 115.
-- **Heading**: swing behind the player's facing with the auto-follow rates ([Heading](#heading)): nothing under 22.5°
-  or over 157.5°, up to 60°/s between 45° and 135°. The player's stick is turned by the camera's heading before it
+- **Heading**: in `level99` as measured the camera does not swing behind the player by itself
+  ([Runtime checks](#runtime-checks)); the leash alone turns it as the player runs across the view. Implement the
+  leash and the right stick first; the auto-follow rates ([Heading](#heading)) can be added behind an option once
+  the condition that enables them is known. The player's stick is turned by the camera's heading before it
   reaches the character ([Characters](characters.md#input)), so the camera must ease, never snap.
-- **Right stick**: yaw 60-150°/s outside a ±48 raw dead zone; pitch only near the ends of the travel; 0.334 s of no
-  auto-follow after any input.
+- **Right stick**: yaw 60-150°/s outside a ±48 raw dead zone, applied to the wanted position at once (the lag
+  smooths it); pitch only near the ends of the travel; 0.334 s of no auto-follow after any input.
 - **Collision**: start with a ray from the look-at point and pull in to the hit; the side probes and swing-away rules in
   [World collision](#collision) can come later.
 - **Update order**: the cameras update at the end of the characters' 30 Hz step, after movement
@@ -258,9 +343,12 @@ None yet. Coney's world viewer has a free camera with the player camera's lens
 
 - **The tutorial's camera calls**: which call set `+0x32c` / `+0x330` to 3.0 / 3.5 (probably `P1.SetupCam` in
   `level99_combat.lua` through `CamSetFollowZoom`; inferred).
-- **Runtime checks** of the auto-follow rates and the right stick: the rates above are read from code only.
+- **Why auto-follow did not run** at runtime ([Runtime checks](#runtime-checks)): a gate not yet identified, perhaps
+  in the update's locals (`sp+0x1c8`, the `0x0012e9a8` look-at step) or a mode the tutorial sets. A breakpoint at
+  `0x0012bd80` would settle it.
 - **The collision step** (`0x00130990`) in full: the exact probe pattern, when the height ray lowers the camera, and
   what `+0x10a`-`+0x10c` (side angle history) feed.
 - **The target state** that lifts the look-at point to 1.65 m, and the two modes of `0x00125588`.
 - **The slow-motion factor** `0x005148a0`: what slows down, and when.
-- **Scenes**: how `IntroScene` and `SuperRunScene` take the camera from the follow camera and give it back (not read).
+- **Scenes**: the scene camera's own update (type 4) and the "a scene is playing" flag at `0x0051489c + 0x410` (see
+  [Scenes](#scenes)).
