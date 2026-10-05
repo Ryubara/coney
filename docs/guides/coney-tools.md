@@ -1,11 +1,12 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers five groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers seven groups:
 `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`xbox`](#xbox), which
 reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
-current, [`natives`](#natives), which renders the script-binding masterlist, and [`refs`](#refs), which builds the
-game reference lists. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The
-format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the
+game reference lists, and [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update traces in
+PCSX2 and compare them with Coney's. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into
+memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -238,3 +239,56 @@ Rewrites every PNG below `docs/references/images/` (or `FOLDER`) in place as a 2
 transparency. `coney --render-references` writes full-colour images of about 26 KB each; with a palette they take
 under a quarter of that and look the same at 256 pixels. The quantizer is deterministic, so a re-render gives the same
 files. Run it after rendering and before `refs extract` links the images.
+
+## pcsx2 {#pcsx2}
+
+The `pcsx2` commands drive the original in PCSX2 over PINE, for runtime research and parity checks. What they do and
+why, the scenario format and the address expressions are in [Recording a trace](research-workflow.md#recording-a-trace).
+The folders come from `coney.local.toml` (`pcsx2_dir`, `game_dir`, `scratch_dir`) unless `--pcsx2-dir`, `--iso` and
+`--scratch` give them; PINE must be enabled in PCSX2's `inis/PCSX2.ini`. Problems print one line and exit with code 2.
+
+```sh
+uv run --project python coney-tools pcsx2 prepare-state SOURCE OUT [--patch NAME ...]
+```
+
+Copies a save state (a `.p2s` file, or `slot:N` for quick-save slot N, which is only read) to `OUT` with the named
+patches of `research/traces/patches.toml` applied to its EE memory. It refuses an `OUT` inside the repository or in
+PCSX2's `sstates/` folder, and refuses the copy when the state does not hold a patch's original instruction words.
+PCSX2 saves states with zstd, which Python reads from 3.14 (uv installs it).
+
+```sh
+uv run --project python coney-tools pcsx2 launch STATE
+```
+
+Starts PCSX2 on a state file (`-fastboot -statefile`, the disc through a hard link in the scratch folder when its path
+holds commas or parentheses), waits until the game runs, and leaves it running. It refuses to start when something
+already serves PINE.
+
+```sh
+uv run --project python coney-tools pcsx2 record SCENARIO --out CSV [--state SOURCE] [--attach] [--keep-open]
+```
+
+Makes the scenario's patched state copy, starts PCSX2 on it, plays the scenario's input script and writes one CSV row
+per character update, then closes PCSX2. It prints the updates recorded, the reads per poll, the time per poll and the
+updates missed. `--state` copies another state, `--attach` records a PCSX2 already running a patched state, and
+`--keep-open` leaves PCSX2 running. The CSV is a measurement of the game: it is refused inside the repository.
+
+## trace {#trace}
+
+```sh
+uv run --project python coney-tools trace coney SCENARIO --out CSV [--coney EXE] [--disc DISC]
+```
+
+Plays the scenario's input script on Coney headless (`--play-level` and the options of its `[coney]` table, `--frames`
+its updates, `--trace CSV`). `--coney` defaults to `build/dev/src/platform/coney`, `--disc` to `game_dir`.
+
+```sh
+uv run --project python coney-tools trace diff ORIGINAL CONEY [--scenario SCENARIO] [--columns COLUMN ...]
+    [--tolerance COLUMN=VALUE ...] [--from STEP] [--to STEP] [--shift N] [--start-frame] [--context N]
+```
+
+Compares two traces step by step and prints, per column, the first step outside its tolerance, the largest difference
+and its step, then the rows of both around each divergence. It exits with 0 when every column is within tolerance, 1
+when one is not and 2 when a trace cannot be read. With `--scenario`, the columns, tolerances, start frame and first
+step (the first update of input) come from the scenario's `[diff]` table; flags override them.
+[Comparing with Coney](research-workflow.md#comparing-with-coney) explains the alignment and the start frame.

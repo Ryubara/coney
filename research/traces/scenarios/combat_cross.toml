@@ -1,0 +1,58 @@
+# A cross chain on a puppet: the player plays X1 then XX2 against a civilian held still 1.5 m in front of him.
+# Research: docs/research/combat.md#attacks, #input-return. On the original, slot 6 (facing a pedestrian): the
+# civilian PoizoCiv is made a puppet (no AI: its per-player +0x1e = 0, and the puppet patch keeps its command clear),
+# then placed 1.5 m in front of the player, facing him, as the sandbox's fight yard places its front target; it is
+# put back there every update until the input starts, because it keeps walking.
+description = "X1 then XX2 at a passive target 1.5 m ahead: the clips, commands and timing of a cross chain"
+research = "docs/research/combat.md#attacks"
+input = "combat_cross.txt"
+updates = 130
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet"]
+let = { puppet = 'human("PoizoCiv")' }
+setup = [
+  { address = "prec(puppet) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "tf(puppet) + 0x0", type = "f32", value = "f32(tf(player)) - 1.5 * sin(heading(player))", until = 39 },
+  { address = "tf(puppet) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.5 * cos(heading(player))", until = 39 },
+  { address = "tf(puppet) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 39 },
+  { address = "tf(puppet) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 39 },
+  { address = "tf(puppet) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 39 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[diff]
+columns = ["clip", "command", "gait", "speed", "power"]
+tolerance = { clip = 0, command = 0, gait = 0, speed = 0.2, power = 0 }
+
+# The puppet, for reading the run (the original's only: Coney's trace has the player alone).
+[[field]]
+name = "target_clip"
+address = "rec(puppet) + 0x20"
+type = "s32"
+
+[[field]]
+name = "target_health"
+address = "rec(puppet) + 0x144"
+type = "s16"
+
+[[field]]
+name = "target_x"
+address = "tf(puppet) + 0x0"
+type = "f32"
+hidden = true
+
+[[field]]
+name = "target_y"
+address = "tf(puppet) + 0x4"
+type = "f32"
+hidden = true
+
+[[field]]
+name = "target_distance"
+formula = "hypot(target_x - x, target_y - y)"

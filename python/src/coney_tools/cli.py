@@ -11,7 +11,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from coney_tools import natives_cli, progress_cli, refs_cli, wad_cli, xbox_cli
+from coney_tools import natives_cli, pcsx2_cli, progress_cli, refs_cli, trace_cli, wad_cli, xbox_cli
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.repo_checks import check_pointer_files, check_title, first_line, load_title_rules
 
@@ -78,6 +78,8 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_progress_commands(groups)
     _add_natives_commands(groups)
     _add_refs_commands(groups)
+    _add_pcsx2_commands(groups)
+    _add_trace_commands(groups)
     return parser
 
 
@@ -177,6 +179,58 @@ def _add_refs_commands(groups: Any) -> None:
     compress.add_argument("folder", nargs="?", type=Path, help="default: docs/references/images/")
 
 
+def _add_pcsx2_flags(command: Any) -> None:
+    """The folder flags every PCSX2 command takes; each defaults to coney.local.toml."""
+    command.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
+    command.add_argument("--iso", type=Path, help="the disc image (or a folder with one); default: game_dir")
+    command.add_argument("--scratch", type=Path, help="where state copies and the disc link go; default: scratch_dir")
+
+
+def _add_pcsx2_commands(groups: Any) -> None:
+    """Register `coney-tools pcsx2 ...`."""
+    group = groups.add_parser("pcsx2", help="drive the original in PCSX2 over PINE: patched states, recording")
+    commands = group.add_subparsers(dest="command", required=True)
+    prepare = commands.add_parser("prepare-state", help="copy a save state with patches applied to its EE memory")
+    prepare.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
+    prepare.add_argument("out", type=Path, help="the patched copy (outside the repository and sstates/)")
+    prepare.add_argument(
+        "--patch", nargs="+", default=[], metavar="NAME", help="patches of research/traces/patches.toml"
+    )
+    prepare.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
+    launch = commands.add_parser("launch", help="start PCSX2 on a state file and wait until its game runs")
+    launch.add_argument("state", type=Path, help="a .p2s file (a patched copy)")
+    _add_pcsx2_flags(launch)
+    record = commands.add_parser("record", help="play a scenario on the original and write its per-update trace")
+    record.add_argument("scenario", type=Path, help="a scenario TOML (research/traces/scenarios/)")
+    record.add_argument("--out", type=Path, required=True, help="the trace CSV (outside the repository)")
+    record.add_argument("--state", help="the state to copy instead of the scenario's slot: a .p2s file or slot:N")
+    record.add_argument("--attach", action="store_true", help="record a PCSX2 already running a patched state")
+    record.add_argument("--keep-open", action="store_true", help="leave PCSX2 running afterwards")
+    _add_pcsx2_flags(record)
+
+
+def _add_trace_commands(groups: Any) -> None:
+    """Register `coney-tools trace ...`."""
+    group = groups.add_parser("trace", help="per-update traces: run a scenario on Coney, compare with the original")
+    commands = group.add_subparsers(dest="command", required=True)
+    coney = commands.add_parser("coney", help="play a scenario on Coney headless and write its --trace")
+    coney.add_argument("scenario", type=Path, help="a scenario TOML (research/traces/scenarios/)")
+    coney.add_argument("--out", type=Path, required=True, help="the trace CSV (outside the repository)")
+    coney.add_argument("--coney", type=Path, help="Coney's executable; default: build/dev/src/platform/coney")
+    coney.add_argument("--disc", help="the disc for Coney; default: game_dir")
+    diff = commands.add_parser("diff", help="compare the original's trace with Coney's; exit 1 outside tolerance")
+    diff.add_argument("original", type=Path, help="the original's trace (pcsx2 record)")
+    diff.add_argument("coney", type=Path, help="Coney's trace (coney --trace, or trace coney)")
+    diff.add_argument("--scenario", type=Path, help="take the columns, tolerances, start and frame from a scenario")
+    diff.add_argument("--columns", nargs="+", metavar="COLUMN", help="compare these (default: every shared one)")
+    diff.add_argument("--tolerance", nargs="+", default=[], metavar="COLUMN=VALUE", help="per column; *=VALUE for all")
+    diff.add_argument("--from", dest="start", type=int, help="the first step (default 1, or the input's first)")
+    diff.add_argument("--to", dest="end", type=int, help="the last step (default: the last both have)")
+    diff.add_argument("--shift", type=int, help="compare original step s with Coney step s + SHIFT (default 0)")
+    diff.add_argument("--start-frame", action="store_true", help="compare in each player's frame at the first step")
+    diff.add_argument("--context", type=int, default=3, help="rows shown each side of a divergence (default 3)")
+
+
 def _run_progress(args: argparse.Namespace) -> int:
     """Dispatch a `progress` command."""
     if args.command == "show":
@@ -214,6 +268,16 @@ def _run_xbox(args: argparse.Namespace) -> int:
     return xbox_cli.run_textures(args.disc, args.ps2)
 
 
+def _run_pcsx2(args: argparse.Namespace) -> int:
+    """Dispatch a `pcsx2` command."""
+    if args.command == "prepare-state":
+        return pcsx2_cli.run_prepare_state(args.source, args.out, args.patch, args.pcsx2_dir)
+    if args.command == "launch":
+        return pcsx2_cli.run_launch(args.state, args.pcsx2_dir, args.iso, args.scratch)
+    flags = (args.pcsx2_dir, args.iso, args.scratch)
+    return pcsx2_cli.run_record(args.scenario, args.out, args.state, args.attach, args.keep_open, flags)
+
+
 def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
     if args.group == "wad":
@@ -234,6 +298,13 @@ def _run(args: argparse.Namespace) -> int:
         if args.command == "compress-images":
             return refs_cli.run_compress_images(args.folder)
         return refs_cli.run_extract(args.disc, args.only, args.names)
+    if args.group == "pcsx2":
+        return _run_pcsx2(args)
+    if args.group == "trace":
+        if args.command == "coney":
+            return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
+        options = (args.start, args.end, args.shift, args.start_frame, args.context)
+        return trace_cli.run_diff(args.original, args.coney, args.scenario, args.columns, args.tolerance, options)
     if args.group == "config":
         return _config_show()
     if args.command == "check-title":

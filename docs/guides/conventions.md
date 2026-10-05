@@ -441,8 +441,8 @@ reverse-engineering projects goes to Rekit instead, once a second project needs 
 - **Python 3.12 or newer**, managed with [uv](https://docs.astral.sh/uv/): `uv sync` sets up the environment and
   `uv run` runs inside it, so everyone uses the same locked dependencies.
 - **One command-line entry point:** `coney-tools <group> <command>`, for example `coney-tools wad extract`. No
-  loose scripts: a script outside the CLI has no tests, no `--help` and nowhere obvious to be found. The planned
-  groups are `wad`, `xbox`, `emu` and `harness`.
+  loose scripts: a script outside the CLI has no tests, no `--help` and nowhere obvious to be found. The groups
+  include `wad`, `xbox`, `pcsx2` (the PCSX2 bridge) and `trace` ([The coney-tools command line](coney-tools.md)).
 - **ruff** formats and lints, **mypy --strict** type-checks, and **pytest** tests. All three run in CI; ruff format
   also runs in pre-commit. Strict typing matters here because these tools parse binary formats, where a wrong type
   is a silent wrong answer.

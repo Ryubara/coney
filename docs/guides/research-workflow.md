@@ -234,9 +234,10 @@ recovered name are named by hash.
 - **Ghidra with ghidra-mcp.** Static analysis of `SLUS_212.15`, with the Emotion Engine processor extension; the
   ghidra-mcp server lets analyst agents drive it. Setup: [Ghidra + ghidra-mcp](ghidra.md). The Ghidra project holds
   the game's code, so it stays on your machine and is never committed.
-- **PCSX2.** For runtime evidence: memory reads and writes on the game as it runs. A bridge in `coney_tools`
-  (`coney-tools emu`) is planned, so that runtime checks can be scripted and repeated; until then, see
-  [Driving PCSX2](#driving-pcsx2).
+- **PCSX2.** For runtime evidence: memory reads and writes on the game as it runs. `coney-tools pcsx2` makes patched
+  state copies, starts PCSX2 on one and records a scripted run as a per-update trace
+  ([Recording a trace](#recording-a-trace)); `coney-tools trace diff` compares it with Coney's
+  ([Comparing with Coney](#comparing-with-coney)). How PCSX2 is driven underneath: [Driving PCSX2](#driving-pcsx2).
 - **Capture analysis.** Recording what the game sends to the graphics hardware or the sound processor and studying
   the capture. It is a later fallback, for questions that the code and the debugger answer badly (exact rendering
   state, timing). Captures contain game data: they stay in your scratch folder and never enter the repository.
@@ -285,10 +286,13 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   file (a zip of `eeMemory.bin` and the rest; Python 3.14's `zipfile` reads its zstd entries), patch `eeMemory.bin` at
   those addresses, and start `pcsx2-qt.exe -fastboot -statefile <copy> -- <iso>`; restart PCSX2 the same way for
   every run. Then write the bytes over PINE (the stick table above gives the magnitude). Find the player as the human
-  whose `+0x1b0` is 0: in later levels it is not human 0, and the per-player record is indexed by its `+0x92`.
+  whose `+0x1b0` is 0: in later levels it is not human 0, and the per-player record is indexed by its `+0x92`. The
+  patch is `scripted-pad` in `research/traces/patches.toml`, with each instruction word it expects and the one that
+  replaces it; `coney-tools pcsx2 prepare-state` and `pcsx2 record` make the copy and restart PCSX2 for you.
 - **The right stick, too** (2026-10-05, the feel pass). The right stick's loads are at `0x00149df8` / `0x00149e00`
   (DualShock 2 path) and `0x00149eb8` / `0x00149ec0` (digital path), offsets 4 and 5; making them 0x24 and 0x25
-  puts the right stick's x and y at `0x005de3ac` / `0x005de3ad`. The stick table at `0x0050b8d0` is the same map as
+  puts the right stick's x and y at `0x005de3ac` / `0x005de3ad` (the `right-stick` patch). The stick table at
+  `0x0050b8d0` is the same map as
   Coney's `pad::stickValue` (dead band 95-160, `(raw − 160) / 95`), so writing the raw bytes Coney makes from an input
   script's percentages (`160 + round(0.95 × v)`, `95 − round(0.95 × |v|)`, 128 at rest) gives both games the same
   stick, diagonals included, without touching the table.
@@ -296,23 +300,132 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   write command ids ([Combat](../research/combat.md#commands)) into its per-player record (`0x00660f50` + index ×
   `0x2c`, `+0x20`): `Player_UpdateActions` runs for every human whose per-player `+0x1e` is 0, AI humans included,
   and acts on that command. For a human with no pad, `0x00146000` clears `+0x20` every update, so put a `nop` over its
-  `sw zero,0x20(a0)` at `0x00146030` in the state copy (with the pad patch above), then write the command for one
+  `sw zero,0x20(a0)` at `0x00146030` in the state copy (with the pad patch above; the `puppet` patch), then write the
+  command for one
   update and 0 the next (a cross tap is `0x12`, then `0x10`, then 0). A grab needs a target: write the player's handle
   (human `+0x90`) to the puppet's human `+0xc8` and its brain's `+0x124` (`0x006d53f0` + index × `0x2f0`), or 70 misses.
   A held button (R1 to block) is read from a pad record, so give the puppet pad index 4 (per-player `+0x19`) and write
   the button into all eight entries of pad record 4's button history (`0x005dd950 + 0x1c`, eight `u16`) every update.
   Set `CfgAutoLockAndCombat` (`0x005104b8`) to 0 when the player must not turn to face the attacker. Pick the puppet
   by name: the nearest human changes as pedestrians walk, and an ally's hits play reactions without damage.
-- **One sample per update.** Batch every read of a sample into one PINE message (a list of Read32 commands) and keep
-  a sample only when the game time `*(0x0050b734) + 0x48` (milliseconds) has advanced by a character update
-  (1000 / 30 ms); apply the scripted input as each update is seen. Over PCSX2's TCP PINE this read about 40 words per
-  update with no update missed in 200-update runs.
+- **One sample per update.** Batch every read of a sample into one PINE message and keep a sample only when the game
+  time `*(0x0050b734) + 0x48` (milliseconds) has advanced by a character update (1000 / 30 ms); apply the scripted
+  input as each update is seen. `coney-tools pcsx2 record` does exactly this ([Recording a trace](#recording-a-trace)).
 - **Leave the quick-save slots alone.** Never save a state to a slot number (PINE's save writes a quick-save slot):
   load existing slots read-only (they may hold someone else's test spots), and keep your own states as files in your
   scratch folder, made as above.
 - **Hygiene.** Save states, screenshots and logs contain game data: keep them in your scratch folder (move the
   `.p2s` files out of `pcsx2/sstates/` afterwards) and close PCSX2 when done. Screenshots are measured, never
   committed; a claim quotes the numbers.
+
+### Recording a trace {#recording-a-trace}
+
+A parity question ("does Coney's walk start take as long as the original's?") is answered by playing **one input
+script** on both games and comparing their per-update traces. The original's side is a **scenario**: a TOML file in
+`research/traces/scenarios/` that names the save state, the patches, the input script beside it, how many updates to
+record, and the fields to read. Scenarios, patches, field sets and input scripts are committed; the traces they record
+are measurements of the game and stay in your scratch folder.
+
+```sh
+uv run --project python coney-tools pcsx2 record research/traces/scenarios/walk60.toml --out ../../scratch/walk60-original.csv
+```
+
+`record` copies the scenario's quick-save slot (read only) to `<scratch_dir>/pcsx2/<scenario>.p2s` with the patches
+applied, starts PCSX2 on the copy with `-fastboot -statefile` (through a hard link to the disc when its path has
+commas or parentheses), waits until the patched state runs, plays the script and samples every update, then closes
+PCSX2 and warns if a file appeared in its `sstates/` folder. The folders come from `coney.local.toml` (`pcsx2_dir`,
+`game_dir`, `scratch_dir`) or from `--pcsx2-dir`, `--iso` and `--scratch`; PINE must be on in PCSX2's ini. `--state`
+records from another state file (or `slot:N`), `--attach` records a PCSX2 you started yourself on a patched copy
+(`coney-tools pcsx2 prepare-state`, then `pcsx2 launch`), and `--keep-open` leaves it running. It prints the number of
+updates, how many reads each poll made, the time per poll and the updates it missed.
+
+**Timing.** Step 0 is the first sample, before any input. After the sample of step N the recorder writes the pad for
+frame N of the script, which the update of step N + 1 reads: the numbering of Coney's `--trace`, where frame N of an
+input script is step N + 1. A missed update (one the poll did not see) is listed by step; its input lands an update
+late. The stick bytes are made from the script's percentages exactly as Coney makes them, so both games see the same
+stick; a tap holds the button for one update. With PCSX2 2.9.94 on Windows a poll of 26 reads took about 0.05 ms, so
+the game time is seen many times per update; no update was missed in the smoke runs (130 to 230 updates).
+
+**The scenario file:**
+
+```toml
+description = "level99 street: the walk start and the walk, stick 60 % up for 100 updates, then the stop"
+research = "docs/research/feel.md"
+input = "walk60.txt"              # a Coney input script, beside the scenario
+updates = 170                     # updates to record; Coney runs as many frames
+fields = ["player", "camera"]     # field sets of research/traces/fields.toml
+
+[original]
+slot = 1                          # the quick-save slot to copy, never written
+patches = ["scripted-pad", "right-stick"]
+let = { puppet = 'human("PoizoCiv")' }       # names resolved once, before the first update
+setup = [ { address = "prec(puppet) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 } ]
+
+[coney]
+level = "level99"                 # --play-level
+args = []                         # more of Coney's options, such as ["--spawn", "start"]
+
+[diff]                            # how `coney-tools trace diff --scenario` compares the two traces
+start_frame = true
+columns = ["x", "y", "heading", "speed", "gait", "clip"]
+tolerance = { x = 0.1, speed = 0.05 }
+```
+
+`setup` writes are made after the samples of frames `frame` to `until`; the values are expressions worked out at that
+moment (`f32(tf(player)) - 1.5 * sin(heading(player))` puts the puppet 1.5 m in front of the player).
+
+**Patches** (`research/traces/patches.toml`) are named groups of edits to the copy's `eeMemory.bin`: a code edit gives
+the address, the instruction word the state must hold there and the word that replaces it, and the copy is refused
+when the state holds something else. `scripted-pad`, `right-stick` and `puppet` are the patches of
+[Driving PCSX2](#driving-pcsx2).
+
+**Fields** (`research/traces/fields.toml`) are named sets of columns. A field is read every update at an
+**address expression** (`tf(player) + 0x4`, type `f32`), or worked out by a **formula** from the fields before it
+(`wrap(deg(2 * atan2(qz, qw)))`); `hidden = true` keeps a helper out of the CSV. Expressions are arithmetic over these
+names, and nothing else of Python:
+
+| Name | Value |
+| --- | --- |
+| `player` | the human whose player number `+0x1b0` is 0, among the 60 at `0x00640c80 + i × 0x6d0` in use (`+0xd4` set) |
+| `human("Name")` | the human in use with that name (`+0x80`) |
+| `index(h)`, `rec(h)` | the handle index (`+0x92`); the record (`*(h + 0xd4)`) |
+| `prec(h)`, `tf(h)`, `brain(h)` | `0x00660f50 + index × 0x2c`; `0x00714b00 + index × 0x20`; `0x006d53f0 + index × 0x2f0` |
+| `heading(h)` | the heading in radians from the transform's rotation (0 faces +y, anticlockwise) |
+| `camera`, `game_time` | `*(0x005d9158)`; `*(0x0050b734) + 0x48` |
+| `u8` ... `f32` (address) | a value in memory (`u8 s8 u16 s16 u32 s32 f32`) |
+| `sin cos atan2 hypot sqrt abs min max deg rad wrap pi` | math; `wrap` takes degrees to (-180, 180] |
+
+A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](building.md#tracing)): `x`, `y`,
+`z`, `heading`, `speed`, `vz`, `gait`, `clip`, `stamina`, `command`, `health`, `power` and the camera's `cam_*`,
+`look_*`, `wanted_*`, `cam_distance`, `cam_pitch`, `cam_yaw`, `band_near` and `target_pitch`. `phase` (record
+`+0x08`) is the original's only.
+
+### Comparing with Coney {#comparing-with-coney}
+
+`coney-tools trace coney` plays the same scenario on Coney headless (`--play-level` from its `[coney]` table,
+`--frames` its updates, its input script, `--trace`), and `coney-tools trace diff` compares the two traces:
+
+```sh
+uv run --project python coney-tools trace coney research/traces/scenarios/walk60.toml --out ../../scratch/walk60-coney.csv
+uv run --project python coney-tools trace diff ../../scratch/walk60-original.csv ../../scratch/walk60-coney.csv --scenario research/traces/scenarios/walk60.toml
+```
+
+The diff aligns the rows by step, from the first update of input (the script's first frame + 1; `--from` and `--to`
+choose others), and prints for each column the first step outside its tolerance, the largest difference and where it
+is, then a short table of both traces around each divergence. It exits with 1 when a column is outside its
+tolerance, so it can gate a check, and 2 when a trace cannot be read. Without a scenario it compares every numeric
+column the two share; `--columns` picks some, `--tolerance COLUMN=VALUE` (or `*=VALUE`) sets tolerances (whole-number
+columns are exact by default, others 0.001), `--shift N` compares the original's step s with Coney's s + N, and
+headings compare round the circle.
+
+The two games seldom start at the same spot: Coney starts a level where its script puts the player, the original where
+the state was saved. `--start-frame` (or `start_frame = true`) moves each trace into its player's frame at the first
+compared step, so positions are metres from where he stood, forward along +y, and headings are turns from his
+heading then. The camera's points move with him, so a camera that starts at another angle shows as a heading offset.
+
+The smoke scenarios reproduce claims of the research pages: `walk60` (the walk start, level99's street, slot 1),
+`run_circle` (the run and the camera's auto-centre turning it into a circle, on the sandbox's open floor) and
+`combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6; the sandbox's fight yard on Coney).
 
 ## Writing up a finding
 

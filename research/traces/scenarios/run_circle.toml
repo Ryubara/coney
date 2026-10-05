@@ -1,0 +1,21 @@
+# The run with circling: full stick up, then held to the left while the camera's auto-centre turns him round.
+# Research: docs/research/feel.md, docs/research/camera.md. Coney runs it on the sandbox's open floor, the original in
+# slot 1's clear street.
+description = "a run, then the stick held left: the run circling behind the camera's auto-centre, then the run stop"
+research = "docs/research/feel.md"
+input = "run_circle.txt"
+updates = 230
+fields = ["player", "camera"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "sandbox"
+args = ["--spawn", "start"]
+
+[diff]
+start_frame = true
+columns = ["x", "y", "heading", "speed", "gait", "clip", "cam_distance", "cam_yaw"]
+tolerance = { x = 0.25, y = 0.25, heading = 2.0, speed = 0.1, gait = 0, clip = 0, cam_distance = 0.1, cam_yaw = 2.0 }

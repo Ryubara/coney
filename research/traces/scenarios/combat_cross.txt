@@ -1,0 +1,4 @@
+# Cross, then cross in X1's window: X1 (11) starts on the release, XX2 (13) when the window opens 10 updates into X1
+# (docs/research/combat.md#attacks). The stick stays at rest. Frames are updates of 1/30 s.
+40 tap cross
+52 tap cross

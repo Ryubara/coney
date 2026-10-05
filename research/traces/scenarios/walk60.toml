@@ -1,0 +1,22 @@
+# The walk start: stick 60 % up from standing, in level99's street (slot 1 on the original, a clear street).
+# Research: docs/research/feel.md (the walk start 413, then the walk 408 at 1.56 m/s).
+description = "level99 street: the walk start and the walk, stick 60 % up for 100 updates, then the stop"
+research = "docs/research/feel.md"
+input = "walk60.txt"
+updates = 170
+fields = ["player", "camera"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+
+[diff]
+# The walk start's timing and speeds. Where he walks and the camera are not compared: Coney's level99 start has a wall
+# behind it that pushes the camera in (2.8 m) and swings it by 20 degrees as he walks clear, which turns the walk; the
+# original's street spot is open.
+start_frame = true
+columns = ["speed", "vz", "gait", "clip", "stamina", "cam_pitch"]
+tolerance = { speed = 0.05, vz = 0.01, gait = 0, clip = 0, stamina = 0, cam_pitch = 1.0 }

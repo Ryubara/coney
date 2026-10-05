@@ -1,0 +1,5 @@
+# The run, then the circle (docs/research/feel.md, docs/research/camera.md): full stick up to run, then full stick to
+# the left; the follow camera swings round behind him, so he runs in a circle. Frames are updates of 1/30 s.
+40 stick left 0 100
+70 stick left -100 0
+190 stick left 0 0

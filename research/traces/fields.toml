@@ -1,0 +1,159 @@
+# Field sets for traces of the original (`coney-tools pcsx2 record`): what is read every character update, and where.
+# A column that Coney's --trace also writes has Coney's name and unit (src/human/player_trace.h): metres, degrees,
+# m/s. Addresses are expressions (python/src/coney_tools/game_memory.py); a formula works a value out from the fields
+# before it. Format: docs/guides/research-workflow.md#recording-a-trace.
+
+# The player human: docs/research/characters.md (the human object, the record, the per-player record, the transform
+# table) and docs/research/combat.md#record-fields.
+[[player]]
+name = "x"
+address = "tf(player) + 0x0"
+type = "f32"
+
+[[player]]
+name = "y"
+address = "tf(player) + 0x4"
+type = "f32"
+
+[[player]]
+name = "z"
+address = "tf(player) + 0x8"
+type = "f32"
+
+[[player]]
+name = "qz"
+address = "tf(player) + 0x18"
+type = "f32"
+hidden = true
+
+[[player]]
+name = "qw"
+address = "tf(player) + 0x1c"
+type = "f32"
+hidden = true
+
+[[player]]
+name = "heading"                          # 0 faces +y, anticlockwise, as Coney's
+formula = "wrap(deg(2 * atan2(qz, qw)))"
+digits = 3
+
+[[player]]
+name = "speed"                            # human +0x1ac, the speed across the ground
+address = "player + 0x1ac"
+type = "f32"
+
+[[player]]
+name = "vz"                               # human +0x3a0, the vertical speed
+address = "player + 0x3a0"
+type = "f32"
+
+[[player]]
+name = "gait"                             # human +0x1a8, 0 standing to 5 sprint
+address = "player + 0x1a8"
+type = "s32"
+
+[[player]]
+name = "clip"                             # record +0x20, the anim id playing
+address = "rec(player) + 0x20"
+type = "s32"
+
+[[player]]
+name = "stamina"                          # record +0x14a
+address = "rec(player) + 0x14a"
+type = "s16"
+
+[[player]]
+name = "command"                          # per-player record +0x20, the command id of this update
+address = "prec(player) + 0x20"
+type = "u32"
+
+[[player]]
+name = "health"                           # record +0x144
+address = "rec(player) + 0x144"
+type = "s16"
+
+[[player]]
+name = "power"                            # record +0x148, the power meter
+address = "rec(player) + 0x148"
+type = "s16"
+
+[[player]]
+name = "phase"                            # record +0x08, the combat phase flags (the original's only)
+address = "rec(player) + 0x08"
+type = "u32"
+
+# The player's follow camera, *(0x005d9158): docs/research/camera.md.
+[[camera]]
+name = "cam_x"
+address = "camera + 0x10"
+type = "f32"
+
+[[camera]]
+name = "cam_y"
+address = "camera + 0x14"
+type = "f32"
+
+[[camera]]
+name = "cam_z"
+address = "camera + 0x18"
+type = "f32"
+
+[[camera]]
+name = "look_x"
+address = "camera + 0x180"
+type = "f32"
+
+[[camera]]
+name = "look_y"
+address = "camera + 0x184"
+type = "f32"
+
+[[camera]]
+name = "look_z"
+address = "camera + 0x188"
+type = "f32"
+
+[[camera]]
+name = "wanted_x"
+address = "camera + 0x250"
+type = "f32"
+
+[[camera]]
+name = "wanted_y"
+address = "camera + 0x254"
+type = "f32"
+
+[[camera]]
+name = "wanted_z"
+address = "camera + 0x258"
+type = "f32"
+
+[[camera]]
+name = "cam_distance"                     # from the camera to its look-at point
+formula = "hypot(cam_x - look_x, cam_y - look_y, cam_z - look_z)"
+
+[[camera]]
+name = "cam_pitch"                        # positive above the look-at point
+formula = "deg(atan2(cam_z - look_z, hypot(cam_x - look_x, cam_y - look_y)))"
+digits = 3
+
+[[camera]]
+name = "cam_yaw"                          # the heading the view faces, as the human's are measured
+formula = "deg(atan2(cam_x - look_x, look_y - cam_y))"
+digits = 3
+
+[[camera]]
+name = "band_near"                        # +0x32c, the leash band's near edge
+address = "camera + 0x32c"
+type = "f32"
+
+[[camera]]
+name = "target_pitch_rad"
+address = "camera + 0x3b4"
+type = "f32"
+hidden = true
+
+[[camera]]
+name = "target_pitch"                     # +0x3b4, in degrees
+formula = "deg(target_pitch_rad)"
+digits = 3

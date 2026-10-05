@@ -522,6 +522,10 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
 | `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
 
+The original's trace, recorded in PCSX2 by `coney-tools pcsx2 record`, uses the same names and units for the columns
+both have, and `coney-tools trace coney` runs a scenario's script on Coney with `--trace`; `coney-tools trace diff`
+compares the two, column by column ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
+
 ### The debug menus {#the-debug-menus}
 
 Every run has Coney's debug menu, a trainer-style menu of its own (the original has none): press L3 and R3 together
@@ -685,8 +689,9 @@ uv run --project python mypy python/src python/tests
 `coney-tools config show` prints the paths your `coney.local.toml` sets (start from `coney.local.example.toml`;
 [Local workspace](workspace.md) explains each one). `coney-tools repo check-title` checks a commit or pull request
 title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits).
-`coney-tools wad` reads the archive on your own disc (`info`, `list`, `extract`, `names`); [The coney-tools command
-line](coney-tools.md) shows how to run each command.
+`coney-tools wad` reads the archive on your own disc (`info`, `list`, `extract`, `names`), `coney-tools pcsx2` and
+`coney-tools trace` record the original's per-update traces in PCSX2 and compare them with Coney's; [The coney-tools
+command line](coney-tools.md) shows how to run each command.
 
 ## Formatting and pre-commit
 

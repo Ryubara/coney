@@ -1,0 +1,5 @@
+# The walk start (docs/research/feel.md): stand, then the left stick at 60 % straight up (a walk: under 95 %) for 100
+# updates, then let go. Frames are character updates of 1/30 s. The input starts after Coney's level script has run
+# (one second into a level), so both games start from rest.
+40 stick left 0 60
+140 stick left 0 0
