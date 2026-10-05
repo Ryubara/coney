@@ -174,11 +174,40 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> 
     m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture);
     m_lights = std::make_unique<CharacterLights>(kCharacterAmbient, kCharacterDirectional,
                                                  directionToRenderWare(m_scenery->lightDirection()));
+    makeTargets(texture);
 }
 
 PlayLevelMode::~PlayLevelMode() {
     m_lights.reset();
-    m_mesh.reset(); // before the dictionaries, whose texture it holds
+    m_targets.clear(); // their meshes too hold the texture
+    m_mesh.reset();    // before the dictionaries, whose texture it holds
+}
+
+void PlayLevelMode::makeTargets(rw::Texture* texture) {
+    const raycast::CollisionMesh& mesh = m_scenery->collision();
+    const std::size_t vertices = m_character->assets().model.vertices.size();
+    std::uint32_t seed = 1;
+    for (const sandbox::TargetPoint& point : m_scenery->targets()) {
+        // Dropped onto the ground below its spot, as a teleport is.
+        raycast::Vec3 feet{point.position.x, point.position.y, point.position.z + kTeleportDrop};
+        if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, feet)) {
+            feet.z = point.position.z;
+        }
+        // **Coney's choice**: a target looks like the player (the one character Coney loads); its own model waits
+        // for the character classes.
+        Target target;
+        target.human = std::make_unique<human::TargetHuman>(
+            m_character->anims(), human::AnimSlots::player(), m_character->skeleton().bindRotations, point.health,
+            anim::Vec3{feet.x, feet.y, feet.z}, point.headingDegrees * std::numbers::pi_v<float> / 180.0F, seed++);
+        target.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture);
+        target.positions.resize(vertices);
+        target.normals.resize(vertices);
+        m_targetPointers.push_back(target.human.get());
+        m_targets.push_back(std::move(target));
+    }
+    if (!m_targets.empty()) {
+        m_print(std::format("targets: {} from the layout\n", m_targets.size()));
+    }
 }
 
 WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot, float drawDistance) const {
@@ -213,27 +242,27 @@ WorldView PlayLevelMode::viewFrom(const world::CameraPose& pose, float drawDista
 
 void PlayLevelMode::enter() { m_scenery->preload(toRenderWare(m_player->camera().position())); }
 
-void PlayLevelMode::skin(const human::PlayerSnapshot& snapshot) {
+void PlayLevelMode::skin(const anim::Pose& pose, anim::Vec3 feet, float heading, float lean,
+                         std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals) const {
     // The pose, skinned in the character's space (game axes, the feet at the origin, facing +y).
     const characters::CharacterModel& model = m_character->assets().model;
-    const auto bones = anim::boneTransforms(m_character->skeleton(), snapshot.pose);
+    const auto bones = anim::boneTransforms(m_character->skeleton(), pose);
     const std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
-    characters::skinVertices(model, matrices, m_positions, m_normals);
+    characters::skinVertices(model, matrices, positions, normals);
     // Then leaned into the turn about the forward axis at the feet (**Coney's choice** of axis and pivot: the
     // research gives the lean's angle, not how the body takes it), turned by the heading about z, moved to the feet,
     // and into RenderWare's axes.
-    const float lc = std::cos(-snapshot.lean);
-    const float ls = std::sin(-snapshot.lean);
+    const float lc = std::cos(-lean);
+    const float ls = std::sin(-lean);
     const auto roll = [lc, ls](anim::Vec3 v) { return anim::Vec3{v.x * lc + v.z * ls, v.y, -v.x * ls + v.z * lc}; };
-    const float c = std::cos(snapshot.heading);
-    const float s = std::sin(snapshot.heading);
-    const anim::Vec3 feet = snapshot.feet;
-    for (std::size_t i = 0; i < m_positions.size(); ++i) {
-        const anim::Vec3 p = roll(m_positions[i]);
-        const anim::Vec3 n = roll(m_normals[i]);
+    const float c = std::cos(heading);
+    const float s = std::sin(heading);
+    for (std::size_t i = 0; i < positions.size(); ++i) {
+        const anim::Vec3 p = roll(positions[i]);
+        const anim::Vec3 n = roll(normals[i]);
         const anim::Vec3 placed{p.x * c - p.y * s + feet.x, p.x * s + p.y * c + feet.y, p.z + feet.z};
-        m_positions[i] = anim::Vec3{placed.x, placed.z, -placed.y};
-        m_normals[i] = directionToRenderWare(anim::Vec3{n.x * c - n.y * s, n.x * s + n.y * c, n.z});
+        positions[i] = anim::Vec3{placed.x, placed.z, -placed.y};
+        normals[i] = directionToRenderWare(anim::Vec3{n.x * c - n.y * s, n.x * s + n.y * c, n.z});
     }
 }
 
@@ -243,6 +272,9 @@ void PlayLevelMode::drawCharacter() const {
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
     m_mesh->atomic()->render();
+    for (const Target& target : m_targets) {
+        target.mesh->atomic()->render();
+    }
 }
 
 ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
@@ -260,7 +292,10 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
 
     // The characters' update, then the cameras' (human::Player keeps that order).
     const anim::Vec3 before = m_player->human().position();
-    m_player->update(playerPad, &m_scenery->collision());
+    m_player->update(playerPad, &m_scenery->collision(), m_targetPointers);
+    for (Target& target : m_targets) {
+        target.human->step();
+    }
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
     if (const std::uint32_t id = m_player->human().animator().animId(); id != m_lastAnimId) {
@@ -290,8 +325,14 @@ void PlayLevelMode::render(const RenderTime& time) {
     const WorldView blended = m_freeCamera ? viewFrom(blendedFreeCamera(*m_freeCamera, time.alpha).pose(), drawDistance)
                                            : view(snapshot, drawDistance);
     if (m_engine.drawsPixels()) {
-        skin(snapshot);
+        skin(snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
         m_mesh->update(m_positions, m_normals);
+        for (Target& target : m_targets) {
+            const human::TargetSnapshot pose =
+                human::interpolate(target.human->previous(), target.human->current(), time.alpha);
+            skin(pose.pose, pose.feet, pose.heading, 0.0F, target.positions, target.normals);
+            target.mesh->update(target.positions, target.normals);
+        }
     }
     // The scenery draws itself through the blended view, with the character and the debug lines among its objects.
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot] {
@@ -440,13 +481,32 @@ std::string PlayLevelMode::summary() const {
     const human::Human& human = m_player->human();
     const anim::Vec3 p = human.position();
     const anim::Vec3 c = m_player->camera().position();
+    // The fight's counts, with targets to fight.
+    std::string fight;
+    if (!m_targets.empty()) {
+        const human::Fighter& fighter = human.fighter();
+        int health = 0;
+        int reactions = 0;
+        int stuns = 0;
+        int knockdowns = 0;
+        for (const Target& target : m_targets) {
+            health += target.human->health().value();
+            reactions += target.human->reactions();
+            stuns += target.human->stuns();
+            knockdowns += target.human->knockdowns();
+        }
+        fight = std::format("; fight: hits {} damage {} power {} rage {}, targets {} health {} reactions {} stuns {} "
+                            "knockdowns {}",
+                            fighter.hitsLanded(), fighter.damageDealt(), fighter.combat().power().value(),
+                            fighter.combat().rage().value(), m_targets.size(), health, reactions, stuns, knockdowns);
+    }
     return std::format(
         "play: {} frames, player at ({:.2f}, {:.2f}, {:.2f}) heading {:.1f} speed {:.2f} gait {} clip {} "
-        "{} {} stamina {}, travelled {:.2f} m, respawns {}; camera {:.2f} m away{}\n",
+        "{} {} stamina {}, travelled {:.2f} m, respawns {}; camera {:.2f} m away{}{}\n",
         m_stats.frames, p.x, p.y, p.z, human.heading() * 180.0F / std::numbers::pi_v<float>, human.speed(),
         gaitName(human.gait()), human.animator().animId(), human.airborne() ? "airborne" : "grounded",
         human::traversalName(human.traversal()), human.stamina().value(), m_stats.travelled, m_player->respawns(),
-        anim::distance(c, m_player->camera().lookAt()), m_scenery->summary());
+        anim::distance(c, m_player->camera().lookAt()), fight, m_scenery->summary());
 }
 
 } // namespace coney::platform

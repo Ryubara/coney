@@ -101,21 +101,46 @@ TEST_CASE("the power meter refills 2 an update and drains 1 every 2 while holdin
     CHECK(power.value() == 0);
 }
 
-TEST_CASE("rage gains points times the class's percentage, the part above the cap at 0.1", "[combat]") {
+TEST_CASE("rage gains points times the class's percentage, a large award at 0.1 as a whole", "[combat]") {
     const CombatTuning tuning;
     RageMeter rage;
     CHECK(rage.maximum() == 78);
     // 7 points × 144 % = 10.08: 10.
-    CHECK(rage.add(7.0F, tuning) == 10);
+    CHECK(rage.add(7.0F, tuning, 0) == 10);
     // 1 point: 1.44, rounded to 1; halved: 0.72, rounded to 1.
-    CHECK(rage.add(1.0F, tuning) == 1);
-    CHECK(rage.add(1.0F, tuning, RageGain{true, 1.0F}) == 1);
-    // 35 points: 25 in full and 10 at 0.1, 26 × 1.44 = 37.44.
-    CHECK(rage.add(35.0F, tuning) == 37);
-    CHECK(rage.value() == 49);
+    CHECK(rage.add(1.0F, tuning, 0) == 1);
+    CHECK(rage.add(1.0F, tuning, 0, RageGain{true, 1.0F}) == 1);
+    // 25 points count in full: 36; 35 points all count at 0.1: 3.5 × 1.44 = 5.04.
+    CHECK(rage.add(25.0F, tuning, 0) == 36);
+    CHECK(rage.add(35.0F, tuning, 0) == 5);
+    CHECK(rage.value() == 53);
     // The meter stops at its maximum.
-    CHECK(rage.add(30.0F, tuning) == 29);
+    CHECK(rage.add(20.0F, tuning, 0) == 25);
     CHECK(rage.full());
+}
+
+TEST_CASE("rage holds 5 s after a gain, then decays at 7.8 a second", "[combat]") {
+    const CombatTuning tuning;
+    RageMeter rage;
+    CHECK(rage.add(25.0F, tuning, 0) == 36);
+    // Held for 5 s: 150 updates.
+    for (std::uint64_t update = 1; update <= 150; ++update) {
+        rage.update(msAt(update), tuning);
+    }
+    CHECK(rage.value() == 36);
+    // Then 2 s of decay take 15 or 16 (7.8 a second).
+    for (std::uint64_t update = 151; update <= 210; ++update) {
+        rage.update(msAt(update), tuning);
+    }
+    CHECK(rage.value() >= 20);
+    CHECK(rage.value() <= 21);
+    // A new gain holds it again.
+    rage.add(1.0F, tuning, msAt(210));
+    const int before = rage.value();
+    for (std::uint64_t update = 211; update <= 300; ++update) {
+        rage.update(msAt(update), tuning);
+    }
+    CHECK(rage.value() == before);
 }
 
 TEST_CASE("rage starts only with a full meter, gains nothing while on and drains to its end", "[combat]") {
@@ -127,17 +152,20 @@ TEST_CASE("rage starts only with a full meter, gains nothing while on and drains
     CHECK(rage.start(0));
     CHECK(rage.raging());
     CHECK_FALSE(rage.start(0));
-    CHECK(rage.add(10.0F, tuning) == 0);
+    CHECK(rage.add(10.0F, tuning, 0) == 0);
 
-    // About 9.5 a second: after 2 s the meter has lost 19.
+    // 9.36 a second: after 2 s the meter has lost 18.
     for (std::uint64_t update = 1; update <= 60; ++update) {
-        rage.update(msAt(update), tuning.rageDrainPerSecond);
+        rage.update(msAt(update), tuning);
     }
-    CHECK(rage.value() == 59);
+    CHECK(rage.value() == 60);
+    // Full to empty in about 8.33 s (8.34 s at runtime).
     std::uint64_t update = 60;
     while (rage.raging() && update < 1000) {
-        rage.update(msAt(++update), tuning.rageDrainPerSecond);
+        rage.update(msAt(++update), tuning);
     }
     CHECK_FALSE(rage.raging());
     CHECK(rage.value() == 0);
+    CHECK(update >= 248);
+    CHECK(update <= 252);
 }

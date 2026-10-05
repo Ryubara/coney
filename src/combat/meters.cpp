@@ -104,14 +104,15 @@ RageMeter::RageMeter(int maximum, int gainPercent, std::uint64_t startMs)
 
 void RageMeter::set(int value) { m_value = std::clamp(value, 0, m_maximum); }
 
-int RageMeter::add(float points, const CombatTuning& tuning, RageGain gain) {
+int RageMeter::add(float points, const CombatTuning& tuning, std::uint64_t nowMs, RageGain gain) {
     if (m_raging || points <= 0.0F) {
         return 0;
     }
-    // The points up to the cap count in full, the rest at the factor above it.
-    const float below = std::min(points, tuning.ragePointsCap);
-    const float above = std::max(points - tuning.ragePointsCap, 0.0F);
-    const float scaled = (below * tuning.rageFactorBelow) + (above * tuning.rageFactorAbove);
+    // A gain holds the meter before it decays.
+    m_holdUntilMs = nowMs + static_cast<std::uint64_t>(std::max(tuning.rageHoldMs, 0));
+    // One factor for the whole award: in full up to the cap, at the factor above it for a larger award.
+    const float factor = points <= tuning.ragePointsCap ? tuning.rageFactorBelow : tuning.rageFactorAbove;
+    const float scaled = points * factor;
     const float halving = gain.halved ? 0.5F : 1.0F;
     const float raw = scaled * static_cast<float>(m_gainPercent) / 100.0F * halving * gain.stateMultiplier;
     const auto added = std::clamp(static_cast<int>(std::lround(raw)), 0, m_maximum - m_value);
@@ -129,17 +130,24 @@ bool RageMeter::start(std::uint64_t nowMs) {
     return true;
 }
 
-void RageMeter::update(std::uint64_t nowMs, float drainPerSecond) {
+void RageMeter::update(std::uint64_t nowMs, const CombatTuning& tuning) {
     const std::uint64_t elapsed = nowMs > m_lastMs ? nowMs - m_lastMs : 0;
     m_lastMs = nowMs;
-    if (!m_raging) {
+    if (m_raging) {
+        // Rage drains the meter and ends with it.
+        m_value = std::max(0, m_value - wholePoints(tuning.rageDrainPerSecond, elapsed, m_carry));
+        if (m_value == 0) {
+            m_raging = false;
+            m_carry = 0.0F;
+        }
         return;
     }
-    m_value = std::max(0, m_value - wholePoints(drainPerSecond, elapsed, m_carry));
-    if (m_value == 0) {
-        m_raging = false;
+    // An unspent meter decays once the last gain's hold has passed.
+    if (nowMs < m_holdUntilMs || m_value == 0) {
         m_carry = 0.0F;
+        return;
     }
+    m_value = std::max(0, m_value - wholePoints(tuning.rageDecayPerSecond, elapsed, m_carry));
 }
 
 } // namespace coney::combat

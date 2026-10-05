@@ -85,6 +85,17 @@ struct SpawnPoint {
     float headingDegrees = 0.0F; ///< As a level's player start: 0 faces +y.
 };
 
+/// A passive human to fight (human::TargetHuman): Coney's own test target, only ever placed by a sandbox layout.
+struct TargetPoint {
+    std::string name;
+    anim::Vec3 position;         ///< Its feet.
+    float headingDegrees = 0.0F; ///< 0 faces +y.
+    int health = 600;            ///< As the street civilian the research fought (600).
+};
+
+/// The most targets one layout may place.
+inline constexpr std::size_t kMaxTargets = 16;
+
 /// A named camera viewpoint for the free camera: the camera's position and where it looks.
 struct Viewpoint {
     std::string name;
@@ -113,8 +124,9 @@ struct SandboxLayout {
     std::string title; ///< From the `title` line; empty without one.
     std::vector<TextureRef> textures;
     std::vector<Primitive> primitives;
-    std::vector<SpawnPoint> spawns; ///< At least one: a layout without a `spawn` line gets one at the origin.
-    std::vector<Viewpoint> views;   ///< At least one: without a `view` line, one behind the first spawn.
+    std::vector<SpawnPoint> spawns;   ///< At least one: a layout without a `spawn` line gets one at the origin.
+    std::vector<TargetPoint> targets; ///< The `target` lines: humans to fight (play mode only).
+    std::vector<Viewpoint> views;     ///< At least one: without a `view` line, one behind the first spawn.
     Lighting lighting;
     float tessellation = 1.0F; ///< Largest edge, metres, of the drawn faces (finer faces carry finer lighting).
 };

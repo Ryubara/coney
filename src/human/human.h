@@ -10,27 +10,34 @@
 #include "animation/anim_math.h"
 #include "animation/anim_pose.h"
 #include "characters/anim_set.h"
+#include "combat/anim_ranges.h"
+#include "combat/commands.h"
 #include "human/climb.h"
+#include "human/fighter.h"
 #include "human/human_animator.h"
 #include "human/locomotion.h"
 #include "human/stamina.h"
+#include "human/target_human.h"
 #include "raycast/collision_mesh.h"
 
-// A human driven by a pad: the player. Its locomotion, sprint and stamina, jump and climbs, its standing on and falling
-// from the level's collision mesh, and its animation, stepped at the characters' fixed 30 Hz. Platform-neutral and
-// deterministic: no clock, no randomness, so a scripted pad gives the same path on every run (test mode).
-// Research: docs/research/characters.md
+// A human driven by a pad: the player. Its locomotion, sprint and stamina, jump and climbs, its fighting (Fighter), its
+// standing on and falling from the level's collision mesh, and its animation, stepped at the characters' fixed 30 Hz.
+// Platform-neutral and deterministic: no clock, no randomness, so a scripted pad gives the same path on every run (test
+// mode). Research: docs/research/characters.md
 
 namespace coney::human {
 
-/// What the human is given each update: the left stick, the camera's view direction, which turns it, and the two
-/// buttons traversal reads.
+/// What the human is given each update: the left stick, the camera's view direction, which turns it, the two
+/// buttons traversal reads, and combat's command, buttons and targets.
 struct HumanInput {
     float stickX = 0.0F;        ///< Left stick, -1 (left) to 1 (right), after the pad's own dead zone.
     float stickY = 0.0F;        ///< Left stick, -1 (down) to 1 (up).
     anim::Vec3 cameraForward;   ///< The camera's view direction; only its part across the ground is used.
     bool sprintHeld = false;    ///< L2 is held: asks for a sprint (docs/research/characters.md#sprint).
     bool actionPressed = false; ///< Triangle went down this update (command 10): a climb, an action or a jump.
+    combat::CommandId command = combat::command::kNone; ///< This update's command (combat::CommandMatcher).
+    std::uint16_t buttons = 0;                          ///< The held buttons (the block reads R1).
+    std::span<TargetHuman* const> targets;              ///< The humans that can be fought (the sandbox's targets).
 };
 
 /// What the human is doing beyond walking and standing, for the debug menus and the tests.
@@ -72,9 +79,11 @@ class Human {
     static constexpr float kLandingTestHeight = 1.0F;
 
     /// A human playing `anims` (which must outlive it) through `slots`, posed over `bindRotations` (the skeleton's),
-    /// of body scale `scale` (`+0x65c`). It stands at the origin facing +y with full stamina until spawn().
+    /// of body scale `scale` (`+0x65c`), its hits' damage from `ranges` (may be null: no damage; must outlive it). It
+    /// stands at the origin facing +y with full stamina until spawn().
     Human(const characters::AnimSet& anims, const AnimSlots& slots,
-          std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale = 1.0F);
+          std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale = 1.0F,
+          const combat::AnimRangeList* ranges = nullptr);
 
     /// Places the human at `position` (the feet, game axes) facing `headingDegrees` (0 faces +y), snapped to the
     /// ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m above; 0.01 above the hit. Stamina is full
@@ -124,6 +133,9 @@ class Human {
     [[nodiscard]] const std::optional<ClimbProbe>& climb() const { return m_climbProbe; }
     /// The body's scale (`+0x65c`).
     [[nodiscard]] float scale() const { return m_scale; }
+    /// The fighting: combat's state, meters and what it last did.
+    [[nodiscard]] const Fighter& fighter() const { return m_fighter; }
+    [[nodiscard]] Fighter& fighter() { return m_fighter; }
 
   private:
     // A climb under way: what it climbs, which clip of its chain plays, and the move to its start point.
@@ -166,6 +178,10 @@ class Human {
     // The materials the body and the snap pass through now: the fences while climbing over.
     [[nodiscard]] std::span<const std::uint8_t> passThrough() const;
 
+    // Combat holds the body: no stick movement; a block turns toward the stick in place (the shuffle).
+    void holdForCombat();
+    // Combat's update: the stick turned into the facing frame, the game time, the targets.
+    void fight(const HumanInput& input);
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
     void updateMeters(bool sprintHeld);
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
@@ -186,6 +202,9 @@ class Human {
     void endClimb();
 
     HumanAnimator m_animator;
+    const combat::AnimRangeList* m_ranges;
+    Fighter m_fighter;
+    std::uint64_t m_updates = 0; // updates stepped: combat's game time
     std::array<anim::Quat, anim::kPoseBones> m_bindRotations{};
     float m_scale = 1.0F;
     anim::Vec3 m_position;

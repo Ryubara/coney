@@ -28,7 +28,8 @@ constexpr float kIdleSpeedShare = 0.25F;
 
 // Whether `state` is an action whose clips play out before the controller chooses again.
 bool isAction(AnimState state) {
-    return state == AnimState::Land || state == AnimState::RunStop || state == AnimState::Climb;
+    return state == AnimState::Land || state == AnimState::RunStop || state == AnimState::Climb ||
+           state == AnimState::Attack;
 }
 
 } // namespace
@@ -192,7 +193,39 @@ void HumanAnimator::stopToIdle() {
     m_state = AnimState::Idle;
 }
 
+void HumanAnimator::playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade) {
+    // The loop last, then each clip handing over to what follows it, built from the end.
+    std::unique_ptr<anim::AnimTask> chain;
+    if (const anim::AnimClip* clip = m_anims->clip(loop); clip != nullptr) {
+        chain = std::make_unique<anim::LoopTask>(*clip, loop, m_anims->rate(loop), 0U);
+    } else {
+        chain = idleLoop();
+    }
+    for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
+        if (hasClip(*it)) {
+            chain = clipThen(*it, std::move(chain));
+        }
+    }
+    m_tasks.change(std::move(chain), fade);
+    m_state = state;
+}
+
+void HumanAnimator::playCombatThenRun(std::span<const std::uint32_t> clips, float fade) {
+    std::unique_ptr<anim::AnimTask> chain = gaitBlend(kRunValue, 0.0F);
+    for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
+        if (hasClip(*it)) {
+            chain = clipThen(*it, std::move(chain));
+        }
+    }
+    m_tasks.change(std::move(chain), fade);
+    m_state = AnimState::Attack;
+}
+
 void HumanAnimator::choose(const AnimInputs& inputs) {
+    // A held combat pose stays until combat plays something else.
+    if (m_state == AnimState::Hold) {
+        return;
+    }
     // An action's clips play out; then the state is whatever they handed over to.
     if (isAction(m_state)) {
         if (drivingClipPlaying()) {
@@ -229,6 +262,8 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
         case AnimState::Land:
         case AnimState::RunStop:
         case AnimState::Climb:
+        case AnimState::Attack:
+        case AnimState::Hold:
             break;
         }
         m_state = next;

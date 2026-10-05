@@ -62,10 +62,12 @@ inline constexpr std::size_t kNoTarget = std::numeric_limits<std::size_t>::max()
 enum class GrabAction : std::uint8_t {
     None,        ///< Nothing.
     Strike,      ///< Square (51 or 53) or cross (55).
-    PowerStrike, ///< Cross held, square pressed, with power above CombatTuning::powerEndurance.
+    PowerStrike, ///< Cross held and square pressed (57, 63 in rage), or circle + cross (63).
     Throw,       ///< Circle with the stick beyond kThrowStick.
     Mug,         ///< Triangle at a victim that can be mugged: the mugging starts.
-    Spin,        ///< Circle without the stick.
+    Spin,        ///< R1 pressed, or circle without the stick from the rear: the hold turns front to rear or back.
+    Release,     ///< A power strike or throw asked for with too little power: the grab is released.
+    LetGo,       ///< L2 held, or the power meter ran out: the player lets go (95, victim 94).
 };
 
 /// What a grab update needs to know.
@@ -81,19 +83,27 @@ struct GrabInput {
 /// What a grab update did.
 struct GrabOutcome {
     GrabAction action = GrabAction::None;
-    int animId = anim_id::kNone; ///< The clip it starts; anim_id::kNone for the mugging and the spin (their clips are
-                                 ///< the mugging's and the spin routine's, not chosen here).
+    int animId = anim_id::kNone; ///< The player's clip it starts (the spin's 78 or 80, the let-go's 95);
+                                 ///< anim_id::kNone for the mugging (its clips are the mugging's) and the release.
+    bool spinFirst = false;      ///< A power strike from the rear: the spin to the front (80) plays first.
     int powerSpent = 0;          ///< Taken from the power meter.
 };
 
-/// One update of a grab: square strikes with 51 or 53 at random, cross (its 0x10) strikes with 55, each costing
-/// CombatTuning::grabStrikeCost × 0.5 of the meter (40 of 400); cross held and square pressed (0x22) is the power
-/// strike 57 (63 in rage, 80 from the rear) when the meter's fraction is above CombatTuning::powerEndurance;
-/// triangle mugs a victim that qualifies; circle (its press, 0x1e) throws by the stick's side, costing the power
-/// endurance fraction (100 of 400), or spins without the stick.
-/// **Coney choices**: the power strike spends nothing (the research gives only what it needs); a strike or throw is
-/// allowed with too little power, the meter stopping at 0; cross strikes on 0x10, not on its press (which would fire
-/// before a power strike's square); circle acts on its press.
+/// One update of a grab:
+/// - square strikes with 51 or 53 at random, cross (its 0x10) with 55, each spending CombatTuning::grabStrikeCost ×
+///   0.5 of the meter (40 of 400) at any level;
+/// - cross held and square pressed (0x22) is the power strike 57 (63 in rage), circle + cross (0x23) is 63; from the
+///   rear the spin to the front plays first;
+/// - circle (its press, 0x1e) with the stick beyond kThrowStick throws by the stick's side; without the stick, from
+///   the rear, it spins to the front;
+/// - the power strikes and the throws need more than CombatTuning::powerEndurance of the meter and spend it (100 of
+///   400); with that much or less the grab is released instead;
+/// - R1 pressed (3) spins front to rear (78) or rear to front (80); L2 held (5) lets go (95);
+/// - triangle mugs a victim that qualifies.
+///
+/// In rage nothing is spent or needed.
+/// **Coney choices**: circle without the stick from the front does nothing (its routine `0x0026f008` is not traced);
+/// cross strikes on 0x10, not on its press (which would fire before a power strike's square).
 /// @orig 0x0027f3b0 Player_UpdateGrabbing (unknown)
 [[nodiscard]] GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTuning& tuning,
                                      CombatRandom& random);

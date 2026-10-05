@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "combat/anim_ranges.h"
 
+#include <array>
 #include <bit>
 #include <cstdint>
+#include <span>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -71,4 +73,37 @@ TEST_CASE("an Anim Range List shorter than its count is refused", "[combat]") {
     CHECK(list.error().code == coney::ErrorCode::Truncated);
 
     CHECK_FALSE(AnimRangeList::parse(Bytes{}.u16(1).span()).has_value());
+}
+
+TEST_CASE("a class's damage table is written over the list, scaled for a player by the Warrior percentage",
+          "[combat]") {
+    // 700 records, each doing 40 (as the file's Rembrandt S1 does).
+    Bytes bytes;
+    bytes.u32(700);
+    for (int i = 0; i < 700; ++i) {
+        record(bytes, 0, 1000, 1.0F, 0, 40, 0, 0);
+    }
+    auto player = AnimRangeList::parse(bytes.span());
+    REQUIRE(player.has_value());
+    AnimRangeList civilian = *player;
+
+    // Index 1 (S1) 15, index 0 (X1) 30, index 10 (the snaps) 20, index 2 (XX2) 0: kept.
+    std::array<std::int16_t, coney::combat::kClassDamageEntries> values{};
+    values[0] = 30;
+    values[1] = 15;
+    values[10] = 20;
+    // A player at 115 %: 15 plays as 17, and 30 as 34 (not 35), as the original rounds.
+    CHECK(coney::combat::applyClassDamage(*player, values, 115) == 8);
+    CHECK(player->damage(12) == 17);
+    CHECK(player->damage(11) == 34);
+    CHECK(player->damage(25) == 23);
+    CHECK(player->damage(30) == 23);
+    CHECK(player->damage(13) == 40);
+    // A civilian keeps the values unscaled.
+    CHECK(coney::combat::applyClassDamage(civilian, values, 0) == 8);
+    CHECK(civilian.damage(12) == 15);
+    CHECK(civilian.damage(11) == 30);
+    // A short table writes only what it has.
+    AnimRangeList shortList = civilian;
+    CHECK(coney::combat::applyClassDamage(shortList, std::span(values).first(1), 0) == 1);
 }

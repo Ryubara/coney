@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "combat/attacks.h"
 
+#include <algorithm>
+#include <array>
+
 namespace coney::combat {
 
 namespace {
@@ -130,11 +133,63 @@ int nextChainAttack(int current, ChainButton button) {
     return next;
 }
 
-void AttackChain::start(int animId) {
+AttackTiming attackTiming(int animId, const CombatTuning& tuning) {
+    // A measured attack, by hit, window opening, end phase and idle; -1 where the research has no number.
+    struct Measured {
+        int id, hit, open, close, end;
+    };
+    static constexpr std::array<Measured, 15> kMeasured{{
+        {.id = anim_id::kAttackX1, .hit = 8, .open = 10, .close = 20, .end = 30},
+        {.id = anim_id::kAttackSS2, .hit = 4, .open = 6, .close = -1, .end = -1},
+        {.id = anim_id::kAttackSSS3, .hit = 7, .open = -1, .close = 16, .end = 26},
+        {.id = anim_id::kAttackSSX3, .hit = 7, .open = -1, .close = 24, .end = 30},
+        {.id = anim_id::kAttackXX2, .hit = 10, .open = -1, .close = 17, .end = 30},
+        {.id = anim_id::kAttackSX2, .hit = 7, .open = -1, .close = 14, .end = 19},
+        {.id = anim_id::kAttackXS2, .hit = 9, .open = -1, .close = 22, .end = 30},
+        {.id = anim_id::kGrabComboStrike1, .hit = 1, .open = -1, .close = -1, .end = 21},
+        {.id = anim_id::kGrabComboStrike2, .hit = 1, .open = -1, .close = -1, .end = 21},
+        {.id = anim_id::kGrabComboStrike3, .hit = 1, .open = -1, .close = -1, .end = 23},
+        {.id = anim_id::kGrabPower1Strike1, .hit = 0, .open = 19, .close = 33, .end = 44},
+        {.id = anim_id::kAttackFromWalk, .hit = -1, .open = -1, .close = -1, .end = 24},
+        {.id = anim_id::kAttackFromRun, .hit = -1, .open = -1, .close = -1, .end = 21},
+        {.id = anim_id::kRunningAttackCharge, .hit = -1, .open = -1, .close = -1, .end = 27},
+        {.id = anim_id::kRunningAttackDive, .hit = -1, .open = -1, .close = -1, .end = 60},
+    }};
+    // S1's timing, the tunable one, is every other attack's.
+    AttackTiming timing{.hit = tuning.hitUpdate,
+                        .chainOpen = tuning.chainOpenUpdate,
+                        .chainClose = tuning.chainCloseUpdate,
+                        .recovery = tuning.recoveryUpdate,
+                        .end = tuning.attackEndUpdate};
+    const auto found = std::ranges::find(kMeasured, animId, &Measured::id);
+    if (found == kMeasured.end()) {
+        return timing;
+    }
+    // The measured columns, the unmeasured ones filled as attackTiming() documents.
+    if (found->hit >= 0) {
+        timing.hit = found->hit;
+    }
+    if (found->end >= 0) {
+        timing.end = found->end;
+        timing.recovery = found->end - (tuning.attackEndUpdate - tuning.recoveryUpdate);
+    }
+    if (found->close >= 0) {
+        timing.chainClose = found->close;
+    } else if (found->open < 0) {
+        timing.chainClose = timing.recovery;
+    }
+    timing.chainOpen = found->open >= 0 ? found->open : timing.chainClose;
+    timing.recovery = std::max(timing.recovery, timing.chainClose);
+    return timing;
+}
+
+bool AttackChain::start(int animId, const CombatTuning& tuning) {
+    m_timing = attackTiming(animId, tuning);
     m_current = animId;
     m_age = 0;
     ++m_combo;
     m_buffered = ChainButton::None;
+    return m_timing.hit == 0;
 }
 
 void AttackChain::cancel() {
@@ -152,50 +207,52 @@ ChainStep AttackChain::update(ChainButton press, const CombatTuning& tuning) {
     ++m_age;
 
     // Buffer the press when the phase takes one; a later press replaces an earlier one.
-    if (press != ChainButton::None && accepts(tuning)) {
+    if (press != ChainButton::None && accepts()) {
         m_buffered = press;
     }
-    if (m_age == tuning.hitUpdate) {
+    if (m_age == m_timing.hit) {
         step.hit = m_current;
     }
 
     // With the window open, a buffered press plays the next attack, or ends the chain where the table has none.
-    if ((phaseFlags(tuning) & kPhaseChainWindow) != 0 && m_buffered != ChainButton::None) {
+    if ((phaseFlags() & kPhaseChainWindow) != 0 && m_buffered != ChainButton::None) {
         const int next = nextChainAttack(m_current, m_buffered);
         m_buffered = ChainButton::None;
         if (next != anim_id::kNone) {
-            start(next);
+            if (start(next, tuning)) {
+                step.hit = next;
+            }
             step.started = next;
             return step;
         }
     }
 
     // The attack ran out with nothing after it: the fight idle returns and the combo starts again.
-    if (m_age >= tuning.attackEndUpdate) {
+    if (m_age >= m_timing.end) {
         cancel();
         step.finished = true;
     }
     return step;
 }
 
-std::uint32_t AttackChain::phaseFlags(const CombatTuning& tuning) const {
+std::uint32_t AttackChain::phaseFlags() const {
     if (!active()) {
         return 0;
     }
-    if (m_age < tuning.chainOpenUpdate) {
+    if (m_age < m_timing.chainOpen) {
         return kPhaseWindUp;
     }
-    if (m_age < tuning.chainCloseUpdate) {
+    if (m_age < m_timing.chainClose) {
         return kPhaseChainWindow;
     }
-    if (m_age < tuning.recoveryUpdate) {
+    if (m_age < m_timing.recovery) {
         return kPhaseEnd;
     }
     return kPhaseRecovery;
 }
 
-bool AttackChain::accepts(const CombatTuning& tuning) const {
-    const std::uint32_t phase = phaseFlags(tuning);
+bool AttackChain::accepts() const {
+    const std::uint32_t phase = phaseFlags();
     if (phase == kPhaseChainWindow) {
         return true;
     }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "combat/anim_ranges.h"
 
+#include <array>
+#include <cmath>
 #include <string>
 
 #include "fileio/reader.h"
@@ -13,6 +15,40 @@ namespace {
 constexpr float kMilli = 0.001F;
 // When the far range is 0 the reach stands for it, scaled by this (docs/research/formats/animation.md).
 constexpr float kFarFromReach = 1.25F;
+
+// The anim ids each class damage index sets (the jump table at `0x0055d6f0`); -1 ends a row.
+struct ClassDamageRow {
+    std::size_t index;
+    std::array<int, 6> ids;
+};
+constexpr std::array<ClassDamageRow, 31> kClassDamageRows{{
+    {.index = 0, .ids = {11, -1, -1, -1, -1, -1}},    {.index = 1, .ids = {12, -1, -1, -1, -1, -1}},
+    {.index = 2, .ids = {13, -1, -1, -1, -1, -1}},    {.index = 3, .ids = {15, -1, -1, -1, -1, -1}},
+    {.index = 4, .ids = {14, -1, -1, -1, -1, -1}},    {.index = 5, .ids = {16, -1, -1, -1, -1, -1}},
+    {.index = 6, .ids = {17, -1, -1, -1, -1, -1}},    {.index = 7, .ids = {19, -1, -1, -1, -1, -1}},
+    {.index = 8, .ids = {18, -1, -1, -1, -1, -1}},    {.index = 9, .ids = {20, -1, -1, -1, -1, -1}},
+    {.index = 10, .ids = {25, 26, 27, 28, 29, 30}},   {.index = 11, .ids = {21, -1, -1, -1, -1, -1}},
+    {.index = 12, .ids = {193, -1, -1, -1, -1, -1}},  {.index = 13, .ids = {194, -1, -1, -1, -1, -1}},
+    {.index = 16, .ids = {653, 655, -1, -1, -1, -1}}, {.index = 17, .ids = {657, 659, -1, -1, -1, -1}},
+    {.index = 19, .ids = {0, -1, -1, -1, -1, -1}},    {.index = 20, .ids = {1, -1, -1, -1, -1, -1}},
+    {.index = 24, .ids = {51, 53, 55, -1, -1, -1}},   {.index = 25, .ids = {147, 151, 149, 153, -1, -1}},
+    {.index = 26, .ids = {57, -1, -1, -1, -1, -1}},   {.index = 27, .ids = {59, -1, -1, -1, -1, -1}},
+    {.index = 28, .ids = {61, -1, -1, -1, -1, -1}},   {.index = 29, .ids = {155, 159, 157, 161, -1, -1}},
+    {.index = 31, .ids = {96, 98, 108, 110, -1, -1}}, {.index = 35, .ids = {219, 221, 223, -1, -1, -1}},
+    {.index = 37, .ids = {225, -1, -1, -1, -1, -1}},  {.index = 38, .ids = {227, -1, -1, -1, -1, -1}},
+    {.index = 39, .ids = {229, -1, -1, -1, -1, -1}},  {.index = 42, .ids = {250, -1, -1, -1, -1, -1}},
+    {.index = 43, .ids = {246, -1, -1, -1, -1, -1}},
+}};
+
+// `exact` as a float rounded toward zero, as the PS2's floating-point unit rounds every result (Coney's reading of
+// the research's "30 gives 34": rounded to nearest, 30 × 115 × 0.01 + 0.5 would give 35).
+float towardZero(double exact) {
+    float rounded = static_cast<float>(exact);
+    if (std::fabs(static_cast<double>(rounded)) > std::fabs(exact)) {
+        rounded = std::nextafter(rounded, 0.0F);
+    }
+    return rounded;
+}
 
 // Reads one 16-byte record; the caller has checked the bytes are there.
 AnimRange readRecord(io::Reader& reader) {
@@ -69,6 +105,28 @@ float AnimRangeList::farRange(std::size_t id) const {
         return 0.0F;
     }
     return range->far != 0.0F ? range->far : range->reach * kFarFromReach;
+}
+
+int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, int playerPercent) {
+    int written = 0;
+    for (const ClassDamageRow& row : kClassDamageRows) {
+        if (row.index >= values.size() || values[row.index] == 0) {
+            continue;
+        }
+        // A player's value is scaled by its Warrior class percentage, in floats as the original rounds it.
+        int damage = values[row.index];
+        if (playerPercent != 0) {
+            const float product = towardZero(static_cast<double>(damage) * playerPercent);
+            const float percent = towardZero(static_cast<double>(product) * static_cast<double>(0.01F));
+            damage = static_cast<int>(towardZero(static_cast<double>(percent) + 0.5));
+        }
+        for (const int id : row.ids) {
+            if (id >= 0 && list.setDamage(static_cast<std::size_t>(id), static_cast<std::int16_t>(damage))) {
+                ++written;
+            }
+        }
+    }
+    return written;
 }
 
 } // namespace coney::combat

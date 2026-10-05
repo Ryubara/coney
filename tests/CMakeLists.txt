@@ -98,6 +98,7 @@ target_sources(coney_tests PRIVATE
     human/human_test.cpp
     human/body_test.cpp
     human/climb_test.cpp
+    human/combat_test.cpp
     human/jump_test.cpp
     human/locomotion_test.cpp
     human/stamina_test.cpp
@@ -111,11 +112,13 @@ target_sources(coney_tests PRIVATE
     combat/grab_test.cpp
     combat/meters_test.cpp
     combat/player_combat_test.cpp
+    combat/reactions_test.cpp
     combat/stick_games_test.cpp
     debug/combat_tunables_test.cpp)
 # The sandbox and the collision writer it uses (docs/guides/sandbox.md).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp
+    sandbox/disc_sandbox_combat_test.cpp
     sandbox/disc_sandbox_player_test.cpp
     sandbox/disc_sandbox_traversal_test.cpp
     sandbox/sandbox_layout_test.cpp

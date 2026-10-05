@@ -117,7 +117,8 @@ level request and back, driven by a scripted pad (`[frontend]`); STORY through t
 standing at level99's start under the pad, and the level scripts' player starts for a few checkpoints (`[story]`);
 every animation clip in the WAD, parsed and sampled (`[anim]`, about 7 seconds); every Character List record with its
 model, textures, character data and clips, skinned (`[characters]`); Rembrandt's Anim Range List with a damage for
-every attack and the grab and tackle ranges (`[combat]`); and Rembrandt at level99's start, walked, run, turned,
+every attack and the grab and tackle ranges, and Rembrandt in the sandbox's fight yard doing a combo, a grab with a
+strike, spins and a throw, a tackle and a mugging on a passive target (`[combat]`); and Rembrandt at level99's start, walked, run, turned,
 stopped and run into the scenery by scripted
 partial stick deflections, with his speeds and clips checked against the research (`[player]`), and played again through
 the main loop at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`). They
@@ -396,23 +397,34 @@ hub, `level95`, and the Rumble arenas) or creates none puts him above the middle
 Coney's stand-in. He walks, runs, sprints, turns and leans into turns, stops, steps onto kerbs under 25 cm, slides
 along walls, jumps, climbs fences and walls, and falls off ledges on the level's collision mesh, with the original's
 speeds, turn rates and clips: the walk or run start, a blend across walk, jog, run and sprint, the idle, the run stop,
-the jump and its landing, and the climbs ([Characters](../research/characters.md#sprint)). The level script runs only
-for the start: there are no objects, other characters, fighting or missions yet; a fall out of the world puts him back
-at the start. Coney prints a line whenever the clip changes and a summary when it stops (the player's position, speed,
+the jump and its landing, and the climbs ([Characters](../research/characters.md#sprint)). He fights as the original's
+player does ([Combat](../research/combat.md#coneys-implementation)): the square and cross chains, the snaps, the run
+attack, the charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the
+tackle, with the original's commands, timing and clips; in a level there is no one to hit yet, and the sandbox's fight
+yard (`--play-level sandbox:combat`) has passive targets that take the hits. The level script runs only for the start:
+there are no objects, other characters or missions yet; a fall out of the world puts him back at the start. Coney prints a line whenever the clip changes and a summary when it stops (the player's position, speed,
 gait, clip, traversal state, stamina, the camera's distance and counts only).
 
 | Pad | Keyboard | Does |
 | --- | --- | --- |
 | left stick | W A S D (full deflection) | move, relative to the camera: a walk below 95 % of the stick's travel, a run above |
 | L2 held | 1 | sprint, with the stick past 95 %, while stamina lasts (135, 6.75 s); let go to refill it |
-| triangle | I | climb the fence or wall ahead (within reach, stick pushed); otherwise jump from a run or sprint |
+| triangle | I | climb the fence or wall ahead (within reach, stick pushed); otherwise jump from a run or sprint; in a grab, mug |
+| square | J | attack (`S1`; pressed again in the chain window `SS2`, then `SSS3`; with the stick pushed past 95 % to a side or back, a snap; at a run, the run attack); in a grab, strike |
+| cross | K or Space | attack on the release (`X1`, then `XX2` or `XS2`); in a grab, strike |
+| circle | L | tapped, grab the target in reach; held, tackle; in a grab, throw towards the stick (pushed past 25 %) |
+| R1 held | E | block: the stick turns him in place and he does not move; in a grab, R1 pressed spins the hold |
+| L1 + R1 | Q + E | start rage, with a full rage meter |
+| L2 held, then cross or square | 1, then K or J | the charge or the dive, at a run or sprint |
 | right stick | none | turn the camera round him, look up and down |
 
 The stick's direction is turned by the camera's heading, so up always moves away from the camera. The game's own
 dead zone (12 %) applies; the walk speed does not depend on how far the stick is pushed, only whether it is pushed
 past 95 %. Let go and he stops at once and settles into the idle; let go in a sprint and he skids through the run
 stop. The jump needs a run (faster than 3.3 m/s) and is refused within 5.5 m of a climbable face, where triangle climbs
-or does nothing. In a script: `press l2`, `stick left 0 100`, `tap triangle`.
+or does nothing. In a script: `press l2`, `stick left 0 100`, `tap triangle`. The fights: `tap square` every 6 frames
+for the square chain, `tap circle` to grab and `press circle` with a `release circle` 7 or more frames later to
+tackle, `press r1` to block (the fight scripts: `tests/support/combat_*.txt`).
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99
@@ -435,7 +447,11 @@ is the layout's fog end. The disc is still needed, for the character.
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox:parkour --spawn lane
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox --spawn stairs --frames 120 --input-script tests/support/sandbox_walk_short.txt --screenshot ../../scratch/stairs.png
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox:combat --frames 30 --input-script tests/support/combat_combo.txt --screenshot ../../scratch/combo.png
 ```
+
+A layout's `target` lines put passive humans to fight there ([Sandbox](sandbox.md#the-layout-format)); the summary
+then adds the fight's counts (hits, damage, power, rage, and the targets' health, reactions, stuns and knockdowns).
 
 ### The debug menus {#the-debug-menus}
 

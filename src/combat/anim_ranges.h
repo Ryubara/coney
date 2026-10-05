@@ -23,8 +23,8 @@ struct AnimRange {
     float reach = 0.0F;      ///< `+0x04`; 0 means the id has no range data.
     float far = 0.0F;        ///< `+0x08` × 0.001 as stored; 0 when the file leaves it to the reach (farRange()).
     std::int16_t damage = 0; ///< `+0x0a`: the move's damage.
-    std::int16_t kind = 0;   ///< `+0x0c`: the hit kind kept with pending damage (inferred).
-    std::uint16_t flags = 0; ///< `+0x0e`: the playback-rate flags.
+    std::int16_t kind = 0;   ///< `+0x0c`: the hit code (direction, height, strength; combat/reactions.h).
+    std::uint16_t flags = 0; ///< `+0x0e`: the playback-rate flags and the stun flag `0x400`.
 };
 
 /// The Anim Range List of one character.
@@ -56,5 +56,16 @@ class AnimRangeList {
   private:
     std::vector<AnimRange> m_records;
 };
+
+/// The damage entries of a character class (`CfgChar`, class record `+0xb8`).
+inline constexpr std::size_t kClassDamageEntries = 45;
+
+/// Writes a character class's damage `values` (up to kClassDamageEntries, by class index) over `list`, as the
+/// original does when a human is made: each index names the anim ids it sets (docs/research/combat.md#damage-table);
+/// a value of 0 keeps the list's own. With `playerPercent` (the Warrior class byte `+0x06`, 115 for class 6; 0 for a
+/// human that is not a player) each value is first scaled to `int(value × percent × 0.01 + 0.5)` in single-precision
+/// floats. Returns how many records it set.
+/// @orig 0x002548f0 AnimRange_ApplyClassDamage (unknown)
+int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, int playerPercent);
 
 } // namespace coney::combat

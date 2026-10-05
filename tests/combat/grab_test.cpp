@@ -102,22 +102,31 @@ TEST_CASE("in a grab, strikes cost 40, a throw 100, and the power strike needs a
     CHECK(grabWith(command::kCrossLongHold, {}, power, random).animId == anim_id::kGrabComboStrike3);
     CHECK(power.value() == 360);
 
-    // Circle with the stick at 0.6 ahead: the front throw, 100 of the meter. A stick of 0.2 spins instead.
+    // Circle with the stick at 0.6 ahead: the front throw, 100 of the meter. A stick of 0.2 from the front does
+    // nothing.
     const GrabOutcome thrown = grabWith(command::kCirclePressed, {0.0F, 0.6F}, power, random);
     CHECK(thrown.action == GrabAction::Throw);
     CHECK(thrown.animId == anim_id::kThrow1Front);
     CHECK(thrown.powerSpent == 100);
-    const GrabOutcome spun = grabWith(command::kCirclePressed, {0.1F, 0.17F}, power, random);
-    CHECK(spun.action == GrabAction::Spin);
-    CHECK(spun.powerSpent == 0);
+    CHECK(grabWith(command::kCirclePressed, {0.1F, 0.17F}, power, random).action == GrabAction::None);
 
-    // The power strike: above 0.25 of the meter it plays, at or below it nothing happens.
+    // The power strike: above 0.25 of the meter it plays and spends 100; at or below it the grab is released.
     power.set(101);
     const GrabOutcome strong = grabWith(command::kCrossSquare, {}, power, random);
     CHECK(strong.action == GrabAction::PowerStrike);
     CHECK(strong.animId == anim_id::kGrabPower1Strike1);
+    CHECK(strong.powerSpent == 100);
+    CHECK_FALSE(strong.spinFirst);
     power.set(100);
-    CHECK(grabWith(command::kCrossSquare, {}, power, random).action == GrabAction::None);
+    CHECK(grabWith(command::kCrossSquare, {}, power, random).action == GrabAction::Release);
+    CHECK(grabWith(command::kCirclePressed, {0.0F, 0.6F}, power, random).action == GrabAction::Release);
+    CHECK(power.value() == 100);
+    // A strike still spends at any level.
+    power.set(30);
+    CHECK(grabWith(command::kSquarePressed, {}, power, random).powerSpent == 30);
+    // Circle + cross is 63.
+    power.set(400);
+    CHECK(grabWith(command::kCircleCross, {}, power, random).animId == anim_id::kGrabPower2Strike1);
 
     // Triangle mugs only a victim that qualifies.
     GrabInput mug;
@@ -126,10 +135,40 @@ TEST_CASE("in a grab, strikes cost 40, a throw 100, and the power strike needs a
     mug.victimMuggable = true;
     CHECK(updateGrab(mug, power, CombatTuning{}, random).action == GrabAction::Mug);
 
-    // In rage the power strike is the second set's.
+    // In rage the power strike is the second set's, and nothing is spent or needed.
     GrabInput rage;
     rage.command = command::kCrossSquare;
     rage.raging = true;
-    power.set(400);
-    CHECK(updateGrab(rage, power, CombatTuning{}, random).animId == anim_id::kGrabPower2Strike1);
+    power.set(20);
+    const GrabOutcome raging = updateGrab(rage, power, CombatTuning{}, random);
+    CHECK(raging.animId == anim_id::kGrabPower2Strike1);
+    CHECK(raging.powerSpent == 0);
+    rage.command = command::kSquarePressed;
+    CHECK(updateGrab(rage, power, CombatTuning{}, random).powerSpent == 0);
+    CHECK(power.value() == 20);
+}
+
+TEST_CASE("in a grab, R1 spins the hold, circle spins a rear hold to the front, and L2 lets go", "[combat]") {
+    PowerMeter power;
+    CombatRandom random(3);
+    GrabInput input;
+    input.command = command::kR1Pressed;
+    const GrabOutcome toRear = updateGrab(input, power, CombatTuning{}, random);
+    CHECK(toRear.action == GrabAction::Spin);
+    CHECK(toRear.animId == anim_id::kGrabSpinToRear);
+    input.fromRear = true;
+    CHECK(updateGrab(input, power, CombatTuning{}, random).animId == anim_id::kGrabSpinToFront);
+    // Circle with the stick at rest (0.2) from the rear.
+    input.command = command::kCirclePressed;
+    input.stick = {0.0F, 0.2F};
+    const GrabOutcome circle = updateGrab(input, power, CombatTuning{}, random);
+    CHECK(circle.action == GrabAction::Spin);
+    CHECK(circle.animId == anim_id::kGrabSpinToFront);
+    // A power strike from the rear spins to the front first.
+    input.command = command::kCrossSquare;
+    CHECK(updateGrab(input, power, CombatTuning{}, random).spinFirst);
+    input.command = command::kL2Held;
+    const GrabOutcome letGo = updateGrab(input, power, CombatTuning{}, random);
+    CHECK(letGo.action == GrabAction::LetGo);
+    CHECK(letGo.animId == anim_id::kGrabLetGo);
 }

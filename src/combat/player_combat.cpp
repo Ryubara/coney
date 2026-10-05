@@ -12,10 +12,11 @@ PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, s
 CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& tuning) {
     CombatOutput out;
 
-    // The meters run every update: power drains while holding someone and refills otherwise; rage drains in rage.
+    // The meters run every update: power drains while holding someone (but not in rage) and refills otherwise; rage
+    // drains in rage and decays after a gain's hold.
     const bool holding = m_mode == CombatMode::Grabbing || m_mode == CombatMode::Tackling;
-    m_power.update(input.nowMs, holding, tuning.powerDrainPerSecond);
-    m_rage.update(input.nowMs, tuning.rageDrainPerSecond);
+    m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
+    m_rage.update(input.nowMs, tuning);
 
     // 1. The block. With R1 held as the command nothing else reads the input this update.
     const bool blockOnly = updateBlock(input, out);
@@ -60,7 +61,7 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
     case CombatMode::Tackling:
         // Mounted on the victim, square strikes it.
         if (input.command == command::kSquarePressed && !m_chain.active()) {
-            startAttack(anim_id::kMountingStrike, out);
+            startAttack(anim_id::kMountingStrike, tuning, out);
         }
         break;
     case CombatMode::Free:
@@ -106,12 +107,24 @@ bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
     return input.command == command::kR1Held;
 }
 
-void PlayerCombat::startAttack(int animId, CombatOutput& out) {
-    m_chain.start(animId);
+void PlayerCombat::startAttack(int animId, const CombatTuning& tuning, CombatOutput& out) {
     out.startAnim = animId;
+    // An attack whose hit lands on its start (the power strike) deals it now.
+    if (m_chain.start(animId, tuning)) {
+        out.hitAnim = animId;
+        out.hitDamage = m_ranges != nullptr ? strikeDamage(*m_ranges, animId) : 0;
+    }
 }
 
 void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
+    // The grab breaks when the power meter runs out.
+    if (m_power.value() == 0) {
+        m_chain.cancel();
+        out.grabAction = GrabAction::LetGo;
+        out.startAnim = anim_id::kGrabLetGo;
+        m_mode = CombatMode::Free;
+        return;
+    }
     // **Coney choice**: one grab move at a time; a move plays out (its hit included) before the next is read.
     if (m_chain.active()) {
         return;
@@ -125,13 +138,32 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
     grab.victimMuggable = input.victimMuggable;
     const GrabOutcome outcome = updateGrab(grab, m_power, tuning, m_random);
     out.grabAction = outcome.action;
-    if (outcome.animId != anim_id::kNone) {
-        startAttack(outcome.animId, out);
-    }
-    if (outcome.action == GrabAction::Mug) {
+    switch (outcome.action) {
+    case GrabAction::Strike:
+    case GrabAction::PowerStrike:
+    case GrabAction::Throw:
+        // The moves with a hit run through the chain for their timing. **Coney choice**: a rear power strike's spin
+        // is played by the caller in front of the strike, whose timing starts with it.
+        startAttack(outcome.animId, tuning, out);
+        break;
+    case GrabAction::Spin:
+        out.startAnim = outcome.animId;
+        break;
+    case GrabAction::Mug:
         m_mugging.emplace(input.nowMs, m_random);
         m_mode = CombatMode::Mugging;
-    } else if (outcome.action == GrabAction::Throw) {
+        break;
+    case GrabAction::LetGo:
+        out.startAnim = outcome.animId;
+        m_mode = CombatMode::Free;
+        break;
+    case GrabAction::Release:
+        m_mode = CombatMode::Free;
+        break;
+    case GrabAction::None:
+        break;
+    }
+    if (outcome.action == GrabAction::Throw) {
         // **Coney choice**: the throw lets go at once; its hit still lands through the attack's timing.
         m_mode = CombatMode::Free;
     }
@@ -155,8 +187,8 @@ void PlayerCombat::updateTheft(const CombatInput& input, const CombatTuning& tun
     }
 }
 
-void PlayerCombat::grabOrTackle(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
-    if (!grabAllowed(m_chain.phaseFlags(tuning))) {
+void PlayerCombat::grabOrTackle(const CombatInput& input, CombatOutput& out) {
+    if (!grabAllowed(m_chain.phaseFlags())) {
         return;
     }
     const bool tackle = input.command == command::kCircleHeld;
@@ -175,9 +207,10 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
     switch (input.command) {
     case command::kL2Cross:
     case command::kL2Square:
-        if (runningAttackAllowed(input.gait, m_chain.phaseFlags(tuning))) {
-            startAttack(
-                input.command == command::kL2Cross ? anim_id::kRunningAttackCharge : anim_id::kRunningAttackDive, out);
+        if (runningAttackAllowed(input.gait, m_chain.phaseFlags())) {
+            startAttack(input.command == command::kL2Cross ? anim_id::kRunningAttackCharge
+                                                           : anim_id::kRunningAttackDive,
+                        tuning, out);
         }
         break;
     case command::kSquarePressed:
@@ -188,17 +221,17 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
             square.gait = input.gait;
             square.snapAttacks = tuning.snapAttacks;
             startAttack(input.target == TargetKind::Breakable ? objectAttack(input.objectHeight) : squareAttack(square),
-                        out);
+                        tuning, out);
         }
         break;
     case command::kCrossLongHold:
         if (!m_chain.active()) {
-            startAttack(crossAttack(), out);
+            startAttack(crossAttack(), tuning, out);
         }
         break;
     case command::kCircleTapped:
     case command::kCircleHeld:
-        grabOrTackle(input, tuning, out);
+        grabOrTackle(input, out);
         break;
     default:
         break;

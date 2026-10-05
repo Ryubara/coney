@@ -740,62 +740,102 @@ the stick at 100 % stepped anticlockwise every update, under 90° a step (for ex
 
 ## Coney's implementation
 
-`src/combat/` holds the player's combat rules as a self-contained core, not yet wired into the player (it decides; the
-player will play the clips it names and apply the hits). Everything runs on the fixed 1/30 s step; time-based meters
+`src/combat/` holds the player's combat rules as a self-contained core: it decides, and `src/human/` plays what it
+decides through the human's animator and lands the hits. Everything runs on the fixed 1/30 s step; time-based meters
 take game time in whole milliseconds and carry the fraction of a point, as the original does; the coin flips come from
 a seeded generator (`CombatRandom`), so a run with the same seed and input is the same run.
 
 | File | What it does |
 | --- | --- |
-| `commands.*` | the nine trigger tables (`CommandTables::street()` is the street's), and the matcher that turns each update's buttons into one command in the documented order, with the tap (1-6 samples), long hold (4th sample, or a release within 3) and history hold (7) counted per button |
-| `attacks.*` | square's choice (target, snap, run, walk, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, and `AttackChain`: the hit, the chain window, the end and the recovery counted in updates, one buffered press |
-| `anim_ranges.*` | the Anim Range List decoded from the character data's chunk: direction, reach, far range, damage, kind, flags |
-| `meters.*` | health, the pending damage (the update's largest), `strikeDamage()`, the power meter (400, refill 60/s, drain 15/s, `spend()`) and the rage meter (78, the gain formula, start, drain) |
-| `grab.*` | when a grab may start, the search ranges (far range × 1.25), the nearest-candidate search, the throw by stick side and wall, and one update of a grab (strikes, power strike, throw, mug, spin, with their costs) |
-| `stick_games.*` | the mugging, the stereo theft's rotation (mode 3) and the button mash (mode 1) |
-| `player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order |
-| `combat_tuning.*`, `src/debug/combat_tunables.*` | the values above as tunables, category **Combat** |
+| `combat/commands.*` | the nine trigger tables (`CommandTables::street()` is the street's), and the matcher that turns each update's buttons into one command in the documented order, with the tap (1-6 samples), long hold (4th sample, or a release within 3) and history hold (7) counted per button |
+| `combat/attacks.*` | square's choice (target, snap, run, walk, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, `attackTiming()` (the [timing table](#attacks) per attack) and `AttackChain`: the hit, the chain window, the end and the recovery counted in updates, one buffered press |
+| `combat/anim_ranges.*` | the Anim Range List decoded from the character data's chunk (direction, reach, far range, damage, hit code, flags), and `applyClassDamage()`: a class's damage table written over it by the index → anim id table, scaled for a player |
+| `combat/reactions.*` | the hit code taken apart, the victim's side, `hitReaction()` (the strength, height and direction rules and the table at `0x00510798`), the dying reaction, the block reactions and when a block holds |
+| `combat/meters.*` | health, the pending damage (the update's largest), `strikeDamage()`, the power meter (400, refill 60/s, drain 15/s, `spend()`) and the rage meter (78, the gain formula, the 5 s hold, the 7.8/s decay, start, the 9.36/s drain) |
+| `combat/grab.*` | when a grab may start, the search ranges (far range × 1.25), the nearest-candidate search, the throw by stick side and wall, and one update of a grab (strikes, the power strikes with the rear spin first, throws, the release with too little power, the R1 and circle spins, the L2 let-go, the mugging; nothing spent in rage) |
+| `combat/stick_games.*` | the mugging, the stereo theft's rotation (mode 3) and the button mash (mode 1) |
+| `combat/player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order; the grab breaks at 0 power |
+| `combat/combat_tuning.*`, `debug/combat_tunables.*` | the values above as tunables, category **Combat**, registered at start-up beside the game's |
+| `human/fighter.*` | the player's combat inside the human: builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front and the grab search), plays its clips, turns and slides into an attack, puts a held victim in front, lands the hits |
+| `human/target_human.*` | a passive target for the sandbox: health, the update's largest hit, the reaction, the stun, the knockdown, the ground time and the rise, the dying clip |
 
-The tests (`tests/combat/`) drive these with the research's own input scripts, played through the pad records with
-partial stick deflections: S1, SS2, SSS3 a press every 6 updates with the hits 2 updates after each; X1 then XS2; a
-press in recovery dropped; the snap; the block with cross under it; rage with L1 + R1; the charge at a run (and its
-cross falling back to `X1` at a walk); a grab, strike and forward throw with the meter paying 40 and 100; the tackle on
-the 7th sample and the mounted strike; the mugging finished 5 s after it starts with the stick at 0.7 or 0.8 on the
-moving target; the stereo theft in 30° steps through 4 stages of 3 turns, failed by an R1 press.
+**In the player.** `human::Player` runs the street's `CommandMatcher` on the pad's buttons and gives the human the
+command, the buttons and the targets; the human calls the fighter each update it is on the ground and not climbing,
+after the locomotion and stamina. While the fighter holds the body (blocking, holding someone, mugging, or an attack's
+clip playing) the stick does not move it: the clip's root motion does, with the slide an attack starts. Triangle keeps
+its own order (climb, context action, jump) and is not read while the fighter holds the body; L2 still sprints, but
+not while blocking.
+
+**The clips** (anim ids, played through the human's animator, `AnimState::Attack` returning to the fight idle 358 and
+`AnimState::Hold` keeping its loop): the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15,
+`XS2` 14 and the snaps; the run attack 24 and the charge 0 and dive 1, after which the run resumes when the stick is
+still at a run; the block 606, or the shuffle 607 with the stick pushed; rage 643; the grab 71, 72, then the hold 82
+(victim 73, then 83); the miss 71, 69, 389; the tackle 4, 5, then 210 (victim 6 when the player's 5 starts, then 207),
+the tackle's miss 4, 2; the grab strikes and power strikes with the victim's next id (52, 54, 56, 58, 64); the spins
+78 / 79 to the rear hold 84 / 85 and 80 / 81 back to 82 / 83; the throws with the victim's next id, then 196; the
+let-go 95 / 94; the mugging 78, 338, 340 (victim 79, 339, 341) with 342 / 343 while the stick is on target and 344 /
+345, 80 / 81 on success; the mounted strike 212 back to 210.
+
+**The target** (`human::TargetHuman`, Coney's own, placed only by a sandbox layout's `target` line,
+[Sandbox](../guides/sandbox.md)): it takes the hit with the attacker's hit code and flags, and picks its reaction with
+`hitReaction()`; a reaction whose clip has an event of type 7 knocks it down (196) for the ground time, then it rises
+with 199; a stun hit (flag `0x400`) plays the reaction, then 356 until the stun time passes, then 357 and the idle; a
+hit at 0 health plays the dying reaction and lies in 196 for good; a grounded target takes 195. Its numbers are the
+street civilian's power class (hurt below 35 %, stun 750 ms, ground 2000 ms). It has no brain, never moves by itself,
+blocks nothing and is drawn with the player's model.
+
+The tests drive all of this with input scripts played through the pad records at partial stick deflections:
+`tests/combat/` the core (each attack's timing, the chain, the grab rules, the meters, the reactions, the class
+damage), `tests/human/combat_test.cpp` the human with synthetic clips (the combo and its reactions and stun, the stun's
+750 ms, the block holding the body while the stick at 0.6 turns it, the grab, strike and throw with the rise 2 s
+later, the R1 spin and the L2 let-go, the tackle, the turn into an attack, the knockdown), and
+`tests/sandbox/disc_sandbox_combat_test.cpp` Rembrandt from the disc in the fight yard (`assets/sandbox/combat.layout`;
+the scripts `tests/support/combat_*.txt`: a combo, a grab with a strike, both spins and a throw, a tackle, a mugging;
+clip ids, counts and hashes only).
 
 **Disc test** (`[disc][combat]`, counts only): Rembrandt's list has 722 records, 160 with damage; every attack combat
-starts has one; the grab and tackle ranges come out at 3.12 m and 3.75 m as at runtime. **The file's damage is not
-the runtime damage** (confirmed (Coney's disc check)): no character data on the disc holds `S1` 17, `SS2` 36 or `X1` 26
-(Rembrandt's file says 40, 40, 45). The damage the research measured is the list after the character class's 45-entry
-damage table (`CfgChar`'s `damage` argument, scaled) has overridden it when the human is made
-([Animation](formats/animation.md#anim-range-list), the jump tables `0x0055d640` / `0x0055d6f0`); which entry goes to
-which anim id is not researched, so Coney reads the file's value and `AnimRangeList::setDamage()` waits for the table.
+starts has one; the grab and tackle ranges come out at 3.12 m and 3.75 m as at runtime; every clip the fighter and
+the target play is there (120 ids), 41 of the reactions with a knockdown event. **The file's damage is not the
+runtime damage** (confirmed (Coney's disc check)): Rembrandt's file says `S1` 40, `SS2` 40, `X1` 45 where play gives
+17, 36, 26, because the character class's table is written over the list ([Damage](#damage-table)).
+`applyClassDamage()` does that write, but Coney does not yet read `CfgChar`'s damage table from the config script (the
+script runner keeps table arguments as nil), so the game plays the file's damage for now.
 
 **Coney choices**, where the research is silent or inferred:
 
 - Inside one trigger table a later matching entry overwrites an earlier one, as the tables do between themselves;
   trigger 4 (query) never matches.
-- Every chain attack takes `S1`'s timing (hit 2, window 6 to 15, end to 17, recovery to 20); the charge, the dive, the
-  run, walk and snap attacks and the grab strikes are timed the same way until their own are measured. The attack keeps
-  counting under a held R1.
+- Attack timing where a column was not measured: the recovery starts 3 updates before the end (as `S1`'s); an attack
+  with no window opening has none; `SS2` closes and ends as `S1`; `SSX3` ends at 30; the run attack ends at 21, the
+  charge at 27 and the dive at 60 (their clip lengths seen at runtime); every attack not measured (the snaps, the
+  moving attacks, the throws, the grounded and mounted strikes) hits 2 updates in, as `S1`. The attack keeps counting
+  under a held R1.
 - `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; at a sprint (gait 5) square is
   `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
-- A side is "front" up to and including 45° and "rear" beyond 135°.
-- Cross strikes in a grab on its `0x10`, circle throws or spins on its press; the power strike spends nothing; a strike
-  or throw with too little power still plays, the meter stopping at 0; a grab plays one move at a time; a throw lets
-  go at once. The power strike's ids are read as anim ids (57, 63 in rage, 80 from the rear).
-- The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone.
-- Rage: the cap splits a hit's points (the part above 25 counts at 0.1); rage drains at the 9.5 a second seen at
-  runtime and ends empty.
+- A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
+  1.5 m.
+- Circle without the stick from the front hold does nothing (`0x0026f008` is not traced); a grab plays one move at a
+  time; a throw lets go at once; the rear power strike's spin plays in front of the strike, whose timing starts with
+  it; the release with too little power goes straight to the idles, and the grab broken at 0 power plays the let-go.
+  A tackle also ends when the power meter is empty, and any hold when the victim has no health left.
+- The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's
+  target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
+  second missed); within the far range the attacker faces the target and slides so that it stands at the clip's reach,
+  spread over the updates to the hit, on top of the clip's root motion; beyond it the attacker turns at most 8°
+  (read as degrees).
+- A held victim stands 0.8 m in front (0.9 m mounted), facing the player, or facing away in a rear hold.
 - The mugging: the 50° tolerance; a random first target; each move between the tolerance plus 20° and 360° less that;
   the period counts game time. The theft: clockwise steps neither add nor take away; the 250 ms pause ignores the
   stick. The mash: the first press counts, a press's gain is truncated, and other commands are ignored.
-- The block is read only when the player is free (not grabbing, tackling, mugging or in a theft).
+- The block is read only when the player is free (not grabbing, tackling, mugging or in a theft); it turns the player
+  towards the stick at the standing turn rate.
+- The stun's loop is 356, as seen at runtime (the code names 355 as a stunned reaction's return).
+- `applyClassDamage()` rounds as the PS2's floating-point unit does (toward zero), which gives the research's 34 for 30
+  at 115 %.
 
-**Integration** (next): the player builds a `CommandMatcher` and a `PlayerCombat`, gives it the camera-turned stick in
-the facing frame, its gait, the target found with `nearestTarget()` within `grabSearchRange()`, and game time; plays
-`startAnim` through the animator, applies `hitAnim`'s damage to the target through `PendingDamage`, calls `release()`
-when a grab or tackle ends, and registers the Combat tunables at start-up.
+**Not yet**: hits from rage (the stats events that give the points are not mapped), the player being hit (no human
+attacks him yet), weapons, breakables and the theft's car windows (no objects yet), the class damage table read from
+the disc, and the hit armour, allies and class 13 rules a fight between humans needs.
 
 ## Open questions
 
@@ -809,11 +849,10 @@ when a grab or tackle ends, and registers the Combat tunables at start-up.
 - **Square at a sprint** at runtime, and the moving attacks' hit timing (the victim was out of reach in the tests).
 - **The mugging's angle frame** (world or camera).
 - **The fence break** in slot 10: which script reacts to the charge.
-- **The class damage table**: which of `CfgChar`'s 45 damage entries overrides which anim id's damage (the jump tables
-  `0x0055d640` / `0x0055d6f0`), and which class and difficulty give the street's values (`S1` 17 in play, 40 in
-  Rembrandt's file).
-- **The power strike's ids**: whether 57, 63 and 80 are anim ids (80 is `GRAB_REAR_SPIN_VICTIM`, with no damage in the
-  file) or damage values; whether it spends power.
-- **Attack timing** of the attacks other than `S1`, the moving attacks and the grab strikes.
-- **The grab moves' commands**: whether cross strikes on `0x10` or `0x12`, circle throws on `0x1e` or `0xd`, and
-  whether a strike or throw needs the power it costs.
+- **The far ranges' class table** (`0x002545e0`, table `0x0055d640`): which of the class's 45 floats goes to which
+  anim id, as the damage table's index → id map does for the damage.
+- **The timing columns not measured**: `SS2`'s window close and end, `SSX3`'s end, and the hit of the snaps, the
+  moving attacks, the throws and the grounded and mounted strikes.
+- **The grab clips' pose**: in Coney the grab, hold and grab strike clips (71-85, 51-58) pose both humans rolled
+  on their side, where the attacks and reactions look right; the paired task types 4 and 6
+  ([Animation](formats/animation.md#animation-tasks)) that play them are not researched.

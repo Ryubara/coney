@@ -42,9 +42,12 @@ struct CombatTuning {
     float ragePointsCap = 25.0F;
     float rageFactorBelow = 1.0F;
     float rageFactorAbove = 0.1F;
-    /// The rage meter's drain while raging, per second. **Coney choice**: the rate seen at runtime (about 9.5); its
-    /// source is not traced.
-    float rageDrainPerSecond = 9.5F;
+    /// The rage meter's drain while raging, per second: the maximum × Warrior byte `+0x04` (240 %) / 100 per 20 s.
+    float rageDrainPerSecond = 9.36F;
+    /// How long a gain holds the meter before it decays (`CfgRageHandlers`), ms, and the decay after it, per second:
+    /// the maximum × Warrior byte `+0x03` (200 %) / 100 per 20 s.
+    int rageHoldMs = 5000;
+    float rageDecayPerSecond = 7.8F;
 
     /// `CfgButtonMash`: the meter total that completes a mash, its loss each update, and a press's gain (used
     /// halved, then scaled by the Warrior class's 1.5 or 0.7).

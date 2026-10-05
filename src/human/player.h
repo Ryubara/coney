@@ -12,11 +12,14 @@
 #include "characters/anim_set.h"
 #include "characters/character_assets.h"
 #include "characters/character_data.h"
+#include "combat/anim_ranges.h"
+#include "combat/commands.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/pad.h"
 #include "fileio/wad.h"
 #include "human/human.h"
+#include "human/target_human.h"
 #include "raycast/collision_mesh.h"
 
 // Player 1 in a level: the character it plays, the human the pad drives and the follow camera behind it, stepped
@@ -62,14 +65,18 @@ class PlayerCharacter {
     [[nodiscard]] const characters::CharacterAssets& assets() const { return m_assets; }
     [[nodiscard]] const characters::AnimSet& anims() const { return m_anims; }
     [[nodiscard]] const anim::Skeleton& skeleton() const { return m_skeleton; }
+    /// The character's Anim Range List, decoded: its moves' damage and reach (combat::AnimRangeList).
+    [[nodiscard]] const combat::AnimRangeList& ranges() const { return m_ranges; }
 
   private:
-    PlayerCharacter(characters::CharacterAssets assets, characters::CharacterData generic);
+    PlayerCharacter(characters::CharacterAssets assets, characters::CharacterData generic,
+                    combat::AnimRangeList ranges);
 
     characters::CharacterAssets m_assets;
     characters::CharacterData m_generic;
     characters::AnimSet m_anims;
     anim::Skeleton m_skeleton;
+    combat::AnimRangeList m_ranges;
 };
 
 /// What drawing the player needs from one simulation step, and nothing else: drawing reads only these, so a renderer
@@ -96,10 +103,11 @@ class Player {
     /// set up behind it.
     Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start);
 
-    /// One update of 1/30 s from `pad` (port 1): the human with the left stick turned by the camera, then the camera
+    /// One update of 1/30 s from `pad` (port 1): the buttons turned into a command (combat::CommandMatcher with the
+    /// street's tables), the human with the left stick turned by the camera and `targets` to fight, then the camera
     /// with the right stick. A human that fell out of the world is put back at the start (**Coney's choice**: the
     /// original fails the mission, which Coney has no flow for yet).
-    void update(const Pad& pad, const raycast::CollisionMesh* mesh);
+    void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<TargetHuman* const> targets = {});
 
     /// Puts the human at `start` on `mesh` (spawned there as at a level start) and the camera behind it, with nothing
     /// to blend from: the debug menus' teleport. Coney's own tool; the original has none.
@@ -109,6 +117,9 @@ class Player {
     void resetCamera();
 
     [[nodiscard]] const Human& human() const { return m_human; }
+    [[nodiscard]] Human& human() { return m_human; }
+    /// The last update's command.
+    [[nodiscard]] combat::CommandId command() const { return m_matcher.command(); }
     [[nodiscard]] const camera::FollowCamera& camera() const { return m_camera; }
     /// How often the human has been put back at the start.
     [[nodiscard]] std::uint32_t respawns() const { return m_respawns; }
@@ -121,6 +132,8 @@ class Player {
     [[nodiscard]] PlayerSnapshot capture() const;
 
     PlayerStart m_start;
+    combat::CommandTables m_tables = combat::CommandTables::street();
+    combat::CommandMatcher m_matcher;
     Human m_human;
     camera::FollowCamera m_camera;
     std::uint32_t m_respawns = 0;

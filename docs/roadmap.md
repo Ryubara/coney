@@ -130,6 +130,13 @@ Combat, AI, missions, game modes, the front end and menus, cameras and saving.
   pad input ([Front end](research/frontend.md), [GUI](research/gui.md)).
 - Done: STORY from the main menu through the mission-complete mode and gameplay (mode 1) to Rembrandt under control
   at level99's first checkpoint ([Front end](research/frontend.md#story-start)).
+- Done: the player's combat as in the original ([Combat](research/combat.md)): the commands, the square and cross
+  chains with each attack's timing, the snaps, the run attack, the charge and the dive, the block, rage, the grab with
+  its strikes, spins, throws, let-go and the mugging, the tackle, the power and rage meters, and the victim's
+  reactions, stuns and knockdowns, played through his clips against passive targets in the sandbox's fight yard and
+  checked by scripted disc tests.
+- Next: the player being hit (his reactions, block and escapes), the character class damage table from the disc,
+  and characters that fight back.
 
 ## Debug menu and test levels
 

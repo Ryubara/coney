@@ -1564,3 +1564,33 @@ address = 0x004238a8
 name = "UM_IsLevelComplete"
 subsystem = "Warriors"
 size = 64
+
+[[function]]
+address = 0x002548f0
+name = "AnimRange_ApplyClassDamage"
+subsystem = "Human"
+
+[[function]]
+address = 0x00265f70
+name = "Human_ApplyPendingDamage"
+subsystem = "Human"
+
+[[function]]
+address = 0x00269f30
+name = "Human_BlockHit"
+subsystem = "Human"
+
+[[function]]
+address = 0x0026b0a0
+name = "Hit_PickReaction"
+subsystem = "Human"
+
+[[function]]
+address = 0x00266d00
+name = "Hit_PickReaction"
+subsystem = "Human"
+
+[[function]]
+address = 0x0027a6c0
+name = "Player_PickTarget"
+subsystem = "unattributed"

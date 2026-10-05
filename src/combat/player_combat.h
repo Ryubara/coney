@@ -82,7 +82,9 @@ class PlayerCombat {
     [[nodiscard]] bool blocking() const { return m_blocking; }
     [[nodiscard]] const AttackChain& chain() const { return m_chain; }
     [[nodiscard]] PowerMeter& power() { return m_power; }
+    [[nodiscard]] const PowerMeter& power() const { return m_power; }
     [[nodiscard]] RageMeter& rage() { return m_rage; }
+    [[nodiscard]] const RageMeter& rage() const { return m_rage; }
     [[nodiscard]] const std::optional<MuggingGame>& mugging() const { return m_mugging; }
     [[nodiscard]] const std::optional<StereoTheft>& theft() const { return m_theft; }
 
@@ -91,14 +93,14 @@ class PlayerCombat {
     // the command is R1 held, which ends the update.
     bool updateBlock(const CombatInput& input, CombatOutput& out);
     // Starts `animId` as an attack (through the chain, for its hit timing) and names it in `out`.
-    void startAttack(int animId, CombatOutput& out);
+    void startAttack(int animId, const CombatTuning& tuning, CombatOutput& out);
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The theft route.
     void updateTheft(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     /// Circle tapped or held: a grab or a tackle, or a miss.
     /// @orig 0x00284920 Player_GrabOrTackle (unknown)
-    void grabOrTackle(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
+    void grabOrTackle(const CombatInput& input, CombatOutput& out);
     // The commands of a free player.
     void updateCommands(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
 

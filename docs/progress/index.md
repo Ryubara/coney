@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% of the game's own code (108,248 of 3,342,936 bytes, 276 functions) |
+| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.2% of the game's own code (108,248 of 3,342,936 bytes, 282 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
-106 reimplemented function(s) have no size yet and add no bytes.
+112 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████░░░░░░░░░░░░░░░` | 24.9% | 28 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 31 | 481,192 |
-| `Human` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 33 | 358,360 |
+| `Human` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 38 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -75,7 +75,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.0% | 8 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 58 | 1,524,752 |
+| Unattributed | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 59 | 1,524,752 |
 
 ## Research coverage
 
@@ -264,6 +264,7 @@ at the top of the repository's `README.md`.
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
+| `0x002548f0` | `AnimRange_ApplyClassDamage` | `Human` | not filled in |
 | `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
 | `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
 | `0x00259578` | `Human_ChooseAnimState` | `Human` | not filled in |
@@ -276,7 +277,12 @@ at the top of the repository's `README.md`.
 | `0x00264178` | `Player_ObjectAttack` | `Human` | 744 |
 | `0x00264bd8` | `Human_AddPendingDamage` | `Human` | 288 |
 | `0x00264cf8` | `Human_AddRage` | `Human` | 680 |
+| `0x00265f70` | `Human_ApplyPendingDamage` | `Human` | not filled in |
+| `0x00266d00` | `Hit_PickReaction` | `Human` | not filled in |
+| `0x00269f30` | `Human_BlockHit` | `Human` | not filled in |
+| `0x0026b0a0` | `Hit_PickReaction` | `Human` | not filled in |
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
+| `0x0027a6c0` | `Player_PickTarget` | `unattributed` | not filled in |
 | `0x0027c120` | `Player_UpdateActions` | `unattributed` | 3,120 |
 | `0x0027ce90` | `Player_UpdateSprint` | `unattributed` | not filled in |
 | `0x0027d800` | `Player_Charge` | `unattributed` | 256 |

@@ -5,13 +5,14 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "combat/combat_tuning.h"
+#include "debug/game_tunables.h"
 
 using coney::debug::TunableRegistry;
 
 TEST_CASE("the combat tunables edit the values combat reads, defaulting to the research's", "[debug][combat]") {
     TunableRegistry registry;
     coney::debug::registerCombatTunables(registry);
-    CHECK(registry.inCategory("Combat").size() == 27);
+    CHECK(registry.inCategory("Combat").size() == 29);
     REQUIRE(registry.find("Combat/History hold") != nullptr);
     CHECK(registry.find("Combat/History hold")->defaultValue() == 7.0);
     REQUIRE(registry.find("Combat/Power endurance") != nullptr);
@@ -30,5 +31,20 @@ TEST_CASE("the combat tunables edit the values combat reads, defaulting to the r
     registry.applyPending();
     CHECK(coney::combat::combatTuning().historyHoldSamples == 7);
     CHECK(coney::combat::combatTuning().snapAttacks);
-    CHECK(registry.removeCategory("Combat") == 27);
+    CHECK(registry.removeCategory("Combat") == 29);
+}
+
+TEST_CASE("the combat tunables register beside the game's, as main does, with the rage's new values",
+          "[debug][combat]") {
+    TunableRegistry registry;
+    coney::debug::registerGameTunables(registry);
+    const std::size_t game = registry.size();
+    coney::debug::registerCombatTunables(registry);
+    CHECK(registry.size() == game + 29);
+    REQUIRE(registry.find("Combat/Rage drain") != nullptr);
+    CHECK(registry.find("Combat/Rage drain")->defaultValue() == Catch::Approx(9.36));
+    REQUIRE(registry.find("Combat/Rage hold") != nullptr);
+    CHECK(registry.find("Combat/Rage hold")->defaultValue() == 5000.0);
+    REQUIRE(registry.find("Combat/Rage decay") != nullptr);
+    CHECK(registry.find("Combat/Rage decay")->defaultValue() == Catch::Approx(7.8));
 }

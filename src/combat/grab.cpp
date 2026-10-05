@@ -56,40 +56,57 @@ int throwAttack(Side side, bool wallInReach) {
 
 GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTuning& tuning, CombatRandom& random) {
     GrabOutcome outcome;
-    const float strikeCost = tuning.grabStrikeCost * kPlayerStrikeCostShare;
+    // Spends `fraction` of the meter, except in rage.
+    const auto spend = [&](float fraction) { return input.raging ? 0 : power.spend(fraction); };
+    // A power move goes ahead with more than the endurance fraction (or in rage), else the grab is released.
+    const auto powerMove = [&](GrabAction action, int animId) {
+        if (!input.raging && power.fraction() <= tuning.powerEndurance) {
+            outcome.action = GrabAction::Release;
+            return;
+        }
+        outcome.action = action;
+        outcome.animId = animId;
+        outcome.powerSpent = spend(tuning.powerEndurance);
+    };
     switch (input.command) {
     case command::kSquarePressed:
         outcome.action = GrabAction::Strike;
         outcome.animId = random.coin() ? anim_id::kGrabComboStrike2 : anim_id::kGrabComboStrike1;
-        outcome.powerSpent = power.spend(strikeCost);
+        outcome.powerSpent = spend(tuning.grabStrikeCost * kPlayerStrikeCostShare);
         break;
     case command::kCrossLongHold:
         outcome.action = GrabAction::Strike;
         outcome.animId = anim_id::kGrabComboStrike3;
-        outcome.powerSpent = power.spend(strikeCost);
+        outcome.powerSpent = spend(tuning.grabStrikeCost * kPlayerStrikeCostShare);
         break;
     case command::kCrossSquare:
-        if (power.fraction() > tuning.powerEndurance) {
-            outcome.action = GrabAction::PowerStrike;
-            outcome.animId = input.raging     ? anim_id::kGrabPower2Strike1
-                             : input.fromRear ? anim_id::kGrabRearSpinVictim
-                                              : anim_id::kGrabPower1Strike1;
-        }
+    case command::kCircleCross: {
+        const bool rageStrike = input.raging || input.command == command::kCircleCross;
+        powerMove(GrabAction::PowerStrike, rageStrike ? anim_id::kGrabPower2Strike1 : anim_id::kGrabPower1Strike1);
+        outcome.spinFirst = outcome.action == GrabAction::PowerStrike && input.fromRear;
         break;
+    }
     case command::kTrianglePressed:
         if (input.victimMuggable) {
             outcome.action = GrabAction::Mug;
         }
         break;
     case command::kCirclePressed:
-        // The stick decides between a throw and a spin.
+        // The stick decides between a throw and, from the rear, the spin to the front.
         if (input.stick.magnitude() > kThrowStick) {
-            outcome.action = GrabAction::Throw;
-            outcome.animId = throwAttack(sideOf(input.stick.angleDegrees()), input.wallInReach);
-            outcome.powerSpent = power.spend(tuning.powerEndurance);
-        } else {
+            powerMove(GrabAction::Throw, throwAttack(sideOf(input.stick.angleDegrees()), input.wallInReach));
+        } else if (input.fromRear) {
             outcome.action = GrabAction::Spin;
+            outcome.animId = anim_id::kGrabSpinToFront;
         }
+        break;
+    case command::kR1Pressed:
+        outcome.action = GrabAction::Spin;
+        outcome.animId = input.fromRear ? anim_id::kGrabSpinToFront : anim_id::kGrabSpinToRear;
+        break;
+    case command::kL2Held:
+        outcome.action = GrabAction::LetGo;
+        outcome.animId = anim_id::kGrabLetGo;
         break;
     default:
         break;

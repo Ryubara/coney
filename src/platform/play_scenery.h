@@ -71,6 +71,8 @@ class PlayScenery {
     [[nodiscard]] virtual std::string name() const = 0;
     /// The named places the debug menus' teleport offers: the start (a level), or the spawn points (a sandbox).
     [[nodiscard]] virtual std::vector<debug::Place> places() const;
+    /// The passive humans to fight (Coney's own sandbox targets): a sandbox layout's `target` lines; none in a level.
+    [[nodiscard]] virtual std::vector<sandbox::TargetPoint> targets() const { return {}; }
     /// Whether the debug menus' Spawner can add objects (a sandbox can).
     [[nodiscard]] virtual bool canSpawn() const { return false; }
     /// Rebuilds the scenery with `extra` objects added to what it was made with (none: as made). Fails with
@@ -151,6 +153,7 @@ class SandboxPlayScenery final : public PlayScenery {
     [[nodiscard]] std::string name() const override { return "sandbox " + m_world.layout().title; }
     [[nodiscard]] std::vector<debug::Place> places() const override;
     [[nodiscard]] bool canSpawn() const override { return true; }
+    [[nodiscard]] std::vector<sandbox::TargetPoint> targets() const override { return m_world.layout().targets; }
     std::expected<void, Error> setExtras(const RenderEngine& engine,
                                          const std::vector<sandbox::Primitive>& extra) override;
 

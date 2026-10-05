@@ -279,7 +279,7 @@ class Parser {
         if (keyword == "texture") {
             return texture(line, rest);
         }
-        if (keyword == "spawn" || keyword == "view") {
+        if (keyword == "spawn" || keyword == "view" || keyword == "target") {
             return place(line, keyword, rest);
         }
         if (keyword == "occlusion" || keyword == "shadows") {
@@ -355,7 +355,8 @@ class Parser {
         return {};
     }
 
-    // `spawn NAME at=X,Y,Z [heading=DEG]` and `view NAME at=X,Y,Z [yaw=DEG] [pitch=DEG]`.
+    // `spawn NAME at=X,Y,Z [heading=DEG]`, `target NAME at=X,Y,Z [heading=DEG] [health=N]` and
+    // `view NAME at=X,Y,Z [yaw=DEG] [pitch=DEG]`.
     std::expected<void, Error> place(std::size_t line, std::string_view keyword,
                                      std::span<const std::string_view> words) {
         if (words.empty() || words.front().find('=') != std::string_view::npos) {
@@ -375,6 +376,19 @@ class Parser {
             SpawnPoint spawn{.name = name, .position = at, .headingDegrees = 0.0F};
             CONEY_TAKE(spawn.headingDegrees, args->number("heading", -360.0F, 360.0F, 0.0F));
             m_layout.spawns.push_back(spawn);
+        } else if (keyword == "target") {
+            if (std::ranges::any_of(m_layout.targets, [&name](const TargetPoint& t) { return t.name == name; })) {
+                return lineError(line, std::format("target {} given twice", name));
+            }
+            if (m_layout.targets.size() >= kMaxTargets) {
+                return lineError(line, std::format("at most {} targets", kMaxTargets));
+            }
+            TargetPoint target{.name = name, .position = at, .headingDegrees = 0.0F, .health = 600};
+            CONEY_TAKE(target.headingDegrees, args->number("heading", -360.0F, 360.0F, 0.0F));
+            std::uint32_t health = 0;
+            CONEY_TAKE(health, args->whole("health", 1, 30000, 600));
+            target.health = static_cast<int>(health);
+            m_layout.targets.push_back(target);
         } else {
             if (std::ranges::any_of(m_layout.views, [&name](const Viewpoint& v) { return v.name == name; })) {
                 return lineError(line, std::format("view {} given twice", name));

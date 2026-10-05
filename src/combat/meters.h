@@ -121,26 +121,29 @@ class RageMeter {
     /// Sets the meter (clamped), as a script or a test may.
     void set(int value);
 
-    /// Adds `round(points' × gain / 100 × h × s)`, where points' counts the points up to the cap in full and the rest
-    /// at the factor above it, to the maximum; nothing while raging. Returns what was added. Only a player gains rage:
-    /// the caller checks that.
-    /// **Coney choice**: the cap splits the points (the part above it counts at 0.1) rather than switching the factor
-    /// for the whole hit; the research gives "1.0 up to 25 points and 0.1 above".
+    /// Adds `round(points × f × gain / 100 × h × s)` to the maximum, where `f` is the factor below the cap for an award
+    /// of up to CombatTuning::ragePointsCap points and the factor above it for a larger one (the whole award), and
+    /// holds the meter for CombatTuning::rageHoldMs from `nowMs`; nothing while raging. Returns what was added. Only a
+    /// player gains rage: the caller checks that.
     /// @orig 0x00264cf8 Human_AddRage (unknown)
-    int add(float points, const CombatTuning& tuning, RageGain gain = {});
+    int add(float points, const CombatTuning& tuning, std::uint64_t nowMs, RageGain gain = {});
 
     /// Starts rage when the meter is full and rage is not on; returns whether it started.
     /// @orig 0x002843f8 Player_StartRage (unknown)
     bool start(std::uint64_t nowMs);
 
-    /// Moves to game time `nowMs`: while raging the meter drains at `drainPerSecond`, and rage ends when it is empty.
-    void update(std::uint64_t nowMs, float drainPerSecond);
+    /// Moves to game time `nowMs`: while raging the meter drains at CombatTuning::rageDrainPerSecond and rage ends when
+    /// it is empty; otherwise, once the hold of the last gain has passed, it decays at
+    /// CombatTuning::rageDecayPerSecond.
+    /// @orig 0x002562d0 Human_DrainMeters (unknown)
+    void update(std::uint64_t nowMs, const CombatTuning& tuning);
 
   private:
     int m_value = 0;
     int m_maximum;
     int m_gainPercent;
     std::uint64_t m_lastMs;
+    std::uint64_t m_holdUntilMs = 0; // the meter does not decay before this (human `+0x648`)
     float m_carry = 0.0F;
     bool m_raging = false;
 };

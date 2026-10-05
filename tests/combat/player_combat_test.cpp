@@ -106,21 +106,23 @@ using Starts = std::vector<std::pair<std::size_t, int>>;
 
 } // namespace
 
-TEST_CASE("a press every 6 updates plays S1, SS2 and SSS3, each hitting 2 updates later", "[combat]") {
+TEST_CASE("a press every 6 updates plays S1, SS2 and SSS3, hitting 2, 4 and 7 updates after each start", "[combat]") {
     const AnimRangeList ranges = researchedRanges();
     Runner runner(&ranges);
     const auto frames = runner.run("10 tap square\n16 tap square\n22 tap square\n", 60);
     CHECK(starts(frames) == Starts{{10, anim_id::kAttackS1}, {16, anim_id::kAttackSS2}, {22, anim_id::kAttackSSS3}});
-    CHECK(hits(frames) == Starts{{12, 17}, {18, 36}, {24, 53}});
+    CHECK(hits(frames) == Starts{{12, 17}, {20, 36}, {29, 53}});
     CHECK_FALSE(runner.combat().chain().active());
 }
 
-TEST_CASE("X1 starts on cross's release and a square 5 updates later chains XS2", "[combat]") {
+TEST_CASE("X1 starts on cross's release, hits at 8, and a square 5 updates later chains XS2 at its window",
+          "[combat]") {
     const AnimRangeList ranges = researchedRanges();
     Runner runner(&ranges);
     const auto frames = runner.run("40 tap cross\n46 tap square\n", 80);
-    CHECK(starts(frames) == Starts{{41, anim_id::kAttackX1}, {47, anim_id::kAttackXS2}});
-    CHECK(hits(frames) == Starts{{43, 26}, {49, 44}});
+    // The square is buffered in X1's wind-up and plays when the window opens, 10 updates in.
+    CHECK(starts(frames) == Starts{{41, anim_id::kAttackX1}, {51, anim_id::kAttackXS2}});
+    CHECK(hits(frames) == Starts{{49, 26}, {60, 44}});
 }
 
 TEST_CASE("a square in recovery is dropped and one after the attack starts a new S1", "[combat]") {
@@ -150,12 +152,17 @@ TEST_CASE("R1 held blocks and reads nothing else; cross under it still attacks",
 }
 
 TEST_CASE("L1 + R1 with a full rage meter starts rage", "[combat]") {
+    // Filled by gains, which hold the meter for 5 s.
     Runner runner(nullptr);
-    runner.combat().rage().set(78);
-    const auto frames = runner.run("320 press l1 r1\n322 release l1 r1\n", 330);
-    CHECK(frames[320].command == command::kL1R1);
-    CHECK(frames[320].out.rageStarted);
-    CHECK(frames[320].out.startAnim == anim_id::kRageStart);
+    const CombatTuning tuning;
+    runner.combat().rage().add(25.0F, tuning, 0);
+    runner.combat().rage().add(25.0F, tuning, 0);
+    runner.combat().rage().add(5.0F, tuning, 0);
+    REQUIRE(runner.combat().rage().full());
+    const auto frames = runner.run("120 press l1 r1\n122 release l1 r1\n", 130);
+    CHECK(frames[120].command == command::kL1R1);
+    CHECK(frames[120].out.rageStarted);
+    CHECK(frames[120].out.startAnim == anim_id::kRageStart);
     CHECK(runner.combat().rage().raging());
 
     // Short of full, nothing.
@@ -193,7 +200,7 @@ TEST_CASE("a grab, a strike and a forward throw, with the power meter paying for
     CHECK(frames[91].out.startAnim == anim_id::kGrabPlayerIntro);
     // Square strikes (51 or 53) and hits for 57; then circle with the stick ahead throws (147).
     CHECK(frames[140].out.grabAction == GrabAction::Strike);
-    CHECK(frames[142].out.hitDamage == 57);
+    CHECK(frames[141].out.hitDamage == 57); // a grab strike hits 1 update after its start
     CHECK(frames[181].out.grabAction == GrabAction::Throw);
     CHECK(frames[181].out.startAnim == anim_id::kThrow1Front);
     CHECK(frames[183].out.hitDamage == 66);

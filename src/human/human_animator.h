@@ -59,6 +59,8 @@ enum class AnimState : std::int8_t {
     Land = 27,     ///< A jump's landing clip, then the gait blend or the idle.
     RunStop = 101, ///< **Coney's**: the run stop (slot 33) after a sprint's skid, then the idle.
     Climb = 102,   ///< **Coney's**: a climb's three clips, then the gait blend or the idle.
+    Attack = 103,  ///< **Coney's**: combat clips played once (an attack, a reaction), then what follows them.
+    Hold = 104,    ///< **Coney's**: a held combat pose (a block, a grab, a mount, a mugging) until combat changes it.
 };
 
 /// What the controller decides from, each update.
@@ -77,6 +79,10 @@ inline constexpr float kStartClipEarly = 0.1333F;
 inline constexpr float kMoveFadeMoving = 0.1333F;
 /// The jump loop's fade (the state 25 builder's 0.1 s); **Coney's** for the landing too.
 inline constexpr float kJumpFade = 0.1F;
+/// The fade into a combat clip, seconds. **Coney's choice** (the combat builders are not researched).
+inline constexpr float kCombatFade = 0.1F;
+/// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat.md#attacks).
+inline constexpr std::uint32_t kAnimFightIdle = 358;
 /// The gait blend's value speed, units a second, for the locomotion.
 inline constexpr float kGaitValueSpeed = 10.0F;
 
@@ -118,6 +124,16 @@ class HumanAnimator {
     void startClimb(std::uint32_t firstId, bool running);
     /// Ends whatever plays with the idle (a climb that cannot go on).
     void stopToIdle();
+    /// Combat: plays `clips` in turn, each once, then `loop` looping, after a fade of `fade`. `state` is
+    /// AnimState::Attack (the controller chooses again once the clips are over, the loop standing for the idle) or
+    /// AnimState::Hold (nothing changes until combat plays something else). Ids the anim set lacks are skipped; a
+    /// missing loop is the idle's (slot 0).
+    void playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
+                    float fade = kCombatFade);
+    /// Combat: plays `clips` in turn, then the gait blend at the run (a run attack after which the run resumes).
+    void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade);
+    /// Whether the anim set has a clip for `id`.
+    [[nodiscard]] bool hasClip(std::uint32_t id) const { return m_anims->clip(id) != nullptr; }
 
     /// The blended pose.
     [[nodiscard]] anim::Pose pose(std::span<const anim::Quat, anim::kPoseBones> bindRotations) const {

@@ -1,0 +1,6 @@
+# Rembrandt mugs the fight yard's front target (assets/sandbox/combat.layout): circle tapped grabs, triangle starts the
+# mugging (the spin to the rear hold, 338, then the loop 340), and the stick is pushed 60 % to the right, where the
+# mugging's target angle may or may not be. Frames are 1/30 s.
+10 tap circle
+40 tap triangle
+60 stick left 60 0

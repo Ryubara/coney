@@ -86,6 +86,24 @@ enum class ChainButton : std::uint8_t { None, Cross, Square, SnapRight, SnapLeft
 /// **Coney choice**: SS2 then square is always `SSS3` (19), never its `_HOLD` variant 20 (19 every time at runtime).
 [[nodiscard]] int nextChainAttack(int current, ChainButton button);
 
+/// When an attack's phases fall, in updates from its clip's start.
+struct AttackTiming {
+    int hit = 2;         ///< The update its hit lands (0: on the start).
+    int chainOpen = 6;   ///< The chain window (`0x2`) opens...
+    int chainClose = 15; ///< ... and closes, the end phase (`0x4`) starting; equal for an attack with no window.
+    int recovery = 17;   ///< The recovery (`0x40000`) starts.
+    int end = 20;        ///< The attack ends and the fight idle returns.
+};
+
+/// The timing of attack `animId` (docs/research/combat.md#chain): `S1` takes CombatTuning's values (hit 2, window
+/// 6 to 15, recovery 17, end 20); `X1`, `SS2`, the third hits, `SX2`, `XS2`, `XX2`, the grab strikes 51, 53, 55, the
+/// power strike 57 (its hit on the start) and the walk attack 23 the measured ones.
+/// **Coney choices** where a column was not measured: the recovery starts 3 updates before the end (as `S1`'s); an
+/// attack with no window opening has none, its end phase following the wind-up; `SS2` closes and ends as `S1`;
+/// `SSX3` ends at 30 (as `XX2` and `XS2`); the run attack 24 ends at 21 (0.7 s), the charge at 27 (0.9 s) and the
+/// dive at 60 (2 s), from their clips' lengths seen at runtime; every attack not measured hits as `S1` does.
+[[nodiscard]] AttackTiming attackTiming(int animId, const CombatTuning& tuning);
+
 /// What one update of an attack did.
 struct ChainStep {
     int started = anim_id::kNone; ///< An attack started this update (the next of the chain).
@@ -95,15 +113,17 @@ struct ChainStep {
 
 /// One attack playing and the chain after it, counted in updates.
 ///
-/// The timing is CombatTuning's: the hit 2 updates after the start, the chain window from 6 to 15, the end phase,
-/// the recovery from 17 and the end at 20. A press is buffered (one at a time, a later one replacing it) during the
-/// chain window, or during the wind-up while the combo count is below 2 (or is 2 on `SS2`); a buffered press plays
-/// its attack as soon as the window is open. Presses in the end phase and the recovery are dropped.
+/// Each attack keeps the timing attackTiming() gives it at its start (`S1`: the hit 2 updates after the start, the
+/// chain window from 6 to 15, the end phase, the recovery from 17 and the end at 20). A press is buffered (one at a
+/// time, a later one replacing it) during the chain window, or during the wind-up while the combo count is below 2 (or
+/// is 2 on `SS2`); a buffered press plays its attack as soon as the window is open. Presses in the end phase and the
+/// recovery are dropped.
 class AttackChain {
   public:
-    /// Starts attack `animId` from its first update, adding one to the combo count.
+    /// Starts attack `animId` from its first update with its attackTiming(), adding one to the combo count. Returns
+    /// whether its hit lands on the start (timing hit 0).
     /// @orig 0x002625a8 Attack_Start (unknown)
-    void start(int animId);
+    bool start(int animId, const CombatTuning& tuning);
     /// Stops the attack and forgets the chain (a hit taken, a grab).
     void cancel();
 
@@ -111,6 +131,8 @@ class AttackChain {
     /// @orig 0x00280630 Player_UpdateChain (unknown)
     /// @orig 0x00280708 Player_UpdateChain (unknown)
     ChainStep update(ChainButton press, const CombatTuning& tuning);
+    /// The timing of the attack playing.
+    [[nodiscard]] const AttackTiming& timing() const { return m_timing; }
 
     /// An attack is playing.
     [[nodiscard]] bool active() const { return m_current != anim_id::kNone; }
@@ -123,12 +145,13 @@ class AttackChain {
     /// The buffered press.
     [[nodiscard]] ChainButton buffered() const { return m_buffered; }
     /// The phase bits of the record's `+0x08` for the attack's age; 0 when no attack plays.
-    [[nodiscard]] std::uint32_t phaseFlags(const CombatTuning& tuning) const;
+    [[nodiscard]] std::uint32_t phaseFlags() const;
 
   private:
     // Whether a press is buffered in the attack's current phase.
-    [[nodiscard]] bool accepts(const CombatTuning& tuning) const;
+    [[nodiscard]] bool accepts() const;
 
+    AttackTiming m_timing;
     int m_current = anim_id::kNone;
     int m_age = 0;
     int m_combo = 0;

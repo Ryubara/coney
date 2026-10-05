@@ -30,6 +30,7 @@
 #include "core/input_script.h"
 #include "core/language.h"
 #include "core/options.h"
+#include "debug/combat_tunables.h"
 #include "debug/debug_session.h"
 #include "debug/game_tunables.h"
 #include "debug/tunables.h"
@@ -553,6 +554,7 @@ int main(int argc, char** argv) {
         options->tunablesFile.value_or(renderer.window() ? coney::platform::defaultTunablesPath() : std::string{});
     coney::debug::TunableRegistry& tunables = coney::debug::globalTunables();
     coney::debug::registerGameTunables(tunables);
+    coney::debug::registerCombatTunables(tunables);
     if (!debugServices.tunablesFile.empty()) {
         auto loaded = tunables.load(debugServices.tunablesFile);
         if (loaded) {

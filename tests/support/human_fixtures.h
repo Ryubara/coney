@@ -30,6 +30,7 @@ struct LocomotionClip {
     float rootVelocity = 0.0F;    ///< Section A's constant y velocity, m/s; 0 for no section A.
     std::uint16_t rangeFlags = 0; ///< The Anim Range List's rate flags.
     float reach = 0.0F;           ///< A type-8 event's vector along +y (a climb clip's reach); 0 for no event.
+    bool knockdown = false;       ///< A type-7 event (a reaction that knocks the victim down).
 };
 
 /// The synthetic climb clips: for each of the four climbs (437 fence, 443 short fence, 449 wall, 455 short wall), a
@@ -91,6 +92,46 @@ inline std::vector<LocomotionClip> locomotionClips() {
     return clips;
 }
 
+/// The synthetic combat clips, all still: the attacks (11-17, 19, 0.6 s), the grab (69, 71-73, 0.3 s; the holds
+/// 82-85, 1 s), the grab strikes and their reactions (51-56, 57-58, 0.5 s), the spins (78-81, 0.4 s), the let-go
+/// (94, 95, 0.4 s), the throw and its reaction (147, 148, 0.6 s), the tackle (2, 4-6, 0.4 s), the ground (195, 196,
+/// 199, 207, 210, 212), the reactions 268-303 (0.4 s; 288-303, the heavy and crushing ones, knock down), the stun (356
+/// loop, 357 end), the fight idle (358), the miss's 389 and the block (606, 607, looping).
+inline std::vector<LocomotionClip> combatClips() {
+    std::vector<LocomotionClip> clips;
+    // A still clip of `id` lasting `duration`, looping at rate 1 with `loop`.
+    const auto still = [&clips](std::uint32_t id, float duration, bool loop = false, bool knockdown = false) {
+        clips.push_back({.id = id,
+                         .speed = 0.0F,
+                         .duration = duration,
+                         .rootVelocity = 0.0F,
+                         .rangeFlags = static_cast<std::uint16_t>(loop ? 0x1000 : 0),
+                         .reach = 0.0F,
+                         .knockdown = knockdown});
+    };
+    for (const std::uint32_t id : {11U, 12U, 13U, 14U, 15U, 16U, 17U, 19U}) {
+        still(id, 0.6F);
+    }
+    for (const std::uint32_t id : {69U, 71U, 72U, 73U}) {
+        still(id, 0.3F);
+    }
+    for (const std::uint32_t id : {82U, 83U, 84U, 85U, 196U, 207U, 210U, 356U, 358U, 606U, 607U}) {
+        still(id, 1.0F, true);
+    }
+    for (std::uint32_t id = 51; id <= 58; ++id) {
+        still(id, 0.5F);
+    }
+    for (const std::uint32_t id : {78U, 79U, 80U, 81U, 94U, 95U, 2U, 4U, 5U, 6U, 195U, 199U, 212U, 357U, 389U}) {
+        still(id, 0.4F);
+    }
+    still(147, 0.6F);
+    still(148, 0.6F);
+    for (std::uint32_t id = 268; id <= 303; ++id) {
+        still(id, 0.4F, false, id >= 288);
+    }
+    return clips;
+}
+
 /// The bytes of a character data resource holding `clips` in order, its Anim Range List and its Character Data
 /// table, which gives clip i the slot value (count - 1 - i): the last clip loaded answers the smallest value.
 inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
@@ -112,11 +153,18 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
             event.u16(0).u16(0).u16(0).u16(0).u16(0);
             keys.append(event.span());
         }
+        // A knockdown: one type-7 event at frame 0.
+        if (clip.knockdown) {
+            Bytes event;
+            event.u16(0).u16(7);
+            event.fill(20, 0);
+            keys.append(event.span());
+        }
         ClipFields fields;
         fields.name = "synthetic";
         fields.displacementY = clip.speed * clip.duration;
         fields.duration = clip.duration;
-        fields.events = clip.reach > 0.0F ? 1 : 0;
+        fields.events = (clip.reach > 0.0F ? 1 : 0) + (clip.knockdown ? 1 : 0);
         chunks.push_back(chunk(anim::kAnimKeyframesChunk, keys));
         chunks.push_back(chunk(anim::kAnimDataChunk, clipDescriptor(fields, sectionA.size(), sectionB.size(), 0)));
     }

@@ -1,0 +1,9 @@
+# Rembrandt at the fight yard's front target (assets/sandbox/combat.layout, tests/sandbox/disc_sandbox_combat_test.cpp):
+# square three times, one press every 6 updates (S1, SS2, SSS3), then, after the stun, cross twice (X1 on the release,
+# XX2 in its window from 10 updates). The stick stays at rest so square does not take the walk attack. Frames are
+# 1/30 s.
+10 tap square
+16 tap square
+22 tap square
+70 tap cross
+82 tap cross

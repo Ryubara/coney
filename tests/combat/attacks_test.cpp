@@ -98,34 +98,34 @@ TEST_CASE("the chain buffers cross's press and square's, the snap by the stick",
 TEST_CASE("S1 hits 2 updates after the press, opens its chain window at 6 and ends at 20", "[combat]") {
     const CombatTuning tuning;
     AttackChain chain;
-    chain.start(anim_id::kAttackS1);
+    chain.start(anim_id::kAttackS1, tuning);
     CHECK(chain.comboCount() == 1);
-    CHECK(chain.phaseFlags(tuning) == kPhaseWindUp);
+    CHECK(chain.phaseFlags() == kPhaseWindUp);
     CHECK(chain.update(ChainButton::None, tuning).hit == anim_id::kNone);
     CHECK(chain.update(ChainButton::None, tuning).hit == anim_id::kAttackS1); // update 2
     idle(chain, 3, tuning);
-    CHECK(chain.phaseFlags(tuning) == kPhaseWindUp); // update 5
+    CHECK(chain.phaseFlags() == kPhaseWindUp); // update 5
     idle(chain, 1, tuning);
-    CHECK(chain.phaseFlags(tuning) == kPhaseChainWindow); // update 6
+    CHECK(chain.phaseFlags() == kPhaseChainWindow); // update 6
     idle(chain, 8, tuning);
-    CHECK(chain.phaseFlags(tuning) == kPhaseChainWindow); // update 14
+    CHECK(chain.phaseFlags() == kPhaseChainWindow); // update 14
     idle(chain, 1, tuning);
-    CHECK(chain.phaseFlags(tuning) == kPhaseEnd); // update 15
+    CHECK(chain.phaseFlags() == kPhaseEnd); // update 15
     idle(chain, 2, tuning);
-    CHECK(chain.phaseFlags(tuning) == kPhaseRecovery); // update 17
+    CHECK(chain.phaseFlags() == kPhaseRecovery); // update 17
     CHECK_FALSE(idle(chain, 2, tuning).finished);
     const ChainStep end = chain.update(ChainButton::None, tuning); // update 20
     CHECK(end.finished);
     CHECK_FALSE(chain.active());
     CHECK(chain.comboCount() == 0);
-    CHECK(chain.phaseFlags(tuning) == 0);
+    CHECK(chain.phaseFlags() == 0);
 }
 
 TEST_CASE("a press in the wind-up is buffered and plays when the window opens; one in recovery is dropped",
           "[combat]") {
     const CombatTuning tuning;
     AttackChain chain;
-    chain.start(anim_id::kAttackS1);
+    chain.start(anim_id::kAttackS1, tuning);
     idle(chain, 4, tuning);
     CHECK(chain.update(ChainButton::Square, tuning).started == anim_id::kNone); // update 5: buffered
     CHECK(chain.buffered() == ChainButton::Square);
@@ -140,7 +140,7 @@ TEST_CASE("a press in the wind-up is buffered and plays when the window opens; o
 
     // In recovery a press is dropped and the attack ends with nothing after it.
     AttackChain late;
-    late.start(anim_id::kAttackS1);
+    late.start(anim_id::kAttackS1, tuning);
     idle(late, 18, tuning);
     CHECK(late.update(ChainButton::Square, tuning).started == anim_id::kNone); // update 19
     CHECK(late.update(ChainButton::None, tuning).finished);
@@ -149,7 +149,7 @@ TEST_CASE("a press in the wind-up is buffered and plays when the window opens; o
 TEST_CASE("a press every 6 updates gives S1, SS2, SSS3 and a fourth press does nothing", "[combat]") {
     const CombatTuning tuning;
     AttackChain chain;
-    chain.start(anim_id::kAttackS1);
+    chain.start(anim_id::kAttackS1, tuning);
     idle(chain, 5, tuning);
     CHECK(chain.update(ChainButton::Square, tuning).started == anim_id::kAttackSS2);
     idle(chain, 5, tuning);
@@ -162,11 +162,45 @@ TEST_CASE("a press every 6 updates gives S1, SS2, SSS3 and a fourth press does n
     CHECK(chain.update(ChainButton::Square, tuning).started == anim_id::kNone);
     CHECK(chain.animId() == anim_id::kAttackSSS3);
 
-    // X1, cross: XX2; a third cross does nothing.
+    // X1, cross when its window opens at 10: XX2; a third cross does nothing.
     AttackChain cross;
-    cross.start(anim_id::kAttackX1);
-    idle(cross, 7, tuning);
+    cross.start(anim_id::kAttackX1, tuning);
+    idle(cross, 9, tuning);
     CHECK(cross.update(ChainButton::Cross, tuning).started == anim_id::kAttackXX2);
     idle(cross, 7, tuning);
     CHECK(cross.update(ChainButton::Cross, tuning).started == anim_id::kNone);
+}
+
+TEST_CASE("each attack keeps its measured timing: X1 hits at 8, SSS3 ends at 26, the power strike hits at once",
+          "[combat]") {
+    const CombatTuning tuning;
+    const AttackTiming x1 = attackTiming(anim_id::kAttackX1, tuning);
+    CHECK(x1.hit == 8);
+    CHECK(x1.chainOpen == 10);
+    CHECK(x1.chainClose == 20);
+    CHECK(x1.end == 30);
+    // A third hit has no window: its end phase follows the wind-up.
+    const AttackTiming sss3 = attackTiming(anim_id::kAttackSSS3, tuning);
+    CHECK(sss3.hit == 7);
+    CHECK(sss3.chainOpen == sss3.chainClose);
+    CHECK(sss3.chainClose == 16);
+    CHECK(sss3.recovery == 23);
+    CHECK(sss3.end == 26);
+    CHECK(attackTiming(anim_id::kGrabComboStrike3, tuning).end == 23);
+    CHECK(attackTiming(anim_id::kSnapRight, tuning).hit == tuning.hitUpdate);
+
+    // X1 then a cross in its window: XX2 hits 10 updates after it starts.
+    AttackChain chain;
+    CHECK_FALSE(chain.start(anim_id::kAttackX1, tuning));
+    CHECK(idle(chain, 7, tuning).hit == anim_id::kNone);
+    CHECK(chain.update(ChainButton::None, tuning).hit == anim_id::kAttackX1);      // update 8
+    CHECK(chain.update(ChainButton::Cross, tuning).started == anim_id::kNone);     // update 9: buffered
+    CHECK(chain.update(ChainButton::None, tuning).started == anim_id::kAttackXX2); // update 10
+    CHECK(idle(chain, 9, tuning).hit == anim_id::kNone);
+    CHECK(chain.update(ChainButton::None, tuning).hit == anim_id::kAttackXX2);
+
+    // The power strike's hit lands on its start.
+    AttackChain power;
+    CHECK(power.start(anim_id::kGrabPower1Strike1, tuning));
+    CHECK(power.timing().end == 44);
 }

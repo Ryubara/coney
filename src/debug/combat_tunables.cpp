@@ -39,7 +39,9 @@ void registerCombatTunables(TunableRegistry& registry) {
     registry.add(kCategory, "Rage points cap", &tuning.ragePointsCap).range(0, 100, 1);
     registry.add(kCategory, "Rage factor below cap", &tuning.rageFactorBelow).range(0, 2, 0.05);
     registry.add(kCategory, "Rage factor above cap", &tuning.rageFactorAbove).range(0, 2, 0.05);
-    registry.add(kCategory, "Rage drain", &tuning.rageDrainPerSecond).range(0, 60, 0.5).units("/s");
+    registry.add(kCategory, "Rage drain", &tuning.rageDrainPerSecond).range(0, 60, 0.02).units("/s");
+    registry.add(kCategory, "Rage hold", &tuning.rageHoldMs).range(0, 20000, 100).units("ms");
+    registry.add(kCategory, "Rage decay", &tuning.rageDecayPerSecond).range(0, 60, 0.1).units("/s");
 
     // The button mash.
     registry.add(kCategory, "Mash target", &tuning.mashTarget).range(1, 5000, 10);

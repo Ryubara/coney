@@ -190,3 +190,17 @@ TEST_CASE("loading a layout file reports the file with a parse error", "[sandbox
     CHECK(layout.error().message.ends_with("broken.layout: line 1: size= is missing"));
     CHECK(coney::sandbox::loadSandboxLayout(dir.path() / "none.layout").error().code == coney::ErrorCode::NotFound);
 }
+
+TEST_CASE("a target line places a passive human to fight, with a heading and health", "[sandbox][layout]") {
+    const auto layout = parseSandboxLayout("target front at=0,1.5,0 heading=180\ntarget tough at=2,1,0 health=1200\n");
+    REQUIRE(layout.has_value());
+    REQUIRE(layout->targets.size() == 2);
+    CHECK(layout->targets[0].name == "front");
+    CHECK(layout->targets[0].position.y == Approx(1.5F));
+    CHECK(layout->targets[0].headingDegrees == Approx(180.0F));
+    CHECK(layout->targets[0].health == 600);
+    CHECK(layout->targets[1].health == 1200);
+    CHECK(errorOf("target a at=0,0,0\ntarget a at=1,0,0\n") == "line 2: target a given twice");
+    CHECK(errorOf("target a at=0,0,0 health=0\n").starts_with("line 1: health= needs a whole number"));
+    CHECK(errorOf("target at=0,0,0\n").starts_with("line 1: target needs a name first"));
+}

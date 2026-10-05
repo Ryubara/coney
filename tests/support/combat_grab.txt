@@ -1,0 +1,10 @@
+# Rembrandt grabs the fight yard's front target (assets/sandbox/combat.layout): circle tapped grabs, square strikes in
+# the hold, R1 spins to the rear hold, circle with the stick at rest spins back to the front, and circle with the stick
+# pushed 70 % ahead throws (147). Frames are 1/30 s.
+10 tap circle
+40 tap square
+70 tap r1
+100 tap circle
+130 stick left 0 70
+131 tap circle
+134 stick left 0 0

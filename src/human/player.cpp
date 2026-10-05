@@ -7,6 +7,7 @@
 
 #include "characters/character_list.h"
 #include "characters/character_rig.h"
+#include "combat/combat_tuning.h"
 
 namespace coney::human {
 
@@ -38,7 +39,13 @@ PlayerCharacter::load(const io::Wad& wad, const chunk::ChunkHandlerTable& table,
     if (!generic) {
         return std::unexpected(std::move(generic.error()));
     }
-    std::unique_ptr<PlayerCharacter> character(new PlayerCharacter(std::move(*assets), std::move(*generic)));
+    // The Anim Range List the character's moves take their damage and reach from.
+    auto ranges = combat::AnimRangeList::parse(assets->data.rangeList());
+    if (!ranges) {
+        return std::unexpected(std::move(ranges.error()));
+    }
+    std::unique_ptr<PlayerCharacter> character(
+        new PlayerCharacter(std::move(*assets), std::move(*generic), std::move(*ranges)));
     if (const std::size_t missing = HumanAnimator::clipsMissing(character->m_anims, AnimSlots::player());
         missing != 0) {
         return fail(ErrorCode::NotFound, std::format("{}: {} locomotion clips missing", name, missing));
@@ -46,13 +53,14 @@ PlayerCharacter::load(const io::Wad& wad, const chunk::ChunkHandlerTable& table,
     return character;
 }
 
-PlayerCharacter::PlayerCharacter(characters::CharacterAssets assets, characters::CharacterData generic)
+PlayerCharacter::PlayerCharacter(characters::CharacterAssets assets, characters::CharacterData generic,
+                                 combat::AnimRangeList ranges)
     : m_assets(std::move(assets)), m_generic(std::move(generic)), m_anims(m_assets.data, &m_generic),
-      m_skeleton(characters::characterSkeleton(m_assets.model)) {}
+      m_skeleton(characters::characterSkeleton(m_assets.model)), m_ranges(std::move(ranges)) {}
 
 Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start)
-    : m_start(start),
-      m_human(character.anims(), AnimSlots::player(), character.skeleton().bindRotations, kPlayerBodyScale),
+    : m_start(start), m_human(character.anims(), AnimSlots::player(), character.skeleton().bindRotations,
+                              kPlayerBodyScale, &character.ranges()),
       m_camera(start.position, 0.0F) {
     m_human.spawn(mesh, start.position, start.headingDegrees);
     m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
@@ -98,14 +106,20 @@ PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot&
                           .cameraTarget = anim::lerp(previous.cameraTarget, current.cameraTarget, alpha)};
 }
 
-void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh) {
+void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<TargetHuman* const> targets) {
+    // The command for this sample (docs/research/combat.md#commands).
+    const combat::CommandId command =
+        m_matcher.update(pad.buttons(), m_tables, combat::combatTuning().historyHoldSamples);
     // The human first, its stick turned by the camera as it stood after the last update; the cameras last.
     // L2 held asks for a sprint; triangle pressed (command 10) climbs or jumps (docs/research/characters.md#buttons).
     m_human.step(HumanInput{.stickX = pad.leftX(),
                             .stickY = pad.leftY(),
                             .cameraForward = m_camera.forward(),
                             .sprintHeld = pad.held(pad::kL2),
-                            .actionPressed = pad.pressed(pad::kTriangle)},
+                            .actionPressed = pad.pressed(pad::kTriangle),
+                            .command = command,
+                            .buttons = pad.buttons(),
+                            .targets = targets},
                  mesh);
     if (m_human.outOfWorld()) {
         m_human.spawn(mesh, m_start.position, m_start.headingDegrees);

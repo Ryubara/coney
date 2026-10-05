@@ -80,8 +80,9 @@ const char* traversalName(Traversal traversal) {
 }
 
 Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
-             std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale)
-    : m_animator(anims, slots), m_scale(scale) {
+             std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale,
+             const combat::AnimRangeList* ranges)
+    : m_animator(anims, slots), m_ranges(ranges), m_fighter(ranges), m_scale(scale) {
     std::ranges::copy(bindRotations, m_bindRotations.begin());
 }
 
@@ -96,7 +97,7 @@ Traversal Human::traversal() const {
     if (m_airborne) {
         return m_jumping ? Traversal::Jumping : Traversal::Falling;
     }
-    if (m_animator.actionPlaying()) {
+    if (m_animator.actionPlaying() && m_animator.state() != AnimState::Attack) {
         return m_animator.state() == AnimState::RunStop ? Traversal::RunStop : Traversal::Landing;
     }
     return Traversal::None;
@@ -114,6 +115,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_sprinting = false;
     m_jumping = false;
     m_lean = 0.0F;
+    m_fighter = Fighter(m_ranges);
     endClimb();
     if (m_animator.state() != AnimState::Idle) {
         m_animator.stopToIdle();
@@ -295,6 +297,35 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
     m_position = feet;
 }
 
+void Human::holdForCombat() {
+    // The clip moves the body (its root motion is added after this), with an attack start's slide to its target.
+    const anim::Vec3 slide = m_fighter.takeSlide();
+    m_velocity = anim::Vec3{slide.x, slide.y, m_velocity.z};
+    // Blocking, the stick turns the player in place at the standing turn limit (**Coney's choice** of the rate: the
+    // research sees the shuffle clip turning, not how fast).
+    if (m_fighter.blocking() && m_intent.magnitude > locomotionTuning().stickDeadZone) {
+        m_heading = turnToward(m_heading, m_intent.angle - kPi / 2.0F, maxTurn(Gait::Standing), m_turn);
+    }
+}
+
+void Human::fight(const HumanInput& input) {
+    // The stick in the facing frame: x to the player's right, y ahead.
+    const float relative = wrapAngle(m_intent.angle - kPi / 2.0F - m_heading);
+    const combat::Stick stick{-m_intent.magnitude * std::sin(relative), m_intent.magnitude * std::cos(relative)};
+    // Game time from the updates stepped (whole milliseconds, as the original keeps it).
+    const std::uint64_t nowMs = m_updates * 1000 / 30;
+    m_fighter.update(FighterInput{.command = input.command,
+                                  .buttons = input.buttons,
+                                  .stick = stick,
+                                  .padStick = combat::Stick{input.stickX, input.stickY},
+                                  .gait = gait(),
+                                  .position = m_position,
+                                  .heading = m_heading,
+                                  .nowMs = nowMs,
+                                  .targets = input.targets},
+                     m_animator, m_heading);
+}
+
 void Human::updateMeters(bool sprintHeld) {
     // The drain at the sprint gait (nothing while an action's clip plays), which ends the sprint when it empties; the
     // refill otherwise; then the sprint flag, cleared and set again while L2 is held and stamina lasts.
@@ -434,6 +465,7 @@ void Human::followClimb(const raycast::CollisionMesh* mesh) {
 
 void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     // 1. The stick, turned by the camera.
+    ++m_updates;
     m_lastMagnitude = m_intent.magnitude;
     m_intent = stickIntent(input.stickX, input.stickY, input.cameraForward);
     if (m_outOfWorld) {
@@ -462,6 +494,8 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
         if (m_jumping) {
             airControl();
         }
+    } else if (m_fighter.holdsMovement(m_animator)) {
+        holdForCombat();
     } else {
         locomote();
     }
@@ -507,9 +541,14 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
         endClimb();
         m_animator.stopToIdle();
     }
-    // 8. The player's part: stamina and the sprint, triangle, the lean, and the animation state.
-    updateMeters(input.sprintHeld);
-    if (input.actionPressed) {
+    // 8. The player's part: stamina and the sprint (a block clears it), combat, triangle, the lean, and the animation
+    // state. Combat first, as the original's dispatcher reads the block and the chain before the commands; triangle
+    // keeps its climb, context action and jump while combat does not hold the body (in a grab it mugs).
+    updateMeters(input.sprintHeld && !m_fighter.blocking());
+    if (!m_airborne && !m_climbRun) {
+        fight(input);
+    }
+    if (input.actionPressed && !m_fighter.holdsMovement(m_animator)) {
         tryActions(mesh, input.sprintHeld);
     }
     m_lean = leanStep(m_lean, turn, speed(), gait());

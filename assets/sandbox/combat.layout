@@ -1,0 +1,35 @@
+# Coney sandbox: the fight yard (docs/guides/sandbox.md). Passive targets to fight: Coney's own test humans, which
+# take hits, react, get stunned, knocked down and thrown as the research's victim does, and never fight back
+# (docs/research/combat.md). Game axes and units: metres, z up; the spawn faces +y ("north").
+
+title Fight yard
+
+texture floor dark_grid.png
+texture wall light_grid.png
+texture marker red_grid.png
+
+shadows on
+tessellate edge=1
+
+spawn start at=0,0,0 heading=0
+spawn pair at=10,0,0 heading=0
+spawn wall at=-10,0,0 heading=0
+
+# One target 1.5 m ahead of the start, facing it: combos, the grab, the throw, the tackle and the mug.
+target front at=0,1.5,0 heading=180
+# Two side by side for the target search (54° of the stick, then any angle).
+target left at=9,1.6,0 heading=180
+target right at=11,1.6,0 heading=180
+# One in front of a wall, for the wall throws (155-161).
+target wall at=-10,1.5,0 heading=180 health=1200
+
+view start at=2.5,-4,2.2 yaw=25 pitch=-12
+view overview at=0,-16,10 yaw=0 pitch=-30
+
+# The ground: 40 m square, its top at z = 0.
+box at=0,0,-0.5 size=40,40,0.5 texture=floor
+# Start pads, and the wall behind the wall target.
+box at=0,0,0 size=1,1,0.02 texture=marker solid=no
+box at=10,0,0 size=1,1,0.02 texture=marker solid=no
+box at=-10,0,0 size=1,1,0.02 texture=marker solid=no
+box at=-10,2.6,0 size=4,0.3,2.5 texture=wall

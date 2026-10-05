@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -18,6 +19,7 @@
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
 #include "human/player.h"
+#include "human/target_human.h"
 #include "platform/character_lights.h"
 #include "platform/character_mesh.h"
 #include "platform/play_scenery.h"
@@ -27,6 +29,10 @@
 #include "sandbox/sandbox_world.h"
 #include "world/debug_camera.h"
 #include "world/sector_budget.h"
+
+namespace rw {
+struct Texture;
+}
 
 namespace coney::platform {
 
@@ -49,8 +55,9 @@ struct PlayStats {
 /// scenery, where the original draws its objects (docs/guides/conventions.md#update-and-render). Game time only, so
 /// with `--frames` and `--input-script` a run is the same every time, and the simulation is the same at any frame rate.
 ///
-/// No level script, objects or other characters yet. The parts follow docs/research/characters.md and
-/// docs/research/camera.md; the mode is Coney's own glue.
+/// No level script, objects or other characters yet, but for a sandbox layout's `target` lines: Coney's passive targets
+/// (human::TargetHuman) to fight, stepped after the player and drawn with the player's model. The parts follow
+/// docs/research/characters.md, docs/research/combat.md and docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// It is also the debug menus' way into the game (debug::PlayControls, docs/guides/debug-menu.md): the Player, Camera
 /// and Spawner pages act on it between steps, and render() draws the Debug draw page's lines into the scene.
@@ -93,6 +100,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls {
     [[nodiscard]] std::string summary() const;
 
     [[nodiscard]] const human::Player& player() const { return *m_player; }
+    /// The sandbox's targets (none in a level).
+    [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
     /// Sets the debug lines render() draws (the debug session's, which must outlive the mode); null draws none.
@@ -130,8 +139,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls {
 
     // The camera of `snapshot` as the scenery draws it, in RenderWare's axes, with `drawDistance` as its far clip.
     [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot, float drawDistance) const;
-    // Skins the character in `snapshot`'s pose and places it in the world (RenderWare's axes) for drawing.
-    void skin(const human::PlayerSnapshot& snapshot);
+    // Skins the character in `pose`, leaned by `lean` and turned to `heading` at `feet`, into `positions` and `normals`
+    // in the world (RenderWare's axes) for drawing.
+    void skin(const anim::Pose& pose, anim::Vec3 feet, float heading, float lean, std::vector<anim::Vec3>& positions,
+              std::vector<anim::Vec3>& normals) const;
+    // Makes the layout's targets, dropped onto the ground, with a mesh each.
+    void makeTargets(rw::Texture* texture);
     // Draws the character: its lights, the render states, the atomic.
     void drawCharacter() const;
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
@@ -159,6 +172,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls {
     bool m_frozen = false;
     std::optional<Interpolated<world::DebugCamera>> m_freeCamera; // at the last two steps, while it is on
     std::vector<sandbox::Primitive> m_spawned;
+    // The sandbox's targets, each drawn with its own copy of the character's mesh.
+    struct Target {
+        std::unique_ptr<human::TargetHuman> human;
+        std::unique_ptr<CharacterMesh> mesh;
+        std::vector<anim::Vec3> positions;
+        std::vector<anim::Vec3> normals;
+    };
+    std::vector<Target> m_targets;
+    std::vector<human::TargetHuman*> m_targetPointers;
 };
 
 } // namespace coney::platform
