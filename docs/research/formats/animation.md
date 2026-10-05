@@ -346,13 +346,24 @@ keyframes into channels and pairs them as the chunk system loads them; `anim_pos
 parent table and turns a pose into bone transforms; `anim_math.*` the vectors, quaternions and matrices. The
 characters' skinning is on [Characters](../characters.md#coneys-implementation).
 
+`anim_task.*` is the task system the human plays through ([Animation tasks](#animation-tasks)): the looping clip
+(type 1), the clip that hands over to a next task (type 3), the gait blend (type 12: five clips on a 0-4 scale, the
+value easing at 10 units/s, the pair stepped at 0.995, 1.995 and 2.995, the leading clip by the falling direction or a
+fraction above 0.875, a shared normalised phase), and the stack with its cosine fades. Root motion is taken from the
+pose of the newest task and switched off by its flags (`0x1` velocity, `0x2` turn; the locomotion tasks carry
+`0x2c1`). Rates come from `CfgAnimSpeeds` by the Anim Range List's flags at `+0x0e` (`src/characters/anim_set.*`).
+
 **Disc test** (`[anim]`, counts only): 5,127 resources, 31,274 occurrences, 1,875 distinct clips, none failing,
 unpaired or sampling to a non-finite pose; 957 clips have no section A, none lacks B; 9,468 events.
 
-**Coney choices**: the rate is 1 (where the flags `0x800`-`0x2000` live is not known to Coney); "entry `+4`" of the
-bone offset chunk is read literally, the float at byte 4, which is 0 on the disc; bones without a channel keep the
-model's bind rotation; root motion is not applied, so the viewer plays clips in place; a looping clip carries its
-overshoot into the next pass.
+**Coney choices**: "entry `+4`" of the bone offset chunk is read literally, the float at byte 4, which is 0 on the
+disc; bones without a channel keep the model's bind rotation; the character viewer plays clips in place at rate 1
+with no root motion; a looping clip carries its overshoot into the next pass. In the task system:
+
+- **The stack** is kept as a list of layers, newest first; when a fade completes, everything older than it goes. A
+  change finishes the newest fade at once when the stack holds more than 6 tasks, and drops the oldest above 12.
+- **The clip that hands over** supports only a blend time of 0 (all the locomotion uses) and carries its overshoot into
+  the next task.
 
 ## Notes for implementers
 
@@ -390,3 +401,4 @@ overshoot into the next pass.
   [Character geometry](../characters.md#character-geometry)).
 - Task types 5, 15 and 16, and the paired types 4 and 6 (used by grabs and two-human moves, not by locomotion).
 - The order in which the instance samples its task stack (bottom-up is inferred from the fade's sampler).
+- The type 3 task's blend into its next task when its blend time is not 0.

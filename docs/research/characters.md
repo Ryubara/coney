@@ -576,7 +576,8 @@ reaches 14.9 m/s after about 7.1 m and 20.5 m/s after 13.4 m (inferred from the 
 
 ## Coney's implementation
 
-Coney loads a character's three resources and plays its clips, without the human, movement or controller:
+Coney loads a character's three resources, plays its clips, and plays Rembrandt as player 1 with the human's
+locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 
 - `src/characters/character_list.*` reads the Character List from `warriors.glr` and finds a record by model name;
   `character_assets.*` loads the three resources by the records' hashes (`"%u"` file names).
@@ -593,15 +594,58 @@ Coney loads a character's three resources and plays its clips, without the human
 - `--render-references DIR` ([Building](../guides/building.md#character-reference-images)) writes a 256x256
   transparent PNG of every character, posed at its default clip's first frame, from a fixed three-quarter camera
   (`src/characters/reference_render.*` frames and reduces; `src/platform/reference_renderer.*` draws offscreen).
+- `src/characters/anim_set.*` answers an anim id from the character's own data, then from the generic character data
+  `0x9da2e531` (594 `gen_*` clips) in place of the default table, with the clip's rate from the Anim Range List flags
+  ([CfgAnimSpeeds](formats/animation.md)) and its speed (root displacement × rate / duration).
+- `src/human/locomotion.*` is the pure maths: the camera-relative stick, dead zone and run threshold
+  (`PlayerRecord_Update`), the target speed and gait, the per-gait turn limit with its ease and carry, acceleration,
+  the skid rule, the slope factor and the gait blend's target (`0x0025ec28`).
+- `src/human/human_animator.*` is the anim state (idle, move and a fall state) and its builders: the walk or run start
+  played at once and handed to the five-clip gait blend, the 0.1333 s fade between moves, the idle's fade by how much
+  of a start clip has played, and the walk start swapped for the run start in its first half
+  ([Clip selection](#clip-selection)).
+- `src/human/human.*` is the human: spawn (a 2.5 m ray from 1 m above, feet 0.01 above the hit), one update in the
+  order of [Update](#update) (stick, animation, root motion of the start clips, locomotion, gravity, move or fall,
+  then the anim state), the ground snap, the fall and landing, and the body pushed out of walls.
+- `src/human/player.*` is player 1 (the character, the human, the follow camera) and the snapshot drawing reads: the
+  previous and current feet, heading, pose and camera, interpolated for a renderer that draws between steps.
+- `--play-level NAME` ([Building](../guides/building.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
+  steps the player and streams the level, then draws from the snapshot only.
 
 **Disc test** (`[characters]`, counts only): all 543 records load (128 models, 52 character data resources, 507
 dictionaries); 150,509 vertices and 155,493 triangles; 1,692 clips and 2,843 resolved ids; the joint mismatch of a
 clip's first pose against the bind skeleton averages 0.054 m (worst 0.106 m).
 
+**Disc test** (`[player]`, counts only): Rembrandt's speeds from his clips are the runtime values (walk 1.629, jog
+4.857, run 7.801, sprint 10.245 m/s); at level99's start he lands at z 0.25, idles in 388, takes the walk start 413
+at a 30 % stick (about 0.79 m/s of root motion), walks in 408 at 1.629 m/s, gains 0.8 m/s per update to the run
+(410), stops at once with the idle on release, and never leaves the ground or passes through the scenery he is run
+into; the same script gives the same path twice.
+
 **Coney choices** where the research is silent: the material takes its dictionary's only texture; bones 0 and 1
-rest at the identity; slots set to the default (`0xffffffff`) stay unresolved, since the resource manager's default
-table is not decoded; weights are used as stored, not renormalised; the viewer's lights, camera and clip keys, and the
-reference images' pose, camera and lights, are Coney's own.
+rest at the identity; weights are used as stored, not renormalised; the viewer's lights, camera and clip keys, and the
+reference images' pose, camera and lights, are Coney's own. For the human:
+
+- **The default anim table**: slots set to the default (`0xffffffff`) are answered by the generic character data
+  `0x9da2e531`, whose clip speeds match the runtime-confirmed ones exactly (380, 407, 409, 410, 411); the table at
+  resource manager `+0x70` is not decoded.
+- **Standing**: a human not asked to move counts as moving while faster than a quarter of the walk speed (the getter
+  `0x00221580` is not identified).
+- **Falling**: a Coney anim state (100) that loops the drop cycle (slot 26, 428) with the idle's 0.15 s fade; the
+  original's airborne anim state is not researched.
+- **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip), and runs
+  while airborne too (air control).
+- **The body** is a sphere of radius 0.35 m with its centre 0.9 m above the feet, pushed out of the nearest wall
+  triangle (`|n.z|` ≤ 0.65) by the distance to the triangle's closest point; the sweep tries 3 passes, then stops.
+- **Landing** probes from 1.0 m above the feet, as the ground snap does.
+- **Out of the world** (20 m below the mesh's lowest point): the human is put back at the start instead of failing
+  the mission.
+- **The gait blend's leading clip** uses a tolerance of 0.001 when it compares the value with its target.
+- **Other levels' starts**: only level99's is researched; elsewhere Rembrandt starts above the middle of the first
+  world's part 1. The character's lights (ambient 0.45, one directional 0.7) stand in for the LightManager, and he is
+  drawn between the level's two worlds.
+- **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
+  `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 
 ## Notes for implementers
 
@@ -638,6 +682,11 @@ reference images' pose, camera and lights, are Coney's own.
 - **The rest rotations of pose bones 0-2** and why bone 3's parent in the table differs from its frame's.
 - **The vertex colour slot** (zeros in every character checked) and **the second texture coordinate set**: what
   the renderer does with them.
-- **The default anim table** at resource manager `+0x70`, which answers the slots set to `0xffffffff`.
+- **The default anim table** at resource manager `+0x70`, which answers the slots set to `0xffffffff`; Coney uses the
+  generic data `0x9da2e531`, which matches every speed checked, but whether the table is that resource is open.
+- **The idle threshold's getter** `0x00221580`: whose quarter decides that a human not asked to move is standing.
+- **The body's shape**: its radius, height and `+0x4e8`, which `PhysicsBody_PushOutOfWalls` reads.
+- **The airborne anim state**, and whether locomotion (turning, air control) runs while airborne or while a start
+  clip plays.
 - **The rest of the human**: the 0x180 and 0x2f0 records, the state flags tested by `0x002265f0` / `0x00226660`, and
   `Human_MakePlayer`'s steps.

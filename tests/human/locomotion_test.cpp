@@ -1,0 +1,153 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "human/locomotion.h"
+
+#include <cmath>
+#include <numbers>
+
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+using Catch::Approx;
+using coney::anim::Vec3;
+using coney::human::Gait;
+using coney::human::Speeds;
+
+namespace {
+
+constexpr float kPi = std::numbers::pi_v<float>;
+constexpr float kDegree = kPi / 180.0F;
+
+// Round speeds for the rules that read them: sneak 1.2, walk 1.5, jog 4, run 7.5, sprint 10.
+Speeds testSpeeds() {
+    return Speeds{.base = 3.0F, .sneak = 1.2F, .walk = 1.5F, .jog = 4.0F, .run = 7.5F, .sprint = 10.0F};
+}
+
+} // namespace
+
+TEST_CASE("the stick does nothing inside the 0.12 dead zone, walks up to 0.95 and runs above", "[locomotion]") {
+    const Speeds speeds = testSpeeds();
+    CHECK(coney::human::targetSpeed(0.0F, speeds) == 0.0F);
+    CHECK(coney::human::targetSpeed(0.10F, speeds) == 0.0F);
+    CHECK(coney::human::targetSpeed(0.12F, speeds) == 0.0F);
+    // Any deflection between the dead zone and the run threshold walks at the same speed.
+    CHECK(coney::human::targetSpeed(0.13F, speeds) == 1.5F);
+    CHECK(coney::human::targetSpeed(0.5F, speeds) == 1.5F);
+    CHECK(coney::human::targetSpeed(0.94F, speeds) == 1.5F);
+    CHECK(coney::human::targetSpeed(0.95F, speeds) == 1.5F);
+    CHECK(coney::human::targetSpeed(0.96F, speeds) == 7.5F);
+    CHECK(coney::human::targetSpeed(1.0F, speeds) == 7.5F);
+}
+
+TEST_CASE("the stick is turned into the camera's frame: up moves away from the camera", "[locomotion]") {
+    // Camera looking along +y: stick up is +y (angle π/2), right is +x (angle 0).
+    auto up = coney::human::stickIntent(0.0F, 0.6F, Vec3{0.0F, 1.0F, -0.3F});
+    CHECK(up.angle == Approx(kPi / 2.0F));
+    CHECK(up.magnitude == Approx(0.6F));
+    auto right = coney::human::stickIntent(0.3F, 0.0F, Vec3{0.0F, 1.0F, 0.0F});
+    CHECK(right.angle == Approx(0.0F).margin(1e-6));
+    // Camera looking along +x: stick up is +x, so the heading (angle - π/2) faces +x, -90°.
+    auto turned = coney::human::stickIntent(0.0F, 0.9F, Vec3{2.0F, 0.0F, 0.0F});
+    CHECK(turned.angle == Approx(0.0F).margin(1e-6));
+    const Vec3 direction = coney::human::facing(turned.angle - kPi / 2.0F);
+    CHECK(direction.x == Approx(1.0F));
+    CHECK(direction.y == Approx(0.0F).margin(1e-6));
+    // The length is clamped to 1 (a diagonal of two full axes), and a locked stick is centred at π/2.
+    CHECK(coney::human::stickIntent(1.0F, 1.0F, Vec3{0.0F, 1.0F, 0.0F}).magnitude == Approx(1.0F));
+    auto locked = coney::human::stickIntent(1.0F, 0.0F, Vec3{0.0F, 1.0F, 0.0F}, true);
+    CHECK(locked.magnitude == 0.0F);
+    CHECK(locked.angle == Approx(kPi / 2.0F));
+}
+
+TEST_CASE("heading 0 faces +y and grows anticlockwise", "[locomotion]") {
+    CHECK(coney::human::facing(0.0F).y == Approx(1.0F));
+    CHECK(coney::human::facing(kPi / 2.0F).x == Approx(-1.0F));
+    CHECK(coney::human::headingOf(Vec3{-1.0F, 0.0F, 0.0F}) == Approx(kPi / 2.0F));
+    CHECK(coney::human::wrapAngle(3.0F * kPi) == Approx(kPi));
+    CHECK(coney::human::wrapAngle(-kPi) == Approx(kPi));
+}
+
+TEST_CASE("a speed's gait: standing below 0.5 m/s, then the nearest gait speed", "[locomotion]") {
+    const Speeds speeds = testSpeeds();
+    CHECK(coney::human::gaitOfSpeed(0.49F, speeds) == Gait::Standing);
+    CHECK(coney::human::gaitOfSpeed(0.8F, speeds) == Gait::Sneak);
+    CHECK(coney::human::gaitOfSpeed(1.5F, speeds) == Gait::Walk);
+    CHECK(coney::human::gaitOfSpeed(3.0F, speeds) == Gait::Jog);
+    CHECK(coney::human::gaitOfSpeed(7.0F, speeds) == Gait::Run);
+    CHECK(coney::human::gaitOfSpeed(9.5F, speeds) == Gait::Sprint);
+    // Human_GaitForSpeed: at or above each threshold.
+    CHECK(coney::human::gaitForSpeed(1.4F, speeds) == Gait::Standing);
+    CHECK(coney::human::gaitForSpeed(1.5F, speeds) == Gait::Walk);
+    CHECK(coney::human::gaitForSpeed(7.5F, speeds) == Gait::Run);
+    CHECK(coney::human::gaitForSpeed(10.0F, speeds) == Gait::Sprint);
+}
+
+TEST_CASE("the player's turn limit is 12 degrees walking, 6 jogging, 4 running, 2.5 sprinting", "[locomotion]") {
+    CHECK(coney::human::maxTurn(Gait::Standing) == Approx(12.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Walk) == Approx(12.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Jog) == Approx(6.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Run) == Approx(4.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Sprint) == Approx(2.5F * kDegree));
+}
+
+TEST_CASE("a turn is eased below 1.5 rad, carries 0.8 of the last step, and never passes the limit", "[locomotion]") {
+    const float limit = 12.0F * kDegree;
+    // A large error turns at the full limit.
+    coney::human::TurnState state;
+    float heading = coney::human::turnToward(0.0F, 2.5F, limit, state);
+    CHECK(heading == Approx(limit));
+    // A small error starts slowly: limit × (1 - cos(π e / 1.5)) / 2.
+    coney::human::TurnState fresh;
+    const float error = 0.3F;
+    const float expected = limit * (1.0F - std::cos(kPi * error / 1.5F)) * 0.5F;
+    CHECK(coney::human::turnToward(0.0F, error, limit, fresh) == Approx(expected));
+    // The next step adds 0.8 of that one, clamped to the limit.
+    const float second = coney::human::turnToward(expected, error, limit, fresh);
+    const float remaining = error - expected;
+    const float wanted = limit * (1.0F - std::cos(kPi * remaining / 1.5F)) * 0.5F + 0.8F * expected;
+    CHECK(second == Approx(expected + std::min(wanted, limit)));
+    // An error smaller than the step snaps onto the target.
+    coney::human::TurnState carrying{.lastStep = limit, .lastError = 0.01F};
+    CHECK(coney::human::turnToward(0.0F, 0.01F, limit, carrying) == Approx(0.01F));
+    // Turning the shorter way round across ±π.
+    coney::human::TurnState across;
+    CHECK(coney::human::turnToward(3.0F, -3.0F, limit, across) > 3.0F - 1e-6F);
+}
+
+TEST_CASE("speed rises by 0.8 m/s an update and drops to its target at once", "[locomotion]") {
+    const float step = coney::human::kStepSeconds;
+    CHECK(coney::human::approachSpeed(0.0F, 7.5F, step) == Approx(0.8F));
+    CHECK(coney::human::approachSpeed(7.0F, 7.5F, step) == Approx(7.5F));
+    CHECK(coney::human::approachSpeed(7.5F, 0.0F, step) == 0.0F);
+    CHECK(coney::human::approachSpeed(7.5F, 1.5F, step) == 1.5F);
+}
+
+TEST_CASE("a slope slows a grounded human, uphill and downhill alike", "[locomotion]") {
+    CHECK(coney::human::slopeFactor(1.0F) == 1.0F);
+    CHECK(coney::human::slopeFactor(0.95F) == 1.0F);
+    CHECK(coney::human::slopeFactor(0.949F) == Approx(0.7347F).margin(1e-3));
+    CHECK(coney::human::slopeFactor(0.87F) == Approx(0.711F));
+    CHECK(coney::human::slopeFactor(0.1F) == Approx(0.5F));
+}
+
+TEST_CASE("the gait blend's target follows the speed piecewise between walk, jog, run and sprint", "[locomotion]") {
+    const Speeds speeds = testSpeeds();
+    CHECK(coney::human::gaitBlendForSpeed(0.0F, speeds) == 0.0F);
+    CHECK(coney::human::gaitBlendForSpeed(1.5F, speeds) == 0.0F);
+    CHECK(coney::human::gaitBlendForSpeed(2.75F, speeds) == Approx(0.5F));
+    CHECK(coney::human::gaitBlendForSpeed(4.0F, speeds) == Approx(1.0F));
+    CHECK(coney::human::gaitBlendForSpeed(7.5F, speeds) == Approx(2.0F));
+    CHECK(coney::human::gaitBlendForSpeed(8.75F, speeds) == Approx(2.5F));
+    CHECK(coney::human::gaitBlendForSpeed(50.0F, speeds) == Approx(3.0F));
+}
+
+TEST_CASE("a run skids to a stop when the stick lets go or turns back", "[locomotion]") {
+    const Speeds speeds = testSpeeds();
+    const Vec3 forward{0.0F, 1.0F, 0.0F};
+    const Vec3 back{0.0F, -1.0F, 0.0F};
+    CHECK(coney::human::skids(Gait::Run, 7.5F, speeds, 1.0F, 0.1F, forward, forward));
+    CHECK(coney::human::skids(Gait::Run, 7.5F, speeds, 1.0F, 1.0F, forward, back));
+    CHECK_FALSE(coney::human::skids(Gait::Run, 7.5F, speeds, 1.0F, 1.0F, forward, forward));
+    // Not while walking, nor when the last stick was not a run.
+    CHECK_FALSE(coney::human::skids(Gait::Walk, 1.5F, speeds, 1.0F, 0.1F, forward, back));
+    CHECK_FALSE(coney::human::skids(Gait::Run, 7.5F, speeds, 0.9F, 0.1F, forward, back));
+}

@@ -317,8 +317,30 @@ holds the popped follow camera, and the follow camera is the current and previou
 
 ## Coney's implementation
 
-None yet. Coney's world viewer has a free camera with the player camera's lens
+`src/camera/follow_camera.*` is the follow camera of `Cam_Follow_Update` (`0x0012ae58`), stepped after the human
+by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/building.md#playing-a-level)):
+
+- the look-at point is the feet + 1.4 m; the wanted position stays put unless its distance leaves the 3.0-3.5 m band,
+  then moves along that line to the band; the camera moves 22% of the way to it each step, held inside a hard band
+  of 2.8-3.85 m;
+- the pitch eases toward 13° at 85°/s, between the lower limit (the larger of -20° and the slope of 0.4 m over
+  6.6 m) and the upper;
+- the right stick turns the wanted position at the raw rates (yaw up to 150°/s outside the ±48 dead zone, pitch near
+  the ends of the travel) and holds off for 0.334 s after any input;
+- the camera's forward vector turns the player's stick before the human sees it.
+
+The world viewer keeps its own free camera with the player camera's lens
 ([The streamed world](world.md#coneys-implementation)).
+
+**Coney choices** where the research is silent:
+
+- **No auto-follow**: the camera does not swing behind the player by itself, as measured in level99
+  ([Runtime checks](#runtime-checks)).
+- **Collision** is one ray (collision mask `0x200`) from the look-at point to the camera; a hit pulls the camera to
+  0.2 m short of it, never nearer than 0.5 m. The side probes and swing-away rules are not implemented.
+- **The upper pitch limit** is fixed at 30°, the value read at runtime with the camera option set; the zoom
+  levels that would change it are not modelled.
+- **A fresh camera** (at the start, or after the player is put back) sits behind the player at 3.0 m and 13°.
 
 ## Notes for implementers
 
@@ -346,8 +368,8 @@ None yet. Coney's world viewer has a free camera with the player camera's lens
 - **Why auto-follow did not run** at runtime ([Runtime checks](#runtime-checks)): a gate not yet identified, perhaps
   in the update's locals (`sp+0x1c8`, the `0x0012e9a8` look-at step) or a mode the tutorial sets. A breakpoint at
   `0x0012bd80` would settle it.
-- **The collision step** (`0x00130990`) in full: the exact probe pattern, when the height ray lowers the camera, and
-  what `+0x10a`-`+0x10c` (side angle history) feed.
+- **The collision step** (`0x00130990`) in full (Coney casts one ray): the exact probe pattern, its margins, when
+  the height ray lowers the camera, and what `+0x10a`-`+0x10c` (side angle history) feed.
 - **The target state** that lifts the look-at point to 1.65 m, and the two modes of `0x00125588`.
 - **The slow-motion factor** `0x005148a0`: what slows down, and when.
 - **Scenes**: the scene camera's own update (type 4) and the "a scene is playing" flag at `0x0051489c + 0x410` (see

@@ -263,6 +263,10 @@ match the header's counts; `+0x98` equals the lowest vertex `z` everywhere. `lev
 - Unit tests on synthetic meshes cover a floor, a one- and a two-sided triangle, a wall from either side, the type
   bits, the mask, disabled triangles, material exclusion, a triangle listed in many cells, a long diagonal ray across
   the grid, marked ground and refused data.
+- The human (`src/human/human.*`, [Characters](characters.md#coneys-implementation)) stands, lands and spawns with
+  `rayCast` (mask 0, no exclusions), and is pushed out of walls by its own nearest-triangle test rather than
+  `spherePush`: the body sphere is kept a radius from the closest point of each wall triangle (`|n.z|` ≤ 0.65), so it
+  cannot slip past a convex edge, which the face-only test allowed. The follow camera casts with mask `0x200`.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][collision]"` loads all 64 `.lev` files
 through the chunk system with the `0x03` handler: none fails; 150,567 triangles and 94,294 vertices, 39,531 facing up,

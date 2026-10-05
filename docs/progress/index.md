@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,936 bytes, 193 functions) |
+| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,936 bytes, 226 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▋░░░░░░░░░░░░░` | 4 of 12 done |
 
-56 reimplemented function(s) have no size yet and add no bytes.
+89 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -50,17 +50,17 @@ at the top of the repository's `README.md`.
 
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
-| `Animation` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 2 | 37,160 |
+| `Animation` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 11 | 37,160 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 31,208 |
-| `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 118,632 |
+| `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 118,632 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 4 | 32,152 |
+| `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 5 | 32,152 |
 | `FileIO` | `▋░░░░░░░░░░░░░░░░░░░` | 3.3% | 2 | 6,480 |
 | `GameModes` | `██▏░░░░░░░░░░░░░░░░░` | 10.7% | 22 | 51,816 |
-| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 27 | 189,024 |
+| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 31 | 481,192 |
-| `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 358,360 |
+| `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 15 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -74,7 +74,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▎░░░░░░░░░░░░░░░░░░░` | 1.0% | 8 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% | 33 | 1,524,752 |
+| Unattributed | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% | 36 | 1,524,752 |
 
 ## Research coverage
 
@@ -104,8 +104,21 @@ at the top of the repository's `README.md`.
 | `0x001041f8` | `AnimCursor_Init` | `unattributed` | 536 |
 | `0x001044a0` | `AnimCursor_Advance` | `unattributed` | 208 |
 | `0x001045e0` | `AnimData_OnLoaded` | `unattributed` | 80 |
+| `0x00104a38` | `Anim_RateMultiplier` | `Animation` | not filled in |
 | `0x00104ce0` | `AnimCursor_SamplePose` | `Animation` | 1,144 |
 | `0x00105158` | `Pose_BlendPartial` | `Animation` | 848 |
+| `0x00105678` | `AnimTask_Loop` | `Animation` | not filled in |
+| `0x00105990` | `AnimTask_ClipThenNext` | `Animation` | not filled in |
+| `0x00106c80` | `AnimTask_Fade` | `Animation` | not filled in |
+| `0x0010a310` | `AnimTask_GaitBlend` | `Animation` | not filled in |
+| `0x0010a500` | `GaitBlend_SetTarget` | `Animation` | not filled in |
+| `0x0010a558` | `GaitBlend_SetValue` | `Animation` | not filled in |
+| `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
+| `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
+| `0x0012ae58` | `Cam_Follow_Update` | `Camera` | not filled in |
+| `0x0012d4e8` | `Cam_Follow_Pitch` | `Camera` | not filled in |
+| `0x0012d688` | `Cam_Follow_Yaw` | `Camera` | not filled in |
+| `0x00130990` | `Cam_Follow_Collide` | `Camera` | not filled in |
 | `0x00143f68` | `Crc32_Hash` | `Core` | 112 |
 | `0x00143fd8` | `Crc32_Lowercase` | `Core` | 120 |
 | `0x001440a0` | `ChunkSystem_PopObject` | `Core` | 40 |
@@ -127,6 +140,7 @@ at the top of the repository's `README.md`.
 | `0x00144fb0` | `Pad_Update` | `unattributed` | not filled in |
 | `0x001454a8` | `Pads_Update` | `unattributed` | not filled in |
 | `0x00145a10` | `GameTimer::Update` | `Device/ps2` | 952 |
+| `0x00146078` | `PlayerRecord_Update` | `Device/ps2` | not filled in |
 | `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
@@ -157,6 +171,8 @@ at the top of the repository's `README.md`.
 | `0x0016e258` | `CharacterData_OnLoaded` | `unattributed` | 304 |
 | `0x0016e8f0` | `ResourceManager_LoadCharacterData` | `Graphics` | 304 |
 | `0x00175080` | `CharacterInstance_GetAnim` | `Graphics` | 160 |
+| `0x00175210` | `CharacterInstance_TopTask` | `Graphics` | not filled in |
+| `0x001754e8` | `CharacterInstance_InsertTask` | `Graphics` | not filled in |
 | `0x00178098` | `CharacterList_OnLoaded` | `Graphics` | 56 |
 | `0x001783d0` | `ResourceManager_LoadCharacterModel` | `Graphics` | 288 |
 | `0x00179808` | `Font_Size` | `Graphics` | 240 |
@@ -216,12 +232,29 @@ at the top of the repository's `README.md`.
 | `0x00209da8` | `PM_Mode::Init` | `GUI` | 944 |
 | `0x0020a268` | `PM_Mode::HandleCommand` | `GUI` | 416 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
+| `0x00218008` | `Human_Init` | `unattributed` | not filled in |
+| `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
+| `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
+| `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
+| `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
+| `0x0023e090` | `Human_Land` | `Human` | not filled in |
+| `0x0023eab8` | `Human_SnapToGround` | `Human` | not filled in |
+| `0x0023f238` | `Human_ApplyRootMotion` | `Human` | not filled in |
+| `0x0023fea8` | `Human_StateUpdate` | `Human` | not filled in |
+| `0x00240e38` | `Human_PlayerLocomotion` | `Human` | not filled in |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
+| `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
+| `0x00259578` | `Human_ChooseAnimState` | `Human` | not filled in |
+| `0x0025b200` | `Human_BuildMoveTasks` | `Human` | not filled in |
+| `0x0025ec28` | `Gait_BlendForSpeed` | `Human` | not filled in |
+| `0x0025f770` | `Human_BuildIdleTasks` | `Human` | not filled in |
 | `0x00336a00` | `QuaternionSlerp` | `unattributed` | 440 |
 | `0x00336bb8` | `VectorLerp` | `unattributed` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `unattributed` | 160 |
 | `0x00337920` | `RayTriangle_OneSided` | `unattributed` | not filled in |
 | `0x00337a60` | `RayTriangle_TwoSided` | `unattributed` | not filled in |
+| `0x0033e278` | `PhysicsBody_Sweep` | `unattributed` | not filled in |
+| `0x003477c0` | `PhysicsBody_PushOutOfWalls` | `unattributed` | not filled in |
 | `0x0034f740` | `Collision_MarchRay` | `unattributed` | not filled in |
 | `0x0034f950` | `Collision_DropToGround` | `unattributed` | not filled in |
 | `0x0034fa28` | `Collision_DropToMarkedGround` | `unattributed` | not filled in |

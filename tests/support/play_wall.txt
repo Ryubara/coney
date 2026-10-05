@@ -1,0 +1,9 @@
+# Rembrandt in level99 runs into the scenery ahead of the start (an oil tank against a fence) and keeps pushing:
+# full stick straight at it, then 70 % diagonally along it and round it, a back-off at 40 %, and a second run.
+# The body must stop at the walls and slide along them, never pass through or drop under the street.
+10 stick left 0 100
+90 stick left 70 70
+120 stick left -70 70
+150 stick left 0 -40
+190 stick left 30 95
+260 stick left 0 0

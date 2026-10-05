@@ -81,9 +81,18 @@ target_sources(coney_tests PRIVATE
     characters/disc_characters_test.cpp
     characters/orbit_camera_test.cpp
     platform/character_mesh_test.cpp)
+# The player: animation tasks, locomotion, the human, the follow camera, and level99 driven by scripted pads.
+target_sources(coney_tests PRIVATE
+    animation/anim_task_test.cpp
+    camera/follow_camera_test.cpp
+    human/disc_player_test.cpp
+    human/human_test.cpp
+    human/locomotion_test.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+# Where the input scripts the disc tests play live.
+target_compile_definitions(coney_tests PRIVATE CONEY_TEST_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/support")
 # coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU).
 target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
 include(Catch)

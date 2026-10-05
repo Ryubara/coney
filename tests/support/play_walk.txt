@@ -1,0 +1,22 @@
+# Rembrandt in level99 from the play mode (--play-level level99), driven as a player would with the left stick at
+# partial deflections: stand, walk at 30 % and 60 %, run at 100 %, turn in an arc, stop, go again, and turn the camera
+# with the right stick. Frames are 1/30 s.
+# Stand still for a second.
+30 stick left 0 30
+# Walk forward at 30 % for two seconds, then at 60 % (the walk speed does not depend on how far the stick is pushed).
+90 stick left 0 60
+# Run: full deflection.
+150 stick left 0 100
+# A turning arc while running: the stick swings to the right and round.
+180 stick left 50 87
+195 stick left 87 50
+210 stick left 100 0
+# Let go: the run stops at once and the idle fades in.
+240 stick left 0 0
+# Walk again at 45 %, to the left.
+270 stick left -45 0
+# The camera: the right stick at 60 % to the right for a second, then full left.
+300 stick right 60 0
+330 stick right -100 0
+345 stick right 0 0
+360 stick left 0 0

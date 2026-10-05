@@ -40,6 +40,11 @@ subsystem = "unattributed"
 size = 80
 
 [[function]]
+address = 0x00104a38
+name = "Anim_RateMultiplier"
+subsystem = "Animation"
+
+[[function]]
 address = 0x00104ce0
 name = "AnimCursor_SamplePose"
 subsystem = "Animation"
@@ -50,6 +55,66 @@ address = 0x00105158
 name = "Pose_BlendPartial"
 subsystem = "Animation"
 size = 848
+
+[[function]]
+address = 0x00105678
+name = "AnimTask_Loop"
+subsystem = "Animation"
+
+[[function]]
+address = 0x00105990
+name = "AnimTask_ClipThenNext"
+subsystem = "Animation"
+
+[[function]]
+address = 0x00106c80
+name = "AnimTask_Fade"
+subsystem = "Animation"
+
+[[function]]
+address = 0x0010a310
+name = "AnimTask_GaitBlend"
+subsystem = "Animation"
+
+[[function]]
+address = 0x0010a500
+name = "GaitBlend_SetTarget"
+subsystem = "Animation"
+
+[[function]]
+address = 0x0010a558
+name = "GaitBlend_SetValue"
+subsystem = "Animation"
+
+[[function]]
+address = 0x0010a5b8
+name = "GaitBlend_Advance"
+subsystem = "Animation"
+
+[[function]]
+address = 0x0010adf8
+name = "GaitBlend_Sample"
+subsystem = "Animation"
+
+[[function]]
+address = 0x0012ae58
+name = "Cam_Follow_Update"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0012d4e8
+name = "Cam_Follow_Pitch"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0012d688
+name = "Cam_Follow_Yaw"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00130990
+name = "Cam_Follow_Collide"
+subsystem = "Camera"
 
 [[function]]
 address = 0x00143f68
@@ -167,6 +232,11 @@ address = 0x00145a10
 name = "GameTimer::Update"
 subsystem = "Device/ps2"
 size = 952
+
+[[function]]
+address = 0x00146078
+name = "PlayerRecord_Update"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00148aa0
@@ -347,6 +417,16 @@ address = 0x00175080
 name = "CharacterInstance_GetAnim"
 subsystem = "Graphics"
 size = 160
+
+[[function]]
+address = 0x00175210
+name = "CharacterInstance_TopTask"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x001754e8
+name = "CharacterInstance_InsertTask"
+subsystem = "Graphics"
 
 [[function]]
 address = 0x00178098
@@ -698,8 +778,83 @@ subsystem = "GUI"
 size = 88
 
 [[function]]
+address = 0x00218008
+name = "Human_Init"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x002213d8
+name = "Human_MaxTurn"
+subsystem = "Human"
+
+[[function]]
+address = 0x00221760
+name = "Human_GaitForSpeed"
+subsystem = "Human"
+
+[[function]]
+address = 0x0022aeb0
+name = "Human_GaitOfVelocity"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023d8c8
+name = "Human_Move"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023e090
+name = "Human_Land"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023eab8
+name = "Human_SnapToGround"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023f238
+name = "Human_ApplyRootMotion"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023fea8
+name = "Human_StateUpdate"
+subsystem = "Human"
+
+[[function]]
+address = 0x00240e38
+name = "Human_PlayerLocomotion"
+subsystem = "Human"
+
+[[function]]
 address = 0x0024e720
 name = "PathData_OnLoaded"
+subsystem = "Human"
+
+[[function]]
+address = 0x00254078
+name = "Human_ComputeSpeeds"
+subsystem = "Human"
+
+[[function]]
+address = 0x00259578
+name = "Human_ChooseAnimState"
+subsystem = "Human"
+
+[[function]]
+address = 0x0025b200
+name = "Human_BuildMoveTasks"
+subsystem = "Human"
+
+[[function]]
+address = 0x0025ec28
+name = "Gait_BlendForSpeed"
+subsystem = "Human"
+
+[[function]]
+address = 0x0025f770
+name = "Human_BuildIdleTasks"
 subsystem = "Human"
 
 [[function]]
@@ -728,6 +883,16 @@ subsystem = "unattributed"
 [[function]]
 address = 0x00337a60
 name = "RayTriangle_TwoSided"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x0033e278
+name = "PhysicsBody_Sweep"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x003477c0
+name = "PhysicsBody_PushOutOfWalls"
 subsystem = "unattributed"
 
 [[function]]
