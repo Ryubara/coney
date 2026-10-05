@@ -308,9 +308,20 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   the button into all eight entries of pad record 4's button history (`0x005dd950 + 0x1c`, eight `u16`) every update.
   Set `CfgAutoLockAndCombat` (`0x005104b8`) to 0 when the player must not turn to face the attacker. Pick the puppet
   by name: the nearest human changes as pedestrians walk, and an ally's hits play reactions without damage.
-- **One sample per update.** Batch every read of a sample into one PINE message and keep a sample only when the game
-  time `*(0x0050b734) + 0x48` (milliseconds) has advanced by a character update (1000 / 30 ms); apply the scripted
-  input as each update is seen. `coney-tools pcsx2 record` does exactly this ([Recording a trace](#recording-a-trace)).
+- **One sample per update.** Batch every read of a sample into one PINE message and keep a sample only when a
+  character update has run since the last one: the game counts its 60 Hz ticks at `0x005104f4` and steps the
+  characters on each tick that makes the count even ([Tasks](../research/tasks.md#tick)), so the count halved numbers
+  the updates. Apply the scripted input as each update is seen. `coney-tools pcsx2 record` does exactly this
+  ([Recording a trace](#recording-a-trace)). (The first recorder counted updates by the game time in milliseconds,
+  `*(0x0050b734) + 0x48`; its rounding skipped and repeated steps after the frame that catches a tick up, about every
+  33 s.)
+- **Hooks: a call log without breakpoints** (2026-10-05, the runtime-checks pass). PINE has no breakpoints, so "who
+  writes this" and "which objects does this run" are answered by patching code in the state copy: a hook replaces two
+  instructions with a jump to a cave in memory the game leaves empty (`0x000a0000`; zeros from `0x00095100` to the
+  ELF at `0x00100000` in every state checked), which writes chosen registers and loads into a ring buffer
+  (`0x000b0000`) and runs the two instructions. The recorder reads the ring every poll and writes one CSV per hook
+  ([Hooks](#hooks)). A **call hook** makes the game call one of its own functions on its own thread, as a script
+  binding would: that is how a fight is started on a pedestrian (`GoalFight`'s `0x002b2b90`) for the AI checks.
 - **Leave the quick-save slots alone.** Never save a state to a slot number (PINE's save writes a quick-save slot):
   load existing slots read-only (they may hold someone else's test spots), and keep your own states as files in your
   scratch folder, made as above.
@@ -344,7 +355,10 @@ frame N of the script, which the update of step N + 1 reads: the numbering of Co
 input script is step N + 1. A missed update (one the poll did not see) is listed by step; its input lands an update
 late. The stick bytes are made from the script's percentages exactly as Coney makes them, so both games see the same
 stick; a tap holds the button for one update. With PCSX2 2.9.94 on Windows a poll of 26 reads took about 0.05 ms, so
-the game time is seen many times per update; no update was missed in the smoke runs (130 to 230 updates).
+the tick count is seen many times per update; no update was missed in the smoke runs (130 to 230 updates). A step
+counts from the tick that follows the update's own (the count turning odd), so a sample never sees an update half
+done; the frame that catches up a tick (one in about 1000, [Tasks](../research/tasks.md#tick)) runs two updates and
+shows as one missed step.
 
 **The scenario file:**
 
@@ -374,6 +388,11 @@ tolerance = { x = 0.1, speed = 0.05 }
 `setup` writes are made after the samples of frames `frame` to `until`; the values are expressions worked out at that
 moment (`f32(tf(player)) - 1.5 * sin(heading(player))` puts the puppet 1.5 m in front of the player).
 
+`calls` (in `[original]`) make the game call one of its functions after the sample of frame `frame`, through the call
+hook among the scenario's patches: `{ function = "0x002b2b90", args = ["u32(enemy + 0x90)", "u32(player + 0x90)"],
+frame = 3 }` is `GoalFight(enemy, player)`. One call per frame; the arguments (up to six) are expressions worked out
+then, and the recorder stops if the call before was not made.
+
 **Patches** (`research/traces/patches.toml`) are named groups of edits to the copy's `eeMemory.bin`: a code edit gives
 the address, the instruction word the state must hold there and the word that replaces it, and the copy is refused
 when the state holds something else. `scripted-pad`, `right-stick` and `puppet` are the patches of
@@ -381,8 +400,9 @@ when the state holds something else. `scripted-pad`, `right-stick` and `puppet` 
 
 **Fields** (`research/traces/fields.toml`) are named sets of columns. A field is read every update at an
 **address expression** (`tf(player) + 0x4`, type `f32`), or worked out by a **formula** from the fields before it
-(`wrap(deg(2 * atan2(qz, qw)))`); `hidden = true` keeps a helper out of the CSV. Expressions are arithmetic over these
-names, and nothing else of Python:
+(`wrap(deg(2 * atan2(qz, qw)))`); `hidden = true` keeps a helper out of the CSV, and `follow = true` works the address
+out again at every sample, for a chain of pointers that changes as the game plays (the top of an animation stack).
+Expressions are arithmetic over these names, and nothing else of Python:
 
 | Name | Value |
 | --- | --- |
@@ -399,6 +419,23 @@ A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing]
 `z`, `heading`, `speed`, `vz`, `gait`, `clip`, `stamina`, `command`, `health`, `power` and the camera's `cam_*`,
 `look_*`, `wanted_*`, `cam_distance`, `cam_pitch`, `cam_yaw`, `band_near` and `target_pitch`. `phase` (record
 `+0x08`) is the original's only.
+
+#### Hooks {#hooks}
+
+Hooks are declared in the same file as `[hook.NAME]` and named in a scenario's `patches` like a patch.
+Each gives the address, the two instruction words it displaces (checked against the state; neither may be a branch,
+and the first may be a jump with its delay slot, as in a two-instruction setter) and up to seven values to `log`: a
+register (`a0`, `ra`, `sp`), a float register (`"f28"` logs an `f32`; in a table without `type`, the raw word, to
+compare floats exactly), `count` (the EE's cycle counter, 4,915,200 a 60 Hz tick) or a load such as `[a0 + 0x14]`,
+`[[a0 + 0x0] + 0x200]` or `[0x005104f4]`, a word unless a table gives `type`. The hook's address must
+not be a delay slot or a branch target, and a load must only follow pointers the hooked code itself uses: a bad load
+crashes the game. `pcsx2 record` writes each hook's calls to `<trace>.<hook>.csv` (the ring's sequence number, the
+step it was read at, the values). `call = true` makes the call hook of `calls` above; put it at the entry of a
+function that takes no floating-point arguments (`call-brains` is at `Brains_Update`, before the brains run).
+The hooks of the runtime-checks pass: `tick-game` and `humans-update` (the play step and the character step),
+`wheel-update` (each object the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and
+`get-command` (per-player `+0x20`), `brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`,
+`skid-test` (the locomotion's run-stop test) and `call-brains`.
 
 ### Comparing with Coney {#comparing-with-coney}
 

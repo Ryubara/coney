@@ -19,9 +19,11 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from coney_tools import hooks as hook_tools
 from coney_tools import pcsx2_state
 from coney_tools.config import ConfigError, find_repo_root, load_config
 from coney_tools.game_memory import GAME_TIME_OFFSET, GAME_TIMER_POINTER, GameMemory
+from coney_tools.hooks import Hook, HookError
 from coney_tools.pcsx2_state import Patch, StateError
 from coney_tools.pine import DEFAULT_PORT, PineClient, PineError, Read
 from coney_tools.recorder import Recorder, RecordError
@@ -212,10 +214,17 @@ def _source_state(source: str, pcsx2_dir: Path | None) -> Path:
     return path
 
 
-def _patches(names: list[str]) -> list[Patch]:
-    """The named patches of research/traces/patches.toml."""
+def _patches(names: list[str]) -> tuple[list[Patch], list[Hook]]:
+    """The named patches and hooks of research/traces/patches.toml: the patches, with one more installing the hooks
+    (ids in the order named), and the hooks."""
     root = find_repo_root(Path.cwd())
-    return pcsx2_state.pick(pcsx2_state.load_patches(root / PATCHES_FILE), names)
+    try:
+        known = pcsx2_state.load_patches(root / PATCHES_FILE)
+        hooks = hook_tools.hooks_for(names, hook_tools.load_hooks(root / PATCHES_FILE), set(known))
+        patches = pcsx2_state.pick(known, [name for name in names if name in known])
+        return [*patches, hook_tools.build(hooks)] if hooks else patches, hooks
+    except HookError as error:
+        raise StateError(str(error)) from error
 
 
 def _make_copy(source: Path, out: Path, patches: list[Patch], pcsx2_dir: Path | None) -> int:
@@ -230,7 +239,7 @@ def run_prepare_state(source: str, out: Path, patch_names: list[str], pcsx2_dir:
     try:
         pcsx2 = pcsx2_dir or _config_paths().get("pcsx2_dir")
         state = _source_state(source, pcsx2)
-        patches = _patches(patch_names)
+        patches, _ = _patches(patch_names)
         count = _make_copy(state, out, patches, pcsx2)
     except StateError as error:
         raise ConfigError(str(error)) from error
@@ -267,6 +276,7 @@ def run_record(
     emulator: Emulator | None = None
     client: PineClient | None = None
     try:
+        patches, hooks = _patches(list(scenario.patches))
         if attach:
             pcsx2 = flags[0] or _config_paths().get("pcsx2_dir")
             client = PineClient(pine_port(pcsx2) if pcsx2 else DEFAULT_PORT)
@@ -275,12 +285,11 @@ def run_record(
             if state is None and scenario.slot is None:
                 raise ConfigError(f"{scenario_path}: names no slot; pass --state")
             source = _source_state(state or f"slot:{scenario.slot}", paths.pcsx2_dir)
-            patches = _patches(list(scenario.patches))
             copy = paths.scratch / f"{scenario_path.stem}.p2s"
             _make_copy(source, copy, patches, paths.pcsx2_dir)
             emulator = Emulator(paths, copy, patches)
             client = emulator.client
-        recording = Recorder(GameMemory(client), scenario).record()
+        recording = Recorder(GameMemory(client), scenario, hooks=hooks).record()
     except (PineError, RecordError, StateError) as error:
         raise ConfigError(str(error)) from error
     finally:
@@ -291,6 +300,16 @@ def run_record(
             emulator.close()
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(recording.csv(), encoding="utf-8")
+    if recording.hooks is not None:
+        # One CSV per hook beside the trace: <trace>.<hook>.csv.
+        for hook in recording.hooks.hooks:
+            if hook.call:
+                continue
+            path = out.with_name(f"{out.stem}.{hook.name}.csv")
+            path.write_text(recording.hooks.csv(hook), encoding="utf-8")
+            print(f"{path}: {len(recording.hooks.entries[hook.name])} calls logged")
+        if recording.hooks.lost:
+            print(f"warning: {recording.hooks.lost} logged calls were lost (the ring overflowed between polls)")
     per_poll = 1000 * recording.seconds / max(recording.polls, 1)
     print(
         f"{out}: {len(recording.rows)} updates, {len(recording.header) - 1} columns; "

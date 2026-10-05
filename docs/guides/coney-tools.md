@@ -271,7 +271,9 @@ uv run --project python coney-tools pcsx2 record SCENARIO --out CSV [--state SOU
 Makes the scenario's patched state copy, starts PCSX2 on it, plays the scenario's input script and writes one CSV row
 per character update, then closes PCSX2. It prints the updates recorded, the reads per poll, the time per poll and the
 updates missed. `--state` copies another state, `--attach` records a PCSX2 already running a patched state, and
-`--keep-open` leaves PCSX2 running. The CSV is a measurement of the game: it is refused inside the repository.
+`--keep-open` leaves PCSX2 running. The CSV is a measurement of the game: it is refused inside the repository. With
+hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
+makes the scenario's `calls` ([Hooks](research-workflow.md#hooks)).
 
 ## trace {#trace}
 

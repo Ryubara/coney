@@ -27,7 +27,7 @@ from coney_tools.game_memory import (
     parse,
 )
 from coney_tools.pine import PineClient, PineError, Read, Write, decode, encode
-from coney_tools.recorder import PAD_BYTES, Recorder
+from coney_tools.recorder import PAD_BYTES, TICK_COUNTER, Recorder
 from coney_tools.scenario import ScenarioError, load_scenario
 
 REPO = Path(__file__).resolve().parents[2]
@@ -58,6 +58,7 @@ class FakeGame:
         self.skip_on_cross = False
         self.write32(GAME_TIMER_POINTER, TIMER)
         self.write32(TIMER + 0x48, 100_000)
+        self.write32(TICK_COUNTER, 1)
         self.write32(CAMERA_POINTER, CAMERA)
         self.write_float(CAMERA + 0x10, 1.5)
         for human, index, name, number in (
@@ -100,8 +101,9 @@ class FakeGame:
             runs, self.skip_on_cross = 2, False
         for _ in range(runs):
             self.updates += 1
-            # 1000 / 30 ms per update, as whole milliseconds that add up.
+            # 1000 / 30 ms per update, as whole milliseconds that add up; two 60 Hz ticks, the count left odd.
             self.write32(TIMER + 0x48, 100_000 + (self.updates * 1000) // 30)
+            self.write32(TICK_COUNTER, 2 * self.updates + 1)
             stick_y = self.memory[PAD_BYTES + 5]
             self.write_float(PLAYER + 0x1AC, float(0x80 - stick_y))
             self.write32(RECORD + PLAYER_INDEX * 0x180 + 0x20, self.updates)
@@ -397,7 +399,8 @@ def test_the_repository_scenarios_load() -> None:
     assert len(scenarios) >= 3
     for path in scenarios:
         scenario = load_scenario(path, REPO)
-        assert scenario.events, path
+        # A scenario plays input, unless it says it has none (a run that only logs calls).
+        assert scenario.events or "no input" in scenario.description, path
         assert scenario.coney_level, path
         assert scenario.slot is not None, path
         assert "scripted-pad" in scenario.patches, path

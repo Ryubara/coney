@@ -15,6 +15,7 @@ slot = 1                             # the quick-save slot to copy (read only)
 patches = ["scripted-pad", "right-stick"]
 let = { puppet = 'human("PoizoCiv")' }   # names resolved once, before the first update
 setup = [ { address = "prec(puppet) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 } ]
+calls = [ { function = "0x002b2b90", args = ["u32(puppet + 0x90)", "u32(player + 0x90)"], frame = 2 } ]
 
 [coney]
 level = "level99"                    # --play-level
@@ -33,7 +34,10 @@ A field set is an array of tables in `research/traces/fields.toml`, each field o
 - `{ name, formula }`: a value worked out from the fields before it (`deg(2 * atan2(qz, qw))`).
 
 `hidden = true` keeps a field out of the CSV (a quaternion part only a formula needs); `digits` sets a float's
-decimals (4 by default). A column the original and Coney's `--trace` both have uses Coney's name and unit.
+decimals (4 by default). An address is worked out once, before the first update, unless `follow = true`: then it is
+worked out again at every sample, for a chain of pointers that changes as the game plays (the top of an animation
+stack); such a field costs a read per pointer in the chain, outside the sample's batch.
+A column the original and Coney's `--trace` both have uses Coney's name and unit.
 """
 
 from __future__ import annotations
@@ -65,6 +69,7 @@ class Field:
     formula: Expression | None = None
     hidden: bool = False
     digits: int = 4
+    follow: bool = False
 
 
 @dataclass(frozen=True)
@@ -76,6 +81,16 @@ class SetupWrite:
     value: Expression
     frame: int
     until: int
+
+
+@dataclass(frozen=True)
+class CallSpec:
+    """A call of one of the game's functions, made after the sample of frame `frame` through a call hook
+    (coney_tools.hooks): `function` and each of `args` are expressions worked out then."""
+
+    function: Expression
+    args: tuple[Expression, ...]
+    frame: int
 
 
 @dataclass(frozen=True)
@@ -102,6 +117,7 @@ class Scenario:
     patches: tuple[str, ...]
     let: tuple[tuple[str, Expression], ...]
     setup: tuple[SetupWrite, ...]
+    calls: tuple[CallSpec, ...]
     coney_level: str
     coney_args: tuple[str, ...]
     diff: DiffSettings
@@ -142,7 +158,7 @@ def parse_field(raw: object, where: str) -> Field:
     if not isinstance(raw, dict) or not isinstance(raw.get("name"), str) or not raw["name"]:
         raise ScenarioError(f"{where}: a field needs a name")
     where = f"{where} ({raw['name']})"
-    unknown = set(raw) - {"name", "address", "type", "formula", "hidden", "digits"}
+    unknown = set(raw) - {"name", "address", "type", "formula", "hidden", "digits", "follow"}
     if unknown:
         raise ScenarioError(f"{where}: unknown key(s) {', '.join(sorted(unknown))}")
     if ("address" in raw) == ("formula" in raw):
@@ -151,10 +167,12 @@ def parse_field(raw: object, where: str) -> Field:
     if not isinstance(digits, int) or not 0 <= digits <= 9:
         raise ScenarioError(f"{where}: digits must be a whole number from 0 to 9")
     hidden = bool(raw.get("hidden", False))
+    follow = bool(raw.get("follow", False))
     if "address" in raw:
-        return Field(
-            raw["name"], _expression(raw["address"], where), _type(raw.get("type"), where), None, hidden, digits
-        )
+        address = _expression(raw["address"], where)
+        return Field(raw["name"], address, _type(raw.get("type"), where), None, hidden, digits, follow)
+    if follow:
+        raise ScenarioError(f"{where}: follow is for an address, not a formula")
     return Field(raw["name"], None, "", _expression(raw["formula"], where), hidden, digits)
 
 
@@ -201,6 +219,26 @@ def _setup(raw: object, where: str) -> SetupWrite:
         _expression(str(raw.get("value", "")), f"{where} value"),
         frame,
         until,
+    )
+
+
+def _call(raw: object, where: str) -> CallSpec:
+    """One call from its TOML table."""
+    if not isinstance(raw, dict):
+        raise ScenarioError(f"{where}: must be a table")
+    unknown = set(raw) - {"function", "args", "frame"}
+    if unknown:
+        raise ScenarioError(f"{where}: unknown key(s) {', '.join(sorted(unknown))}")
+    frame = raw.get("frame", 0)
+    args = raw.get("args", [])
+    if not isinstance(frame, int) or frame < 0:
+        raise ScenarioError(f"{where}: frame must be a whole number from 0")
+    if not isinstance(args, list) or len(args) > 6:
+        raise ScenarioError(f"{where}: args must be a list of at most six expressions")
+    return CallSpec(
+        _expression(str(raw.get("function", "")), f"{where} function"),
+        tuple(_expression(str(arg), f"{where} argument {k + 1}") for k, arg in enumerate(args)),
+        frame,
     )
 
 
@@ -257,6 +295,9 @@ def load_scenario(path: Path, root: Path) -> Scenario:
         raise ScenarioError(f"{where}: [original] slot must be a whole number")
     let = tuple((str(k), _expression(v, f"{where} let {k}")) for k, v in original.get("let", {}).items())
     setup = tuple(_setup(item, f"{where} setup {i + 1}") for i, item in enumerate(original.get("setup", [])))
+    calls = tuple(_call(item, f"{where} call {i + 1}") for i, item in enumerate(original.get("calls", [])))
+    if len({call.frame for call in calls}) != len(calls):
+        raise ScenarioError(f"{where}: one call per frame (the call block holds one)")
     coney = data.get("coney", {})
     return Scenario(
         path=path,
@@ -269,6 +310,7 @@ def load_scenario(path: Path, root: Path) -> Scenario:
         patches=tuple(str(p) for p in original.get("patches", [])),
         let=let,
         setup=setup,
+        calls=calls,
         coney_level=str(coney.get("level", "")),
         coney_args=tuple(str(a) for a in coney.get("args", [])),
         diff=_diff(data.get("diff", {}), where),

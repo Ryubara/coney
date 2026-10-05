@@ -40,3 +40,129 @@ edits = [
   # sw zero,0x20(a0) at 0x00146030 becomes a nop.
   { address = 0x00146030, original = [0xac800020], replacement = [0x00000000] },
 ]
+
+# Hooks: call logging (python/src/coney_tools/hooks.py, docs/guides/research-workflow.md#hooks). A scenario names
+# them in its `patches` like a patch; each displaces the two instruction words `original` at `address` (checked
+# against the state) with a jump to a cave that logs the values of `log` and runs them. The hook's address must not be
+# a delay slot or a branch target.
+
+[hook.tick-game]
+description = "Each call of TaskManager_TickGame (the play phase's task step, once per frame of play): the cycle counter and the characters' tick counter."
+research = "docs/research/tasks.md#tick"
+address = 0x003a2ea0
+# addiu sp,sp,-0xa0; lui v1,0x51
+original = [0x27bdff60, 0x3c030051]
+log = ["count", { value = "[0x005104f4]", name = "ticks" }, "ra"]
+
+[hook.humans-update]
+description = "Each call of Humans_Update (every 60 Hz tick): the cycle counter and the tick counter before it counts this tick."
+research = "docs/research/tasks.md#humans-update"
+address = 0x00249108
+# lui v0,0x51; addiu sp,sp,-0xd0
+original = [0x3c020051, 0x27bdff30]
+log = ["count", { value = "[0x005104f4]", name = "ticks" }, "ra"]
+
+[hook.wheel-update]
+description = "Each object TaskWheel_RunBucket updates (just before its vtable +0x13c call): the object, its vtable, its interval in ticks and its flags."
+research = "docs/research/tasks.md#wheel"
+address = 0x003a3618
+# lw v1,0x0(s0); lh a0,0x138(v1)
+original = [0x8e030000, 0x84640138]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  { value = "s0", name = "object" },
+  { value = "[s0 + 0x0]", name = "vtable" },
+  { value = "[s0 + 0x6e]", name = "interval", type = "u16" },
+  { value = "[s0 + 0x54]", name = "flags" },
+]
+
+[hook.state-code]
+description = "Each call of the record's state-code setter (0x002266a8, record +0x14): the caller, the human and the code."
+research = "docs/research/tasks.md#locomotion-gate"
+address = 0x002266ac
+# jr ra; sw a1,0x14(v0) (after lw v0,0xd4(a0))
+original = [0x03e00008, 0xac450014]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "code" }]
+
+[hook.set-command]
+description = "Each call of PlayerRecord_SetCommand (0x00147ef0, per-player +0x20): the caller, the per-player record and the command."
+research = "docs/research/ai.md#attack-action"
+address = 0x00147ef0
+# jr ra; sw a1,0x20(a0)
+original = [0x03e00008, 0xac850020]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "prec" }, { value = "a1", name = "command" }]
+
+[hook.get-command]
+description = "Each call of the per-player command getter (0x00147ef8): the caller, the per-player record and the command it returns."
+research = "docs/research/tasks.md#humans-update"
+address = 0x00147ef8
+# jr ra; lw v0,0x20(a0)
+original = [0x03e00008, 0x8c820020]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  "ra",
+  { value = "a0", name = "prec" },
+  { value = "[a0 + 0x20]", name = "command" },
+]
+
+[hook.brain-think]
+description = "Each call of Brain_Think (0x0028f6c0, a brain's handler B): the brain and its think counter before this one."
+research = "docs/research/ai.md#update"
+address = 0x0028f6c0
+# addiu sp,sp,-0x50; sq s0,0x40(sp)
+original = [0x27bdffb0, 0x7fb00040]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "brain" }, { value = "[a0 + 0x38]", name = "thinks" }]
+
+[hook.call-brains]
+description = "A call hook at Brains_Update's entry (step 5 of the character step): the recorder's scenario calls (a fight started as GoalFight starts it) run there, on the game's thread, before the brains update."
+research = "docs/guides/research-workflow.md#hooks"
+address = 0x00293b28
+# addiu sp,sp,-0x60; lui v0,0x51
+original = [0x27bdffa0, 0x3c020051]
+call = true
+
+[hook.try-block]
+description = "Each call of Goal_TryBlock (0x0029f098): the brain, its +0x200 (an attack on it was announced), the chance passed (0: the class's) and the caller."
+research = "docs/research/ai.md#block"
+address = 0x0029f098
+# addiu sp,sp,-0x60; sq s1,0x30(sp)
+original = [0x27bdffa0, 0x7fb10030]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  "ra",
+  { value = "[a0 + 0x0]", name = "brain" },
+  { value = "[[a0 + 0x0] + 0x200]", name = "warned" },
+  { value = "a1", name = "chance" },
+]
+
+[hook.block-start]
+description = "Each start of a block goal (BlockGoal_Start, 0x002b5520): the goal and its brain."
+research = "docs/research/ai.md#block"
+address = 0x002b5520
+# addiu sp,sp,-0x60; lui v0,0x51
+original = [0x27bdffa0, 0x3c020051]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "goal" }, { value = "[a0 + 0x0]", name = "brain" }]
+
+[hook.brain-event]
+description = "Each event a brain receives (Brain_OnEvent, 0x0028f928): the brain, the event's type (+0x20) and its sender (+0x00), the brain's +0x200 before it is handled, and the code that sent it to the human."
+research = "docs/research/ai.md#events"
+address = 0x0028f928
+# addiu sp,sp,-0x30; sq s0,0x20(sp)
+original = [0x27bdffd0, 0x7fb00020]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  { value = "a0", name = "brain" },
+  { value = "[a1 + 0x20]", name = "type" },
+  { value = "[a1 + 0x0]", name = "sender" },
+  { value = "[a0 + 0x200]", name = "warned" },
+  # Human_OnEvent (0x0021d480) keeps its return address at its sp + 0x10, which is this function's sp: who sent it.
+  { value = "[sp + 0x10]", name = "via" },
+]
+
+[hook.attack-warning]
+description = "Each call of the attack warning (0x0021d5c0) an attack start makes: the human warned, the attacker, the third argument and the caller. It sends the warned human event 0x10 when the attacker is in its sight (0x002223e8)."
+research = "docs/research/ai.md#block"
+address = 0x0021d5c0
+# addiu sp,sp,-0x80; sq s0,0x60(sp)
+original = [0x27bdff80, 0x7fb00060]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "warned" }, { value = "a1", name = "attacker" }, "a2"]
