@@ -110,7 +110,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Natives | the [script bindings](#natives) by category with their Coney status, an argument editor and a call |
 | Lua console | a Lua line to run in the script state, a file to run, and the output |
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
-| Levels | the level table's levels, loaded by name, a name to type, and the sandbox layouts to play |
+| Levels | the levels to play (or the level table's, in the front end), a name to type, and the sandbox layouts |
 | Player | where the player is and how it moves (plotted), freezing it, teleports to places, a typed or saved spot |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
@@ -130,8 +130,11 @@ is not in Coney yet. The page does what the checker does on a match: it calls th
 `DbgEnterCheat`, with the code's index. `global.lua` defines that callback when a level loads; at the front end or in
 the sandbox the page reports that it is not set.
 
-**Levels.** With a disc the level table holds the game's levels (filled by `CfgLevelName`); choosing one asks the level
-flow to start it next (`MenuLoadLevel`). *Sandbox layouts* lists the layouts in the sandbox folder
+**Levels.** In the front end (a run with a disc and no mode named), the level table holds the game's levels (filled by
+`CfgLevelName`); choosing one asks the level flow to start it next (`MenuLoadLevel`). In `--play-level` and the other
+modes run with a disc, the page lists instead every level with a streamed world on the disc (`level0` to `level199`,
+79 of them); choosing one, or typing its name, plays it with Rembrandt at the start of the next frame, in place of the
+play mode or sandbox viewer on top. *Sandbox layouts* lists the layouts in the sandbox folder
 ([Sandbox](sandbox.md)); choosing one plays it at the start of the next frame, in place of the play mode or sandbox
 viewer on top: with Rembrandt when there is a disc for his character, else with the free camera.
 

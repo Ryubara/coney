@@ -330,8 +330,17 @@ void addLevelsPage(DebugSession& session) {
                          },
                          false))
                 .withHelp("A level name such as level2.");
+            // The play mode's levels, when it lists them; else the level table the game's scripts fill.
+            const std::vector<std::string> playable =
+                session.services().playableLevels ? session.services().playableLevels() : std::vector<std::string>{};
             GameState* state = session.services().gameState ? session.services().gameState() : nullptr;
-            if (state == nullptr || state->levels.count() == 0) {
+            if (!playable.empty()) {
+                for (const std::string& name : playable) {
+                    // Copies a string: all it can throw is a failed allocation.
+                    // NOLINTNEXTLINE(bugprone-exception-escape)
+                    page.add(actionItem(name, [load, name] { load(name); }));
+                }
+            } else if (state == nullptr || state->levels.count() == 0) {
                 page.add(watchItem("Level table", [] { return std::string("empty: run with --disc"); }))
                     .withHelp("The table is filled by the game's config scripts (CfgLevelName).");
             } else {

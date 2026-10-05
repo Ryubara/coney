@@ -272,3 +272,22 @@ TEST_CASE("every level's streamed worlds stream under a camera path within the b
     CHECK(tight.unloads > 0);
     CHECK(tight.partsEverLoaded == tight.parts);
 }
+
+TEST_CASE("the playable levels are the level names with a streamed world", "[disc][world_streaming]") {
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto disc = coney::io::Disc::open(discPath);
+    REQUIRE(disc.has_value());
+    auto wad = coney::io::Wad::open(std::move(*disc));
+    REQUIRE(wad.has_value());
+    const std::vector<std::string> names = coney::platform::playableLevelNames(*wad);
+    std::printf("playable levels: %zu\n", names.size());
+    CHECK(std::ranges::find(names, "level2") != names.end());
+    CHECK(std::ranges::find(names, "level99") != names.end());
+    CHECK(std::ranges::find(names, "level7") == names.end());
+    for (const std::string& name : names) {
+        CHECK(coney::platform::worldNamesFor(*wad, name).has_value());
+    }
+}

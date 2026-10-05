@@ -359,7 +359,8 @@ build/dev/src/platform/coney --sandbox parkour
 
 ### Playing a level {#playing-a-level}
 
-`--play-level NAME` puts you in a level as Rembrandt, driven with a gamepad's analog sticks, with the follow camera
+`--play-level NAME` puts you in a level (`level2`, `level99`: any of the 79 with a streamed world, listed on the debug
+menu's [Levels page](debug-menu.md), which also switches between them) as Rembrandt, driven with a gamepad's analog sticks, with the follow camera
 behind him ([Characters](../research/characters.md#coneys-implementation),
 [Camera](../research/camera.md#coneys-implementation)). The level's worlds and level file load and stream as in
 [the world viewer](#the-world-viewer); Rembrandt stands at the level's player start (level99's start, from its level

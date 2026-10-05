@@ -32,6 +32,10 @@ namespace coney::platform {
 /// ErrorCode::NotFound when neither exists.
 [[nodiscard]] std::expected<std::vector<std::string>, Error> worldNamesFor(const io::Wad& wad, std::string_view name);
 
+/// The levels `levelN` (N below 200, past the highest on the disc) that have a streamed world on the disc, in number
+/// order: the names worldNamesFor() resolves, so each can be played. For the debug menu's Levels page.
+[[nodiscard]] std::vector<std::string> playableLevelNames(const io::Wad& wad);
+
 /// A level's streamed worlds, loaded: each world's layout and texture dictionary, resident, and its parts' atomics and
 /// dictionaries as the streamer asks for them. It is the PartStore the streamer reads through, and it charges the
 /// worlds' and parts' heap sizes to a SectorBudget. Every dictionary it holds is in the global texture lookup while it

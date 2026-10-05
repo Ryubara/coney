@@ -67,6 +67,19 @@ std::expected<std::vector<std::string>, Error> worldNamesFor(const io::Wad& wad,
     return fail(ErrorCode::NotFound, std::format("no streamed world is called {0}s, {0}d or {0}", base));
 }
 
+std::vector<std::string> playableLevelNames(const io::Wad& wad) {
+    // Every level is named after its number; 200 is well past the highest the disc holds.
+    constexpr int kLevelNumbers = 200;
+    std::vector<std::string> names;
+    for (int number = 0; number < kLevelNumbers; ++number) {
+        std::string name = std::format("level{}", number);
+        if (worldNamesFor(wad, name)) {
+            names.push_back(std::move(name));
+        }
+    }
+    return names;
+}
+
 std::expected<std::unique_ptr<WorldSet>, Error> WorldSet::load(const io::Wad& wad, std::span<const std::string> names,
                                                                world::SectorBudget& budget, bool forDrawing) {
     installGlobalTextureLookup();

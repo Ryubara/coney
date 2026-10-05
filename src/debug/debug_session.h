@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "debug/input_gate.h"
 #include "debug/lua_console.h"
@@ -40,6 +41,9 @@ struct DebugServices {
     std::function<GameState*()> gameState;
     /// Starts the level named `name` (`level2`); returns false when it cannot. Empty: levels cannot be loaded yet.
     std::function<bool(std::string_view name)> loadLevel;
+    /// The levels the play mode can play (`level2`), listed on the Levels page in place of the game state's level
+    /// table; empty: the table is listed.
+    std::function<std::vector<std::string>()> playableLevels;
     /// Where the Tunables page saves and loads overrides (`coney-tunables.ini` in the user's config folder, or the
     /// `--tunables` file); empty: no saving.
     std::string tunablesFile;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The pages over a play mode (Player, Camera, Spawner, Debug draw) and the Levels page's sandbox layouts, driven
+// The pages over a play mode (Player, Camera, Spawner, Debug draw) and the Levels page's levels and sandboxes, driven
 // through the menu model over a fake PlayControls: no game, no disc.
 #include <cmath>
 #include <cstddef>
@@ -239,4 +239,21 @@ TEST_CASE("the Levels page lists the sandbox layouts and asks for the one chosen
     first.run();
     CHECK(asked == std::vector<std::string>{first.label});
     CHECK(layouts->find("parkour") != nullptr);
+}
+
+TEST_CASE("the Levels page lists the play mode's levels and asks for the one chosen", "[debug]") {
+    TunableRegistry tunables;
+    DebugServices services;
+    services.playableLevels = [] { return std::vector<std::string>{"level2", "level99"}; };
+    std::vector<std::string> asked;
+    services.loadLevel = [&asked](std::string_view name) {
+        asked.emplace_back(name);
+        return true;
+    };
+    DebugSession session(tunables, services, nullptr);
+    const auto levels = session.model().openPage("Levels");
+    REQUIRE(levels != nullptr);
+    CHECK(levels->find("level2") != nullptr);
+    itemOn(*levels, "level99").run();
+    CHECK(asked == std::vector<std::string>{"level99"});
 }
