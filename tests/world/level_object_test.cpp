@@ -38,15 +38,27 @@ Bytes occludersChunk(const std::vector<std::array<Vec3, 4>>& walls) {
     return chunk;
 }
 
-// A path data chunk with the given counts, its records zero, and `extra` bytes after them.
+// A path data chunk with the given counts and its records zero. Every path has no slab lists except that, when `lists`
+// is given, path 0's first slab starts at its first value; then the 4-byte tail and padding to 16.
 Bytes pathChunk(std::uint32_t paths, std::uint32_t b, std::uint16_t c, std::uint16_t a, std::uint32_t d,
-                std::size_t extra) {
+                const std::vector<std::int16_t>& lists = {}) {
     Bytes chunk;
-    chunk.u32(paths).u32(b).u16(c).u16(a).u32(d);
-    chunk.fill(std::size_t{a} * 16 + std::size_t{b} * 16 + std::size_t{paths} * 0x50 + std::size_t{c} * 32 +
-                   std::size_t{d} * 8 + extra,
-               0);
-    return chunk;
+    chunk.u32(paths).u32(b).u16(c).u16(a).u32(d).fill(0x10, 0);
+    chunk.fill(std::size_t{a} * 16 + std::size_t{b} * 16, 0);
+    for (std::uint32_t p = 0; p < paths; ++p) {
+        chunk.fill(0x28, 0);
+        for (int slab = 0; slab < 16; ++slab) {
+            const bool hasList = p == 0 && slab == 0 && !lists.empty();
+            chunk.u16(hasList ? 0 : 0xFFFF);
+        }
+        chunk.fill(8, 0);
+    }
+    chunk.fill(std::size_t{c} * 32 + std::size_t{d} * 8, 0);
+    for (const std::int16_t edge : lists) {
+        chunk.u16(static_cast<std::uint16_t>(edge));
+    }
+    chunk.fill(4, 0);
+    return chunk.padTo((chunk.size() + 15) / 16 * 16);
 }
 
 // An empty collision mesh's six chunks: one cell, no triangles.
@@ -128,7 +140,7 @@ std::expected<void, coney::Error> recordLink(coney::chunk::LoadedObject& model,
 Bytes levelFile() {
     const EmptyCollision c = emptyCollision();
     const Bytes occluders = occludersChunk({{Vec3{1, 2, 3}, Vec3{4, 5, 6}, Vec3{1, 2, 4}, Vec3{4, 5, 7}}});
-    const Bytes paths = pathChunk(1, 2, 3, 4, 5, 32);
+    const Bytes paths = pathChunk(1, 2, 3, 4, 5);
     Bytes one;
     one.u8(0);
     const auto marker = [](int value) {
@@ -179,17 +191,34 @@ TEST_CASE("occluders are read with their corners turned into RenderWare's axes",
     CHECK(coney::world::readOccluders(cut.span()).error().code == ErrorCode::Truncated);
 }
 
-TEST_CASE("path data's counted records must fit in the chunk, which may hold more", "[level_object]") {
-    const Bytes chunk = pathChunk(2, 3, 4, 5, 6, 48);
+TEST_CASE("path data's records, edge lists and tail must make up the chunk", "[level_object]") {
+    const Bytes chunk = pathChunk(2, 3, 4, 5, 6);
     auto header = coney::world::inspectPathData(chunk.span());
     REQUIRE(header.has_value());
     CHECK(header->paths == 2);
     CHECK(header->aCount == 5);
     CHECK(header->cCount == 4);
-    CHECK(header->recordBytes == 16 + 5 * 16 + 3 * 16 + 2 * 0x50 + 4 * 32 + 6 * 8);
-    Bytes shortChunk = pathChunk(2, 3, 4, 5, 6, 0);
-    shortChunk.patchU32(0, 3); // one more path than there is room for
+    CHECK(header->recordBytes == 0x20 + 5 * 16 + 3 * 16 + 2 * 0x50 + 4 * 32 + 6 * 8);
+    CHECK(header->edgeListBytes == 0);
+
+    // One list of three edges and its terminator.
+    const Bytes withLists = pathChunk(2, 3, 4, 5, 6, {0, 1, 2, -1});
+    auto listed = coney::world::inspectPathData(withLists.span());
+    REQUIRE(listed.has_value());
+    CHECK(listed->edgeListBytes == 8);
+
+    Bytes shortChunk = pathChunk(2, 3, 4, 5, 6);
+    shortChunk.patchU32(0, 9); // more paths than there is room for
     CHECK(coney::world::inspectPathData(shortChunk.span()).error().code == ErrorCode::Truncated);
+
+    // A list with no terminator runs off the chunk.
+    const Bytes unended = pathChunk(1, 0, 0, 0, 0, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13});
+    CHECK(coney::world::inspectPathData(unended.span()).error().code == ErrorCode::Truncated);
+
+    // Sixteen bytes past the tail.
+    Bytes longer = pathChunk(2, 3, 4, 5, 6);
+    longer.fill(16, 0);
+    CHECK(coney::world::inspectPathData(longer.span()).error().code == ErrorCode::Invalid);
 }
 
 TEST_CASE("a clump of one atomic becomes a standalone atomic with its frames combined", "[level_object]") {
@@ -319,7 +348,7 @@ TEST_CASE("a level file builds the level object from all its chunks, models link
     CHECK(object.collision->triangles().empty());
     CHECK(object.occluders.size() == 1);
     CHECK(object.pathHeader.paths == 1);
-    CHECK(object.pathData.size() == object.pathHeader.recordBytes + 32);
+    CHECK(object.pathData.size() == object.pathHeader.recordBytes + 8); // the tail, to a multiple of 16
     CHECK(object.subtitles.size() == 32);
 
     // A link that fails fails the load.

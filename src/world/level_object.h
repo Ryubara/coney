@@ -52,17 +52,19 @@ struct Occluder {
 
 /// The path data chunk's header (0x40). The records' meaning is not traced; Coney keeps the chunk's bytes.
 struct PathDataHeader {
-    std::uint32_t paths = 0;     ///< +0x00: paths, 0x50 bytes each.
-    std::uint32_t bCount = 0;    ///< +0x04: B records, 16 bytes each.
-    std::uint16_t cCount = 0;    ///< +0x08: C records, 32 bytes each.
-    std::uint16_t aCount = 0;    ///< +0x0a: A records, 16 bytes each.
-    std::uint32_t dCount = 0;    ///< +0x0c: D records, 8 bytes each.
-    std::size_t recordBytes = 0; ///< What the counts add up to, header included.
+    std::uint32_t paths = 0;       ///< +0x00: paths, 0x50 bytes each.
+    std::uint32_t bCount = 0;      ///< +0x04: B records, 16 bytes each.
+    std::uint16_t cCount = 0;      ///< +0x08: C records, 32 bytes each.
+    std::uint16_t aCount = 0;      ///< +0x0a: A records, 16 bytes each.
+    std::uint32_t dCount = 0;      ///< +0x0c: D records, 8 bytes each.
+    std::size_t recordBytes = 0;   ///< What the counts add up to, header included: where the edge lists start.
+    std::size_t edgeListBytes = 0; ///< The paths' slab edge lists, to the end of the furthest one.
 };
 
-/// Reads the path data chunk's header and checks that the records it counts fit in the chunk. On the disc every chunk
-/// holds more than they add up to (docs/research/level-loading.md#path-data), so only "no more than the chunk" is
-/// checked. Fails with ErrorCode::Truncated otherwise.
+/// Reads the path data chunk's 0x20-byte header, checks that the records it counts fit in the chunk, walks the paths'
+/// slab edge lists that follow them, and checks that the chunk ends with a 4- to 19-byte tail padding it to a multiple
+/// of 16, as every chunk on the disc does (docs/research/level-loading.md#path-data). Fails with ErrorCode::Truncated
+/// when the records or a list run off the chunk, ErrorCode::Invalid when the chunk's size is otherwise wrong.
 [[nodiscard]] std::expected<PathDataHeader, Error> inspectPathData(std::span<const std::byte> chunk);
 
 /// The path data, on the object stack between its handler and the level header's.

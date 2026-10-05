@@ -258,7 +258,7 @@ the 12 files without lists it is all zeros in 7 and holds other values in 5, and
 totals: 10,992 paths, 68,000 vertices, 1,754 A, 43,234 C and 252,896 D records, 4,912 slab lists in 52 of the files (the
 other 12 have none) taking 77,678 bytes.
 
-**The 79,472 bytes** Coney's disc test reported past the counted records (`[disc][level]`, with a 16-byte header) are
+**The 79,472 bytes** Coney's disc test once reported past the counted records (with a 16-byte header) were
 therefore 64 × 16 = 1,024 bytes of the 0x20-byte header, the 77,678 bytes of edge lists and the 770 bytes of tails.
 No record size or count is missing.
 
@@ -547,14 +547,11 @@ What the implementer still needs:
 - **A disc test**: every `.lev` loads through the chunk system (64 files, 18 chunks each), and every world loads
   ([The streamed world](world.md#disc-counts)).
 
-**Engine follow-up (path data):** the header check (`inspectPathData`, `src/world/level_object.cpp`; the `.lev`
-reader in `src/platform/level_file.*` only hands the chunk over) counts a 16-byte header, where the original's is 0x20
-bytes ([Path data](#path-data)). With 0x20 the records end where the edge lists begin, and the check could go on to
-walk each path's slab lists (16 `s16` starts at `+0x28`, each list ended by a negative value) and require the chunk to
-be `align16(end of the furthest list + 4)` bytes, which holds for all 64 files. The disc test's "chunk bytes past the
-counted records" would then read 78,448 (lists and tails) with the header fixed, or 770 (tails only) with the lists
-counted too. The doc comment on `inspectPathData` that every chunk "holds more than they add up to" should say what the
-rest is.
+**Coney's path data check:** `inspectPathData` (`src/world/level_object.cpp`) reads the 0x20-byte header, checks
+that the counted records fit, walks every path's slab lists (16 `s16` starts at `+0x28`, each an index into the edge
+lists and each list ended by a negative value, a path with a negative first start having none) and requires the chunk
+to be `align16(end of the furthest list + 4)` bytes ([Path data](#path-data)). The disc test (`[disc][level]`) counts
+77,678 bytes of edge lists and 770 bytes of tails over the 64 files.
 
 ## Open questions
 
@@ -570,7 +567,7 @@ rest is.
 - **The subtitles chunk** (`0x51`) and the path records A, C and D ([Path data](#path-data)): their contents, and
   what the areas are used for.
 - **The path data's size** (answered): the header is 0x20 bytes, and the chunk ends with the paths' edge lists and a
-  4- to 18-byte tail; the 79,472 bytes Coney's disc test left uncounted are the header's second 16 bytes, the lists and
+  4- to 18-byte tail; the 79,472 bytes Coney's disc test left uncounted were the header's second 16 bytes, the lists and
   the tails ([Path data](#path-data)). Still open: whether the tail's first 4 bytes mean anything (no reader found).
 - **`WorldLevel_Load`** (answered): game code in `World/`. tolua ends at `0x0040c5e0`; the WAD object and
   `WorldLevel_Load` after it call no Lua API, and the source map and the progress totals now say so

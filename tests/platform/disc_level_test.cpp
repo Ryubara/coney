@@ -30,7 +30,8 @@ struct LevelTotals {
     std::uint64_t failures = 0;
     std::uint64_t occluders = 0;
     std::uint64_t paths = 0;
-    std::uint64_t pathBytesUndescribed = 0; // chunk bytes past what the header's counts add up to
+    std::uint64_t pathListBytes = 0;        // the paths' slab edge lists
+    std::uint64_t pathBytesUndescribed = 0; // chunk bytes past the records and lists: the tails
     std::uint64_t subtitleBytes = 0;
     std::uint64_t modelTriangles[3] = {0, 0, 0}; // skyline, sky box, cloud box
     std::uint64_t texturedModels = 0;            // models whose first material has a texture after linking
@@ -104,7 +105,9 @@ TEST_CASE("every level file loads into a level object", "[disc][level]") {
         const coney::world::LevelObject& object = **level;
         totals.occluders += object.occluders.size();
         totals.paths += object.pathHeader.paths;
-        totals.pathBytesUndescribed += object.pathData.size() - object.pathHeader.recordBytes;
+        totals.pathListBytes += object.pathHeader.edgeListBytes;
+        totals.pathBytesUndescribed +=
+            object.pathData.size() - object.pathHeader.recordBytes - object.pathHeader.edgeListBytes;
         totals.subtitleBytes += object.subtitles.size();
         const coney::world::LevelModel* models[3] = {&object.skyline, &object.skyBox, &object.cloudBox};
         for (int m = 0; m < 3; ++m) {
@@ -120,10 +123,11 @@ TEST_CASE("every level file loads into a level object", "[disc][level]") {
         totals.worldTextured += allTextured(object.levelWorld.get()) ? 1U : 0U;
     }
 
-    std::printf("level files: %llu (failed %llu); occluders %llu; paths %llu (%llu chunk bytes past the counted "
-                "records); subtitles %llu bytes\n",
+    std::printf("level files: %llu (failed %llu); occluders %llu; paths %llu (edge lists %llu bytes, tails %llu "
+                "bytes); subtitles %llu bytes\n",
                 static_cast<unsigned long long>(totals.levels), static_cast<unsigned long long>(totals.failures),
                 static_cast<unsigned long long>(totals.occluders), static_cast<unsigned long long>(totals.paths),
+                static_cast<unsigned long long>(totals.pathListBytes),
                 static_cast<unsigned long long>(totals.pathBytesUndescribed),
                 static_cast<unsigned long long>(totals.subtitleBytes));
     std::printf(
@@ -138,6 +142,8 @@ TEST_CASE("every level file loads into a level object", "[disc][level]") {
     CHECK(totals.levels == 64);
     CHECK(totals.failures == 0);
     CHECK(totals.occluders == 66);
+    CHECK(totals.pathListBytes == 77678);
+    CHECK(totals.pathBytesUndescribed == 770);
     CHECK(totals.texturedModels == totals.levels * 3);
     CHECK(totals.boxesNearOrigin == totals.levels * 2);
     CHECK(totals.worldTextured == totals.levels);

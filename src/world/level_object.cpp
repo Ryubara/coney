@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "world/level_object.h"
 
+#include <algorithm>
 #include <bit>
 #include <format>
 #include <utility>
@@ -16,13 +17,56 @@ constexpr std::size_t kOccluderHeaderBytes = 16;
 constexpr std::size_t kOccluderRecordBytes = 0x70;
 constexpr std::size_t kOccluderPointsOffset = 0x30;
 
-// Path data: the header and each record kind's size.
-constexpr std::size_t kPathHeaderBytes = 16;
+// Path data: the header, each record kind's size, a path's slab list starts, and the tail after the edge lists.
+constexpr std::size_t kPathHeaderBytes = 0x20;
 constexpr std::size_t kPathRecordBytes = 0x50;
+constexpr std::size_t kPathSlabStartsOffset = 0x28;
+constexpr std::size_t kPathSlabs = 16;
+constexpr std::size_t kPathTailMinBytes = 4;
 constexpr std::size_t kPathABytes = 16;
 constexpr std::size_t kPathBBytes = 16;
 constexpr std::size_t kPathCBytes = 32;
 constexpr std::size_t kPathDBytes = 8;
+
+// A signed little-endian 16-bit value of a buffer whose size the caller has checked.
+std::int16_t loadS16(std::span<const std::byte> bytes, std::size_t at) {
+    return static_cast<std::int16_t>(std::to_integer<std::uint16_t>(bytes[at]) |
+                                     (std::to_integer<std::uint16_t>(bytes[at + 1]) << 8U));
+}
+
+// Rounds `n` up to a multiple of 16.
+constexpr std::uint64_t align16(std::uint64_t n) { return (n + 15U) & ~std::uint64_t{15U}; }
+
+// Walks every path's slab lists (16 s16 starts at +0x28, each an index into the edge lists, each list ended by a
+// negative value) and returns the bytes from the lists' start to the end of the furthest one, its terminator included.
+// A path whose first start is negative has no lists. Fails when a list runs off the chunk.
+std::expected<std::size_t, Error> measureEdgeLists(std::span<const std::byte> chunk, std::size_t pathsAt,
+                                                   std::uint32_t paths, std::size_t listsAt) {
+    std::size_t end = listsAt;
+    for (std::uint32_t p = 0; p < paths; ++p) {
+        const std::size_t starts = pathsAt + std::size_t{p} * kPathRecordBytes + kPathSlabStartsOffset;
+        if (loadS16(chunk, starts) < 0) {
+            continue;
+        }
+        for (std::size_t slab = 0; slab < kPathSlabs; ++slab) {
+            const std::int16_t start = loadS16(chunk, starts + slab * 2);
+            if (start < 0) {
+                continue;
+            }
+            // Step over the edge numbers to the negative value that ends the list.
+            std::size_t at = listsAt + static_cast<std::size_t>(start) * 2;
+            while (at + 2 <= chunk.size() && loadS16(chunk, at) >= 0) {
+                at += 2;
+            }
+            if (at + 2 > chunk.size()) {
+                return fail(ErrorCode::Truncated,
+                            std::format("path {}'s slab {} edge list runs off the path data chunk", p, slab));
+            }
+            end = std::max(end, at + 2);
+        }
+    }
+    return end - listsAt;
+}
 
 // A float of a buffer whose size the caller has checked.
 float loadF32(std::span<const std::byte> bytes, std::size_t at) {
@@ -101,15 +145,27 @@ std::expected<PathDataHeader, Error> inspectPathData(std::span<const std::byte> 
     if ((header.cCount & 0x8000U) != 0 || (header.aCount & 0x8000U) != 0) {
         return fail(ErrorCode::Invalid, "the path data has a negative record count");
     }
-    const std::uint64_t bytes = kPathHeaderBytes + std::uint64_t{header.aCount} * kPathABytes +
-                                std::uint64_t{header.bCount} * kPathBBytes +
-                                std::uint64_t{header.paths} * kPathRecordBytes +
+    const std::uint64_t pathsAt =
+        kPathHeaderBytes + std::uint64_t{header.aCount} * kPathABytes + std::uint64_t{header.bCount} * kPathBBytes;
+    const std::uint64_t bytes = pathsAt + std::uint64_t{header.paths} * kPathRecordBytes +
                                 std::uint64_t{header.cCount} * kPathCBytes + std::uint64_t{header.dCount} * kPathDBytes;
     if (bytes > chunk.size()) {
         return fail(ErrorCode::Truncated,
                     std::format("the path data's records need {} bytes; the chunk has {}", bytes, chunk.size()));
     }
     header.recordBytes = static_cast<std::size_t>(bytes);
+    // The edge lists follow the D records; then a tail of at least 4 bytes pads the chunk to a multiple of 16.
+    auto lists = measureEdgeLists(chunk, static_cast<std::size_t>(pathsAt), header.paths, header.recordBytes);
+    if (!lists) {
+        return std::unexpected(std::move(lists.error()));
+    }
+    header.edgeListBytes = *lists;
+    const std::uint64_t expected = align16(bytes + header.edgeListBytes + kPathTailMinBytes);
+    if (chunk.size() != expected) {
+        return fail(ErrorCode::Invalid,
+                    std::format("the path data chunk has {} bytes; its records and edge lists make {}", chunk.size(),
+                                expected));
+    }
     return header;
 }
 
