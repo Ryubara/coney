@@ -108,6 +108,7 @@ target_sources(coney_core PRIVATE
     human/locomotion.cpp
     human/fighter.cpp
     human/player.cpp
+    human/player_trace.cpp
     human/stamina.cpp
     human/target_human.cpp)
 # Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat.md).

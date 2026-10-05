@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "human/locomotion.h"
 
+#include <array>
 #include <cmath>
 #include <numbers>
 
@@ -81,29 +82,58 @@ TEST_CASE("a speed's gait: standing below 0.5 m/s, then the nearest gait speed",
     CHECK(coney::human::gaitForSpeed(10.0F, speeds) == Gait::Sprint);
 }
 
-TEST_CASE("the player's turn limit is 12 degrees walking, 6 jogging, 4 running, 2.5 sprinting", "[locomotion]") {
-    CHECK(coney::human::maxTurn(Gait::Standing) == Approx(12.0F * kDegree));
-    CHECK(coney::human::maxTurn(Gait::Walk) == Approx(12.0F * kDegree));
-    CHECK(coney::human::maxTurn(Gait::Jog) == Approx(6.0F * kDegree));
-    CHECK(coney::human::maxTurn(Gait::Run) == Approx(4.0F * kDegree));
-    CHECK(coney::human::maxTurn(Gait::Sprint) == Approx(2.5F * kDegree));
+TEST_CASE("the player's turn limit in play is 20 degrees walking, 18 jogging and running, 16 sprinting, 24 in a stance",
+          "[locomotion]") {
+    CHECK(coney::human::maxTurn(Gait::Standing) == Approx(20.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Walk) == Approx(20.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Jog) == Approx(18.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Run) == Approx(18.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Sprint) == Approx(16.0F * kDegree));
+    CHECK(coney::human::stanceTurn() == Approx(24.0F * kDegree));
 }
 
-TEST_CASE("a turn is eased below 1.5 rad, carries 0.8 of the last step, and never passes the limit", "[locomotion]") {
+TEST_CASE("CfgSetTurnRates and CfgTurnRate set the player's turn limits and ease, refusing angles of 90 or more",
+          "[locomotion]") {
+    const coney::human::LocomotionTuning saved = coney::human::locomotionTuning();
+    // The script's order: two special states', sprint, run, jog, walk, stance; the first has no reader in Coney.
+    const std::array<float, 6> rates{11.0F, 10.0F, 12.0F, 14.0F, 30.0F, 95.0F};
+    coney::human::setPlayerTurnRates(rates);
+    CHECK(coney::human::maxTurn(Gait::Sprint) == Approx(10.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Run) == Approx(12.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Jog) == Approx(14.0F * kDegree));
+    CHECK(coney::human::maxTurn(Gait::Walk) == Approx(30.0F * kDegree));
+    CHECK(coney::human::stanceTurn() == Approx(24.0F * kDegree)); // 95° is refused: the old value stays
+    coney::human::setTurnEase(1.0F, 0.5F);
+    CHECK(coney::human::locomotionTuning().turnEaseError == 1.0F);
+    CHECK(coney::human::locomotionTuning().turnCarry == 0.5F);
+    coney::human::locomotionTuning() = saved;
+}
+
+TEST_CASE("a 90 degree turn at a run goes 16 degrees, then 18 an update, as at runtime", "[locomotion]") {
+    // The measured steps fit limit × (1 - cos(π e / 2.0)) / 2 + 0.8 × the last step, clamped to the limit.
+    coney::human::TurnState state;
+    const float limit = coney::human::maxTurn(Gait::Run);
+    const float first = coney::human::turnToward(0.0F, 90.0F * kDegree, limit, state);
+    CHECK(first / kDegree == Approx(16.0F).margin(0.1));
+    const float second = coney::human::turnToward(first, 90.0F * kDegree, limit, state);
+    CHECK((second - first) / kDegree == Approx(18.0F).margin(1e-3));
+}
+
+TEST_CASE("a turn is eased below 2.0 rad, carries 0.8 of the last step, and never passes the limit", "[locomotion]") {
     const float limit = 12.0F * kDegree;
     // A large error turns at the full limit.
     coney::human::TurnState state;
     float heading = coney::human::turnToward(0.0F, 2.5F, limit, state);
     CHECK(heading == Approx(limit));
-    // A small error starts slowly: limit × (1 - cos(π e / 1.5)) / 2.
+    // A small error starts slowly: limit × (1 - cos(π e / 2.0)) / 2.
     coney::human::TurnState fresh;
     const float error = 0.3F;
-    const float expected = limit * (1.0F - std::cos(kPi * error / 1.5F)) * 0.5F;
+    const float expected = limit * (1.0F - std::cos(kPi * error / 2.0F)) * 0.5F;
     CHECK(coney::human::turnToward(0.0F, error, limit, fresh) == Approx(expected));
     // The next step adds 0.8 of that one, clamped to the limit.
     const float second = coney::human::turnToward(expected, error, limit, fresh);
     const float remaining = error - expected;
-    const float wanted = limit * (1.0F - std::cos(kPi * remaining / 1.5F)) * 0.5F + 0.8F * expected;
+    const float wanted = limit * (1.0F - std::cos(kPi * remaining / 2.0F)) * 0.5F + 0.8F * expected;
     CHECK(second == Approx(expected + std::min(wanted, limit)));
     // An error smaller than the step snaps onto the target.
     coney::human::TurnState carrying{.lastStep = limit, .lastError = 0.01F};

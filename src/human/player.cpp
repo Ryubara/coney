@@ -11,6 +11,24 @@
 
 namespace coney::human {
 
+namespace {
+
+// What the follow camera needs of the human after its update: where it is and faces, and whether the auto-centre rule
+// and the sprint zoom follow it. The rule turned the camera while walking, running, sprinting and in the air, and not
+// while standing or while a start or landing clip played (docs/research/camera.md#street); **Coney's choice** extends
+// that to every clip that moves the body (the run stop, a climb, an attack).
+camera::FollowTarget followTargetOf(const Human& human) {
+    const Gait gait = human.gait();
+    const bool moving = human.airborne() || gait != Gait::Standing;
+    return camera::FollowTarget{.feet = human.position(),
+                                .heading = human.heading(),
+                                .turnsCamera = moving && !human.animator().drivingClipPlaying(),
+                                .running = gait == Gait::Run || gait == Gait::Sprint,
+                                .sprinting = gait == Gait::Sprint};
+}
+
+} // namespace
+
 std::optional<PlayerStart> researchedPlayerStart(std::string_view level) {
     if (level == "level99") {
         return PlayerStart{.position = anim::Vec3{-284.4F, 120.4F, 0.3F}, .headingDegrees = 0.0F};
@@ -127,7 +145,7 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
         ++m_respawns;
     }
     const auto& raw = pad.rawSticks(); // right x, right y, left x, left y
-    m_camera.update(m_human.position(), raw[0], raw[1], mesh, kStepSeconds);
+    m_camera.update(followTargetOf(m_human), raw[0], raw[1], mesh, kStepSeconds);
     // What drawing will read: this step's state, and the last one's to interpolate from.
     m_previous = m_current;
     m_current = capture();

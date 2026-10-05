@@ -46,7 +46,7 @@ enum class Traversal : std::uint8_t {
     Falling, ///< In the air after a drop.
     Jumping, ///< In the air after a jump (state flag `0x400000000`).
     Landing, ///< A jump's landing clip.
-    RunStop, ///< The run stop after a sprint's skid.
+    RunStop, ///< The run stop after a run's or a sprint's skid.
     Climbing ///< A climb's clips.
 };
 
@@ -159,8 +159,11 @@ class Human {
     // Moves by the velocity against the walls, then snaps to the ground or starts a fall.
     // @orig 0x0023d8c8 Human_Move (unknown)
     void moveOnGround(const raycast::CollisionMesh& mesh);
-    // Moves a falling human, landing on a floor it passes.
+    // Moves a falling human, landing on a floor it passed on the update before.
     void moveInAir(const raycast::CollisionMesh& mesh);
+    // Keeps the move the walls left (`slid`, against the asked `displacement` at slope `factor`) as the velocity, so a
+    // wall met at a steep angle brakes the human (docs/research/characters.md#walls).
+    void keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor);
     // Sweeps the walking body from the feet at `from` by `displacement`, sliding off walls; returns where it ends, or
     // nothing when it is still blocked after three passes.
     // @orig 0x0033e278 PhysicsBody_Sweep (unknown)
@@ -215,6 +218,9 @@ class Human {
     TurnState m_turn;
     bool m_airborne = false;
     bool m_outOfWorld = false;
+    bool m_landingPending = false; // the last airborne move passed a floor: land on the next update
+    float m_landingFloorZ = 0.0F;  // that floor's height where it was passed
+    float m_landingSpeed = 0.0F;   // the vertical speed it was passed at
     std::uint32_t m_airborneUpdates = 0;
     std::uint32_t m_blockedUpdates = 0;
     anim::Vec3 m_lastGround;

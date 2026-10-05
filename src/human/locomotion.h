@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <numbers>
+#include <span>
 
 #include "animation/anim_math.h"
 
@@ -24,9 +25,19 @@ inline constexpr float kRunThreshold = 0.95F;
 inline constexpr float kAcceleration = 24.0F;
 /// Below this speed the gait is 0 (standing).
 inline constexpr float kStandingSpeed = 0.5F;
-/// The ease's full-rate heading error (0x00510310), and the share of the last turn step carried over (0x0051030c).
-inline constexpr float kTurnEaseError = 1.5F;
+/// The ease's full-rate heading error (0x00510310), and the share of the last turn step carried over (0x0051030c), as
+/// `config_preload2.lua`'s `CfgTurnRate(true, false, 2.0, 0.8)` sets them in play (`.data` holds 1.5 rad for the ease;
+/// docs/research/characters.md#movement-constants).
+inline constexpr float kTurnEaseError = 2.0F;
 inline constexpr float kTurnCarry = 0.8F;
+/// The player's turn limits per update in play, degrees: the player words of the table at 0x005101b0 as
+/// `config_preload2.lua`'s `CfgSetTurnRates(11, 16, 18, 18, 20, 24)` sets them (the `.data` values 12°, 6°, 4° and
+/// 2.5° are the other humans' column; docs/research/feel.md#details-behind-the-table).
+inline constexpr float kSprintTurnDegrees = 16.0F;
+inline constexpr float kRunTurnDegrees = 18.0F;
+inline constexpr float kJogTurnDegrees = 18.0F;
+inline constexpr float kWalkTurnDegrees = 20.0F;
+inline constexpr float kStanceTurnDegrees = 24.0F;
 /// The carry when the heading error has changed sign since the last update.
 inline constexpr float kTurnReverseCarry = -0.5F;
 /// Skid: in a run or sprint, a stick under this magnitude, or pointing more than 120° from the velocity.
@@ -37,15 +48,18 @@ inline constexpr float kSkidDot = -0.5F;
 /// docs/guides/debug-menu.md#tunables). Each defaults to the researched constant above; the game reads them through
 /// locomotionTuning(), and the tunables registry changes them only between two steps, so a run stays deterministic.
 struct LocomotionTuning {
-    float stickDeadZone = kStickDeadZone; ///< kStickDeadZone.
-    float runThreshold = kRunThreshold;   ///< kRunThreshold.
-    float acceleration = kAcceleration;   ///< kAcceleration, m/s each second.
-    float walkTurnDegrees = 12.0F;        ///< maxTurn() walking, standing or sneaking, degrees an update.
-    float jogTurnDegrees = 6.0F;          ///< maxTurn() jogging.
-    float runTurnDegrees = 4.0F;          ///< maxTurn() running.
-    float sprintTurnDegrees = 2.5F;       ///< maxTurn() sprinting.
-    float leanFactor = 0.4F;              ///< leanStep(): the turn times this times the speed is the lean asked for.
-    float walkLeanFactor = 8.0F;          ///< leanStep(): the same, walking.
+    float stickDeadZone = kStickDeadZone;         ///< kStickDeadZone.
+    float runThreshold = kRunThreshold;           ///< kRunThreshold.
+    float acceleration = kAcceleration;           ///< kAcceleration, m/s each second.
+    float walkTurnDegrees = kWalkTurnDegrees;     ///< maxTurn() walking, standing or sneaking, degrees an update.
+    float jogTurnDegrees = kJogTurnDegrees;       ///< maxTurn() jogging.
+    float runTurnDegrees = kRunTurnDegrees;       ///< maxTurn() running.
+    float sprintTurnDegrees = kSprintTurnDegrees; ///< maxTurn() sprinting.
+    float stanceTurnDegrees = kStanceTurnDegrees; ///< stanceTurn(): in a combat stance (the block's shuffle).
+    float turnEaseError = kTurnEaseError;         ///< turnToward(): the error at which the ease is full, radians.
+    float turnCarry = kTurnCarry;                 ///< turnToward(): the share of the last step carried over.
+    float leanFactor = 0.4F;     ///< leanStep(): the turn times this times the speed is the lean asked for.
+    float walkLeanFactor = 8.0F; ///< leanStep(): the same, walking.
 };
 
 /// The one LocomotionTuning the game uses; at its defaults unless a debug menu changed it.
@@ -106,15 +120,31 @@ struct TurnState {
 /// @orig 0x00221760 Human_GaitForSpeed (unknown)
 [[nodiscard]] Gait gaitForSpeed(float speed, const Speeds& speeds);
 
-/// The player's turn limit per update for a gait: 12° walking (and standing or sneaking), 6° jogging, 4° running,
-/// 2.5° sprinting.
+/// The player's turn limit per update for a gait, radians: in play 20° walking (and standing or sneaking), 18° jogging
+/// and running, 16° sprinting (locomotionTuning()).
 /// @orig 0x002213d8 Human_MaxTurn (unknown)
 [[nodiscard]] float maxTurn(Gait gait);
 
+/// The player's turn limit per update in a combat stance (state `0x00228340`), radians: 24° in play.
+[[nodiscard]] float stanceTurn();
+
+/// What `CfgSetTurnRates` does for the player: the six player turn limits of the table at 0x005101b0, in degrees, in
+/// the script's order (two special states', sprint, run, jog, walk, combat stance). A value outside 0 to 90 leaves the
+/// old one, as the original does; the first (two special states Coney does not model) is dropped, and missing values
+/// leave theirs. Writes locomotionTuning().
+/// @orig 0x0023a7a0 Cfg_SetTurnRates (unknown)
+void setPlayerTurnRates(std::span<const float> degrees);
+
+/// What `CfgTurnRate(smoothed, other, easeError, carry)` does for the turn: the ease's full-rate error (radians) and
+/// the carried share of the last step. Coney's turn is always eased, so the two flags are not taken. Writes
+/// locomotionTuning().
+/// @orig 0x0023a5f8 Cfg_SetTurnRate (unknown)
+void setTurnEase(float easeError, float carry);
+
 /// Turns `heading` toward `target` by at most `limit` radians, eased: the step is the limit times
-/// `(1 - cos(π e / 1.5)) / 2` (e the error, capped at 1.5 rad) plus 0.8 times the last step (-0.5 times it when the
-/// error changed sign), clamped to [0, limit]; when the error is smaller than the step the heading snaps to the target.
-/// Updates `state`. Returns the new heading, wrapped.
+/// `(1 - cos(π e / E)) / 2` (e the error, capped at E, 2.0 rad in play) plus 0.8 times the last step (-0.5 times it
+/// when the error changed sign), clamped to [0, limit]; when the error is smaller than the step the heading snaps to
+/// the target. Updates `state`. Returns the new heading, wrapped.
 [[nodiscard]] float turnToward(float heading, float target, float limit, TurnState& state);
 
 /// The next speed toward `target`: up by kAcceleration × `seconds` at most, down to the target at once.

@@ -71,9 +71,14 @@ stairs at=8,11.5,0 width=2.5 steps=10 rise=0.20 run=0.3 texture=stairs
 stairs at=12,11.2,0 width=2.5 steps=8 rise=0.25 run=0.3 texture=stairs
 stairs at=16,11.05,0 width=2.5 steps=7 rise=0.30 run=0.3 texture=stairs
 stairs at=20,10.75,0 width=2.5 steps=5 rise=0.40 run=0.3 texture=stairs
-box at=0,17.5,0 size=2.5,3,2.0 texture=ledge
-box at=4,15.4,0 size=2.5,3,1.95 texture=ledge
-box at=8,14.5,0 size=2.5,3,2.0 texture=ledge
+# The walkable sets' landings are two boxes, the top one a rise deep, so no wall face taller than a riser stands where
+# the player's 0.485 m walking sphere reaches it from the last step (docs/research/characters.md#walls).
+box at=0,17.5,0 size=2.5,3,1.9 texture=ledge
+box at=0,17.5,1.9 size=2.5,3,0.1 texture=ledge
+box at=4,15.4,0 size=2.5,3,1.8 texture=ledge
+box at=4,15.4,1.8 size=2.5,3,0.15 texture=ledge
+box at=8,14.5,0 size=2.5,3,1.8 texture=ledge
+box at=8,14.5,1.8 size=2.5,3,0.2 texture=ledge
 box at=12,13.9,0 size=2.5,3,2.0 texture=ledge
 box at=16,13.6,0 size=2.5,3,2.1 texture=ledge
 box at=20,13.0,0 size=2.5,3,2.0 texture=ledge

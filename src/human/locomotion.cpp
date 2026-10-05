@@ -101,14 +101,41 @@ float maxTurn(Gait gait) {
     return locomotionTuning().walkTurnDegrees * kDegrees;
 }
 
+float stanceTurn() { return locomotionTuning().stanceTurnDegrees * kDegrees; }
+
+void setPlayerTurnRates(std::span<const float> degrees) {
+    // The table's player words in the script's order; the first (two special states) has no Coney reader.
+    LocomotionTuning& tuning = locomotionTuning();
+    const std::array<float*, 6> targets{nullptr,
+                                        &tuning.sprintTurnDegrees,
+                                        &tuning.runTurnDegrees,
+                                        &tuning.jogTurnDegrees,
+                                        &tuning.walkTurnDegrees,
+                                        &tuning.stanceTurnDegrees};
+    for (std::size_t i = 0; i < degrees.size() && i < targets.size(); ++i) {
+        // Each value is taken only from 0 up to (not including) 90 degrees.
+        if (targets.at(i) != nullptr && degrees[i] >= 0.0F && degrees[i] < 90.0F) {
+            *targets.at(i) = degrees[i];
+        }
+    }
+}
+
+void setTurnEase(float easeError, float carry) {
+    LocomotionTuning& tuning = locomotionTuning();
+    tuning.turnEaseError = easeError;
+    tuning.turnCarry = carry;
+}
+
 float turnToward(float heading, float target, float limit, TurnState& state) {
     const float error = wrapAngle(target - heading);
     const float magnitude = std::abs(error);
-    // The ease reaches the full rate at 1.5 rad of error; part of the last step carries over (negatively when the
-    // error has swapped sides, which damps an overshoot).
-    const float ease = (1.0F - std::cos(kPi * std::min(magnitude, kTurnEaseError) / kTurnEaseError)) * 0.5F;
+    // The ease reaches the full rate at 2.0 rad of error in play; part of the last step carries over (negatively when
+    // the error has swapped sides, which damps an overshoot).
+    const LocomotionTuning& tuning = locomotionTuning();
+    const float full = std::max(tuning.turnEaseError, 1e-3F);
+    const float ease = (1.0F - std::cos(kPi * std::min(magnitude, full) / full)) * 0.5F;
     const bool reversed = (error > 0.0F) != (state.lastError > 0.0F) && state.lastError != 0.0F;
-    const float carry = (reversed ? kTurnReverseCarry : kTurnCarry) * state.lastStep;
+    const float carry = (reversed ? kTurnReverseCarry : tuning.turnCarry) * state.lastStep;
     const float step = std::clamp(limit * ease + carry, 0.0F, limit);
     state.lastError = error;
     if (magnitude <= step) {

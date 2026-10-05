@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.4% of the game's own code (113,816 of 3,342,936 bytes, 315 functions) |
+| **Reimplemented** | `▋░░░░░░░░░░░░░░░░░░░` | 3.4% of the game's own code (113,816 of 3,342,936 bytes, 318 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
-112 reimplemented function(s) have no size yet and add no bytes.
+115 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -53,7 +53,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 11 | 37,160 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 31,208 |
-| `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 118,632 |
+| `Camera` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 5 | 118,632 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 7 | 32,152 |
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 32 | 481,192 |
-| `Human` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 38 | 358,360 |
+| `Human` | `▍░░░░░░░░░░░░░░░░░░░` | 1.6% | 40 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -116,6 +116,7 @@ at the top of the repository's `README.md`.
 | `0x0010a558` | `GaitBlend_SetValue` | `Animation` | not filled in |
 | `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
 | `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
+| `0x00129f88` | `Cam_Follow_AutoCentre` | `Camera` | not filled in |
 | `0x0012ae58` | `Cam_Follow_Update` | `Camera` | not filled in |
 | `0x0012d4e8` | `Cam_Follow_Pitch` | `Camera` | not filled in |
 | `0x0012d688` | `Cam_Follow_Yaw` | `Camera` | not filled in |
@@ -257,6 +258,8 @@ at the top of the repository's `README.md`.
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
+| `0x0023a5f8` | `Cfg_SetTurnRate` | `Human` | not filled in |
+| `0x0023a7a0` | `Cfg_SetTurnRates` | `Human` | not filled in |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
 | `0x0023db48` | `Human_BeginJump` | `Human` | not filled in |
 | `0x0023e090` | `Human_Land` | `Human` | not filled in |

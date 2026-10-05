@@ -111,8 +111,8 @@ TEST_CASE("removing a tunable drops it and its queued change", "[debug]") {
 TEST_CASE("the game's movement and camera tunables edit the values the game reads", "[debug]") {
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
-    CHECK(registry.inCategory("Movement").size() == 9);
-    CHECK(registry.inCategory("Body").size() == 4);
+    CHECK(registry.inCategory("Movement").size() == 12);
+    CHECK(registry.inCategory("Body").size() == 5);
     CHECK(registry.inCategory("Sprint").size() == 3);
     CHECK(registry.inCategory("Jump").size() == 4);
     CHECK(registry.inCategory("Climb").size() == 11);
@@ -138,5 +138,5 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
     registry.resetAll();
     registry.applyPending();
     CHECK(coney::human::locomotionTuning().runThreshold == coney::human::kRunThreshold);
-    CHECK(coney::camera::followDefaults().leashFar == 3.5F);
+    CHECK(coney::camera::followDefaults().leashFar == 5.3F);
 }

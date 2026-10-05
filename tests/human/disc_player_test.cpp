@@ -5,12 +5,14 @@
 // fixed 30 Hz step with no window and no clock. They run only when the environment variable CONEY_DISC names the
 // disc and skip otherwise; they print counts and speeds only, never data (LEGAL.md).
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -24,6 +26,7 @@
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "human/player.h"
+#include "human/player_trace.h"
 #include "platform/level_file.h"
 #include "platform/render_engine.h"
 
@@ -120,9 +123,11 @@ TEST_CASE("Rembrandt stands at level99's start, walks, runs, turns and stops und
     CHECK(run[0].position.z == Approx(0.25F).margin(0.02));
     CHECK(run[29].animId == 388U);
     CHECK(run[29].speed == 0.0F);
-    // Stick 0.3 from frame 30: the walk start, its own root motion (about 0.76 m/s at runtime), then the walk.
-    CHECK(run[31].animId == 413U);
-    CHECK(run[35].speed == Approx(0.79F).margin(0.05));
+    // Stick 0.3 from frame 30: the walk start, its own root motion times the body scale (0.762 m/s at runtime), then
+    // the walk. The update the start clip begins does not move him.
+    CHECK(run[30].animId == 413U);
+    CHECK(run[30].speed == 0.0F);
+    CHECK(run[35].speed == Approx(0.762F).margin(0.01));
     CHECK(run[60].animId == 408U);
     CHECK(run[60].speed == Approx(speeds.walk).margin(1e-3));
     // Stick 0.6 from frame 90: still the same walk.
@@ -131,17 +136,18 @@ TEST_CASE("Rembrandt stands at level99's start, walks, runs, turns and stops und
     CHECK(run[151].speed - run[150].speed == Approx(0.8F).margin(1e-3));
     CHECK(run[165].speed == Approx(speeds.run).margin(1e-3));
     CHECK(run[165].animId == 410U);
-    // Let go at frame 240: no speed and the idle at once.
-    CHECK(run[240].speed == 0.0F);
-    CHECK(run[240].animId == 388U);
+    // Let go at frame 240: the run skids into the run stop (417), which slides him on for 24 updates, then the idle.
+    CHECK(run[240].animId == 417U);
+    CHECK(run[268].animId == 388U);
+    CHECK(run[268].speed == 0.0F);
     // A 45 % stick to the left from frame 270 walks again, with the walk start first.
     CHECK(run[271].animId == 413U);
     CHECK(run[300].speed == Approx(speeds.walk).margin(1e-3));
-    // Never in the air on this ground, the camera never further than the hard band's 3.85 m.
+    // Never in the air on this ground, the camera never further than the hard band's 5.65 m.
     float travelled = 0.0F;
     for (std::size_t i = 0; i < run.size(); ++i) {
         CHECK(!run[i].airborne);
-        CHECK(run[i].cameraDistance <= 3.85F + 1e-3F);
+        CHECK(run[i].cameraDistance <= 5.65F + 1e-3F);
         if (i > 0) {
             travelled +=
                 std::hypot(run[i].position.x - run[i - 1].position.x, run[i].position.y - run[i - 1].position.y);
@@ -154,6 +160,32 @@ TEST_CASE("Rembrandt stands at level99's start, walks, runs, turns and stops und
     // The same script gives the same path every time.
     const std::vector<FrameRecord> again = runScript(loaded, "play_walk.txt", 390);
     CHECK(again.back().position == run.back().position);
+}
+
+TEST_CASE("the trace writes one line per step with every column its header names", "[disc][player]") {
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const Level99 loaded = loadLevel99(discPath);
+    const coney::raycast::CollisionMesh* mesh = loaded.level->collision.get();
+    const auto start = coney::human::researchedPlayerStart("level99");
+    coney::human::Player player(*loaded.character, mesh, start.value_or(coney::human::PlayerStart{}));
+    coney::Pads pads;
+    pads.update(coney::PortSamples{});
+    player.update(pads.port(0), mesh);
+    const std::string_view header = coney::human::traceHeader();
+    const std::string line = coney::human::traceLine(1, player);
+    // As many commas in each, one newline at the end, the step first and the idle's clip in it.
+    CHECK(std::ranges::count(header, ',') == std::ranges::count(line, ','));
+    CHECK(std::ranges::count(header, ',') == 26);
+    CHECK(header.back() == '\n');
+    CHECK(line.back() == '\n');
+    CHECK(line.starts_with("1,"));
+    CHECK(line.find(",388,") != std::string::npos);
+    std::printf("trace line: %zu bytes\n", line.size());
 }
 
 TEST_CASE("running into level99's scenery stops Rembrandt without letting him through", "[disc][player]") {

@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <fstream>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -117,6 +118,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
+    /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
+    /// replacing it: `--trace`. Fails with ErrorCode::Io when the file cannot be opened.
+    [[nodiscard]] std::expected<void, Error> traceTo(const std::string& path);
+
     /// Sets the debug lines render() draws (the debug session's, which must outlive the mode); null draws none.
     void setDebugDraw(const debug::DebugDrawOptions* options) { m_debugDraw = options; }
 
@@ -200,6 +205,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
     std::string m_model; // the Character List model the player is
+    // The --trace file (closed when unset) and the steps traced.
+    std::optional<std::ofstream> m_trace;
+    std::uint64_t m_traceSteps = 0;
 };
 
 } // namespace coney::platform

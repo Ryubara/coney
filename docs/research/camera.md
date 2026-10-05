@@ -358,28 +358,51 @@ holds the popped follow camera, and the follow camera is the current and previou
 `src/camera/follow_camera.*` is the follow camera of `Cam_Follow_Update` (`0x0012ae58`), stepped after the human
 by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/building.md#playing-a-level)):
 
-- the look-at point is the feet + 1.4 m; the wanted position stays put unless its distance leaves the 3.0-3.5 m band,
-  then moves along that line to the band; the camera moves 22% of the way to it each step, held inside a hard band
-  of 2.8-3.85 m;
-- the pitch eases toward 13° at 85°/s, between the lower limit (the larger of -20° and the slope of 0.4 m over
-  6.6 m) and the upper;
+- the look-at point is the feet + 1.4 m; the wanted position stays put unless its distance leaves the leash band,
+  4.8-5.3 m (the default distance and + 0.5, as in the street), then moves along that line to the band; the camera
+  moves 22% of the way to it each step, held inside the hard band (4.56-5.65 m), which widens at once and shrinks by
+  1% of the difference an update;
+- the **auto-centre rule** ([Heading](#heading)) turns the wanted position toward the player's facing at the rule's
+  rate of the angle `a` between the facing and the camera's view at the start of the update, while the player
+  walks, runs, sprints or is in the air and no clip moves the body (a start, a landing, a run stop, a climb, an
+  attack), and not for 0.334 s after right-stick input; with the stick held sideways the player runs in a circle;
+- the **sprint zoom**: from the first update at the sprint gait the band moves in to 3.0-3.5 m by the measured
+  per-update shares (15 updates) and the target pitch to 7° in 14 even steps; 8 updates after the sprint gait ends
+  (the run stop's 8 at runtime) both go back the same way. In a sprint the camera settles 4.70 m away at 5.2°, as
+  measured;
+- the pitch eases toward its target at 85°/s, between the lower limit (the larger of -20° and the slope of 0.4 m over
+  6.6 m) and the upper, 40°;
+- after a sudden rise of the feet (more than 0.5 m in one update: a climb onto a top) the look-at height eases 20%
+  of the way an update while more than 0.6 m is left, then covers the rest in 2 updates; a jump's rise is followed
+  directly;
 - the right stick turns the wanted position at the raw rates (yaw up to 150°/s outside the ±48 dead zone, pitch near
   the ends of the travel) and holds off for 0.334 s after any input;
-- the camera's forward vector turns the player's stick before the human sees it.
+- the camera's forward vector turns the player's stick before the human sees it;
+- `--trace FILE` writes the camera's position, look-at point, wanted position, distance, angles, band and
+  auto-centre turn after every step, with the player's state ([Building](../guides/building.md#tracing)).
 
 The world viewer keeps its own free camera with the player camera's lens
 ([The streamed world](world.md#coneys-implementation)).
 
 **Coney choices** where the research is silent:
 
-- **No auto-follow**: the camera does not swing behind the player by itself, as measured at level99's checkpoint 1
-  ([Runtime checks](#runtime-checks)); in the street the original's auto-centre rule runs ([In the street](#street)),
-  so this choice differs from what the player mostly sees.
-- **Collision** is one ray (collision mask `0x200`) from the look-at point to the camera; a hit pulls the camera to
+- **The auto-centre rule always runs** (the street save's option bytes; the debug menu's Follow camera page can turn
+  it off); the default rule (`0x0012a400`) and checkpoint 1's missing auto-follow are not modelled. Beyond 157.5°
+  the rule's falling line is carried on for a running player (5°/s at 180°). The clips that hold it off beyond the
+  start and landing clips (the run stop, a climb, an attack) are Coney's choice.
+- **Circling is faster than measured**: with the stick held 90° to the side Coney's player and camera turn together
+  at about 190°/s at a run (the same steady `a` of 67°), where the original turned 122°/s: the look-at point's
+  sideways move drags the wanted position round on top of the rule's own turn. Whether the measured rule already
+  includes that share is open ([Open questions](#open-questions)).
+- **The sprint zoom**'s curve is the measured band edges, normalised; what starts and ends it in the code is not
+  traced (Coney: the sprint gait, and 8 updates without it).
+- **Collision** is one ray (collision mask `0x200`) from the look-at point to the camera, passing through material
+  30 (`LOW_FENCE`, as through the runtime's fence climb; the other fence materials are not); a hit pulls the camera to
   0.2 m short of it, never nearer than 0.5 m. The side probes and swing-away rules are not implemented.
-- **The upper pitch limit** is fixed at 30°, the value read at runtime with the camera option set; the zoom
+- **The upper pitch limit** is fixed at 40°, the value read in the street; the zoom
   levels that would change it are not modelled.
-- **A fresh camera** (at the start, or after the player is put back) sits behind the player at 3.0 m and 13°.
+- **A fresh camera** (at the start, or after the player is put back) sits behind the player at 4.8 m and 13°.
+- **The look-at height's ease** starts on a rise of more than 0.5 m in one update (the trigger is not traced).
 
 ## Notes for implementers
 
@@ -407,6 +430,10 @@ The world viewer keeps its own free camera with the player camera's lens
 - **Why auto-follow did not run** at checkpoint 1 ([Runtime checks](#runtime-checks)) when it runs in the street
   ([In the street](#street)): a gate not yet identified, perhaps a mode the tutorial sets. A breakpoint at
   `0x0012bd80` would settle it. Also open: the option bytes' value in a fresh profile.
+- **The circling rate**: does the measured auto-centre rate already include the turn the look-at point's sideways
+  move gives the wanted position? Coney adds the rule's turn to the leash's drag and circles at about 190°/s where
+  the original circled at 122°/s ([Coney's implementation](#coneys-implementation)); a per-update split of the
+  wanted position's rotation in the street save would settle it.
 - **The sprint zoom** ([In the street](#street)): which code moves the band to the minimum distance and the pitch to
   7°, its easing (the measured curve is not linear), and what ends it.
 - **Look-at height easing**: 20% per update measured after a climb's rise against the 30% read in the code.

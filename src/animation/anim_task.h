@@ -106,9 +106,12 @@ class LoopTask final : public AnimTask {
 /// @orig 0x00105990 AnimTask_ClipThenNext (AnimationBlend.cpp)
 class ClipThenNextTask final : public AnimTask {
   public:
-    /// Plays `clip` (anim id `animId`) from `startSeconds`, then hands over to `next` (not null).
+    /// Plays `clip` (anim id `animId`) from `startSeconds`, then hands over to `next` (not null). With
+    /// `handOverEarly` it hands over on the advance after which less than that advance's length of the clip is left,
+    /// rather than once the clip is over: the move start clips, which at runtime lasted 13 updates where playing to
+    /// the end takes 14 (**Coney's reading**, docs/research/feel.md).
     ClipThenNextTask(const AnimClip& clip, std::uint32_t animId, float rate, std::uint32_t flags,
-                     std::unique_ptr<AnimTask> next, float startSeconds = 0.0F);
+                     std::unique_ptr<AnimTask> next, float startSeconds = 0.0F, bool handOverEarly = false);
     [[nodiscard]] AnimTaskType type() const override { return AnimTaskType::ClipThenNext; }
     void advance(float seconds) override;
     [[nodiscard]] Pose sample(std::span<const Quat, kPoseBones> bindRotations) const override;
@@ -124,6 +127,7 @@ class ClipThenNextTask final : public AnimTask {
     std::uint32_t m_animId;
     std::unique_ptr<AnimTask> m_next;
     bool m_finished = false;
+    bool m_handOverEarly = false;
 };
 
 /// One clip of a gait blend and its anim id.

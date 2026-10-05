@@ -64,8 +64,8 @@ Pose LoopTask::sample(std::span<const Quat, kPoseBones> bindRotations) const {
 }
 
 ClipThenNextTask::ClipThenNextTask(const AnimClip& clip, std::uint32_t animId, float rate, std::uint32_t flags,
-                                   std::unique_ptr<AnimTask> next, float startSeconds)
-    : AnimTask(rate, flags), m_cursor(clip), m_animId(animId), m_next(std::move(next)) {
+                                   std::unique_ptr<AnimTask> next, float startSeconds, bool handOverEarly)
+    : AnimTask(rate, flags), m_cursor(clip), m_animId(animId), m_next(std::move(next)), m_handOverEarly(handOverEarly) {
     CONEY_ASSERT(m_next != nullptr);
     m_cursor.restart(startSeconds);
 }
@@ -81,6 +81,9 @@ void ClipThenNextTask::advance(float seconds) {
         if (m_next) {
             m_next->advance(rate() > 0.0F ? overshoot / rate() : 0.0F);
         }
+    } else if (m_handOverEarly && m_cursor.clip().duration - m_cursor.time() < seconds * rate()) {
+        // Less than one more advance of the clip left: the next task takes over now, from its start.
+        m_finished = true;
     }
 }
 

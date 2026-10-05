@@ -86,6 +86,10 @@ float walkingRadius(float scale) { return bodyTuning().radius * scale; }
 
 float walkingCentreHeight(float scale) { return walkingRadius(scale) + bodyTuning().footGap; }
 
+float playerWalkingRadius(float scale) { return walkingRadius(scale * bodyTuning().playerFactor); }
+
+float playerWalkingCentreHeight(float scale) { return playerWalkingRadius(scale) + bodyTuning().footGap; }
+
 bool wallTooLow(anim::Vec3 a, anim::Vec3 b, anim::Vec3 c, float minHeight) {
     const std::array<anim::Vec3, 3> corners{a, b, c};
     // The edge whose direction is steepest: if even it rises less than the limit, the triangle is a low step.

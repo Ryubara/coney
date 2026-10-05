@@ -28,6 +28,7 @@
 #include "core/pads.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
+#include "human/body.h"
 #include "human/player.h"
 #include "platform/render_engine.h"
 #include "sandbox/sandbox_world.h"
@@ -192,8 +193,8 @@ int firstFrameOf(const Run& run, std::uint32_t animId, std::size_t from = 0) {
     return -1;
 }
 
-// The player's walking sphere: how far short of a wall's face his feet stop.
-constexpr float kBodyRadius = 0.35F * coney::human::kPlayerBodyScale;
+// The player's walking sphere (0.485 m): how far short of a wall's face his feet stop.
+const float kBodyRadius = coney::human::playerWalkingRadius(coney::human::kPlayerBodyScale);
 
 TEST_CASE("Rembrandt sprints along the parkour lane while L2 and stamina last", "[disc][player][sandbox][traversal]") {
     const char* discPath = discOrSkip();
@@ -218,11 +219,12 @@ TEST_CASE("Rembrandt sprints along the parkour lane while L2 and stamina last", 
     for (std::size_t i = emptyFrame; i < 330; ++i) {
         CHECK(run.frames[i].stamina == 0);
     }
-    // L2 let go: 40 a second at the run; the stick let go at the run: stopped at once, no run stop.
+    // L2 let go: 40 a second at the run; the stick let go at the run: the run stop (417) for about 24 updates.
     CHECK(run.frames[359].stamina >= 38);
     CHECK(run.frames[359].stamina <= 42);
-    CHECK(run.frames[361].speed == 0.0F);
-    CHECK(framesOf(run, Traversal::RunStop) == 0);
+    CHECK(run.frames[361].traversal == Traversal::RunStop);
+    CHECK(framesOf(run, Traversal::RunStop) >= 23);
+    CHECK(framesOf(run, Traversal::RunStop) <= 26);
 }
 
 TEST_CASE("Rembrandt jumps from a run and from a sprint on the parkour lane", "[disc][player][sandbox][traversal]") {
@@ -247,10 +249,10 @@ TEST_CASE("Rembrandt jumps from a run and from a sprint on the parkour lane", "[
     CHECK(run.frames[static_cast<std::size_t>(second)].speed == Approx(10.245F).margin(0.01));
     const int secondLanding = firstFrameOf(run, 436, static_cast<std::size_t>(second));
     REQUIRE(secondLanding > second);
-    // The sprint jump carries about 8 m.
+    // The sprint jump carries about 8.5 m: 24 updates in the air and the landing update, both at the sprint's speed.
     const float carried = run.frames[static_cast<std::size_t>(secondLanding)].position.y -
                           run.frames[static_cast<std::size_t>(second) - 1].position.y;
-    CHECK(carried == Approx(8.0F).margin(0.4));
+    CHECK(carried == Approx(8.5F).margin(0.3));
     // Let go in the sprint: the run stop (417).
     CHECK(firstFrameOf(run, 417, 200) > 0);
     CHECK(framesOf(run, Traversal::RunStop) > 0);
@@ -266,7 +268,9 @@ TEST_CASE("Rembrandt jumps the 5 m gap between two platforms of the parkour cour
     const Run run = runScript(course, "gap jump", "parkour_gap_jump.txt", {-80.0F, -0.3F, 2.0F}, 150);
     CHECK(run.respawns == 0);
     CHECK(framesOf(run, Traversal::Jumping) > 20);
-    CHECK(lowest(run) == Approx(2.0F).margin(0.02));
+    // The last airborne update leaves the feet below the far platform's top (0.19 m at runtime) and the next lands
+    // them on it: never further down than that.
+    CHECK(lowest(run) > 1.7F);
     const FrameRecord& last = run.frames.back();
     CHECK(last.position.y > 10.5F);
     CHECK(last.position.z == Approx(2.0F).margin(0.02));
@@ -348,6 +352,10 @@ TEST_CASE("Rembrandt climbs low walls and blocks standing; ledges too low or too
         CHECK(kerb.frames.back().position.y > 35.0F);
         const Run ledge = runScript(course, "kerb 30", "parkour_kerb.txt", {-60.0F, 32.0F, 0.0F}, 150);
         CHECK(highest(ledge) == Approx(0.0F).margin(0.02));
-        CHECK(ledge.frames.back().position.y == Approx(34.5F - kBodyRadius).margin(0.03));
+        // The sphere, centred its radius + 0.05 up, meets the 30 cm face's top edge before its plane: it stops where
+        // that edge is a radius from its centre.
+        const float above = kBodyRadius + 0.05F - 0.3F;
+        const float edgeStop = std::sqrt((kBodyRadius * kBodyRadius) - (above * above));
+        CHECK(ledge.frames.back().position.y == Approx(34.5F - edgeStop).margin(0.03));
     }
 }

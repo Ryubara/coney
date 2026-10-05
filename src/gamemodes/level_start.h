@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 
+#include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
@@ -34,6 +35,8 @@ struct LevelScriptRun {
     std::uint64_t skippedCalls = 0; ///< Calls of bindings Coney lacks in the run (ScriptSystem::skippedCalls()).
     std::size_t humans = 0;         ///< Humans the scripts created.
     std::size_t flags = 0;          ///< World flags the scripts and InitLevel made.
+    /// What the preloads' recording stubs kept (`CfgSetTurnRates` and the other configuration Coney applies itself).
+    script::RecordedCalls recorded;
 };
 
 /// The names of the two flags `InitLevel` adds after the level script, at the origin with heading 0

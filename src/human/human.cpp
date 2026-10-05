@@ -110,6 +110,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_outOfWorld = false;
     m_airborneUpdates = 0;
     m_blockedUpdates = 0;
+    m_landingPending = false;
     m_turn = TurnState{};
     m_stamina = Stamina(staminaTuning().maximum);
     m_sprinting = false;
@@ -142,22 +143,26 @@ void Human::locomote() {
     const Gait gaitNow = gaitOfSpeed(current, speeds);
     float newSpeed = approachSpeed(current, target, kStepSeconds);
 
-    // A run stopped hard or turned back skids: the velocity is zeroed. From a sprint the run stop plays.
+    // A run stopped hard or turned back skids: the velocity is zeroed and the run stop plays (after a run as after a
+    // sprint, docs/research/feel.md). The run stop holds the facing; the skid's own update still turns one step (a
+    // reversal at a run turned 18° before sliding the old way).
+    const bool stopping = m_animator.state() == AnimState::RunStop && m_animator.actionPlaying();
     const anim::Vec3 moving =
         current > 1e-6F ? anim::scale(anim::Vec3{m_velocity.x, m_velocity.y, 0.0F}, 1.0F / current) : facing(m_heading);
     if (skids(gaitNow, current, speeds, m_lastMagnitude, m_intent.magnitude, moving, facing(wanted))) {
         newSpeed = 0.0F;
-        if (gaitNow == Gait::Sprint) {
-            m_animator.startRunStop();
-        }
-    } else if (target > 0.0F) {
+        m_animator.startRunStop();
+    }
+    if (target > 0.0F && !stopping) {
         // Turn toward the stick, limited by the gait and eased.
         m_heading = turnToward(m_heading, wanted, maxTurn(gaitNow), m_turn);
     }
-    // While a clip moves the body (a start, a landing, a run stop) the clip alone moves it; otherwise the velocity
-    // follows the facing.
+    // While a clip moves the body (a start, a landing, a run stop) the clip alone moves it. Standing (no gait blend
+    // yet), the update the start clip begins does not move the body either: at runtime the first update with the stick
+    // pushed began the start clip at speed 0. Otherwise the velocity follows the facing.
     const anim::Vec3 direction = facing(m_heading);
-    const float horizontal = m_animator.drivingClipPlaying() ? 0.0F : newSpeed;
+    const bool clipMoves = m_animator.drivingClipPlaying() || !m_animator.gaitBlendPlaying();
+    const float horizontal = clipMoves ? 0.0F : newSpeed;
     m_velocity = anim::Vec3{direction.x * horizontal, direction.y * horizontal, m_velocity.z};
 }
 
@@ -176,11 +181,13 @@ void Human::airControl() {
 
 void Human::applyRootMotion(const anim::Pose& pose) {
     const anim::RootMotion root = anim::rootMotionOf(pose);
-    // The clip's velocity is in the character's axes (facing +y): turn it by the heading, cap it, add it.
+    // The clip's velocity is in the character's axes (facing +y): turn it by the heading, scale it by the body (the
+    // walk start moved Rembrandt at 0.762 m/s against the clip's 0.786, docs/research/characters.md#locomotion), cap
+    // it, add it.
     const float c = std::cos(m_heading);
     const float s = std::sin(m_heading);
-    anim::Vec3 world{root.velocity.x * c - root.velocity.y * s, root.velocity.x * s + root.velocity.y * c,
-                     root.velocity.z};
+    anim::Vec3 world{(root.velocity.x * c - root.velocity.y * s) * m_scale,
+                     (root.velocity.x * s + root.velocity.y * c) * m_scale, root.velocity.z * m_scale};
     if (const float length = anim::length(world); length > kMaxSpeed) {
         world = anim::scale(world, kMaxSpeed / length);
     }
@@ -202,11 +209,11 @@ std::optional<anim::Vec3> Human::sweep(const raycast::CollisionMesh& mesh, anim:
     if (anim::length(displacement) <= 0.0F) {
         return from;
     }
-    // The walking sphere, 0.05 m clear of the feet, against the walls the move goes into and that are 0.25 m tall or
-    // more; each push slides it along that wall.
+    // The player's walking sphere (0.485 m for Rembrandt), 0.05 m clear of the feet, against the walls the move goes
+    // into and that are 0.25 m tall or more; each push slides it along that wall.
     const WallFilter filter{.move = displacement, .skipLow = true, .excludeMaterials = passThrough()};
-    return slideOut(mesh, anim::add(from, displacement), walkingRadius(m_scale), walkingCentreHeight(m_scale), filter,
-                    m_nearby);
+    return slideOut(mesh, anim::add(from, displacement), playerWalkingRadius(m_scale),
+                    playerWalkingCentreHeight(m_scale), filter, m_nearby);
 }
 
 std::optional<anim::Vec3> Human::pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
@@ -237,6 +244,7 @@ void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
 }
 
 void Human::land(anim::Vec3 feet) {
+    m_landingPending = false;
     m_lastLandingSpeed = m_velocity.z;
     m_position = feet;
     m_lastGround = feet;
@@ -260,6 +268,7 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     if (const auto moved = sweep(mesh, m_position, displacement); moved) {
         feet = *moved;
         m_blockedUpdates = 0;
+        keepSlidVelocity(anim::subtract(*moved, m_position), displacement, factor);
     } else {
         // Blocked: the body stays and its horizontal velocity goes.
         m_velocity.x = 0.0F;
@@ -267,6 +276,22 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
         ++m_blockedUpdates;
     }
     snapToGround(mesh, feet);
+}
+
+void Human::keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor) {
+    // Only a move the walls changed: the velocity becomes the move the sweep allowed, never longer than it was, so the
+    // next update's speed starts from what the wall left of it.
+    const anim::Vec3 change{slid.x - displacement.x, slid.y - displacement.y, 0.0F};
+    if (anim::length(change) < kClear || factor <= 0.0F) {
+        return;
+    }
+    const float before = std::hypot(m_velocity.x, m_velocity.y);
+    anim::Vec3 velocity{slid.x / (factor * kStepSeconds), slid.y / (factor * kStepSeconds), 0.0F};
+    if (const float after = anim::length(velocity); after > before && after > 0.0F) {
+        velocity = anim::scale(velocity, before / after);
+    }
+    m_velocity.x = velocity.x;
+    m_velocity.y = velocity.y;
 }
 
 void Human::moveInAir(const raycast::CollisionMesh& mesh) {
@@ -281,7 +306,24 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
         feet = anim::Vec3{m_position.x, m_position.y, m_position.z + displacement.z};
         ++m_blockedUpdates;
     }
-    // The landing test: the segment from the body's upper point to the moved feet; a floor on it is a landing.
+    // A floor the last update's move passed: land on it now, the whole horizontal move made (at runtime the landing
+    // update still moved at the run's 7.80 m/s, docs/research/feel.md). Nothing under the feet any more (they went
+    // over an edge): no landing, the fall goes on.
+    if (m_landingPending) {
+        m_landingPending = false;
+        const raycast::Ray ray{.origin = toMesh(anim::Vec3{feet.x, feet.y, m_landingFloorZ + kSnapAbove}),
+                               .direction = raycast::kDown,
+                               .length = kSnapLength};
+        if (const auto hit = mesh.rayCast(ray, passThrough(), 0); hit && hit->normal.z > kFloorNormalZ) {
+            m_groundNormal = fromMesh(hit->normal);
+            m_velocity.z = m_landingSpeed;
+            land(anim::Vec3{feet.x, feet.y, m_landingFloorZ + kSnapAbove - hit->t});
+            return;
+        }
+    }
+    // The landing test: the segment from the body's upper point to the moved feet; a floor on it is a landing, on the
+    // next update (**Coney's reading** of the runtime's last airborne update ending 0.19 m below the ground: the feet
+    // go on below it this update).
     const anim::Vec3 top = anim::add(m_position, anim::Vec3{0.0F, 0.0F, kLandingTestHeight});
     const anim::Vec3 segment = anim::subtract(feet, top);
     const float length = anim::length(segment);
@@ -289,9 +331,9 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
         const raycast::Ray ray{
             .origin = toMesh(top), .direction = toMesh(anim::scale(segment, 1.0F / length)), .length = length};
         if (const auto hit = mesh.rayCast(ray, passThrough(), 0); hit && hit->normal.z > kFloorNormalZ) {
-            m_groundNormal = fromMesh(hit->normal);
-            land(anim::add(top, anim::scale(segment, hit->t / length)));
-            return;
+            m_landingPending = true;
+            m_landingFloorZ = top.z + segment.z * (hit->t / length);
+            m_landingSpeed = m_velocity.z;
         }
     }
     m_position = feet;
@@ -301,10 +343,10 @@ void Human::holdForCombat() {
     // The clip moves the body (its root motion is added after this), with an attack start's slide to its target.
     const anim::Vec3 slide = m_fighter.takeSlide();
     m_velocity = anim::Vec3{slide.x, slide.y, m_velocity.z};
-    // Blocking, the stick turns the player in place at the standing turn limit (**Coney's choice** of the rate: the
-    // research sees the shuffle clip turning, not how fast).
+    // Blocking, the stick turns the player in place at the combat stance's limit (24° an update in play; the block is
+    // held in a fight stance, docs/research/combat.md).
     if (m_fighter.blocking() && m_intent.magnitude > locomotionTuning().stickDeadZone) {
-        m_heading = turnToward(m_heading, m_intent.angle - kPi / 2.0F, maxTurn(Gait::Standing), m_turn);
+        m_heading = turnToward(m_heading, m_intent.angle - kPi / 2.0F, stanceTurn(), m_turn);
     }
 }
 
@@ -386,7 +428,7 @@ bool Human::tryJump(const raycast::CollisionMesh* mesh, anim::Vec3 direction) {
         return false;
     }
     // The launch: the way the human moves, at the run or sprint speed for the gait reached, and 5.5 m/s up.
-    const Gait takeOff = gaitForSpeed(current, m_animator.speeds());
+    const Gait takeOff = gaitOfSpeed(current, m_animator.speeds());
     const anim::Vec3 way = flatUnit(m_velocity);
     const float forward = launchSpeed(takeOff, m_animator.speeds());
     m_velocity = anim::Vec3{way.x * forward, way.y * forward, jumpTuning().upSpeed};
@@ -415,8 +457,9 @@ void Human::tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld) {
     if (!sprintHeld && tryContextAction()) {
         return;
     }
-    // 3. A jump, with the stick at a run and no start clip playing. (4, the object action, is not researched.)
-    if (!m_animator.startClipPlaying() && m_intent.magnitude > tuning.runThreshold) {
+    // 3. A jump, with the stick at a run; a start clip does not stop it (a tap 7 updates into the run start jumped at
+    // runtime, docs/research/feel.md). (4, the object action, is not researched.)
+    if (m_intent.magnitude > tuning.runThreshold) {
         static_cast<void>(tryJump(mesh, stickWay));
     }
 }

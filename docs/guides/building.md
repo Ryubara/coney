@@ -144,7 +144,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
-      [--play-level NAME [--spawn NAME | --checkpoint N]]
+      [--play-level NAME [--spawn NAME | --checkpoint N] [--trace FILE]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE]
       [--dev-overlay N]
@@ -445,8 +445,10 @@ stamina, the camera's distance and counts only).
 
 The stick's direction is turned by the camera's heading, so up always moves away from the camera. The game's own
 dead zone (12 %) applies; the walk speed does not depend on how far the stick is pushed, only whether it is pushed
-past 95 %. Let go and he stops at once and settles into the idle; let go in a sprint and he skids through the run
-stop. The jump needs a run (faster than 3.3 m/s) and is refused within 5.5 m of a climbable face, where triangle climbs
+past 95 %. Let go at a walk and he stops at once and settles into the idle; let go (or pull the stick back) at a run
+or a sprint and he skids through the run stop. The camera swings round behind him while he moves (the original's
+auto-centre rule), so a stick held to the side runs him in a circle, and it pulls in and lowers while he sprints.
+The jump needs a run (faster than 3.3 m/s) and is refused within 5.5 m of a climbable face, where triangle climbs
 or does nothing. In a script: `press l2`, `stick left 0 100`, `tap triangle`. The fights: `tap square` every 6 frames
 for the square chain, `tap circle` to grab and `press circle` with a `release circle` 7 or more frames later to
 tackle, `press r1` to block (the fight scripts: `tests/support/combat_*.txt`).
@@ -477,6 +479,29 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox:c
 
 A layout's `target` lines put passive humans to fight there ([Sandbox](sandbox.md#the-layout-format)); the summary
 then adds the fight's counts (hits, damage, power, rage, and the targets' health, reactions, stuns and knockdowns).
+
+#### Tracing {#tracing}
+
+`--trace FILE` (with `--play-level`) writes the player's and the follow camera's state after every step to `FILE`,
+one CSV line per step, so a feel comparison with the original ([Feel comparison](../research/feel.md)) can be
+repeated with Coney alone. Drive it with an input script in test mode, so the run is the same every time:
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level sandbox:parkour --spawn lane --headless --frames 300 --input-script ../../scratch/run_turn.txt --trace ../../scratch/run_turn.csv
+```
+
+The columns, positions in metres (game axes, z up), angles in degrees, speeds in m/s:
+
+| Columns | What |
+| --- | --- |
+| `step` | the step, from 1 (frame N of an input script is step N + 1) |
+| `x`, `y`, `z`, `heading` | the feet and the facing (0 faces +y, anticlockwise) |
+| `speed`, `vz` | the speed across the ground and the vertical speed |
+| `gait`, `clip`, `traversal` | the stored gait (0 standing to 5 sprint), the anim id playing, and `none`, `jumping`, `landing`, `run stop`, ... |
+| `stamina`, `sprinting` | the stamina meter and whether a sprint is asked for |
+| `cam_x` ... `wanted_z` | the camera's position, its look-at point and its wanted position |
+| `cam_distance`, `cam_pitch`, `cam_yaw` | the camera's distance from its look-at point, its pitch above it and the heading its view faces |
+| `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
 
 ### The debug menus {#the-debug-menus}
 

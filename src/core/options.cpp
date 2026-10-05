@@ -20,7 +20,8 @@ constexpr std::string_view kUsage =
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
-    "             [--play-level NAME [--spawn NAME | --checkpoint N]] [--sandbox [NAME]] [--assets DIR]\n"
+    "             [--play-level NAME [--spawn NAME | --checkpoint N] [--trace FILE]] [--sandbox [NAME]]\n"
+    "             [--assets DIR]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--show-fps]\n"
@@ -47,6 +48,8 @@ constexpr std::string_view kUsage =
     "                     layout (sandbox alone: default); needs --disc\n"
     "  --spawn NAME       with --play-level sandbox:NAME: the layout's spawn point to start at\n"
     "  --checkpoint N     with --play-level levelN: the checkpoint to start at (1 to 99, default 1)\n"
+    "  --trace FILE       with --play-level: write the player's and the camera's state after every\n"
+    "                     step to FILE, one CSV line per step\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
     "                     .layout file; needs no disc\n"
     "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
@@ -160,6 +163,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.checkpoint.has_value() && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
         return invalidArgument("--checkpoint needs --play-level with a level: it names the level's checkpoint");
+    }
+    if (options.traceFile.has_value() && !options.playLevel.has_value()) {
+        return invalidArgument("--trace needs --play-level: it traces the player");
     }
     if (!options.sandbox.has_value()) {
         return {};
@@ -371,6 +377,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--play-level") {
             if (auto value = takeValue(args, i, options.playLevel, "--play-level", "a level name"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--trace") {
+            if (auto value = takeValue(args, i, options.traceFile, "--trace", "the path of a CSV file"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--spawn") {

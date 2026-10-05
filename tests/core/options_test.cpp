@@ -349,6 +349,17 @@ TEST_CASE("the play option names a sandbox as sandbox or sandbox:NAME, with a sp
         parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "sandbox", "--spawn"}).has_value());
 }
 
+TEST_CASE("the trace option names the file a played level's steps are traced to", "[options]") {
+    auto play =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "sandbox:parkour", "--trace", "t.csv"});
+    REQUIRE(play.has_value());
+    CHECK(play->traceFile == "t.csv");
+    // It traces the player, so it needs a played level, and a file.
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--trace", "t.csv"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level2", "--trace"}).has_value());
+    CHECK(coney::usageText().find("--trace") != std::string_view::npos);
+}
+
 TEST_CASE("the checkpoint option picks a level's checkpoint for the play option", "[options]") {
     auto play = parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level2", "--checkpoint", "3"});
     REQUIRE(play.has_value());

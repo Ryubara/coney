@@ -27,6 +27,14 @@ void registerGameTunables(TunableRegistry& registry) {
     registry.add("Movement", "Turn jogging", &move.jogTurnDegrees).range(0, 45, 0.5).units("deg/step");
     registry.add("Movement", "Turn running", &move.runTurnDegrees).range(0, 45, 0.5).units("deg/step");
     registry.add("Movement", "Turn sprinting", &move.sprintTurnDegrees).range(0, 45, 0.5).units("deg/step");
+    registry.add("Movement", "Turn in a stance", &move.stanceTurnDegrees).range(0, 45, 0.5).units("deg/step");
+    registry.add("Movement", "Turn ease", &move.turnEaseError)
+        .range(0.1, 3.2, 0.05)
+        .units("rad")
+        .describe("Heading error from which a turn goes at its full limit; less turns ease in");
+    registry.add("Movement", "Turn carry", &move.turnCarry)
+        .range(0, 1, 0.05)
+        .describe("Share of the last update's turn step carried into this one");
     registry.add("Movement", "Lean factor", &move.leanFactor)
         .range(0, 4, 0.05)
         .describe("Lean asked for: the turn an update times this times the speed (jogging and faster)");
@@ -46,6 +54,9 @@ void registerGameTunables(TunableRegistry& registry) {
         .range(0, 2, 0.01)
         .units("m")
         .describe("Wall faces less tall than this do not stop a walking body; the ground snap lifts it on");
+    registry.add("Body", "Player factor", &body.playerFactor)
+        .range(0.5, 2, 0.01)
+        .describe("A player's body factor: his walking sphere is the radius times this times the scale (0.485 m)");
     registry.add("Body", "Air radius", &body.airRadius)
         .range(0.05, 1.5, 0.01)
         .units("m")
@@ -90,6 +101,8 @@ void registerGameTunables(TunableRegistry& registry) {
         .describe("Share of the wanted move the camera covers each update");
     registry.add("Follow camera", "Collision margin", &follow.collisionMargin).range(0, 2, 0.05).units("m");
     registry.add("Follow camera", "Closest after collision", &follow.minCollisionDistance).range(0, 5, 0.1).units("m");
+    registry.add("Follow camera", "Auto-centre", &follow.autoCentre)
+        .describe("Whether the camera swings round behind a moving player (the original's auto-centre option)");
     camera::FollowSettings& placed = camera::followDefaults();
     registry.add("Follow camera", "Leash near", &placed.leashNear)
         .range(0.5, 20, 0.1)

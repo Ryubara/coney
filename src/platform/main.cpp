@@ -50,6 +50,7 @@
 #include "graphics/font.h"
 #include "gui/global_strings.h"
 #include "gui/text_layout.h"
+#include "human/locomotion.h"
 #include "human/player.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/debug_menus.h"
@@ -68,6 +69,8 @@
 #include "platform/world_viewer_mode.h"
 #include "sandbox/sandbox_world.h"
 #include "scripting/config_strings.h"
+#include "scripting/lua_value.h"
+#include "scripting/script_bindings.h"
 #include "world/sector_budget.h"
 
 namespace {
@@ -196,6 +199,34 @@ std::expected<coney::sandbox::SandboxWorld, coney::Error> loadSandbox(const cone
     return world;
 }
 
+// The player's turning as the preload scripts configure it (`CfgSetTurnRates`, `CfgTurnRate` in config_preload2.lua,
+// recorded by their stubs): the values the original plays with (docs/research/characters.md#movement-constants).
+void applyTurnConfig(const coney::script::RecordedCalls& recorded) {
+    // A recorded argument as a float; nil and strings count as nothing.
+    const auto numberAt = [](const std::vector<coney::script::Value>& args, std::size_t i) -> std::optional<float> {
+        if (i >= args.size()) {
+            return std::nullopt;
+        }
+        const std::optional<double> number = args[i].number();
+        return number ? std::optional<float>(static_cast<float>(*number)) : std::nullopt;
+    };
+    for (const std::vector<coney::script::Value>& args : recorded.calls("CfgSetTurnRates")) {
+        std::vector<float> degrees;
+        degrees.reserve(args.size());
+        for (std::size_t i = 0; i < args.size(); ++i) {
+            degrees.push_back(numberAt(args, i).value_or(-1.0F)); // -1 is out of range: the old value stays
+        }
+        coney::human::setPlayerTurnRates(degrees);
+    }
+    for (const std::vector<coney::script::Value>& args : recorded.calls("CfgTurnRate")) {
+        const std::optional<float> ease = numberAt(args, 2);
+        const std::optional<float> carry = numberAt(args, 3);
+        if (ease && carry) {
+            coney::human::setTurnEase(*ease, *carry);
+        }
+    }
+}
+
 // Player 1's start as the level scripts left him, in the play mode's terms: where a TeleportToFlag put him, else where
 // HuCreate made him; nothing when the scripts made none.
 std::optional<coney::human::PlayerStart> playerStartOf(const coney::LevelStart& start) {
@@ -248,6 +279,7 @@ coney::LevelStart scriptStartFor(const coney::io::Wad& wad, std::string_view nam
     std::vector<std::uint32_t> table;
     const coney::LevelScriptRun run = coney::runLevelScriptAlone(coney::script::wadScriptSource(wad), name, checkpoint,
                                                                  printText, levelScriptOptions(wad, name, table));
+    applyTurnConfig(run.recorded);
     const std::optional<coney::human::PlayerStart> start = playerStartOf(run.start);
     if (start && run.start.player) {
         printText(std::format("level script: {} checkpoint {}: player 1 {} (type {}, model {}) at ({:.2f}, {:.2f}, "
@@ -474,6 +506,12 @@ int main(int argc, char** argv) {
             return 1;
         }
         playLevel = std::move(*playMode);
+        if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
+            if (auto traced = playLevel->traceTo(*tracePath); !traced) {
+                std::fprintf(stderr, "coney: %s\n", traced.error().message.c_str());
+                return 1;
+            }
+        }
         modes.push(*playLevel);
     } else if (const std::optional<std::string> sandboxName = options->sandbox; sandboxName) {
         // The sandbox with the free camera: no disc needed.

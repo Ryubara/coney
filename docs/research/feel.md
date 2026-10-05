@@ -33,8 +33,8 @@ were corrected in place where the runs contradicted them.
   missed in any run.
 - **Coney trace.** A throwaway tool (outside the repository) stepped Coney's `Human` and `FollowCamera` headless on
   `level99`'s collision mesh, from the save's position and heading, with the camera placed behind at the save's view
-  heading, and printed the same quantities per update. A `--trace` option would make that tool unnecessary
-  ([Open questions](#open-questions)).
+  heading, and printed the same quantities per update. Coney's own `--trace` option now writes them
+  ([Building](../guides/building.md#tracing)).
 - **Saves.** Slot 1 (a clear street, facing −x) for walks, runs, turns, sprint, jumps and the right stick; slot 7
   (the fence) for the running fence climb; slot 8 (the trash can and roof) for the short-wall and wall climbs.
 
@@ -126,6 +126,34 @@ run read per update; the turn values are also confirmed (code), below.
 - **Jump during a start clip.** The tap that jumped came 7 updates into the run start (414), at 3.35 m/s; record
   `+0x08` held `0x10000000` then, so that record bit does not block the jump. Confirmed (runtime), slot 7.
 
+## Coney's implementation
+
+The fixes below are in Coney ([Characters](characters.md#coneys-implementation),
+[Camera](camera.md#coneys-implementation)); the values are from Coney's own trace (`--trace`,
+[Building](../guides/building.md#tracing)) on the sandbox's parkour lane with the same kind of scripted stick:
+
+| Quantity | Original | Coney now |
+| --- | --- | --- |
+| Turn limits walk / jog / run / sprint / combat stance; ease | 20° / 18° / 18° / 16° / 24°; 2.0 rad | the same (defaults, and from the preload's calls for a level) |
+| Stick turned 90° at a run | 16.1°, then 18° per update | 16.0°, then 18° |
+| Released or reversed at a run | run stop 417, 24 updates; a reversal turns 18° first | 417 for 24-25 updates; a reversal turns 18°, then the start toward the stick at 20° per update |
+| First update with the stick pushed | the start clip begins, speed 0 | the same |
+| Walk / run start length | 13 updates | 13 |
+| Walk start speed | 0.762 m/s | 0.762 (the first moving update 0.57) |
+| Walking body | 0.485 m sphere, steep walls brake | the same |
+| Jump during the run start | from 3.3 m/s | the same |
+| Run jump: air time, last airborne height, landing update | 24 updates, −0.19 m, 7.80 m/s | 24, −0.19 m, 7.80 m/s, then 436 at 4.23 m/s for 10 more |
+| Camera band; distance running | 4.8-5.3 m; 5.65 m | the same |
+| Sprint camera; distance and pitch in a sprint | 14 updates in and out; 4.70 m, 5.2° | the same; 4.70 m, 5.2°; out again 8 updates after the run stop begins |
+| Upper pitch limit | 40° | 40° |
+| Auto-follow | the auto-centre rule | the rule; but circling with the stick sideways about 190°/s against 122°/s ([Camera](camera.md#coneys-implementation)) |
+| Fence climb camera | 4.9-5.3 m throughout | the ray passes through material 30 |
+| Look-at height after a climb's rise | 20 % per update, then 2 updates | the same |
+
+Still different: the first moving update of a start clip and the run stop's first updates (the fades,
+[Characters](characters.md#coneys-implementation)), the circling rate, and the low one-sided face that still pulls the
+camera in (the collision step is one ray).
+
 ## Notes for implementers
 
 The fixes in order of how much they change the feel:
@@ -149,9 +177,8 @@ The fixes in order of how much they change the feel:
 
 ## Open questions
 
-- **A `--trace` option for `coney`**: one CSV line per update (feet, heading, speed, vertical speed, gait, clip,
-  traversal, stamina, camera position, look-at, wanted position, distance, pitch) would let anyone repeat these
-  comparisons with Coney alone.
+- **A `--trace` option for `coney`** (answered): `--play-level NAME --trace FILE` writes those columns per update
+  ([Building](../guides/building.md#tracing)).
 - **The 0.25 m step at runtime**: the street around the saves is flat (0.223) with no kerb or low ledge, so the step
   rule was not checked; it needs a save next to a kerb. With the player's larger sphere (0.485 m, centred 0.535 m up)
   the faces that stop him reach up to about 1.0 m, which matters for that check.

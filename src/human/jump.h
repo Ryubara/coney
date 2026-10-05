@@ -22,14 +22,16 @@ struct JumpTuning {
 [[nodiscard]] JumpTuning& jumpTuning();
 
 /// Whether a jump may start (`Player_TryJump` and `Human_BeginJump`): faster than the minimum speed, at a speed whose
-/// gait (gaitForSpeed(), the "reached" gait) is a jog or more, and no climbable wall ahead. The stick (above the run
-/// threshold), the start clip and the human's state are the caller's checks.
+/// gait is a jog or more, and no climbable wall ahead. The stick (above the run threshold) and the human's state are
+/// the caller's checks; a start clip does not stop it. **Coney's reading**: the gait is the stored one (gaitOfSpeed(),
+/// `+0x1a8`, the nearest gait), as a tap 7 updates into the run start jumped at 3.35 m/s at runtime, where the
+/// "reached" gait (gaitForSpeed()) the page reads in the code would still be a walk (docs/research/feel.md).
 /// @orig 0x002829e8 Player_TryJump (unknown)
 /// @orig 0x0023db48 Human_BeginJump (unknown)
 [[nodiscard]] bool jumpAllowed(float speed, const Speeds& speeds, bool climbableAhead);
 
-/// The horizontal speed a jump leaves at, by the gait at take-off: the run speed for a jog or a run, the sprint speed
-/// for a sprint, the jog speed below.
+/// The horizontal speed a jump leaves at, by the gait at take-off (the stored gait, as jumpAllowed() reads it): the run
+/// speed for a jog or a run, the sprint speed for a sprint, the jog speed below.
 /// @orig 0x002217f0 Human_LaunchJump (unknown)
 [[nodiscard]] float launchSpeed(Gait takeOffGait, const Speeds& speeds);
 

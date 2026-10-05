@@ -61,6 +61,10 @@ struct Options {
     /// `--checkpoint`: the checkpoint a level played with `--play-level` starts at, as `SetCheckPoint` sets it before
     /// the level loads; 1 when unset. Requires playLevel to name a level, not a sandbox.
     std::optional<int> checkpoint;
+    /// `--trace`: write the player's and the follow camera's state after every step of `--play-level` to this file,
+    /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
+    /// (docs/guides/building.md#tracing). Requires playLevel.
+    std::optional<std::string> traceFile;
     /// `--assets`: the folder holding Coney's own assets (its `sandbox` folder of layouts and textures), in place of
     /// the `assets` folder beside the executable.
     std::optional<std::string> assetsDir;

@@ -17,6 +17,7 @@
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "human/human_animator.h"
+#include "human/player_trace.h"
 #include "raycast/collision_mesh.h"
 
 namespace coney::platform {
@@ -258,6 +259,18 @@ WorldView PlayLevelMode::viewFrom(const world::CameraPose& pose, float drawDista
                      .drawDistance = drawDistance};
 }
 
+std::expected<void, Error> PlayLevelMode::traceTo(const std::string& path) {
+    // Text written as is (no newline translation), so a trace reads the same on every platform.
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        return fail(ErrorCode::Io, std::format("cannot write the trace {}", path));
+    }
+    file << human::traceHeader();
+    m_trace = std::move(file);
+    m_traceSteps = 0;
+    return {};
+}
+
 void PlayLevelMode::enter() { m_scenery->preload(toRenderWare(m_player->camera().position())); }
 
 void PlayLevelMode::skin(const anim::Pose& pose, anim::Vec3 feet, float heading, float lean,
@@ -316,6 +329,9 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
+    if (m_trace) {
+        *m_trace << human::traceLine(++m_traceSteps, *m_player);
+    }
     if (const std::uint32_t id = m_player->human().animator().animId(); id != m_lastAnimId) {
         m_print(std::format("frame {}: clip {}\n", frame.index, id));
         m_lastAnimId = id;

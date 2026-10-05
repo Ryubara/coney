@@ -124,6 +124,7 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     run.skippedCalls = scripts.skippedCalls();
     run.humans = humans.all().size();
     run.flags = flags.all().size();
+    run.recorded = std::move(recorded);
     return run;
 }
 

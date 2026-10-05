@@ -15,8 +15,8 @@ bool jumpAllowed(float speed, const Speeds& speeds, bool climbableAhead) {
     if (climbableAhead || speed <= jumpTuning().minSpeed) {
         return false;
     }
-    const Gait reached = gaitForSpeed(speed, speeds);
-    return reached == Gait::Jog || reached == Gait::Run || reached == Gait::Sprint;
+    const Gait stored = gaitOfSpeed(speed, speeds);
+    return stored == Gait::Jog || stored == Gait::Run || stored == Gait::Sprint;
 }
 
 float launchSpeed(Gait takeOffGait, const Speeds& speeds) {

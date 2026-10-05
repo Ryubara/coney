@@ -88,7 +88,7 @@ TEST_CASE("a 20 cm kerb is walked onto; 30 and 50 cm ledges are walls the body s
             CHECK(human.position().y > 40.5F);
         } else {
             CHECK(human.position().z == Approx(0.0F).margin(1e-4));
-            CHECK(human.position().y == Approx(40.0F - coney::human::walkingRadius(1.0F)).margin(0.02));
+            CHECK(human.position().y == Approx(40.0F - coney::human::playerWalkingRadius(1.0F)).margin(0.02));
         }
     }
 }
@@ -164,7 +164,8 @@ TEST_CASE("empty stamina drops the sprint to the run at once and stays empty unt
     CHECK(human.speed() == Approx(10.0F));
 }
 
-TEST_CASE("letting go in a sprint plays the run stop; letting go in a run stops at once", "[human][traversal]") {
+TEST_CASE("letting go in a sprint or a run plays the run stop; a reversal at a run turns one step and skids too",
+          "[human][traversal]") {
     const TestCharacter character;
     const auto mesh = makeMesh(ground());
     Human sprinter = spawnHuman(character, mesh.get(), Vec3{40.0F, 5.0F, 0.0F});
@@ -185,8 +186,19 @@ TEST_CASE("letting go in a sprint plays the run stop; letting go in a run stops 
     hold(runner, pad(0.0F, 1.0F), 45, mesh.get());
     REQUIRE(runner.speed() == Approx(7.5F));
     runner.step(pad(0.0F, 0.0F), mesh.get());
-    CHECK(runner.animator().state() == AnimState::Idle);
-    CHECK(runner.speed() == 0.0F);
+    CHECK(runner.animator().state() == AnimState::RunStop);
+    CHECK(runner.animator().animId() == 417U);
+
+    // Reversed at a run: one turn step of the run's limit, then the run stop holds the facing while it slides.
+    Human reverser = spawnHuman(character, mesh.get(), Vec3{60.0F, 5.0F, 0.0F});
+    hold(reverser, pad(0.0F, 1.0F), 45, mesh.get());
+    const float heading = reverser.heading();
+    reverser.step(pad(0.0F, -1.0F), mesh.get());
+    CHECK(reverser.animator().state() == AnimState::RunStop);
+    const float turned = std::abs(coney::human::wrapAngle(reverser.heading() - heading));
+    CHECK(turned == Approx(coney::human::maxTurn(coney::human::Gait::Run)).margin(1e-4));
+    hold(reverser, pad(0.0F, -1.0F), 5, mesh.get());
+    CHECK(std::abs(coney::human::wrapAngle(reverser.heading() - heading)) == Approx(turned).margin(1e-4));
 }
 
 TEST_CASE("a jump from a run leaves at 5.5 m/s up and the run speed, rises 1.06 m and lands running",
@@ -336,7 +348,7 @@ TEST_CASE("a fence stops a walk, and a running climb carries the body through it
     SECTION("walked into, it is a wall") {
         Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 37.0F, 0.0F});
         hold(human, pad(0.0F, 0.6F), 120, mesh.get());
-        CHECK(human.position().y == Approx(40.0F - coney::human::walkingRadius(1.0F)).margin(0.02));
+        CHECK(human.position().y == Approx(40.0F - coney::human::playerWalkingRadius(1.0F)).margin(0.02));
     }
     SECTION("from a run, triangle 3 m before it") {
         Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 20.0F, 0.0F});

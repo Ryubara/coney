@@ -11,7 +11,7 @@
 180 stick left 50 87
 195 stick left 87 50
 210 stick left 100 0
-# Let go: the run stops at once and the idle fades in.
+# Let go: the run skids through the run stop (0.8 s), then the idle.
 240 stick left 0 0
 # Walk again at 45 %, to the left.
 270 stick left -45 0

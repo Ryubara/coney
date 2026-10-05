@@ -109,10 +109,27 @@ TEST_CASE("a full stick runs: the run start, then 0.8 m/s more each update up to
     CHECK(human.speed() == Approx(7.5F));
     CHECK(human.gait() == coney::human::Gait::Run);
     CHECK(human.animator().gaitValue() == Approx(2.0F));
-    // Let go: the speed is gone at once and the idle comes back.
+    // Let go: the run skids into the run stop (417), which slides the body on and then gives way to the idle.
     human.step(stick(0.0F, 0.0F), mesh.get());
-    CHECK(human.speed() == 0.0F);
+    CHECK(human.animator().state() == AnimState::RunStop);
+    CHECK(human.traversal() == coney::human::Traversal::RunStop);
+    for (int i = 0; i < 60; ++i) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+    }
     CHECK(human.animator().state() == AnimState::Idle);
+    CHECK(human.speed() < 0.5F);
+}
+
+TEST_CASE("the update a walk start begins does not move the body; the clip moves it from the next", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 5.0F, 0.0F});
+    const Vec3 start = human.position();
+    human.step(stick(0.0F, 0.6F), mesh.get());
+    CHECK(human.animator().animId() == 413U);
+    CHECK(std::hypot(human.position().x - start.x, human.position().y - start.y) == 0.0F);
+    human.step(stick(0.0F, 0.6F), mesh.get());
+    CHECK(human.position().y > start.y);
 }
 
 TEST_CASE("a human turns toward the stick at no more than its turn limit", "[human]") {
@@ -185,13 +202,30 @@ TEST_CASE("a wall stops the body a radius away and lets it slide along", "[human
     for (int i = 0; i < 150; ++i) {
         human.step(stick(1.0F, 0.0F), mesh.get());
     }
-    CHECK(human.position().x == Approx(50.0F - coney::human::walkingRadius(1.0F)).margin(0.02));
+    CHECK(human.position().x == Approx(50.0F - coney::human::playerWalkingRadius(1.0F)).margin(0.02));
+    // Walking into it head-on leaves no speed: the slid velocity is all the next update starts from.
+    CHECK(human.speed() < 0.9F);
     const float y = human.position().y;
     for (int i = 0; i < 30; ++i) {
-        human.step(stick(0.7F, 0.7F), mesh.get());
+        human.step(stick(0.6F, 0.6F), mesh.get());
     }
-    CHECK(human.position().x <= 50.0F - coney::human::walkingRadius(1.0F) + 0.02F);
-    CHECK(human.position().y > y + 1.0F);
+    CHECK(human.position().x <= 50.0F - coney::human::playerWalkingRadius(1.0F) + 0.02F);
+    CHECK(human.position().y > y + 0.5F);
+}
+
+TEST_CASE("running into a wall at a steep angle brakes the player to the slid speed", "[human]") {
+    const TestCharacter character;
+    const auto mesh =
+        coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
+                                                coney::test::wallFacingMinusX(50.0F, 0.0F, 80.0F, -1.0F, 5.0F)));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 20.0F, 0.0F});
+    // Run along +x into the wall (stick full right), then hold the stick 20° off the wall's normal: the speed falls
+    // toward 0.8 k / (1 - k), k = sin 20°, rather than sliding at the run's speed.
+    const float k = std::sin(20.0F * std::numbers::pi_v<float> / 180.0F);
+    for (int i = 0; i < 90; ++i) {
+        human.step(stick(std::cos(20.0F * std::numbers::pi_v<float> / 180.0F), k), mesh.get());
+    }
+    CHECK(human.speed() < 2.0F * 0.8F * k / (1.0F - k));
 }
 
 TEST_CASE("the stick is camera-relative: up walks away from the camera", "[human]") {

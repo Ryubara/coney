@@ -110,6 +110,11 @@ bool HumanAnimator::drivingClipPlaying() const {
     return top != nullptr && top->type() == anim::AnimTaskType::ClipThenNext;
 }
 
+bool HumanAnimator::gaitBlendPlaying() const {
+    const anim::AnimTask* top = m_tasks.top();
+    return top != nullptr && top->type() == anim::AnimTaskType::GaitBlend;
+}
+
 bool HumanAnimator::startClipPlaying() const { return m_state == AnimState::Move && drivingClipPlaying(); }
 
 bool HumanAnimator::actionPlaying() const { return isAction(m_state) && drivingClipPlaying(); }
@@ -145,9 +150,13 @@ void HumanAnimator::buildMove(bool run) {
         m_tasks.change(gaitBlend(std::floor(std::min(old.value(), 3.0F)), old.phase()), kMoveFadeMoving);
         return;
     }
-    // From standing: the walk start (or the run start) at once, handing over to a gait blend at the walk (or run).
+    // From standing: the walk start (or the run start) at once, handing over to a gait blend at the walk (or run) when
+    // less than an update of it is left (13 updates at runtime).
     const std::uint32_t startId = m_slots.ids[kSlotWalkStart] + (run ? kRunStartOffset : 0U);
-    m_tasks.change(clipThen(startId, gaitBlend(run ? kRunValue : kWalkValue, 0.0F)), 0.0F);
+    m_tasks.change(std::make_unique<anim::ClipThenNextTask>(*m_anims->clip(startId), startId, m_anims->rate(startId),
+                                                            0U, gaitBlend(run ? kRunValue : kWalkValue, 0.0F), 0.0F,
+                                                            true),
+                   0.0F);
 }
 
 void HumanAnimator::buildFall() {
@@ -165,9 +174,9 @@ void HumanAnimator::startJump() {
 
 void HumanAnimator::startLanding(bool movingOn) {
     if (movingOn) {
-        m_tasks.change(clipThen(kAnimJumpEndRunning, gaitBlend(kJogValue, 0.0F)), kJumpFade);
+        m_tasks.change(clipThen(kAnimJumpEndRunning, gaitBlend(kJogValue, 0.0F)), kLandFade);
     } else {
-        m_tasks.change(clipThen(kAnimJumpEnd, idleLoop()), kJumpFade);
+        m_tasks.change(clipThen(kAnimJumpEnd, idleLoop()), kLandFade);
     }
     m_state = AnimState::Land;
 }
@@ -281,7 +290,7 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
         const float startAt = top->normalisedTime() * runStart->duration;
         const float fade = std::min(kMoveFadeMoving, top->duration());
         m_tasks.change(std::make_unique<anim::ClipThenNextTask>(*runStart, runId, m_anims->rate(runId), 0U,
-                                                                gaitBlend(kRunValue, 0.0F), startAt),
+                                                                gaitBlend(kRunValue, 0.0F), startAt, true),
                        fade);
         return;
     }

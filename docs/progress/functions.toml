@@ -97,6 +97,11 @@ name = "GaitBlend_Sample"
 subsystem = "Animation"
 
 [[function]]
+address = 0x00129f88
+name = "Cam_Follow_AutoCentre"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0012ae58
 name = "Cam_Follow_Update"
 subsystem = "Camera"
@@ -914,6 +919,16 @@ address = 0x00233d60
 name = "Human_Create"
 subsystem = "Human"
 size = 400
+
+[[function]]
+address = 0x0023a5f8
+name = "Cfg_SetTurnRate"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023a7a0
+name = "Cfg_SetTurnRates"
+subsystem = "Human"
 
 [[function]]
 address = 0x0023d8c8

@@ -26,6 +26,7 @@
 #include "core/pads.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
+#include "human/body.h"
 #include "human/player.h"
 #include "platform/render_engine.h"
 #include "sandbox/sandbox_world.h"
@@ -166,11 +167,11 @@ TEST_CASE("Rembrandt walks up a slope, a stair set and over low ledges to a wall
         // Wall faces under 0.25 m do not stop the walking body and the ground snap lifts the feet on; the 25 cm
         // block's 3 m wide face is two slivers the same rule skips (docs/research/characters.md#walls).
         CHECK(highest(run) == Approx(0.25F).margin(0.02));
-        // The 50 cm block is a wall: the walking sphere (0.34 m for Rembrandt) holds him short of its face at
+        // The 50 cm block is a wall: the walking sphere (0.485 m for Rembrandt) holds him short of its face at
         // y = -5.5.
         const FrameRecord& last = run.frames.back();
         CHECK(last.position.z == Approx(0.0F).margin(0.02));
-        const float stop = -5.5F - (0.35F * coney::human::kPlayerBodyScale);
+        const float stop = -5.5F - coney::human::playerWalkingRadius(coney::human::kPlayerBodyScale);
         CHECK(last.position.y > stop - 0.03F);
         CHECK(last.position.y < stop + 0.03F);
         CHECK(!last.airborne);

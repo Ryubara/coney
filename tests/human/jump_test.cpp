@@ -19,12 +19,18 @@ Speeds testSpeeds() {
 
 } // namespace
 
-TEST_CASE("a jump needs more than 3.3 m/s, a jog's speed or more, and no climbable wall ahead", "[human][jump]") {
+TEST_CASE("a jump needs more than 3.3 m/s, a speed whose stored gait is a jog or more, and no climbable wall ahead",
+          "[human][jump]") {
     const Speeds speeds = testSpeeds();
     CHECK_FALSE(coney::human::jumpAllowed(1.5F, speeds, false)); // a walk
     CHECK_FALSE(coney::human::jumpAllowed(3.3F, speeds, false));
-    CHECK_FALSE(coney::human::jumpAllowed(3.9F, speeds, false)); // faster than 3.3 but below the jog
+    // Just over 3.3 m/s, nearer the jog than the walk: the run start's 3.35 m/s jumped at runtime.
+    CHECK(coney::human::jumpAllowed(3.35F, speeds, false));
     CHECK(coney::human::jumpAllowed(4.0F, speeds, false));
+    // A slow jog clip: 4 m/s is still nearer the walk, so its stored gait is a walk.
+    Speeds slowJog = speeds;
+    slowJog.jog = 8.0F;
+    CHECK_FALSE(coney::human::jumpAllowed(4.0F, slowJog, false));
     CHECK(coney::human::jumpAllowed(7.5F, speeds, false));
     CHECK(coney::human::jumpAllowed(10.0F, speeds, false));
     CHECK_FALSE(coney::human::jumpAllowed(7.5F, speeds, true));

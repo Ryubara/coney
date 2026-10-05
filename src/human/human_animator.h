@@ -57,7 +57,7 @@ enum class AnimState : std::int8_t {
     Jump = 25,     ///< The jump loop (slot 30) until the landing.
     Fall = 26,     ///< A drop: **Coney's builder** loops the drop cycle (slot 26).
     Land = 27,     ///< A jump's landing clip, then the gait blend or the idle.
-    RunStop = 101, ///< **Coney's**: the run stop (slot 33) after a sprint's skid, then the idle.
+    RunStop = 101, ///< **Coney's**: the run stop (slot 33) after a run's or a sprint's skid, then the idle.
     Climb = 102,   ///< **Coney's**: a climb's three clips, then the gait blend or the idle.
     Attack = 103,  ///< **Coney's**: combat clips played once (an attack, a reaction), then what follows them.
     Hold = 104,    ///< **Coney's**: a held combat pose (a block, a grab, a mount, a mugging) until combat changes it.
@@ -77,8 +77,11 @@ inline constexpr float kIdleFadeEarlyStart = 1.0F / 15.0F;
 inline constexpr float kIdleFadeLateStart = 0.2F;
 inline constexpr float kStartClipEarly = 0.1333F;
 inline constexpr float kMoveFadeMoving = 0.1333F;
-/// The jump loop's fade (the state 25 builder's 0.1 s); **Coney's** for the landing too.
+/// The jump loop's fade (the state 25 builder's 0.1 s).
 inline constexpr float kJumpFade = 0.1F;
+/// The landing's fade: none. **Coney's reading**: at runtime 436 moved the body at its full 4.23 m/s from its first
+/// update, which a fade from the jump loop would blend down (docs/research/feel.md).
+inline constexpr float kLandFade = 0.0F;
 /// The fade into a combat clip, seconds. **Coney's choice** (the combat builders are not researched).
 inline constexpr float kCombatFade = 0.1F;
 /// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat.md#attacks).
@@ -113,11 +116,11 @@ class HumanAnimator {
     /// @orig 0x0025cf30 Human_BuildJumpTasks (unknown)
     void startJump();
     /// A jump's landing: moving on (the stick above the dead zone), the jump end running (436) handing over to a gait
-    /// blend at the jog; otherwise the jump end (435) and then the idle. **Coney's choice**: the jump's 0.1 s fade.
+    /// blend at the jog; otherwise the jump end (435) and then the idle, with no fade (kLandFade).
     /// @orig 0x0025d390 Human_BuildLandTasks (unknown)
     void startLanding(bool movingOn);
-    /// The run stop after a sprint's skid (slot 33, 417), then the idle. **Coney's**: the page sees it after a sprint
-    /// and not after a run, and does not trace what plays it; the move fade of 0.1333 s is Coney's too.
+    /// The run stop after a run's or a sprint's skid (slot 33, 417), then the idle. **Coney's**: what plays it is not
+    /// traced; the move fade of 0.1333 s is Coney's too.
     void startRunStop();
     /// A climb: the chain `firstId`, + 1, + 2, then a gait blend at the run (`running`) or the idle. **Coney's
     /// choice**: the move fade of 0.1333 s before it.
@@ -145,6 +148,8 @@ class HumanAnimator {
     /// locomotion sets no velocity of its own then (flags `0x110c0880`,
     /// docs/research/formats/animation.md#root-motion).
     [[nodiscard]] bool drivingClipPlaying() const;
+    /// Whether the newest task is a gait blend: the human moves at its own speed (not standing, nor in a clip).
+    [[nodiscard]] bool gaitBlendPlaying() const;
     /// Whether an action's clips are playing (a landing, a run stop or a climb: record `+0x08` is not 0).
     [[nodiscard]] bool actionPlaying() const;
     [[nodiscard]] AnimState state() const { return m_state; }

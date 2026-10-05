@@ -74,12 +74,15 @@ fence has nothing to stand on just behind it, a wall has a top inside the window
 flag bit 2 (`0x4`, players) or bit 7 (`0x80`) are climbable ([Collision](../research/collision.md#triangles)); a
 primitive's `flags=` sets those bits raw.
 
-What the courses show today. Coney's walking body is the original's: a sphere of 0.34 m whose bottom is 0.05 m above
-the feet, and a wall triangle under 0.25 m tall is not a wall ([walls and steps](../research/characters.md#walls)).
+What the courses show today. Coney's walking body is the original's: for the player a sphere of 0.485 m whose bottom
+is 0.05 m above the feet, and a wall triangle under 0.25 m tall is not a wall
+([walls and steps](../research/characters.md#walls)).
 
-- **Default course**: Rembrandt walks up the 20° ramp and the 20 cm stairs onto their 2 m platforms. He walks onto
-  the 10 cm ledge and the 25 cm one (its 3 m wide face is two thin triangles the same rule skips), and the 50 cm
-  ledge stops him 0.34 m short of its face. `tests/sandbox/disc_sandbox_player_test.cpp` checks these runs.
+- **Default course**: Rembrandt walks up the 20° ramp and the 20 cm stairs onto their 2 m platforms (each walkable
+  stair set's landing is two boxes, the top one a rise deep, so no face taller than a riser stands within the
+  sphere's reach of the last step). He walks onto the 10 cm ledge and the 25 cm one (its 3 m wide face is two thin
+  triangles the same rule skips), and the 50 cm ledge stops him 0.485 m short of its face.
+  `tests/sandbox/disc_sandbox_player_test.cpp` checks these runs.
 - **Parkour course**: L2 with the stick past 0.95 sprints until stamina runs out; triangle jumps from a run or a sprint
   and climbs the fences, low walls and blocks inside the windows. The 20 cm kerb is walked onto, and the 30, 50 and
   65 cm ledges are walls: too low to climb, so only a jump gets onto them. `tests/sandbox/disc_sandbox_traversal_test.cpp`
