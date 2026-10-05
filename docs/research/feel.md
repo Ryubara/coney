@@ -105,8 +105,13 @@ run read per update; the turn values are also confirmed (code), below.
   the view from the camera's position at the start of the update to its look-at point (mean error 5.4°/s over 656
   updates; the other definitions tried were 8-30°/s worse). It turned nothing while standing, during the walk and
   run start clips and during the landing clip 436, and turned at walk, run, sprint and in the air. The save has the
-  per-pad option bytes `0x0050b240` and `0x0050b248` at 1 (the auto-centre rule); which value a fresh profile has is
-  not known. Confirmed (runtime) in slot 1.
+  per-pad option bytes `0x0050b240` and `0x0050b248` at 1 (the auto-centre rule). Confirmed (runtime) in slot 1.
+  Both are 1 by **default**: their bytes in the executable's `.data` are 1 for both pads; `0x0050b248` (and `+1`)
+  is set to 1 again by every camera reset (`0x00122b80`); `0x0050b240` is changed only by the options menu (its first
+  choice writes 1, its second 0, `0x001d7ff0` → `0x00418aa8`, which also stores it in the profile at `+0x448` + pad ×
+  4) and by loading a profile (`0x00421ad0`). The camera reads both at `0x00129e00` / `0x00129e2c` and takes the
+  default rule when either is 0. Confirmed (code). So a fresh boot uses the auto-centre rule; what a new profile
+  saves at `+0x448` is not traced.
 - **Sprint camera.** Band and target pitch per update after the first update at gait 5 (the band's near edge; the
   far edge is 0.5 more): 4.569, 4.379, 4.221, 4.085, 3.968, 3.863, 3.770, 3.686, 3.607, 3.533, 3.462, 3.391, 3.315,
   3.216, then 3.000; the target pitch falls 0.4286° per update (6° in 14 updates, 12.9°/s). On the way back the same
@@ -179,12 +184,13 @@ The fixes in order of how much they change the feel:
 
 - **A `--trace` option for `coney`** (answered): `--play-level NAME --trace FILE` writes those columns per update
   ([Building](../guides/building.md#tracing)).
-- **The 0.25 m step at runtime**: the street around the saves is flat (0.223) with no kerb or low ledge, so the step
-  rule was not checked; it needs a save next to a kerb. With the player's larger sphere (0.485 m, centred 0.535 m up)
-  the faces that stop him reach up to about 1.0 m, which matters for that check.
-- **The auto-follow option's default**: `0x0050b240` / `0x0050b248` were 1 in the save; a fresh profile's value, and
-  whether the default rule (`0x0012a400`) ever runs, are not known. The earlier "not seen" reading at `level99`
-  checkpoint 1 ([Camera](camera.md#runtime-checks)) is also unexplained.
+- **The 0.25 m step at runtime** (answered): a test step made in the street's collision mesh was walked onto at
+  0.10-0.245 m in one update and stopped the player from 0.255 m, at the distances the 0.485 m sphere predicts
+  ([Characters](characters.md#walls)). A real kerb in a later level would corroborate it.
+- **The auto-follow option's default** (answered): 1 for both bytes, so the auto-centre rule runs on a fresh boot
+  ([Details](#details-behind-the-table)); the default rule (`0x0012a400`) runs only after the options menu turns it
+  off. Still open: what a new profile saves, and the "not seen" reading at `level99` checkpoint 1
+  ([Camera](camera.md#runtime-checks)).
 - **The sprint camera's code**: which function moves the band and the pitch (a zoom to the minimum distance and a
   pitch of 7°, inferred from the values), and what ends it (the speed, the gait or the run stop's end).
 - **The look-at height's ease**: 20 % per update measured where the code read gives 30 % (`+0x398` may scale it), and

@@ -44,7 +44,7 @@ skeleton's `bip_sw_*` bone names) and in `Animation/AnimationBlend.cpp` and `Ani
 | `0x00106c80`, `0x00105678`, `0x00105990`, `0x0010a310` | task constructors: fade, clip, clip-then-next, gait blend | see [Animation tasks](#animation-tasks) | confirmed (code) |
 | `0x002364a0` (binding `CfgAnimSpeeds`, `0x0035a510`) | sets the four playback rates | `0x00510260`-`0x0051026c` | confirmed (code) |
 | `0x0023f238` | `Human_ApplyRootMotion` | the pose's root velocity and turn into the human's velocity and heading | confirmed (code) |
-| `0x00100200` | `Pose_InitReference` | writes the 34-rotation [reference pose](#reference-pose) that fills bones a clip has no channel for | confirmed (code) |
+| `0x00100200` | `Pose_InitReference` | writes the 34-rotation [reference pose](#reference-pose) that fills bones a clip has no channel for; 2,172 bytes (to `0x00100a7b`, one `jr ra`), then a 4-byte alignment `nop` before `0x00100a80` | confirmed (code) |
 | `0x00104630` | `Instance_BuildBoneMatrices` | the pose into model-space bone transforms, from the pelvis down ([Bone transforms](#bone-transforms)) | confirmed (code) |
 | `0x00176d60` | `CharacterInstance_Sample` | samples the task stack and calls `0x00104630`; picks the default pose | confirmed (code) |
 | `0x00108450` / `0x00108a78` | `PairedTask_Init` (type 4 / type 6) | a clip of **another** human's character played on this one ([Paired tasks](#paired-tasks)) | confirmed (code) |

@@ -888,8 +888,25 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
 So on the ground the original has **no step height of its own**: a wall face shorter than 0.25 m is not a wall, and
 the ground snap (1.0 m up, above) then lifts the feet onto it; any face 0.25 m or taller that reaches into the sphere
 (0.05-1.02 m above the feet for the player) stops the body. A kerb of 0.2 m is walked onto; a ledge of 0.5 m or
-0.75 m is a wall to walk into and needs a climb (a short wall from 0.7 m, [Climbing](#climb)) or a jump (inferred
-from the rule; not yet checked at runtime against a ledge of a known height: the street around the saves is flat).
+0.75 m is a wall to walk into and needs a climb (a short wall from 0.7 m, [Climbing](#climb)) or a jump.
+
+**The step at runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 1 in `level99`'s world, 2026-10-05). The
+street there has no kerb (no wall face under 0.35 m rises from the street level), so a box of the level's collision
+mesh (material 41, 2.62 × 0.62 m, against a wall; its eight vertices are used by its own ten triangles only) was
+made into a step by writing its vertices' heights in RAM: bottom at the floor (0.213), top 0.10 to 0.30 m higher.
+The player was put 1.26 m in front of it, facing it, and walked in with the stick at 35 %, 50 % or 100 %, turned by
+the camera so that the move pointed straight at the face:
+
+| Step height | Stick | Result |
+| --- | --- | --- |
+| 0.100, 0.200, 0.240 m | 35 %, 50 % (walk 1.63 m/s) | walked on: the feet rose by the step's height **in one update**, on the update the body's centre passed over the edge, with no change of speed or clip |
+| 0.245 m | 100 % (run start, 5.6 m/s) | walked on, the same way |
+| 0.255 m | 100 % | stopped 0.395 m short of the face, idle with the stick held |
+| 0.260, 0.300 m | 50 % | stopped 0.399 m and 0.423 m short of the face |
+
+So the 0.25 m test is exact, and the stopping distances are those of the 0.485 m sphere centred 0.535 m above the feet
+touching the face's top edge: `sqrt(0.485² − (0.535 − h)²)` gives 0.396, 0.400 and 0.424 m for `h` = 0.255, 0.26
+and 0.30. Against a full-height wall the same walk stopped 0.476 m from it.
 
 **Sliding along a wall** (confirmed (runtime), slot 1): the velocity the sweep leaves after sliding is the human's
 velocity, so the next update's current speed is its length and the 0.8 m/s gain starts from there. Running into a
@@ -1297,9 +1314,9 @@ default ids are known, [Anim slots](#anim-slots)), and the
   open: what the capsule's 1.886 (shape `+0x44`) and the human's `+0x4e8` are used for.
 - **The airborne anim state** (answered): states 25-27 ([Falling and landing](#falling)); air control
   ([Jumping](#jump)). Still open: whether locomotion turns the human while a start clip plays.
-- **Step height at runtime**: the 0.25 m rule is from the code; walking at a kerb and at ledges of known heights
-  (0.3, 0.5, 0.75 m) has not been checked in the game: the street around the test saves is flat, so it needs a save
-  beside a kerb. The player's sphere (0.485 m, [Walls and steps](#walls)) is larger than the rule was first read with.
+- **Step height at runtime** (answered): steps up to 0.245 m are walked onto in one update, from 0.255 m they stop
+  the body ([Walls and steps](#walls)), measured on a test step made in the mesh. Still open: a real kerb in a later
+  level, as corroboration.
 - **The context action** (`0x002811f0`) and the object action (`0x00226ff0`) that triangle also starts: doors,
   pick-ups, which objects.
 - **The air turn's gait** (partly answered): 4° per update from a run and a sprint alike, which is the non-player

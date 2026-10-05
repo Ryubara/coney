@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▊░░░░░░░░░░░░░░░░░░░` | 3.7% of the game's own code (122,736 of 3,342,936 bytes, 329 functions) |
+| **Reimplemented** | `▊░░░░░░░░░░░░░░░░░░░` | 3.7% of the game's own code (122,732 of 3,342,936 bytes, 329 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -101,7 +101,7 @@ at the top of the repository's `README.md`.
 
 | Address | Original name | Subsystem | Bytes |
 | --- | --- | --- | --- |
-| `0x00100200` | `Pose_InitReference` | `unattributed` | 2,176 |
+| `0x00100200` | `Pose_InitReference` | `unattributed` | 2,172 |
 | `0x00101120` | `Skeleton_InitParents` | `unattributed` | 304 |
 | `0x00101658` | `Anim_FirstContactTime` | `unattributed` | 328 |
 | `0x001041f8` | `AnimCursor_Init` | `unattributed` | 536 |

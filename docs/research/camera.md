@@ -176,7 +176,8 @@ The yaw rotation is done by `0x0012d688(angle)`, about the look-at point. Four r
   rate is `(a − 22.5°) × 2.667` per second below 45° (0 to 60°/s), 60°/s from 45° to 135°, and above 135° it falls
   from 120°/s back to 60°/s at 157.5°. Each update turns by `min(a, rate × dt)` toward the facing.
 - **Auto-centre option** (`0x00129f88`, used instead when the per-pad option bytes `0x0050b240` and `0x0050b248` are
-  both set; they are 1 in the `level99` save used at runtime): nothing below 22.5°; from 22.5° to 90° the rate is
+  both set; they are 1 in the `level99` save used at runtime and 1 by default,
+  [Feel](feel.md#details-behind-the-table)): nothing below 22.5°; from 22.5° to 90° the rate is
   `(a − 45°) × 2.444 + 45°` per second (negative below 26.6°, so the step is then a small turn the other way; 45°/s at
   45°, 155°/s at 90°); 200°/s (`3.4907` rad/s) from 90° to 100°; from 100° to 157.5° it falls linearly
   (`(157.5° − a) × 2.435 + 60°`) from 200°/s to 60°/s; beyond 157.5° only when the player is moving (an argument
@@ -429,7 +430,8 @@ The world viewer keeps its own free camera with the player camera's lens
   `level99_combat.lua` through `CamSetFollowZoom`; inferred).
 - **Why auto-follow did not run** at checkpoint 1 ([Runtime checks](#runtime-checks)) when it runs in the street
   ([In the street](#street)): a gate not yet identified, perhaps a mode the tutorial sets. A breakpoint at
-  `0x0012bd80` would settle it. Also open: the option bytes' value in a fresh profile.
+  `0x0012bd80` would settle it. (The option bytes are 1 by default, [Feel](feel.md#details-behind-the-table), so
+  they do not explain it.)
 - **The circling rate**: does the measured auto-centre rate already include the turn the look-at point's sideways
   move gives the wanted position? Coney adds the rule's turn to the leash's drag and circles at about 190°/s where
   the original circled at 122°/s ([Coney's implementation](#coneys-implementation)); a per-update split of the
