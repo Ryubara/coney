@@ -146,15 +146,18 @@ character keeps it at Character Data `+0xb54` (`+0xb50` the count); the human's 
 
 | Offset | Type | Meaning | Reader |
 | --- | --- | --- | --- |
-| `+0x00`, `+0x02` | s16 × 0.001 | `x`, `y` of a target offset in metres (where the other human should be for this move) | `0x00254418`; its angle `0x00254310` |
+| `+0x00`, `+0x02` | s16 × 0.001 | `x`, `y` of a unit direction (x right, y forward) towards the other human for this move: (1, 0) for a snap right, (-1, 0) left, (0, -1) back | `0x00254418`; its angle `0x00254310` |
 | `+0x04` | f32 | reach; 0 means the id has no range data | `0x002544a0` |
 | `+0x08` | s16 × 0.001 | a far range; when 0, `+0x04` × 1.25 | `0x00254508`; setter `0x002545a8` |
-| `+0x0a` | s16 | a value not named | `0x002542e8`; setter `0x002548c8` |
-| `+0x0c` | s16 | a kind (10 by default; 0 maps to `0x26` in one state) | `0x00254d60` |
+| `+0x0a` | s16 | the move's **damage** ([Combat](../combat.md#damage-table)) | `0x002542e8`; setter `0x002548c8` |
+| `+0x0c` | s16 | a kind (10 by default; 0 maps to `0x26` in one state); the hit kind kept with pending damage (inferred) | `0x00254d60` |
 | `+0x0e` | u16 | flags choosing the playback rate: `0x800`, `0x1000`, `0x2000` or none ([rates](#playback-rate)) | `0x00104a38` |
 
-The second word on the disc is 1000 in every record seen, which is consistent with `+0x02` being a scaled value of
-1.0 m (inferred). The ranges are most likely for attacks and grabs (speculative);
+At runtime (Rembrandt-class player, PCSX2 2.9.94) `+0x00`, `+0x02` read as a unit vector × 1000: (0, 1000) for most
+ids, (999, -12) for 25 `SNAP_RIGHT_01`, (-1000, 0) for 27, (-39, -999) for 29, (351, 936) for 147; so a direction
+rather than an offset (inferred from the values). `+0x0a` is the damage: every hit tested took exactly this value off
+the target's health (confirmed (runtime), [Combat](../combat.md#damage-table)). The ranges serve the attacks, grabs
+and tackles: the grab searches within id 70's far range × 1.25, the tackle id 3's (confirmed (code) at `0x00284920`);
 the locomotion clips carry flag `0x1000` (confirmed (runtime) on Rembrandt). The class record (`CfgChar`'s 45 floats
 and 16-bit values) overrides the range data for some ids, through the jump tables at `0x0055d640` and `0x0055d6f0`
 (called from `Human_AttachInstance`, `0x00217a98`), confirmed (code).

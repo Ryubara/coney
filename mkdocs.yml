@@ -76,6 +76,7 @@ nav:
           - Level loading: research/level-loading.md
           - Scripts (Lua): research/scripting.md
           - Characters: research/characters.md
+          - Combat: research/combat.md
           - Camera: research/camera.md
           - Collision: research/collision.md
           - The streamed world: research/world.md

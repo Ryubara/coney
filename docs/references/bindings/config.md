@@ -460,13 +460,13 @@ pad's 8-frame button history.
 ## CfgButtonMash {#cfgbuttonmash}
 
 ```lua
-CfgButtonMash(perPress, decay, target)
+CfgButtonMash(decay, pressGain, target)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `perPress` | number, truncated to an integer | Integer at 0x005102bc (15 in config_preload2.lua). |
-| 2 | `decay` | number, truncated to an integer | Integer at 0x005102c0, used halved by 0x0027e6d8 (250). |
+| 1 | `decay` | number, truncated to an integer | Integer at 0x005102bc (15 in config_preload2.lua): what the mash meter loses each update, 0x0027e6d8. |
+| 2 | `pressGain` | number, truncated to an integer | Integer at 0x005102c0 (250): halved, then scaled by 1.5 or 0.7 by the Warrior class, it is what one alternating press adds, 0x0027e6d8. |
 | 3 | `target` | number, truncated to an integer | Integer at 0x005102b8: the meter total that completes the mash (1000); 0x00255f08 compares a counter with it and draws the fraction. |
 
 **Returns** nothing.
@@ -474,7 +474,8 @@ CfgButtonMash(perPress, decay, target)
 Configures button-mash prompts (grapple struggles and similar): the value a mash counter must reach and two tuning
 integers.
 
-**Notes.** The target's use is confirmed (code); the meanings of the first two are inferred.
+**Notes.** The target's use is confirmed (code); the decay and the press gain are confirmed (code) at 0x0027e6d8, the
+stereo theft's mash mode (L1 and R1 held alternately), docs/research/combat.md.
 
 - **Evidence:** confirmed (code) at `0x0023a560`; detail: traced
 - **Wrapper** `0x0035ddf0` (registered by `RegisterBindings`); **calls** `0x0023a560` `Cfg_SetButtonMash`
@@ -1676,7 +1677,9 @@ CfgPowerEndurance(factor)
 
 Stores a global float (0x00510278) beside CfgDamageEndurance's, set once by config_preload2.lua.
 
-**Notes.** What it scales is not traced (the name points to resistance against power attacks).
+**Notes.** The grab's power strike (cross held, square pressed while grabbing) needs the power meter's fraction (record
++0x148 over its maximum) above this value, confirmed (code) at 0x0027f3b0 and confirmed (runtime) 0.25; a throw costs
+the same fraction of the meter (docs/research/combat.md).
 
 - **Evidence:** confirmed (code) at `0x002364f8`; detail: traced
 - **Wrapper** `0x0035a678` (registered by `RegisterBindings`); **calls** `0x002364f8` `Cfg_SetPowerEndurance`

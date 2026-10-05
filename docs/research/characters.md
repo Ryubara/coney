@@ -161,7 +161,8 @@ are Rembrandt's.
 | `+0x18` | int | anim state ([Clip selection](#clip-selection)) |
 | `+0x20` | int | anim id playing (getter `0x002266b8`) |
 | `+0x28`-`+0xb3` | int[35] | [anim slots](#anim-slots) |
-| `+0x148` | s16 | a second meter, refilled at the power class's `+0x2a` per second to the maximum `0x00223068` returns; not traced further |
+| `+0x144` / `+0x146` | s16 | **health** / its maximum ([Combat](combat.md#damage)) |
+| `+0x148` | s16 | the **power meter** that grabs spend, refilled at the power class's `+0x2a` per second to the maximum `0x00223068` returns (`+0x28`, [Combat](combat.md#power-meter)) |
 | `+0x14a` | s16 | **stamina** ([Sprint](#sprint)) |
 | `+0x14c` / `+0x154` | u32 | game time (ms, `*(0x0050b734) + 0x48`) of the last update of the second meter / of stamina |
 | `+0x150` / `+0x158` | float | the fractions carried between updates of the two meters |
@@ -172,6 +173,7 @@ State flag bits used on this page:
 | Bit | Meaning |
 | --- | --- |
 | `0x1000000` | sprint asked for (L2 held, [Sprint](#sprint)) |
+| `0x1`-`0x8000`, `0x4000000` | fight stance, grabs, mugging, tackles, throwing, blocking, theft ([Combat](combat.md#state-flags)) |
 | `0x200000000` | dead |
 | `0x400000000` | jumping (set at launch) |
 | `0x800000000` | falling (a drop) |
@@ -187,8 +189,8 @@ player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads; Re
 
 | Field | Rembrandt (class 64) | Use |
 | --- | --- | --- |
-| `+0x28` | 400 | not traced on this page |
-| `+0x2a` | 60 | the second meter's refill per second |
+| `+0x28` | 400 | the **power meter's maximum** ([Combat](combat.md#power-meter)) |
+| `+0x2a` | 60 | the power meter's refill per second |
 | `+0x2c` | 135 | **stamina maximum** |
 | `+0x2e` | 40 | **stamina refill per second** |
 
@@ -557,17 +559,11 @@ above).
 The pad's buttons become **command ids** through tables of 12-byte entries `{u16 mask, u32 command, u16 buttons,
 u16 extra}` that `AddCommand` fills. Each update `0x00147940` matches them and stores the command in the per-player
 record's `+0x20`, or in the pending `+0x24` when the entry's mask is `0xfe` (`0xff` enables it for pad 0). The buttons
-are the pad word's bits ([Pad record](frontend.md#pad-record)). The matchers are confirmed (code); the tables were read
-in `level99` (confirmed (runtime)):
-
-| Table | Matched when | Button → command |
-| --- | --- | --- |
-| `0x005ddd10` | held (`0x00144b88`) | L1 → 6, R1 → 4, **L2 → 5**, R2 → 1, square → `0x15`, cross → `0x16` |
-| `0x005dddd0` | pressed (`0x00144bf0`) | d-pad up, down, right, left → `0x26`, `0x25`, `0x28`, `0x27`; **triangle → 10**; L1 → 7; R1 → 3; square → `0xf`; cross → `0x12`; circle → `0x1e` |
-| `0x005dde90` | released (`0x00144ba8`) | L1 → 8, R2 → 2 |
-| `0x005ddf50`, `0x005ddfb0`, `0x005de010` | not traced | circle → `0xd`; cross → `0x10`; triangle → `0xb`, circle → `0xe` |
-| `0x005de070` | combinations (`0x00144ef8`) | d-pad directions → `0x29`-`0x2c`; L3 → 9; circle + cross → `0x23`; L1 + R1 → `0x1f` |
-| `0x005de130` | combinations (`0x00144f48`) | L2 + left → `0x21`, L2 + down → `0x20`, cross + left → `0x22`, circle + up → `0x24` |
+are the pad word's bits ([Pad record](frontend.md#pad-record)). The nine tables, what each trigger means, the
+order in which they are matched and every command they make are on [Combat, Commands](combat.md#commands)
+(confirmed (code) and (runtime)). An earlier reading here took square (`0x80`) for d-pad left and cross (`0x40`) for
+down: the combinations are L2 + square (`0x21`), L2 + cross (`0x20`), cross + square (`0x22`) and circle + triangle
+(`0x24`), and the d-pad combinations `0x29`-`0x2c` and L3's 9 need select held as well.
 
 Traversal uses two buttons: **triangle pressed** (command 10) starts a climb, a context action or a jump
 ([Jumping](#jump), [Climbing](#climb)), and **L2** sprints. The sprint reads the button itself
@@ -586,8 +582,9 @@ and clears state flags `0x8008`) only when all of these hold. Confirmed (code):
 
 So the sprint lasts exactly as long as L2 is held and stamina lasts: letting go of L2 ends it on the next update, and
 nothing latches it. It also ends when stamina reaches 0 (below) and when `Player_UpdateActions` takes its block branch
-(`0x0027c6b0`, reached among other cases when R1 is held while `0x00224f28` holds, a fight inferred), which clears
-the flag and sets state flags `0x8001`. **At runtime** (`level99` and a street, stick 1.0 straight up and L2 held
+(`0x0027c6b0`): **R1 held** in a fight, or L1 released or L1 + R1 while already blocking
+([Combat, Dispatcher](combat.md#dispatch)), which clears the flag and sets state flags `0x8001`. **At runtime**
+(`level99` and a street, stick 1.0 straight up and L2 held
 through patched pad input, [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)) the flag was set every
 update, the command was 5, and the speed rose by 0.8 m/s per update from 7.80 to **10.245 m/s** (gait 5).
 Confirmed (runtime).
@@ -1096,7 +1093,8 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   [Animation](formats/animation.md#animation-tasks); the playback rate is never scaled with the speed. Still open:
   the anim states other than idle and move (11, 21, 24 and the combat ones) and the special idle ids.
 - **Jog**: when a pad-controlled human jogs other than when carrying (a movement style, a script).
-- **What slots 16-24 and 28-34 are used for** (their default ids are known, [Anim slots](#anim-slots)), and the
+- **What slots 16-24 and 28-34 are used for** (16-24 are the attacks and the block, [Combat](combat.md#attacks)) (their
+default ids are known, [Anim slots](#anim-slots)), and the
   movement styles of `0x00253688` beyond the ids they write.
 - **The `+0x65c` scale's source**: what the division in `Human_Init` takes.
 - **How the texture reaches the material**, which names none ([Character geometry](#character-geometry)).
@@ -1118,8 +1116,8 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 - **Climb reaches**: the clips' type-8 event vectors give each climb's distance window; their values, and
   `CfgClimbWithGhetto`'s effect, are not read.
 - **Triangle flags `0x4` and `0x80`**: why two climbable flags (one for players only), and which surfaces carry them.
-- **The sprint's other clear** (`0x0027c6b0`): the exact block and fight conditions; and what `0x00230140`, called when
-  the sprint is set, does.
+- **The sprint's other clear** (answered: the block, [Combat](combat.md#dispatch)). Still open: what `0x00230140`,
+  called when the sprint is set, does, and the fight test `0x00224f28`.
 - **The rest of the human**: the 0x180 and 0x2f0 records, the state flags tested by `0x002265f0` / `0x00226660`, and
   `Human_MakePlayer`'s steps.
 - **Level starts at runtime**: the list is read from the scripts; a runtime check would confirm a few. For each of
