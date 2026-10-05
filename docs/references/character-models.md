@@ -18,39 +18,39 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | Record | Image | CRC | Model | Data | Types |
 | --- | --- | --- | --- | --- | --- |
 | <span id="model-0"></span>0 | ![characters/bopp_bo.png](images/characters/bopp_bo.png){ width="96" } | `0x072c630f` | `bopp_bo` | `bopp_bo_header` | [128](characters.md#char-128) |
-| <span id="model-433"></span>433 | ![characters/bopp_bo_a.png](images/characters/bopp_bo_a.png){ width="96" } | `0x156c29ab` | `bopp_bo_a` | `bopp_bo_header` |  |
-| <span id="model-2"></span>2 | ![characters/bopp_fa1.png](images/characters/bopp_fa1.png){ width="96" } | `0x8aee5b17` | `bopp_fa1` |  | [313](characters.md#char-313), [314](characters.md#char-314) |
+| <span id="model-433"></span>433 | ![characters/bopp_bo_a.png](images/characters/bopp_bo_a.png){ width="96" } | `0x156c29ab` | `bopp_bo_a` | `bopp_bo_header` | |
+| <span id="model-2"></span>2 | ![characters/bopp_fa1.png](images/characters/bopp_fa1.png){ width="96" } | `0x8aee5b17` | `bopp_fa1` | | [313](characters.md#char-313), [314](characters.md#char-314) |
 | <span id="model-1"></span>1 | ![characters/bopp_lt.png](images/characters/bopp_lt.png){ width="96" } | `0x13ca876d` | `bopp_lt` | `bopp_lt_header` | [129](characters.md#char-129) |
-| <span id="model-434"></span>434 | ![characters/bopp_lt_a.png](images/characters/bopp_lt_a.png){ width="96" } | `0xe5c01209` | `bopp_lt_a` | `bopp_lt_header` |  |
+| <span id="model-434"></span>434 | ![characters/bopp_lt_a.png](images/characters/bopp_lt_a.png){ width="96" } | `0xe5c01209` | `bopp_lt_a` | `bopp_lt_header` | |
 | <span id="model-3"></span>3 | ![characters/bopp_so1a.png](images/characters/bopp_so1a.png){ width="96" } | `0x06b75f78` | `bopp_so1a` | `generic_header` | [130](characters.md#char-130) |
-| <span id="model-435"></span>435 | ![characters/bopp_so1a_a.png](images/characters/bopp_so1a_a.png){ width="96" } | `0x5a7dbb86` | `bopp_so1a_a` | `generic_header` |  |
+| <span id="model-435"></span>435 | ![characters/bopp_so1a_a.png](images/characters/bopp_so1a_a.png){ width="96" } | `0x5a7dbb86` | `bopp_so1a_a` | `generic_header` | |
 | <span id="model-4"></span>4 | ![characters/bopp_so1b.png](images/characters/bopp_so1b.png){ width="96" } | `0x9fbe0ec2` | `bopp_so1b` | `generic_header` | [131](characters.md#char-131) |
 | <span id="model-5"></span>5 | ![characters/bopp_so1c.png](images/characters/bopp_so1c.png){ width="96" } | `0xe8b93e54` | `bopp_so1c` | `generic_header` | [132](characters.md#char-132) |
 | <span id="model-6"></span>6 | ![characters/bopp_so1d.png](images/characters/bopp_so1d.png){ width="96" } | `0x76ddabf7` | `bopp_so1d` | `generic_header` | [133](characters.md#char-133) |
 | <span id="model-7"></span>7 | ![characters/bopp_so2a.png](images/characters/bopp_so2a.png){ width="96" } | `0x2d9a0cbb` | `bopp_so2a` | `generic_header` | [134](characters.md#char-134) |
-| <span id="model-436"></span>436 | ![characters/bopp_so2a_a.png](images/characters/bopp_so2a_a.png){ width="96" } | `0x48c81468` | `bopp_so2a_a` | `generic_header` |  |
-| <span id="model-8"></span>8 | ![characters/char_db1.png](images/characters/char_db1.png){ width="96" } | `0x190060f4` | `char_db1` |  | [268](characters.md#char-268) |
-| <span id="model-9"></span>9 | ![characters/char_db2.png](images/characters/char_db2.png){ width="96" } | `0x8009314e` | `char_db2` |  | [269](characters.md#char-269) |
-| <span id="model-10"></span>10 | ![characters/char_lcgf.png](images/characters/char_lcgf.png){ width="96" } | `0xe48da58f` | `char_lcgf` |  | [205](characters.md#char-205) |
-| <span id="model-11"></span>11 | ![characters/char_lcgf_vest.png](images/characters/char_lcgf_vest.png){ width="96" } | `0xb5afb6d3` | `char_lcgf_vest` |  | [206](characters.md#char-206) |
+| <span id="model-436"></span>436 | ![characters/bopp_so2a_a.png](images/characters/bopp_so2a_a.png){ width="96" } | `0x48c81468` | `bopp_so2a_a` | `generic_header` | |
+| <span id="model-8"></span>8 | ![characters/char_db1.png](images/characters/char_db1.png){ width="96" } | `0x190060f4` | `char_db1` | | [268](characters.md#char-268) |
+| <span id="model-9"></span>9 | ![characters/char_db2.png](images/characters/char_db2.png){ width="96" } | `0x8009314e` | `char_db2` | | [269](characters.md#char-269) |
+| <span id="model-10"></span>10 | ![characters/char_lcgf.png](images/characters/char_lcgf.png){ width="96" } | `0xe48da58f` | `char_lcgf` | | [205](characters.md#char-205) |
+| <span id="model-11"></span>11 | ![characters/char_lcgf_vest.png](images/characters/char_lcgf_vest.png){ width="96" } | `0xb5afb6d3` | `char_lcgf_vest` | | [206](characters.md#char-206) |
 | <span id="model-12"></span>12 | ![characters/char_wheels.png](images/characters/char_wheels.png){ width="96" } | `0xedb49427` | `char_wheels` | `turn_bd_header` | [97](characters.md#char-97), [459](characters.md#char-459) |
 | <span id="model-13"></span>13 | ![characters/civl_abe.png](images/characters/civl_abe.png){ width="96" } | `0x14b92786` | `civl_abe` | `generic_header` | [121](characters.md#char-121) |
 | <span id="model-14"></span>14 | ![characters/civl_bm_va1.png](images/characters/civl_bm_va1.png){ width="96" } | `0x9497b4fd` | `civl_bm_va1` | `civl_bm_header` | [270](characters.md#char-270), [285](characters.md#char-285) |
-| <span id="model-15"></span>15 | ![characters/civl_bm_va2.png](images/characters/civl_bm_va2.png){ width="96" } | `0x0d9ee547` | `civl_bm_va2` |  | [271](characters.md#char-271), [282](characters.md#char-282) |
+| <span id="model-15"></span>15 | ![characters/civl_bm_va2.png](images/characters/civl_bm_va2.png){ width="96" } | `0x0d9ee547` | `civl_bm_va2` | | [271](characters.md#char-271), [282](characters.md#char-282) |
 | <span id="model-16"></span>16 | ![characters/civl_bm_vb1.png](images/characters/civl_bm_vb1.png){ width="96" } | `0xbfbae73e` | `civl_bm_vb1` | `civl_bm_header` | [272](characters.md#char-272) |
-| <span id="model-25"></span>25 | ![characters/civl_bm_vb11.png](images/characters/civl_bm_vb11.png){ width="96" } | `0x420248fb` | `civl_bm_vb11` |  | [281](characters.md#char-281), [287](characters.md#char-287) |
-| <span id="model-17"></span>17 | ![characters/civl_bm_vb2.png](images/characters/civl_bm_vb2.png){ width="96" } | `0x26b3b684` | `civl_bm_vb2` |  | [273](characters.md#char-273), [286](characters.md#char-286) |
+| <span id="model-25"></span>25 | ![characters/civl_bm_vb11.png](images/characters/civl_bm_vb11.png){ width="96" } | `0x420248fb` | `civl_bm_vb11` | | [281](characters.md#char-281), [287](characters.md#char-287) |
+| <span id="model-17"></span>17 | ![characters/civl_bm_vb2.png](images/characters/civl_bm_vb2.png){ width="96" } | `0x26b3b684` | `civl_bm_vb2` | | [273](characters.md#char-273), [286](characters.md#char-286) |
 | <span id="model-18"></span>18 | ![characters/civl_bm_vb3.png](images/characters/civl_bm_vb3.png){ width="96" } | `0x51b48612` | `civl_bm_vb3` | `civl_bm_header` | [274](characters.md#char-274) |
-| <span id="model-19"></span>19 | ![characters/civl_bm_vb4.png](images/characters/civl_bm_vb4.png){ width="96" } | `0xcfd013b1` | `civl_bm_vb4` |  | [275](characters.md#char-275) |
+| <span id="model-19"></span>19 | ![characters/civl_bm_vb4.png](images/characters/civl_bm_vb4.png){ width="96" } | `0xcfd013b1` | `civl_bm_vb4` | | [275](characters.md#char-275) |
 | <span id="model-20"></span>20 | ![characters/civl_bm_vb5.png](images/characters/civl_bm_vb5.png){ width="96" } | `0xb8d72327` | `civl_bm_vb5` | `civl_bm_header` | [276](characters.md#char-276), [283](characters.md#char-283) |
-| <span id="model-21"></span>21 | ![characters/civl_bm_vb6.png](images/characters/civl_bm_vb6.png){ width="96" } | `0x21de729d` | `civl_bm_vb6` |  | [277](characters.md#char-277) |
+| <span id="model-21"></span>21 | ![characters/civl_bm_vb6.png](images/characters/civl_bm_vb6.png){ width="96" } | `0x21de729d` | `civl_bm_vb6` | | [277](characters.md#char-277) |
 | <span id="model-22"></span>22 | ![characters/civl_bm_vb7.png](images/characters/civl_bm_vb7.png){ width="96" } | `0x56d9420b` | `civl_bm_vb7` | `civl_bm_header` | [278](characters.md#char-278) |
-| <span id="model-23"></span>23 | ![characters/civl_bm_vb8.png](images/characters/civl_bm_vb8.png){ width="96" } | `0xc6665f9a` | `civl_bm_vb8` |  | [279](characters.md#char-279), [284](characters.md#char-284) |
+| <span id="model-23"></span>23 | ![characters/civl_bm_vb8.png](images/characters/civl_bm_vb8.png){ width="96" } | `0xc6665f9a` | `civl_bm_vb8` | | [279](characters.md#char-279), [284](characters.md#char-284) |
 | <span id="model-24"></span>24 | ![characters/civl_bm_vb9.png](images/characters/civl_bm_vb9.png){ width="96" } | `0xb1616f0c` | `civl_bm_vb9` | `civl_bm_header` | [280](characters.md#char-280) |
-| <span id="model-26"></span>26 | ![characters/civl_bn_fa1.png](images/characters/civl_bn_fa1.png){ width="96" } | `0xcf116d5d` | `civl_bn_fa1` |  | [368](characters.md#char-368) |
-| <span id="model-27"></span>27 | ![characters/civl_bn_fa2.png](images/characters/civl_bn_fa2.png){ width="96" } | `0x56183ce7` | `civl_bn_fa2` |  | [369](characters.md#char-369) |
-| <span id="model-28"></span>28 | ![characters/civl_bn_fa3.png](images/characters/civl_bn_fa3.png){ width="96" } | `0x211f0c71` | `civl_bn_fa3` |  | [370](characters.md#char-370) |
-| <span id="model-29"></span>29 | ![characters/civl_bn_fa4.png](images/characters/civl_bn_fa4.png){ width="96" } | `0xbf7b99d2` | `civl_bn_fa4` |  | [371](characters.md#char-371) |
+| <span id="model-26"></span>26 | ![characters/civl_bn_fa1.png](images/characters/civl_bn_fa1.png){ width="96" } | `0xcf116d5d` | `civl_bn_fa1` | | [368](characters.md#char-368) |
+| <span id="model-27"></span>27 | ![characters/civl_bn_fa2.png](images/characters/civl_bn_fa2.png){ width="96" } | `0x56183ce7` | `civl_bn_fa2` | | [369](characters.md#char-369) |
+| <span id="model-28"></span>28 | ![characters/civl_bn_fa3.png](images/characters/civl_bn_fa3.png){ width="96" } | `0x211f0c71` | `civl_bn_fa3` | | [370](characters.md#char-370) |
+| <span id="model-29"></span>29 | ![characters/civl_bn_fa4.png](images/characters/civl_bn_fa4.png){ width="96" } | `0xbf7b99d2` | `civl_bn_fa4` | | [371](characters.md#char-371) |
 | <span id="model-30"></span>30 | ![characters/civl_bn_ma1.png](images/characters/civl_bn_ma1.png){ width="96" } | `0xc34482bc` | `civl_bn_ma1` | `generic_header` | [372](characters.md#char-372), [377](characters.md#char-377) |
 | <span id="model-31"></span>31 | ![characters/civl_bn_ma2.png](images/characters/civl_bn_ma2.png){ width="96" } | `0x5a4dd306` | `civl_bn_ma2` | `generic_header` | [373](characters.md#char-373), [378](characters.md#char-378) |
 | <span id="model-32"></span>32 | ![characters/civl_bn_ma3.png](images/characters/civl_bn_ma3.png){ width="96" } | `0x2d4ae390` | `civl_bn_ma3` | `generic_header` | [374](characters.md#char-374), [379](characters.md#char-379) |
@@ -61,7 +61,7 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-82"></span>82 | ![characters/civl_co_di.png](images/characters/civl_co_di.png){ width="96" } | `0x1da31044` | `civl_co_di` | `generic_header` | [291](characters.md#char-291), [441](characters.md#char-441) |
 | <span id="model-83"></span>83 | ![characters/civl_co_do.png](images/characters/civl_co_do.png){ width="96" } | `0xf4c0b571` | `civl_co_do` | `generic_header` | [292](characters.md#char-292) |
 | <span id="model-80"></span>80 | ![characters/civl_co_ic.png](images/characters/civl_co_ic.png){ width="96" } | `0x48d88717` | `civl_co_ic` | `generic_header` | [289](characters.md#char-289) |
-| <span id="model-437"></span>437 | ![characters/civl_co_ic_a.png](images/characters/civl_co_ic_a.png){ width="96" } | `0x3010d867` | `civl_co_ic_a` | `generic_header` |  |
+| <span id="model-437"></span>437 | ![characters/civl_co_ic_a.png](images/characters/civl_co_ic_a.png){ width="96" } | `0x3010d867` | `civl_co_ic_a` | `generic_header` | |
 | <span id="model-37"></span>37 | ![characters/civl_co_lf1.png](images/characters/civl_co_lf1.png){ width="96" } | `0x7bfb8459` | `civl_co_lf1` | `generic_header` | [300](characters.md#char-300) |
 | <span id="model-38"></span>38 | ![characters/civl_co_lf2.png](images/characters/civl_co_lf2.png){ width="96" } | `0xe2f2d5e3` | `civl_co_lf2` | `generic_header` | [301](characters.md#char-301) |
 | <span id="model-39"></span>39 | ![characters/civl_co_lf3.png](images/characters/civl_co_lf3.png){ width="96" } | `0x95f5e575` | `civl_co_lf3` | `generic_header` | [302](characters.md#char-302) |
@@ -71,20 +71,20 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-43"></span>43 | ![characters/civl_co_ma4.png](images/characters/civl_co_ma4.png){ width="96" } | `0x45128c26` | `civl_co_ma4` | `generic_header` | [420](characters.md#char-420) |
 | <span id="model-44"></span>44 | ![characters/civl_co_ma5.png](images/characters/civl_co_ma5.png){ width="96" } | `0x3215bcb0` | `civl_co_ma5` | `generic_header` | [421](characters.md#char-421) |
 | <span id="model-81"></span>81 | ![characters/civl_co_sh.png](images/characters/civl_co_sh.png){ width="96" } | `0x6f27a444` | `civl_co_sh` | `generic_header` | [290](characters.md#char-290) |
-| <span id="model-45"></span>45 | ![characters/civl_csg.png](images/characters/civl_csg.png){ width="96" } | `0xaaeab1d4` | `civl_csg` |  | [306](characters.md#char-306) |
+| <span id="model-45"></span>45 | ![characters/civl_csg.png](images/characters/civl_csg.png){ width="96" } | `0xaaeab1d4` | `civl_csg` | | [306](characters.md#char-306) |
 | <span id="model-46"></span>46 | ![characters/civl_ct_ac.png](images/characters/civl_ct_ac.png){ width="96" } | `0x0719dd81` | `civl_ct_ac` | `generic_header` | [415](characters.md#char-415) |
 | <span id="model-53"></span>53 | ![characters/civl_ct_ck1.png](images/characters/civl_ct_ck1.png){ width="96" } | `0xd2391bba` | `civl_ct_ck1` | `generic_header` | [411](characters.md#char-411) |
-| <span id="model-438"></span>438 | ![characters/civl_ct_ck1_a.png](images/characters/civl_ct_ck1_a.png){ width="96" } | `0xd2005f4d` | `civl_ct_ck1_a` | `generic_header` |  |
+| <span id="model-438"></span>438 | ![characters/civl_ct_ck1_a.png](images/characters/civl_ct_ck1_a.png){ width="96" } | `0xd2005f4d` | `civl_ct_ck1_a` | `generic_header` | |
 | <span id="model-54"></span>54 | ![characters/civl_ct_ck2.png](images/characters/civl_ct_ck2.png){ width="96" } | `0x4b304a00` | `civl_ct_ck2` | `generic_header` | [412](characters.md#char-412) |
 | <span id="model-55"></span>55 | ![characters/civl_ct_ck3.png](images/characters/civl_ct_ck3.png){ width="96" } | `0x3c377a96` | `civl_ct_ck3` | `generic_header` | [413](characters.md#char-413) |
 | <span id="model-47"></span>47 | ![characters/civl_ct_eb.png](images/characters/civl_ct_eb.png){ width="96" } | `0x14722813` | `civl_ct_eb` | `generic_header` | [414](characters.md#char-414) |
-| <span id="model-56"></span>56 | ![characters/civl_ct_fa1.png](images/characters/civl_ct_fa1.png){ width="96" } | `0x2e1d31db` | `civl_ct_fa1` |  | [402](characters.md#char-402) |
-| <span id="model-439"></span>439 | ![characters/civl_ct_fa1_a.png](images/characters/civl_ct_fa1_a.png){ width="96" } | `0x755d3059` | `civl_ct_fa1_a` |  |  |
-| <span id="model-57"></span>57 | ![characters/civl_ct_fa2.png](images/characters/civl_ct_fa2.png){ width="96" } | `0xb7146061` | `civl_ct_fa2` |  | [404](characters.md#char-404) |
-| <span id="model-58"></span>58 | ![characters/civl_ct_fa3.png](images/characters/civl_ct_fa3.png){ width="96" } | `0xc01350f7` | `civl_ct_fa3` |  | [406](characters.md#char-406) |
-| <span id="model-59"></span>59 | ![characters/civl_ct_fa4.png](images/characters/civl_ct_fa4.png){ width="96" } | `0x5e77c554` | `civl_ct_fa4` |  | [408](characters.md#char-408) |
+| <span id="model-56"></span>56 | ![characters/civl_ct_fa1.png](images/characters/civl_ct_fa1.png){ width="96" } | `0x2e1d31db` | `civl_ct_fa1` | | [402](characters.md#char-402) |
+| <span id="model-439"></span>439 | ![characters/civl_ct_fa1_a.png](images/characters/civl_ct_fa1_a.png){ width="96" } | `0x755d3059` | `civl_ct_fa1_a` | | |
+| <span id="model-57"></span>57 | ![characters/civl_ct_fa2.png](images/characters/civl_ct_fa2.png){ width="96" } | `0xb7146061` | `civl_ct_fa2` | | [404](characters.md#char-404) |
+| <span id="model-58"></span>58 | ![characters/civl_ct_fa3.png](images/characters/civl_ct_fa3.png){ width="96" } | `0xc01350f7` | `civl_ct_fa3` | | [406](characters.md#char-406) |
+| <span id="model-59"></span>59 | ![characters/civl_ct_fa4.png](images/characters/civl_ct_fa4.png){ width="96" } | `0x5e77c554` | `civl_ct_fa4` | | [408](characters.md#char-408) |
 | <span id="model-48"></span>48 | ![characters/civl_ct_ma1.png](images/characters/civl_ct_ma1.png){ width="96" } | `0x2248de3a` | `civl_ct_ma1` | `generic_header` | [118](characters.md#char-118), [403](characters.md#char-403) |
-| <span id="model-440"></span>440 | ![characters/civl_ct_ma1_a.png](images/characters/civl_ct_ma1_a.png){ width="96" } | `0x028d0148` | `civl_ct_ma1_a` | `generic_header` |  |
+| <span id="model-440"></span>440 | ![characters/civl_ct_ma1_a.png](images/characters/civl_ct_ma1_a.png){ width="96" } | `0x028d0148` | `civl_ct_ma1_a` | `generic_header` | |
 | <span id="model-49"></span>49 | ![characters/civl_ct_ma2.png](images/characters/civl_ct_ma2.png){ width="96" } | `0xbb418f80` | `civl_ct_ma2` | `generic_header` | [405](characters.md#char-405) |
 | <span id="model-50"></span>50 | ![characters/civl_ct_ma3.png](images/characters/civl_ct_ma3.png){ width="96" } | `0xcc46bf16` | `civl_ct_ma3` | `generic_header` | [407](characters.md#char-407) |
 | <span id="model-51"></span>51 | ![characters/civl_ct_ma4.png](images/characters/civl_ct_ma4.png){ width="96" } | `0x52222ab5` | `civl_ct_ma4` | `generic_header` | [409](characters.md#char-409) |
@@ -98,9 +98,9 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-66"></span>66 | ![characters/civl_dr_ma3.png](images/characters/civl_dr_ma3.png){ width="96" } | `0x5e037a0e` | `civl_dr_ma3` | `generic_header` | [429](characters.md#char-429) |
 | <span id="model-67"></span>67 | ![characters/civl_dr_ma4.png](images/characters/civl_dr_ma4.png){ width="96" } | `0xc067efad` | `civl_dr_ma4` | `generic_header` | [428](characters.md#char-428) |
 | <span id="model-68"></span>68 | ![characters/civl_dr_ma5.png](images/characters/civl_dr_ma5.png){ width="96" } | `0xb760df3b` | `civl_dr_ma5` | `generic_header` | [430](characters.md#char-430) |
-| <span id="model-69"></span>69 | ![characters/civl_eh_fa1.png](images/characters/civl_eh_fa1.png){ width="96" } | `0x5d54a845` | `civl_eh_fa1` |  | [380](characters.md#char-380) |
-| <span id="model-70"></span>70 | ![characters/civl_eh_fa2.png](images/characters/civl_eh_fa2.png){ width="96" } | `0xc45df9ff` | `civl_eh_fa2` |  | [381](characters.md#char-381) |
-| <span id="model-71"></span>71 | ![characters/civl_eh_fa3.png](images/characters/civl_eh_fa3.png){ width="96" } | `0xb35ac969` | `civl_eh_fa3` |  | [382](characters.md#char-382) |
+| <span id="model-69"></span>69 | ![characters/civl_eh_fa1.png](images/characters/civl_eh_fa1.png){ width="96" } | `0x5d54a845` | `civl_eh_fa1` | | [380](characters.md#char-380) |
+| <span id="model-70"></span>70 | ![characters/civl_eh_fa2.png](images/characters/civl_eh_fa2.png){ width="96" } | `0xc45df9ff` | `civl_eh_fa2` | | [381](characters.md#char-381) |
+| <span id="model-71"></span>71 | ![characters/civl_eh_fa3.png](images/characters/civl_eh_fa3.png){ width="96" } | `0xb35ac969` | `civl_eh_fa3` | | [382](characters.md#char-382) |
 | <span id="model-72"></span>72 | ![characters/civl_eh_ma1.png](images/characters/civl_eh_ma1.png){ width="96" } | `0x510147a4` | `civl_eh_ma1` | `generic_header` | [383](characters.md#char-383) |
 | <span id="model-73"></span>73 | ![characters/civl_eh_ma2.png](images/characters/civl_eh_ma2.png){ width="96" } | `0xc808161e` | `civl_eh_ma2` | `generic_header` | [384](characters.md#char-384) |
 | <span id="model-74"></span>74 | ![characters/civl_eh_ma3.png](images/characters/civl_eh_ma3.png){ width="96" } | `0xbf0f2688` | `civl_eh_ma3` | `generic_header` | [385](characters.md#char-385) |
@@ -108,59 +108,59 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-76"></span>76 | ![characters/civl_eh_ma5.png](images/characters/civl_eh_ma5.png){ width="96" } | `0x566c83bd` | `civl_eh_ma5` | `generic_header` | [387](characters.md#char-387) |
 | <span id="model-84"></span>84 | ![characters/civl_gc_bt.png](images/characters/civl_gc_bt.png){ width="96" } | `0x97a9c263` | `civl_gc_bt` | `generic_header` | [321](characters.md#char-321) |
 | <span id="model-77"></span>77 | ![characters/civl_gk.png](images/characters/civl_gk.png){ width="96" } | `0x9897a67d` | `civl_gk` | `generic_header` | [288](characters.md#char-288) |
-| <span id="model-78"></span>78 | ![characters/civl_gypsy.png](images/characters/civl_gypsy.png){ width="96" } | `0xb6742be8` | `civl_gypsy` |  | [312](characters.md#char-312) |
+| <span id="model-78"></span>78 | ![characters/civl_gypsy.png](images/characters/civl_gypsy.png){ width="96" } | `0xb6742be8` | `civl_gypsy` | | [312](characters.md#char-312) |
 | <span id="model-79"></span>79 | ![characters/civl_hd.png](images/characters/civl_hd.png){ width="96" } | `0x8fb0a723` | `civl_hd` | `generic_header` | [315](characters.md#char-315) |
-| <span id="model-448"></span>448 | ![characters/civl_hd_a.png](images/characters/civl_hd_a.png){ width="96" } | `0xb054cc30` | `civl_hd_a` | `generic_header` |  |
+| <span id="model-448"></span>448 | ![characters/civl_hd_a.png](images/characters/civl_hd_a.png){ width="96" } | `0xb054cc30` | `civl_hd_a` | `generic_header` | |
 | <span id="model-85"></span>85 | ![characters/civl_hl_b1.png](images/characters/civl_hl_b1.png){ width="96" } | `0x4b2cf0fb` | `civl_hl_b1` | `generic_header` | [293](characters.md#char-293) |
 | <span id="model-86"></span>86 | ![characters/civl_hl_b2.png](images/characters/civl_hl_b2.png){ width="96" } | `0xd225a141` | `civl_hl_b2` | `generic_header` | [294](characters.md#char-294) |
 | <span id="model-87"></span>87 | ![characters/civl_hl_b3.png](images/characters/civl_hl_b3.png){ width="96" } | `0xa52291d7` | `civl_hl_b3` | `generic_header` | [295](characters.md#char-295) |
-| <span id="model-88"></span>88 | ![characters/civl_hl_br1.png](images/characters/civl_hl_br1.png){ width="96" } | `0x72acf415` | `civl_hl_br1` |  | [316](characters.md#char-316) |
-| <span id="model-449"></span>449 | ![characters/civl_hl_br1_a.png](images/characters/civl_hl_br1_a.png){ width="96" } | `0xcb2aa017` | `civl_hl_br1_a` |  |  |
-| <span id="model-89"></span>89 | ![characters/civl_hl_br2.png](images/characters/civl_hl_br2.png){ width="96" } | `0xeba5a5af` | `civl_hl_br2` |  | [317](characters.md#char-317) |
-| <span id="model-450"></span>450 | ![characters/civl_hl_br2_a.png](images/characters/civl_hl_br2_a.png){ width="96" } | `0xc96c1e4e` | `civl_hl_br2_a` |  |  |
-| <span id="model-90"></span>90 | ![characters/civl_hl_br3.png](images/characters/civl_hl_br3.png){ width="96" } | `0x9ca29539` | `civl_hl_br3` |  | [318](characters.md#char-318) |
-| <span id="model-91"></span>91 | ![characters/civl_hl_br4.png](images/characters/civl_hl_br4.png){ width="96" } | `0x02c6009a` | `civl_hl_br4` |  | [319](characters.md#char-319) |
-| <span id="model-92"></span>92 | ![characters/civl_hl_br5.png](images/characters/civl_hl_br5.png){ width="96" } | `0x75c1300c` | `civl_hl_br5` |  | [320](characters.md#char-320) |
-| <span id="model-93"></span>93 | ![characters/civl_hl_br6.png](images/characters/civl_hl_br6.png){ width="96" } | `0xecc861b6` | `civl_hl_br6` |  |  |
+| <span id="model-88"></span>88 | ![characters/civl_hl_br1.png](images/characters/civl_hl_br1.png){ width="96" } | `0x72acf415` | `civl_hl_br1` | | [316](characters.md#char-316) |
+| <span id="model-449"></span>449 | ![characters/civl_hl_br1_a.png](images/characters/civl_hl_br1_a.png){ width="96" } | `0xcb2aa017` | `civl_hl_br1_a` | | |
+| <span id="model-89"></span>89 | ![characters/civl_hl_br2.png](images/characters/civl_hl_br2.png){ width="96" } | `0xeba5a5af` | `civl_hl_br2` | | [317](characters.md#char-317) |
+| <span id="model-450"></span>450 | ![characters/civl_hl_br2_a.png](images/characters/civl_hl_br2_a.png){ width="96" } | `0xc96c1e4e` | `civl_hl_br2_a` | | |
+| <span id="model-90"></span>90 | ![characters/civl_hl_br3.png](images/characters/civl_hl_br3.png){ width="96" } | `0x9ca29539` | `civl_hl_br3` | | [318](characters.md#char-318) |
+| <span id="model-91"></span>91 | ![characters/civl_hl_br4.png](images/characters/civl_hl_br4.png){ width="96" } | `0x02c6009a` | `civl_hl_br4` | | [319](characters.md#char-319) |
+| <span id="model-92"></span>92 | ![characters/civl_hl_br5.png](images/characters/civl_hl_br5.png){ width="96" } | `0x75c1300c` | `civl_hl_br5` | | [320](characters.md#char-320) |
+| <span id="model-93"></span>93 | ![characters/civl_hl_br6.png](images/characters/civl_hl_br6.png){ width="96" } | `0xecc861b6` | `civl_hl_br6` | | |
 | <span id="model-111"></span>111 | ![characters/civl_hl_bt1.png](images/characters/civl_hl_bt1.png){ width="96" } | `0x24f65393` | `civl_hl_bt1` | `generic_header` | [344](characters.md#char-344) |
 | <span id="model-112"></span>112 | ![characters/civl_hl_bt2.png](images/characters/civl_hl_bt2.png){ width="96" } | `0xbdff0229` | `civl_hl_bt2` | `generic_header` | [345](characters.md#char-345) |
 | <span id="model-113"></span>113 | ![characters/civl_hl_bt3.png](images/characters/civl_hl_bt3.png){ width="96" } | `0xcaf832bf` | `civl_hl_bt3` | `generic_header` | [346](characters.md#char-346) |
 | <span id="model-114"></span>114 | ![characters/civl_hl_bt4.png](images/characters/civl_hl_bt4.png){ width="96" } | `0x549ca71c` | `civl_hl_bt4` | `generic_header` | [347](characters.md#char-347) |
 | <span id="model-115"></span>115 | ![characters/civl_hl_bt5.png](images/characters/civl_hl_bt5.png){ width="96" } | `0x239b978a` | `civl_hl_bt5` | `generic_header` | [348](characters.md#char-348), [349](characters.md#char-349) |
 | <span id="model-116"></span>116 | ![characters/civl_hl_dj1.png](images/characters/civl_hl_dj1.png){ width="96" } | `0xf43a10fe` | `civl_hl_dj1` | `generic_header` | [350](characters.md#char-350) |
-| <span id="model-441"></span>441 | ![characters/civl_hl_dj1_a.png](images/characters/civl_hl_dj1_a.png){ width="96" } | `0xd1c72ac7` | `civl_hl_dj1_a` | `generic_header` |  |
+| <span id="model-441"></span>441 | ![characters/civl_hl_dj1_a.png](images/characters/civl_hl_dj1_a.png){ width="96" } | `0xd1c72ac7` | `civl_hl_dj1_a` | `generic_header` | |
 | <span id="model-94"></span>94 | ![characters/civl_hl_dm1.png](images/characters/civl_hl_dm1.png){ width="96" } | `0xbb7b8639` | `civl_hl_dm1` | `generic_header` | [322](characters.md#char-322) |
 | <span id="model-95"></span>95 | ![characters/civl_hl_dm2.png](images/characters/civl_hl_dm2.png){ width="96" } | `0x2272d783` | `civl_hl_dm2` | `generic_header` | [323](characters.md#char-323) |
-| <span id="model-101"></span>101 | ![characters/civl_hl_fb1.png](images/characters/civl_hl_fb1.png){ width="96" } | `0x3f674e98` | `civl_hl_fb1` |  | [329](characters.md#char-329) |
-| <span id="model-102"></span>102 | ![characters/civl_hl_fb2.png](images/characters/civl_hl_fb2.png){ width="96" } | `0xa66e1f22` | `civl_hl_fb2` |  | [330](characters.md#char-330) |
-| <span id="model-106"></span>106 | ![characters/civl_hl_fc1.png](images/characters/civl_hl_fc1.png){ width="96" } | `0x267c7fd9` | `civl_hl_fc1` |  | [338](characters.md#char-338) |
-| <span id="model-442"></span>442 | ![characters/civl_hl_fc1_a.png](images/characters/civl_hl_fc1_a.png){ width="96" } | `0xd60f362d` | `civl_hl_fc1_a` |  |  |
-| <span id="model-107"></span>107 | ![characters/civl_hl_fc2.png](images/characters/civl_hl_fc2.png){ width="96" } | `0xbf752e63` | `civl_hl_fc2` |  | [339](characters.md#char-339) |
-| <span id="model-443"></span>443 | ![characters/civl_hl_fc2_a.png](images/characters/civl_hl_fc2_a.png){ width="96" } | `0xd4498874` | `civl_hl_fc2_a` |  |  |
-| <span id="model-108"></span>108 | ![characters/civl_hl_fc3.png](images/characters/civl_hl_fc3.png){ width="96" } | `0xc8721ef5` | `civl_hl_fc3` |  | [340](characters.md#char-340) |
-| <span id="model-444"></span>444 | ![characters/civl_hl_fc3_a.png](images/characters/civl_hl_fc3_a.png){ width="96" } | `0xd58be243` | `civl_hl_fc3_a` |  |  |
-| <span id="model-109"></span>109 | ![characters/civl_hl_fc4.png](images/characters/civl_hl_fc4.png){ width="96" } | `0x56168b56` | `civl_hl_fc4` |  | [341](characters.md#char-341) |
-| <span id="model-445"></span>445 | ![characters/civl_hl_fc4_a.png](images/characters/civl_hl_fc4_a.png){ width="96" } | `0xd0c4f4c6` | `civl_hl_fc4_a` |  |  |
-| <span id="model-110"></span>110 | ![characters/civl_hl_fc5.png](images/characters/civl_hl_fc5.png){ width="96" } | `0x2111bbc0` | `civl_hl_fc5` |  | [342](characters.md#char-342) |
+| <span id="model-101"></span>101 | ![characters/civl_hl_fb1.png](images/characters/civl_hl_fb1.png){ width="96" } | `0x3f674e98` | `civl_hl_fb1` | | [329](characters.md#char-329) |
+| <span id="model-102"></span>102 | ![characters/civl_hl_fb2.png](images/characters/civl_hl_fb2.png){ width="96" } | `0xa66e1f22` | `civl_hl_fb2` | | [330](characters.md#char-330) |
+| <span id="model-106"></span>106 | ![characters/civl_hl_fc1.png](images/characters/civl_hl_fc1.png){ width="96" } | `0x267c7fd9` | `civl_hl_fc1` | | [338](characters.md#char-338) |
+| <span id="model-442"></span>442 | ![characters/civl_hl_fc1_a.png](images/characters/civl_hl_fc1_a.png){ width="96" } | `0xd60f362d` | `civl_hl_fc1_a` | | |
+| <span id="model-107"></span>107 | ![characters/civl_hl_fc2.png](images/characters/civl_hl_fc2.png){ width="96" } | `0xbf752e63` | `civl_hl_fc2` | | [339](characters.md#char-339) |
+| <span id="model-443"></span>443 | ![characters/civl_hl_fc2_a.png](images/characters/civl_hl_fc2_a.png){ width="96" } | `0xd4498874` | `civl_hl_fc2_a` | | |
+| <span id="model-108"></span>108 | ![characters/civl_hl_fc3.png](images/characters/civl_hl_fc3.png){ width="96" } | `0xc8721ef5` | `civl_hl_fc3` | | [340](characters.md#char-340) |
+| <span id="model-444"></span>444 | ![characters/civl_hl_fc3_a.png](images/characters/civl_hl_fc3_a.png){ width="96" } | `0xd58be243` | `civl_hl_fc3_a` | | |
+| <span id="model-109"></span>109 | ![characters/civl_hl_fc4.png](images/characters/civl_hl_fc4.png){ width="96" } | `0x56168b56` | `civl_hl_fc4` | | [341](characters.md#char-341) |
+| <span id="model-445"></span>445 | ![characters/civl_hl_fc4_a.png](images/characters/civl_hl_fc4_a.png){ width="96" } | `0xd0c4f4c6` | `civl_hl_fc4_a` | | |
+| <span id="model-110"></span>110 | ![characters/civl_hl_fc5.png](images/characters/civl_hl_fc5.png){ width="96" } | `0x2111bbc0` | `civl_hl_fc5` | | [342](characters.md#char-342) |
 | <span id="model-103"></span>103 | ![characters/civl_hl_ho1.png](images/characters/civl_hl_ho1.png){ width="96" } | `0x80571ddf` | `civl_hl_ho1` | `hooker_header` | [331](characters.md#char-331) |
 | <span id="model-104"></span>104 | ![characters/civl_hl_ho2.png](images/characters/civl_hl_ho2.png){ width="96" } | `0x195e4c65` | `civl_hl_ho2` | `hooker_header` | [332](characters.md#char-332), [335](characters.md#char-335) |
 | <span id="model-96"></span>96 | ![characters/civl_hl_ma1.png](images/characters/civl_hl_ma1.png){ width="96" } | `0x181ff2ba` | `civl_hl_ma1` | `generic_header` | [324](characters.md#char-324) |
-| <span id="model-446"></span>446 | ![characters/civl_hl_ma1_a.png](images/characters/civl_hl_ma1_a.png){ width="96" } | `0x0bd6cfb7` | `civl_hl_ma1_a` | `generic_header` |  |
+| <span id="model-446"></span>446 | ![characters/civl_hl_ma1_a.png](images/characters/civl_hl_ma1_a.png){ width="96" } | `0x0bd6cfb7` | `civl_hl_ma1_a` | `generic_header` | |
 | <span id="model-97"></span>97 | ![characters/civl_hl_ma2.png](images/characters/civl_hl_ma2.png){ width="96" } | `0x8116a300` | `civl_hl_ma2` | `generic_header` | [325](characters.md#char-325) |
 | <span id="model-98"></span>98 | ![characters/civl_hl_ma3.png](images/characters/civl_hl_ma3.png){ width="96" } | `0xf6119396` | `civl_hl_ma3` | `generic_header` | [326](characters.md#char-326) |
-| <span id="model-447"></span>447 | ![characters/civl_hl_ma3_a.png](images/characters/civl_hl_ma3_a.png){ width="96" } | `0x08521bd9` | `civl_hl_ma3_a` | `generic_header` |  |
+| <span id="model-447"></span>447 | ![characters/civl_hl_ma3_a.png](images/characters/civl_hl_ma3_a.png){ width="96" } | `0x08521bd9` | `civl_hl_ma3_a` | `generic_header` | |
 | <span id="model-99"></span>99 | ![characters/civl_hl_ma4.png](images/characters/civl_hl_ma4.png){ width="96" } | `0x68750635` | `civl_hl_ma4` | `generic_header` | [327](characters.md#char-327) |
 | <span id="model-100"></span>100 | ![characters/civl_hl_ma5.png](images/characters/civl_hl_ma5.png){ width="96" } | `0x1f7236a3` | `civl_hl_ma5` | `generic_header` | [328](characters.md#char-328) |
-| <span id="model-117"></span>117 | ![characters/civl_hl_st1a.png](images/characters/civl_hl_st1a.png){ width="96" } | `0x6930ba14` | `civl_hl_st1a` |  | [353](characters.md#char-353) |
-| <span id="model-451"></span>451 | ![characters/civl_hl_st1a_a.png](images/characters/civl_hl_st1a_a.png){ width="96" } | `0x4355e65d` | `civl_hl_st1a_a` |  |  |
-| <span id="model-118"></span>118 | ![characters/civl_hl_st1b.png](images/characters/civl_hl_st1b.png){ width="96" } | `0xf039ebae` | `civl_hl_st1b` |  | [354](characters.md#char-354) |
-| <span id="model-452"></span>452 | ![characters/civl_hl_st1b_a.png](images/characters/civl_hl_st1b_a.png){ width="96" } | `0x41135804` | `civl_hl_st1b_a` |  |  |
-| <span id="model-119"></span>119 | ![characters/civl_hl_st2a.png](images/characters/civl_hl_st2a.png){ width="96" } | `0x421de9d7` | `civl_hl_st2a` |  | [355](characters.md#char-355) |
-| <span id="model-453"></span>453 | ![characters/civl_hl_st2a_a.png](images/characters/civl_hl_st2a_a.png){ width="96" } | `0x51e049b3` | `civl_hl_st2a_a` |  |  |
-| <span id="model-120"></span>120 | ![characters/civl_hl_st2b.png](images/characters/civl_hl_st2b.png){ width="96" } | `0xdb14b86d` | `civl_hl_st2b` |  | [356](characters.md#char-356) |
-| <span id="model-454"></span>454 | ![characters/civl_hl_st2b_a.png](images/characters/civl_hl_st2b_a.png){ width="96" } | `0x53a6f7ea` | `civl_hl_st2b_a` |  |  |
-| <span id="model-121"></span>121 | ![characters/civl_hl_st3a.png](images/characters/civl_hl_st3a.png){ width="96" } | `0x5b06d896` | `civl_hl_st3a` |  | [357](characters.md#char-357) |
-| <span id="model-105"></span>105 | ![characters/civl_hl_tr.png](images/characters/civl_hl_tr.png){ width="96" } | `0xb8615506` | `civl_hl_tr` |  | [337](characters.md#char-337) |
+| <span id="model-117"></span>117 | ![characters/civl_hl_st1a.png](images/characters/civl_hl_st1a.png){ width="96" } | `0x6930ba14` | `civl_hl_st1a` | | [353](characters.md#char-353) |
+| <span id="model-451"></span>451 | ![characters/civl_hl_st1a_a.png](images/characters/civl_hl_st1a_a.png){ width="96" } | `0x4355e65d` | `civl_hl_st1a_a` | | |
+| <span id="model-118"></span>118 | ![characters/civl_hl_st1b.png](images/characters/civl_hl_st1b.png){ width="96" } | `0xf039ebae` | `civl_hl_st1b` | | [354](characters.md#char-354) |
+| <span id="model-452"></span>452 | ![characters/civl_hl_st1b_a.png](images/characters/civl_hl_st1b_a.png){ width="96" } | `0x41135804` | `civl_hl_st1b_a` | | |
+| <span id="model-119"></span>119 | ![characters/civl_hl_st2a.png](images/characters/civl_hl_st2a.png){ width="96" } | `0x421de9d7` | `civl_hl_st2a` | | [355](characters.md#char-355) |
+| <span id="model-453"></span>453 | ![characters/civl_hl_st2a_a.png](images/characters/civl_hl_st2a_a.png){ width="96" } | `0x51e049b3` | `civl_hl_st2a_a` | | |
+| <span id="model-120"></span>120 | ![characters/civl_hl_st2b.png](images/characters/civl_hl_st2b.png){ width="96" } | `0xdb14b86d` | `civl_hl_st2b` | | [356](characters.md#char-356) |
+| <span id="model-454"></span>454 | ![characters/civl_hl_st2b_a.png](images/characters/civl_hl_st2b_a.png){ width="96" } | `0x53a6f7ea` | `civl_hl_st2b_a` | | |
+| <span id="model-121"></span>121 | ![characters/civl_hl_st3a.png](images/characters/civl_hl_st3a.png){ width="96" } | `0x5b06d896` | `civl_hl_st3a` | | [357](characters.md#char-357) |
+| <span id="model-105"></span>105 | ![characters/civl_hl_tr.png](images/characters/civl_hl_tr.png){ width="96" } | `0xb8615506` | `civl_hl_tr` | | [337](characters.md#char-337) |
 | <span id="model-122"></span>122 | ![characters/civl_hud.png](images/characters/civl_hud.png){ width="96" } | `0x69eca809` | `civl_hud` | `generic_header` | [65](characters.md#char-65), [244](characters.md#char-244), [336](characters.md#char-336), [352](characters.md#char-352) |
 | <span id="model-125"></span>125 | ![characters/civl_monk1.png](images/characters/civl_monk1.png){ width="96" } | `0x6512e48b` | `civl_monk1` | `sava_bo_header` | [114](characters.md#char-114) |
 | <span id="model-126"></span>126 | ![characters/civl_monk2.png](images/characters/civl_monk2.png){ width="96" } | `0xfc1bb531` | `civl_monk2` | `sava_bo_header` | [115](characters.md#char-115) |
@@ -168,9 +168,9 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-124"></span>124 | ![characters/civl_monk_bo2.png](images/characters/civl_monk_bo2.png){ width="96" } | `0x6192d320` | `civl_monk_bo2` | `sava_bo_header` | [117](characters.md#char-117) |
 | <span id="model-129"></span>129 | ![characters/civl_pimp1.png](images/characters/civl_pimp1.png){ width="96" } | `0x73799da7` | `civl_pimp1` | `generic_header` | [442](characters.md#char-442), [444](characters.md#char-444) |
 | <span id="model-130"></span>130 | ![characters/civl_pimp2.png](images/characters/civl_pimp2.png){ width="96" } | `0xea70cc1d` | `civl_pimp2` | `generic_header` | [443](characters.md#char-443) |
-| <span id="model-131"></span>131 | ![characters/civl_pl_dr.png](images/characters/civl_pl_dr.png){ width="96" } | `0xa2339b14` | `civl_pl_dr` | `generic_header` |  |
-| <span id="model-132"></span>132 | ![characters/civl_pl_fa1.png](images/characters/civl_pl_fa1.png){ width="96" } | `0xfbcf9dad` | `civl_pl_fa1` |  | [366](characters.md#char-366) |
-| <span id="model-133"></span>133 | ![characters/civl_pl_fa2.png](images/characters/civl_pl_fa2.png){ width="96" } | `0x62c6cc17` | `civl_pl_fa2` |  | [367](characters.md#char-367) |
+| <span id="model-131"></span>131 | ![characters/civl_pl_dr.png](images/characters/civl_pl_dr.png){ width="96" } | `0xa2339b14` | `civl_pl_dr` | `generic_header` | |
+| <span id="model-132"></span>132 | ![characters/civl_pl_fa1.png](images/characters/civl_pl_fa1.png){ width="96" } | `0xfbcf9dad` | `civl_pl_fa1` | | [366](characters.md#char-366) |
+| <span id="model-133"></span>133 | ![characters/civl_pl_fa2.png](images/characters/civl_pl_fa2.png){ width="96" } | `0x62c6cc17` | `civl_pl_fa2` | | [367](characters.md#char-367) |
 | <span id="model-134"></span>134 | ![characters/civl_pl_ma1.png](images/characters/civl_pl_ma1.png){ width="96" } | `0xf79a724c` | `civl_pl_ma1` | `generic_header` | [360](characters.md#char-360) |
 | <span id="model-135"></span>135 | ![characters/civl_pl_ma2.png](images/characters/civl_pl_ma2.png){ width="96" } | `0x6e9323f6` | `civl_pl_ma2` | `generic_header` | [361](characters.md#char-361) |
 | <span id="model-136"></span>136 | ![characters/civl_pl_ma3.png](images/characters/civl_pl_ma3.png){ width="96" } | `0x19941360` | `civl_pl_ma3` | `generic_header` | [362](characters.md#char-362) |
@@ -178,26 +178,26 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-139"></span>139 | ![characters/civl_pl_ma6.png](images/characters/civl_pl_ma6.png){ width="96" } | `0x69fee7ef` | `civl_pl_ma6` | `generic_header` | [364](characters.md#char-364) |
 | <span id="model-141"></span>141 | ![characters/civl_pl_ma8.png](images/characters/civl_pl_ma8.png){ width="96" } | `0x8e46cae8` | `civl_pl_ma8` | `generic_header` | [365](characters.md#char-365) |
 | <span id="model-143"></span>143 | ![characters/civl_pl_pm.png](images/characters/civl_pl_pm.png){ width="96" } | `0x019541b4` | `civl_pl_pm` | `generic_header` | [445](characters.md#char-445) |
-| <span id="model-144"></span>144 | ![characters/civl_pl_sp.png](images/characters/civl_pl_sp.png){ width="96" } | `0x49be7eae` | `civl_pl_sp` | `generic_header` |  |
+| <span id="model-144"></span>144 | ![characters/civl_pl_sp.png](images/characters/civl_pl_sp.png){ width="96" } | `0x49be7eae` | `civl_pl_sp` | `generic_header` | |
 | <span id="model-145"></span>145 | ![characters/civl_pl_st1.png](images/characters/civl_pl_st1.png){ width="96" } | `0xd6971a22` | `civl_pl_st1` | `generic_header` | [422](characters.md#char-422) |
 | <span id="model-146"></span>146 | ![characters/civl_pl_st2.png](images/characters/civl_pl_st2.png){ width="96" } | `0x4f9e4b98` | `civl_pl_st2` | `generic_header` | [423](characters.md#char-423) |
 | <span id="model-147"></span>147 | ![characters/civl_pl_st3.png](images/characters/civl_pl_st3.png){ width="96" } | `0x38997b0e` | `civl_pl_st3` | `generic_header` | [424](characters.md#char-424) |
-| <span id="model-148"></span>148 | ![characters/civl_pl_we.png](images/characters/civl_pl_we.png){ width="96" } | `0x400f5f41` | `civl_pl_we` | `generic_header` |  |
-| <span id="model-152"></span>152 | ![characters/civl_prom_fa.png](images/characters/civl_prom_fa.png){ width="96" } | `0xd4d8f1ee` | `civl_prom_fa` |  | [310](characters.md#char-310) |
-| <span id="model-153"></span>153 | ![characters/civl_prom_fb.png](images/characters/civl_prom_fb.png){ width="96" } | `0x4dd1a054` | `civl_prom_fb` |  | [311](characters.md#char-311) |
+| <span id="model-148"></span>148 | ![characters/civl_pl_we.png](images/characters/civl_pl_we.png){ width="96" } | `0x400f5f41` | `civl_pl_we` | `generic_header` | |
+| <span id="model-152"></span>152 | ![characters/civl_prom_fa.png](images/characters/civl_prom_fa.png){ width="96" } | `0xd4d8f1ee` | `civl_prom_fa` | | [310](characters.md#char-310) |
+| <span id="model-153"></span>153 | ![characters/civl_prom_fb.png](images/characters/civl_prom_fb.png){ width="96" } | `0x4dd1a054` | `civl_prom_fb` | | [311](characters.md#char-311) |
 | <span id="model-150"></span>150 | ![characters/civl_prom_ma.png](images/characters/civl_prom_ma.png){ width="96" } | `0x372c2825` | `civl_prom_ma` | `generic_header` | [308](characters.md#char-308) |
 | <span id="model-151"></span>151 | ![characters/civl_prom_mb.png](images/characters/civl_prom_mb.png){ width="96" } | `0xae25799f` | `civl_prom_mb` | `generic_header` | [309](characters.md#char-309) |
-| <span id="model-154"></span>154 | ![characters/civl_rs_fa1.png](images/characters/civl_rs_fa1.png){ width="96" } | `0x54b73cf5` | `civl_rs_fa1` |  | [451](characters.md#char-451) |
-| <span id="model-155"></span>155 | ![characters/civl_rs_fa2.png](images/characters/civl_rs_fa2.png){ width="96" } | `0xcdbe6d4f` | `civl_rs_fa2` |  | [452](characters.md#char-452) |
-| <span id="model-156"></span>156 | ![characters/civl_rs_fa3.png](images/characters/civl_rs_fa3.png){ width="96" } | `0xbab95dd9` | `civl_rs_fa3` |  | [453](characters.md#char-453) |
+| <span id="model-154"></span>154 | ![characters/civl_rs_fa1.png](images/characters/civl_rs_fa1.png){ width="96" } | `0x54b73cf5` | `civl_rs_fa1` | | [451](characters.md#char-451) |
+| <span id="model-155"></span>155 | ![characters/civl_rs_fa2.png](images/characters/civl_rs_fa2.png){ width="96" } | `0xcdbe6d4f` | `civl_rs_fa2` | | [452](characters.md#char-452) |
+| <span id="model-156"></span>156 | ![characters/civl_rs_fa3.png](images/characters/civl_rs_fa3.png){ width="96" } | `0xbab95dd9` | `civl_rs_fa3` | | [453](characters.md#char-453) |
 | <span id="model-157"></span>157 | ![characters/civl_rs_ma1.png](images/characters/civl_rs_ma1.png){ width="96" } | `0x58e2d314` | `civl_rs_ma1` | `generic_header` | [446](characters.md#char-446) |
 | <span id="model-158"></span>158 | ![characters/civl_rs_ma2.png](images/characters/civl_rs_ma2.png){ width="96" } | `0xc1eb82ae` | `civl_rs_ma2` | `generic_header` | [447](characters.md#char-447) |
 | <span id="model-159"></span>159 | ![characters/civl_rs_ma3.png](images/characters/civl_rs_ma3.png){ width="96" } | `0xb6ecb238` | `civl_rs_ma3` | `generic_header` | [448](characters.md#char-448) |
 | <span id="model-160"></span>160 | ![characters/civl_rs_ma4.png](images/characters/civl_rs_ma4.png){ width="96" } | `0x2888279b` | `civl_rs_ma4` | `generic_header` | [449](characters.md#char-449) |
 | <span id="model-161"></span>161 | ![characters/civl_rs_ma5.png](images/characters/civl_rs_ma5.png){ width="96" } | `0x5f8f170d` | `civl_rs_ma5` | `generic_header` | [450](characters.md#char-450) |
 | <span id="model-162"></span>162 | ![characters/civl_scps.png](images/characters/civl_scps.png){ width="96" } | `0xd3a6430e` | `civl_scps` | `generic_header` | [425](characters.md#char-425) |
-| <span id="model-127"></span>127 | ![characters/civl_sg1.png](images/characters/civl_sg1.png){ width="96" } | `0x1a6a3130` | `civl_sg1` |  | [265](characters.md#char-265), [358](characters.md#char-358) |
-| <span id="model-128"></span>128 | ![characters/civl_sg2.png](images/characters/civl_sg2.png){ width="96" } | `0x8363608a` | `civl_sg2` |  | [359](characters.md#char-359) |
+| <span id="model-127"></span>127 | ![characters/civl_sg1.png](images/characters/civl_sg1.png){ width="96" } | `0x1a6a3130` | `civl_sg1` | | [265](characters.md#char-265), [358](characters.md#char-358) |
+| <span id="model-128"></span>128 | ![characters/civl_sg2.png](images/characters/civl_sg2.png){ width="96" } | `0x8363608a` | `civl_sg2` | | [359](characters.md#char-359) |
 | <span id="model-163"></span>163 | ![characters/civl_sk_pe.png](images/characters/civl_sk_pe.png){ width="96" } | `0xd5398bef` | `civl_sk_pe` | `generic_header` | [304](characters.md#char-304), [456](characters.md#char-456) |
 | <span id="model-164"></span>164 | ![characters/civl_sp_ju.png](images/characters/civl_sp_ju.png){ width="96" } | `0xffbbb1ce` | `civl_sp_ju` | `generic_header` | [307](characters.md#char-307) |
 | <span id="model-165"></span>165 | ![characters/civl_sp_ma1.png](images/characters/civl_sp_ma1.png){ width="96" } | `0xd41e7a61` | `civl_sp_ma1` | `generic_header` | [432](characters.md#char-432) |
@@ -209,10 +209,10 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-169"></span>169 | ![characters/civl_sp_ma5.png](images/characters/civl_sp_ma5.png){ width="96" } | `0xd373be78` | `civl_sp_ma5` | `generic_header` | [431](characters.md#char-431) |
 | <span id="model-172"></span>172 | ![characters/civl_st.png](images/characters/civl_st.png){ width="96" } | `0x3b317cdd` | `civl_st` | `generic_header` | [416](characters.md#char-416), [454](characters.md#char-454) |
 | <span id="model-175"></span>175 | ![characters/civl_tr_cw.png](images/characters/civl_tr_cw.png){ width="96" } | `0xd85e7f30` | `civl_tr_cw` | `generic_header` | [388](characters.md#char-388) |
-| <span id="model-176"></span>176 | ![characters/civl_tr_fa1.png](images/characters/civl_tr_fa1.png){ width="96" } | `0xbf8ef658` | `civl_tr_fa1` |  | [389](characters.md#char-389) |
-| <span id="model-177"></span>177 | ![characters/civl_tr_fa2.png](images/characters/civl_tr_fa2.png){ width="96" } | `0x2687a7e2` | `civl_tr_fa2` |  | [390](characters.md#char-390) |
-| <span id="model-178"></span>178 | ![characters/civl_tr_fa3.png](images/characters/civl_tr_fa3.png){ width="96" } | `0x51809774` | `civl_tr_fa3` |  | [391](characters.md#char-391) |
-| <span id="model-179"></span>179 | ![characters/civl_tr_fa4.png](images/characters/civl_tr_fa4.png){ width="96" } | `0xcfe402d7` | `civl_tr_fa4` |  | [392](characters.md#char-392) |
+| <span id="model-176"></span>176 | ![characters/civl_tr_fa1.png](images/characters/civl_tr_fa1.png){ width="96" } | `0xbf8ef658` | `civl_tr_fa1` | | [389](characters.md#char-389) |
+| <span id="model-177"></span>177 | ![characters/civl_tr_fa2.png](images/characters/civl_tr_fa2.png){ width="96" } | `0x2687a7e2` | `civl_tr_fa2` | | [390](characters.md#char-390) |
+| <span id="model-178"></span>178 | ![characters/civl_tr_fa3.png](images/characters/civl_tr_fa3.png){ width="96" } | `0x51809774` | `civl_tr_fa3` | | [391](characters.md#char-391) |
+| <span id="model-179"></span>179 | ![characters/civl_tr_fa4.png](images/characters/civl_tr_fa4.png){ width="96" } | `0xcfe402d7` | `civl_tr_fa4` | | [392](characters.md#char-392) |
 | <span id="model-180"></span>180 | ![characters/civl_tr_ma1.png](images/characters/civl_tr_ma1.png){ width="96" } | `0xb3db19b9` | `civl_tr_ma1` | `generic_header` | [393](characters.md#char-393), [398](characters.md#char-398) |
 | <span id="model-181"></span>181 | ![characters/civl_tr_ma2.png](images/characters/civl_tr_ma2.png){ width="96" } | `0x2ad24803` | `civl_tr_ma2` | `generic_header` | [394](characters.md#char-394) |
 | <span id="model-182"></span>182 | ![characters/civl_tr_ma3.png](images/characters/civl_tr_ma3.png){ width="96" } | `0x5dd57895` | `civl_tr_ma3` | `generic_header` | [395](characters.md#char-395), [399](characters.md#char-399) |
@@ -224,113 +224,113 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-188"></span>188 | ![characters/civl_we_ma3.png](images/characters/civl_we_ma3.png){ width="96" } | `0x098141a9` | `civl_we_ma3` | `generic_header` | [438](characters.md#char-438) |
 | <span id="model-189"></span>189 | ![characters/civl_we_ma4.png](images/characters/civl_we_ma4.png){ width="96" } | `0x97e5d40a` | `civl_we_ma4` | `generic_header` | [439](characters.md#char-439) |
 | <span id="model-190"></span>190 | ![characters/civl_we_ma5.png](images/characters/civl_we_ma5.png){ width="96" } | `0xe0e2e49c` | `civl_we_ma5` | `generic_header` | [440](characters.md#char-440) |
-| <span id="model-205"></span>205 | ![characters/cops_ia1.png](images/characters/cops_ia1.png){ width="96" } | `0x0ab86664` | `cops_ia1` |  | [261](characters.md#char-261) |
-| <span id="model-206"></span>206 | ![characters/cops_ia2.png](images/characters/cops_ia2.png){ width="96" } | `0x93b137de` | `cops_ia2` |  | [262](characters.md#char-262) |
-| <span id="model-191"></span>191 | ![characters/cops_ty_va1.png](images/characters/cops_ty_va1.png){ width="96" } | `0x0fe74e73` | `cops_ty_va1` |  | [245](characters.md#char-245), [249](characters.md#char-249) |
-| <span id="model-192"></span>192 | ![characters/cops_ty_va2.png](images/characters/cops_ty_va2.png){ width="96" } | `0x96ee1fc9` | `cops_ty_va2` |  | [246](characters.md#char-246), [250](characters.md#char-250) |
-| <span id="model-193"></span>193 | ![characters/cops_ty_vb1.png](images/characters/cops_ty_vb1.png){ width="96" } | `0x24ca1db0` | `cops_ty_vb1` |  | [247](characters.md#char-247), [251](characters.md#char-251) |
-| <span id="model-194"></span>194 | ![characters/cops_ty_vb2.png](images/characters/cops_ty_vb2.png){ width="96" } | `0xbdc34c0a` | `cops_ty_vb2` |  | [248](characters.md#char-248), [252](characters.md#char-252) |
-| <span id="model-204"></span>204 | ![characters/cops_uc1.png](images/characters/cops_uc1.png){ width="96" } | `0x2db25ef2` | `cops_uc1` |  | [260](characters.md#char-260) |
-| <span id="model-195"></span>195 | ![characters/cops_va1.png](images/characters/cops_va1.png){ width="96" } | `0x1dc28229` | `cops_va1` |  | [253](characters.md#char-253) |
-| <span id="model-196"></span>196 | ![characters/cops_va2.png](images/characters/cops_va2.png){ width="96" } | `0x84cbd393` | `cops_va2` |  | [254](characters.md#char-254) |
-| <span id="model-197"></span>197 | ![characters/cops_va3.png](images/characters/cops_va3.png){ width="96" } | `0xf3cce305` | `cops_va3` |  | [255](characters.md#char-255) |
-| <span id="model-198"></span>198 | ![characters/cops_vb1.png](images/characters/cops_vb1.png){ width="96" } | `0x36efd1ea` | `cops_vb1` |  | [256](characters.md#char-256), [266](characters.md#char-266) |
-| <span id="model-199"></span>199 | ![characters/cops_vb2.png](images/characters/cops_vb2.png){ width="96" } | `0xafe68050` | `cops_vb2` |  | [257](characters.md#char-257) |
-| <span id="model-200"></span>200 | ![characters/cops_vb3.png](images/characters/cops_vb3.png){ width="96" } | `0xd8e1b0c6` | `cops_vb3` |  | [258](characters.md#char-258) |
-| <span id="model-201"></span>201 | ![characters/cops_vc1.png](images/characters/cops_vc1.png){ width="96" } | `0x2ff4e0ab` | `cops_vc1` |  | [259](characters.md#char-259), [267](characters.md#char-267) |
-| <span id="model-202"></span>202 | ![characters/cops_vd1.png](images/characters/cops_vd1.png){ width="96" } | `0x60b5766c` | `cops_vd1` |  | [263](characters.md#char-263) |
-| <span id="model-203"></span>203 | ![characters/cops_vd2.png](images/characters/cops_vd2.png){ width="96" } | `0xf9bc27d6` | `cops_vd2` |  | [264](characters.md#char-264) |
+| <span id="model-205"></span>205 | ![characters/cops_ia1.png](images/characters/cops_ia1.png){ width="96" } | `0x0ab86664` | `cops_ia1` | | [261](characters.md#char-261) |
+| <span id="model-206"></span>206 | ![characters/cops_ia2.png](images/characters/cops_ia2.png){ width="96" } | `0x93b137de` | `cops_ia2` | | [262](characters.md#char-262) |
+| <span id="model-191"></span>191 | ![characters/cops_ty_va1.png](images/characters/cops_ty_va1.png){ width="96" } | `0x0fe74e73` | `cops_ty_va1` | | [245](characters.md#char-245), [249](characters.md#char-249) |
+| <span id="model-192"></span>192 | ![characters/cops_ty_va2.png](images/characters/cops_ty_va2.png){ width="96" } | `0x96ee1fc9` | `cops_ty_va2` | | [246](characters.md#char-246), [250](characters.md#char-250) |
+| <span id="model-193"></span>193 | ![characters/cops_ty_vb1.png](images/characters/cops_ty_vb1.png){ width="96" } | `0x24ca1db0` | `cops_ty_vb1` | | [247](characters.md#char-247), [251](characters.md#char-251) |
+| <span id="model-194"></span>194 | ![characters/cops_ty_vb2.png](images/characters/cops_ty_vb2.png){ width="96" } | `0xbdc34c0a` | `cops_ty_vb2` | | [248](characters.md#char-248), [252](characters.md#char-252) |
+| <span id="model-204"></span>204 | ![characters/cops_uc1.png](images/characters/cops_uc1.png){ width="96" } | `0x2db25ef2` | `cops_uc1` | | [260](characters.md#char-260) |
+| <span id="model-195"></span>195 | ![characters/cops_va1.png](images/characters/cops_va1.png){ width="96" } | `0x1dc28229` | `cops_va1` | | [253](characters.md#char-253) |
+| <span id="model-196"></span>196 | ![characters/cops_va2.png](images/characters/cops_va2.png){ width="96" } | `0x84cbd393` | `cops_va2` | | [254](characters.md#char-254) |
+| <span id="model-197"></span>197 | ![characters/cops_va3.png](images/characters/cops_va3.png){ width="96" } | `0xf3cce305` | `cops_va3` | | [255](characters.md#char-255) |
+| <span id="model-198"></span>198 | ![characters/cops_vb1.png](images/characters/cops_vb1.png){ width="96" } | `0x36efd1ea` | `cops_vb1` | | [256](characters.md#char-256), [266](characters.md#char-266) |
+| <span id="model-199"></span>199 | ![characters/cops_vb2.png](images/characters/cops_vb2.png){ width="96" } | `0xafe68050` | `cops_vb2` | | [257](characters.md#char-257) |
+| <span id="model-200"></span>200 | ![characters/cops_vb3.png](images/characters/cops_vb3.png){ width="96" } | `0xd8e1b0c6` | `cops_vb3` | | [258](characters.md#char-258) |
+| <span id="model-201"></span>201 | ![characters/cops_vc1.png](images/characters/cops_vc1.png){ width="96" } | `0x2ff4e0ab` | `cops_vc1` | | [259](characters.md#char-259), [267](characters.md#char-267) |
+| <span id="model-202"></span>202 | ![characters/cops_vd1.png](images/characters/cops_vd1.png){ width="96" } | `0x60b5766c` | `cops_vd1` | | [263](characters.md#char-263) |
+| <span id="model-203"></span>203 | ![characters/cops_vd2.png](images/characters/cops_vd2.png){ width="96" } | `0xf9bc27d6` | `cops_vd2` | | [264](characters.md#char-264) |
 | <span id="model-207"></span>207 | ![characters/dest_bo.png](images/characters/dest_bo.png){ width="96" } | `0x0da598d4` | `dest_bo` | `dest_bo_header` | [178](characters.md#char-178) |
-| <span id="model-455"></span>455 | ![characters/dest_bo_a.png](images/characters/dest_bo_a.png){ width="96" } | `0x5dcf1462` | `dest_bo_a` | `dest_bo_header` |  |
+| <span id="model-455"></span>455 | ![characters/dest_bo_a.png](images/characters/dest_bo_a.png){ width="96" } | `0x5dcf1462` | `dest_bo_a` | `dest_bo_header` | |
 | <span id="model-208"></span>208 | ![characters/dest_bo_tg.png](images/characters/dest_bo_tg.png){ width="96" } | `0x95803202` | `dest_bo_tg` | `dest_lt_header` | [179](characters.md#char-179) |
 | <span id="model-210"></span>210 | ![characters/dest_cl.png](images/characters/dest_cl.png){ width="96" } | `0x8db7f82f` | `dest_cl` | `warr_cl_header` | [189](characters.md#char-189) |
 | <span id="model-217"></span>217 | ![characters/dest_le_bare.png](images/characters/dest_le_bare.png){ width="96" } | `0x1bb21614` | `dest_le_bare` | `dest_lt_header` | [187](characters.md#char-187) |
 | <span id="model-211"></span>211 | ![characters/dest_lt.png](images/characters/dest_lt.png){ width="96" } | `0x19437cb6` | `dest_lt` | `dest_lt_header` | [180](characters.md#char-180), [207](characters.md#char-207) |
 | <span id="model-215"></span>215 | ![characters/dest_lt_be.png](images/characters/dest_lt_be.png){ width="96" } | `0x5f3e8806` | `dest_lt_be` | `dest_lt_header` | [185](characters.md#char-185), [213](characters.md#char-213) |
-| <span id="model-456"></span>456 | ![characters/dest_lt_be_a.png](images/characters/dest_lt_be_a.png){ width="96" } | `0xf376f100` | `dest_lt_be_a` | `dest_lt_header` |  |
+| <span id="model-456"></span>456 | ![characters/dest_lt_be_a.png](images/characters/dest_lt_be_a.png){ width="96" } | `0xf376f100` | `dest_lt_be_a` | `dest_lt_header` | |
 | <span id="model-229"></span>229 | ![characters/dest_lt_hr.png](images/characters/dest_lt_hr.png){ width="96" } | `0x2602e54b` | `dest_lt_hr` | `dest_lt_header` | [181](characters.md#char-181) |
 | <span id="model-216"></span>216 | ![characters/dest_lt_le.png](images/characters/dest_lt_le.png){ width="96" } | `0xc1bda588` | `dest_lt_le` | `dest_lt_header` | [186](characters.md#char-186), [212](characters.md#char-212) |
-| <span id="model-457"></span>457 | ![characters/dest_lt_le_a.png](images/characters/dest_lt_le_a.png){ width="96" } | `0x13a98633` | `dest_lt_le_a` | `dest_lt_header` |  |
+| <span id="model-457"></span>457 | ![characters/dest_lt_le_a.png](images/characters/dest_lt_le_a.png){ width="96" } | `0x13a98633` | `dest_lt_le_a` | `dest_lt_header` | |
 | <span id="model-212"></span>212 | ![characters/dest_lt_v1.png](images/characters/dest_lt_v1.png){ width="96" } | `0x1d96cabe` | `dest_lt_v1` | `dest_lt_header` | [182](characters.md#char-182) |
 | <span id="model-213"></span>213 | ![characters/dest_lt_v2.png](images/characters/dest_lt_v2.png){ width="96" } | `0x849f9b04` | `dest_lt_v2` | `dest_lt_header` | [183](characters.md#char-183) |
-| <span id="model-458"></span>458 | ![characters/dest_lt_v2_a.png](images/characters/dest_lt_v2_a.png){ width="96" } | `0x45fe09fd` | `dest_lt_v2_a` | `dest_lt_header` |  |
+| <span id="model-458"></span>458 | ![characters/dest_lt_v2_a.png](images/characters/dest_lt_v2_a.png){ width="96" } | `0x45fe09fd` | `dest_lt_v2_a` | `dest_lt_header` | |
 | <span id="model-214"></span>214 | ![characters/dest_lt_v3.png](images/characters/dest_lt_v3.png){ width="96" } | `0xf398ab92` | `dest_lt_v3` | `dest_lt_header` | [184](characters.md#char-184) |
-| <span id="model-219"></span>219 | ![characters/dest_so1a.png](images/characters/dest_so1a.png){ width="96" } | `0x4e1462b1` | `dest_so1a` |  | [192](characters.md#char-192), [208](characters.md#char-208) |
-| <span id="model-459"></span>459 | ![characters/dest_so1a_a.png](images/characters/dest_so1a_a.png){ width="96" } | `0x182dd333` | `dest_so1a_a` |  |  |
+| <span id="model-219"></span>219 | ![characters/dest_so1a.png](images/characters/dest_so1a.png){ width="96" } | `0x4e1462b1` | `dest_so1a` | | [192](characters.md#char-192), [208](characters.md#char-208) |
+| <span id="model-459"></span>459 | ![characters/dest_so1a_a.png](images/characters/dest_so1a_a.png){ width="96" } | `0x182dd333` | `dest_so1a_a` | | |
 | <span id="model-224"></span>224 | ![characters/dest_so1a_drnk.png](images/characters/dest_so1a_drnk.png){ width="96" } | `0x7713fa9f` | `dest_so1a_drnk` | `civl_bm_header` | [201](characters.md#char-201) |
-| <span id="model-230"></span>230 | ![characters/dest_so1a_hr.png](images/characters/dest_so1a_hr.png){ width="96" } | `0x02030811` | `dest_so1a_hr` |  | [193](characters.md#char-193) |
-| <span id="model-220"></span>220 | ![characters/dest_so1b.png](images/characters/dest_so1b.png){ width="96" } | `0xd71d330b` | `dest_so1b` |  | [194](characters.md#char-194), [209](characters.md#char-209) |
+| <span id="model-230"></span>230 | ![characters/dest_so1a_hr.png](images/characters/dest_so1a_hr.png){ width="96" } | `0x02030811` | `dest_so1a_hr` | | [193](characters.md#char-193) |
+| <span id="model-220"></span>220 | ![characters/dest_so1b.png](images/characters/dest_so1b.png){ width="96" } | `0xd71d330b` | `dest_so1b` | | [194](characters.md#char-194), [209](characters.md#char-209) |
 | <span id="model-225"></span>225 | ![characters/dest_so1b_drnk.png](images/characters/dest_so1b_drnk.png){ width="96" } | `0xf1878831` | `dest_so1b_drnk` | `civl_bm_header` | [202](characters.md#char-202) |
-| <span id="model-231"></span>231 | ![characters/dest_so1b_hr.png](images/characters/dest_so1b_hr.png){ width="96" } | `0x10b6a7ff` | `dest_so1b_hr` |  | [195](characters.md#char-195) |
-| <span id="model-221"></span>221 | ![characters/dest_so1c.png](images/characters/dest_so1c.png){ width="96" } | `0xa01a039d` | `dest_so1c` |  | [196](characters.md#char-196) |
-| <span id="model-460"></span>460 | ![characters/dest_so1c_a.png](images/characters/dest_so1c_a.png){ width="96" } | `0x1ba9075d` | `dest_so1c_a` |  |  |
-| <span id="model-222"></span>222 | ![characters/dest_so2a.png](images/characters/dest_so2a.png){ width="96" } | `0x65393172` | `dest_so2a` |  | [197](characters.md#char-197), [210](characters.md#char-210) |
-| <span id="model-461"></span>461 | ![characters/dest_so2a_a.png](images/characters/dest_so2a_a.png){ width="96" } | `0x0a987cdd` | `dest_so2a_a` |  |  |
+| <span id="model-231"></span>231 | ![characters/dest_so1b_hr.png](images/characters/dest_so1b_hr.png){ width="96" } | `0x10b6a7ff` | `dest_so1b_hr` | | [195](characters.md#char-195) |
+| <span id="model-221"></span>221 | ![characters/dest_so1c.png](images/characters/dest_so1c.png){ width="96" } | `0xa01a039d` | `dest_so1c` | | [196](characters.md#char-196) |
+| <span id="model-460"></span>460 | ![characters/dest_so1c_a.png](images/characters/dest_so1c_a.png){ width="96" } | `0x1ba9075d` | `dest_so1c_a` | | |
+| <span id="model-222"></span>222 | ![characters/dest_so2a.png](images/characters/dest_so2a.png){ width="96" } | `0x65393172` | `dest_so2a` | | [197](characters.md#char-197), [210](characters.md#char-210) |
+| <span id="model-461"></span>461 | ![characters/dest_so2a_a.png](images/characters/dest_so2a_a.png){ width="96" } | `0x0a987cdd` | `dest_so2a_a` | | |
 | <span id="model-226"></span>226 | ![characters/dest_so2a_drnk.png](images/characters/dest_so2a_drnk.png){ width="96" } | `0x46fbe002` | `dest_so2a_drnk` | `civl_bm_header` | [204](characters.md#char-204) |
-| <span id="model-232"></span>232 | ![characters/dest_so2a_hr.png](images/characters/dest_so2a_hr.png){ width="96" } | `0x45a372c1` | `dest_so2a_hr` |  | [198](characters.md#char-198) |
-| <span id="model-223"></span>223 | ![characters/dest_so2b.png](images/characters/dest_so2b.png){ width="96" } | `0xfc3060c8` | `dest_so2b` |  | [199](characters.md#char-199), [211](characters.md#char-211) |
+| <span id="model-232"></span>232 | ![characters/dest_so2a_hr.png](images/characters/dest_so2a_hr.png){ width="96" } | `0x45a372c1` | `dest_so2a_hr` | | [198](characters.md#char-198) |
+| <span id="model-223"></span>223 | ![characters/dest_so2b.png](images/characters/dest_so2b.png){ width="96" } | `0xfc3060c8` | `dest_so2b` | | [199](characters.md#char-199), [211](characters.md#char-211) |
 | <span id="model-227"></span>227 | ![characters/dest_so2b_drnk.png](images/characters/dest_so2b_drnk.png){ width="96" } | `0xc06f92ac` | `dest_so2b_drnk` | `civl_bm_header` | [203](characters.md#char-203) |
-| <span id="model-233"></span>233 | ![characters/dest_so2b_hr.png](images/characters/dest_so2b_hr.png){ width="96" } | `0x5716dd2f` | `dest_so2b_hr` |  | [200](characters.md#char-200) |
+| <span id="model-233"></span>233 | ![characters/dest_so2b_hr.png](images/characters/dest_so2b_hr.png){ width="96" } | `0x5716dd2f` | `dest_so2b_hr` | | [200](characters.md#char-200) |
 | <span id="model-228"></span>228 | ![characters/dest_ve.png](images/characters/dest_ve.png){ width="96" } | `0xc3dea69f` | `dest_ve` | `warr_ve_header` | [191](characters.md#char-191) |
-| <span id="model-234"></span>234 | ![characters/dj.png](images/characters/dj.png){ width="96" } | `0xed2f341a` | `dj` |  | [351](characters.md#char-351) |
+| <span id="model-234"></span>234 | ![characters/dj.png](images/characters/dj.png){ width="96" } | `0xed2f341a` | `dj` | | [351](characters.md#char-351) |
 | <span id="model-235"></span>235 | ![characters/elec_bo.png](images/characters/elec_bo.png){ width="96" } | `0xaeb3cfac` | `elec_bo` | `generic_header` | [172](characters.md#char-172) |
-| <span id="model-462"></span>462 | ![characters/elec_bo_a.png](images/characters/elec_bo_a.png){ width="96" } | `0x4f2680dd` | `elec_bo_a` | `generic_header` |  |
+| <span id="model-462"></span>462 | ![characters/elec_bo_a.png](images/characters/elec_bo_a.png){ width="96" } | `0x4f2680dd` | `elec_bo_a` | `generic_header` | |
 | <span id="model-236"></span>236 | ![characters/elec_lt.png](images/characters/elec_lt.png){ width="96" } | `0xba552bce` | `elec_lt` | `generic_header` | [173](characters.md#char-173) |
-| <span id="model-463"></span>463 | ![characters/elec_lt_a.png](images/characters/elec_lt_a.png){ width="96" } | `0xbf8abb7f` | `elec_lt_a` | `generic_header` |  |
+| <span id="model-463"></span>463 | ![characters/elec_lt_a.png](images/characters/elec_lt_a.png){ width="96" } | `0xbf8abb7f` | `elec_lt_a` | `generic_header` | |
 | <span id="model-237"></span>237 | ![characters/elec_so1.png](images/characters/elec_so1.png){ width="96" } | `0x41f67afc` | `elec_so1` | `generic_header` | [174](characters.md#char-174) |
-| <span id="model-464"></span>464 | ![characters/elec_so1_a.png](images/characters/elec_so1_a.png){ width="96" } | `0x4e9675cf` | `elec_so1_a` | `generic_header` |  |
+| <span id="model-464"></span>464 | ![characters/elec_so1_a.png](images/characters/elec_so1_a.png){ width="96" } | `0x4e9675cf` | `elec_so1_a` | `generic_header` | |
 | <span id="model-238"></span>238 | ![characters/elec_so2.png](images/characters/elec_so2.png){ width="96" } | `0xd8ff2b46` | `elec_so2` | `generic_header` | [175](characters.md#char-175) |
-| <span id="model-465"></span>465 | ![characters/elec_so2_a.png](images/characters/elec_so2_a.png){ width="96" } | `0x4cd0cb96` | `elec_so2_a` | `generic_header` |  |
+| <span id="model-465"></span>465 | ![characters/elec_so2_a.png](images/characters/elec_so2_a.png){ width="96" } | `0x4cd0cb96` | `elec_so2_a` | `generic_header` | |
 | <span id="model-239"></span>239 | ![characters/elec_so3.png](images/characters/elec_so3.png){ width="96" } | `0xaff81bd0` | `elec_so3` | `generic_header` | [176](characters.md#char-176) |
 | <span id="model-240"></span>240 | ![characters/elec_so4.png](images/characters/elec_so4.png){ width="96" } | `0x319c8e73` | `elec_so4` | `generic_header` | [177](characters.md#char-177) |
 | <span id="model-241"></span>241 | ![characters/fury_bo.png](images/characters/fury_bo.png){ width="96" } | `0x56e67a0b` | `fury_bo` | `fury_bo_header` | [89](characters.md#char-89) |
-| <span id="model-466"></span>466 | ![characters/fury_bo_a.png](images/characters/fury_bo_a.png){ width="96" } | `0x156b15a5` | `fury_bo_a` | `generic_header` |  |
+| <span id="model-466"></span>466 | ![characters/fury_bo_a.png](images/characters/fury_bo_a.png){ width="96" } | `0x156b15a5` | `fury_bo_a` | `generic_header` | |
 | <span id="model-242"></span>242 | ![characters/fury_lt.png](images/characters/fury_lt.png){ width="96" } | `0x42009e69` | `fury_lt` | `fury_lt_header` | [90](characters.md#char-90) |
-| <span id="model-467"></span>467 | ![characters/fury_lt_a.png](images/characters/fury_lt_a.png){ width="96" } | `0xe5c72e07` | `fury_lt_a` | `fury_lt_header` |  |
-| <span id="model-243"></span>243 | ![characters/fury_so1.png](images/characters/fury_so1.png){ width="96" } | `0x09bc1902` | `fury_so1` |  | [91](characters.md#char-91) |
-| <span id="model-468"></span>468 | ![characters/fury_so1_a.png](images/characters/fury_so1_a.png){ width="96" } | `0x1012c154` | `fury_so1_a` |  |  |
-| <span id="model-244"></span>244 | ![characters/fury_so2.png](images/characters/fury_so2.png){ width="96" } | `0x90b548b8` | `fury_so2` |  | [92](characters.md#char-92), [95](characters.md#char-95) |
-| <span id="model-469"></span>469 | ![characters/fury_so2_a.png](images/characters/fury_so2_a.png){ width="96" } | `0x12547f0d` | `fury_so2_a` |  |  |
-| <span id="model-245"></span>245 | ![characters/fury_so3.png](images/characters/fury_so3.png){ width="96" } | `0xe7b2782e` | `fury_so3` |  | [93](characters.md#char-93) |
-| <span id="model-246"></span>246 | ![characters/fury_so4.png](images/characters/fury_so4.png){ width="96" } | `0x79d6ed8d` | `fury_so4` |  | [94](characters.md#char-94) |
+| <span id="model-467"></span>467 | ![characters/fury_lt_a.png](images/characters/fury_lt_a.png){ width="96" } | `0xe5c72e07` | `fury_lt_a` | `fury_lt_header` | |
+| <span id="model-243"></span>243 | ![characters/fury_so1.png](images/characters/fury_so1.png){ width="96" } | `0x09bc1902` | `fury_so1` | | [91](characters.md#char-91) |
+| <span id="model-468"></span>468 | ![characters/fury_so1_a.png](images/characters/fury_so1_a.png){ width="96" } | `0x1012c154` | `fury_so1_a` | | |
+| <span id="model-244"></span>244 | ![characters/fury_so2.png](images/characters/fury_so2.png){ width="96" } | `0x90b548b8` | `fury_so2` | | [92](characters.md#char-92), [95](characters.md#char-95) |
+| <span id="model-469"></span>469 | ![characters/fury_so2_a.png](images/characters/fury_so2_a.png){ width="96" } | `0x12547f0d` | `fury_so2_a` | | |
+| <span id="model-245"></span>245 | ![characters/fury_so3.png](images/characters/fury_so3.png){ width="96" } | `0xe7b2782e` | `fury_so3` | | [93](characters.md#char-93) |
+| <span id="model-246"></span>246 | ![characters/fury_so4.png](images/characters/fury_so4.png){ width="96" } | `0x79d6ed8d` | `fury_so4` | | [94](characters.md#char-94) |
 | <span id="model-247"></span>247 | ![characters/hiha_bo.png](images/characters/hiha_bo.png){ width="96" } | `0xcd3033e5` | `hiha_bo` | `hiha_bo_header` | [135](characters.md#char-135) |
-| <span id="model-470"></span>470 | ![characters/hiha_bo_a.png](images/characters/hiha_bo_a.png){ width="96" } | `0xda96a925` | `hiha_bo_a` | `hiha_bo_header` |  |
+| <span id="model-470"></span>470 | ![characters/hiha_bo_a.png](images/characters/hiha_bo_a.png){ width="96" } | `0xda96a925` | `hiha_bo_a` | `hiha_bo_header` | |
 | <span id="model-248"></span>248 | ![characters/hiha_lt.png](images/characters/hiha_lt.png){ width="96" } | `0xd9d6d787` | `hiha_lt` | `hiha_lt_header` | [136](characters.md#char-136) |
-| <span id="model-471"></span>471 | ![characters/hiha_lt_a.png](images/characters/hiha_lt_a.png){ width="96" } | `0x2a3a9287` | `hiha_lt_a` | `hiha_lt_header` |  |
+| <span id="model-471"></span>471 | ![characters/hiha_lt_a.png](images/characters/hiha_lt_a.png){ width="96" } | `0x2a3a9287` | `hiha_lt_a` | `hiha_lt_header` | |
 | <span id="model-249"></span>249 | ![characters/hiha_lt_ft.png](images/characters/hiha_lt_ft.png){ width="96" } | `0xb9dde07e` | `hiha_lt_ft` | `hiha_lt_header` | [137](characters.md#char-137) |
-| <span id="model-472"></span>472 | ![characters/hiha_lt_ft_a.png](images/characters/hiha_lt_ft_a.png){ width="96" } | `0x57f90d77` | `hiha_lt_ft_a` | `hiha_lt_header` |  |
+| <span id="model-472"></span>472 | ![characters/hiha_lt_ft_a.png](images/characters/hiha_lt_ft_a.png){ width="96" } | `0x57f90d77` | `hiha_lt_ft_a` | `hiha_lt_header` | |
 | <span id="model-250"></span>250 | ![characters/hiha_so_va1.png](images/characters/hiha_so_va1.png){ width="96" } | `0xfafb3dd5` | `hiha_so_va1` | `generic_header` | [138](characters.md#char-138) |
-| <span id="model-473"></span>473 | ![characters/hiha_so_va1_a.png](images/characters/hiha_so_va1_a.png){ width="96" } | `0xe268851a` | `hiha_so_va1_a` | `generic_header` |  |
+| <span id="model-473"></span>473 | ![characters/hiha_so_va1_a.png](images/characters/hiha_so_va1_a.png){ width="96" } | `0xe268851a` | `hiha_so_va1_a` | `generic_header` | |
 | <span id="model-251"></span>251 | ![characters/hiha_so_va2.png](images/characters/hiha_so_va2.png){ width="96" } | `0x63f26c6f` | `hiha_so_va2` | `generic_header` | [139](characters.md#char-139) |
 | <span id="model-252"></span>252 | ![characters/hiha_so_vb1.png](images/characters/hiha_so_vb1.png){ width="96" } | `0xd1d66e16` | `hiha_so_vb1` | `generic_header` | [140](characters.md#char-140) |
-| <span id="model-474"></span>474 | ![characters/hiha_so_vb1_a.png](images/characters/hiha_so_vb1_a.png){ width="96" } | `0xf0dd2af4` | `hiha_so_vb1_a` | `generic_header` |  |
+| <span id="model-474"></span>474 | ![characters/hiha_so_vb1_a.png](images/characters/hiha_so_vb1_a.png){ width="96" } | `0xf0dd2af4` | `hiha_so_vb1_a` | `generic_header` | |
 | <span id="model-253"></span>253 | ![characters/hiha_so_vb2.png](images/characters/hiha_so_vb2.png){ width="96" } | `0x48df3fac` | `hiha_so_vb2` | `generic_header` | [141](characters.md#char-141) |
 | <span id="model-254"></span>254 | ![characters/hook_01.png](images/characters/hook_01.png){ width="96" } | `0xc2aaafa9` | `hook_01` | `hooker_header` | [333](characters.md#char-333) |
 | <span id="model-256"></span>256 | ![characters/hook_03.png](images/characters/hook_03.png){ width="96" } | `0x2ca4ce85` | `hook_03` | `hooker_header` | [334](characters.md#char-334) |
 | <span id="model-258"></span>258 | ![characters/hurr_de.png](images/characters/hurr_de.png){ width="96" } | `0x6757c8cf` | `hurr_de` | `hurr_de_header` | [120](characters.md#char-120) |
-| <span id="model-475"></span>475 | ![characters/hurr_de_a.png](images/characters/hurr_de_a.png){ width="96" } | `0x9f92e4fe` | `hurr_de_a` | `hurr_de_header` |  |
+| <span id="model-475"></span>475 | ![characters/hurr_de_a.png](images/characters/hurr_de_a.png){ width="96" } | `0x9f92e4fe` | `hurr_de_a` | `hurr_de_header` | |
 | <span id="model-260"></span>260 | ![characters/hurr_lt.png](images/characters/hurr_lt.png){ width="96" } | `0xc53e6235` | `hurr_lt` | `hurr_lt_header` | [123](characters.md#char-123) |
-| <span id="model-476"></span>476 | ![characters/hurr_lt_a.png](images/characters/hurr_lt_a.png){ width="96" } | `0x47c20556` | `hurr_lt_a` | `hurr_lt_header` |  |
+| <span id="model-476"></span>476 | ![characters/hurr_lt_a.png](images/characters/hurr_lt_a.png){ width="96" } | `0x47c20556` | `hurr_lt_a` | `hurr_lt_header` | |
 | <span id="model-261"></span>261 | ![characters/hurr_sa.png](images/characters/hurr_sa.png){ width="96" } | `0x65b98840` | `hurr_sa` | `hurr_lt_header` | [122](characters.md#char-122) |
-| <span id="model-477"></span>477 | ![characters/hurr_sa_a.png](images/characters/hurr_sa_a.png){ width="96" } | `0x55552304` | `hurr_sa_a` | `hurr_lt_header` |  |
-| <span id="model-262"></span>262 | ![characters/hurr_so1a.png](images/characters/hurr_so1a.png){ width="96" } | `0xa4b54827` | `hurr_so1a` |  | [124](characters.md#char-124) |
-| <span id="model-478"></span>478 | ![characters/hurr_so1a_a.png](images/characters/hurr_so1a_a.png){ width="96" } | `0xe48dddd8` | `hurr_so1a_a` |  |  |
-| <span id="model-263"></span>263 | ![characters/hurr_so1b.png](images/characters/hurr_so1b.png){ width="96" } | `0x3dbc199d` | `hurr_so1b` |  | [125](characters.md#char-125) |
-| <span id="model-479"></span>479 | ![characters/hurr_so1b_a.png](images/characters/hurr_so1b_a.png){ width="96" } | `0xe6cb6381` | `hurr_so1b_a` |  |  |
-| <span id="model-264"></span>264 | ![characters/hurr_so2a.png](images/characters/hurr_so2a.png){ width="96" } | `0x8f981be4` | `hurr_so2a` |  | [126](characters.md#char-126) |
-| <span id="model-265"></span>265 | ![characters/hurr_so2b.png](images/characters/hurr_so2b.png){ width="96" } | `0x16914a5e` | `hurr_so2b` |  | [127](characters.md#char-127) |
+| <span id="model-477"></span>477 | ![characters/hurr_sa_a.png](images/characters/hurr_sa_a.png){ width="96" } | `0x55552304` | `hurr_sa_a` | `hurr_lt_header` | |
+| <span id="model-262"></span>262 | ![characters/hurr_so1a.png](images/characters/hurr_so1a.png){ width="96" } | `0xa4b54827` | `hurr_so1a` | | [124](characters.md#char-124) |
+| <span id="model-478"></span>478 | ![characters/hurr_so1a_a.png](images/characters/hurr_so1a_a.png){ width="96" } | `0xe48dddd8` | `hurr_so1a_a` | | |
+| <span id="model-263"></span>263 | ![characters/hurr_so1b.png](images/characters/hurr_so1b.png){ width="96" } | `0x3dbc199d` | `hurr_so1b` | | [125](characters.md#char-125) |
+| <span id="model-479"></span>479 | ![characters/hurr_so1b_a.png](images/characters/hurr_so1b_a.png){ width="96" } | `0xe6cb6381` | `hurr_so1b_a` | | |
+| <span id="model-264"></span>264 | ![characters/hurr_so2a.png](images/characters/hurr_so2a.png){ width="96" } | `0x8f981be4` | `hurr_so2a` | | [126](characters.md#char-126) |
+| <span id="model-265"></span>265 | ![characters/hurr_so2b.png](images/characters/hurr_so2b.png){ width="96" } | `0x16914a5e` | `hurr_so2b` | | [127](characters.md#char-127) |
 | <span id="model-266"></span>266 | ![characters/hurr_va.png](images/characters/hurr_va.png){ width="96" } | `0x18ce7c05` | `hurr_va` | `hurr_va_header` | [119](characters.md#char-119) |
-| <span id="model-480"></span>480 | ![characters/hurr_va_a.png](images/characters/hurr_va_a.png){ width="96" } | `0x628bd336` | `hurr_va_a` | `hurr_va_header` |  |
+| <span id="model-480"></span>480 | ![characters/hurr_va_a.png](images/characters/hurr_va_a.png){ width="96" } | `0x628bd336` | `hurr_va_a` | `hurr_va_header` | |
 | <span id="model-267"></span>267 | ![characters/jsbs_bo.png](images/characters/jsbs_bo.png){ width="96" } | `0x48428484` | `jsbs_bo` | `generic_header` | [154](characters.md#char-154) |
-| <span id="model-481"></span>481 | ![characters/jsbs_bo_a.png](images/characters/jsbs_bo_a.png){ width="96" } | `0xf375509e` | `jsbs_bo_a` | `generic_header` |  |
+| <span id="model-481"></span>481 | ![characters/jsbs_bo_a.png](images/characters/jsbs_bo_a.png){ width="96" } | `0xf375509e` | `jsbs_bo_a` | `generic_header` | |
 | <span id="model-268"></span>268 | ![characters/jsbs_lt.png](images/characters/jsbs_lt.png){ width="96" } | `0x5ca460e6` | `jsbs_lt` | `jsbs_lt_header` | [155](characters.md#char-155) |
-| <span id="model-482"></span>482 | ![characters/jsbs_lt_a.png](images/characters/jsbs_lt_a.png){ width="96" } | `0x03d96b3c` | `jsbs_lt_a` | `jsbs_lt_header` |  |
-| <span id="model-269"></span>269 | ![characters/jsbs_so1.png](images/characters/jsbs_so1.png){ width="96" } | `0x74a5234d` | `jsbs_so1` |  | [156](characters.md#char-156) |
-| <span id="model-270"></span>270 | ![characters/jsbs_so2.png](images/characters/jsbs_so2.png){ width="96" } | `0xedac72f7` | `jsbs_so2` |  | [157](characters.md#char-157) |
-| <span id="model-483"></span>483 | ![characters/jsbs_so2_a.png](images/characters/jsbs_so2_a.png){ width="96" } | `0xa3b9886c` | `jsbs_so2_a` |  |  |
-| <span id="model-271"></span>271 | ![characters/jsbs_so3.png](images/characters/jsbs_so3.png){ width="96" } | `0x9aab4261` | `jsbs_so3` |  | [158](characters.md#char-158) |
-| <span id="model-484"></span>484 | ![characters/jsbs_so3_a.png](images/characters/jsbs_so3_a.png){ width="96" } | `0xa27be25b` | `jsbs_so3_a` |  |  |
-| <span id="model-272"></span>272 | ![characters/jsbs_so4.png](images/characters/jsbs_so4.png){ width="96" } | `0x04cfd7c2` | `jsbs_so4` |  | [159](characters.md#char-159) |
+| <span id="model-482"></span>482 | ![characters/jsbs_lt_a.png](images/characters/jsbs_lt_a.png){ width="96" } | `0x03d96b3c` | `jsbs_lt_a` | `jsbs_lt_header` | |
+| <span id="model-269"></span>269 | ![characters/jsbs_so1.png](images/characters/jsbs_so1.png){ width="96" } | `0x74a5234d` | `jsbs_so1` | | [156](characters.md#char-156) |
+| <span id="model-270"></span>270 | ![characters/jsbs_so2.png](images/characters/jsbs_so2.png){ width="96" } | `0xedac72f7` | `jsbs_so2` | | [157](characters.md#char-157) |
+| <span id="model-483"></span>483 | ![characters/jsbs_so2_a.png](images/characters/jsbs_so2_a.png){ width="96" } | `0xa3b9886c` | `jsbs_so2_a` | | |
+| <span id="model-271"></span>271 | ![characters/jsbs_so3.png](images/characters/jsbs_so3.png){ width="96" } | `0x9aab4261` | `jsbs_so3` | | [158](characters.md#char-158) |
+| <span id="model-484"></span>484 | ![characters/jsbs_so3_a.png](images/characters/jsbs_so3_a.png){ width="96" } | `0xa27be25b` | `jsbs_so3_a` | | |
+| <span id="model-272"></span>272 | ![characters/jsbs_so4.png](images/characters/jsbs_so4.png){ width="96" } | `0x04cfd7c2` | `jsbs_so4` | | [159](characters.md#char-159) |
 | <span id="model-273"></span>273 | ![characters/juda_bo.png](images/characters/juda_bo.png){ width="96" } | `0xeb4b0d2d` | `juda_bo` | `generic_header` | [166](characters.md#char-166) |
 | <span id="model-274"></span>274 | ![characters/juda_lt.png](images/characters/juda_lt.png){ width="96" } | `0xffade94f` | `juda_lt` | `generic_header` | [167](characters.md#char-167) |
 | <span id="model-275"></span>275 | ![characters/juda_so_va1.png](images/characters/juda_so_va1.png){ width="96" } | `0x79311666` | `juda_so_va1` | `generic_header` | [168](characters.md#char-168) |
@@ -338,43 +338,43 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-277"></span>277 | ![characters/juda_so_vb1.png](images/characters/juda_so_vb1.png){ width="96" } | `0x521c45a5` | `juda_so_vb1` | `generic_header` | [170](characters.md#char-170) |
 | <span id="model-278"></span>278 | ![characters/juda_so_vb2.png](images/characters/juda_so_vb2.png){ width="96" } | `0xcb15141f` | `juda_so_vb2` | `generic_header` | [171](characters.md#char-171) |
 | <span id="model-279"></span>279 | ![characters/lizz_bo.png](images/characters/lizz_bo.png){ width="96" } | `0xa447038a` | `lizz_bo` | `lizz_bo_header` | [237](characters.md#char-237) |
-| <span id="model-485"></span>485 | ![characters/lizz_bo_a.png](images/characters/lizz_bo_a.png){ width="96" } | `0x1e2a8796` | `lizz_bo_a` | `lizz_bo_header` |  |
+| <span id="model-485"></span>485 | ![characters/lizz_bo_a.png](images/characters/lizz_bo_a.png){ width="96" } | `0x1e2a8796` | `lizz_bo_a` | `lizz_bo_header` | |
 | <span id="model-280"></span>280 | ![characters/lizz_lt.png](images/characters/lizz_lt.png){ width="96" } | `0xb0a1e7e8` | `lizz_lt` | `lizz_bo_header` | [238](characters.md#char-238) |
-| <span id="model-486"></span>486 | ![characters/lizz_lt_a.png](images/characters/lizz_lt_a.png){ width="96" } | `0xee86bc34` | `lizz_lt_a` | `lizz_bo_header` |  |
+| <span id="model-486"></span>486 | ![characters/lizz_lt_a.png](images/characters/lizz_lt_a.png){ width="96" } | `0xee86bc34` | `lizz_lt_a` | `lizz_bo_header` | |
 | <span id="model-281"></span>281 | ![characters/lizz_so_va1.png](images/characters/lizz_so_va1.png){ width="96" } | `0xe9c509dd` | `lizz_so_va1` | `lizz_bo_header` | [239](characters.md#char-239) |
-| <span id="model-487"></span>487 | ![characters/lizz_so_va1_a.png](images/characters/lizz_so_va1_a.png){ width="96" } | `0x0b05e899` | `lizz_so_va1_a` | `lizz_bo_header` |  |
+| <span id="model-487"></span>487 | ![characters/lizz_so_va1_a.png](images/characters/lizz_so_va1_a.png){ width="96" } | `0x0b05e899` | `lizz_so_va1_a` | `lizz_bo_header` | |
 | <span id="model-282"></span>282 | ![characters/lizz_so_va2.png](images/characters/lizz_so_va2.png){ width="96" } | `0x70cc5867` | `lizz_so_va2` | `lizz_bo_header` | [240](characters.md#char-240) |
-| <span id="model-488"></span>488 | ![characters/lizz_so_va2_a.png](images/characters/lizz_so_va2_a.png){ width="96" } | `0x094356c0` | `lizz_so_va2_a` | `lizz_bo_header` |  |
+| <span id="model-488"></span>488 | ![characters/lizz_so_va2_a.png](images/characters/lizz_so_va2_a.png){ width="96" } | `0x094356c0` | `lizz_so_va2_a` | `lizz_bo_header` | |
 | <span id="model-283"></span>283 | ![characters/lizz_so_va3.png](images/characters/lizz_so_va3.png){ width="96" } | `0x07cb68f1` | `lizz_so_va3` | `lizz_bo_header` | [241](characters.md#char-241) |
 | <span id="model-284"></span>284 | ![characters/lizz_so_vb1.png](images/characters/lizz_so_vb1.png){ width="96" } | `0xc2e85a1e` | `lizz_so_vb1` | `lizz_bo_header` | [242](characters.md#char-242) |
 | <span id="model-285"></span>285 | ![characters/lizz_so_vb2.png](images/characters/lizz_so_vb2.png){ width="96" } | `0x5be10ba4` | `lizz_so_vb2` | `lizz_bo_header` | [243](characters.md#char-243) |
 | <span id="model-286"></span>286 | ![characters/moon_bo.png](images/characters/moon_bo.png){ width="96" } | `0xa3123319` | `moon_bo` | `generic_header` | [214](characters.md#char-214) |
-| <span id="model-489"></span>489 | ![characters/moon_bo_a.png](images/characters/moon_bo_a.png){ width="96" } | `0x629f69b6` | `moon_bo_a` | `generic_header` |  |
+| <span id="model-489"></span>489 | ![characters/moon_bo_a.png](images/characters/moon_bo_a.png){ width="96" } | `0x629f69b6` | `moon_bo_a` | `generic_header` | |
 | <span id="model-287"></span>287 | ![characters/moon_lt.png](images/characters/moon_lt.png){ width="96" } | `0xb7f4d77b` | `moon_lt` | `moon_lt_header` | [215](characters.md#char-215) |
-| <span id="model-490"></span>490 | ![characters/moon_lt_a.png](images/characters/moon_lt_a.png){ width="96" } | `0x92335214` | `moon_lt_a` | `moon_lt_header` |  |
+| <span id="model-490"></span>490 | ![characters/moon_lt_a.png](images/characters/moon_lt_a.png){ width="96" } | `0x92335214` | `moon_lt_a` | `moon_lt_header` | |
 | <span id="model-288"></span>288 | ![characters/moon_so1a.png](images/characters/moon_so1a.png){ width="96" } | `0x71441f65` | `moon_so1a` | `generic_header` | [216](characters.md#char-216) |
-| <span id="model-491"></span>491 | ![characters/moon_so1a_a.png](images/characters/moon_so1a_a.png){ width="96" } | `0xd3cde1f9` | `moon_so1a_a` | `generic_header` |  |
+| <span id="model-491"></span>491 | ![characters/moon_so1a_a.png](images/characters/moon_so1a_a.png){ width="96" } | `0xd3cde1f9` | `moon_so1a_a` | `generic_header` | |
 | <span id="model-289"></span>289 | ![characters/moon_so1b.png](images/characters/moon_so1b.png){ width="96" } | `0xe84d4edf` | `moon_so1b` | `generic_header` | [217](characters.md#char-217) |
 | <span id="model-290"></span>290 | ![characters/moon_so2a.png](images/characters/moon_so2a.png){ width="96" } | `0x5a694ca6` | `moon_so2a` | `generic_header` | [218](characters.md#char-218) |
-| <span id="model-492"></span>492 | ![characters/moon_so2a_a.png](images/characters/moon_so2a_a.png){ width="96" } | `0xc1784e17` | `moon_so2a_a` | `generic_header` |  |
+| <span id="model-492"></span>492 | ![characters/moon_so2a_a.png](images/characters/moon_so2a_a.png){ width="96" } | `0xc1784e17` | `moon_so2a_a` | `generic_header` | |
 | <span id="model-291"></span>291 | ![characters/moon_so2b.png](images/characters/moon_so2b.png){ width="96" } | `0xc3601d1c` | `moon_so2b` | `generic_header` | [219](characters.md#char-219) |
-| <span id="model-292"></span>292 | ![characters/orph_bo.png](images/characters/orph_bo.png){ width="96" } | `0x4c1e6cfa` | `orph_bo` | `generic_header` |  |
+| <span id="model-292"></span>292 | ![characters/orph_bo.png](images/characters/orph_bo.png){ width="96" } | `0x4c1e6cfa` | `orph_bo` | `generic_header` | |
 | <span id="model-294"></span>294 | ![characters/orph_bo_va1.png](images/characters/orph_bo_va1.png){ width="96" } | `0xcc537835` | `orph_bo_va1` | `generic_header` | [220](characters.md#char-220) |
-| <span id="model-493"></span>493 | ![characters/orph_bo_va1_a.png](images/characters/orph_bo_va1_a.png){ width="96" } | `0xbaa0f541` | `orph_bo_va1_a` | `generic_header` |  |
+| <span id="model-493"></span>493 | ![characters/orph_bo_va1_a.png](images/characters/orph_bo_va1_a.png){ width="96" } | `0xbaa0f541` | `orph_bo_va1_a` | `generic_header` | |
 | <span id="model-296"></span>296 | ![characters/orph_lt_va.png](images/characters/orph_lt_va.png){ width="96" } | `0x684dbe5c` | `orph_lt_va` | `generic_header` | [223](characters.md#char-223) |
-| <span id="model-494"></span>494 | ![characters/orph_lt_va_a.png](images/characters/orph_lt_va_a.png){ width="96" } | `0x7c98e634` | `orph_lt_va_a` | `generic_header` |  |
+| <span id="model-494"></span>494 | ![characters/orph_lt_va_a.png](images/characters/orph_lt_va_a.png){ width="96" } | `0x7c98e634` | `orph_lt_va_a` | `generic_header` | |
 | <span id="model-297"></span>297 | ![characters/orph_lt_vb.png](images/characters/orph_lt_vb.png){ width="96" } | `0xf144efe6` | `orph_lt_vb` | `generic_header` | [224](characters.md#char-224) |
-| <span id="model-495"></span>495 | ![characters/orph_lt_vb_a.png](images/characters/orph_lt_vb_a.png){ width="96" } | `0x7ede586d` | `orph_lt_vb_a` | `generic_header` |  |
-| <span id="model-298"></span>298 | ![characters/orph_me.png](images/characters/orph_me.png){ width="96" } | `0x2b53992b` | `orph_me` |  | [221](characters.md#char-221) |
-| <span id="model-496"></span>496 | ![characters/orph_me_a.png](images/characters/orph_me_a.png){ width="96" } | `0xb9ecff70` | `orph_me_a` |  |  |
-| <span id="model-299"></span>299 | ![characters/orph_me_vb.png](images/characters/orph_me_vb.png){ width="96" } | `0x2481f6ac` | `orph_me_vb` |  | [222](characters.md#char-222) |
+| <span id="model-495"></span>495 | ![characters/orph_lt_vb_a.png](images/characters/orph_lt_vb_a.png){ width="96" } | `0x7ede586d` | `orph_lt_vb_a` | `generic_header` | |
+| <span id="model-298"></span>298 | ![characters/orph_me.png](images/characters/orph_me.png){ width="96" } | `0x2b53992b` | `orph_me` | | [221](characters.md#char-221) |
+| <span id="model-496"></span>496 | ![characters/orph_me_a.png](images/characters/orph_me_a.png){ width="96" } | `0xb9ecff70` | `orph_me_a` | | |
+| <span id="model-299"></span>299 | ![characters/orph_me_vb.png](images/characters/orph_me_vb.png){ width="96" } | `0x2481f6ac` | `orph_me_vb` | | [222](characters.md#char-222) |
 | <span id="model-300"></span>300 | ![characters/orph_so_va1.png](images/characters/orph_so_va1.png){ width="96" } | `0x04d9a90b` | `orph_so_va1` | `generic_header` | [225](characters.md#char-225) |
-| <span id="model-497"></span>497 | ![characters/orph_so_va1_a.png](images/characters/orph_so_va1_a.png){ width="96" } | `0x0ab1c4f4` | `orph_so_va1_a` | `generic_header` |  |
+| <span id="model-497"></span>497 | ![characters/orph_so_va1_a.png](images/characters/orph_so_va1_a.png){ width="96" } | `0x0ab1c4f4` | `orph_so_va1_a` | `generic_header` | |
 | <span id="model-301"></span>301 | ![characters/orph_so_va2.png](images/characters/orph_so_va2.png){ width="96" } | `0x9dd0f8b1` | `orph_so_va2` | `generic_header` | [226](characters.md#char-226) |
-| <span id="model-498"></span>498 | ![characters/orph_so_va2_a.png](images/characters/orph_so_va2_a.png){ width="96" } | `0x08f77aad` | `orph_so_va2_a` | `generic_header` |  |
+| <span id="model-498"></span>498 | ![characters/orph_so_va2_a.png](images/characters/orph_so_va2_a.png){ width="96" } | `0x08f77aad` | `orph_so_va2_a` | `generic_header` | |
 | <span id="model-302"></span>302 | ![characters/orph_so_vb1.png](images/characters/orph_so_vb1.png){ width="96" } | `0x2ff4fac8` | `orph_so_vb1` | `generic_header` | [227](characters.md#char-227) |
 | <span id="model-303"></span>303 | ![characters/orph_so_vb2.png](images/characters/orph_so_vb2.png){ width="96" } | `0xb6fdab72` | `orph_so_vb2` | `generic_header` | [228](characters.md#char-228) |
-| <span id="model-499"></span>499 | ![characters/orph_so_vb2_a.png](images/characters/orph_so_vb2_a.png){ width="96" } | `0x1a42d543` | `orph_so_vb2_a` | `generic_header` |  |
+| <span id="model-499"></span>499 | ![characters/orph_so_vb2_a.png](images/characters/orph_so_vb2_a.png){ width="96" } | `0x1a42d543` | `orph_so_vb2_a` | `generic_header` | |
 | <span id="model-304"></span>304 | ![characters/panz_bo.png](images/characters/panz_bo.png){ width="96" } | `0x7d0a461f` | `panz_bo` | `generic_header` | [148](characters.md#char-148) |
 | <span id="model-305"></span>305 | ![characters/panz_lt.png](images/characters/panz_lt.png){ width="96" } | `0x69eca27d` | `panz_lt` | `generic_header` | [149](characters.md#char-149) |
 | <span id="model-306"></span>306 | ![characters/panz_so_va1.png](images/characters/panz_so_va1.png){ width="96" } | `0xafd20c58` | `panz_so_va1` | `generic_header` | [150](characters.md#char-150) |
@@ -383,61 +383,61 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-309"></span>309 | ![characters/panz_so_vb2.png](images/characters/panz_so_vb2.png){ width="96" } | `0x1df60e21` | `panz_so_vb2` | `generic_header` | [153](characters.md#char-153) |
 | <span id="model-312"></span>312 | ![characters/punchbag.png](images/characters/punchbag.png){ width="96" } | `0x81bfbc7d` | `punchbag` | `punchbag_header` | [460](characters.md#char-460) |
 | <span id="model-310"></span>310 | ![characters/punk_bo.png](images/characters/punk_bo.png){ width="96" } | `0x0de83668` | `punk_bo` | `generic_header` | [229](characters.md#char-229) |
-| <span id="model-500"></span>500 | ![characters/punk_bo_a.png](images/characters/punk_bo_a.png){ width="96" } | `0x24d17b74` | `punk_bo_a` | `generic_header` |  |
+| <span id="model-500"></span>500 | ![characters/punk_bo_a.png](images/characters/punk_bo_a.png){ width="96" } | `0x24d17b74` | `punk_bo_a` | `generic_header` | |
 | <span id="model-311"></span>311 | ![characters/punk_bo_vb.png](images/characters/punk_bo_vb.png){ width="96" } | `0x23710f31` | `punk_bo_vb` | `generic_header` | [230](characters.md#char-230) |
 | <span id="model-313"></span>313 | ![characters/punk_lt.png](images/characters/punk_lt.png){ width="96" } | `0x190ed20a` | `punk_lt` | `generic_header` | [231](characters.md#char-231) |
-| <span id="model-501"></span>501 | ![characters/punk_lt_a.png](images/characters/punk_lt_a.png){ width="96" } | `0xd47d40d6` | `punk_lt_a` | `generic_header` |  |
-| <span id="model-315"></span>315 | ![characters/punk_so1a.png](images/characters/punk_so1a.png){ width="96" } | `0x370a0da7` | `punk_so1a` |  | [233](characters.md#char-233) |
-| <span id="model-502"></span>502 | ![characters/punk_so1a_a.png](images/characters/punk_so1a_a.png){ width="96" } | `0xd9b86333` | `punk_so1a_a` |  |  |
-| <span id="model-316"></span>316 | ![characters/punk_so1b.png](images/characters/punk_so1b.png){ width="96" } | `0xae035c1d` | `punk_so1b` |  | [234](characters.md#char-234) |
-| <span id="model-503"></span>503 | ![characters/punk_so1b_a.png](images/characters/punk_so1b_a.png){ width="96" } | `0xdbfedd6a` | `punk_so1b_a` |  |  |
-| <span id="model-317"></span>317 | ![characters/punk_so2a.png](images/characters/punk_so2a.png){ width="96" } | `0x1c275e64` | `punk_so2a` |  | [235](characters.md#char-235) |
-| <span id="model-318"></span>318 | ![characters/punk_so2b.png](images/characters/punk_so2b.png){ width="96" } | `0x852e0fde` | `punk_so2b` |  | [236](characters.md#char-236) |
+| <span id="model-501"></span>501 | ![characters/punk_lt_a.png](images/characters/punk_lt_a.png){ width="96" } | `0xd47d40d6` | `punk_lt_a` | `generic_header` | |
+| <span id="model-315"></span>315 | ![characters/punk_so1a.png](images/characters/punk_so1a.png){ width="96" } | `0x370a0da7` | `punk_so1a` | | [233](characters.md#char-233) |
+| <span id="model-502"></span>502 | ![characters/punk_so1a_a.png](images/characters/punk_so1a_a.png){ width="96" } | `0xd9b86333` | `punk_so1a_a` | | |
+| <span id="model-316"></span>316 | ![characters/punk_so1b.png](images/characters/punk_so1b.png){ width="96" } | `0xae035c1d` | `punk_so1b` | | [234](characters.md#char-234) |
+| <span id="model-503"></span>503 | ![characters/punk_so1b_a.png](images/characters/punk_so1b_a.png){ width="96" } | `0xdbfedd6a` | `punk_so1b_a` | | |
+| <span id="model-317"></span>317 | ![characters/punk_so2a.png](images/characters/punk_so2a.png){ width="96" } | `0x1c275e64` | `punk_so2a` | | [235](characters.md#char-235) |
+| <span id="model-318"></span>318 | ![characters/punk_so2b.png](images/characters/punk_so2b.png){ width="96" } | `0x852e0fde` | `punk_so2b` | | [236](characters.md#char-236) |
 | <span id="model-319"></span>319 | ![characters/riff_bo_va1.png](images/characters/riff_bo_va1.png){ width="96" } | `0xbc2fa22f` | `riff_bo_va1` | `generic_header` | [64](characters.md#char-64) |
-| <span id="model-504"></span>504 | ![characters/riff_bo_va1_a.png](images/characters/riff_bo_va1_a.png){ width="96" } | `0x6c8b442c` | `riff_bo_va1_a` | `generic_header` |  |
+| <span id="model-504"></span>504 | ![characters/riff_bo_va1_a.png](images/characters/riff_bo_va1_a.png){ width="96" } | `0x6c8b442c` | `riff_bo_va1_a` | `generic_header` | |
 | <span id="model-321"></span>321 | ![characters/riff_cy.png](images/characters/riff_cy.png){ width="96" } | `0xc1b6f2ad` | `riff_cy` | `generic_header` | [62](characters.md#char-62) |
 | <span id="model-322"></span>322 | ![characters/riff_cy_ghost.png](images/characters/riff_cy_ghost.png){ width="96" } | `0xb6699001` | `riff_cy_ghost` | `generic_header` | [63](characters.md#char-63) |
-| <span id="model-506"></span>506 | ![characters/riff_cy_ghost_a.png](images/characters/riff_cy_ghost_a.png){ width="96" } | `0xaf5b16c6` | `riff_cy_ghost_a` | `generic_header` |  |
+| <span id="model-506"></span>506 | ![characters/riff_cy_ghost_a.png](images/characters/riff_cy_ghost_a.png){ width="96" } | `0xaf5b16c6` | `riff_cy_ghost_a` | `generic_header` | |
 | <span id="model-323"></span>323 | ![characters/riff_em.png](images/characters/riff_em.png){ width="96" } | `0x8d368156` | `riff_em` | `generic_header` | [67](characters.md#char-67) |
 | <span id="model-320"></span>320 | ![characters/riff_lt.png](images/characters/riff_lt.png){ width="96" } | `0x389f92df` | `riff_lt` | `riff_lt_header` | [66](characters.md#char-66) |
-| <span id="model-505"></span>505 | ![characters/riff_lt_a.png](images/characters/riff_lt_a.png){ width="96" } | `0x5eee118d` | `riff_lt_a` | `riff_lt_header` |  |
-| <span id="model-324"></span>324 | ![characters/riff_so_va1.png](images/characters/riff_so_va1.png){ width="96" } | `0x74a57311` | `riff_so_va1` |  | [68](characters.md#char-68), [70](characters.md#char-70) |
-| <span id="model-507"></span>507 | ![characters/riff_so_va1_a.png](images/characters/riff_so_va1_a.png){ width="96" } | `0xdc9a7599` | `riff_so_va1_a` |  |  |
-| <span id="model-325"></span>325 | ![characters/riff_so_va2.png](images/characters/riff_so_va2.png){ width="96" } | `0xedac22ab` | `riff_so_va2` |  | [69](characters.md#char-69) |
-| <span id="model-508"></span>508 | ![characters/riff_so_va2_a.png](images/characters/riff_so_va2_a.png){ width="96" } | `0xdedccbc0` | `riff_so_va2_a` |  |  |
-| <span id="model-327"></span>327 | ![characters/riff_so_vb1.png](images/characters/riff_so_vb1.png){ width="96" } | `0x5f8820d2` | `riff_so_vb1` |  | [71](characters.md#char-71) |
-| <span id="model-328"></span>328 | ![characters/riff_so_vb2.png](images/characters/riff_so_vb2.png){ width="96" } | `0xc6817168` | `riff_so_vb2` |  | [72](characters.md#char-72) |
-| <span id="model-329"></span>329 | ![characters/riff_so_vc1.png](images/characters/riff_so_vc1.png){ width="96" } | `0x46931193` | `riff_so_vc1` |  | [73](characters.md#char-73) |
-| <span id="model-330"></span>330 | ![characters/riff_so_vc2.png](images/characters/riff_so_vc2.png){ width="96" } | `0xdf9a4029` | `riff_so_vc2` |  | [74](characters.md#char-74) |
-| <span id="model-331"></span>331 | ![characters/riff_so_vc3.png](images/characters/riff_so_vc3.png){ width="96" } | `0xa89d70bf` | `riff_so_vc3` |  | [75](characters.md#char-75) |
-| <span id="model-332"></span>332 | ![characters/riff_so_vc4.png](images/characters/riff_so_vc4.png){ width="96" } | `0x36f9e51c` | `riff_so_vc4` |  | [76](characters.md#char-76) |
+| <span id="model-505"></span>505 | ![characters/riff_lt_a.png](images/characters/riff_lt_a.png){ width="96" } | `0x5eee118d` | `riff_lt_a` | `riff_lt_header` | |
+| <span id="model-324"></span>324 | ![characters/riff_so_va1.png](images/characters/riff_so_va1.png){ width="96" } | `0x74a57311` | `riff_so_va1` | | [68](characters.md#char-68), [70](characters.md#char-70) |
+| <span id="model-507"></span>507 | ![characters/riff_so_va1_a.png](images/characters/riff_so_va1_a.png){ width="96" } | `0xdc9a7599` | `riff_so_va1_a` | | |
+| <span id="model-325"></span>325 | ![characters/riff_so_va2.png](images/characters/riff_so_va2.png){ width="96" } | `0xedac22ab` | `riff_so_va2` | | [69](characters.md#char-69) |
+| <span id="model-508"></span>508 | ![characters/riff_so_va2_a.png](images/characters/riff_so_va2_a.png){ width="96" } | `0xdedccbc0` | `riff_so_va2_a` | | |
+| <span id="model-327"></span>327 | ![characters/riff_so_vb1.png](images/characters/riff_so_vb1.png){ width="96" } | `0x5f8820d2` | `riff_so_vb1` | | [71](characters.md#char-71) |
+| <span id="model-328"></span>328 | ![characters/riff_so_vb2.png](images/characters/riff_so_vb2.png){ width="96" } | `0xc6817168` | `riff_so_vb2` | | [72](characters.md#char-72) |
+| <span id="model-329"></span>329 | ![characters/riff_so_vc1.png](images/characters/riff_so_vc1.png){ width="96" } | `0x46931193` | `riff_so_vc1` | | [73](characters.md#char-73) |
+| <span id="model-330"></span>330 | ![characters/riff_so_vc2.png](images/characters/riff_so_vc2.png){ width="96" } | `0xdf9a4029` | `riff_so_vc2` | | [74](characters.md#char-74) |
+| <span id="model-331"></span>331 | ![characters/riff_so_vc3.png](images/characters/riff_so_vc3.png){ width="96" } | `0xa89d70bf` | `riff_so_vc3` | | [75](characters.md#char-75) |
+| <span id="model-332"></span>332 | ![characters/riff_so_vc4.png](images/characters/riff_so_vc4.png){ width="96" } | `0x36f9e51c` | `riff_so_vc4` | | [76](characters.md#char-76) |
 | <span id="model-333"></span>333 | ![characters/rogu_bo.png](images/characters/rogu_bo.png){ width="96" } | `0x85ec4461` | `rogu_bo` | `rogu_bo_header` | [77](characters.md#char-77) |
-| <span id="model-509"></span>509 | ![characters/rogu_bo_a.png](images/characters/rogu_bo_a.png){ width="96" } | `0x4b185829` | `rogu_bo_a` | `rogu_bo_header` |  |
+| <span id="model-509"></span>509 | ![characters/rogu_bo_a.png](images/characters/rogu_bo_a.png){ width="96" } | `0x4b185829` | `rogu_bo_a` | `rogu_bo_header` | |
 | <span id="model-334"></span>334 | ![characters/rogu_bo_gun.png](images/characters/rogu_bo_gun.png){ width="96" } | `0x9ce0a294` | `rogu_bo_gun` | `rogu_bo_gun_header` | [79](characters.md#char-79) |
-| <span id="model-510"></span>510 | ![characters/rogu_bo_gun_a.png](images/characters/rogu_bo_gun_a.png){ width="96" } | `0x6bba1390` | `rogu_bo_gun_a` | `rogu_bo_gun_header` |  |
+| <span id="model-510"></span>510 | ![characters/rogu_bo_gun_a.png](images/characters/rogu_bo_gun_a.png){ width="96" } | `0x6bba1390` | `rogu_bo_gun_a` | `rogu_bo_gun_header` | |
 | <span id="model-335"></span>335 | ![characters/rogu_bo_vb.png](images/characters/rogu_bo_vb.png){ width="96" } | `0x36c4eb5b` | `rogu_bo_vb` | `rogu_bo_header` | [78](characters.md#char-78) |
 | <span id="model-336"></span>336 | ![characters/rogu_lt.png](images/characters/rogu_lt.png){ width="96" } | `0x910aa003` | `rogu_lt` | `generic_header` | [80](characters.md#char-80) |
-| <span id="model-511"></span>511 | ![characters/rogu_lt_a.png](images/characters/rogu_lt_a.png){ width="96" } | `0xbbb4638b` | `rogu_lt_a` | `generic_header` |  |
+| <span id="model-511"></span>511 | ![characters/rogu_lt_a.png](images/characters/rogu_lt_a.png){ width="96" } | `0xbbb4638b` | `rogu_lt_a` | `generic_header` | |
 | <span id="model-337"></span>337 | ![characters/rogu_so_va1.png](images/characters/rogu_so_va1.png){ width="96" } | `0x9cf421dd` | `rogu_so_va1` | `generic_header` | [81](characters.md#char-81) |
-| <span id="model-512"></span>512 | ![characters/rogu_so_va1_a.png](images/characters/rogu_so_va1_a.png){ width="96" } | `0x3eb03552` | `rogu_so_va1_a` | `generic_header` |  |
+| <span id="model-512"></span>512 | ![characters/rogu_so_va1_a.png](images/characters/rogu_so_va1_a.png){ width="96" } | `0x3eb03552` | `rogu_so_va1_a` | `generic_header` | |
 | <span id="model-341"></span>341 | ![characters/rogu_so_va1_hr.png](images/characters/rogu_so_va1_hr.png){ width="96" } | `0x3890c439` | `rogu_so_va1_hr` | `generic_header` | [85](characters.md#char-85) |
 | <span id="model-338"></span>338 | ![characters/rogu_so_va2.png](images/characters/rogu_so_va2.png){ width="96" } | `0x05fd7067` | `rogu_so_va2` | `generic_header` | [82](characters.md#char-82) |
-| <span id="model-513"></span>513 | ![characters/rogu_so_va2_a.png](images/characters/rogu_so_va2_a.png){ width="96" } | `0x3cf68b0b` | `rogu_so_va2_a` | `generic_header` |  |
+| <span id="model-513"></span>513 | ![characters/rogu_so_va2_a.png](images/characters/rogu_so_va2_a.png){ width="96" } | `0x3cf68b0b` | `rogu_so_va2_a` | `generic_header` | |
 | <span id="model-342"></span>342 | ![characters/rogu_so_va2_hr.png](images/characters/rogu_so_va2_hr.png){ width="96" } | `0x2a256bd7` | `rogu_so_va2_hr` | `generic_header` | [86](characters.md#char-86) |
 | <span id="model-339"></span>339 | ![characters/rogu_so_vb1.png](images/characters/rogu_so_vb1.png){ width="96" } | `0xb7d9721e` | `rogu_so_vb1` | `generic_header` | [83](characters.md#char-83) |
 | <span id="model-343"></span>343 | ![characters/rogu_so_vb1_hr.png](images/characters/rogu_so_vb1_hr.png){ width="96" } | `0x7f30bee9` | `rogu_so_vb1_hr` | `generic_header` | [87](characters.md#char-87) |
 | <span id="model-340"></span>340 | ![characters/rogu_so_vb2.png](images/characters/rogu_so_vb2.png){ width="96" } | `0x2ed023a4` | `rogu_so_vb2` | `generic_header` | [84](characters.md#char-84) |
 | <span id="model-344"></span>344 | ![characters/rogu_so_vb2_hr.png](images/characters/rogu_so_vb2_hr.png){ width="96" } | `0x6d851107` | `rogu_so_vb2_hr` | `generic_header` | [88](characters.md#char-88) |
 | <span id="model-345"></span>345 | ![characters/samo_bo.png](images/characters/samo_bo.png){ width="96" } | `0x6c8581ff` | `samo_bo` | `samo_bo_header` | [160](characters.md#char-160) |
-| <span id="model-514"></span>514 | ![characters/samo_bo_a.png](images/characters/samo_bo_a.png){ width="96" } | `0x4fd420eb` | `samo_bo_a` | `samo_bo_header` |  |
+| <span id="model-514"></span>514 | ![characters/samo_bo_a.png](images/characters/samo_bo_a.png){ width="96" } | `0x4fd420eb` | `samo_bo_a` | `samo_bo_header` | |
 | <span id="model-350"></span>350 | ![characters/samo_lt.png](images/characters/samo_lt.png){ width="96" } | `0x7863659d` | `samo_lt` | `samo_lt_header` | [161](characters.md#char-161) |
-| <span id="model-515"></span>515 | ![characters/samo_lt_a.png](images/characters/samo_lt_a.png){ width="96" } | `0xbf781b49` | `samo_lt_a` | `samo_lt_header` |  |
-| <span id="model-346"></span>346 | ![characters/samo_so_va1.png](images/characters/samo_so_va1.png){ width="96" } | `0x3be669d3` | `samo_so_va1` |  | [162](characters.md#char-162) |
-| <span id="model-347"></span>347 | ![characters/samo_so_va2.png](images/characters/samo_so_va2.png){ width="96" } | `0xa2ef3869` | `samo_so_va2` |  | [163](characters.md#char-163) |
-| <span id="model-348"></span>348 | ![characters/samo_so_va3.png](images/characters/samo_so_va3.png){ width="96" } | `0xd5e808ff` | `samo_so_va3` |  | [164](characters.md#char-164) |
-| <span id="model-516"></span>516 | ![characters/samo_so_va3_a.png](images/characters/samo_so_va3_a.png){ width="96" } | `0xdbb0a202` | `samo_so_va3_a` |  |  |
-| <span id="model-349"></span>349 | ![characters/samo_so_va4.png](images/characters/samo_so_va4.png){ width="96" } | `0x4b8c9d5c` | `samo_so_va4` |  | [165](characters.md#char-165) |
-| <span id="model-517"></span>517 | ![characters/samo_so_va4_a.png](images/characters/samo_so_va4_a.png){ width="96" } | `0xdeffb487` | `samo_so_va4_a` |  |  |
+| <span id="model-515"></span>515 | ![characters/samo_lt_a.png](images/characters/samo_lt_a.png){ width="96" } | `0xbf781b49` | `samo_lt_a` | `samo_lt_header` | |
+| <span id="model-346"></span>346 | ![characters/samo_so_va1.png](images/characters/samo_so_va1.png){ width="96" } | `0x3be669d3` | `samo_so_va1` | | [162](characters.md#char-162) |
+| <span id="model-347"></span>347 | ![characters/samo_so_va2.png](images/characters/samo_so_va2.png){ width="96" } | `0xa2ef3869` | `samo_so_va2` | | [163](characters.md#char-163) |
+| <span id="model-348"></span>348 | ![characters/samo_so_va3.png](images/characters/samo_so_va3.png){ width="96" } | `0xd5e808ff` | `samo_so_va3` | | [164](characters.md#char-164) |
+| <span id="model-516"></span>516 | ![characters/samo_so_va3_a.png](images/characters/samo_so_va3_a.png){ width="96" } | `0xdbb0a202` | `samo_so_va3_a` | | |
+| <span id="model-349"></span>349 | ![characters/samo_so_va4.png](images/characters/samo_so_va4.png){ width="96" } | `0x4b8c9d5c` | `samo_so_va4` | | [165](characters.md#char-165) |
+| <span id="model-517"></span>517 | ![characters/samo_so_va4_a.png](images/characters/samo_so_va4_a.png){ width="96" } | `0xdeffb487` | `samo_so_va4_a` | | |
 | <span id="model-351"></span>351 | ![characters/sara_bo.png](images/characters/sara_bo.png){ width="96" } | `0x6eeaf69f` | `sara_bo` | `generic_header` | [142](characters.md#char-142) |
 | <span id="model-352"></span>352 | ![characters/sara_lt.png](images/characters/sara_lt.png){ width="96" } | `0x7a0c12fd` | `sara_lt` | `generic_header` | [143](characters.md#char-143) |
 | <span id="model-353"></span>353 | ![characters/sara_so1a.png](images/characters/sara_so1a.png){ width="96" } | `0xf793db6f` | `sara_so1a` | `generic_header` | [144](characters.md#char-144) |
@@ -445,71 +445,71 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-355"></span>355 | ![characters/sara_so2a.png](images/characters/sara_so2a.png){ width="96" } | `0xdcbe88ac` | `sara_so2a` | `generic_header` | [146](characters.md#char-146) |
 | <span id="model-356"></span>356 | ![characters/sara_so2b.png](images/characters/sara_so2b.png){ width="96" } | `0x45b7d916` | `sara_so2b` | `generic_header` | [147](characters.md#char-147) |
 | <span id="model-357"></span>357 | ![characters/sava_bo.png](images/characters/sava_bo.png){ width="96" } | `0x9b6a505f` | `sava_bo` | `sava_bo_header` | [106](characters.md#char-106) |
-| <span id="model-518"></span>518 | ![characters/sava_bo_a.png](images/characters/sava_bo_a.png){ width="96" } | `0x100789af` | `sava_bo_a` | `sava_bo_header` |  |
+| <span id="model-518"></span>518 | ![characters/sava_bo_a.png](images/characters/sava_bo_a.png){ width="96" } | `0x100789af` | `sava_bo_a` | `sava_bo_header` | |
 | <span id="model-358"></span>358 | ![characters/sava_lt.png](images/characters/sava_lt.png){ width="96" } | `0x8f8cb43d` | `sava_lt` | `sava_lt_header` | [107](characters.md#char-107) |
 | <span id="model-359"></span>359 | ![characters/sava_lt1.png](images/characters/sava_lt1.png){ width="96" } | `0xdb3b2f12` | `sava_lt1` | `sava_lt_header` | [108](characters.md#char-108) |
 | <span id="model-360"></span>360 | ![characters/sava_lt2.png](images/characters/sava_lt2.png){ width="96" } | `0x42327ea8` | `sava_lt2` | `sava_lt_header` | [109](characters.md#char-109) |
-| <span id="model-520"></span>520 | ![characters/sava_lt2_a.png](images/characters/sava_lt2_a.png){ width="96" } | `0x972c2a42` | `sava_lt2_a` | `sava_lt_header` |  |
-| <span id="model-519"></span>519 | ![characters/sava_lt_a.png](images/characters/sava_lt_a.png){ width="96" } | `0xe0abb20d` | `sava_lt_a` | `sava_lt_header` |  |
-| <span id="model-361"></span>361 | ![characters/sava_so1a.png](images/characters/sava_so1a.png){ width="96" } | `0x03dcff7c` | `sava_so1a` |  | [110](characters.md#char-110) |
-| <span id="model-521"></span>521 | ![characters/sava_so1a_a.png](images/characters/sava_so1a_a.png){ width="96" } | `0xe8c7d801` | `sava_so1a_a` |  |  |
-| <span id="model-362"></span>362 | ![characters/sava_so1b.png](images/characters/sava_so1b.png){ width="96" } | `0x9ad5aec6` | `sava_so1b` |  | [111](characters.md#char-111) |
-| <span id="model-363"></span>363 | ![characters/sava_so2a.png](images/characters/sava_so2a.png){ width="96" } | `0x28f1acbf` | `sava_so2a` |  | [112](characters.md#char-112) |
-| <span id="model-364"></span>364 | ![characters/sava_so2b.png](images/characters/sava_so2b.png){ width="96" } | `0xb1f8fd05` | `sava_so2b` |  | [113](characters.md#char-113) |
+| <span id="model-520"></span>520 | ![characters/sava_lt2_a.png](images/characters/sava_lt2_a.png){ width="96" } | `0x972c2a42` | `sava_lt2_a` | `sava_lt_header` | |
+| <span id="model-519"></span>519 | ![characters/sava_lt_a.png](images/characters/sava_lt_a.png){ width="96" } | `0xe0abb20d` | `sava_lt_a` | `sava_lt_header` | |
+| <span id="model-361"></span>361 | ![characters/sava_so1a.png](images/characters/sava_so1a.png){ width="96" } | `0x03dcff7c` | `sava_so1a` | | [110](characters.md#char-110) |
+| <span id="model-521"></span>521 | ![characters/sava_so1a_a.png](images/characters/sava_so1a_a.png){ width="96" } | `0xe8c7d801` | `sava_so1a_a` | | |
+| <span id="model-362"></span>362 | ![characters/sava_so1b.png](images/characters/sava_so1b.png){ width="96" } | `0x9ad5aec6` | `sava_so1b` | | [111](characters.md#char-111) |
+| <span id="model-363"></span>363 | ![characters/sava_so2a.png](images/characters/sava_so2a.png){ width="96" } | `0x28f1acbf` | `sava_so2a` | | [112](characters.md#char-112) |
+| <span id="model-364"></span>364 | ![characters/sava_so2b.png](images/characters/sava_so2b.png){ width="96" } | `0xb1f8fd05` | `sava_so2b` | | [113](characters.md#char-113) |
 | <span id="model-365"></span>365 | ![characters/turn_bd.png](images/characters/turn_bd.png){ width="96" } | `0xfcbb4142` | `turn_bd` | `turn_bd_header` | [96](characters.md#char-96), [458](characters.md#char-458) |
 | <span id="model-366"></span>366 | ![characters/turn_bd_gun.png](images/characters/turn_bd_gun.png){ width="96" } | `0xf48f62a4` | `turn_bd_gun` | `turn_bd_gun_header` | [98](characters.md#char-98) |
 | <span id="model-367"></span>367 | ![characters/turn_bo.png](images/characters/turn_bo.png){ width="96" } | `0x6b6998ca` | `turn_bo` | `turn_lt_header` | [99](characters.md#char-99) |
 | <span id="model-368"></span>368 | ![characters/turn_lt.png](images/characters/turn_lt.png){ width="96" } | `0x7f8f7ca8` | `turn_lt` | `turn_lt_header` | [100](characters.md#char-100) |
-| <span id="model-369"></span>369 | ![characters/turn_so1.png](images/characters/turn_so1.png){ width="96" } | `0xe5e264c6` | `turn_so1` |  | [101](characters.md#char-101) |
-| <span id="model-370"></span>370 | ![characters/turn_so2.png](images/characters/turn_so2.png){ width="96" } | `0x7ceb357c` | `turn_so2` |  | [102](characters.md#char-102) |
-| <span id="model-371"></span>371 | ![characters/turn_so3.png](images/characters/turn_so3.png){ width="96" } | `0x0bec05ea` | `turn_so3` |  | [103](characters.md#char-103) |
-| <span id="model-372"></span>372 | ![characters/turn_so4.png](images/characters/turn_so4.png){ width="96" } | `0x95889049` | `turn_so4` |  | [104](characters.md#char-104) |
-| <span id="model-373"></span>373 | ![characters/turn_so5.png](images/characters/turn_so5.png){ width="96" } | `0xe28fa0df` | `turn_so5` |  | [105](characters.md#char-105) |
+| <span id="model-369"></span>369 | ![characters/turn_so1.png](images/characters/turn_so1.png){ width="96" } | `0xe5e264c6` | `turn_so1` | | [101](characters.md#char-101) |
+| <span id="model-370"></span>370 | ![characters/turn_so2.png](images/characters/turn_so2.png){ width="96" } | `0x7ceb357c` | `turn_so2` | | [102](characters.md#char-102) |
+| <span id="model-371"></span>371 | ![characters/turn_so3.png](images/characters/turn_so3.png){ width="96" } | `0x0bec05ea` | `turn_so3` | | [103](characters.md#char-103) |
+| <span id="model-372"></span>372 | ![characters/turn_so4.png](images/characters/turn_so4.png){ width="96" } | `0x95889049` | `turn_so4` | | [104](characters.md#char-104) |
+| <span id="model-373"></span>373 | ![characters/turn_so5.png](images/characters/turn_so5.png){ width="96" } | `0xe28fa0df` | `turn_so5` | | [105](characters.md#char-105) |
 | <span id="model-374"></span>374 | ![characters/warr_aj.png](images/characters/warr_aj.png){ width="96" } | `0x834e8db1` | `warr_aj` | `warr_aj_header` | [11](characters.md#char-11) |
-| <span id="model-522"></span>522 | ![characters/warr_aj_a.png](images/characters/warr_aj_a.png){ width="96" } | `0x2898e180` | `warr_aj_a` | `warr_aj_header` |  |
+| <span id="model-522"></span>522 | ![characters/warr_aj_a.png](images/characters/warr_aj_a.png){ width="96" } | `0x2898e180` | `warr_aj_a` | `warr_aj_header` | |
 | <span id="model-376"></span>376 | ![characters/warr_aj_cv.png](images/characters/warr_aj_cv.png){ width="96" } | `0xb4c242c7` | `warr_aj_cv` | `warr_aj_header` | [13](characters.md#char-13) |
-| <span id="model-531"></span>531 | ![characters/warr_aj_fury.png](images/characters/warr_aj_fury.png){ width="96" } | `0x5cf85b8f` | `warr_aj_fury` | `warr_aj_header` |  |
+| <span id="model-531"></span>531 | ![characters/warr_aj_fury.png](images/characters/warr_aj_fury.png){ width="96" } | `0x5cf85b8f` | `warr_aj_fury` | `warr_aj_header` | |
 | <span id="model-375"></span>375 | ![characters/warr_aj_gen.png](images/characters/warr_aj_gen.png){ width="96" } | `0x1b5adfcd` | `warr_aj_gen` | `generic_header` | [12](characters.md#char-12) |
 | <span id="model-377"></span>377 | ![characters/warr_aj_ghost.png](images/characters/warr_aj_ghost.png){ width="96" } | `0x89334219` | `warr_aj_ghost` | `warr_aj_header` | [14](characters.md#char-14) |
 | <span id="model-378"></span>378 | ![characters/warr_cb.png](images/characters/warr_cb.png){ width="96" } | `0xbfa36701` | `warr_cb` | `warr_cb_header` | [18](characters.md#char-18) |
-| <span id="model-523"></span>523 | ![characters/warr_cb_a.png](images/characters/warr_cb_a.png){ width="96" } | `0x8c8278b3` | `warr_cb_a` | `warr_cb_header` |  |
+| <span id="model-523"></span>523 | ![characters/warr_cb_a.png](images/characters/warr_cb_a.png){ width="96" } | `0x8c8278b3` | `warr_cb_a` | `warr_cb_header` | |
 | <span id="model-379"></span>379 | ![characters/warr_cb_cv.png](images/characters/warr_cb_cv.png){ width="96" } | `0x0bb63948` | `warr_cb_cv` | `warr_cb_header` | [20](characters.md#char-20) |
-| <span id="model-532"></span>532 | ![characters/warr_cb_fury.png](images/characters/warr_cb_fury.png){ width="96" } | `0x2734c8cb` | `warr_cb_fury` | `warr_cb_header` |  |
+| <span id="model-532"></span>532 | ![characters/warr_cb_fury.png](images/characters/warr_cb_fury.png){ width="96" } | `0x2734c8cb` | `warr_cb_fury` | `warr_cb_header` | |
 | <span id="model-380"></span>380 | ![characters/warr_cb_gen.png](images/characters/warr_cb_gen.png){ width="96" } | `0x66e23507` | `warr_cb_gen` | `generic_header` | [19](characters.md#char-19) |
 | <span id="model-381"></span>381 | ![characters/warr_cl.png](images/characters/warr_cl.png){ width="96" } | `0x581b4a06` | `warr_cl` | `warr_cl_header` | [1](characters.md#char-1) |
 | <span id="model-430"></span>430 | ![characters/warr_cl_chase.png](images/characters/warr_cl_chase.png){ width="96" } | `0x3d68db66` | `warr_cl_chase` | `warr_cl_chase_header` | [4](characters.md#char-4) |
-| <span id="model-540"></span>540 | ![characters/warr_cl_chase_fury.png](images/characters/warr_cl_chase_fury.png){ width="96" } | `0xcfcd11dc` | `warr_cl_chase_fury` | `warr_cl_chase_header` |  |
-| <span id="model-533"></span>533 | ![characters/warr_cl_fury.png](images/characters/warr_cl_fury.png){ width="96" } | `0x1d3ea9bb` | `warr_cl_fury` | `warr_cl_header` |  |
+| <span id="model-540"></span>540 | ![characters/warr_cl_chase_fury.png](images/characters/warr_cl_chase_fury.png){ width="96" } | `0xcfcd11dc` | `warr_cl_chase_fury` | `warr_cl_chase_header` | |
+| <span id="model-533"></span>533 | ![characters/warr_cl_fury.png](images/characters/warr_cl_fury.png){ width="96" } | `0x1d3ea9bb` | `warr_cl_fury` | `warr_cl_header` | |
 | <span id="model-382"></span>382 | ![characters/warr_cl_gen.png](images/characters/warr_cl_gen.png){ width="96" } | `0xd9d28b66` | `warr_cl_gen` | `generic_header` | [2](characters.md#char-2) |
 | <span id="model-383"></span>383 | ![characters/warr_cl_ghost.png](images/characters/warr_cl_ghost.png){ width="96" } | `0xa8c6705e` | `warr_cl_ghost` | `generic_header` | [3](characters.md#char-3) |
-| <span id="model-524"></span>524 | ![characters/warr_cl_ghost_a.png](images/characters/warr_cl_ghost_a.png){ width="96" } | `0x3272ab8a` | `warr_cl_ghost_a` | `generic_header` |  |
+| <span id="model-524"></span>524 | ![characters/warr_cl_ghost_a.png](images/characters/warr_cl_ghost_a.png){ width="96" } | `0x3272ab8a` | `warr_cl_ghost_a` | `generic_header` | |
 | <span id="model-384"></span>384 | ![characters/warr_co.png](images/characters/warr_co.png){ width="96" } | `0xc1121bbc` | `warr_co` | `warr_co_header` | [15](characters.md#char-15) |
-| <span id="model-525"></span>525 | ![characters/warr_co_a.png](images/characters/warr_co_a.png){ width="96" } | `0x845aebe0` | `warr_co_a` | `warr_co_header` |  |
+| <span id="model-525"></span>525 | ![characters/warr_co_a.png](images/characters/warr_co_a.png){ width="96" } | `0x845aebe0` | `warr_co_a` | `warr_co_header` | |
 | <span id="model-386"></span>386 | ![characters/warr_co_cv.png](images/characters/warr_co_cv.png){ width="96" } | `0xf9dce195` | `warr_co_cv` | `warr_co_header` | [17](characters.md#char-17) |
-| <span id="model-534"></span>534 | ![characters/warr_co_fury.png](images/characters/warr_co_fury.png){ width="96" } | `0x9baadb15` | `warr_co_fury` | `warr_co_header` |  |
+| <span id="model-534"></span>534 | ![characters/warr_co_fury.png](images/characters/warr_co_fury.png){ width="96" } | `0x9baadb15` | `warr_co_fury` | `warr_co_header` | |
 | <span id="model-385"></span>385 | ![characters/warr_co_gen.png](images/characters/warr_co_gen.png){ width="96" } | `0x9e72f1b6` | `warr_co_gen` | `generic_header` | [16](characters.md#char-16) |
 | <span id="model-387"></span>387 | ![characters/warr_dest_le.png](images/characters/warr_dest_le.png){ width="96" } | `0xf42d3b4a` | `warr_dest_le` | `dest_lt_header` | [61](characters.md#char-61) |
 | <span id="model-388"></span>388 | ![characters/warr_fo.png](images/characters/warr_fo.png){ width="96" } | `0xbc65eff9` | `warr_fo` | `warr_fo_header` | [21](characters.md#char-21) |
 | <span id="model-389"></span>389 | ![characters/warr_fo_cv1.png](images/characters/warr_fo_cv1.png){ width="96" } | `0x538dc52e` | `warr_fo_cv1` | `warr_fo_header` | [23](characters.md#char-23) |
 | <span id="model-390"></span>390 | ![characters/warr_fo_cv2.png](images/characters/warr_fo_cv2.png){ width="96" } | `0xca849494` | `warr_fo_cv2` | `warr_fo_header` | [24](characters.md#char-24) |
-| <span id="model-535"></span>535 | ![characters/warr_fo_fury.png](images/characters/warr_fo_fury.png){ width="96" } | `0xc992f4b2` | `warr_fo_fury` | `warr_fo_header` |  |
+| <span id="model-535"></span>535 | ![characters/warr_fo_fury.png](images/characters/warr_fo_fury.png){ width="96" } | `0xc992f4b2` | `warr_fo_fury` | `warr_fo_header` | |
 | <span id="model-391"></span>391 | ![characters/warr_fo_gen.png](images/characters/warr_fo_gen.png){ width="96" } | `0xcebf6005` | `warr_fo_gen` | `generic_header` | [22](characters.md#char-22) |
 | <span id="model-392"></span>392 | ![characters/warr_fo_ghost.png](images/characters/warr_fo_ghost.png){ width="96" } | `0xd1ce64a7` | `warr_fo_ghost` | `generic_header` | [25](characters.md#char-25) |
-| <span id="model-526"></span>526 | ![characters/warr_fo_ghost_a.png](images/characters/warr_fo_ghost_a.png){ width="96" } | `0xedd65c0b` | `warr_fo_ghost_a` | `generic_header` |  |
+| <span id="model-526"></span>526 | ![characters/warr_fo_ghost_a.png](images/characters/warr_fo_ghost_a.png){ width="96" } | `0xedd65c0b` | `warr_fo_ghost_a` | `generic_header` | |
 | <span id="model-393"></span>393 | ![characters/warr_jn.png](images/characters/warr_jn.png){ width="96" } | `0x67d79063` | `warr_jn` | `generic_header` | [41](characters.md#char-41) |
 | <span id="model-395"></span>395 | ![characters/warr_ly.png](images/characters/warr_ly.png){ width="96" } | `0xb25eb222` | `warr_ly` | `generic_header` | [45](characters.md#char-45) |
 | <span id="model-399"></span>399 | ![characters/warr_ma.png](images/characters/warr_ma.png){ width="96" } | `0xb8291b35` | `warr_ma` | `generic_header` | [43](characters.md#char-43) |
 | <span id="model-401"></span>401 | ![characters/warr_re.png](images/characters/warr_re.png){ width="96" } | `0x721ed1b2` | `warr_re` | `warr_re_header` | [30](characters.md#char-30) |
-| <span id="model-527"></span>527 | ![characters/warr_re_a.png](images/characters/warr_re_a.png){ width="96" } | `0x61685ecc` | `warr_re_a` | `warr_re_header` |  |
+| <span id="model-527"></span>527 | ![characters/warr_re_a.png](images/characters/warr_re_a.png){ width="96" } | `0x61685ecc` | `warr_re_a` | `warr_re_header` | |
 | <span id="model-402"></span>402 | ![characters/warr_re_cv.png](images/characters/warr_re_cv.png){ width="96" } | `0xcbe1bfc3` | `warr_re_cv` | `warr_re_header` | [32](characters.md#char-32) |
-| <span id="model-536"></span>536 | ![characters/warr_re_fury.png](images/characters/warr_re_fury.png){ width="96" } | `0xfb986f09` | `warr_re_fury` | `warr_re_header` |  |
+| <span id="model-536"></span>536 | ![characters/warr_re_fury.png](images/characters/warr_re_fury.png){ width="96" } | `0xfb986f09` | `warr_re_fury` | `warr_re_header` | |
 | <span id="model-403"></span>403 | ![characters/warr_re_gen.png](images/characters/warr_re_gen.png){ width="96" } | `0x1c483829` | `warr_re_gen` | `generic_header` | [31](characters.md#char-31) |
 | <span id="model-404"></span>404 | ![characters/warr_sn.png](images/characters/warr_sn.png){ width="96" } | `0xfcd7397b` | `warr_sn` | `warr_sn_header` | [33](characters.md#char-33) |
-| <span id="model-528"></span>528 | ![characters/warr_sn_a.png](images/characters/warr_sn_a.png){ width="96" } | `0xd581d648` | `warr_sn_a` | `warr_sn_header` |  |
+| <span id="model-528"></span>528 | ![characters/warr_sn_a.png](images/characters/warr_sn_a.png){ width="96" } | `0xd581d648` | `warr_sn_a` | `warr_sn_header` | |
 | <span id="model-431"></span>431 | ![characters/warr_sn_chase.png](images/characters/warr_sn_chase.png){ width="96" } | `0xd64cfb64` | `warr_sn_chase` | `warr_sn_chase_header` | [36](characters.md#char-36) |
-| <span id="model-541"></span>541 | ![characters/warr_sn_chase_fury.png](images/characters/warr_sn_chase_fury.png){ width="96" } | `0x97f12999` | `warr_sn_chase_fury` | `warr_sn_chase_header` |  |
+| <span id="model-541"></span>541 | ![characters/warr_sn_chase_fury.png](images/characters/warr_sn_chase_fury.png){ width="96" } | `0x97f12999` | `warr_sn_chase_fury` | `warr_sn_chase_header` | |
 | <span id="model-405"></span>405 | ![characters/warr_sn_cv.png](images/characters/warr_sn_cv.png){ width="96" } | `0x21801172` | `warr_sn_cv` | `warr_sn_header` | [35](characters.md#char-35) |
-| <span id="model-537"></span>537 | ![characters/warr_sn_fury.png](images/characters/warr_sn_fury.png){ width="96" } | `0x3728947e` | `warr_sn_fury` | `warr_sn_header` |  |
+| <span id="model-537"></span>537 | ![characters/warr_sn_fury.png](images/characters/warr_sn_fury.png){ width="96" } | `0x3728947e` | `warr_sn_fury` | `warr_sn_header` | |
 | <span id="model-406"></span>406 | ![characters/warr_sn_gen.png](images/characters/warr_sn_gen.png){ width="96" } | `0xa0c4da9d` | `warr_sn_gen` | `generic_header` | [34](characters.md#char-34) |
 | <span id="model-407"></span>407 | ![characters/warr_so_va1.png](images/characters/warr_so_va1.png){ width="96" } | `0x1ff8b30b` | `warr_so_va1` | `generic_header` | [49](characters.md#char-49) |
 | <span id="model-413"></span>413 | ![characters/warr_so_va1_hr.png](images/characters/warr_so_va1_hr.png){ width="96" } | `0xfb55298b` | `warr_so_va1_hr` | `generic_header` | [55](characters.md#char-55) |
@@ -524,42 +524,42 @@ dictionary and character data (animations) by hash ([Characters](../research/cha
 | <span id="model-412"></span>412 | ![characters/warr_so_vb3.png](images/characters/warr_so_vb3.png){ width="96" } | `0xdadb81e4` | `warr_so_vb3` | `generic_header` | [54](characters.md#char-54) |
 | <span id="model-418"></span>418 | ![characters/warr_so_vb3_hr.png](images/characters/warr_so_vb3_hr.png){ width="96" } | `0x16fc9bd0` | `warr_so_vb3_hr` | `generic_header` | [60](characters.md#char-60) |
 | <span id="model-419"></span>419 | ![characters/warr_sw.png](images/characters/warr_sw.png){ width="96" } | `0x98bc91bb` | `warr_sw` | `warr_sw_header` | [5](characters.md#char-5) |
-| <span id="model-529"></span>529 | ![characters/warr_sw_a.png](images/characters/warr_sw_a.png){ width="96" } | `0xc6764eb7` | `warr_sw_a` | `warr_sw_header` |  |
+| <span id="model-529"></span>529 | ![characters/warr_sw_a.png](images/characters/warr_sw_a.png){ width="96" } | `0xc6764eb7` | `warr_sw_a` | `warr_sw_header` | |
 | <span id="model-432"></span>432 | ![characters/warr_sw_chase.png](images/characters/warr_sw_chase.png){ width="96" } | `0x240a2279` | `warr_sw_chase` | `warr_sw_chase_header` | [9](characters.md#char-9) |
-| <span id="model-542"></span>542 | ![characters/warr_sw_chase_fury.png](images/characters/warr_sw_chase_fury.png){ width="96" } | `0x0640fef4` | `warr_sw_chase_fury` | `warr_sw_chase_header` |  |
+| <span id="model-542"></span>542 | ![characters/warr_sw_chase_fury.png](images/characters/warr_sw_chase_fury.png){ width="96" } | `0x0640fef4` | `warr_sw_chase_fury` | `warr_sw_chase_header` | |
 | <span id="model-420"></span>420 | ![characters/warr_sw_cv.png](images/characters/warr_sw_cv.png){ width="96" } | `0x0c910967` | `warr_sw_cv` | `warr_sw_header` | [7](characters.md#char-7) |
-| <span id="model-538"></span>538 | ![characters/warr_sw_fury.png](images/characters/warr_sw_fury.png){ width="96" } | `0x13f1c72d` | `warr_sw_fury` | `warr_sw_header` |  |
+| <span id="model-538"></span>538 | ![characters/warr_sw_fury.png](images/characters/warr_sw_fury.png){ width="96" } | `0x13f1c72d` | `warr_sw_fury` | `warr_sw_header` | |
 | <span id="model-421"></span>421 | ![characters/warr_sw_gen.png](images/characters/warr_sw_gen.png){ width="96" } | `0xcd342f6e` | `warr_sw_gen` | `generic_header` | [6](characters.md#char-6) |
 | <span id="model-422"></span>422 | ![characters/warr_sw_ghost.png](images/characters/warr_sw_ghost.png){ width="96" } | `0xb1a48941` | `warr_sw_ghost` | `warr_sw_header` | [8](characters.md#char-8) |
 | <span id="model-423"></span>423 | ![characters/warr_ty.png](images/characters/warr_ty.png){ width="96" } | `0x30452a7b` | `warr_ty` | `generic_header` | [38](characters.md#char-38) |
 | <span id="model-425"></span>425 | ![characters/warr_ty_cv.png](images/characters/warr_ty_cv.png){ width="96" } | `0x5e6ea244` | `warr_ty_cv` | `generic_header` | [40](characters.md#char-40) |
 | <span id="model-426"></span>426 | ![characters/warr_ve.png](images/characters/warr_ve.png){ width="96" } | `0x167214b6` | `warr_ve` | `warr_ve_header` | [26](characters.md#char-26), [28](characters.md#char-28) |
-| <span id="model-530"></span>530 | ![characters/warr_ve_a.png](images/characters/warr_ve_a.png){ width="96" } | `0xee0ac99b` | `warr_ve_a` | `warr_ve_header` |  |
+| <span id="model-530"></span>530 | ![characters/warr_ve_a.png](images/characters/warr_ve_a.png){ width="96" } | `0xee0ac99b` | `warr_ve_a` | `warr_ve_header` | |
 | <span id="model-427"></span>427 | ![characters/warr_ve_cv.png](images/characters/warr_ve_cv.png){ width="96" } | `0x3e611903` | `warr_ve_cv` | `warr_ve_header` | [29](characters.md#char-29) |
-| <span id="model-539"></span>539 | ![characters/warr_ve_fury.png](images/characters/warr_ve_fury.png){ width="96" } | `0x0fd74b1a` | `warr_ve_fury` | `warr_ve_header` |  |
+| <span id="model-539"></span>539 | ![characters/warr_ve_fury.png](images/characters/warr_ve_fury.png){ width="96" } | `0x0fd74b1a` | `warr_ve_fury` | `warr_ve_header` | |
 | <span id="model-428"></span>428 | ![characters/warr_ve_gen.png](images/characters/warr_ve_gen.png){ width="96" } | `0x87d97a3f` | `warr_ve_gen` | `generic_header` | [27](characters.md#char-27) |
-| <span id="model-137"></span>137 | ![characters/87f086c3.png](images/characters/87f086c3.png){ width="96" } | `0x87f086c3` |  | `generic_header` |  |
-| <span id="model-140"></span>140 | ![characters/1ef9d779.png](images/characters/1ef9d779.png){ width="96" } | `0x1ef9d779` |  | `generic_header` |  |
-| <span id="model-142"></span>142 | ![characters/f941fa7e.png](images/characters/f941fa7e.png){ width="96" } | `0xf941fa7e` |  | `generic_header` |  |
-| <span id="model-149"></span>149 | ![characters/59fd14be.png](images/characters/59fd14be.png){ width="96" } | `0x59fd14be` |  | `generic_header` |  |
-| <span id="model-173"></span>173 | ![characters/9ec10057.png](images/characters/9ec10057.png){ width="96" } | `0x9ec10057` |  | `generic_header` |  |
-| <span id="model-174"></span>174 | ![characters/07c851ed.png](images/characters/07c851ed.png){ width="96" } | `0x07c851ed` |  | `generic_header` |  |
-| <span id="model-209"></span>209 | ![characters/6a0fd528.png](images/characters/6a0fd528.png){ width="96" } | `0x6a0fd528` |  | `warr_cb_header` |  |
-| <span id="model-218"></span>218 | ![characters/297b8b52.png](images/characters/297b8b52.png){ width="96" } | `0x297b8b52` |  | `warr_sn_header` |  |
-| <span id="model-255"></span>255 | ![characters/5ba3fe13.png](images/characters/5ba3fe13.png){ width="96" } | `0x5ba3fe13` |  | `hooker_header` |  |
-| <span id="model-257"></span>257 | ![characters/d1d88657.png](images/characters/d1d88657.png){ width="96" } | `0xd1d88657` |  | `hurr_lt_header` |  |
-| <span id="model-259"></span>259 | ![characters/ea4b6425.png](images/characters/ea4b6425.png){ width="96" } | `0xea4b6425` |  | `hurr_de_header` |  |
-| <span id="model-293"></span>293 | ![characters/c7b064ef.png](images/characters/c7b064ef.png){ width="96" } | `0xc7b064ef` |  | `generic_header` |  |
-| <span id="model-295"></span>295 | ![characters/555a298f.png](images/characters/555a298f.png){ width="96" } | `0x555a298f` |  | `generic_header` |  |
-| <span id="model-314"></span>314 | ![characters/f4a52e90.png](images/characters/f4a52e90.png){ width="96" } | `0xf4a52e90` |  |  |  |
-| <span id="model-326"></span>326 | ![characters/9aab123d.png](images/characters/9aab123d.png){ width="96" } | `0x9aab123d` |  |  |  |
-| <span id="model-394"></span>394 | ![characters/4c70e481.png](images/characters/4c70e481.png){ width="96" } | `0x4c70e481` |  | `generic_header` |  |
-| <span id="model-396"></span>396 | ![characters/e77d0edb.png](images/characters/e77d0edb.png){ width="96" } | `0xe77d0edb` |  | `generic_header` |  |
-| <span id="model-397"></span>397 | ![characters/1db6846a.png](images/characters/1db6846a.png){ width="96" } | `0x1db6846a` |  | `generic_header` |  |
-| <span id="model-398"></span>398 | ![characters/84bfd5d0.png](images/characters/84bfd5d0.png){ width="96" } | `0x84bfd5d0` |  | `generic_header` |  |
-| <span id="model-400"></span>400 | ![characters/a63328c7.png](images/characters/a63328c7.png){ width="96" } | `0xa63328c7` |  | `generic_header` |  |
-| <span id="model-424"></span>424 | ![characters/b7edd298.png](images/characters/b7edd298.png){ width="96" } | `0xb7edd298` |  | `generic_header` |  |
-| <span id="model-429"></span>429 | ![characters/47f80e38.png](images/characters/47f80e38.png){ width="96" } | `0x47f80e38` |  | `generic_header` |  |
+| <span id="model-137"></span>137 | ![characters/87f086c3.png](images/characters/87f086c3.png){ width="96" } | `0x87f086c3` | | `generic_header` | |
+| <span id="model-140"></span>140 | ![characters/1ef9d779.png](images/characters/1ef9d779.png){ width="96" } | `0x1ef9d779` | | `generic_header` | |
+| <span id="model-142"></span>142 | ![characters/f941fa7e.png](images/characters/f941fa7e.png){ width="96" } | `0xf941fa7e` | | `generic_header` | |
+| <span id="model-149"></span>149 | ![characters/59fd14be.png](images/characters/59fd14be.png){ width="96" } | `0x59fd14be` | | `generic_header` | |
+| <span id="model-173"></span>173 | ![characters/9ec10057.png](images/characters/9ec10057.png){ width="96" } | `0x9ec10057` | | `generic_header` | |
+| <span id="model-174"></span>174 | ![characters/07c851ed.png](images/characters/07c851ed.png){ width="96" } | `0x07c851ed` | | `generic_header` | |
+| <span id="model-209"></span>209 | ![characters/6a0fd528.png](images/characters/6a0fd528.png){ width="96" } | `0x6a0fd528` | | `warr_cb_header` | |
+| <span id="model-218"></span>218 | ![characters/297b8b52.png](images/characters/297b8b52.png){ width="96" } | `0x297b8b52` | | `warr_sn_header` | |
+| <span id="model-255"></span>255 | ![characters/5ba3fe13.png](images/characters/5ba3fe13.png){ width="96" } | `0x5ba3fe13` | | `hooker_header` | |
+| <span id="model-257"></span>257 | ![characters/d1d88657.png](images/characters/d1d88657.png){ width="96" } | `0xd1d88657` | | `hurr_lt_header` | |
+| <span id="model-259"></span>259 | ![characters/ea4b6425.png](images/characters/ea4b6425.png){ width="96" } | `0xea4b6425` | | `hurr_de_header` | |
+| <span id="model-293"></span>293 | ![characters/c7b064ef.png](images/characters/c7b064ef.png){ width="96" } | `0xc7b064ef` | | `generic_header` | |
+| <span id="model-295"></span>295 | ![characters/555a298f.png](images/characters/555a298f.png){ width="96" } | `0x555a298f` | | `generic_header` | |
+| <span id="model-314"></span>314 | ![characters/f4a52e90.png](images/characters/f4a52e90.png){ width="96" } | `0xf4a52e90` | | | |
+| <span id="model-326"></span>326 | ![characters/9aab123d.png](images/characters/9aab123d.png){ width="96" } | `0x9aab123d` | | | |
+| <span id="model-394"></span>394 | ![characters/4c70e481.png](images/characters/4c70e481.png){ width="96" } | `0x4c70e481` | | `generic_header` | |
+| <span id="model-396"></span>396 | ![characters/e77d0edb.png](images/characters/e77d0edb.png){ width="96" } | `0xe77d0edb` | | `generic_header` | |
+| <span id="model-397"></span>397 | ![characters/1db6846a.png](images/characters/1db6846a.png){ width="96" } | `0x1db6846a` | | `generic_header` | |
+| <span id="model-398"></span>398 | ![characters/84bfd5d0.png](images/characters/84bfd5d0.png){ width="96" } | `0x84bfd5d0` | | `generic_header` | |
+| <span id="model-400"></span>400 | ![characters/a63328c7.png](images/characters/a63328c7.png){ width="96" } | `0xa63328c7` | | `generic_header` | |
+| <span id="model-424"></span>424 | ![characters/b7edd298.png](images/characters/b7edd298.png){ width="96" } | `0xb7edd298` | | `generic_header` | |
+| <span id="model-429"></span>429 | ![characters/47f80e38.png](images/characters/47f80e38.png){ width="96" } | `0x47f80e38` | | `generic_header` | |
 
 ## Sources and evidence
 
@@ -571,18 +571,18 @@ Evidence levels used: confirmed-code.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `index` | int |  | Position in the Character List (stable for the NTSC-U disc). |
-| `crc` | hex |  | CRC-32 of the model name, lower case: what the game looks up. |
-| `name` | str |  | The model name, when recovered. |
-| `data` | str |  | Name of the character data resource (animations and anim table), when recovered. |
-| `data_crc` | hex |  | Hash naming the character data resource. |
-| `geo_crc` | hex |  | Hash naming the model resource; the name is `<model>_geo`. |
-| `tex_crc` | hex |  | Hash naming the texture dictionary; the name is `<model>_tex`. |
-| `data_size` | int |  | Size of the character data in bytes. |
-| `geo_size` | int |  | Size of the model resource in bytes. |
-| `tex_size` | int |  | Size of the texture dictionary in bytes. |
-| `types` | list |  | Character types (`CfgChar`) that use the model. |
-| `image` | str |  | A thumbnail, a path below `docs/references/images/` (`characters/warr_re_cv.png`); set by extract from the files present. |
+| `index` | int | | Position in the Character List (stable for the NTSC-U disc). |
+| `crc` | hex | | CRC-32 of the model name, lower case: what the game looks up. |
+| `name` | str | | The model name, when recovered. |
+| `data` | str | | Name of the character data resource (animations and anim table), when recovered. |
+| `data_crc` | hex | | Hash naming the character data resource. |
+| `geo_crc` | hex | | Hash naming the model resource; the name is `<model>_geo`. |
+| `tex_crc` | hex | | Hash naming the texture dictionary; the name is `<model>_tex`. |
+| `data_size` | int | | Size of the character data in bytes. |
+| `geo_size` | int | | Size of the model resource in bytes. |
+| `tex_size` | int | | Size of the texture dictionary in bytes. |
+| `types` | list | | Character types (`CfgChar`) that use the model. |
+| `image` | str | | A thumbnail, a path below `docs/references/images/` (`characters/warr_re_cv.png`); set by extract from the files present. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

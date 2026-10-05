@@ -1435,20 +1435,20 @@ Evidence levels used: inferred.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `name` | str |  | Object type name (`CfgObj`'s first argument); also the model's name. |
-| `category` | str |  | Our grouping, from the object type (weapons, hats, piles, doors ...). |
-| `class` | str |  | The object class name (`hat_object`, ...). |
-| `type` | str |  | The `OBJECT` type constant. |
-| `type_value` | int |  | Its number. |
-| `shape` | str |  | Physics shape (`PHYS` constant). |
-| `axis` | str |  | Main axis (`AXIS` constant). |
-| `size` | list |  | Collision box size {x, y, z} in metres. |
-| `mass` | float |  | Float at `+0x88` (0.1 for hats; a mass, inferred). |
-| `material` | str |  | Surface material (`MATERIAL` constant). |
-| `pickup_anim` | str |  | Pick-up animation (`ANIM` constant). |
-| `anim_set` | str |  | Animation set used while holding it (`ANIM` constant). |
-| `script` | str |  | The preload that configures it. |
-| `image` | str |  | A thumbnail, a path below `docs/references/images/` (`characters/warr_re_cv.png`); set by extract from the files present. |
+| `name` | str | | Object type name (`CfgObj`'s first argument); also the model's name. |
+| `category` | str | | Our grouping, from the object type (weapons, hats, piles, doors ...). |
+| `class` | str | | The object class name (`hat_object`, ...). |
+| `type` | str | | The `OBJECT` type constant. |
+| `type_value` | int | | Its number. |
+| `shape` | str | | Physics shape (`PHYS` constant). |
+| `axis` | str | | Main axis (`AXIS` constant). |
+| `size` | list | | Collision box size {x, y, z} in metres. |
+| `mass` | float | | Float at `+0x88` (0.1 for hats; a mass, inferred). |
+| `material` | str | | Surface material (`MATERIAL` constant). |
+| `pickup_anim` | str | | Pick-up animation (`ANIM` constant). |
+| `anim_set` | str | | Animation set used while holding it (`ANIM` constant). |
+| `script` | str | | The preload that configures it. |
+| `image` | str | | A thumbnail, a path below `docs/references/images/` (`characters/warr_re_cv.png`); set by extract from the files present. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

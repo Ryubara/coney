@@ -25,7 +25,7 @@ level script and `CfgGangMusic` gives it three music tracks. Humans join a gang 
 | <span id="gang-6"></span>6 | `StratPunks` | `music/furies_fightmaster`, `music/furies_fightmaster`, `music/furies_fightmaster` | `Punks01`, `Punks02`, `Hiders2`, `ScnPunks`, `Punks`, `Punks03`, `Punks04`, `Punks05` |
 | <span id="gang-7"></span>7 | `StratTurnbulls` | `music/punky`, `music/punk5`, `music/gmetal1` | `DevilBand`, `ArrestedBulls`, `PlatformBulls`, `TopsideArrested`, `TopsideAC`, `SewerTurnbulls`, `CopFighters1`, `OutsideDevil` |
 | <span id="gang-8"></span>8 | `StratFuries` | `music/furies_fightmaster`, `music/furyorig`, `music/warriors_hardrock` | `ParkFuries`, `ParkFuries2`, `FenceFuries`, `MFuries`, `Fur1`, `MidFur`, `PFur02`, `PFur3` |
-| <span id="gang-9"></span>9 | `StratNormal` | `music/furies_fightmaster`, `music/furies_fightmaster`, `music/furies_fightmaster` |  |
+| <span id="gang-9"></span>9 | `StratNormal` | `music/furies_fightmaster`, `music/furies_fightmaster`, `music/furies_fightmaster` | |
 | <span id="gang-10"></span>10 | `StratNormal` | `music/furies_fightmaster`, `music/furies_fightmaster`, `music/furies_fightmaster` | `Tag02`, `Crowd01`, `Crowd02`, `Eliminators`, `NP1Gang`, `HideEliminators1`, `HideEliminators2`, `RunnerEliminators1` |
 | <span id="gang-11"></span>11 | `StratNormal` | `music/dunt_dunt`, `music/hatepril`, `music/furies_fightmaster` | `SRespond`, `HideMothers`, `AlleyMothers`, `StreetMothers`, `RunnerMothers1`, `RunnerMothers2`, `SM06`, `SM01` |
 | <span id="gang-12"></span>12 | `StratNormal` | `music/furies_fightmaster`, `music/furies_fightmaster`, `music/furies_fightmaster` | `Security`, `JSB`, `JSB2`, `JSB3`, `Scout02`, `AptJSB`, `Scout01`, `JonesRespond` |
@@ -40,7 +40,7 @@ level script and `CfgGangMusic` gives it three music tracks. Humans join a gang 
 | <span id="gang-21"></span>21 | `StratHuns` | `music/furies_fightmaster`, `music/furies_fightmaster`, `music/furies_fightmaster` | `MarkerHolder`, `StoreHuns1`, `Ghost`, `GhostBackup`, `FinalChaseHuns`, `Ghost01`, `NP4Gang`, `ShadowHuns` |
 | <span id="gang-22"></span>22 | `StratNormal` | `music/furies_fightmaster`, `music/furies_fightmaster`, `music/furies_fightmaster` | `ExtraChicks`, `Extra2Chicks`, `Extra3Chicks`, `Scene1Saracens`, `Ralphie`, `Scene5Saracens`, `BumFighter4`, `OtherWarriors` |
 | <span id="gang-23"></span>23 | `StratNormal` | `music/fight2a`, `music/fight2a`, `music/fight2a` | `Civilians`, `Bums`, `Spectators`, `Spectators01`, `Spectators02`, `Spectators03`, `Spectators04`, `Referee` |
-| <span id="gang-24"></span>24 | `StratNormal` |  | `Dealers`, `Dealer`, `Deal`, `Dealer02`, `Deal01`, `Deal02`, `Flash`, `Weap` |
+| <span id="gang-24"></span>24 | `StratNormal` | | `Dealers`, `Dealer`, `Deal`, `Dealer02`, `Deal01`, `Deal02`, `Flash`, `Weap` |
 
 ## Sources and evidence
 
@@ -52,19 +52,19 @@ Evidence levels used: inferred.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `id` | int |  | Gang type: `CfgGang`'s first argument and `GangCreate`'s. |
+| `id` | int | | Gang type: `CfgGang`'s first argument and `GangCreate`'s. |
 | `label` | str | yes | Who the gang type is, in our words. |
-| `strategy` | str |  | The strategy table passed (a `Strat...` global of `config_preload2.lua`). |
-| `strategy_values` | list |  | That table's seven numbers (bytes `+0x73`...). |
-| `v2` | int |  | Byte `+0x6c` of the gang record. |
-| `v3` | int |  | Byte `+0x6d`. |
-| `v4` | int |  | Byte `+0x6e`. |
-| `v5` | int |  | Byte `+0x6f`. |
-| `v7` | int |  | Byte `+0x70`. |
-| `v8` | int |  | Byte `+0x71`. |
-| `v9` | int |  | Byte `+0x72`. |
-| `music` | list |  | The three music tracks `CfgGangMusic` gives the gang type. |
-| `script_names` | list |  | The names level scripts give gangs of this type (`GangCreate`), most used first. |
+| `strategy` | str | | The strategy table passed (a `Strat...` global of `config_preload2.lua`). |
+| `strategy_values` | list | | That table's seven numbers (bytes `+0x73`...). |
+| `v2` | int | | Byte `+0x6c` of the gang record. |
+| `v3` | int | | Byte `+0x6d`. |
+| `v4` | int | | Byte `+0x6e`. |
+| `v5` | int | | Byte `+0x6f`. |
+| `v7` | int | | Byte `+0x70`. |
+| `v8` | int | | Byte `+0x71`. |
+| `v9` | int | | Byte `+0x72`. |
+| `music` | list | | The three music tracks `CfgGangMusic` gives the gang type. |
+| `script_names` | list | | The names level scripts give gangs of this type (`GangCreate`), most used first. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

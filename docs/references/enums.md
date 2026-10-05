@@ -626,12 +626,12 @@ Evidence levels used: inferred.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `id` | str |  | `ENUM.NAME` (or the global's name for loose constants). |
-| `enum` | str |  | The table or prefix the value belongs to. |
-| `name` | str |  | The constant's name. |
-| `value` | any |  | Its value. |
+| `id` | str | | `ENUM.NAME` (or the global's name for loose constants). |
+| `enum` | str | | The table or prefix the value belongs to. |
+| `name` | str | | The constant's name. |
+| `value` | any | | Its value. |
 | `meaning` | str | yes | What it means. |
-| `script` | str |  | The script that defines it. |
+| `script` | str | | The script that defines it. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

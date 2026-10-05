@@ -31,14 +31,14 @@ Evidence levels used: inferred.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `id` | int |  | Speed class number. |
-| `base` | float |  | Entry `+0x00`: base speed (m/s). |
-| `v04` | float |  | Entry `+0x04`: no reader found. |
-| `walk` | float |  | Walk (m/s). |
-| `jog` | float |  | Jog (m/s). |
-| `run` | float |  | Run (m/s). |
-| `sprint` | float |  | Sprint (m/s). |
-| `types` | int |  | How many character types name the class. |
+| `id` | int | | Speed class number. |
+| `base` | float | | Entry `+0x00`: base speed (m/s). |
+| `v04` | float | | Entry `+0x04`: no reader found. |
+| `walk` | float | | Walk (m/s). |
+| `jog` | float | | Jog (m/s). |
+| `run` | float | | Run (m/s). |
+| `sprint` | float | | Sprint (m/s). |
+| `types` | int | | How many character types name the class. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

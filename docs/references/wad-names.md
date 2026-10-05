@@ -4097,10 +4097,10 @@ Evidence levels used: confirmed-code.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `crc` | hex |  | The entry's hash in WARRIORS.DIR: CRC-32 of `./ee_files/<name>`, lower case. |
-| `name` | str |  | The recovered name. |
-| `kind` | str |  | The name's extension ([WAD contents](../research/formats/wad-contents.md)). |
-| `index` | int |  | The entry's position in WARRIORS.DIR (stable for the NTSC-U disc). |
+| `crc` | hex | | The entry's hash in WARRIORS.DIR: CRC-32 of `./ee_files/<name>`, lower case. |
+| `name` | str | | The recovered name. |
+| `kind` | str | | The name's extension ([WAD contents](../research/formats/wad-contents.md)). |
+| `index` | int | | The entry's position in WARRIORS.DIR (stable for the NTSC-U disc). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

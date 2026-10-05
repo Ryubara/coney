@@ -15,7 +15,7 @@ assigns from it.
 
 | Key | RGBA | Swatch | HUD slot |
 | --- | --- | --- | --- |
-| <span id="colour-wht"></span>`wht` | `B2B2B2FF` | <span style="display:inline-block;width:2em;height:1em;background:#B2B2B2"></span> |  |
+| <span id="colour-wht"></span>`wht` | `B2B2B2FF` | <span style="display:inline-block;width:2em;height:1em;background:#B2B2B2"></span> | |
 | <span id="colour-but"></span>`but` | `FFFFFFFF` | <span style="display:inline-block;width:2em;height:1em;background:#FFFFFF"></span> | 1 |
 | <span id="colour-cash"></span>`cash` | `49B749FF` | <span style="display:inline-block;width:2em;height:1em;background:#49B749"></span> | 2 |
 | <span id="colour-warr"></span>`warr` | `861A1AFF` | <span style="display:inline-block;width:2em;height:1em;background:#861A1A"></span> | 3 |
@@ -24,11 +24,11 @@ assigns from it.
 | <span id="colour-bon"></span>`bon` | `6A4183FF` | <span style="display:inline-block;width:2em;height:1em;background:#6A4183"></span> | 6 |
 | <span id="colour-blu"></span>`blu` | `2353BCFF` | <span style="display:inline-block;width:2em;height:1em;background:#2353BC"></span> | 7 |
 | <span id="colour-orng"></span>`orng` | `2353BCFF` | <span style="display:inline-block;width:2em;height:1em;background:#2353BC"></span> | 8 |
-| <span id="colour-bigmoney"></span>`bigmoney` |  |  | 9 |
-| <span id="colour-hudwhite"></span>`hudWhite` | `B2B2B2FF` | <span style="display:inline-block;width:2em;height:1em;background:#B2B2B2"></span> |  |
-| <span id="colour-selected"></span>`selected` |  |  |  |
-| <span id="colour-enabled"></span>`enabled` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> |  |
-| <span id="colour-disabled"></span>`disabled` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> |  |
+| <span id="colour-bigmoney"></span>`bigmoney` | | | 9 |
+| <span id="colour-hudwhite"></span>`hudWhite` | `B2B2B2FF` | <span style="display:inline-block;width:2em;height:1em;background:#B2B2B2"></span> | |
+| <span id="colour-selected"></span>`selected` | | | |
+| <span id="colour-enabled"></span>`enabled` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> | |
+| <span id="colour-disabled"></span>`disabled` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> | |
 
 ## Sources and evidence
 
@@ -40,11 +40,11 @@ Evidence levels used: inferred.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `id` | str |  | The key in `global.lua`'s colour table `CL`. |
-| `rgba` | str |  | The colour as `RRGGBBAA` hex. |
-| `swatch` | str |  | A swatch of the colour (rendered). |
-| `markup` | str |  | The text the table holds (a `<COLOR>` tag, or a list of four bytes). |
-| `hud_slot` | int |  | `CfgHUDColor` slot the colour is given to, if any. |
+| `id` | str | | The key in `global.lua`'s colour table `CL`. |
+| `rgba` | str | | The colour as `RRGGBBAA` hex. |
+| `swatch` | str | | A swatch of the colour (rendered). |
+| `markup` | str | | The text the table holds (a `<COLOR>` tag, or a list of four bytes). |
+| `hud_slot` | int | | `CfgHUDColor` slot the colour is given to, if any. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

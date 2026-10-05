@@ -15,15 +15,15 @@ a message is read from the names of the callbacks scripts give it.
 
 | Message | Meaning | Handlers | Example callbacks |
 | --- | --- | --- | --- |
-| <span id="event-0"></span>0 |  | 2 | `PARTY.ActionCatch`, `C5.OpenAllDoors` |
+| <span id="event-0"></span>0 | | 2 | `PARTY.ActionCatch`, `C5.OpenAllDoors` |
 | <span id="event-1"></span>1 | Damage taken (`DamageHandler`, `BossHealth`). | 131 | `C2.DamageHandler`, `C5.BossHealth`, `LCCheer`, `HotDogGuyDamage`, `BandMeleeMove` |
 | <span id="event-2"></span>2 | A scripted object or character finished or broke (`AjaxDead`, `FortBroken`, `LaunchMissionFailed`). | 132 | `SwitchNodeStack`, `F1.AjaxDead`, `F1.SwanDead`, `C1.FortBroken`, `LaunchMissionFailed` |
 | <span id="event-3"></span>3 | Something entered a trigger box (`ObjectiveEnter`, `EnterBoxEvent`). | 567 | `ObjectiveEnter`, `GlowGoAway`, `EnterBoxEvent`, `GS.RunnerEventTriggered`, `AddSuspend` |
 | <span id="event-4"></span>4 | Something left a trigger box (`ObjectiveExit`, `ExitBoxEvent`). | 137 | `GlowComeBack`, `ObjectiveExit`, `ExitBoxEvent`, `ExitInteriorCam`, `C7.EndButton` |
-| <span id="event-5"></span>5 |  | 37 | `ObjectiveEnter`, `VandalTwiggy`, `C5.CheckBox`, `VandalMarcello`, `VandalChuck` |
+| <span id="event-5"></span>5 | | 37 | `ObjectiveEnter`, `VandalTwiggy`, `C5.CheckBox`, `VandalMarcello`, `VandalChuck` |
 | <span id="event-6"></span>6 | A store was damaged or vandalised (`StoreDamaged`, `SetStoreBars`). | 29 | `SetStoreBars`, `C1.CleonTrashStore`, `AwardDamage`, `C3.CHVandleRespond`, `StoreDamaged` |
 | <span id="event-7"></span>7 | An object was stolen (`ObjectStolen`). | 2 | `C2.TheftCallback`, `ObjectStolen` |
-| <span id="event-8"></span>8 |  | 121 | `df.RestoreDealersBrains`, `P1.Walk03`, `P3.InsideGate`, `C2.BanterPassive`, `P3.AccountantDone` |
+| <span id="event-8"></span>8 | | 121 | `df.RestoreDealersBrains`, `P1.Walk03`, `P3.InsideGate`, `C2.BanterPassive`, `P3.AccountantDone` |
 | <span id="event-10"></span>10 | A character saw the player (`SeePlayer`). | 6 | `coney.SeePlayer`, `SecuritySeePlayer`, `P3.AccountantDonePlayer`, `ch4.StopPornoChat`, `freedom.CopGoesForPlayer` |
 | <span id="event-11"></span>11 | A character spotted someone (`PlayerSpotted`, `PlayerSawStalker`). | 13 | `BopStopTag1`, `ToolSeePlayer`, `P3.AccountantDoneSpot`, `vigilante.PlayerSawStalker`, `P3.PlayerSpotted` |
 | <span id="event-14"></span>14 | A tag (graffiti) was finished (`GangTagComplete`). | 23 | `GangTagComplete`, `WarrTag1Complete`, `C4.BonusTagComplete`, `C1.GangTagComplete`, `WarrTag2Complete` |
@@ -42,11 +42,11 @@ Evidence levels used: inferred.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `id` | int |  | Message number (`SetMsgHandler`'s second argument). |
+| `id` | int | | Message number (`SetMsgHandler`'s second argument). |
 | `meaning` | str | yes | What the message reports, in our words. |
-| `handlers` | int |  | How many `SetMsgHandler` calls name a callback for it. |
-| `clears` | int |  | How many calls pass nil (removing a handler). |
-| `examples` | list |  | The most common callback names (evidence for the meaning). |
+| `handlers` | int | | How many `SetMsgHandler` calls name a callback for it. |
+| `clears` | int | | How many calls pass nil (removing a handler). |
+| `examples` | list | | The most common callback names (evidence for the meaning). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

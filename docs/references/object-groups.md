@@ -31,9 +31,9 @@ Evidence levels used: inferred.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `name` | str |  | Group name as referenced. |
-| `defined` | bool |  | Whether any script defines the group with `CfgObjectGroup`. |
-| `referenced_by` | list |  | Character types whose `CfgChar` names the group. |
+| `name` | str | | Group name as referenced. |
+| `defined` | bool | | Whether any script defines the group with `CfgObjectGroup`. |
+| `referenced_by` | list | | Character types whose `CfgChar` names the group. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

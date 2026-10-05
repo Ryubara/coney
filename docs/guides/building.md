@@ -95,24 +95,24 @@ other.
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ctest` runs the Catch2 unit tests (`coney_tests`) and thirteen smoke tests of the `coney` executable itself: it
-starts and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
+`ctest` runs the Catch2 unit tests (`coney_tests`) and thirteen smoke tests of the `coney` executable itself: it starts
+and stops headless, prints its help, refuses a bad argument, refuses `--load`, `--view-txd`, `--view-sheet`,
 `--view-text`, `--view-world`, `--view-character` or `--render-references` without `--disc`, refuses a disc that does
-not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and refuses one that does not exist; with `CONEY_DISC` set when
-CMake configures, two more run `coney --disc` to the main menu (`coney.reaches_main_menu`) and play Rembrandt's clips in
-the character viewer under a scripted orbit (`coney.views_character`, `tests/support/character_orbit.txt`). The unit
-tests build their disc images, archives, RenderWare texture dictionaries, streamed worlds and PS2 geometry byte by byte;
-none needs the game or a GPU (the librw tests run librw on its NULL device). Ten tests check your own disc: every
-texture dictionary; every sprite sheet, font and the sheet table; every streamed world with the atomics of its parts
-(`[world]`, about a second); every level's worlds streamed under a scripted camera path, with the streaming's invariants
-checked every frame (`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run through the
-game's own Lua scripts (`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); the
-front end's scripts (the preloads, `global.lua`, `level100.lua` and the menu callbacks) run in the script system with no
-error and no missing binding (`[scripts]`); the start-up path from the legal screen to the main menu, through quick
-rumble and story to the level request and back, driven by a scripted pad (`[frontend]`); every animation clip in the
-WAD, parsed and sampled (`[anim]`, about 7 seconds); and every Character List record with its model, textures, character
-data and clips, skinned (`[characters]`). They run only when the environment variable `CONEY_DISC` names the disc, are
-reported as skipped otherwise, and print counts only:
+not exist, plays a synthetic input script (`tests/support/menu_input.txt`) and refuses one that does not exist; with
+`CONEY_DISC` set when CMake configures, two more run `coney --disc` to the main menu (`coney.reaches_main_menu`) and
+play Rembrandt's clips in the character viewer under a scripted orbit (`coney.views_character`,
+`tests/support/character_orbit.txt`). The unit tests build their disc images, archives, RenderWare texture dictionaries,
+streamed worlds and PS2 geometry byte by byte; none needs the game or a GPU (the librw tests run librw on its NULL
+device). Ten tests check your own disc: every texture dictionary; every sprite sheet, font and the sheet table; every
+streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds streamed under a scripted
+camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about 30 seconds); the UI strings
+of all five languages, run through the game's own Lua scripts (`[strings]`); the two text fonts with every English UI
+string laid out in them (`[text]`); the front end's scripts (the preloads, `global.lua`, `level100.lua` and the menu
+callbacks) run in the script system with no error and no missing binding (`[scripts]`); the start-up path from the legal
+screen to the main menu, through quick rumble and story to the level request and back, driven by a scripted pad
+(`[frontend]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7 seconds); and every Character
+List record with its model, textures, character data and clips, skinned (`[characters]`). They run only when the
+environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"

@@ -19,24 +19,24 @@ buttons are positional (south is cross).
 
 | Input | Action | Bit | Glyph |
 | --- | --- | --- | --- |
-| <span id="ctl-pad-l2"></span>L2 |  | `0x0001` | `<L2>` |
-| <span id="ctl-pad-r2"></span>R2 |  | `0x0002` | `<R2>` |
-| <span id="ctl-pad-l1"></span>L1 |  | `0x0004` | `<L1>` |
-| <span id="ctl-pad-r1"></span>R1 |  | `0x0008` | `<R1>` |
+| <span id="ctl-pad-l2"></span>L2 | | `0x0001` | `<L2>` |
+| <span id="ctl-pad-r2"></span>R2 | | `0x0002` | `<R2>` |
+| <span id="ctl-pad-l1"></span>L1 | | `0x0004` | `<L1>` |
+| <span id="ctl-pad-r1"></span>R1 | | `0x0008` | `<R1>` |
 | <span id="ctl-pad-triangle"></span>triangle | Menus: back, on release. | `0x0010` | `<T>` |
 | <span id="ctl-pad-circle"></span>circle | Menus: back, on release. | `0x0020` | `<O>` |
 | <span id="ctl-pad-cross"></span>cross | Menus: accept, on release. | `0x0040` | `<X>` |
-| <span id="ctl-pad-square"></span>square |  | `0x0080` | `<S>` |
-| <span id="ctl-pad-select"></span>SELECT |  | `0x0100` | `<SELECT>` |
-| <span id="ctl-pad-l3"></span>L3 |  | `0x0200` | `<L3>` |
-| <span id="ctl-pad-r3"></span>R3 |  | `0x0400` | `<R3>` |
-| <span id="ctl-pad-start"></span>START |  | `0x0800` | `<START>` |
+| <span id="ctl-pad-square"></span>square | | `0x0080` | `<S>` |
+| <span id="ctl-pad-select"></span>SELECT | | `0x0100` | `<SELECT>` |
+| <span id="ctl-pad-l3"></span>L3 | | `0x0200` | `<L3>` |
+| <span id="ctl-pad-r3"></span>R3 | | `0x0400` | `<R3>` |
+| <span id="ctl-pad-start"></span>START | | `0x0800` | `<START>` |
 | <span id="ctl-pad-d-pad-up"></span>d-pad up | Menus: move up (auto-repeat). | `0x1000` | `<DU>` |
 | <span id="ctl-pad-d-pad-right"></span>d-pad right | Menus: move right (auto-repeat). | `0x2000` | `<DR>` |
 | <span id="ctl-pad-d-pad-down"></span>d-pad down | Menus: move down (auto-repeat). | `0x4000` | `<DD>` |
 | <span id="ctl-pad-d-pad-left"></span>d-pad left | Menus: move left (auto-repeat). | `0x8000` | `<DL>` |
-| <span id="ctl-pad-left-stick"></span>left stick | On foot: move; speed follows the deflection. Menus: move past half deflection. |  | `<LAS>` |
-| <span id="ctl-pad-right-stick"></span>right stick |  |  | `<RAS>` |
+| <span id="ctl-pad-left-stick"></span>left stick | On foot: move; speed follows the deflection. Menus: move past half deflection. | | `<LAS>` |
+| <span id="ctl-pad-right-stick"></span>right stick | | | `<RAS>` |
 
 ## Sources and evidence
 
@@ -48,12 +48,12 @@ Evidence levels used: inferred.
 
 | Field | Type | Hand-written | Meaning |
 | --- | --- | --- | --- |
-| `id` | str |  | Our stable id. |
-| `context` | str |  | Where it applies: pad, menus, on foot, scripts ... |
+| `id` | str | | Our stable id. |
+| `context` | str | | Where it applies: pad, menus, on foot, scripts ... |
 | `input` | str | yes | The pad input (gamepad with analog sticks). |
 | `action` | str | yes | What it does there. |
-| `bit` | hex |  | Bit in the game's button word. |
-| `glyph` | str |  | The markup tag that shows its icon in text. |
+| `bit` | hex | | Bit in the game's button word. |
+| `glyph` | str | | The markup tag that shows its icon in text. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

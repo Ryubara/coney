@@ -265,7 +265,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "source": "SLUS_212.15, tag table 0x0050d718",
         "evidence": "confirmed-code",
         "about": "The markup tags text strings may carry, in the order of the executable's tag table\n"
-        "([GUI, Markup tags](../research/gui.md#markup)). A tag with a trailing space takes an argument.",
+        "([GUI, Markup tags](../research/gui.md#markup)). A tag with a trailing space (shown as ␠) takes an argument.",
         "complete": "All 66 tags are listed; the effects are written from the layout code.",
     },
     "enums": {
