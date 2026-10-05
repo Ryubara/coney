@@ -62,8 +62,12 @@ inline constexpr std::string_view kGangCallFlag = "GangCall";
 struct LevelScriptOptions {
     /// The game's random table, read from the player's disc (GameRandom); empty: Coney's stand-in generator.
     std::span<const std::uint32_t> randomTable;
-    /// The Rumble menu's set-up an arena reads (`GetRumbleModeData`); nothing leaves it all 0.
+    /// The Rumble menu's set-up an arena reads (`GetRumbleModeData`); nothing leaves it all 0, unless rumbleArena is
+    /// set.
     std::optional<RumbleSetup> rumble;
+    /// When set (and rumble is not), the set-up is the one the Rumble menu leaves by default with this arena's level
+    /// number: the menu's chunks run after the preloads (gui::rumbleMenuDefaults()).
+    std::optional<int> rumbleArena;
 };
 
 /// The story's way into `level` at `checkpoint` without the menus, for `--play-level`: a script system of its own

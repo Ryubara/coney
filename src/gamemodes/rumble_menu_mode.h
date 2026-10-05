@@ -15,6 +15,8 @@
 #include "graphics/overlay_camera.h"
 #include "graphics/render_device.h"
 #include "graphics/sprite_batch.h"
+#include "gui/global_strings.h"
+#include "gui/rumble_mode_gui/rumble_data.h"
 #include "gui/rumble_mode_gui/rumble_menu.h"
 #include "gui/widget.h"
 #include "scripting/script_system.h"
@@ -27,15 +29,10 @@ class GameModeStack;
 /// The level number of the arena the Rumble menu offers on a fresh boot: the Fight Pen, `level102`.
 inline constexpr int kDefaultRumbleArena = 102;
 
-/// The set-up the Rumble menu leaves when every screen's first entry is accepted on a fresh boot
-/// (gui::rumbleMenuDefaults()): 1 ON 1, one player against the computer, the BASEBALL FURIES against the ORPHANS, in
-/// the Fight Pen (docs/research/frontend.md#rumble-setup).
-[[nodiscard]] RumbleSetup defaultRumbleSetup();
-
-/// defaultRumbleSetup() for the arena `level` when `level` names a Rumble arena (`level101` to `level137`), with that
-/// arena's level number; nothing for any other level. For `--play-level` of an arena, which has no menu before it
-/// (**Coney's choice**: the menu offers only the Fight Pen on a fresh boot).
-[[nodiscard]] std::optional<RumbleSetup> rumbleSetupForLevel(std::string_view level);
+/// The level number of `level` when it names a Rumble arena (`level101` to `level137`); nothing for any other level.
+/// For `--play-level` of an arena, which has no menu before it: the level runs with the set-up the menu leaves by
+/// default (gui::rumbleMenuDefaults()) in that arena.
+[[nodiscard]] std::optional<int> rumbleArenaOf(std::string_view level);
 
 /// Game mode 0x11, the Rumble set-up menu that QUICK RUMBLE opens (`ShowRumbleModeInterface`): it keeps the cancel and
 /// start callbacks, runs the menu's screens (gui::RumbleMenu: Game Mode, Game Type, Choose Gangs, Choose Area), which
@@ -43,11 +40,15 @@ inline constexpr int kDefaultRumbleArena = 102;
 /// and on leaving calls the cancel callback or the start one with that level number
 /// (docs/research/frontend.md#quick-rumble, docs/research/frontend.md#rumble-setup).
 ///
+/// The screens' chunks run in `scripts`' current state, whose `CfgRumble*` bindings fill `data`
+/// (docs/research/frontend.md#rumble-data). Backing out of the first screen sets "cancelled" only when the menu was
+/// opened from the front end, as the original does; opened in game, the menu just closes.
+///
 /// Coney's choices: the screens are drawn on black (there is no front-end world yet) with the fonts the profile
 /// manager uses (`part_page0`, `big_font`), loaded on entry; a font that fails to load is logged and its text not
 /// drawn. When the menu starts a fight, the profile manager below it (mode 0x12) is popped too, without its start game
 /// callback, as its controller ends with Rumble mode chosen (docs/research/frontend.md#mode-flow); the level flow on
-/// top then starts the arena. No autosave (Coney has no saves).
+/// top then starts the arena. The screens' sound cues are logged (no audio yet). No autosave (Coney has no saves).
 class RumbleMenuMode final : public GameMode {
   public:
     /// The original's id for this mode.
@@ -59,10 +60,12 @@ class RumbleMenuMode final : public GameMode {
     /// Loads a sprite sheet by its resource name; the platform layer reads it from the disc.
     using SheetLoader = std::function<std::expected<graphics::SpriteSheet, Error>(std::string_view resourceName)>;
 
-    /// Draws through `device` with fonts from `loadSheet`, pushes itself on `stack`, calls the callbacks in `scripts`
-    /// and writes the set-up into `state`; each must outlive the mode. `log` gets a line for each step.
+    /// Draws through `device` with fonts from `loadSheet`, pushes itself on `stack`, runs the screens' chunks and calls
+    /// the callbacks in `scripts`, writes the set-up into `state`, reads the Game Type screen's text from `strings` and
+    /// the lists from `data`; each must outlive the mode. `log` gets a line for each step.
     RumbleMenuMode(graphics::RenderDevice& device, SheetLoader loadSheet, GameModeStack& stack,
-                   script::ScriptSystem& scripts, GameState& state, std::function<void(std::string_view)> log);
+                   script::ScriptSystem& scripts, GameState& state, const gui::GlobalStrings& strings,
+                   gui::RumbleData& data, std::function<void(std::string_view)> log);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
 

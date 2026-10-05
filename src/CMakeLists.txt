@@ -55,6 +55,8 @@ add_library(coney_core STATIC
     gui/profile_management_gui/pm_greet.cpp
     gui/profile_management_gui/pm_mode.cpp
     gui/profile_management_gui/pm_placeholder.cpp
+    gui/rumble_mode_gui/rumble_data.cpp
+    gui/rumble_mode_gui/rumble_gang_chooser.cpp
     gui/rumble_mode_gui/rumble_menu.cpp
     gui/screen_flow_controller.cpp
     gui/text_layout.cpp
@@ -67,10 +69,12 @@ add_library(coney_core STATIC
     scripting/lua_libraries.cpp
     scripting/lua_value.cpp
     scripting/lua_vm.cpp
+    scripting/rumble_bindings.cpp
     scripting/script_bindings.cpp
     scripting/script_system.cpp
     warriors/created_humans.cpp
     warriors/level_table.cpp
+    warriors/unlockables.cpp
     world/debug_camera.cpp
     world/level_object.cpp
     world/sector_budget.cpp

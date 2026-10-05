@@ -5,10 +5,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <span>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
+#include "core/assert.h"
 #include "graphics/render_device.h"
 #include "gui/text_layout.h"
 
@@ -16,116 +18,77 @@ namespace coney::gui {
 
 namespace {
 
-// The menu's entries as a fresh boot offers them (docs/research/frontend.md#rumble-setup). The labels are the
-// curated names the page lists: the page gives neither the mode list's nor the gang records' addresses, so they cannot
-// be read from the player's executable yet.
+// The pack a side gets when the mode has preset fighters and no gang is chosen.
+constexpr std::uint16_t kNoPack = 255;
 
-// The players (value 0) each Game Type entry writes.
-constexpr std::uint16_t kOnePlayer = 3;
-constexpr std::uint16_t kVersus = 2;
-constexpr std::uint16_t kCoop = 1;
-
-// One entry of the mode list: its name, the mode's `RM_*` number, the fighters per side and the Game Type entries it
-// offers, in order.
-struct ModeEntry {
-    std::string_view name;
-    std::uint16_t gameType;
-    std::uint16_t gangSize;
-    std::span<const std::uint16_t> players;
-};
-constexpr std::array<std::uint16_t, 2> kOneOnOnePlayers{kOnePlayer, kVersus};
-constexpr std::array<std::uint16_t, 3> kWarPartyPlayers{kOnePlayer, kCoop, kVersus};
-// "1 ON 1" is `RM_Brawl1` (12), one a side; "WAR PARTY" five a side, `RM_Brawl5` (14) by its name (inferred).
-constexpr std::array kModes{
-    ModeEntry{"1 ON 1", 12, 1, kOneOnOnePlayers},
-    ModeEntry{"WAR PARTY", 14, 5, kWarPartyPlayers},
-};
-
-// One side's gang as the gang screen writes it: its name, its pack - 1 and its nine character types.
-struct GangEntry {
-    std::string_view name;
-    std::uint16_t pak;
-    std::array<std::uint16_t, RumbleSetup::kGangMembers> types;
-};
-// The default pairing, read at run time: the player's BASEBALL FURIES against the computer's ORPHANS.
-constexpr GangEntry kSide1Gang{"BASEBALL FURIES", 4, {91, 94, 91, 92, 93, 94, 91, 92, 93}};
-constexpr GangEntry kSide2Gang{"ORPHANS", 2, {225, 226, 224, 225, 226, 227, 228, 225, 226}};
-
-// One arena of the Choose Area screen: its name and level number.
-struct AreaEntry {
-    std::string_view name;
-    std::uint16_t levelNumber;
-};
-constexpr std::array kAreas{AreaEntry{"Fight Pen", 102}};
+// The players (`gameMode`) of Game Type entry `id`: 0 one player, 1 co-op, 2 versus.
+constexpr std::array<std::uint16_t, RumbleModeEntry::kPlayerOptions> kPlayersOfEntry{kRumbleOnePlayer, kRumbleCoop,
+                                                                                     kRumbleVersus};
 
 // Where the screens put things, in GUI units: Coney's layout, in PM_Mode's style.
-constexpr float kTitleY = 0.3F;
-constexpr float kListTop = 0.5F;
-constexpr float kRowGap = 0.08F;
+constexpr float kTitleY = 0.2F;
+constexpr float kListTop = 0.35F;
+constexpr float kRowGap = 0.06F;
+constexpr float kDetailY = 0.9F;
+constexpr float kSide1Y = 0.45F;
+constexpr float kSide2Y = 0.6F;
 constexpr float kBoxWidth = 0.8F;
 constexpr float kSelectedScale = 1.15F;
 constexpr graphics::Rgba kGrey{160, 160, 160, 255};
 
-// The label of a Game Type entry writing `players`.
-std::string_view playersLabel(std::uint16_t players) {
-    switch (players) {
-    case kOnePlayer:
-        return "1 Player : Vs.";
-    case kVersus:
-        return "VS";
-    default:
-        return "COOP";
-    }
-}
-
-// The Game Mode confirm: the mode's number and the gang size. (The original also copies the entry's name and three
-// more fields outside the 23 values, and fills preset gangs for an entry that has them; none of the fresh boot's
-// entries has.)
-// @orig 0x001f8d80 RumbleGUI_ModeList_Confirm (unknown)
-void applyMode(const ModeEntry& mode, RumbleSetup& setup) {
-    setup.values.at(RumbleSetup::kGameType) = mode.gameType;
+// The Game Mode confirm's copy of `mode` into `setup`: its id, its gang size, its title after a ':', its three player
+// options and, for a mode with preset fighters, all nine members of each side.
+void applyMode(const RumbleModeEntry& mode, RumbleSetup& setup) {
+    setup.values.at(RumbleSetup::kGameType) = mode.mode;
     setup.values.at(RumbleSetup::kGangSize) = mode.gangSize;
-}
-
-// The Game Type confirm: the players.
-// @orig 0x001fd1c8 RumbleGUI_GameType_Confirm (unknown)
-void applyPlayers(std::uint16_t players, RumbleSetup& setup) { setup.values.at(RumbleSetup::kGameMode) = players; }
-
-// Copies a gang's name the way the menu does, at most 32 bytes.
-// @orig 0x001fe070 RumbleMode_SetGang1Name (unknown)
-// @orig 0x001fe0d8 RumbleMode_SetGang2Name (unknown)
-void setGangName(std::string& name, std::string_view gang) { name = gang.substr(0, RumbleSetup::kGangNameLength); }
-
-// The gang screen's confirm: each side's pack, nine character types and name.
-// @orig 0x001ef7c0 RumbleGUI_Gangs_Confirm (unknown)
-void applyGangs(const GangEntry& side1, const GangEntry& side2, RumbleSetup& setup) {
-    setup.values.at(RumbleSetup::kGang1Pak) = side1.pak;
-    setup.values.at(RumbleSetup::kGang2Pak) = side2.pak;
-    for (std::size_t i = 0; i < RumbleSetup::kGangMembers; ++i) {
-        setup.values.at(RumbleSetup::kGang1Types + i) = side1.types.at(i);
-        setup.values.at(RumbleSetup::kGang2Types + i) = side2.types.at(i);
+    setup.modeLabel = ":" + mode.title;
+    setup.playerOptions = mode.playerOptions;
+    setup.presetGangs = mode.presets[0] != 0;
+    if (setup.presetGangs) {
+        for (std::size_t i = 0; i < RumbleSetup::kGangMembers; ++i) {
+            setup.values.at(RumbleSetup::kGang1Types + i) = mode.presets[0];
+            setup.values.at(RumbleSetup::kGang2Types + i) = mode.presets[1];
+        }
     }
-    setGangName(setup.gangNames[0], side1.name);
-    setGangName(setup.gangNames[1], side2.name);
 }
 
-// The last screen's confirm: the arena's level number (the original also sets "started", which the mode keeps).
-// @orig 0x001ebb90 RumbleGUI_Area_Confirm (unknown)
-void applyArea(const AreaEntry& area, RumbleSetup& setup) { setup.levelNumber = area.levelNumber; }
+// The Game Type confirm's write: the players, and for a preset mode no packs.
+void applyPlayers(std::uint16_t players, RumbleSetup& setup) {
+    setup.values.at(RumbleSetup::kGameMode) = players;
+    if (setup.presetGangs) {
+        setup.values.at(RumbleSetup::kGang1Pak) = kNoPack;
+        setup.values.at(RumbleSetup::kGang2Pak) = kNoPack;
+    }
+}
+
+// The first Game Type entry `options` offers (0 one player, 1 co-op, 2 versus); nothing when it offers none.
+std::optional<std::size_t> firstPlayerOption(const std::array<bool, RumbleModeEntry::kPlayerOptions>& options) {
+    for (std::size_t id = 0; id < options.size(); ++id) {
+        if (options.at(id)) {
+            return id;
+        }
+    }
+    return std::nullopt;
+}
+
+// The label of arena `arena`: its level record's title, or the level's name when the title is empty.
+std::string_view arenaLabel(const GameState& state, const RumbleArenaEntry& arena) {
+    const LevelRecord* record = state.levels.at(arena.levelIndex);
+    if (record == nullptr) {
+        return {};
+    }
+    return record->fourthName.empty() ? std::string_view(record->name) : std::string_view(record->fourthName);
+}
 
 } // namespace
 
-RumbleSetup rumbleMenuDefaults() {
-    RumbleSetup setup;
-    applyMode(kModes[0], setup);
-    applyPlayers(kModes[0].players[0], setup);
-    applyGangs(kSide1Gang, kSide2Gang, setup);
-    applyArea(kAreas[0], setup);
-    return setup;
+RumbleMenu::RumbleMenu(RumbleMenuServices services) : m_services(std::move(services)) {
+    CONEY_ASSERT(m_services.state != nullptr && m_services.data != nullptr && m_services.strings != nullptr);
 }
 
 void RumbleMenu::start(std::uint64_t nowMs) {
     m_mode = 0;
+    m_launchPending.reset();
     show(RumbleScreen::GameMode, 0, nowMs);
 }
 
@@ -143,33 +106,43 @@ std::string_view RumbleMenu::screenName() const {
     return {};
 }
 
-RumbleMenuResult RumbleMenu::update(const GuiFrame& frame, std::size_t connectedPads, RumbleSetup& setup) {
+std::vector<int> RumbleMenu::takeCues() { return std::exchange(m_cues, {}); }
+
+RumbleMenuResult RumbleMenu::update(const GuiFrame& frame, std::size_t connectedPads) {
+    // The arena confirmed on the last update is launched now, before any input (the Choose Area update, 0x001ebc10).
+    if (const std::optional<std::size_t> pending = std::exchange(m_launchPending, std::nullopt)) {
+        launchArena(*pending);
+        return RumbleMenuResult::Started;
+    }
+
+    // The Game Type message goes after its time.
+    if (m_screen == RumbleScreen::GameType && m_messageUntilMs != 0 && frame.timeMs >= m_messageUntilMs) {
+        m_messageUntilMs = 0;
+        m_detail.setText({});
+    }
+
+    // This frame's command, handed to the screen's input.
     RumbleMenuResult result = RumbleMenuResult::Stay;
-    const std::optional<MenuCommand> command =
-        frame.pad != nullptr ? m_input.dispatch(*frame.pad, frame.timeMs) : std::nullopt;
-    if (command == MenuCommand::Back) {
-        // Back: the screen before, or out of the menu from the first.
+    if (const std::optional<MenuCommand> command =
+            frame.pad != nullptr ? m_input.dispatch(*frame.pad, frame.timeMs) : std::nullopt) {
         switch (m_screen) {
         case RumbleScreen::GameMode:
-            result = RumbleMenuResult::Cancelled;
+            result = onModeInput(*command, frame.timeMs);
             break;
         case RumbleScreen::GameType:
-            show(RumbleScreen::GameMode, m_mode, frame.timeMs);
+            result = onPlayersInput(*command, connectedPads, frame.timeMs);
             break;
         case RumbleScreen::ChooseGangs:
-            show(RumbleScreen::GameType, 0, frame.timeMs);
+            result = onGangsInput(*command, frame.timeMs);
             break;
         case RumbleScreen::ChooseArea:
-            show(RumbleScreen::ChooseGangs, 0, frame.timeMs);
+            result = onAreaInput(*command, frame.timeMs);
             break;
-        }
-    } else if (command) {
-        if (const std::optional<int> chosen = m_grid.handle(*command)) {
-            result = confirm(*chosen, connectedPads, setup, frame.timeMs);
         }
     }
     m_title.update(frame);
-    m_rival.update(frame);
+    m_side1.update(frame);
+    m_detail.update(frame);
     m_grid.update(frame);
     return result;
 }
@@ -177,10 +150,12 @@ RumbleMenuResult RumbleMenu::update(const GuiFrame& frame, std::size_t connected
 void RumbleMenu::render(const GuiCanvas& canvas) const {
     m_title.render(canvas);
     m_grid.render(canvas);
-    m_rival.render(canvas);
+    m_side1.render(canvas);
+    m_detail.render(canvas);
 }
 
 void RumbleMenu::show(RumbleScreen screen, std::size_t selected, std::uint64_t nowMs) {
+    // An empty list in PM_Mode's style; each screen fills it.
     m_screen = screen;
     m_grid.init();
     m_grid.setup(OptionGridLayout{
@@ -193,34 +168,32 @@ void RumbleMenu::show(RumbleScreen screen, std::size_t selected, std::uint64_t n
         .colour = kGrey,
         .selectedColour = graphics::kWhite,
     });
-    m_rival.setText({});
+    m_side1.setText({});
+    m_detail.setText({});
+    m_detail.centreOn(0.5F, kDetailY, kBoxWidth);
+    m_detail.style().colour = kGrey;
+    m_detail.style().scale = 1.0F;
 
-    // Each screen's entries, the code of each being what its confirm needs.
     switch (screen) {
     case RumbleScreen::GameMode:
-        for (std::size_t i = 0; i < kModes.size(); ++i) {
-            m_grid.addItem(kModes.at(i).name, static_cast<int>(i));
-        }
+        showModes();
         break;
     case RumbleScreen::GameType:
-        for (const std::uint16_t players : kModes.at(m_mode).players) {
-            m_grid.addItem(playersLabel(players), players);
-        }
+        showPlayers();
         break;
     case RumbleScreen::ChooseGangs:
-        // One pairing is known: side 1's gang is the entry, side 2's is shown under it.
-        m_grid.addItem(kSide1Gang.name, 0);
-        m_rival.setText(kSide2Gang.name);
-        m_rival.centreOn(0.5F, kListTop + 2.0F * kRowGap, kBoxWidth);
-        m_rival.style().colour = kGrey;
+        showGangs();
         break;
     case RumbleScreen::ChooseArea:
-        for (std::size_t i = 0; i < kAreas.size(); ++i) {
-            m_grid.addItem(kAreas.at(i).name, static_cast<int>(i));
-        }
+        showAreas();
         break;
     }
-    m_grid.select(selected < m_grid.items() ? selected : 0);
+    if (m_grid.items() > 0) {
+        m_grid.select(selected < m_grid.items() ? selected : 0);
+    }
+    if (screen == RumbleScreen::GameMode && m_grid.items() > 0) {
+        m_detail.setText(m_services.data->modes.at(m_grid.selected()).description);
+    }
 
     m_title.setText(screenName());
     m_title.centreOn(0.5F, kTitleY, kBoxWidth);
@@ -228,32 +201,200 @@ void RumbleMenu::show(RumbleScreen screen, std::size_t selected, std::uint64_t n
     m_grid.takeFocus(m_input, nowMs);
 }
 
-RumbleMenuResult RumbleMenu::confirm(int code, std::size_t connectedPads, RumbleSetup& setup, std::uint64_t nowMs) {
-    switch (m_screen) {
-    case RumbleScreen::GameMode:
-        m_mode = static_cast<std::size_t>(code);
-        applyMode(kModes.at(m_mode), setup);
-        show(RumbleScreen::GameType, 0, nowMs);
-        break;
-    case RumbleScreen::GameType: {
-        // Versus and co-op need a second player's pad.
-        const auto players = static_cast<std::uint16_t>(code);
-        if (players != kOnePlayer && connectedPads < 2) {
-            break;
+// @orig 0x001f85c0 RM_GameMode_Init (RM_GameMode.cpp)
+void RumbleMenu::showModes() {
+    m_services.data->modes.clear();
+    m_services.runChunk(kRumbleModeChunk);
+    const std::vector<RumbleModeEntry>& modes = m_services.data->modes;
+    for (std::size_t i = 0; i < modes.size(); ++i) {
+        m_grid.addItem(modes.at(i).title, static_cast<int>(i));
+    }
+}
+
+// @orig 0x001fc5b0 RM_NumPlayers_Init (RM_NumPlayers.cpp)
+void RumbleMenu::showPlayers() {
+    constexpr std::array<std::uint32_t, RumbleModeEntry::kPlayerOptions> kLabels{kOnePlayerString, kCoopString,
+                                                                                 kVersusString};
+    for (std::size_t id = 0; id < kLabels.size(); ++id) {
+        if (setup().playerOptions.at(id)) {
+            m_grid.addItem(m_services.strings->get(kLabels.at(id)), static_cast<int>(id));
         }
-        applyPlayers(players, setup);
-        show(RumbleScreen::ChooseGangs, 0, nowMs);
+    }
+    m_messageShown = false;
+    m_messageUntilMs = 0;
+}
+
+// @orig 0x001ecae0 RM_ChooseGangs_Init (RM_ChooseGangs.cpp)
+void RumbleMenu::showGangs() {
+    m_services.data->gangs.clear();
+    m_services.runChunk(kRumbleGangChunk);
+    m_gangs.start(m_services.data->gangs);
+    refreshGangLines();
+}
+
+// @orig 0x001eb0c8 RM_ChooseArea_Init (RM_ChooseArea.cpp)
+void RumbleMenu::showAreas() {
+    m_services.data->arenas.clear();
+    m_services.runChunk(kRumbleArenaChunk);
+    const std::vector<RumbleArenaEntry>& arenas = m_services.data->arenas;
+    for (std::size_t i = 0; i < arenas.size(); ++i) {
+        m_grid.addItem(arenaLabel(*m_services.state, arenas.at(i)), static_cast<int>(i));
+    }
+    m_launchPending.reset();
+}
+
+// Accept copies the entry into the set-up and opens the Game Type screen; back leaves the menu.
+// @orig 0x001f8d80 RM_GameMode_OnInput (RM_GameMode.cpp)
+RumbleMenuResult RumbleMenu::onModeInput(MenuCommand command, std::uint64_t nowMs) {
+    if (command == MenuCommand::Back) {
+        m_cues.push_back(kRumbleBackCue);
+        return RumbleMenuResult::Cancelled;
+    }
+    const std::optional<int> chosen = m_grid.handle(command);
+    if (m_grid.items() > 0) {
+        m_detail.setText(m_services.data->modes.at(m_grid.selected()).description);
+    }
+    if (!chosen) {
+        return RumbleMenuResult::Stay;
+    }
+    m_mode = static_cast<std::size_t>(*chosen);
+    applyMode(m_services.data->modes.at(m_mode), setup());
+    m_cues.push_back(kRumbleConfirmCue);
+    show(RumbleScreen::GameType, 0, nowMs);
+    return RumbleMenuResult::Stay;
+}
+
+// Accept writes the players: one player at once; co-op and versus first show the message, then need a second pad.
+// @orig 0x001fd1c8 RM_NumPlayers_OnInput (RM_NumPlayers.cpp)
+RumbleMenuResult RumbleMenu::onPlayersInput(MenuCommand command, std::size_t connectedPads, std::uint64_t nowMs) {
+    if (command == MenuCommand::Back) {
+        show(RumbleScreen::GameMode, m_mode, nowMs);
+        return RumbleMenuResult::Stay;
+    }
+    const std::optional<int> chosen = m_grid.handle(command);
+    if (!chosen) {
+        return RumbleMenuResult::Stay;
+    }
+    const auto id = static_cast<std::size_t>(*chosen);
+    if (id != 0 && (!m_messageShown || connectedPads < 2)) {
+        // The message for player 2 (and Coney's stand-in for the no-second-controller screen).
+        m_messageShown = true;
+        m_messageUntilMs = nowMs + kMessageMs;
+        m_detail.setText(m_services.strings->get(kPlayerTwoString));
+        return RumbleMenuResult::Stay;
+    }
+    applyPlayers(kPlayersOfEntry.at(id), setup());
+    show(setup().presetGangs ? RumbleScreen::ChooseArea : RumbleScreen::ChooseGangs, 0, nowMs);
+    return RumbleMenuResult::Stay;
+}
+
+// Up and down choose the active side's gang, left and right its warchief (not in co-op), accept locks the side and,
+// with both locked, writes the gangs; back unlocks, or with nothing locked returns to the Game Type screen.
+// @orig 0x001ef7c0 RM_ChooseGangs_OnInput (RM_ChooseGangs.cpp)
+RumbleMenuResult RumbleMenu::onGangsInput(MenuCommand command, std::uint64_t nowMs) {
+    switch (command) {
+    case MenuCommand::Up:
+        m_gangs.move(-1);
+        break;
+    case MenuCommand::Down:
+        m_gangs.move(1);
+        break;
+    case MenuCommand::Left:
+    case MenuCommand::Right:
+        if (setup().values.at(RumbleSetup::kGameMode) != kRumbleCoop) {
+            m_gangs.rotate(command == MenuCommand::Left);
+        }
+        break;
+    case MenuCommand::Accept:
+        if (m_gangs.lock()) {
+            m_gangs.apply(setup());
+            show(RumbleScreen::ChooseArea, 0, nowMs);
+            return RumbleMenuResult::Stay;
+        }
+        break;
+    case MenuCommand::Back:
+        if (!m_gangs.unlock()) {
+            show(RumbleScreen::GameType, 0, nowMs);
+            return RumbleMenuResult::Stay;
+        }
         break;
     }
-    case RumbleScreen::ChooseGangs:
-        applyGangs(kSide1Gang, kSide2Gang, setup);
-        show(RumbleScreen::ChooseArea, 0, nowMs);
-        break;
-    case RumbleScreen::ChooseArea:
-        applyArea(kAreas.at(static_cast<std::size_t>(code)), setup);
-        return RumbleMenuResult::Started;
+    refreshGangLines();
+    return RumbleMenuResult::Stay;
+}
+
+// Accept marks the arena for the launch on the next update; back returns to the screen before.
+// @orig 0x001eb9f8 RM_ChooseArea_OnInput (RM_ChooseArea.cpp)
+RumbleMenuResult RumbleMenu::onAreaInput(MenuCommand command, std::uint64_t nowMs) {
+    if (command == MenuCommand::Back) {
+        m_cues.push_back(kRumbleBackCue);
+        show(setup().presetGangs ? RumbleScreen::GameType : RumbleScreen::ChooseGangs, 0, nowMs);
+        return RumbleMenuResult::Stay;
+    }
+    if (const std::optional<int> chosen = m_grid.handle(command)) {
+        m_launchPending = static_cast<std::size_t>(*chosen);
+        m_cues.push_back(kRumbleConfirmCue);
     }
     return RumbleMenuResult::Stay;
+}
+
+// @orig 0x001ebb90 RM_ChooseArea_Launch (RM_ChooseArea.cpp)
+void RumbleMenu::launchArena(std::size_t entry) {
+    const RumbleArenaEntry& arena = m_services.data->arenas.at(entry);
+    // The level number comes from the arena's level record, as the original reads it.
+    const LevelRecord* record = m_services.state->levels.at(arena.levelIndex);
+    setup().levelNumber = record != nullptr ? static_cast<int>(record->number) : arena.levelNumber;
+}
+
+void RumbleMenu::refreshGangLines() {
+    // Side 1's gang above side 2's; the side choosing is white and larger, a locked or waiting side grey.
+    const std::array<TextWidget*, RumbleGangChooser::kSides> lines{&m_side1, &m_detail};
+    constexpr std::array<float, RumbleGangChooser::kSides> kLineY{kSide1Y, kSide2Y};
+    for (std::size_t side = 0; side < lines.size(); ++side) {
+        const RumbleGangEntry* gang = m_gangs.gang(side);
+        TextWidget& line = *lines.at(side);
+        line.setText(gang != nullptr ? std::string_view(gang->name) : std::string_view{});
+        line.centreOn(0.5F, kLineY.at(side), kBoxWidth);
+        const bool choosing = side == m_gangs.activeSide() && !m_gangs.locked(side);
+        line.style().colour = choosing ? graphics::kWhite : kGrey;
+        line.style().scale = choosing ? kSelectedScale : 1.0F;
+    }
+}
+
+std::optional<RumbleSetup> rumbleMenuDefaults(const RumbleMenuServices& services, int levelNumber) {
+    CONEY_ASSERT(services.state != nullptr && services.data != nullptr);
+    RumbleSetup& setup = services.state->rumble;
+    setup = RumbleSetup{};
+
+    // The Game Mode screen's first entry and the Game Type screen's first.
+    services.data->modes.clear();
+    services.runChunk(kRumbleModeChunk);
+    if (services.data->modes.empty()) {
+        return std::nullopt;
+    }
+    applyMode(services.data->modes.front(), setup);
+    const std::optional<std::size_t> players = firstPlayerOption(setup.playerOptions);
+    if (!players) {
+        return std::nullopt;
+    }
+    applyPlayers(kPlayersOfEntry.at(*players), setup);
+
+    // Each side's first gang, as the gang screen starts them, unless the mode has preset fighters.
+    if (!setup.presetGangs) {
+        services.data->gangs.clear();
+        services.runChunk(kRumbleGangChunk);
+        if (services.data->gangs.empty()) {
+            return std::nullopt;
+        }
+        RumbleGangChooser chooser;
+        chooser.start(services.data->gangs);
+        // Side 1's lock passes to side 2; side 2's completes the pair.
+        chooser.lock();
+        chooser.lock();
+        chooser.apply(setup);
+    }
+    setup.levelNumber = levelNumber;
+    return setup;
 }
 
 } // namespace coney::gui

@@ -6,10 +6,13 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "core/assert.h"
 #include "gui/global_strings.h"
+#include "gui/rumble_mode_gui/rumble_data.h"
+#include "gui/rumble_mode_gui/rumble_menu.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
 
@@ -84,7 +87,8 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     CreatedHumans humans;
     world_objects::WorldFlags flags;
     QuietHost host;
-    const script::BindingContext context{&state, &strings, &host, &recorded, &humans, &flags};
+    gui::RumbleData rumbleData;
+    const script::BindingContext context{&state, &strings, &host, &recorded, &humans, &flags, &rumbleData};
     if (options.randomTable.size() == GameRandom::kTableSize) {
         state.random.setTable(options.randomTable);
     }
@@ -100,6 +104,18 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     scripts.create();
     scripts.runFiles(script::kEnumPreloadScripts);
     scripts.runFiles(script::kConfigPreloadScripts);
+
+    // An arena run alone gets the Rumble menu's default set-up: its chunks need the `RM_*` names `global.lua` defines.
+    if (!options.rumble && options.rumbleArena) {
+        scripts.runFile(script::kGlobalScript);
+        const gui::RumbleMenuServices services{
+            .state = &state, .data = &rumbleData, .strings = &strings, .runChunk = [&scripts](std::string_view chunk) {
+                scripts.runFile(chunk);
+            }};
+        if (!gui::rumbleMenuDefaults(services, *options.rumbleArena)) {
+            scripts.log("rumble: the menu's chunks list no mode or gang; the set-up stays empty");
+        }
+    }
 
     // The front end's unload makes a fresh state, and runNextMission sets the checkpoint and chooses the level by
     // name. A level the table does not list gets index 0 (Coney's choice: the menus never ask for one).

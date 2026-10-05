@@ -849,16 +849,70 @@ subsystem = "GUI"
 size = 1080
 
 [[function]]
+address = 0x001eaa30
+name = "RM_ChooseArea_AddArena"
+subsystem = "GUI"
+size = 392
+
+[[function]]
+address = 0x001eb0c8
+name = "RM_ChooseArea_Init"
+subsystem = "GUI"
+size = 1872
+
+[[function]]
+address = 0x001eb9f8
+name = "RM_ChooseArea_OnInput"
+subsystem = "GUI"
+size = 224
+
+[[function]]
 address = 0x001ebb90
-name = "RumbleGUI_Area_Confirm"
+name = "RM_ChooseArea_Launch"
 subsystem = "GUI"
 size = 128
 
 [[function]]
+address = 0x001ec028
+name = "RM_ChooseGangs_RotateRight"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x001ec130
+name = "RM_ChooseGangs_RotateLeft"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x001ec490
+name = "RM_ChooseGangs_StandInType"
+subsystem = "GUI"
+size = 1264
+
+[[function]]
+address = 0x001ec980
+name = "RM_ChooseGangs_AddGang"
+subsystem = "GUI"
+size = 352
+
+[[function]]
+address = 0x001ecae0
+name = "RM_ChooseGangs_Init"
+subsystem = "GUI"
+size = 8672
+
+[[function]]
 address = 0x001ef7c0
-name = "RumbleGUI_Gangs_Confirm"
+name = "RM_ChooseGangs_OnInput"
 subsystem = "GUI"
 size = 1480
+
+[[function]]
+address = 0x001f0e60
+name = "RM_CharData_Add"
+subsystem = "GUI"
+size = 416
 
 [[function]]
 address = 0x001f26a8
@@ -873,14 +927,32 @@ subsystem = "GUI"
 size = 64
 
 [[function]]
+address = 0x001f8110
+name = "RM_GameMode_AddGame"
+subsystem = "GUI"
+size = 432
+
+[[function]]
+address = 0x001f85c0
+name = "RM_GameMode_Init"
+subsystem = "GUI"
+size = 1392
+
+[[function]]
 address = 0x001f8d80
-name = "RumbleGUI_ModeList_Confirm"
+name = "RM_GameMode_OnInput"
 subsystem = "GUI"
 size = 376
 
 [[function]]
+address = 0x001fc5b0
+name = "RM_NumPlayers_Init"
+subsystem = "GUI"
+size = 2632
+
+[[function]]
 address = 0x001fd1c8
-name = "RumbleGUI_GameType_Confirm"
+name = "RM_NumPlayers_OnInput"
 subsystem = "GUI"
 size = 416
 
@@ -1659,6 +1731,30 @@ subsystem = "Scripting"
 address = 0x0036b220
 name = "CfgLevelName"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x0036b4f0
+name = "CfgRumbleGame"
+subsystem = "Scripting"
+size = 384
+
+[[function]]
+address = 0x0036b670
+name = "CfgRumbleArena"
+subsystem = "Scripting"
+size = 288
+
+[[function]]
+address = 0x0036b790
+name = "CfgRumbleGang"
+subsystem = "Scripting"
+size = 280
+
+[[function]]
+address = 0x0036b8a8
+name = "CfgRumbleChar"
+subsystem = "Scripting"
+size = 328
 
 [[function]]
 address = 0x0036b9f0

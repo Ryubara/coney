@@ -9,6 +9,7 @@
 #include "core/game_random.h"
 #include "core/language.h"
 #include "warriors/level_table.h"
+#include "warriors/unlockables.h"
 
 namespace coney {
 
@@ -21,7 +22,7 @@ struct RumbleSetup {
     /// The longest gang name kept: the menu copies at most 32 bytes.
     static constexpr std::size_t kGangNameLength = 32;
     /// Where each value lives (the C index; the arena script reads index + 1).
-    static constexpr std::size_t kGameMode = 0;    ///< 3 one player against the computer, 2 versus, 1 co-op.
+    static constexpr std::size_t kGameMode = 0;    ///< 3 one player against the computer, 2 co-op, 1 versus.
     static constexpr std::size_t kGameType = 1;    ///< The mode's `RM_*` number (12 is "1 ON 1").
     static constexpr std::size_t kGangSize = 2;    ///< Fighters per side.
     static constexpr std::size_t kGang1Pak = 3;    ///< Side 1's gang pack - 1.
@@ -34,6 +35,12 @@ struct RumbleSetup {
     /// `0x0063eef0` and `0x0063ef10`: side 1's and side 2's gang names; empty until the gangs are confirmed.
     std::array<std::string, 2> gangNames;
     int levelNumber = 0; ///< `0x0050f4e8`: the chosen arena's level number (`+0x04`).
+    /// `0x0063ef30`: the chosen mode's title with a `:` before it (`:1 ON 1`), which the Game Mode screen copies.
+    std::string modeLabel;
+    /// `0x0063ef6c`, `0x0063ef70`, `0x0063ef74`: whether the chosen mode offers one player, co-op and versus.
+    std::array<bool, 3> playerOptions{};
+    /// `0x0063ef78`: the chosen mode has preset fighters, so no gangs are chosen.
+    bool presetGangs = false;
 };
 
 /// The part of the game state (`W_GameState`, 0x57c0 bytes in the original) that the front end and its scripts use:
@@ -62,6 +69,8 @@ struct GameState {
     GameRandom random;             ///< The random table's index (`0x006eb880`) and the table.
     std::string startGameCallback; ///< `0x005e6d88`: the Lua function `InitLevel` calls when the level is ready.
     RumbleSetup rumble;            ///< The Rumble menu's set-up.
+    /// The unlockables manager (`0x006fe998`) as the Rumble menu asks it: a fresh profile's until Coney has saves.
+    Unlockables unlockables = Unlockables::freshProfile();
 };
 
 } // namespace coney

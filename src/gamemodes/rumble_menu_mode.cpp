@@ -41,23 +41,23 @@ std::optional<int> levelNumberOf(std::string_view level) {
 
 } // namespace
 
-RumbleSetup defaultRumbleSetup() { return gui::rumbleMenuDefaults(); }
-
-std::optional<RumbleSetup> rumbleSetupForLevel(std::string_view level) {
+std::optional<int> rumbleArenaOf(std::string_view level) {
     const std::optional<int> number = levelNumberOf(level);
     if (!number || *number < kFirstArena || *number > kLastArena) {
         return std::nullopt;
     }
-    RumbleSetup setup = defaultRumbleSetup();
-    setup.levelNumber = *number;
-    return setup;
+    return number;
 }
 
 RumbleMenuMode::RumbleMenuMode(graphics::RenderDevice& device, SheetLoader loadSheet, GameModeStack& stack,
-                               script::ScriptSystem& scripts, GameState& state,
-                               std::function<void(std::string_view)> log)
+                               script::ScriptSystem& scripts, GameState& state, const gui::GlobalStrings& strings,
+                               gui::RumbleData& data, std::function<void(std::string_view)> log)
     : m_device(device), m_loadSheet(std::move(loadSheet)), m_stack(stack), m_scripts(scripts), m_state(state),
-      m_log(std::move(log)) {
+      m_log(std::move(log)),
+      m_menu(gui::RumbleMenuServices{
+          .state = &state, .data = &data, .strings = &strings, .runChunk = [&scripts](std::string_view chunk) {
+              scripts.runFile(chunk);
+          }}) {
     m_canvas.fonts = [this](int slot) -> const graphics::Font* {
         if (slot == gui::kBigFontSlot && m_bigFont) {
             return &*m_bigFont;
@@ -105,8 +105,11 @@ ModeResult RumbleMenuMode::update(GameModeStack& stack, const FrameTime& frame) 
 
     // One frame of the screens, read from the HUD player's pad (port 1); a confirm writes the set-up.
     const gui::GuiFrame guiFrame{nowMs, &stack.pads().port(0)};
-    const gui::RumbleMenuResult result = m_menu.update(guiFrame, stack.pads().connectedCount(), m_state.rumble);
+    const gui::RumbleMenuResult result = m_menu.update(guiFrame, stack.pads().connectedCount());
     m_menu.render(m_canvas);
+    for (const int cue : m_menu.takeCues()) {
+        m_log(std::format("rumble menu: cue {}\n", cue));
+    }
     for (std::optional<graphics::SpriteBatch>* batch : {&m_textBatch, &m_bigBatch}) {
         if (*batch) {
             m_pass.queue(**batch);
@@ -118,9 +121,10 @@ ModeResult RumbleMenuMode::update(GameModeStack& stack, const FrameTime& frame) 
     }
     m_scripts.update(nowMs, frame.seconds);
 
+    // Backing out from the front end is "cancelled"; in game the menu only closes.
     m_started = result == gui::RumbleMenuResult::Started;
-    m_cancelled = result == gui::RumbleMenuResult::Cancelled;
-    if (!m_started && !m_cancelled) {
+    m_cancelled = result == gui::RumbleMenuResult::Cancelled && m_fromFrontEnd;
+    if (result == gui::RumbleMenuResult::Stay) {
         return ModeResult::Stay;
     }
 

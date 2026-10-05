@@ -36,10 +36,16 @@
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
+#include "support/rumble_fixtures.h"
 
 namespace {
 
 using coney::test::LuaAsm;
+
+// The set-up every screen's first entry gives over the synthetic Rumble chunks (rumble_fixtures.h): mode 12, one
+// player, gang 5 (pack 4) against gang 3 (pack 2) with the stand-in types.
+constexpr std::array<std::uint16_t, coney::RumbleSetup::kValues> kDefaultValues{
+    3, 12, 1, 4, 2, 91, 94, 91, 92, 93, 94, 91, 92, 93, 225, 226, 224, 225, 226, 227, 228, 225, 226};
 
 // The scripts of a quick rumble, written like the game's (Lua 4.0 bytecode built by hand): a level table of level100
 // and level102; level100.lua's Menu.fadeToRMI opens the Rumble menu at once, Menu.startRumbleMode(n) sets checkpoint 1
@@ -97,6 +103,7 @@ std::map<std::string, std::vector<std::byte>, std::less<>> rumbleScripts() {
     arena.closure(0).setGlobal("DoRules");
     arena.getGlobal("SetStartGameCallback").pushString("DoRules").call(1);
     files["level102.lua"] = coney::test::luaChunk(arena.end());
+    coney::test::addRumbleChunks(files);
     return files;
 }
 
@@ -156,8 +163,9 @@ constexpr std::string_view kQuickRumble = "200 tap start\n212 stick left 0 70\n2
 
 TEST_CASE("quick rumble: the Rumble menu starts the arena and the start callback teleports player 1 onto its flag",
           "[rumble_start]") {
-    // Cross on each of the four screens, keeping each screen's first entry.
-    RumbleRun run(std::string(kQuickRumble) + "240 tap cross\n250 tap cross\n260 tap cross\n270 tap cross\n");
+    // Cross on each screen (on the gang screen once for each side), keeping each screen's first entry.
+    RumbleRun run(std::string(kQuickRumble) +
+                  "240 tap cross\n250 tap cross\n260 tap cross\n270 tap cross\n280 tap cross\n");
     run.frames(230);
     // The profile manager's quick rumble callback opened mode 0x11 over it, at its Game Mode screen.
     REQUIRE(run.stack.topId() == coney::RumbleMenuMode::kId);
@@ -167,8 +175,11 @@ TEST_CASE("quick rumble: the Rumble menu starts the arena and the start callback
     // The screens write the default set-up; the area's cross leaves calling Menu.startRumbleMode(102), the profile
     // manager goes too, and the level flow starts level102, whose start callback places P11 on the flag with the
     // flag's heading.
-    run.frames(50);
-    CHECK(run.flow->state().rumble.values == coney::defaultRumbleSetup().values);
+    run.frames(60);
+    for (const std::string& line : run.log) {
+        UNSCOPED_INFO(line);
+    }
+    CHECK(run.flow->state().rumble.values == kDefaultValues);
     CHECK(run.flow->state().rumble.levelNumber == coney::kDefaultRumbleArena);
     CHECK(run.flow->rumbleMenu().started());
     CHECK(run.stack.topId() == coney::GameplayMode::kId);
@@ -179,7 +190,7 @@ TEST_CASE("quick rumble: the Rumble menu starts the arena and the start callback
     REQUIRE(start.player.has_value());
     const coney::HumanCreation player = start.player.value_or(coney::HumanCreation{});
     CHECK(player.name == "P11");
-    CHECK(player.type == coney::defaultRumbleSetup().values.at(5));
+    CHECK(player.type == kDefaultValues.at(5));
     REQUIRE(player.teleported.has_value());
     const coney::world_objects::Placement placed = player.teleported.value_or(coney::world_objects::Placement{});
     CHECK(placed.position == std::array<float, 3>{5.0F, 6.0F, 7.0F});
@@ -200,12 +211,10 @@ TEST_CASE("quick rumble: backing out of the Rumble menu calls the cancel callbac
     CHECK(run.flow->levelFlow().chosenLevel() == coney::LevelFlowMode::kNoLevel);
 }
 
-TEST_CASE("the Rumble menu's default set-up names an arena for each Rumble level only", "[rumble_start]") {
-    const std::optional<coney::RumbleSetup> arena = coney::rumbleSetupForLevel("level117");
-    REQUIRE(arena.has_value());
-    CHECK(arena.value_or(coney::RumbleSetup{}).levelNumber == 117);
-    CHECK(arena.value_or(coney::RumbleSetup{}).values == coney::defaultRumbleSetup().values);
-    CHECK(!coney::rumbleSetupForLevel("level99").has_value());
-    CHECK(!coney::rumbleSetupForLevel("level102s").has_value());
-    CHECK(!coney::rumbleSetupForLevel("sandbox").has_value());
+TEST_CASE("a Rumble arena's level number is known for each Rumble level only", "[rumble_start]") {
+    CHECK(coney::rumbleArenaOf("level117") == 117);
+    CHECK(coney::rumbleArenaOf("level102") == coney::kDefaultRumbleArena);
+    CHECK(!coney::rumbleArenaOf("level99").has_value());
+    CHECK(!coney::rumbleArenaOf("level102s").has_value());
+    CHECK(!coney::rumbleArenaOf("sandbox").has_value());
 }

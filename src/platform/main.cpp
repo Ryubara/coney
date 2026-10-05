@@ -269,7 +269,7 @@ coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::str
         table = std::move(*words);
         options.randomTable = table;
     }
-    options.rumble = coney::rumbleSetupForLevel(name);
+    options.rumbleArena = coney::rumbleArenaOf(name);
     return options;
 }
 

@@ -289,7 +289,7 @@ TEST_CASE("the disc's hub and Rumble arenas put player 1 on their flags", "[disc
          {Arena{"level102", {-9.1F, 8.9F, -11.1F}, 128.0F}, Arena{"level103", {-66.4F, 23.2F, 0.3F}, 95.0F}}) {
         INFO(std::string(arena.level));
         coney::LevelScriptOptions options;
-        options.rumble = coney::rumbleSetupForLevel(arena.level);
+        options.rumbleArena = coney::rumbleArenaOf(arena.level);
         const coney::LevelScriptRun run =
             coney::runLevelScriptAlone(coney::script::wadScriptSource(*wad), arena.level, 1, {}, options);
         REQUIRE(run.start.player.has_value());
@@ -400,9 +400,9 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
     coney::gui::GlobalStrings strings;
     coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
 
-    // START, the stick up most of the way (wrapping to QUICK RUMBLE), cross; cross on each of the Rumble menu's four
-    // screens (1 ON 1, one player, the default gangs, the Fight Pen); then in the arena the stick at 40 % right and
-    // 70 % forward for two seconds, then let go.
+    // START, the stick up most of the way (wrapping to QUICK RUMBLE), cross; cross on each of the Rumble menu's screens
+    // (1 ON 1, one player, side 1's and side 2's default gangs, the Fight Pen); then in the arena the stick at 40 %
+    // right and 70 % forward for two seconds, then let go.
     auto script = coney::parseInputScript("200 tap start\n"
                                           "212 stick left 0 70\n"
                                           "214 stick left 0 0\n"
@@ -410,6 +410,7 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
                                           "280 tap cross\n"
                                           "290 tap cross\n"
                                           "300 tap cross\n"
+                                          "305 tap cross\n"
                                           "310 tap cross\n"
                                           "360 stick left 40 70\n"
                                           "420 stick left 0 0\n");
@@ -436,7 +437,10 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
     }
     REQUIRE(stack.topId() == coney::GameplayMode::kId);
     CHECK(flow.rumbleMenu().started());
-    CHECK(flow.state().rumble.values == coney::defaultRumbleSetup().values);
+    // The fresh boot's 1 ON 1 set-up, as read at run time: mode 12, one player, Baseball Furies against Orphans.
+    constexpr std::array<std::uint16_t, coney::RumbleSetup::kValues> kDefaultValues{
+        3, 12, 1, 4, 2, 91, 94, 91, 92, 93, 94, 91, 92, 93, 225, 226, 224, 225, 226, 227, 228, 225, 226};
+    CHECK(flow.state().rumble.values == kDefaultValues);
     CHECK(flow.state().rumble.gangNames[0] == "BASEBALL FURIES");
     const auto* play = dynamic_cast<const coney::platform::PlayLevelMode*>(flow.gameplay().level());
     REQUIRE(play != nullptr);

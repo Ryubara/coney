@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 4.9%](https://img.shields.io/badge/reimplemented-4.9%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 5.4%](https://img.shields.io/badge/reimplemented-5.4%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█░░░░░░░░░░░░░░░░░░░` | 4.9% of the game's own code (162,676 of 3,342,936 bytes, 363 functions) |
+| **Reimplemented** | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% of the game's own code (182,132 of 3,342,936 bytes, 379 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -60,13 +60,13 @@ at the top of the repository's `README.md`.
 | `FileIO` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 3 | 6,480 |
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
-| `GUI` | `▉░░░░░░░░░░░░░░░░░░░` | 4.1% | 41 | 481,192 |
+| `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
 | `Human` | `█▊░░░░░░░░░░░░░░░░░░` | 9.0% | 57 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `███▋░░░░░░░░░░░░░░░░` | 18.2% | 47 | 197,192 |
+| `Scripting` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 51 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -245,12 +245,24 @@ at the top of the repository's `README.md`.
 | `0x001d4230` | `OptionGrid_AddItem` | `GUI` | 440 |
 | `0x001d4d28` | `OptionGrid_TakeFocus` | `GUI` | 144 |
 | `0x001e95c0` | `MenuInput_Dispatch` | `GUI` | 1,080 |
-| `0x001ebb90` | `RumbleGUI_Area_Confirm` | `GUI` | 128 |
-| `0x001ef7c0` | `RumbleGUI_Gangs_Confirm` | `GUI` | 1,480 |
+| `0x001eaa30` | `RM_ChooseArea_AddArena` | `GUI` | 392 |
+| `0x001eb0c8` | `RM_ChooseArea_Init` | `GUI` | 1,872 |
+| `0x001eb9f8` | `RM_ChooseArea_OnInput` | `GUI` | 224 |
+| `0x001ebb90` | `RM_ChooseArea_Launch` | `GUI` | 128 |
+| `0x001ec028` | `RM_ChooseGangs_RotateRight` | `GUI` | 264 |
+| `0x001ec130` | `RM_ChooseGangs_RotateLeft` | `GUI` | 264 |
+| `0x001ec490` | `RM_ChooseGangs_StandInType` | `GUI` | 1,264 |
+| `0x001ec980` | `RM_ChooseGangs_AddGang` | `GUI` | 352 |
+| `0x001ecae0` | `RM_ChooseGangs_Init` | `GUI` | 8,672 |
+| `0x001ef7c0` | `RM_ChooseGangs_OnInput` | `GUI` | 1,480 |
+| `0x001f0e60` | `RM_CharData_Add` | `GUI` | 416 |
 | `0x001f26a8` | `RumbleMode_GetGangName` | `GUI` | 56 |
 | `0x001f26e0` | `RumbleMode_GetData` | `GUI` | 64 |
-| `0x001f8d80` | `RumbleGUI_ModeList_Confirm` | `GUI` | 376 |
-| `0x001fd1c8` | `RumbleGUI_GameType_Confirm` | `GUI` | 416 |
+| `0x001f8110` | `RM_GameMode_AddGame` | `GUI` | 432 |
+| `0x001f85c0` | `RM_GameMode_Init` | `GUI` | 1,392 |
+| `0x001f8d80` | `RM_GameMode_OnInput` | `GUI` | 376 |
+| `0x001fc5b0` | `RM_NumPlayers_Init` | `GUI` | 2,632 |
+| `0x001fd1c8` | `RM_NumPlayers_OnInput` | `GUI` | 416 |
 | `0x001fe048` | `RumbleMode_GetGang1Name` | `GUI` | 24 |
 | `0x001fe070` | `RumbleMode_SetGang1Name` | `GUI` | 88 |
 | `0x001fe0c8` | `RumbleMode_GetGang2Name` | `GUI` | 16 |
@@ -395,6 +407,10 @@ at the top of the repository's `README.md`.
 | `0x00358428` | `HuCreate` | `Scripting` | 480 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
+| `0x0036b4f0` | `CfgRumbleGame` | `Scripting` | 384 |
+| `0x0036b670` | `CfgRumbleArena` | `Scripting` | 288 |
+| `0x0036b790` | `CfgRumbleGang` | `Scripting` | 280 |
+| `0x0036b8a8` | `CfgRumbleChar` | `Scripting` | 328 |
 | `0x0036b9f0` | `GetRumbleModeData` | `Scripting` | 208 |
 | `0x0036bac0` | `GetRumbleModeGangName` | `Scripting` | 80 |
 | `0x0036bb10` | `CfgSetDatabaseSizes` | `Scripting` | 424 |

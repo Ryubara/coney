@@ -14,6 +14,7 @@
 #include "scripting/binding_args.h"
 #include "scripting/config_strings.h"
 #include "scripting/level_bindings.h"
+#include "scripting/rumble_bindings.h"
 
 namespace coney::script {
 
@@ -450,6 +451,11 @@ constexpr std::array kBindings{
     real("SetStartGameCallback"),
     real("GetRumbleModeData"),
     real("GetRumbleModeGangName"),
+    // The Rumble menu's lists, which its chunks build (rumble_bindings.h).
+    real("CfgRumbleGame"),
+    real("CfgRumbleGang"),
+    real("CfgRumbleArena"),
+    real("CfgRumbleChar"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     routed("SoundPlayMusicTrack"),
@@ -661,11 +667,13 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
             vm.registerFunction(info.name, maker->make(factory));
             continue;
         }
-        // Every real binding has a maker or is a string or level binding (CONEY_ASSERT).
+        // Every real binding has a maker or is a string, level or Rumble binding (CONEY_ASSERT).
         CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end() ||
-                     std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end());
+                     std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
+                     std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end());
     }
     addStringBindings(vm, *context.strings);
+    addRumbleBindings(vm, context);
     // The level bindings make world objects, so they take their handles from the same counter as the stubs.
     addLevelBindings(vm, context, [handles = factory.handles] {
         const double handle = handles->next;

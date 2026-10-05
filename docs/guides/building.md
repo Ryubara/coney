@@ -238,15 +238,17 @@ Level99 is up by frame 270; the last line walks Rembrandt forward at 35 % of the
 **QUICK RUMBLE** follows the original's path too: the menu's scripts call `ShowRumbleModeInterface`, which opens the
 Rumble menu (mode 0x11) and its four screens, as a fresh boot offers them: **Game Mode** (1 ON 1 or WAR PARTY),
 **Game Type** (one player against the computer, or versus or co-op with a second pad), **Choose Gangs** (the BASEBALL
-FURIES against the ORPHANS, the only pairing known so far) and **Choose Area** (the Fight Pen, `level102`). Up and down
-(d-pad or left stick) pick an entry, cross confirms it and moves on, triangle or circle goes back a screen (out of the
-menu from the first); each change of screen is logged (`rumble menu: Game Type`). The layout is Coney's: the screen's
+FURIES against the ORPHANS, the gangs a fresh profile has) and **Choose Area** (the Fight Pen, `level102`). The lists
+come from the disc's own Rumble scripts, so the text is the game's. Up and down (d-pad or left stick) pick an entry,
+cross confirms it and moves on, triangle or circle goes back a screen (out of the menu from the first). On Choose
+Gangs each side picks in turn: up and down choose the gang, left and right rotate its roster to choose the warchief,
+cross locks the side (twice in all), and back unlocks it; each change of screen is logged (`rumble menu: Game Type`). The layout is Coney's: the screen's
 name and its entries in white and grey on black. Confirming the arena calls the scripts' `Menu.startRumbleMode`, whose
 level request loads the arena; the arena's script reads the set-up (`GetRumbleModeData`, `GetRumbleModeGangName`), and
 its start callback creates player 1, the Furies' first fighter, and teleports him to his gang's first flag, where you
 control him. The Rumble's other fighters are created by the script but not drawn yet. In a script, from the title
-screen (the stick up most of the way wraps the main menu round to QUICK RUMBLE, then cross on each of the four
-screens):
+screen (the stick up most of the way wraps the main menu round to QUICK RUMBLE, then cross on each screen, twice on
+Choose Gangs):
 
 ```text
 200 tap start
@@ -256,6 +258,7 @@ screens):
 280 tap cross
 290 tap cross
 300 tap cross
+305 tap cross
 310 tap cross
 360 stick left 40 70
 ```

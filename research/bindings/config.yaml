@@ -1477,6 +1477,7 @@
   notes: >-
     Unlock check 0x00424130 on the unlockables manager (0x006fe998) with kind 1. Only the Rumble data script calls it.
   usage: {chunks: 1, calls: 9, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgRumbleArena
   wrapper: 0x0036b670
@@ -1494,6 +1495,7 @@
   notes: >-
     A modes table whose first value is 0 allows every mode.
   usage: {chunks: 1, calls: 29, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgRumbleGang
   wrapper: 0x0036b790
@@ -1512,6 +1514,7 @@
     one per side, rotated separately to choose the warchief). Each type passes through 0x001ec490, which replaces a
     locked character type (unlockables kind 4) with a fixed stand-in.
   usage: {chunks: 1, calls: 46, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgRumbleChar
   wrapper: 0x0036b8a8
@@ -1532,6 +1535,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 5, calls: 732, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgSetDatabaseSizes
   wrapper: 0x0036bb10

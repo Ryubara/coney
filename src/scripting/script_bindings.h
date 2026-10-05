@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "gui/global_strings.h"
+#include "gui/rumble_mode_gui/rumble_data.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_system.h"
@@ -109,6 +110,7 @@ struct BindingContext {
     RecordedCalls* recorded = nullptr;          ///< The recording stubs' arguments.
     CreatedHumans* humans = nullptr;            ///< Where `HuCreate` keeps the humans it makes; null keeps none.
     world_objects::WorldFlags* flags = nullptr; ///< The level's world flags (`AddFlag`); null keeps none.
+    gui::RumbleData* rumble = nullptr;          ///< The Rumble menu's lists (`CfgRumble*`); null keeps none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,
