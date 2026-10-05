@@ -78,7 +78,8 @@ std::vector<FrameRecord> runScript(const Level99& loaded, const std::string& nam
     const coney::raycast::CollisionMesh* mesh = loaded.level->collision.get();
     const auto start = coney::human::researchedPlayerStart("level99");
     REQUIRE(start.has_value());
-    coney::human::Player player(*loaded.character, mesh, *start);
+    // value_or keeps the access checked for clang-tidy, which does not know REQUIRE stops the test.
+    coney::human::Player player(*loaded.character, mesh, start.value_or(coney::human::PlayerStart{}));
     std::vector<FrameRecord> records;
     for (std::uint64_t frame = 0; frame < frames; ++frame) {
         pads.update(input.sample(frame));

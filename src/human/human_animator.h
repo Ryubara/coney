@@ -39,7 +39,7 @@ inline constexpr std::size_t kSlotCombatWalk = 14;
 inline constexpr std::size_t kSlotDropCycle = 26;
 
 /// Anim states, by the original's numbers where it has them.
-enum class AnimState : int {
+enum class AnimState : std::int8_t {
     None = -1, ///< Nothing built yet.
     Idle = 0,
     Move = 4,

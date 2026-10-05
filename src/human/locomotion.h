@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
 #include <numbers>
 
 #include "animation/anim_math.h"
@@ -33,7 +34,7 @@ inline constexpr float kSkidStick = 0.2F;
 inline constexpr float kSkidDot = -0.5F;
 
 /// Gaits, as the original numbers them (0x0022aeb0, 0x00221760).
-enum class Gait : int { Standing = 0, Sneak = 1, Walk = 2, Jog = 3, Run = 4, Sprint = 5 };
+enum class Gait : std::uint8_t { Standing = 0, Sneak = 1, Walk = 2, Jog = 3, Run = 4, Sprint = 5 };
 
 /// A human's speeds in m/s, each from its locomotion clip's root motion (docs/research/characters.md#speed-classes).
 struct Speeds {
