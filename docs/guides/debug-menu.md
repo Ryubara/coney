@@ -22,10 +22,18 @@ appears in every front end with no front-end code.
 | The pad menu's state | `src/debug/menu_navigator.h`, `pad_menu_input.h` | breadcrumb, cursor, typing, hold-to-repeat |
 | The pad menu's renderer | `src/gui/debug_menu_view.h`, `debug_text_painter.h` | the in-game list over the game's screen |
 | The platform glue | `src/platform/debug_menus.h` | draws the pad menu at the end of every frame |
+| The developer overlay | `src/platform/imgui_model_view.h`, `imgui_overlay.h` | the same model in Dear ImGui windows |
 
 The item kinds are: **action** (run a callback), **toggle**, **number** (a slider with a range and a step, whole or
 real), **choice** (one of a list), **text** (typed text or a number, with an optional history), **submenu**,
 **watch** (a live read-only value, optionally with a plotted channel) and **log** (read-only lines).
+
+There are two front ends. The **pad menu** is a trainer-style list drawn in the game's own font, driven by the pad
+alone, in every run including headless ones; it is the one to use with a gamepad in hand, on a television, and in
+scripted tests. The **developer overlay** shows the same pages as Dear ImGui windows for the mouse and keyboard, in a
+windowed run only; it is the one to use at a desk, for many values at once, searching the bindings, plots and typing
+Lua. Both act on the same session at the same time: a value changed in one shows at once in the other, and a pin made in
+one is in the other's Favourites.
 
 ## Opening it and the controls {#controls}
 
@@ -61,12 +69,43 @@ The breadcrumb on the title bar shows where you are, the counter how far down th
 cursor for the next visit. The footer shows the item's help, the last message, a plot of a watched channel and the
 page's log lines.
 
+## The developer overlay {#the-developer-overlay}
+
+**F1** shows and hides the overlay (a windowed run only; it starts hidden). A menu bar lists the pages; each opens as a
+window, and the windows that were open come back in the next run, with their places, from `coney-imgui.ini` in the
+config folder next to the tunables file. Every window has a filter box over its items: a submenu whose name matches
+shows everything under it, and one whose items match opens to show them, so typing `Ped` in the Natives window shows
+the matching bindings in every category. *Refresh* makes the page again for lists that changed.
+
+| Item | Widget |
+| --- | --- |
+| action | a button |
+| toggle | a checkbox |
+| number | a drag box over its range, with its units; Ctrl+click types a value |
+| choice | a drop-down list |
+| text | a text box: Enter commits it; Up and Down walk its history (the Lua console's box empties after each line) |
+| submenu | a tree node, labelled with its tag (a category's count, a binding's status) |
+| watch | the live value; *Plot* draws its channel's last 300 steps |
+| log | a scrolling box that follows new lines |
+
+Hovering an item shows its help; right-clicking it pins it to Favourites (or unpins it) and resets a number to its
+default. While a text box has the keyboard, or the mouse is over a window, those events stay with the overlay: the
+keyboard does not play on port 1 and Escape does not quit. The gamepads always go to the game and the pad menu.
+
+Hidden, the overlay draws nothing and takes no input. Shown, it draws last in the frame, through Dear ImGui's OpenGL 3
+backend, which saves the OpenGL state it changes and restores it afterwards, so librw's own idea of the state stays
+right. `--dev-overlay N` shows it for the first N frames and then hides it, to check that: the last frame of
+`--frames 150 --dev-overlay 100 --screenshot a.png` is byte-identical to the same run without `--dev-overlay`.
+
+Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/platform/`
+([LEGAL.md](repo:LEGAL.md#licences)).
+
 ## The pages {#pages}
 
 | Page | What it has |
 | --- | --- |
 | Favourites | every pinned item, working as itself |
-| Time | pause, step one fixed step, slow motion, the frame and step counts with a plot |
+| Time | pause, step one fixed step, slow motion, the frame and step counts with a plot, the real frame time |
 | Tunables | one page per category of the [tunables](#tunables), reset all, save and load the overrides file |
 | Natives | the [script bindings](#natives) by category with their Coney status, an argument editor and a call |
 | Lua console | a Lua line to run in the script state, a file to run, and the output |
@@ -78,7 +117,9 @@ page's log lines.
 **Time.** The game always advances by whole fixed 1/30 s steps. Paused, no step runs; *Step one* runs exactly one.
 Slow motion runs one step out of every N that real time calls for, so the game runs at 1/N speed and every step is still
 1/30 s: never a variable step. A held step still reads the pad, so the menu keeps working, and the game's last step
-stays on screen, drawn as it is (not blended towards a step that has not run).
+stays on screen, drawn as it is (not blended towards a step that has not run). In a window
+the page also shows the real time each frame took, as the frame pacer measures it (a headless run has no real clock
+and leaves it out); it is only shown and plotted, never used by a step.
 
 **Cheats.** The retail cheat checker (six single buttons matched against a table, [Debug features](../research/debug.md#cheats))
 is not in Coney yet. The page does what the checker does on a match: it calls the script's cheat callback,
@@ -177,8 +218,11 @@ Coney: no game data and no third-party font. The panels are flat translucent qua
 teleport and spawn) is defined once, in `src/debug/`, as data: pages of items, tunables, signatures, actions with
 callbacks. The front ends only render that model and hold no feature logic. A feature added there appears in every
 front end with no front-end code. If a feature seems to need its own front-end code, add the missing item kind or a
-generic capability to the model instead, so every front end gets it. A test walks the model and checks that every item
-kind has a renderer in each front end (`tests/gui/debug_menu_view_test.cpp`).
+generic capability to the model instead, so every front end gets it. Tests check that every item kind has a renderer
+in each front end and that the overlay draws every item of the session's pages (`tests/gui/debug_menu_view_test.cpp`,
+`tests/platform/imgui_model_view_test.cpp`); the overlay's switch over the kinds has no default case, so a new kind
+without a widget does not compile. The overlay's only extras are generic ones: the filter box, plotting any watch with
+a channel, and a text box for any text item.
 
 A tunable is one line where the subsystem has its variable:
 
@@ -210,6 +254,9 @@ picture, run the same script in a window with `--screenshot` (keep screenshots o
 ```sh
 build/dev/src/platform/coney --frames 30 --input-script tests/support/debug_menu.txt --screenshot ../../scratch/menu.png
 ```
+
+The overlay is checked the same way: its renderer runs over a bare Dear ImGui context in the unit tests, and
+`--dev-overlay` with `--screenshot` checks that it leaves the frame as it found it ([above](#the-developer-overlay)).
 
 ## Still to come {#still-to-come}
 

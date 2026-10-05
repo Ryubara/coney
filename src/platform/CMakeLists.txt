@@ -18,8 +18,10 @@ target_sources(coney_platform PRIVATE sdl_input.cpp)
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
 target_sources(coney_platform PRIVATE debug_menus.cpp)
+# The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
+target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp)
 coney_target_defaults(coney_platform)
-target_link_libraries(coney_platform PUBLIC coney_core SDL3::SDL3-static librw::librw)
+target_link_libraries(coney_platform PUBLIC coney_core SDL3::SDL3-static librw::librw imgui)
 
 add_executable(coney main.cpp)
 coney_target_defaults(coney)

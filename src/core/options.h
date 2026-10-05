@@ -73,6 +73,10 @@ struct Options {
     /// `--tunables`: the debug menus' overrides file (docs/guides/debug-menu.md#tunables), loaded at start-up and
     /// written by the Tunables page; unset: `coney-tunables.ini` in the user's config folder.
     std::optional<std::string> tunablesFile;
+    /// `--dev-overlay`: show the debug menus' developer overlay for this many frames from the start, then hide it; a
+    /// test aid for checking that the overlay leaves the frame as it found it (docs/guides/debug-menu.md). Ignored
+    /// without a window.
+    std::optional<int> devOverlayFrames;
     /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
     Language language = Language::English;
     /// `--render-references`: the folder to write a reference image of every character into, then exit. Requires

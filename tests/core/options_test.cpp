@@ -365,3 +365,15 @@ TEST_CASE("the tunables option takes the debug menus' overrides file once", "[op
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--tunables", "a", "--tunables", "b"}).has_value());
     CHECK(coney::usageText().find("--tunables FILE") != std::string_view::npos);
 }
+
+TEST_CASE("the developer overlay option takes a frame count once", "[options]") {
+    auto shown = parse(std::array<std::string_view, 2>{"--dev-overlay", "5"});
+    REQUIRE(shown.has_value());
+    CHECK(shown->devOverlayFrames == 5);
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--dev-overlay"}).has_value());
+    auto zero = parse(std::array<std::string_view, 2>{"--dev-overlay", "0"});
+    REQUIRE_FALSE(zero.has_value());
+    CHECK(zero.error().message.find("--dev-overlay") != std::string::npos);
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--dev-overlay", "1", "--dev-overlay", "2"}).has_value());
+    CHECK(coney::usageText().find("--dev-overlay N") != std::string_view::npos);
+}

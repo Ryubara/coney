@@ -152,6 +152,14 @@ std::optional<Window> RenderEngine::window() const {
     return Window(m_sdlWindow);
 }
 
+std::pair<void*, void*> RenderEngine::sdlWindowAndContext() const {
+    if (m_sdlWindow == nullptr) {
+        return {nullptr, nullptr};
+    }
+    // librw's GL3 device keeps its context current on this thread for the engine's whole life.
+    return {m_sdlWindow, SDL_GL_GetCurrentContext()};
+}
+
 void RenderEngine::createCamera() {
     // As librw's own examples do: a camera with a frame (its position, unused by 2D drawing but required by
     // beginUpdate) and frame and depth buffers the size of the window.

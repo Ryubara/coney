@@ -33,7 +33,27 @@ FetchContent_Declare(librw GIT_REPOSITORY https://github.com/aap/librw.git
 FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git
                             GIT_TAG 317ac1ed4c0bb6e6b91eafc817e05c488feffcb3 SYSTEM)
 
-FetchContent_MakeAvailable(SDL3 librw Catch2)
+# Dear ImGui v1.92.9b (a lightweight tag, so the commit is the tag's own), MIT licence. The developer overlay of the
+# debug menus (docs/guides/debug-menu.md), used only in src/platform/. It ships no CMake build, so the library is
+# made below from its core, its std::string helpers and the SDL3 and OpenGL 3 backends.
+FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git
+                           GIT_TAG f1cc2ae15e53a861a874c3034aae6798fde194ab SYSTEM)
+
+FetchContent_MakeAvailable(SDL3 librw Catch2 imgui)
+
+# Dear ImGui as a static library. Its OpenGL 3 backend loads the GL functions itself (its bundled loader), so it
+# needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen.
+add_library(imgui STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp)
+target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
+                                               ${imgui_SOURCE_DIR}/misc/cpp)
+# No ImGui API that a later version removes, so an update fails loudly instead of compiling against stale names.
+target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+target_compile_features(imgui PUBLIC cxx_std_23)
+target_link_libraries(imgui PUBLIC SDL3::SDL3-static ${CMAKE_DL_LIBS})
 
 # Catch2 builds as C++14 by default, which leaves out its std::string_view support (C++17 and later) from the
 # compiled library while our C++23 tests still see it declared, and the tests then fail to link. Build it with the

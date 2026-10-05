@@ -174,3 +174,23 @@ TEST_CASE("an Input page watch has a channel that fills once per frame", "[debug
     REQUIRE(series != nullptr);
     CHECK(series->size() == 5);
 }
+
+TEST_CASE("the Time page shows and samples the frame time only when the platform measures it", "[debug]") {
+    TunableRegistry tunables;
+    DebugSession bare(tunables, DebugServices{}, nullptr);
+    CHECK(bare.model().openPage("Time")->find("Frame time") == nullptr);
+    CHECK(bare.model().channel("Time/Frame ms") == nullptr);
+
+    DebugServices services;
+    services.frameMilliseconds = [] { return 16.5; };
+    DebugSession timed(tunables, services, nullptr);
+    const auto time = timed.model().openPage("Time");
+    const MenuItem* frameTime = time->find("Frame time");
+    REQUIRE(frameTime != nullptr);
+    CHECK(frameTime->watch() == "16.50 ms");
+    CHECK(frameTime->channel == "Time/Frame ms");
+    timed.model().sampleChannels();
+    const coney::debug::TimeSeries* series = timed.model().channel("Time/Frame ms");
+    REQUIRE(series != nullptr);
+    CHECK(series->latest() == 16.5F);
+}

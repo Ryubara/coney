@@ -76,9 +76,15 @@ void addTimePage(DebugSession& session) {
         *lastSteps = steps;
         return delta;
     });
+    // The real frame time, when the platform measures it.
+    const std::function<double()> frameMilliseconds = session.services().frameMilliseconds;
+    if (frameMilliseconds) {
+        session.model().addChannel("Time/Frame ms",
+                                   [frameMilliseconds] { return static_cast<float>(frameMilliseconds()); });
+    }
     session.model().addPage(
         "Time",
-        [&time](MenuPage& page) {
+        [&time, frameMilliseconds](MenuPage& page) {
             page.add(toggleItem(
                          "Paused", [&time] { return time.paused(); }, [&time](bool paused) { time.setPaused(paused); }))
                 .withHelp("Stops the game's steps; the menus keep running.");
@@ -99,6 +105,13 @@ void addTimePage(DebugSession& session) {
             page.add(watchItem(
                 "Due / run steps", [&time] { return std::format("{} / {}", time.frames(), time.steps()); },
                 "Time/Steps run"));
+            if (frameMilliseconds) {
+                page
+                    .add(watchItem(
+                        "Frame time", [frameMilliseconds] { return std::format("{:.2f} ms", frameMilliseconds()); },
+                        "Time/Frame ms"))
+                    .withHelp("Real time per frame, measured by the platform; the steps stay 1/30 s.");
+            }
         },
         "Pause, single step and slow motion; every step stays 1/30 s.");
 }

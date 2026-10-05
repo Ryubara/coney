@@ -46,6 +46,7 @@
 #include "platform/character_viewer_mode.h"
 #include "platform/debug_menus.h"
 #include "platform/frame_pacer.h"
+#include "platform/imgui_overlay.h"
 #include "platform/play_level_mode.h"
 #include "platform/reference_renderer.h"
 #include "platform/render_engine.h"
@@ -420,6 +421,8 @@ int main(int argc, char** argv) {
     // there is a window; a headless run without a script has no pads. Declared after the renderer, so it is destroyed
     // before SDL stops.
     std::unique_ptr<coney::InputSource> input;
+    coney::platform::SdlInput* devices =
+        nullptr; // the SDL input, when it is the source: the overlay mutes its keyboard
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
         auto events = coney::loadInputScript(*scriptPath);
         if (!events) {
@@ -428,17 +431,25 @@ int main(int argc, char** argv) {
         }
         input = std::make_unique<coney::ScriptedInput>(std::move(*events));
     } else if (renderer.window()) {
-        auto devices = coney::platform::SdlInput::start();
-        if (devices) {
-            input = std::move(*devices);
+        auto started = coney::platform::SdlInput::start();
+        if (started) {
+            devices = started->get();
+            input = std::move(*started);
         } else {
-            std::fprintf(stderr, "coney: %s; running without pads\n", devices.error().message.c_str());
+            std::fprintf(stderr, "coney: %s; running without pads\n", started.error().message.c_str());
         }
     }
 
     // The debug menus (docs/guides/debug-menu.md), Coney's own tools: a session over the game's services whose input
     // gate sits between the pads and the game, drawn over every frame by the pad menu overlay.
     coney::debug::DebugServices debugServices;
+    // The real time of each frame, for the Time page: the frame pacer measures it, so only outside test mode, which
+    // keeps no real clock.
+    const bool windowed = renderer.window().has_value();
+    double frameMilliseconds = 0.0;
+    if (!coney::isTestMode(*options)) {
+        debugServices.frameMilliseconds = [&frameMilliseconds] { return frameMilliseconds; };
+    }
     if (startUp) {
         debugServices.scripts = [&startUp] { return &startUp->scripts(); };
         debugServices.recorded = [&startUp] { return &startUp->recorded(); };
@@ -475,7 +486,27 @@ int main(int argc, char** argv) {
         }
     }
     coney::platform::PadMenuOverlay padMenu(debugSession, std::move(debugFont));
-    renderer.setPresentOverlay([&padMenu](coney::graphics::RenderDevice& device) { padMenu.draw(device); });
+    // The developer overlay (F1), only with a window; without it the pad menu still works.
+    std::unique_ptr<coney::platform::ImGuiOverlay> devOverlay;
+    if (windowed) {
+        auto started =
+            coney::platform::ImGuiOverlay::start(renderer, debugSession, coney::platform::defaultOverlayLayoutPath());
+        if (started) {
+            devOverlay = std::move(*started);
+            if (const std::optional<int> shownFor = options->devOverlayFrames; shownFor) {
+                devOverlay->showForFrames(static_cast<std::uint64_t>(*shownFor));
+            }
+        } else {
+            std::fprintf(stderr, "coney: %s; running without the developer overlay\n", started.error().message.c_str());
+        }
+    }
+    // Both menus draw over every frame, the overlay last so it stays on top.
+    renderer.setPresentOverlay([&padMenu, &devOverlay](coney::graphics::RenderDevice& device) {
+        padMenu.draw(device);
+        if (devOverlay) {
+            devOverlay->draw();
+        }
+    });
     // The time controls hold steps (pause, slow motion); a held step still reads the pads for the menus, and the
     // frame still renders the game's last step.
     modes.setStepGate([&debugSession] { return debugSession.time().shouldStep(); });
@@ -495,14 +526,31 @@ int main(int argc, char** argv) {
     coney::FrameClock clock(testMode || fpsCap == kStepsPerSecond ? coney::FramePacing::Lockstep
                                                                   : coney::FramePacing::Interpolated);
     std::optional<coney::platform::Window> window = renderer.window();
+    // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
-    hooks.beginFrame = [&window] { return !window || window->pumpEvents(); };
+    hooks.beginFrame = [&window, &devOverlay, devices] {
+        if (!window) {
+            return true;
+        }
+        const bool running =
+            devOverlay ? window->pumpEvents([&devOverlay](const void* event) { return devOverlay->handleEvent(event); })
+                       : window->pumpEvents();
+        if (devices != nullptr) {
+            devices->setKeyboardEnabled(!(devOverlay && devOverlay->wantsKeyboard()));
+        }
+        return running;
+    };
     std::optional<coney::platform::FramePacer> pacer;
     if (!testMode) {
         coney::platform::FramePacer& paced =
             pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(printText)
                                                    : std::function<void(std::string_view)>());
-        hooks.waitForFrame = [&paced] { return paced.waitForFrame(); };
+        // The pacer's measure of each frame is also the debug menus' frame time.
+        hooks.waitForFrame = [&paced, &frameMilliseconds] {
+            const std::uint64_t nanoseconds = paced.waitForFrame();
+            frameMilliseconds = static_cast<double>(nanoseconds) / 1'000'000.0;
+            return nanoseconds;
+        };
         hooks.endFrame = [&paced](std::uint32_t steps) { paced.endFrame(steps); };
     }
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);

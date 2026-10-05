@@ -237,7 +237,9 @@ PortSamples SdlInput::sample(std::uint64_t /*frame*/) {
     }
     // Port 1 always has the keyboard.
     samples[0].connected = true;
-    addKeyboard(samples[0]);
+    if (m_keyboardEnabled) {
+        addKeyboard(samples[0]);
+    }
 
     // Buttons pressed since the last sample count as held in this one, even if they were let go already.
     std::vector<Press> presses;
@@ -248,6 +250,9 @@ PortSamples SdlInput::sample(std::uint64_t /*frame*/) {
     for (const Press& press : presses) {
         // The keyboard is port 1's; a gamepad that has gone since (not found) has no port.
         std::size_t port = 0;
+        if (press.gamepad == 0 && !m_keyboardEnabled) {
+            continue;
+        }
         if (press.gamepad != 0) {
             const auto found = std::ranges::find(m_gamepads, press.gamepad, &OpenGamepad::id);
             port = found == m_gamepads.end() ? kPadPorts : static_cast<std::size_t>(found - m_gamepads.begin());

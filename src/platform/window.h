@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <functional>
 #include <string_view>
 
 // No SDL type appears in this header, so code that holds a Window stays platform-neutral and never includes SDL.
@@ -26,9 +27,14 @@ class Window {
     /// Views the SDL_Window `handle`, which must not be null (checked by CONEY_ASSERT).
     explicit Window(void* handle);
 
-    /// Handles every pending OS event. Returns false once the user has asked to quit: closed the window or pressed
-    /// Escape.
-    [[nodiscard]] bool pumpEvents();
+    /// Sees one OS event (an `const SDL_Event*`, opaque here) before the window does; returns true when it took the
+    /// event, which then is not a key for the window (Escape does not quit).
+    using EventFilter = std::function<bool(const void* event)>;
+
+    /// Handles every pending OS event, each shown to `filter` first when there is one (the developer overlay, which
+    /// takes the keyboard while a text box has it). Returns false once the user has asked to quit: closed the window,
+    /// or pressed Escape when the filter did not take it.
+    [[nodiscard]] bool pumpEvents(const EventFilter& filter = {});
 
   private:
     void* m_handle; // SDL_Window*, kept opaque here

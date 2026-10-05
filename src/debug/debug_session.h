@@ -41,6 +41,9 @@ struct DebugServices {
     /// Where the Tunables page saves and loads overrides (`coney-tunables.ini` in the user's config folder, or the
     /// `--tunables` file); empty: no saving.
     std::string tunablesFile;
+    /// The real time the last frame took, in milliseconds, as the platform measures it; empty in a run with no real
+    /// clock (headless, tests), which then shows no frame time. Only shown and plotted: the steps never depend on it.
+    std::function<double()> frameMilliseconds;
 };
 
 /// One debug session: the menu model with every page, the state its pages share (the time controls, the log, the Lua

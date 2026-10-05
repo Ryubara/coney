@@ -20,7 +20,7 @@ constexpr std::string_view kUsage =
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
-    "             [--play-level NAME [--spawn NAME]] [--sandbox [NAME]] [--assets DIR]\n"
+    "             [--play-level NAME [--spawn NAME]] [--sandbox [NAME]] [--assets DIR] [--dev-overlay N]\n"
     "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--show-fps]\n"
     "\n"
@@ -65,7 +65,8 @@ constexpr std::string_view kUsage =
     "                     play the pad input in FILE instead of the keyboard and gamepads\n"
     "  --tunables FILE    the debug menus' tunable overrides to load and save (default: coney-tunables.ini\n"
     "                     in your config folder)\n"
-    "  --headless         run with no window and no GPU (nothing is drawn)\n"
+    "  --dev-overlay N    show the developer overlay (F1) for the first N frames, then hide it; a test aid\n"
+    "  --headless        run with no window and no GPU (nothing is drawn)\n"
     "  --help             show this text and exit\n";
 
 // Shorthand for the one error code every option mistake uses.
@@ -78,11 +79,12 @@ bool isAllDigits(std::string_view text) {
     return !text.empty() && std::ranges::all_of(text, [](char c) { return c >= '0' && c <= '9'; });
 }
 
-/// Parses the value after `--frames`: a whole number from 1 to kMaxFrameLimit, written with decimal digits only.
-std::expected<int, Error> parseFrameLimit(std::string_view text) {
-    auto badValue = [text] {
+/// Parses the value after `--frames` (or `option`, named in the error): a whole number from 1 to kMaxFrameLimit,
+/// written with decimal digits only.
+std::expected<int, Error> parseFrameLimit(std::string_view text, std::string_view option = "--frames") {
+    auto badValue = [text, option] {
         return invalidArgument(
-            std::format("--frames needs a whole number from 1 to {}, got \"{}\"", kMaxFrameLimit, text));
+            std::format("{} needs a whole number from 1 to {}, got \"{}\"", option, kMaxFrameLimit, text));
     };
     // Check the characters first: on its own, from_chars accepts a leading '-' and stops quietly at the first
     // non-digit, so "-3" and "3x" would both look like numbers to it.
@@ -305,6 +307,19 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(limit.error()));
             }
             options.frameLimit = *limit;
+        } else if (arg == "--dev-overlay") {
+            if (options.devOverlayFrames.has_value()) {
+                return invalidArgument("--dev-overlay given twice");
+            }
+            if (i + 1 == args.size()) {
+                return invalidArgument(std::format("--dev-overlay needs a whole number from 1 to {}", kMaxFrameLimit));
+            }
+            ++i;
+            auto frames = parseFrameLimit(args[i], "--dev-overlay");
+            if (!frames) {
+                return std::unexpected(std::move(frames.error()));
+            }
+            options.devOverlayFrames = *frames;
         } else if (arg == "--disc") {
             if (options.discPath.has_value()) {
                 return invalidArgument("--disc given twice");

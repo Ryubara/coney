@@ -18,6 +18,10 @@ namespace coney::platform {
 /// `~/Library/Application Support/Coney/Coney/` on macOS). Empty when SDL cannot give one.
 [[nodiscard]] std::string defaultTunablesPath();
 
+/// Where the developer overlay keeps its windows' places and sizes: `coney-imgui.ini` in the same folder. Empty when
+/// SDL cannot give one.
+[[nodiscard]] std::string defaultOverlayLayoutPath();
+
 /// The pad debug menu as the platform draws it: the session's view over a text painter, drawn at the end of every
 /// frame through the renderer's present overlay, so it shows over whatever mode runs.
 ///

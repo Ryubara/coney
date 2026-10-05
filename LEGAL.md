@@ -48,7 +48,9 @@ whole function.
 
 - Code is GPL-3.0-or-later (see `LICENSE`).
 - Documentation in `docs/` is CC-BY-SA-4.0 (see `docs/LICENSE`).
-- Dependencies keep their own licences.
+- Dependencies keep their own licences. They are fetched at build time at the commits pinned in `cmake/deps.cmake`,
+  never copied into the repository: SDL3 (zlib), librw (MIT), Dear ImGui (MIT, the debug menus' developer overlay)
+  and Catch2 (Boost Software Licence 1.0, tests only). A build that is passed on carries their licence notices.
 - Third-party assets in `assets/` keep theirs, with the licence file beside them. The sandbox's textures in
   `assets/sandbox/` are from Kenney's Prototype Textures (`www.kenney.nl`), released under CC0 1.0
   (`assets/sandbox/License.txt`); one is re-encoded, which CC0 allows. Only assets under CC0 or a licence compatible

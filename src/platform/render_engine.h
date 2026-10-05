@@ -8,6 +8,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <utility>
 
 #include "core/error.h"
 #include "graphics/frame_stats.h"
@@ -69,6 +70,9 @@ class RenderEngine final : public graphics::RenderDevice {
     [[nodiscard]] bool drawsPixels() const { return m_backend == RenderBackend::OpenGl; }
     /// The window, for the OpenGL backend; nothing for NULL.
     [[nodiscard]] std::optional<Window> window() const;
+    /// The SDL_Window* and its OpenGL context (an SDL_GLContext), opaque here, for the developer overlay's backends;
+    /// nulls with the NULL backend.
+    [[nodiscard]] std::pair<void*, void*> sdlWindowAndContext() const;
     /// The size of the area frames are drawn into, in pixels: the window's client area, or the requested size for
     /// the NULL backend.
     [[nodiscard]] graphics::Extent frameSize() const { return m_frameSize; }

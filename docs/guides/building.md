@@ -16,7 +16,7 @@ before you have a disc image at all.
 | Git | yes | yes | yes |
 | [uv](https://docs.astral.sh/uv/) | for the Python tools and pre-commit | same | same |
 
-The C++ dependencies (SDL3, librw, Catch2) are not installed by hand: CMake downloads them on the first configure,
+The C++ dependencies (SDL3, librw, Dear ImGui, Catch2) are not installed by hand: CMake downloads them on the first configure,
 at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access and takes a few
 minutes; later builds reuse the copies under `build/<preset>/_deps/`.
 
@@ -141,6 +141,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP] [--play-level NAME [--spawn NAME]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE]
+      [--dev-overlay N]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -410,9 +411,15 @@ state. `--tunables FILE` names the file its tunable overrides are loaded from at
 windowed run uses `coney-tunables.ini` in your config folder and a headless run none. [The debug menus](debug-menu.md)
 has the pages, the controls and how to add to it.
 
+In a window, F1 shows the same menus as a developer overlay drawn with Dear ImGui, for the mouse and keyboard: a
+window per page, filter boxes, plots and a real text box for the Lua console. `--dev-overlay N` shows it for the first
+N frames and then hides it, a test aid: with `--screenshot`, the last frame must be byte-identical to a run without
+the option, which shows the overlay leaves the frame as it found it.
+
 ```sh
 build/dev/src/platform/coney --tunables ../../scratch/tunables.ini
 build/dev/src/platform/coney --headless --frames 30 --input-script tests/support/debug_menu.txt
+build/dev/src/platform/coney --frames 60 --dev-overlay 30 --screenshot ../../scratch/overlay-hidden.png
 ```
 
 ### Character reference images {#character-reference-images}
@@ -463,10 +470,13 @@ original; the menus, [the world viewer](#the-world-viewer), [the character viewe
 | L2, R2 | left and right trigger (held from a quarter of the travel) | 1, 3 |
 | L3, R3 | stick presses | F, H |
 | L3 and R3 together (the debug menu) | both stick presses | F4, or F and H together |
+| none (the developer overlay) | none | F1 |
 
 The first gamepad connected plays on port 1, the second on port 2; the keyboard always plays on port 1, alongside
-the first gamepad. Escape quits. A headless run reads no devices. L3 and R3 pressed together open and close
-[the debug menu](debug-menu.md); the game never sees that chord.
+the first gamepad. Escape quits, unless the developer overlay has the keyboard (a text box in it is being typed
+in); while it has the keyboard, the keyboard does not play on port 1. A headless run reads no devices. L3 and R3
+pressed together open and close [the debug menu](debug-menu.md); the game never sees that chord. F1 shows and hides
+[the developer overlay](debug-menu.md#the-developer-overlay).
 
 A gamepad's sticks are squared off like a DualShock 2's: a modern stick reports a circle, about 0.71 on each axis at a
 full diagonal, which the game's per-axis dead zone turns into a walk; the DualShock 2 reaches both extremes there, so

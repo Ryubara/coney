@@ -9,16 +9,17 @@ namespace coney::platform {
 
 Window::Window(void* handle) : m_handle(handle) { CONEY_ASSERT(handle != nullptr); }
 
-bool Window::pumpEvents() {
+bool Window::pumpEvents(const EventFilter& filter) {
     // Drain the whole queue every frame: leaving events behind makes the OS think the window has stopped responding.
     bool keepRunning = true;
     const SDL_WindowID ours = SDL_GetWindowID(static_cast<SDL_Window*>(m_handle));
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        // Quit, a close request for our window, or Escape.
+        const bool taken = filter && filter(&event);
+        // Quit, a close request for our window, or an Escape nobody else took.
         if (event.type == SDL_EVENT_QUIT ||
             (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == ours) ||
-            (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE)) {
+            (!taken && event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE)) {
             keepRunning = false;
         }
     }

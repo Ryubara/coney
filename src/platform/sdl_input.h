@@ -69,6 +69,10 @@ class SdlInput final : public InputSource {
     /// sample(). The SDL event watch calls it; safe from any thread.
     void notePress(std::uint32_t gamepad, std::uint16_t bit);
 
+    /// Whether the keyboard plays on port 1 (it does by default). The developer overlay turns it off while it has the
+    /// keyboard, so typing into it does not also move the player.
+    void setKeyboardEnabled(bool enabled) { m_keyboardEnabled = enabled; }
+
   private:
     SdlInput() = default;
 
@@ -90,6 +94,7 @@ class SdlInput final : public InputSource {
         void* handle;
     };
     std::vector<OpenGamepad> m_gamepads; // in connection order: the first is port 1's
+    bool m_keyboardEnabled = true;
 };
 
 } // namespace coney::platform
