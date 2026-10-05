@@ -149,6 +149,8 @@ target_sources(coney_tests PRIVATE
     debug/pad_menu_input_test.cpp
     debug/play_pages_test.cpp
     debug/tunables_test.cpp)
+# A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
+target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -159,3 +161,15 @@ target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
 catch_discover_tests(coney_tests)
+
+# The debug C runtime's checks must fail a run on stderr, not open a dialog nobody will click (platform/error_dialogs.h).
+# Only MSVC's debug runtime has those dialogs and those checks.
+if(MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_executable(error_dialogs_check support/error_dialogs_check.cpp)
+    coney_target_defaults(error_dialogs_check)
+    target_link_libraries(error_dialogs_check PRIVATE coney_platform)
+    add_test(NAME coney.error_dialogs_off
+             COMMAND ${CMAKE_COMMAND} -DCHECK_EXE=$<TARGET_FILE:error_dialogs_check> -P
+                     "${CMAKE_CURRENT_SOURCE_DIR}/support/error_dialogs_check.cmake")
+    set_tests_properties(coney.error_dialogs_off PROPERTIES TIMEOUT 60)
+endif()

@@ -16,6 +16,8 @@ target_sources(coney_platform PRIVATE reference_renderer.cpp)
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
+# Failures end the process on stderr, never in a dialog waiting for a click (test runs, CI, agents).
+target_sources(coney_platform PRIVATE error_dialogs.cpp)
 # The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
 target_sources(coney_platform PRIVATE debug_menus.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).

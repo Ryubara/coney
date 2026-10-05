@@ -425,6 +425,13 @@ disc. Tests that need the player's disc find it through `coney.local.toml`, skip
 print only aggregates (counts, hashes matched), never content. See
 [LEGAL.md](repo:LEGAL.md#no-game-data).
 
+No run may wait for a click. On Windows, the debug C runtime opens a modal "Debug Assertion Failed!" box for its
+own checks (`front()` on an empty vector, an index out of range), and a run with nobody at the keyboard hangs on it
+until the timeout. `coney` and `coney_tests` call `platform::reportErrorsToConsole()` before anything else, so these
+reports go to stderr and the process ends at once; the `coney.error_dialogs_off` test checks it in MSVC debug
+builds. In tests, check a container's size (`REQUIRE(!starts.empty())`) before reading `front()`, `back()` or an
+index, so a missing value fails one test cleanly instead of ending the whole run.
+
 ## Python {#python}
 
 `python/coney_tools` holds Coney-specific automation: the WAD extractor and name recovery, the PCSX2 bridge, and

@@ -54,6 +54,7 @@
 #include "human/player.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/debug_menus.h"
+#include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
 #include "platform/imgui_overlay.h"
 #include "platform/play_level_mode.h"
@@ -303,6 +304,9 @@ coney::LevelStart scriptStartFor(const coney::io::Wad& wad, std::string_view nam
 // ends the program either way.
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv) {
+    // A failure must end the run on stderr, not wait on a dialog: scripted and headless runs have nobody to click.
+    coney::platform::reportErrorsToConsole();
+
     // Parse the command line; exit 2 on a usage error, as command-line tools do.
     const std::vector<std::string_view> args(argv + 1, argv + argc);
     auto options = coney::parseOptions(args);
