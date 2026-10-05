@@ -411,7 +411,15 @@ confirmed):
   absent the table keeps the zeros `ParseLuaData` put there, so `Rumble.gameType` is 0 (`RumbleInfo[0]` is
   `"brawl"`, the right file by chance), `Rumble.gangSize` is 0 (the "no gangs" path, `ShowRules1`) and
   `Rumble.gang1[1]`, the player's type, is nil. A playable arena needs the menu's values (inferred from the
-  disassembly of `level102.lua`).
+  disassembly of `level102.lua`; the values are in [Front end](frontend.md#rumble-setup)).
+- **`level95`, `events.ChatEvent: attempt to index a nil value`**: `events.SetupConversationEvent(cluster)` adds
+  1 to `events.NumEvents`, stores `events.ChatTable[NumEvents] = {eventCluster = cluster, lastStatement = 1,
+  lastTalker = NilHandle}` and calls `ScheduleFuncArg1("events.ChatEvent", events.NumEvents, 5000 + random(1,
+  5000))`; `ChatEvent(n)` then reads `events.ChatTable[n].eventCluster` and that cluster's `CClusters[c].occupied`.
+  The script expects the **number first and the delay last** (as `0x003572e8` does). Coney's binding takes them the
+  other way round, so it called `ChatEvent` with 5001-10000 after `NumEvents` ms, and `ChatTable[n]` was nil.
+  Confirmed (code) for the binding, the script side from the disassembly. (`flags.Cleanup` also sets `CClusters` to
+  nil, so a chat event that fires after it would fail the same way; inferred.)
 
 ## Notes for implementers
 
@@ -524,8 +532,8 @@ of the original).
   `W_GameState_SetLevelRecord`, `0x00160d78` `MenuLoadLevel_Choose`, `0x0015c7b0` `LevelFlow_ChooseLevel` and
   `0x0020a268` `PM_Mode::HandleCommand`, until the research database names them.
 - Binding arguments the [script bindings](../references/bindings/index.md) reference marks as not understood yet:
-  which bit of `PadSetHandler`'s mask is which PS2 button; what each message number of `SetMsgHandler` means; the 23
-  values `GetRumbleModeData` returns; the scene-play flags (`ScenePlay` and its relatives) beyond their `global.lua`
+  which bit of `PadSetHandler`'s mask is which PS2 button; what each message number of `SetMsgHandler` means; the
+  scene-play flags (`ScenePlay` and its relatives) beyond their `global.lua`
   names; when animation callbacks (`AddAnimCallback`) fire and with what arguments; most fields of the large `Cfg*`
   records (`CfgChar`, `CfgPowerClass`, `CfgWarriorClass`), which are written through computed addresses with no reader
   found yet. Each would move up from inferred once a reader or a runtime observation is found.

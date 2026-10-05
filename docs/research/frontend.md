@@ -316,9 +316,10 @@ inferred from the matching text.
 
 ### From QUICK RUMBLE to an arena fight {#quick-rumble}
 
-The chain from the main menu's **QUICK RUMBLE** to a fight, static analysis only (a runtime check in PCSX2 is still
-to come). Confirmed (code) for the C++ steps; the Lua steps inferred from the disassembly of `level100.lua`,
-`level102.lua` (the Fight Pen; every arena `level101`-`level137` has the same functions) and `brawl.lua`.
+The chain from the main menu's **QUICK RUMBLE** to a fight (the menu's screens and values at runtime are in [The Rumble
+set-up](#rumble-setup)). Confirmed (code) for the C++ steps; the Lua steps inferred from the disassembly of
+`level100.lua`, `level102.lua` (the Fight Pen; every arena `level101`-`level137` has the same functions) and
+`brawl.lua`.
 
 1. **Main menu.** QUICK RUMBLE (code 1, [Input](#input)) calls the profile manager's first callback,
    `Menu.fadeToRMI`: fade out over 0.7 s and `ScheduleFunc("Menu.launchRMI", 500)`.
@@ -354,6 +355,42 @@ What Coney needs for QUICK RUMBLE to reach a fight: mode 0x11 (or a stand-in tha
 calls `Menu.startRumbleMode` with an arena's level number), `GetRumbleModeData`, the flag bindings, the start
 callback, and `HuCreate` with the chosen character types. The same menu opens in game from the hub with
 `fromFrontEnd` 0.
+
+### The Rumble set-up {#rumble-setup}
+
+**The screens** (confirmed (runtime), PCSX2 from a fresh boot with no save, every screen's default accepted with
+cross): QUICK RUMBLE → **Game Mode** (two entries: "1 ON 1", 1P or VS, and "WAR PARTY", five to a side, 1P, COOP or
+VS) → **Game Type** ("1 Player : Vs." against the computer, or two players) → **Choose Gangs** (up / down picks the
+gang, left / right the warchief; default player 1 **BASEBALL FURIES** against the computer's **ORPHANS**) →
+**Choose Area** (one arena offered, the **Fight Pen**) → a "BASEBALL FURIES vs ORPHANS" title, and the fight in
+`level102`. The other modes are presumably unlocked by the story (inferred: the list held two entries without a
+save).
+
+**The 23 values** at `0x0063eec0` (the C++ index; `ParseLuaData` reads them as `RM_LuaData[index + 1]`), who writes
+them, and the default 1 ON 1 set-up read at runtime once the gangs were confirmed:
+
+| Index | Lua | Written by | Meaning | Default |
+| --- | --- | --- | --- | --- |
+| 0 | `gameMode` | Game Type screen (`0x001fd1c8`) | players: 3 one player against the computer, 2 two players (needs pad 2), 1 co-op; 255 no menu choice, 254 a special path (`PakCleanup`) | 3 |
+| 1 | `gameType` | mode list (`0x001f8d80`), entry `+0x0c` | the mode: an `RM_*` number (`RM_Brawl1` 12 "1 ON 1", `RM_Brawl5` 14, `RM_Brawl` 1, `RM_Koth` 2, ...); `RumbleInfo[gameType]` names the rules file (`brawl` for 1, 12 and 14) | 12 |
+| 2 | `gangSize` | mode list, entry `+0x1c` | fighters per side; 0 takes the "no gangs" path | 1 |
+| 3 | `gang1Pak` − 1 | gang screen (`0x001ef7c0`) | side 1's gang: its record's `[0]` − 1 (255 for the preset gangs) | 4 |
+| 4 | `gang2Pak` − 1 | gang screen | side 2's gang, the same way | 2 |
+| 5-13 | `gang1[1..9]` | gang screen, record shorts `[4 + 2i]` | side 1's nine character types (`HuCreate`'s type) | 91, 94, 91, 92, 93, 94, 91, 92, 93 |
+| 14-22 | `gang2[1..9]` | gang screen, record shorts `[0x16 + 2i]` | side 2's nine character types | 225, 226, 224, 225, 226, 227, 228, 225, 226 |
+
+Confirmed (code) for the writers and the Lua names (`0x001ef7c0`, `0x001f8d80`, `0x001fd1c8`, `level102.lua`'s
+`ParseLuaData`), confirmed (runtime) for the defaults. The mode list also copies the entry's name (`+0x08`) with a
+`":"` prefix to `0x0063ef30` (`":1 ON 1"`), its `+0x10` / `+0x14` / `+0x18` to `0x0063ef6c` / `70` / `74`, and, when
+the entry's `+0x20` is not 0, fills all nine members of both sides with its `+0x20` / `+0x22` and sets `0x0063ef78`
+(preset gangs; the Game Type screen then writes 255 to indices 3 and 4). The arena confirm wrote "started" 1 and
+level number **102**.
+
+**`GetRumbleModeGangName(side)`** (`0x001f26a8`) returns a **string**: the gang's display name, side 1 from
+`0x0063eef0` (`0x001fe048`), any other side from `0x0063ef10`. The gang screen fills them (`0x001fe070`,
+`0x001fe0d8`: `strncpy` of at most 32 bytes from the chosen gang record's name pointer, its shorts `[2..3]`). Runtime:
+`"BASEBALL FURIES"` and `"ORPHANS"`, empty until the gangs are confirmed. `ParseLuaData` asks for them only when
+`gameMode` is not 255 (`Rumble.gang1Name`, `gang2Name`). Confirmed (code), confirmed (runtime).
 
 ### InitLevel
 

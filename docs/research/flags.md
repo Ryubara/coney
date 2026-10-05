@@ -145,13 +145,14 @@ the disassembly of `level95.lua`):
    stands on the start flag, facing the flag's heading, and walks to the end flag.
 
 `WCLoc` is set once by the main chunk: **`random(1, 5)`**. The claim "chosen at random" holds in this sense: `random`
-(`0x00386488` → `0x003353f0`) returns `low + v mod (high − low + 1)` with an unsigned modulo, so the result is in
-`[1, 5]` inclusive, where `v` is the next entry of a fixed table of 1,024 32-bit numbers at `0x005117e0`, its index
-(`0x006eb880`) advanced by 1 and masked to 10 bits on every draw (`0x00335390`). The index starts at 0 (a static
-initialiser, `0x00335608`, zeroes it with nine neighbouring generator indices) and is never seeded; it is shared by
-`random` and many C++ callers (the character set-up `0x00218008` among them), so which door depends on how many draws
-the session has made so far. Confirmed (code) for the generator; that the draw count varies between visits is
-inferred.
+(`0x00386488` → `0x003353f0`) returns `low + v mod (high − low + 1)` with an unsigned modulo, so the result is in `[1,
+5]` inclusive, where `v` is the next entry of a fixed table of 1,024 32-bit numbers at `0x005117e0`, its index
+(`0x006eb880`) advanced by 1 and masked to 10 bits on every draw (`0x00335390`) **before** the entry is read, so the
+first draw of a session reads entry 1, not entry 0; `0x003353f0` divides unsigned, with a trap (`break 7`, at
+`0x003353b8`) for a zero span. The index starts at 0 (a static initialiser, `0x00335608`, zeroes it with nine
+neighbouring generator indices) and is never seeded; it is shared by `random` and many C++ callers (the character set-up
+`0x00218008` among them), so which door depends on how many draws the session has made so far. Confirmed (code) for the
+generator; that the draw count varies between visits is inferred.
 
 The five start flags (from `AddFlagsBoxesPaths`): 1 (−188.6, 95, −194.3) 89°; 2 (−188.6, 102.7, −197.5) 89°; 3
 (−163.7, 80.7, −197.5) 358°; 4 (−174.4, 80.5, −194.3) 358°; 5 (−185.2, 112.7, −193.7) 182°.

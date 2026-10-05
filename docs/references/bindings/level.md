@@ -586,8 +586,10 @@ GetRumbleModeData(data)
 Copies the Rumble mode set-up (23 unsigned 16-bit values: game type, gangs, players and options chosen on the Rumble
 menu) into the given table. `level101.lua` and the other Rumble arenas read it at start-up.
 
-**Notes.** The meaning of each of the 23 fields is not traced; the arena scripts index the table by name constants of
-their own.
+**Notes.** The fields (C index = Lua index - 1): 0 players (3 one player against the computer, 2 versus, 1 co-op), 1 the
+mode's `RM_*` number (12 is "1 ON 1"), 2 fighters per side, 3 and 4 each side's gang pack - 1, 5-13 side 1's nine
+character types, 14-22 side 2's. The default 1 ON 1 set-up reads 3, 12, 1, 4, 2, then 91, 94, ... and 225, 226, ...
+(confirmed (runtime)); see the front end page's Rumble set-up.
 
 - **Evidence:** confirmed (code) at `0x001f26e0`; detail: brief
 - **Wrapper** `0x0036b9f0` (registered by `RegisterBindings`); **calls** `0x001f26e0`
@@ -607,6 +609,9 @@ GetRumbleModeGangName(side) -> string
 **Returns** string (nil for none): The chosen gang's name (a string).
 
 Returns the name of the gang a Rumble side chose (`0x001fe048` for side 1, `0x001fe0c8` otherwise).
+
+**Notes.** The display name the gang screen copied (at most 32 bytes) to `0x0063eef0` or `0x0063ef10`, such as "BASEBALL
+FURIES"; empty until the gangs are confirmed (confirmed (runtime)).
 
 - **Evidence:** confirmed (code) at `0x001f26a8`; detail: brief
 - **Wrapper** `0x0036bac0` (registered by `RegisterBindings`); **calls** `0x001f26a8`

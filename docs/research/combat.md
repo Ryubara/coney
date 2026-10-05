@@ -448,6 +448,28 @@ unless the victim's weapon type is 3 or it is in a block clip (605-620). Attack 
 type 3 throws the attacker into 629. A blocked hit gives the attacker half the rage. Blocking drains no power
 (`0x005101e4` = 0 at runtime).
 
+**The duck and the early block** are announced by the **attacker's clip**, not the hit. Confirmed (code) at
+`0x00101dd8`, `0x00245920` and `0x00254e78`:
+
+- An anim event of type **`0x24`** in the attacker's clip (`0x00101dd8`): if the attacker has a target
+  (`0x00226e60`) within twice the reach of its current anim (Anim Range List `+0x04`, `0x002544a0`), it sends the
+  target message **`0xa4`** (`0x003a2e00`).
+- The target's message handler (`0x00245920`), case `0xa4`: when `0x00225498` allows it (the target is not in one of
+  its excluded states) and the target is **blocking** (`0x00223ad0`: state `0x8000`, or record `+0x08` `0x1000`), it
+  takes the attacker as its target (`0x00226760`) and sets record `+0x14` = **`0xd`** (`0x002266a8`).
+- On its next update `0x00254e78` sees `0xd` with a target, sets state `0x8000` and calls `0x00261578`, which plays
+  **616 `BLOCK_DODGE`** (628 with weapon type 3 against weapon type 3) and sets record `+0x08` `0x1000`. The attack
+  then passes over the ducking body.
+- Event type **`0x26`** sends message `0xa6`, which sets `+0x14` = `0xc` and calls `0x0026ae20`: an **early block
+  reaction** from the [table](#hit-codes) at `0x002671a8`, played before the hit lands. Event `0x25` sends `0xa5` to
+  the attacker itself, which sets `+0x14` = `0xe` (not traced further).
+
+The events on the disc (the clips' event lists, frame in brackets) match the runtime ducks exactly (confirmed
+(runtime), [Being hit](#being-hit-runtime)): Rembrandt (`warr_re_cv`) has `0x24` on 11 `X1` (3), 13 `XX2` (5) and
+14 `XS2` (4), and `0x26` on 12, 15, 16, 17, 19, 20, 653 and 655; the civilian (`civl_co_ma1`) has `0x24` on 17 `SSX3`
+(3) and 653 / 655 (14), and `0x26` on 11-16, 19 and 24. So which attacks a block ducks is a property of the
+attacker's model, not of the attack.
+
 ### Grab and tackle {#grab}
 
 **Circle tapped** (released within 6 samples, command `0xd`) grabs; **circle held** for 7 samples (`0xe`) tackles.
@@ -627,6 +649,31 @@ and lowered 0.24 m, and neither is rolled onto its side**: a pelvis rotation tha
 the model's `−z` (straight down) is the "on its side" pose. The root entry was zero (no velocity, no turn) all through
 the holds and strikes and carried only the spins' and connects' root motion (78: about 0.8 m/s forward).
 
+### Moving a grab, and the mount {#grab-turn}
+
+**The stick turns and drags the pair** (`0x00245310`, the grabbing human's movement), confirmed (code); confirmed
+(runtime) where marked:
+
+- It acts only when the stick's magnitude (pad record `+0x10` / `+0x14`, buffered) is **above 0.95**
+  (`0x005102e8`). At runtime the stick held 60 % and 80 % right did nothing; full right turned the pair.
+- The wanted heading is the stick's angle (pad `+0x08` / `+0x0c`) **+ 180°**: the grabber turns its back to the
+  stick and walks backward along it, pulling the victim.
+- The turn per update, for an angle `d` still to turn: `r = min(max, max × (1 − cos(|d| × π / 4)) / 2 + prev × k)`,
+  `k` 0.8 (`0x00510314`), or −0.5 when the direction reverses within 45°; the smoothing branch is taken because
+  `0x00510308` is 1, with 4.0 at `0x00510318`. `max` comes from `0x002213d8`, which for a grab reads the table at
+  `0x005101b0`: 0.192 rad (11° per update) for a player, 0.0262 for the AI. Runtime table: 0.192, 0.0262, 0.2793,
+  0.0436, 0.3142, 0.0698, 0.3142, 0.1047, 0.3491, 0.2094, 0.4189, 0.4189; constants from `0x005102e0`: 0.05, 0,
+  0.95, 0, 0, 30, 60, 100, 115, 0, 1, 0.8, 2.0, 0.8, 4.0.
+- Runtime: full stick turned the player's front hold by 118° in about 18 updates, 11° per update at first and
+  slowing near the heading; the pair then walked backward at **1.125 m/s** in the front hold (record `+0x170` to
+  `+0x17c` became 1.125, the grab movement style's walk speed, `0x00254078`) and about 1.22 m/s in the rear hold.
+  The victim kept the hold's offsets (front 1.012 ahead, 0.379 right; rear 0.222, −0.097).
+
+**The tackle's mount** (confirmed (runtime), and from the disc's events): after the tackle (5 / 6 from the front,
+7 / 8) the pair is in 210 `MOUNTING_IDLE` / 207 `MOUNTED_IDLE` with the victim **0.032 m ahead and 0.120 m to the
+mounter's left**, its heading the mounter's + 180°. That is clip 210's type-8 pair event (−0.120, 0.032). The tackle
+clips' own pair events: 5 (0.021, 1.013), 7 (−0.092, 1.036), 212 (0, 1.203).
+
 ### Grabbed, and breaking free {#grabbed}
 
 **When the player is grabbed** (`Player_UpdateGrabbed`, `0x0027fd68`, the grabber at human `+0xc4`), confirmed
@@ -637,7 +684,9 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
   fraction is above 1 / its power class byte `+0x36`. It takes 1 / (own byte `+0x36`) of the **grabber's** maximum
   power, spent even when the strike then cannot start (another move playing), and the strike damages the grabber by
   its clip's damage; a strike that would kill the grabber breaks the grab. Runtime: 96 (grabber 97); each press took
-  the 200-power civilian down by about 75 (66.7 for 1 / 3, the rest not traced), 68 when 104 was still playing; the
+  the 200-power civilian down by about 75 (66.7 for 1 / 3, and the rest is the grab's own drain of 15 per second,
+which keeps running through the struggle clip: 198 → 123 over 19 updates = 66.7 + 9.5, then 4 more over the next 7
+updates of 96), 68 when 104 was still playing; the
   third press emptied the meter and the grab broke with the player on 94 and the grabber on 95. 96 does 0 damage.
 - **Cross** (`0x12` / `0x10`): 104 / 116, a strike back. Runtime: 104 (grabber 105) for 33 updates, 20 damage to the
   grabber, no power spent, then back to the holds 83 / 82.
@@ -802,15 +851,15 @@ civilian appeared (23, 14, 46, 37, 37, 28, 51, 42) it read 14 / 23. The class va
 | 30 Rembrandt (before the 115 % scale) | 23 | 15 | 46 | 38 | 38 | 31 | 53 | 46 | 5 | 50 | 57 |
 
 **Blocking** (R1 held, the player's `0x8` pressed through the pad): the block started on the next update (606, state
-`0x8001`, no 605 seen) and **every blocked hit did 0 damage**, from every side. Light and medium hits played the
-block reactions of the [table](#block) by the reaction's direction: `S1` 608 front, 611 left, 610 behind; `X1` 611,
-610, 609; `SS2` 608 then 611; `SSS3` 612, 615, 614. The heavy and crushing ones (`SSX3`, 653 / 655) played **616
-`BLOCK_DODGE`** (a duck) about 4 updates before their hit, which then missed: `0x00261578` plays 616 (or 628 with
-weapon type 3 against weapon type 3) when the blocker's record `+0x14` is `0xd` (`0x00254e78`), confirmed (code); what
-sets `0xd` is not traced. The block reaction table at `0x00510898` holds -1 in entries 0-3 and 12-15, so a modified
-strength of 3 (entry 0) would break the block (confirmed (code) at `0x002671a8`); no hit broke the player's block. The
-puppet civilian, blocking the player, ducked under `X1`, `XX2` and `XS2` (616) and blocked `S1`, `SS2`, `SSS3` and
-`SSX3`.
+`0x8001`, no 605 seen) and **every blocked hit did 0 damage**, from every side. Light and medium hits played the block
+reactions of the [table](#block) by the reaction's direction: `S1` 608 front, 611 left, 610 behind; `X1` 611, 610, 609;
+`SS2` 608 then 611; `SSS3` 612, 615, 614. The heavy and crushing ones (`SSX3`, 653 / 655) played **616 `BLOCK_DODGE`**
+(a duck) about 4 updates before their hit, which then missed: `0x00261578` plays 616 (or 628 with weapon type 3 against
+weapon type 3) when the blocker's record `+0x14` is `0xd` (`0x00254e78`), confirmed (code); the attacker's anim event
+`0x24` sets `0xd` ([Block](#block)). The block reaction table at `0x00510898` holds -1 in entries 0-3 and 12-15, so a
+modified strength of 3 (entry 0) would break the block (confirmed (code) at `0x002671a8`); no hit broke the player's
+block. The puppet civilian, blocking the player, ducked under `X1`, `XX2` and `XS2` (616) and blocked `S1`, `SS2`,
+`SSS3` and `SSX3`.
 
 **Rage gained by the player** (rage 0 and the hold timer reset before each combo; `S1` gains are 0 or 1):
 
@@ -819,7 +868,9 @@ puppet civilian, blocking the player, ducked under `X1`, `XX2` and `XS2` (616) a
 | Rage | 1 | 5 | 1 | 13 | 10 | 6 | 4 | 7 or 15 | 10 | 1 |
 | Blocked | 0 | | 0 | | | | 0 | 6 | | |
 
-Being hit gave the player no rage. Every gain set the hold timer to now + 5000 ms.
+Being hit gave the player no rage. Every gain set the hold timer to now + 5000 ms. A later run gave `S1` 1, `X1` 5,
+`XS2` 10, `SX2` 13 and `SSX3` 15 every time; the 7 is the halved gain ([Rage](#rage)): `SSX3`'s two awards 3 and 8
+give 2 + 5 at a factor 0.72, and `S1`'s 1 gives 0.
 
 ### Power meter {#power-meter}
 
@@ -830,18 +881,34 @@ further grab state, 0 blocking; and **refills 60 per second** (`+0x2a`) otherwis
 nor drains while raging or with flag `0x4000000` (the fraction then reads 1.0). Confirmed (code), confirmed (runtime)
 (400 → 377 over 1.4 s of a tackle; 25 → 0 at 15 per second in a grab).
 
+**Per class.** The power class is human `+0x1b8` (AI) or `+0x1b9` (player), through `0x00222b78`
+([Character classes](characters.md#classes)). The maximum (`0x00223068`) is the class's s16 `+0x28`; for a player
+with the upgrade flag (`0x00424130(0x6fe998, 6, 0xb)`) it is scaled by 1 + byte `+0x02` / 100 of the record from
+`0x00228860`; and **while hurt** (`0x00222ff8`: health percentage below the class float `+0x04` × 100) it is scaled
+by the class float `+0x18`; each step `int(x + 0.5)`. The refill (`0x00256a60`) adds the class's `+0x2a` × the
+update's time, capped at that maximum. Confirmed (code). Runtime classes: `PoizoCiv` class 2 = 200, 32 per second,
+hurt factor 0.55; Vermin (type 26) class 7 = 400, 100 per second, hurt below 35 %, factor 0.75; Rembrandt class 64 =
+400, 60 per second, 0.75. Confirmed (runtime).
+
+The "civilian" whose meter refilled to 300 at about 100 per second was the puppet at human 0 in those runs, which
+was **Vermin** (1800 health, 400 power), not the `PoizoCiv`: the script had set its health to 600 of 1800 (33 %,
+hurt), so its maximum was 400 × 0.75 = 300 and its refill class 7's 100 per second. Confirmed (runtime) from the logs
+and the class values. The hit-armour run used the same puppet.
+
 ### Rage {#rage}
 
 Rage is human `+0x650`, up to the Warrior class's s16 `+0x00` (78 for class 6). `Human_AddRage` (`0x00264cf8`),
 confirmed (code), adds, only for a player-flagged human (`0x2000000`) not already raging:
 
-`round(points × f × gain / 100 × h × s)`, where `f` is 1.0 when the award is 25 points or fewer and 0.1 when it is
-more (the whole award, not the excess: `CfgRagePoints` `0x005108d8`, table `0x005108e0`), `gain` the Warrior class
-byte `+0x02` (144), `h` 0.5 when the per-player byte `+0x182` (record `0x0051489c + player × 0x5c`) is set, and `s`
-that record's float `+0x17c` when `0x002239e0` holds. The meter is **capped** at the maximum; the first time it fills,
-`0x00236ec8` announces it. Each gain sets the hold timer `+0x648` = now + 5000 ms (`CfgRageHandlers`). Confirmed
-(code). The gains per hit at runtime are in [Being hit](#being-hit-runtime): 0 to 15 per hit, 0 for most blocked
-hits, none for being hit (confirmed (runtime)).
+`trunc(points × f × gain / 100 × h × s)` (the float → integer at `0x0042c718` truncates), where `f` is 1.0 when the
+award is 25 points or fewer and 0.1 when it is more (the whole award, not the excess: `CfgRagePoints` `0x005108d8`,
+table `0x005108e0`), `gain` the Warrior class byte `+0x02` (144), `h` 0.5 when the per-player byte `+0x182` (record
+`0x0051489c + player × 0x5c`) is set, and `s` that record's float `+0x17c` when `0x002239e0` holds (only while record
+`+0x08` has `0x1000`; `0x00254e78` resets it to 1.0). Who sets byte `+0x182` is not found: there is no direct store to
+it, the game rewrote a written 1 to 0 on the next update, and its neighbours `+0x180`, `+0x181` and `+0x183` toggle with
+attacks. The meter is **capped** at the maximum; the first time it fills, `0x00236ec8` announces it. Each gain sets the
+hold timer `+0x648` = now + 5000 ms (`CfgRageHandlers`). Confirmed (code). The gains per hit at runtime are in [Being
+hit](#being-hit-runtime): 0 to 15 per hit, 0 for most blocked hits, none for being hit (confirmed (runtime)).
 
 **The points** come from the stats system, which also adds them to the per-player score at `0x006fe490 + player ×
 0xc0`: `0x002653d8` maps the attack to an event (`X1` event 1, `S1` event 2, ...; a blocked hit is halved through
@@ -849,8 +916,27 @@ hits, none for being hit (confirmed (runtime)).
 (`0x004ed988` → table 2 at `0x00715510`; `0x004ed8c8` → table 3 at `0x00715500`; `0x004ed948` → table 4 at
 `0x00715818`). The tables are filled by `CfgSetStatValue`; at runtime: table 3 = 6, 4, 1, 7, 20, 3, 5, 5; table 2 =
 75, 200, 150, 60, 150, 150, 100, 150, 100, 150, 100, 75, 30, then 0; table 4 = 50, 300, 5, 25, 250, 100, 300, 200,
-100, 5, 50, 10. Confirmed (code) for the path, confirmed (runtime) for the values; the full event list per anim id is
-not traced.
+100, 5, 50, 10. Confirmed (code) for the path, confirmed (runtime) for the values.
+
+**Per attack** `0x002653d8` makes **two awards**, each through `Human_AddRage` and truncated on its own: event 2
+(table 3 entry 2, 1 point) × count A, and event 1 (table 3 entry 1, 4 points) × count B. A blocked hit halves each
+award's points with a shift (`0x004ed9c8`: count × value >> 1). Confirmed (code); every result below matched the
+runtime gains at `gain` 144 (confirmed (runtime)):
+
+| Attack | A | B | Gain | Blocked |
+| --- | --- | --- | --- | --- |
+| 11 `X1` | 0 | 1 | 5 | |
+| 12 `S1` | 1 | 0 | 1 | 0 |
+| 13 `XX2` | 1 | 1 | 1 + 5 = 6 | |
+| 14 `XS2` | 4 | 1 | 5 + 5 = 10 | |
+| 15 `SX2` | 2 | 2 | 2 + 11 = 13 | |
+| 16 `SS2` | 1 | 0 | 1 | 0 |
+| 17, 18 `SSX3` | 3 | 2 | 4 + 11 = 15 | 1 + 5 = 6 |
+| 19, 20 `SSS3` | 3 | 0 | 4 | 0 |
+| 21-24 | 1 | 0 | 1 | |
+
+Other ids award other events: `0x1f5`, `0xfa`, `0xc1`-`0xc7`, and the grab and escape ids `0x68`, `0x74`, `0x78`,
+`0x7a` (event 2 × 10), plus ranges such as `0x22`-`0x2c` (confirmed (code), the events' meanings not traced).
 
 **The meter falls**: an unspent meter decays by the maximum × Warrior byte `+0x03` / 100 per 20 s (`0x00510294`;
 200 % → 7.8 per second) once the hold timer passes; while raging it drains by byte `+0x04` (240 % → **9.36 per
@@ -910,6 +996,13 @@ not the script's):
 | Clip | 380 forward | 381 forward right | 382 right | 383 back right | 384 back | 387 forward left |
 
 A target that the walk took beyond 2.5 m was dropped and the player went back to the walk start 413.
+
+**Combat-walk speed.** `0x00241b90` normalises the stick vector (dead zone 0.12) and multiplies it by `0x00221710`'s
+speed, so the stick's deflection does not change the speed (confirmed (code)). The clips 380-387 each cover 2.4 m in
+0.7 s, **3.429 m/s**, with record `+0x164` × `+0x3a4` = 1.0. At runtime the player moved at 3.43 m/s from the first
+update at 35 %, 60 %, 80 % and 100 %, with no ramp; slower values came only while pushing into the target. Backward
+at 35 % gave 2.6-3.0 m/s (not explained). The strafe ids 31 / 32 / 33 move at 2.358 / 2.613 / 4.236 m/s. Confirmed
+(runtime).
 
 **Turning into an attack** (`Attack_Start`, `0x002625a8`): with the target within the attack's far range, it tells
 the target (`0x0021d5c0`) and steers with `0x002761c8`: turn and slide so that the target, moved by its velocity over
@@ -1117,14 +1210,13 @@ the disc, and the hit armour, allies and class 13 rules a fight between humans n
 
 ## Open questions
 
-- **The block's duck**: which code sets record `+0x14` to `0xd` (and so `0x00261578`'s 616) for some attacks on a
-  held block ([Being hit](#being-hit-runtime)), and whether a strength-3 hit can still break a block.
+- **The block**: whether a strength-3 hit can still break a block, and what `+0x14` = `0xe` (message `0xa5`) does.
 - **The shared Anim Range List**: whether the overwrite by the newest human is intended, and which humans share a
   list ([Being hit](#being-hit-runtime)).
-- **The AI power meter**: the civilian's meter (class 2, maximum 200) refilled to 300 at about 100 per second.
-- **Rage per hit**: the same `SSX3` gave 7 in one run and 15 in another, and `S1` 0 or 1.
+- **The halved rage**: what sets the per-player byte `+0x182` ([Rage](#rage)).
+- **The backward combat walk** at 35 %: 2.6-3.0 m/s instead of 3.43 ([Target selection](#targets)).
 - **Class 13**: which character class it is (it gets hit armour and adds 2 s to a knockdown).
-- **The rage events**: the full map from anim id to stats event and table entry (`0x002653d8`, `0x00264fa0`).
+- **The rage events**: the meaning of the events beyond the chain attacks' (`0x002653d8`, `0x00264fa0`).
 - **Commands `0x30`-`0x39`**: which scripts or weapons make them; `0x36`-`0x38` and the d-pad (`0x27`).
 - **Theft mode 2 at runtime**, and which objects use modes 1 and 2.
 - **The grab's front circle** `0x0026f008`, the `0x00510980` table and the further grab state of `0x005101f0`.
@@ -1136,5 +1228,4 @@ the disc, and the hit armour, allies and class 13 rules a fight between humans n
 - **The timing columns not measured**: `SS2`'s window close and end, `SSX3`'s end, and the hit of the snaps, the
   moving attacks, the throws and the grounded and mounted strikes.
 - **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are
-  the fields the alignment writes (human `+0x2e0`-`+0x332`, victim `+0xa0` / `+0xb0`), how `0x00245310` turns the pair
-  from the stick, and how the tackle places the mount.
+  the fields the alignment writes (human `+0x2e0`-`+0x332`, victim `+0xa0` / `+0xb0`).
