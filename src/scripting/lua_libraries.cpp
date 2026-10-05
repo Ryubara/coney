@@ -85,7 +85,8 @@ std::expected<std::string, Error> checkString(std::span<const Value> args, std::
 // Argument `i` as a table; a bad argument error otherwise.
 std::expected<std::shared_ptr<Table>, Error> checkTable(std::span<const Value> args, std::size_t i,
                                                         std::string_view function) {
-    const std::shared_ptr<Table>& table = argAt(args, i).table();
+    // A copy: argAt returns the argument by value, so a reference into it would dangle.
+    std::shared_ptr<Table> table = argAt(args, i).table();
     if (!table) {
         return badArgument(function, i, "table");
     }
@@ -818,8 +819,8 @@ Results stringFind(std::span<const Value> args) {
     PatternMatcher matcher(*subject, *pattern);
     for (std::size_t s = from;; ++s) {
         const std::optional<std::size_t> end = matcher.match(s, anchored ? 1 : 0);
-        if (matcher.error()) {
-            return std::unexpected(*matcher.error());
+        if (const auto& failure = matcher.error()) {
+            return std::unexpected(*failure);
         }
         if (end) {
             std::vector<Value> results{Value(static_cast<double>(s + 1)), Value(static_cast<double>(*end))};
@@ -857,8 +858,8 @@ Results stringReplace(LuaVm& vm, std::span<const Value> args) {
     std::int64_t count = 0;
     while (static_cast<double>(count) < *limit) {
         const std::optional<std::size_t> end = matcher.match(s, anchored ? 1 : 0);
-        if (matcher.error()) {
-            return std::unexpected(*matcher.error());
+        if (const auto& failure = matcher.error()) {
+            return std::unexpected(*failure);
         }
         if (end) {
             ++count;
@@ -877,8 +878,8 @@ Results stringReplace(LuaVm& vm, std::span<const Value> args) {
                     }
                     const Value capture = next == '0' ? Value(std::string(subject->substr(s, *end - s)))
                                                       : matcher.capture(next - '1', s, *end);
-                    if (matcher.error()) {
-                        return std::unexpected(*matcher.error());
+                    if (const auto& failure = matcher.error()) {
+                        return std::unexpected(*failure);
                     }
                     result += asString(capture).value_or(std::string());
                 }

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/lua_vm.h"
 
+#include <cerrno>
 #include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <format>
 #include <optional>
 #include <string>
@@ -725,10 +727,25 @@ std::optional<double> parseLuaNumber(std::string_view text) {
         return std::nullopt;
     }
     double number = 0.0;
+#if defined(__cpp_lib_to_chars)
     const auto parsed = std::from_chars(text.data(), text.data() + text.size(), number);
     if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size()) {
         return std::nullopt;
     }
+#else
+    // Apple's libc++ has no floating-point std::from_chars, so strtod reads it there. Hexadecimal is refused to read
+    // what from_chars reads, and a copy gives strtod the terminating null it needs.
+    if (text.find_first_of("xX") != std::string_view::npos) {
+        return std::nullopt;
+    }
+    const std::string copy(text);
+    char* end = nullptr;
+    errno = 0;
+    number = std::strtod(copy.c_str(), &end);
+    if (errno == ERANGE || end != copy.c_str() + copy.size()) {
+        return std::nullopt;
+    }
+#endif
     return negative ? -number : number;
 }
 

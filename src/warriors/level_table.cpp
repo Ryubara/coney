@@ -34,10 +34,11 @@ bool LevelTable::set(LevelRecord record) {
 }
 
 const LevelRecord* LevelTable::at(std::size_t index) const {
-    if (index >= kCapacity || !m_records.at(index)) {
+    if (index >= kCapacity) {
         return nullptr;
     }
-    return &*m_records.at(index);
+    const std::optional<LevelRecord>& record = m_records.at(index);
+    return record ? &*record : nullptr;
 }
 
 std::optional<std::size_t> LevelTable::find(std::string_view name) const {
