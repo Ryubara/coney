@@ -19,6 +19,9 @@ namespace {
 // What a binding returns: its results, or an error that stops the script.
 using Results = std::expected<std::vector<Value>, Error>;
 
+// The value of the global `NilHandle` (Coney's choice, below): what a binding returns for no object.
+constexpr double kNilHandle = 0.0;
+
 // ---- The tolua argument and result conventions (docs/research/scripting.md#argument-and-result-conventions) ----
 
 // Argument `i` (0-based) as a number: 0 when absent or not convertible, as tolua reads a missing argument.
@@ -275,6 +278,57 @@ NativeFunction makeRandom(const Factory& /*factory*/) {
     };
 }
 
+// The position argument of `HuCreate`: a table of three numbers at t[1]..t[3]; nothing for anything else.
+std::optional<std::array<float, 3>> positionArg(std::span<const Value> args, std::size_t i) {
+    if (i >= args.size() || args[i].table() == nullptr) {
+        return std::nullopt;
+    }
+    const Table& table = *args[i].table();
+    std::array<float, 3> position{};
+    for (std::size_t axis = 0; axis < position.size(); ++axis) {
+        const std::optional<double> value = table.get(Value(static_cast<double>(axis + 1))).number();
+        if (!value) {
+            return std::nullopt;
+        }
+        position.at(axis) = static_cast<float>(*value);
+    }
+    return position;
+}
+
+// `HuCreate(name, type, {x, y, z}, heading, unused, player, gang, flag)`: makes a human and returns its handle, or
+// `NilHandle` when every slot is taken. Coney has no characters as game objects yet, so the human is kept in the
+// context's CreatedHumans, where the play mode takes player 1 from. Coney's choices: the position is not snapped to
+// the ground here (no collision is loaded while the script runs) and so not written back into the table; the play mode
+// snaps the player the same way when it places him (docs/research/characters.md#creation). The gang, the unused string
+// and the flag are not kept.
+// @orig 0x00358428 HuCreate (unknown)
+// @orig 0x00233d60 Human_Create (unknown)
+NativeFunction makeHuCreate(const Factory& factory) {
+    return [humans = factory.context->humans, handles = factory.handles](std::span<const Value> args) {
+        HumanCreation human;
+        human.name = stringArg(args, 0);
+        human.type = static_cast<int>(std::trunc(numberArg(args, 1)));
+        human.position = positionArg(args, 2);
+        human.headingDegrees = static_cast<float>(numberArg(args, 3));
+        human.playerIndex = static_cast<int>(std::trunc(numberArg(args, 5)));
+        human.handle = handles->next;
+        if (humans != nullptr && !humans->add(human)) {
+            return number(kNilHandle);
+        }
+        handles->next += 1;
+        return number(human.handle);
+    };
+}
+
+// `HUDLaunchMissionComplete(kind)`: shows the mission-complete mode with `kind` (runNextMission passes 4).
+// @orig 0x0036f218 HUDLaunchMissionComplete (unknown)
+NativeFunction makeHudLaunchMissionComplete(const Factory& factory) {
+    return [host = factory.context->host](std::span<const Value> args) {
+        host->launchMissionComplete(static_cast<int>(std::trunc(numberArg(args, 0))));
+        return none();
+    };
+}
+
 // ---- Routed bindings: handed to the host's stand-ins ----
 
 // `PlayMovie(name)`.
@@ -324,6 +378,8 @@ constexpr std::array kMakers{
     Maker{"GetLevelId", makeGetLevelId},
     Maker{"GetPlatform", makeGetPlatform},
     Maker{"GetProfileDifficulty", makeGetProfileDifficulty},
+    Maker{"HUDLaunchMissionComplete", makeHudLaunchMissionComplete},
+    Maker{"HuCreate", makeHuCreate},
     Maker{"MenuLoadLevel", makeMenuLoadLevel},
     Maker{"PlayMovie", makePlayMovie},
     Maker{"ScheduleFunc", makeScheduleFunc},
@@ -396,6 +452,9 @@ constexpr std::array kBindings{
     real("ShowProfileManager"),
     real("MenuLoadLevel"),
     real("ScreenQueueEffect"),
+    real("HUDLaunchMissionComplete"),
+    // The level scripts' humans.
+    real("HuCreate"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     routed("SoundPlayMusicTrack"),
@@ -517,7 +576,6 @@ constexpr std::array kBindings{
     stub("SetWorldAmbient"),
     // The HUD.
     stub("HUDEnableClubActionText"),
-    stub("HUDLaunchMissionComplete"),
     // Cameras, scenes, objects and particles: the ones that make something return a handle.
     stub("CameraCreateLocked", StubResult::Handle),
     stub("CameraMakeActive"),
@@ -617,7 +675,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     vm.setGlobal("tolua", Value(std::make_shared<Table>()));
     vm.setGlobal("M_Vector4", Value(std::make_shared<Table>()));
     vm.setGlobal("M_Quat", Value(std::make_shared<Table>()));
-    vm.setGlobal("NilHandle", Value(0.0));
+    vm.setGlobal("NilHandle", Value(kNilHandle));
     vm.setGlobal("NilSoundHandle", Value(0.0));
 }
 

@@ -408,12 +408,13 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   from the public Lua 4.0 library.
 - **The bindings** (`src/scripting/script_bindings.h`): one table, by name, saying for each whether it is **real**
   (does its job: the getters and script-system bindings of the tables above, `CfgLevelName`, the five string bindings,
-  `ShowProfileManager`, `MenuLoadLevel`, `ScreenQueueEffect`), **routed** (handed to a Coney stand-in that logs it:
-  `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`) or a **stub** (returns its documented default:
-  nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn` and `CameraCreateLocked`, false for
-  `SceneIsPreloaded` and `UM_IsTypeDirty`). The configuration stubs (the `Cfg*` bindings, `CfgObj`, sound, unlockables
-  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 27 real, 5 routed and 111
-  stubs (73 of them recording): every binding the front-end path calls, and no more.
+  `ShowProfileManager`, `MenuLoadLevel`, `ScreenQueueEffect`, `HUDLaunchMissionComplete` and `HuCreate`, which keeps
+  the humans a level script makes, [Level loading](level-loading.md#coneys-implementation)), **routed** (handed to a
+  Coney stand-in that logs it: `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`) or a **stub** (returns
+  its documented default: nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn` and `CameraCreateLocked`,
+  false for `SceneIsPreloaded` and `UM_IsTypeDirty`). The configuration stubs (the `Cfg*` bindings, `CfgObj`, sound, unlockables
+  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 29 real, 5 routed and 110
+  stubs (73 of them recording): every binding the front-end path calls, and the level scripts' `HuCreate`.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
   `GetLevelId` and the level flow (record 0 is `level100`).
 - **The front end** runs the preloads at the legal screen and `global.lua` and `level100.lua` in the same state when the
@@ -449,7 +450,10 @@ of the original).
 
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,
-  `global.lua` and `level100.lua` run without errors in Coney's fresh state.)
+  `global.lua` and `level100.lua` run without errors in Coney's fresh state, and so do `level99.lua` with
+  `level99_combat.lua`, `level2.lua` and `level3.lua` at the checkpoints tried; `level5.lua` at checkpoint 2 stops on
+  instruction 19 comparing nil with a number (its player 1 is still created), and `level102.lua` on instruction 5
+  indexing nil. Each is a binding Coney lacks returning nothing, or a missing preload: not yet told apart.)
 - The scene system (`SuperRunScene`): how a scripted scene takes the player's control and gives it back. The camera
   side is on [Camera](camera.md#scenes).
 - `RegisterUpdate`. (Answered: `preLoadFile`'s completion routine `0x00356d00` runs the loaded chunk through slot

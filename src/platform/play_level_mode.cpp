@@ -106,8 +106,8 @@ const char* gaitName(human::Gait gait) {
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
-                      std::function<void(std::string_view)> print) {
-    auto scenery = LevelPlayScenery::load(engine, wad, name, budget, print);
+                      std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start) {
+    auto scenery = LevelPlayScenery::load(engine, wad, name, budget, print, start);
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
     }

@@ -25,6 +25,7 @@
   notes: >-
     Steps and offsets: Characters, creation. The model loads later if its files are not yet resident.
   usage: {chunks: 100, calls: 3411, boot: false, mission1: true, result_used: true}
+  coney: implemented
 
 - name: HuDelete
   wrapper: 0x00358608

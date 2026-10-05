@@ -20,7 +20,8 @@ constexpr std::string_view kUsage =
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
-    "             [--play-level NAME [--spawn NAME]] [--sandbox [NAME]] [--assets DIR] [--dev-overlay N]\n"
+    "             [--play-level NAME [--spawn NAME | --checkpoint N]] [--sandbox [NAME]] [--assets DIR]\n"
+    "             [--dev-overlay N]\n"
     "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--show-fps]\n"
     "\n"
@@ -41,9 +42,11 @@ constexpr std::string_view kUsage =
     "                     Rembrandt); needs --disc\n"
     "  --anim CLIP        the clip --view-character plays: an anim id or a clip name\n"
     "  --play-level NAME  play a level as Rembrandt with a gamepad and the follow camera: levelN\n"
-    "                     (level2, level99: any level with a streamed world on the disc),\n"
-    "                     or sandbox:NAME for a sandbox layout (sandbox alone: default); needs --disc\n"
+    "                     (level2, level99: any level with a streamed world on the disc), starting\n"
+    "                     where the level's script puts player 1, or sandbox:NAME for a sandbox\n"
+    "                     layout (sandbox alone: default); needs --disc\n"
     "  --spawn NAME       with --play-level sandbox:NAME: the layout's spawn point to start at\n"
+    "  --checkpoint N     with --play-level levelN: the checkpoint to start at (1 to 99, default 1)\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
     "                     .layout file; needs no disc\n"
     "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
@@ -154,6 +157,9 @@ std::expected<void, Error> checkPlayLevel(const Options& options) {
 std::expected<void, Error> checkSandbox(const Options& options) {
     if (options.spawn.has_value() && !(options.playLevel && sandboxOfPlayLevel(*options.playLevel))) {
         return invalidArgument("--spawn needs --play-level sandbox:NAME: it names a sandbox layout's spawn point");
+    }
+    if (options.checkpoint.has_value() && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
+        return invalidArgument("--checkpoint needs --play-level with a level: it names the level's checkpoint");
     }
     if (!options.sandbox.has_value()) {
         return {};
@@ -277,6 +283,19 @@ std::expected<int, Error> parseFpsCap(std::string_view text) {
         std::format("--fps-cap needs a whole number from 0 (no cap) to {}, got \"{}\"", kMaxFpsCap, text));
 }
 
+// Parses the value after `--checkpoint`: a whole number from 1 to kMaxCheckpoint, written with decimal digits only.
+std::expected<int, Error> parseCheckpoint(std::string_view text) {
+    int value = 0;
+    if (isAllDigits(text)) {
+        const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (parsed.ec == std::errc{} && value >= 1 && value <= kMaxCheckpoint) {
+            return value;
+        }
+    }
+    return invalidArgument(
+        std::format("--checkpoint needs a whole number from 1 to {}, got \"{}\"", kMaxCheckpoint, text));
+}
+
 } // namespace
 
 bool isTestMode(const Options& options) {
@@ -286,9 +305,10 @@ bool isTestMode(const Options& options) {
 
 std::expected<Options, Error> parseOptions(std::span<const std::string_view> args) {
     Options options;
-    std::optional<std::string> languageArg; // as typed, so a repeat is refused like any other option
-    std::optional<std::string> fpsCapArg;   // as typed, likewise
-    std::optional<std::string> vsyncArg;    // as typed, likewise
+    std::optional<std::string> languageArg;   // as typed, so a repeat is refused like any other option
+    std::optional<std::string> fpsCapArg;     // as typed, likewise
+    std::optional<std::string> vsyncArg;      // as typed, likewise
+    std::optional<std::string> checkpointArg; // as typed, likewise
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string_view arg = args[i];
         if (arg == "--help") {
@@ -446,6 +466,15 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.vsync = setting == "on";
         } else if (arg == "--show-fps") {
             options.showFps = true;
+        } else if (arg == "--checkpoint") {
+            if (auto value = takeValue(args, i, checkpointArg, "--checkpoint", "a checkpoint number"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto checkpoint = parseCheckpoint(checkpointArg.value_or(std::string{}));
+            if (!checkpoint) {
+                return std::unexpected(std::move(checkpoint.error()));
+            }
+            options.checkpoint = *checkpoint;
         } else if (arg == "--screenshot") {
 
             if (auto value = takeValue(args, i, options.screenshotPath, "--screenshot", "the path of a PNG file");

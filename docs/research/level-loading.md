@@ -521,8 +521,45 @@ too. `UnloadLevel(keep)`, confirmed (code) for the order:
 ## Coney's implementation
 
 The streamed-world half of `LoadLevel`, the level file and the streaming of a running level exist (2026-10-04),
-behind Coney's world viewer (`coney --view-world <level>`, [Building](../guides/building.md#the-world-viewer)); mode 1,
-`InitLevel` and `UnloadLevel` do not. Details on [The streamed world](world.md#coneys-implementation).
+behind Coney's world viewer (`coney --view-world <level>`, [Building](../guides/building.md#the-world-viewer)), and
+Coney's play mode plays a level with Rembrandt (`--play-level`). Details on
+[The streamed world](world.md#coneys-implementation).
+
+**Mode 1 and the player's start** (2026-10-05), written from [From STORY to the player in level99](#story-into-level99)
+and [Characters](characters.md#level-starts):
+
+- **`GameplayMode`** (`src/gamemodes/gameplay_mode.h`) is mode 1. The level flow selects the chosen level and pushes it
+  ([Front end](frontend.md#coneys-implementation)). Its `enter` is `InitLevel` in the order that matters for the
+  player: first the level script (`runLevelScript`, `src/gamemodes/level_start.h`: the humans of the level before are
+  forgotten, then `global.lua` and `<level>.lua` run in the Lua state the front end's unload made, and their `HuCreate`
+  calls are kept), then the level loads with player 1 at the position and heading the script gave him, and the preload
+  streams the world around him. Its `update` is the level's step, then the scripts' frame; its `exit` makes a fresh Lua
+  state (`UnloadLevel`'s script part).
+- **`HuCreate`** is a real binding (`src/scripting/script_bindings.cpp`): it reads the name, the type, the position
+  table, the heading and the player index, keeps them (`CreatedHumans`, `src/warriors/created_humans.h`, at most 60)
+  and returns a handle, or `NilHandle` when all 60 are taken.
+- **The loading and the player** are the play mode's (`src/platform/play_level_mode.h`), given to gameplay as a level
+  loader by `main`. It snaps the start to the ground as `HuCreate` does (a 2.5 m ray from 1 m above).
+- **`--play-level NAME [--checkpoint N]`** runs the same script step alone (`runLevelScriptAlone`): the preloads, a
+  fresh state, `SetCheckPoint(N)` and the level's index, then the level script; the play mode starts the player there.
+- **Disc check (NTSC-U, 2026-10-05, positions only):** `coney_tests "[disc][story]"` finds player 1 at the
+  [Level starts](../references/level-starts.md) values for `level99` checkpoints 1 and 2, `level2` 3, `level3` 4 and
+  `level5` 2, with the name and type each lists; `level99` checkpoint 1 makes 2 humans with no script error.
+
+Coney's choices and stand-ins for mode 1:
+
+- The rest of `InitLevel` (the object and dependency lists, the music, the intro movie `L99_IN`, the pending Lua call)
+  and of mode 1's `Enter` (the audio, the level-end countdown) is not done; the start callback (`StartAmbient`, the
+  intro scene) is never called, and `preLoadFile` runs the checkpoint's script at once without calling its start
+  function, so a start function's teleport does not happen. The player has control on the first frame.
+- `HuCreate` does not snap the position or write it back into the script's table (no collision is loaded while the
+  script runs; the play mode snaps it); the gang, the unused string and the flag are not kept.
+- The player is always Rembrandt's model (`warr_re_cv`): the type names the character (`CfgChar`), but the class
+  record that maps it to a model is not read yet.
+- A creation whose position is not a table of three numbers (the hub's `AddWarchief` and the Rumble arenas use flags,
+  `FlagPos` and `AddFlag`, which Coney lacks) is kept without a position and does not count as a start: the play mode
+  falls back to the researched level99 start or its stand-in. `level95` creates no human at all in Coney's run.
+- A level that fails to load leaves gameplay's frame black, with the error logged.
 
 - **The worlds in `LoadLevel`'s order**: `<level>s_sec.wld` decides between two worlds (`<level>s`, `<level>d`) and one
   (`<level>`); each is constructed, its manifest read and its world stream loaded, and no part is loaded
@@ -574,14 +611,13 @@ file whenever the level has one.
 
 What the implementer still needs:
 
-- **Mode 1** with `Enter` → `InitLevel`, an `Update` that streams once a frame, and `Exit` → `UnloadLevel`.
+- **Mode 1** (done as far as above): the rest of `InitLevel`, and `Exit` → the whole of `UnloadLevel`.
 - **The level table** filled from `config_preload3.lua` ([Front end](frontend.md#the-level-table)), with the names at
   `+0x14` (level) and `+0x39` (world); in practice both are `level<N>`.
 - **`LoadLevel`** in the order above: the worlds, then the level file (done, above); still missing are the path
   records' and subtitles' meaning, and handing the level object to a world manager.
-- **The player's start**: no file holds it; the level script creates player 1 for the current checkpoint before the
-  preload ([Characters](characters.md#level-starts), values in [Level starts](../references/level-starts.md)), and
-  [From STORY to the player in level99](#story-into-level99) gives the order.
+- **The player's start** (done from the level script, above): still missing are the flags (`AddFlag`, `FlagPos`) that
+  the hub and the Rumble arenas place player 1 with, and the start functions' teleports.
 - **The level's lighting, fog colour and camera** from the level script and the player camera
   ([The streamed world](world.md#lighting)).
 - **The preload** as the first frame's precondition: load the section's pack, then stream world parts until the

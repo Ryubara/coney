@@ -349,6 +349,29 @@ TEST_CASE("the play option names a sandbox as sandbox or sandbox:NAME, with a sp
         parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "sandbox", "--spawn"}).has_value());
 }
 
+TEST_CASE("the checkpoint option picks a level's checkpoint for the play option", "[options]") {
+    auto play = parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level2", "--checkpoint", "3"});
+    REQUIRE(play.has_value());
+    CHECK(play->checkpoint == 3);
+    // Unset without the option: the level starts at checkpoint 1.
+    auto plain = parse(std::array<std::string_view, 4>{"--disc", "x", "--play-level", "level2"});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->checkpoint.has_value());
+    // A whole number from 1 to kMaxCheckpoint, given once.
+    for (const std::string_view bad : {"0", "-1", "1.5", "abc", "100", ""}) {
+        INFO(std::string(bad));
+        CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level2", "--checkpoint", bad})
+                        .has_value());
+    }
+    CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level2", "--checkpoint", "1",
+                                                      "--checkpoint", "2"})
+                    .has_value());
+    // It belongs to a level: not a sandbox, and not without --play-level.
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "sandbox", "--checkpoint", "1"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--checkpoint", "1"}).has_value());
+    CHECK(coney::usageText().find("--checkpoint N") != std::string_view::npos);
+}
 TEST_CASE("the assets option takes a folder", "[options][sandbox]") {
     auto assets = parse(std::array<std::string_view, 3>{"--sandbox", "--assets", "some/folder"});
     REQUIRE(assets.has_value());

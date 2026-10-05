@@ -21,10 +21,13 @@ add_library(coney_core STATIC
     fileio/wad_index.cpp
     gamemodes/front_end_services.cpp
     gamemodes/game_mode_stack.cpp
+    gamemodes/gameplay_mode.cpp
     gamemodes/legal_screen_mode.cpp
     gamemodes/level_flow_mode.cpp
+    gamemodes/level_start.cpp
     gamemodes/load_entry_mode.cpp
     gamemodes/memory_card_mode.cpp
+    gamemodes/mission_complete_mode.cpp
     gamemodes/profile_manager_mode.cpp
     gamemodes/sheet_viewer_mode.cpp
     gamemodes/start_up_flow.cpp
@@ -61,6 +64,7 @@ add_library(coney_core STATIC
     scripting/lua_vm.cpp
     scripting/script_bindings.cpp
     scripting/script_system.cpp
+    warriors/created_humans.cpp
     warriors/level_table.cpp
     world/debug_camera.cpp
     world/level_object.cpp

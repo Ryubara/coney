@@ -4,8 +4,10 @@
 // (docs/research/scripting.md#bindings).
 #include "scripting/script_bindings.h"
 
+#include <array>
 #include <cstddef>
 #include <expected>
+#include <memory>
 #include <set>
 #include <span>
 #include <string>
@@ -20,6 +22,7 @@
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_system.h"
+#include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 
 using coney::Error;
@@ -48,6 +51,7 @@ class RecordingHost final : public coney::script::BindingHost {
     void queueScreenEffect(int type, double seconds) override {
         requests.push_back("fade " + std::to_string(type) + " " + std::to_string(static_cast<int>(seconds * 10)));
     }
+    void launchMissionComplete(int kind) override { requests.push_back("mission " + std::to_string(kind)); }
 };
 
 // A script system with Coney's bindings over a game state, strings and a recording host.
@@ -56,7 +60,8 @@ struct Harness {
     coney::gui::GlobalStrings strings;
     RecordingHost host;
     coney::script::RecordedCalls recorded;
-    coney::script::BindingContext context{&state, &strings, &host, &recorded};
+    coney::CreatedHumans humans;
+    coney::script::BindingContext context{&state, &strings, &host, &recorded, &humans};
     std::vector<std::string> sourced;
     std::vector<std::string> log;
     ScriptSystem scripts;
@@ -178,10 +183,11 @@ TEST_CASE("the front-end bindings reach the host", "[script_bindings]") {
     h.call("SoundLoopMusicTrack", {str("music/track")});
     h.call("SoundStopMusicTrack");
     h.call("ScreenQueueEffect", {Value(1.0), Value(0.7)});
+    h.call("HUDLaunchMissionComplete", {Value(4.0)});
     CHECK(h.host.requests == std::vector<std::string>{"menus Menu.fadeToRMI Menu.startGame",
                                                       "rumble Menu.cancelRumbleMode Menu.startRumbleMode",
                                                       "level level99", "movie TRAILER", "music music/track", "stop",
-                                                      "fade 1 7"});
+                                                      "fade 1 7", "mission 4"});
 }
 
 TEST_CASE("stubs return their defaults; recording stubs keep their arguments; strings reach the table",
@@ -202,4 +208,47 @@ TEST_CASE("stubs return their defaults; recording stubs keep their arguments; st
     CHECK(kept[2].isNil()); // a table is not kept
     h.call("CfgHUDMessage", {Value(0x76), str("PRESS THE START BUTTON")});
     CHECK(h.strings.get(0x76) == "PRESS THE START BUTTON");
+}
+
+TEST_CASE("HuCreate keeps the human it makes and returns a handle; player 1 is found by index", "[script_bindings]") {
+    Harness h;
+    // A position table {x, y, z}, as the level scripts pass one.
+    const auto position = std::make_shared<coney::script::Table>();
+    REQUIRE(position->set(Value(1.0), Value(-284.4)).has_value());
+    REQUIRE(position->set(Value(2.0), Value(120.4)).has_value());
+    REQUIRE(position->set(Value(3.0), Value(0.3)).has_value());
+    // level99's checkpoint 1: Rembrandt as player 1, then Ash as player 2 (docs/research/scripting.md#level99).
+    const double rembrandt = h.first("HuCreate", {str("Rembrandt"), Value(32.0), Value(position), Value(0.0),
+                                                  str("warr_sw"), Value(1.0), Value(1.0)})
+                                 .number()
+                                 .value_or(0.0);
+    const double ash = h.first("HuCreate", {str("Ash"), Value(40.0), Value(position), Value(235.0), str("warr_sw"),
+                                            Value(2.0), Value(1.0)})
+                           .number()
+                           .value_or(0.0);
+    CHECK(rembrandt >= 1.0);
+    CHECK(ash == rembrandt + 1.0);
+    REQUIRE(h.humans.all().size() == 2);
+    const coney::HumanCreation* player = h.humans.player(1);
+    REQUIRE(player != nullptr);
+    CHECK(player->name == "Rembrandt");
+    CHECK(player->type == 32);
+    CHECK(player->handle == rembrandt);
+    REQUIRE(player->position.has_value());
+    CHECK(player->position.value_or(std::array<float, 3>{}) == std::array<float, 3>{-284.4F, 120.4F, 0.3F});
+    CHECK(h.humans.player(2)->headingDegrees == 235.0F);
+    CHECK(h.humans.player(3) == nullptr);
+    // A position from a binding Coney lacks is nil: the human is kept without one.
+    h.call("HuCreate", {str("P11"), Value(1.0), Value(), Value(270.0), Value(), Value(1.0)});
+    CHECK(h.humans.all().back().name == "P11");
+    CHECK(!h.humans.all().back().position.has_value());
+}
+
+TEST_CASE("HuCreate returns NilHandle once every human slot is taken", "[script_bindings]") {
+    Harness h;
+    for (std::size_t i = 0; i < coney::CreatedHumans::kCapacity; ++i) {
+        CHECK(h.first("HuCreate", {str("extra"), Value(1.0)}).number().value_or(0.0) >= 1.0);
+    }
+    CHECK(h.first("HuCreate", {str("one too many"), Value(1.0)}).number() == 0.0);
+    CHECK(h.humans.all().size() == coney::CreatedHumans::kCapacity);
 }

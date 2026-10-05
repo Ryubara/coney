@@ -58,6 +58,9 @@ struct Options {
     /// `--spawn`: the spawn point of a sandbox layout the player starts at (`--play-level sandbox:NAME`); the layout's
     /// first when unset. Requires playLevel to name a sandbox.
     std::optional<std::string> spawn;
+    /// `--checkpoint`: the checkpoint a level played with `--play-level` starts at, as `SetCheckPoint` sets it before
+    /// the level loads; 1 when unset. Requires playLevel to name a level, not a sandbox.
+    std::optional<int> checkpoint;
     /// `--assets`: the folder holding Coney's own assets (its `sandbox` folder of layouts and textures), in place of
     /// the `assets` folder beside the executable.
     std::optional<std::string> assetsDir;
@@ -101,6 +104,9 @@ struct Options {
 
 /// The largest `--fps-cap`.
 inline constexpr int kMaxFpsCap = 1000;
+
+/// The largest `--checkpoint`: far beyond any level's (the most is 12, the hub's), but a script reads any number.
+inline constexpr int kMaxCheckpoint = 99;
 
 /// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script` or `--screenshot`. Test
 /// mode runs the main loop in lockstep, one fixed step and one render per frame, and never reads a real clock, so a run

@@ -7,25 +7,29 @@
 
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/gameplay_mode.h"
 #include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/memory_card_mode.h"
+#include "gamemodes/mission_complete_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "graphics/render_device.h"
 #include "graphics/screen_fade.h"
 #include "gui/global_strings.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 
 namespace coney {
 
 /// The game's start-up path from the movies to the main menu, as `main` sets it up: the script system, the game state,
-/// the modes it pushes (8, 6, 5) and the one the front end pushes (0x12), with the services they share. `coney --disc`
-/// and the disc test build it the same way.
+/// the modes it pushes (8, 6, 5), the ones the front end pushes (0x12, then 0xb and 1 for a story game), with the
+/// services they share. `coney --disc` and the disc test build it the same way.
 ///
 /// It is also what the script bindings reach outside the script system (script::BindingHost): `ShowProfileManager`
-/// shows the menus, `MenuLoadLevel` chooses a level in the level flow, `ScreenQueueEffect` starts a fade, and music and
+/// shows the menus, `MenuLoadLevel` chooses a level in the level flow, `HUDLaunchMissionComplete` pushes the
+/// mission-complete mode, `HuCreate` keeps the level scripts' humans, `ScreenQueueEffect` starts a fade, and music and
 /// movies go to FrontEndServices. `ShowRumbleModeInterface` has no screens to show yet: Coney logs it and cancels at
 /// once (the cancel callback runs on the next frame), so quick rumble fades back to the main menu.
 ///
@@ -35,10 +39,12 @@ class StartUpFlow final : public script::BindingHost {
     /// The modes over `device`, sheets from `loadSheet` and `strings` (which the preloads fill), run on `stack`, with
     /// scripts read through `scripts` (empty: no script system; the level flow then shows the menus itself). `legal`
     /// picks the legal screen's picture and the language; its `europe` flag also hides PM_Extras. Every argument must
-    /// outlive the flow; `log` gets the modes', the services' and the scripts' lines.
+    /// outlive the flow; `log` gets the modes', the services' and the scripts' lines. `loadLevel` loads a chosen level
+    /// for gameplay (mode 1); empty: no gameplay, and the level flow brings the menus back instead.
     StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack, const ProfileManagerMode::SheetLoader& loadSheet,
                 gui::GlobalStrings& strings, LegalScreenSettings legal,
-                const std::function<void(std::string_view)>& log, script::ScriptSource scripts = {});
+                const std::function<void(std::string_view)>& log, script::ScriptSource scripts = {},
+                GameplayMode::LevelLoader loadLevel = {});
 
     /// What `main` does from the subsystems' start on: makes the Lua state (`Game_InitializeSubsystems`), plays the
     /// start-up movies (skipped: FrontEndServices), pushes the level flow, asks for the memory-card boot check, pushes
@@ -64,6 +70,12 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] LevelFlowMode& levelFlow() { return m_levelFlow; }
     /// Mode 0x12.
     [[nodiscard]] ProfileManagerMode& profileManager() { return m_profileManager; }
+    /// Mode 0xb.
+    [[nodiscard]] MissionCompleteMode& missionComplete() { return m_missionComplete; }
+    /// Mode 1.
+    [[nodiscard]] GameplayMode& gameplay() { return m_gameplay; }
+    /// The humans the level scripts created.
+    [[nodiscard]] const CreatedHumans& humans() const { return m_humans; }
 
     void showProfileManager(std::string_view onRumble, std::string_view onStartGame) override;
     void showRumbleModeInterface(std::string_view onCancel, std::string_view onStart, double players) override;
@@ -72,19 +84,23 @@ class StartUpFlow final : public script::BindingHost {
     void playMusic(std::string_view track) override;
     void stopMusic() override;
     void queueScreenEffect(int type, double seconds) override;
+    void launchMissionComplete(int kind) override;
 
   private:
     GameModeStack& m_stack;
     std::function<void(std::string_view)> m_log;
     GameState m_state;
     script::RecordedCalls m_recorded;
+    CreatedHumans m_humans;
     FrontEndServices m_services;
     graphics::ScreenFade m_fade;
     script::BindingContext m_context;
     bool m_hasScripts;
     script::ScriptSystem m_scripts; // after everything its bindings refer to
     ProfileManagerMode m_profileManager;
+    GameplayMode m_gameplay;
     LevelFlowMode m_levelFlow;
+    MissionCompleteMode m_missionComplete;
     MemoryCardMode m_memoryCard;
     LegalScreenMode m_legal;
 };

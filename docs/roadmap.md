@@ -116,7 +116,9 @@ gamepad or keyboard.
 - Done: traversal as in the original: the sprint on L2 with stamina, the lean, the run stop, the jump from a run or
   sprint, climbs over fences and onto walls with triangle, and the original's walking body (wall faces under 0.25 m
   are walked onto), checked on the sandbox's parkour course by scripted disc tests.
-- Next: the level script's start (front end story into level99), objects, and other characters moving in the level.
+- Done: the player start from the level's own script at run time (`HuCreate`), at any checkpoint, for every story
+  level but the hub (`--play-level NAME --checkpoint N`).
+- Next: objects, and other characters moving in the level.
 
 ## Gameplay
 
@@ -126,6 +128,8 @@ Combat, AI, missions, game modes, the front end and menus, cameras and saving.
 
 - Done: the start-up modes, the legal screen and the menus up to the main menu, with the game's text and fonts and
   pad input ([Front end](research/frontend.md), [GUI](research/gui.md)).
+- Done: STORY from the main menu through the mission-complete mode and gameplay (mode 1) to Rembrandt under control
+  at level99's first checkpoint ([Front end](research/frontend.md#story-start)).
 
 ## Debug menu and test levels
 

@@ -82,21 +82,20 @@ class PlayScenery {
 
 /// A level's scenery for the play mode: its streamed worlds and level file (loadLevelScenery()), streamed around the
 /// camera one decision a step, the draw distance following the nearest missing scenery, the visible sectors found at
-/// the end of each step, drawn by the world renderer. The player starts at the level's researched start, or Coney's
-/// stand-in (playLevelStandInStart()).
+/// the end of each step, drawn by the world renderer. The player starts where the level script created him (the start
+/// given to load()), else at the level's researched start, else at Coney's stand-in (playLevelStandInStart()).
 class LevelPlayScenery final : public PlayScenery {
   public:
     /// Loads level `name` from `wad`, charging `budget` (which must outlive the scenery). Fails as loadLevelScenery()
-    /// does, and with ErrorCode::NotFound for a level without a level file (no collision to stand on).
+    /// does, and with ErrorCode::NotFound for a level without a level file (no collision to stand on). The player
+    /// starts at `scriptStart`, player 1 as the level script created him, when given.
     [[nodiscard]] static std::expected<std::unique_ptr<LevelPlayScenery>, Error>
     load(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
-         std::function<void(std::string_view)> print);
+         std::function<void(std::string_view)> print, std::optional<human::PlayerStart> scriptStart = std::nullopt);
 
     [[nodiscard]] const raycast::CollisionMesh& collision() const override { return *m_scenery.level->collision; }
     [[nodiscard]] human::PlayerStart start() const override { return m_start; }
-    [[nodiscard]] std::string startSource() const override {
-        return m_researched ? "the level's start" : "Coney's stand-in start";
-    }
+    [[nodiscard]] std::string startSource() const override { return m_startSource; }
     void preload(world::Vec3 camera) override;
     void step(world::Vec3 camera, const FrameTime& frame) override;
     [[nodiscard]] float drawDistance() const override { return m_drawDistance; }
@@ -109,12 +108,12 @@ class LevelPlayScenery final : public PlayScenery {
 
   private:
     LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
-                     bool researched, std::function<void(std::string_view)> print);
+                     std::string startSource, std::function<void(std::string_view)> print);
 
     LevelScenery m_scenery;
     world::SectorBudget& m_budget;
     human::PlayerStart m_start;
-    bool m_researched; // whether m_start is the level's researched start
+    std::string m_startSource; // where m_start comes from, for the player's line
     WorldRenderer m_renderer;
     std::function<void(std::string_view)> m_print;
     std::string m_name; // the level's name

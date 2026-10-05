@@ -269,6 +269,18 @@ subsystem = "FileIO"
 size = 88
 
 [[function]]
+address = 0x001582e0
+name = "Mode1::Enter"
+subsystem = "GameModes"
+size = 424
+
+[[function]]
+address = 0x00158728
+name = "Mode1::Update"
+subsystem = "GameModes"
+size = 3392
+
+[[function]]
 address = 0x00159a58
 name = "Mode5::Enter"
 subsystem = "GameModes"
@@ -341,6 +353,24 @@ subsystem = "GameModes"
 size = 568
 
 [[function]]
+address = 0x0015cf70
+name = "ModeB::Enter"
+subsystem = "GameModes"
+size = 384
+
+[[function]]
+address = 0x0015d160
+name = "ModeB::Update"
+subsystem = "GameModes"
+size = 704
+
+[[function]]
+address = 0x0015d420
+name = "MissionComplete_Launch"
+subsystem = "GameModes"
+size = 96
+
+[[function]]
 address = 0x0015e048
 name = "Mode12::Enter"
 subsystem = "GameModes"
@@ -387,6 +417,12 @@ address = 0x0015e748
 name = "GameModeStack_TopId"
 subsystem = "GameModes"
 size = 72
+
+[[function]]
+address = 0x0015fe90
+name = "InitLevel"
+subsystem = "GameModes"
+size = 2344
 
 [[function]]
 address = 0x00160d78
@@ -808,6 +844,12 @@ name = "Human_GaitOfVelocity"
 subsystem = "Human"
 
 [[function]]
+address = 0x00233d60
+name = "Human_Create"
+subsystem = "Human"
+size = 400
+
+[[function]]
 address = 0x0023d8c8
 name = "Human_Move"
 subsystem = "Human"
@@ -1155,6 +1197,11 @@ subsystem = "Scripting"
 size = 312
 
 [[function]]
+address = 0x00358428
+name = "HuCreate"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x0035e5d0
 name = "CfgHUDMessage"
 subsystem = "Scripting"
@@ -1177,6 +1224,11 @@ subsystem = "Scripting"
 [[function]]
 address = 0x0036eef8
 name = "ShowProfileManager_Binding"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x0036f218
+name = "HUDLaunchMissionComplete"
 subsystem = "Scripting"
 
 [[function]]

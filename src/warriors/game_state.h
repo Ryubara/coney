@@ -18,9 +18,10 @@ struct GameState {
     Language language = Language::English; ///< `+0x120`: 0 on the NTSC-U disc.
     double difficulty = 1;                 ///< `+0x154` (`GetDifficulty`): 1 at the front end.
     double profileDifficulty = 1;          ///< `+0x43c` (`GetProfileDifficulty`): 1 at the front end.
-    double checkPoint = 0;                 ///< `+0x33a` (`GetCheckPoint`, `SetCheckPoint`): the level's section.
-    std::size_t currentLevel = 0;          ///< `+0x56dc` (`GetCurrentLevelIndex`): 0, the front end, at start-up.
-    LevelTable levels;                     ///< `+0x14d4`: the level records.
+    double checkPoint =
+        1; ///< `+0x33a` (`GetCheckPoint`, `SetCheckPoint`): the level's section; 1 from the constructor.
+    std::size_t currentLevel = 0; ///< `+0x56dc` (`GetCurrentLevelIndex`): 0, the front end, at start-up.
+    LevelTable levels;            ///< `+0x14d4`: the level records.
 };
 
 } // namespace coney

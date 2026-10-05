@@ -1106,10 +1106,12 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 - **Out of the world** (20 m below the mesh's lowest point): the human is put back at the start instead of failing
   the mission.
 - **The gait blend's leading clip** uses a tolerance of 0.001 when it compares the value with its target.
-- **Other levels' starts**: only level99's is used; elsewhere Rembrandt starts above the middle of the first
-  world's part 1. Every level's start is now researched ([Where a level puts the player](#level-starts) and the
-  [Level starts](../references/level-starts.md) list), for the implementer to take up. The character's lights (ambient
-  0.45, one directional 0.7) stand in for the LightManager, and he is
+- **Level starts**: the start comes from the level's own script at run time: its `HuCreate` for player 1 at the
+  checkpoint (`GetCheckPoint`), kept by Coney's `HuCreate` binding
+  ([Level loading](level-loading.md#coneys-implementation)); the story's way in and `--play-level NAME [--checkpoint N]`
+  both run it. Rembrandt's model plays whatever character the script names. A level that places player 1 at a flag
+  (the hub, the Rumble arenas) has no start in Coney yet, and Rembrandt starts above the middle of the first world's
+  part 1 there. The character's lights (ambient 0.45, one directional 0.7) stand in for the LightManager, and he is
   drawn between the level's two worlds.
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.

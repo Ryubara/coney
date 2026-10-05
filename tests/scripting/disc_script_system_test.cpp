@@ -75,7 +75,7 @@ TEST_CASE("the disc's front-end scripts run without errors in one state", "[disc
     coney::gui::GlobalStrings strings;
     RecordingHost host;
     coney::script::RecordedCalls recorded;
-    const coney::script::BindingContext context{&state, &strings, &host, &recorded};
+    const coney::script::BindingContext context{&state, &strings, &host, &recorded, nullptr};
     std::vector<std::string> log;
     coney::script::ScriptSystem scripts(
         coney::script::wadScriptSource(*wad),

@@ -23,6 +23,7 @@ add_executable(coney_tests
     gamemodes/load_entry_mode_test.cpp
     gamemodes/sheet_viewer_mode_test.cpp
     gamemodes/start_up_flow_test.cpp
+    gamemodes/story_start_test.cpp
     gamemodes/text_viewer_mode_test.cpp
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
@@ -43,6 +44,7 @@ add_executable(coney_tests
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
     platform/disc_sprite_sheets_test.cpp
+    platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp

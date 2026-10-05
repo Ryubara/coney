@@ -106,16 +106,18 @@ main menu (`coney.reaches_main_menu`), Rembrandt's clips in the character viewer
 (`coney.views_character`, `tests/support/character_orbit.txt`), and level99 played headless under a scripted pad
 (`coney.plays_level`, `tests/support/play_walk.txt`). The unit tests build their disc images, archives,
 RenderWare texture dictionaries, streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or
-a GPU (the librw tests run librw on its NULL device). Twelve tests check your own disc: every texture dictionary; every
+a GPU (the librw tests run librw on its NULL device). Thirteen tests check your own disc: every texture dictionary; every
 sprite sheet, font and the sheet table; every streamed world with the atomics of its parts (`[world]`, about a second);
 every level's worlds streamed under a scripted camera path, with the streaming's invariants checked every frame
 (`[world_streaming]`, about 30 seconds); the UI strings of all five languages, run through the game's own Lua scripts
 (`[strings]`); the two text fonts with every English UI string laid out in them (`[text]`); the front end's scripts (the
 preloads, `global.lua`, `level100.lua` and the menu callbacks) run in the script system with no error and no missing
 binding (`[scripts]`); the start-up path from the legal screen to the main menu, through quick rumble and story to the
-level request and back, driven by a scripted pad (`[frontend]`); every animation clip in the WAD, parsed and sampled
-(`[anim]`, about 7 seconds); every Character List record with its model, textures, character data and clips, skinned
-(`[characters]`); and Rembrandt at level99's start, walked, run, turned, stopped and run into the scenery by scripted
+level request and back, driven by a scripted pad (`[frontend]`); STORY through the mission-complete mode to Rembrandt
+standing at level99's start under the pad, and the level scripts' player starts for a few checkpoints (`[story]`);
+every animation clip in the WAD, parsed and sampled (`[anim]`, about 7 seconds); every Character List record with its
+model, textures, character data and clips, skinned (`[characters]`); and Rembrandt at level99's start, walked, run,
+turned, stopped and run into the scenery by scripted
 partial stick deflections, with his speeds and clips checked against the research (`[player]`), and played again through
 the main loop at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`). They
 run only when the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts
@@ -138,7 +140,8 @@ allows and centred; a window of another shape gets black bars at the sides or at
 ```text
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
-      [--view-world NAME] [--view-character [NAME]] [--anim CLIP] [--play-level NAME [--spawn NAME]]
+      [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
+      [--play-level NAME [--spawn NAME | --checkpoint N]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE]
       [--dev-overlay N]
@@ -209,6 +212,24 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 22
 ```
 
 The second line runs to the main menu without a window: its last line is `profile manager: PM_Mode`.
+
+**STORY** starts a new game as the original does: cross on STORY, then cross on the profile screen (a placeholder for
+now, standing in for the new-profile screens), and the game's own scripts take it from there (`Menu.startGame`,
+`runNextMission(1)`, the mission-complete mode, `UnlockAndLoad`), to `level99` at checkpoint 1. Its level script
+creates Rembrandt, and Coney loads the level with him where the script put him, under your control
+([Playing a level](#playing-a-level)). There is no loading screen, intro movie, intro scene, tutorial or other
+character yet. The log shows the way: `script: Menu.startGame()`, `mission complete: kind 4`, `level flow: starting
+level99`, then `gameplay: level99 checkpoint 1: player 1 Rembrandt (type 32) at (-284.40, 120.40, 0.30) heading 0`.
+In a script, with STORY selected first:
+
+```text
+200 tap start
+235 tap cross
+265 tap cross
+330 stick left 0 35
+```
+
+Level99 is up by frame 270; the last line walks Rembrandt forward at 35 % of the stick's travel.
 
 `--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a
 file name such as `level1.lev` (any letter case) or a name hash written `0x` and up to 8 hex digits, such as
@@ -364,15 +385,20 @@ menu's [Levels page](debug-menu.md), which also switches between them) as Rembra
 sticks, with the follow camera
 behind him ([Characters](../research/characters.md#coneys-implementation),
 [Camera](../research/camera.md#coneys-implementation)). The level's worlds and level file load and stream as in
-[the world viewer](#the-world-viewer); Rembrandt stands at the level's player start (level99's start, from its level
-script, is researched; any other level puts him above the middle of its first world's part 1 for now, Coney's
-stand-in). He walks, runs, sprints, turns and leans into turns, stops, steps onto kerbs under 25 cm, slides along
-walls, jumps, climbs fences and walls, and falls off ledges on the level's collision mesh, with the original's speeds,
-turn rates and clips: the walk or run start, a blend across walk, jog, run and sprint, the idle, the run stop, the
-jump and its landing, and the climbs ([Characters](../research/characters.md#sprint)). There are no level script,
-objects, other characters, fighting or missions yet; a fall out of the world puts him back at the start. Coney prints a
-line whenever the clip changes and a summary when it stops (the player's position, speed, gait, clip, traversal
-state, stamina, the camera's distance and counts only).
+[the world viewer](#the-world-viewer); Rembrandt stands where the level's own script creates player 1, as when the
+story reaches the level: Coney runs the scripts the original runs before it (the preloads, then a fresh Lua state with
+`SetCheckPoint`), then `global.lua` and the level's script, and takes the position and heading of its `HuCreate` for
+player 1, and prints them (`level script: level2 checkpoint 3: player 1 Cleon (type 1) at ...`). `--checkpoint N`
+picks the checkpoint (1 by default), so `--play-level level2 --checkpoint 3` starts where level2's third checkpoint
+does. It is always Rembrandt's model, whoever the script names. A level whose script places player 1 at a flag (the
+hub, `level95`, and the Rumble arenas) or creates none puts him above the middle of its first world's part 1 for now,
+Coney's stand-in. He walks, runs, sprints, turns and leans into turns, stops, steps onto kerbs under 25 cm, slides
+along walls, jumps, climbs fences and walls, and falls off ledges on the level's collision mesh, with the original's
+speeds, turn rates and clips: the walk or run start, a blend across walk, jog, run and sprint, the idle, the run stop,
+the jump and its landing, and the climbs ([Characters](../research/characters.md#sprint)). The level script runs only
+for the start: there are no objects, other characters, fighting or missions yet; a fall out of the world puts him back
+at the start. Coney prints a line whenever the clip changes and a summary when it stops (the player's position, speed,
+gait, clip, traversal state, stamina, the camera's distance and counts only).
 
 | Pad | Keyboard | Does |
 | --- | --- | --- |

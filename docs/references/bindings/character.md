@@ -869,7 +869,7 @@ character. This is how every level script puts the Warriors, enemies and civilia
 - **Evidence:** confirmed (code) at `0x00233d60`; detail: traced
 - **Wrapper** `0x00358428` (registered by `RegisterBindings`); **calls** `0x00233d60` `Human_Create`
 - **Used by** 100 of 467 script chunks (3411 references); boot to menu: no; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuDelete {#hudelete}
 

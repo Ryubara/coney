@@ -125,7 +125,9 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
     run(60);
     CHECK(logged("script: Menu.startGame"));
     CHECK(logged("level start requested"));
-    CHECK(flow.levelFlow().levelRequests().size() == 1);
+    // Menu.startGame asks once, and the mission-complete mode's UnlockAndLoad asks again (runNextMission(1) twice).
+    CHECK(flow.levelFlow().levelRequests().size() == 2);
+    CHECK(flow.missionComplete().launches() == 2);
     CHECK(flow.scripts().generation() == 2);
     CHECK(stack.topId() == coney::ProfileManagerMode::kId);
     CHECK(menus.controller().currentName() == "PM_Greet");

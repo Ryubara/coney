@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/level_flow_mode.h"
 
+#include <cstddef>
 #include <format>
 #include <optional>
 #include <utility>
 
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/gameplay_mode.h"
 
 namespace coney {
 
 LevelFlowMode::LevelFlowMode(graphics::RenderDevice& device, GameModeStack& stack, ProfileManagerMode& profileManager,
                              FrontEndServices& services, script::ScriptSystem& scripts, GameState& state,
-                             std::function<void(std::string_view)> log)
+                             std::function<void(std::string_view)> log, GameplayMode* gameplay)
     : m_device(device), m_stack(stack), m_profileManager(profileManager), m_services(services), m_scripts(scripts),
-      m_state(state), m_log(std::move(log)) {}
+      m_state(state), m_log(std::move(log)), m_gameplay(gameplay) {}
 
 void LevelFlowMode::enter() {
     m_loadFrontEndOnResume = true;
@@ -31,17 +33,29 @@ ModeResult LevelFlowMode::update(GameModeStack& /*stack*/, const FrameTime& fram
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
 
-    // A level is chosen: the original finishes the front end, selects the level and pushes gameplay (mode 1). Mode 1
-    // is not written yet, so Coney stops at the request and brings the front end back.
+    // A level is chosen: finish the front end if it is loaded, select the level and push gameplay (mode 1), whose
+    // enter loads it. Without gameplay, Coney stops at the request and brings the front end back.
     if (m_chosenLevel != kNoLevel) {
-        const LevelRecord* record = m_state.levels.at(static_cast<std::size_t>(m_chosenLevel));
+        const auto index = static_cast<std::size_t>(m_chosenLevel);
+        const LevelRecord* record = m_state.levels.at(index);
         const std::string name = record != nullptr ? record->name : std::string();
-        finishFrontEnd();
-        m_log(std::format("level flow: level start requested: {} (level index {}); gameplay is not written yet, back "
-                          "to the front end\n",
-                          name, m_chosenLevel));
+        if (m_frontEndLoaded) {
+            finishFrontEnd();
+        }
         m_chosenLevel = kNoLevel;
-        startFrontEnd();
+        if (m_gameplay != nullptr) {
+            m_state.currentLevel = index;
+            m_currentLevel = name;
+            m_log(std::format("level flow: starting {} (level index {}, checkpoint {})\n", name, index,
+                              m_state.checkPoint));
+            m_gameplay->setLevel(name);
+            m_stack.push(*m_gameplay);
+        } else {
+            m_log(std::format("level flow: level start requested: {} (level index {}); no gameplay to start it, back "
+                              "to the front end\n",
+                              name, index));
+            startFrontEnd();
+        }
     }
 
     // The scripts' step. The original draws the front-end world's frame around it; Coney's render() does.
@@ -62,6 +76,16 @@ void LevelFlowMode::chooseLevel(std::string_view name) {
         return;
     }
     m_chosenLevel = static_cast<int>(*index);
+}
+
+void LevelFlowMode::chooseLevelIndex(std::size_t index) {
+    const LevelRecord* record = m_state.levels.at(index);
+    if (record == nullptr) {
+        m_log(std::format("level flow: level index {}: no such record in the level table; ignored\n", index));
+        return;
+    }
+    m_levelRequests.push_back(record->name);
+    m_chosenLevel = static_cast<int>(index);
 }
 
 void LevelFlowMode::startFrontEnd() {

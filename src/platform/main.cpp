@@ -3,6 +3,7 @@
 // Entry point. SDL_main.h lets SDL provide the right entry on each OS (WinMain on Windows), which is why main lives
 // in src/platform/: it is the one function that is part of the operating-system boundary.
 
+#include <array>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
@@ -35,7 +36,9 @@
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/gameplay_mode.h"
 #include "gamemodes/idle_mode.h"
+#include "gamemodes/level_start.h"
 #include "gamemodes/load_entry_mode.h"
 #include "gamemodes/sheet_viewer_mode.h"
 #include "gamemodes/start_up_flow.h"
@@ -43,6 +46,7 @@
 #include "graphics/font.h"
 #include "gui/global_strings.h"
 #include "gui/text_layout.h"
+#include "human/player.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/debug_menus.h"
 #include "platform/frame_pacer.h"
@@ -188,6 +192,42 @@ std::expected<coney::sandbox::SandboxWorld, coney::Error> loadSandbox(const cone
     return world;
 }
 
+// Player 1's start as the level script created him, in the play mode's terms; nothing when the script made none.
+std::optional<coney::human::PlayerStart> playerStartOf(const coney::LevelStart& start) {
+    if (!start.player) {
+        return std::nullopt;
+    }
+    const coney::HumanCreation& player = *start.player;
+    if (!player.position) {
+        return std::nullopt;
+    }
+    const std::array<float, 3>& p = *player.position;
+    return coney::human::PlayerStart{.position = coney::anim::Vec3{p[0], p[1], p[2]},
+                                     .headingDegrees = player.headingDegrees};
+}
+
+// Runs level `name`'s scripts alone, as the story would reach it at `checkpoint`
+// (docs/guides/building.md#playing-a-level), and prints what they made: the start and counts only. Nothing when the
+// script made no player 1 to place.
+std::optional<coney::human::PlayerStart> scriptStartFor(const coney::io::Wad& wad, std::string_view name,
+                                                        int checkpoint) {
+    const coney::LevelScriptRun run =
+        coney::runLevelScriptAlone(coney::script::wadScriptSource(wad), name, checkpoint, {});
+    const std::optional<coney::human::PlayerStart> start = playerStartOf(run.start);
+    if (start && run.start.player) {
+        printText(std::format("level script: {} checkpoint {}: player 1 {} (type {}) at ({:.2f}, {:.2f}, {:.2f}) "
+                              "heading {:.0f}; {} humans, {} script errors, {} skipped calls\n",
+                              name, checkpoint, run.start.player->name, run.start.player->type, start->position.x,
+                              start->position.y, start->position.z, start->headingDegrees, run.humans, run.scriptErrors,
+                              run.skippedCalls));
+    } else {
+        printText(std::format("level script: {} checkpoint {}: no player 1 with a position; {} humans, {} script "
+                              "errors, {} skipped calls\n",
+                              name, checkpoint, run.humans, run.scriptErrors, run.skippedCalls));
+    }
+    return start;
+}
+
 } // namespace
 
 // Coney throws no exceptions; what could escape is a failed allocation inside the standard library or librw, which
@@ -304,6 +344,8 @@ int main(int argc, char** argv) {
     std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
     std::unique_ptr<coney::platform::PlayLevelMode> playLevel;
     std::unique_ptr<coney::platform::SandboxViewerMode> sandboxViewer;
+    // The debug lines a story level's play mode draws: the debug session's, once it exists (below).
+    const coney::debug::DebugDrawOptions* storyDebugDraw = nullptr;
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
             return 2; // parseOptions refuses --view-txd without --disc, so this is never reached
@@ -385,7 +427,11 @@ int main(int argc, char** argv) {
                                                                                options->spawn, printText)
                              : std::unexpected(std::move(world.error()));
         } else {
-            playMode = coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText);
+            // The level's script says where player 1 starts at the checkpoint, as when the story reaches it.
+            const std::optional<coney::human::PlayerStart> start =
+                scriptStartFor(*wad, *playName, options->checkpoint.value_or(1));
+            playMode =
+                coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText, start);
         }
         if (!playMode) {
             std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), playMode.error().message.c_str());
@@ -411,7 +457,22 @@ int main(int argc, char** argv) {
         // screen's preloads fill the UI strings (docs/research/scripting.md#life-of-the-lua-state).
         coney::LegalScreenSettings legal;
         legal.language = options->language;
-        startUp.emplace(renderer, modes, loadSheet, strings, legal, printText, coney::script::wadScriptSource(*wad))
+        // Gameplay (mode 1) loads the chosen level as the play mode, with player 1 where the level script made him.
+        const coney::io::Wad& gameWad = *wad;
+        coney::GameplayMode::LevelLoader loadLevel =
+            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw](
+                const coney::LevelStart& start) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+            auto mode = coney::platform::PlayLevelMode::create(renderer, gameWad, start.level, sectorBudget, printText,
+                                                               playerStartOf(start));
+            if (!mode) {
+                return std::unexpected(std::move(mode.error()));
+            }
+            (*mode)->setDebugDraw(storyDebugDraw);
+            return std::unique_ptr<coney::GameMode>(std::move(*mode));
+        };
+        startUp
+            .emplace(renderer, modes, loadSheet, strings, legal, printText, coney::script::wadScriptSource(*wad),
+                     std::move(loadLevel))
             .start();
     } else {
         // No disc: no game to run, only the idle screen.
@@ -473,7 +534,13 @@ int main(int argc, char** argv) {
     }
     // The play mode, for the Player, Camera and Spawner pages; and the sandbox layouts the Levels page plays, switched
     // to at the start of the next frame (playSandbox below), outside any step.
-    debugServices.play = [&playLevel]() -> coney::debug::PlayControls* { return playLevel.get(); };
+    debugServices.play = [&playLevel, &startUp]() -> coney::debug::PlayControls* {
+        if (playLevel) {
+            return playLevel.get();
+        }
+        // A story level in play: gameplay's level is the play mode.
+        return startUp ? dynamic_cast<coney::platform::PlayLevelMode*>(startUp->gameplay().level()) : nullptr;
+    };
     debugServices.sandboxFolder = sandboxFolder(*options);
     std::optional<std::string> pendingSandbox;
     debugServices.loadSandbox = [&pendingSandbox](std::string_view name) {
@@ -509,6 +576,7 @@ int main(int argc, char** argv) {
     if (playLevel) {
         playLevel->setDebugDraw(&debugSession.debugDraw());
     }
+    storyDebugDraw = &debugSession.debugDraw();
     // Plays sandbox layout `name` in place of the play mode or sandbox viewer on top (or above whatever runs): with
     // the player when there is a disc for his character, else with the free camera.
     const auto playSandbox = [&](const std::string& name) {
@@ -571,7 +639,8 @@ int main(int argc, char** argv) {
         }
         playLevel.reset();
         sandboxViewer.reset();
-        auto mode = coney::platform::PlayLevelMode::create(renderer, *wad, name, sectorBudget, printText);
+        auto mode = coney::platform::PlayLevelMode::create(renderer, *wad, name, sectorBudget, printText,
+                                                           scriptStartFor(*wad, name, 1));
         if (!mode) {
             debugSession.print(std::format("levels: {}: {}", name, mode.error().message));
             return;
@@ -672,6 +741,12 @@ int main(int argc, char** argv) {
     }
     if (playLevel) {
         printText(playLevel->summary());
+    }
+    if (startUp) {
+        if (const auto* storyLevel = dynamic_cast<const coney::platform::PlayLevelMode*>(startUp->gameplay().level());
+            storyLevel != nullptr) {
+            printText(storyLevel->summary());
+        }
     }
     if (sandboxViewer) {
         printText(sandboxViewer->summary());

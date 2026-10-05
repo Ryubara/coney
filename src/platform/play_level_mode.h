@@ -63,11 +63,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls {
     static constexpr float kCharacterAmbient = 0.45F;
     static constexpr float kCharacterDirectional = 0.7F;
 
-    /// Loads level `name` (LevelPlayScenery::load()) and the player's character from `wad`. `print` receives what was
-    /// loaded and streamed (counts only). Everything given must outlive the mode. Fails as the loaders do.
+    /// Loads level `name` (LevelPlayScenery::load()) and the player's character from `wad`, the player at `start`
+    /// (player 1 as the level script created him) when given. `print` receives what was loaded and streamed (counts
+    /// only). Everything given must outlive the mode. Fails as the loaders do.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
     create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
-           std::function<void(std::string_view)> print);
+           std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start = std::nullopt);
 
     /// The player in the sandbox `world` (SandboxPlayScenery::create()), at spawn point `spawn` (the layout's first
     /// when unset), with the character loaded from `wad`. Fails as the scenery and the character loader do.

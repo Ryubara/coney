@@ -19,15 +19,15 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 2.1%](https://img.shields.io/badge/reimplemented-2.1%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 2.4%](https://img.shields.io/badge/reimplemented-2.4%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% of the game's own code (70,896 of 3,342,936 bytes, 244 functions) |
+| **Reimplemented** | `▌░░░░░░░░░░░░░░░░░░░` | 2.4% of the game's own code (78,640 of 3,342,936 bytes, 253 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
-107 reimplemented function(s) have no size yet and add no bytes.
+109 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -58,15 +58,15 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 5 | 32,152 |
 | `FileIO` | `▋░░░░░░░░░░░░░░░░░░░` | 3.3% | 2 | 6,480 |
-| `GameModes` | `██▏░░░░░░░░░░░░░░░░░` | 10.7% | 22 | 51,816 |
+| `GameModes` | `█████░░░░░░░░░░░░░░░` | 24.9% | 28 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 31 | 481,192 |
-| `Human` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 358,360 |
+| `Human` | `▏░░░░░░░░░░░░░░░░░░░` | 0.1% | 24 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `███▍░░░░░░░░░░░░░░░░` | 16.7% | 29 | 197,192 |
+| `Scripting` | `███▍░░░░░░░░░░░░░░░░` | 16.7% | 31 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -147,6 +147,8 @@ at the top of the repository's `README.md`.
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
 | `0x00154440` | `Stream_SkipBytes` | `FileIO` | 128 |
 | `0x001552b0` | `ShowProfileManager` | `FileIO` | 88 |
+| `0x001582e0` | `Mode1::Enter` | `GameModes` | 424 |
+| `0x00158728` | `Mode1::Update` | `GameModes` | 3,392 |
 | `0x00159a58` | `Mode5::Enter` | `GameModes` | 96 |
 | `0x00159ab8` | `Mode5::Exit` | `GameModes` | 40 |
 | `0x00159ae0` | `Mode5::Update` | `GameModes` | 296 |
@@ -159,6 +161,9 @@ at the top of the repository's `README.md`.
 | `0x0015c6f8` | `Mode8::Resume` | `GameModes` | 136 |
 | `0x0015c7b0` | `LevelFlow_ChooseLevel` | `GameModes` | 168 |
 | `0x0015c858` | `Mode8::Update` | `GameModes` | 568 |
+| `0x0015cf70` | `ModeB::Enter` | `GameModes` | 384 |
+| `0x0015d160` | `ModeB::Update` | `GameModes` | 704 |
+| `0x0015d420` | `MissionComplete_Launch` | `GameModes` | 96 |
 | `0x0015e048` | `Mode12::Enter` | `GameModes` | 176 |
 | `0x0015e130` | `Mode12::Exit` | `GameModes` | 264 |
 | `0x0015e238` | `Mode12::Update` | `GameModes` | 760 |
@@ -167,6 +172,7 @@ at the top of the repository's `README.md`.
 | `0x0015e6b8` | `GameModeStack_RunUntilEmpty` | `GameModes` | 96 |
 | `0x0015e718` | `GameModeStack_Top` | `GameModes` | 48 |
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
+| `0x0015fe90` | `InitLevel` | `GameModes` | 2,344 |
 | `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
 | `0x00161218` | `RunPreloadScripts` | `GameModes` | 152 |
 | `0x0016e258` | `CharacterData_OnLoaded` | `unattributed` | 304 |
@@ -239,6 +245,7 @@ at the top of the repository's `README.md`.
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
+| `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
 | `0x0023db48` | `Human_BeginJump` | `Human` | not filled in |
 | `0x0023e090` | `Human_Land` | `Human` | not filled in |
@@ -304,11 +311,13 @@ at the top of the repository's `README.md`.
 | `0x00357998` | `GetPlatform` | `Scripting` | 8 |
 | `0x003579a0` | `doFile` | `Scripting` | 200 |
 | `0x00357a68` | `preLoadFile` | `Scripting` | 312 |
+| `0x00358428` | `HuCreate` | `Scripting` | not filled in |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
 | `0x0036d938` | `ToInt` | `Scripting` | not filled in |
 | `0x0036df48` | `MenuLoadLevel` | `Scripting` | not filled in |
 | `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
+| `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | not filled in |
 | `0x0037d420` | `RegisterBindings` | `Scripting` | 27,408 |
 | `0x00386370` | `gc` | `Scripting` | 48 |
 | `0x003863d8` | `ScheduleFunc` | `Scripting` | 56 |

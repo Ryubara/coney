@@ -780,7 +780,7 @@ Pushes the mission-complete screen (game mode 0xb) unless it is already showing.
 - **Evidence:** confirmed (code) at `0x0015d420`; detail: traced
 - **Wrapper** `0x0036f218` (registered by `RegisterBindings`); **calls** `0x0015d420` `MissionComplete_Launch`
 - **Used by** 10 of 467 script chunks (12 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDLaunchMissionFailed {#hudlaunchmissionfailed}
 

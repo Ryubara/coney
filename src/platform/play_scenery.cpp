@@ -40,7 +40,7 @@ human::PlayerStart playLevelStandInStart(const WorldSet& set, const raycast::Col
 
 std::expected<std::unique_ptr<LevelPlayScenery>, Error>
 LevelPlayScenery::load(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
-                       std::function<void(std::string_view)> print) {
+                       std::function<void(std::string_view)> print, std::optional<human::PlayerStart> scriptStart) {
     // The scenery, as LoadLevel reads it; a level needs its level file for the ground.
     auto scenery = loadLevelScenery(engine, wad, name, budget, print);
     if (!scenery) {
@@ -49,18 +49,28 @@ LevelPlayScenery::load(RenderEngine& engine, const io::Wad& wad, std::string_vie
     if (!scenery->level || !scenery->level->collision) {
         return fail(ErrorCode::NotFound, std::format("{} has no level file to stand on", name));
     }
-    const std::optional<human::PlayerStart> researched = human::researchedPlayerStart(name);
-    const human::PlayerStart start =
-        researched ? *researched : playLevelStandInStart(*scenery->set, *scenery->level->collision);
+    // The start: the level script's player 1, else the researched one, else Coney's stand-in.
+    human::PlayerStart start;
+    std::string source;
+    if (scriptStart) {
+        start = *scriptStart;
+        source = "the level script's start";
+    } else if (const std::optional<human::PlayerStart> researched = human::researchedPlayerStart(name); researched) {
+        start = *researched;
+        source = "the level's start";
+    } else {
+        start = playLevelStandInStart(*scenery->set, *scenery->level->collision);
+        source = "Coney's stand-in start";
+    }
     std::unique_ptr<LevelPlayScenery> made(
-        new LevelPlayScenery(std::move(*scenery), budget, start, researched.has_value(), std::move(print)));
+        new LevelPlayScenery(std::move(*scenery), budget, start, std::move(source), std::move(print)));
     made->m_name = std::string(name);
     return made;
 }
 
 LevelPlayScenery::LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
-                                   bool researched, std::function<void(std::string_view)> print)
-    : m_scenery(std::move(scenery)), m_budget(budget), m_start(start), m_researched(researched),
+                                   std::string startSource, std::function<void(std::string_view)> print)
+    : m_scenery(std::move(scenery)), m_budget(budget), m_start(start), m_startSource(std::move(startSource)),
       m_renderer(WorldViewerMode::kAmbient), m_print(std::move(print)),
       m_drawDistance(camera::kPlayerCameraLens.farClip) {}
 

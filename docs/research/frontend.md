@@ -570,17 +570,31 @@ the original shows with no card is an [open question](#open-questions).
 and no level is chosen (`LevelFlow_StartFrontEnd`): select level 0 (record 0 of the level table, `level100`), run the
 level's scripts (`global.lua`, then `level100.lua`), play `menu`, call `Menu.onStart` (which shows the menus through
 `ShowProfileManager`), mark the front end loaded. `MenuLoadLevel(name)` chooses a level by name in the level table
-(`+0x20`); the next `update` finishes the front end (`Menu.onFinish`, then the unload, which makes a fresh Lua state).
-Coney's stand-ins, each because the research or the subsystem is not there yet:
+(`+0x20`); the next `update` finishes the front end when it is loaded (`Menu.onFinish`, then the unload, which makes a
+fresh Lua state), selects the level (`W_GameState + 0x56dc`) and pushes gameplay, mode 1
+([Level loading](level-loading.md#coneys-implementation)). `chooseLevelIndex` chooses by index, for the
+mission-complete mode's kinds 2 and 3. Coney's stand-ins, each because the research or the subsystem is not there yet:
 
-- `InitLevel` is only its script step: nothing else of the level is loaded, and the background is black where the
-  Wonder Wheel scene would be.
-- Gameplay (mode 1) does not exist: after finishing the front end, `update` logs `level start requested: <level>` and
-  starts the front end again, so the player is back on the menus (with `global.lua` and `level100.lua` run in the
-  fresh state, as when the original comes back from a level).
+- The front end's `InitLevel` is only its script step: nothing else of `level100` is loaded, and the background is
+  black where the Wonder Wheel scene would be.
+- A flow made without a level loader (the tests without a disc) has no gameplay: after finishing the front end,
+  `update` logs `level start requested: <level>` and starts the front end again, so the player is back on the menus.
 - Without a script system (no disc), or when `Menu.onStart` did not push the menus, the level flow calls
   `ShowProfileManager("Menu.fadeToRMI", "Menu.startGame")` itself and logs it, so the menus always come up.
 - `update` clears to black, runs the scripts' frame and presents.
+
+**Mode 0xb, the mission-complete mode** (`src/gamemodes/mission_complete_mode.h`, `MissionCompleteMode`), from
+[Starting a story game](#story-start) and [Boot](boot.md#one-frame): `HUDLaunchMissionComplete(kind)` (a real binding
+now) calls `launch`, which stores the kind and pushes the mode unless it is on top (`MissionComplete_Launch`); `enter`
+calls the Lua function `UnlockAndLoad`; `update` runs the scripts' frame and, once a kind is set, pops itself and acts
+on it (1: the checkpoint back to 1; 2: the current level chosen again; 3: the next record), then pops gameplay too when
+it is the new top. So STORY goes as in the original: the profile manager's exit calls `Menu.startGame`, whose
+`runNextMission(1)` sets checkpoint 1, chooses `level99` and pushes mode 0xb over mode 8; the next frame its enter runs
+`UnlockAndLoad` (the same choice again; already on top, so no second push) and its update pops it; the frame after,
+mode 8 finishes the front end and pushes mode 1, which loads `level99` with Rembrandt where its script creates him.
+Coney's choices: the kind is stored on every launch, on top or not (the page says where it is stored, not whether a
+second launch stores it); no mission-complete screen, save-system call, inventories or autosave (Coney has no saves);
+the frame is black.
 
 **Mode 0x12, the profile manager** (`src/gamemodes/profile_manager_mode.h`, `ProfileManagerMode`): `show` is
 `ShowProfileManager` (`0x001552b0`: keep the two callbacks, push unless on top); `enter` plays `menu` unless it is
@@ -636,9 +650,16 @@ as if it had ended at once; the original blocks until it ends.
 start-up path headless with the disc's sheets and the game's own scripts: PM_Greet is on top by frame 160 with every
 sheet loaded, and START on frame 200 reaches PM_Mode with three items and cue 9; quick rumble (chosen with the analog
 stick) fades out and back to PM_Mode; story, then cross on the PM_Profile stand-in, calls `Menu.startGame`, which asks
-for a level (`runNextMission(1)`), and the front end comes back at PM_Greet in a second Lua state. 111 level records,
-no script error and no call of a missing binding in either state. With `CONEY_DISC` set when CMake configures, the
-smoke test `coney.reaches_main_menu` runs `coney --disc` the same way.
+for a level (`runNextMission(1)`) and launches the mission-complete mode, whose `UnlockAndLoad` asks again (two
+requests, two launches), and, with no level loader in this test, the front end comes back at PM_Greet in a second Lua
+state. 111 level records, no script error and no call of a missing binding in either state. With `CONEY_DISC` set when
+CMake configures, the smoke test `coney.reaches_main_menu` runs `coney --disc` the same way.
+
+**Disc check (NTSC-U, 2026-10-05, states only):** `coney_tests "[disc][story]"` runs STORY with the play mode as the
+level loader: gameplay is on top by frame 300 with `level99` loaded, the checkpoint is 1, Rembrandt stands at
+(-284.4, 120.4) on the ground (z 0.25, the height seen at run time) and not airborne; the stick then moves him
+(6.12 m in 200 frames at 35 % and a 30/65 diagonal) and he stands again on release. No script error; the level's
+scripts call 29 bindings Coney lacks (177 calls skipped). `coney --disc` with STORY chosen does the same in a window.
 
 **The Lua 4.0 virtual machine** (`src/scripting/`), Coney's own implementation of the public Lua 4.0 language,
 so the game's precompiled scripts run unchanged:
@@ -703,8 +724,7 @@ TODO for the analysts, found while implementing:
 
 What the implementer still needs:
 
-- Mode 1, and mode 8's half that starts the chosen level (push mode 1 after `Menu.onFinish` and `UnloadLevel`); mode
-  6's real card check once Coney has saves.
+- Mode 6's real card check once Coney has saves, and the autosave the mission-complete mode asks for.
 - The profile manager's other twelve screens, and the message box mode 6 uses ([GUI](gui.md#open-questions)).
 - The Rumble mode interface (`ShowRumbleModeInterface`), which Coney cancels at once.
 - The bindings that are stubs today (cameras, scenes, particles, sound, `PadSetHandler`), each with its subsystem;
@@ -729,6 +749,13 @@ What the implementer still needs:
   transitions in the table), and what `0x00204008` (asked by the autosave check after the mission-complete mode)
   reports. A runtime check: break on `0x0015e130` and `0x0015cf70` after choosing STORY on a new profile and note the
   mode stack (`0x005e66a0`, top index `0x0050c784`) each time.
+- **A second launch while mode 0xb is on top** (from Coney's mission-complete mode): does `MissionComplete_Launch`
+  (`0x0015d420`) store the new kind at `0x005e5e1c` when it does not push (`UnlockAndLoad`'s `runNextMission(1)`
+  launches 4 again, which would replace a kind 1, 2 or 3 the mission end asked for)? Coney stores it either way.
+- **Mode 8's `+0x28` after a level** (from Coney's gameplay mode): `Enter` sets it after mode 6's boot `Exit` has
+  cleared it, so it stays 1, and a mode 1 popped with no level chosen would bring the front end back on `Resume` (Coney
+  does so). Does the autosave's mode 6 (pushed after the mission-complete mode) clear it again, so that the game never
+  reloads the front end that way? And what pops mode 1 when a mission is quit to the menus?
 - **The device flag `0x02`** hides `PM_Extras` and selects other layouts; it is still unidentified (see
   [Graphics](graphics.md#open-questions)).
 - **Script system slots** (answered: [Scripts](scripting.md#vtable-slots); update is `+0x14`, its adjust word

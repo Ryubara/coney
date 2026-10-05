@@ -381,6 +381,7 @@
   notes: >-
     What each kind changes on the screen and what the 0x0050c754 flag does are not traced.
   usage: {chunks: 10, calls: 12, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: HUDEnableFixedCamIcon
   wrapper: 0x0036f250
