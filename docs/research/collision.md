@@ -267,6 +267,12 @@ match the header's counts; `+0x98` equals the lowest vertex `z` everywhere. `lev
   `rayCast` (mask 0, no exclusions), and is pushed out of walls by its own nearest-triangle test rather than
   `spherePush`: the body sphere is kept a radius from the closest point of each wall triangle (`|n.z|` ≤ 0.65), so it
   cannot slip past a convex edge, which the face-only test allowed. The follow camera casts with mask `0x200`.
+- `src/raycast/collision_builder.h` (Coney's own, for [the sandbox](../guides/sandbox.md)) writes the six chunks
+  above from a list of triangles and loads them through `CollisionMesh::build`, so a built mesh passes the same
+  checks as a level's. Shared corners become one vertex. The grid's cells are the size asked for; the matrix maps the
+  bounds onto them with z left out (one layer). Each triangle is listed in every cell its bounding box covers, plus one
+  cell on each side. The checked set is sized by the header rule. Unit tests cast rays through a built mesh against a
+  brute-force cast.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][collision]"` loads all 64 `.lev` files
 through the chunk system with the `0x03` handler: none fails; 150,567 triangles and 94,294 vertices, 39,531 facing up,

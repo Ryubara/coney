@@ -1,0 +1,128 @@
+# Coney sandbox: the traversal course, for running, jumping, mounting fences and climbing (docs/guides/sandbox.md).
+# Game axes and units: metres, z up; spawns face +y. One texture tile is 1 m (bright lines every 50 cm).
+#
+# What the research gives (docs/research/characters.md): the ground snap climbs a step of up to 1.0 m and follows a
+# drop of up to 0.5 m; gravity is 15.68 m/s² from the second airborne update; a landing hurts from 14.9 m/s and kills
+# from 20.5 m/s; Rembrandt walks at 1.63 m/s, jogs at 4.86, runs at 7.80 and sprints at 10.25. The game has fence,
+# short-fence, wall and short-wall climbs and a building jump among its animations (research/references/anim-ids.yaml),
+# but the heights and gaps that choose them are not researched yet: the ranges below are Coney's choices, wide enough
+# to bracket whatever they turn out to be. No collision flag for climbable or mountable surfaces is known yet; a
+# primitive's flags= sets the triangle flag bits raw (docs/research/collision.md#triangles) for experiments.
+
+title Traversal course
+
+texture floor dark_grid.png
+texture wall light_grid.png
+texture ramp orange_grid.png
+texture stairs green_grid.png
+texture ledge purple_grid.png
+texture marker red_grid.png
+texture prop light_checker.png
+
+sky colour=0.62,0.72,0.84
+sun direction=-0.5,0.45,-0.74 colour=0.62,0.58,0.50
+ambient sky=0.36,0.40,0.48 ground=0.20,0.19,0.18
+fog start=90 end=260
+occlusion radius=1.5 strength=0.65
+shadows on
+tessellate edge=1
+
+spawn lane at=60,-62,0 heading=0
+spawn fences at=-39,12,0 heading=0
+spawn walls at=-45,28,0 heading=0
+spawn climbs at=-42,47,0 heading=0
+spawn gaps at=-80,-66,0 heading=0
+spawn towers at=18,-52,0 heading=0
+spawn blocks at=15,-6,0 heading=0
+
+view lane at=56,-70,4 yaw=-15 pitch=-10
+view fences at=-39,6,4 yaw=0 pitch=-12
+view walls at=-45,24,4 yaw=0 pitch=-12
+view climbs at=-42,42,5 yaw=0 pitch=-8
+view gaps at=-90,-70,10 yaw=-25 pitch=-16
+view towers at=18,-66,12 yaw=0 pitch=-14
+view blocks at=15,-10,4 yaw=0 pitch=-14
+view overview at=0,-110,60 yaw=0 pitch=-32
+
+# The ground: 200 m square, its top at z = 0.
+box at=0,0,-0.5 size=200,200,0.5 texture=floor
+
+# Run lane and long straight, east: 120 m along +y at x = 60, 3 m wide. A tick every metre, a post every 5 m on
+# both sides, a taller one every 10 m: count the ticks passed in a number of frames (30 a second) for the speed.
+box at=60,0,0 size=3,120,0.01 texture=wall solid=no
+box at=60,-60,0 size=3,0.05,0.02 texture=marker solid=no repeat=121 step=0,1,0
+cylinder at=58.2,-60,0 radius=0.08 height=1 segments=8 texture=marker repeat=25 step=0,5,0
+cylinder at=61.8,-60,0 radius=0.08 height=1 segments=8 texture=marker repeat=25 step=0,5,0
+cylinder at=58.2,-60,0 radius=0.1 height=2 segments=8 texture=wall repeat=13 step=0,10,0
+cylinder at=61.8,-60,0 radius=0.1 height=2 segments=8 texture=wall repeat=13 step=0,10,0
+
+# Fences, north-west: 4 m wide and 8 cm thick, from 0.5 to 3 m high, with room to run up from the south.
+box at=-60,20,0 size=4,0.08,0.5 texture=marker
+box at=-54,20,0 size=4,0.08,0.75 texture=marker
+box at=-48,20,0 size=4,0.08,1.0 texture=marker
+box at=-42,20,0 size=4,0.08,1.25 texture=marker
+box at=-36,20,0 size=4,0.08,1.5 texture=marker
+box at=-30,20,0 size=4,0.08,2.0 texture=marker
+box at=-24,20,0 size=4,0.08,2.5 texture=marker
+box at=-18,20,0 size=4,0.08,3.0 texture=marker
+
+# Low walls: 4 m wide and 40 cm thick, from 0.3 to 1.5 m high.
+box at=-60,35,0 size=4,0.4,0.3 texture=wall
+box at=-54,35,0 size=4,0.4,0.5 texture=wall
+box at=-48,35,0 size=4,0.4,0.75 texture=wall
+box at=-42,35,0 size=4,0.4,1.0 texture=wall
+box at=-36,35,0 size=4,0.4,1.25 texture=wall
+box at=-30,35,0 size=4,0.4,1.5 texture=wall
+
+# Climbing blocks: 3 m square, from 1 to 4 m high.
+box at=-60,55,0 size=3,3,1.0 texture=ledge
+box at=-54,55,0 size=3,3,1.5 texture=ledge
+box at=-48,55,0 size=3,3,2.0 texture=ledge
+box at=-42,55,0 size=3,3,2.5 texture=ledge
+box at=-36,55,0 size=3,3,3.0 texture=ledge
+box at=-30,55,0 size=3,3,3.5 texture=ledge
+box at=-24,55,0 size=3,3,4.0 texture=ledge
+
+# Jump gaps, west: platforms 2 m high, 3 m wide and 6 m long (a run-up each) along x = -80, with gaps of 1 to 6 m;
+# stairs up to the first. Missing a jump is a 2 m fall to the ground.
+stairs at=-80,-61.2,0 width=3 steps=8 rise=0.25 run=0.3 texture=stairs
+box at=-80,-57,0 size=3,6,2 texture=ledge
+box at=-80,-50,0 size=3,6,2 texture=ledge
+box at=-80,-42.5,0 size=3,6,2 texture=ledge
+box at=-80,-34.5,0 size=3,6,2 texture=ledge
+box at=-80,-26,0 size=3,6,2 texture=ledge
+box at=-80,-17,0 size=3,6,2 texture=ledge
+box at=-80,-7.5,0 size=3,6,2 texture=ledge
+box at=-80,2.5,0 size=3,6,2 texture=ledge
+box at=-80,13.5,0 size=3,6,2 texture=ledge
+box at=-80,25.5,0 size=3,6,2 texture=ledge
+
+# Drop towers, south: 3 m square, 2 to 14 m high, each with stairs (25 cm rises) up its south side; step off the north
+# side to fall. A fall from h lands at about sqrt(2 · 15.68 · h): hurting from about 7.1 m (14.9 m/s) and killing from
+# about 13.4 m (20.5 m/s), inferred from the gravity and thresholds above, so the towers bracket both.
+stairs at=0,-31.2,0 width=2 steps=8 rise=0.25 run=0.3 texture=stairs
+stairs at=6,-32.4,0 width=2 steps=16 rise=0.25 run=0.3 texture=stairs
+stairs at=12,-33.6,0 width=2 steps=24 rise=0.25 run=0.3 texture=stairs
+stairs at=18,-34.2,0 width=2 steps=28 rise=0.25 run=0.3 texture=stairs
+stairs at=24,-34.8,0 width=2 steps=32 rise=0.25 run=0.3 texture=stairs
+stairs at=30,-36,0 width=2 steps=40 rise=0.25 run=0.3 texture=stairs
+stairs at=36,-38.4,0 width=2 steps=56 rise=0.25 run=0.3 texture=stairs
+box at=0,-28.5,0 size=3,3,2 texture=ledge
+box at=6,-28.5,0 size=3,3,4 texture=ledge
+box at=12,-28.5,0 size=3,3,6 texture=ledge
+box at=18,-28.5,0 size=3,3,7 texture=marker
+box at=24,-28.5,0 size=3,3,8 texture=marker
+box at=30,-28.5,0 size=3,3,10 texture=marker
+box at=36,-28.5,0 size=3,3,14 texture=marker
+
+# Jump-up blocks, centre: 2 m square, 0.5 to 2 m high in quarter metres.
+box at=0,0,0 size=2,2,0.5 texture=prop
+box at=5,0,0 size=2,2,0.75 texture=prop
+box at=10,0,0 size=2,2,1.0 texture=prop
+box at=15,0,0 size=2,2,1.25 texture=prop
+box at=20,0,0 size=2,2,1.5 texture=prop
+box at=25,0,0 size=2,2,1.75 texture=prop
+box at=30,0,0 size=2,2,2.0 texture=prop
+
+# A person-sized capsule (1.8 m) beside the lane start, for scale.
+capsule at=57,-62,0 radius=0.3 height=1.8 texture=prop

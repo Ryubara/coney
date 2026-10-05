@@ -1,0 +1,137 @@
+# Coney sandbox: the general movement course (docs/guides/sandbox.md).
+# Game axes and units: metres, z up; the spawn faces +y ("north"). One texture tile is 1 m: the bright grid lines
+# fall every 50 cm, the faint ones every 12.5 cm, and on walls they measure the height above the ground.
+# Heights and distances cite docs/research/characters.md where a value comes from the game; the rest are Coney choices.
+
+title Movement course
+
+texture floor dark_grid.png
+texture wall light_grid.png
+texture ramp orange_grid.png
+texture stairs green_grid.png
+texture ledge purple_grid.png
+texture marker red_grid.png
+texture prop light_checker.png
+
+sky colour=0.62,0.72,0.84
+sun direction=-0.5,0.45,-0.74 colour=0.62,0.58,0.50
+ambient sky=0.36,0.40,0.48 ground=0.20,0.19,0.18
+fog start=80 end=220
+occlusion radius=1.5 strength=0.65
+shadows on
+tessellate edge=1
+
+spawn start at=0,0,0 heading=0
+spawn slopes at=-27,4,0 heading=0
+spawn stairs at=10,4,0 heading=0
+spawn ledges at=27,-14,0 heading=0
+spawn gaps at=-50,-26,0 heading=0
+spawn room at=-24,-18,0 heading=180
+
+view start at=0,-8,3 yaw=0 pitch=-12
+view overview at=0,-75,45 yaw=0 pitch=-32
+view slopes at=-27,-4,6 yaw=0 pitch=-14
+view stairs at=10,-3,5 yaw=0 pitch=-14
+view ledges at=18,-20,6 yaw=-45 pitch=-14
+view gaps at=-40,-26,6 yaw=30 pitch=-14
+view room at=-24,-14,9 yaw=180 pitch=-38
+view corridors at=16,-16,6 yaw=180 pitch=-25
+
+# The ground: 160 m square, its top at z = 0.
+box at=0,0,-0.5 size=160,160,0.5 texture=floor
+
+# The start: a pad, a person-sized capsule (1.8 m) for scale, and a measuring strip east along y = -3: a tick every
+# metre, a post every 5 m.
+box at=0,0,0 size=2,2,0.02 texture=marker solid=no
+capsule at=2,1,0 radius=0.3 height=1.8 texture=prop
+box at=0,-3,0 size=0.05,0.6,0.02 texture=marker solid=no repeat=21 step=1,0,0
+cylinder at=0,-3.6,0 radius=0.08 height=1 segments=8 texture=marker repeat=5 step=5,0,0
+
+# Slope gallery, north-west: ramps 3 m wide and 2 m high at 10° to 60°, low ends on y = 10, each with a platform at
+# the top. A character lands only on ground whose normal has z > 0.65, about 49° (docs/research/characters.md#ground),
+# so the 50° and 60° ramps are red: steeper than the game's walkable limit.
+ramp at=-40,15.672,0 width=3 height=2 angle=10 texture=ramp
+ramp at=-35,12.747,0 width=3 height=2 angle=20 texture=ramp
+ramp at=-30,11.732,0 width=3 height=2 angle=30 texture=ramp
+ramp at=-25,11.192,0 width=3 height=2 angle=40 texture=ramp
+ramp at=-20,10.839,0 width=3 height=2 angle=50 texture=marker
+ramp at=-15,10.577,0 width=3 height=2 angle=60 texture=marker
+box at=-40,22.843,0 size=3,3,2 texture=ledge
+box at=-35,16.995,0 size=3,3,2 texture=ledge
+box at=-30,14.964,0 size=3,3,2 texture=ledge
+box at=-25,13.884,0 size=3,3,2 texture=ledge
+box at=-20,13.178,0 size=3,3,2 texture=ledge
+box at=-15,12.655,0 size=3,3,2 texture=ledge
+
+# Stair sets, north: 2.5 m wide, 30 cm treads, rises of 10, 15, 20, 25, 30 and 40 cm, about 2 m up, low ends on
+# y = 10, a landing at the top of each.
+stairs at=0,13,0 width=2.5 steps=20 rise=0.10 run=0.3 texture=stairs
+stairs at=4,11.95,0 width=2.5 steps=13 rise=0.15 run=0.3 texture=stairs
+stairs at=8,11.5,0 width=2.5 steps=10 rise=0.20 run=0.3 texture=stairs
+stairs at=12,11.2,0 width=2.5 steps=8 rise=0.25 run=0.3 texture=stairs
+stairs at=16,11.05,0 width=2.5 steps=7 rise=0.30 run=0.3 texture=stairs
+stairs at=20,10.75,0 width=2.5 steps=5 rise=0.40 run=0.3 texture=stairs
+box at=0,17.5,0 size=2.5,3,2.0 texture=ledge
+box at=4,15.4,0 size=2.5,3,1.95 texture=ledge
+box at=8,14.5,0 size=2.5,3,2.0 texture=ledge
+box at=12,13.9,0 size=2.5,3,2.0 texture=ledge
+box at=16,13.6,0 size=2.5,3,2.1 texture=ledge
+box at=20,13.0,0 size=2.5,3,2.0 texture=ledge
+
+# Step-up and climb ledges, east: 3 m blocks from 10 cm to 3 m high along x = 32. The ground snap casts from 1.0 m
+# above the feet, so a step up to 1.0 m is climbed in one update (docs/research/characters.md#ground); the blocks
+# above that are red.
+box at=32,-12,0 size=3,3,0.1 texture=ledge
+box at=32,-8,0 size=3,3,0.25 texture=ledge
+box at=32,-4,0 size=3,3,0.5 texture=ledge
+box at=32,0,0 size=3,3,0.75 texture=ledge
+box at=32,4,0 size=3,3,1.0 texture=ledge
+box at=32,8,0 size=3,3,1.25 texture=marker
+box at=32,12,0 size=3,3,1.5 texture=marker
+box at=32,16,0 size=3,3,2.0 texture=marker
+box at=32,20,0 size=3,3,2.5 texture=marker
+box at=32,24,0 size=3,3,3.0 texture=marker
+
+# Gaps, west: 1 m high platforms 4 m long along x = -50 with gaps of 0.5 to 4 m between them, and a ramp up to the
+# first. A drop of more than 0.5 m is a fall (docs/research/characters.md#ground), so stepping off is a fall.
+ramp at=-50,-21.374,0 width=3 height=1 angle=20 texture=ramp
+box at=-50,-18,0 size=3,4,1 texture=ledge
+box at=-50,-13.5,0 size=3,4,1 texture=ledge
+box at=-50,-8.5,0 size=3,4,1 texture=ledge
+box at=-50,-3,0 size=3,4,1 texture=ledge
+box at=-50,3,0 size=3,4,1 texture=ledge
+box at=-50,9.5,0 size=3,4,1 texture=ledge
+box at=-50,16.5,0 size=3,4,1 texture=ledge
+box at=-50,24,0 size=3,4,1 texture=ledge
+box at=-50,32,0 size=3,4,1 texture=ledge
+
+# A walled room, south-west, for the follow camera against walls and under a low ceiling: 12 m square inside, walls
+# 4 m high with a 2 m doorway on the north side; a slab 2.2 m up over one corner; a pillar and a crate inside.
+box at=-24,-36.15,0 size=12.6,0.3,4 texture=wall
+box at=-30.15,-30,0 size=0.3,12,4 texture=wall
+box at=-17.85,-30,0 size=0.3,12,4 texture=wall
+box at=-27.65,-23.85,0 size=5.3,0.3,4 texture=wall
+box at=-20.35,-23.85,0 size=5.3,0.3,4 texture=wall
+box at=-27,-33,2.2 size=6,6,0.3 texture=wall
+cylinder at=-21,-27,0 radius=0.5 height=4 texture=prop
+box at=-21,-33,0 size=1.2,1.2,1.2 yaw=20 texture=prop
+
+# Corridors, south-east: 10 m long between 3 m walls, 0.6, 0.8, 1.0, 1.5 and 2.0 m wide.
+box at=12.25,-31,0 size=0.5,10,3 texture=wall
+box at=13.35,-31,0 size=0.5,10,3 texture=wall
+box at=14.65,-31,0 size=0.5,10,3 texture=wall
+box at=16.15,-31,0 size=0.5,10,3 texture=wall
+box at=18.15,-31,0 size=0.5,10,3 texture=wall
+box at=20.65,-31,0 size=0.5,10,3 texture=wall
+
+# Pillars and scattered primitives, south of the start.
+cylinder at=-8,-14,0 radius=0.4 height=4 texture=wall repeat=5 step=4,0,0
+cylinder at=-6,-19,0 radius=0.4 height=4 texture=wall repeat=4 step=4,0,0
+box at=-8,-8,0 size=1,1,1 texture=prop
+box at=-6.4,-8.3,0 size=1,1,1 yaw=20 texture=prop
+box at=-7.9,-8.1,1 size=1,1,1 yaw=10 texture=prop
+sphere at=12,-12,0 radius=1 texture=prop
+sphere at=20,-10,0 radius=2 texture=ledge
+capsule at=8,-8,0 radius=0.5 height=2.5 texture=ramp
+cylinder at=-14,-10,0 radius=1.5 height=1 texture=stairs
+box at=4,-14,0 size=2,2,2 yaw=45 texture=ramp

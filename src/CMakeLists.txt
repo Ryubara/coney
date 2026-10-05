@@ -93,6 +93,13 @@ target_sources(coney_core PRIVATE
     human/human_animator.cpp
     human/locomotion.cpp
     human/player.cpp)
+# The sandbox: Coney's own test worlds of primitives (docs/guides/sandbox.md), and the collision writer they use.
+target_sources(coney_core PRIVATE
+    raycast/collision_builder.cpp
+    sandbox/sandbox_layout.cpp
+    sandbox/sandbox_lighting.cpp
+    sandbox/sandbox_mesh.cpp
+    sandbox/sandbox_world.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_subdirectory(platform)

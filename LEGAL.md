@@ -49,6 +49,10 @@ whole function.
 - Code is GPL-3.0-or-later (see `LICENSE`).
 - Documentation in `docs/` is CC-BY-SA-4.0 (see `docs/LICENSE`).
 - Dependencies keep their own licences.
+- Third-party assets in `assets/` keep theirs, with the licence file beside them. The sandbox's textures in
+  `assets/sandbox/` are from Kenney's Prototype Textures (`www.kenney.nl`), released under CC0 1.0
+  (`assets/sandbox/License.txt`); one is re-encoded, which CC0 allows. Only assets under CC0 or a licence compatible
+  with GPL-3.0-or-later go in, never anything from the original game ([No game data](#no-game-data)).
 - Each source file states its licence with `SPDX-License-Identifier: GPL-3.0-or-later`.
 
 ## Provenance

@@ -92,6 +92,14 @@ target_sources(coney_tests PRIVATE
     human/disc_player_test.cpp
     human/human_test.cpp
     human/locomotion_test.cpp)
+# The sandbox and the collision writer it uses (docs/guides/sandbox.md).
+target_sources(coney_tests PRIVATE
+    raycast/collision_builder_test.cpp
+    sandbox/sandbox_layout_test.cpp
+    sandbox/sandbox_mesh_test.cpp
+    sandbox/sandbox_world_test.cpp)
+# The shipped sandbox layouts are Coney's own (assets/sandbox), so the tests may read them.
+target_compile_definitions(coney_tests PRIVATE CONEY_ASSETS_DIR="${PROJECT_SOURCE_DIR}/assets")
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")

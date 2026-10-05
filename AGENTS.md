@@ -8,7 +8,8 @@ subsystem from our docs and comments alone. Legal rules in full: `LEGAL.md`.
 
 `src/core/` platform-neutral engine code; `src/platform/` the only place for OS, SDL3 or librw code; `tests/`
 Catch2; `python/` the `coney-tools` CLI (uv); `docs/research/` what we know about the original; `docs/guides/` how
-we work; `cmake/deps.cmake` pinned dependencies. Worktrees go in `../../worktrees/coney/<branch>/`, scratch output
+we work; `assets/` Coney's own assets (sandbox layouts, CC0 textures; never game data); `cmake/deps.cmake` pinned
+dependencies. Worktrees go in `../../worktrees/coney/<branch>/`, scratch output
 in `../../scratch/`; game files, emulators and tool installs live beside the repo, never in it.
 
 ## Build and test

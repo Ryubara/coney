@@ -2,8 +2,8 @@
 # pre-commit.ci runs the same hooks on pull requests.
 # Every rev is a tag resolved with `git ls-remote --tags` on 2026-10-04.
 
-# Never rewritten by a hook: the licence texts, which stay verbatim (LEGAL.md).
-exclude: ^(LICENSE|docs/LICENSE)$
+# Never rewritten by a hook: the licence texts, which stay verbatim (LEGAL.md), Coney's and the vendored assets'.
+exclude: ^(LICENSE|docs/LICENSE|assets/sandbox/License\.txt)$
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
