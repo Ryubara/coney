@@ -185,14 +185,24 @@ The three airborne bits (`0x1c00000000`) are cleared on landing.
 ### Power classes {#power-classes}
 
 `CfgPowerClass` fills records of 0x44 bytes at `0x006619a0 + class × 0x44`. A human's class is byte `+0x1b9` for a
-player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads; Rembrandt's values confirmed (runtime):
+player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at the cited addresses; Rembrandt's
+values confirmed (runtime). A street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms, power
+200, byte `+0x36` 4 (confirmed (runtime)). The other fields (floats `+0x08`, `+0x0c`, `+0x18`, `+0x24`, `+0x32`, the
+bytes from `+0x37`) are not traced:
 
 | Field | Rembrandt (class 64) | Use |
 | --- | --- | --- |
+| `+0x00` | 1.3 | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
+| `+0x04` | 0.3 | the **hurt** threshold: below this fraction of maximum health the human is hurt (`0x00222ff8`) |
+| `+0x10` / `+0x14` | 1.0 / 1.0 | the stun time's / the ground time's factor while hurt ([Combat](combat.md#reactions)) |
+| `+0x1c` / `+0x20` | 3.0 / 3.0 | AI only: the factor on `CfgAttackDelay`, the second when the target is down (`0x00223800`) |
 | `+0x28` | 400 | the **power meter's maximum** ([Combat](combat.md#power-meter)) |
 | `+0x2a` | 60 | the power meter's refill per second |
 | `+0x2c` | 135 | **stamina maximum** |
 | `+0x2e` | 40 | **stamina refill per second** |
+| `+0x30` | 200 | a **stun**'s length, ms (`0x0022f658`) |
+| `+0x34` | 2750 | the time a knocked-down human stays **down**, ms (`0x0022f100`) |
+| `+0x36` | 3 | in a grab struggle, the grabbed human's strike costs the grabber 1 / this of its power (`0x0027fd68`) |
 
 `Human_StaminaMax` (`0x00223188`) returns `+0x2c`; for a player, when the flag `0x00424130(0x6fe998, 6, 0xc)` is set,
 it returns `+0x2c × (1 + b × 0.01)` rounded, where `b` is byte 3 of the record `0x00228860` returns (an upgrade,

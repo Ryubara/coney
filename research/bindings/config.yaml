@@ -460,10 +460,10 @@
   calls:
     - {addr: 0x0023a658, name: Cfg_SetBurnRates}
   args:
-    - {name: rate1, lua: number, ctype: unsigned, desc: "Rate used in one movement state, global 0x005101e4 (0 in config_preload2.lua)."}
-    - {name: rate2, lua: number, ctype: unsigned, desc: "Rate for another state, 0x005101e8 (15)."}
-    - {name: rate3, lua: number, ctype: unsigned, desc: "Rate for another state, 0x005101ec (15)."}
-    - {name: rate4, lua: number, ctype: unsigned, desc: "Rate for another state, 0x005101f0 (2)."}
+    - {name: rate1, lua: number, ctype: unsigned, desc: "Power drained per second while blocking, global 0x005101e4 (0 in config_preload2.lua)."}
+    - {name: rate2, lua: number, ctype: unsigned, desc: "Power drained per second while grabbing, 0x005101e8 (15)."}
+    - {name: rate3, lua: number, ctype: unsigned, desc: "Power drained per second while tackling, 0x005101ec (15)."}
+    - {name: rate4, lua: number, ctype: unsigned, desc: "Power drained per second in a further grab state (inferred: moving with the victim), 0x005101f0 (2)."}
     - {name: rate5, lua: number, ctype: unsigned, desc: "Rate for another state, 0x005101f4 (20)."}
   description: >-
     Stores five whole-number rates as floats; 0x00223280 picks one of them by the human's current movement state (and
@@ -471,7 +471,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    What is 'burned' (stamina, rage) per state is not traced.
+    The first four are the power meter's drain per second (combat.md#power-meter), confirmed (runtime) for 0, 15
+    and 15; rate5's state is not traced.
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
 
 - name: CfgSnap
@@ -512,8 +513,9 @@
     - {name: pressGain, lua: number, ctype: int, desc: "Integer at 0x005102c0 (250): halved, then scaled by 1.5 or 0.7 by the Warrior class, it is what one alternating press adds, 0x0027e6d8."}
     - {name: target, lua: number, ctype: int, desc: "Integer at 0x005102b8: the meter total that completes the mash (1000); 0x00255f08 compares a counter with it and draws the fraction."}
   description: >-
-    Configures button-mash prompts (grapple struggles and similar): the value a mash counter must reach and two tuning
-    integers.
+    Configures the button-mash theft game (alternate L1 and R1, theft mode 1): the value the mash meter must reach and
+    two tuning integers. Its only game reader is the theft update 0x0027e6d8; the grabbed player's struggle does not
+    use it.
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -1062,7 +1064,8 @@
     - {name: ms, lua: number, ctype: int, desc: "Delay in milliseconds (200 for most; 0 to 1000 for some)."}
   description: >-
     Stores one attack's delay in the table at 0x006b6658 (one int per index), set for 44 indices by
-    config_preload2.lua.
+    config_preload2.lua. Only the AI reads it (0x002fa9a8 through 0x00223800): the wait before an AI human attacks,
+    the table value times the attacker's power class +0x1c (+0x20 when the target is down).
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -1075,23 +1078,23 @@
     - {addr: 0x002288c0, name: Cfg_SetPowerClass}
   args:
     - {name: classId, lua: number, ctype: int, desc: "Power class index; selects a 0x44-byte record at 0x006619a0 + classId x 0x44 (0-66 in the difficulty configs)."}
-    - {name: p2, lua: number, ctype: int, desc: "16-bit value at +0x28 (e.g. 180-650: probably hit points)."}
-    - {name: p3, lua: number, ctype: int, desc: "16-bit value at +0x2a (30-110)."}
-    - {name: p4, lua: number, ctype: int, desc: "16-bit value at +0x2c (80-135)."}
-    - {name: p5, lua: number, ctype: int, desc: "16-bit value at +0x2e (10-40)."}
-    - {name: p6, lua: number, ctype: int, desc: "16-bit value at +0x34 (2000-2750: a time in ms, inferred)."}
-    - {name: p7, lua: number, ctype: int, desc: "16-bit value at +0x30 (200-750)."}
+    - {name: p2, lua: number, ctype: int, desc: "16-bit value at +0x28 (180-650): the power meter's maximum (400 for the player), 0x00223068."}
+    - {name: p3, lua: number, ctype: int, desc: "16-bit value at +0x2a (30-110): the power meter's refill per second (60 for the player)."}
+    - {name: p4, lua: number, ctype: int, desc: "16-bit value at +0x2c (80-135): the stamina maximum, 0x00223188."}
+    - {name: p5, lua: number, ctype: int, desc: "16-bit value at +0x2e (10-40): the stamina refill per second."}
+    - {name: p6, lua: number, ctype: int, desc: "16-bit value at +0x34 (2000-2750): ms a knocked-down human stays down before rising, 0x0022f100."}
+    - {name: p7, lua: number, ctype: int, desc: "16-bit value at +0x30 (200-750): ms a stun lasts, 0x0022f658."}
     - {name: p8, lua: number, ctype: int, desc: "16-bit value at +0x32 (300-750)."}
-    - {name: f9, lua: number, ctype: float, desc: "Float at +0x00."}
-    - {name: f10, lua: number, ctype: float, desc: "Float at +0x04."}
+    - {name: f9, lua: number, ctype: float, desc: "Float at +0x00: as the attacker, multiplies the victim's stun for some weapon hits (damage 20-49), 0x0022f658."}
+    - {name: f10, lua: number, ctype: float, desc: "Float at +0x04: the hurt threshold; below this fraction of maximum health the human is hurt, 0x00222ff8."}
     - {name: f11, lua: number, ctype: float, desc: "Float at +0x08."}
     - {name: f12, lua: number, ctype: float, desc: "Float at +0x0c."}
-    - {name: f13, lua: number, ctype: float, desc: "Float at +0x10."}
-    - {name: f14, lua: number, ctype: float, desc: "Float at +0x14."}
+    - {name: f13, lua: number, ctype: float, desc: "Float at +0x10: the stun time's factor while hurt, 0x0022f658."}
+    - {name: f14, lua: number, ctype: float, desc: "Float at +0x14: the ground time's factor while hurt, 0x0022f100."}
     - {name: f15, lua: number, ctype: float, desc: "Float at +0x18."}
-    - {name: f16, lua: number, ctype: float, desc: "Float at +0x1c."}
-    - {name: f17, lua: number, ctype: float, desc: "Float at +0x20."}
-    - {name: n18, lua: number, ctype: int, desc: "Byte at +0x36, at least 1."}
+    - {name: f16, lua: number, ctype: float, desc: "Float at +0x1c: the AI attack delay's factor (CfgAttackDelay), 0x00223800."}
+    - {name: f17, lua: number, ctype: float, desc: "Float at +0x20: the AI attack delay's factor when the target is down, 0x00223800."}
+    - {name: n18, lua: number, ctype: int, desc: "Byte at +0x36, at least 1: grab struggle divisor; a grabbed human's strike costs the grabber 1/n of its power, 0x0027fd68."}
     - {name: n19, lua: number, ctype: int, desc: "Byte at +0x37, clamped 0-15."}
     - {name: f20, lua: number, ctype: float, desc: "Float at +0x24, clamped to 0-1."}
     - {name: n21, lua: number, ctype: int, desc: "Byte at +0x38, clamped 0-127."}
@@ -1113,9 +1116,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Layout and clamps confirmed (code) at 0x002288c0. The readers use computed addresses, so no field's game meaning
-    has been traced; meanings in the argument list are guesses from the values. The record has 31 fields; Coney needs
-    all of them stored even before their meaning is known.
+    Layout and clamps confirmed (code) at 0x002288c0; the record is read through 0x00222b78. The meanings given in the
+    argument list are confirmed (code) at the cited readers (combat.md and characters.md); the others are not traced.
+    The record has 31 fields; Coney needs all of them stored even before their meaning is known.
   usage: {chunks: 6, calls: 311, boot: true, mission1: false, result_used: false}
 
 - name: CfgWarriorClass

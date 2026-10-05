@@ -208,6 +208,8 @@ CfgAttackDelay(attack, ms)
 **Returns** nothing.
 
 Stores one attack's delay in the table at 0x006b6658 (one int per index), set for 44 indices by config_preload2.lua.
+Only the AI reads it (0x002fa9a8 through 0x00223800): the wait before an AI human attacks, the table value times the
+attacker's power class +0x1c (+0x20 when the target is down).
 
 **Notes.** No range check on the index. That the unit is milliseconds is inferred from the values.
 
@@ -397,10 +399,10 @@ CfgBurnRates(rate1, rate2, rate3, rate4, rate5)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `rate1` | number, truncated to an unsigned integer | Rate used in one movement state, global 0x005101e4 (0 in config_preload2.lua). |
-| 2 | `rate2` | number, truncated to an unsigned integer | Rate for another state, 0x005101e8 (15). |
-| 3 | `rate3` | number, truncated to an unsigned integer | Rate for another state, 0x005101ec (15). |
-| 4 | `rate4` | number, truncated to an unsigned integer | Rate for another state, 0x005101f0 (2). |
+| 1 | `rate1` | number, truncated to an unsigned integer | Power drained per second while blocking, global 0x005101e4 (0 in config_preload2.lua). |
+| 2 | `rate2` | number, truncated to an unsigned integer | Power drained per second while grabbing, 0x005101e8 (15). |
+| 3 | `rate3` | number, truncated to an unsigned integer | Power drained per second while tackling, 0x005101ec (15). |
+| 4 | `rate4` | number, truncated to an unsigned integer | Power drained per second in a further grab state (inferred: moving with the victim), 0x005101f0 (2). |
 | 5 | `rate5` | number, truncated to an unsigned integer | Rate for another state, 0x005101f4 (20). |
 
 **Returns** nothing.
@@ -408,7 +410,8 @@ CfgBurnRates(rate1, rate2, rate3, rate4, rate5)
 Stores five whole-number rates as floats; 0x00223280 picks one of them by the human's current movement state (and
 returns 0 otherwise).
 
-**Notes.** What is 'burned' (stamina, rage) per state is not traced.
+**Notes.** The first four are the power meter's drain per second (combat.md#power-meter), confirmed (runtime) for 0, 15
+and 15; rate5's state is not traced.
 
 - **Evidence:** confirmed (code) at `0x0023a658`; detail: traced
 - **Wrapper** `0x0035dc90` (registered by `RegisterBindings`); **calls** `0x0023a658` `Cfg_SetBurnRates`
@@ -471,8 +474,8 @@ CfgButtonMash(decay, pressGain, target)
 
 **Returns** nothing.
 
-Configures button-mash prompts (grapple struggles and similar): the value a mash counter must reach and two tuning
-integers.
+Configures the button-mash theft game (alternate L1 and R1, theft mode 1): the value the mash meter must reach and two
+tuning integers. Its only game reader is the theft update 0x0027e6d8; the grabbed player's struggle does not use it.
 
 **Notes.** The target's use is confirmed (code); the decay and the press gain are confirmed (code) at 0x0027e6d8, the
 stereo theft's mash mode (L1 and R1 held alternately), docs/research/combat.md.
@@ -1617,23 +1620,23 @@ CfgPowerClass(classId, p2, p3, p4, p5, p6, p7, p8, f9, f10, f11, f12, f13, f14, 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `classId` | number, truncated to an integer | Power class index; selects a 0x44-byte record at 0x006619a0 + classId x 0x44 (0-66 in the difficulty configs). |
-| 2 | `p2` | number, truncated to an integer | 16-bit value at +0x28 (e.g. 180-650: probably hit points). |
-| 3 | `p3` | number, truncated to an integer | 16-bit value at +0x2a (30-110). |
-| 4 | `p4` | number, truncated to an integer | 16-bit value at +0x2c (80-135). |
-| 5 | `p5` | number, truncated to an integer | 16-bit value at +0x2e (10-40). |
-| 6 | `p6` | number, truncated to an integer | 16-bit value at +0x34 (2000-2750: a time in ms, inferred). |
-| 7 | `p7` | number, truncated to an integer | 16-bit value at +0x30 (200-750). |
+| 2 | `p2` | number, truncated to an integer | 16-bit value at +0x28 (180-650): the power meter's maximum (400 for the player), 0x00223068. |
+| 3 | `p3` | number, truncated to an integer | 16-bit value at +0x2a (30-110): the power meter's refill per second (60 for the player). |
+| 4 | `p4` | number, truncated to an integer | 16-bit value at +0x2c (80-135): the stamina maximum, 0x00223188. |
+| 5 | `p5` | number, truncated to an integer | 16-bit value at +0x2e (10-40): the stamina refill per second. |
+| 6 | `p6` | number, truncated to an integer | 16-bit value at +0x34 (2000-2750): ms a knocked-down human stays down before rising, 0x0022f100. |
+| 7 | `p7` | number, truncated to an integer | 16-bit value at +0x30 (200-750): ms a stun lasts, 0x0022f658. |
 | 8 | `p8` | number, truncated to an integer | 16-bit value at +0x32 (300-750). |
-| 9 | `f9` | number (single precision) | Float at +0x00. |
-| 10 | `f10` | number (single precision) | Float at +0x04. |
+| 9 | `f9` | number (single precision) | Float at +0x00: as the attacker, multiplies the victim's stun for some weapon hits (damage 20-49), 0x0022f658. |
+| 10 | `f10` | number (single precision) | Float at +0x04: the hurt threshold; below this fraction of maximum health the human is hurt, 0x00222ff8. |
 | 11 | `f11` | number (single precision) | Float at +0x08. |
 | 12 | `f12` | number (single precision) | Float at +0x0c. |
-| 13 | `f13` | number (single precision) | Float at +0x10. |
-| 14 | `f14` | number (single precision) | Float at +0x14. |
+| 13 | `f13` | number (single precision) | Float at +0x10: the stun time's factor while hurt, 0x0022f658. |
+| 14 | `f14` | number (single precision) | Float at +0x14: the ground time's factor while hurt, 0x0022f100. |
 | 15 | `f15` | number (single precision) | Float at +0x18. |
-| 16 | `f16` | number (single precision) | Float at +0x1c. |
-| 17 | `f17` | number (single precision) | Float at +0x20. |
-| 18 | `n18` | number, truncated to an integer | Byte at +0x36, at least 1. |
+| 16 | `f16` | number (single precision) | Float at +0x1c: the AI attack delay's factor (CfgAttackDelay), 0x00223800. |
+| 17 | `f17` | number (single precision) | Float at +0x20: the AI attack delay's factor when the target is down, 0x00223800. |
+| 18 | `n18` | number, truncated to an integer | Byte at +0x36, at least 1: grab struggle divisor; a grabbed human's strike costs the grabber 1/n of its power, 0x0027fd68. |
 | 19 | `n19` | number, truncated to an integer | Byte at +0x37, clamped 0-15. |
 | 20 | `f20` | number (single precision) | Float at +0x24, clamped to 0-1. |
 | 21 | `n21` | number, truncated to an integer | Byte at +0x38, clamped 0-127. |
@@ -1654,9 +1657,9 @@ Fills one power class, the combat-strength profile a character type refers to: s
 run of small bytes, with the clamps listed per argument; it also marks the record as set (+0x43 = 1). The difficulty
 scripts (config_easy/normal/hard/fury and Rumble) each define the whole set, so the profile depends on difficulty.
 
-**Notes.** Layout and clamps confirmed (code) at 0x002288c0. The readers use computed addresses, so no field's game
-meaning has been traced; meanings in the argument list are guesses from the values. The record has 31 fields; Coney
-needs all of them stored even before their meaning is known.
+**Notes.** Layout and clamps confirmed (code) at 0x002288c0; the record is read through 0x00222b78. The meanings given
+in the argument list are confirmed (code) at the cited readers (combat.md and characters.md); the others are not traced.
+The record has 31 fields; Coney needs all of them stored even before their meaning is known.
 
 - **Evidence:** confirmed (code) at `0x002288c0`; detail: traced
 - **Wrapper** `0x00369868` (registered by `RegisterBindings`); **calls** `0x002288c0` `Cfg_SetPowerClass`

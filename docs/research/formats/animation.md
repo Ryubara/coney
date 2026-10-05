@@ -150,8 +150,8 @@ character keeps it at Character Data `+0xb54` (`+0xb50` the count); the human's 
 | `+0x04` | f32 | reach; 0 means the id has no range data | `0x002544a0` |
 | `+0x08` | s16 × 0.001 | a far range; when 0, `+0x04` × 1.25 | `0x00254508`; setter `0x002545a8` |
 | `+0x0a` | s16 | the move's **damage** ([Combat](../combat.md#damage-table)) | `0x002542e8`; setter `0x002548c8` |
-| `+0x0c` | s16 | a kind (10 by default; 0 maps to `0x26` in one state); the hit kind kept with pending damage (inferred) | `0x00254d60` |
-| `+0x0e` | u16 | flags choosing the playback rate: `0x800`, `0x1000`, `0x2000` or none ([rates](#playback-rate)) | `0x00104a38` |
+| `+0x0c` | s16 | the **hit code**: bits 0-1 direction, 2-3 height, 4-5 strength; 10 by default; picks the victim's reaction ([Combat](../combat.md#hit-codes)) | `0x00254d60`; `0x00266d00` |
+| `+0x0e` | u16 | flags: `0x400` the hit **stuns** (`0x0026a6d0`); `0x800`, `0x1000`, `0x2000` choose the playback rate ([rates](#playback-rate)); `0x100` seen on escapes and throws, not traced | `0x00104a38` |
 
 At runtime (Rembrandt-class player, PCSX2 2.9.94) `+0x00`, `+0x02` read as a unit vector × 1000: (0, 1000) for most
 ids, (999, -12) for 25 `SNAP_RIGHT_01`, (-1000, 0) for 27, (-39, -999) for 29, (351, 936) for 147; so a direction
