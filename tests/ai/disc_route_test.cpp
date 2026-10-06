@@ -98,8 +98,9 @@ TEST_CASE("every level's path data decodes and level99's routes are planned", "[
         const coney::anim::Vec3 from = map->nodes()[a].position;
         const coney::anim::Vec3 to = map->nodes()[b].position;
         auto plan = planner.request(from, to);
-        const coney::ai::Route* route = plan && plan->route.has_value() ? &plan->route.value() : nullptr;
-        if (route != nullptr) {
+        // A local: clang-tidy cannot follow a check through the outer expected.
+        const std::optional<coney::ai::Route> route = plan ? std::move(plan->route) : std::nullopt;
+        if (route) {
             ++routed;
             routeNodes += route->nodes().size();
         } else if (plan) {

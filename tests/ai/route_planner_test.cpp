@@ -94,8 +94,13 @@ TEST_CASE("a request fails off the polygons, between polygons off the graph, and
     for (std::size_t k = 0; k < coney::ai::kRoutePoolSize; ++k) {
         auto plan = planner.request({1.0F, 1.0F, 0.0F}, {1.0F, 9.0F, 0.0F});
         REQUIRE(plan.has_value());
-        REQUIRE(plan->route.has_value());
-        held.push_back(std::move(plan->route.value()));
+        // A local: clang-tidy cannot follow a check through the outer expected.
+        std::optional<coney::ai::Route> route = std::move(plan->route);
+        REQUIRE(route.has_value());
+        if (!route) {
+            return;
+        }
+        held.push_back(std::move(*route));
     }
     CHECK(planner.routesInUse() == coney::ai::kRoutePoolSize);
     CHECK(planner.request({1.0F, 1.0F, 0.0F}, {1.0F, 9.0F, 0.0F}).error() == MoveFailure::NoRoute);
@@ -136,6 +141,9 @@ TEST_CASE("the search walks the edges whose flags meet the mask and gives up whe
     const RoutePlanner planner(map);
     auto far = planner.search(0, 150, 1);
     REQUIRE(far.has_value());
+    if (!far) {
+        return;
+    }
     CHECK(far.value().nodes.size() == 151);
     CHECK(far.value().nodes.front() == 0);
     CHECK(far.value().nodes.back() == 150);
@@ -194,7 +202,12 @@ TEST_CASE("a route over a jump edge is kept when no way without one is cheaper",
     auto plan = planner.request({1.0F, 0.5F, 0.0F}, {1.0F, 5.5F, 0.0F});
     REQUIRE(plan.has_value());
     CHECK(nodesOf(*plan) == std::vector<std::uint32_t>{0, 1});
-    CHECK(plan->route.value().cost() == 64 - 8 + 320);
+    const std::optional<coney::ai::Route> route = std::move(plan->route);
+    REQUIRE(route.has_value());
+    if (!route) {
+        return;
+    }
+    CHECK(route->cost() == 64 - 8 + 320);
 }
 
 TEST_CASE("a route shortcuts to a node up to four ahead that links back", "[ai][routes]") {
@@ -215,6 +228,9 @@ TEST_CASE("a route shortcuts to a node up to four ahead that links back", "[ai][
     RoutePlanner planner(map, coney::ai::PlannerSettings{.extraCosts = true, .keepLeadingNodes = true});
     auto search = planner.search(0, 5, 1);
     REQUIRE(search.has_value());
+    if (!search) {
+        return;
+    }
     CHECK(search.value().nodes.size() == 6);
     auto plan = planner.request({0.5F, 0.5F, 0.0F}, {19.5F, 9.5F, 0.0F});
     REQUIRE(plan.has_value());
@@ -228,8 +244,12 @@ TEST_CASE("the follower moves on at each waypoint and skips the ones it reaches 
     RoutePlanner planner(map);
     auto plan = planner.request({1.0F, 1.0F, 0.0F}, {1.0F, 9.0F, 0.0F});
     REQUIRE(plan.has_value());
-    REQUIRE(plan->route.has_value());
-    coney::ai::RouteFollower follower(map, std::move(plan->route.value()), {1.0F, 1.0F, 0.0F}, {1.0F, 9.0F, 0.0F});
+    std::optional<coney::ai::Route> route = std::move(plan->route);
+    REQUIRE(route.has_value());
+    if (!route) {
+        return;
+    }
+    coney::ai::RouteFollower follower(map, std::move(*route), {1.0F, 1.0F, 0.0F}, {1.0F, 9.0F, 0.0F});
     CHECK(follower.waypoint(map, {1.0F, 1.0F, 0.0F}) == Vec3{9.0F, 1.0F, 0.0F});
     CHECK(follower.ahead().size() == 4);
     // At node 1: on to node 2, which it reaches, and on past it to node 3 (straight up the side).

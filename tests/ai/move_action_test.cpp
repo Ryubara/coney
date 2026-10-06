@@ -212,6 +212,9 @@ TEST_CASE("standing far off its way, a move turns on the spot before it walks", 
     scene.run(1);
     const std::optional<coney::human::BrainMove> first = brain.human().record().move;
     REQUIRE(first.has_value());
+    if (!first) {
+        return;
+    }
     CHECK(first.value().speed == 0.0F);
     CHECK(std::fabs(coney::human::wrapAngle(first.value().heading - radians(90.0F))) < 1e-3F);
     // It turns where it stands until it is within 30 degrees, then walks.
