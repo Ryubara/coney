@@ -8,7 +8,8 @@ is also the model's name and what scripts pass to create the object.
 !!! info "What is complete"
 
     Every object type (1,371) is listed with its class, type, physics shape, size and animations. The
-    category is our grouping by class. Arguments 2-5, 11 and 14-17 are not traced.
+    category is our grouping by class. Arguments 2-5, 11 and 14-17 are not traced. 1,293 show their
+    model; the other 78 have no Object List record under their name.
 
 1,371 entries. Data: `research/references/objects.yaml`.
 
@@ -16,1414 +17,1414 @@ is also the model's name and what scripts pass to create the object.
 
 172 entries.
 
-| Name | Class | Type | Shape | Size (m) |
-| --- | --- | --- | --- | --- |
-| <span id="obj-dyn-amp-a"></span>`dyn_amp_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.02, 0.35, 0.48 |
-| <span id="obj-dyn-amp-b"></span>`dyn_amp_b` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.84, 0.4, 0.62 |
-| <span id="obj-dyn-barstool-a"></span>`dyn_barstool_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.44, 0.4, 1.06 |
-| <span id="obj-dyn-baseball"></span>`dyn_baseball` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.15, 0.15, 0.16 |
-| <span id="obj-dyn-bat"></span>`dyn_bat` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.89, 0.08 |
-| <span id="obj-dyn-bat-fury"></span>`dyn_bat_fury` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.89, 0.08 |
-| <span id="obj-dyn-bat-tuff"></span>`dyn_bat_tuff` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.89, 0.08 |
-| <span id="obj-dyn-baton"></span>`dyn_baton` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.04, 0.6, 0.05 |
-| <span id="obj-dyn-beerbottle"></span>`dyn_beerbottle` | `thrown_weapon` | `TYPE_BOTTLE` | `OBB` | 0.1, 0.3, 0.09 |
-| <span id="obj-dyn-beerbottle-b"></span>`dyn_beerbottle_b` | `melee_weapon` | `TYPE_BROKENBOTTLE` | `OBB` | 0.1, 0.28, 0.09 |
-| <span id="obj-dyn-beerbottleheavy"></span>`dyn_beerbottleheavy` | `thrown_weapon` | `TYPE_BOTTLE` | `OBB` | 0.1, 0.3, 0.09 |
-| <span id="obj-dyn-boltcutter-b"></span>`dyn_boltcutter_b` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.02, 0.63, 0.17 |
-| <span id="obj-dyn-bong"></span>`dyn_bong` | `thrown_weapon` | `TYPE_GLASS` | `OBB` | 0.16, 0.24, 0.48 |
-| <span id="obj-dyn-bong-f"></span>`dyn_bong_f` | `thrown_weapon` | `TYPE_GLASS` | `OBB` | 0.36, 0.38, 0.81 |
-| <span id="obj-dyn-bowie"></span>`dyn_bowie` | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.03, 0.46, 0.08 |
-| <span id="obj-dyn-box-stereo"></span>`dyn_box_stereo` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.61, 0.39, 0.19 |
-| <span id="obj-dyn-brick"></span>`dyn_brick` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.07, 0.21, 0.1 |
-| <span id="obj-dyn-broom"></span>`dyn_broom` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.54, 1.68, 0.23 |
-| <span id="obj-dyn-bumcart-a"></span>`dyn_bumcart_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.63, 0.56, 1.23 |
-| <span id="obj-dyn-cane"></span>`dyn_cane` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.17, 1.01, 0.03 |
-| <span id="obj-dyn-carjunk-headlight"></span>`dyn_carjunk_headlight` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.21, 0.18, 0.22 |
-| <span id="obj-dyn-carjunk-muffler"></span>`dyn_carjunk_muffler` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.34, 0.15, 1.76 |
-| <span id="obj-dyn-cbox"></span>`dyn_cbox` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.53, 0.54, 0.52 |
-| <span id="obj-dyn-chair01"></span>`dyn_chair01_` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.53, 0.52, 1.2 |
-| <span id="obj-dyn-chair-b"></span>`dyn_chair_b` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.53, 0.52, 1.02 |
-| <span id="obj-dyn-chair-bd"></span>`dyn_chair_bd` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.06, 0.66, 0.05 |
-| <span id="obj-dyn-chair-k"></span>`dyn_chair_k` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.57, 0.52, 1.1 |
-| <span id="obj-dyn-chair-kd"></span>`dyn_chair_kd` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.06, 0.66, 0.05 |
-| <span id="obj-dyn-chair-w"></span>`dyn_chair_w` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.53, 0.52, 1.02 |
-| <span id="obj-dyn-chair-wd"></span>`dyn_chair_wd` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.06, 0.66, 0.05 |
-| <span id="obj-dyn-chi-axe"></span>`dyn_chi_axe` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.11, 1.22, 0.43 |
-| <span id="obj-dyn-chi-broadsword"></span>`dyn_chi_broadsword` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.11, 1.23, 0.39 |
-| <span id="obj-dyn-chi-hooksword"></span>`dyn_chi_hooksword` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 1.01, 0.19 |
-| <span id="obj-dyn-chi-lt-kwandao"></span>`dyn_chi_lt_kwandao` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.16, 2.45, 0.4 |
-| <span id="obj-dyn-chi-lt-spikestaff"></span>`dyn_chi_lt_spikestaff` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.37, 1.54, 0.37 |
-| <span id="obj-dyn-chi-throwaxe"></span>`dyn_chi_throwaxe` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.02, 0.45, 0.17 |
-| <span id="obj-dyn-chibroom"></span>`dyn_chibroom` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.31, 1.52, 0.34 |
-| <span id="obj-dyn-cinderblok"></span>`dyn_cinderblok` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.47, 0.27, 0.17 |
-| <span id="obj-dyn-cleaver"></span>`dyn_cleaver` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 0.55, 0.16 |
-| <span id="obj-dyn-cny-mallet"></span>`dyn_cny_mallet` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.2, 0.52, 0.23 |
-| <span id="obj-dyn-cny-plunger"></span>`dyn_cny_plunger` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.2, 0.78, 0.23 |
-| <span id="obj-dyn-cny-skullhead-a"></span>`dyn_cny_skullhead_a` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.21, 0.26, 0.32 |
-| <span id="obj-dyn-cny-tnt-keg"></span>`dyn_cny_tnt_keg` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.35, 0.53 |
-| <span id="obj-dyn-crate-ac"></span>`dyn_crate_ac` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 0.87, 0.09 |
-| <span id="obj-dyn-crate-ae"></span>`dyn_crate_ae` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 0.87, 0.09 |
-| <span id="obj-dyn-crate-c"></span>`dyn_crate_c` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.9, 0.9, 0.9 |
-| <span id="obj-dyn-crate-d"></span>`dyn_crate_d` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.93, 0.65, 0.44 |
-| <span id="obj-dyn-crate-e"></span>`dyn_crate_e` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.48, 0.48, 0.44 |
-| <span id="obj-dyn-crowbar"></span>`dyn_crowbar` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.11, 0.81, 0.06 |
-| <span id="obj-dyn-crutch"></span>`dyn_crutch` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.07, 1.46, 0.23 |
-| <span id="obj-dyn-cueball"></span>`dyn_cueball` | `thrown_weapon` | `TYPE_BRICK` | `SPHERE` | 0.11, 0.11, 0.12 |
-| <span id="obj-dyn-detergent"></span>`dyn_detergent` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.42, 0.26, 0.9 |
-| <span id="obj-dyn-diego-weapon"></span>`dyn_diego_weapon` | `melee_weapon` | `TYPE_DIEGO_WEAPON` | `OBB` | 0.16, 2.51, 0.26 |
-| <span id="obj-dyn-dogdish"></span>`dyn_dogdish` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.3, 0.27, 0.22 |
-| <span id="obj-dyn-donut-a"></span>`dyn_donut_a` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.09, 0.12, 0.09 |
-| <span id="obj-dyn-donut-a-new"></span>`dyn_donut_a_new` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.09, 0.12, 0.09 |
-| <span id="obj-dyn-donut-b"></span>`dyn_donut_b` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.11, 0.13, 0.11 |
-| <span id="obj-dyn-donut-b-new"></span>`dyn_donut_b_new` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.11, 0.13, 0.11 |
-| <span id="obj-dyn-donut-c"></span>`dyn_donut_c` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.1, 0.12, 0.09 |
-| <span id="obj-dyn-donut-c-new"></span>`dyn_donut_c_new` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.1, 0.12, 0.09 |
-| <span id="obj-dyn-drumkit-a"></span>`dyn_drumkit_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.55, 0.53, 1.13 |
-| <span id="obj-dyn-drumkit-b"></span>`dyn_drumkit_b` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.59, 0.57, 0.82 |
-| <span id="obj-dyn-drumkit-c"></span>`dyn_drumkit_c` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.48, 0.52, 0.49 |
-| <span id="obj-dyn-drumkit-d"></span>`dyn_drumkit_d` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.98, 0.5, 0.83 |
-| <span id="obj-dyn-drumkit-e"></span>`dyn_drumkit_e` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.66, 0.71, 1.62 |
-| <span id="obj-dyn-drumkit-f"></span>`dyn_drumkit_f` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.52, 0.47, 0.9 |
-| <span id="obj-dyn-drumstick"></span>`dyn_drumstick` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.02, 0.46, 0.02 |
-| <span id="obj-dyn-dryer-b"></span>`dyn_dryer_b` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.92, 0.91, 1.33 |
-| <span id="obj-dyn-dryer-weap"></span>`dyn_dryer_weap` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.91, 0.92, 1.33 |
-| <span id="obj-dyn-fencep"></span>`dyn_fencep` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 1.04, 0.09 |
-| <span id="obj-dyn-fireex"></span>`dyn_fireex` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.41, 0.26, 0.97 |
-| <span id="obj-dyn-flamingo"></span>`dyn_flamingo` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.75, 0.11, 0.95 |
-| <span id="obj-dyn-foamhand"></span>`dyn_foamhand` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.36, 0.12, 0.71 |
-| <span id="obj-dyn-fridge-c"></span>`dyn_fridge_c` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.92, 0.89, 1.93 |
-| <span id="obj-dyn-fridge-weap"></span>`dyn_fridge_weap` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.92, 0.84, 1.93 |
-| <span id="obj-dyn-garba0"></span>`dyn_garba0_` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-gascan"></span>`dyn_gascan` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.16, 0.5 |
-| <span id="obj-dyn-gbags"></span>`dyn_gbags` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.75, 0.68, 0.9 |
-| <span id="obj-dyn-guitar-a"></span>`dyn_guitar_a` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.05, 1.15, 0.36 |
-| <span id="obj-dyn-guitar-b"></span>`dyn_guitar_b` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.05, 1.18, 0.41 |
-| <span id="obj-dyn-guitar-c"></span>`dyn_guitar_c` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.13, 1.11, 0.42 |
-| <span id="obj-dyn-guitar-d"></span>`dyn_guitar_d` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.05, 1.36, 0.44 |
-| <span id="obj-dyn-hobo-gbags"></span>`dyn_hobo_gbags` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.75, 0.68, 0.9 |
-| <span id="obj-dyn-hobo-trashcan"></span>`dyn_hobo_trashcan` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.84, 0.74, 0.97 |
-| <span id="obj-dyn-hockey"></span>`dyn_hockey` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.04, 1.65, 0.31 |
-| <span id="obj-dyn-hoe"></span>`dyn_hoe` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.18, 1.09, 0.18 |
-| <span id="obj-dyn-hotdog-c"></span>`dyn_hotdog_c` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.05, 0.21, 0.06 |
-| <span id="obj-dyn-hunter"></span>`dyn_hunter` | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.02, 0.38, 0.07 |
-| <span id="obj-dyn-icecream-a"></span>`dyn_icecream_a` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.1, 0.27, 0.11 |
-| <span id="obj-dyn-keyboard"></span>`dyn_keyboard` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.42, 0.4, 0.11 |
-| <span id="obj-dyn-lamp-a"></span>`dyn_lamp_a` | `overhead_weapon` | `TYPE_BRICK` | `OBB` | 0.4, 0.34, 0.56 |
-| <span id="obj-dyn-laundrybasket-a"></span>`dyn_laundrybasket_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.77, 0.41, 0.56 |
-| <span id="obj-dyn-lawnchair-a"></span>`dyn_lawnchair_a` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.77, 0.86, 1.12 |
-| <span id="obj-dyn-lawnchair-b"></span>`dyn_lawnchair_b` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.77, 0.86, 1.12 |
-| <span id="obj-dyn-lt-bat-blk-a"></span>`dyn_lt_bat_blk_a` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.23, 1.07, 0.18 |
-| <span id="obj-dyn-lt-bat-blk-b"></span>`dyn_lt_bat_blk_b` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.1, 1.07, 0.11 |
-| <span id="obj-dyn-lt-razorbat"></span>`dyn_lt_razorbat` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.21, 1.08, 0.21 |
-| <span id="obj-dyn-mace"></span>`dyn_mace` | `melee_weapon` | `TYPE_MACE` | `OBB` | 0.07, 0.2, 0.05 |
-| <span id="obj-dyn-machet"></span>`dyn_machet` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 0.89, 0.14 |
-| <span id="obj-dyn-manqhead"></span>`dyn_manqhead` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.17, 0.21, 0.29 |
-| <span id="obj-dyn-mask-a"></span>`dyn_mask_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.19, 0.66 |
-| <span id="obj-dyn-mask-b"></span>`dyn_mask_b` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.16, 0.6 |
-| <span id="obj-dyn-mask-c"></span>`dyn_mask_c` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.3, 0.11, 0.76 |
-| <span id="obj-dyn-mask-d"></span>`dyn_mask_d` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.03, 0.77, 1.85 |
-| <span id="obj-dyn-meatscale"></span>`dyn_meatscale` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.21, 0.19, 0.26 |
-| <span id="obj-dyn-mug"></span>`dyn_mug` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.11, 0.13, 0.13 |
-| <span id="obj-dyn-mug-new"></span>`dyn_mug_new` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.11, 0.13, 0.13 |
-| <span id="obj-dyn-newsps"></span>`dyn_newsps` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.71, 0.62, 0.52 |
-| <span id="obj-dyn-oilcan"></span>`dyn_oilcan` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.17 |
-| <span id="obj-dyn-oilcan-bird"></span>`dyn_oilcan_bird` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.17 |
-| <span id="obj-dyn-paintcan"></span>`dyn_paintcan` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.22, 0.22, 0.26 |
-| <span id="obj-dyn-paintcan-sm"></span>`dyn_paintcan_sm` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.15 |
-| <span id="obj-dyn-pan"></span>`dyn_pan` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.28, 0.46, 0.07 |
-| <span id="obj-dyn-pan-b"></span>`dyn_pan_b` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.28, 0.46, 0.07 |
-| <span id="obj-dyn-parktrash-a"></span>`dyn_parktrash_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.68, 0.73, 0.92 |
-| <span id="obj-dyn-pimpcane"></span>`dyn_pimpcane` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.07, 0.88, 0.06 |
-| <span id="obj-dyn-pipe-a"></span>`dyn_pipe_a` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.25, 0.76, 0.06 |
-| <span id="obj-dyn-pitchfork"></span>`dyn_pitchfork` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.26, 1.09, 0.06 |
-| <span id="obj-dyn-poolball08"></span>`dyn_poolball08_` | `thrown_weapon` | `TYPE_BRICK` | `SPHERE` | 0.11, 0.11, 0.12 |
-| <span id="obj-dyn-poolcue"></span>`dyn_poolcue` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.05, 1.61, 0.05 |
-| <span id="obj-dyn-porcelain-weap-b"></span>`dyn_porcelain_weap_b` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.63, 0.88, 0.96 |
-| <span id="obj-dyn-porcelain-weap-c"></span>`dyn_porcelain_weap_c` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.67, 0.63, 1.14 |
-| <span id="obj-dyn-pot"></span>`dyn_pot` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.46, 0.77, 0.15 |
-| <span id="obj-dyn-pot-b"></span>`dyn_pot_b` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.46, 0.77, 0.15 |
-| <span id="obj-dyn-pstack"></span>`dyn_pstack` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.68, 0.68, 0.43 |
-| <span id="obj-dyn-pullcart-a"></span>`dyn_pullcart_a_` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.79, 0.95, 1.13 |
-| <span id="obj-dyn-pylon"></span>`dyn_pylon` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.37, 0.52 |
-| <span id="obj-dyn-rake"></span>`dyn_rake` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.39, 1.08, 0.06 |
-| <span id="obj-dyn-record-b"></span>`dyn_record_b` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.3, 0.3, 0 |
-| <span id="obj-dyn-rice-steamer"></span>`dyn_rice_steamer` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.34, 0.25, 0.15 |
-| <span id="obj-dyn-ricebag-a"></span>`dyn_ricebag_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.65, 0.74, 0.66 |
-| <span id="obj-dyn-ricebag-b"></span>`dyn_ricebag_b` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.74, 0.48, 0.18 |
-| <span id="obj-dyn-salami"></span>`dyn_salami` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.08, 0.61, 0.08 |
-| <span id="obj-dyn-shack-door-a"></span>`dyn_shack_door_a` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.02, 0.06, 1.16 |
-| <span id="obj-dyn-shack-door-b"></span>`dyn_shack_door_b` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.02, 0.06, 1.16 |
-| <span id="obj-dyn-shovel"></span>`dyn_shovel` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.25, 1.06, 0.11 |
-| <span id="obj-dyn-skullcandle"></span>`dyn_skullcandle` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.24, 0.36, 0.41 |
-| <span id="obj-dyn-skullstick"></span>`dyn_skullstick` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.14, 1.07, 0.19 |
-| <span id="obj-dyn-sledgehammer"></span>`dyn_sledgehammer` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.76, 0.18 |
-| <span id="obj-dyn-speaker"></span>`dyn_speaker` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.38, 0.66 |
-| <span id="obj-dyn-spider"></span>`dyn_spider` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.96, 0.68, 0.26 |
-| <span id="obj-dyn-spikebat"></span>`dyn_spikebat` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.89, 0.08 |
-| <span id="obj-dyn-steak"></span>`dyn_steak` | `thrown_weapon` | `TYPE_BRICK` | `SPHERE` | 0.22, 0.31, 0.04 |
-| <span id="obj-dyn-stereo"></span>`dyn_stereo` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.56, 0.39, 0.17 |
-| <span id="obj-dyn-swhbld"></span>`dyn_swhbld` | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.04, 0.32, 0.04 |
-| <span id="obj-dyn-swhbld-movie"></span>`dyn_swhbld_movie` | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.04, 0.32, 0.04 |
-| <span id="obj-dyn-swhbld-super"></span>`dyn_swhbld_super` | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.03, 0.46, 0.08 |
-| <span id="obj-dyn-table-bc"></span>`dyn_table_bc` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.1, 0.66, 0.11 |
-| <span id="obj-dyn-table-kc"></span>`dyn_table_kc` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.12, 0.71, 0.12 |
-| <span id="obj-dyn-table-wc"></span>`dyn_table_wc` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.08, 0.74, 0.08 |
-| <span id="obj-dyn-tire"></span>`dyn_tire` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.72, 0.69, 0.23 |
-| <span id="obj-dyn-tknife"></span>`dyn_tknife` | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.03, 0.46, 0.08 |
-| <span id="obj-dyn-trashcan"></span>`dyn_trashcan` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.84, 0.74, 0.97 |
-| <span id="obj-dyn-tricycle"></span>`dyn_tricycle` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.85, 0.74, 0.55 |
-| <span id="obj-dyn-trnyrd-sign-ab"></span>`dyn_trnyrd_sign_ab` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.38, 2.63, 0.21 |
-| <span id="obj-dyn-turkey"></span>`dyn_turkey` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.35, 0.41, 0.16 |
-| <span id="obj-dyn-tv"></span>`dyn_tv` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.51, 0.46, 0.42 |
-| <span id="obj-dyn-tvlarge-weap"></span>`dyn_tvlarge_weap` | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.26, 0.88, 0.86 |
-| <span id="obj-dyn-tvsmall"></span>`dyn_tvsmall` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.6, 0.46, 0.42 |
-| <span id="obj-dyn-vargas-bookcase-a"></span>`dyn_vargas_bookcase_a` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 1.13, 0.42, 1.44 |
-| <span id="obj-dyn-vargas-lamp"></span>`dyn_vargas_lamp` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.4, 0.35, 0.63 |
-| <span id="obj-dyn-vargas-plate"></span>`dyn_vargas_plate` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.37, 0.37, 0.03 |
-| <span id="obj-dyn-vargas-sofa"></span>`dyn_vargas_sofa` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 1.87, 0.72, 0.9 |
-| <span id="obj-dyn-vargas-stove-a"></span>`dyn_vargas_stove_a` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.95, 1.18, 1.36 |
-| <span id="obj-dyn-vargas-vase"></span>`dyn_vargas_vase` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.29, 0.27, 0.44 |
-| <span id="obj-dyn-vargas-washer-a"></span>`dyn_vargas_washer_a` | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.95, 1.05, 1.36 |
-| <span id="obj-dyn-vchicken"></span>`dyn_vchicken` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.4, 0.26, 0.35 |
-| <span id="obj-dyn-vchicken-b"></span>`dyn_vchicken_b` | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.23, 0.69, 0.25 |
-| <span id="obj-dyn-wok"></span>`dyn_wok` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.46, 0.77, 0.15 |
-| <span id="obj-dyn-woodbarb"></span>`dyn_woodbarb` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.19, 0.89, 0.19 |
-| <span id="obj-dyn-woodboard"></span>`dyn_woodboard` | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.17, 1.04, 0.09 |
-| <span id="obj-dyn-wrenchplumb"></span>`dyn_wrenchplumb` | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.04, 0.58, 0.16 |
+| Name | Image | Class | Type | Shape | Size (m) |
+| --- | --- | --- | --- | --- | --- |
+| <span id="obj-dyn-amp-a"></span>`dyn_amp_a` | ![objects/dyn_amp_a.png](images/objects/dyn_amp_a.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.02, 0.35, 0.48 |
+| <span id="obj-dyn-amp-b"></span>`dyn_amp_b` | ![objects/dyn_amp_b.png](images/objects/dyn_amp_b.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.84, 0.4, 0.62 |
+| <span id="obj-dyn-barstool-a"></span>`dyn_barstool_a` | ![objects/dyn_barstool_a.png](images/objects/dyn_barstool_a.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.44, 0.4, 1.06 |
+| <span id="obj-dyn-baseball"></span>`dyn_baseball` | ![objects/dyn_baseball.png](images/objects/dyn_baseball.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.15, 0.15, 0.16 |
+| <span id="obj-dyn-bat"></span>`dyn_bat` | ![objects/dyn_bat.png](images/objects/dyn_bat.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.89, 0.08 |
+| <span id="obj-dyn-bat-fury"></span>`dyn_bat_fury` | ![objects/dyn_bat_fury.png](images/objects/dyn_bat_fury.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.89, 0.08 |
+| <span id="obj-dyn-bat-tuff"></span>`dyn_bat_tuff` | ![objects/dyn_bat_tuff.png](images/objects/dyn_bat_tuff.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.89, 0.08 |
+| <span id="obj-dyn-baton"></span>`dyn_baton` | ![objects/dyn_baton.png](images/objects/dyn_baton.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.04, 0.6, 0.05 |
+| <span id="obj-dyn-beerbottle"></span>`dyn_beerbottle` | ![objects/dyn_beerbottle.png](images/objects/dyn_beerbottle.png){ width="96" } | `thrown_weapon` | `TYPE_BOTTLE` | `OBB` | 0.1, 0.3, 0.09 |
+| <span id="obj-dyn-beerbottle-b"></span>`dyn_beerbottle_b` | ![objects/dyn_beerbottle_b.png](images/objects/dyn_beerbottle_b.png){ width="96" } | `melee_weapon` | `TYPE_BROKENBOTTLE` | `OBB` | 0.1, 0.28, 0.09 |
+| <span id="obj-dyn-beerbottleheavy"></span>`dyn_beerbottleheavy` | ![objects/dyn_beerbottleheavy.png](images/objects/dyn_beerbottleheavy.png){ width="96" } | `thrown_weapon` | `TYPE_BOTTLE` | `OBB` | 0.1, 0.3, 0.09 |
+| <span id="obj-dyn-boltcutter-b"></span>`dyn_boltcutter_b` | ![objects/dyn_boltcutter_b.png](images/objects/dyn_boltcutter_b.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.02, 0.63, 0.17 |
+| <span id="obj-dyn-bong"></span>`dyn_bong` | ![objects/dyn_bong.png](images/objects/dyn_bong.png){ width="96" } | `thrown_weapon` | `TYPE_GLASS` | `OBB` | 0.16, 0.24, 0.48 |
+| <span id="obj-dyn-bong-f"></span>`dyn_bong_f` | ![objects/dyn_bong_f.png](images/objects/dyn_bong_f.png){ width="96" } | `thrown_weapon` | `TYPE_GLASS` | `OBB` | 0.36, 0.38, 0.81 |
+| <span id="obj-dyn-bowie"></span>`dyn_bowie` | ![objects/dyn_bowie.png](images/objects/dyn_bowie.png){ width="96" } | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.03, 0.46, 0.08 |
+| <span id="obj-dyn-box-stereo"></span>`dyn_box_stereo` | ![objects/dyn_box_stereo.png](images/objects/dyn_box_stereo.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.61, 0.39, 0.19 |
+| <span id="obj-dyn-brick"></span>`dyn_brick` | ![objects/dyn_brick.png](images/objects/dyn_brick.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.07, 0.21, 0.1 |
+| <span id="obj-dyn-broom"></span>`dyn_broom` | ![objects/dyn_broom.png](images/objects/dyn_broom.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.54, 1.68, 0.23 |
+| <span id="obj-dyn-bumcart-a"></span>`dyn_bumcart_a` | ![objects/dyn_bumcart_a.png](images/objects/dyn_bumcart_a.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.63, 0.56, 1.23 |
+| <span id="obj-dyn-cane"></span>`dyn_cane` | ![objects/dyn_cane.png](images/objects/dyn_cane.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.17, 1.01, 0.03 |
+| <span id="obj-dyn-carjunk-headlight"></span>`dyn_carjunk_headlight` | ![objects/dyn_carjunk_headlight.png](images/objects/dyn_carjunk_headlight.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.21, 0.18, 0.22 |
+| <span id="obj-dyn-carjunk-muffler"></span>`dyn_carjunk_muffler` | ![objects/dyn_carjunk_muffler.png](images/objects/dyn_carjunk_muffler.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.34, 0.15, 1.76 |
+| <span id="obj-dyn-cbox"></span>`dyn_cbox` | ![objects/dyn_cbox.png](images/objects/dyn_cbox.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.53, 0.54, 0.52 |
+| <span id="obj-dyn-chair01"></span>`dyn_chair01_` | ![objects/dyn_chair01_.png](images/objects/dyn_chair01_.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.53, 0.52, 1.2 |
+| <span id="obj-dyn-chair-b"></span>`dyn_chair_b` | ![objects/dyn_chair_b.png](images/objects/dyn_chair_b.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.53, 0.52, 1.02 |
+| <span id="obj-dyn-chair-bd"></span>`dyn_chair_bd` | ![objects/dyn_chair_bd.png](images/objects/dyn_chair_bd.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.06, 0.66, 0.05 |
+| <span id="obj-dyn-chair-k"></span>`dyn_chair_k` | ![objects/dyn_chair_k.png](images/objects/dyn_chair_k.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.57, 0.52, 1.1 |
+| <span id="obj-dyn-chair-kd"></span>`dyn_chair_kd` | ![objects/dyn_chair_kd.png](images/objects/dyn_chair_kd.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.06, 0.66, 0.05 |
+| <span id="obj-dyn-chair-w"></span>`dyn_chair_w` | ![objects/dyn_chair_w.png](images/objects/dyn_chair_w.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.53, 0.52, 1.02 |
+| <span id="obj-dyn-chair-wd"></span>`dyn_chair_wd` | ![objects/dyn_chair_wd.png](images/objects/dyn_chair_wd.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.06, 0.66, 0.05 |
+| <span id="obj-dyn-chi-axe"></span>`dyn_chi_axe` | ![objects/dyn_chi_axe.png](images/objects/dyn_chi_axe.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.11, 1.22, 0.43 |
+| <span id="obj-dyn-chi-broadsword"></span>`dyn_chi_broadsword` | ![objects/dyn_chi_broadsword.png](images/objects/dyn_chi_broadsword.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.11, 1.23, 0.39 |
+| <span id="obj-dyn-chi-hooksword"></span>`dyn_chi_hooksword` | ![objects/dyn_chi_hooksword.png](images/objects/dyn_chi_hooksword.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 1.01, 0.19 |
+| <span id="obj-dyn-chi-lt-kwandao"></span>`dyn_chi_lt_kwandao` | ![objects/dyn_chi_lt_kwandao.png](images/objects/dyn_chi_lt_kwandao.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.16, 2.45, 0.4 |
+| <span id="obj-dyn-chi-lt-spikestaff"></span>`dyn_chi_lt_spikestaff` | ![objects/dyn_chi_lt_spikestaff.png](images/objects/dyn_chi_lt_spikestaff.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.37, 1.54, 0.37 |
+| <span id="obj-dyn-chi-throwaxe"></span>`dyn_chi_throwaxe` | ![objects/dyn_chi_throwaxe.png](images/objects/dyn_chi_throwaxe.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.02, 0.45, 0.17 |
+| <span id="obj-dyn-chibroom"></span>`dyn_chibroom` | ![objects/dyn_chibroom.png](images/objects/dyn_chibroom.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.31, 1.52, 0.34 |
+| <span id="obj-dyn-cinderblok"></span>`dyn_cinderblok` | ![objects/dyn_cinderblok.png](images/objects/dyn_cinderblok.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.47, 0.27, 0.17 |
+| <span id="obj-dyn-cleaver"></span>`dyn_cleaver` | ![objects/dyn_cleaver.png](images/objects/dyn_cleaver.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 0.55, 0.16 |
+| <span id="obj-dyn-cny-mallet"></span>`dyn_cny_mallet` | ![objects/dyn_cny_mallet.png](images/objects/dyn_cny_mallet.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.2, 0.52, 0.23 |
+| <span id="obj-dyn-cny-plunger"></span>`dyn_cny_plunger` | ![objects/dyn_cny_plunger.png](images/objects/dyn_cny_plunger.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.2, 0.78, 0.23 |
+| <span id="obj-dyn-cny-skullhead-a"></span>`dyn_cny_skullhead_a` | ![objects/dyn_cny_skullhead_a.png](images/objects/dyn_cny_skullhead_a.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.21, 0.26, 0.32 |
+| <span id="obj-dyn-cny-tnt-keg"></span>`dyn_cny_tnt_keg` | ![objects/dyn_cny_tnt_keg.png](images/objects/dyn_cny_tnt_keg.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.35, 0.53 |
+| <span id="obj-dyn-crate-ac"></span>`dyn_crate_ac` | ![objects/dyn_crate_ac.png](images/objects/dyn_crate_ac.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 0.87, 0.09 |
+| <span id="obj-dyn-crate-ae"></span>`dyn_crate_ae` | | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 0.87, 0.09 |
+| <span id="obj-dyn-crate-c"></span>`dyn_crate_c` | ![objects/dyn_crate_c.png](images/objects/dyn_crate_c.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.9, 0.9, 0.9 |
+| <span id="obj-dyn-crate-d"></span>`dyn_crate_d` | ![objects/dyn_crate_d.png](images/objects/dyn_crate_d.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.93, 0.65, 0.44 |
+| <span id="obj-dyn-crate-e"></span>`dyn_crate_e` | ![objects/dyn_crate_e.png](images/objects/dyn_crate_e.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.48, 0.48, 0.44 |
+| <span id="obj-dyn-crowbar"></span>`dyn_crowbar` | ![objects/dyn_crowbar.png](images/objects/dyn_crowbar.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.11, 0.81, 0.06 |
+| <span id="obj-dyn-crutch"></span>`dyn_crutch` | ![objects/dyn_crutch.png](images/objects/dyn_crutch.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.07, 1.46, 0.23 |
+| <span id="obj-dyn-cueball"></span>`dyn_cueball` | ![objects/dyn_cueball.png](images/objects/dyn_cueball.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `SPHERE` | 0.11, 0.11, 0.12 |
+| <span id="obj-dyn-detergent"></span>`dyn_detergent` | ![objects/dyn_detergent.png](images/objects/dyn_detergent.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.42, 0.26, 0.9 |
+| <span id="obj-dyn-diego-weapon"></span>`dyn_diego_weapon` | ![objects/dyn_diego_weapon.png](images/objects/dyn_diego_weapon.png){ width="96" } | `melee_weapon` | `TYPE_DIEGO_WEAPON` | `OBB` | 0.16, 2.51, 0.26 |
+| <span id="obj-dyn-dogdish"></span>`dyn_dogdish` | ![objects/dyn_dogdish.png](images/objects/dyn_dogdish.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.3, 0.27, 0.22 |
+| <span id="obj-dyn-donut-a"></span>`dyn_donut_a` | ![objects/dyn_donut_a.png](images/objects/dyn_donut_a.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.09, 0.12, 0.09 |
+| <span id="obj-dyn-donut-a-new"></span>`dyn_donut_a_new` | ![objects/dyn_donut_a_new.png](images/objects/dyn_donut_a_new.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.09, 0.12, 0.09 |
+| <span id="obj-dyn-donut-b"></span>`dyn_donut_b` | ![objects/dyn_donut_b.png](images/objects/dyn_donut_b.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.11, 0.13, 0.11 |
+| <span id="obj-dyn-donut-b-new"></span>`dyn_donut_b_new` | ![objects/dyn_donut_b_new.png](images/objects/dyn_donut_b_new.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.11, 0.13, 0.11 |
+| <span id="obj-dyn-donut-c"></span>`dyn_donut_c` | ![objects/dyn_donut_c.png](images/objects/dyn_donut_c.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.1, 0.12, 0.09 |
+| <span id="obj-dyn-donut-c-new"></span>`dyn_donut_c_new` | ![objects/dyn_donut_c_new.png](images/objects/dyn_donut_c_new.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.1, 0.12, 0.09 |
+| <span id="obj-dyn-drumkit-a"></span>`dyn_drumkit_a` | ![objects/dyn_drumkit_a.png](images/objects/dyn_drumkit_a.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.55, 0.53, 1.13 |
+| <span id="obj-dyn-drumkit-b"></span>`dyn_drumkit_b` | ![objects/dyn_drumkit_b.png](images/objects/dyn_drumkit_b.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.59, 0.57, 0.82 |
+| <span id="obj-dyn-drumkit-c"></span>`dyn_drumkit_c` | ![objects/dyn_drumkit_c.png](images/objects/dyn_drumkit_c.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.48, 0.52, 0.49 |
+| <span id="obj-dyn-drumkit-d"></span>`dyn_drumkit_d` | ![objects/dyn_drumkit_d.png](images/objects/dyn_drumkit_d.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.98, 0.5, 0.83 |
+| <span id="obj-dyn-drumkit-e"></span>`dyn_drumkit_e` | ![objects/dyn_drumkit_e.png](images/objects/dyn_drumkit_e.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.66, 0.71, 1.62 |
+| <span id="obj-dyn-drumkit-f"></span>`dyn_drumkit_f` | ![objects/dyn_drumkit_f.png](images/objects/dyn_drumkit_f.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.52, 0.47, 0.9 |
+| <span id="obj-dyn-drumstick"></span>`dyn_drumstick` | ![objects/dyn_drumstick.png](images/objects/dyn_drumstick.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.02, 0.46, 0.02 |
+| <span id="obj-dyn-dryer-b"></span>`dyn_dryer_b` | ![objects/dyn_dryer_b.png](images/objects/dyn_dryer_b.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.92, 0.91, 1.33 |
+| <span id="obj-dyn-dryer-weap"></span>`dyn_dryer_weap` | ![objects/dyn_dryer_weap.png](images/objects/dyn_dryer_weap.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.91, 0.92, 1.33 |
+| <span id="obj-dyn-fencep"></span>`dyn_fencep` | ![objects/dyn_fencep.png](images/objects/dyn_fencep.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 1.04, 0.09 |
+| <span id="obj-dyn-fireex"></span>`dyn_fireex` | ![objects/dyn_fireex.png](images/objects/dyn_fireex.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.41, 0.26, 0.97 |
+| <span id="obj-dyn-flamingo"></span>`dyn_flamingo` | ![objects/dyn_flamingo.png](images/objects/dyn_flamingo.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.75, 0.11, 0.95 |
+| <span id="obj-dyn-foamhand"></span>`dyn_foamhand` | ![objects/dyn_foamhand.png](images/objects/dyn_foamhand.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.36, 0.12, 0.71 |
+| <span id="obj-dyn-fridge-c"></span>`dyn_fridge_c` | ![objects/dyn_fridge_c.png](images/objects/dyn_fridge_c.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.92, 0.89, 1.93 |
+| <span id="obj-dyn-fridge-weap"></span>`dyn_fridge_weap` | ![objects/dyn_fridge_weap.png](images/objects/dyn_fridge_weap.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.92, 0.84, 1.93 |
+| <span id="obj-dyn-garba0"></span>`dyn_garba0_` | ![objects/dyn_garba0_.png](images/objects/dyn_garba0_.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-gascan"></span>`dyn_gascan` | ![objects/dyn_gascan.png](images/objects/dyn_gascan.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.16, 0.5 |
+| <span id="obj-dyn-gbags"></span>`dyn_gbags` | ![objects/dyn_gbags.png](images/objects/dyn_gbags.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.75, 0.68, 0.9 |
+| <span id="obj-dyn-guitar-a"></span>`dyn_guitar_a` | ![objects/dyn_guitar_a.png](images/objects/dyn_guitar_a.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.05, 1.15, 0.36 |
+| <span id="obj-dyn-guitar-b"></span>`dyn_guitar_b` | ![objects/dyn_guitar_b.png](images/objects/dyn_guitar_b.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.05, 1.18, 0.41 |
+| <span id="obj-dyn-guitar-c"></span>`dyn_guitar_c` | ![objects/dyn_guitar_c.png](images/objects/dyn_guitar_c.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.13, 1.11, 0.42 |
+| <span id="obj-dyn-guitar-d"></span>`dyn_guitar_d` | ![objects/dyn_guitar_d.png](images/objects/dyn_guitar_d.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.05, 1.36, 0.44 |
+| <span id="obj-dyn-hobo-gbags"></span>`dyn_hobo_gbags` | ![objects/dyn_hobo_gbags.png](images/objects/dyn_hobo_gbags.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.75, 0.68, 0.9 |
+| <span id="obj-dyn-hobo-trashcan"></span>`dyn_hobo_trashcan` | ![objects/dyn_hobo_trashcan.png](images/objects/dyn_hobo_trashcan.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.84, 0.74, 0.97 |
+| <span id="obj-dyn-hockey"></span>`dyn_hockey` | ![objects/dyn_hockey.png](images/objects/dyn_hockey.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.04, 1.65, 0.31 |
+| <span id="obj-dyn-hoe"></span>`dyn_hoe` | ![objects/dyn_hoe.png](images/objects/dyn_hoe.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.18, 1.09, 0.18 |
+| <span id="obj-dyn-hotdog-c"></span>`dyn_hotdog_c` | ![objects/dyn_hotdog_c.png](images/objects/dyn_hotdog_c.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.05, 0.21, 0.06 |
+| <span id="obj-dyn-hunter"></span>`dyn_hunter` | ![objects/dyn_hunter.png](images/objects/dyn_hunter.png){ width="96" } | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.02, 0.38, 0.07 |
+| <span id="obj-dyn-icecream-a"></span>`dyn_icecream_a` | ![objects/dyn_icecream_a.png](images/objects/dyn_icecream_a.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.1, 0.27, 0.11 |
+| <span id="obj-dyn-keyboard"></span>`dyn_keyboard` | ![objects/dyn_keyboard.png](images/objects/dyn_keyboard.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.42, 0.4, 0.11 |
+| <span id="obj-dyn-lamp-a"></span>`dyn_lamp_a` | ![objects/dyn_lamp_a.png](images/objects/dyn_lamp_a.png){ width="96" } | `overhead_weapon` | `TYPE_BRICK` | `OBB` | 0.4, 0.34, 0.56 |
+| <span id="obj-dyn-laundrybasket-a"></span>`dyn_laundrybasket_a` | ![objects/dyn_laundrybasket_a.png](images/objects/dyn_laundrybasket_a.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.77, 0.41, 0.56 |
+| <span id="obj-dyn-lawnchair-a"></span>`dyn_lawnchair_a` | ![objects/dyn_lawnchair_a.png](images/objects/dyn_lawnchair_a.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.77, 0.86, 1.12 |
+| <span id="obj-dyn-lawnchair-b"></span>`dyn_lawnchair_b` | ![objects/dyn_lawnchair_b.png](images/objects/dyn_lawnchair_b.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.77, 0.86, 1.12 |
+| <span id="obj-dyn-lt-bat-blk-a"></span>`dyn_lt_bat_blk_a` | ![objects/dyn_lt_bat_blk_a.png](images/objects/dyn_lt_bat_blk_a.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.23, 1.07, 0.18 |
+| <span id="obj-dyn-lt-bat-blk-b"></span>`dyn_lt_bat_blk_b` | ![objects/dyn_lt_bat_blk_b.png](images/objects/dyn_lt_bat_blk_b.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.1, 1.07, 0.11 |
+| <span id="obj-dyn-lt-razorbat"></span>`dyn_lt_razorbat` | ![objects/dyn_lt_razorbat.png](images/objects/dyn_lt_razorbat.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.21, 1.08, 0.21 |
+| <span id="obj-dyn-mace"></span>`dyn_mace` | ![objects/dyn_mace.png](images/objects/dyn_mace.png){ width="96" } | `melee_weapon` | `TYPE_MACE` | `OBB` | 0.07, 0.2, 0.05 |
+| <span id="obj-dyn-machet"></span>`dyn_machet` | ![objects/dyn_machet.png](images/objects/dyn_machet.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.03, 0.89, 0.14 |
+| <span id="obj-dyn-manqhead"></span>`dyn_manqhead` | ![objects/dyn_manqhead.png](images/objects/dyn_manqhead.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.17, 0.21, 0.29 |
+| <span id="obj-dyn-mask-a"></span>`dyn_mask_a` | ![objects/dyn_mask_a.png](images/objects/dyn_mask_a.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.19, 0.66 |
+| <span id="obj-dyn-mask-b"></span>`dyn_mask_b` | ![objects/dyn_mask_b.png](images/objects/dyn_mask_b.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.16, 0.6 |
+| <span id="obj-dyn-mask-c"></span>`dyn_mask_c` | ![objects/dyn_mask_c.png](images/objects/dyn_mask_c.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.3, 0.11, 0.76 |
+| <span id="obj-dyn-mask-d"></span>`dyn_mask_d` | ![objects/dyn_mask_d.png](images/objects/dyn_mask_d.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.03, 0.77, 1.85 |
+| <span id="obj-dyn-meatscale"></span>`dyn_meatscale` | ![objects/dyn_meatscale.png](images/objects/dyn_meatscale.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.21, 0.19, 0.26 |
+| <span id="obj-dyn-mug"></span>`dyn_mug` | ![objects/dyn_mug.png](images/objects/dyn_mug.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.11, 0.13, 0.13 |
+| <span id="obj-dyn-mug-new"></span>`dyn_mug_new` | ![objects/dyn_mug_new.png](images/objects/dyn_mug_new.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.11, 0.13, 0.13 |
+| <span id="obj-dyn-newsps"></span>`dyn_newsps` | ![objects/dyn_newsps.png](images/objects/dyn_newsps.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.71, 0.62, 0.52 |
+| <span id="obj-dyn-oilcan"></span>`dyn_oilcan` | ![objects/dyn_oilcan.png](images/objects/dyn_oilcan.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.17 |
+| <span id="obj-dyn-oilcan-bird"></span>`dyn_oilcan_bird` | ![objects/dyn_oilcan_bird.png](images/objects/dyn_oilcan_bird.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.17 |
+| <span id="obj-dyn-paintcan"></span>`dyn_paintcan` | ![objects/dyn_paintcan.png](images/objects/dyn_paintcan.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.22, 0.22, 0.26 |
+| <span id="obj-dyn-paintcan-sm"></span>`dyn_paintcan_sm` | ![objects/dyn_paintcan_sm.png](images/objects/dyn_paintcan_sm.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.15 |
+| <span id="obj-dyn-pan"></span>`dyn_pan` | ![objects/dyn_pan.png](images/objects/dyn_pan.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.28, 0.46, 0.07 |
+| <span id="obj-dyn-pan-b"></span>`dyn_pan_b` | ![objects/dyn_pan_b.png](images/objects/dyn_pan_b.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.28, 0.46, 0.07 |
+| <span id="obj-dyn-parktrash-a"></span>`dyn_parktrash_a` | ![objects/dyn_parktrash_a.png](images/objects/dyn_parktrash_a.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.68, 0.73, 0.92 |
+| <span id="obj-dyn-pimpcane"></span>`dyn_pimpcane` | ![objects/dyn_pimpcane.png](images/objects/dyn_pimpcane.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.07, 0.88, 0.06 |
+| <span id="obj-dyn-pipe-a"></span>`dyn_pipe_a` | ![objects/dyn_pipe_a.png](images/objects/dyn_pipe_a.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.25, 0.76, 0.06 |
+| <span id="obj-dyn-pitchfork"></span>`dyn_pitchfork` | ![objects/dyn_pitchfork.png](images/objects/dyn_pitchfork.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.26, 1.09, 0.06 |
+| <span id="obj-dyn-poolball08"></span>`dyn_poolball08_` | ![objects/dyn_poolball08_.png](images/objects/dyn_poolball08_.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `SPHERE` | 0.11, 0.11, 0.12 |
+| <span id="obj-dyn-poolcue"></span>`dyn_poolcue` | ![objects/dyn_poolcue.png](images/objects/dyn_poolcue.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.05, 1.61, 0.05 |
+| <span id="obj-dyn-porcelain-weap-b"></span>`dyn_porcelain_weap_b` | ![objects/dyn_porcelain_weap_b.png](images/objects/dyn_porcelain_weap_b.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.63, 0.88, 0.96 |
+| <span id="obj-dyn-porcelain-weap-c"></span>`dyn_porcelain_weap_c` | ![objects/dyn_porcelain_weap_c.png](images/objects/dyn_porcelain_weap_c.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.67, 0.63, 1.14 |
+| <span id="obj-dyn-pot"></span>`dyn_pot` | ![objects/dyn_pot.png](images/objects/dyn_pot.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.46, 0.77, 0.15 |
+| <span id="obj-dyn-pot-b"></span>`dyn_pot_b` | ![objects/dyn_pot_b.png](images/objects/dyn_pot_b.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.46, 0.77, 0.15 |
+| <span id="obj-dyn-pstack"></span>`dyn_pstack` | ![objects/dyn_pstack.png](images/objects/dyn_pstack.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.68, 0.68, 0.43 |
+| <span id="obj-dyn-pullcart-a"></span>`dyn_pullcart_a_` | ![objects/dyn_pullcart_a_.png](images/objects/dyn_pullcart_a_.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.79, 0.95, 1.13 |
+| <span id="obj-dyn-pylon"></span>`dyn_pylon` | ![objects/dyn_pylon.png](images/objects/dyn_pylon.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.37, 0.52 |
+| <span id="obj-dyn-rake"></span>`dyn_rake` | ![objects/dyn_rake.png](images/objects/dyn_rake.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.39, 1.08, 0.06 |
+| <span id="obj-dyn-record-b"></span>`dyn_record_b` | ![objects/dyn_record_b.png](images/objects/dyn_record_b.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.3, 0.3, 0 |
+| <span id="obj-dyn-rice-steamer"></span>`dyn_rice_steamer` | ![objects/dyn_rice_steamer.png](images/objects/dyn_rice_steamer.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.34, 0.25, 0.15 |
+| <span id="obj-dyn-ricebag-a"></span>`dyn_ricebag_a` | ![objects/dyn_ricebag_a.png](images/objects/dyn_ricebag_a.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.65, 0.74, 0.66 |
+| <span id="obj-dyn-ricebag-b"></span>`dyn_ricebag_b` | ![objects/dyn_ricebag_b.png](images/objects/dyn_ricebag_b.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.74, 0.48, 0.18 |
+| <span id="obj-dyn-salami"></span>`dyn_salami` | ![objects/dyn_salami.png](images/objects/dyn_salami.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.08, 0.61, 0.08 |
+| <span id="obj-dyn-shack-door-a"></span>`dyn_shack_door_a` | | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.02, 0.06, 1.16 |
+| <span id="obj-dyn-shack-door-b"></span>`dyn_shack_door_b` | | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.02, 0.06, 1.16 |
+| <span id="obj-dyn-shovel"></span>`dyn_shovel` | ![objects/dyn_shovel.png](images/objects/dyn_shovel.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.25, 1.06, 0.11 |
+| <span id="obj-dyn-skullcandle"></span>`dyn_skullcandle` | ![objects/dyn_skullcandle.png](images/objects/dyn_skullcandle.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.24, 0.36, 0.41 |
+| <span id="obj-dyn-skullstick"></span>`dyn_skullstick` | ![objects/dyn_skullstick.png](images/objects/dyn_skullstick.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.14, 1.07, 0.19 |
+| <span id="obj-dyn-sledgehammer"></span>`dyn_sledgehammer` | ![objects/dyn_sledgehammer.png](images/objects/dyn_sledgehammer.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.76, 0.18 |
+| <span id="obj-dyn-speaker"></span>`dyn_speaker` | ![objects/dyn_speaker.png](images/objects/dyn_speaker.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.4, 0.38, 0.66 |
+| <span id="obj-dyn-spider"></span>`dyn_spider` | ![objects/dyn_spider.png](images/objects/dyn_spider.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.96, 0.68, 0.26 |
+| <span id="obj-dyn-spikebat"></span>`dyn_spikebat` | ![objects/dyn_spikebat.png](images/objects/dyn_spikebat.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.09, 0.89, 0.08 |
+| <span id="obj-dyn-steak"></span>`dyn_steak` | ![objects/dyn_steak.png](images/objects/dyn_steak.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `SPHERE` | 0.22, 0.31, 0.04 |
+| <span id="obj-dyn-stereo"></span>`dyn_stereo` | ![objects/dyn_stereo.png](images/objects/dyn_stereo.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.56, 0.39, 0.17 |
+| <span id="obj-dyn-swhbld"></span>`dyn_swhbld` | ![objects/dyn_swhbld.png](images/objects/dyn_swhbld.png){ width="96" } | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.04, 0.32, 0.04 |
+| <span id="obj-dyn-swhbld-movie"></span>`dyn_swhbld_movie` | ![objects/dyn_swhbld_movie.png](images/objects/dyn_swhbld_movie.png){ width="96" } | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.04, 0.32, 0.04 |
+| <span id="obj-dyn-swhbld-super"></span>`dyn_swhbld_super` | ![objects/dyn_swhbld_super.png](images/objects/dyn_swhbld_super.png){ width="96" } | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.03, 0.46, 0.08 |
+| <span id="obj-dyn-table-bc"></span>`dyn_table_bc` | ![objects/dyn_table_bc.png](images/objects/dyn_table_bc.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.1, 0.66, 0.11 |
+| <span id="obj-dyn-table-kc"></span>`dyn_table_kc` | ![objects/dyn_table_kc.png](images/objects/dyn_table_kc.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.12, 0.71, 0.12 |
+| <span id="obj-dyn-table-wc"></span>`dyn_table_wc` | ![objects/dyn_table_wc.png](images/objects/dyn_table_wc.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.08, 0.74, 0.08 |
+| <span id="obj-dyn-tire"></span>`dyn_tire` | ![objects/dyn_tire.png](images/objects/dyn_tire.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.72, 0.69, 0.23 |
+| <span id="obj-dyn-tknife"></span>`dyn_tknife` | ![objects/dyn_tknife.png](images/objects/dyn_tknife.png){ width="96" } | `melee_weapon` | `TYPE_KNIFE` | `OBB` | 0.03, 0.46, 0.08 |
+| <span id="obj-dyn-trashcan"></span>`dyn_trashcan` | ![objects/dyn_trashcan.png](images/objects/dyn_trashcan.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.84, 0.74, 0.97 |
+| <span id="obj-dyn-tricycle"></span>`dyn_tricycle` | ![objects/dyn_tricycle.png](images/objects/dyn_tricycle.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.85, 0.74, 0.55 |
+| <span id="obj-dyn-trnyrd-sign-ab"></span>`dyn_trnyrd_sign_ab` | ![objects/dyn_trnyrd_sign_ab.png](images/objects/dyn_trnyrd_sign_ab.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.38, 2.63, 0.21 |
+| <span id="obj-dyn-turkey"></span>`dyn_turkey` | ![objects/dyn_turkey.png](images/objects/dyn_turkey.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.35, 0.41, 0.16 |
+| <span id="obj-dyn-tv"></span>`dyn_tv` | ![objects/dyn_tv.png](images/objects/dyn_tv.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 0.51, 0.46, 0.42 |
+| <span id="obj-dyn-tvlarge-weap"></span>`dyn_tvlarge_weap` | ![objects/dyn_tvlarge_weap.png](images/objects/dyn_tvlarge_weap.png){ width="96" } | `overhead_weapon` | `TYPE_DRUM` | `OBB` | 1.26, 0.88, 0.86 |
+| <span id="obj-dyn-tvsmall"></span>`dyn_tvsmall` | ![objects/dyn_tvsmall.png](images/objects/dyn_tvsmall.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.6, 0.46, 0.42 |
+| <span id="obj-dyn-vargas-bookcase-a"></span>`dyn_vargas_bookcase_a` | ![objects/dyn_vargas_bookcase_a.png](images/objects/dyn_vargas_bookcase_a.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 1.13, 0.42, 1.44 |
+| <span id="obj-dyn-vargas-lamp"></span>`dyn_vargas_lamp` | ![objects/dyn_vargas_lamp.png](images/objects/dyn_vargas_lamp.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.4, 0.35, 0.63 |
+| <span id="obj-dyn-vargas-plate"></span>`dyn_vargas_plate` | ![objects/dyn_vargas_plate.png](images/objects/dyn_vargas_plate.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.37, 0.37, 0.03 |
+| <span id="obj-dyn-vargas-sofa"></span>`dyn_vargas_sofa` | ![objects/dyn_vargas_sofa.png](images/objects/dyn_vargas_sofa.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 1.87, 0.72, 0.9 |
+| <span id="obj-dyn-vargas-stove-a"></span>`dyn_vargas_stove_a` | ![objects/dyn_vargas_stove_a.png](images/objects/dyn_vargas_stove_a.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.95, 1.18, 1.36 |
+| <span id="obj-dyn-vargas-vase"></span>`dyn_vargas_vase` | ![objects/dyn_vargas_vase.png](images/objects/dyn_vargas_vase.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.29, 0.27, 0.44 |
+| <span id="obj-dyn-vargas-washer-a"></span>`dyn_vargas_washer_a` | ![objects/dyn_vargas_washer_a.png](images/objects/dyn_vargas_washer_a.png){ width="96" } | `overhead_weapon` | `TYPE_GENERIC` | `OBB` | 0.95, 1.05, 1.36 |
+| <span id="obj-dyn-vchicken"></span>`dyn_vchicken` | ![objects/dyn_vchicken.png](images/objects/dyn_vchicken.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.4, 0.26, 0.35 |
+| <span id="obj-dyn-vchicken-b"></span>`dyn_vchicken_b` | ![objects/dyn_vchicken_b.png](images/objects/dyn_vchicken_b.png){ width="96" } | `thrown_weapon` | `TYPE_BRICK` | `OBB` | 0.23, 0.69, 0.25 |
+| <span id="obj-dyn-wok"></span>`dyn_wok` | ![objects/dyn_wok.png](images/objects/dyn_wok.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.46, 0.77, 0.15 |
+| <span id="obj-dyn-woodbarb"></span>`dyn_woodbarb` | ![objects/dyn_woodbarb.png](images/objects/dyn_woodbarb.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.19, 0.89, 0.19 |
+| <span id="obj-dyn-woodboard"></span>`dyn_woodboard` | ![objects/dyn_woodboard.png](images/objects/dyn_woodboard.png){ width="96" } | `melee_weapon` | `TYPE_BAT` | `OBB` | 0.17, 1.04, 0.09 |
+| <span id="obj-dyn-wrenchplumb"></span>`dyn_wrenchplumb` | ![objects/dyn_wrenchplumb.png](images/objects/dyn_wrenchplumb.png){ width="96" } | `melee_weapon` | `TYPE_BATON` | `OBB` | 0.04, 0.58, 0.16 |
 
 ## hats and masks {#hats-and-masks}
 
 293 entries.
 
-| Name | Class | Type | Shape | Size (m) |
-| --- | --- | --- | --- | --- |
-| <span id="obj-dyn-abe"></span>`dyn_abe` | `hat_object` | `TYPE_HAT` | `OBB` | 0.52, 0.4, 0.46 |
-| <span id="obj-dyn-arcade-new-a"></span>`dyn_arcade_new_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.94, 1.17, 2.29 |
-| <span id="obj-dyn-bar-stool-b"></span>`dyn_bar_stool_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.44, 0.44, 0.97 |
-| <span id="obj-dyn-barbeque"></span>`dyn_barbeque` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.64, 0.7, 0.92 |
-| <span id="obj-dyn-barrel-a"></span>`dyn_barrel_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-bat"></span>`dyn_barrel_bat` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-board"></span>`dyn_barrel_board` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-bottle"></span>`dyn_barrel_bottle` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-flash"></span>`dyn_barrel_flash` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-knife"></span>`dyn_barrel_knife` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-machete"></span>`dyn_barrel_machete` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-molotov"></span>`dyn_barrel_molotov` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-pipe"></span>`dyn_barrel_pipe` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-spray"></span>`dyn_barrel_spray` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-barrel-tknife"></span>`dyn_barrel_tknife` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
-| <span id="obj-dyn-bath-heater-a"></span>`dyn_bath_heater_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.57, 0.25, 1.42 |
-| <span id="obj-dyn-bath-mirror-a"></span>`dyn_bath_mirror_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.88, 0.06, 1.05 |
-| <span id="obj-dyn-bath-sink-lrg-a"></span>`dyn_bath_sink_lrg_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.62, 1.03, 1.6 |
-| <span id="obj-dyn-bath-sink-lrg-aa"></span>`dyn_bath_sink_lrg_aa` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.85, 1.03, 1.59 |
-| <span id="obj-dyn-bath-sink-lrg-b"></span>`dyn_bath_sink_lrg_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.62, 1.03, 1.6 |
-| <span id="obj-dyn-bath-toweldisp-a"></span>`dyn_bath_toweldisp_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.5, 0.35, 0.36 |
-| <span id="obj-dyn-beansie"></span>`dyn_beansie` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.26, 0.26, 0.28 |
-| <span id="obj-dyn-bm-va1"></span>`dyn_bm_va1` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.27, 0.3, 0.36 |
-| <span id="obj-dyn-bm-va2"></span>`dyn_bm_va2` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.3, 0.31, 0.32 |
-| <span id="obj-dyn-bm-vb1"></span>`dyn_bm_vb1` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.34, 0.31 |
-| <span id="obj-dyn-bm-vb2"></span>`dyn_bm_vb2` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
-| <span id="obj-dyn-bm-vb3"></span>`dyn_bm_vb3` | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.31, 0.13 |
-| <span id="obj-dyn-bm-vb4"></span>`dyn_bm_vb4` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.27, 0.4 |
-| <span id="obj-dyn-bm-vb5"></span>`dyn_bm_vb5` | `hat_object` | `TYPE_HAT` | `OBB` | 0.26, 0.32, 0.18 |
-| <span id="obj-dyn-bm-vb6"></span>`dyn_bm_vb6` | `hat_object` | `TYPE_HAT` | `OBB` | 0.31, 0.35, 0.14 |
-| <span id="obj-dyn-bm-vb7"></span>`dyn_bm_vb7` | `hat_object` | `TYPE_HAT` | `OBB` | 0.37, 0.44, 0.16 |
-| <span id="obj-dyn-bm-vb8"></span>`dyn_bm_vb8` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.27, 0.27 |
-| <span id="obj-dyn-bm-vb9"></span>`dyn_bm_vb9` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.2, 0.3, 0.13 |
-| <span id="obj-dyn-bn-fa1"></span>`dyn_bn_fa1` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.19, 0.21, 0.16 |
-| <span id="obj-dyn-bn-fa2"></span>`dyn_bn_fa2` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.19, 0.21, 0.16 |
-| <span id="obj-dyn-bn-ma1"></span>`dyn_bn_ma1` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
-| <span id="obj-dyn-bopp-bo"></span>`dyn_bopp_bo` | `hat_object` | `TYPE_HAT` | `OBB` | 0.43, 0.51, 0.17 |
-| <span id="obj-dyn-bopp-lt"></span>`dyn_bopp_lt` | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.46, 0.15 |
-| <span id="obj-dyn-bopp-so"></span>`dyn_bopp_so` | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.46, 0.15 |
-| <span id="obj-dyn-bumcart-b"></span>`dyn_bumcart_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.35, 0.76, 1.42 |
-| <span id="obj-dyn-butcher"></span>`dyn_butcher` | `hat_object` | `TYPE_HAT` | `OBB` | 0.19, 0.25, 0.09 |
-| <span id="obj-dyn-cabinet-a"></span>`dyn_cabinet_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.07, 1.02, 1.8 |
-| <span id="obj-dyn-cabinet-aa"></span>`dyn_cabinet_aa` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.07, 1.19, 1.8 |
-| <span id="obj-dyn-cardrack"></span>`dyn_cardrack` | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.5, 0.53, 1.99 |
-| <span id="obj-dyn-carjunk-door-a"></span>`dyn_carjunk_door_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.31, 0.5, 1.18 |
-| <span id="obj-dyn-carjunk-door-b"></span>`dyn_carjunk_door_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.31, 0.5, 1.18 |
-| <span id="obj-dyn-carjunk-fender-a"></span>`dyn_carjunk_fender_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.1, 0.9 |
-| <span id="obj-dyn-carjunk-fender-b"></span>`dyn_carjunk_fender_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.57, 0.1, 0.93 |
-| <span id="obj-dyn-carjunk-hood-a"></span>`dyn_carjunk_hood_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.01, 1.87, 0.2 |
-| <span id="obj-dyn-carjunk-windshld-a"></span>`dyn_carjunk_windshld_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.1, 0.36, 0.76 |
-| <span id="obj-dyn-cb-christ-a"></span>`dyn_cb_christ_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.37, 0.78, 2.81 |
-| <span id="obj-dyn-cb-christ-b"></span>`dyn_cb_christ_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.94, 0.75, 1.79 |
-| <span id="obj-dyn-cb-coffee-a"></span>`dyn_cb_coffee_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.84, 0.88, 1.01 |
-| <span id="obj-dyn-cb-coffee-b"></span>`dyn_cb_coffee_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.44, 0.86, 0.87 |
-| <span id="obj-dyn-cb-david-a"></span>`dyn_cb_david_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.82, 1.16, 4.17 |
-| <span id="obj-dyn-cb-david-b"></span>`dyn_cb_david_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.71, 1.12, 3.68 |
-| <span id="obj-dyn-cb-david-d"></span>`dyn_cb_david_d` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.67, 1.09, 1.73 |
-| <span id="obj-dyn-cb-pieta-a"></span>`dyn_cb_pieta_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.19, 1.51, 2.38 |
-| <span id="obj-dyn-cb-pieta-b"></span>`dyn_cb_pieta_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.84, 1.51, 2.24 |
-| <span id="obj-dyn-cb-thinker-a"></span>`dyn_cb_thinker_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.1, 1.23, 2.21 |
-| <span id="obj-dyn-cb-thinker-b"></span>`dyn_cb_thinker_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.1, 1.22, 1.46 |
-| <span id="obj-dyn-cgs"></span>`dyn_cgs` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.27, 0.06, 0.2 |
-| <span id="obj-dyn-ch"></span>`dyn_ch` | `hat_object` | `TYPE_HAT` | `OBB` | 0.19, 0.32, 0.12 |
-| <span id="obj-dyn-chi-basket-a"></span>`dyn_chi_basket_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.6, 0.6, 0.6 |
-| <span id="obj-dyn-chi-basket-b"></span>`dyn_chi_basket_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.6, 0.6, 0.6 |
-| <span id="obj-dyn-chi-basket-c"></span>`dyn_chi_basket_c` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.6, 0.6, 0.6 |
-| <span id="obj-dyn-chi-bowl-a"></span>`dyn_chi_bowl_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.27, 0.27, 0.11 |
-| <span id="obj-dyn-chi-box-a"></span>`dyn_chi_box_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.67, 1.11, 0.21 |
-| <span id="obj-dyn-chi-box-b"></span>`dyn_chi_box_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.67, 1.11, 0.21 |
-| <span id="obj-dyn-chi-box-c"></span>`dyn_chi_box_c` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.67, 1.11, 0.21 |
-| <span id="obj-dyn-chi-box-orange-a"></span>`dyn_chi_box_orange_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.53, 0.71, 0.28 |
-| <span id="obj-dyn-chi-broom-b"></span>`dyn_chi_broom_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.44, 0.32, 1.88 |
-| <span id="obj-dyn-chi-burlap-a"></span>`dyn_chi_burlap_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.75, 0.68, 0.79 |
-| <span id="obj-dyn-chi-burlap-b"></span>`dyn_chi_burlap_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.7, 0.74, 0.79 |
-| <span id="obj-dyn-chi-burlap-c"></span>`dyn_chi_burlap_c` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.75, 0.69, 0.78 |
-| <span id="obj-dyn-chi-burlap-d"></span>`dyn_chi_burlap_d` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.75, 0.69, 0.78 |
-| <span id="obj-dyn-chi-chopsticks-a"></span>`dyn_chi_chopsticks_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.15, 0.17, 0.36 |
-| <span id="obj-dyn-chi-chopsticks-b"></span>`dyn_chi_chopsticks_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.43, 0.16, 0.01 |
-| <span id="obj-dyn-chi-noodlestand-a"></span>`dyn_chi_noodlestand_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.7, 1, 2.78 |
-| <span id="obj-dyn-chi-soup-pot-a"></span>`dyn_chi_soup_pot_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.48, 0.46, 0.38 |
-| <span id="obj-dyn-chi-table-a"></span>`dyn_chi_table_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.76, 0.98, 0.88 |
-| <span id="obj-dyn-chi-table-b"></span>`dyn_chi_table_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.18, 0.98, 0.78 |
-| <span id="obj-dyn-chi-tatami-a"></span>`dyn_chi_tatami_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.21, 0.67, 1.25 |
-| <span id="obj-dyn-chi-vase-a"></span>`dyn_chi_vase_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.28, 0.28, 0.99 |
-| <span id="obj-dyn-chi-vase-b"></span>`dyn_chi_vase_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.36, 0.36, 0.58 |
-| <span id="obj-dyn-chi-vase-c"></span>`dyn_chi_vase_c` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.51, 0.49, 0.48 |
-| <span id="obj-dyn-chi-vase-d"></span>`dyn_chi_vase_d` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.31, 0.32, 0.46 |
-| <span id="obj-dyn-chi-vase-e"></span>`dyn_chi_vase_e` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.56, 0.57, 0.73 |
-| <span id="obj-dyn-chi-wbasket-a"></span>`dyn_chi_wbasket_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.57, 0.56, 0.85 |
-| <span id="obj-dyn-chi-wbasket-b"></span>`dyn_chi_wbasket_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.68, 0.69, 0.59 |
-| <span id="obj-dyn-chi-wbasket-stack-a"></span>`dyn_chi_wbasket_stack_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.99, 0.72, 1.25 |
-| <span id="obj-dyn-chim-a"></span>`dyn_chim_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.68, 0.66, 1.35 |
-| <span id="obj-dyn-chim-b"></span>`dyn_chim_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.16, 0.57, 1.8 |
-| <span id="obj-dyn-chim-c"></span>`dyn_chim_c` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.08, 1.1, 1.63 |
-| <span id="obj-dyn-chim-d"></span>`dyn_chim_d` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.14, 1.02, 2.42 |
-| <span id="obj-dyn-chinavendor-a"></span>`dyn_chinavendor_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.74, 1.28, 2.78 |
-| <span id="obj-dyn-chinavendor-b"></span>`dyn_chinavendor_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.6, 0.71, 1.97 |
-| <span id="obj-dyn-cigvend-a"></span>`dyn_cigvend_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.97, 0.9, 1.49 |
-| <span id="obj-dyn-civl-a"></span>`dyn_civl_a` | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.27, 0.16 |
-| <span id="obj-dyn-civl-hl-ho"></span>`dyn_civl_hl_ho` | `hat_object` | `TYPE_HAT` | `OBB` | 0.21, 0.3, 0.14 |
-| <span id="obj-dyn-civl-pl-sp"></span>`dyn_civl_pl_sp` | `hat_object` | `TYPE_HAT` | `OBB` | 0.28, 0.29, 0.15 |
-| <span id="obj-dyn-civl-pl-we-hair"></span>`dyn_civl_pl_we_hair` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.26, 0.31 |
-| <span id="obj-dyn-cny-booth-mole-a"></span>`dyn_cny_booth_mole_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.23, 0.72, 0.97 |
-| <span id="obj-dyn-cny-booth-reg-a"></span>`dyn_cny_booth_reg_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.23, 0.72, 1 |
-| <span id="obj-dyn-cny-booth-reg-b"></span>`dyn_cny_booth_reg_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.23, 0.72, 1 |
-| <span id="obj-dyn-cny-booth-roul-a"></span>`dyn_cny_booth_roul_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.23, 0.72, 1 |
-| <span id="obj-dyn-cny-clownface"></span>`dyn_cny_clownface` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.86, 0.97, 1.2 |
-| <span id="obj-dyn-cny-dock-a"></span>`dyn_cny_dock_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.45, 0.14, 2.5 |
-| <span id="obj-dyn-cny-dock-aa"></span>`dyn_cny_dock_aa` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.73, 0.87, 2.5 |
-| <span id="obj-dyn-cny-dock-ab"></span>`dyn_cny_dock_ab` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.73, 0.87, 2.5 |
-| <span id="obj-dyn-cny-milk"></span>`dyn_cny_milk` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.45, 0.56, 0.98 |
-| <span id="obj-dyn-cny-picnic-a"></span>`dyn_cny_picnic_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.21, 2.92, 0.95 |
-| <span id="obj-dyn-cny-skullgate-a"></span>`dyn_cny_skullgate_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.61, 0.27, 2.13 |
-| <span id="obj-dyn-cny-skullspear-a"></span>`dyn_cny_skullspear_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.59, 0.59, 2.45 |
-| <span id="obj-dyn-cny-skullspear-b"></span>`dyn_cny_skullspear_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.63, 0.59, 2.13 |
-| <span id="obj-dyn-cny-tiki-mask-a"></span>`dyn_cny_tiki_mask_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.81, 0.75, 1.57 |
-| <span id="obj-dyn-cny-tiki-mask-b"></span>`dyn_cny_tiki_mask_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.51, 1.33, 2.76 |
-| <span id="obj-dyn-cny-tnt-stack"></span>`dyn_cny_tnt_stack` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.59, 0.45, 1.42 |
-| <span id="obj-dyn-cny-umbrella"></span>`dyn_cny_umbrella` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.85, 2.8, 2.91 |
-| <span id="obj-dyn-co-ma3"></span>`dyn_co_ma3` | `hat_object` | `TYPE_HAT` | `OBB` | 0.38, 0.44, 0.15 |
-| <span id="obj-dyn-co-ma5"></span>`dyn_co_ma5` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.3, 0.31 |
-| <span id="obj-dyn-coke-machine-a"></span>`dyn_coke_machine_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.17, 1.07, 2.16 |
-| <span id="obj-dyn-cops-va"></span>`dyn_cops_va` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.31, 0.13 |
-| <span id="obj-dyn-cops-vb"></span>`dyn_cops_vb` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.31, 0.13 |
-| <span id="obj-dyn-cops-vc"></span>`dyn_cops_vc` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.31, 0.13 |
-| <span id="obj-dyn-corrugwall-a"></span>`dyn_corrugwall_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.3, 0.24, 2.52 |
-| <span id="obj-dyn-corrugwall-aa"></span>`dyn_corrugwall_aa` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.3, 0.29, 1.73 |
-| <span id="obj-dyn-corrugwall-ab"></span>`dyn_corrugwall_ab` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.05, 0.25, 1.29 |
-| <span id="obj-dyn-corrugwall-b"></span>`dyn_corrugwall_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.46, 0.44, 2.53 |
-| <span id="obj-dyn-corrugwall-ba"></span>`dyn_corrugwall_ba` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.46, 0.26, 1.55 |
-| <span id="obj-dyn-corrugwall-bb"></span>`dyn_corrugwall_bb` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.48, 0.23, 1.05 |
-| <span id="obj-dyn-crate-a"></span>`dyn_crate_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-b"></span>`dyn_crate_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-bat"></span>`dyn_crate_bat` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-board"></span>`dyn_crate_board` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-bottle"></span>`dyn_crate_bottle` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-f"></span>`dyn_crate_f` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-flash"></span>`dyn_crate_flash` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-knife"></span>`dyn_crate_knife` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-machete"></span>`dyn_crate_machete` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-molotov"></span>`dyn_crate_molotov` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-pipe"></span>`dyn_crate_pipe` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-spray"></span>`dyn_crate_spray` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-crate-stack"></span>`dyn_crate_stack` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.56, 0.91, 1.38 |
-| <span id="obj-dyn-crate-stack-sml"></span>`dyn_crate_stack_sml` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.66, 0.95, 1 |
-| <span id="obj-dyn-crate-stack-tuff"></span>`dyn_crate_stack_tuff` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.56, 0.91, 1.38 |
-| <span id="obj-dyn-crate-tknife"></span>`dyn_crate_tknife` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
-| <span id="obj-dyn-ct-act"></span>`dyn_ct_act` | `hat_object` | `TYPE_HAT` | `OBB` | 0.38, 0.44, 0.15 |
-| <span id="obj-dyn-ct-fa3"></span>`dyn_ct_fa3` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.19, 0.21, 0.21 |
-| <span id="obj-dyn-ct-fa4"></span>`dyn_ct_fa4` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.18, 0.06, 0.16 |
-| <span id="obj-dyn-ct-ma2"></span>`dyn_ct_ma2` | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.34, 0.16 |
-| <span id="obj-dyn-cw-m1"></span>`dyn_cw_m1` | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.34, 0.16 |
-| <span id="obj-dyn-cw-m2"></span>`dyn_cw_m2` | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.34, 0.16 |
-| <span id="obj-dyn-dest-lt"></span>`dyn_dest_lt` | `hat_object` | `TYPE_HAT` | `OBB` | 0.25, 0.3, 0.18 |
-| <span id="obj-dyn-dest-lta"></span>`dyn_dest_lta` | `hat_object` | `TYPE_HAT` | `OBB` | 0.28, 0.29, 0.15 |
-| <span id="obj-dyn-dest-ltb"></span>`dyn_dest_ltb` | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.32, 0.1 |
-| <span id="obj-dyn-doghouse-a"></span>`dyn_doghouse_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.15, 1.24, 1.13 |
-| <span id="obj-dyn-dryer-a"></span>`dyn_dryer_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.91, 0.92, 1.33 |
-| <span id="obj-dyn-dryerdoor"></span>`dyn_dryerdoor` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.92, 0, 1.12 |
-| <span id="obj-dyn-dvdr"></span>`dyn_dvdr` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.1, 0.17, 2.08 |
-| <span id="obj-dyn-easel"></span>`dyn_easel` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.25, 0.77, 2.42 |
-| <span id="obj-dyn-eh-fa1"></span>`dyn_eh_fa1` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.27, 0.27, 0.31 |
-| <span id="obj-dyn-eh-fa2"></span>`dyn_eh_fa2` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.14, 0.14 |
-| <span id="obj-dyn-eh-fa3"></span>`dyn_eh_fa3` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.12, 0.11, 0.17 |
-| <span id="obj-dyn-eh-ma2"></span>`dyn_eh_ma2` | `hat_object` | `TYPE_HAT` | `OBB` | 0.35, 0.44, 0.14 |
-| <span id="obj-dyn-eh-ma3"></span>`dyn_eh_ma3` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.33, 0.28 |
-| <span id="obj-dyn-eh-ma4"></span>`dyn_eh_ma4` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.36, 0.3, 0.32 |
-| <span id="obj-dyn-eh-ma5"></span>`dyn_eh_ma5` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
-| <span id="obj-dyn-fake-a"></span>`dyn_fake_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.21, 0.88, 1.3 |
-| <span id="obj-dyn-fake-b"></span>`dyn_fake_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.4, 0.88, 1.35 |
-| <span id="obj-dyn-fake-c"></span>`dyn_fake_c` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.7, 0.88, 2.76 |
-| <span id="obj-dyn-firehydrant-a"></span>`dyn_firehydrant_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.47, 0.48, 0.86 |
-| <span id="obj-dyn-fridge-b"></span>`dyn_fridge_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.92, 0.84, 1.93 |
-| <span id="obj-dyn-fruitstand-a"></span>`dyn_fruitstand_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.3, 3.69, 1.06 |
-| <span id="obj-dyn-fruitstand-b"></span>`dyn_fruitstand_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.17, 0.04, 1.06 |
-| <span id="obj-dyn-gallery-glass-table"></span>`dyn_gallery_glass_table` | `dyn_masks` | `TYPE_GLASS` | `OBB` | 2.75, 1.03, 0.03 |
-| <span id="obj-dyn-gatechain"></span>`dyn_gatechain` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.31, 0.08, 0.36 |
-| <span id="obj-dyn-ghost"></span>`dyn_ghost` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.28, 0.31 |
-| <span id="obj-dyn-gypsy"></span>`dyn_gypsy` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.23, 0.28, 0.35 |
-| <span id="obj-dyn-hiha-lt"></span>`dyn_hiha_lt` | `hat_object` | `TYPE_HAT` | `OBB` | 0.27, 0.33, 0.14 |
-| <span id="obj-dyn-hiha-lt-ft"></span>`dyn_hiha_lt_ft` | `hat_object` | `TYPE_HAT` | `OBB` | 0.27, 0.33, 0.14 |
-| <span id="obj-dyn-hiha-so"></span>`dyn_hiha_so` | `hat_object` | `TYPE_HAT` | `OBB` | 0.27, 0.32, 0.14 |
-| <span id="obj-dyn-huns-lt1"></span>`dyn_huns_lt1` | `hat_object` | `TYPE_RIOT_HAT` | `OBB` | 0.21, 0.25, 0.25 |
-| <span id="obj-dyn-huns-lt2"></span>`dyn_huns_lt2` | `hat_object` | `TYPE_RIOT_HAT` | `OBB` | 0.04, 0.09, 0.05 |
-| <span id="obj-dyn-hurr-lt"></span>`dyn_hurr_lt` | `hat_object` | `TYPE_HAT` | `OBB` | 0.38, 0.44, 0.15 |
-| <span id="obj-dyn-hurr-so"></span>`dyn_hurr_so` | `hat_object` | `TYPE_HAT` | `OBB` | 0.28, 0.34, 0.15 |
-| <span id="obj-dyn-jewelcase-a"></span>`dyn_jewelcase_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.58, 0.56, 2.1 |
-| <span id="obj-dyn-jukebox-opti-a"></span>`dyn_jukebox_opti_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.91, 0.94, 1.7 |
-| <span id="obj-dyn-ladder"></span>`dyn_ladder` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.07, 0.71, 4.93 |
-| <span id="obj-dyn-lizzypillar-a"></span>`dyn_lizzypillar_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.8, 0.8, 6.24 |
-| <span id="obj-dyn-mailbox-a"></span>`dyn_mailbox_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.63, 0.64, 1.45 |
-| <span id="obj-dyn-mask-e"></span>`dyn_mask_e` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.39, 0.74, 2.45 |
-| <span id="obj-dyn-meatslicer"></span>`dyn_meatslicer` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.46, 0.57, 0.48 |
-| <span id="obj-dyn-milk-crate-a"></span>`dyn_milk_crate_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.49, 0.49, 0.46 |
-| <span id="obj-dyn-milk-crate-b"></span>`dyn_milk_crate_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.49, 0.49, 0.46 |
-| <span id="obj-dyn-mohawk"></span>`dyn_mohawk` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.03, 0.47, 0.29 |
-| <span id="obj-dyn-newsbox-a"></span>`dyn_newsbox_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.82, 1.43 |
-| <span id="obj-dyn-newsstand-a"></span>`dyn_newsstand_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.68, 1.13, 1.29 |
-| <span id="obj-dyn-newsstand-b"></span>`dyn_newsstand_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.11, 2.17, 2.95 |
-| <span id="obj-dyn-oil-fire"></span>`dyn_oil_fire` | `dyn_masks` | `TYPE_FIREBARREL` | `OBB` | 0.72, 0.73, 1.12 |
-| <span id="obj-dyn-oil-fire-rain"></span>`dyn_oil_fire_rain` | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.72, 0.73, 1.12 |
-| <span id="obj-dyn-old-door"></span>`dyn_old_door` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.09, 0.46, 2.3 |
-| <span id="obj-dyn-old-window"></span>`dyn_old_window` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 0.32, 1.49 |
-| <span id="obj-dyn-paintcan-stack"></span>`dyn_paintcan_stack` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.67, 0.27, 0.77 |
-| <span id="obj-dyn-painting-a"></span>`dyn_painting_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.79, 0.05, 1.01 |
-| <span id="obj-dyn-painting-b"></span>`dyn_painting_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.19, 0.05, 1.04 |
-| <span id="obj-dyn-panz-lt"></span>`dyn_panz_lt` | `hat_object` | `TYPE_HAT` | `OBB` | 0.22, 0.25, 0.07 |
-| <span id="obj-dyn-panz-so"></span>`dyn_panz_so` | `hat_object` | `TYPE_HAT` | `OBB` | 0.22, 0.25, 0.07 |
-| <span id="obj-dyn-parkbench-a"></span>`dyn_parkbench_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.98, 0.81, 1.01 |
-| <span id="obj-dyn-parknmeter-a"></span>`dyn_parknmeter_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.23, 0.11, 1.65 |
-| <span id="obj-dyn-phone-b"></span>`dyn_phone_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.55, 0.35, 0.85 |
-| <span id="obj-dyn-picnic"></span>`dyn_picnic` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.75, 2.21, 0.95 |
-| <span id="obj-dyn-pimp-va"></span>`dyn_pimp_va` | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.44, 0.15 |
-| <span id="obj-dyn-pimp-vb"></span>`dyn_pimp_vb` | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.44, 0.15 |
-| <span id="obj-dyn-pinball-fuzzballs-a"></span>`dyn_pinball_fuzzballs_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.83, 1.67, 2.07 |
-| <span id="obj-dyn-pinball-fuzzballs-b"></span>`dyn_pinball_fuzzballs_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.83, 1.26, 1.06 |
-| <span id="obj-dyn-pinball-new-a"></span>`dyn_pinball_new_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.83, 1.67, 2.07 |
-| <span id="obj-dyn-pl-dr"></span>`dyn_pl_dr` | `hat_object` | `TYPE_RIOT_HAT` | `OBB` | 0.29, 0.31, 0.26 |
-| <span id="obj-dyn-pl-ma1"></span>`dyn_pl_ma1` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.13, 0.05 |
-| <span id="obj-dyn-pl-ma2"></span>`dyn_pl_ma2` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.28, 0.28 |
-| <span id="obj-dyn-pl-ma3"></span>`dyn_pl_ma3` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.3, 0.31, 0.32 |
-| <span id="obj-dyn-pl-ma5"></span>`dyn_pl_ma5` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
-| <span id="obj-dyn-pl-ma6"></span>`dyn_pl_ma6` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
-| <span id="obj-dyn-pl-ma7"></span>`dyn_pl_ma7` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.26, 0.31 |
-| <span id="obj-dyn-pl-ma9"></span>`dyn_pl_ma9` | `hat_object` | `TYPE_HAT` | `OBB` | 0.19, 0.33, 0.15 |
-| <span id="obj-dyn-pl-pm"></span>`dyn_pl_pm` | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.46, 0.15 |
-| <span id="obj-dyn-porcelain-a"></span>`dyn_porcelain_a` | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.74, 0.66, 0.58 |
-| <span id="obj-dyn-porcelain-b"></span>`dyn_porcelain_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.63, 0.88, 0.96 |
-| <span id="obj-dyn-porcelain-c"></span>`dyn_porcelain_c` | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.67, 0.63, 1.35 |
-| <span id="obj-dyn-porcelain-d"></span>`dyn_porcelain_d` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.5, 0.83, 1.13 |
-| <span id="obj-dyn-porcelain-e"></span>`dyn_porcelain_e` | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.84, 0.7, 1.39 |
-| <span id="obj-dyn-porcelain-f"></span>`dyn_porcelain_f` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.76, 0.36, 0.98 |
-| <span id="obj-dyn-posterbox"></span>`dyn_posterbox` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.47, 0.39, 1.04 |
-| <span id="obj-dyn-prom-fa"></span>`dyn_prom_fa` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.27, 0.27, 0.31 |
-| <span id="obj-dyn-propane-a"></span>`dyn_propane_a` | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.38, 0.33, 0.74 |
-| <span id="obj-dyn-propane-b"></span>`dyn_propane_b` | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.38, 0.33, 0.57 |
-| <span id="obj-dyn-punk-sink-a"></span>`dyn_punk_sink_a` | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.74, 0.66, 1.38 |
-| <span id="obj-dyn-punk-toilet-a"></span>`dyn_punk_toilet_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.63, 0.88, 0.96 |
-| <span id="obj-dyn-recordbox"></span>`dyn_recordbox` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.4, 0.43, 0.36 |
-| <span id="obj-dyn-riot-visor"></span>`dyn_riot_visor` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.22, 0.21, 0.17 |
-| <span id="obj-dyn-rogu-lt"></span>`dyn_rogu_lt` | `hat_object` | `TYPE_HAT` | `OBB` | 0.21, 0.3, 0.13 |
-| <span id="obj-dyn-rogu-so"></span>`dyn_rogu_so` | `hat_object` | `TYPE_HAT` | `OBB` | 0.2, 0.3, 0.13 |
-| <span id="obj-dyn-s-spook-a"></span>`dyn_s_spook_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
-| <span id="obj-dyn-s-spook-b"></span>`dyn_s_spook_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
-| <span id="obj-dyn-s-spook-c"></span>`dyn_s_spook_c` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
-| <span id="obj-dyn-s-spook-d"></span>`dyn_s_spook_d` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
-| <span id="obj-dyn-s-spook-e"></span>`dyn_s_spook_e` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
-| <span id="obj-dyn-s-spook-f"></span>`dyn_s_spook_f` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
-| <span id="obj-dyn-s-spook-g"></span>`dyn_s_spook_g` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
-| <span id="obj-dyn-samo1"></span>`dyn_samo1` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.29, 0.31 |
-| <span id="obj-dyn-samo2"></span>`dyn_samo2` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.29, 0.31 |
-| <span id="obj-dyn-sata-bo"></span>`dyn_sata_bo` | `hat_object` | `TYPE_HAT` | `OBB` | 0.26, 0.29, 0.27 |
-| <span id="obj-dyn-scaffold-a"></span>`dyn_scaffold_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 5.29, 1.83, 4.43 |
-| <span id="obj-dyn-scps"></span>`dyn_scps` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.19, 0.33, 0.2 |
-| <span id="obj-dyn-shelf"></span>`dyn_shelf` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.07, 1.02, 1.8 |
-| <span id="obj-dyn-sk-pe"></span>`dyn_sk_pe` | `hat_object` | `TYPE_HAT` | `OBB` | 0.31, 0.36, 0.2 |
-| <span id="obj-dyn-skid"></span>`dyn_skid` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.74, 0.43, 1.75 |
-| <span id="obj-dyn-sml-fro"></span>`dyn_sml_fro` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.23, 0.26, 0.28 |
-| <span id="obj-dyn-stair-patch"></span>`dyn_stair_patch` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.66, 2.4, 1.6 |
-| <span id="obj-dyn-stallwall-a"></span>`dyn_stallwall_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.48, 0.09, 2.5 |
-| <span id="obj-dyn-stallwall-lrg-a"></span>`dyn_stallwall_lrg_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.79, 0.17, 1.8 |
-| <span id="obj-dyn-strut-a"></span>`dyn_strut_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.2, 2.32, 0.2 |
-| <span id="obj-dyn-strut-b"></span>`dyn_strut_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.3, 1.7, 0.43 |
-| <span id="obj-dyn-strut-p"></span>`dyn_strut_p` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.22, 1.29, 0.32 |
-| <span id="obj-dyn-subseat-a"></span>`dyn_subseat_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.96, 0.64, 1.06 |
-| <span id="obj-dyn-subseat-b"></span>`dyn_subseat_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.02, 0.64, 1.06 |
-| <span id="obj-dyn-subtrash-a"></span>`dyn_subtrash_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.53, 0.54, 1.3 |
-| <span id="obj-dyn-sun"></span>`dyn_sun` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.13, 0.05 |
-| <span id="obj-dyn-templestatue"></span>`dyn_templestatue` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.46, 0.91, 1.32 |
-| <span id="obj-dyn-templetorch-a"></span>`dyn_templetorch_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.87, 0.82, 1.35 |
-| <span id="obj-dyn-templevase"></span>`dyn_templevase` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.76, 0.78, 0.96 |
-| <span id="obj-dyn-tikitorch"></span>`dyn_tikitorch` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.11, 0.1, 2.11 |
-| <span id="obj-dyn-tikitorch-noflame"></span>`dyn_tikitorch_noflame` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.11, 0.1, 2.11 |
-| <span id="obj-dyn-tomb-a"></span>`dyn_tomb_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.3, 1.19 |
-| <span id="obj-dyn-tomb-b"></span>`dyn_tomb_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.7, 0.19, 1.41 |
-| <span id="obj-dyn-tr-cw"></span>`dyn_tr_cw` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.13, 0.05 |
-| <span id="obj-dyn-tr-fa1"></span>`dyn_tr_fa1` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.27, 0.26 |
-| <span id="obj-dyn-tr-fa2"></span>`dyn_tr_fa2` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.06, 0.09, 0.18 |
-| <span id="obj-dyn-tr-fa4"></span>`dyn_tr_fa4` | `hat_object` | `TYPE_HAT` | `OBB` | 0.21, 0.3, 0.13 |
-| <span id="obj-dyn-tr-ma2"></span>`dyn_tr_ma2` | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.32, 0.1 |
-| <span id="obj-dyn-tr-ma5"></span>`dyn_tr_ma5` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.26, 0.31 |
-| <span id="obj-dyn-trnyrd-elecbox-a"></span>`dyn_trnyrd_elecbox_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.41, 1.34, 3.12 |
-| <span id="obj-dyn-trnyrd-light-a"></span>`dyn_trnyrd_light_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.42, 0.46, 3.03 |
-| <span id="obj-dyn-trnyrd-sign-a"></span>`dyn_trnyrd_sign_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.33, 0.21, 5.15 |
-| <span id="obj-dyn-turn-so"></span>`dyn_turn_so` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.13, 0.12 |
-| <span id="obj-dyn-turn-so-vb"></span>`dyn_turn_so_vb` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.29, 0.31, 0.26 |
-| <span id="obj-dyn-tvlarge"></span>`dyn_tvlarge` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.26, 0.88, 0.86 |
-| <span id="obj-dyn-tw"></span>`dyn_tw` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.28, 0.31 |
-| <span id="obj-dyn-vargas-wall"></span>`dyn_vargas_wall` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.26, 0, 1.66 |
-| <span id="obj-dyn-wall-a"></span>`dyn_wall_a` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 5.16, 0.12, 3.05 |
-| <span id="obj-dyn-wall-b"></span>`dyn_wall_b` | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.6, 0.1, 3.47 |
-| <span id="obj-dyn-warr-cb"></span>`dyn_warr_cb` | `hat_object` | `TYPE_HAT` | `OBB` | 0.35, 0.44, 0.16 |
-| <span id="obj-dyn-we-ma2"></span>`dyn_we_ma2` | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.19 |
+| Name | Image | Class | Type | Shape | Size (m) |
+| --- | --- | --- | --- | --- | --- |
+| <span id="obj-dyn-abe"></span>`dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.52, 0.4, 0.46 |
+| <span id="obj-dyn-arcade-new-a"></span>`dyn_arcade_new_a` | ![objects/dyn_arcade_new_a.png](images/objects/dyn_arcade_new_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.94, 1.17, 2.29 |
+| <span id="obj-dyn-bar-stool-b"></span>`dyn_bar_stool_b` | ![objects/dyn_bar_stool_b.png](images/objects/dyn_bar_stool_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.44, 0.44, 0.97 |
+| <span id="obj-dyn-barbeque"></span>`dyn_barbeque` | ![objects/dyn_barbeque.png](images/objects/dyn_barbeque.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.64, 0.7, 0.92 |
+| <span id="obj-dyn-barrel-a"></span>`dyn_barrel_a` | ![objects/dyn_barrel_a.png](images/objects/dyn_barrel_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-bat"></span>`dyn_barrel_bat` | ![objects/dyn_barrel_bat.png](images/objects/dyn_barrel_bat.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-board"></span>`dyn_barrel_board` | ![objects/dyn_barrel_board.png](images/objects/dyn_barrel_board.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-bottle"></span>`dyn_barrel_bottle` | ![objects/dyn_barrel_bottle.png](images/objects/dyn_barrel_bottle.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-flash"></span>`dyn_barrel_flash` | ![objects/dyn_barrel_flash.png](images/objects/dyn_barrel_flash.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-knife"></span>`dyn_barrel_knife` | ![objects/dyn_barrel_knife.png](images/objects/dyn_barrel_knife.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-machete"></span>`dyn_barrel_machete` | ![objects/dyn_barrel_machete.png](images/objects/dyn_barrel_machete.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-molotov"></span>`dyn_barrel_molotov` | ![objects/dyn_barrel_molotov.png](images/objects/dyn_barrel_molotov.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-pipe"></span>`dyn_barrel_pipe` | ![objects/dyn_barrel_pipe.png](images/objects/dyn_barrel_pipe.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-spray"></span>`dyn_barrel_spray` | ![objects/dyn_barrel_spray.png](images/objects/dyn_barrel_spray.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-barrel-tknife"></span>`dyn_barrel_tknife` | ![objects/dyn_barrel_tknife.png](images/objects/dyn_barrel_tknife.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.9, 1.19 |
+| <span id="obj-dyn-bath-heater-a"></span>`dyn_bath_heater_a` | ![objects/dyn_bath_heater_a.png](images/objects/dyn_bath_heater_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.57, 0.25, 1.42 |
+| <span id="obj-dyn-bath-mirror-a"></span>`dyn_bath_mirror_a` | ![objects/dyn_bath_mirror_a.png](images/objects/dyn_bath_mirror_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.88, 0.06, 1.05 |
+| <span id="obj-dyn-bath-sink-lrg-a"></span>`dyn_bath_sink_lrg_a` | ![objects/dyn_bath_sink_lrg_a.png](images/objects/dyn_bath_sink_lrg_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.62, 1.03, 1.6 |
+| <span id="obj-dyn-bath-sink-lrg-aa"></span>`dyn_bath_sink_lrg_aa` | ![objects/dyn_bath_sink_lrg_aa.png](images/objects/dyn_bath_sink_lrg_aa.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.85, 1.03, 1.59 |
+| <span id="obj-dyn-bath-sink-lrg-b"></span>`dyn_bath_sink_lrg_b` | ![objects/dyn_bath_sink_lrg_b.png](images/objects/dyn_bath_sink_lrg_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.62, 1.03, 1.6 |
+| <span id="obj-dyn-bath-toweldisp-a"></span>`dyn_bath_toweldisp_a` | ![objects/dyn_bath_toweldisp_a.png](images/objects/dyn_bath_toweldisp_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.5, 0.35, 0.36 |
+| <span id="obj-dyn-beansie"></span>`dyn_beansie` | ![objects/dyn_beansie.png](images/objects/dyn_beansie.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.26, 0.26, 0.28 |
+| <span id="obj-dyn-bm-va1"></span>`dyn_bm_va1` | ![objects/dyn_bm_va1.png](images/objects/dyn_bm_va1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.27, 0.3, 0.36 |
+| <span id="obj-dyn-bm-va2"></span>`dyn_bm_va2` | ![objects/dyn_bm_va2.png](images/objects/dyn_bm_va2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.3, 0.31, 0.32 |
+| <span id="obj-dyn-bm-vb1"></span>`dyn_bm_vb1` | ![objects/dyn_bm_vb1.png](images/objects/dyn_bm_vb1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.34, 0.31 |
+| <span id="obj-dyn-bm-vb2"></span>`dyn_bm_vb2` | ![objects/dyn_bm_vb2.png](images/objects/dyn_bm_vb2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
+| <span id="obj-dyn-bm-vb3"></span>`dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.31, 0.13 |
+| <span id="obj-dyn-bm-vb4"></span>`dyn_bm_vb4` | ![objects/dyn_bm_vb4.png](images/objects/dyn_bm_vb4.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.27, 0.4 |
+| <span id="obj-dyn-bm-vb5"></span>`dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.26, 0.32, 0.18 |
+| <span id="obj-dyn-bm-vb6"></span>`dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.31, 0.35, 0.14 |
+| <span id="obj-dyn-bm-vb7"></span>`dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.37, 0.44, 0.16 |
+| <span id="obj-dyn-bm-vb8"></span>`dyn_bm_vb8` | ![objects/dyn_bm_vb8.png](images/objects/dyn_bm_vb8.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.27, 0.27 |
+| <span id="obj-dyn-bm-vb9"></span>`dyn_bm_vb9` | ![objects/dyn_bm_vb9.png](images/objects/dyn_bm_vb9.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.2, 0.3, 0.13 |
+| <span id="obj-dyn-bn-fa1"></span>`dyn_bn_fa1` | ![objects/dyn_bn_fa1.png](images/objects/dyn_bn_fa1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.19, 0.21, 0.16 |
+| <span id="obj-dyn-bn-fa2"></span>`dyn_bn_fa2` | ![objects/dyn_bn_fa2.png](images/objects/dyn_bn_fa2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.19, 0.21, 0.16 |
+| <span id="obj-dyn-bn-ma1"></span>`dyn_bn_ma1` | ![objects/dyn_bn_ma1.png](images/objects/dyn_bn_ma1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
+| <span id="obj-dyn-bopp-bo"></span>`dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.43, 0.51, 0.17 |
+| <span id="obj-dyn-bopp-lt"></span>`dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.46, 0.15 |
+| <span id="obj-dyn-bopp-so"></span>`dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.46, 0.15 |
+| <span id="obj-dyn-bumcart-b"></span>`dyn_bumcart_b` | ![objects/dyn_bumcart_b.png](images/objects/dyn_bumcart_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.35, 0.76, 1.42 |
+| <span id="obj-dyn-butcher"></span>`dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.19, 0.25, 0.09 |
+| <span id="obj-dyn-cabinet-a"></span>`dyn_cabinet_a` | ![objects/dyn_cabinet_a.png](images/objects/dyn_cabinet_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.07, 1.02, 1.8 |
+| <span id="obj-dyn-cabinet-aa"></span>`dyn_cabinet_aa` | ![objects/dyn_cabinet_aa.png](images/objects/dyn_cabinet_aa.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.07, 1.19, 1.8 |
+| <span id="obj-dyn-cardrack"></span>`dyn_cardrack` | ![objects/dyn_cardrack.png](images/objects/dyn_cardrack.png){ width="96" } | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.5, 0.53, 1.99 |
+| <span id="obj-dyn-carjunk-door-a"></span>`dyn_carjunk_door_a` | ![objects/dyn_carjunk_door_a.png](images/objects/dyn_carjunk_door_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.31, 0.5, 1.18 |
+| <span id="obj-dyn-carjunk-door-b"></span>`dyn_carjunk_door_b` | ![objects/dyn_carjunk_door_b.png](images/objects/dyn_carjunk_door_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.31, 0.5, 1.18 |
+| <span id="obj-dyn-carjunk-fender-a"></span>`dyn_carjunk_fender_a` | ![objects/dyn_carjunk_fender_a.png](images/objects/dyn_carjunk_fender_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.1, 0.9 |
+| <span id="obj-dyn-carjunk-fender-b"></span>`dyn_carjunk_fender_b` | ![objects/dyn_carjunk_fender_b.png](images/objects/dyn_carjunk_fender_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.57, 0.1, 0.93 |
+| <span id="obj-dyn-carjunk-hood-a"></span>`dyn_carjunk_hood_a` | ![objects/dyn_carjunk_hood_a.png](images/objects/dyn_carjunk_hood_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.01, 1.87, 0.2 |
+| <span id="obj-dyn-carjunk-windshld-a"></span>`dyn_carjunk_windshld_a` | ![objects/dyn_carjunk_windshld_a.png](images/objects/dyn_carjunk_windshld_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.1, 0.36, 0.76 |
+| <span id="obj-dyn-cb-christ-a"></span>`dyn_cb_christ_a` | ![objects/dyn_cb_christ_a.png](images/objects/dyn_cb_christ_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.37, 0.78, 2.81 |
+| <span id="obj-dyn-cb-christ-b"></span>`dyn_cb_christ_b` | ![objects/dyn_cb_christ_b.png](images/objects/dyn_cb_christ_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.94, 0.75, 1.79 |
+| <span id="obj-dyn-cb-coffee-a"></span>`dyn_cb_coffee_a` | ![objects/dyn_cb_coffee_a.png](images/objects/dyn_cb_coffee_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.84, 0.88, 1.01 |
+| <span id="obj-dyn-cb-coffee-b"></span>`dyn_cb_coffee_b` | ![objects/dyn_cb_coffee_b.png](images/objects/dyn_cb_coffee_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.44, 0.86, 0.87 |
+| <span id="obj-dyn-cb-david-a"></span>`dyn_cb_david_a` | ![objects/dyn_cb_david_a.png](images/objects/dyn_cb_david_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.82, 1.16, 4.17 |
+| <span id="obj-dyn-cb-david-b"></span>`dyn_cb_david_b` | ![objects/dyn_cb_david_b.png](images/objects/dyn_cb_david_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.71, 1.12, 3.68 |
+| <span id="obj-dyn-cb-david-d"></span>`dyn_cb_david_d` | ![objects/dyn_cb_david_d.png](images/objects/dyn_cb_david_d.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.67, 1.09, 1.73 |
+| <span id="obj-dyn-cb-pieta-a"></span>`dyn_cb_pieta_a` | ![objects/dyn_cb_pieta_a.png](images/objects/dyn_cb_pieta_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.19, 1.51, 2.38 |
+| <span id="obj-dyn-cb-pieta-b"></span>`dyn_cb_pieta_b` | ![objects/dyn_cb_pieta_b.png](images/objects/dyn_cb_pieta_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.84, 1.51, 2.24 |
+| <span id="obj-dyn-cb-thinker-a"></span>`dyn_cb_thinker_a` | ![objects/dyn_cb_thinker_a.png](images/objects/dyn_cb_thinker_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.1, 1.23, 2.21 |
+| <span id="obj-dyn-cb-thinker-b"></span>`dyn_cb_thinker_b` | ![objects/dyn_cb_thinker_b.png](images/objects/dyn_cb_thinker_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.1, 1.22, 1.46 |
+| <span id="obj-dyn-cgs"></span>`dyn_cgs` | ![objects/dyn_cgs.png](images/objects/dyn_cgs.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.27, 0.06, 0.2 |
+| <span id="obj-dyn-ch"></span>`dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.19, 0.32, 0.12 |
+| <span id="obj-dyn-chi-basket-a"></span>`dyn_chi_basket_a` | ![objects/dyn_chi_basket_a.png](images/objects/dyn_chi_basket_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.6, 0.6, 0.6 |
+| <span id="obj-dyn-chi-basket-b"></span>`dyn_chi_basket_b` | ![objects/dyn_chi_basket_b.png](images/objects/dyn_chi_basket_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.6, 0.6, 0.6 |
+| <span id="obj-dyn-chi-basket-c"></span>`dyn_chi_basket_c` | ![objects/dyn_chi_basket_c.png](images/objects/dyn_chi_basket_c.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.6, 0.6, 0.6 |
+| <span id="obj-dyn-chi-bowl-a"></span>`dyn_chi_bowl_a` | ![objects/dyn_chi_bowl_a.png](images/objects/dyn_chi_bowl_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.27, 0.27, 0.11 |
+| <span id="obj-dyn-chi-box-a"></span>`dyn_chi_box_a` | ![objects/dyn_chi_box_a.png](images/objects/dyn_chi_box_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.67, 1.11, 0.21 |
+| <span id="obj-dyn-chi-box-b"></span>`dyn_chi_box_b` | ![objects/dyn_chi_box_b.png](images/objects/dyn_chi_box_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.67, 1.11, 0.21 |
+| <span id="obj-dyn-chi-box-c"></span>`dyn_chi_box_c` | ![objects/dyn_chi_box_c.png](images/objects/dyn_chi_box_c.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.67, 1.11, 0.21 |
+| <span id="obj-dyn-chi-box-orange-a"></span>`dyn_chi_box_orange_a` | ![objects/dyn_chi_box_orange_a.png](images/objects/dyn_chi_box_orange_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.53, 0.71, 0.28 |
+| <span id="obj-dyn-chi-broom-b"></span>`dyn_chi_broom_b` | ![objects/dyn_chi_broom_b.png](images/objects/dyn_chi_broom_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.44, 0.32, 1.88 |
+| <span id="obj-dyn-chi-burlap-a"></span>`dyn_chi_burlap_a` | ![objects/dyn_chi_burlap_a.png](images/objects/dyn_chi_burlap_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.75, 0.68, 0.79 |
+| <span id="obj-dyn-chi-burlap-b"></span>`dyn_chi_burlap_b` | ![objects/dyn_chi_burlap_b.png](images/objects/dyn_chi_burlap_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.7, 0.74, 0.79 |
+| <span id="obj-dyn-chi-burlap-c"></span>`dyn_chi_burlap_c` | ![objects/dyn_chi_burlap_c.png](images/objects/dyn_chi_burlap_c.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.75, 0.69, 0.78 |
+| <span id="obj-dyn-chi-burlap-d"></span>`dyn_chi_burlap_d` | ![objects/dyn_chi_burlap_d.png](images/objects/dyn_chi_burlap_d.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.75, 0.69, 0.78 |
+| <span id="obj-dyn-chi-chopsticks-a"></span>`dyn_chi_chopsticks_a` | ![objects/dyn_chi_chopsticks_a.png](images/objects/dyn_chi_chopsticks_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.15, 0.17, 0.36 |
+| <span id="obj-dyn-chi-chopsticks-b"></span>`dyn_chi_chopsticks_b` | ![objects/dyn_chi_chopsticks_b.png](images/objects/dyn_chi_chopsticks_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.43, 0.16, 0.01 |
+| <span id="obj-dyn-chi-noodlestand-a"></span>`dyn_chi_noodlestand_a` | ![objects/dyn_chi_noodlestand_a.png](images/objects/dyn_chi_noodlestand_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.7, 1, 2.78 |
+| <span id="obj-dyn-chi-soup-pot-a"></span>`dyn_chi_soup_pot_a` | ![objects/dyn_chi_soup_pot_a.png](images/objects/dyn_chi_soup_pot_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.48, 0.46, 0.38 |
+| <span id="obj-dyn-chi-table-a"></span>`dyn_chi_table_a` | ![objects/dyn_chi_table_a.png](images/objects/dyn_chi_table_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.76, 0.98, 0.88 |
+| <span id="obj-dyn-chi-table-b"></span>`dyn_chi_table_b` | ![objects/dyn_chi_table_b.png](images/objects/dyn_chi_table_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.18, 0.98, 0.78 |
+| <span id="obj-dyn-chi-tatami-a"></span>`dyn_chi_tatami_a` | ![objects/dyn_chi_tatami_a.png](images/objects/dyn_chi_tatami_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.21, 0.67, 1.25 |
+| <span id="obj-dyn-chi-vase-a"></span>`dyn_chi_vase_a` | ![objects/dyn_chi_vase_a.png](images/objects/dyn_chi_vase_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.28, 0.28, 0.99 |
+| <span id="obj-dyn-chi-vase-b"></span>`dyn_chi_vase_b` | ![objects/dyn_chi_vase_b.png](images/objects/dyn_chi_vase_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.36, 0.36, 0.58 |
+| <span id="obj-dyn-chi-vase-c"></span>`dyn_chi_vase_c` | ![objects/dyn_chi_vase_c.png](images/objects/dyn_chi_vase_c.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.51, 0.49, 0.48 |
+| <span id="obj-dyn-chi-vase-d"></span>`dyn_chi_vase_d` | ![objects/dyn_chi_vase_d.png](images/objects/dyn_chi_vase_d.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.31, 0.32, 0.46 |
+| <span id="obj-dyn-chi-vase-e"></span>`dyn_chi_vase_e` | ![objects/dyn_chi_vase_e.png](images/objects/dyn_chi_vase_e.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.56, 0.57, 0.73 |
+| <span id="obj-dyn-chi-wbasket-a"></span>`dyn_chi_wbasket_a` | ![objects/dyn_chi_wbasket_a.png](images/objects/dyn_chi_wbasket_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.57, 0.56, 0.85 |
+| <span id="obj-dyn-chi-wbasket-b"></span>`dyn_chi_wbasket_b` | ![objects/dyn_chi_wbasket_b.png](images/objects/dyn_chi_wbasket_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.68, 0.69, 0.59 |
+| <span id="obj-dyn-chi-wbasket-stack-a"></span>`dyn_chi_wbasket_stack_a` | ![objects/dyn_chi_wbasket_stack_a.png](images/objects/dyn_chi_wbasket_stack_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.99, 0.72, 1.25 |
+| <span id="obj-dyn-chim-a"></span>`dyn_chim_a` | ![objects/dyn_chim_a.png](images/objects/dyn_chim_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.68, 0.66, 1.35 |
+| <span id="obj-dyn-chim-b"></span>`dyn_chim_b` | ![objects/dyn_chim_b.png](images/objects/dyn_chim_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.16, 0.57, 1.8 |
+| <span id="obj-dyn-chim-c"></span>`dyn_chim_c` | ![objects/dyn_chim_c.png](images/objects/dyn_chim_c.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.08, 1.1, 1.63 |
+| <span id="obj-dyn-chim-d"></span>`dyn_chim_d` | ![objects/dyn_chim_d.png](images/objects/dyn_chim_d.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.14, 1.02, 2.42 |
+| <span id="obj-dyn-chinavendor-a"></span>`dyn_chinavendor_a` | ![objects/dyn_chinavendor_a.png](images/objects/dyn_chinavendor_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.74, 1.28, 2.78 |
+| <span id="obj-dyn-chinavendor-b"></span>`dyn_chinavendor_b` | ![objects/dyn_chinavendor_b.png](images/objects/dyn_chinavendor_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.6, 0.71, 1.97 |
+| <span id="obj-dyn-cigvend-a"></span>`dyn_cigvend_a` | ![objects/dyn_cigvend_a.png](images/objects/dyn_cigvend_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.97, 0.9, 1.49 |
+| <span id="obj-dyn-civl-a"></span>`dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.27, 0.16 |
+| <span id="obj-dyn-civl-hl-ho"></span>`dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.21, 0.3, 0.14 |
+| <span id="obj-dyn-civl-pl-sp"></span>`dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.28, 0.29, 0.15 |
+| <span id="obj-dyn-civl-pl-we-hair"></span>`dyn_civl_pl_we_hair` | ![objects/dyn_civl_pl_we_hair.png](images/objects/dyn_civl_pl_we_hair.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.26, 0.31 |
+| <span id="obj-dyn-cny-booth-mole-a"></span>`dyn_cny_booth_mole_a` | ![objects/dyn_cny_booth_mole_a.png](images/objects/dyn_cny_booth_mole_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.23, 0.72, 0.97 |
+| <span id="obj-dyn-cny-booth-reg-a"></span>`dyn_cny_booth_reg_a` | ![objects/dyn_cny_booth_reg_a.png](images/objects/dyn_cny_booth_reg_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.23, 0.72, 1 |
+| <span id="obj-dyn-cny-booth-reg-b"></span>`dyn_cny_booth_reg_b` | ![objects/dyn_cny_booth_reg_b.png](images/objects/dyn_cny_booth_reg_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.23, 0.72, 1 |
+| <span id="obj-dyn-cny-booth-roul-a"></span>`dyn_cny_booth_roul_a` | ![objects/dyn_cny_booth_roul_a.png](images/objects/dyn_cny_booth_roul_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.23, 0.72, 1 |
+| <span id="obj-dyn-cny-clownface"></span>`dyn_cny_clownface` | ![objects/dyn_cny_clownface.png](images/objects/dyn_cny_clownface.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.86, 0.97, 1.2 |
+| <span id="obj-dyn-cny-dock-a"></span>`dyn_cny_dock_a` | ![objects/dyn_cny_dock_a.png](images/objects/dyn_cny_dock_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.45, 0.14, 2.5 |
+| <span id="obj-dyn-cny-dock-aa"></span>`dyn_cny_dock_aa` | ![objects/dyn_cny_dock_aa.png](images/objects/dyn_cny_dock_aa.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.73, 0.87, 2.5 |
+| <span id="obj-dyn-cny-dock-ab"></span>`dyn_cny_dock_ab` | ![objects/dyn_cny_dock_ab.png](images/objects/dyn_cny_dock_ab.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.73, 0.87, 2.5 |
+| <span id="obj-dyn-cny-milk"></span>`dyn_cny_milk` | ![objects/dyn_cny_milk.png](images/objects/dyn_cny_milk.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.45, 0.56, 0.98 |
+| <span id="obj-dyn-cny-picnic-a"></span>`dyn_cny_picnic_a` | ![objects/dyn_cny_picnic_a.png](images/objects/dyn_cny_picnic_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.21, 2.92, 0.95 |
+| <span id="obj-dyn-cny-skullgate-a"></span>`dyn_cny_skullgate_a` | ![objects/dyn_cny_skullgate_a.png](images/objects/dyn_cny_skullgate_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.61, 0.27, 2.13 |
+| <span id="obj-dyn-cny-skullspear-a"></span>`dyn_cny_skullspear_a` | ![objects/dyn_cny_skullspear_a.png](images/objects/dyn_cny_skullspear_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.59, 0.59, 2.45 |
+| <span id="obj-dyn-cny-skullspear-b"></span>`dyn_cny_skullspear_b` | ![objects/dyn_cny_skullspear_b.png](images/objects/dyn_cny_skullspear_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.63, 0.59, 2.13 |
+| <span id="obj-dyn-cny-tiki-mask-a"></span>`dyn_cny_tiki_mask_a` | ![objects/dyn_cny_tiki_mask_a.png](images/objects/dyn_cny_tiki_mask_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.81, 0.75, 1.57 |
+| <span id="obj-dyn-cny-tiki-mask-b"></span>`dyn_cny_tiki_mask_b` | ![objects/dyn_cny_tiki_mask_b.png](images/objects/dyn_cny_tiki_mask_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.51, 1.33, 2.76 |
+| <span id="obj-dyn-cny-tnt-stack"></span>`dyn_cny_tnt_stack` | ![objects/dyn_cny_tnt_stack.png](images/objects/dyn_cny_tnt_stack.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.59, 0.45, 1.42 |
+| <span id="obj-dyn-cny-umbrella"></span>`dyn_cny_umbrella` | ![objects/dyn_cny_umbrella.png](images/objects/dyn_cny_umbrella.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.85, 2.8, 2.91 |
+| <span id="obj-dyn-co-ma3"></span>`dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.38, 0.44, 0.15 |
+| <span id="obj-dyn-co-ma5"></span>`dyn_co_ma5` | ![objects/dyn_co_ma5.png](images/objects/dyn_co_ma5.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.3, 0.31 |
+| <span id="obj-dyn-coke-machine-a"></span>`dyn_coke_machine_a` | ![objects/dyn_coke_machine_a.png](images/objects/dyn_coke_machine_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.17, 1.07, 2.16 |
+| <span id="obj-dyn-cops-va"></span>`dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.31, 0.13 |
+| <span id="obj-dyn-cops-vb"></span>`dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.31, 0.13 |
+| <span id="obj-dyn-cops-vc"></span>`dyn_cops_vc` | ![objects/dyn_cops_vc.png](images/objects/dyn_cops_vc.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.31, 0.13 |
+| <span id="obj-dyn-corrugwall-a"></span>`dyn_corrugwall_a` | ![objects/dyn_corrugwall_a.png](images/objects/dyn_corrugwall_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.3, 0.24, 2.52 |
+| <span id="obj-dyn-corrugwall-aa"></span>`dyn_corrugwall_aa` | ![objects/dyn_corrugwall_aa.png](images/objects/dyn_corrugwall_aa.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.3, 0.29, 1.73 |
+| <span id="obj-dyn-corrugwall-ab"></span>`dyn_corrugwall_ab` | ![objects/dyn_corrugwall_ab.png](images/objects/dyn_corrugwall_ab.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.05, 0.25, 1.29 |
+| <span id="obj-dyn-corrugwall-b"></span>`dyn_corrugwall_b` | ![objects/dyn_corrugwall_b.png](images/objects/dyn_corrugwall_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.46, 0.44, 2.53 |
+| <span id="obj-dyn-corrugwall-ba"></span>`dyn_corrugwall_ba` | ![objects/dyn_corrugwall_ba.png](images/objects/dyn_corrugwall_ba.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.46, 0.26, 1.55 |
+| <span id="obj-dyn-corrugwall-bb"></span>`dyn_corrugwall_bb` | ![objects/dyn_corrugwall_bb.png](images/objects/dyn_corrugwall_bb.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.48, 0.23, 1.05 |
+| <span id="obj-dyn-crate-a"></span>`dyn_crate_a` | ![objects/dyn_crate_a.png](images/objects/dyn_crate_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-b"></span>`dyn_crate_b` | ![objects/dyn_crate_b.png](images/objects/dyn_crate_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-bat"></span>`dyn_crate_bat` | ![objects/dyn_crate_bat.png](images/objects/dyn_crate_bat.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-board"></span>`dyn_crate_board` | ![objects/dyn_crate_board.png](images/objects/dyn_crate_board.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-bottle"></span>`dyn_crate_bottle` | ![objects/dyn_crate_bottle.png](images/objects/dyn_crate_bottle.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-f"></span>`dyn_crate_f` | ![objects/dyn_crate_f.png](images/objects/dyn_crate_f.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-flash"></span>`dyn_crate_flash` | ![objects/dyn_crate_flash.png](images/objects/dyn_crate_flash.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-knife"></span>`dyn_crate_knife` | ![objects/dyn_crate_knife.png](images/objects/dyn_crate_knife.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-machete"></span>`dyn_crate_machete` | ![objects/dyn_crate_machete.png](images/objects/dyn_crate_machete.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-molotov"></span>`dyn_crate_molotov` | ![objects/dyn_crate_molotov.png](images/objects/dyn_crate_molotov.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-pipe"></span>`dyn_crate_pipe` | ![objects/dyn_crate_pipe.png](images/objects/dyn_crate_pipe.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-spray"></span>`dyn_crate_spray` | ![objects/dyn_crate_spray.png](images/objects/dyn_crate_spray.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-crate-stack"></span>`dyn_crate_stack` | ![objects/dyn_crate_stack.png](images/objects/dyn_crate_stack.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.56, 0.91, 1.38 |
+| <span id="obj-dyn-crate-stack-sml"></span>`dyn_crate_stack_sml` | ![objects/dyn_crate_stack_sml.png](images/objects/dyn_crate_stack_sml.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.66, 0.95, 1 |
+| <span id="obj-dyn-crate-stack-tuff"></span>`dyn_crate_stack_tuff` | ![objects/dyn_crate_stack_tuff.png](images/objects/dyn_crate_stack_tuff.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.56, 0.91, 1.38 |
+| <span id="obj-dyn-crate-tknife"></span>`dyn_crate_tknife` | ![objects/dyn_crate_tknife.png](images/objects/dyn_crate_tknife.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.55 |
+| <span id="obj-dyn-ct-act"></span>`dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.38, 0.44, 0.15 |
+| <span id="obj-dyn-ct-fa3"></span>`dyn_ct_fa3` | ![objects/dyn_ct_fa3.png](images/objects/dyn_ct_fa3.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.19, 0.21, 0.21 |
+| <span id="obj-dyn-ct-fa4"></span>`dyn_ct_fa4` | ![objects/dyn_ct_fa4.png](images/objects/dyn_ct_fa4.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.18, 0.06, 0.16 |
+| <span id="obj-dyn-ct-ma2"></span>`dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.34, 0.16 |
+| <span id="obj-dyn-cw-m1"></span>`dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.34, 0.16 |
+| <span id="obj-dyn-cw-m2"></span>`dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.34, 0.16 |
+| <span id="obj-dyn-dest-lt"></span>`dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.25, 0.3, 0.18 |
+| <span id="obj-dyn-dest-lta"></span>`dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.28, 0.29, 0.15 |
+| <span id="obj-dyn-dest-ltb"></span>`dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.32, 0.1 |
+| <span id="obj-dyn-doghouse-a"></span>`dyn_doghouse_a` | ![objects/dyn_doghouse_a.png](images/objects/dyn_doghouse_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.15, 1.24, 1.13 |
+| <span id="obj-dyn-dryer-a"></span>`dyn_dryer_a` | ![objects/dyn_dryer_a.png](images/objects/dyn_dryer_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.91, 0.92, 1.33 |
+| <span id="obj-dyn-dryerdoor"></span>`dyn_dryerdoor` | ![objects/dyn_dryerdoor.png](images/objects/dyn_dryerdoor.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.92, 0, 1.12 |
+| <span id="obj-dyn-dvdr"></span>`dyn_dvdr` | ![objects/dyn_dvdr.png](images/objects/dyn_dvdr.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.1, 0.17, 2.08 |
+| <span id="obj-dyn-easel"></span>`dyn_easel` | ![objects/dyn_easel.png](images/objects/dyn_easel.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.25, 0.77, 2.42 |
+| <span id="obj-dyn-eh-fa1"></span>`dyn_eh_fa1` | ![objects/dyn_eh_fa1.png](images/objects/dyn_eh_fa1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.27, 0.27, 0.31 |
+| <span id="obj-dyn-eh-fa2"></span>`dyn_eh_fa2` | ![objects/dyn_eh_fa2.png](images/objects/dyn_eh_fa2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.14, 0.14 |
+| <span id="obj-dyn-eh-fa3"></span>`dyn_eh_fa3` | ![objects/dyn_eh_fa3.png](images/objects/dyn_eh_fa3.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.12, 0.11, 0.17 |
+| <span id="obj-dyn-eh-ma2"></span>`dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.35, 0.44, 0.14 |
+| <span id="obj-dyn-eh-ma3"></span>`dyn_eh_ma3` | ![objects/dyn_eh_ma3.png](images/objects/dyn_eh_ma3.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.33, 0.28 |
+| <span id="obj-dyn-eh-ma4"></span>`dyn_eh_ma4` | ![objects/dyn_eh_ma4.png](images/objects/dyn_eh_ma4.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.36, 0.3, 0.32 |
+| <span id="obj-dyn-eh-ma5"></span>`dyn_eh_ma5` | ![objects/dyn_eh_ma5.png](images/objects/dyn_eh_ma5.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
+| <span id="obj-dyn-fake-a"></span>`dyn_fake_a` | ![objects/dyn_fake_a.png](images/objects/dyn_fake_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.21, 0.88, 1.3 |
+| <span id="obj-dyn-fake-b"></span>`dyn_fake_b` | ![objects/dyn_fake_b.png](images/objects/dyn_fake_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.4, 0.88, 1.35 |
+| <span id="obj-dyn-fake-c"></span>`dyn_fake_c` | ![objects/dyn_fake_c.png](images/objects/dyn_fake_c.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.7, 0.88, 2.76 |
+| <span id="obj-dyn-firehydrant-a"></span>`dyn_firehydrant_a` | ![objects/dyn_firehydrant_a.png](images/objects/dyn_firehydrant_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.47, 0.48, 0.86 |
+| <span id="obj-dyn-fridge-b"></span>`dyn_fridge_b` | ![objects/dyn_fridge_b.png](images/objects/dyn_fridge_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.92, 0.84, 1.93 |
+| <span id="obj-dyn-fruitstand-a"></span>`dyn_fruitstand_a` | ![objects/dyn_fruitstand_a.png](images/objects/dyn_fruitstand_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.3, 3.69, 1.06 |
+| <span id="obj-dyn-fruitstand-b"></span>`dyn_fruitstand_b` | ![objects/dyn_fruitstand_b.png](images/objects/dyn_fruitstand_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.17, 0.04, 1.06 |
+| <span id="obj-dyn-gallery-glass-table"></span>`dyn_gallery_glass_table` | ![objects/dyn_gallery_glass_table.png](images/objects/dyn_gallery_glass_table.png){ width="96" } | `dyn_masks` | `TYPE_GLASS` | `OBB` | 2.75, 1.03, 0.03 |
+| <span id="obj-dyn-gatechain"></span>`dyn_gatechain` | ![objects/dyn_gatechain.png](images/objects/dyn_gatechain.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.31, 0.08, 0.36 |
+| <span id="obj-dyn-ghost"></span>`dyn_ghost` | ![objects/dyn_ghost.png](images/objects/dyn_ghost.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.28, 0.31 |
+| <span id="obj-dyn-gypsy"></span>`dyn_gypsy` | ![objects/dyn_gypsy.png](images/objects/dyn_gypsy.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.23, 0.28, 0.35 |
+| <span id="obj-dyn-hiha-lt"></span>`dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.27, 0.33, 0.14 |
+| <span id="obj-dyn-hiha-lt-ft"></span>`dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.27, 0.33, 0.14 |
+| <span id="obj-dyn-hiha-so"></span>`dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.27, 0.32, 0.14 |
+| <span id="obj-dyn-huns-lt1"></span>`dyn_huns_lt1` | ![objects/dyn_huns_lt1.png](images/objects/dyn_huns_lt1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `OBB` | 0.21, 0.25, 0.25 |
+| <span id="obj-dyn-huns-lt2"></span>`dyn_huns_lt2` | ![objects/dyn_huns_lt2.png](images/objects/dyn_huns_lt2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `OBB` | 0.04, 0.09, 0.05 |
+| <span id="obj-dyn-hurr-lt"></span>`dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.38, 0.44, 0.15 |
+| <span id="obj-dyn-hurr-so"></span>`dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.28, 0.34, 0.15 |
+| <span id="obj-dyn-jewelcase-a"></span>`dyn_jewelcase_a` | ![objects/dyn_jewelcase_a.png](images/objects/dyn_jewelcase_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.58, 0.56, 2.1 |
+| <span id="obj-dyn-jukebox-opti-a"></span>`dyn_jukebox_opti_a` | ![objects/dyn_jukebox_opti_a.png](images/objects/dyn_jukebox_opti_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.91, 0.94, 1.7 |
+| <span id="obj-dyn-ladder"></span>`dyn_ladder` | ![objects/dyn_ladder.png](images/objects/dyn_ladder.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.07, 0.71, 4.93 |
+| <span id="obj-dyn-lizzypillar-a"></span>`dyn_lizzypillar_a` | ![objects/dyn_lizzypillar_a.png](images/objects/dyn_lizzypillar_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.8, 0.8, 6.24 |
+| <span id="obj-dyn-mailbox-a"></span>`dyn_mailbox_a` | ![objects/dyn_mailbox_a.png](images/objects/dyn_mailbox_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.63, 0.64, 1.45 |
+| <span id="obj-dyn-mask-e"></span>`dyn_mask_e` | ![objects/dyn_mask_e.png](images/objects/dyn_mask_e.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.39, 0.74, 2.45 |
+| <span id="obj-dyn-meatslicer"></span>`dyn_meatslicer` | ![objects/dyn_meatslicer.png](images/objects/dyn_meatslicer.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.46, 0.57, 0.48 |
+| <span id="obj-dyn-milk-crate-a"></span>`dyn_milk_crate_a` | ![objects/dyn_milk_crate_a.png](images/objects/dyn_milk_crate_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.49, 0.49, 0.46 |
+| <span id="obj-dyn-milk-crate-b"></span>`dyn_milk_crate_b` | ![objects/dyn_milk_crate_b.png](images/objects/dyn_milk_crate_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.49, 0.49, 0.46 |
+| <span id="obj-dyn-mohawk"></span>`dyn_mohawk` | ![objects/dyn_mohawk.png](images/objects/dyn_mohawk.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.03, 0.47, 0.29 |
+| <span id="obj-dyn-newsbox-a"></span>`dyn_newsbox_a` | ![objects/dyn_newsbox_a.png](images/objects/dyn_newsbox_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.82, 1.43 |
+| <span id="obj-dyn-newsstand-a"></span>`dyn_newsstand_a` | ![objects/dyn_newsstand_a.png](images/objects/dyn_newsstand_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.68, 1.13, 1.29 |
+| <span id="obj-dyn-newsstand-b"></span>`dyn_newsstand_b` | ![objects/dyn_newsstand_b.png](images/objects/dyn_newsstand_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.11, 2.17, 2.95 |
+| <span id="obj-dyn-oil-fire"></span>`dyn_oil_fire` | ![objects/dyn_oil_fire.png](images/objects/dyn_oil_fire.png){ width="96" } | `dyn_masks` | `TYPE_FIREBARREL` | `OBB` | 0.72, 0.73, 1.12 |
+| <span id="obj-dyn-oil-fire-rain"></span>`dyn_oil_fire_rain` | ![objects/dyn_oil_fire_rain.png](images/objects/dyn_oil_fire_rain.png){ width="96" } | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.72, 0.73, 1.12 |
+| <span id="obj-dyn-old-door"></span>`dyn_old_door` | ![objects/dyn_old_door.png](images/objects/dyn_old_door.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.09, 0.46, 2.3 |
+| <span id="obj-dyn-old-window"></span>`dyn_old_window` | ![objects/dyn_old_window.png](images/objects/dyn_old_window.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1, 0.32, 1.49 |
+| <span id="obj-dyn-paintcan-stack"></span>`dyn_paintcan_stack` | ![objects/dyn_paintcan_stack.png](images/objects/dyn_paintcan_stack.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.67, 0.27, 0.77 |
+| <span id="obj-dyn-painting-a"></span>`dyn_painting_a` | ![objects/dyn_painting_a.png](images/objects/dyn_painting_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.79, 0.05, 1.01 |
+| <span id="obj-dyn-painting-b"></span>`dyn_painting_b` | ![objects/dyn_painting_b.png](images/objects/dyn_painting_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.19, 0.05, 1.04 |
+| <span id="obj-dyn-panz-lt"></span>`dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.22, 0.25, 0.07 |
+| <span id="obj-dyn-panz-so"></span>`dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.22, 0.25, 0.07 |
+| <span id="obj-dyn-parkbench-a"></span>`dyn_parkbench_a` | ![objects/dyn_parkbench_a.png](images/objects/dyn_parkbench_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.98, 0.81, 1.01 |
+| <span id="obj-dyn-parknmeter-a"></span>`dyn_parknmeter_a` | ![objects/dyn_parknmeter_a.png](images/objects/dyn_parknmeter_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.23, 0.11, 1.65 |
+| <span id="obj-dyn-phone-b"></span>`dyn_phone_b` | ![objects/dyn_phone_b.png](images/objects/dyn_phone_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.55, 0.35, 0.85 |
+| <span id="obj-dyn-picnic"></span>`dyn_picnic` | ![objects/dyn_picnic.png](images/objects/dyn_picnic.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.75, 2.21, 0.95 |
+| <span id="obj-dyn-pimp-va"></span>`dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.44, 0.15 |
+| <span id="obj-dyn-pimp-vb"></span>`dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.44, 0.15 |
+| <span id="obj-dyn-pinball-fuzzballs-a"></span>`dyn_pinball_fuzzballs_a` | ![objects/dyn_pinball_fuzzballs_a.png](images/objects/dyn_pinball_fuzzballs_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.83, 1.67, 2.07 |
+| <span id="obj-dyn-pinball-fuzzballs-b"></span>`dyn_pinball_fuzzballs_b` | ![objects/dyn_pinball_fuzzballs_b.png](images/objects/dyn_pinball_fuzzballs_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.83, 1.26, 1.06 |
+| <span id="obj-dyn-pinball-new-a"></span>`dyn_pinball_new_a` | ![objects/dyn_pinball_new_a.png](images/objects/dyn_pinball_new_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.83, 1.67, 2.07 |
+| <span id="obj-dyn-pl-dr"></span>`dyn_pl_dr` | ![objects/dyn_pl_dr.png](images/objects/dyn_pl_dr.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `OBB` | 0.29, 0.31, 0.26 |
+| <span id="obj-dyn-pl-ma1"></span>`dyn_pl_ma1` | ![objects/dyn_pl_ma1.png](images/objects/dyn_pl_ma1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.13, 0.05 |
+| <span id="obj-dyn-pl-ma2"></span>`dyn_pl_ma2` | ![objects/dyn_pl_ma2.png](images/objects/dyn_pl_ma2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.28, 0.28 |
+| <span id="obj-dyn-pl-ma3"></span>`dyn_pl_ma3` | ![objects/dyn_pl_ma3.png](images/objects/dyn_pl_ma3.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.3, 0.31, 0.32 |
+| <span id="obj-dyn-pl-ma5"></span>`dyn_pl_ma5` | ![objects/dyn_pl_ma5.png](images/objects/dyn_pl_ma5.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
+| <span id="obj-dyn-pl-ma6"></span>`dyn_pl_ma6` | ![objects/dyn_pl_ma6.png](images/objects/dyn_pl_ma6.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.29 |
+| <span id="obj-dyn-pl-ma7"></span>`dyn_pl_ma7` | ![objects/dyn_pl_ma7.png](images/objects/dyn_pl_ma7.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.26, 0.31 |
+| <span id="obj-dyn-pl-ma9"></span>`dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.19, 0.33, 0.15 |
+| <span id="obj-dyn-pl-pm"></span>`dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.36, 0.46, 0.15 |
+| <span id="obj-dyn-porcelain-a"></span>`dyn_porcelain_a` | ![objects/dyn_porcelain_a.png](images/objects/dyn_porcelain_a.png){ width="96" } | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.74, 0.66, 0.58 |
+| <span id="obj-dyn-porcelain-b"></span>`dyn_porcelain_b` | ![objects/dyn_porcelain_b.png](images/objects/dyn_porcelain_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.63, 0.88, 0.96 |
+| <span id="obj-dyn-porcelain-c"></span>`dyn_porcelain_c` | ![objects/dyn_porcelain_c.png](images/objects/dyn_porcelain_c.png){ width="96" } | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.67, 0.63, 1.35 |
+| <span id="obj-dyn-porcelain-d"></span>`dyn_porcelain_d` | ![objects/dyn_porcelain_d.png](images/objects/dyn_porcelain_d.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.5, 0.83, 1.13 |
+| <span id="obj-dyn-porcelain-e"></span>`dyn_porcelain_e` | ![objects/dyn_porcelain_e.png](images/objects/dyn_porcelain_e.png){ width="96" } | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.84, 0.7, 1.39 |
+| <span id="obj-dyn-porcelain-f"></span>`dyn_porcelain_f` | ![objects/dyn_porcelain_f.png](images/objects/dyn_porcelain_f.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.76, 0.36, 0.98 |
+| <span id="obj-dyn-posterbox"></span>`dyn_posterbox` | ![objects/dyn_posterbox.png](images/objects/dyn_posterbox.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.47, 0.39, 1.04 |
+| <span id="obj-dyn-prom-fa"></span>`dyn_prom_fa` | ![objects/dyn_prom_fa.png](images/objects/dyn_prom_fa.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.27, 0.27, 0.31 |
+| <span id="obj-dyn-propane-a"></span>`dyn_propane_a` | ![objects/dyn_propane_a.png](images/objects/dyn_propane_a.png){ width="96" } | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.38, 0.33, 0.74 |
+| <span id="obj-dyn-propane-b"></span>`dyn_propane_b` | ![objects/dyn_propane_b.png](images/objects/dyn_propane_b.png){ width="96" } | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.38, 0.33, 0.57 |
+| <span id="obj-dyn-punk-sink-a"></span>`dyn_punk_sink_a` | ![objects/dyn_punk_sink_a.png](images/objects/dyn_punk_sink_a.png){ width="96" } | `dyn_masks` | `TYPE_DRUM` | `OBB` | 0.74, 0.66, 1.38 |
+| <span id="obj-dyn-punk-toilet-a"></span>`dyn_punk_toilet_a` | ![objects/dyn_punk_toilet_a.png](images/objects/dyn_punk_toilet_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.63, 0.88, 0.96 |
+| <span id="obj-dyn-recordbox"></span>`dyn_recordbox` | ![objects/dyn_recordbox.png](images/objects/dyn_recordbox.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.4, 0.43, 0.36 |
+| <span id="obj-dyn-riot-visor"></span>`dyn_riot_visor` | ![objects/dyn_riot_visor.png](images/objects/dyn_riot_visor.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.22, 0.21, 0.17 |
+| <span id="obj-dyn-rogu-lt"></span>`dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.21, 0.3, 0.13 |
+| <span id="obj-dyn-rogu-so"></span>`dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.2, 0.3, 0.13 |
+| <span id="obj-dyn-s-spook-a"></span>`dyn_s_spook_a` | ![objects/dyn_s_spook_a.png](images/objects/dyn_s_spook_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
+| <span id="obj-dyn-s-spook-b"></span>`dyn_s_spook_b` | ![objects/dyn_s_spook_b.png](images/objects/dyn_s_spook_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
+| <span id="obj-dyn-s-spook-c"></span>`dyn_s_spook_c` | ![objects/dyn_s_spook_c.png](images/objects/dyn_s_spook_c.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
+| <span id="obj-dyn-s-spook-d"></span>`dyn_s_spook_d` | ![objects/dyn_s_spook_d.png](images/objects/dyn_s_spook_d.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
+| <span id="obj-dyn-s-spook-e"></span>`dyn_s_spook_e` | ![objects/dyn_s_spook_e.png](images/objects/dyn_s_spook_e.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
+| <span id="obj-dyn-s-spook-f"></span>`dyn_s_spook_f` | ![objects/dyn_s_spook_f.png](images/objects/dyn_s_spook_f.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
+| <span id="obj-dyn-s-spook-g"></span>`dyn_s_spook_g` | ![objects/dyn_s_spook_g.png](images/objects/dyn_s_spook_g.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.69, 0.95, 2.8 |
+| <span id="obj-dyn-samo1"></span>`dyn_samo1` | ![objects/dyn_samo1.png](images/objects/dyn_samo1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.29, 0.31 |
+| <span id="obj-dyn-samo2"></span>`dyn_samo2` | ![objects/dyn_samo2.png](images/objects/dyn_samo2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.29, 0.31 |
+| <span id="obj-dyn-sata-bo"></span>`dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.26, 0.29, 0.27 |
+| <span id="obj-dyn-scaffold-a"></span>`dyn_scaffold_a` | ![objects/dyn_scaffold_a.png](images/objects/dyn_scaffold_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 5.29, 1.83, 4.43 |
+| <span id="obj-dyn-scps"></span>`dyn_scps` | ![objects/dyn_scps.png](images/objects/dyn_scps.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.19, 0.33, 0.2 |
+| <span id="obj-dyn-shelf"></span>`dyn_shelf` | ![objects/dyn_shelf.png](images/objects/dyn_shelf.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.07, 1.02, 1.8 |
+| <span id="obj-dyn-sk-pe"></span>`dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.31, 0.36, 0.2 |
+| <span id="obj-dyn-skid"></span>`dyn_skid` | ![objects/dyn_skid.png](images/objects/dyn_skid.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.74, 0.43, 1.75 |
+| <span id="obj-dyn-sml-fro"></span>`dyn_sml_fro` | ![objects/dyn_sml_fro.png](images/objects/dyn_sml_fro.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.23, 0.26, 0.28 |
+| <span id="obj-dyn-stair-patch"></span>`dyn_stair_patch` | ![objects/dyn_stair_patch.png](images/objects/dyn_stair_patch.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.66, 2.4, 1.6 |
+| <span id="obj-dyn-stallwall-a"></span>`dyn_stallwall_a` | ![objects/dyn_stallwall_a.png](images/objects/dyn_stallwall_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.48, 0.09, 2.5 |
+| <span id="obj-dyn-stallwall-lrg-a"></span>`dyn_stallwall_lrg_a` | ![objects/dyn_stallwall_lrg_a.png](images/objects/dyn_stallwall_lrg_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.79, 0.17, 1.8 |
+| <span id="obj-dyn-strut-a"></span>`dyn_strut_a` | ![objects/dyn_strut_a.png](images/objects/dyn_strut_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.2, 2.32, 0.2 |
+| <span id="obj-dyn-strut-b"></span>`dyn_strut_b` | ![objects/dyn_strut_b.png](images/objects/dyn_strut_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.3, 1.7, 0.43 |
+| <span id="obj-dyn-strut-p"></span>`dyn_strut_p` | ![objects/dyn_strut_p.png](images/objects/dyn_strut_p.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.22, 1.29, 0.32 |
+| <span id="obj-dyn-subseat-a"></span>`dyn_subseat_a` | ![objects/dyn_subseat_a.png](images/objects/dyn_subseat_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.96, 0.64, 1.06 |
+| <span id="obj-dyn-subseat-b"></span>`dyn_subseat_b` | ![objects/dyn_subseat_b.png](images/objects/dyn_subseat_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.02, 0.64, 1.06 |
+| <span id="obj-dyn-subtrash-a"></span>`dyn_subtrash_a` | ![objects/dyn_subtrash_a.png](images/objects/dyn_subtrash_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.53, 0.54, 1.3 |
+| <span id="obj-dyn-sun"></span>`dyn_sun` | ![objects/dyn_sun.png](images/objects/dyn_sun.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.13, 0.05 |
+| <span id="obj-dyn-templestatue"></span>`dyn_templestatue` | ![objects/dyn_templestatue.png](images/objects/dyn_templestatue.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.46, 0.91, 1.32 |
+| <span id="obj-dyn-templetorch-a"></span>`dyn_templetorch_a` | ![objects/dyn_templetorch_a.png](images/objects/dyn_templetorch_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.87, 0.82, 1.35 |
+| <span id="obj-dyn-templevase"></span>`dyn_templevase` | ![objects/dyn_templevase.png](images/objects/dyn_templevase.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.76, 0.78, 0.96 |
+| <span id="obj-dyn-tikitorch"></span>`dyn_tikitorch` | ![objects/dyn_tikitorch.png](images/objects/dyn_tikitorch.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.11, 0.1, 2.11 |
+| <span id="obj-dyn-tikitorch-noflame"></span>`dyn_tikitorch_noflame` | ![objects/dyn_tikitorch_noflame.png](images/objects/dyn_tikitorch_noflame.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.11, 0.1, 2.11 |
+| <span id="obj-dyn-tomb-a"></span>`dyn_tomb_a` | ![objects/dyn_tomb_a.png](images/objects/dyn_tomb_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.78, 0.3, 1.19 |
+| <span id="obj-dyn-tomb-b"></span>`dyn_tomb_b` | ![objects/dyn_tomb_b.png](images/objects/dyn_tomb_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.7, 0.19, 1.41 |
+| <span id="obj-dyn-tr-cw"></span>`dyn_tr_cw` | ![objects/dyn_tr_cw.png](images/objects/dyn_tr_cw.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.13, 0.05 |
+| <span id="obj-dyn-tr-fa1"></span>`dyn_tr_fa1` | ![objects/dyn_tr_fa1.png](images/objects/dyn_tr_fa1.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.25, 0.27, 0.26 |
+| <span id="obj-dyn-tr-fa2"></span>`dyn_tr_fa2` | ![objects/dyn_tr_fa2.png](images/objects/dyn_tr_fa2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.06, 0.09, 0.18 |
+| <span id="obj-dyn-tr-fa4"></span>`dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.21, 0.3, 0.13 |
+| <span id="obj-dyn-tr-ma2"></span>`dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.24, 0.32, 0.1 |
+| <span id="obj-dyn-tr-ma5"></span>`dyn_tr_ma5` | ![objects/dyn_tr_ma5.png](images/objects/dyn_tr_ma5.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.26, 0.31 |
+| <span id="obj-dyn-trnyrd-elecbox-a"></span>`dyn_trnyrd_elecbox_a` | ![objects/dyn_trnyrd_elecbox_a.png](images/objects/dyn_trnyrd_elecbox_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.41, 1.34, 3.12 |
+| <span id="obj-dyn-trnyrd-light-a"></span>`dyn_trnyrd_light_a` | ![objects/dyn_trnyrd_light_a.png](images/objects/dyn_trnyrd_light_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.42, 0.46, 3.03 |
+| <span id="obj-dyn-trnyrd-sign-a"></span>`dyn_trnyrd_sign_a` | ![objects/dyn_trnyrd_sign_a.png](images/objects/dyn_trnyrd_sign_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 0.33, 0.21, 5.15 |
+| <span id="obj-dyn-turn-so"></span>`dyn_turn_so` | ![objects/dyn_turn_so.png](images/objects/dyn_turn_so.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.17, 0.13, 0.12 |
+| <span id="obj-dyn-turn-so-vb"></span>`dyn_turn_so_vb` | ![objects/dyn_turn_so_vb.png](images/objects/dyn_turn_so_vb.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.29, 0.31, 0.26 |
+| <span id="obj-dyn-tvlarge"></span>`dyn_tvlarge` | ![objects/dyn_tvlarge.png](images/objects/dyn_tvlarge.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 1.26, 0.88, 0.86 |
+| <span id="obj-dyn-tw"></span>`dyn_tw` | ![objects/dyn_tw.png](images/objects/dyn_tw.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.24, 0.28, 0.31 |
+| <span id="obj-dyn-vargas-wall"></span>`dyn_vargas_wall` | ![objects/dyn_vargas_wall.png](images/objects/dyn_vargas_wall.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 3.26, 0, 1.66 |
+| <span id="obj-dyn-wall-a"></span>`dyn_wall_a` | ![objects/dyn_wall_a.png](images/objects/dyn_wall_a.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 5.16, 0.12, 3.05 |
+| <span id="obj-dyn-wall-b"></span>`dyn_wall_b` | ![objects/dyn_wall_b.png](images/objects/dyn_wall_b.png){ width="96" } | `dyn_masks` | `TYPE_GENERIC` | `OBB` | 2.6, 0.1, 3.47 |
+| <span id="obj-dyn-warr-cb"></span>`dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | `hat_object` | `TYPE_HAT` | `OBB` | 0.35, 0.44, 0.16 |
+| <span id="obj-dyn-we-ma2"></span>`dyn_we_ma2` | ![objects/dyn_we_ma2.png](images/objects/dyn_we_ma2.png){ width="96" } | `hat_object` | `TYPE_RIOT_HAT` | `NONE` | 0.28, 0.29, 0.19 |
 
 ## pick-ups and power-ups {#pick-ups-and-power-ups}
 
 111 entries.
 
-| Name | Class | Type | Shape | Size (m) |
-| --- | --- | --- | --- | --- |
-| <span id="obj-dyn-alert-p-one"></span>`dyn_alert_p_one` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.33, 0.03, 0.35 |
-| <span id="obj-dyn-alert-p-two"></span>`dyn_alert_p_two` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.33, 0.03, 0.35 |
-| <span id="obj-dyn-arrow-p1"></span>`dyn_arrow_p1` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
-| <span id="obj-dyn-arrow-p2"></span>`dyn_arrow_p2` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
-| <span id="obj-dyn-bagcoins"></span>`dyn_bagcoins` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-barkit"></span>`dyn_barkit` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-baseballpile"></span>`dyn_baseballpile` | `dyn_pile` | `TYPE_BASEBALLPILE` | `OBB` | 0.43, 0.42, 0.69 |
-| <span id="obj-dyn-beerpile"></span>`dyn_beerpile` | `dyn_pile` | `TYPE_BEERPILE` | `OBB` | 0.48, 0.64, 0.3 |
-| <span id="obj-dyn-beerpileheavy"></span>`dyn_beerpileheavy` | `dyn_pile` | `TYPE_BEERPILEHEAVY` | `OBB` | 0.48, 0.64, 0.3 |
-| <span id="obj-dyn-binocs"></span>`dyn_binocs` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.22, 0.17, 0.07 |
-| <span id="obj-dyn-blade"></span>`dyn_blade` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-blokpile"></span>`dyn_blokpile` | `dyn_pile` | `TYPE_GENERIC` | `OBB` | 1.45, 1.37, 0.77 |
-| <span id="obj-dyn-boltcut-box"></span>`dyn_boltcut_box` | `dyn_pile` | `TYPE_BOLTCUTTERBOX` | `OBB` | 0.51, 0.69, 0.62 |
-| <span id="obj-dyn-boltcutter"></span>`dyn_boltcutter` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.25, 0.87, 0.05 |
-| <span id="obj-dyn-bottle-e"></span>`dyn_bottle_e` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.13, 0.14, 0.42 |
-| <span id="obj-dyn-brass"></span>`dyn_brass` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-brickpile"></span>`dyn_brickpile` | `dyn_pile` | `TYPE_BRICKPILE` | `OBB` | 0.59, 0.56, 0.32 |
-| <span id="obj-dyn-brooch"></span>`dyn_brooch` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.07, 0.12, 0.16 |
-| <span id="obj-dyn-brownbag"></span>`dyn_brownbag` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.23, 0.21, 0.29 |
-| <span id="obj-dyn-bsblmitt"></span>`dyn_bsblmitt` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.27, 0.12, 0.32 |
-| <span id="obj-dyn-camera"></span>`dyn_camera` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.16, 0.22, 0.13 |
-| <span id="obj-dyn-camera-a"></span>`dyn_camera_a` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-carstereo"></span>`dyn_carstereo` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.4, 0.22, 0.1 |
-| <span id="obj-dyn-coins"></span>`dyn_coins` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-copradio"></span>`dyn_copradio` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.37, 0.32, 0.16 |
-| <span id="obj-dyn-cross"></span>`dyn_cross` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-crown"></span>`dyn_crown` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-cstick-a"></span>`dyn_cstick_a` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-cstick-b"></span>`dyn_cstick_b` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-cstick-c"></span>`dyn_cstick_c` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-cufflinks"></span>`dyn_cufflinks` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-cuffs"></span>`dyn_cuffs` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-cuffs-p-one"></span>`dyn_cuffs_p_one` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-cuffs-p-two"></span>`dyn_cuffs_p_two` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-dealer"></span>`dyn_dealer` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
-| <span id="obj-dyn-decanter-a"></span>`dyn_decanter_a` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-donut-spawner"></span>`dyn_donut_spawner` | `dyn_pile` | `TYPE_DONUTPILE` | `OBB` | 0.48, 0.64, 0.3 |
-| <span id="obj-dyn-eighttrack"></span>`dyn_eighttrack` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.15, 0.15, 0.19 |
-| <span id="obj-dyn-exclamation"></span>`dyn_exclamation` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.28, 0.02, 0.3 |
-| <span id="obj-dyn-flashdeal"></span>`dyn_flashdeal` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-gangrat"></span>`dyn_gangrat` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.28, 0.02, 0.3 |
-| <span id="obj-dyn-headphones"></span>`dyn_headphones` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.26, 0.12, 0.22 |
-| <span id="obj-dyn-hobo-donut-a"></span>`dyn_hobo_donut_a` | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
-| <span id="obj-dyn-hobo-donut-b"></span>`dyn_hobo_donut_b` | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
-| <span id="obj-dyn-hobo-donut-c"></span>`dyn_hobo_donut_c` | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
-| <span id="obj-dyn-hobo-hotdog"></span>`dyn_hobo_hotdog` | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
-| <span id="obj-dyn-hobo-mug"></span>`dyn_hobo_mug` | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
-| <span id="obj-dyn-hobo-salami"></span>`dyn_hobo_salami` | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
-| <span id="obj-dyn-hobo-steak"></span>`dyn_hobo_steak` | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
-| <span id="obj-dyn-info"></span>`dyn_info` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-key"></span>`dyn_key` | `powerup_item` | `TYPE_KEY` | `NONE` | 0.33, 0.2, 0.26 |
-| <span id="obj-dyn-ledger"></span>`dyn_ledger` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.22, 0.29, 0.04 |
-| <span id="obj-dyn-liquorpile"></span>`dyn_liquorpile` | `dyn_pile` | `TYPE_LIQUORPILE` | `OBB` | 1.45, 1.37, 0.77 |
-| <span id="obj-dyn-lizziestarget"></span>`dyn_lizziestarget` | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.36, 0, 0.38 |
-| <span id="obj-dyn-member-p1"></span>`dyn_member_p1` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
-| <span id="obj-dyn-member-p2"></span>`dyn_member_p2` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
-| <span id="obj-dyn-molotovpile"></span>`dyn_molotovpile` | `dyn_pile` | `TYPE_MOLOTOVPILE` | `OBB` | 0.48, 0.41, 0.41 |
-| <span id="obj-dyn-molotovpile-b"></span>`dyn_molotovpile_b` | `dyn_pile` | `TYPE_MOLOTOVPILE` | `OBB` | 0.48, 0.41, 0.41 |
-| <span id="obj-dyn-money"></span>`dyn_money` | `powerup_item` | `TYPE_MONEY` | `NONE` | 0.29, 0.15, 0.18 |
-| <span id="obj-dyn-necklace"></span>`dyn_necklace` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.23, 0.28, 0.26 |
-| <span id="obj-dyn-objective-green"></span>`dyn_objective_green` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 1.59, 1.57, 2.16 |
-| <span id="obj-dyn-objective-red"></span>`dyn_objective_red` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 1.59, 1.57, 2.16 |
-| <span id="obj-dyn-objective-w"></span>`dyn_objective_w` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 1.89, 1.7, 2.16 |
-| <span id="obj-dyn-objective-yellow"></span>`dyn_objective_yellow` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 1.59, 1.57, 2.16 |
-| <span id="obj-dyn-oilcan-box"></span>`dyn_oilcan_box` | `dyn_pile` | `TYPE_OILPILE` | `OBB` | 0.5, 0.69, 0.46 |
-| <span id="obj-dyn-p-one"></span>`dyn_p_one` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-p-two"></span>`dyn_p_two` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-pass"></span>`dyn_pass` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.1, 0.01, 0.22 |
-| <span id="obj-dyn-pedal"></span>`dyn_pedal` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.09, 0.16, 0.05 |
-| <span id="obj-dyn-pedrat"></span>`dyn_pedrat` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.28, 0.02, 0.3 |
-| <span id="obj-dyn-pills-bottle"></span>`dyn_pills_bottle` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.1, 0.22, 0.21 |
-| <span id="obj-dyn-pills-box"></span>`dyn_pills_box` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.26, 0.21, 0.21 |
-| <span id="obj-dyn-play-one"></span>`dyn_play_one` | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.44, 0, 0.48 |
-| <span id="obj-dyn-play-one-euro"></span>`dyn_play_one_euro` | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.44, 0, 0.48 |
-| <span id="obj-dyn-play-two"></span>`dyn_play_two` | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.44, 0, 0.48 |
-| <span id="obj-dyn-play-two-euro"></span>`dyn_play_two_euro` | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.44, 0, 0.48 |
-| <span id="obj-dyn-poolballpile"></span>`dyn_poolballpile` | `dyn_pile` | `TYPE_POOLBALLPILE` | `OBB` | 0.5, 0.41, 0.1 |
-| <span id="obj-dyn-porcelain-g"></span>`dyn_porcelain_g` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-porcelain-k"></span>`dyn_porcelain_k` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-porcelain-m"></span>`dyn_porcelain_m` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-porcelain-n"></span>`dyn_porcelain_n` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-porcelain-w"></span>`dyn_porcelain_w` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-powercuffs"></span>`dyn_powercuffs` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-pwatch"></span>`dyn_pwatch` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.15, 0.09, 0.15 |
-| <span id="obj-dyn-radio-a"></span>`dyn_radio_a` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-radio-b"></span>`dyn_radio_b` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-record"></span>`dyn_record` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.3, 0.3, 0.03 |
-| <span id="obj-dyn-revival"></span>`dyn_revival` | `powerup_item` | `TYPE_REVIVAL` | `NONE` | 0.12, 0.18, 0.24 |
-| <span id="obj-dyn-ring"></span>`dyn_ring` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.16, 0.13, 0.17 |
-| <span id="obj-dyn-ringdmnd"></span>`dyn_ringdmnd` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.06, 0.02, 0.06 |
-| <span id="obj-dyn-ringpimp"></span>`dyn_ringpimp` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.06, 0.06, 2.11 |
-| <span id="obj-dyn-ringstar"></span>`dyn_ringstar` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.42, 0.06, 0.41 |
-| <span id="obj-dyn-rockstar"></span>`dyn_rockstar` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.26, 0.02, 0.26 |
-| <span id="obj-dyn-siren"></span>`dyn_siren` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.01, 0.01, 0.01 |
-| <span id="obj-dyn-special-dragon"></span>`dyn_special_dragon` | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.41, 0.29, 0.38 |
-| <span id="obj-dyn-special-key"></span>`dyn_special_key` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.33, 0.17, 0.31 |
-| <span id="obj-dyn-spraycan"></span>`dyn_spraycan` | `powerup_item` | `TYPE_SPRAYCAN` | `NONE` | 0.1, 0.1, 0.31 |
-| <span id="obj-dyn-spraycan-box"></span>`dyn_spraycan_box` | `dyn_pile` | `TYPE_SPRAYPILE` | `OBB` | 0.5, 0.69, 0.46 |
-| <span id="obj-dyn-spraydeal"></span>`dyn_spraydeal` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-throwknifes"></span>`dyn_throwknifes` | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-throwtarget"></span>`dyn_throwtarget` | `dyn_objective` | `TYPE_GLASS` | `OBB` | 0.27, 0.02, 0.26 |
-| <span id="obj-dyn-w-bonus"></span>`dyn_w_bonus` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.65, 0.65, 2 |
-| <span id="obj-dyn-w-bonus-b"></span>`dyn_w_bonus_b` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.35, 0.02, 0.37 |
-| <span id="obj-dyn-w-cinematics"></span>`dyn_w_cinematics` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.38, 0.38, 2 |
-| <span id="obj-dyn-w-goto"></span>`dyn_w_goto` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.52, 0.52, 2 |
-| <span id="obj-dyn-w-green"></span>`dyn_w_green` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.42, 0.42, 2 |
-| <span id="obj-dyn-w-mission"></span>`dyn_w_mission` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.52, 0.52, 2 |
-| <span id="obj-dyn-w-mission-b"></span>`dyn_w_mission_b` | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.39, 0.03, 0.38 |
-| <span id="obj-dyn-w-red"></span>`dyn_w_red` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.42, 0.06, 0.41 |
-| <span id="obj-dyn-w-yellow"></span>`dyn_w_yellow` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.42, 0.06, 0.41 |
-| <span id="obj-dyn-weapdeal"></span>`dyn_weapdeal` | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| Name | Image | Class | Type | Shape | Size (m) |
+| --- | --- | --- | --- | --- | --- |
+| <span id="obj-dyn-alert-p-one"></span>`dyn_alert_p_one` | ![objects/dyn_alert_p_one.png](images/objects/dyn_alert_p_one.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.33, 0.03, 0.35 |
+| <span id="obj-dyn-alert-p-two"></span>`dyn_alert_p_two` | ![objects/dyn_alert_p_two.png](images/objects/dyn_alert_p_two.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.33, 0.03, 0.35 |
+| <span id="obj-dyn-arrow-p1"></span>`dyn_arrow_p1` | ![objects/dyn_arrow_p1.png](images/objects/dyn_arrow_p1.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
+| <span id="obj-dyn-arrow-p2"></span>`dyn_arrow_p2` | ![objects/dyn_arrow_p2.png](images/objects/dyn_arrow_p2.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
+| <span id="obj-dyn-bagcoins"></span>`dyn_bagcoins` | ![objects/dyn_bagcoins.png](images/objects/dyn_bagcoins.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-barkit"></span>`dyn_barkit` | ![objects/dyn_barkit.png](images/objects/dyn_barkit.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-baseballpile"></span>`dyn_baseballpile` | ![objects/dyn_baseballpile.png](images/objects/dyn_baseballpile.png){ width="96" } | `dyn_pile` | `TYPE_BASEBALLPILE` | `OBB` | 0.43, 0.42, 0.69 |
+| <span id="obj-dyn-beerpile"></span>`dyn_beerpile` | ![objects/dyn_beerpile.png](images/objects/dyn_beerpile.png){ width="96" } | `dyn_pile` | `TYPE_BEERPILE` | `OBB` | 0.48, 0.64, 0.3 |
+| <span id="obj-dyn-beerpileheavy"></span>`dyn_beerpileheavy` | ![objects/dyn_beerpileheavy.png](images/objects/dyn_beerpileheavy.png){ width="96" } | `dyn_pile` | `TYPE_BEERPILEHEAVY` | `OBB` | 0.48, 0.64, 0.3 |
+| <span id="obj-dyn-binocs"></span>`dyn_binocs` | ![objects/dyn_binocs.png](images/objects/dyn_binocs.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.22, 0.17, 0.07 |
+| <span id="obj-dyn-blade"></span>`dyn_blade` | ![objects/dyn_blade.png](images/objects/dyn_blade.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-blokpile"></span>`dyn_blokpile` | ![objects/dyn_blokpile.png](images/objects/dyn_blokpile.png){ width="96" } | `dyn_pile` | `TYPE_GENERIC` | `OBB` | 1.45, 1.37, 0.77 |
+| <span id="obj-dyn-boltcut-box"></span>`dyn_boltcut_box` | ![objects/dyn_boltcut_box.png](images/objects/dyn_boltcut_box.png){ width="96" } | `dyn_pile` | `TYPE_BOLTCUTTERBOX` | `OBB` | 0.51, 0.69, 0.62 |
+| <span id="obj-dyn-boltcutter"></span>`dyn_boltcutter` | ![objects/dyn_boltcutter.png](images/objects/dyn_boltcutter.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.25, 0.87, 0.05 |
+| <span id="obj-dyn-bottle-e"></span>`dyn_bottle_e` | ![objects/dyn_bottle_e.png](images/objects/dyn_bottle_e.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.13, 0.14, 0.42 |
+| <span id="obj-dyn-brass"></span>`dyn_brass` | ![objects/dyn_brass.png](images/objects/dyn_brass.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-brickpile"></span>`dyn_brickpile` | ![objects/dyn_brickpile.png](images/objects/dyn_brickpile.png){ width="96" } | `dyn_pile` | `TYPE_BRICKPILE` | `OBB` | 0.59, 0.56, 0.32 |
+| <span id="obj-dyn-brooch"></span>`dyn_brooch` | ![objects/dyn_brooch.png](images/objects/dyn_brooch.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.07, 0.12, 0.16 |
+| <span id="obj-dyn-brownbag"></span>`dyn_brownbag` | ![objects/dyn_brownbag.png](images/objects/dyn_brownbag.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.23, 0.21, 0.29 |
+| <span id="obj-dyn-bsblmitt"></span>`dyn_bsblmitt` | ![objects/dyn_bsblmitt.png](images/objects/dyn_bsblmitt.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.27, 0.12, 0.32 |
+| <span id="obj-dyn-camera"></span>`dyn_camera` | ![objects/dyn_camera.png](images/objects/dyn_camera.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.16, 0.22, 0.13 |
+| <span id="obj-dyn-camera-a"></span>`dyn_camera_a` | ![objects/dyn_camera_a.png](images/objects/dyn_camera_a.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-carstereo"></span>`dyn_carstereo` | ![objects/dyn_carstereo.png](images/objects/dyn_carstereo.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.4, 0.22, 0.1 |
+| <span id="obj-dyn-coins"></span>`dyn_coins` | ![objects/dyn_coins.png](images/objects/dyn_coins.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-copradio"></span>`dyn_copradio` | ![objects/dyn_copradio.png](images/objects/dyn_copradio.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.37, 0.32, 0.16 |
+| <span id="obj-dyn-cross"></span>`dyn_cross` | ![objects/dyn_cross.png](images/objects/dyn_cross.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-crown"></span>`dyn_crown` | ![objects/dyn_crown.png](images/objects/dyn_crown.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-cstick-a"></span>`dyn_cstick_a` | ![objects/dyn_cstick_a.png](images/objects/dyn_cstick_a.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-cstick-b"></span>`dyn_cstick_b` | ![objects/dyn_cstick_b.png](images/objects/dyn_cstick_b.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-cstick-c"></span>`dyn_cstick_c` | ![objects/dyn_cstick_c.png](images/objects/dyn_cstick_c.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-cufflinks"></span>`dyn_cufflinks` | ![objects/dyn_cufflinks.png](images/objects/dyn_cufflinks.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-cuffs"></span>`dyn_cuffs` | ![objects/dyn_cuffs.png](images/objects/dyn_cuffs.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-cuffs-p-one"></span>`dyn_cuffs_p_one` | ![objects/dyn_cuffs_p_one.png](images/objects/dyn_cuffs_p_one.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-cuffs-p-two"></span>`dyn_cuffs_p_two` | ![objects/dyn_cuffs_p_two.png](images/objects/dyn_cuffs_p_two.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-dealer"></span>`dyn_dealer` | ![objects/dyn_dealer.png](images/objects/dyn_dealer.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
+| <span id="obj-dyn-decanter-a"></span>`dyn_decanter_a` | ![objects/dyn_decanter_a.png](images/objects/dyn_decanter_a.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-donut-spawner"></span>`dyn_donut_spawner` | | `dyn_pile` | `TYPE_DONUTPILE` | `OBB` | 0.48, 0.64, 0.3 |
+| <span id="obj-dyn-eighttrack"></span>`dyn_eighttrack` | ![objects/dyn_eighttrack.png](images/objects/dyn_eighttrack.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.15, 0.15, 0.19 |
+| <span id="obj-dyn-exclamation"></span>`dyn_exclamation` | ![objects/dyn_exclamation.png](images/objects/dyn_exclamation.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.28, 0.02, 0.3 |
+| <span id="obj-dyn-flashdeal"></span>`dyn_flashdeal` | ![objects/dyn_flashdeal.png](images/objects/dyn_flashdeal.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-gangrat"></span>`dyn_gangrat` | ![objects/dyn_gangrat.png](images/objects/dyn_gangrat.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.28, 0.02, 0.3 |
+| <span id="obj-dyn-headphones"></span>`dyn_headphones` | ![objects/dyn_headphones.png](images/objects/dyn_headphones.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.26, 0.12, 0.22 |
+| <span id="obj-dyn-hobo-donut-a"></span>`dyn_hobo_donut_a` | ![objects/dyn_hobo_donut_a.png](images/objects/dyn_hobo_donut_a.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
+| <span id="obj-dyn-hobo-donut-b"></span>`dyn_hobo_donut_b` | ![objects/dyn_hobo_donut_b.png](images/objects/dyn_hobo_donut_b.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
+| <span id="obj-dyn-hobo-donut-c"></span>`dyn_hobo_donut_c` | ![objects/dyn_hobo_donut_c.png](images/objects/dyn_hobo_donut_c.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
+| <span id="obj-dyn-hobo-hotdog"></span>`dyn_hobo_hotdog` | ![objects/dyn_hobo_hotdog.png](images/objects/dyn_hobo_hotdog.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
+| <span id="obj-dyn-hobo-mug"></span>`dyn_hobo_mug` | ![objects/dyn_hobo_mug.png](images/objects/dyn_hobo_mug.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
+| <span id="obj-dyn-hobo-salami"></span>`dyn_hobo_salami` | ![objects/dyn_hobo_salami.png](images/objects/dyn_hobo_salami.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
+| <span id="obj-dyn-hobo-steak"></span>`dyn_hobo_steak` | ![objects/dyn_hobo_steak.png](images/objects/dyn_hobo_steak.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `OBB` | 0.26, 0.12, 0.22 |
+| <span id="obj-dyn-info"></span>`dyn_info` | ![objects/dyn_info.png](images/objects/dyn_info.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-key"></span>`dyn_key` | ![objects/dyn_key.png](images/objects/dyn_key.png){ width="96" } | `powerup_item` | `TYPE_KEY` | `NONE` | 0.33, 0.2, 0.26 |
+| <span id="obj-dyn-ledger"></span>`dyn_ledger` | ![objects/dyn_ledger.png](images/objects/dyn_ledger.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.22, 0.29, 0.04 |
+| <span id="obj-dyn-liquorpile"></span>`dyn_liquorpile` | ![objects/dyn_liquorpile.png](images/objects/dyn_liquorpile.png){ width="96" } | `dyn_pile` | `TYPE_LIQUORPILE` | `OBB` | 1.45, 1.37, 0.77 |
+| <span id="obj-dyn-lizziestarget"></span>`dyn_lizziestarget` | ![objects/dyn_lizziestarget.png](images/objects/dyn_lizziestarget.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.36, 0, 0.38 |
+| <span id="obj-dyn-member-p1"></span>`dyn_member_p1` | ![objects/dyn_member_p1.png](images/objects/dyn_member_p1.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
+| <span id="obj-dyn-member-p2"></span>`dyn_member_p2` | ![objects/dyn_member_p2.png](images/objects/dyn_member_p2.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.19, 0.06, 0.19 |
+| <span id="obj-dyn-molotovpile"></span>`dyn_molotovpile` | ![objects/dyn_molotovpile.png](images/objects/dyn_molotovpile.png){ width="96" } | `dyn_pile` | `TYPE_MOLOTOVPILE` | `OBB` | 0.48, 0.41, 0.41 |
+| <span id="obj-dyn-molotovpile-b"></span>`dyn_molotovpile_b` | ![objects/dyn_molotovpile_b.png](images/objects/dyn_molotovpile_b.png){ width="96" } | `dyn_pile` | `TYPE_MOLOTOVPILE` | `OBB` | 0.48, 0.41, 0.41 |
+| <span id="obj-dyn-money"></span>`dyn_money` | ![objects/dyn_money.png](images/objects/dyn_money.png){ width="96" } | `powerup_item` | `TYPE_MONEY` | `NONE` | 0.29, 0.15, 0.18 |
+| <span id="obj-dyn-necklace"></span>`dyn_necklace` | ![objects/dyn_necklace.png](images/objects/dyn_necklace.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.23, 0.28, 0.26 |
+| <span id="obj-dyn-objective-green"></span>`dyn_objective_green` | ![objects/dyn_objective_green.png](images/objects/dyn_objective_green.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 1.59, 1.57, 2.16 |
+| <span id="obj-dyn-objective-red"></span>`dyn_objective_red` | ![objects/dyn_objective_red.png](images/objects/dyn_objective_red.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 1.59, 1.57, 2.16 |
+| <span id="obj-dyn-objective-w"></span>`dyn_objective_w` | ![objects/dyn_objective_w.png](images/objects/dyn_objective_w.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 1.89, 1.7, 2.16 |
+| <span id="obj-dyn-objective-yellow"></span>`dyn_objective_yellow` | ![objects/dyn_objective_yellow.png](images/objects/dyn_objective_yellow.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 1.59, 1.57, 2.16 |
+| <span id="obj-dyn-oilcan-box"></span>`dyn_oilcan_box` | ![objects/dyn_oilcan_box.png](images/objects/dyn_oilcan_box.png){ width="96" } | `dyn_pile` | `TYPE_OILPILE` | `OBB` | 0.5, 0.69, 0.46 |
+| <span id="obj-dyn-p-one"></span>`dyn_p_one` | ![objects/dyn_p_one.png](images/objects/dyn_p_one.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-p-two"></span>`dyn_p_two` | ![objects/dyn_p_two.png](images/objects/dyn_p_two.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-pass"></span>`dyn_pass` | ![objects/dyn_pass.png](images/objects/dyn_pass.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.1, 0.01, 0.22 |
+| <span id="obj-dyn-pedal"></span>`dyn_pedal` | ![objects/dyn_pedal.png](images/objects/dyn_pedal.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.09, 0.16, 0.05 |
+| <span id="obj-dyn-pedrat"></span>`dyn_pedrat` | ![objects/dyn_pedrat.png](images/objects/dyn_pedrat.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.28, 0.02, 0.3 |
+| <span id="obj-dyn-pills-bottle"></span>`dyn_pills_bottle` | ![objects/dyn_pills_bottle.png](images/objects/dyn_pills_bottle.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.1, 0.22, 0.21 |
+| <span id="obj-dyn-pills-box"></span>`dyn_pills_box` | ![objects/dyn_pills_box.png](images/objects/dyn_pills_box.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.26, 0.21, 0.21 |
+| <span id="obj-dyn-play-one"></span>`dyn_play_one` | ![objects/dyn_play_one.png](images/objects/dyn_play_one.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.44, 0, 0.48 |
+| <span id="obj-dyn-play-one-euro"></span>`dyn_play_one_euro` | ![objects/dyn_play_one_euro.png](images/objects/dyn_play_one_euro.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.44, 0, 0.48 |
+| <span id="obj-dyn-play-two"></span>`dyn_play_two` | ![objects/dyn_play_two.png](images/objects/dyn_play_two.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.44, 0, 0.48 |
+| <span id="obj-dyn-play-two-euro"></span>`dyn_play_two_euro` | ![objects/dyn_play_two_euro.png](images/objects/dyn_play_two_euro.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `NONE` | 0.44, 0, 0.48 |
+| <span id="obj-dyn-poolballpile"></span>`dyn_poolballpile` | ![objects/dyn_poolballpile.png](images/objects/dyn_poolballpile.png){ width="96" } | `dyn_pile` | `TYPE_POOLBALLPILE` | `OBB` | 0.5, 0.41, 0.1 |
+| <span id="obj-dyn-porcelain-g"></span>`dyn_porcelain_g` | ![objects/dyn_porcelain_g.png](images/objects/dyn_porcelain_g.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-porcelain-k"></span>`dyn_porcelain_k` | ![objects/dyn_porcelain_k.png](images/objects/dyn_porcelain_k.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-porcelain-m"></span>`dyn_porcelain_m` | ![objects/dyn_porcelain_m.png](images/objects/dyn_porcelain_m.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-porcelain-n"></span>`dyn_porcelain_n` | ![objects/dyn_porcelain_n.png](images/objects/dyn_porcelain_n.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-porcelain-w"></span>`dyn_porcelain_w` | ![objects/dyn_porcelain_w.png](images/objects/dyn_porcelain_w.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-powercuffs"></span>`dyn_powercuffs` | ![objects/dyn_powercuffs.png](images/objects/dyn_powercuffs.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-pwatch"></span>`dyn_pwatch` | ![objects/dyn_pwatch.png](images/objects/dyn_pwatch.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.15, 0.09, 0.15 |
+| <span id="obj-dyn-radio-a"></span>`dyn_radio_a` | ![objects/dyn_radio_a.png](images/objects/dyn_radio_a.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-radio-b"></span>`dyn_radio_b` | ![objects/dyn_radio_b.png](images/objects/dyn_radio_b.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-record"></span>`dyn_record` | ![objects/dyn_record.png](images/objects/dyn_record.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.3, 0.3, 0.03 |
+| <span id="obj-dyn-revival"></span>`dyn_revival` | ![objects/dyn_revival.png](images/objects/dyn_revival.png){ width="96" } | `powerup_item` | `TYPE_REVIVAL` | `NONE` | 0.12, 0.18, 0.24 |
+| <span id="obj-dyn-ring"></span>`dyn_ring` | ![objects/dyn_ring.png](images/objects/dyn_ring.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.16, 0.13, 0.17 |
+| <span id="obj-dyn-ringdmnd"></span>`dyn_ringdmnd` | ![objects/dyn_ringdmnd.png](images/objects/dyn_ringdmnd.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.06, 0.02, 0.06 |
+| <span id="obj-dyn-ringpimp"></span>`dyn_ringpimp` | ![objects/dyn_ringpimp.png](images/objects/dyn_ringpimp.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.06, 0.06, 2.11 |
+| <span id="obj-dyn-ringstar"></span>`dyn_ringstar` | ![objects/dyn_ringstar.png](images/objects/dyn_ringstar.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.42, 0.06, 0.41 |
+| <span id="obj-dyn-rockstar"></span>`dyn_rockstar` | ![objects/dyn_rockstar.png](images/objects/dyn_rockstar.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.26, 0.02, 0.26 |
+| <span id="obj-dyn-siren"></span>`dyn_siren` | ![objects/dyn_siren.png](images/objects/dyn_siren.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.01, 0.01, 0.01 |
+| <span id="obj-dyn-special-dragon"></span>`dyn_special_dragon` | ![objects/dyn_special_dragon.png](images/objects/dyn_special_dragon.png){ width="96" } | `pickup_item` | `TYPE_SPECIAL` | `NONE` | 0.41, 0.29, 0.38 |
+| <span id="obj-dyn-special-key"></span>`dyn_special_key` | ![objects/dyn_special_key.png](images/objects/dyn_special_key.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0.33, 0.17, 0.31 |
+| <span id="obj-dyn-spraycan"></span>`dyn_spraycan` | ![objects/dyn_spraycan.png](images/objects/dyn_spraycan.png){ width="96" } | `powerup_item` | `TYPE_SPRAYCAN` | `NONE` | 0.1, 0.1, 0.31 |
+| <span id="obj-dyn-spraycan-box"></span>`dyn_spraycan_box` | ![objects/dyn_spraycan_box.png](images/objects/dyn_spraycan_box.png){ width="96" } | `dyn_pile` | `TYPE_SPRAYPILE` | `OBB` | 0.5, 0.69, 0.46 |
+| <span id="obj-dyn-spraydeal"></span>`dyn_spraydeal` | ![objects/dyn_spraydeal.png](images/objects/dyn_spraydeal.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-throwknifes"></span>`dyn_throwknifes` | ![objects/dyn_throwknifes.png](images/objects/dyn_throwknifes.png){ width="96" } | `powerup_item` | `TYPE_SPECIAL` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-throwtarget"></span>`dyn_throwtarget` | ![objects/dyn_throwtarget.png](images/objects/dyn_throwtarget.png){ width="96" } | `dyn_objective` | `TYPE_GLASS` | `OBB` | 0.27, 0.02, 0.26 |
+| <span id="obj-dyn-w-bonus"></span>`dyn_w_bonus` | ![objects/dyn_w_bonus.png](images/objects/dyn_w_bonus.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.65, 0.65, 2 |
+| <span id="obj-dyn-w-bonus-b"></span>`dyn_w_bonus_b` | ![objects/dyn_w_bonus_b.png](images/objects/dyn_w_bonus_b.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.35, 0.02, 0.37 |
+| <span id="obj-dyn-w-cinematics"></span>`dyn_w_cinematics` | ![objects/dyn_w_cinematics.png](images/objects/dyn_w_cinematics.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.38, 0.38, 2 |
+| <span id="obj-dyn-w-goto"></span>`dyn_w_goto` | ![objects/dyn_w_goto.png](images/objects/dyn_w_goto.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.52, 0.52, 2 |
+| <span id="obj-dyn-w-green"></span>`dyn_w_green` | ![objects/dyn_w_green.png](images/objects/dyn_w_green.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.42, 0.42, 2 |
+| <span id="obj-dyn-w-mission"></span>`dyn_w_mission` | ![objects/dyn_w_mission.png](images/objects/dyn_w_mission.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.52, 0.52, 2 |
+| <span id="obj-dyn-w-mission-b"></span>`dyn_w_mission_b` | ![objects/dyn_w_mission_b.png](images/objects/dyn_w_mission_b.png){ width="96" } | `dyn_objective` | `TYPE_GENERIC` | `OBB` | 0.39, 0.03, 0.38 |
+| <span id="obj-dyn-w-red"></span>`dyn_w_red` | ![objects/dyn_w_red.png](images/objects/dyn_w_red.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.42, 0.06, 0.41 |
+| <span id="obj-dyn-w-yellow"></span>`dyn_w_yellow` | ![objects/dyn_w_yellow.png](images/objects/dyn_w_yellow.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.42, 0.06, 0.41 |
+| <span id="obj-dyn-weapdeal"></span>`dyn_weapdeal` | ![objects/dyn_weapdeal.png](images/objects/dyn_weapdeal.png){ width="96" } | `dyn_icon` | `TYPE_GENERIC` | `OBB` | 0.27, 0.02, 0.26 |
 
 ## doors {#doors}
 
 98 entries.
 
-| Name | Class | Type | Shape | Size (m) |
-| --- | --- | --- | --- | --- |
-| <span id="obj-dyn-door-big-gate"></span>`dyn_door_big_gate` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 8.86, 0.1, 3.32 |
-| <span id="obj-dyn-door-cabin-a"></span>`dyn_door_cabin_a` | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.64, 0.07, 1.89 |
-| <span id="obj-dyn-door-cabin-b"></span>`dyn_door_cabin_b` | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.64, 0.07, 1.89 |
-| <span id="obj-dyn-door-cabin-c"></span>`dyn_door_cabin_c` | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.64, 0.07, 1.89 |
-| <span id="obj-dyn-door-cemgate"></span>`dyn_door_cemgate` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.66, 0.16, 2.84 |
-| <span id="obj-dyn-door-chainlnk-a"></span>`dyn_door_chainlnk_a` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-door-chainlnk-ag"></span>`dyn_door_chainlnk_ag` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-door-chainlnk-ap"></span>`dyn_door_chainlnk_ap` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 3.35, 0.07, 3.28 |
-| <span id="obj-dyn-door-chainlnk-ar"></span>`dyn_door_chainlnk_ar` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-door-chainlnk-aw"></span>`dyn_door_chainlnk_aw` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-door-chainlnk-pick"></span>`dyn_door_chainlnk_pick` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-door-corr"></span>`dyn_door_corr` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 3.4, 0.18, 4.29 |
-| <span id="obj-dyn-door-dblgate"></span>`dyn_door_dblgate` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.96, 0.1, 3.03 |
-| <span id="obj-dyn-door-dblgate-d"></span>`dyn_door_dblgate_d` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.96, 0.1, 3.03 |
-| <span id="obj-dyn-door-dblstlwin"></span>`dyn_door_dblstlwin` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-dblwood"></span>`dyn_door_dblwood` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-dblwoodfnce-xl"></span>`dyn_door_dblwoodfnce_xl` | `dyn_door_swinging` | `TYPE_GENERIC` | `NONE` | 4.12, 0.11, 2.65 |
-| <span id="obj-dyn-door-dclub"></span>`dyn_door_dclub` | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.18, 0.07, 2.33 |
-| <span id="obj-dyn-door-ele"></span>`dyn_door_ele` | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 4.75, 0.1, 4.92 |
-| <span id="obj-dyn-door-ele-c"></span>`dyn_door_ele_c` | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 3.71, 0, 1.6 |
-| <span id="obj-dyn-door-fence-r"></span>`dyn_door_fence_r` | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 3.44, 0.18, 4.61 |
-| <span id="obj-dyn-door-fence-s"></span>`dyn_door_fence_s` | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 2.31, 0.08, 3.28 |
-| <span id="obj-dyn-door-liz"></span>`dyn_door_liz` | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.18, 0.07, 2.33 |
-| <span id="obj-dyn-door-ornate"></span>`dyn_door_ornate` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.05, 2.33 |
-| <span id="obj-dyn-door-ornate-single"></span>`dyn_door_ornate_single` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.05, 2.33 |
-| <span id="obj-dyn-door-pol"></span>`dyn_door_pol` | `dyn_door_sliding` | `TYPE_DOOR` | `OBB` | 0.11, 0.11, 1.32 |
-| <span id="obj-dyn-door-portcullis"></span>`dyn_door_portcullis` | `dyn_door_sliding` | `TYPE_SLIDING_DOOR` | `OBB` | 3.27, 0.2, 2.64 |
-| <span id="obj-dyn-door-red-fence"></span>`dyn_door_red_fence` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.11, 0.1, 3.88 |
-| <span id="obj-dyn-door-redgate"></span>`dyn_door_redgate` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 3.44, 0.09, 4.97 |
-| <span id="obj-dyn-door-rollup"></span>`dyn_door_rollup` | `dyn_door_sliding` | `TYPE_SLIDING_DOOR` | `NONE` | 3.82, 0.1, 3.48 |
-| <span id="obj-dyn-door-shackdoor"></span>`dyn_door_shackdoor` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 4.27, 0.18, 4.29 |
-| <span id="obj-dyn-door-sheetmtl"></span>`dyn_door_sheetmtl` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 4.27, 0.18, 4.29 |
-| <span id="obj-dyn-door-spook"></span>`dyn_door_spook` | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 2.49, 0.16, 8.44 |
-| <span id="obj-dyn-door-stall"></span>`dyn_door_stall` | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.31, 0.07, 2.2 |
-| <span id="obj-dyn-door-steel-b"></span>`dyn_door_steel_b` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-stlslot"></span>`dyn_door_stlslot` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-stlwin"></span>`dyn_door_stlwin` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-store"></span>`dyn_door_store` | `dyn_door_swinging` | `TYPE_BREAKANDENTER_DOOR` | `OBB` | 2.18, 0.07, 2.33 |
-| <span id="obj-dyn-door-storeb"></span>`dyn_door_storeb` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.18, 0.2, 2.33 |
-| <span id="obj-dyn-door-strip"></span>`dyn_door_strip` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-subcan"></span>`dyn_door_subcan` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.04, 2.33 |
-| <span id="obj-dyn-door-subway"></span>`dyn_door_subway` | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 0.83, 0.06, 2.31 |
-| <span id="obj-dyn-door-temple"></span>`dyn_door_temple` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-templedoor"></span>`dyn_door_templedoor` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-templeshutter"></span>`dyn_door_templeshutter` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 3.154, 0.07, 2.22 |
-| <span id="obj-dyn-door-wood"></span>`dyn_door_wood` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-door-woodbrd"></span>`dyn_door_woodbrd` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.41, 0.06, 2.58 |
-| <span id="obj-dyn-door-woodfnce-xl"></span>`dyn_door_woodfnce_xl` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.06, 0.11, 2.65 |
-| <span id="obj-dyn-door-woodp"></span>`dyn_door_woodp` | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.2, 0.1, 3 |
-| <span id="obj-dyn-dr-big-gate"></span>`dyn_dr_big_gate` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 4.43, 0, 3.32 |
-| <span id="obj-dyn-dr-cabin-a"></span>`dyn_dr_cabin_a` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.64, 0.07, 1.89 |
-| <span id="obj-dyn-dr-cabin-aa"></span>`dyn_dr_cabin_aa` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 0.82, 0.11, 1.89 |
-| <span id="obj-dyn-dr-cabin-b"></span>`dyn_dr_cabin_b` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.64, 0.07, 1.89 |
-| <span id="obj-dyn-dr-cabin-bb"></span>`dyn_dr_cabin_bb` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 0.82, 0.11, 1.89 |
-| <span id="obj-dyn-dr-cabin-c"></span>`dyn_dr_cabin_c` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.64, 0.07, 1.89 |
-| <span id="obj-dyn-dr-cabin-cc"></span>`dyn_dr_cabin_cc` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 0.82, 0.11, 1.89 |
-| <span id="obj-dyn-dr-cemgate"></span>`dyn_dr_cemgate` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.66, 0.16, 2.84 |
-| <span id="obj-dyn-dr-chainlnk-a"></span>`dyn_dr_chainlnk_a` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-dr-chainlnk-ag"></span>`dyn_dr_chainlnk_ag` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-dr-chainlnk-ap"></span>`dyn_dr_chainlnk_ap` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 3.35, 0.07, 3.28 |
-| <span id="obj-dyn-dr-chainlnk-ar"></span>`dyn_dr_chainlnk_ar` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-dr-chainlnk-aw"></span>`dyn_dr_chainlnk_aw` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.31, 0.07, 3.28 |
-| <span id="obj-dyn-dr-corr"></span>`dyn_dr_corr` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 3.4, 0.18, 4.29 |
-| <span id="obj-dyn-dr-dblgate"></span>`dyn_dr_dblgate` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 1.96, 0.1, 3.03 |
-| <span id="obj-dyn-dr-dblgate-d"></span>`dyn_dr_dblgate_d` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 1.96, 0.1, 3.03 |
-| <span id="obj-dyn-dr-dblstlwin"></span>`dyn_dr_dblstlwin` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-dclub"></span>`dyn_dr_dclub` | `sub_swinging_door` | `TYPE_BREAKABLE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-ele"></span>`dyn_dr_ele` | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 4.75, 0.1, 4.92 |
-| <span id="obj-dyn-dr-ele-c"></span>`dyn_dr_ele_c` | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 3.71, 0, 1.6 |
-| <span id="obj-dyn-dr-fence-r"></span>`dyn_dr_fence_r` | `sub_sliding_door` | `TYPE_GLASS` | `OBB` | 3.42, 0.18, 4.61 |
-| <span id="obj-dyn-dr-fence-s"></span>`dyn_dr_fence_s` | `sub_sliding_door` | `TYPE_GLASS` | `OBB` | 2.31, 0.08, 3.28 |
-| <span id="obj-dyn-dr-liz"></span>`dyn_dr_liz` | `sub_swinging_door` | `TYPE_BREAKABLE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-ornate"></span>`dyn_dr_ornate` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.05, 2.33 |
-| <span id="obj-dyn-dr-pol"></span>`dyn_dr_pol` | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 1.88, 0.5, 1.1 |
-| <span id="obj-dyn-dr-portcullis"></span>`dyn_dr_portcullis` | `sub_sliding_door` | `TYPE_GLASS` | `OBB` | 3.27, 0.2, 2.64 |
-| <span id="obj-dyn-dr-red-fence"></span>`dyn_dr_red_fence` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.11, 0.1, 3.88 |
-| <span id="obj-dyn-dr-redgate"></span>`dyn_dr_redgate` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 3.44, 0.09, 4.97 |
-| <span id="obj-dyn-dr-rollup"></span>`dyn_dr_rollup` | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 3.82, 0.1, 3.48 |
-| <span id="obj-dyn-dr-shackdoor"></span>`dyn_dr_shackdoor` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 4.27, 0.18, 4.29 |
-| <span id="obj-dyn-dr-sheetmtl"></span>`dyn_dr_sheetmtl` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 4.27, 0.18, 4.29 |
-| <span id="obj-dyn-dr-spook-a"></span>`dyn_dr_spook_a` | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 2.49, 0.16, 8.44 |
-| <span id="obj-dyn-dr-spook-b"></span>`dyn_dr_spook_b` | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 2.49, 0.16, 8.44 |
-| <span id="obj-dyn-dr-stall"></span>`dyn_dr_stall` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.31, 0.07, 2.2 |
-| <span id="obj-dyn-dr-steel-b"></span>`dyn_dr_steel_b` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-stlslot"></span>`dyn_dr_stlslot` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-stlwin"></span>`dyn_dr_stlwin` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-store"></span>`dyn_dr_store` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.18, 0.07, 2.33 |
-| <span id="obj-dyn-dr-store-wrecked"></span>`dyn_dr_store_wrecked` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.18, 0.07, 2.33 |
-| <span id="obj-dyn-dr-storeb"></span>`dyn_dr_storeb` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.18, 0.15, 2.33 |
-| <span id="obj-dyn-dr-storeb-wrecked"></span>`dyn_dr_storeb_wrecked` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.18, 0.07, 2.33 |
-| <span id="obj-dyn-dr-strip"></span>`dyn_dr_strip` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-subcan"></span>`dyn_dr_subcan` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.04, 2.33 |
-| <span id="obj-dyn-dr-subway"></span>`dyn_dr_subway` | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 0.83, 0.06, 2.31 |
-| <span id="obj-dyn-dr-temple"></span>`dyn_dr_temple` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 1.89, 0.23, 2.61 |
-| <span id="obj-dyn-dr-templedoor"></span>`dyn_dr_templedoor` | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-templeshutter"></span>`dyn_dr_templeshutter` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.58, 0.07, 2.22 |
-| <span id="obj-dyn-dr-wood"></span>`dyn_dr_wood` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-dr-woodfnce-xl"></span>`dyn_dr_woodfnce_xl` | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.06, 0.11, 2.65 |
+| Name | Image | Class | Type | Shape | Size (m) |
+| --- | --- | --- | --- | --- | --- |
+| <span id="obj-dyn-door-big-gate"></span>`dyn_door_big_gate` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 8.86, 0.1, 3.32 |
+| <span id="obj-dyn-door-cabin-a"></span>`dyn_door_cabin_a` | | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.64, 0.07, 1.89 |
+| <span id="obj-dyn-door-cabin-b"></span>`dyn_door_cabin_b` | | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.64, 0.07, 1.89 |
+| <span id="obj-dyn-door-cabin-c"></span>`dyn_door_cabin_c` | | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.64, 0.07, 1.89 |
+| <span id="obj-dyn-door-cemgate"></span>`dyn_door_cemgate` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.66, 0.16, 2.84 |
+| <span id="obj-dyn-door-chainlnk-a"></span>`dyn_door_chainlnk_a` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-door-chainlnk-ag"></span>`dyn_door_chainlnk_ag` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-door-chainlnk-ap"></span>`dyn_door_chainlnk_ap` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 3.35, 0.07, 3.28 |
+| <span id="obj-dyn-door-chainlnk-ar"></span>`dyn_door_chainlnk_ar` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-door-chainlnk-aw"></span>`dyn_door_chainlnk_aw` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-door-chainlnk-pick"></span>`dyn_door_chainlnk_pick` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-door-corr"></span>`dyn_door_corr` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 3.4, 0.18, 4.29 |
+| <span id="obj-dyn-door-dblgate"></span>`dyn_door_dblgate` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.96, 0.1, 3.03 |
+| <span id="obj-dyn-door-dblgate-d"></span>`dyn_door_dblgate_d` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.96, 0.1, 3.03 |
+| <span id="obj-dyn-door-dblstlwin"></span>`dyn_door_dblstlwin` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-dblwood"></span>`dyn_door_dblwood` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-dblwoodfnce-xl"></span>`dyn_door_dblwoodfnce_xl` | | `dyn_door_swinging` | `TYPE_GENERIC` | `NONE` | 4.12, 0.11, 2.65 |
+| <span id="obj-dyn-door-dclub"></span>`dyn_door_dclub` | | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.18, 0.07, 2.33 |
+| <span id="obj-dyn-door-ele"></span>`dyn_door_ele` | | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 4.75, 0.1, 4.92 |
+| <span id="obj-dyn-door-ele-c"></span>`dyn_door_ele_c` | | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 3.71, 0, 1.6 |
+| <span id="obj-dyn-door-fence-r"></span>`dyn_door_fence_r` | | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 3.44, 0.18, 4.61 |
+| <span id="obj-dyn-door-fence-s"></span>`dyn_door_fence_s` | | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 2.31, 0.08, 3.28 |
+| <span id="obj-dyn-door-liz"></span>`dyn_door_liz` | | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.18, 0.07, 2.33 |
+| <span id="obj-dyn-door-ornate"></span>`dyn_door_ornate` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.05, 2.33 |
+| <span id="obj-dyn-door-ornate-single"></span>`dyn_door_ornate_single` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.05, 2.33 |
+| <span id="obj-dyn-door-pol"></span>`dyn_door_pol` | | `dyn_door_sliding` | `TYPE_DOOR` | `OBB` | 0.11, 0.11, 1.32 |
+| <span id="obj-dyn-door-portcullis"></span>`dyn_door_portcullis` | | `dyn_door_sliding` | `TYPE_SLIDING_DOOR` | `OBB` | 3.27, 0.2, 2.64 |
+| <span id="obj-dyn-door-red-fence"></span>`dyn_door_red_fence` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.11, 0.1, 3.88 |
+| <span id="obj-dyn-door-redgate"></span>`dyn_door_redgate` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 3.44, 0.09, 4.97 |
+| <span id="obj-dyn-door-rollup"></span>`dyn_door_rollup` | | `dyn_door_sliding` | `TYPE_SLIDING_DOOR` | `NONE` | 3.82, 0.1, 3.48 |
+| <span id="obj-dyn-door-shackdoor"></span>`dyn_door_shackdoor` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 4.27, 0.18, 4.29 |
+| <span id="obj-dyn-door-sheetmtl"></span>`dyn_door_sheetmtl` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 4.27, 0.18, 4.29 |
+| <span id="obj-dyn-door-spook"></span>`dyn_door_spook` | | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 2.49, 0.16, 8.44 |
+| <span id="obj-dyn-door-stall"></span>`dyn_door_stall` | | `dyn_door_swinging` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.31, 0.07, 2.2 |
+| <span id="obj-dyn-door-steel-b"></span>`dyn_door_steel_b` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-stlslot"></span>`dyn_door_stlslot` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-stlwin"></span>`dyn_door_stlwin` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-store"></span>`dyn_door_store` | | `dyn_door_swinging` | `TYPE_BREAKANDENTER_DOOR` | `OBB` | 2.18, 0.07, 2.33 |
+| <span id="obj-dyn-door-storeb"></span>`dyn_door_storeb` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.18, 0.2, 2.33 |
+| <span id="obj-dyn-door-strip"></span>`dyn_door_strip` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-subcan"></span>`dyn_door_subcan` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.04, 2.33 |
+| <span id="obj-dyn-door-subway"></span>`dyn_door_subway` | | `dyn_door_sliding` | `TYPE_DOOR` | `NONE` | 0.83, 0.06, 2.31 |
+| <span id="obj-dyn-door-temple"></span>`dyn_door_temple` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-templedoor"></span>`dyn_door_templedoor` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-templeshutter"></span>`dyn_door_templeshutter` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 3.154, 0.07, 2.22 |
+| <span id="obj-dyn-door-wood"></span>`dyn_door_wood` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-door-woodbrd"></span>`dyn_door_woodbrd` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.41, 0.06, 2.58 |
+| <span id="obj-dyn-door-woodfnce-xl"></span>`dyn_door_woodfnce_xl` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 2.06, 0.11, 2.65 |
+| <span id="obj-dyn-door-woodp"></span>`dyn_door_woodp` | | `dyn_door_swinging` | `TYPE_DOOR` | `NONE` | 1.2, 0.1, 3 |
+| <span id="obj-dyn-dr-big-gate"></span>`dyn_dr_big_gate` | ![objects/dyn_dr_big_gate.png](images/objects/dyn_dr_big_gate.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 4.43, 0, 3.32 |
+| <span id="obj-dyn-dr-cabin-a"></span>`dyn_dr_cabin_a` | ![objects/dyn_dr_cabin_a.png](images/objects/dyn_dr_cabin_a.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.64, 0.07, 1.89 |
+| <span id="obj-dyn-dr-cabin-aa"></span>`dyn_dr_cabin_aa` | ![objects/dyn_dr_cabin_aa.png](images/objects/dyn_dr_cabin_aa.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 0.82, 0.11, 1.89 |
+| <span id="obj-dyn-dr-cabin-b"></span>`dyn_dr_cabin_b` | ![objects/dyn_dr_cabin_b.png](images/objects/dyn_dr_cabin_b.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.64, 0.07, 1.89 |
+| <span id="obj-dyn-dr-cabin-bb"></span>`dyn_dr_cabin_bb` | ![objects/dyn_dr_cabin_bb.png](images/objects/dyn_dr_cabin_bb.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 0.82, 0.11, 1.89 |
+| <span id="obj-dyn-dr-cabin-c"></span>`dyn_dr_cabin_c` | ![objects/dyn_dr_cabin_c.png](images/objects/dyn_dr_cabin_c.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.64, 0.07, 1.89 |
+| <span id="obj-dyn-dr-cabin-cc"></span>`dyn_dr_cabin_cc` | ![objects/dyn_dr_cabin_cc.png](images/objects/dyn_dr_cabin_cc.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 0.82, 0.11, 1.89 |
+| <span id="obj-dyn-dr-cemgate"></span>`dyn_dr_cemgate` | ![objects/dyn_dr_cemgate.png](images/objects/dyn_dr_cemgate.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.66, 0.16, 2.84 |
+| <span id="obj-dyn-dr-chainlnk-a"></span>`dyn_dr_chainlnk_a` | ![objects/dyn_dr_chainlnk_a.png](images/objects/dyn_dr_chainlnk_a.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-dr-chainlnk-ag"></span>`dyn_dr_chainlnk_ag` | ![objects/dyn_dr_chainlnk_ag.png](images/objects/dyn_dr_chainlnk_ag.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-dr-chainlnk-ap"></span>`dyn_dr_chainlnk_ap` | ![objects/dyn_dr_chainlnk_ap.png](images/objects/dyn_dr_chainlnk_ap.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 3.35, 0.07, 3.28 |
+| <span id="obj-dyn-dr-chainlnk-ar"></span>`dyn_dr_chainlnk_ar` | ![objects/dyn_dr_chainlnk_ar.png](images/objects/dyn_dr_chainlnk_ar.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-dr-chainlnk-aw"></span>`dyn_dr_chainlnk_aw` | ![objects/dyn_dr_chainlnk_aw.png](images/objects/dyn_dr_chainlnk_aw.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.31, 0.07, 3.28 |
+| <span id="obj-dyn-dr-corr"></span>`dyn_dr_corr` | ![objects/dyn_dr_corr.png](images/objects/dyn_dr_corr.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 3.4, 0.18, 4.29 |
+| <span id="obj-dyn-dr-dblgate"></span>`dyn_dr_dblgate` | ![objects/dyn_dr_dblgate.png](images/objects/dyn_dr_dblgate.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 1.96, 0.1, 3.03 |
+| <span id="obj-dyn-dr-dblgate-d"></span>`dyn_dr_dblgate_d` | ![objects/dyn_dr_dblgate_d.png](images/objects/dyn_dr_dblgate_d.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 1.96, 0.1, 3.03 |
+| <span id="obj-dyn-dr-dblstlwin"></span>`dyn_dr_dblstlwin` | ![objects/dyn_dr_dblstlwin.png](images/objects/dyn_dr_dblstlwin.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-dclub"></span>`dyn_dr_dclub` | ![objects/dyn_dr_dclub.png](images/objects/dyn_dr_dclub.png){ width="96" } | `sub_swinging_door` | `TYPE_BREAKABLE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-ele"></span>`dyn_dr_ele` | ![objects/dyn_dr_ele.png](images/objects/dyn_dr_ele.png){ width="96" } | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 4.75, 0.1, 4.92 |
+| <span id="obj-dyn-dr-ele-c"></span>`dyn_dr_ele_c` | ![objects/dyn_dr_ele_c.png](images/objects/dyn_dr_ele_c.png){ width="96" } | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 3.71, 0, 1.6 |
+| <span id="obj-dyn-dr-fence-r"></span>`dyn_dr_fence_r` | ![objects/dyn_dr_fence_r.png](images/objects/dyn_dr_fence_r.png){ width="96" } | `sub_sliding_door` | `TYPE_GLASS` | `OBB` | 3.42, 0.18, 4.61 |
+| <span id="obj-dyn-dr-fence-s"></span>`dyn_dr_fence_s` | ![objects/dyn_dr_fence_s.png](images/objects/dyn_dr_fence_s.png){ width="96" } | `sub_sliding_door` | `TYPE_GLASS` | `OBB` | 2.31, 0.08, 3.28 |
+| <span id="obj-dyn-dr-liz"></span>`dyn_dr_liz` | ![objects/dyn_dr_liz.png](images/objects/dyn_dr_liz.png){ width="96" } | `sub_swinging_door` | `TYPE_BREAKABLE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-ornate"></span>`dyn_dr_ornate` | ![objects/dyn_dr_ornate.png](images/objects/dyn_dr_ornate.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.05, 2.33 |
+| <span id="obj-dyn-dr-pol"></span>`dyn_dr_pol` | ![objects/dyn_dr_pol.png](images/objects/dyn_dr_pol.png){ width="96" } | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 1.88, 0.5, 1.1 |
+| <span id="obj-dyn-dr-portcullis"></span>`dyn_dr_portcullis` | ![objects/dyn_dr_portcullis.png](images/objects/dyn_dr_portcullis.png){ width="96" } | `sub_sliding_door` | `TYPE_GLASS` | `OBB` | 3.27, 0.2, 2.64 |
+| <span id="obj-dyn-dr-red-fence"></span>`dyn_dr_red_fence` | ![objects/dyn_dr_red_fence.png](images/objects/dyn_dr_red_fence.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 2.11, 0.1, 3.88 |
+| <span id="obj-dyn-dr-redgate"></span>`dyn_dr_redgate` | ![objects/dyn_dr_redgate.png](images/objects/dyn_dr_redgate.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 3.44, 0.09, 4.97 |
+| <span id="obj-dyn-dr-rollup"></span>`dyn_dr_rollup` | ![objects/dyn_dr_rollup.png](images/objects/dyn_dr_rollup.png){ width="96" } | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 3.82, 0.1, 3.48 |
+| <span id="obj-dyn-dr-shackdoor"></span>`dyn_dr_shackdoor` | ![objects/dyn_dr_shackdoor.png](images/objects/dyn_dr_shackdoor.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 4.27, 0.18, 4.29 |
+| <span id="obj-dyn-dr-sheetmtl"></span>`dyn_dr_sheetmtl` | ![objects/dyn_dr_sheetmtl.png](images/objects/dyn_dr_sheetmtl.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 4.27, 0.18, 4.29 |
+| <span id="obj-dyn-dr-spook-a"></span>`dyn_dr_spook_a` | ![objects/dyn_dr_spook_a.png](images/objects/dyn_dr_spook_a.png){ width="96" } | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 2.49, 0.16, 8.44 |
+| <span id="obj-dyn-dr-spook-b"></span>`dyn_dr_spook_b` | ![objects/dyn_dr_spook_b.png](images/objects/dyn_dr_spook_b.png){ width="96" } | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 2.49, 0.16, 8.44 |
+| <span id="obj-dyn-dr-stall"></span>`dyn_dr_stall` | ![objects/dyn_dr_stall.png](images/objects/dyn_dr_stall.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.31, 0.07, 2.2 |
+| <span id="obj-dyn-dr-steel-b"></span>`dyn_dr_steel_b` | ![objects/dyn_dr_steel_b.png](images/objects/dyn_dr_steel_b.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-stlslot"></span>`dyn_dr_stlslot` | ![objects/dyn_dr_stlslot.png](images/objects/dyn_dr_stlslot.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-stlwin"></span>`dyn_dr_stlwin` | ![objects/dyn_dr_stlwin.png](images/objects/dyn_dr_stlwin.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-store"></span>`dyn_dr_store` | ![objects/dyn_dr_store.png](images/objects/dyn_dr_store.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.18, 0.07, 2.33 |
+| <span id="obj-dyn-dr-store-wrecked"></span>`dyn_dr_store_wrecked` | ![objects/dyn_dr_store_wrecked.png](images/objects/dyn_dr_store_wrecked.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.18, 0.07, 2.33 |
+| <span id="obj-dyn-dr-storeb"></span>`dyn_dr_storeb` | ![objects/dyn_dr_storeb.png](images/objects/dyn_dr_storeb.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.18, 0.15, 2.33 |
+| <span id="obj-dyn-dr-storeb-wrecked"></span>`dyn_dr_storeb_wrecked` | ![objects/dyn_dr_storeb_wrecked.png](images/objects/dyn_dr_storeb_wrecked.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.18, 0.07, 2.33 |
+| <span id="obj-dyn-dr-strip"></span>`dyn_dr_strip` | ![objects/dyn_dr_strip.png](images/objects/dyn_dr_strip.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-subcan"></span>`dyn_dr_subcan` | ![objects/dyn_dr_subcan.png](images/objects/dyn_dr_subcan.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.04, 2.33 |
+| <span id="obj-dyn-dr-subway"></span>`dyn_dr_subway` | ![objects/dyn_dr_subway.png](images/objects/dyn_dr_subway.png){ width="96" } | `sub_sliding_door` | `TYPE_SLIDING_DOOR` | `OBB` | 0.83, 0.06, 2.31 |
+| <span id="obj-dyn-dr-temple"></span>`dyn_dr_temple` | ![objects/dyn_dr_temple.png](images/objects/dyn_dr_temple.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 1.89, 0.23, 2.61 |
+| <span id="obj-dyn-dr-templedoor"></span>`dyn_dr_templedoor` | ![objects/dyn_dr_templedoor.png](images/objects/dyn_dr_templedoor.png){ width="96" } | `sub_swinging_door` | `TYPE_GLASS` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-templeshutter"></span>`dyn_dr_templeshutter` | ![objects/dyn_dr_templeshutter.png](images/objects/dyn_dr_templeshutter.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.58, 0.07, 2.22 |
+| <span id="obj-dyn-dr-wood"></span>`dyn_dr_wood` | ![objects/dyn_dr_wood.png](images/objects/dyn_dr_wood.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-dr-woodfnce-xl"></span>`dyn_dr_woodfnce_xl` | ![objects/dyn_dr_woodfnce_xl.png](images/objects/dyn_dr_woodfnce_xl.png){ width="96" } | `sub_swinging_door` | `TYPE_DOOR` | `NONE` | 2.06, 0.11, 2.65 |
 
 ## props {#props}
 
 639 entries.
 
-| Name | Class | Type | Shape | Size (m) |
-| --- | --- | --- | --- | --- |
-| <span id="obj-dyn-ajax"></span>`dyn_ajax` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
-| <span id="obj-dyn-ajax-bird"></span>`dyn_ajax_bird` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.03, 0.11, 0.03 |
-| <span id="obj-dyn-ajax-bird-fix"></span>`dyn_ajax_bird_fix` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.03, 0.11, 0.03 |
-| <span id="obj-dyn-arcade-new-aa"></span>`dyn_arcade_new_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.05, 1.17, 2.29 |
-| <span id="obj-dyn-autosign"></span>`dyn_autosign` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.99, 1.14, 4.62 |
-| <span id="obj-dyn-bagcash"></span>`dyn_bagcash` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.34, 0.61, 0.47 |
-| <span id="obj-dyn-bagdrug"></span>`dyn_bagdrug` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.34, 0.61, 0.47 |
-| <span id="obj-dyn-bar-table"></span>`dyn_bar_table` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.61, 1.99, 0.86 |
-| <span id="obj-dyn-bar-table-b"></span>`dyn_bar_table_b` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.5, 1.5, 0.9 |
-| <span id="obj-dyn-barbeque-wreck"></span>`dyn_barbeque_wreck` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.87, 0.95, 0.13 |
-| <span id="obj-dyn-barrel-aa"></span>`dyn_barrel_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.8, 1.19, 0.23 |
-| <span id="obj-dyn-barrel-ab"></span>`dyn_barrel_ab` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.65, 0.62, 0.06 |
-| <span id="obj-dyn-barrel-ac"></span>`dyn_barrel_ac` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.81, 0.91, 0.13 |
-| <span id="obj-dyn-barrel-b"></span>`dyn_barrel_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.72, 0.73, 1.12 |
-| <span id="obj-dyn-barric"></span>`dyn_barric` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.88, 0.5, 1.1 |
-| <span id="obj-dyn-bartable-b"></span>`dyn_bartable_b` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.19, 1.18, 1.38 |
-| <span id="obj-dyn-bartable-c"></span>`dyn_bartable_c` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.19, 1.18, 1.06 |
-| <span id="obj-dyn-bath-heater-aa"></span>`dyn_bath_heater_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.69, 0.55, 1.38 |
-| <span id="obj-dyn-bath-mirror-aa"></span>`dyn_bath_mirror_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.88, 0.06, 1.16 |
-| <span id="obj-dyn-bath-sink-lrg-aaa"></span>`dyn_bath_sink_lrg_aaa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.67, 1.78, 0.3 |
-| <span id="obj-dyn-bath-toweldisp-aa"></span>`dyn_bath_toweldisp_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.35, 0.37 |
-| <span id="obj-dyn-bg-ajaxverminone"></span>`dyn_bg_ajaxverminone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 0.69, 0.95 |
-| <span id="obj-dyn-bg-ajaxvermintwo"></span>`dyn_bg_ajaxvermintwo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.14, 0.82, 0.95 |
-| <span id="obj-dyn-bg-cleon"></span>`dyn_bg_cleon` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 1.41, 0.95 |
-| <span id="obj-dyn-bg-cleonajaxendone"></span>`dyn_bg_cleonajaxendone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.11, 0.87, 0.95 |
-| <span id="obj-dyn-bg-cleonajaxendtwo"></span>`dyn_bg_cleonajaxendtwo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.4, 0.18, 0.95 |
-| <span id="obj-dyn-bg-cleonajaxfour"></span>`dyn_bg_cleonajaxfour` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.4, 0.12, 0.95 |
-| <span id="obj-dyn-bg-cleonajaxone"></span>`dyn_bg_cleonajaxone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.11, 0.87, 0.95 |
-| <span id="obj-dyn-bg-cleonajaxthree"></span>`dyn_bg_cleonajaxthree` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.11, 0.87, 0.95 |
-| <span id="obj-dyn-bg-cleonajaxtwo"></span>`dyn_bg_cleonajaxtwo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 0.69, 0.95 |
-| <span id="obj-dyn-bg-cleonrembone"></span>`dyn_bg_cleonrembone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.24, 0.67, 0.95 |
-| <span id="obj-dyn-bg-cleonrembtwo"></span>`dyn_bg_cleonrembtwo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.4, 0.15, 0.95 |
-| <span id="obj-dyn-bg-cochiseajaxone"></span>`dyn_bg_cochiseajaxone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 0.69, 0.95 |
-| <span id="obj-dyn-bg-cochiseajaxtwo"></span>`dyn_bg_cochiseajaxtwo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.14, 0.82, 0.95 |
-| <span id="obj-dyn-bg-cochisesnowone"></span>`dyn_bg_cochisesnowone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 0.69, 0.95 |
-| <span id="obj-dyn-bg-cochisesnowtwo"></span>`dyn_bg_cochisesnowtwo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.14, 0.82, 0.95 |
-| <span id="obj-dyn-bg-cowboycochise"></span>`dyn_bg_cowboycochise` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.36, 0.39, 0.95 |
-| <span id="obj-dyn-bg-cowboyverminone"></span>`dyn_bg_cowboyverminone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.11, 0.87, 0.95 |
-| <span id="obj-dyn-bg-cowboyvermintwo"></span>`dyn_bg_cowboyvermintwo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.4, 0.12, 0.95 |
-| <span id="obj-dyn-bg-swanrembone"></span>`dyn_bg_swanrembone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.18, 0.77, 0.95 |
-| <span id="obj-dyn-bg-swanrembtwo"></span>`dyn_bg_swanrembtwo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.36, 0.36, 0.95 |
-| <span id="obj-dyn-big-fan"></span>`dyn_big_fan` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.06, 0.17, 1.01 |
-| <span id="obj-dyn-blocker"></span>`dyn_blocker` | `dyn_blocker` | `TYPE_GENERIC` | `OBB` | 3.67, 3.67, 1 |
-| <span id="obj-dyn-blocker-b"></span>`dyn_blocker_b` | `dyn_blocker` | `TYPE_GENERIC` | `OBB` | 1.851, 0.5, 1.851 |
-| <span id="obj-dyn-blocker-c"></span>`dyn_blocker_c` | `dyn_blocker` | `TYPE_GENERIC` | `OBB` | 3.651, 0.5, 1.496 |
-| <span id="obj-dyn-blocker-d"></span>`dyn_blocker_d` | `dyn_blocker` | `TYPE_TRUNKLOCK` | `OBB` | 3.651, 0.5, 1.496 |
-| <span id="obj-dyn-boat"></span>`dyn_boat` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.2, 1.17, 2.56 |
-| <span id="obj-dyn-bookcase"></span>`dyn_bookcase` | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 1.26, 0.55, 2.29 |
-| <span id="obj-dyn-bookcase-aa"></span>`dyn_bookcase_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.29, 0.57, 2.29 |
-| <span id="obj-dyn-bookcase-ab"></span>`dyn_bookcase_ab` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.27, 1.08, 2.29 |
-| <span id="obj-dyn-bookcase-ac"></span>`dyn_bookcase_ac` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.29, 0.08 |
-| <span id="obj-dyn-bopp"></span>`dyn_bopp` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.57, 0.96, 1.09 |
-| <span id="obj-dyn-bottles-a"></span>`dyn_bottles_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.07, 0.07, 0.25 |
-| <span id="obj-dyn-bottles-b"></span>`dyn_bottles_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.07, 0.07, 0.25 |
-| <span id="obj-dyn-brassknkl"></span>`dyn_brassknkl` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.06, 0.01 |
-| <span id="obj-dyn-brokebeam-a"></span>`dyn_brokebeam_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.56, 0.32, 0.51 |
-| <span id="obj-dyn-brokebeam-aa"></span>`dyn_brokebeam_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.06, 0.32, 0.51 |
-| <span id="obj-dyn-brokebeam-b"></span>`dyn_brokebeam_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.59, 0.06, 0.15 |
-| <span id="obj-dyn-brokebeam-c"></span>`dyn_brokebeam_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.52, 0.06, 0.17 |
-| <span id="obj-dyn-brownbag-b"></span>`dyn_brownbag_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.18, 0.23, 0.31 |
-| <span id="obj-dyn-bucket"></span>`dyn_bucket` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.34, 0.41, 0.45 |
-| <span id="obj-dyn-bumcart-aa"></span>`dyn_bumcart_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.07, 1.46, 0.66 |
-| <span id="obj-dyn-bumcart-bb"></span>`dyn_bumcart_bb` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.81, 1.95, 0.86 |
-| <span id="obj-dyn-burntpillar"></span>`dyn_burntpillar` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.76, 0.5, 7.16 |
-| <span id="obj-dyn-button"></span>`dyn_button` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.1, 0.2 |
-| <span id="obj-dyn-cabin-aa"></span>`dyn_cabin_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.82, 0.11, 1.09 |
-| <span id="obj-dyn-cabin-bb"></span>`dyn_cabin_bb` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.82, 0.11, 1.09 |
-| <span id="obj-dyn-cabin-cc"></span>`dyn_cabin_cc` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.82, 0.11, 1.89 |
-| <span id="obj-dyn-cabinet-ab"></span>`dyn_cabinet_ab` | `fade_object` | `TYPE_GENERIC` | `OBB` | 3.21, 2.64, 0.3 |
-| <span id="obj-dyn-cam-astro-a"></span>`dyn_cam_astro_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.81, 0.54, 3.45 |
-| <span id="obj-dyn-cam-astro-aa"></span>`dyn_cam_astro_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.95, 0.22, 6.09 |
-| <span id="obj-dyn-cam-ceilfan"></span>`dyn_cam_ceilfan` | `simple_object` | `TYPE_GENERIC` | `NONE` | 2.22, 2.21, 2.51 |
-| <span id="obj-dyn-cam-hydropole"></span>`dyn_cam_hydropole` | `simple_object` | `TYPE_GENERIC` | `NONE` | 1.34, 1.43, 6.55 |
-| <span id="obj-dyn-cam-streetlight"></span>`dyn_cam_streetlight` | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.6, 2.76, 5.18 |
-| <span id="obj-dyn-cam-subdivider"></span>`dyn_cam_subdivider` | `simple_object` | `TYPE_GENERIC` | `NONE` | 1.66, 0.25, 3.07 |
-| <span id="obj-dyn-cam-subpillar-a"></span>`dyn_cam_subpillar_a` | `simple_object` | `TYPE_GENERIC` | `NONE` | 5.99, 0.5, 8.95 |
-| <span id="obj-dyn-cam-subpillar-b"></span>`dyn_cam_subpillar_b` | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.29, 0.31, 5 |
-| <span id="obj-dyn-cam-tree-a"></span>`dyn_cam_tree_a` | `simple_object` | `TYPE_GENERIC` | `NONE` | 9.23, 9.71, 10.35 |
-| <span id="obj-dyn-candybar"></span>`dyn_candybar` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.01, 0.08 |
-| <span id="obj-dyn-cardrack-a"></span>`dyn_cardrack_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.4, 0.4, 0.4 |
-| <span id="obj-dyn-cargo"></span>`dyn_cargo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.41, 6.6, 2.68 |
-| <span id="obj-dyn-carjunk-door-aa"></span>`dyn_carjunk_door_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.37, 0.47, 1.16 |
-| <span id="obj-dyn-carjunk-door-ba"></span>`dyn_carjunk_door_ba` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.37, 0.47, 1.16 |
-| <span id="obj-dyn-carjunk-hood-aa"></span>`dyn_carjunk_hood_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.01, 1.87, 0.34 |
-| <span id="obj-dyn-carjunk-windshld-aa"></span>`dyn_carjunk_windshld_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.1, 0.36, 0.76 |
-| <span id="obj-dyn-carwreck"></span>`dyn_carwreck` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.94, 2.14, 1.23 |
-| <span id="obj-dyn-cash-dollar"></span>`dyn_cash_dollar` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.17, 0 |
-| <span id="obj-dyn-cash-hand"></span>`dyn_cash_hand` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.2, 0.02 |
-| <span id="obj-dyn-cash-roll"></span>`dyn_cash_roll` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.12, 0.07 |
-| <span id="obj-dyn-cash-stack"></span>`dyn_cash_stack` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.21, 0.05 |
-| <span id="obj-dyn-cashreg-c"></span>`dyn_cashreg_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.53, 0.55, 0.58 |
-| <span id="obj-dyn-cb-christ-c"></span>`dyn_cb_christ_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.53, 1.15, 0.41 |
-| <span id="obj-dyn-cb-coffee-c"></span>`dyn_cb_coffee_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.6, 1.48, 0.41 |
-| <span id="obj-dyn-cb-david-c"></span>`dyn_cb_david_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.85, 1.33, 1.35 |
-| <span id="obj-dyn-cb-extra-head"></span>`dyn_cb_extra_head` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.24, 0.32, 0.4 |
-| <span id="obj-dyn-cb-pieta-c"></span>`dyn_cb_pieta_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3, 2.62, 1.17 |
-| <span id="obj-dyn-cb-thinker-c"></span>`dyn_cb_thinker_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.18, 2.39, 1.15 |
-| <span id="obj-dyn-cbradio-b"></span>`dyn_cbradio_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.8, 0.8, 0.38 |
-| <span id="obj-dyn-chair-ba"></span>`dyn_chair_ba` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.42, 0.14 |
-| <span id="obj-dyn-chair-bb"></span>`dyn_chair_bb` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.33, 0.57, 0.06 |
-| <span id="obj-dyn-chair-bc"></span>`dyn_chair_bc` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.66, 0.05 |
-| <span id="obj-dyn-chair-ka"></span>`dyn_chair_ka` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.28, 0.47, 0.07 |
-| <span id="obj-dyn-chair-kb"></span>`dyn_chair_kb` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.37, 0.63, 0.04 |
-| <span id="obj-dyn-chair-kc"></span>`dyn_chair_kc` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.66, 0.05 |
-| <span id="obj-dyn-chair-wa"></span>`dyn_chair_wa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.42, 0.11 |
-| <span id="obj-dyn-chair-wb"></span>`dyn_chair_wb` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.33, 0.57, 0.06 |
-| <span id="obj-dyn-chair-wc"></span>`dyn_chair_wc` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.66, 0.05 |
-| <span id="obj-dyn-chandelier-b"></span>`dyn_chandelier_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.93, 1.93, 0.82 |
-| <span id="obj-dyn-chandelier-c"></span>`dyn_chandelier_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.65, 1.65, 0.7 |
-| <span id="obj-dyn-chandelier-d"></span>`dyn_chandelier_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.29, 1.09, 0.82 |
-| <span id="obj-dyn-chandelier-dmg"></span>`dyn_chandelier_dmg` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.76, 2.54, 0.84 |
-| <span id="obj-dyn-chandelier-glows"></span>`dyn_chandelier_glows` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.64, 2.48, 1.74 |
-| <span id="obj-dyn-checkerboard"></span>`dyn_checkerboard` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3, 0, 2 |
-| <span id="obj-dyn-chi-noodlestand-aa"></span>`dyn_chi_noodlestand_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.8, 1.07, 2.79 |
-| <span id="obj-dyn-chim-aa"></span>`dyn_chim_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.05, 1.28, 0.76 |
-| <span id="obj-dyn-chim-ba"></span>`dyn_chim_ba` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.29, 1.28, 1.24 |
-| <span id="obj-dyn-chim-ca"></span>`dyn_chim_ca` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.95, 1.41, 1.15 |
-| <span id="obj-dyn-chim-da"></span>`dyn_chim_da` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.52, 1.54, 1.76 |
-| <span id="obj-dyn-chimcowl"></span>`dyn_chimcowl` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.79, 0.68, 0.52 |
-| <span id="obj-dyn-china"></span>`dyn_china` | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 1.63, 0.69, 2.78 |
-| <span id="obj-dyn-china-aa"></span>`dyn_china_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.63, 0.93, 2.78 |
-| <span id="obj-dyn-china-ab"></span>`dyn_china_ab` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.7, 1.32, 2.68 |
-| <span id="obj-dyn-china-ac"></span>`dyn_china_ac` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.29, 0.08 |
-| <span id="obj-dyn-china-ad"></span>`dyn_china_ad` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.84, 0.72, 0.3 |
-| <span id="obj-dyn-cig"></span>`dyn_cig` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.01, 0.01, 0.1 |
-| <span id="obj-dyn-cigvend-b"></span>`dyn_cigvend_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.17, 1.04, 1.44 |
-| <span id="obj-dyn-cleon"></span>`dyn_cleon` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.98, 1.9, 1.28 |
-| <span id="obj-dyn-clublite"></span>`dyn_clublite` | `simple_object` | `TYPE_GLASS` | `OBB` | 0.29, 0.58, 0.35 |
-| <span id="obj-dyn-cny-autoskatter-lites"></span>`dyn_cny_autoskatter_lites` | `simple_object` | `TYPE_GENERIC` | `OBB` | 9.32, 0, 2.34 |
-| <span id="obj-dyn-cny-dock-ac"></span>`dyn_cny_dock_ac` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.73, 1.01, 0.8 |
-| <span id="obj-dyn-cny-fabers-lites"></span>`dyn_cny_fabers_lites` | `simple_object` | `TYPE_GLASS` | `OBB` | 8.76, 0, 2.14 |
-| <span id="obj-dyn-cny-hut-a"></span>`dyn_cny_hut_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
-| <span id="obj-dyn-cny-teradactile"></span>`dyn_cny_teradactile` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
-| <span id="obj-dyn-cny-tiki-pillar-a"></span>`dyn_cny_tiki_pillar_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
-| <span id="obj-dyn-cochise"></span>`dyn_cochise` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.61, 2.11, 1.28 |
-| <span id="obj-dyn-coke-machine-b"></span>`dyn_coke_machine_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.38, 1.16, 2.16 |
-| <span id="obj-dyn-coney-car-a"></span>`dyn_coney_car_a` | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 1.43, 1.35, 1.32 |
-| <span id="obj-dyn-coney-car-b"></span>`dyn_coney_car_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.37, 1.36, 0.28 |
-| <span id="obj-dyn-copcar-door-b"></span>`dyn_copcar_door_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.36, 1.18, 1.22 |
-| <span id="obj-dyn-copcar-trunk-b"></span>`dyn_copcar_trunk_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.74, 1.19, 0.24 |
-| <span id="obj-dyn-copcar-whole"></span>`dyn_copcar_whole` | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.65, 5.45, 1.8 |
-| <span id="obj-dyn-copcar-wrecked"></span>`dyn_copcar_wrecked` | `simple_object` | `TYPE_CAR` | `OBB` | 2.54, 5.35, 1.68 |
-| <span id="obj-dyn-cowboy"></span>`dyn_cowboy` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.39, 0.59, 0.33 |
-| <span id="obj-dyn-crate-aa"></span>`dyn_crate_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.15, 1.15, 1.36 |
-| <span id="obj-dyn-crate-ab"></span>`dyn_crate_ab` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.02, 0.8, 1.6 |
-| <span id="obj-dyn-crate-ad"></span>`dyn_crate_ad` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.02, 0.95, 1.55 |
-| <span id="obj-dyn-crate-box-a"></span>`dyn_crate_box_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.49, 1.62, 2.04 |
-| <span id="obj-dyn-ctrl-box-a"></span>`dyn_ctrl_box_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.33, 0.23, 0.57 |
-| <span id="obj-dyn-cuffs-b"></span>`dyn_cuffs_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.27, 0.19, 0.12 |
-| <span id="obj-dyn-cuffs-c"></span>`dyn_cuffs_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.12, 0.02 |
-| <span id="obj-dyn-desk"></span>`dyn_desk` | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 1.29, 0.77, 0.86 |
-| <span id="obj-dyn-desk-aa"></span>`dyn_desk_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.29, 1.01, 0.87 |
-| <span id="obj-dyn-desk-ab"></span>`dyn_desk_ab` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.28, 1.2, 0.87 |
-| <span id="obj-dyn-dest-tag"></span>`dyn_dest_tag` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 5.3, 2.57 |
-| <span id="obj-dyn-destroyers"></span>`dyn_destroyers` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 2.23, 1.09 |
-| <span id="obj-dyn-discoball"></span>`dyn_discoball` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.67, 0.69, 2.53 |
-| <span id="obj-dyn-discoball-gold"></span>`dyn_discoball_gold` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.23, 1.23, 1.23 |
-| <span id="obj-dyn-discoball-silver"></span>`dyn_discoball_silver` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.23, 1.23, 1.23 |
-| <span id="obj-dyn-discolite-b"></span>`dyn_discolite_b` | `simple_object` | `TYPE_GENERIC` | `NONE` | 10, 10, 0 |
-| <span id="obj-dyn-discoray-gold"></span>`dyn_discoray_gold` | `rotating_object` | `TYPE_GLASS` | `NONE` | 8.57, 8.2, 3.82 |
-| <span id="obj-dyn-discoray-gold-b"></span>`dyn_discoray_gold_b` | `rotating_object` | `TYPE_GLASS` | `NONE` | 29.6, 29.61, 25.1 |
-| <span id="obj-dyn-discoray-silver"></span>`dyn_discoray_silver` | `rotating_object` | `TYPE_GLASS` | `NONE` | 8.57, 8.2, 3.82 |
-| <span id="obj-dyn-discoray-silver-b"></span>`dyn_discoray_silver_b` | `rotating_object` | `TYPE_GLASS` | `NONE` | 29.6, 29.61, 25.1 |
-| <span id="obj-dyn-dj-blurrymic"></span>`dyn_dj_blurrymic` | `rotating_object` | `TYPE_GLASS` | `OBB` | 0.19, 0, 0.16 |
-| <span id="obj-dyn-dj-giant-needle"></span>`dyn_dj_giant_needle` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.11, 0.88, 0.06 |
-| <span id="obj-dyn-dj-magtape"></span>`dyn_dj_magtape` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.36, 0.36, 0.03 |
-| <span id="obj-dyn-dj-magtape-b"></span>`dyn_dj_magtape_b` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.82, 0.33, 0.96 |
-| <span id="obj-dyn-dj-mic"></span>`dyn_dj_mic` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.15, 0.11, 0.09 |
-| <span id="obj-dyn-dj-needle"></span>`dyn_dj_needle` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 0, 0.08 |
-| <span id="obj-dyn-dj-needleboard"></span>`dyn_dj_needleboard` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.06, 0, 0.55 |
-| <span id="obj-dyn-dj-redbg"></span>`dyn_dj_redbg` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.98, 0, 0.63 |
-| <span id="obj-dyn-dj-redglow-a"></span>`dyn_dj_redglow_a` | `rotating_object` | `TYPE_GLASS` | `OBB` | 0.42, 0.41, 0 |
-| <span id="obj-dyn-dj-turntable"></span>`dyn_dj_turntable` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.07, 1.07, 0.05 |
-| <span id="obj-dyn-dj-turntable-needle"></span>`dyn_dj_turntable_needle` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.05, 0.34, 0.03 |
-| <span id="obj-dyn-doghouse-aa"></span>`dyn_doghouse_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.53, 1.67, 1.05 |
-| <span id="obj-dyn-doghouse-ab"></span>`dyn_doghouse_ab` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.62, 2.31, 0.2 |
-| <span id="obj-dyn-doorshutter"></span>`dyn_doorshutter` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.31, 0.02, 0.18 |
-| <span id="obj-dyn-dr-bar-bani"></span>`dyn_dr_bar_bani` | `simple_object` | `TYPE_DOOR` | `NONE` | 3.16, 0.14, 1.2 |
-| <span id="obj-dyn-dr-barricade"></span>`dyn_dr_barricade` | `simple_object` | `TYPE_DOOR` | `NONE` | 0.11, 0.11, 1.32 |
-| <span id="obj-dyn-dr-bnstr"></span>`dyn_dr_bnstr` | `simple_object` | `TYPE_DOOR` | `NONE` | 1.8, 0.17, 1.12 |
-| <span id="obj-dyn-dr-chain-s"></span>`dyn_dr_chain_s` | `simple_object` | `TYPE_GLASS` | `NONE` | 4.94, 4.94, 7.15 |
-| <span id="obj-dyn-dr-dblliz"></span>`dyn_dr_dblliz` | `simple_object` | `TYPE_DOOR` | `OBB` | 2.18, 0.07, 2.33 |
-| <span id="obj-dyn-dr-fence"></span>`dyn_dr_fence` | `simple_object` | `TYPE_GLASS` | `OBB` | 2.48, 0.1, 2.6 |
-| <span id="obj-dyn-dr-fence-o"></span>`dyn_dr_fence_o` | `simple_object` | `TYPE_BREAKABLE_DOOR` | `OBB` | 4.26, 0.01, 1.11 |
-| <span id="obj-dyn-dr-fence-p"></span>`dyn_dr_fence_p` | `simple_object` | `TYPE_GLASS` | `OBB` | 4.26, 0.01, 1.11 |
-| <span id="obj-dyn-dr-parapet"></span>`dyn_dr_parapet` | `simple_object` | `TYPE_DOOR` | `NONE` | 9.26, 0.21, 1.07 |
-| <span id="obj-dyn-dre-bar-bani-a"></span>`dyn_dre_bar_bani_a` | `fade_object` | `TYPE_BAT` | `OBB` | 1.69, 0.14, 0.06 |
-| <span id="obj-dyn-dre-bar-bani-b"></span>`dyn_dre_bar_bani_b` | `fade_object` | `TYPE_BAT` | `OBB` | 0.11, 0.11, 1.32 |
-| <span id="obj-dyn-dre-bnstr-a"></span>`dyn_dre_bnstr_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.13, 0.16, 0.01 |
-| <span id="obj-dyn-dre-bnstr-b"></span>`dyn_dre_bnstr_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.16, 0.96 |
-| <span id="obj-dyn-dre-bnstr-c"></span>`dyn_dre_bnstr_c` | `fade_object` | `TYPE_DRUM` | `OBB` | 0.31, 0.96, 0.1 |
-| <span id="obj-dyn-dre-bnstr-d"></span>`dyn_dre_bnstr_d` | `fade_object` | `TYPE_DRUM` | `OBB` | 0.62, 0.96, 0.1 |
-| <span id="obj-dyn-dre-bnstr-e"></span>`dyn_dre_bnstr_e` | `fade_object` | `TYPE_DRUM` | `OBB` | 0.62, 0.96, 0.1 |
-| <span id="obj-dyn-dre-bnstr-f"></span>`dyn_dre_bnstr_f` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.16, 0.17, 0.07 |
-| <span id="obj-dyn-dre-chain-t"></span>`dyn_dre_chain_t` | `simple_object` | `TYPE_GLASS` | `NONE` | 4.94, 4.94, 7.15 |
-| <span id="obj-dyn-dre-dclub-b"></span>`dyn_dre_dclub_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.18, 0.41, 2.34 |
-| <span id="obj-dyn-dre-dclub-c"></span>`dyn_dre_dclub_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.21, 2.3 |
-| <span id="obj-dyn-dre-dclub-d"></span>`dyn_dre_dclub_d` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.93, 0.23, 2.33 |
-| <span id="obj-dyn-dre-fence-a"></span>`dyn_dre_fence_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.8, 2.52, 0.06 |
-| <span id="obj-dyn-dre-fence-b"></span>`dyn_dre_fence_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.49, 2.58, 0.03 |
-| <span id="obj-dyn-dre-fence-oa"></span>`dyn_dre_fence_oa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 4.26, 0.01, 1.11 |
-| <span id="obj-dyn-dre-fence-ob"></span>`dyn_dre_fence_ob` | `fade_object` | `TYPE_GENERIC` | `OBB` | 3.26, 0.1, 0.11 |
-| <span id="obj-dyn-dre-fence-oc"></span>`dyn_dre_fence_oc` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.27, 0.03, 0.12 |
-| <span id="obj-dyn-dre-liz-a"></span>`dyn_dre_liz_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.17, 0.15, 2.33 |
-| <span id="obj-dyn-dre-liz-b"></span>`dyn_dre_liz_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.18, 0.28, 2.34 |
-| <span id="obj-dyn-dre-liz-c"></span>`dyn_dre_liz_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.18, 0.41, 2.34 |
-| <span id="obj-dyn-dre-liz-d"></span>`dyn_dre_liz_d` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.24, 0.89, 2.34 |
-| <span id="obj-dyn-dre-liz-e"></span>`dyn_dre_liz_e` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.93, 0.23, 2.33 |
-| <span id="obj-dyn-dre-liz-f"></span>`dyn_dre_liz_f` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.21, 2.3 |
-| <span id="obj-dyn-dre-parapet-a"></span>`dyn_dre_parapet_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.17, 0.2, 0.2 |
-| <span id="obj-dyn-dre-parapet-b"></span>`dyn_dre_parapet_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.51, 0.2, 0.2 |
-| <span id="obj-dyn-dre-parapet-c"></span>`dyn_dre_parapet_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.66, 1.07, 0.21 |
-| <span id="obj-dyn-dre-parapet-d"></span>`dyn_dre_parapet_d` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.1, 0.2, 0.2 |
-| <span id="obj-dyn-dre-stall-a"></span>`dyn_dre_stall_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.2, 1.78, 0.07 |
-| <span id="obj-dyn-dre-stall-b"></span>`dyn_dre_stall_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.19, 1.78, 0.07 |
-| <span id="obj-dyn-dre-storec"></span>`dyn_dre_storec` | `simple_object` | `TYPE_GLASS` | `NONE` | 1.09, 0.07, 2.33 |
-| <span id="obj-dyn-drumstick-left"></span>`dyn_drumstick_left` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.02, 0.46, 0.02 |
-| <span id="obj-dyn-dryer-ba"></span>`dyn_dryer_ba` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.96, 1.08, 1.33 |
-| <span id="obj-dyn-dryerdoor-a"></span>`dyn_dryerdoor_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.92, 0.17, 1.12 |
-| <span id="obj-dyn-easel-a"></span>`dyn_easel_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 1.5, 0.03 |
-| <span id="obj-dyn-easel-b"></span>`dyn_easel_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 2.5, 0.03 |
-| <span id="obj-dyn-easel-c"></span>`dyn_easel_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.86, 0.03 |
-| <span id="obj-dyn-fan-a"></span>`dyn_fan_a` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.97, 0.46, 0.96 |
-| <span id="obj-dyn-fan-b"></span>`dyn_fan_b` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.97, 0.36, 0.96 |
-| <span id="obj-dyn-fence-corrug-a"></span>`dyn_fence_corrug_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.65, 0, 3.11 |
-| <span id="obj-dyn-fence-wood-a"></span>`dyn_fence_wood_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.69, 0, 2.58 |
-| <span id="obj-dyn-fencebarb"></span>`dyn_fencebarb` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.62, 0.08, 2.57 |
-| <span id="obj-dyn-fencegate"></span>`dyn_fencegate` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.39, 0.08, 2.17 |
-| <span id="obj-dyn-firehydrant-aa"></span>`dyn_firehydrant_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.47, 0.56, 0.9 |
-| <span id="obj-dyn-firetruck"></span>`dyn_firetruck` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.59, 9.07, 2.82 |
-| <span id="obj-dyn-fnc-clmb-brk-mesh"></span>`dyn_fnc_clmb_brk_mesh` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.98, 0, 2.17 |
-| <span id="obj-dyn-fnc-clmb-brk-post"></span>`dyn_fnc_clmb_brk_post` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.05, 0.08, 2.17 |
-| <span id="obj-dyn-fox"></span>`dyn_fox` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.18, 0.36, 0.76 |
-| <span id="obj-dyn-fridge-a"></span>`dyn_fridge_a` | `simple_object` | `TYPE_DRUM` | `OBB` | 0.73, 0.94, 0.99 |
-| <span id="obj-dyn-fridge-ba"></span>`dyn_fridge_ba` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.04, 1.02, 2.01 |
-| <span id="obj-dyn-fridge-ca"></span>`dyn_fridge_ca` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.07, 2.33, 0.83 |
-| <span id="obj-dyn-fruitstand-aa"></span>`dyn_fruitstand_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 3.61, 4.98, 0.26 |
-| <span id="obj-dyn-furies"></span>`dyn_furies` | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.8, 0.86, 0.77 |
-| <span id="obj-dyn-fx-ocopcar"></span>`dyn_fx_ocopcar` | `simple_object` | `TYPE_GLASS` | `NONE` | 6.04, 8.72, 15.03 |
-| <span id="obj-dyn-fx-sublight-intro"></span>`dyn_fx_sublight_intro` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.17, 0.27, 10.13 |
-| <span id="obj-dyn-fx-train"></span>`dyn_fx_train` | `simple_object` | `TYPE_GLASS` | `NONE` | 2.84, 8.81, 1.48 |
-| <span id="obj-dyn-fx-turnbull"></span>`dyn_fx_turnbull` | `simple_object` | `TYPE_GLASS` | `NONE` | 11.41, 8.43, 2.02 |
-| <span id="obj-dyn-fx-turnbull-b"></span>`dyn_fx_turnbull_b` | `simple_object` | `TYPE_GLASS` | `NONE` | 2.26, 5.32, 0.99 |
-| <span id="obj-dyn-gallery-woodbeams"></span>`dyn_gallery_woodbeams` | `simple_object` | `TYPE_GENERIC` | `NONE` | 17.31, 12.85, 7.07 |
-| <span id="obj-dyn-garage"></span>`dyn_garage` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 4.34, 0.36, 2.5 |
-| <span id="obj-dyn-gaspump"></span>`dyn_gaspump` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.86, 0.54, 1.5 |
-| <span id="obj-dyn-gbin-lrg"></span>`dyn_gbin_lrg` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.57, 6.1, 2.28 |
-| <span id="obj-dyn-gbin-small"></span>`dyn_gbin_small` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.25, 1.68, 1.7 |
-| <span id="obj-dyn-gbin-small-open"></span>`dyn_gbin_small_open` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.25, 1.9, 3.35 |
-| <span id="obj-dyn-gear-a"></span>`dyn_gear_a` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.61, 0.61, 0.13 |
-| <span id="obj-dyn-gear-aa"></span>`dyn_gear_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.92, 0.11, 0.42 |
-| <span id="obj-dyn-hand-spraycan"></span>`dyn_hand_spraycan` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 0.24, 0.35 |
-| <span id="obj-dyn-hanglight"></span>`dyn_hanglight` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 2, 0.41, 2.64 |
-| <span id="obj-dyn-hearse"></span>`dyn_hearse` | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 2.61, 6.3, 1.69 |
-| <span id="obj-dyn-hearse-door-a-l"></span>`dyn_hearse_door_a_l` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.48, 1.15, 1.49 |
-| <span id="obj-dyn-hearse-door-a-r"></span>`dyn_hearse_door_a_r` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.48, 1.15, 1.49 |
-| <span id="obj-dyn-hearse-door-b-l"></span>`dyn_hearse_door_b_l` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.45, 1.14, 1.49 |
-| <span id="obj-dyn-hearse-door-b-r"></span>`dyn_hearse_door_b_r` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.45, 1.14, 1.49 |
-| <span id="obj-dyn-hearse-win-a-l"></span>`dyn_hearse_win_a_l` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.16, 0.67, 0.5 |
-| <span id="obj-dyn-hearse-win-a-r"></span>`dyn_hearse_win_a_r` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.16, 0.67, 0.5 |
-| <span id="obj-dyn-hearse-win-b-l"></span>`dyn_hearse_win_b_l` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.15, 1.02, 0.49 |
-| <span id="obj-dyn-hearse-win-b-r"></span>`dyn_hearse_win_b_r` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.15, 1.02, 0.49 |
-| <span id="obj-dyn-highres-cueball"></span>`dyn_highres_cueball` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.11, 0.11, 0.11 |
-| <span id="obj-dyn-highres-eightball"></span>`dyn_highres_eightball` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.11, 0.11, 0.11 |
-| <span id="obj-dyn-hihats"></span>`dyn_hihats` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.43, 1.12, 0.77 |
-| <span id="obj-dyn-hoe-b"></span>`dyn_hoe_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.18, 0.16, 0.2 |
-| <span id="obj-dyn-hotdog-c-fade"></span>`dyn_hotdog_c_fade` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.05, 0.21, 0.06 |
-| <span id="obj-dyn-huns"></span>`dyn_huns` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.7, 0.4, 1.12 |
-| <span id="obj-dyn-huns-shirts"></span>`dyn_huns_shirts` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.48, 0.23, 0.49 |
-| <span id="obj-dyn-hurricanes"></span>`dyn_hurricanes` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.75, 0.1, 0.53 |
-| <span id="obj-dyn-icecream-a-fade"></span>`dyn_icecream_a_fade` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.1, 0.27, 0.11 |
-| <span id="obj-dyn-intro-test"></span>`dyn_intro_test` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.6, 0, 0.9 |
-| <span id="obj-dyn-invisible"></span>`dyn_invisible` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.35, 0.35, 0 |
-| <span id="obj-dyn-jewelcase-aa"></span>`dyn_jewelcase_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.81, 1.96, 0.4 |
-| <span id="obj-dyn-jsb-cusion"></span>`dyn_jsb_cusion` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.14, 1.04, 0.25 |
-| <span id="obj-dyn-jsb-drawer"></span>`dyn_jsb_drawer` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.77, 0.66, 0.36 |
-| <span id="obj-dyn-jsb-file"></span>`dyn_jsb_file` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.45, 0.8, 0.38 |
-| <span id="obj-dyn-jsb-locker"></span>`dyn_jsb_locker` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.04, 0.41, 2 |
-| <span id="obj-dyn-jsbs"></span>`dyn_jsbs` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.38, 1.83, 1.27 |
-| <span id="obj-dyn-jukebox"></span>`dyn_jukebox` | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 0.91, 0.94, 1.7 |
-| <span id="obj-dyn-jukebox-aa"></span>`dyn_jukebox_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.91, 0.94, 1.7 |
-| <span id="obj-dyn-jukebox-ab"></span>`dyn_jukebox_ab` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.05, 1.02, 1.7 |
-| <span id="obj-dyn-jukebox-ac"></span>`dyn_jukebox_ac` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.05, 1.02, 0.37 |
-| <span id="obj-dyn-jukebox-ad"></span>`dyn_jukebox_ad` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.65, 0.63, 0.3 |
-| <span id="obj-dyn-jukebox-ae"></span>`dyn_jukebox_ae` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.32, 0.76, 0.3 |
-| <span id="obj-dyn-jukebox-opti-b"></span>`dyn_jukebox_opti_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 0.95, 1.61 |
-| <span id="obj-dyn-laundry"></span>`dyn_laundry` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.32, 0.24, 0.27 |
-| <span id="obj-dyn-lawnchair-aa"></span>`dyn_lawnchair_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.52, 1.29, 0.3 |
-| <span id="obj-dyn-lawnchair-ba"></span>`dyn_lawnchair_ba` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.52, 1.29, 0.3 |
-| <span id="obj-dyn-liz-couch"></span>`dyn_liz_couch` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.4, 0.81, 0.94 |
-| <span id="obj-dyn-lizzies"></span>`dyn_lizzies` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 0, 0.85 |
-| <span id="obj-dyn-lizzies-b"></span>`dyn_lizzies_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 0, 0.85 |
-| <span id="obj-dyn-lizzypillar-aa"></span>`dyn_lizzypillar_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.62, 1.31, 6.27 |
-| <span id="obj-dyn-lizzywall-a"></span>`dyn_lizzywall_a` | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 3.6, 0.4, 6.24 |
-| <span id="obj-dyn-lizzywall-aa"></span>`dyn_lizzywall_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.82, 1.62, 6.27 |
-| <span id="obj-dyn-lizzywall-b"></span>`dyn_lizzywall_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.6, 0.41, 6.24 |
-| <span id="obj-dyn-lizzywall-int-a"></span>`dyn_lizzywall_int_a` | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 3.57, 0.12, 3.05 |
-| <span id="obj-dyn-lizzywall-int-aa"></span>`dyn_lizzywall_int_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.57, 0.12, 3.05 |
-| <span id="obj-dyn-lock-b"></span>`dyn_lock_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.15, 0.29, 0.04 |
-| <span id="obj-dyn-lock-c"></span>`dyn_lock_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.16, 0 |
-| <span id="obj-dyn-lock-g"></span>`dyn_lock_g` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.52, 0.25, 0.63 |
-| <span id="obj-dyn-lock-h"></span>`dyn_lock_h` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.52, 0.06 |
-| <span id="obj-dyn-lock-k"></span>`dyn_lock_k` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.14, 0.17, 0 |
-| <span id="obj-dyn-mailbox-aa"></span>`dyn_mailbox_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.66, 0.75, 1.45 |
-| <span id="obj-dyn-meat-hanging-a"></span>`dyn_meat_hanging_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.78, 0.53, 8.29 |
-| <span id="obj-dyn-meat-hanging-b"></span>`dyn_meat_hanging_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.46, 0.29, 8.16 |
-| <span id="obj-dyn-megaphone"></span>`dyn_megaphone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.23, 0.34, 0.3 |
-| <span id="obj-dyn-moonrunners"></span>`dyn_moonrunners` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 2.47, 1.54 |
-| <span id="obj-dyn-motelneon-aa"></span>`dyn_motelneon_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.56, 2.82, 2.82 |
-| <span id="obj-dyn-musicstore"></span>`dyn_musicstore` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.48, 1.71, 5.83 |
-| <span id="obj-dyn-neon-chi-a"></span>`dyn_neon_chi_a` | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.87, 0.27, 1.29 |
-| <span id="obj-dyn-neon-chi-b"></span>`dyn_neon_chi_b` | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.67, 0.27, 1.14 |
-| <span id="obj-dyn-neon-chi-c"></span>`dyn_neon_chi_c` | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.88, 0.27, 1.06 |
-| <span id="obj-dyn-neon-cross-aa"></span>`dyn_neon_cross_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.12, 0, 5.12 |
-| <span id="obj-dyn-newsbox-b"></span>`dyn_newsbox_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.08, 1.29, 1.43 |
-| <span id="obj-dyn-notepad"></span>`dyn_notepad` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.26, 0.06 |
-| <span id="obj-dyn-notepad-fix"></span>`dyn_notepad_fix` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.26, 0.06 |
-| <span id="obj-dyn-o-animwave-b"></span>`dyn_o_animwave_b` | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
-| <span id="obj-dyn-o-animwave-c"></span>`dyn_o_animwave_c` | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
-| <span id="obj-dyn-o-animwave-d"></span>`dyn_o_animwave_d` | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
-| <span id="obj-dyn-o-animwave-e"></span>`dyn_o_animwave_e` | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
-| <span id="obj-dyn-o-animwave-f"></span>`dyn_o_animwave_f` | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
-| <span id="obj-dyn-o-animwave-g"></span>`dyn_o_animwave_g` | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
-| <span id="obj-dyn-o-animwave-h"></span>`dyn_o_animwave_h` | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
-| <span id="obj-dyn-o-whitecap-b"></span>`dyn_o_whitecap_b` | `simple_object` | `TYPE_GLASS` | `NONE` | 6.55, 1.01, 0.57 |
-| <span id="obj-dyn-o-whitecap-c"></span>`dyn_o_whitecap_c` | `simple_object` | `TYPE_GLASS` | `NONE` | 14.58, 1.57, 0.69 |
-| <span id="obj-dyn-o-whitecap-d"></span>`dyn_o_whitecap_d` | `simple_object` | `TYPE_GLASS` | `NONE` | 31.97, 1.58, 0.63 |
-| <span id="obj-dyn-ocopcar-glass"></span>`dyn_ocopcar_glass` | `simple_object` | `TYPE_GLASS` | `OBB` | 2.06, 0.55, 0.43 |
-| <span id="obj-dyn-ocopcar-wrecked"></span>`dyn_ocopcar_wrecked` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.87, 5.68, 1.9 |
-| <span id="obj-dyn-ocoupe"></span>`dyn_ocoupe` | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.34, 5.46, 1.49 |
-| <span id="obj-dyn-ocoupe-glass"></span>`dyn_ocoupe_glass` | `simple_object` | `TYPE_GLASS` | `OBB` | 2.05, 0.51, 0.41 |
-| <span id="obj-dyn-ocoupe-wrecked"></span>`dyn_ocoupe_wrecked` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.53, 5.47, 1.67 |
-| <span id="obj-dyn-ocube"></span>`dyn_ocube` | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.54, 5.56, 2.98 |
-| <span id="obj-dyn-ocube-glass"></span>`dyn_ocube_glass` | `simple_object` | `TYPE_GLASS` | `OBB` | 2.18, 0.58, 0.52 |
-| <span id="obj-dyn-ocube-wrecked"></span>`dyn_ocube_wrecked` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.54, 5.51, 2.85 |
-| <span id="obj-dyn-oflatbed"></span>`dyn_oflatbed` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.37, 7.58, 2.04 |
-| <span id="obj-dyn-oflatbed-glass"></span>`dyn_oflatbed_glass` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.81, 0.42, 0.44 |
-| <span id="obj-dyn-oil-fire-b"></span>`dyn_oil_fire_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.78, 1.01, 0.65 |
-| <span id="obj-dyn-oilcan-brk"></span>`dyn_oilcan_brk` | `fade_object` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.15 |
-| <span id="obj-dyn-old-door-a"></span>`dyn_old_door_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.03, 0.06 |
-| <span id="obj-dyn-old-door-b"></span>`dyn_old_door_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.03, 0.06 |
-| <span id="obj-dyn-old-door-c"></span>`dyn_old_door_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.03, 0.06 |
-| <span id="obj-dyn-old-window-a"></span>`dyn_old_window_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.06, 0.05 |
-| <span id="obj-dyn-old-window-b"></span>`dyn_old_window_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.06, 0.05 |
-| <span id="obj-dyn-old-window-c"></span>`dyn_old_window_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.06, 0.05 |
-| <span id="obj-dyn-orphans"></span>`dyn_orphans` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.32, 0.42, 0.78 |
-| <span id="obj-dyn-osedan"></span>`dyn_osedan` | `simple_object` | `TYPE_CAR` | `OBB` | 2.42, 5.94, 1.54 |
-| <span id="obj-dyn-osedan-glass"></span>`dyn_osedan_glass` | `simple_object` | `TYPE_GLASS` | `OBB` | 2.06, 0.55, 0.43 |
-| <span id="obj-dyn-osedan-wrecked"></span>`dyn_osedan_wrecked` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.85, 5.94, 1.45 |
-| <span id="obj-dyn-ovan"></span>`dyn_ovan` | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.43, 5.28, 2.75 |
-| <span id="obj-dyn-ovan-glass"></span>`dyn_ovan_glass` | `simple_object` | `TYPE_GLASS` | `OBB` | 2.19, 0.67, 0.54 |
-| <span id="obj-dyn-ovan-wrecked"></span>`dyn_ovan_wrecked` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.77, 5.2, 2.33 |
-| <span id="obj-dyn-owagon"></span>`dyn_owagon` | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.33, 6.18, 1.58 |
-| <span id="obj-dyn-owagon-glass"></span>`dyn_owagon_glass` | `simple_object` | `TYPE_GLASS` | `OBB` | 2.06, 0.55, 0.44 |
-| <span id="obj-dyn-owagon-glass-b"></span>`dyn_owagon_glass_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.94, 0.55, 0.42 |
-| <span id="obj-dyn-owagon-wrecked"></span>`dyn_owagon_wrecked` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.33, 6.32, 1.48 |
-| <span id="obj-dyn-padlock-a"></span>`dyn_padlock_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 9.26, 0.21, 1.07 |
-| <span id="obj-dyn-padlock-b"></span>`dyn_padlock_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 9.26, 0.21, 1.07 |
-| <span id="obj-dyn-paintcan-brk"></span>`dyn_paintcan_brk` | `fade_object` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.15 |
-| <span id="obj-dyn-painting-aa"></span>`dyn_painting_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.79, 0.12, 1.09 |
-| <span id="obj-dyn-painting-ba"></span>`dyn_painting_ba` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.27, 0.1, 1.15 |
-| <span id="obj-dyn-panty"></span>`dyn_panty` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.05, 0.24 |
-| <span id="obj-dyn-parkbench-aa"></span>`dyn_parkbench_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.76, 1.62, 0.16 |
-| <span id="obj-dyn-parknmeter-aa"></span>`dyn_parknmeter_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.3, 0.26, 1.59 |
-| <span id="obj-dyn-parktrash-aa"></span>`dyn_parktrash_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.78, 1.01, 0.65 |
-| <span id="obj-dyn-phone"></span>`dyn_phone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.21, 0.07 |
-| <span id="obj-dyn-phone-bb"></span>`dyn_phone_bb` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.28, 0.26, 0.65 |
-| <span id="obj-dyn-phonebooth"></span>`dyn_phonebooth` | `simple_object` | `TYPE_GENERIC` | `NONE` | 1.2, 1.26, 2.64 |
-| <span id="obj-dyn-pickable"></span>`dyn_pickable` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.28, 0, 0.31 |
-| <span id="obj-dyn-picnic-a"></span>`dyn_picnic_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.77, 2.35, 1.12 |
-| <span id="obj-dyn-pigroast"></span>`dyn_pigroast` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.36, 2.62, 0.41 |
-| <span id="obj-dyn-pinball-fuzzballs-aa"></span>`dyn_pinball_fuzzballs_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 1.68, 2.05 |
-| <span id="obj-dyn-pinball-fuzzballs-ba"></span>`dyn_pinball_fuzzballs_ba` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.88, 1.26, 1.12 |
-| <span id="obj-dyn-pinball-new-aa"></span>`dyn_pinball_new_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 1.68, 2.05 |
-| <span id="obj-dyn-pinball-screen"></span>`dyn_pinball_screen` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.77, 0, 0.7 |
-| <span id="obj-dyn-pitchfork-b"></span>`dyn_pitchfork_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.44, 0.06 |
-| <span id="obj-dyn-poster"></span>`dyn_poster` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.69, 0, 1.09 |
-| <span id="obj-dyn-punchbag-a"></span>`dyn_punchbag_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.72, 0.72, 1.78 |
-| <span id="obj-dyn-punchbag-b"></span>`dyn_punchbag_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.27, 0.31, 0.55 |
-| <span id="obj-dyn-punk-sink-aa"></span>`dyn_punk_sink_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.74, 0.36, 0.58 |
-| <span id="obj-dyn-punk-sink-ab"></span>`dyn_punk_sink_ab` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.74, 0.55, 0.58 |
-| <span id="obj-dyn-punk-toilet-aa"></span>`dyn_punk_toilet_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.65, 0.72, 0.98 |
-| <span id="obj-dyn-punks"></span>`dyn_punks` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.83, 1.29, 1.28 |
-| <span id="obj-dyn-rake-b"></span>`dyn_rake_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.39, 0.14, 0.06 |
-| <span id="obj-dyn-ramp"></span>`dyn_ramp` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.76, 2.29, 1.46 |
-| <span id="obj-dyn-ranks"></span>`dyn_ranks` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
-| <span id="obj-dyn-ranks-a"></span>`dyn_ranks_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
-| <span id="obj-dyn-ranks-b"></span>`dyn_ranks_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
-| <span id="obj-dyn-ranks-c"></span>`dyn_ranks_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
-| <span id="obj-dyn-ranks-d"></span>`dyn_ranks_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
-| <span id="obj-dyn-rembrandt"></span>`dyn_rembrandt` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.93, 1.24, 1.27 |
-| <span id="obj-dyn-ridecart"></span>`dyn_ridecart` | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 1.66, 1.74, 1.39 |
-| <span id="obj-dyn-riffs"></span>`dyn_riffs` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.91, 1.09, 1.28 |
-| <span id="obj-dyn-rod"></span>`dyn_rod` | `simple_object` | `TYPE_BAT` | `OBB` | 0.8, 2.23, 0.99 |
-| <span id="obj-dyn-rogues"></span>`dyn_rogues` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.4, 2.1, 1.28 |
-| <span id="obj-dyn-rogues-car"></span>`dyn_rogues_car` | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 2.56, 6.08, 1.71 |
-| <span id="obj-dyn-rogues-car-graff"></span>`dyn_rogues_car_graff` | `simple_object` | `TYPE_GLASS` | `OBB` | 2.46, 5.62, 1.73 |
-| <span id="obj-dyn-rogues-car-tires"></span>`dyn_rogues_car_tires` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.81, 0.81 |
-| <span id="obj-dyn-rogues-car-windows"></span>`dyn_rogues_car_windows` | `simple_object` | `TYPE_GLASS` | `OBB` | 1.92, 3.72, 0.56 |
-| <span id="obj-dyn-rolltop"></span>`dyn_rolltop` | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 1.84, 0.88, 1.42 |
-| <span id="obj-dyn-rolltop-aa"></span>`dyn_rolltop_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.84, 1.11, 1.42 |
-| <span id="obj-dyn-rolltop-ab"></span>`dyn_rolltop_ab` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.84, 1.31, 1.42 |
-| <span id="obj-dyn-rolltop-ac"></span>`dyn_rolltop_ac` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.49, 0.68, 0.21 |
-| <span id="obj-dyn-rolltop-ad"></span>`dyn_rolltop_ad` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.22, 0.92, 0.3 |
-| <span id="obj-dyn-s-apple"></span>`dyn_s_apple` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-bagcoins"></span>`dyn_s_bagcoins` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.15, 0.28 |
-| <span id="obj-dyn-s-bbq-fork"></span>`dyn_s_bbq_fork` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-bbq-spatula"></span>`dyn_s_bbq_spatula` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-beerbottle"></span>`dyn_s_beerbottle` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.1, 0.3, 0.09 |
-| <span id="obj-dyn-s-billboard"></span>`dyn_s_billboard` | `simple_object` | `TYPE_GENERIC` | `OBB` | 18.13, 3.67, 12 |
-| <span id="obj-dyn-s-billboard-a"></span>`dyn_s_billboard_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 15.76, 0.8, 1.66 |
-| <span id="obj-dyn-s-billboard-b"></span>`dyn_s_billboard_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.65, 3.67, 10.11 |
-| <span id="obj-dyn-s-billboard-c"></span>`dyn_s_billboard_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.37, 3.67, 10.11 |
-| <span id="obj-dyn-s-billboard-d"></span>`dyn_s_billboard_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.72, 3.67, 10.11 |
-| <span id="obj-dyn-s-billboard-p"></span>`dyn_s_billboard_p` | `simple_object` | `TYPE_GENERIC` | `OBB` | 18.13, 3.67, 12 |
-| <span id="obj-dyn-s-billboard-pa"></span>`dyn_s_billboard_pa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 15.76, 0.8, 1.66 |
-| <span id="obj-dyn-s-billboard-pb"></span>`dyn_s_billboard_pb` | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.65, 3.67, 10.11 |
-| <span id="obj-dyn-s-billboard-pc"></span>`dyn_s_billboard_pc` | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.37, 3.67, 10.11 |
-| <span id="obj-dyn-s-billboard-pd"></span>`dyn_s_billboard_pd` | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.72, 3.67, 10.11 |
-| <span id="obj-dyn-s-binocs"></span>`dyn_s_binocs` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.07, 0.17, 0.22 |
-| <span id="obj-dyn-s-blaster"></span>`dyn_s_blaster` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-blaster-low"></span>`dyn_s_blaster_low` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-boltcutter"></span>`dyn_s_boltcutter` | `simple_object` | `TYPE_SPECIAL` | `NONE` | 0.25, 0.87, 0.05 |
-| <span id="obj-dyn-s-boltcutter-a"></span>`dyn_s_boltcutter_a` | `simple_object` | `TYPE_SPECIAL` | `NONE` | 0.09, 0.87, 0.05 |
-| <span id="obj-dyn-s-boltcutter-b"></span>`dyn_s_boltcutter_b` | `simple_object` | `TYPE_SPECIAL` | `NONE` | 0.16, 0.86, 0.05 |
-| <span id="obj-dyn-s-boltcutter-c"></span>`dyn_s_boltcutter_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 0.04, 0.62 |
-| <span id="obj-dyn-s-box-stereo"></span>`dyn_s_box_stereo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.61, 0.57, 0.24 |
-| <span id="obj-dyn-s-buddah"></span>`dyn_s_buddah` | `simple_object` | `TYPE_SPECIAL` | `NONE` | 0.4, 0.29, 0.37 |
-| <span id="obj-dyn-s-camera-a"></span>`dyn_s_camera_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
-| <span id="obj-dyn-s-camera-d"></span>`dyn_s_camera_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.67, 0.68, 1.4 |
-| <span id="obj-dyn-s-card-hand"></span>`dyn_s_card_hand` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.1, 0 |
-| <span id="obj-dyn-s-carrots"></span>`dyn_s_carrots` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-carstereo"></span>`dyn_s_carstereo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.4, 0.22, 0.1 |
-| <span id="obj-dyn-s-cashroll"></span>`dyn_s_cashroll` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.09, 0.12 |
-| <span id="obj-dyn-s-cigarette"></span>`dyn_s_cigarette` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.01, 0 |
-| <span id="obj-dyn-s-dirtymag"></span>`dyn_s_dirtymag` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.34, 0.07, 0.28 |
-| <span id="obj-dyn-s-dumbells"></span>`dyn_s_dumbells` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.39, 0.25, 0.24 |
-| <span id="obj-dyn-s-dumbells-b"></span>`dyn_s_dumbells_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.39, 0.24 |
-| <span id="obj-dyn-s-dumbells-c"></span>`dyn_s_dumbells_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.39, 0.24 |
-| <span id="obj-dyn-s-dumpster"></span>`dyn_s_dumpster` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.3, 1.69, 1.88 |
-| <span id="obj-dyn-s-elevator-a"></span>`dyn_s_elevator_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.94, 4.94, 7.15 |
-| <span id="obj-dyn-s-elevator-b"></span>`dyn_s_elevator_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.94, 4.94, 12 |
-| <span id="obj-dyn-s-elevator-pit"></span>`dyn_s_elevator_pit` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.49, 5.43, 7.11 |
-| <span id="obj-dyn-s-firescape"></span>`dyn_s_firescape` | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.03, 1.9, 3.98 |
-| <span id="obj-dyn-s-firescape-a"></span>`dyn_s_firescape_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.1, 0.85, 3.98 |
-| <span id="obj-dyn-s-firescape-b"></span>`dyn_s_firescape_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.46, 0.04, 0.9 |
-| <span id="obj-dyn-s-firescape-c"></span>`dyn_s_firescape_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.33, 1.9, 0.36 |
-| <span id="obj-dyn-s-firescape-d"></span>`dyn_s_firescape_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.47, 0.04, 0.9 |
-| <span id="obj-dyn-s-firescape-e"></span>`dyn_s_firescape_e` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.04, 1.82, 0.9 |
-| <span id="obj-dyn-s-firescape-f"></span>`dyn_s_firescape_f` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.84, 1.9, 0.36 |
-| <span id="obj-dyn-s-firescape-g"></span>`dyn_s_firescape_g` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.14, 1.67 |
-| <span id="obj-dyn-s-firescape-m"></span>`dyn_s_firescape_m` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.41, 2.86, 1.61 |
-| <span id="obj-dyn-s-firescape-n"></span>`dyn_s_firescape_n` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.99, 2.86, 1.61 |
-| <span id="obj-dyn-s-firescape-o"></span>`dyn_s_firescape_o` | `simple_object` | `TYPE_GENERIC` | `OBB` | 7.39, 2.86, 1.61 |
-| <span id="obj-dyn-s-firescape-p"></span>`dyn_s_firescape_p` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.04, 1.55, 4.98 |
-| <span id="obj-dyn-s-guilo"></span>`dyn_s_guilo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.05, 0.05, 1.15 |
-| <span id="obj-dyn-s-hamburger"></span>`dyn_s_hamburger` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-hotdog"></span>`dyn_s_hotdog` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-hotdog-b"></span>`dyn_s_hotdog_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.25, 0.08 |
-| <span id="obj-dyn-s-jack"></span>`dyn_s_jack` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.25, 0.64 |
-| <span id="obj-dyn-s-jacket"></span>`dyn_s_jacket` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.25, 0.64 |
-| <span id="obj-dyn-s-jewelpile"></span>`dyn_s_jewelpile` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1, 0.69, 0.24 |
-| <span id="obj-dyn-s-ledger"></span>`dyn_s_ledger` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.29, 0.02 |
-| <span id="obj-dyn-s-lettuce"></span>`dyn_s_lettuce` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-liquor"></span>`dyn_s_liquor` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.42, 0.14 |
-| <span id="obj-dyn-s-litterbox"></span>`dyn_s_litterbox` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.35, 0.49, 0.13 |
-| <span id="obj-dyn-s-lock"></span>`dyn_s_lock` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.15, 0.11, 0.29 |
-| <span id="obj-dyn-s-lockchain"></span>`dyn_s_lockchain` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.52, 0.2, 0.13 |
-| <span id="obj-dyn-s-milk"></span>`dyn_s_milk` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-minecar"></span>`dyn_s_minecar` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.92, 1.23, 1.3 |
-| <span id="obj-dyn-s-neon-a"></span>`dyn_s_neon_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-s-neon-b"></span>`dyn_s_neon_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-s-neon-c"></span>`dyn_s_neon_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-s-neon-d"></span>`dyn_s_neon_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-s-newspaper-a"></span>`dyn_s_newspaper_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-newspaper-b"></span>`dyn_s_newspaper_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-newspaper-c"></span>`dyn_s_newspaper_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.23, 0.28, 0.03 |
-| <span id="obj-dyn-s-ocopcar"></span>`dyn_s_ocopcar` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.41, 5.76, 1.8 |
-| <span id="obj-dyn-s-ocopcar-b"></span>`dyn_s_ocopcar_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.41, 5.76, 1.8 |
-| <span id="obj-dyn-s-ocopcar-d"></span>`dyn_s_ocopcar_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.18, 0.79, 0.86 |
-| <span id="obj-dyn-s-ocopcar-glass"></span>`dyn_s_ocopcar_glass` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.06, 2.4, 0.37 |
-| <span id="obj-dyn-s-ocopcar-t"></span>`dyn_s_ocopcar_t` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.8, 1.14, 0.24 |
-| <span id="obj-dyn-s-paper-list"></span>`dyn_s_paper_list` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 0.27, 0.05 |
-| <span id="obj-dyn-s-phone"></span>`dyn_s_phone` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.07, 0.22, 0.06 |
-| <span id="obj-dyn-s-pizzabox"></span>`dyn_s_pizzabox` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-poolcue"></span>`dyn_s_poolcue` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.05, 0.05, 1.61 |
-| <span id="obj-dyn-s-rickshaw"></span>`dyn_s_rickshaw` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-speaker"></span>`dyn_s_speaker` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.46, 0.37, 0.27 |
-| <span id="obj-dyn-s-spook-h"></span>`dyn_s_spook_h` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.27, 0.32 |
-| <span id="obj-dyn-s-spook-m"></span>`dyn_s_spook_m` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.7, 0.3, 1.73 |
-| <span id="obj-dyn-s-spook-s"></span>`dyn_s_spook_s` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.76, 1.16, 2.46 |
-| <span id="obj-dyn-s-spook-t"></span>`dyn_s_spook_t` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.98, 0.52, 0.2 |
-| <span id="obj-dyn-s-spraycan"></span>`dyn_s_spraycan` | `simple_object` | `TYPE_SPRAYCAN` | `OBB` | 0.12, 0.14, 0.24 |
-| <span id="obj-dyn-s-starrgun"></span>`dyn_s_starrgun` | `simple_object` | `TYPE_BAT` | `OBB` | 0.03, 0.12, 0.16 |
-| <span id="obj-dyn-s-steak"></span>`dyn_s_steak` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-subdoor"></span>`dyn_s_subdoor` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.15, 0.06, 2.22 |
-| <span id="obj-dyn-s-swhbld-a"></span>`dyn_s_swhbld_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 0, 0 |
-| <span id="obj-dyn-s-swhbld-b"></span>`dyn_s_swhbld_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 0, 0 |
-| <span id="obj-dyn-s-thermostat"></span>`dyn_s_thermostat` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
-| <span id="obj-dyn-s-train-b"></span>`dyn_s_train_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.18, 16.69, 3.28 |
-| <span id="obj-dyn-s-train-bm"></span>`dyn_s_train_bm` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 0.04, 0.95 |
-| <span id="obj-dyn-s-train-c"></span>`dyn_s_train_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.18, 16.69, 3.28 |
-| <span id="obj-dyn-s-train-c-b"></span>`dyn_s_train_c_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.18, 16.69, 3.28 |
-| <span id="obj-dyn-s-train-clean"></span>`dyn_s_train_clean` | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.1, 22.55, 3.61 |
-| <span id="obj-dyn-s-train-kill-p"></span>`dyn_s_train_kill_p` | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 3.18, 16.69, 2.91 |
-| <span id="obj-dyn-s-train-low"></span>`dyn_s_train_low` | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.21, 15.93, 2.91 |
-| <span id="obj-dyn-s-train-med-full"></span>`dyn_s_train_med_full` | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.21, 15.93, 2.91 |
-| <span id="obj-dyn-s-train-med-half"></span>`dyn_s_train_med_half` | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.21, 15.93, 2.91 |
-| <span id="obj-dyn-s-train-p"></span>`dyn_s_train_p` | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.18, 16.69, 2.91 |
-| <span id="obj-dyn-s-vest"></span>`dyn_s_vest` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.16, 0.14, 0.58 |
-| <span id="obj-dyn-s-vest-b"></span>`dyn_s_vest_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 0.39, 0.25 |
-| <span id="obj-dyn-s-weights"></span>`dyn_s_weights` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.69, 0.44, 0.42 |
-| <span id="obj-dyn-s-wtower-a"></span>`dyn_s_wtower_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.38, 4.4, 1.04 |
-| <span id="obj-dyn-s-wtower-b"></span>`dyn_s_wtower_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.96, 3.96, 4.04 |
-| <span id="obj-dyn-s-wtower-c"></span>`dyn_s_wtower_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.86, 2.83, 2.22 |
-| <span id="obj-dyn-s-wtower-d"></span>`dyn_s_wtower_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.3, 0.3, 1.59 |
-| <span id="obj-dyn-s-wwcart"></span>`dyn_s_wwcart` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.95, 2.75, 2.45 |
-| <span id="obj-dyn-s-wwcart-a"></span>`dyn_s_wwcart_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
-| <span id="obj-dyn-s-wwcart-b"></span>`dyn_s_wwcart_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
-| <span id="obj-dyn-s-wwcart-c"></span>`dyn_s_wwcart_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
-| <span id="obj-dyn-s-wwcart-simple-a"></span>`dyn_s_wwcart_simple_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
-| <span id="obj-dyn-s-wwcart-simple-b"></span>`dyn_s_wwcart_simple_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
-| <span id="obj-dyn-s-wwcart-simple-c"></span>`dyn_s_wwcart_simple_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
-| <span id="obj-dyn-s-wwheel-a"></span>`dyn_s_wwheel_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 44.89, 4.98, 44.89 |
-| <span id="obj-dyn-s-wwheel-b"></span>`dyn_s_wwheel_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 36.7, 0, 36.56 |
-| <span id="obj-dyn-samo"></span>`dyn_samo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.65, 1.39, 1.81 |
-| <span id="obj-dyn-saracens"></span>`dyn_saracens` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.93, 2.02, 1.28 |
-| <span id="obj-dyn-sawhorse"></span>`dyn_sawhorse` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.39, 0.06, 1.35 |
-| <span id="obj-dyn-scaf-a"></span>`dyn_scaf_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.37, 11.78, 4.67 |
-| <span id="obj-dyn-scaf-aa"></span>`dyn_scaf_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.37, 12.22, 4.67 |
-| <span id="obj-dyn-scaf-b"></span>`dyn_scaf_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.37, 15.31, 5.8 |
-| <span id="obj-dyn-scaf-ba"></span>`dyn_scaf_ba` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.54, 15.3, 5.8 |
-| <span id="obj-dyn-scaf-bb"></span>`dyn_scaf_bb` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.01, 5.57, 4.39 |
-| <span id="obj-dyn-scaf-c"></span>`dyn_scaf_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.64, 4.89, 0.13 |
-| <span id="obj-dyn-scaf-d"></span>`dyn_scaf_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.63, 3.11, 0.13 |
-| <span id="obj-dyn-scaf-e"></span>`dyn_scaf_e` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.86, 3.14, 0.24 |
-| <span id="obj-dyn-scaf-f"></span>`dyn_scaf_f` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.62, 2.57, 0.2 |
-| <span id="obj-dyn-scaf-g"></span>`dyn_scaf_g` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.64, 2.19, 0.13 |
-| <span id="obj-dyn-scaf-h"></span>`dyn_scaf_h` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.64, 2.21, 0.13 |
-| <span id="obj-dyn-scafwind-a"></span>`dyn_scafwind_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.74, 1.95, 1.64 |
-| <span id="obj-dyn-scafwind-b"></span>`dyn_scafwind_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.01, 1.67 |
-| <span id="obj-dyn-scafwind-d"></span>`dyn_scafwind_d` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.53, 4.55, 2.48 |
-| <span id="obj-dyn-scafwind-e"></span>`dyn_scafwind_e` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.99, 4.72, 1.66 |
-| <span id="obj-dyn-scafwind-f"></span>`dyn_scafwind_f` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.01, 1.67 |
-| <span id="obj-dyn-scafwind-g"></span>`dyn_scafwind_g` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.01, 1.67 |
-| <span id="obj-dyn-shack"></span>`dyn_shack` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.2, 3.42, 4.59 |
-| <span id="obj-dyn-shelf-a"></span>`dyn_shelf_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.06, 1.44, 1.89 |
-| <span id="obj-dyn-shovel-b"></span>`dyn_shovel_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.52, 0.1 |
-| <span id="obj-dyn-sign-diner-a"></span>`dyn_sign_diner_a` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.65, 0.21, 2.49 |
-| <span id="obj-dyn-sign-diner-b"></span>`dyn_sign_diner_b` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.92, 0.32, 1.56 |
-| <span id="obj-dyn-skidstack"></span>`dyn_skidstack` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.29, 2.28, 1.92 |
-| <span id="obj-dyn-skulljaw"></span>`dyn_skulljaw` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.22, 0.65, 0.77 |
-| <span id="obj-dyn-sledgehammer-b"></span>`dyn_sledgehammer_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.18, 0.1, 0.09 |
-| <span id="obj-dyn-snow"></span>`dyn_snow` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.55, 0.41, 0.34 |
-| <span id="obj-dyn-spill-garbage-mesh"></span>`dyn_spill_garbage_mesh` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-spill-garbage-mesh-tin"></span>`dyn_spill_garbage_mesh_tin` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-squeege"></span>`dyn_squeege` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.32, 0.39, 1.18 |
-| <span id="obj-dyn-stallwall-aa"></span>`dyn_stallwall_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.48, 0.09, 2.5 |
-| <span id="obj-dyn-stallwall-lrg-aa"></span>`dyn_stallwall_lrg_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 3.79, 0.09, 1.8 |
-| <span id="obj-dyn-std-gls"></span>`dyn_std_gls` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-steak-fade"></span>`dyn_steak_fade` | `fade_object` | `TYPE_BRICK` | `SPHERE` | 0.22, 0.31, 0.04 |
-| <span id="obj-dyn-steeltoe"></span>`dyn_steeltoe` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.07, 0.05 |
-| <span id="obj-dyn-stereo-a"></span>`dyn_stereo_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.61, 0.46, 0.17 |
-| <span id="obj-dyn-sub-handle"></span>`dyn_sub_handle` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.04, 0.43 |
-| <span id="obj-dyn-sub-turnstyle-b"></span>`dyn_sub_turnstyle_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.03, 1.02, 0.12 |
-| <span id="obj-dyn-subseat-aa"></span>`dyn_subseat_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2, 0.64, 1.08 |
-| <span id="obj-dyn-subseat-ba"></span>`dyn_subseat_ba` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.64, 1.08 |
-| <span id="obj-dyn-subtrash-aa"></span>`dyn_subtrash_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.46, 1.47, 0.48 |
-| <span id="obj-dyn-subwaydoor-a"></span>`dyn_subwaydoor_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.83, 0.06, 2.31 |
-| <span id="obj-dyn-suspicious-package"></span>`dyn_suspicious_package` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 2.23, 1.09 |
-| <span id="obj-dyn-swan"></span>`dyn_swan` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 2.23, 1.09 |
-| <span id="obj-dyn-table"></span>`dyn_table` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 1 |
-| <span id="obj-dyn-table01"></span>`dyn_table01_` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.85 |
-| <span id="obj-dyn-table3"></span>`dyn_table3_` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 2.92, 1.42, 0.88 |
-| <span id="obj-dyn-table4"></span>`dyn_table4_` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 2.53, 1.37, 0.87 |
-| <span id="obj-dyn-table-b"></span>`dyn_table_b` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.77 |
-| <span id="obj-dyn-table-ba"></span>`dyn_table_ba` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.49, 0.67, 0.04 |
-| <span id="obj-dyn-table-bb"></span>`dyn_table_bb` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.1, 0.66, 0.11 |
-| <span id="obj-dyn-table-k"></span>`dyn_table_k` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.78 |
-| <span id="obj-dyn-table-ka"></span>`dyn_table_ka` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.49, 0.69, 0.17 |
-| <span id="obj-dyn-table-kb"></span>`dyn_table_kb` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.71, 0.12 |
-| <span id="obj-dyn-table-s"></span>`dyn_table_s` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.77 |
-| <span id="obj-dyn-table-sa"></span>`dyn_table_sa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.49, 0.69, 0.04 |
-| <span id="obj-dyn-table-sb"></span>`dyn_table_sb` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.73, 0.04 |
-| <span id="obj-dyn-table-sc"></span>`dyn_table_sc` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.73, 0.04 |
-| <span id="obj-dyn-table-w"></span>`dyn_table_w` | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.79 |
-| <span id="obj-dyn-table-wa"></span>`dyn_table_wa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.49, 0.69, 0.04 |
-| <span id="obj-dyn-table-wb"></span>`dyn_table_wb` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.74, 0.08 |
-| <span id="obj-dyn-tacks-e-lit"></span>`dyn_tacks_e_lit` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.15, 0, 2.13 |
-| <span id="obj-dyn-tag-warr"></span>`dyn_tag_warr` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.12, 0, 2.15 |
-| <span id="obj-dyn-tag-warr-dest"></span>`dyn_tag_warr_dest` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.12, 0, 2.15 |
-| <span id="obj-dyn-taggable"></span>`dyn_taggable` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.28, 0, 0.31 |
-| <span id="obj-dyn-templetorch-aa"></span>`dyn_templetorch_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.28, 1.07, 0.67 |
-| <span id="obj-dyn-test"></span>`dyn_test` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.84, 0.7, 1.18 |
-| <span id="obj-dyn-testobject"></span>`dyn_testobject` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.3, 0.27, 0.22 |
-| <span id="obj-dyn-tire-bus"></span>`dyn_tire_bus` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 1.1, 1.05 |
-| <span id="obj-dyn-tire-fire"></span>`dyn_tire_fire` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 1.23, 0.37 |
-| <span id="obj-dyn-tire-van"></span>`dyn_tire_van` | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.81, 0.81, 0.28 |
-| <span id="obj-dyn-trans-wrecked"></span>`dyn_trans_wrecked` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.73, 1.67, 2.69 |
-| <span id="obj-dyn-trashbit-a"></span>`dyn_trashbit_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.06, 0.2 |
-| <span id="obj-dyn-trashbit-b"></span>`dyn_trashbit_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.06, 0.33 |
-| <span id="obj-dyn-trashbit-c"></span>`dyn_trashbit_c` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.35, 0.27, 0.14 |
-| <span id="obj-dyn-trashbit-d"></span>`dyn_trashbit_d` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.3, 0.21, 0.11 |
-| <span id="obj-dyn-trashcan-b"></span>`dyn_trashcan_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.78, 1.01, 0.65 |
-| <span id="obj-dyn-trnyrd-elecbox-aa"></span>`dyn_trnyrd_elecbox_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.41, 1.65, 3.12 |
-| <span id="obj-dyn-trnyrd-light-aa"></span>`dyn_trnyrd_light_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.57, 0.46, 3.06 |
-| <span id="obj-dyn-trnyrd-sign-aa"></span>`dyn_trnyrd_sign_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.36, 0.27, 2.11 |
-| <span id="obj-dyn-troph-bopp-bo"></span>`dyn_troph_bopp_bo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.42, 0.17, 0.5 |
-| <span id="obj-dyn-troph-crown"></span>`dyn_troph_crown` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.11, 0.26 |
-| <span id="obj-dyn-troph-sata-bo"></span>`dyn_troph_sata_bo` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.27, 0.28 |
-| <span id="obj-dyn-trophy-fuhuns"></span>`dyn_trophy_fuhuns` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.57, 0.08, 0.6 |
-| <span id="obj-dyn-turbine"></span>`dyn_turbine` | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.91, 1.03, 2.14 |
-| <span id="obj-dyn-turnbul-bus"></span>`dyn_turnbul_bus` | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 6.35, 1, 3.04 |
-| <span id="obj-dyn-turnbull-a"></span>`dyn_turnbull_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.59, 1.84, 1.25 |
-| <span id="obj-dyn-turnbull-bus-graf"></span>`dyn_turnbull_bus_graf` | `simple_object` | `TYPE_GLASS` | `NONE` | 0, 0, 0 |
-| <span id="obj-dyn-turns"></span>`dyn_turns` | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.73, 1.73, 2.55 |
-| <span id="obj-dyn-tv-aa"></span>`dyn_tv_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.63, 0.52, 0.42 |
-| <span id="obj-dyn-tvlarge-wreck"></span>`dyn_tvlarge_wreck` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.26, 0.97, 0.86 |
-| <span id="obj-dyn-twodoor"></span>`dyn_twodoor` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.62, 5.44, 1.27 |
-| <span id="obj-dyn-vargas-door-a"></span>`dyn_vargas_door_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.63, 0.13, 2.45 |
-| <span id="obj-dyn-vargas-door-aa"></span>`dyn_vargas_door_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.84, 0.86, 2.45 |
-| <span id="obj-dyn-vargas-stove-aa"></span>`dyn_vargas_stove_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.45, 1.83, 1 |
-| <span id="obj-dyn-vargas-washer-aa"></span>`dyn_vargas_washer_aa` | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.89, 1.48, 0.95 |
-| <span id="obj-dyn-vermin"></span>`dyn_vermin` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.61, 2.09, 1.28 |
-| <span id="obj-dyn-walkie"></span>`dyn_walkie` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.08, 0.33 |
-| <span id="obj-dyn-wall-aa"></span>`dyn_wall_aa` | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.16, 0.33, 3.05 |
-| <span id="obj-dyn-war-vest"></span>`dyn_war_vest` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.45, 0.52, 0.04 |
-| <span id="obj-dyn-warcade-a"></span>`dyn_warcade_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.87, 1.11, 2.49 |
-| <span id="obj-dyn-warcade-b"></span>`dyn_warcade_b` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 1.13, 2.49 |
-| <span id="obj-dyn-warcade-c"></span>`dyn_warcade_c` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.61, 0.11, 0.49 |
-| <span id="obj-dyn-warr-tag-twolayer"></span>`dyn_warr_tag_twolayer` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.11, 2.58, 1.08 |
-| <span id="obj-dyn-warrtag-brnr"></span>`dyn_warrtag_brnr` | `simple_object` | `TYPE_GENERIC` | `OBB` | 7.81, 0.15, 2.37 |
-| <span id="obj-dyn-whistle"></span>`dyn_whistle` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.02, 0.07, 0.03 |
-| <span id="obj-dyn-whlchr"></span>`dyn_whlchr` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.74, 1.31, 1.2 |
-| <span id="obj-dyn-window-decal"></span>`dyn_window_decal` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.74, 1.31, 1.2 |
-| <span id="obj-dyn-woodbridge-a"></span>`dyn_woodbridge_a` | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.88, 11.54, 3.69 |
-| <span id="obj-dyn-woodbridge-rail"></span>`dyn_woodbridge_rail` | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.43, 3.03, 1.2 |
-| <span id="obj-dyn-wooddmg-a"></span>`dyn_wooddmg_a` | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.18, 1.81, 0.16 |
-| <span id="obj-dyn-wooddmg-b"></span>`dyn_wooddmg_b` | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.84, 0.78, 0.13 |
+| Name | Image | Class | Type | Shape | Size (m) |
+| --- | --- | --- | --- | --- | --- |
+| <span id="obj-dyn-ajax"></span>`dyn_ajax` | ![objects/dyn_ajax.png](images/objects/dyn_ajax.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
+| <span id="obj-dyn-ajax-bird"></span>`dyn_ajax_bird` | ![objects/dyn_ajax_bird.png](images/objects/dyn_ajax_bird.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.03, 0.11, 0.03 |
+| <span id="obj-dyn-ajax-bird-fix"></span>`dyn_ajax_bird_fix` | ![objects/dyn_ajax_bird_fix.png](images/objects/dyn_ajax_bird_fix.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.03, 0.11, 0.03 |
+| <span id="obj-dyn-arcade-new-aa"></span>`dyn_arcade_new_aa` | ![objects/dyn_arcade_new_aa.png](images/objects/dyn_arcade_new_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.05, 1.17, 2.29 |
+| <span id="obj-dyn-autosign"></span>`dyn_autosign` | ![objects/dyn_autosign.png](images/objects/dyn_autosign.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.99, 1.14, 4.62 |
+| <span id="obj-dyn-bagcash"></span>`dyn_bagcash` | ![objects/dyn_bagcash.png](images/objects/dyn_bagcash.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.34, 0.61, 0.47 |
+| <span id="obj-dyn-bagdrug"></span>`dyn_bagdrug` | ![objects/dyn_bagdrug.png](images/objects/dyn_bagdrug.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.34, 0.61, 0.47 |
+| <span id="obj-dyn-bar-table"></span>`dyn_bar_table` | ![objects/dyn_bar_table.png](images/objects/dyn_bar_table.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.61, 1.99, 0.86 |
+| <span id="obj-dyn-bar-table-b"></span>`dyn_bar_table_b` | ![objects/dyn_bar_table_b.png](images/objects/dyn_bar_table_b.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.5, 1.5, 0.9 |
+| <span id="obj-dyn-barbeque-wreck"></span>`dyn_barbeque_wreck` | ![objects/dyn_barbeque_wreck.png](images/objects/dyn_barbeque_wreck.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.87, 0.95, 0.13 |
+| <span id="obj-dyn-barrel-aa"></span>`dyn_barrel_aa` | ![objects/dyn_barrel_aa.png](images/objects/dyn_barrel_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.8, 1.19, 0.23 |
+| <span id="obj-dyn-barrel-ab"></span>`dyn_barrel_ab` | ![objects/dyn_barrel_ab.png](images/objects/dyn_barrel_ab.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.65, 0.62, 0.06 |
+| <span id="obj-dyn-barrel-ac"></span>`dyn_barrel_ac` | ![objects/dyn_barrel_ac.png](images/objects/dyn_barrel_ac.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.81, 0.91, 0.13 |
+| <span id="obj-dyn-barrel-b"></span>`dyn_barrel_b` | ![objects/dyn_barrel_b.png](images/objects/dyn_barrel_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.72, 0.73, 1.12 |
+| <span id="obj-dyn-barric"></span>`dyn_barric` | ![objects/dyn_barric.png](images/objects/dyn_barric.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.88, 0.5, 1.1 |
+| <span id="obj-dyn-bartable-b"></span>`dyn_bartable_b` | ![objects/dyn_bartable_b.png](images/objects/dyn_bartable_b.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.19, 1.18, 1.38 |
+| <span id="obj-dyn-bartable-c"></span>`dyn_bartable_c` | ![objects/dyn_bartable_c.png](images/objects/dyn_bartable_c.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.19, 1.18, 1.06 |
+| <span id="obj-dyn-bath-heater-aa"></span>`dyn_bath_heater_aa` | ![objects/dyn_bath_heater_aa.png](images/objects/dyn_bath_heater_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.69, 0.55, 1.38 |
+| <span id="obj-dyn-bath-mirror-aa"></span>`dyn_bath_mirror_aa` | ![objects/dyn_bath_mirror_aa.png](images/objects/dyn_bath_mirror_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.88, 0.06, 1.16 |
+| <span id="obj-dyn-bath-sink-lrg-aaa"></span>`dyn_bath_sink_lrg_aaa` | ![objects/dyn_bath_sink_lrg_aaa.png](images/objects/dyn_bath_sink_lrg_aaa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.67, 1.78, 0.3 |
+| <span id="obj-dyn-bath-toweldisp-aa"></span>`dyn_bath_toweldisp_aa` | ![objects/dyn_bath_toweldisp_aa.png](images/objects/dyn_bath_toweldisp_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.35, 0.37 |
+| <span id="obj-dyn-bg-ajaxverminone"></span>`dyn_bg_ajaxverminone` | ![objects/dyn_bg_ajaxverminone.png](images/objects/dyn_bg_ajaxverminone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 0.69, 0.95 |
+| <span id="obj-dyn-bg-ajaxvermintwo"></span>`dyn_bg_ajaxvermintwo` | ![objects/dyn_bg_ajaxvermintwo.png](images/objects/dyn_bg_ajaxvermintwo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.14, 0.82, 0.95 |
+| <span id="obj-dyn-bg-cleon"></span>`dyn_bg_cleon` | ![objects/dyn_bg_cleon.png](images/objects/dyn_bg_cleon.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 1.41, 0.95 |
+| <span id="obj-dyn-bg-cleonajaxendone"></span>`dyn_bg_cleonajaxendone` | ![objects/dyn_bg_cleonajaxendone.png](images/objects/dyn_bg_cleonajaxendone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.11, 0.87, 0.95 |
+| <span id="obj-dyn-bg-cleonajaxendtwo"></span>`dyn_bg_cleonajaxendtwo` | ![objects/dyn_bg_cleonajaxendtwo.png](images/objects/dyn_bg_cleonajaxendtwo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.4, 0.18, 0.95 |
+| <span id="obj-dyn-bg-cleonajaxfour"></span>`dyn_bg_cleonajaxfour` | ![objects/dyn_bg_cleonajaxfour.png](images/objects/dyn_bg_cleonajaxfour.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.4, 0.12, 0.95 |
+| <span id="obj-dyn-bg-cleonajaxone"></span>`dyn_bg_cleonajaxone` | ![objects/dyn_bg_cleonajaxone.png](images/objects/dyn_bg_cleonajaxone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.11, 0.87, 0.95 |
+| <span id="obj-dyn-bg-cleonajaxthree"></span>`dyn_bg_cleonajaxthree` | ![objects/dyn_bg_cleonajaxthree.png](images/objects/dyn_bg_cleonajaxthree.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.11, 0.87, 0.95 |
+| <span id="obj-dyn-bg-cleonajaxtwo"></span>`dyn_bg_cleonajaxtwo` | ![objects/dyn_bg_cleonajaxtwo.png](images/objects/dyn_bg_cleonajaxtwo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 0.69, 0.95 |
+| <span id="obj-dyn-bg-cleonrembone"></span>`dyn_bg_cleonrembone` | ![objects/dyn_bg_cleonrembone.png](images/objects/dyn_bg_cleonrembone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.24, 0.67, 0.95 |
+| <span id="obj-dyn-bg-cleonrembtwo"></span>`dyn_bg_cleonrembtwo` | ![objects/dyn_bg_cleonrembtwo.png](images/objects/dyn_bg_cleonrembtwo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.4, 0.15, 0.95 |
+| <span id="obj-dyn-bg-cochiseajaxone"></span>`dyn_bg_cochiseajaxone` | ![objects/dyn_bg_cochiseajaxone.png](images/objects/dyn_bg_cochiseajaxone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 0.69, 0.95 |
+| <span id="obj-dyn-bg-cochiseajaxtwo"></span>`dyn_bg_cochiseajaxtwo` | ![objects/dyn_bg_cochiseajaxtwo.png](images/objects/dyn_bg_cochiseajaxtwo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.14, 0.82, 0.95 |
+| <span id="obj-dyn-bg-cochisesnowone"></span>`dyn_bg_cochisesnowone` | ![objects/dyn_bg_cochisesnowone.png](images/objects/dyn_bg_cochisesnowone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 0.69, 0.95 |
+| <span id="obj-dyn-bg-cochisesnowtwo"></span>`dyn_bg_cochisesnowtwo` | ![objects/dyn_bg_cochisesnowtwo.png](images/objects/dyn_bg_cochisesnowtwo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.14, 0.82, 0.95 |
+| <span id="obj-dyn-bg-cowboycochise"></span>`dyn_bg_cowboycochise` | ![objects/dyn_bg_cowboycochise.png](images/objects/dyn_bg_cowboycochise.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.36, 0.39, 0.95 |
+| <span id="obj-dyn-bg-cowboyverminone"></span>`dyn_bg_cowboyverminone` | ![objects/dyn_bg_cowboyverminone.png](images/objects/dyn_bg_cowboyverminone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.11, 0.87, 0.95 |
+| <span id="obj-dyn-bg-cowboyvermintwo"></span>`dyn_bg_cowboyvermintwo` | ![objects/dyn_bg_cowboyvermintwo.png](images/objects/dyn_bg_cowboyvermintwo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.4, 0.12, 0.95 |
+| <span id="obj-dyn-bg-swanrembone"></span>`dyn_bg_swanrembone` | ![objects/dyn_bg_swanrembone.png](images/objects/dyn_bg_swanrembone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.18, 0.77, 0.95 |
+| <span id="obj-dyn-bg-swanrembtwo"></span>`dyn_bg_swanrembtwo` | ![objects/dyn_bg_swanrembtwo.png](images/objects/dyn_bg_swanrembtwo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.36, 0.36, 0.95 |
+| <span id="obj-dyn-big-fan"></span>`dyn_big_fan` | ![objects/dyn_big_fan.png](images/objects/dyn_big_fan.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.06, 0.17, 1.01 |
+| <span id="obj-dyn-blocker"></span>`dyn_blocker` | | `dyn_blocker` | `TYPE_GENERIC` | `OBB` | 3.67, 3.67, 1 |
+| <span id="obj-dyn-blocker-b"></span>`dyn_blocker_b` | | `dyn_blocker` | `TYPE_GENERIC` | `OBB` | 1.851, 0.5, 1.851 |
+| <span id="obj-dyn-blocker-c"></span>`dyn_blocker_c` | | `dyn_blocker` | `TYPE_GENERIC` | `OBB` | 3.651, 0.5, 1.496 |
+| <span id="obj-dyn-blocker-d"></span>`dyn_blocker_d` | | `dyn_blocker` | `TYPE_TRUNKLOCK` | `OBB` | 3.651, 0.5, 1.496 |
+| <span id="obj-dyn-boat"></span>`dyn_boat` | ![objects/dyn_boat.png](images/objects/dyn_boat.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.2, 1.17, 2.56 |
+| <span id="obj-dyn-bookcase"></span>`dyn_bookcase` | ![objects/dyn_bookcase.png](images/objects/dyn_bookcase.png){ width="96" } | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 1.26, 0.55, 2.29 |
+| <span id="obj-dyn-bookcase-aa"></span>`dyn_bookcase_aa` | ![objects/dyn_bookcase_aa.png](images/objects/dyn_bookcase_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.29, 0.57, 2.29 |
+| <span id="obj-dyn-bookcase-ab"></span>`dyn_bookcase_ab` | ![objects/dyn_bookcase_ab.png](images/objects/dyn_bookcase_ab.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.27, 1.08, 2.29 |
+| <span id="obj-dyn-bookcase-ac"></span>`dyn_bookcase_ac` | ![objects/dyn_bookcase_ac.png](images/objects/dyn_bookcase_ac.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.29, 0.08 |
+| <span id="obj-dyn-bopp"></span>`dyn_bopp` | ![objects/dyn_bopp.png](images/objects/dyn_bopp.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.57, 0.96, 1.09 |
+| <span id="obj-dyn-bottles-a"></span>`dyn_bottles_a` | ![objects/dyn_bottles_a.png](images/objects/dyn_bottles_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.07, 0.07, 0.25 |
+| <span id="obj-dyn-bottles-b"></span>`dyn_bottles_b` | ![objects/dyn_bottles_b.png](images/objects/dyn_bottles_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.07, 0.07, 0.25 |
+| <span id="obj-dyn-brassknkl"></span>`dyn_brassknkl` | ![objects/dyn_brassknkl.png](images/objects/dyn_brassknkl.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.06, 0.01 |
+| <span id="obj-dyn-brokebeam-a"></span>`dyn_brokebeam_a` | ![objects/dyn_brokebeam_a.png](images/objects/dyn_brokebeam_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.56, 0.32, 0.51 |
+| <span id="obj-dyn-brokebeam-aa"></span>`dyn_brokebeam_aa` | ![objects/dyn_brokebeam_aa.png](images/objects/dyn_brokebeam_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.06, 0.32, 0.51 |
+| <span id="obj-dyn-brokebeam-b"></span>`dyn_brokebeam_b` | ![objects/dyn_brokebeam_b.png](images/objects/dyn_brokebeam_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.59, 0.06, 0.15 |
+| <span id="obj-dyn-brokebeam-c"></span>`dyn_brokebeam_c` | ![objects/dyn_brokebeam_c.png](images/objects/dyn_brokebeam_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.52, 0.06, 0.17 |
+| <span id="obj-dyn-brownbag-b"></span>`dyn_brownbag_b` | ![objects/dyn_brownbag_b.png](images/objects/dyn_brownbag_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.18, 0.23, 0.31 |
+| <span id="obj-dyn-bucket"></span>`dyn_bucket` | ![objects/dyn_bucket.png](images/objects/dyn_bucket.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.34, 0.41, 0.45 |
+| <span id="obj-dyn-bumcart-aa"></span>`dyn_bumcart_aa` | ![objects/dyn_bumcart_aa.png](images/objects/dyn_bumcart_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.07, 1.46, 0.66 |
+| <span id="obj-dyn-bumcart-bb"></span>`dyn_bumcart_bb` | ![objects/dyn_bumcart_bb.png](images/objects/dyn_bumcart_bb.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.81, 1.95, 0.86 |
+| <span id="obj-dyn-burntpillar"></span>`dyn_burntpillar` | ![objects/dyn_burntpillar.png](images/objects/dyn_burntpillar.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.76, 0.5, 7.16 |
+| <span id="obj-dyn-button"></span>`dyn_button` | ![objects/dyn_button.png](images/objects/dyn_button.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.1, 0.2 |
+| <span id="obj-dyn-cabin-aa"></span>`dyn_cabin_aa` | ![objects/dyn_cabin_aa.png](images/objects/dyn_cabin_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.82, 0.11, 1.09 |
+| <span id="obj-dyn-cabin-bb"></span>`dyn_cabin_bb` | ![objects/dyn_cabin_bb.png](images/objects/dyn_cabin_bb.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.82, 0.11, 1.09 |
+| <span id="obj-dyn-cabin-cc"></span>`dyn_cabin_cc` | ![objects/dyn_cabin_cc.png](images/objects/dyn_cabin_cc.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.82, 0.11, 1.89 |
+| <span id="obj-dyn-cabinet-ab"></span>`dyn_cabinet_ab` | ![objects/dyn_cabinet_ab.png](images/objects/dyn_cabinet_ab.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 3.21, 2.64, 0.3 |
+| <span id="obj-dyn-cam-astro-a"></span>`dyn_cam_astro_a` | ![objects/dyn_cam_astro_a.png](images/objects/dyn_cam_astro_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.81, 0.54, 3.45 |
+| <span id="obj-dyn-cam-astro-aa"></span>`dyn_cam_astro_aa` | ![objects/dyn_cam_astro_aa.png](images/objects/dyn_cam_astro_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.95, 0.22, 6.09 |
+| <span id="obj-dyn-cam-ceilfan"></span>`dyn_cam_ceilfan` | ![objects/dyn_cam_ceilfan.png](images/objects/dyn_cam_ceilfan.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 2.22, 2.21, 2.51 |
+| <span id="obj-dyn-cam-hydropole"></span>`dyn_cam_hydropole` | ![objects/dyn_cam_hydropole.png](images/objects/dyn_cam_hydropole.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 1.34, 1.43, 6.55 |
+| <span id="obj-dyn-cam-streetlight"></span>`dyn_cam_streetlight` | ![objects/dyn_cam_streetlight.png](images/objects/dyn_cam_streetlight.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.6, 2.76, 5.18 |
+| <span id="obj-dyn-cam-subdivider"></span>`dyn_cam_subdivider` | ![objects/dyn_cam_subdivider.png](images/objects/dyn_cam_subdivider.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 1.66, 0.25, 3.07 |
+| <span id="obj-dyn-cam-subpillar-a"></span>`dyn_cam_subpillar_a` | ![objects/dyn_cam_subpillar_a.png](images/objects/dyn_cam_subpillar_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 5.99, 0.5, 8.95 |
+| <span id="obj-dyn-cam-subpillar-b"></span>`dyn_cam_subpillar_b` | ![objects/dyn_cam_subpillar_b.png](images/objects/dyn_cam_subpillar_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.29, 0.31, 5 |
+| <span id="obj-dyn-cam-tree-a"></span>`dyn_cam_tree_a` | ![objects/dyn_cam_tree_a.png](images/objects/dyn_cam_tree_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 9.23, 9.71, 10.35 |
+| <span id="obj-dyn-candybar"></span>`dyn_candybar` | ![objects/dyn_candybar.png](images/objects/dyn_candybar.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.01, 0.08 |
+| <span id="obj-dyn-cardrack-a"></span>`dyn_cardrack_a` | ![objects/dyn_cardrack_a.png](images/objects/dyn_cardrack_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.4, 0.4, 0.4 |
+| <span id="obj-dyn-cargo"></span>`dyn_cargo` | ![objects/dyn_cargo.png](images/objects/dyn_cargo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.41, 6.6, 2.68 |
+| <span id="obj-dyn-carjunk-door-aa"></span>`dyn_carjunk_door_aa` | ![objects/dyn_carjunk_door_aa.png](images/objects/dyn_carjunk_door_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.37, 0.47, 1.16 |
+| <span id="obj-dyn-carjunk-door-ba"></span>`dyn_carjunk_door_ba` | ![objects/dyn_carjunk_door_ba.png](images/objects/dyn_carjunk_door_ba.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.37, 0.47, 1.16 |
+| <span id="obj-dyn-carjunk-hood-aa"></span>`dyn_carjunk_hood_aa` | ![objects/dyn_carjunk_hood_aa.png](images/objects/dyn_carjunk_hood_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.01, 1.87, 0.34 |
+| <span id="obj-dyn-carjunk-windshld-aa"></span>`dyn_carjunk_windshld_aa` | ![objects/dyn_carjunk_windshld_aa.png](images/objects/dyn_carjunk_windshld_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.1, 0.36, 0.76 |
+| <span id="obj-dyn-carwreck"></span>`dyn_carwreck` | ![objects/dyn_carwreck.png](images/objects/dyn_carwreck.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.94, 2.14, 1.23 |
+| <span id="obj-dyn-cash-dollar"></span>`dyn_cash_dollar` | ![objects/dyn_cash_dollar.png](images/objects/dyn_cash_dollar.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.17, 0 |
+| <span id="obj-dyn-cash-hand"></span>`dyn_cash_hand` | ![objects/dyn_cash_hand.png](images/objects/dyn_cash_hand.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.2, 0.02 |
+| <span id="obj-dyn-cash-roll"></span>`dyn_cash_roll` | ![objects/dyn_cash_roll.png](images/objects/dyn_cash_roll.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.12, 0.07 |
+| <span id="obj-dyn-cash-stack"></span>`dyn_cash_stack` | ![objects/dyn_cash_stack.png](images/objects/dyn_cash_stack.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.21, 0.05 |
+| <span id="obj-dyn-cashreg-c"></span>`dyn_cashreg_c` | ![objects/dyn_cashreg_c.png](images/objects/dyn_cashreg_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.53, 0.55, 0.58 |
+| <span id="obj-dyn-cb-christ-c"></span>`dyn_cb_christ_c` | ![objects/dyn_cb_christ_c.png](images/objects/dyn_cb_christ_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.53, 1.15, 0.41 |
+| <span id="obj-dyn-cb-coffee-c"></span>`dyn_cb_coffee_c` | ![objects/dyn_cb_coffee_c.png](images/objects/dyn_cb_coffee_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.6, 1.48, 0.41 |
+| <span id="obj-dyn-cb-david-c"></span>`dyn_cb_david_c` | ![objects/dyn_cb_david_c.png](images/objects/dyn_cb_david_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.85, 1.33, 1.35 |
+| <span id="obj-dyn-cb-extra-head"></span>`dyn_cb_extra_head` | ![objects/dyn_cb_extra_head.png](images/objects/dyn_cb_extra_head.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.24, 0.32, 0.4 |
+| <span id="obj-dyn-cb-pieta-c"></span>`dyn_cb_pieta_c` | ![objects/dyn_cb_pieta_c.png](images/objects/dyn_cb_pieta_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3, 2.62, 1.17 |
+| <span id="obj-dyn-cb-thinker-c"></span>`dyn_cb_thinker_c` | ![objects/dyn_cb_thinker_c.png](images/objects/dyn_cb_thinker_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.18, 2.39, 1.15 |
+| <span id="obj-dyn-cbradio-b"></span>`dyn_cbradio_b` | ![objects/dyn_cbradio_b.png](images/objects/dyn_cbradio_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.8, 0.8, 0.38 |
+| <span id="obj-dyn-chair-ba"></span>`dyn_chair_ba` | ![objects/dyn_chair_ba.png](images/objects/dyn_chair_ba.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.42, 0.14 |
+| <span id="obj-dyn-chair-bb"></span>`dyn_chair_bb` | ![objects/dyn_chair_bb.png](images/objects/dyn_chair_bb.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.33, 0.57, 0.06 |
+| <span id="obj-dyn-chair-bc"></span>`dyn_chair_bc` | ![objects/dyn_chair_bc.png](images/objects/dyn_chair_bc.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.66, 0.05 |
+| <span id="obj-dyn-chair-ka"></span>`dyn_chair_ka` | ![objects/dyn_chair_ka.png](images/objects/dyn_chair_ka.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.28, 0.47, 0.07 |
+| <span id="obj-dyn-chair-kb"></span>`dyn_chair_kb` | ![objects/dyn_chair_kb.png](images/objects/dyn_chair_kb.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.37, 0.63, 0.04 |
+| <span id="obj-dyn-chair-kc"></span>`dyn_chair_kc` | ![objects/dyn_chair_kc.png](images/objects/dyn_chair_kc.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.66, 0.05 |
+| <span id="obj-dyn-chair-wa"></span>`dyn_chair_wa` | ![objects/dyn_chair_wa.png](images/objects/dyn_chair_wa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.42, 0.11 |
+| <span id="obj-dyn-chair-wb"></span>`dyn_chair_wb` | ![objects/dyn_chair_wb.png](images/objects/dyn_chair_wb.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.33, 0.57, 0.06 |
+| <span id="obj-dyn-chair-wc"></span>`dyn_chair_wc` | ![objects/dyn_chair_wc.png](images/objects/dyn_chair_wc.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.66, 0.05 |
+| <span id="obj-dyn-chandelier-b"></span>`dyn_chandelier_b` | ![objects/dyn_chandelier_b.png](images/objects/dyn_chandelier_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.93, 1.93, 0.82 |
+| <span id="obj-dyn-chandelier-c"></span>`dyn_chandelier_c` | ![objects/dyn_chandelier_c.png](images/objects/dyn_chandelier_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.65, 1.65, 0.7 |
+| <span id="obj-dyn-chandelier-d"></span>`dyn_chandelier_d` | ![objects/dyn_chandelier_d.png](images/objects/dyn_chandelier_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.29, 1.09, 0.82 |
+| <span id="obj-dyn-chandelier-dmg"></span>`dyn_chandelier_dmg` | ![objects/dyn_chandelier_dmg.png](images/objects/dyn_chandelier_dmg.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.76, 2.54, 0.84 |
+| <span id="obj-dyn-chandelier-glows"></span>`dyn_chandelier_glows` | ![objects/dyn_chandelier_glows.png](images/objects/dyn_chandelier_glows.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.64, 2.48, 1.74 |
+| <span id="obj-dyn-checkerboard"></span>`dyn_checkerboard` | ![objects/dyn_checkerboard.png](images/objects/dyn_checkerboard.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3, 0, 2 |
+| <span id="obj-dyn-chi-noodlestand-aa"></span>`dyn_chi_noodlestand_aa` | ![objects/dyn_chi_noodlestand_aa.png](images/objects/dyn_chi_noodlestand_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.8, 1.07, 2.79 |
+| <span id="obj-dyn-chim-aa"></span>`dyn_chim_aa` | ![objects/dyn_chim_aa.png](images/objects/dyn_chim_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.05, 1.28, 0.76 |
+| <span id="obj-dyn-chim-ba"></span>`dyn_chim_ba` | ![objects/dyn_chim_ba.png](images/objects/dyn_chim_ba.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.29, 1.28, 1.24 |
+| <span id="obj-dyn-chim-ca"></span>`dyn_chim_ca` | ![objects/dyn_chim_ca.png](images/objects/dyn_chim_ca.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.95, 1.41, 1.15 |
+| <span id="obj-dyn-chim-da"></span>`dyn_chim_da` | ![objects/dyn_chim_da.png](images/objects/dyn_chim_da.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.52, 1.54, 1.76 |
+| <span id="obj-dyn-chimcowl"></span>`dyn_chimcowl` | ![objects/dyn_chimcowl.png](images/objects/dyn_chimcowl.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.79, 0.68, 0.52 |
+| <span id="obj-dyn-china"></span>`dyn_china` | ![objects/dyn_china.png](images/objects/dyn_china.png){ width="96" } | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 1.63, 0.69, 2.78 |
+| <span id="obj-dyn-china-aa"></span>`dyn_china_aa` | ![objects/dyn_china_aa.png](images/objects/dyn_china_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.63, 0.93, 2.78 |
+| <span id="obj-dyn-china-ab"></span>`dyn_china_ab` | ![objects/dyn_china_ab.png](images/objects/dyn_china_ab.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.7, 1.32, 2.68 |
+| <span id="obj-dyn-china-ac"></span>`dyn_china_ac` | ![objects/dyn_china_ac.png](images/objects/dyn_china_ac.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.29, 0.08 |
+| <span id="obj-dyn-china-ad"></span>`dyn_china_ad` | ![objects/dyn_china_ad.png](images/objects/dyn_china_ad.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.84, 0.72, 0.3 |
+| <span id="obj-dyn-cig"></span>`dyn_cig` | ![objects/dyn_cig.png](images/objects/dyn_cig.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.01, 0.01, 0.1 |
+| <span id="obj-dyn-cigvend-b"></span>`dyn_cigvend_b` | ![objects/dyn_cigvend_b.png](images/objects/dyn_cigvend_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.17, 1.04, 1.44 |
+| <span id="obj-dyn-cleon"></span>`dyn_cleon` | ![objects/dyn_cleon.png](images/objects/dyn_cleon.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.98, 1.9, 1.28 |
+| <span id="obj-dyn-clublite"></span>`dyn_clublite` | ![objects/dyn_clublite.png](images/objects/dyn_clublite.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 0.29, 0.58, 0.35 |
+| <span id="obj-dyn-cny-autoskatter-lites"></span>`dyn_cny_autoskatter_lites` | ![objects/dyn_cny_autoskatter_lites.png](images/objects/dyn_cny_autoskatter_lites.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 9.32, 0, 2.34 |
+| <span id="obj-dyn-cny-dock-ac"></span>`dyn_cny_dock_ac` | ![objects/dyn_cny_dock_ac.png](images/objects/dyn_cny_dock_ac.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.73, 1.01, 0.8 |
+| <span id="obj-dyn-cny-fabers-lites"></span>`dyn_cny_fabers_lites` | ![objects/dyn_cny_fabers_lites.png](images/objects/dyn_cny_fabers_lites.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 8.76, 0, 2.14 |
+| <span id="obj-dyn-cny-hut-a"></span>`dyn_cny_hut_a` | ![objects/dyn_cny_hut_a.png](images/objects/dyn_cny_hut_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
+| <span id="obj-dyn-cny-teradactile"></span>`dyn_cny_teradactile` | ![objects/dyn_cny_teradactile.png](images/objects/dyn_cny_teradactile.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
+| <span id="obj-dyn-cny-tiki-pillar-a"></span>`dyn_cny_tiki_pillar_a` | ![objects/dyn_cny_tiki_pillar_a.png](images/objects/dyn_cny_tiki_pillar_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
+| <span id="obj-dyn-cochise"></span>`dyn_cochise` | ![objects/dyn_cochise.png](images/objects/dyn_cochise.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.61, 2.11, 1.28 |
+| <span id="obj-dyn-coke-machine-b"></span>`dyn_coke_machine_b` | ![objects/dyn_coke_machine_b.png](images/objects/dyn_coke_machine_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.38, 1.16, 2.16 |
+| <span id="obj-dyn-coney-car-a"></span>`dyn_coney_car_a` | ![objects/dyn_coney_car_a.png](images/objects/dyn_coney_car_a.png){ width="96" } | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 1.43, 1.35, 1.32 |
+| <span id="obj-dyn-coney-car-b"></span>`dyn_coney_car_b` | ![objects/dyn_coney_car_b.png](images/objects/dyn_coney_car_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.37, 1.36, 0.28 |
+| <span id="obj-dyn-copcar-door-b"></span>`dyn_copcar_door_b` | ![objects/dyn_copcar_door_b.png](images/objects/dyn_copcar_door_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.36, 1.18, 1.22 |
+| <span id="obj-dyn-copcar-trunk-b"></span>`dyn_copcar_trunk_b` | ![objects/dyn_copcar_trunk_b.png](images/objects/dyn_copcar_trunk_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.74, 1.19, 0.24 |
+| <span id="obj-dyn-copcar-whole"></span>`dyn_copcar_whole` | ![objects/dyn_copcar_whole.png](images/objects/dyn_copcar_whole.png){ width="96" } | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.65, 5.45, 1.8 |
+| <span id="obj-dyn-copcar-wrecked"></span>`dyn_copcar_wrecked` | ![objects/dyn_copcar_wrecked.png](images/objects/dyn_copcar_wrecked.png){ width="96" } | `simple_object` | `TYPE_CAR` | `OBB` | 2.54, 5.35, 1.68 |
+| <span id="obj-dyn-cowboy"></span>`dyn_cowboy` | ![objects/dyn_cowboy.png](images/objects/dyn_cowboy.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.39, 0.59, 0.33 |
+| <span id="obj-dyn-crate-aa"></span>`dyn_crate_aa` | ![objects/dyn_crate_aa.png](images/objects/dyn_crate_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.15, 1.15, 1.36 |
+| <span id="obj-dyn-crate-ab"></span>`dyn_crate_ab` | ![objects/dyn_crate_ab.png](images/objects/dyn_crate_ab.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.02, 0.8, 1.6 |
+| <span id="obj-dyn-crate-ad"></span>`dyn_crate_ad` | ![objects/dyn_crate_ad.png](images/objects/dyn_crate_ad.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.02, 0.95, 1.55 |
+| <span id="obj-dyn-crate-box-a"></span>`dyn_crate_box_a` | ![objects/dyn_crate_box_a.png](images/objects/dyn_crate_box_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.49, 1.62, 2.04 |
+| <span id="obj-dyn-ctrl-box-a"></span>`dyn_ctrl_box_a` | ![objects/dyn_ctrl_box_a.png](images/objects/dyn_ctrl_box_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.33, 0.23, 0.57 |
+| <span id="obj-dyn-cuffs-b"></span>`dyn_cuffs_b` | ![objects/dyn_cuffs_b.png](images/objects/dyn_cuffs_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.27, 0.19, 0.12 |
+| <span id="obj-dyn-cuffs-c"></span>`dyn_cuffs_c` | ![objects/dyn_cuffs_c.png](images/objects/dyn_cuffs_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.12, 0.02 |
+| <span id="obj-dyn-desk"></span>`dyn_desk` | ![objects/dyn_desk.png](images/objects/dyn_desk.png){ width="96" } | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 1.29, 0.77, 0.86 |
+| <span id="obj-dyn-desk-aa"></span>`dyn_desk_aa` | ![objects/dyn_desk_aa.png](images/objects/dyn_desk_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.29, 1.01, 0.87 |
+| <span id="obj-dyn-desk-ab"></span>`dyn_desk_ab` | ![objects/dyn_desk_ab.png](images/objects/dyn_desk_ab.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.28, 1.2, 0.87 |
+| <span id="obj-dyn-dest-tag"></span>`dyn_dest_tag` | ![objects/dyn_dest_tag.png](images/objects/dyn_dest_tag.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 5.3, 2.57 |
+| <span id="obj-dyn-destroyers"></span>`dyn_destroyers` | ![objects/dyn_destroyers.png](images/objects/dyn_destroyers.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 2.23, 1.09 |
+| <span id="obj-dyn-discoball"></span>`dyn_discoball` | ![objects/dyn_discoball.png](images/objects/dyn_discoball.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.67, 0.69, 2.53 |
+| <span id="obj-dyn-discoball-gold"></span>`dyn_discoball_gold` | ![objects/dyn_discoball_gold.png](images/objects/dyn_discoball_gold.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.23, 1.23, 1.23 |
+| <span id="obj-dyn-discoball-silver"></span>`dyn_discoball_silver` | ![objects/dyn_discoball_silver.png](images/objects/dyn_discoball_silver.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.23, 1.23, 1.23 |
+| <span id="obj-dyn-discolite-b"></span>`dyn_discolite_b` | ![objects/dyn_discolite_b.png](images/objects/dyn_discolite_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 10, 10, 0 |
+| <span id="obj-dyn-discoray-gold"></span>`dyn_discoray_gold` | ![objects/dyn_discoray_gold.png](images/objects/dyn_discoray_gold.png){ width="96" } | `rotating_object` | `TYPE_GLASS` | `NONE` | 8.57, 8.2, 3.82 |
+| <span id="obj-dyn-discoray-gold-b"></span>`dyn_discoray_gold_b` | ![objects/dyn_discoray_gold_b.png](images/objects/dyn_discoray_gold_b.png){ width="96" } | `rotating_object` | `TYPE_GLASS` | `NONE` | 29.6, 29.61, 25.1 |
+| <span id="obj-dyn-discoray-silver"></span>`dyn_discoray_silver` | ![objects/dyn_discoray_silver.png](images/objects/dyn_discoray_silver.png){ width="96" } | `rotating_object` | `TYPE_GLASS` | `NONE` | 8.57, 8.2, 3.82 |
+| <span id="obj-dyn-discoray-silver-b"></span>`dyn_discoray_silver_b` | ![objects/dyn_discoray_silver_b.png](images/objects/dyn_discoray_silver_b.png){ width="96" } | `rotating_object` | `TYPE_GLASS` | `NONE` | 29.6, 29.61, 25.1 |
+| <span id="obj-dyn-dj-blurrymic"></span>`dyn_dj_blurrymic` | ![objects/dyn_dj_blurrymic.png](images/objects/dyn_dj_blurrymic.png){ width="96" } | `rotating_object` | `TYPE_GLASS` | `OBB` | 0.19, 0, 0.16 |
+| <span id="obj-dyn-dj-giant-needle"></span>`dyn_dj_giant_needle` | ![objects/dyn_dj_giant_needle.png](images/objects/dyn_dj_giant_needle.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.11, 0.88, 0.06 |
+| <span id="obj-dyn-dj-magtape"></span>`dyn_dj_magtape` | ![objects/dyn_dj_magtape.png](images/objects/dyn_dj_magtape.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.36, 0.36, 0.03 |
+| <span id="obj-dyn-dj-magtape-b"></span>`dyn_dj_magtape_b` | ![objects/dyn_dj_magtape_b.png](images/objects/dyn_dj_magtape_b.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.82, 0.33, 0.96 |
+| <span id="obj-dyn-dj-mic"></span>`dyn_dj_mic` | ![objects/dyn_dj_mic.png](images/objects/dyn_dj_mic.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.15, 0.11, 0.09 |
+| <span id="obj-dyn-dj-needle"></span>`dyn_dj_needle` | ![objects/dyn_dj_needle.png](images/objects/dyn_dj_needle.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 0, 0.08 |
+| <span id="obj-dyn-dj-needleboard"></span>`dyn_dj_needleboard` | ![objects/dyn_dj_needleboard.png](images/objects/dyn_dj_needleboard.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.06, 0, 0.55 |
+| <span id="obj-dyn-dj-redbg"></span>`dyn_dj_redbg` | ![objects/dyn_dj_redbg.png](images/objects/dyn_dj_redbg.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.98, 0, 0.63 |
+| <span id="obj-dyn-dj-redglow-a"></span>`dyn_dj_redglow_a` | ![objects/dyn_dj_redglow_a.png](images/objects/dyn_dj_redglow_a.png){ width="96" } | `rotating_object` | `TYPE_GLASS` | `OBB` | 0.42, 0.41, 0 |
+| <span id="obj-dyn-dj-turntable"></span>`dyn_dj_turntable` | ![objects/dyn_dj_turntable.png](images/objects/dyn_dj_turntable.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.07, 1.07, 0.05 |
+| <span id="obj-dyn-dj-turntable-needle"></span>`dyn_dj_turntable_needle` | ![objects/dyn_dj_turntable_needle.png](images/objects/dyn_dj_turntable_needle.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.05, 0.34, 0.03 |
+| <span id="obj-dyn-doghouse-aa"></span>`dyn_doghouse_aa` | ![objects/dyn_doghouse_aa.png](images/objects/dyn_doghouse_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.53, 1.67, 1.05 |
+| <span id="obj-dyn-doghouse-ab"></span>`dyn_doghouse_ab` | ![objects/dyn_doghouse_ab.png](images/objects/dyn_doghouse_ab.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.62, 2.31, 0.2 |
+| <span id="obj-dyn-doorshutter"></span>`dyn_doorshutter` | ![objects/dyn_doorshutter.png](images/objects/dyn_doorshutter.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.31, 0.02, 0.18 |
+| <span id="obj-dyn-dr-bar-bani"></span>`dyn_dr_bar_bani` | ![objects/dyn_dr_bar_bani.png](images/objects/dyn_dr_bar_bani.png){ width="96" } | `simple_object` | `TYPE_DOOR` | `NONE` | 3.16, 0.14, 1.2 |
+| <span id="obj-dyn-dr-barricade"></span>`dyn_dr_barricade` | | `simple_object` | `TYPE_DOOR` | `NONE` | 0.11, 0.11, 1.32 |
+| <span id="obj-dyn-dr-bnstr"></span>`dyn_dr_bnstr` | ![objects/dyn_dr_bnstr.png](images/objects/dyn_dr_bnstr.png){ width="96" } | `simple_object` | `TYPE_DOOR` | `NONE` | 1.8, 0.17, 1.12 |
+| <span id="obj-dyn-dr-chain-s"></span>`dyn_dr_chain_s` | ![objects/dyn_dr_chain_s.png](images/objects/dyn_dr_chain_s.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 4.94, 4.94, 7.15 |
+| <span id="obj-dyn-dr-dblliz"></span>`dyn_dr_dblliz` | | `simple_object` | `TYPE_DOOR` | `OBB` | 2.18, 0.07, 2.33 |
+| <span id="obj-dyn-dr-fence"></span>`dyn_dr_fence` | ![objects/dyn_dr_fence.png](images/objects/dyn_dr_fence.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 2.48, 0.1, 2.6 |
+| <span id="obj-dyn-dr-fence-o"></span>`dyn_dr_fence_o` | ![objects/dyn_dr_fence_o.png](images/objects/dyn_dr_fence_o.png){ width="96" } | `simple_object` | `TYPE_BREAKABLE_DOOR` | `OBB` | 4.26, 0.01, 1.11 |
+| <span id="obj-dyn-dr-fence-p"></span>`dyn_dr_fence_p` | ![objects/dyn_dr_fence_p.png](images/objects/dyn_dr_fence_p.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 4.26, 0.01, 1.11 |
+| <span id="obj-dyn-dr-parapet"></span>`dyn_dr_parapet` | ![objects/dyn_dr_parapet.png](images/objects/dyn_dr_parapet.png){ width="96" } | `simple_object` | `TYPE_DOOR` | `NONE` | 9.26, 0.21, 1.07 |
+| <span id="obj-dyn-dre-bar-bani-a"></span>`dyn_dre_bar_bani_a` | ![objects/dyn_dre_bar_bani_a.png](images/objects/dyn_dre_bar_bani_a.png){ width="96" } | `fade_object` | `TYPE_BAT` | `OBB` | 1.69, 0.14, 0.06 |
+| <span id="obj-dyn-dre-bar-bani-b"></span>`dyn_dre_bar_bani_b` | ![objects/dyn_dre_bar_bani_b.png](images/objects/dyn_dre_bar_bani_b.png){ width="96" } | `fade_object` | `TYPE_BAT` | `OBB` | 0.11, 0.11, 1.32 |
+| <span id="obj-dyn-dre-bnstr-a"></span>`dyn_dre_bnstr_a` | ![objects/dyn_dre_bnstr_a.png](images/objects/dyn_dre_bnstr_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.13, 0.16, 0.01 |
+| <span id="obj-dyn-dre-bnstr-b"></span>`dyn_dre_bnstr_b` | ![objects/dyn_dre_bnstr_b.png](images/objects/dyn_dre_bnstr_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.16, 0.96 |
+| <span id="obj-dyn-dre-bnstr-c"></span>`dyn_dre_bnstr_c` | ![objects/dyn_dre_bnstr_c.png](images/objects/dyn_dre_bnstr_c.png){ width="96" } | `fade_object` | `TYPE_DRUM` | `OBB` | 0.31, 0.96, 0.1 |
+| <span id="obj-dyn-dre-bnstr-d"></span>`dyn_dre_bnstr_d` | ![objects/dyn_dre_bnstr_d.png](images/objects/dyn_dre_bnstr_d.png){ width="96" } | `fade_object` | `TYPE_DRUM` | `OBB` | 0.62, 0.96, 0.1 |
+| <span id="obj-dyn-dre-bnstr-e"></span>`dyn_dre_bnstr_e` | ![objects/dyn_dre_bnstr_e.png](images/objects/dyn_dre_bnstr_e.png){ width="96" } | `fade_object` | `TYPE_DRUM` | `OBB` | 0.62, 0.96, 0.1 |
+| <span id="obj-dyn-dre-bnstr-f"></span>`dyn_dre_bnstr_f` | ![objects/dyn_dre_bnstr_f.png](images/objects/dyn_dre_bnstr_f.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.16, 0.17, 0.07 |
+| <span id="obj-dyn-dre-chain-t"></span>`dyn_dre_chain_t` | ![objects/dyn_dre_chain_t.png](images/objects/dyn_dre_chain_t.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 4.94, 4.94, 7.15 |
+| <span id="obj-dyn-dre-dclub-b"></span>`dyn_dre_dclub_b` | ![objects/dyn_dre_dclub_b.png](images/objects/dyn_dre_dclub_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.18, 0.41, 2.34 |
+| <span id="obj-dyn-dre-dclub-c"></span>`dyn_dre_dclub_c` | ![objects/dyn_dre_dclub_c.png](images/objects/dyn_dre_dclub_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.21, 2.3 |
+| <span id="obj-dyn-dre-dclub-d"></span>`dyn_dre_dclub_d` | ![objects/dyn_dre_dclub_d.png](images/objects/dyn_dre_dclub_d.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.93, 0.23, 2.33 |
+| <span id="obj-dyn-dre-fence-a"></span>`dyn_dre_fence_a` | ![objects/dyn_dre_fence_a.png](images/objects/dyn_dre_fence_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.8, 2.52, 0.06 |
+| <span id="obj-dyn-dre-fence-b"></span>`dyn_dre_fence_b` | ![objects/dyn_dre_fence_b.png](images/objects/dyn_dre_fence_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.49, 2.58, 0.03 |
+| <span id="obj-dyn-dre-fence-oa"></span>`dyn_dre_fence_oa` | ![objects/dyn_dre_fence_oa.png](images/objects/dyn_dre_fence_oa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 4.26, 0.01, 1.11 |
+| <span id="obj-dyn-dre-fence-ob"></span>`dyn_dre_fence_ob` | ![objects/dyn_dre_fence_ob.png](images/objects/dyn_dre_fence_ob.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 3.26, 0.1, 0.11 |
+| <span id="obj-dyn-dre-fence-oc"></span>`dyn_dre_fence_oc` | ![objects/dyn_dre_fence_oc.png](images/objects/dyn_dre_fence_oc.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.27, 0.03, 0.12 |
+| <span id="obj-dyn-dre-liz-a"></span>`dyn_dre_liz_a` | ![objects/dyn_dre_liz_a.png](images/objects/dyn_dre_liz_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.17, 0.15, 2.33 |
+| <span id="obj-dyn-dre-liz-b"></span>`dyn_dre_liz_b` | ![objects/dyn_dre_liz_b.png](images/objects/dyn_dre_liz_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.18, 0.28, 2.34 |
+| <span id="obj-dyn-dre-liz-c"></span>`dyn_dre_liz_c` | ![objects/dyn_dre_liz_c.png](images/objects/dyn_dre_liz_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.18, 0.41, 2.34 |
+| <span id="obj-dyn-dre-liz-d"></span>`dyn_dre_liz_d` | ![objects/dyn_dre_liz_d.png](images/objects/dyn_dre_liz_d.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.24, 0.89, 2.34 |
+| <span id="obj-dyn-dre-liz-e"></span>`dyn_dre_liz_e` | ![objects/dyn_dre_liz_e.png](images/objects/dyn_dre_liz_e.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.93, 0.23, 2.33 |
+| <span id="obj-dyn-dre-liz-f"></span>`dyn_dre_liz_f` | ![objects/dyn_dre_liz_f.png](images/objects/dyn_dre_liz_f.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.21, 2.3 |
+| <span id="obj-dyn-dre-parapet-a"></span>`dyn_dre_parapet_a` | ![objects/dyn_dre_parapet_a.png](images/objects/dyn_dre_parapet_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.17, 0.2, 0.2 |
+| <span id="obj-dyn-dre-parapet-b"></span>`dyn_dre_parapet_b` | ![objects/dyn_dre_parapet_b.png](images/objects/dyn_dre_parapet_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.51, 0.2, 0.2 |
+| <span id="obj-dyn-dre-parapet-c"></span>`dyn_dre_parapet_c` | ![objects/dyn_dre_parapet_c.png](images/objects/dyn_dre_parapet_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.66, 1.07, 0.21 |
+| <span id="obj-dyn-dre-parapet-d"></span>`dyn_dre_parapet_d` | ![objects/dyn_dre_parapet_d.png](images/objects/dyn_dre_parapet_d.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.1, 0.2, 0.2 |
+| <span id="obj-dyn-dre-stall-a"></span>`dyn_dre_stall_a` | ![objects/dyn_dre_stall_a.png](images/objects/dyn_dre_stall_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.2, 1.78, 0.07 |
+| <span id="obj-dyn-dre-stall-b"></span>`dyn_dre_stall_b` | ![objects/dyn_dre_stall_b.png](images/objects/dyn_dre_stall_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.19, 1.78, 0.07 |
+| <span id="obj-dyn-dre-storec"></span>`dyn_dre_storec` | ![objects/dyn_dre_storec.png](images/objects/dyn_dre_storec.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 1.09, 0.07, 2.33 |
+| <span id="obj-dyn-drumstick-left"></span>`dyn_drumstick_left` | ![objects/dyn_drumstick_left.png](images/objects/dyn_drumstick_left.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.02, 0.46, 0.02 |
+| <span id="obj-dyn-dryer-ba"></span>`dyn_dryer_ba` | ![objects/dyn_dryer_ba.png](images/objects/dyn_dryer_ba.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.96, 1.08, 1.33 |
+| <span id="obj-dyn-dryerdoor-a"></span>`dyn_dryerdoor_a` | ![objects/dyn_dryerdoor_a.png](images/objects/dyn_dryerdoor_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.92, 0.17, 1.12 |
+| <span id="obj-dyn-easel-a"></span>`dyn_easel_a` | ![objects/dyn_easel_a.png](images/objects/dyn_easel_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 1.5, 0.03 |
+| <span id="obj-dyn-easel-b"></span>`dyn_easel_b` | ![objects/dyn_easel_b.png](images/objects/dyn_easel_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 2.5, 0.03 |
+| <span id="obj-dyn-easel-c"></span>`dyn_easel_c` | ![objects/dyn_easel_c.png](images/objects/dyn_easel_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.86, 0.03 |
+| <span id="obj-dyn-fan-a"></span>`dyn_fan_a` | ![objects/dyn_fan_a.png](images/objects/dyn_fan_a.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.97, 0.46, 0.96 |
+| <span id="obj-dyn-fan-b"></span>`dyn_fan_b` | ![objects/dyn_fan_b.png](images/objects/dyn_fan_b.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.97, 0.36, 0.96 |
+| <span id="obj-dyn-fence-corrug-a"></span>`dyn_fence_corrug_a` | ![objects/dyn_fence_corrug_a.png](images/objects/dyn_fence_corrug_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.65, 0, 3.11 |
+| <span id="obj-dyn-fence-wood-a"></span>`dyn_fence_wood_a` | ![objects/dyn_fence_wood_a.png](images/objects/dyn_fence_wood_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.69, 0, 2.58 |
+| <span id="obj-dyn-fencebarb"></span>`dyn_fencebarb` | ![objects/dyn_fencebarb.png](images/objects/dyn_fencebarb.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.62, 0.08, 2.57 |
+| <span id="obj-dyn-fencegate"></span>`dyn_fencegate` | ![objects/dyn_fencegate.png](images/objects/dyn_fencegate.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.39, 0.08, 2.17 |
+| <span id="obj-dyn-firehydrant-aa"></span>`dyn_firehydrant_aa` | ![objects/dyn_firehydrant_aa.png](images/objects/dyn_firehydrant_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.47, 0.56, 0.9 |
+| <span id="obj-dyn-firetruck"></span>`dyn_firetruck` | ![objects/dyn_firetruck.png](images/objects/dyn_firetruck.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.59, 9.07, 2.82 |
+| <span id="obj-dyn-fnc-clmb-brk-mesh"></span>`dyn_fnc_clmb_brk_mesh` | ![objects/dyn_fnc_clmb_brk_mesh.png](images/objects/dyn_fnc_clmb_brk_mesh.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.98, 0, 2.17 |
+| <span id="obj-dyn-fnc-clmb-brk-post"></span>`dyn_fnc_clmb_brk_post` | ![objects/dyn_fnc_clmb_brk_post.png](images/objects/dyn_fnc_clmb_brk_post.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.05, 0.08, 2.17 |
+| <span id="obj-dyn-fox"></span>`dyn_fox` | ![objects/dyn_fox.png](images/objects/dyn_fox.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.18, 0.36, 0.76 |
+| <span id="obj-dyn-fridge-a"></span>`dyn_fridge_a` | ![objects/dyn_fridge_a.png](images/objects/dyn_fridge_a.png){ width="96" } | `simple_object` | `TYPE_DRUM` | `OBB` | 0.73, 0.94, 0.99 |
+| <span id="obj-dyn-fridge-ba"></span>`dyn_fridge_ba` | ![objects/dyn_fridge_ba.png](images/objects/dyn_fridge_ba.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.04, 1.02, 2.01 |
+| <span id="obj-dyn-fridge-ca"></span>`dyn_fridge_ca` | ![objects/dyn_fridge_ca.png](images/objects/dyn_fridge_ca.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.07, 2.33, 0.83 |
+| <span id="obj-dyn-fruitstand-aa"></span>`dyn_fruitstand_aa` | ![objects/dyn_fruitstand_aa.png](images/objects/dyn_fruitstand_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 3.61, 4.98, 0.26 |
+| <span id="obj-dyn-furies"></span>`dyn_furies` | ![objects/dyn_furies.png](images/objects/dyn_furies.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.8, 0.86, 0.77 |
+| <span id="obj-dyn-fx-ocopcar"></span>`dyn_fx_ocopcar` | ![objects/dyn_fx_ocopcar.png](images/objects/dyn_fx_ocopcar.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 6.04, 8.72, 15.03 |
+| <span id="obj-dyn-fx-sublight-intro"></span>`dyn_fx_sublight_intro` | ![objects/dyn_fx_sublight_intro.png](images/objects/dyn_fx_sublight_intro.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.17, 0.27, 10.13 |
+| <span id="obj-dyn-fx-train"></span>`dyn_fx_train` | ![objects/dyn_fx_train.png](images/objects/dyn_fx_train.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 2.84, 8.81, 1.48 |
+| <span id="obj-dyn-fx-turnbull"></span>`dyn_fx_turnbull` | ![objects/dyn_fx_turnbull.png](images/objects/dyn_fx_turnbull.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 11.41, 8.43, 2.02 |
+| <span id="obj-dyn-fx-turnbull-b"></span>`dyn_fx_turnbull_b` | ![objects/dyn_fx_turnbull_b.png](images/objects/dyn_fx_turnbull_b.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 2.26, 5.32, 0.99 |
+| <span id="obj-dyn-gallery-woodbeams"></span>`dyn_gallery_woodbeams` | ![objects/dyn_gallery_woodbeams.png](images/objects/dyn_gallery_woodbeams.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 17.31, 12.85, 7.07 |
+| <span id="obj-dyn-garage"></span>`dyn_garage` | ![objects/dyn_garage.png](images/objects/dyn_garage.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 4.34, 0.36, 2.5 |
+| <span id="obj-dyn-gaspump"></span>`dyn_gaspump` | ![objects/dyn_gaspump.png](images/objects/dyn_gaspump.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.86, 0.54, 1.5 |
+| <span id="obj-dyn-gbin-lrg"></span>`dyn_gbin_lrg` | ![objects/dyn_gbin_lrg.png](images/objects/dyn_gbin_lrg.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.57, 6.1, 2.28 |
+| <span id="obj-dyn-gbin-small"></span>`dyn_gbin_small` | ![objects/dyn_gbin_small.png](images/objects/dyn_gbin_small.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.25, 1.68, 1.7 |
+| <span id="obj-dyn-gbin-small-open"></span>`dyn_gbin_small_open` | ![objects/dyn_gbin_small_open.png](images/objects/dyn_gbin_small_open.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.25, 1.9, 3.35 |
+| <span id="obj-dyn-gear-a"></span>`dyn_gear_a` | ![objects/dyn_gear_a.png](images/objects/dyn_gear_a.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.61, 0.61, 0.13 |
+| <span id="obj-dyn-gear-aa"></span>`dyn_gear_aa` | ![objects/dyn_gear_aa.png](images/objects/dyn_gear_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.92, 0.11, 0.42 |
+| <span id="obj-dyn-hand-spraycan"></span>`dyn_hand_spraycan` | ![objects/dyn_hand_spraycan.png](images/objects/dyn_hand_spraycan.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 0.24, 0.35 |
+| <span id="obj-dyn-hanglight"></span>`dyn_hanglight` | ![objects/dyn_hanglight.png](images/objects/dyn_hanglight.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 2, 0.41, 2.64 |
+| <span id="obj-dyn-hearse"></span>`dyn_hearse` | ![objects/dyn_hearse.png](images/objects/dyn_hearse.png){ width="96" } | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 2.61, 6.3, 1.69 |
+| <span id="obj-dyn-hearse-door-a-l"></span>`dyn_hearse_door_a_l` | ![objects/dyn_hearse_door_a_l.png](images/objects/dyn_hearse_door_a_l.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.48, 1.15, 1.49 |
+| <span id="obj-dyn-hearse-door-a-r"></span>`dyn_hearse_door_a_r` | ![objects/dyn_hearse_door_a_r.png](images/objects/dyn_hearse_door_a_r.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.48, 1.15, 1.49 |
+| <span id="obj-dyn-hearse-door-b-l"></span>`dyn_hearse_door_b_l` | ![objects/dyn_hearse_door_b_l.png](images/objects/dyn_hearse_door_b_l.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.45, 1.14, 1.49 |
+| <span id="obj-dyn-hearse-door-b-r"></span>`dyn_hearse_door_b_r` | ![objects/dyn_hearse_door_b_r.png](images/objects/dyn_hearse_door_b_r.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.45, 1.14, 1.49 |
+| <span id="obj-dyn-hearse-win-a-l"></span>`dyn_hearse_win_a_l` | ![objects/dyn_hearse_win_a_l.png](images/objects/dyn_hearse_win_a_l.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.16, 0.67, 0.5 |
+| <span id="obj-dyn-hearse-win-a-r"></span>`dyn_hearse_win_a_r` | ![objects/dyn_hearse_win_a_r.png](images/objects/dyn_hearse_win_a_r.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.16, 0.67, 0.5 |
+| <span id="obj-dyn-hearse-win-b-l"></span>`dyn_hearse_win_b_l` | ![objects/dyn_hearse_win_b_l.png](images/objects/dyn_hearse_win_b_l.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.15, 1.02, 0.49 |
+| <span id="obj-dyn-hearse-win-b-r"></span>`dyn_hearse_win_b_r` | ![objects/dyn_hearse_win_b_r.png](images/objects/dyn_hearse_win_b_r.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.15, 1.02, 0.49 |
+| <span id="obj-dyn-highres-cueball"></span>`dyn_highres_cueball` | ![objects/dyn_highres_cueball.png](images/objects/dyn_highres_cueball.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.11, 0.11, 0.11 |
+| <span id="obj-dyn-highres-eightball"></span>`dyn_highres_eightball` | ![objects/dyn_highres_eightball.png](images/objects/dyn_highres_eightball.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.11, 0.11, 0.11 |
+| <span id="obj-dyn-hihats"></span>`dyn_hihats` | ![objects/dyn_hihats.png](images/objects/dyn_hihats.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.43, 1.12, 0.77 |
+| <span id="obj-dyn-hoe-b"></span>`dyn_hoe_b` | ![objects/dyn_hoe_b.png](images/objects/dyn_hoe_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.18, 0.16, 0.2 |
+| <span id="obj-dyn-hotdog-c-fade"></span>`dyn_hotdog_c_fade` | ![objects/dyn_hotdog_c_fade.png](images/objects/dyn_hotdog_c_fade.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.05, 0.21, 0.06 |
+| <span id="obj-dyn-huns"></span>`dyn_huns` | ![objects/dyn_huns.png](images/objects/dyn_huns.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.7, 0.4, 1.12 |
+| <span id="obj-dyn-huns-shirts"></span>`dyn_huns_shirts` | ![objects/dyn_huns_shirts.png](images/objects/dyn_huns_shirts.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.48, 0.23, 0.49 |
+| <span id="obj-dyn-hurricanes"></span>`dyn_hurricanes` | ![objects/dyn_hurricanes.png](images/objects/dyn_hurricanes.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.75, 0.1, 0.53 |
+| <span id="obj-dyn-icecream-a-fade"></span>`dyn_icecream_a_fade` | ![objects/dyn_icecream_a_fade.png](images/objects/dyn_icecream_a_fade.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.1, 0.27, 0.11 |
+| <span id="obj-dyn-intro-test"></span>`dyn_intro_test` | ![objects/dyn_intro_test.png](images/objects/dyn_intro_test.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.6, 0, 0.9 |
+| <span id="obj-dyn-invisible"></span>`dyn_invisible` | ![objects/dyn_invisible.png](images/objects/dyn_invisible.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.35, 0.35, 0 |
+| <span id="obj-dyn-jewelcase-aa"></span>`dyn_jewelcase_aa` | ![objects/dyn_jewelcase_aa.png](images/objects/dyn_jewelcase_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.81, 1.96, 0.4 |
+| <span id="obj-dyn-jsb-cusion"></span>`dyn_jsb_cusion` | ![objects/dyn_jsb_cusion.png](images/objects/dyn_jsb_cusion.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.14, 1.04, 0.25 |
+| <span id="obj-dyn-jsb-drawer"></span>`dyn_jsb_drawer` | ![objects/dyn_jsb_drawer.png](images/objects/dyn_jsb_drawer.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.77, 0.66, 0.36 |
+| <span id="obj-dyn-jsb-file"></span>`dyn_jsb_file` | ![objects/dyn_jsb_file.png](images/objects/dyn_jsb_file.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.45, 0.8, 0.38 |
+| <span id="obj-dyn-jsb-locker"></span>`dyn_jsb_locker` | ![objects/dyn_jsb_locker.png](images/objects/dyn_jsb_locker.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.04, 0.41, 2 |
+| <span id="obj-dyn-jsbs"></span>`dyn_jsbs` | ![objects/dyn_jsbs.png](images/objects/dyn_jsbs.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.38, 1.83, 1.27 |
+| <span id="obj-dyn-jukebox"></span>`dyn_jukebox` | ![objects/dyn_jukebox.png](images/objects/dyn_jukebox.png){ width="96" } | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 0.91, 0.94, 1.7 |
+| <span id="obj-dyn-jukebox-aa"></span>`dyn_jukebox_aa` | ![objects/dyn_jukebox_aa.png](images/objects/dyn_jukebox_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.91, 0.94, 1.7 |
+| <span id="obj-dyn-jukebox-ab"></span>`dyn_jukebox_ab` | ![objects/dyn_jukebox_ab.png](images/objects/dyn_jukebox_ab.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.05, 1.02, 1.7 |
+| <span id="obj-dyn-jukebox-ac"></span>`dyn_jukebox_ac` | ![objects/dyn_jukebox_ac.png](images/objects/dyn_jukebox_ac.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.05, 1.02, 0.37 |
+| <span id="obj-dyn-jukebox-ad"></span>`dyn_jukebox_ad` | ![objects/dyn_jukebox_ad.png](images/objects/dyn_jukebox_ad.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.65, 0.63, 0.3 |
+| <span id="obj-dyn-jukebox-ae"></span>`dyn_jukebox_ae` | ![objects/dyn_jukebox_ae.png](images/objects/dyn_jukebox_ae.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.32, 0.76, 0.3 |
+| <span id="obj-dyn-jukebox-opti-b"></span>`dyn_jukebox_opti_b` | ![objects/dyn_jukebox_opti_b.png](images/objects/dyn_jukebox_opti_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 0.95, 1.61 |
+| <span id="obj-dyn-laundry"></span>`dyn_laundry` | ![objects/dyn_laundry.png](images/objects/dyn_laundry.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.32, 0.24, 0.27 |
+| <span id="obj-dyn-lawnchair-aa"></span>`dyn_lawnchair_aa` | ![objects/dyn_lawnchair_aa.png](images/objects/dyn_lawnchair_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.52, 1.29, 0.3 |
+| <span id="obj-dyn-lawnchair-ba"></span>`dyn_lawnchair_ba` | ![objects/dyn_lawnchair_ba.png](images/objects/dyn_lawnchair_ba.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.52, 1.29, 0.3 |
+| <span id="obj-dyn-liz-couch"></span>`dyn_liz_couch` | ![objects/dyn_liz_couch.png](images/objects/dyn_liz_couch.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.4, 0.81, 0.94 |
+| <span id="obj-dyn-lizzies"></span>`dyn_lizzies` | ![objects/dyn_lizzies.png](images/objects/dyn_lizzies.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 0, 0.85 |
+| <span id="obj-dyn-lizzies-b"></span>`dyn_lizzies_b` | ![objects/dyn_lizzies_b.png](images/objects/dyn_lizzies_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 0, 0.85 |
+| <span id="obj-dyn-lizzypillar-aa"></span>`dyn_lizzypillar_aa` | ![objects/dyn_lizzypillar_aa.png](images/objects/dyn_lizzypillar_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.62, 1.31, 6.27 |
+| <span id="obj-dyn-lizzywall-a"></span>`dyn_lizzywall_a` | ![objects/dyn_lizzywall_a.png](images/objects/dyn_lizzywall_a.png){ width="96" } | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 3.6, 0.4, 6.24 |
+| <span id="obj-dyn-lizzywall-aa"></span>`dyn_lizzywall_aa` | ![objects/dyn_lizzywall_aa.png](images/objects/dyn_lizzywall_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.82, 1.62, 6.27 |
+| <span id="obj-dyn-lizzywall-b"></span>`dyn_lizzywall_b` | ![objects/dyn_lizzywall_b.png](images/objects/dyn_lizzywall_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.6, 0.41, 6.24 |
+| <span id="obj-dyn-lizzywall-int-a"></span>`dyn_lizzywall_int_a` | ![objects/dyn_lizzywall_int_a.png](images/objects/dyn_lizzywall_int_a.png){ width="96" } | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 3.57, 0.12, 3.05 |
+| <span id="obj-dyn-lizzywall-int-aa"></span>`dyn_lizzywall_int_aa` | ![objects/dyn_lizzywall_int_aa.png](images/objects/dyn_lizzywall_int_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.57, 0.12, 3.05 |
+| <span id="obj-dyn-lock-b"></span>`dyn_lock_b` | ![objects/dyn_lock_b.png](images/objects/dyn_lock_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.15, 0.29, 0.04 |
+| <span id="obj-dyn-lock-c"></span>`dyn_lock_c` | ![objects/dyn_lock_c.png](images/objects/dyn_lock_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.16, 0 |
+| <span id="obj-dyn-lock-g"></span>`dyn_lock_g` | ![objects/dyn_lock_g.png](images/objects/dyn_lock_g.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.52, 0.25, 0.63 |
+| <span id="obj-dyn-lock-h"></span>`dyn_lock_h` | ![objects/dyn_lock_h.png](images/objects/dyn_lock_h.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.52, 0.06 |
+| <span id="obj-dyn-lock-k"></span>`dyn_lock_k` | ![objects/dyn_lock_k.png](images/objects/dyn_lock_k.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.14, 0.17, 0 |
+| <span id="obj-dyn-mailbox-aa"></span>`dyn_mailbox_aa` | ![objects/dyn_mailbox_aa.png](images/objects/dyn_mailbox_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.66, 0.75, 1.45 |
+| <span id="obj-dyn-meat-hanging-a"></span>`dyn_meat_hanging_a` | ![objects/dyn_meat_hanging_a.png](images/objects/dyn_meat_hanging_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.78, 0.53, 8.29 |
+| <span id="obj-dyn-meat-hanging-b"></span>`dyn_meat_hanging_b` | ![objects/dyn_meat_hanging_b.png](images/objects/dyn_meat_hanging_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.46, 0.29, 8.16 |
+| <span id="obj-dyn-megaphone"></span>`dyn_megaphone` | ![objects/dyn_megaphone.png](images/objects/dyn_megaphone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.23, 0.34, 0.3 |
+| <span id="obj-dyn-moonrunners"></span>`dyn_moonrunners` | ![objects/dyn_moonrunners.png](images/objects/dyn_moonrunners.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 2.47, 1.54 |
+| <span id="obj-dyn-motelneon-aa"></span>`dyn_motelneon_aa` | ![objects/dyn_motelneon_aa.png](images/objects/dyn_motelneon_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.56, 2.82, 2.82 |
+| <span id="obj-dyn-musicstore"></span>`dyn_musicstore` | ![objects/dyn_musicstore.png](images/objects/dyn_musicstore.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.48, 1.71, 5.83 |
+| <span id="obj-dyn-neon-chi-a"></span>`dyn_neon_chi_a` | ![objects/dyn_neon_chi_a.png](images/objects/dyn_neon_chi_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.87, 0.27, 1.29 |
+| <span id="obj-dyn-neon-chi-b"></span>`dyn_neon_chi_b` | ![objects/dyn_neon_chi_b.png](images/objects/dyn_neon_chi_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.67, 0.27, 1.14 |
+| <span id="obj-dyn-neon-chi-c"></span>`dyn_neon_chi_c` | ![objects/dyn_neon_chi_c.png](images/objects/dyn_neon_chi_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.88, 0.27, 1.06 |
+| <span id="obj-dyn-neon-cross-aa"></span>`dyn_neon_cross_aa` | ![objects/dyn_neon_cross_aa.png](images/objects/dyn_neon_cross_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.12, 0, 5.12 |
+| <span id="obj-dyn-newsbox-b"></span>`dyn_newsbox_b` | ![objects/dyn_newsbox_b.png](images/objects/dyn_newsbox_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.08, 1.29, 1.43 |
+| <span id="obj-dyn-notepad"></span>`dyn_notepad` | ![objects/dyn_notepad.png](images/objects/dyn_notepad.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.26, 0.06 |
+| <span id="obj-dyn-notepad-fix"></span>`dyn_notepad_fix` | ![objects/dyn_notepad_fix.png](images/objects/dyn_notepad_fix.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.26, 0.06 |
+| <span id="obj-dyn-o-animwave-b"></span>`dyn_o_animwave_b` | ![objects/dyn_o_animwave_b.png](images/objects/dyn_o_animwave_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
+| <span id="obj-dyn-o-animwave-c"></span>`dyn_o_animwave_c` | ![objects/dyn_o_animwave_c.png](images/objects/dyn_o_animwave_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
+| <span id="obj-dyn-o-animwave-d"></span>`dyn_o_animwave_d` | ![objects/dyn_o_animwave_d.png](images/objects/dyn_o_animwave_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
+| <span id="obj-dyn-o-animwave-e"></span>`dyn_o_animwave_e` | ![objects/dyn_o_animwave_e.png](images/objects/dyn_o_animwave_e.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
+| <span id="obj-dyn-o-animwave-f"></span>`dyn_o_animwave_f` | ![objects/dyn_o_animwave_f.png](images/objects/dyn_o_animwave_f.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
+| <span id="obj-dyn-o-animwave-g"></span>`dyn_o_animwave_g` | ![objects/dyn_o_animwave_g.png](images/objects/dyn_o_animwave_g.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
+| <span id="obj-dyn-o-animwave-h"></span>`dyn_o_animwave_h` | ![objects/dyn_o_animwave_h.png](images/objects/dyn_o_animwave_h.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
+| <span id="obj-dyn-o-whitecap-b"></span>`dyn_o_whitecap_b` | ![objects/dyn_o_whitecap_b.png](images/objects/dyn_o_whitecap_b.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 6.55, 1.01, 0.57 |
+| <span id="obj-dyn-o-whitecap-c"></span>`dyn_o_whitecap_c` | ![objects/dyn_o_whitecap_c.png](images/objects/dyn_o_whitecap_c.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 14.58, 1.57, 0.69 |
+| <span id="obj-dyn-o-whitecap-d"></span>`dyn_o_whitecap_d` | ![objects/dyn_o_whitecap_d.png](images/objects/dyn_o_whitecap_d.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 31.97, 1.58, 0.63 |
+| <span id="obj-dyn-ocopcar-glass"></span>`dyn_ocopcar_glass` | ![objects/dyn_ocopcar_glass.png](images/objects/dyn_ocopcar_glass.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 2.06, 0.55, 0.43 |
+| <span id="obj-dyn-ocopcar-wrecked"></span>`dyn_ocopcar_wrecked` | ![objects/dyn_ocopcar_wrecked.png](images/objects/dyn_ocopcar_wrecked.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.87, 5.68, 1.9 |
+| <span id="obj-dyn-ocoupe"></span>`dyn_ocoupe` | ![objects/dyn_ocoupe.png](images/objects/dyn_ocoupe.png){ width="96" } | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.34, 5.46, 1.49 |
+| <span id="obj-dyn-ocoupe-glass"></span>`dyn_ocoupe_glass` | ![objects/dyn_ocoupe_glass.png](images/objects/dyn_ocoupe_glass.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 2.05, 0.51, 0.41 |
+| <span id="obj-dyn-ocoupe-wrecked"></span>`dyn_ocoupe_wrecked` | ![objects/dyn_ocoupe_wrecked.png](images/objects/dyn_ocoupe_wrecked.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.53, 5.47, 1.67 |
+| <span id="obj-dyn-ocube"></span>`dyn_ocube` | ![objects/dyn_ocube.png](images/objects/dyn_ocube.png){ width="96" } | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.54, 5.56, 2.98 |
+| <span id="obj-dyn-ocube-glass"></span>`dyn_ocube_glass` | ![objects/dyn_ocube_glass.png](images/objects/dyn_ocube_glass.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 2.18, 0.58, 0.52 |
+| <span id="obj-dyn-ocube-wrecked"></span>`dyn_ocube_wrecked` | ![objects/dyn_ocube_wrecked.png](images/objects/dyn_ocube_wrecked.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.54, 5.51, 2.85 |
+| <span id="obj-dyn-oflatbed"></span>`dyn_oflatbed` | ![objects/dyn_oflatbed.png](images/objects/dyn_oflatbed.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.37, 7.58, 2.04 |
+| <span id="obj-dyn-oflatbed-glass"></span>`dyn_oflatbed_glass` | ![objects/dyn_oflatbed_glass.png](images/objects/dyn_oflatbed_glass.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.81, 0.42, 0.44 |
+| <span id="obj-dyn-oil-fire-b"></span>`dyn_oil_fire_b` | ![objects/dyn_oil_fire_b.png](images/objects/dyn_oil_fire_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.78, 1.01, 0.65 |
+| <span id="obj-dyn-oilcan-brk"></span>`dyn_oilcan_brk` | ![objects/dyn_oilcan_brk.png](images/objects/dyn_oilcan_brk.png){ width="96" } | `fade_object` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.15 |
+| <span id="obj-dyn-old-door-a"></span>`dyn_old_door_a` | ![objects/dyn_old_door_a.png](images/objects/dyn_old_door_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.03, 0.06 |
+| <span id="obj-dyn-old-door-b"></span>`dyn_old_door_b` | ![objects/dyn_old_door_b.png](images/objects/dyn_old_door_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.03, 0.06 |
+| <span id="obj-dyn-old-door-c"></span>`dyn_old_door_c` | ![objects/dyn_old_door_c.png](images/objects/dyn_old_door_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.03, 0.06 |
+| <span id="obj-dyn-old-window-a"></span>`dyn_old_window_a` | ![objects/dyn_old_window_a.png](images/objects/dyn_old_window_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.06, 0.05 |
+| <span id="obj-dyn-old-window-b"></span>`dyn_old_window_b` | ![objects/dyn_old_window_b.png](images/objects/dyn_old_window_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.06, 0.05 |
+| <span id="obj-dyn-old-window-c"></span>`dyn_old_window_c` | ![objects/dyn_old_window_c.png](images/objects/dyn_old_window_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.06, 0.05 |
+| <span id="obj-dyn-orphans"></span>`dyn_orphans` | ![objects/dyn_orphans.png](images/objects/dyn_orphans.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.32, 0.42, 0.78 |
+| <span id="obj-dyn-osedan"></span>`dyn_osedan` | ![objects/dyn_osedan.png](images/objects/dyn_osedan.png){ width="96" } | `simple_object` | `TYPE_CAR` | `OBB` | 2.42, 5.94, 1.54 |
+| <span id="obj-dyn-osedan-glass"></span>`dyn_osedan_glass` | ![objects/dyn_osedan_glass.png](images/objects/dyn_osedan_glass.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 2.06, 0.55, 0.43 |
+| <span id="obj-dyn-osedan-wrecked"></span>`dyn_osedan_wrecked` | ![objects/dyn_osedan_wrecked.png](images/objects/dyn_osedan_wrecked.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.85, 5.94, 1.45 |
+| <span id="obj-dyn-ovan"></span>`dyn_ovan` | ![objects/dyn_ovan.png](images/objects/dyn_ovan.png){ width="96" } | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.43, 5.28, 2.75 |
+| <span id="obj-dyn-ovan-glass"></span>`dyn_ovan_glass` | ![objects/dyn_ovan_glass.png](images/objects/dyn_ovan_glass.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 2.19, 0.67, 0.54 |
+| <span id="obj-dyn-ovan-wrecked"></span>`dyn_ovan_wrecked` | ![objects/dyn_ovan_wrecked.png](images/objects/dyn_ovan_wrecked.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.77, 5.2, 2.33 |
+| <span id="obj-dyn-owagon"></span>`dyn_owagon` | ![objects/dyn_owagon.png](images/objects/dyn_owagon.png){ width="96" } | `simple_object` | `TYPE_COPCAR` | `OBB` | 2.33, 6.18, 1.58 |
+| <span id="obj-dyn-owagon-glass"></span>`dyn_owagon_glass` | ![objects/dyn_owagon_glass.png](images/objects/dyn_owagon_glass.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 2.06, 0.55, 0.44 |
+| <span id="obj-dyn-owagon-glass-b"></span>`dyn_owagon_glass_b` | ![objects/dyn_owagon_glass_b.png](images/objects/dyn_owagon_glass_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.94, 0.55, 0.42 |
+| <span id="obj-dyn-owagon-wrecked"></span>`dyn_owagon_wrecked` | ![objects/dyn_owagon_wrecked.png](images/objects/dyn_owagon_wrecked.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.33, 6.32, 1.48 |
+| <span id="obj-dyn-padlock-a"></span>`dyn_padlock_a` | ![objects/dyn_padlock_a.png](images/objects/dyn_padlock_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 9.26, 0.21, 1.07 |
+| <span id="obj-dyn-padlock-b"></span>`dyn_padlock_b` | ![objects/dyn_padlock_b.png](images/objects/dyn_padlock_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 9.26, 0.21, 1.07 |
+| <span id="obj-dyn-paintcan-brk"></span>`dyn_paintcan_brk` | ![objects/dyn_paintcan_brk.png](images/objects/dyn_paintcan_brk.png){ width="96" } | `fade_object` | `TYPE_BRICK` | `OBB` | 0.12, 0.12, 0.15 |
+| <span id="obj-dyn-painting-aa"></span>`dyn_painting_aa` | ![objects/dyn_painting_aa.png](images/objects/dyn_painting_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.79, 0.12, 1.09 |
+| <span id="obj-dyn-painting-ba"></span>`dyn_painting_ba` | ![objects/dyn_painting_ba.png](images/objects/dyn_painting_ba.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.27, 0.1, 1.15 |
+| <span id="obj-dyn-panty"></span>`dyn_panty` | ![objects/dyn_panty.png](images/objects/dyn_panty.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.05, 0.24 |
+| <span id="obj-dyn-parkbench-aa"></span>`dyn_parkbench_aa` | ![objects/dyn_parkbench_aa.png](images/objects/dyn_parkbench_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.76, 1.62, 0.16 |
+| <span id="obj-dyn-parknmeter-aa"></span>`dyn_parknmeter_aa` | ![objects/dyn_parknmeter_aa.png](images/objects/dyn_parknmeter_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.3, 0.26, 1.59 |
+| <span id="obj-dyn-parktrash-aa"></span>`dyn_parktrash_aa` | ![objects/dyn_parktrash_aa.png](images/objects/dyn_parktrash_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.78, 1.01, 0.65 |
+| <span id="obj-dyn-phone"></span>`dyn_phone` | ![objects/dyn_phone.png](images/objects/dyn_phone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.21, 0.07 |
+| <span id="obj-dyn-phone-bb"></span>`dyn_phone_bb` | ![objects/dyn_phone_bb.png](images/objects/dyn_phone_bb.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.28, 0.26, 0.65 |
+| <span id="obj-dyn-phonebooth"></span>`dyn_phonebooth` | ![objects/dyn_phonebooth.png](images/objects/dyn_phonebooth.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 1.2, 1.26, 2.64 |
+| <span id="obj-dyn-pickable"></span>`dyn_pickable` | ![objects/dyn_pickable.png](images/objects/dyn_pickable.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.28, 0, 0.31 |
+| <span id="obj-dyn-picnic-a"></span>`dyn_picnic_a` | ![objects/dyn_picnic_a.png](images/objects/dyn_picnic_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.77, 2.35, 1.12 |
+| <span id="obj-dyn-pigroast"></span>`dyn_pigroast` | ![objects/dyn_pigroast.png](images/objects/dyn_pigroast.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.36, 2.62, 0.41 |
+| <span id="obj-dyn-pinball-fuzzballs-aa"></span>`dyn_pinball_fuzzballs_aa` | ![objects/dyn_pinball_fuzzballs_aa.png](images/objects/dyn_pinball_fuzzballs_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 1.68, 2.05 |
+| <span id="obj-dyn-pinball-fuzzballs-ba"></span>`dyn_pinball_fuzzballs_ba` | ![objects/dyn_pinball_fuzzballs_ba.png](images/objects/dyn_pinball_fuzzballs_ba.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.88, 1.26, 1.12 |
+| <span id="obj-dyn-pinball-new-aa"></span>`dyn_pinball_new_aa` | ![objects/dyn_pinball_new_aa.png](images/objects/dyn_pinball_new_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 1.68, 2.05 |
+| <span id="obj-dyn-pinball-screen"></span>`dyn_pinball_screen` | | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.77, 0, 0.7 |
+| <span id="obj-dyn-pitchfork-b"></span>`dyn_pitchfork_b` | ![objects/dyn_pitchfork_b.png](images/objects/dyn_pitchfork_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.44, 0.06 |
+| <span id="obj-dyn-poster"></span>`dyn_poster` | ![objects/dyn_poster.png](images/objects/dyn_poster.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.69, 0, 1.09 |
+| <span id="obj-dyn-punchbag-a"></span>`dyn_punchbag_a` | ![objects/dyn_punchbag_a.png](images/objects/dyn_punchbag_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.72, 0.72, 1.78 |
+| <span id="obj-dyn-punchbag-b"></span>`dyn_punchbag_b` | ![objects/dyn_punchbag_b.png](images/objects/dyn_punchbag_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.27, 0.31, 0.55 |
+| <span id="obj-dyn-punk-sink-aa"></span>`dyn_punk_sink_aa` | ![objects/dyn_punk_sink_aa.png](images/objects/dyn_punk_sink_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.74, 0.36, 0.58 |
+| <span id="obj-dyn-punk-sink-ab"></span>`dyn_punk_sink_ab` | ![objects/dyn_punk_sink_ab.png](images/objects/dyn_punk_sink_ab.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.74, 0.55, 0.58 |
+| <span id="obj-dyn-punk-toilet-aa"></span>`dyn_punk_toilet_aa` | ![objects/dyn_punk_toilet_aa.png](images/objects/dyn_punk_toilet_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.65, 0.72, 0.98 |
+| <span id="obj-dyn-punks"></span>`dyn_punks` | ![objects/dyn_punks.png](images/objects/dyn_punks.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.83, 1.29, 1.28 |
+| <span id="obj-dyn-rake-b"></span>`dyn_rake_b` | ![objects/dyn_rake_b.png](images/objects/dyn_rake_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.39, 0.14, 0.06 |
+| <span id="obj-dyn-ramp"></span>`dyn_ramp` | ![objects/dyn_ramp.png](images/objects/dyn_ramp.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.76, 2.29, 1.46 |
+| <span id="obj-dyn-ranks"></span>`dyn_ranks` | ![objects/dyn_ranks.png](images/objects/dyn_ranks.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
+| <span id="obj-dyn-ranks-a"></span>`dyn_ranks_a` | ![objects/dyn_ranks_a.png](images/objects/dyn_ranks_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
+| <span id="obj-dyn-ranks-b"></span>`dyn_ranks_b` | ![objects/dyn_ranks_b.png](images/objects/dyn_ranks_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
+| <span id="obj-dyn-ranks-c"></span>`dyn_ranks_c` | ![objects/dyn_ranks_c.png](images/objects/dyn_ranks_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
+| <span id="obj-dyn-ranks-d"></span>`dyn_ranks_d` | ![objects/dyn_ranks_d.png](images/objects/dyn_ranks_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.14, 0.67 |
+| <span id="obj-dyn-rembrandt"></span>`dyn_rembrandt` | ![objects/dyn_rembrandt.png](images/objects/dyn_rembrandt.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.93, 1.24, 1.27 |
+| <span id="obj-dyn-ridecart"></span>`dyn_ridecart` | ![objects/dyn_ridecart.png](images/objects/dyn_ridecart.png){ width="96" } | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 1.66, 1.74, 1.39 |
+| <span id="obj-dyn-riffs"></span>`dyn_riffs` | ![objects/dyn_riffs.png](images/objects/dyn_riffs.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.91, 1.09, 1.28 |
+| <span id="obj-dyn-rod"></span>`dyn_rod` | | `simple_object` | `TYPE_BAT` | `OBB` | 0.8, 2.23, 0.99 |
+| <span id="obj-dyn-rogues"></span>`dyn_rogues` | ![objects/dyn_rogues.png](images/objects/dyn_rogues.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.4, 2.1, 1.28 |
+| <span id="obj-dyn-rogues-car"></span>`dyn_rogues_car` | ![objects/dyn_rogues_car.png](images/objects/dyn_rogues_car.png){ width="96" } | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 2.56, 6.08, 1.71 |
+| <span id="obj-dyn-rogues-car-graff"></span>`dyn_rogues_car_graff` | ![objects/dyn_rogues_car_graff.png](images/objects/dyn_rogues_car_graff.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 2.46, 5.62, 1.73 |
+| <span id="obj-dyn-rogues-car-tires"></span>`dyn_rogues_car_tires` | ![objects/dyn_rogues_car_tires.png](images/objects/dyn_rogues_car_tires.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.81, 0.81 |
+| <span id="obj-dyn-rogues-car-windows"></span>`dyn_rogues_car_windows` | ![objects/dyn_rogues_car_windows.png](images/objects/dyn_rogues_car_windows.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `OBB` | 1.92, 3.72, 0.56 |
+| <span id="obj-dyn-rolltop"></span>`dyn_rolltop` | ![objects/dyn_rolltop.png](images/objects/dyn_rolltop.png){ width="96" } | `dyn_lizzies` | `TYPE_GENERIC` | `OBB` | 1.84, 0.88, 1.42 |
+| <span id="obj-dyn-rolltop-aa"></span>`dyn_rolltop_aa` | ![objects/dyn_rolltop_aa.png](images/objects/dyn_rolltop_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.84, 1.11, 1.42 |
+| <span id="obj-dyn-rolltop-ab"></span>`dyn_rolltop_ab` | ![objects/dyn_rolltop_ab.png](images/objects/dyn_rolltop_ab.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.84, 1.31, 1.42 |
+| <span id="obj-dyn-rolltop-ac"></span>`dyn_rolltop_ac` | ![objects/dyn_rolltop_ac.png](images/objects/dyn_rolltop_ac.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.49, 0.68, 0.21 |
+| <span id="obj-dyn-rolltop-ad"></span>`dyn_rolltop_ad` | ![objects/dyn_rolltop_ad.png](images/objects/dyn_rolltop_ad.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.22, 0.92, 0.3 |
+| <span id="obj-dyn-s-apple"></span>`dyn_s_apple` | ![objects/dyn_s_apple.png](images/objects/dyn_s_apple.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-bagcoins"></span>`dyn_s_bagcoins` | ![objects/dyn_s_bagcoins.png](images/objects/dyn_s_bagcoins.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.15, 0.28 |
+| <span id="obj-dyn-s-bbq-fork"></span>`dyn_s_bbq_fork` | ![objects/dyn_s_bbq_fork.png](images/objects/dyn_s_bbq_fork.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-bbq-spatula"></span>`dyn_s_bbq_spatula` | ![objects/dyn_s_bbq_spatula.png](images/objects/dyn_s_bbq_spatula.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-beerbottle"></span>`dyn_s_beerbottle` | ![objects/dyn_s_beerbottle.png](images/objects/dyn_s_beerbottle.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.1, 0.3, 0.09 |
+| <span id="obj-dyn-s-billboard"></span>`dyn_s_billboard` | ![objects/dyn_s_billboard.png](images/objects/dyn_s_billboard.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 18.13, 3.67, 12 |
+| <span id="obj-dyn-s-billboard-a"></span>`dyn_s_billboard_a` | ![objects/dyn_s_billboard_a.png](images/objects/dyn_s_billboard_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 15.76, 0.8, 1.66 |
+| <span id="obj-dyn-s-billboard-b"></span>`dyn_s_billboard_b` | ![objects/dyn_s_billboard_b.png](images/objects/dyn_s_billboard_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.65, 3.67, 10.11 |
+| <span id="obj-dyn-s-billboard-c"></span>`dyn_s_billboard_c` | ![objects/dyn_s_billboard_c.png](images/objects/dyn_s_billboard_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.37, 3.67, 10.11 |
+| <span id="obj-dyn-s-billboard-d"></span>`dyn_s_billboard_d` | ![objects/dyn_s_billboard_d.png](images/objects/dyn_s_billboard_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.72, 3.67, 10.11 |
+| <span id="obj-dyn-s-billboard-p"></span>`dyn_s_billboard_p` | ![objects/dyn_s_billboard_p.png](images/objects/dyn_s_billboard_p.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 18.13, 3.67, 12 |
+| <span id="obj-dyn-s-billboard-pa"></span>`dyn_s_billboard_pa` | ![objects/dyn_s_billboard_pa.png](images/objects/dyn_s_billboard_pa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 15.76, 0.8, 1.66 |
+| <span id="obj-dyn-s-billboard-pb"></span>`dyn_s_billboard_pb` | ![objects/dyn_s_billboard_pb.png](images/objects/dyn_s_billboard_pb.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.65, 3.67, 10.11 |
+| <span id="obj-dyn-s-billboard-pc"></span>`dyn_s_billboard_pc` | ![objects/dyn_s_billboard_pc.png](images/objects/dyn_s_billboard_pc.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.37, 3.67, 10.11 |
+| <span id="obj-dyn-s-billboard-pd"></span>`dyn_s_billboard_pd` | ![objects/dyn_s_billboard_pd.png](images/objects/dyn_s_billboard_pd.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.72, 3.67, 10.11 |
+| <span id="obj-dyn-s-binocs"></span>`dyn_s_binocs` | ![objects/dyn_s_binocs.png](images/objects/dyn_s_binocs.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.07, 0.17, 0.22 |
+| <span id="obj-dyn-s-blaster"></span>`dyn_s_blaster` | ![objects/dyn_s_blaster.png](images/objects/dyn_s_blaster.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-blaster-low"></span>`dyn_s_blaster_low` | ![objects/dyn_s_blaster_low.png](images/objects/dyn_s_blaster_low.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-boltcutter"></span>`dyn_s_boltcutter` | ![objects/dyn_s_boltcutter.png](images/objects/dyn_s_boltcutter.png){ width="96" } | `simple_object` | `TYPE_SPECIAL` | `NONE` | 0.25, 0.87, 0.05 |
+| <span id="obj-dyn-s-boltcutter-a"></span>`dyn_s_boltcutter_a` | ![objects/dyn_s_boltcutter_a.png](images/objects/dyn_s_boltcutter_a.png){ width="96" } | `simple_object` | `TYPE_SPECIAL` | `NONE` | 0.09, 0.87, 0.05 |
+| <span id="obj-dyn-s-boltcutter-b"></span>`dyn_s_boltcutter_b` | ![objects/dyn_s_boltcutter_b.png](images/objects/dyn_s_boltcutter_b.png){ width="96" } | `simple_object` | `TYPE_SPECIAL` | `NONE` | 0.16, 0.86, 0.05 |
+| <span id="obj-dyn-s-boltcutter-c"></span>`dyn_s_boltcutter_c` | ![objects/dyn_s_boltcutter_c.png](images/objects/dyn_s_boltcutter_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 0.04, 0.62 |
+| <span id="obj-dyn-s-box-stereo"></span>`dyn_s_box_stereo` | ![objects/dyn_s_box_stereo.png](images/objects/dyn_s_box_stereo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.61, 0.57, 0.24 |
+| <span id="obj-dyn-s-buddah"></span>`dyn_s_buddah` | ![objects/dyn_s_buddah.png](images/objects/dyn_s_buddah.png){ width="96" } | `simple_object` | `TYPE_SPECIAL` | `NONE` | 0.4, 0.29, 0.37 |
+| <span id="obj-dyn-s-camera-a"></span>`dyn_s_camera_a` | ![objects/dyn_s_camera_a.png](images/objects/dyn_s_camera_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 0.58, 0.35 |
+| <span id="obj-dyn-s-camera-d"></span>`dyn_s_camera_d` | ![objects/dyn_s_camera_d.png](images/objects/dyn_s_camera_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.67, 0.68, 1.4 |
+| <span id="obj-dyn-s-card-hand"></span>`dyn_s_card_hand` | ![objects/dyn_s_card_hand.png](images/objects/dyn_s_card_hand.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.1, 0 |
+| <span id="obj-dyn-s-carrots"></span>`dyn_s_carrots` | ![objects/dyn_s_carrots.png](images/objects/dyn_s_carrots.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-carstereo"></span>`dyn_s_carstereo` | ![objects/dyn_s_carstereo.png](images/objects/dyn_s_carstereo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.4, 0.22, 0.1 |
+| <span id="obj-dyn-s-cashroll"></span>`dyn_s_cashroll` | ![objects/dyn_s_cashroll.png](images/objects/dyn_s_cashroll.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.09, 0.12 |
+| <span id="obj-dyn-s-cigarette"></span>`dyn_s_cigarette` | ![objects/dyn_s_cigarette.png](images/objects/dyn_s_cigarette.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.06, 0.01, 0 |
+| <span id="obj-dyn-s-dirtymag"></span>`dyn_s_dirtymag` | ![objects/dyn_s_dirtymag.png](images/objects/dyn_s_dirtymag.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.34, 0.07, 0.28 |
+| <span id="obj-dyn-s-dumbells"></span>`dyn_s_dumbells` | ![objects/dyn_s_dumbells.png](images/objects/dyn_s_dumbells.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.39, 0.25, 0.24 |
+| <span id="obj-dyn-s-dumbells-b"></span>`dyn_s_dumbells_b` | ![objects/dyn_s_dumbells_b.png](images/objects/dyn_s_dumbells_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.39, 0.24 |
+| <span id="obj-dyn-s-dumbells-c"></span>`dyn_s_dumbells_c` | ![objects/dyn_s_dumbells_c.png](images/objects/dyn_s_dumbells_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.39, 0.24 |
+| <span id="obj-dyn-s-dumpster"></span>`dyn_s_dumpster` | ![objects/dyn_s_dumpster.png](images/objects/dyn_s_dumpster.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.3, 1.69, 1.88 |
+| <span id="obj-dyn-s-elevator-a"></span>`dyn_s_elevator_a` | ![objects/dyn_s_elevator_a.png](images/objects/dyn_s_elevator_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.94, 4.94, 7.15 |
+| <span id="obj-dyn-s-elevator-b"></span>`dyn_s_elevator_b` | ![objects/dyn_s_elevator_b.png](images/objects/dyn_s_elevator_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.94, 4.94, 12 |
+| <span id="obj-dyn-s-elevator-pit"></span>`dyn_s_elevator_pit` | ![objects/dyn_s_elevator_pit.png](images/objects/dyn_s_elevator_pit.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.49, 5.43, 7.11 |
+| <span id="obj-dyn-s-firescape"></span>`dyn_s_firescape` | ![objects/dyn_s_firescape.png](images/objects/dyn_s_firescape.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 6.03, 1.9, 3.98 |
+| <span id="obj-dyn-s-firescape-a"></span>`dyn_s_firescape_a` | ![objects/dyn_s_firescape_a.png](images/objects/dyn_s_firescape_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.1, 0.85, 3.98 |
+| <span id="obj-dyn-s-firescape-b"></span>`dyn_s_firescape_b` | ![objects/dyn_s_firescape_b.png](images/objects/dyn_s_firescape_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.46, 0.04, 0.9 |
+| <span id="obj-dyn-s-firescape-c"></span>`dyn_s_firescape_c` | ![objects/dyn_s_firescape_c.png](images/objects/dyn_s_firescape_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.33, 1.9, 0.36 |
+| <span id="obj-dyn-s-firescape-d"></span>`dyn_s_firescape_d` | ![objects/dyn_s_firescape_d.png](images/objects/dyn_s_firescape_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.47, 0.04, 0.9 |
+| <span id="obj-dyn-s-firescape-e"></span>`dyn_s_firescape_e` | ![objects/dyn_s_firescape_e.png](images/objects/dyn_s_firescape_e.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.04, 1.82, 0.9 |
+| <span id="obj-dyn-s-firescape-f"></span>`dyn_s_firescape_f` | ![objects/dyn_s_firescape_f.png](images/objects/dyn_s_firescape_f.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.84, 1.9, 0.36 |
+| <span id="obj-dyn-s-firescape-g"></span>`dyn_s_firescape_g` | ![objects/dyn_s_firescape_g.png](images/objects/dyn_s_firescape_g.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.14, 1.67 |
+| <span id="obj-dyn-s-firescape-m"></span>`dyn_s_firescape_m` | ![objects/dyn_s_firescape_m.png](images/objects/dyn_s_firescape_m.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.41, 2.86, 1.61 |
+| <span id="obj-dyn-s-firescape-n"></span>`dyn_s_firescape_n` | ![objects/dyn_s_firescape_n.png](images/objects/dyn_s_firescape_n.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.99, 2.86, 1.61 |
+| <span id="obj-dyn-s-firescape-o"></span>`dyn_s_firescape_o` | ![objects/dyn_s_firescape_o.png](images/objects/dyn_s_firescape_o.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 7.39, 2.86, 1.61 |
+| <span id="obj-dyn-s-firescape-p"></span>`dyn_s_firescape_p` | ![objects/dyn_s_firescape_p.png](images/objects/dyn_s_firescape_p.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.04, 1.55, 4.98 |
+| <span id="obj-dyn-s-guilo"></span>`dyn_s_guilo` | ![objects/dyn_s_guilo.png](images/objects/dyn_s_guilo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.05, 0.05, 1.15 |
+| <span id="obj-dyn-s-hamburger"></span>`dyn_s_hamburger` | ![objects/dyn_s_hamburger.png](images/objects/dyn_s_hamburger.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-hotdog"></span>`dyn_s_hotdog` | ![objects/dyn_s_hotdog.png](images/objects/dyn_s_hotdog.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-hotdog-b"></span>`dyn_s_hotdog_b` | ![objects/dyn_s_hotdog_b.png](images/objects/dyn_s_hotdog_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.25, 0.08 |
+| <span id="obj-dyn-s-jack"></span>`dyn_s_jack` | ![objects/dyn_s_jack.png](images/objects/dyn_s_jack.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.25, 0.64 |
+| <span id="obj-dyn-s-jacket"></span>`dyn_s_jacket` | ![objects/dyn_s_jacket.png](images/objects/dyn_s_jacket.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.25, 0.64 |
+| <span id="obj-dyn-s-jewelpile"></span>`dyn_s_jewelpile` | ![objects/dyn_s_jewelpile.png](images/objects/dyn_s_jewelpile.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1, 0.69, 0.24 |
+| <span id="obj-dyn-s-ledger"></span>`dyn_s_ledger` | ![objects/dyn_s_ledger.png](images/objects/dyn_s_ledger.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.29, 0.02 |
+| <span id="obj-dyn-s-lettuce"></span>`dyn_s_lettuce` | ![objects/dyn_s_lettuce.png](images/objects/dyn_s_lettuce.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-liquor"></span>`dyn_s_liquor` | ![objects/dyn_s_liquor.png](images/objects/dyn_s_liquor.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.42, 0.14 |
+| <span id="obj-dyn-s-litterbox"></span>`dyn_s_litterbox` | ![objects/dyn_s_litterbox.png](images/objects/dyn_s_litterbox.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.35, 0.49, 0.13 |
+| <span id="obj-dyn-s-lock"></span>`dyn_s_lock` | ![objects/dyn_s_lock.png](images/objects/dyn_s_lock.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.15, 0.11, 0.29 |
+| <span id="obj-dyn-s-lockchain"></span>`dyn_s_lockchain` | ![objects/dyn_s_lockchain.png](images/objects/dyn_s_lockchain.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.52, 0.2, 0.13 |
+| <span id="obj-dyn-s-milk"></span>`dyn_s_milk` | ![objects/dyn_s_milk.png](images/objects/dyn_s_milk.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-minecar"></span>`dyn_s_minecar` | ![objects/dyn_s_minecar.png](images/objects/dyn_s_minecar.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.92, 1.23, 1.3 |
+| <span id="obj-dyn-s-neon-a"></span>`dyn_s_neon_a` | ![objects/dyn_s_neon_a.png](images/objects/dyn_s_neon_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-s-neon-b"></span>`dyn_s_neon_b` | ![objects/dyn_s_neon_b.png](images/objects/dyn_s_neon_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-s-neon-c"></span>`dyn_s_neon_c` | ![objects/dyn_s_neon_c.png](images/objects/dyn_s_neon_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-s-neon-d"></span>`dyn_s_neon_d` | ![objects/dyn_s_neon_d.png](images/objects/dyn_s_neon_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-s-newspaper-a"></span>`dyn_s_newspaper_a` | ![objects/dyn_s_newspaper_a.png](images/objects/dyn_s_newspaper_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-newspaper-b"></span>`dyn_s_newspaper_b` | ![objects/dyn_s_newspaper_b.png](images/objects/dyn_s_newspaper_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-newspaper-c"></span>`dyn_s_newspaper_c` | ![objects/dyn_s_newspaper_c.png](images/objects/dyn_s_newspaper_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.23, 0.28, 0.03 |
+| <span id="obj-dyn-s-ocopcar"></span>`dyn_s_ocopcar` | ![objects/dyn_s_ocopcar.png](images/objects/dyn_s_ocopcar.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.41, 5.76, 1.8 |
+| <span id="obj-dyn-s-ocopcar-b"></span>`dyn_s_ocopcar_b` | ![objects/dyn_s_ocopcar_b.png](images/objects/dyn_s_ocopcar_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.41, 5.76, 1.8 |
+| <span id="obj-dyn-s-ocopcar-d"></span>`dyn_s_ocopcar_d` | ![objects/dyn_s_ocopcar_d.png](images/objects/dyn_s_ocopcar_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.18, 0.79, 0.86 |
+| <span id="obj-dyn-s-ocopcar-glass"></span>`dyn_s_ocopcar_glass` | ![objects/dyn_s_ocopcar_glass.png](images/objects/dyn_s_ocopcar_glass.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.06, 2.4, 0.37 |
+| <span id="obj-dyn-s-ocopcar-t"></span>`dyn_s_ocopcar_t` | ![objects/dyn_s_ocopcar_t.png](images/objects/dyn_s_ocopcar_t.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.8, 1.14, 0.24 |
+| <span id="obj-dyn-s-paper-list"></span>`dyn_s_paper_list` | ![objects/dyn_s_paper_list.png](images/objects/dyn_s_paper_list.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 0.27, 0.05 |
+| <span id="obj-dyn-s-phone"></span>`dyn_s_phone` | ![objects/dyn_s_phone.png](images/objects/dyn_s_phone.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.07, 0.22, 0.06 |
+| <span id="obj-dyn-s-pizzabox"></span>`dyn_s_pizzabox` | ![objects/dyn_s_pizzabox.png](images/objects/dyn_s_pizzabox.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-poolcue"></span>`dyn_s_poolcue` | ![objects/dyn_s_poolcue.png](images/objects/dyn_s_poolcue.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.05, 0.05, 1.61 |
+| <span id="obj-dyn-s-rickshaw"></span>`dyn_s_rickshaw` | ![objects/dyn_s_rickshaw.png](images/objects/dyn_s_rickshaw.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-speaker"></span>`dyn_s_speaker` | ![objects/dyn_s_speaker.png](images/objects/dyn_s_speaker.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.46, 0.37, 0.27 |
+| <span id="obj-dyn-s-spook-h"></span>`dyn_s_spook_h` | ![objects/dyn_s_spook_h.png](images/objects/dyn_s_spook_h.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.22, 0.27, 0.32 |
+| <span id="obj-dyn-s-spook-m"></span>`dyn_s_spook_m` | ![objects/dyn_s_spook_m.png](images/objects/dyn_s_spook_m.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.7, 0.3, 1.73 |
+| <span id="obj-dyn-s-spook-s"></span>`dyn_s_spook_s` | ![objects/dyn_s_spook_s.png](images/objects/dyn_s_spook_s.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.76, 1.16, 2.46 |
+| <span id="obj-dyn-s-spook-t"></span>`dyn_s_spook_t` | ![objects/dyn_s_spook_t.png](images/objects/dyn_s_spook_t.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.98, 0.52, 0.2 |
+| <span id="obj-dyn-s-spraycan"></span>`dyn_s_spraycan` | ![objects/dyn_s_spraycan.png](images/objects/dyn_s_spraycan.png){ width="96" } | `simple_object` | `TYPE_SPRAYCAN` | `OBB` | 0.12, 0.14, 0.24 |
+| <span id="obj-dyn-s-starrgun"></span>`dyn_s_starrgun` | ![objects/dyn_s_starrgun.png](images/objects/dyn_s_starrgun.png){ width="96" } | `simple_object` | `TYPE_BAT` | `OBB` | 0.03, 0.12, 0.16 |
+| <span id="obj-dyn-s-steak"></span>`dyn_s_steak` | ![objects/dyn_s_steak.png](images/objects/dyn_s_steak.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-subdoor"></span>`dyn_s_subdoor` | ![objects/dyn_s_subdoor.png](images/objects/dyn_s_subdoor.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.15, 0.06, 2.22 |
+| <span id="obj-dyn-s-swhbld-a"></span>`dyn_s_swhbld_a` | ![objects/dyn_s_swhbld_a.png](images/objects/dyn_s_swhbld_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 0, 0 |
+| <span id="obj-dyn-s-swhbld-b"></span>`dyn_s_swhbld_b` | ![objects/dyn_s_swhbld_b.png](images/objects/dyn_s_swhbld_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0, 0, 0 |
+| <span id="obj-dyn-s-thermostat"></span>`dyn_s_thermostat` | ![objects/dyn_s_thermostat.png](images/objects/dyn_s_thermostat.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.2, 0.19, 0.37 |
+| <span id="obj-dyn-s-train-b"></span>`dyn_s_train_b` | ![objects/dyn_s_train_b.png](images/objects/dyn_s_train_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.18, 16.69, 3.28 |
+| <span id="obj-dyn-s-train-bm"></span>`dyn_s_train_bm` | ![objects/dyn_s_train_bm.png](images/objects/dyn_s_train_bm.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 0.04, 0.95 |
+| <span id="obj-dyn-s-train-c"></span>`dyn_s_train_c` | ![objects/dyn_s_train_c.png](images/objects/dyn_s_train_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.18, 16.69, 3.28 |
+| <span id="obj-dyn-s-train-c-b"></span>`dyn_s_train_c_b` | ![objects/dyn_s_train_c_b.png](images/objects/dyn_s_train_c_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.18, 16.69, 3.28 |
+| <span id="obj-dyn-s-train-clean"></span>`dyn_s_train_clean` | ![objects/dyn_s_train_clean.png](images/objects/dyn_s_train_clean.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.1, 22.55, 3.61 |
+| <span id="obj-dyn-s-train-kill-p"></span>`dyn_s_train_kill_p` | ![objects/dyn_s_train_kill_p.png](images/objects/dyn_s_train_kill_p.png){ width="96" } | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 3.18, 16.69, 2.91 |
+| <span id="obj-dyn-s-train-low"></span>`dyn_s_train_low` | ![objects/dyn_s_train_low.png](images/objects/dyn_s_train_low.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.21, 15.93, 2.91 |
+| <span id="obj-dyn-s-train-med-full"></span>`dyn_s_train_med_full` | ![objects/dyn_s_train_med_full.png](images/objects/dyn_s_train_med_full.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.21, 15.93, 2.91 |
+| <span id="obj-dyn-s-train-med-half"></span>`dyn_s_train_med_half` | ![objects/dyn_s_train_med_half.png](images/objects/dyn_s_train_med_half.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.21, 15.93, 2.91 |
+| <span id="obj-dyn-s-train-p"></span>`dyn_s_train_p` | ![objects/dyn_s_train_p.png](images/objects/dyn_s_train_p.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 3.18, 16.69, 2.91 |
+| <span id="obj-dyn-s-vest"></span>`dyn_s_vest` | ![objects/dyn_s_vest.png](images/objects/dyn_s_vest.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.16, 0.14, 0.58 |
+| <span id="obj-dyn-s-vest-b"></span>`dyn_s_vest_b` | ![objects/dyn_s_vest_b.png](images/objects/dyn_s_vest_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.17, 0.39, 0.25 |
+| <span id="obj-dyn-s-weights"></span>`dyn_s_weights` | ![objects/dyn_s_weights.png](images/objects/dyn_s_weights.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.69, 0.44, 0.42 |
+| <span id="obj-dyn-s-wtower-a"></span>`dyn_s_wtower_a` | ![objects/dyn_s_wtower_a.png](images/objects/dyn_s_wtower_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.38, 4.4, 1.04 |
+| <span id="obj-dyn-s-wtower-b"></span>`dyn_s_wtower_b` | ![objects/dyn_s_wtower_b.png](images/objects/dyn_s_wtower_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.96, 3.96, 4.04 |
+| <span id="obj-dyn-s-wtower-c"></span>`dyn_s_wtower_c` | ![objects/dyn_s_wtower_c.png](images/objects/dyn_s_wtower_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.86, 2.83, 2.22 |
+| <span id="obj-dyn-s-wtower-d"></span>`dyn_s_wtower_d` | ![objects/dyn_s_wtower_d.png](images/objects/dyn_s_wtower_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.3, 0.3, 1.59 |
+| <span id="obj-dyn-s-wwcart"></span>`dyn_s_wwcart` | ![objects/dyn_s_wwcart.png](images/objects/dyn_s_wwcart.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.95, 2.75, 2.45 |
+| <span id="obj-dyn-s-wwcart-a"></span>`dyn_s_wwcart_a` | ![objects/dyn_s_wwcart_a.png](images/objects/dyn_s_wwcart_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
+| <span id="obj-dyn-s-wwcart-b"></span>`dyn_s_wwcart_b` | ![objects/dyn_s_wwcart_b.png](images/objects/dyn_s_wwcart_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
+| <span id="obj-dyn-s-wwcart-c"></span>`dyn_s_wwcart_c` | ![objects/dyn_s_wwcart_c.png](images/objects/dyn_s_wwcart_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
+| <span id="obj-dyn-s-wwcart-simple-a"></span>`dyn_s_wwcart_simple_a` | ![objects/dyn_s_wwcart_simple_a.png](images/objects/dyn_s_wwcart_simple_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
+| <span id="obj-dyn-s-wwcart-simple-b"></span>`dyn_s_wwcart_simple_b` | ![objects/dyn_s_wwcart_simple_b.png](images/objects/dyn_s_wwcart_simple_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
+| <span id="obj-dyn-s-wwcart-simple-c"></span>`dyn_s_wwcart_simple_c` | ![objects/dyn_s_wwcart_simple_c.png](images/objects/dyn_s_wwcart_simple_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.51, 1.82, 2.09 |
+| <span id="obj-dyn-s-wwheel-a"></span>`dyn_s_wwheel_a` | ![objects/dyn_s_wwheel_a.png](images/objects/dyn_s_wwheel_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 44.89, 4.98, 44.89 |
+| <span id="obj-dyn-s-wwheel-b"></span>`dyn_s_wwheel_b` | ![objects/dyn_s_wwheel_b.png](images/objects/dyn_s_wwheel_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 36.7, 0, 36.56 |
+| <span id="obj-dyn-samo"></span>`dyn_samo` | ![objects/dyn_samo.png](images/objects/dyn_samo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.65, 1.39, 1.81 |
+| <span id="obj-dyn-saracens"></span>`dyn_saracens` | ![objects/dyn_saracens.png](images/objects/dyn_saracens.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.93, 2.02, 1.28 |
+| <span id="obj-dyn-sawhorse"></span>`dyn_sawhorse` | ![objects/dyn_sawhorse.png](images/objects/dyn_sawhorse.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.39, 0.06, 1.35 |
+| <span id="obj-dyn-scaf-a"></span>`dyn_scaf_a` | ![objects/dyn_scaf_a.png](images/objects/dyn_scaf_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.37, 11.78, 4.67 |
+| <span id="obj-dyn-scaf-aa"></span>`dyn_scaf_aa` | ![objects/dyn_scaf_aa.png](images/objects/dyn_scaf_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.37, 12.22, 4.67 |
+| <span id="obj-dyn-scaf-b"></span>`dyn_scaf_b` | ![objects/dyn_scaf_b.png](images/objects/dyn_scaf_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.37, 15.31, 5.8 |
+| <span id="obj-dyn-scaf-ba"></span>`dyn_scaf_ba` | ![objects/dyn_scaf_ba.png](images/objects/dyn_scaf_ba.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.54, 15.3, 5.8 |
+| <span id="obj-dyn-scaf-bb"></span>`dyn_scaf_bb` | ![objects/dyn_scaf_bb.png](images/objects/dyn_scaf_bb.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.01, 5.57, 4.39 |
+| <span id="obj-dyn-scaf-c"></span>`dyn_scaf_c` | ![objects/dyn_scaf_c.png](images/objects/dyn_scaf_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.64, 4.89, 0.13 |
+| <span id="obj-dyn-scaf-d"></span>`dyn_scaf_d` | ![objects/dyn_scaf_d.png](images/objects/dyn_scaf_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.63, 3.11, 0.13 |
+| <span id="obj-dyn-scaf-e"></span>`dyn_scaf_e` | ![objects/dyn_scaf_e.png](images/objects/dyn_scaf_e.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.86, 3.14, 0.24 |
+| <span id="obj-dyn-scaf-f"></span>`dyn_scaf_f` | ![objects/dyn_scaf_f.png](images/objects/dyn_scaf_f.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.62, 2.57, 0.2 |
+| <span id="obj-dyn-scaf-g"></span>`dyn_scaf_g` | ![objects/dyn_scaf_g.png](images/objects/dyn_scaf_g.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.64, 2.19, 0.13 |
+| <span id="obj-dyn-scaf-h"></span>`dyn_scaf_h` | ![objects/dyn_scaf_h.png](images/objects/dyn_scaf_h.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.64, 2.21, 0.13 |
+| <span id="obj-dyn-scafwind-a"></span>`dyn_scafwind_a` | ![objects/dyn_scafwind_a.png](images/objects/dyn_scafwind_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 4.74, 1.95, 1.64 |
+| <span id="obj-dyn-scafwind-b"></span>`dyn_scafwind_b` | ![objects/dyn_scafwind_b.png](images/objects/dyn_scafwind_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.01, 1.67 |
+| <span id="obj-dyn-scafwind-d"></span>`dyn_scafwind_d` | ![objects/dyn_scafwind_d.png](images/objects/dyn_scafwind_d.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.53, 4.55, 2.48 |
+| <span id="obj-dyn-scafwind-e"></span>`dyn_scafwind_e` | ![objects/dyn_scafwind_e.png](images/objects/dyn_scafwind_e.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.99, 4.72, 1.66 |
+| <span id="obj-dyn-scafwind-f"></span>`dyn_scafwind_f` | ![objects/dyn_scafwind_f.png](images/objects/dyn_scafwind_f.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.01, 1.67 |
+| <span id="obj-dyn-scafwind-g"></span>`dyn_scafwind_g` | ![objects/dyn_scafwind_g.png](images/objects/dyn_scafwind_g.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.01, 1.67 |
+| <span id="obj-dyn-shack"></span>`dyn_shack` | ![objects/dyn_shack.png](images/objects/dyn_shack.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.2, 3.42, 4.59 |
+| <span id="obj-dyn-shelf-a"></span>`dyn_shelf_a` | ![objects/dyn_shelf_a.png](images/objects/dyn_shelf_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.06, 1.44, 1.89 |
+| <span id="obj-dyn-shovel-b"></span>`dyn_shovel_b` | ![objects/dyn_shovel_b.png](images/objects/dyn_shovel_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.25, 0.52, 0.1 |
+| <span id="obj-dyn-sign-diner-a"></span>`dyn_sign_diner_a` | ![objects/dyn_sign_diner_a.png](images/objects/dyn_sign_diner_a.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.65, 0.21, 2.49 |
+| <span id="obj-dyn-sign-diner-b"></span>`dyn_sign_diner_b` | ![objects/dyn_sign_diner_b.png](images/objects/dyn_sign_diner_b.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 1.92, 0.32, 1.56 |
+| <span id="obj-dyn-skidstack"></span>`dyn_skidstack` | ![objects/dyn_skidstack.png](images/objects/dyn_skidstack.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.29, 2.28, 1.92 |
+| <span id="obj-dyn-skulljaw"></span>`dyn_skulljaw` | ![objects/dyn_skulljaw.png](images/objects/dyn_skulljaw.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.22, 0.65, 0.77 |
+| <span id="obj-dyn-sledgehammer-b"></span>`dyn_sledgehammer_b` | ![objects/dyn_sledgehammer_b.png](images/objects/dyn_sledgehammer_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.18, 0.1, 0.09 |
+| <span id="obj-dyn-snow"></span>`dyn_snow` | ![objects/dyn_snow.png](images/objects/dyn_snow.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.55, 0.41, 0.34 |
+| <span id="obj-dyn-spill-garbage-mesh"></span>`dyn_spill_garbage_mesh` | | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-spill-garbage-mesh-tin"></span>`dyn_spill_garbage_mesh_tin` | | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-squeege"></span>`dyn_squeege` | ![objects/dyn_squeege.png](images/objects/dyn_squeege.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.32, 0.39, 1.18 |
+| <span id="obj-dyn-stallwall-aa"></span>`dyn_stallwall_aa` | ![objects/dyn_stallwall_aa.png](images/objects/dyn_stallwall_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.48, 0.09, 2.5 |
+| <span id="obj-dyn-stallwall-lrg-aa"></span>`dyn_stallwall_lrg_aa` | ![objects/dyn_stallwall_lrg_aa.png](images/objects/dyn_stallwall_lrg_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 3.79, 0.09, 1.8 |
+| <span id="obj-dyn-std-gls"></span>`dyn_std_gls` | | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-steak-fade"></span>`dyn_steak_fade` | ![objects/dyn_steak_fade.png](images/objects/dyn_steak_fade.png){ width="96" } | `fade_object` | `TYPE_BRICK` | `SPHERE` | 0.22, 0.31, 0.04 |
+| <span id="obj-dyn-steeltoe"></span>`dyn_steeltoe` | ![objects/dyn_steeltoe.png](images/objects/dyn_steeltoe.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.07, 0.05 |
+| <span id="obj-dyn-stereo-a"></span>`dyn_stereo_a` | ![objects/dyn_stereo_a.png](images/objects/dyn_stereo_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.61, 0.46, 0.17 |
+| <span id="obj-dyn-sub-handle"></span>`dyn_sub_handle` | ![objects/dyn_sub_handle.png](images/objects/dyn_sub_handle.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.04, 0.43 |
+| <span id="obj-dyn-sub-turnstyle-b"></span>`dyn_sub_turnstyle_b` | ![objects/dyn_sub_turnstyle_b.png](images/objects/dyn_sub_turnstyle_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.03, 1.02, 0.12 |
+| <span id="obj-dyn-subseat-aa"></span>`dyn_subseat_aa` | ![objects/dyn_subseat_aa.png](images/objects/dyn_subseat_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2, 0.64, 1.08 |
+| <span id="obj-dyn-subseat-ba"></span>`dyn_subseat_ba` | ![objects/dyn_subseat_ba.png](images/objects/dyn_subseat_ba.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.02, 0.64, 1.08 |
+| <span id="obj-dyn-subtrash-aa"></span>`dyn_subtrash_aa` | ![objects/dyn_subtrash_aa.png](images/objects/dyn_subtrash_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.46, 1.47, 0.48 |
+| <span id="obj-dyn-subwaydoor-a"></span>`dyn_subwaydoor_a` | ![objects/dyn_subwaydoor_a.png](images/objects/dyn_subwaydoor_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.83, 0.06, 2.31 |
+| <span id="obj-dyn-suspicious-package"></span>`dyn_suspicious_package` | ![objects/dyn_suspicious_package.png](images/objects/dyn_suspicious_package.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 2.23, 1.09 |
+| <span id="obj-dyn-swan"></span>`dyn_swan` | ![objects/dyn_swan.png](images/objects/dyn_swan.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.16, 2.23, 1.09 |
+| <span id="obj-dyn-table"></span>`dyn_table` | ![objects/dyn_table.png](images/objects/dyn_table.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 1 |
+| <span id="obj-dyn-table01"></span>`dyn_table01_` | ![objects/dyn_table01_.png](images/objects/dyn_table01_.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.85 |
+| <span id="obj-dyn-table3"></span>`dyn_table3_` | ![objects/dyn_table3_.png](images/objects/dyn_table3_.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 2.92, 1.42, 0.88 |
+| <span id="obj-dyn-table4"></span>`dyn_table4_` | | `dyn_table` | `TYPE_GENERIC` | `OBB` | 2.53, 1.37, 0.87 |
+| <span id="obj-dyn-table-b"></span>`dyn_table_b` | ![objects/dyn_table_b.png](images/objects/dyn_table_b.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.77 |
+| <span id="obj-dyn-table-ba"></span>`dyn_table_ba` | ![objects/dyn_table_ba.png](images/objects/dyn_table_ba.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.49, 0.67, 0.04 |
+| <span id="obj-dyn-table-bb"></span>`dyn_table_bb` | ![objects/dyn_table_bb.png](images/objects/dyn_table_bb.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.1, 0.66, 0.11 |
+| <span id="obj-dyn-table-k"></span>`dyn_table_k` | ![objects/dyn_table_k.png](images/objects/dyn_table_k.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.78 |
+| <span id="obj-dyn-table-ka"></span>`dyn_table_ka` | ![objects/dyn_table_ka.png](images/objects/dyn_table_ka.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.49, 0.69, 0.17 |
+| <span id="obj-dyn-table-kb"></span>`dyn_table_kb` | ![objects/dyn_table_kb.png](images/objects/dyn_table_kb.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.12, 0.71, 0.12 |
+| <span id="obj-dyn-table-s"></span>`dyn_table_s` | ![objects/dyn_table_s.png](images/objects/dyn_table_s.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.77 |
+| <span id="obj-dyn-table-sa"></span>`dyn_table_sa` | ![objects/dyn_table_sa.png](images/objects/dyn_table_sa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.49, 0.69, 0.04 |
+| <span id="obj-dyn-table-sb"></span>`dyn_table_sb` | ![objects/dyn_table_sb.png](images/objects/dyn_table_sb.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.73, 0.04 |
+| <span id="obj-dyn-table-sc"></span>`dyn_table_sc` | ![objects/dyn_table_sc.png](images/objects/dyn_table_sc.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.73, 0.04 |
+| <span id="obj-dyn-table-w"></span>`dyn_table_w` | ![objects/dyn_table_w.png](images/objects/dyn_table_w.png){ width="96" } | `dyn_table` | `TYPE_GENERIC` | `OBB` | 1.49, 1.49, 0.79 |
+| <span id="obj-dyn-table-wa"></span>`dyn_table_wa` | ![objects/dyn_table_wa.png](images/objects/dyn_table_wa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.49, 0.69, 0.04 |
+| <span id="obj-dyn-table-wb"></span>`dyn_table_wb` | ![objects/dyn_table_wb.png](images/objects/dyn_table_wb.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.74, 0.08 |
+| <span id="obj-dyn-tacks-e-lit"></span>`dyn_tacks_e_lit` | ![objects/dyn_tacks_e_lit.png](images/objects/dyn_tacks_e_lit.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.15, 0, 2.13 |
+| <span id="obj-dyn-tag-warr"></span>`dyn_tag_warr` | ![objects/dyn_tag_warr.png](images/objects/dyn_tag_warr.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.12, 0, 2.15 |
+| <span id="obj-dyn-tag-warr-dest"></span>`dyn_tag_warr_dest` | ![objects/dyn_tag_warr_dest.png](images/objects/dyn_tag_warr_dest.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.12, 0, 2.15 |
+| <span id="obj-dyn-taggable"></span>`dyn_taggable` | ![objects/dyn_taggable.png](images/objects/dyn_taggable.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.28, 0, 0.31 |
+| <span id="obj-dyn-templetorch-aa"></span>`dyn_templetorch_aa` | ![objects/dyn_templetorch_aa.png](images/objects/dyn_templetorch_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.28, 1.07, 0.67 |
+| <span id="obj-dyn-test"></span>`dyn_test` | ![objects/dyn_test.png](images/objects/dyn_test.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.84, 0.7, 1.18 |
+| <span id="obj-dyn-testobject"></span>`dyn_testobject` | ![objects/dyn_testobject.png](images/objects/dyn_testobject.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.3, 0.27, 0.22 |
+| <span id="obj-dyn-tire-bus"></span>`dyn_tire_bus` | ![objects/dyn_tire_bus.png](images/objects/dyn_tire_bus.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.29, 1.1, 1.05 |
+| <span id="obj-dyn-tire-fire"></span>`dyn_tire_fire` | ![objects/dyn_tire_fire.png](images/objects/dyn_tire_fire.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.23, 1.23, 0.37 |
+| <span id="obj-dyn-tire-van"></span>`dyn_tire_van` | ![objects/dyn_tire_van.png](images/objects/dyn_tire_van.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `NONE` | 0.81, 0.81, 0.28 |
+| <span id="obj-dyn-trans-wrecked"></span>`dyn_trans_wrecked` | ![objects/dyn_trans_wrecked.png](images/objects/dyn_trans_wrecked.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.73, 1.67, 2.69 |
+| <span id="obj-dyn-trashbit-a"></span>`dyn_trashbit_a` | ![objects/dyn_trashbit_a.png](images/objects/dyn_trashbit_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.09, 0.06, 0.2 |
+| <span id="obj-dyn-trashbit-b"></span>`dyn_trashbit_b` | ![objects/dyn_trashbit_b.png](images/objects/dyn_trashbit_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.13, 0.06, 0.33 |
+| <span id="obj-dyn-trashbit-c"></span>`dyn_trashbit_c` | ![objects/dyn_trashbit_c.png](images/objects/dyn_trashbit_c.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.35, 0.27, 0.14 |
+| <span id="obj-dyn-trashbit-d"></span>`dyn_trashbit_d` | ![objects/dyn_trashbit_d.png](images/objects/dyn_trashbit_d.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.3, 0.21, 0.11 |
+| <span id="obj-dyn-trashcan-b"></span>`dyn_trashcan_b` | ![objects/dyn_trashcan_b.png](images/objects/dyn_trashcan_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.78, 1.01, 0.65 |
+| <span id="obj-dyn-trnyrd-elecbox-aa"></span>`dyn_trnyrd_elecbox_aa` | ![objects/dyn_trnyrd_elecbox_aa.png](images/objects/dyn_trnyrd_elecbox_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.41, 1.65, 3.12 |
+| <span id="obj-dyn-trnyrd-light-aa"></span>`dyn_trnyrd_light_aa` | ![objects/dyn_trnyrd_light_aa.png](images/objects/dyn_trnyrd_light_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.57, 0.46, 3.06 |
+| <span id="obj-dyn-trnyrd-sign-aa"></span>`dyn_trnyrd_sign_aa` | ![objects/dyn_trnyrd_sign_aa.png](images/objects/dyn_trnyrd_sign_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.36, 0.27, 2.11 |
+| <span id="obj-dyn-troph-bopp-bo"></span>`dyn_troph_bopp_bo` | ![objects/dyn_troph_bopp_bo.png](images/objects/dyn_troph_bopp_bo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.42, 0.17, 0.5 |
+| <span id="obj-dyn-troph-crown"></span>`dyn_troph_crown` | ![objects/dyn_troph_crown.png](images/objects/dyn_troph_crown.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.21, 0.11, 0.26 |
+| <span id="obj-dyn-troph-sata-bo"></span>`dyn_troph_sata_bo` | ![objects/dyn_troph_sata_bo.png](images/objects/dyn_troph_sata_bo.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.26, 0.27, 0.28 |
+| <span id="obj-dyn-trophy-fuhuns"></span>`dyn_trophy_fuhuns` | ![objects/dyn_trophy_fuhuns.png](images/objects/dyn_trophy_fuhuns.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.57, 0.08, 0.6 |
+| <span id="obj-dyn-turbine"></span>`dyn_turbine` | ![objects/dyn_turbine.png](images/objects/dyn_turbine.png){ width="96" } | `rotating_object` | `TYPE_GENERIC` | `OBB` | 0.91, 1.03, 2.14 |
+| <span id="obj-dyn-turnbul-bus"></span>`dyn_turnbul_bus` | ![objects/dyn_turnbul_bus.png](images/objects/dyn_turnbul_bus.png){ width="96" } | `simple_object` | `TYPE_MOVINGVEHICLE` | `OBB` | 6.35, 1, 3.04 |
+| <span id="obj-dyn-turnbull-a"></span>`dyn_turnbull_a` | ![objects/dyn_turnbull_a.png](images/objects/dyn_turnbull_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.59, 1.84, 1.25 |
+| <span id="obj-dyn-turnbull-bus-graf"></span>`dyn_turnbull_bus_graf` | ![objects/dyn_turnbull_bus_graf.png](images/objects/dyn_turnbull_bus_graf.png){ width="96" } | `simple_object` | `TYPE_GLASS` | `NONE` | 0, 0, 0 |
+| <span id="obj-dyn-turns"></span>`dyn_turns` | ![objects/dyn_turns.png](images/objects/dyn_turns.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 1.73, 1.73, 2.55 |
+| <span id="obj-dyn-tv-aa"></span>`dyn_tv_aa` | ![objects/dyn_tv_aa.png](images/objects/dyn_tv_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.63, 0.52, 0.42 |
+| <span id="obj-dyn-tvlarge-wreck"></span>`dyn_tvlarge_wreck` | ![objects/dyn_tvlarge_wreck.png](images/objects/dyn_tvlarge_wreck.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.26, 0.97, 0.86 |
+| <span id="obj-dyn-twodoor"></span>`dyn_twodoor` | ![objects/dyn_twodoor.png](images/objects/dyn_twodoor.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.62, 5.44, 1.27 |
+| <span id="obj-dyn-vargas-door-a"></span>`dyn_vargas_door_a` | ![objects/dyn_vargas_door_a.png](images/objects/dyn_vargas_door_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.63, 0.13, 2.45 |
+| <span id="obj-dyn-vargas-door-aa"></span>`dyn_vargas_door_aa` | ![objects/dyn_vargas_door_aa.png](images/objects/dyn_vargas_door_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 2.84, 0.86, 2.45 |
+| <span id="obj-dyn-vargas-stove-aa"></span>`dyn_vargas_stove_aa` | ![objects/dyn_vargas_stove_aa.png](images/objects/dyn_vargas_stove_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.45, 1.83, 1 |
+| <span id="obj-dyn-vargas-washer-aa"></span>`dyn_vargas_washer_aa` | ![objects/dyn_vargas_washer_aa.png](images/objects/dyn_vargas_washer_aa.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 1.89, 1.48, 0.95 |
+| <span id="obj-dyn-vermin"></span>`dyn_vermin` | ![objects/dyn_vermin.png](images/objects/dyn_vermin.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.61, 2.09, 1.28 |
+| <span id="obj-dyn-walkie"></span>`dyn_walkie` | ![objects/dyn_walkie.png](images/objects/dyn_walkie.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.08, 0.08, 0.33 |
+| <span id="obj-dyn-wall-aa"></span>`dyn_wall_aa` | ![objects/dyn_wall_aa.png](images/objects/dyn_wall_aa.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 5.16, 0.33, 3.05 |
+| <span id="obj-dyn-war-vest"></span>`dyn_war_vest` | ![objects/dyn_war_vest.png](images/objects/dyn_war_vest.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.45, 0.52, 0.04 |
+| <span id="obj-dyn-warcade-a"></span>`dyn_warcade_a` | ![objects/dyn_warcade_a.png](images/objects/dyn_warcade_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.87, 1.11, 2.49 |
+| <span id="obj-dyn-warcade-b"></span>`dyn_warcade_b` | ![objects/dyn_warcade_b.png](images/objects/dyn_warcade_b.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.91, 1.13, 2.49 |
+| <span id="obj-dyn-warcade-c"></span>`dyn_warcade_c` | ![objects/dyn_warcade_c.png](images/objects/dyn_warcade_c.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.61, 0.11, 0.49 |
+| <span id="obj-dyn-warr-tag-twolayer"></span>`dyn_warr_tag_twolayer` | ![objects/dyn_warr_tag_twolayer.png](images/objects/dyn_warr_tag_twolayer.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.11, 2.58, 1.08 |
+| <span id="obj-dyn-warrtag-brnr"></span>`dyn_warrtag_brnr` | ![objects/dyn_warrtag_brnr.png](images/objects/dyn_warrtag_brnr.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 7.81, 0.15, 2.37 |
+| <span id="obj-dyn-whistle"></span>`dyn_whistle` | ![objects/dyn_whistle.png](images/objects/dyn_whistle.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.02, 0.07, 0.03 |
+| <span id="obj-dyn-whlchr"></span>`dyn_whlchr` | ![objects/dyn_whlchr.png](images/objects/dyn_whlchr.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.74, 1.31, 1.2 |
+| <span id="obj-dyn-window-decal"></span>`dyn_window_decal` | ![objects/dyn_window_decal.png](images/objects/dyn_window_decal.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.74, 1.31, 1.2 |
+| <span id="obj-dyn-woodbridge-a"></span>`dyn_woodbridge_a` | ![objects/dyn_woodbridge_a.png](images/objects/dyn_woodbridge_a.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 3.88, 11.54, 3.69 |
+| <span id="obj-dyn-woodbridge-rail"></span>`dyn_woodbridge_rail` | ![objects/dyn_woodbridge_rail.png](images/objects/dyn_woodbridge_rail.png){ width="96" } | `simple_object` | `TYPE_GENERIC` | `OBB` | 0.43, 3.03, 1.2 |
+| <span id="obj-dyn-wooddmg-a"></span>`dyn_wooddmg_a` | ![objects/dyn_wooddmg_a.png](images/objects/dyn_wooddmg_a.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 2.18, 1.81, 0.16 |
+| <span id="obj-dyn-wooddmg-b"></span>`dyn_wooddmg_b` | ![objects/dyn_wooddmg_b.png](images/objects/dyn_wooddmg_b.png){ width="96" } | `fade_object` | `TYPE_GENERIC` | `OBB` | 0.84, 0.78, 0.13 |
 
 ## other {#other}
 
 58 entries.
 
-| Name | Class | Type | Shape | Size (m) |
-| --- | --- | --- | --- | --- |
-| <span id="obj-dyn-bar-tbllamp"></span>`dyn_bar_tbllamp` | `dyn_bar_lamp` | `TYPE_GENERIC` | `OBB` | 0.19, 0.19, 0.31 |
-| <span id="obj-dyn-bare-light"></span>`dyn_bare_light` | `dyn_breakable_light` | `TYPE_BRICK` | `SPHERE` | 0.5, 0.5, 0.5 |
-| <span id="obj-dyn-blaster"></span>`dyn_blaster` | `dyn_blaster` | `TYPE_DRUM` | `OBB` | 0.71, 0.15, 0.42 |
-| <span id="obj-dyn-blaster-b"></span>`dyn_blaster_b` | `dyn_blaster` | `TYPE_DRUM` | `OBB` | 0.71, 0.15, 0.42 |
-| <span id="obj-dyn-cagedchic"></span>`dyn_cagedchic` | `dyn_chicken` | `TYPE_DRUM` | `OBB` | 0.8, 0.75, 0.35 |
-| <span id="obj-dyn-cashreg"></span>`dyn_cashreg` | `dyn_cashreg` | `TYPE_GENERIC` | `OBB` | 0.53, 0.55, 0.58 |
-| <span id="obj-dyn-cashreg-b"></span>`dyn_cashreg_b` | `dyn_cashreg_b` | `TYPE_GENERIC` | `NONE` | 0.49, 0.5, 0.09 |
-| <span id="obj-dyn-cbradio"></span>`dyn_cbradio` | `dyn_cbradio` | `TYPE_GENERIC` | `OBB` | 0.8, 0.8, 0.38 |
-| <span id="obj-dyn-chandelier-a"></span>`dyn_chandelier_a` | `dyn_chand` | `TYPE_GENERIC` | `OBB` | 2.09, 2.09, 2.27 |
-| <span id="obj-dyn-colasign"></span>`dyn_colasign` | `dyn_colasign` | `TYPE_GENERIC` | `OBB` | 1.23, 0.14, 2.14 |
-| <span id="obj-dyn-ctrl-box"></span>`dyn_ctrl_box` | `dyn_ctrl_box` | `TYPE_GENERIC` | `OBB` | 0.33, 0.12, 0.57 |
-| <span id="obj-dyn-discolite-a"></span>`dyn_discolite_a` | `dyn_disco_a` | `TYPE_GENERIC` | `NONE` | 8.72, 8.7, 0 |
-| <span id="obj-dyn-discolite-c"></span>`dyn_discolite_c` | `dyn_disco_b` | `TYPE_GENERIC` | `NONE` | 10, 10, 0 |
-| <span id="obj-dyn-discolite-d"></span>`dyn_discolite_d` | `dyn_disco_b` | `TYPE_GENERIC` | `NONE` | 9.37, 10, 0 |
-| <span id="obj-dyn-door-bar-bani"></span>`dyn_door_bar_bani` | `dyn_door_bar_bani` | `TYPE_BREAKABLE_DOOR` | `OBB` | 3.16, 0.14, 1.2 |
-| <span id="obj-dyn-door-barricade"></span>`dyn_door_barricade` | `dyn_door_barricade` | `TYPE_DOOR` | `NONE` | 0.11, 0.11, 1.32 |
-| <span id="obj-dyn-door-bnstr"></span>`dyn_door_bnstr` | `dyn_door_bnstr` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.8, 0.17, 1.12 |
-| <span id="obj-dyn-door-chain-s"></span>`dyn_door_chain_s` | `dyn_door_chain_s` | `TYPE_GENERIC` | `OBB` | 4.94, 4.94, 7.15 |
-| <span id="obj-dyn-door-fence"></span>`dyn_door_fence` | `dyn_door_fence` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.48, 0.2, 2.6 |
-| <span id="obj-dyn-door-fence-o"></span>`dyn_door_fence_o` | `dyn_door_fence_o` | `TYPE_BREAKABLE_DOOR` | `OBB` | 4.26, 0.01, 1.11 |
-| <span id="obj-dyn-door-parapet"></span>`dyn_door_parapet` | `dyn_door_parapet` | `TYPE_BREAKABLE_DOOR` | `OBB` | 9.26, 0.21, 1.07 |
-| <span id="obj-dyn-door-vargas"></span>`dyn_door_vargas` | `dyn_door_fence` | `TYPE_GENERIC` | `OBB` | 2.63, 0.13, 2.45 |
-| <span id="obj-dyn-door-wall-a"></span>`dyn_door_wall_a` | `dyn_door_fence` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.48, 0.2, 2.6 |
-| <span id="obj-dyn-door-wall-b"></span>`dyn_door_wall_b` | `dyn_door_fence` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.48, 0.2, 2.6 |
-| <span id="obj-dyn-float-item"></span>`dyn_float_item` | `float_item` | `TYPE_SPECIAL` | `NONE` | 2.02, 0.517, 1.286 |
-| <span id="obj-dyn-fluor-swing"></span>`dyn_fluor_swing` | `dyn_fluor_swing` | `TYPE_GENERIC` | `NONE` | 2.02, 0.517, 1.286 |
-| <span id="obj-dyn-lightglow-ben-a"></span>`dyn_lightglow_ben_a` | `dyn_oneon_glow` | `TYPE_GLASS` | `NONE` | 4.196, 1.441, 4.417 |
-| <span id="obj-dyn-lightglow-ben-b"></span>`dyn_lightglow_ben_b` | `dyn_neon_onesided` | `TYPE_GLASS` | `NONE` | 4.196, 1.441, 4.417 |
-| <span id="obj-dyn-lightglow-ben-c"></span>`dyn_lightglow_ben_c` | `dyn_neon_onesided` | `TYPE_GLASS` | `NONE` | 4.196, 1.441, 4.417 |
-| <span id="obj-dyn-lightglow-tre-a"></span>`dyn_lightglow_tre_a` | `dyn_oneon_glow` | `TYPE_GLASS` | `NONE` | 5.025, 1.932, 4.416 |
-| <span id="obj-dyn-lightglow-tre-b"></span>`dyn_lightglow_tre_b` | `dyn_neon_broken` | `TYPE_GLASS` | `NONE` | 2.988, 2.077, 6.24 |
-| <span id="obj-dyn-lightglow-tre-c"></span>`dyn_lightglow_tre_c` | `dyn_neon_onesided` | `TYPE_GLASS` | `NONE` | 9.75, 0.878, 4.452 |
-| <span id="obj-dyn-lock-a"></span>`dyn_lock_a` | `dyn_lock_a` | `TYPE_GENERIC` | `OBB` | 0.52, 0.23, 1.34 |
-| <span id="obj-dyn-manqheadred"></span>`dyn_manqheadred` | `dyn_manqheadred` | `TYPE_BRICK` | `OBB` | 0.17, 0.21, 0.29 |
-| <span id="obj-dyn-molotv"></span>`dyn_molotv` | `dyn_molotv` | `TYPE_MOLOTOV` | `OBB` | 0.15, 0.35, 0.12 |
-| <span id="obj-dyn-motelneon-a"></span>`dyn_motelneon_a` | `dyn_motelneon` | `TYPE_GENERIC` | `OBB` | 0.56, 2.82, 2.82 |
-| <span id="obj-dyn-neon-cross-a"></span>`dyn_neon_cross_a` | `dyn_motelneon` | `TYPE_GENERIC` | `OBB` | 3.12, 0, 5.12 |
-| <span id="obj-dyn-neon-lotus"></span>`dyn_neon_lotus` | `dyn_motelneon` | `TYPE_GENERIC` | `OBB` | 0.56, 2.82, 2.82 |
-| <span id="obj-dyn-o-animwave-a"></span>`dyn_o_animwave_a` | `dyn_animwave` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
-| <span id="obj-dyn-o-shorline"></span>`dyn_o_shorline` | `dyn_o_shore` | `TYPE_GLASS` | `NONE` | 612.5, 6.88, 0 |
-| <span id="obj-dyn-o-wave"></span>`dyn_o_wave` | `dyn_wave` | `TYPE_GLASS` | `NONE` | 612.5, 6.16, 1.33 |
-| <span id="obj-dyn-o-wavewash-a"></span>`dyn_o_wavewash_a` | `dyn_wash_a` | `TYPE_GLASS` | `NONE` | 612.5, 11.99, 0 |
-| <span id="obj-dyn-o-wavewash-b"></span>`dyn_o_wavewash_b` | `dyn_wash_b` | `TYPE_GLASS` | `NONE` | 656.25, 12.03, 0 |
-| <span id="obj-dyn-o-whitecap-a"></span>`dyn_o_whitecap_a` | `dyn_outwave` | `TYPE_GLASS` | `NONE` | 3.86, 0.6, 0.3 |
-| <span id="obj-dyn-objective-a"></span>`dyn_objective_a` | `sub_objective_column` | `TYPE_GLASS` | `NONE` | 0.68, 0.68, 3.68 |
-| <span id="obj-dyn-ocopcar"></span>`dyn_ocopcar` | `dyn_exploding_car` | `TYPE_COPCAR` | `OBB` | 2.41, 5.76, 1.8 |
-| <span id="obj-dyn-oil-reflect"></span>`dyn_oil_reflect` | `sub_oil_reflect` | `TYPE_DRUM` | `OBB` | 0.72, 0.73, 1.12 |
-| <span id="obj-dyn-on-off"></span>`dyn_on_off` | `dyn_on_off` | `TYPE_GENERIC` | `OBB` | 0.12, 0.11, 0.23 |
-| <span id="obj-dyn-rat-black"></span>`dyn_rat_black` | `dyn_rat` | `TYPE_GENERIC` | `OBB` | 0.07, 0.24, 0.05 |
-| <span id="obj-dyn-rat-brown"></span>`dyn_rat_brown` | `dyn_rat` | `TYPE_GENERIC` | `OBB` | 0.07, 0.24, 0.05 |
-| <span id="obj-dyn-scafwind-c"></span>`dyn_scafwind_c` | `dyn_scaffold` | `TYPE_GENERIC` | `OBB` | 1, 1, 1 |
-| <span id="obj-dyn-skull-eyes-a"></span>`dyn_skull_eyes_a` | `dyn_skullglow` | `TYPE_GENERIC` | `OBB` | 0.95, 0.19, 0.22 |
-| <span id="obj-dyn-swinging-obj"></span>`dyn_swinging_obj` | `sub_swinging_obj` | `TYPE_GENERIC` | `OBB` | 1.23, 0.14, 2.14 |
-| <span id="obj-dyn-tacks-e"></span>`dyn_tacks_e` | `dyn_motelneon` | `TYPE_GENERIC` | `OBB` | 1.15, 0, 2.13 |
-| <span id="obj-dyn-trans"></span>`dyn_trans` | `dyn_exploding_car` | `TYPE_CAR` | `OBB` | 1.73, 1.67, 2.74 |
-| <span id="obj-dyn-vargas-chand"></span>`dyn_vargas_chand` | `dyn_chand` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.66 |
-| <span id="obj-dyn-walktalk"></span>`dyn_walktalk` | `dyn_walktalk` | `TYPE_BRICK` | `OBB` | 0.08, 0.04, 0.31 |
-| <span id="obj-dyn-woodbridge"></span>`dyn_woodbridge` | `dyn_woodbridge` | `TYPE_GENERIC` | `OBB` | 4.08, 11.54, 3.27 |
+| Name | Image | Class | Type | Shape | Size (m) |
+| --- | --- | --- | --- | --- | --- |
+| <span id="obj-dyn-bar-tbllamp"></span>`dyn_bar_tbllamp` | ![objects/dyn_bar_tbllamp.png](images/objects/dyn_bar_tbllamp.png){ width="96" } | `dyn_bar_lamp` | `TYPE_GENERIC` | `OBB` | 0.19, 0.19, 0.31 |
+| <span id="obj-dyn-bare-light"></span>`dyn_bare_light` | ![objects/dyn_bare_light.png](images/objects/dyn_bare_light.png){ width="96" } | `dyn_breakable_light` | `TYPE_BRICK` | `SPHERE` | 0.5, 0.5, 0.5 |
+| <span id="obj-dyn-blaster"></span>`dyn_blaster` | ![objects/dyn_blaster.png](images/objects/dyn_blaster.png){ width="96" } | `dyn_blaster` | `TYPE_DRUM` | `OBB` | 0.71, 0.15, 0.42 |
+| <span id="obj-dyn-blaster-b"></span>`dyn_blaster_b` | ![objects/dyn_blaster_b.png](images/objects/dyn_blaster_b.png){ width="96" } | `dyn_blaster` | `TYPE_DRUM` | `OBB` | 0.71, 0.15, 0.42 |
+| <span id="obj-dyn-cagedchic"></span>`dyn_cagedchic` | ![objects/dyn_cagedchic.png](images/objects/dyn_cagedchic.png){ width="96" } | `dyn_chicken` | `TYPE_DRUM` | `OBB` | 0.8, 0.75, 0.35 |
+| <span id="obj-dyn-cashreg"></span>`dyn_cashreg` | ![objects/dyn_cashreg.png](images/objects/dyn_cashreg.png){ width="96" } | `dyn_cashreg` | `TYPE_GENERIC` | `OBB` | 0.53, 0.55, 0.58 |
+| <span id="obj-dyn-cashreg-b"></span>`dyn_cashreg_b` | ![objects/dyn_cashreg_b.png](images/objects/dyn_cashreg_b.png){ width="96" } | `dyn_cashreg_b` | `TYPE_GENERIC` | `NONE` | 0.49, 0.5, 0.09 |
+| <span id="obj-dyn-cbradio"></span>`dyn_cbradio` | ![objects/dyn_cbradio.png](images/objects/dyn_cbradio.png){ width="96" } | `dyn_cbradio` | `TYPE_GENERIC` | `OBB` | 0.8, 0.8, 0.38 |
+| <span id="obj-dyn-chandelier-a"></span>`dyn_chandelier_a` | ![objects/dyn_chandelier_a.png](images/objects/dyn_chandelier_a.png){ width="96" } | `dyn_chand` | `TYPE_GENERIC` | `OBB` | 2.09, 2.09, 2.27 |
+| <span id="obj-dyn-colasign"></span>`dyn_colasign` | ![objects/dyn_colasign.png](images/objects/dyn_colasign.png){ width="96" } | `dyn_colasign` | `TYPE_GENERIC` | `OBB` | 1.23, 0.14, 2.14 |
+| <span id="obj-dyn-ctrl-box"></span>`dyn_ctrl_box` | ![objects/dyn_ctrl_box.png](images/objects/dyn_ctrl_box.png){ width="96" } | `dyn_ctrl_box` | `TYPE_GENERIC` | `OBB` | 0.33, 0.12, 0.57 |
+| <span id="obj-dyn-discolite-a"></span>`dyn_discolite_a` | ![objects/dyn_discolite_a.png](images/objects/dyn_discolite_a.png){ width="96" } | `dyn_disco_a` | `TYPE_GENERIC` | `NONE` | 8.72, 8.7, 0 |
+| <span id="obj-dyn-discolite-c"></span>`dyn_discolite_c` | ![objects/dyn_discolite_c.png](images/objects/dyn_discolite_c.png){ width="96" } | `dyn_disco_b` | `TYPE_GENERIC` | `NONE` | 10, 10, 0 |
+| <span id="obj-dyn-discolite-d"></span>`dyn_discolite_d` | ![objects/dyn_discolite_d.png](images/objects/dyn_discolite_d.png){ width="96" } | `dyn_disco_b` | `TYPE_GENERIC` | `NONE` | 9.37, 10, 0 |
+| <span id="obj-dyn-door-bar-bani"></span>`dyn_door_bar_bani` | | `dyn_door_bar_bani` | `TYPE_BREAKABLE_DOOR` | `OBB` | 3.16, 0.14, 1.2 |
+| <span id="obj-dyn-door-barricade"></span>`dyn_door_barricade` | | `dyn_door_barricade` | `TYPE_DOOR` | `NONE` | 0.11, 0.11, 1.32 |
+| <span id="obj-dyn-door-bnstr"></span>`dyn_door_bnstr` | | `dyn_door_bnstr` | `TYPE_BREAKABLE_DOOR` | `OBB` | 1.8, 0.17, 1.12 |
+| <span id="obj-dyn-door-chain-s"></span>`dyn_door_chain_s` | | `dyn_door_chain_s` | `TYPE_GENERIC` | `OBB` | 4.94, 4.94, 7.15 |
+| <span id="obj-dyn-door-fence"></span>`dyn_door_fence` | | `dyn_door_fence` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.48, 0.2, 2.6 |
+| <span id="obj-dyn-door-fence-o"></span>`dyn_door_fence_o` | | `dyn_door_fence_o` | `TYPE_BREAKABLE_DOOR` | `OBB` | 4.26, 0.01, 1.11 |
+| <span id="obj-dyn-door-parapet"></span>`dyn_door_parapet` | | `dyn_door_parapet` | `TYPE_BREAKABLE_DOOR` | `OBB` | 9.26, 0.21, 1.07 |
+| <span id="obj-dyn-door-vargas"></span>`dyn_door_vargas` | | `dyn_door_fence` | `TYPE_GENERIC` | `OBB` | 2.63, 0.13, 2.45 |
+| <span id="obj-dyn-door-wall-a"></span>`dyn_door_wall_a` | | `dyn_door_fence` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.48, 0.2, 2.6 |
+| <span id="obj-dyn-door-wall-b"></span>`dyn_door_wall_b` | | `dyn_door_fence` | `TYPE_BREAKABLE_DOOR` | `OBB` | 2.48, 0.2, 2.6 |
+| <span id="obj-dyn-float-item"></span>`dyn_float_item` | | `float_item` | `TYPE_SPECIAL` | `NONE` | 2.02, 0.517, 1.286 |
+| <span id="obj-dyn-fluor-swing"></span>`dyn_fluor_swing` | ![objects/dyn_fluor_swing.png](images/objects/dyn_fluor_swing.png){ width="96" } | `dyn_fluor_swing` | `TYPE_GENERIC` | `NONE` | 2.02, 0.517, 1.286 |
+| <span id="obj-dyn-lightglow-ben-a"></span>`dyn_lightglow_ben_a` | ![objects/dyn_lightglow_ben_a.png](images/objects/dyn_lightglow_ben_a.png){ width="96" } | `dyn_oneon_glow` | `TYPE_GLASS` | `NONE` | 4.196, 1.441, 4.417 |
+| <span id="obj-dyn-lightglow-ben-b"></span>`dyn_lightglow_ben_b` | ![objects/dyn_lightglow_ben_b.png](images/objects/dyn_lightglow_ben_b.png){ width="96" } | `dyn_neon_onesided` | `TYPE_GLASS` | `NONE` | 4.196, 1.441, 4.417 |
+| <span id="obj-dyn-lightglow-ben-c"></span>`dyn_lightglow_ben_c` | ![objects/dyn_lightglow_ben_c.png](images/objects/dyn_lightglow_ben_c.png){ width="96" } | `dyn_neon_onesided` | `TYPE_GLASS` | `NONE` | 4.196, 1.441, 4.417 |
+| <span id="obj-dyn-lightglow-tre-a"></span>`dyn_lightglow_tre_a` | ![objects/dyn_lightglow_tre_a.png](images/objects/dyn_lightglow_tre_a.png){ width="96" } | `dyn_oneon_glow` | `TYPE_GLASS` | `NONE` | 5.025, 1.932, 4.416 |
+| <span id="obj-dyn-lightglow-tre-b"></span>`dyn_lightglow_tre_b` | ![objects/dyn_lightglow_tre_b.png](images/objects/dyn_lightglow_tre_b.png){ width="96" } | `dyn_neon_broken` | `TYPE_GLASS` | `NONE` | 2.988, 2.077, 6.24 |
+| <span id="obj-dyn-lightglow-tre-c"></span>`dyn_lightglow_tre_c` | ![objects/dyn_lightglow_tre_c.png](images/objects/dyn_lightglow_tre_c.png){ width="96" } | `dyn_neon_onesided` | `TYPE_GLASS` | `NONE` | 9.75, 0.878, 4.452 |
+| <span id="obj-dyn-lock-a"></span>`dyn_lock_a` | ![objects/dyn_lock_a.png](images/objects/dyn_lock_a.png){ width="96" } | `dyn_lock_a` | `TYPE_GENERIC` | `OBB` | 0.52, 0.23, 1.34 |
+| <span id="obj-dyn-manqheadred"></span>`dyn_manqheadred` | ![objects/dyn_manqheadred.png](images/objects/dyn_manqheadred.png){ width="96" } | `dyn_manqheadred` | `TYPE_BRICK` | `OBB` | 0.17, 0.21, 0.29 |
+| <span id="obj-dyn-molotv"></span>`dyn_molotv` | ![objects/dyn_molotv.png](images/objects/dyn_molotv.png){ width="96" } | `dyn_molotv` | `TYPE_MOLOTOV` | `OBB` | 0.15, 0.35, 0.12 |
+| <span id="obj-dyn-motelneon-a"></span>`dyn_motelneon_a` | ![objects/dyn_motelneon_a.png](images/objects/dyn_motelneon_a.png){ width="96" } | `dyn_motelneon` | `TYPE_GENERIC` | `OBB` | 0.56, 2.82, 2.82 |
+| <span id="obj-dyn-neon-cross-a"></span>`dyn_neon_cross_a` | ![objects/dyn_neon_cross_a.png](images/objects/dyn_neon_cross_a.png){ width="96" } | `dyn_motelneon` | `TYPE_GENERIC` | `OBB` | 3.12, 0, 5.12 |
+| <span id="obj-dyn-neon-lotus"></span>`dyn_neon_lotus` | ![objects/dyn_neon_lotus.png](images/objects/dyn_neon_lotus.png){ width="96" } | `dyn_motelneon` | `TYPE_GENERIC` | `OBB` | 0.56, 2.82, 2.82 |
+| <span id="obj-dyn-o-animwave-a"></span>`dyn_o_animwave_a` | ![objects/dyn_o_animwave_a.png](images/objects/dyn_o_animwave_a.png){ width="96" } | `dyn_animwave` | `TYPE_GENERIC` | `NONE` | 612.5, 5.66, 1.73 |
+| <span id="obj-dyn-o-shorline"></span>`dyn_o_shorline` | ![objects/dyn_o_shorline.png](images/objects/dyn_o_shorline.png){ width="96" } | `dyn_o_shore` | `TYPE_GLASS` | `NONE` | 612.5, 6.88, 0 |
+| <span id="obj-dyn-o-wave"></span>`dyn_o_wave` | ![objects/dyn_o_wave.png](images/objects/dyn_o_wave.png){ width="96" } | `dyn_wave` | `TYPE_GLASS` | `NONE` | 612.5, 6.16, 1.33 |
+| <span id="obj-dyn-o-wavewash-a"></span>`dyn_o_wavewash_a` | ![objects/dyn_o_wavewash_a.png](images/objects/dyn_o_wavewash_a.png){ width="96" } | `dyn_wash_a` | `TYPE_GLASS` | `NONE` | 612.5, 11.99, 0 |
+| <span id="obj-dyn-o-wavewash-b"></span>`dyn_o_wavewash_b` | ![objects/dyn_o_wavewash_b.png](images/objects/dyn_o_wavewash_b.png){ width="96" } | `dyn_wash_b` | `TYPE_GLASS` | `NONE` | 656.25, 12.03, 0 |
+| <span id="obj-dyn-o-whitecap-a"></span>`dyn_o_whitecap_a` | ![objects/dyn_o_whitecap_a.png](images/objects/dyn_o_whitecap_a.png){ width="96" } | `dyn_outwave` | `TYPE_GLASS` | `NONE` | 3.86, 0.6, 0.3 |
+| <span id="obj-dyn-objective-a"></span>`dyn_objective_a` | ![objects/dyn_objective_a.png](images/objects/dyn_objective_a.png){ width="96" } | `sub_objective_column` | `TYPE_GLASS` | `NONE` | 0.68, 0.68, 3.68 |
+| <span id="obj-dyn-ocopcar"></span>`dyn_ocopcar` | ![objects/dyn_ocopcar.png](images/objects/dyn_ocopcar.png){ width="96" } | `dyn_exploding_car` | `TYPE_COPCAR` | `OBB` | 2.41, 5.76, 1.8 |
+| <span id="obj-dyn-oil-reflect"></span>`dyn_oil_reflect` | | `sub_oil_reflect` | `TYPE_DRUM` | `OBB` | 0.72, 0.73, 1.12 |
+| <span id="obj-dyn-on-off"></span>`dyn_on_off` | ![objects/dyn_on_off.png](images/objects/dyn_on_off.png){ width="96" } | `dyn_on_off` | `TYPE_GENERIC` | `OBB` | 0.12, 0.11, 0.23 |
+| <span id="obj-dyn-rat-black"></span>`dyn_rat_black` | ![objects/dyn_rat_black.png](images/objects/dyn_rat_black.png){ width="96" } | `dyn_rat` | `TYPE_GENERIC` | `OBB` | 0.07, 0.24, 0.05 |
+| <span id="obj-dyn-rat-brown"></span>`dyn_rat_brown` | ![objects/dyn_rat_brown.png](images/objects/dyn_rat_brown.png){ width="96" } | `dyn_rat` | `TYPE_GENERIC` | `OBB` | 0.07, 0.24, 0.05 |
+| <span id="obj-dyn-scafwind-c"></span>`dyn_scafwind_c` | ![objects/dyn_scafwind_c.png](images/objects/dyn_scafwind_c.png){ width="96" } | `dyn_scaffold` | `TYPE_GENERIC` | `OBB` | 1, 1, 1 |
+| <span id="obj-dyn-skull-eyes-a"></span>`dyn_skull_eyes_a` | ![objects/dyn_skull_eyes_a.png](images/objects/dyn_skull_eyes_a.png){ width="96" } | `dyn_skullglow` | `TYPE_GENERIC` | `OBB` | 0.95, 0.19, 0.22 |
+| <span id="obj-dyn-swinging-obj"></span>`dyn_swinging_obj` | | `sub_swinging_obj` | `TYPE_GENERIC` | `OBB` | 1.23, 0.14, 2.14 |
+| <span id="obj-dyn-tacks-e"></span>`dyn_tacks_e` | ![objects/dyn_tacks_e.png](images/objects/dyn_tacks_e.png){ width="96" } | `dyn_motelneon` | `TYPE_GENERIC` | `OBB` | 1.15, 0, 2.13 |
+| <span id="obj-dyn-trans"></span>`dyn_trans` | ![objects/dyn_trans.png](images/objects/dyn_trans.png){ width="96" } | `dyn_exploding_car` | `TYPE_CAR` | `OBB` | 1.73, 1.67, 2.74 |
+| <span id="obj-dyn-vargas-chand"></span>`dyn_vargas_chand` | ![objects/dyn_vargas_chand.png](images/objects/dyn_vargas_chand.png){ width="96" } | `dyn_chand` | `TYPE_GENERIC` | `OBB` | 1, 1, 1.66 |
+| <span id="obj-dyn-walktalk"></span>`dyn_walktalk` | ![objects/dyn_walktalk.png](images/objects/dyn_walktalk.png){ width="96" } | `dyn_walktalk` | `TYPE_BRICK` | `OBB` | 0.08, 0.04, 0.31 |
+| <span id="obj-dyn-woodbridge"></span>`dyn_woodbridge` | ![objects/dyn_woodbridge.png](images/objects/dyn_woodbridge.png){ width="96" } | `dyn_woodbridge` | `TYPE_GENERIC` | `OBB` | 4.08, 11.54, 3.27 |
 
 ## Sources and evidence
 
