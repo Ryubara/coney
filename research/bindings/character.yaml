@@ -1642,14 +1642,16 @@
 - name: HuSetCombatMode
   wrapper: 0x0035c030
   calls:
-    - {addr: 0x0023a1b0}
+    - {addr: 0x0023a1b0, name: Human_SetCombatMode}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: combat, lua: boolean, desc: "True puts it in combat mode, false takes it out."}
   description: >-
-    Switches the human into or out of combat mode (fighting stance).
-  evidence: inferred
+    Turns a human's fight stance on (true, 0x0022fe80) or off (anything else, 0x0022fef0).
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    Only exactly true (1) turns it on. Fight stance: [Combat](../../research/combat.md#state-flags).
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
 
 - name: HuSetIdleAnim
@@ -1720,9 +1722,11 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: range, lua: number, ctype: float, desc: "Hearing distance in metres (scripts use 0 to 9); 0 makes it deaf."}
   description: >-
-    Sets how far the human's AI hears noises (+0x134 of its AI record, 0x0021d408).
-  evidence: inferred
+    Sets how far a human's AI hears noises, in metres (brain `+0x134`); 0 makes it deaf.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    Storage at 0x002383e8; the hearing checks that read it are not traced here.
   usage: {chunks: 5, calls: 7, boot: false, mission1: false, result_used: false}
 
 - name: HuSetHelpHearRange
@@ -2956,9 +2960,12 @@
     - {name: command, lua: number, ctype: int, desc: "Warrior command number (0-6, the entries of the command menu)."}
     - {name: "on", lua: boolean, desc: "true issues the command; passed on as for WCIssueCommand."}
   description: >-
-    Issues a Warrior command for player 1, as WCIssueCommand does with player 1's human.
-  evidence: inferred
+    Issues a Warrior command as player 1's chief: player 1's human (game state `+0x228`) is passed with the command
+    to the dispatcher `WCIssueCommand` uses.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    0x0041c2d0 → 0x0041c4e0. What each command starts: [AI](../../research/ai.md#warrior-commands).
   usage: {chunks: 7, calls: 15, boot: false, mission1: false, result_used: false}
 
 - name: WCEnableAllCommands

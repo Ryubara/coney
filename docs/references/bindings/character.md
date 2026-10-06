@@ -108,7 +108,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetButtonTapControl`](#husetbuttontapcontrol) | - | 3 | no | no | inferred |
 | [`HuSetCanBlockKD`](#husetcanblockkd) | - | 0 | no | no | speculative |
 | [`HuSetCarriedItem`](#husetcarrieditem) | - | 37 | no | yes | confirmed (code) |
-| [`HuSetCombatMode`](#husetcombatmode) | - | 5 | no | no | inferred |
+| [`HuSetCombatMode`](#husetcombatmode) | - | 5 | no | no | confirmed (code) |
 | [`HuSetConscious`](#husetconscious) | - | 4 | no | no | inferred |
 | [`HuSetDamage`](#husetdamage) | - | 2 | no | no | inferred |
 | [`HuSetDemiGodMode`](#husetdemigodmode) | - | 8 | no | yes | confirmed (code) |
@@ -120,7 +120,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetHardToStun`](#husethardtostun) | - | 0 | no | no | inferred |
 | [`HuSetHealth`](#husethealth) | - | 23 | no | no | confirmed (code) |
 | [`HuSetHealthPercent`](#husethealthpercent) | - | 17 | no | yes | confirmed (code) |
-| [`HuSetHearRange`](#husethearrange) | - | 5 | no | no | inferred |
+| [`HuSetHearRange`](#husethearrange) | - | 5 | no | no | confirmed (code) |
 | [`HuSetHelpHearRange`](#husethelphearrange) | - | 2 | no | no | inferred |
 | [`HuSetIdleAnim`](#husetidleanim) | - | 0 | no | no | inferred |
 | [`HuSetIdleDialogMaxIter`](#husetidledialogmaxiter) | - | 2 | no | no | inferred |
@@ -195,7 +195,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuWhatAmIHolding`](#huwhatamiholding) | number | 3 | no | no | inferred |
 | [`HuWorkout`](#huworkout) | - | 1 | no | no | inferred |
 | [`IsAHuman`](#isahuman) | boolean | 1 | no | no | confirmed (code) |
-| [`IssueWarriorCommand`](#issuewarriorcommand) | - | 7 | no | no | inferred |
+| [`IssueWarriorCommand`](#issuewarriorcommand) | - | 7 | no | no | confirmed (code) |
 | [`KillHumans`](#killhumans) | - | 4 | yes | no | confirmed (code) |
 | [`LoadBumAnims`](#loadbumanims) | - | 8 | no | no | confirmed (code) |
 | [`ResetCommands`](#resetcommands) | - | 1 | yes | no | confirmed (code) |
@@ -2324,10 +2324,12 @@ HuSetCombatMode(human, combat)
 
 **Returns** nothing.
 
-Switches the human into or out of combat mode (fighting stance).
+Turns a human's fight stance on (true, 0x0022fe80) or off (anything else, 0x0022fef0).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035c030` (registered by `RegisterBindings`); **calls** `0x0023a1b0`
+**Notes.** Only exactly true (1) turns it on. Fight stance: [Combat](../../research/combat.md#state-flags).
+
+- **Evidence:** confirmed (code) at `0x0023a1b0`; detail: brief
+- **Wrapper** `0x0035c030` (registered by `RegisterBindings`); **calls** `0x0023a1b0` `Human_SetCombatMode`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -2583,9 +2585,11 @@ HuSetHearRange(human, range)
 
 **Returns** nothing.
 
-Sets how far the human's AI hears noises (+0x134 of its AI record, 0x0021d408).
+Sets how far a human's AI hears noises, in metres (brain `+0x134`); 0 makes it deaf.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Storage at 0x002383e8; the hearing checks that read it are not traced here.
+
+- **Evidence:** confirmed (code) at `0x002383e8`; detail: brief
 - **Wrapper** `0x0035c278` (registered by `RegisterBindings`); **calls** `0x002383e8` `Human_SetHearRange`
 - **Used by** 5 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -4234,9 +4238,12 @@ IssueWarriorCommand(command, on)
 
 **Returns** nothing.
 
-Issues a Warrior command for player 1, as WCIssueCommand does with player 1's human.
+Issues a Warrior command as player 1's chief: player 1's human (game state `+0x228`) is passed with the command to the
+dispatcher `WCIssueCommand` uses.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** 0x0041c2d0 → 0x0041c4e0. What each command starts: [AI](../../research/ai.md#warrior-commands).
+
+- **Evidence:** confirmed (code) at `0x0041c2d0`; detail: brief
 - **Wrapper** `0x003747b8` (registered by `RegisterBindings`); **calls** `0x0041c2d0` `GameState_IssueWarriorCommand`
 - **Used by** 7 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

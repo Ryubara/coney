@@ -560,13 +560,14 @@
     - {name: distance, lua: number, ctype: float, desc: "Length of the offset in metres (0)."}
     - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres (scripts use 0.3)."}
   description: >-
-    Sends a human to an exit flag, used to clear pedestrians and vendors out of a scene; before pushing the goal it
-    switches the human's brain off (as `BrDead`) unless the brain is type 1.
-  evidence: inferred
+    Sends a human to an exit flag to leave the scene: unless its brain is of type 1 the brain is first switched off
+    (0x0028ced8 with 1, as `BrDead`), then a `MoveToExitFlag` goal (type 2) takes it to the flag, and on arrival the
+    human is removed.
+  evidence: confirmed-code
   depth: brief
   notes: >-
-    A human that reaches an exit flag (activity 8) is removed (0x00416b18, [World
-    flags](../../research/flags.md#activities)); `HuExitWorld` finds the flag itself.
+    Goal_MoveToExitFlag 0x002da810, constructor 0x002da8f8. Removal at an exit flag (activity 8): 0x00416b18, [World
+    flags](../../research/flags.md#activities). `HuExitWorld` finds the flag itself.
   usage: {chunks: 10, calls: 26, boot: false, mission1: false, result_used: false}
 
 - name: GoalMoveToUseFlag
@@ -1749,9 +1750,13 @@
     - {name: turnSpeed, lua: number, ctype: float, desc: "Largest turn per update (scripts use 0.1 and 1)."}
     - {name: timeMs, lua: number, ctype: int, default: -1, desc: "A time limit in milliseconds; -1 (the default) for none (inferred)."}
   description: >-
-    Queues an action that turns the human to a world heading.
-  evidence: inferred
+    Queues a turn action on the human's brain (0x002fdc28) towards a world heading in degrees, turning at most
+    `turnSpeed` per update.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    0x002fdb90 allocates the action (`Brain_AllocAction`); the same turn action serves `GoalPlayDynIdle` and
+    `GoalAreaWalker` ([AI](../../research/ai.md#look-at)).
   usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
 
 - name: ActLookAt
@@ -2561,7 +2566,7 @@
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
     - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 0 and 5)."}
     - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 0 and 15)."}
-    - {name: range, lua: number, ctype: float, default: 40, desc: "Radius in metres of the call for help; below 0 the member's doubled hearing range is used (default 40)."}
+    - {name: range, lua: number, ctype: float, default: 40, desc: "Radius in metres of the call for help; below 0 twice the member's brain +0x140 is used (not traced) (default 40)."}
     - {name: value3, lua: number, ctype: float, default: 10, desc: "A number (default 10)."}
     - {name: value4, lua: number, ctype: float, default: 30, desc: "A number (default 30)."}
     - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}

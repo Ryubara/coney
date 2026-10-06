@@ -904,7 +904,7 @@ Class details, confirmed (code) unless marked:
 - **Scout** (`0x0031a430`): Start (`0x0031af98`) gives each member a scout goal and substitutes anim `0x29c`. Process
   (`0x0031b030`), every 200 ms: members with enemies melee, and the gang's alert state is set when any is fighting.
   A hit, a sighting or an attack (`0x0031a818`) makes that member melee and, when the crime rules allow, call his gang
-  (`Goal_CallGang`, radius `range` or twice the member's hearing).
+  (`Goal_CallGang`, radius `range` or twice the member's brain `+0x140`).
 - **Vandalize** / **Steal**: each member's goal takes the zone, the delay and `leaderRange`; the vandal brain's
   `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break.
 

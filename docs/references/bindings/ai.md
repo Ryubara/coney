@@ -15,7 +15,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`ActMoveTo`](#actmoveto) | - | 0 | no | no | inferred |
 | [`ActTurn`](#actturn) | - | 0 | no | no | inferred |
 | [`ActTurnTo`](#actturnto) | - | 1 | no | no | inferred |
-| [`ActTurnToDir`](#actturntodir) | - | 3 | no | no | inferred |
+| [`ActTurnToDir`](#actturntodir) | - | 3 | no | no | confirmed (code) |
 | [`BrCanUseWorldFlags`](#brcanuseworldflags) | - | 6 | yes | no | confirmed (code) |
 | [`BrClearBackoff`](#brclearbackoff) | - | 1 | yes | yes | confirmed (code) |
 | [`BrDead`](#brdead) | - | 120 | yes | yes | confirmed (code) |
@@ -88,7 +88,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalManWeaponPile`](#goalmanweaponpile) | - | 3 | no | no | inferred |
 | [`GoalMark`](#goalmark) | - | 1 | no | no | inferred |
 | [`GoalMelee`](#goalmelee) | - | 1 | no | no | inferred |
-| [`GoalMoveToExitFlag`](#goalmovetoexitflag) | - | 10 | no | no | inferred |
+| [`GoalMoveToExitFlag`](#goalmovetoexitflag) | - | 10 | no | no | confirmed (code) |
 | [`GoalMoveToFlag`](#goalmovetoflag) | - | 84 | no | yes | confirmed (code) |
 | [`GoalMoveToHuman`](#goalmovetohuman) | - | 3 | no | no | inferred |
 | [`GoalMoveToUseFlag`](#goalmovetouseflag) | - | 28 | no | yes | confirmed (code) |
@@ -307,9 +307,13 @@ ActTurnToDir(human, heading, turnSpeed, timeMs)
 
 **Returns** nothing.
 
-Queues an action that turns the human to a world heading.
+Queues a turn action on the human's brain (0x002fdc28) towards a world heading in degrees, turning at most `turnSpeed`
+per update.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** 0x002fdb90 allocates the action (`Brain_AllocAction`); the same turn action serves `GoalPlayDynIdle` and
+`GoalAreaWalker` ([AI](../../research/ai.md#look-at)).
+
+- **Evidence:** confirmed (code) at `0x002fdb90`; detail: brief
 - **Wrapper** `0x00364708` (registered by `RegisterBindings`); **calls** `0x002fdb90` `Action_TurnToHeading`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -2007,13 +2011,14 @@ GoalMoveToExitFlag(human, flag, gait, angle, distance, radius)
 
 **Returns** nothing.
 
-Sends a human to an exit flag, used to clear pedestrians and vendors out of a scene; before pushing the goal it switches
-the human's brain off (as `BrDead`) unless the brain is type 1.
+Sends a human to an exit flag to leave the scene: unless its brain is of type 1 the brain is first switched off
+(0x0028ced8 with 1, as `BrDead`), then a `MoveToExitFlag` goal (type 2) takes it to the flag, and on arrival the human
+is removed.
 
-**Notes.** A human that reaches an exit flag (activity 8) is removed (0x00416b18, [World
-flags](../../research/flags.md#activities)); `HuExitWorld` finds the flag itself.
+**Notes.** Goal_MoveToExitFlag 0x002da810, constructor 0x002da8f8. Removal at an exit flag (activity 8): 0x00416b18,
+[World flags](../../research/flags.md#activities). `HuExitWorld` finds the flag itself.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x002da810`; detail: brief
 - **Wrapper** `0x00360090` (registered by `RegisterBindings`); **calls** `0x002da810` `Goal_MoveToExitFlag`
 - **Used by** 10 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3455,7 +3460,7 @@ TacticScout(gang, value1, value2, range, value3, value4, callback)
 | 1 | `gang` | number, truncated to an integer | The gang index. |
 | 2 | `value1` | number, truncated to an integer | A number (scripts use 0 and 5). |
 | 3 | `value2` | number, truncated to an integer | A number (scripts use 0 and 15). |
-| 4 | `range` | number (single precision); default 40 | Radius in metres of the call for help; below 0 the member's doubled hearing range is used (default 40). |
+| 4 | `range` | number (single precision); default 40 | Radius in metres of the call for help; below 0 twice the member's brain +0x140 is used (not traced) (default 40). |
 | 5 | `value3` | number (single precision); default 10 | A number (default 10). |
 | 6 | `value4` | number (single precision); default 30 | A number (default 30). |
 | 7 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |

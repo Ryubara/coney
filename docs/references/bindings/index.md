@@ -28,7 +28,7 @@ YAML, never these pages. CI runs `coney-tools natives render --check`, which fai
 | [AI](ai.md): goals, actions, brains and gang tactics that drive non-player characters | 146 | 114 | 16 | 24 | 49 |
 | [Gangs](gang.md): gangs: creation, membership, spawners, relations | 57 | 53 | 18 | 14 | 23 |
 | [Cameras](camera.md): creating, switching and moving cameras | 41 | 34 | 4 | 9 | 9 |
-| [World and objects](world.md): objects, cars, doors, flags, paths, volume boxes and triggers | 80 | 69 | 12 | 19 | 25 |
+| [World and objects](world.md): objects, cars, doors, flags, paths, volume boxes and triggers | 80 | 69 | 12 | 19 | 26 |
 | [Effects and lighting](effects.md): particles, weather, fog, lights, shadows, gamma and screen effects | 43 | 35 | 15 | 6 | 20 |
 | [HUD and menus](hud.md): the in-game HUD, radar, objectives, messages and front-end menus | 78 | 66 | 18 | 27 | 31 |
 | [Sound and music](sound.md): sound effects, ambient emitters, music tracks and sound configuration | 51 | 45 | 20 | 8 | 24 |
@@ -39,7 +39,7 @@ YAML, never these pages. CI runs `coney-tools natives render --check`, which fai
 | [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 13 | 75 |
 | [Utilities](util.md): numbers, platform queries and generic object queries | 8 | 7 | 6 | 2 | 6 |
 | [Debug](debug.md): developer leftovers: network debugging, sample capture, detail flags | 5 | 3 | 0 | 1 | 1 |
-| **All** | **956** | **802** | **266** | **215** | **397** |
+| **All** | **956** | **802** | **266** | **215** | **398** |
 
 ## Conventions {#conventions}
 
@@ -124,9 +124,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 677 |
+| confirmed (code) | 685 |
 | confirmed (runtime) | 0 |
-| inferred | 244 |
+| inferred | 236 |
 | speculative | 35 |
-| detail: traced | 397 |
-| detail: brief | 559 |
+| detail: traced | 398 |
+| detail: brief | 558 |

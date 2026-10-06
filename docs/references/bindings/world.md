@@ -55,7 +55,7 @@ and how to read an entry are on the [masterlist](index.md).
 | [`ObjColor`](#objcolor) | - | 1 | no | no | confirmed (code) |
 | [`ObjDestroy`](#objdestroy) | - | 93 | yes | yes | confirmed (code) |
 | [`ObjectChangeState`](#objectchangestate) | - | 1 | no | no | confirmed (code) |
-| [`ObjEnablePhysics`](#objenablephysics) | - | 12 | no | no | inferred |
+| [`ObjEnablePhysics`](#objenablephysics) | - | 12 | no | no | confirmed (code) |
 | [`ObjEnableZone`](#objenablezone) | - | 95 | yes | yes | confirmed (code) |
 | [`ObjGetIndex`](#objgetindex) | number | 7 | no | no | confirmed (code) |
 | [`ObjGetZone`](#objgetzone) | number | 2 | no | no | confirmed (code) |
@@ -77,7 +77,7 @@ and how to read an entry are on the [masterlist](index.md).
 | [`OpenDoor`](#opendoor) | - | 46 | no | no | confirmed (code) |
 | [`OpenDoorAnimated`](#opendooranimated) | - | 6 | no | no | confirmed (code) |
 | [`OrientObject`](#orientobject) | - | 0 | no | no | confirmed (code) |
-| [`PathValid`](#pathvalid) | boolean | 16 | no | no | inferred |
+| [`PathValid`](#pathvalid) | boolean | 16 | no | no | confirmed (code) |
 | [`ReleasePTank`](#releaseptank) | - | 4 | yes | no | confirmed (code) |
 | [`RotateVolumeBox`](#rotatevolumebox) | - | 31 | no | yes | confirmed (code) |
 | [`SetDoorPickable`](#setdoorpickable) | - | 16 | no | no | confirmed (code) |
@@ -1113,12 +1113,13 @@ ObjEnablePhysics(object, enable)
 
 **Returns** nothing.
 
-Turns physics simulation on or off for a game object.
+Turns a game object's physics on or off: on (0x00391d48) also sets bit 0x80000000 of its physics body's `+0x40` and
+hands the object to the body's owner (body +0x74 slot +0x14), waking it; off calls 0x003924d8.
 
-**Notes.** On calls 0x00391d48 and wakes the object's physics body; off calls 0x003924d8. The labels are inferred from
-the name.
+**Notes.** That on means simulated and off frozen is inferred from the name; the two callees are not traced. Physics:
+[Physics](../../research/physics.md).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00396a90`; detail: brief
 - **Wrapper** `0x00377f78` (registered by `RegisterBindings`); **calls** `0x00396a90` `Obj_EnablePhysics`
 - **Used by** 12 of 467 script chunks (73 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -1580,14 +1581,18 @@ PathValid(from, to) -> boolean
 | 1 | `from` | number, truncated to an unsigned integer | Handle of the first game object (usually a human). |
 | 2 | `to` | number, truncated to an unsigned integer | Handle of the second game object. |
 
-**Returns** boolean (1 for true, nil for false): True when the navigation query (0x0024e078) finds a route between the
-two objects' positions; false (nil) when it does not or either handle is invalid.
+**Returns** boolean (1 for true, nil for false): True when a walkable route exists between the two objects' positions;
+nil when not, or when either handle is invalid.
 
-Asks the navigation system whether a walkable route exists between two objects.
+Asks the path data whether a human could walk between two objects: true when both positions lie on walkable polygons and
+either the straight segment stays inside them or an A* route exists over the graph (all edge flags allowed) that passes
+no node `0x00251718` rejects; false otherwise or for an invalid handle.
 
-**Notes.** That 0x0024e078 is a path query is inferred from its arguments (two positions, a mask); not traced further.
+**Notes.** 0x00386010 reads both positions (object vtable +0xa4) and calls 0x0024e078(from, to, 0, 0, 1, 0xffff):
+polygon lookup 0x00250708, straight check 0x0024fbf8, end nodes 0x00251150, search 0x002511c8, then the route is freed.
+What 0x00251718 tests on a node is not traced. Planning: [AI](../../research/ai.md#path-planning).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00386010`; detail: traced
 - **Wrapper** `0x0036cf88` (registered by `RegisterBindings`); **calls** `0x00386010` `Obj_PathExists`
 - **Used by** 16 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** not implemented

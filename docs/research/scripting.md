@@ -416,6 +416,37 @@ disassembly, and it matches the level records' `+0x0c` (`order` 1-18 in [Levels]
 `level95` (the hub) comes between missions 3-4, 4-5, 5-6, 6-7, 7-8, 8-9, 10-11, 11-12, 12-13 and 13-14 (its
 checkpoints 1-10) and after mission 18 (11); its checkpoint 12 follows `level64`.
 
+#### Missions coverage {#missions-coverage}
+
+Which [script bindings](../references/bindings/index.md) the story needs after `level99`: missions 2-18 and the hub,
+18 levels. A level's bindings are those its chunks (`levelNN.lua` and its `levelNN_*.lua` chapters, without the
+`_scenetest` and string files) name, plus those of the `global.lua` helpers they reach and the engine's two callbacks,
+the same reach rule as [`natives mission1`](../references/bindings/mission1.md) (an upper bound). Counted from the
+disc on 2026-10-06; 608 bindings in all, 295 of them in at least 9 of the 18 levels.
+
+| Family | Bindings used | In ≥ 9 levels | Traced (thorough) | Confirmed (code) | In Coney | Behaviour |
+| --- | --- | --- | --- | --- | --- | --- |
+| character | 143 | 35 | 58 | 92 | 2 | [Characters](characters.md), [Combat](combat.md) |
+| world | 66 | 26 | 26 | 55 | 3 | [World objects](objects.md), [World flags](flags.md) |
+| level | 51 | 27 | 34 | 45 | 9 | [Level loading](level-loading.md) |
+| ai: goals and actions (`Goal*`, `Act*`) | 46 | 9 | 15 | 18 | 6 | [AI](ai.md#scripted) |
+| gang | 46 | 23 | 23 | 37 | 12 | [AI](ai.md#gangs) |
+| hud | 46 | 19 | 27 | 41 | 2 | [HUD](hud.md) |
+| config | 37 | 7 | 19 | 28 | 1 | [Config bindings](../references/bindings/config.md) |
+| sound | 33 | 13 | 14 | 24 | 3 | [Sound](sound.md) |
+| effects | 30 | 6 | 14 | 27 | 1 | [Particles](particles.md), [The streamed world](world.md#fog) |
+| camera | 29 | 11 | 9 | 24 | 0 | [Camera](camera.md) |
+| ai: tactics (`Tactic*`) | 28 | 18 | 19 | 20 | 3 | [AI](ai.md#tactic-kinds) |
+| ai: brains and the rest (`Br*`, ...) | 19 | 9 | 10 | 17 | 6 | [AI](ai.md#brain) |
+| scene | 11 | 5 | 9 | 11 | 0 | [Scenes](scenes.md) |
+| script | 11 | 8 | 9 | 11 | 7 | this page |
+| util, debug, input | 12 | 7 | 9 | 12 | 5 | this page |
+
+Of the bindings used by 4 or more of the 18 levels, all but seven are at confirmed (code), leaving aside the
+camera, HUD, scene, sound and lock-picking ones: six flag setters whose readers are not traced
+(`GangSetSpawnerMustBeOffScreen`, `GangSetAlwaysSeen`, `HuSetNoReact`, `HuMarkReachable`, `HuSetRevivable`,
+`HuPutItemInPocket`) and `GoalRiot`. The others not yet confirmed are each needed by three levels or fewer.
+
 ### The hub (`level95`) {#the-hub}
 
 `level95` is the **Warriors' clubhouse and the streets of Coney around it**, where the story returns between

@@ -71,13 +71,17 @@
     - {name: from, lua: number, ctype: unsigned, desc: "Handle of the first game object (usually a human)."}
     - {name: to, lua: number, ctype: unsigned, desc: "Handle of the second game object."}
   results:
-    - {lua: boolean, desc: "True when the navigation query (0x0024e078) finds a route between the two objects' positions; false (nil) when it does not or either handle is invalid."}
+    - {lua: boolean, desc: "True when a walkable route exists between the two objects' positions; nil when not, or when either handle is invalid."}
   description: >-
-    Asks the navigation system whether a walkable route exists between two objects.
-  evidence: inferred
-  depth: brief
+    Asks the path data whether a human could walk between two objects: true when both positions lie on walkable
+    polygons and either the straight segment stays inside them or an A* route exists over the graph (all edge flags
+    allowed) that passes no node `0x00251718` rejects; false otherwise or for an invalid handle.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    That 0x0024e078 is a path query is inferred from its arguments (two positions, a mask); not traced further.
+    0x00386010 reads both positions (object vtable +0xa4) and calls 0x0024e078(from, to, 0, 0, 1, 0xffff): polygon
+    lookup 0x00250708, straight check 0x0024fbf8, end nodes 0x00251150, search 0x002511c8, then the route is freed.
+    What 0x00251718 tests on a node is not traced. Planning: [AI](../../research/ai.md#path-planning).
   usage: {chunks: 16, calls: 17, boot: false, mission1: false, result_used: true}
 
 - name: TriggerSphereEnable
@@ -510,12 +514,13 @@
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
     - {name: enable, lua: boolean, desc: "True makes the object physically simulated (it can fall, be pushed or knocked over); false freezes it in place."}
   description: >-
-    Turns physics simulation on or off for a game object.
-  evidence: inferred
+    Turns a game object's physics on or off: on (0x00391d48) also sets bit 0x80000000 of its physics body's `+0x40`
+    and hands the object to the body's owner (body +0x74 slot +0x14), waking it; off calls 0x003924d8.
+  evidence: confirmed-code
   depth: brief
   notes: >-
-    On calls 0x00391d48 and wakes the object's physics body; off calls 0x003924d8. The labels are inferred from the
-    name.
+    That on means simulated and off frozen is inferred from the name; the two callees are not traced. Physics:
+    [Physics](../../research/physics.md).
   usage: {chunks: 12, calls: 73, boot: false, mission1: false, result_used: false}
 
 - name: ObjShow

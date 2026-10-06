@@ -203,14 +203,18 @@
 - name: GangSetAttackable
   wrapper: 0x0035f790
   calls:
-    - {addr: 0x0016bb58}
+    - {addr: 0x0016bb58, name: Gang_SetAttackable}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
     - {name: "on", lua: boolean, default: true, desc: "true (the default) lets others attack the members; false makes them not attackable."}
   description: >-
-    Sets whether the gang's current members can be attacked (a byte in each member's AI, +0x11f).
+    Writes the byte at brain `+0x11f` of every current member of a gang in use; from the name, whether others may
+    attack them.
   evidence: inferred
   depth: brief
+  notes: >-
+    The store is confirmed (code) at 0x0016bb58; the readers of brain `+0x11f` are not traced. Later members keep
+    their own value.
   usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false}
 
 - name: GangSetHearRange
@@ -520,13 +524,14 @@
 - name: GangSetLOS
   wrapper: 0x00373808
   calls:
-    - {addr: 0x0016a5e8}
+    - {addr: 0x0016a5e8, name: Gang_SetSightRange}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
     - {name: range, lua: number, ctype: float, desc: "Line-of-sight (vision) distance in metres, written to every current member's AI (+0x130)."}
   description: >-
-    Sets how far the gang's current members can see.
-  evidence: inferred
+    Sets the sight range in metres (brain `+0x130`, as `HuSetLOSRange`) of every current member of the gang; later
+    members keep their own.
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 6, calls: 16, boot: false, mission1: false, result_used: false}
 

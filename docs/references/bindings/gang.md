@@ -53,7 +53,7 @@ read an entry are on the [masterlist](index.md).
 | [`GangSetHearRange`](#gangsethearrange) | - | 7 | no | no | confirmed (code) |
 | [`GangSetInvestigateResponse`](#gangsetinvestigateresponse) | - | 42 | yes | no | confirmed (code) |
 | [`GangSetLeader`](#gangsetleader) | - | 6 | yes | no | confirmed (code) |
-| [`GangSetLOS`](#gangsetlos) | - | 6 | no | no | inferred |
+| [`GangSetLOS`](#gangsetlos) | - | 6 | no | no | confirmed (code) |
 | [`GangSetMaxConcurrent`](#gangsetmaxconcurrent) | - | 8 | no | no | confirmed (code) |
 | [`GangSetMoney`](#gangsetmoney) | - | 15 | no | no | confirmed (code) |
 | [`GangSetMsgHandler`](#gangsetmsghandler) | - | 140 | yes | yes | confirmed (code) |
@@ -888,10 +888,14 @@ GangSetAttackable(gang, on)
 
 **Returns** nothing.
 
-Sets whether the gang's current members can be attacked (a byte in each member's AI, +0x11f).
+Writes the byte at brain `+0x11f` of every current member of a gang in use; from the name, whether others may attack
+them.
+
+**Notes.** The store is confirmed (code) at 0x0016bb58; the readers of brain `+0x11f` are not traced. Later members keep
+their own value.
 
 - **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035f790` (registered by `RegisterBindings`); **calls** `0x0016bb58`
+- **Wrapper** `0x0035f790` (registered by `RegisterBindings`); **calls** `0x0016bb58` `Gang_SetAttackable`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -1064,10 +1068,11 @@ GangSetLOS(gang, range)
 
 **Returns** nothing.
 
-Sets how far the gang's current members can see.
+Sets the sight range in metres (brain `+0x130`, as `HuSetLOSRange`) of every current member of the gang; later members
+keep their own.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00373808` (registered by `RegisterBindings`); **calls** `0x0016a5e8`
+- **Evidence:** confirmed (code) at `0x0016a5e8`; detail: brief
+- **Wrapper** `0x00373808` (registered by `RegisterBindings`); **calls** `0x0016a5e8` `Gang_SetSightRange`
 - **Used by** 6 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
