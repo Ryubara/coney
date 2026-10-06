@@ -272,14 +272,22 @@ Coney (`effects::MotionBlur`, `repo:src/effects/motion_blur.h`; `platform::Motio
 and strength linearly over the time given and lays the last frame over the new one at that strength, a stand-in for
 the `+0x108` slot's drawing, which is not traced; the looks' own blur values are not applied yet.
 
-**Ground fog and litter** (`effects::GroundFog`, `effects::CameraLitter`, `repo:src/effects/ground_fog.h`): Coney has
-one view, so one fog emitter. [`Start3DFog`](../references/bindings/effects.md#start3dfog) starts it over: every 5
-frames it tops the view up to 20 wisps (`MaxFogParticles` lowers it), at most 10 at a time, within 20 m of the camera's
-target and 0.5-2 m above it, fading in over 9 / fadeSpeed frames to the colour's alpha; a wisp more than 20 m from the
-camera is dropped and one within 4 m hidden. **Coney's stand-ins**: the wisps drift horizontally in a random direction
-at drift × 1.75-2.25 tenths of a metre a second; a fade step is a frame, adding alpha × fadeRate / steps; the wisps are
-not drawn, as the sprite word's sheet (its high half) is not traced. `StartGarbage` / `EndGarbage` keep the litter's
-kind (0-3) and switch; its sprites and motion are not traced, so nothing is drawn.
+**Ground fog and litter** (`effects::GroundFog`, `repo:src/effects/ground_fog.h`; `effects::CameraLitter`,
+`repo:src/effects/camera_litter.h`): Coney has one view, so one fog emitter.
+[`Start3DFog`](../references/bindings/effects.md#start3dfog) starts it over: every 5 frames it tops the view up to 20
+wisps (`MaxFogParticles` lowers it), at most 10 at a time, within 20 m of the camera's target and 0.5-2 m above it,
+fading in over 9 / fadeSpeed frames to the colour's alpha; a wisp more than 20 m from the camera is dropped and one
+within 4 m hidden. Each wisp drifts from birth [toward the camera](particles.md#fog), aimed up to 2 m to either side
+along the camera's x axis, at drift × 1.75-2.25 m/s. **Coney's stand-ins**: a fade step is a frame, adding alpha ×
+fadeRate / steps; the wisps are not drawn yet (the renderer does not load the `part_fog_00` / `_01` sheets).
+`StartGarbage(kind)` arms the [litter](particles.md#garbage): 64 pieces on the 8 × 8 grid round the camera with the
+kind's rectangles and sizes, a grey, a wind threshold and a 600-900-update life; at 30 Hz each falls (9.8 m/s²
+edge-on, half lying flat), lands on what the collision ray meets and lies down over up to 8 updates; a ground ray every
+20 updates (staggered) puts back a piece with no ground below and drops one just placed onto the ground; a piece
+more than 28 m from the camera on x or y, or landed with its life over, fades out over 60 updates and comes back in
+its grid cell round the camera. `EndGarbage` stops it. **Coney's readings**: the wind vector is not read, so no piece
+is lifted, tumbled or pushed at the start; a piece's orientation is one tilt value; a piece that lands is put on the
+hit; the pieces are not drawn yet (they are cards, not the renderer's camera-facing sprites).
 
 ## Behaviour
 

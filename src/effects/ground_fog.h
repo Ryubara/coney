@@ -30,14 +30,15 @@ struct FogSettings {
 /// The drifting ground fog of a view: the `part_fog` emitter `Start3DFog` makes in each player's screen-effects
 /// manager, which every 5 frames tops its view up to 20 live `sub_fog` wisps (at most 10 at a time), each placed at
 /// random within 20 m of the camera's target and 0.5-2 m above it, drifting and fading in to the colour's alpha; a wisp
-/// is dropped when its viewer is more than 20 m away and hidden within 4 m.
+/// is dropped when its viewer is more than 20 m away and hidden within 4 m. A wisp drifts from birth toward the camera,
+/// aimed up to 2 m to either side along the camera's x axis, at `drift` × 1.75-2.25 metres a second (the unit
+/// inferred). The sprite word's high half is a sheet record: `0x212` is `part_fog_00`, `0x213` `part_fog_01`.
 ///
-/// **Coney's stand-ins** where the page is silent: a wisp's drift is horizontal, in a random direction, and `drift` is
-/// read as a tenth of a metre a second; a fade step is a frame, each adding alpha × fadeRate / steps; the wisps are
-/// kept, not drawn (the sprite's sheet, the high half of the word, is not traced). Coney has one view, so one emitter.
+/// **Coney's stand-ins** where the page is silent: a fade step is a frame, each adding alpha × fadeRate / steps; the
+/// wisps are kept, not drawn (Coney's renderer does not load the fog sheets yet). Coney has one view, so one emitter.
 /// The generator is the fog's own xorshift32, so a run is the same every time.
 ///
-/// Research: docs/references/bindings/effects.md#start3dfog
+/// Research: docs/references/bindings/effects.md#start3dfog, docs/research/particles.md#fog
 class GroundFog {
   public:
     /// The wisps a view keeps alive unless `MaxFogParticles` says otherwise.
@@ -86,7 +87,8 @@ class GroundFog {
   private:
     // A number in [0, 1) from the generator.
     float unit();
-    // One wisp at random round `viewer`'s target, drifting at `drift` × 1.75-2.25.
+    // One wisp at random round `viewer`'s target, drifting toward the camera at `drift` × 1.75-2.25 (sub_fog's init).
+    // @orig 0x003ca658 Fog3D_WispInit (unknown)
     Wisp makeWisp(const EffectsViewer& viewer, float drift);
 
     std::optional<FogSettings> m_settings;
@@ -94,37 +96,6 @@ class GroundFog {
     std::size_t m_maxWisps = kDefaultMaxWisps;
     float m_frames = 0.0F; // frames since the last top-up
     std::uint32_t m_random;
-};
-
-/// The blowing litter round the camera (`ICameraGarbage`, `0x005971a0`): `StartGarbage(kind)` starts it with kind
-/// 0-3, each with its own sprite set and sizes, 64 litter particles drifting round the camera; `EndGarbage` stops it.
-///
-/// **Coney's stand-in**: the kinds' sprites and sizes and the litter's motion are not on the page, so Coney keeps the
-/// switch and the kind, and draws nothing.
-///
-/// Research: docs/references/bindings/effects.md#startgarbage
-class CameraLitter {
-  public:
-    /// Litter particles round the camera.
-    static constexpr std::size_t kParticles = 64;
-    /// Kinds 0 to kKinds - 1 start it; any other does nothing.
-    static constexpr std::uint32_t kKinds = 4;
-
-    /// `StartGarbage(kind)`.
-    /// @orig 0x003977a8 Garbage_Start (unknown)
-    void start(std::uint32_t kind) {
-        if (kind < kKinds) {
-            m_kind = kind;
-        }
-    }
-    /// `EndGarbage()`.
-    /// @orig 0x003977d0 Garbage_End (unknown)
-    void end() { m_kind.reset(); }
-    /// The kind blowing, or nothing.
-    [[nodiscard]] std::optional<std::uint32_t> kind() const { return m_kind; }
-
-  private:
-    std::optional<std::uint32_t> m_kind;
 };
 
 } // namespace coney::effects

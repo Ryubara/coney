@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The ground fog and the camera's litter (docs/references/bindings/effects.md#start3dfog, #startgarbage): the top-ups
 // to 20 wisps, 10 at a time every 5 frames, round the camera's target; the fade-in; the far wisps dropped and the near
-// ones hidden; MaxFogParticles; and the litter's kinds.
+// ones hidden; MaxFogParticles; the drift toward the camera; and the litter (docs/research/particles.md#garbage): its
+// kinds, the grid, the fall and landing, the fade and respawn round the camera, and a piece with no ground below.
 #include "effects/ground_fog.h"
 
 #include <cmath>
+#include <optional>
 
 #include <catch2/catch_test_macros.hpp>
+
+#include "effects/camera_litter.h"
 
 using coney::anim::Vec3;
 using coney::effects::CameraLitter;
@@ -99,6 +103,24 @@ TEST_CASE("wisps far from the camera are dropped and near ones hidden; MaxFogPar
     CHECK_FALSE(fog.settings().has_value());
 }
 
+TEST_CASE("a wisp drifts toward the camera at drift x 1.75-2.25 m/s, a little to either side", "[fog]") {
+    GroundFog fog;
+    fog.start(settings());
+    const EffectsViewer viewer{.position = Vec3{0, -10, 2}, .target = Vec3{0, 0, 0}};
+    fog.step(kFrame, viewer);
+    REQUIRE_FALSE(fog.wisps().empty());
+    for (const GroundFog::Wisp& wisp : fog.wisps()) {
+        const Vec3 v = wisp.velocity;
+        const float speed = std::sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+        CHECK(speed >= 0.4F * 1.75F - 1e-4F);
+        CHECK(speed <= 0.4F * 2.25F + 1e-4F);
+        // Toward the camera: the velocity points the way the camera lies, give or take the 2 m sideways.
+        const Vec3 to{viewer.position.x - wisp.position.x, viewer.position.y - wisp.position.y,
+                      viewer.position.z - wisp.position.z};
+        CHECK((v.x * to.x) + (v.y * to.y) + (v.z * to.z) > 0.0F);
+    }
+}
+
 TEST_CASE("StartGarbage takes kinds 0-3 and EndGarbage stops it", "[fog]") {
     CameraLitter litter;
     litter.start(4);
@@ -107,4 +129,87 @@ TEST_CASE("StartGarbage takes kinds 0-3 and EndGarbage stops it", "[fog]") {
     CHECK(litter.kind() == 2U);
     litter.end();
     CHECK_FALSE(litter.kind().has_value());
+}
+
+namespace {
+
+// Flat ground at z = 0 everywhere within 100 m of the origin.
+std::optional<coney::effects::LitterHit> ground(Vec3 from, Vec3 to) {
+    if ((from.z >= 0.0F) == (to.z >= 0.0F) || std::abs(from.x) > 100.0F || std::abs(from.y) > 100.0F) {
+        return std::nullopt;
+    }
+    const float t = from.z / (from.z - to.z);
+    return coney::effects::LitterHit{
+        .point = Vec3{from.x + ((to.x - from.x) * t), from.y + ((to.y - from.y) * t), 0.0F}, .normal = Vec3{0, 0, 1}};
+}
+
+} // namespace
+
+TEST_CASE("litter is armed on the grid round the camera with its kind's looks", "[fog]") {
+    CameraLitter litter;
+    litter.start(2);
+    litter.step(1.0F / 30.0F, Vec3{10, 20, 3}, ground);
+    REQUIRE(litter.armed());
+    for (const coney::effects::LitterPiece& piece : litter.pieces()) {
+        CHECK(piece.rect >= 8);
+        CHECK(piece.rect <= 11);
+        CHECK(piece.size >= 16.0F / 256.0F);
+        CHECK(piece.size <= 32.0F / 256.0F);
+        CHECK(piece.grey >= 128);
+        CHECK(piece.grey <= 190);
+        CHECK(piece.position.x >= 10.0F - 28.0F);
+        CHECK(piece.position.x <= 10.0F + 21.0F);
+        CHECK(piece.position.y >= 20.0F - 28.0F);
+        CHECK(piece.position.y <= 20.0F + 21.0F);
+    }
+    CHECK(litter.pieces()[0].position.x == 10.0F - 28.0F);
+    CHECK(litter.pieces()[63].position.y == 20.0F + 21.0F);
+}
+
+TEST_CASE("litter falls, lands and lies flat on the ground", "[fog]") {
+    CameraLitter litter;
+    litter.start(0);
+    for (int i = 0; i < 90; ++i) {
+        litter.step(1.0F / 30.0F, Vec3{0, 0, 3}, ground);
+    }
+    for (const coney::effects::LitterPiece& piece : litter.pieces()) {
+        CHECK(piece.grounded);
+        CHECK(std::abs(piece.position.z) < 1e-3F);
+        CHECK(piece.tilt == 0.0F);
+        CHECK(piece.alpha() == 255.0F);
+    }
+}
+
+TEST_CASE("litter left behind by the camera fades out and comes back round it", "[fog]") {
+    CameraLitter litter;
+    litter.start(3);
+    for (int i = 0; i < 30; ++i) {
+        litter.step(1.0F / 30.0F, Vec3{0, 0, 3}, ground);
+    }
+    // The camera moves 60 m: every piece is too far, fades over 60 updates, and is back round the camera.
+    litter.step(1.0F / 30.0F, Vec3{60, 0, 3}, ground);
+    CHECK(litter.pieces()[0].fade == CameraLitter::kFadeUpdates);
+    CHECK(litter.pieces()[0].alpha() == 4.25F * 60.0F);
+    for (int i = 0; i < 60; ++i) {
+        litter.step(1.0F / 30.0F, Vec3{60, 0, 3}, ground);
+    }
+    for (const coney::effects::LitterPiece& piece : litter.pieces()) {
+        CHECK(piece.fade == 0);
+        CHECK(std::abs(piece.position.x - 60.0F) <= 28.0F);
+    }
+}
+
+TEST_CASE("a piece with no ground below is put back", "[fog]") {
+    CameraLitter litter;
+    litter.start(1);
+    // Over the edge of the ground: no hit below the pieces, which are placed afresh at each ground ray.
+    const auto none = [](Vec3, Vec3) { return std::optional<coney::effects::LitterHit>{}; };
+    for (int i = 0; i < 25; ++i) {
+        litter.step(1.0F / 30.0F, Vec3{0, 0, 3}, none);
+    }
+    for (const coney::effects::LitterPiece& piece : litter.pieces()) {
+        CHECK_FALSE(piece.grounded);
+        CHECK(piece.position.z >
+              -1.0F); // at most 20 updates of falling, about 2.2 m, from 2 m below the camera or higher
+    }
 }

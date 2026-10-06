@@ -328,6 +328,24 @@ void GameplayMode::enter() {
     m_context.lighting = m_lighting.get();
     // The level's particles and motion blur; an attached particle system follows a human the scripts made.
     m_effects = std::make_unique<effects::LevelEffects>();
+    // The litter's rays meet the level's collision, once the level has given the objects theirs.
+    m_effects->litterRay = [this](anim::Vec3 from, anim::Vec3 to) -> std::optional<effects::LitterHit> {
+        const raycast::CollisionMesh* mesh = m_objects.world.collision;
+        const anim::Vec3 d = anim::subtract(to, from);
+        const float length = std::sqrt(anim::dot(d, d));
+        if (mesh == nullptr || length < 1e-4F) {
+            return std::nullopt;
+        }
+        const raycast::Ray ray{.origin = {from.x, from.y, from.z},
+                               .direction = {d.x / length, d.y / length, d.z / length},
+                               .length = length};
+        const std::optional<raycast::RayHit> hit = mesh->rayCast(ray, {}, 0);
+        if (!hit) {
+            return std::nullopt;
+        }
+        return effects::LitterHit{.point = anim::add(from, anim::scale(d, hit->t / length)),
+                                  .normal = anim::Vec3{hit->normal.x, hit->normal.y, hit->normal.z}};
+    };
     m_effects->particles.setLocator([scripted = m_scripted.get()](double handle) -> std::optional<anim::Vec3> {
         const std::optional<world_objects::Placement> placement = scripted->humanPlacement(handle);
         if (!placement) {

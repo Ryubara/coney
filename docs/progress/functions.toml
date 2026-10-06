@@ -1605,6 +1605,21 @@ subsystem = "Graphics"
 size = 304
 
 [[function]]
+address = 0x00170330
+name = "Garbage_Start"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x00170528
+name = "Garbage_End"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x00170c88
+name = "Garbage_Update"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x00174320
 name = "HumanRender_Draw"
 subsystem = "Graphics"
@@ -7503,6 +7518,11 @@ size = 536
 [[function]]
 address = 0x003c55e8
 name = "ScriptType_Find"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003ca658
+name = "Fog3D_WispInit"
 subsystem = "TaskEngine"
 
 [[function]]

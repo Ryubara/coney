@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,492 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,496 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-414 reimplemented function(s) have no size yet and add no bytes.
+418 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -60,7 +60,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▏░░░░░░░░░░░░░` | 30.6% | 97 | 100,440 |
-| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 57 | 195,624 |
+| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 60 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
 | `Human` | `██▊░░░░░░░░░░░░░░░░░` | 13.9% | 465 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
@@ -70,7 +70,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 200 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 84 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 85 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -388,6 +388,9 @@ at the top of the repository's `README.md`.
 | `0x0016d810` | `Gang_SpawnerNextType` | `GameModes` | 80 |
 | `0x0016e258` | `CharacterData_OnLoaded` | `GameModes` | 304 |
 | `0x0016e8f0` | `ResourceManager_LoadCharacterData` | `Graphics` | 304 |
+| `0x00170330` | `Garbage_Start` | `Graphics` | not filled in |
+| `0x00170528` | `Garbage_End` | `Graphics` | not filled in |
+| `0x00170c88` | `Garbage_Update` | `Graphics` | not filled in |
 | `0x00174320` | `HumanRender_Draw` | `Graphics` | 2,008 |
 | `0x00175080` | `CharacterInstance_GetAnim` | `Graphics` | 160 |
 | `0x00175210` | `CharacterInstance_TopTask` | `Graphics` | not filled in |
@@ -1411,6 +1414,7 @@ at the top of the repository's `README.md`.
 | `0x003b2180` | `DoorFence_Hit` | `TaskEngine` | 3,520 |
 | `0x003b2f40` | `DoorFence_Init` | `TaskEngine` | 536 |
 | `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |
+| `0x003ca658` | `Fog3D_WispInit` | `TaskEngine` | not filled in |
 | `0x003cadd8` | `Fog3D_EmitterUpdate` | `TaskEngine` | not filled in |
 | `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
 | `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |

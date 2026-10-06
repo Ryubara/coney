@@ -14,8 +14,10 @@ constexpr float kFramesPerSecond = 60.0F;
 // A wisp's drift is `drift` × 1.75-2.25 (docs/references/bindings/effects.md#start3dfog).
 constexpr float kDriftMin = 1.75F;
 constexpr float kDriftSpread = 0.5F;
-// **Coney's stand-in**: `drift` read as a tenth of a metre a second (its unit is not on the page).
-constexpr float kDriftUnit = 0.1F;
+// The sideways push of a wisp's aim, metres either way along the camera's x axis.
+constexpr float kSideSpread = 2.0F;
+// Below this a length is taken as none.
+constexpr float kTiny = 1e-6F;
 // The fade-in takes 9 / fadeSpeed steps.
 constexpr float kFadeSteps = 9.0F;
 
@@ -62,9 +64,16 @@ GroundFog::Wisp GroundFog::makeWisp(const EffectsViewer& viewer, float drift) {
     Wisp wisp;
     wisp.position = anim::Vec3{viewer.target.x + (reach * std::cos(angle)), viewer.target.y + (reach * std::sin(angle)),
                                viewer.target.z + kMinHeight + ((kMaxHeight - kMinHeight) * unit())};
-    const float heading = unit() * 2.0F * std::numbers::pi_v<float>;
-    const float speed = drift * (kDriftMin + (kDriftSpread * unit())) * kDriftUnit;
-    wisp.velocity = anim::Vec3{speed * std::cos(heading), speed * std::sin(heading), 0.0F};
+    // Toward the camera, pushed up to 2 m to either side along the camera's own x axis (level, across the view).
+    const anim::Vec3 forward = anim::subtract(viewer.target, viewer.position);
+    anim::Vec3 side{forward.y, -forward.x, 0.0F};
+    const float sideLength = std::sqrt(anim::dot(side, side));
+    side = sideLength > kTiny ? anim::scale(side, 1.0F / sideLength) : anim::Vec3{1.0F, 0.0F, 0.0F};
+    const float offset = kSideSpread * ((2.0F * unit()) - 1.0F);
+    const anim::Vec3 aim = anim::add(anim::subtract(viewer.position, wisp.position), anim::scale(side, offset));
+    const float aimLength = std::sqrt(anim::dot(aim, aim));
+    const float speed = drift * (kDriftMin + (kDriftSpread * unit()));
+    wisp.velocity = aimLength > kTiny ? anim::scale(aim, speed / aimLength) : anim::Vec3{};
     return wisp;
 }
 

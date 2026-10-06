@@ -3,6 +3,7 @@
 
 #include <optional>
 
+#include "effects/camera_litter.h"
 #include "effects/ground_fog.h"
 #include "effects/motion_blur.h"
 #include "effects/particles.h"
@@ -17,15 +18,18 @@ struct LevelEffects {
     MotionBlur motionBlur;
     GroundFog fog;
     CameraLitter litter;
+    /// The level's collision for the litter's rays (empty: the litter meets nothing).
+    LitterRay litterRay;
 
     /// One fixed step of `seconds`, seen from `viewer` (none before the level has a camera: the steam vents and the
-    /// fog wait).
+    /// fog and the litter wait).
     void step(float seconds, const std::optional<EffectsViewer>& viewer = std::nullopt) {
         particles.setViewer(viewer ? std::optional<anim::Vec3>(viewer->position) : std::nullopt);
         particles.step(seconds);
         motionBlur.step(seconds);
         if (viewer) {
             fog.step(seconds, *viewer);
+            litter.step(seconds, viewer->position, litterRay);
         }
     }
 };
