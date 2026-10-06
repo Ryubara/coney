@@ -88,6 +88,27 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return player != nullptr ? std::optional(player->human().position()) : std::nullopt;
     }
 
+    // Coney stand-in for the visibility test (0x001202e8, not on the page): the sphere is seen when it reaches into
+    // player 1's camera's cone (half its field of view) within the far clip; nothing hides it. No camera sees nothing.
+    [[nodiscard]] bool seen(anim::Vec3 centre, float radius) const override {
+        if (m_cameras == nullptr) {
+            return false;
+        }
+        const camera::CameraView& view = m_cameras->view();
+        const anim::Vec3 toCentre = anim::subtract(centre, view.position);
+        const float distance = anim::length(toCentre);
+        if (distance <= radius) {
+            return true;
+        }
+        if (distance - radius > view.farClip) {
+            return false;
+        }
+        const anim::Vec3 forward = anim::normalise(anim::subtract(view.lookAt, view.position));
+        const float angle = std::acos(std::clamp(anim::dot(toCentre, forward) / distance, -1.0F, 1.0F));
+        const float halfFov = view.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F;
+        return angle <= halfFov + std::asin(radius / distance);
+    }
+
     [[nodiscard]] bool alive(double handle) const override {
         const auto found = m_scripted->bound().find(handle);
         return found != m_scripted->bound().end() && found->second->human().alive();

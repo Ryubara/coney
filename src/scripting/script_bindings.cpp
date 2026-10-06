@@ -808,6 +808,8 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CfgChanceToGetHelp"),
     real("ChangeBlocker"),
     real("ForceCrimeLevel"),
+    real("GangSetMaxConcurrent"),
+    real("GangSetSpawnerMustBeOffScreen"),
     real("GetRTTI"),
     real("HuSetWounded"),
     real("ObjGetIndex"),

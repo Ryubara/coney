@@ -927,6 +927,7 @@
     spawner's own position, so it matters for spawners that place humans there, not for the states that place them
     away from the player. Spawners: [AI](../../research/ai.md#spawners).
   usage: {chunks: 12, calls: 29, boot: false, mission1: false, result_used: false, levels: [34, 3, 81, 86, 93, 9, 54, 82, 83]}
+  coney: implemented
 
 - name: GangStartSpawner
   wrapper: 0x00374288
@@ -972,6 +973,7 @@
     Reader: GangSpawner_Update (0x001681a0, at 0x0016855c; the wave flag is spawner `+0x51`). The spawner's total
     (`+0x58`) still ends it. Spawners: [AI](../../research/ai.md#spawners).
   usage: {chunks: 8, calls: 34, boot: false, mission1: false, result_used: false, levels: [34, 93, 52, 82, 83]}
+  coney: implemented
 
 - name: GangQueueResponders
   wrapper: 0x003743f0

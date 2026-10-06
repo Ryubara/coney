@@ -24,7 +24,7 @@ to run it.
 | [Mission 1: New Blood](level99.md) | `level99` | 🚧 In Progress | 1 of 3 | 0 | 215 of 215 |
 | [Mission 2: Real Live Bunch](level80.md) | `level80` | 🎮 Pending Gameplay Approval | 4 of 4 | 0 | 50 of 50 |
 | [Mission 3: Payback](level87.md) | `level87` | 🎮 Pending Gameplay Approval | 5 of 5 | 0 | 87 of 87 |
-| [Mission 4: Blackout](level34.md) | `level34` | 🚧 In Progress | 0 of 5 | 0 | 10 of 17 |
+| [Mission 4: Blackout](level34.md) | `level34` | 🚧 In Progress | 0 of 5 | 0 | 13 of 17 |
 | [Mission 5: Real Heavy Rep](level2.md) | `level2` | 🚧 In Progress | 0 of 4 | 0 | 1 of 19 |
 | [Mission 6: Writer's Block](level3.md) | `level3` | 🚧 In Progress | 0 of 5 | 0 | 4 of 22 |
 | [Mission 7: Adios Amigo](level5.md) | `level5` | ⬜ Not Started | 0 of 4 | 0 | 2 of 16 |

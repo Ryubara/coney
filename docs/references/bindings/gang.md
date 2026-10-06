@@ -1250,7 +1250,7 @@ the whole wave to die before starting the next.
   `0x00168eb8` `GangSpawner_SetMaxConcurrent`
 - **Used by** 8 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetMoney {#gangsetmoney}
 
@@ -1440,7 +1440,7 @@ the player. Spawners: [AI](../../research/ai.md#spawners).
   `0x00168e68` `GangSpawner_SetMustBeOffScreen`
 - **Used by** 12 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetTargetable {#gangsettargetable}
 

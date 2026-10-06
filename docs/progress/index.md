@@ -25,7 +25,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (470,332 of 3,354,776 bytes, 1,518 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (470,644 of 3,354,776 bytes, 1,522 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
-| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.3% | 99 | 100,440 |
+| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 103 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.4% | 61 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
 | `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.1% | 477 | 1,096,672 |
@@ -353,6 +353,8 @@ at the top of the repository's `README.md`.
 | `0x001673b8` | `Gang_PlaceOutOfSight` | `GameModes` | 1,584 |
 | `0x001681a0` | `Gang_UpdateSpawners` | `GameModes` | 2,304 |
 | `0x00168cd0` | `Gang_SetSpawnerState` | `GameModes` | 304 |
+| `0x00168e68` | `GangSpawner_SetMustBeOffScreen` | `GameModes` | 80 |
+| `0x00168eb8` | `GangSpawner_SetMaxConcurrent` | `GameModes` | 80 |
 | `0x00168f58` | `Gang_AreFriends` | `GameModes` | 136 |
 | `0x001696e0` | `Gangs_MusicMood` | `GameModes` | not filled in |
 | `0x001698f0` | `Gang_UpdateWanted` | `GameModes` | 304 |
@@ -374,6 +376,8 @@ at the top of the repository's `README.md`.
 | `0x0016ad80` | `GangMakeFriends` | `GameModes` | 144 |
 | `0x0016ae90` | `Gang_MakeNeutralOfTypeById` | `GameModes` | 48 |
 | `0x0016afc8` | `Gang_StartSpawner` | `GameModes` | not filled in |
+| `0x0016b070` | `Gang_SetSpawnerMustBeOffScreen` | `GameModes` | 64 |
+| `0x0016b0b0` | `Gang_SetSpawnerMaxConcurrent` | `GameModes` | 88 |
 | `0x0016b2c8` | `Gang_AttachSpinningIcon` | `GameModes` | 144 |
 | `0x0016b358` | `Gang_RemoveSpinningIcon` | `GameModes` | 120 |
 | `0x0016b3d0` | `Gang_SetThreatResponse` | `GameModes` | 144 |

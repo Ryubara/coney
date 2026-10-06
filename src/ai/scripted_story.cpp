@@ -463,6 +463,14 @@ void ScriptedStory::startSpawner(int gang, std::string_view name, int mode, int 
     m_scripted->humanHost().spawners().start(gang, name, mode, value);
 }
 
+void ScriptedStory::setSpawnerMaxConcurrent(int gang, std::string_view name, int count) {
+    m_scripted->humanHost().spawners().setMaxConcurrent(gang, name, count);
+}
+
+void ScriptedStory::setSpawnerOffScreen(int gang, std::string_view name, bool on) {
+    m_scripted->humanHost().spawners().setMustBeOffScreen(gang, name, on);
+}
+
 void ScriptedStory::canUseWorldFlags(int gang, bool on, int percent) {
     onGang(gang, [on, percent](Gang& found) {
         for (Brain* member : found.members()) {

@@ -31,6 +31,10 @@ class TestWorld final : public coney::ai::SpawnerWorld {
         return spot;
     }
     [[nodiscard]] bool alive(double handle) const override { return !dead.contains(handle); }
+    [[nodiscard]] bool seen(coney::anim::Vec3 centre, float radius) const override {
+        looked.emplace_back(centre, radius);
+        return camera;
+    }
     double spawn(const coney::ai::SpawnRequest& request) override {
         made.push_back(request);
         return static_cast<double>(100 + made.size());
@@ -44,6 +48,8 @@ class TestWorld final : public coney::ai::SpawnerWorld {
     std::optional<coney::anim::Vec3> spot = coney::anim::Vec3{1.0F, 2.0F, 3.0F};
     std::vector<std::pair<float, int>> asked;
     std::set<double> dead;
+    bool camera = false;
+    mutable std::vector<std::pair<coney::anim::Vec3, float>> looked;
     std::vector<coney::ai::SpawnRequest> made;
     std::vector<std::string> callbacks;
 };
@@ -263,4 +269,50 @@ TEST_CASE("the out-of-sight search gives up after 17 tries, 16 of them turned", 
     };
     CHECK_FALSE(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random).has_value());
     CHECK(draws == coney::ai::kPlacementTries - 1);
+}
+
+TEST_CASE("a spawner with a negative limit spawns in waves, each once the last has all died", "[ai][spawners]") {
+    coney::ai::Spawners spawners;
+    spawners.add(spawnerCall(1));
+    TestWorld world;
+    spawners.setMaxConcurrent(3, "ENEMYspawner", -2);
+    spawners.update(0, world);
+    spawners.update(500, world);
+    REQUIRE(world.made.size() == 2);
+    // One of the wave dies: the wave is not over, so no new human.
+    world.dead.insert(101.0);
+    spawners.update(1000, world);
+    CHECK(world.made.size() == 2);
+    // Both dead: the next wave fills up.
+    world.dead.insert(102.0);
+    spawners.update(1500, world);
+    spawners.update(2000, world);
+    CHECK(world.made.size() == 4);
+    spawners.update(2500, world);
+    CHECK(world.made.size() == 4);
+    // An unknown name changes nothing.
+    spawners.setMaxConcurrent(3, "nobody", 9);
+    CHECK(spawners.find(3, "ENEMYspawner")->maxConcurrent == -2);
+}
+
+TEST_CASE("an off-screen spawner waits while a camera sees the sphere above its spot", "[ai][spawners]") {
+    coney::ai::Spawners spawners;
+    spawners.add(spawnerCall(1));
+    spawners.setMustBeOffScreen(3, "ENEMYspawner", true);
+    TestWorld world;
+    world.camera = true;
+    spawners.update(0, world);
+    CHECK(world.made.empty());
+    REQUIRE(world.looked.size() == 1);
+    CHECK(world.looked[0].first == coney::anim::Vec3{10.0F, 0.0F, 1.6F});
+    CHECK(world.looked[0].second == 0.3F);
+    world.camera = false;
+    spawners.update(100, world);
+    CHECK(world.made.size() == 1);
+    // Off again: the camera is not asked.
+    spawners.setMustBeOffScreen(3, "ENEMYspawner", false);
+    world.camera = true;
+    spawners.update(600, world);
+    CHECK(world.made.size() == 2);
+    CHECK(world.looked.size() == 2);
 }

@@ -139,6 +139,21 @@ void addMission4Bindings(LuaVm& vm, const BindingContext& context) {
         }
         return binding::none();
     });
+    // ---- The gangs' spawners: -1 for the gang does nothing.
+    vm.registerFunction("GangSetMaxConcurrent", [context = &context](std::span<const Value> args) {
+        const int gang = static_cast<int>(wholeArg(args, 0));
+        if (StoryBindingHost* host = storyOf(*context); host != nullptr && gang != -1) {
+            host->setSpawnerMaxConcurrent(gang, stringArg(args, 1), static_cast<int>(wholeArg(args, 2)));
+        }
+        return binding::none();
+    });
+    vm.registerFunction("GangSetSpawnerMustBeOffScreen", [context = &context](std::span<const Value> args) {
+        const int gang = static_cast<int>(wholeArg(args, 0));
+        if (StoryBindingHost* host = storyOf(*context); host != nullptr && gang != -1) {
+            host->setSpawnerOffScreen(gang, stringArg(args, 1), boolArg(args, 2));
+        }
+        return binding::none();
+    });
     vm.registerFunction("HuSetWounded", [context = &context](std::span<const Value> args) {
         if (StoryBindingHost* host = storyOf(*context); host != nullptr) {
             host->setWounded(handleArg(args, 0), boolArg(args, 1));

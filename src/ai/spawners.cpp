@@ -5,11 +5,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <format>
 #include <functional>
 #include <numbers>
 #include <queue>
 #include <ranges>
+#include <utility>
 
 namespace coney::ai {
 
@@ -17,6 +19,10 @@ namespace {
 
 // The states `GangStartSpawner` may set (`0x00168cd0`'s switch); 6 and 10 only the update sets.
 bool settable(int mode) { return (mode >= 0 && mode <= 5) || mode == 7 || mode == 8 || mode == 9 || mode == 11; }
+
+// The sphere an off-screen spawner keeps out of sight: 1.6 m above its position, 0.3 m (Coney choice: the radius).
+constexpr float kOffScreenHeight = 1.6F;
+constexpr float kOffScreenRadius = 0.3F;
 
 // Milliseconds in a second, for state 2's value.
 constexpr std::uint64_t kMsPerSecond = 1000;
@@ -136,6 +142,9 @@ void Spawners::add(const script::SpawnerCall& call) {
     spawner.call = call;
     spawner.state = call.state;
     spawner.value = call.value;
+    // Coney choice: GangAddSpawner's limit is the field GangSetMaxConcurrent writes, so a negative one makes waves
+    // too (the page does not say whether its setter also sets the wave flag).
+    spawner.maxConcurrent = call.maxConcurrent;
     spawner.nextSpawnMs = m_nowMs;
     spawner.deadlineMs = m_nowMs + static_cast<std::uint64_t>(std::max(call.value, 0)) * kMsPerSecond;
     spawners.push_back(std::move(spawner));
@@ -171,12 +180,59 @@ void Spawners::update(std::uint64_t nowMs, SpawnerWorld& world) {
             }
             // Its humans that went down or were deleted no longer count against its limit.
             std::erase_if(spawner.humans, [&world](double handle) { return !world.alive(handle); });
-            if (!ready(spawner, nowMs, world) || nowMs < spawner.nextSpawnMs ||
-                static_cast<int>(spawner.humans.size()) >= spawner.call.maxConcurrent) {
+            // An off-screen spawner first checks that no camera sees its spot.
+            if (spawner.offScreen) {
+                const anim::Vec3 spot{spawner.call.position[0], spawner.call.position[1],
+                                      spawner.call.position[2] + kOffScreenHeight};
+                if (world.seen(spot, kOffScreenRadius)) {
+                    continue;
+                }
+            }
+            if (!ready(spawner, nowMs, world) || nowMs < spawner.nextSpawnMs || !roomFor(spawner)) {
                 continue;
             }
             spawnOne(spawner, nowMs, world);
+            // A wave is complete once as many are alive as the limit allows.
+            if (spawner.maxConcurrent < 0 && std::cmp_greater_equal(spawner.humans.size(), -spawner.maxConcurrent)) {
+                spawner.waveFull = true;
+            }
         }
+    }
+}
+
+bool Spawners::roomFor(Spawner& spawner) {
+    if (spawner.maxConcurrent >= 0) {
+        return std::cmp_less(spawner.humans.size(), spawner.maxConcurrent);
+    }
+    // A wave waits for all of its humans to die, then the next fills up again.
+    if (spawner.waveFull) {
+        if (!spawner.humans.empty()) {
+            return false;
+        }
+        spawner.waveFull = false;
+    }
+    return std::cmp_less(spawner.humans.size(), -spawner.maxConcurrent);
+}
+
+Spawner* Spawners::named(int gang, std::string_view name) {
+    const auto found = m_spawners.find(gang);
+    if (found == m_spawners.end()) {
+        return nullptr;
+    }
+    const auto spawner =
+        std::ranges::find_if(found->second, [name](const Spawner& candidate) { return candidate.call.name == name; });
+    return spawner == found->second.end() ? nullptr : &*spawner;
+}
+
+void Spawners::setMaxConcurrent(int gang, std::string_view name, int count) {
+    if (Spawner* spawner = named(gang, name); spawner != nullptr) {
+        spawner->maxConcurrent = static_cast<std::int16_t>(count);
+    }
+}
+
+void Spawners::setMustBeOffScreen(int gang, std::string_view name, bool on) {
+    if (Spawner* spawner = named(gang, name); spawner != nullptr) {
+        spawner->offScreen = on;
     }
 }
 

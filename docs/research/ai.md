@@ -1787,7 +1787,12 @@ turned tries turn the forward about the vertical, the angle drawn evenly outside
 numbers; with no camera the player is the eye, looking along +y. **Stand-ins**: 7 is placed as 8 with a value of 0
 (`0x001679e8` is not on the page) and does not send its human to the gang's first live member; the others stand at the
 spawner; no door opens; the dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept)
-never spawn; `SetSpawnMax` is not read.
+never spawn; `SetSpawnMax` is not read. `GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns
+waves of n, the next once the last has all died; **Coney choice**: `GangAddSpawner`'s limit, the same field, makes
+waves too when negative). `GangSetSpawnerMustBeOffScreen` skips an update while a camera sees the 0.3 m sphere 1.6 m
+above the spawner; **stand-ins** for the untraced visibility test (`0x001202e8`): 0.3 m is taken as the radius, and
+the sphere is seen when it reaches into player 1's camera's cone (half its field of view) within the far clip, with
+nothing hiding it.
 
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
 (`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and
@@ -1889,6 +1894,8 @@ when `GangCanFlee` turns it on.
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
 - What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
 - The perception struct (`+0xf8`).
+- The camera visibility test `0x001202e8` an off-screen spawner (and state 11) uses: is 0.3 m the radius, and does
+  anything hide the sphere? Does `GangAddSpawner`'s negative limit make waves (Coney: yes)?
 - The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of
   `GoalBoxer`.
 - Which sound each hub goal line plays (`beckon`, `store_greet`, `phone_gang`, `dead_meat`, `cower`, `mug_grunt`).

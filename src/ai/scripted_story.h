@@ -122,6 +122,8 @@ class ScriptedStory final : public script::StoryBindingHost {
     void gangExitWorld(int gang, double exit, std::string_view callback, bool deleteGang) override;
     /// Switches the gang's spawner (ScriptedHumans::spawners(), Spawners::start()).
     void startSpawner(int gang, std::string_view name, int mode, int value) override;
+    void setSpawnerMaxConcurrent(int gang, std::string_view name, int count) override;
+    void setSpawnerOffScreen(int gang, std::string_view name, bool on) override;
     void canUseWorldFlags(int gang, bool on, int percent) override;
     /// The gang takes the story tactic of the call's kind (ai/story_tactics.h); a TravelPath walks the path the call
     /// names. Attack and Confront are the AI host's (ScriptedBrains::tacticAttack(), tacticConfront()).

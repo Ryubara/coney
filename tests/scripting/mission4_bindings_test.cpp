@@ -56,6 +56,14 @@ class KeepingStory final : public coney::script::StoryBindingHost {
   public:
     void setPedType(double human, std::uint16_t type) override { pedTypes.emplace_back(human, type); }
     void setWounded(double human, bool wounded) override { wounds.emplace_back(human, wounded); }
+    void setSpawnerMaxConcurrent(int gang, std::string_view name, int count) override {
+        limits.push_back(std::to_string(gang) + ":" + std::string(name) + ":" + std::to_string(count));
+    }
+    void setSpawnerOffScreen(int gang, std::string_view name, bool on) override {
+        offScreen.push_back(std::to_string(gang) + ":" + std::string(name) + ":" + (on ? "on" : "off"));
+    }
+    std::vector<std::string> limits;
+    std::vector<std::string> offScreen;
     std::vector<std::pair<double, std::uint16_t>> pedTypes;
     std::vector<std::pair<double, bool>> wounds;
 };
@@ -183,6 +191,16 @@ TEST_CASE("BrSetPedType and HuSetWounded reach the story host", "[mission4_bindi
     h.call("HuSetWounded", {Value(5.0), Value(1.0)});
     h.call("HuSetWounded", {Value(5.0)});
     CHECK(h.ai.keeping.wounds == std::vector<std::pair<double, bool>>{{5.0, true}, {5.0, false}});
+}
+
+TEST_CASE("The spawner limits reach the story host, and gang -1 does nothing", "[mission4_bindings]") {
+    Harness h(overlapping());
+    h.call("GangSetMaxConcurrent", {Value(1.0), Value(std::string("RiotCivs1")), Value(-6.0)});
+    h.call("GangSetMaxConcurrent", {Value(-1.0), Value(std::string("RiotCivs1")), Value(3.0)});
+    CHECK(h.ai.keeping.limits == std::vector<std::string>{"1:RiotCivs1:-6"});
+    h.call("GangSetSpawnerMustBeOffScreen", {Value(2.0), Value(std::string("Door")), Value(1.0)});
+    h.call("GangSetSpawnerMustBeOffScreen", {Value(2.0), Value(std::string("Door"))});
+    CHECK(h.ai.keeping.offScreen == std::vector<std::string>{"2:Door:on", "2:Door:off"});
 }
 
 TEST_CASE("ChangeBlocker blocks the area whose centre is nearest the point, and opens it again",

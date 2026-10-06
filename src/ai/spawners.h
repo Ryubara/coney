@@ -69,6 +69,8 @@ class SpawnerWorld {
     [[nodiscard]] virtual std::optional<anim::Vec3> outOfSight(float value, int gang) = 0;
     /// Whether the human with `handle` is alive (made, not deleted and not down).
     [[nodiscard]] virtual bool alive(double handle) const = 0;
+    /// Whether a camera sees the sphere of `radius` metres about `centre`.
+    [[nodiscard]] virtual bool seen(anim::Vec3 centre, float radius) const = 0;
     /// Makes the human and returns its handle; 0 (NilHandle) when none was made.
     virtual double spawn(const SpawnRequest& request) = 0;
     /// Calls the Lua function `callback` (a dotted or `:` name) with the new human's handle, the gang's id and the
@@ -122,6 +124,9 @@ struct Spawner {
     std::uint64_t deadlineMs = 0;  ///< `+0x7c`: state 2's deadline.
     std::vector<double> humans;    ///< The handles of the humans it made that may still be alive.
     std::size_t typeIndex = 0;     ///< `+0x4c`: the type list's entry made last (0 for a new spawner).
+    int maxConcurrent = 0;         ///< `+0x5a`: its humans alive at once; negative -n makes waves of n.
+    bool waveFull = false;         ///< `+0x51`: a wave is complete, and waits for all of it to die.
+    bool offScreen = false;        ///< `+0x8c`: it spawns only while no camera sees its spot.
 };
 
 /// The level's spawners, by gang.
@@ -145,6 +150,17 @@ class Spawners {
     /// The gang's spawner named `name`; null when none is.
     [[nodiscard]] const Spawner* find(int gang, std::string_view name) const;
 
+    /// `GangSetMaxConcurrent(gang, name, count)`: the spawner's limit of humans alive at once, as 16 bits; a negative
+    /// -n spawns waves of n, each only once the last has all died. An unknown gang or name does nothing.
+    /// @orig 0x0016b0b0 Gang_SetSpawnerMaxConcurrent (unknown)
+    /// @orig 0x00168eb8 GangSpawner_SetMaxConcurrent (unknown)
+    void setMaxConcurrent(int gang, std::string_view name, int count);
+    /// `GangSetSpawnerMustBeOffScreen(gang, name, on)`: while on, the spawner does nothing in an update in which a
+    /// camera sees the 0.3 m sphere 1.6 m above its position. An unknown gang or name does nothing.
+    /// @orig 0x0016b070 Gang_SetSpawnerMustBeOffScreen (unknown)
+    /// @orig 0x00168e68 GangSpawner_SetMustBeOffScreen (unknown)
+    void setMustBeOffScreen(int gang, std::string_view name, bool on);
+
   private:
     // Whether `spawner`'s state lets it spawn now (the update's first step).
     [[nodiscard]] static bool ready(const Spawner& spawner, std::uint64_t nowMs, const SpawnerWorld& world);
@@ -152,6 +168,11 @@ class Spawners {
     // entry of 0.
     // @orig 0x0016d810 Gang_SpawnerNextType (unknown)
     [[nodiscard]] static int pickType(Spawner& spawner);
+    // The gang's spawner named `name`; null when none is.
+    [[nodiscard]] Spawner* named(int gang, std::string_view name);
+    // Whether `spawner` may make another human now: under its limit alive, and (for waves) not waiting for one to
+    // die out.
+    [[nodiscard]] static bool roomFor(Spawner& spawner);
     // Makes one human from `spawner`, counts it and calls its callback.
     void spawnOne(Spawner& spawner, std::uint64_t nowMs, SpawnerWorld& world);
 

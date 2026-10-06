@@ -1398,6 +1398,18 @@ subsystem = "GameModes"
 size = 304
 
 [[function]]
+address = 0x00168e68
+name = "GangSpawner_SetMustBeOffScreen"
+subsystem = "GameModes"
+size = 80
+
+[[function]]
+address = 0x00168eb8
+name = "GangSpawner_SetMaxConcurrent"
+subsystem = "GameModes"
+size = 80
+
+[[function]]
 address = 0x00168f58
 name = "Gang_AreFriends"
 subsystem = "GameModes"
@@ -1511,6 +1523,18 @@ size = 48
 address = 0x0016afc8
 name = "Gang_StartSpawner"
 subsystem = "GameModes"
+
+[[function]]
+address = 0x0016b070
+name = "Gang_SetSpawnerMustBeOffScreen"
+subsystem = "GameModes"
+size = 64
+
+[[function]]
+address = 0x0016b0b0
+name = "Gang_SetSpawnerMaxConcurrent"
+subsystem = "GameModes"
+size = 88
 
 [[function]]
 address = 0x0016b2c8

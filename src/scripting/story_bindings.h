@@ -310,6 +310,10 @@ class StoryBindingHost {
     virtual void gangExitWorld(int /*gang*/, double /*exit*/, std::string_view /*callback*/, bool /*deleteGang*/) {}
     /// `GangStartSpawner(gang, name, mode, value)`; value -1 keeps the spawner's.
     virtual void startSpawner(int /*gang*/, std::string_view /*name*/, int /*mode*/, int /*value*/) {}
+    /// `GangSetMaxConcurrent(gang, name, count)`.
+    virtual void setSpawnerMaxConcurrent(int /*gang*/, std::string_view /*name*/, int /*count*/) {}
+    /// `GangSetSpawnerMustBeOffScreen(gang, name, on)`.
+    virtual void setSpawnerOffScreen(int /*gang*/, std::string_view /*name*/, bool /*on*/) {}
     /// `GangCanUseWorldFlags(gang, on, percent)`.
     virtual void canUseWorldFlags(int /*gang*/, bool /*on*/, int /*percent*/) {}
     /// A `Tactic<Name>` call: the gang takes the tactic.
