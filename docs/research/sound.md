@@ -316,7 +316,8 @@ sound with flags `0x12` (the front end's cue 9 on START, `0xf` on back; [Front e
    a target, the speaker looks at it for the line's length plus 0.5 s.
 
 Voice lines are streamed, positional and directional (class flags `0x1c` or `0x4c`, priorities 7-11, far 20-50 m).
-No lip-sync data was found: the speaking human only turns to its target.
+No lip-sync data was found: the speaking human only turns to its target. Scenes play their own soundtrack
+([Scene soundtracks](#scene-sound)).
 
 ### Speech lines by name
 
@@ -326,6 +327,27 @@ first part. Speech lines are class flags `0x06` (streamed, positional) at priori
 sounds outrank them. 537 of the 566 names the scripts form are in the sound list; every bank sound is in the list too,
 so the other 29 (and the 2 missing ambient names) are not on the disc at all (inferred: the scripts name lines
 that were cut).
+
+### Scene soundtracks {#scene-sound}
+
+An in-engine scene ([Scenes](scenes.md#events)) plays one **scene soundtrack**: a 32,250 Hz stereo stream (class 224,
+[stereo table](formats/audio.md)) as long as the scene (*speculative*: it carries the scene's dialogue). It runs in
+two steps, so the stream is buffering before the first frame:
+
+1. **Preload** (`0x0010ff68`, called from scene load `0x00352098` and from `SoundPreLoadScene`, `0x00114178`): the hash
+   comes from the first type-13 clip event of a role (`0x00101c58`) or, failing that, of the camera track
+   (`0x00354d28`). It stops the previous scene sound, claims a stereo stream pair (`0x0011b450`, falling back to
+   `0x00112d60` when none is free) and prepares the sound without starting it (`0x001100e8` → `0x00111f78`), keeping
+   its task in the manager at `+0x24268`. *Confirmed (code).*
+2. **Start**: scene event 13 (`0x00110018`) starts that prepared task and sets `+0x2426c`. *Confirmed (code).*
+
+Music ducks to 0.75 while it plays ([Music](#music)). Scene events 14 and 71 play a sound by hash at a human's
+position (the human transform at `0x00714b00 + index × 0x20`) only when that human's speech handle (`+0x168`) is idle,
+storing the handle at `0x0021ef58`; event 71 on a car goes through `0x00110258`. *Confirmed (code).*
+
+On the disc (*inferred*, from scanning the `.scn` files for listed hashes): 228 scenes name a stereo sound, using 228
+of the 248 once each; every main level99 scene (`l99_c1`-`c9`, `l99_t1`, `l99_ash_intro`) has its own. The scenes
+also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/71 sounds.
 
 ### The front end and level99
 
@@ -357,4 +379,5 @@ mode: the random pitch and volume factors come from the game's seeded random.
 - What human `+0x16c` does for the command lines of step 3.
 - When the game itself says each speech command (fights, crowds, the police).
 - What `a8` (the play call's third volume factor, `+0xa8`) is used for by each caller.
+- Whether a scene soundtrack holds the dialogue alone or a full mix, and what the 20 unused stereo sounds are.
 - The IOP side (`IOP.IRX`): the exact SPU2 voice assignment of streams and its mixing.

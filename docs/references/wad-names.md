@@ -8,7 +8,7 @@ string hashes to an entry. Each name here was checked against its hash.
 
 !!! info "What is complete"
 
-    4,059 of 10,701 names are known; the streamed world and most early entries are still unnamed.
+    4,073 of 10,701 names are known; the streamed world and most early entries are still unnamed.
 
 4,073 entries. Data: `research/references/wad-names.yaml`.
 
