@@ -381,8 +381,8 @@ lengths; the result lines' look and the grids' rows; the melee and confront goal
 test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
 brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
 scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight; a knock-out without its clips
-or its wake-up after 14 s; the spawners' type pick and out-of-sight placement; the engage goal's range; the
-wheelchair's clips and the give-way action.
+or its wake-up after 14 s; the spawners' type pick and out-of-sight placement (the original's are on
+[AI: spawners](ai.md#spawner-placement)); the engage goal's range; the wheelchair's clips and the give-way action.
 
 ## Open questions {#open-questions}
 
@@ -411,8 +411,6 @@ wheelchair's clips and the give-way action.
 - What brain the human left behind by `HuSwitchPlayer` runs, and whether he keeps the player's fighter profile
   (Coney: his class's brain type, the profile unchanged).
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
-- How a spawner picks from its ten types, and where `0x001673b8` puts a human out of the camera's sight (Coney: the
-  types in turn; a level flag out of the view whose distance from the player is nearest the value).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
 - The wheelchair's clips and start (state code 5), and whether the update is 1/30 s or 1/60 s (Coney: no clips, the
   constants per 1/30 s step).

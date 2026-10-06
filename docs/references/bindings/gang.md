@@ -109,7 +109,7 @@ GangAddSpawner(gang, name, arg3, types, model, pos, heading, total, delay, maxCo
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31) that owns the spawner and receives the spawned humans; -1 does nothing. |
 | 2 | `name` | string | Name of the spawner, used by GangStartSpawner and the other spawner bindings. |
 | 3 | `arg3` | number, truncated to an integer | A number stored with the spawner (the scripts pass 0); meaning not traced. |
-| 4 | `types` | table of 10 numbers (t[1]..t[10]) | Table of up to 10 character type ids the spawner picks from (the scripts pass lists such as CharGenSpawner1). |
+| 4 | `types` | table of 10 numbers (t[1]..t[10]) | Table of up to 10 character type ids (the scripts pass lists such as CharGenSpawner1), taken in turn: each spawn moves to the next slot, back to the first after slot 10 or a 0 (so a fresh spawner starts with the second type). |
 | 5 | `model` | string | Name of the model/outfit the spawned characters use (such as "warr_sw"); GangSetSpawnerModel changes it. |
 | 6 | `pos` | table of 3 numbers (t[1]..t[3]) | Spawn position {x, y, z} in world units (metres). |
 | 7 | `heading` | number, truncated to an integer | Heading of the spawned characters, in degrees. |
@@ -119,7 +119,7 @@ GangAddSpawner(gang, name, arg3, types, model, pos, heading, total, delay, maxCo
 | 11 | `kind` | number, truncated to an integer | The [spawner state](../spawner-states.md) it starts in (spawner `+0x52`): 0 off, 1 on, 2 after `value` seconds, 3 or 5 by distance from player 1, 4 and 9 dispatch squads, 7 and 8 out of sight, 11 keeps the gang topped up. |
 | 12 | `target` | number, truncated to an unsigned integer | A handle stored with the spawner (the scripts pass NilHandle); meaning not traced. |
 | 13 | `arg13` | number, truncated to an integer | A number stored with the spawner (the scripts pass 0); meaning not traced. |
-| 14 | `callback` | string | Name of a Lua function called for each character spawned, or nil. |
+| 14 | `callback` | string | Name of a Lua function (dotted and `:` names work) called once per spawned character, right after it is made, with three arguments: the human's handle, the gang's id and the spawner's name. nil, or a name that is not a function, for none. |
 | 15 | `value` | number, truncated to an integer | The state's number (spawner +0x68): seconds for state 2, metres for 3, 5, 6 and 8; GangStartSpawner's last argument replaces it. |
 | 16 | `arg16` | number, truncated to an unsigned integer | A handle stored with the spawner (the scripts pass NilHandle); meaning not traced. |
 | 17 | `anim` | string | Name of an animation or behaviour given to spawned characters; "nothing" for none (inferred). |
@@ -131,7 +131,9 @@ Adds a spawner to a gang: a point that creates gang members over time from a lis
 
 **Notes.** 0x0016aec0 → 0x00166ff8. The layout (which argument goes to which spawner field) is confirmed (code); the
 meaning of the numeric arguments is inferred from the stored fields and the scripts' values. Default per-spawner timers
-(10, 20, 30, 60 ...) are set at creation.
+(10, 20, 30, 60 ...) are set at creation. The callback call is in 0x0016d860 (script slots +0x5c handle, +0x64 short,
++0x7c string, +0x8c call with 3); scripts such as level87's StoopCallBack index their own tables by the gang id. Type
+pick 0x0016d810; spawning, the callback and out-of-sight placement: [AI: spawners](../../research/ai.md#spawners).
 
 - **Evidence:** confirmed (code) at `0x0016aec0`; detail: traced
 - **Wrapper** `0x00373dd0` (registered by `RegisterBindings`); **calls** `0x0016aec0`
@@ -1506,7 +1508,9 @@ now so a spawner made ready spawns on its next update. What each state does is i
 spawners](../../research/ai.md#spawners).
 
 **Notes.** The value and next-spawn time are written even when the mode is not accepted. Spawners only run while the
-level's spawn cap allows (SetSpawnMax).
+level's spawn cap allows (SetSpawnMax). Each spawn calls GangAddSpawner's callback with (human, gang id, spawner name);
+states 6, 8 and 10 place the human out of the camera's sight ([AI: out of
+sight](../../research/ai.md#spawner-placement)).
 
 - **Evidence:** confirmed (code) at `0x0016afc8`, `0x00168cd0`, `0x00168aa0`; detail: traced
 - **Wrapper** `0x00374288` (registered by `RegisterBindings`); **calls** `0x0016afc8` `Gang_StartSpawner`, `0x00168cd0`

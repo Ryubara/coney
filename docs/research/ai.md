@@ -1055,10 +1055,49 @@ uses are in [Spawner states](../references/spawner-states.md). Confirmed (code):
    `Responder<n>` is made: of type 1 for 4, only while the game's count `+0x324` is under `+0x326`, of the spawner's own
    type for 9, which also takes its owner's friend and enemy masks. The state becomes 6 (from 4) or 10 (from 9), and
    returns once the entry's squad is complete; an entry whose byte `+0x17` is 3 may also start `Tactic_RiotCop`.
-3. **Place** the human: 6, 8 and 10 at the value's distance from the player, out of the camera's view (`0x001673b8`);
-   7 out of view and sent to the gang's first live member (`0x001679e8`, the second part inferred); the others at the
+3. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 out of
+   view and sent to the gang's first live member (`0x001679e8`, the second part inferred); the others at the
    spawner. State 11 skips a spot a camera can see (`0x001202e8`).
 4. **Spawn** (`0x00167ea8`, named `<spawner><count>`), open the spawner's door, count it.
+
+**The type** (`0x0016d810`): the spawner keeps an index at `+0x4c` into its ten types (`+0x24`). Each spawn first
+adds 1; at 10, or at a slot holding 0, it goes back to 0; the type at the index is used. So the types are taken **in
+turn**, a 0 ending the list. `GangAddSpawner` does not reset the index, so a new spawner starting from 0
+(inferred: the gang record starts zeroed) takes the **second** type first when there is one. State 6 (a police
+dispatch) uses the model `cops_vc1` and type `0x103` for an entry whose byte `+0x17` is 3 or more, and otherwise the
+type in turn with one of the four models at `0x0050cb40` (`Random_Int(3)`, 0-3); the other states use the spawner's
+model (`+0x20`). Confirmed (code).
+
+**The human** (`0x0016d860`): a free human (none: nothing spawns), its name, `Human_Init(type, gang, position)`, facing
+the spawner's heading (`+0x54`, degrees), brain `+0x210` = the spawner's slot, the spawner's animation (`+0x1c`)
+unless it is `nothing`, and then **the callback** (`+0x18`, interned at `GangAddSpawner`): looked up by name (slot
+`+0x4c`, so `Table.func` and `Table:func` work) and, when it resolves to a function, called with **three
+arguments**: the human's handle (slot `+0x5c`), **the gang's id** (gang `+0x30`, a short, slot `+0x64`) and **the
+spawner's name** (gang `+0x654 + 0x130 × slot`, a string, slot `+0x7c`). Nothing else is set up for it: the engine
+writes no table or global first. The callback runs before the caller opens the door, counts the spawn and, for
+states 6 and 10, adds the human to its responder gang and gives its dispatch goal. Confirmed (code). `level87`'s
+`StoopCallBack(human, gang, name)` appends the human to `tblStoop[gang].humans`, a table its own `SetUpStoop` made
+for that gang id before the spawner started; called with the handle alone it indexes `tblStoop[nil]` and fails.
+
+##### Out of sight {#spawner-placement}
+
+`0x001673b8` places the humans of states 8, 6 and 10. Confirmed (code):
+
+1. **Camera**: player 1's; with two players, for 6 and 10 the player whose camera is nearer the dispatch entry's
+   position (kept at `+0xe1` for the other states).
+2. **Search**: from the route node of that player's human, a best-first search over the route graph (`0x00251d28`)
+   toward a goal point, which returns the first node either more than **70 m** (`0x0050cc60`) from the camera or more
+   than the spawner's **value** in metres from it and outside a cone around the camera's forward of half its field
+   of view + 10° (`+0x2ac`). The first goal is 100 m straight ahead of the camera; up to 16 more tries each turn the
+   forward by a random angle outside that cone and put the goal at 2 × value. No node in 17 tries: no spawn this
+   update.
+3. **Second player**: with two players, a node that the other camera can see 1.6 m above it (`0x00122548`, within
+   the smaller of its view distance capped at 70 m and the value) is refused.
+4. **Turf**: the node must lie in one of the gang's turf boxes (`Gang_IsPointInTurf`, `0x001652e8`); a gang with no
+   turf takes any. Otherwise no spawn this update.
+
+The human stands on the node found. The function's other branch (a flag near the point, checked for being unseen) is
+not reached from its one caller.
 
 #### Crimes and the police {#crimes}
 

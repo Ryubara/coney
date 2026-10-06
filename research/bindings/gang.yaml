@@ -834,7 +834,7 @@
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31) that owns the spawner and receives the spawned humans; -1 does nothing."}
     - {name: name, lua: string, desc: "Name of the spawner, used by GangStartSpawner and the other spawner bindings."}
     - {name: arg3, lua: number, ctype: int, desc: "A number stored with the spawner (the scripts pass 0); meaning not traced."}
-    - {name: types, lua: table, elem: number, count: 10, written_back: true, desc: "Table of up to 10 character type ids the spawner picks from (the scripts pass lists such as CharGenSpawner1)."}
+    - {name: types, lua: table, elem: number, count: 10, written_back: true, desc: "Table of up to 10 character type ids (the scripts pass lists such as CharGenSpawner1), taken in turn: each spawn moves to the next slot, back to the first after slot 10 or a 0 (so a fresh spawner starts with the second type)."}
     - {name: model, lua: string, desc: "Name of the model/outfit the spawned characters use (such as \"warr_sw\"); GangSetSpawnerModel changes it."}
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Spawn position {x, y, z} in world units (metres)."}
     - {name: heading, lua: number, ctype: int, desc: "Heading of the spawned characters, in degrees."}
@@ -844,7 +844,7 @@
     - {name: kind, lua: number, ctype: int, desc: "The [spawner state](../spawner-states.md) it starts in (spawner `+0x52`): 0 off, 1 on, 2 after `value` seconds, 3 or 5 by distance from player 1, 4 and 9 dispatch squads, 7 and 8 out of sight, 11 keeps the gang topped up."}
     - {name: target, lua: number, ctype: unsigned, desc: "A handle stored with the spawner (the scripts pass NilHandle); meaning not traced."}
     - {name: arg13, lua: number, ctype: int, desc: "A number stored with the spawner (the scripts pass 0); meaning not traced."}
-    - {name: callback, lua: string, desc: "Name of a Lua function called for each character spawned, or nil."}
+    - {name: callback, lua: string, desc: "Name of a Lua function (dotted and `:` names work) called once per spawned character, right after it is made, with three arguments: the human's handle, the gang's id and the spawner's name. nil, or a name that is not a function, for none."}
     - {name: value, lua: number, ctype: int, desc: "The state's number (spawner +0x68): seconds for state 2, metres for 3, 5, 6 and 8; GangStartSpawner's last argument replaces it."}
     - {name: arg16, lua: number, ctype: unsigned, desc: "A handle stored with the spawner (the scripts pass NilHandle); meaning not traced."}
     - {name: anim, lua: string, desc: "Name of an animation or behaviour given to spawned characters; \"nothing\" for none (inferred)."}
@@ -857,7 +857,10 @@
   notes: >-
     0x0016aec0 → 0x00166ff8. The layout (which argument goes to which spawner field) is confirmed (code); the meaning
     of the numeric arguments is inferred from the stored fields and the scripts' values. Default per-spawner timers
-    (10, 20, 30, 60 ...) are set at creation.
+    (10, 20, 30, 60 ...) are set at creation. The callback call is in 0x0016d860 (script slots +0x5c handle, +0x64
+    short, +0x7c string, +0x8c call with 3); scripts such as level87's StoopCallBack index their own tables by the
+    gang id. Type pick 0x0016d810; spawning, the callback and out-of-sight placement:
+    [AI: spawners](../../research/ai.md#spawners).
   usage: {chunks: 37, calls: 221, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -938,7 +941,9 @@
   depth: thorough
   notes: >-
     The value and next-spawn time are written even when the mode is not accepted. Spawners only run while the
-    level's spawn cap allows (SetSpawnMax).
+    level's spawn cap allows (SetSpawnMax). Each spawn calls GangAddSpawner's callback with (human, gang id, spawner
+    name); states 6, 8 and 10 place the human out of the camera's sight
+    ([AI: out of sight](../../research/ai.md#spawner-placement)).
   usage: {chunks: 45, calls: 229, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
   coney: implemented
 
