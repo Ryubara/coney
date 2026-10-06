@@ -23,191 +23,191 @@ behaviours, lights and glass that share the table ([Particles](../research/parti
 
 183 entries.
 
-| Name | Image | Index | Sheet | Rect | Size (px) | Spawns | Script calls | Scripts |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| <span id="part-blo-splat"></span>`blo_splat` | ![particles/blo_splat.png](images/particles/blo_splat.png){ width="96" } | 0 | `part_page1` | 5 | 32, 32 | | | |
-| <span id="part-blood-drop"></span>`blood_drop` | ![particles/blood_drop.png](images/particles/blood_drop.png){ width="96" } | 1 | `part_page1` | 52 | 16, 16 | | | |
-| <span id="part-blood-mist"></span>`blood_mist` | | 2 | | | | | | |
-| <span id="part-blood-splat-ground"></span>`blood_splat_ground` | | 3 | | | | | | |
-| <span id="part-blood-splatter"></span>`blood_splatter` | | 4 | | | | | | |
-| <span id="part-blood-spray"></span>`blood_spray` | ![particles/blood_spray.png](images/particles/blood_spray.png){ width="96" } | 5 | `part_page1` | 52 | 16, 16 | | | |
-| <span id="part-bloosh"></span>`bloosh` | ![particles/bloosh.png](images/particles/bloosh.png){ width="96" } | 6 | `part_page1` | 46 | 40, 40 | | | |
-| <span id="part-coplights-glow"></span>`coplights_glow` | ![particles/coplights_glow.png](images/particles/coplights_glow.png){ width="96" } | 7 | `lighting` | 2 | 120, 120 | | | |
-| <span id="part-coplights-lens-flare"></span>`coplights_lens_flare` | ![particles/coplights_lens_flare.png](images/particles/coplights_lens_flare.png){ width="96" } | 8 | `lighting` | 2 | 120, 120 | | | |
-| <span id="part-fir"></span>`fir` | | 59 | | | | | | |
-| <span id="part-fir-group"></span>`fir_group` | | 60 | | | | [fir](particles.md#part-fir) | | |
-| <span id="part-glasstest"></span>`glasstest` | | 62 | | | | | | |
-| <span id="part-hud-radar-dot"></span>`hud_radar_dot` | ![particles/hud_radar_dot.png](images/particles/hud_radar_dot.png){ width="96" } | 65 | `part_page0` | 69 | 10, 10 | | | |
-| <span id="part-hud-text-widget"></span>`hud_text_widget` | | 66 | | | | | | |
-| <span id="part-hud-widget"></span>`hud_widget` | | 67 | | | | | | |
-| <span id="part-hud-widget-angled"></span>`hud_widget_angled` | | 68 | | | | | | |
-| <span id="part-miniglass"></span>`miniglass` | | 70 | | | | | | |
-| <span id="part-molotov-smoke"></span>`molotov_smoke` | | 71 | | | | | | |
-| <span id="part-paint-splat"></span>`paint_splat` | | 75 | | | | | | |
-| <span id="part-part-blood-spray"></span>`part_blood_spray` | | 76 | | | | | | |
-| <span id="part-part-coke-machine"></span>`part_coke_machine` | | 77 | | | | | | |
-| <span id="part-part-copcar-lights"></span>`part_copcar_lights` | ![particles/part_copcar_lights.png](images/particles/part_copcar_lights.png){ width="96" } | 78 | `lighting` | 2 | 120, 120 | | | |
-| <span id="part-part-explosion"></span>`part_explosion` | ![particles/part_explosion.png](images/particles/part_explosion.png){ width="96" } | 79 | `part_page1` | 6 | 64, 64 | | 4 | `level93_chapter6.lua` |
-| <span id="part-part-explosion-screen-shake"></span>`part_explosion_screen_shake` | | 80 | | | | | 2 | `level93_chapter6.lua` |
-| <span id="part-part-fear"></span>`part_fear` | | 81 | | | | | 71 | `level115.lua`, `level31.lua`, `level61.lua`, `level63_orphans.lua`, `level81.lua`, `level93_chapter6.lua` |
-| <span id="part-part-fire"></span>`part_fire` | ![particles/part_fire.png](images/particles/part_fire.png){ width="96" } | 82 | `part_fire` | 0 | 40, 40 | | 7 | `level93_chapter6.lua` |
-| <span id="part-part-fire-large"></span>`part_fire_large` | ![particles/part_fire_large.png](images/particles/part_fire_large.png){ width="96" } | 83 | `part_fire` | 0 | 40, 40 | | 2 | `level34.lua` |
-| <span id="part-part-fire-large-ns"></span>`part_fire_large_ns` | ![particles/part_fire_large_ns.png](images/particles/part_fire_large_ns.png){ width="96" } | 84 | `part_fire` | 0 | 40, 40 | | 2 | `level52_chapter1.lua` |
-| <span id="part-part-fire-light-large"></span>`part_fire_light_large` | | 85 | | | | | 1 | `level93_chapter6.lua` |
-| <span id="part-part-fire-light-medium"></span>`part_fire_light_medium` | | 86 | | | | | 7 | `level52_chapter1.lua`, `level93_chapter6.lua` |
-| <span id="part-part-fire-ns"></span>`part_fire_ns` | ![particles/part_fire_ns.png](images/particles/part_fire_ns.png){ width="96" } | 87 | `part_fire` | 0 | 40, 40 | | 2 | `level52_chapter1.lua` |
-| <span id="part-part-fire-plume"></span>`part_fire_plume` | ![particles/part_fire_plume.png](images/particles/part_fire_plume.png){ width="96" } | 88 | `39640d4c` | 0 | 10, 30 | | 1 | `level80.lua` |
-| <span id="part-part-fire-tiki"></span>`part_fire_tiki` | ![particles/part_fire_tiki.png](images/particles/part_fire_tiki.png){ width="96" } | 89 | `part_fire` | 0 | 40, 40 | | | |
-| <span id="part-part-firebarrel"></span>`part_firebarrel` | ![particles/part_firebarrel.png](images/particles/part_firebarrel.png){ width="96" } | 90 | `part_fire` | 0 | 40, 40 | | | |
-| <span id="part-part-firebarrel-ns"></span>`part_firebarrel_ns` | ![particles/part_firebarrel_ns.png](images/particles/part_firebarrel_ns.png){ width="96" } | 91 | `part_fire` | 0 | 40, 40 | | | |
-| <span id="part-part-firetruck-lights"></span>`part_firetruck_lights` | ![particles/part_firetruck_lights.png](images/particles/part_firetruck_lights.png){ width="96" } | 92 | `lighting` | 2 | 120, 120 | | 1 | `level52.lua` |
-| <span id="part-part-fog"></span>`part_fog` | | 93 | | | | | | |
-| <span id="part-part-garbage-flies"></span>`part_garbage_flies` | | 94 | | | | | | |
-| <span id="part-part-garbage-flies-ns"></span>`part_garbage_flies_ns` | | 95 | | | | | | |
-| <span id="part-part-gasmeter"></span>`part_gasmeter` | | 96 | | | | | | |
-| <span id="part-part-generator-sparks"></span>`part_generator_sparks` | | 97 | | | | | | |
-| <span id="part-part-ghost-light"></span>`part_ghost_light` | | 98 | | | | | | |
-| <span id="part-part-gun-flash"></span>`part_gun_flash` | ![particles/part_gun_flash.png](images/particles/part_gun_flash.png){ width="96" } | 99 | `lighting` | 2 | 120, 120 | [sub_shack_puff](particles.md#part-sub-shack-puff) | | |
-| <span id="part-part-large-ac"></span>`part_large_ac` | | 100 | | | | | | |
-| <span id="part-part-large-ac-two"></span>`part_large_ac_two` | | 101 | | | | | | |
-| <span id="part-part-lava-light"></span>`part_lava_light` | | 102 | | | | | | |
-| <span id="part-part-level2-subway"></span>`part_level2_subway` | | 103 | | | | | 1 | `level2.lua` |
-| <span id="part-part-light-bugs"></span>`part_light_bugs` | | 104 | | | | | | |
-| <span id="part-part-motorbike-gang"></span>`part_motorbike_gang` | | 105 | | | | | | |
-| <span id="part-part-multi-strobe"></span>`part_multi_strobe` | | 106 | | | | | 3 | `level11.lua`, `level110.lua` |
-| <span id="part-part-narrowflame"></span>`part_narrowflame` | ![particles/part_narrowflame.png](images/particles/part_narrowflame.png){ width="96" } | 107 | `5e5e43c6` | 0 | 40, 40 | | 56 | `level52_chapter1.lua`, `level93_chapter6.lua` |
-| <span id="part-part-ominous-smoke"></span>`part_ominous_smoke` | | 108 | | | | | 36 | `level51.lua`, `level52_chapter1.lua`, `level61.lua`, `level61_huns.lua`, `level64.lua`, `level81.lua` |
-| <span id="part-part-open-air-vent"></span>`part_open_air_vent` | | 109 | | | | | | |
-| <span id="part-part-orange-neon"></span>`part_orange_neon` | | 110 | | | | | | |
-| <span id="part-part-pelham-subway"></span>`part_pelham_subway` | | 111 | | | | | | |
-| <span id="part-part-pink-neon"></span>`part_pink_neon` | | 112 | | | | | | |
-| <span id="part-part-plaster-drop"></span>`part_plaster_drop` | | 113 | | | | | 4 | `level5.lua` |
-| <span id="part-part-plaster-drop-ns"></span>`part_plaster_drop_ns` | | 114 | | | | | 2 | `level81_chatterbox.lua`, `level93_chapter6.lua` |
-| <span id="part-part-raindrops"></span>`part_raindrops` | | 115 | | | | [sub_ripple](particles.md#part-sub-ripple), [sub_splash](particles.md#part-sub-splash) | | |
-| <span id="part-part-ridecart-sound"></span>`part_ridecart_sound` | | 116 | | | | | | |
-| <span id="part-part-rotate-vent"></span>`part_rotate_vent` | | 117 | | | | | | |
-| <span id="part-part-s-fire"></span>`part_s_fire` | ![particles/part_s_fire.png](images/particles/part_s_fire.png){ width="96" } | 118 | `part_fire` | 0 | 40, 40 | | | |
-| <span id="part-part-s-shack-dust-puff"></span>`part_s_shack_dust_puff` | | 119 | | | | [sub_shack_puff](particles.md#part-sub-shack-puff) | | |
-| <span id="part-part-s-subway-sparks"></span>`part_s_subway_sparks` | | 120 | `part_page1` | 54 | 32, 32 | | | |
-| <span id="part-part-small-ac"></span>`part_small_ac` | | 121 | | | | | | |
-| <span id="part-part-small-light"></span>`part_small_light` | | 122 | | | | | 6 | `level14.lua`, `level81.lua` |
-| <span id="part-part-smaller-light"></span>`part_smaller_light` | | 123 | | | | | | |
-| <span id="part-part-spray-tag"></span>`part_spray_tag` | | 124 | | | | | 230 | `level107.lua`, `level11.lua`, `level122.lua`, `level14.lua`, `level2.lua`, `level20.lua` |
-| <span id="part-part-squareflame-lrg"></span>`part_squareflame_lrg` | ![particles/part_squareflame_lrg.png](images/particles/part_squareflame_lrg.png){ width="96" } | 125 | `5e5e43c6` | 0 | 40, 40 | | 54 | `level93_chapter6.lua` |
-| <span id="part-part-squareflame-med"></span>`part_squareflame_med` | ![particles/part_squareflame_med.png](images/particles/part_squareflame_med.png){ width="96" } | 126 | `5e5e43c6` | 0 | 40, 40 | | 27 | `level52_chapter1.lua`, `level93_chapter6.lua` |
-| <span id="part-part-squareflame-sml"></span>`part_squareflame_sml` | ![particles/part_squareflame_sml.png](images/particles/part_squareflame_sml.png){ width="96" } | 127 | `5e5e43c6` | 0 | 40, 40 | | 1 | `level52_chapter1.lua` |
-| <span id="part-part-steam"></span>`part_steam` | | 128 | | | | | 18 | `level11.lua`, `level110.lua`, `level52.lua`, `level87.lua` |
-| <span id="part-part-steam-huge"></span>`part_steam_huge` | | 129 | | | | | 1 | `level52.lua` |
-| <span id="part-part-steam-large"></span>`part_steam_large` | | 130 | | | | | 17 | `level52.lua` |
-| <span id="part-part-strobe"></span>`part_strobe` | | 131 | | | | | 8 | `level11.lua`, `level110.lua`, `level81.lua` |
-| <span id="part-part-strobe-red"></span>`part_strobe_red` | | 132 | | | | | 2 | `level93.lua` |
-| <span id="part-part-subway-light"></span>`part_subway_light` | | 133 | | | | | | |
-| <span id="part-part-torch-flame"></span>`part_torch_flame` | ![particles/part_torch_flame.png](images/particles/part_torch_flame.png){ width="96" } | 134 | `part_fire` | 0 | 40, 40 | | 3 | `level86_chapter2_reg.lua` |
-| <span id="part-part-torch-flame-ns"></span>`part_torch_flame_ns` | ![particles/part_torch_flame_ns.png](images/particles/part_torch_flame_ns.png){ width="96" } | 135 | `part_fire` | 0 | 40, 40 | | | |
-| <span id="part-part-truck-sound"></span>`part_truck_sound` | | 136 | | | | | 1 | `level51.lua` |
-| <span id="part-part-truck-humans"></span>`part_truck_humans` | | 137 | | | | | 1 | `level51.lua` |
-| <span id="part-part-train-sound"></span>`part_train_sound` | | 138 | | | | | 16 | `level115.lua`, `level14.lua`, `level2.lua`, `level31.lua`, `level5.lua`, `level55_subway.lua` |
-| <span id="part-part-train-splat"></span>`part_train_splat` | ![particles/part_train_splat.png](images/particles/part_train_splat.png){ width="96" } | 139 | `part_page1` | 6 | 64, 64 | | | |
-| <span id="part-part-trans-five"></span>`part_trans_five` | | 140 | | | | | | |
-| <span id="part-part-trans-four"></span>`part_trans_four` | | 141 | | | | | | |
-| <span id="part-part-trans-one"></span>`part_trans_one` | | 142 | | | | | | |
-| <span id="part-part-trans-three"></span>`part_trans_three` | | 143 | | | | | | |
-| <span id="part-part-trans-two"></span>`part_trans_two` | | 144 | | | | | | |
-| <span id="part-part-tv"></span>`part_tv` | ![particles/part_tv.png](images/particles/part_tv.png){ width="96" } | 145 | `part_tv` | 0 | 30, 30 | | | |
-| <span id="part-part-tv-light"></span>`part_tv_light` | | 146 | | | | | | |
-| <span id="part-part-urine-spray"></span>`part_urine_spray` | | 147 | | | | | | |
-| <span id="part-part-urine-stain2"></span>`part_urine_stain2` | ![particles/part_urine_stain2.png](images/particles/part_urine_stain2.png){ width="96" } | 148 | `part_page1` | 6 | 64, 64 | | | |
-| <span id="part-part-water"></span>`part_water` | | 149 | | | | | | |
-| <span id="part-pee-pee"></span>`pee_pee` | | 150 | | | | | | |
-| <span id="part-pee-tracer"></span>`pee_tracer` | | 151 | | | | | | |
-| <span id="part-power-mist"></span>`power_mist` | | 153 | | | | | | |
-| <span id="part-puk-splat"></span>`puk_splat` | | 156 | | | | | | |
-| <span id="part-rubble"></span>`rubble` | | 158 | | | | [sub_shack_puff](particles.md#part-sub-shack-puff) | | |
-| <span id="part-spark"></span>`spark` | ![particles/spark.png](images/particles/spark.png){ width="96" } | 161 | `part_page1` | 41 | 30, 30 | | | |
-| <span id="part-spawn-delayed"></span>`spawn_delayed` | | 163 | | | | | | |
-| <span id="part-spray-mist"></span>`spray_mist` | | 164 | | | | | | |
-| <span id="part-sub-anim-notes"></span>`sub_anim_notes` | | 167 | | | | [glasstest](particles.md#part-glasstest), [sub_wood_splinter](particles.md#part-sub-wood-splinter) | | |
-| <span id="part-sub-anim-spark"></span>`sub_anim_spark` | ![particles/sub_anim_spark.png](images/particles/sub_anim_spark.png){ width="96" } | 168 | `part_page1` | 50 | 16, 16 | | | |
-| <span id="part-sub-barlamp-glow"></span>`sub_barlamp_glow` | ![particles/sub_barlamp_glow.png](images/particles/sub_barlamp_glow.png){ width="96" } | 169 | `lighting` | 3 | 120, 120 | | | |
-| <span id="part-sub-blight-glow"></span>`sub_blight_glow` | ![particles/sub_blight_glow.png](images/particles/sub_blight_glow.png){ width="96" } | 171 | `lighting` | 3 | 120, 120 | | | |
-| <span id="part-sub-blo"></span>`sub_blo` | | 172 | | | | | | |
-| <span id="part-sub-blood-effect"></span>`sub_blood_effect` | | 173 | | | | | | |
-| <span id="part-sub-blood-gout"></span>`sub_blood_gout` | ![particles/sub_blood_gout.png](images/particles/sub_blood_gout.png){ width="96" } | 174 | `part_page1` | 2 | 32, 32 | | | |
-| <span id="part-sub-blood-gush"></span>`sub_blood_gush` | | 175 | | | | | | |
-| <span id="part-sub-blood-spray"></span>`sub_blood_spray` | ![particles/sub_blood_spray.png](images/particles/sub_blood_spray.png){ width="96" } | 176 | `part_page1` | 6 | 64, 64 | | | |
-| <span id="part-sub-burn"></span>`sub_burn` | | 177 | | | | | | |
-| <span id="part-sub-car-damage"></span>`sub_car_damage` | | 178 | | | | [sub_shack_puff](particles.md#part-sub-shack-puff) | | |
-| <span id="part-sub-car-rubble"></span>`sub_car_rubble` | ![particles/sub_car_rubble.png](images/particles/sub_car_rubble.png){ width="96" } | 179 | `part_page1` | 24 | 32, 32 | | | |
-| <span id="part-sub-car-spark-emitter"></span>`sub_car_spark_emitter` | | 180 | | | | | | |
-| <span id="part-sub-car-sparks"></span>`sub_car_sparks` | ![particles/sub_car_sparks.png](images/particles/sub_car_sparks.png){ width="96" } | 181 | `part_page1` | 45 | 16, 3 | | | |
-| <span id="part-sub-car-steam"></span>`sub_car_steam` | | 182 | | | | | | |
-| <span id="part-sub-car-steam-emitter"></span>`sub_car_steam_emitter` | | 183 | | | | | | |
-| <span id="part-sub-coloured-glass"></span>`sub_coloured_glass` | | 184 | | | | | | |
-| <span id="part-sub-coloured-shards"></span>`sub_coloured_shards` | | 185 | | | | | | |
-| <span id="part-sub-debris"></span>`sub_debris` | | 186 | | | | | | |
-| <span id="part-sub-detergent"></span>`sub_detergent` | | 187 | | | | [sub_debris](particles.md#part-sub-debris), [sub_paint_splat](particles.md#part-sub-paint-splat), [sub_shack_puff](particles.md#part-sub-shack-puff) | | |
-| <span id="part-sub-dus"></span>`sub_dus` | | 188 | | | | [sub_shack_puff](particles.md#part-sub-shack-puff) | | |
-| <span id="part-sub-embers"></span>`sub_embers` | ![particles/sub_embers.png](images/particles/sub_embers.png){ width="96" } | 189 | `part_page1` | 20 | 64, 64 | | | |
-| <span id="part-sub-explode"></span>`sub_explode` | ![particles/sub_explode.png](images/particles/sub_explode.png){ width="96" } | 190 | `part_page1` | 17 | 64, 64 | | | |
-| <span id="part-sub-explosion-embers"></span>`sub_explosion_embers` | | 191 | | | | | | |
-| <span id="part-sub-explosion-group"></span>`sub_explosion_group` | | 193 | | | | | | |
-| <span id="part-sub-fade-flame"></span>`sub_fade_flame` | ![particles/sub_fade_flame.png](images/particles/sub_fade_flame.png){ width="96" } | 194 | `part_fire` | 0 | 40, 40 | | | |
-| <span id="part-sub-fire"></span>`sub_fire` | | 195 | | | | | | |
-| <span id="part-sub-fire-smoke"></span>`sub_fire_smoke` | ![particles/sub_fire_smoke.png](images/particles/sub_fire_smoke.png){ width="96" } | 197 | `part_page1` | 42 | 64, 64 | | | |
-| <span id="part-sub-fire2"></span>`sub_fire2` | | 198 | | | | | | |
-| <span id="part-sub-fire2-smoke"></span>`sub_fire2_smoke` | | 200 | | | | | | |
-| <span id="part-sub-fireball"></span>`sub_fireball` | | 201 | | | | | | |
-| <span id="part-sub-fireball-emitter"></span>`sub_fireball_emitter` | | 202 | | | | | 1 | `level93_chapter6.lua` |
-| <span id="part-sub-flame-reflect"></span>`sub_flame_reflect` | ![particles/sub_flame_reflect.png](images/particles/sub_flame_reflect.png){ width="96" } | 204 | `part_fire` | 0 | 40, 40 | | | |
-| <span id="part-sub-flames"></span>`sub_flames` | | 205 | | | | | | |
-| <span id="part-sub-flaming-debris"></span>`sub_flaming_debris` | ![particles/sub_flaming_debris.png](images/particles/sub_flaming_debris.png){ width="96" } | 206 | `part_fire` | 0 | 40, 40 | | | |
-| <span id="part-sub-flashing-light"></span>`sub_flashing_light` | | 207 | | | | | | |
-| <span id="part-sub-fog"></span>`sub_fog` | | 208 | | | | | | |
-| <span id="part-sub-glass"></span>`sub_glass` | | 210 | | | | | | |
-| <span id="part-sub-glint"></span>`sub_glint` | ![particles/sub_glint.png](images/particles/sub_glint.png){ width="96" } | 211 | `part_page1` | 41 | 30, 30 | | | |
-| <span id="part-sub-glt"></span>`sub_glt` | | 212 | | | | | | |
-| <span id="part-sub-gun"></span>`sub_gun` | | 213 | | | | | | |
-| <span id="part-sub-hood-smoke"></span>`sub_hood_smoke` | | 214 | | | | | | |
-| <span id="part-sub-molotv-flame"></span>`sub_molotv_flame` | | 216 | | | | | | |
-| <span id="part-sub-muzzle-flash"></span>`sub_muzzle_flash` | ![particles/sub_muzzle_flash.png](images/particles/sub_muzzle_flash.png){ width="96" } | 219 | `part_page1` | 35 | 16, 8 | | | |
-| <span id="part-sub-objective-glow"></span>`sub_objective_glow` | ![particles/sub_objective_glow.png](images/particles/sub_objective_glow.png){ width="96" } | 223 | `lighting` | 3 | 120, 120 | | | |
-| <span id="part-sub-paint-splat"></span>`sub_paint_splat` | | 225 | | | | | | |
-| <span id="part-sub-pch"></span>`sub_pch` | | 226 | | | | | | |
-| <span id="part-sub-pee"></span>`sub_pee` | | 227 | | | | | | |
-| <span id="part-sub-pla"></span>`sub_pla` | | 228 | | | | | | |
-| <span id="part-sub-plaster-drop"></span>`sub_plaster_drop` | | 229 | | | | | | |
-| <span id="part-sub-polar-bugs"></span>`sub_polar_bugs` | ![particles/sub_polar_bugs.png](images/particles/sub_polar_bugs.png){ width="96" } | 230 | `part_page1` | 19 | 16, 16 | | | |
-| <span id="part-sub-powerup-glow"></span>`sub_powerup_glow` | ![particles/sub_powerup_glow.png](images/particles/sub_powerup_glow.png){ width="96" } | 232 | `part_page1` | 29 | 64, 64 | | | |
-| <span id="part-sub-puk"></span>`sub_puk` | | 233 | | | | | | |
-| <span id="part-sub-punch-flash"></span>`sub_punch_flash` | | 234 | | | | | | |
-| <span id="part-sub-ripple"></span>`sub_ripple` | | 235 | | | | | | |
-| <span id="part-sub-rubble"></span>`sub_rubble` | | 236 | | | | [rubble](particles.md#part-rubble) | | |
-| <span id="part-sub-shack-puff"></span>`sub_shack_puff` | ![particles/sub_shack_puff.png](images/particles/sub_shack_puff.png){ width="96" } | 237 | `part_page1` | 42 | 64, 64 | | | |
-| <span id="part-sub-shack-puff-aligned"></span>`sub_shack_puff_aligned` | ![particles/sub_shack_puff_aligned.png](images/particles/sub_shack_puff_aligned.png){ width="96" } | 238 | `part_page1` | 42 | 64, 64 | | | |
-| <span id="part-sub-shk"></span>`sub_shk` | | 239 | | | | | | |
-| <span id="part-sub-smk"></span>`sub_smk` | | 241 | | | | | | |
-| <span id="part-sub-smoke"></span>`sub_smoke` | | 242 | | | | | | |
-| <span id="part-sub-spark-effect"></span>`sub_spark_effect` | | 243 | | | | | | |
-| <span id="part-sub-spk"></span>`sub_spk` | | 244 | | | | | | |
-| <span id="part-sub-splash"></span>`sub_splash` | ![particles/sub_splash.png](images/particles/sub_splash.png){ width="96" } | 245 | `part_page1` | 51 | 16, 8 | | | |
-| <span id="part-sub-spr"></span>`sub_spr` | | 246 | | | | | | |
-| <span id="part-sub-stained-glass"></span>`sub_stained_glass` | | 247 | | | | | | |
-| <span id="part-sub-sweat-effect"></span>`sub_sweat_effect` | | 248 | | | | | | |
-| <span id="part-sub-thrown-dust-puff"></span>`sub_thrown_dust_puff` | ![particles/sub_thrown_dust_puff.png](images/particles/sub_thrown_dust_puff.png){ width="96" } | 251 | `part_page1` | 42 | 64, 64 | | | |
-| <span id="part-sub-train-splat"></span>`sub_train_splat` | ![particles/sub_train_splat.png](images/particles/sub_train_splat.png){ width="96" } | 252 | `part_page1` | 2 | 32, 32 | | | |
-| <span id="part-sub-train-splat-mist"></span>`sub_train_splat_mist` | ![particles/sub_train_splat_mist.png](images/particles/sub_train_splat_mist.png){ width="96" } | 253 | `part_page1` | 6 | 64, 64 | | | |
-| <span id="part-sub-triglint"></span>`sub_triglint` | | 254 | | | | | | |
-| <span id="part-sub-water"></span>`sub_water` | | 256 | | | | | | |
-| <span id="part-sub-wood-splinter"></span>`sub_wood_splinter` | | 257 | | | | [wood_splinter_bit](particles.md#part-wood-splinter-bit) | | |
-| <span id="part-subway-lensflare"></span>`subway_lensflare` | ![particles/subway_lensflare.png](images/particles/subway_lensflare.png){ width="96" } | 258 | `cf4c87d3` | 0 | 102, 50 | | | |
-| <span id="part-subway-loop"></span>`subway_loop` | | 260 | | | | | | |
-| <span id="part-subway-spark"></span>`subway_spark` | | 261 | `part_page1` | 54 | 32, 32 | | | |
-| <span id="part-sweat-drop"></span>`sweat_drop` | | 263 | | | | | | |
-| <span id="part-sweat-mist"></span>`sweat_mist` | | 264 | | | | | | |
-| <span id="part-sweat-spray"></span>`sweat_spray` | | 265 | | | | | | |
-| <span id="part-urine-spray"></span>`urine_spray` | | 267 | `part_page1` | 54 | 32, 32 | | | |
-| <span id="part-wind-manager"></span>`Wind_Manager` | | 268 | | | | | | |
-| <span id="part-wood-splinter-bit"></span>`wood_splinter_bit` | | 269 | | | | | | |
+| Name | Image | Index | Sheet | Rect | Size (px) | Spawns | Script calls | Scripts | What |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| <span id="part-blo-splat"></span>`blo_splat` | ![particles/blo_splat.png](images/particles/blo_splat.png){ width="96" } | 0 | `part_page1` | 5 | 32, 32 | | | | |
+| <span id="part-blood-drop"></span>`blood_drop` | ![particles/blood_drop.png](images/particles/blood_drop.png){ width="96" } | 1 | `part_page1` | 52 | 16, 16 | | | | |
+| <span id="part-blood-mist"></span>`blood_mist` | | 2 | | | | | | | |
+| <span id="part-blood-splat-ground"></span>`blood_splat_ground` | | 3 | | | | | | | |
+| <span id="part-blood-splatter"></span>`blood_splatter` | | 4 | | | | | | | |
+| <span id="part-blood-spray"></span>`blood_spray` | ![particles/blood_spray.png](images/particles/blood_spray.png){ width="96" } | 5 | `part_page1` | 52 | 16, 16 | | | | |
+| <span id="part-bloosh"></span>`bloosh` | ![particles/bloosh.png](images/particles/bloosh.png){ width="96" } | 6 | `part_page1` | 46 | 40, 40 | | | | |
+| <span id="part-coplights-glow"></span>`coplights_glow` | ![particles/coplights_glow.png](images/particles/coplights_glow.png){ width="96" } | 7 | `lighting` | 2 | 120, 120 | | | | |
+| <span id="part-coplights-lens-flare"></span>`coplights_lens_flare` | ![particles/coplights_lens_flare.png](images/particles/coplights_lens_flare.png){ width="96" } | 8 | `lighting` | 2 | 120, 120 | | | | |
+| <span id="part-fir"></span>`fir` | | 59 | | | | | | | |
+| <span id="part-fir-group"></span>`fir_group` | | 60 | | | | [fir](particles.md#part-fir) | | | |
+| <span id="part-glasstest"></span>`glasstest` | | 62 | | | | | | | |
+| <span id="part-hud-radar-dot"></span>`hud_radar_dot` | ![particles/hud_radar_dot.png](images/particles/hud_radar_dot.png){ width="96" } | 65 | `part_page0` | 69 | 10, 10 | | | | |
+| <span id="part-hud-text-widget"></span>`hud_text_widget` | | 66 | | | | | | | |
+| <span id="part-hud-widget"></span>`hud_widget` | | 67 | | | | | | | |
+| <span id="part-hud-widget-angled"></span>`hud_widget_angled` | | 68 | | | | | | | |
+| <span id="part-miniglass"></span>`miniglass` | | 70 | | | | | | | |
+| <span id="part-molotov-smoke"></span>`molotov_smoke` | | 71 | | | | | | | |
+| <span id="part-paint-splat"></span>`paint_splat` | | 75 | | | | | | | |
+| <span id="part-part-blood-spray"></span>`part_blood_spray` | | 76 | | | | | | | |
+| <span id="part-part-coke-machine"></span>`part_coke_machine` | | 77 | | | | | | | |
+| <span id="part-part-copcar-lights"></span>`part_copcar_lights` | ![particles/part_copcar_lights.png](images/particles/part_copcar_lights.png){ width="96" } | 78 | `lighting` | 2 | 120, 120 | | | | |
+| <span id="part-part-explosion"></span>`part_explosion` | ![particles/part_explosion.png](images/particles/part_explosion.png){ width="96" } | 79 | `part_page1` | 6 | 64, 64 | | 4 | `level93_chapter6.lua` | |
+| <span id="part-part-explosion-screen-shake"></span>`part_explosion_screen_shake` | | 80 | | | | | 2 | `level93_chapter6.lua` | |
+| <span id="part-part-fear"></span>`part_fear` | | 81 | | | | | 71 | `level115.lua`, `level31.lua`, `level61.lua`, `level63_orphans.lua`, `level81.lua`, `level93_chapter6.lua` | |
+| <span id="part-part-fire"></span>`part_fire` | ![particles/part_fire.png](images/particles/part_fire.png){ width="96" } | 82 | `part_fire` | 0 | 40, 40 | | 7 | `level93_chapter6.lua` | |
+| <span id="part-part-fire-large"></span>`part_fire_large` | ![particles/part_fire_large.png](images/particles/part_fire_large.png){ width="96" } | 83 | `part_fire` | 0 | 40, 40 | | 2 | `level34.lua` | |
+| <span id="part-part-fire-large-ns"></span>`part_fire_large_ns` | ![particles/part_fire_large_ns.png](images/particles/part_fire_large_ns.png){ width="96" } | 84 | `part_fire` | 0 | 40, 40 | | 2 | `level52_chapter1.lua` | |
+| <span id="part-part-fire-light-large"></span>`part_fire_light_large` | | 85 | | | | | 1 | `level93_chapter6.lua` | |
+| <span id="part-part-fire-light-medium"></span>`part_fire_light_medium` | | 86 | | | | | 7 | `level52_chapter1.lua`, `level93_chapter6.lua` | |
+| <span id="part-part-fire-ns"></span>`part_fire_ns` | ![particles/part_fire_ns.png](images/particles/part_fire_ns.png){ width="96" } | 87 | `part_fire` | 0 | 40, 40 | | 2 | `level52_chapter1.lua` | |
+| <span id="part-part-fire-plume"></span>`part_fire_plume` | ![particles/part_fire_plume.png](images/particles/part_fire_plume.png){ width="96" } | 88 | `39640d4c` | 0 | 10, 30 | | 1 | `level80.lua` | |
+| <span id="part-part-fire-tiki"></span>`part_fire_tiki` | ![particles/part_fire_tiki.png](images/particles/part_fire_tiki.png){ width="96" } | 89 | `part_fire` | 0 | 40, 40 | | | | |
+| <span id="part-part-firebarrel"></span>`part_firebarrel` | ![particles/part_firebarrel.png](images/particles/part_firebarrel.png){ width="96" } | 90 | `part_fire` | 0 | 40, 40 | | | | |
+| <span id="part-part-firebarrel-ns"></span>`part_firebarrel_ns` | ![particles/part_firebarrel_ns.png](images/particles/part_firebarrel_ns.png){ width="96" } | 91 | `part_fire` | 0 | 40, 40 | | | | |
+| <span id="part-part-firetruck-lights"></span>`part_firetruck_lights` | ![particles/part_firetruck_lights.png](images/particles/part_firetruck_lights.png){ width="96" } | 92 | `lighting` | 2 | 120, 120 | | 1 | `level52.lua` | |
+| <span id="part-part-fog"></span>`part_fog` | | 93 | | | | | | | |
+| <span id="part-part-garbage-flies"></span>`part_garbage_flies` | | 94 | | | | | | | |
+| <span id="part-part-garbage-flies-ns"></span>`part_garbage_flies_ns` | | 95 | | | | | | | |
+| <span id="part-part-gasmeter"></span>`part_gasmeter` | | 96 | | | | | | | |
+| <span id="part-part-generator-sparks"></span>`part_generator_sparks` | | 97 | | | | | | | |
+| <span id="part-part-ghost-light"></span>`part_ghost_light` | | 98 | | | | | | | |
+| <span id="part-part-gun-flash"></span>`part_gun_flash` | ![particles/part_gun_flash.png](images/particles/part_gun_flash.png){ width="96" } | 99 | `lighting` | 2 | 120, 120 | [sub_shack_puff](particles.md#part-sub-shack-puff) | | | |
+| <span id="part-part-large-ac"></span>`part_large_ac` | | 100 | | | | | | | |
+| <span id="part-part-large-ac-two"></span>`part_large_ac_two` | | 101 | | | | | | | |
+| <span id="part-part-lava-light"></span>`part_lava_light` | | 102 | | | | | | | |
+| <span id="part-part-level2-subway"></span>`part_level2_subway` | | 103 | | | | | 1 | `level2.lua` | |
+| <span id="part-part-light-bugs"></span>`part_light_bugs` | | 104 | | | | | | | |
+| <span id="part-part-motorbike-gang"></span>`part_motorbike_gang` | | 105 | | | | | | | |
+| <span id="part-part-multi-strobe"></span>`part_multi_strobe` | | 106 | | | | | 3 | `level11.lua`, `level110.lua` | |
+| <span id="part-part-narrowflame"></span>`part_narrowflame` | ![particles/part_narrowflame.png](images/particles/part_narrowflame.png){ width="96" } | 107 | `5e5e43c6` | 0 | 40, 40 | | 56 | `level52_chapter1.lua`, `level93_chapter6.lua` | |
+| <span id="part-part-ominous-smoke"></span>`part_ominous_smoke` | | 108 | | | | | 36 | `level51.lua`, `level52_chapter1.lua`, `level61.lua`, `level61_huns.lua`, `level64.lua`, `level81.lua` | |
+| <span id="part-part-open-air-vent"></span>`part_open_air_vent` | | 109 | | | | | | | |
+| <span id="part-part-orange-neon"></span>`part_orange_neon` | | 110 | | | | | | | |
+| <span id="part-part-pelham-subway"></span>`part_pelham_subway` | | 111 | | | | | | | |
+| <span id="part-part-pink-neon"></span>`part_pink_neon` | | 112 | | | | | | | |
+| <span id="part-part-plaster-drop"></span>`part_plaster_drop` | | 113 | | | | | 4 | `level5.lua` | |
+| <span id="part-part-plaster-drop-ns"></span>`part_plaster_drop_ns` | | 114 | | | | | 2 | `level81_chatterbox.lua`, `level93_chapter6.lua` | |
+| <span id="part-part-raindrops"></span>`part_raindrops` | | 115 | | | | [sub_ripple](particles.md#part-sub-ripple), [sub_splash](particles.md#part-sub-splash) | | | |
+| <span id="part-part-ridecart-sound"></span>`part_ridecart_sound` | | 116 | | | | | | | |
+| <span id="part-part-rotate-vent"></span>`part_rotate_vent` | | 117 | | | | | | | |
+| <span id="part-part-s-fire"></span>`part_s_fire` | ![particles/part_s_fire.png](images/particles/part_s_fire.png){ width="96" } | 118 | `part_fire` | 0 | 40, 40 | | | | |
+| <span id="part-part-s-shack-dust-puff"></span>`part_s_shack_dust_puff` | | 119 | | | | [sub_shack_puff](particles.md#part-sub-shack-puff) | | | |
+| <span id="part-part-s-subway-sparks"></span>`part_s_subway_sparks` | ![particles/part_s_subway_sparks.png](images/particles/part_s_subway_sparks.png){ width="96" } | 120 | `part_page1` | 54 | 32, 32 | | | | Sprite to recheck: the traced rectangle 54 shows a grey box, not this effect |
+| <span id="part-part-small-ac"></span>`part_small_ac` | | 121 | | | | | | | |
+| <span id="part-part-small-light"></span>`part_small_light` | | 122 | | | | | 6 | `level14.lua`, `level81.lua` | |
+| <span id="part-part-smaller-light"></span>`part_smaller_light` | | 123 | | | | | | | |
+| <span id="part-part-spray-tag"></span>`part_spray_tag` | | 124 | | | | | 230 | `level107.lua`, `level11.lua`, `level122.lua`, `level14.lua`, `level2.lua`, `level20.lua` | |
+| <span id="part-part-squareflame-lrg"></span>`part_squareflame_lrg` | ![particles/part_squareflame_lrg.png](images/particles/part_squareflame_lrg.png){ width="96" } | 125 | `5e5e43c6` | 0 | 40, 40 | | 54 | `level93_chapter6.lua` | |
+| <span id="part-part-squareflame-med"></span>`part_squareflame_med` | ![particles/part_squareflame_med.png](images/particles/part_squareflame_med.png){ width="96" } | 126 | `5e5e43c6` | 0 | 40, 40 | | 27 | `level52_chapter1.lua`, `level93_chapter6.lua` | |
+| <span id="part-part-squareflame-sml"></span>`part_squareflame_sml` | ![particles/part_squareflame_sml.png](images/particles/part_squareflame_sml.png){ width="96" } | 127 | `5e5e43c6` | 0 | 40, 40 | | 1 | `level52_chapter1.lua` | |
+| <span id="part-part-steam"></span>`part_steam` | | 128 | | | | | 18 | `level11.lua`, `level110.lua`, `level52.lua`, `level87.lua` | |
+| <span id="part-part-steam-huge"></span>`part_steam_huge` | | 129 | | | | | 1 | `level52.lua` | |
+| <span id="part-part-steam-large"></span>`part_steam_large` | | 130 | | | | | 17 | `level52.lua` | |
+| <span id="part-part-strobe"></span>`part_strobe` | | 131 | | | | | 8 | `level11.lua`, `level110.lua`, `level81.lua` | |
+| <span id="part-part-strobe-red"></span>`part_strobe_red` | | 132 | | | | | 2 | `level93.lua` | |
+| <span id="part-part-subway-light"></span>`part_subway_light` | | 133 | | | | | | | |
+| <span id="part-part-torch-flame"></span>`part_torch_flame` | ![particles/part_torch_flame.png](images/particles/part_torch_flame.png){ width="96" } | 134 | `part_fire` | 0 | 40, 40 | | 3 | `level86_chapter2_reg.lua` | |
+| <span id="part-part-torch-flame-ns"></span>`part_torch_flame_ns` | ![particles/part_torch_flame_ns.png](images/particles/part_torch_flame_ns.png){ width="96" } | 135 | `part_fire` | 0 | 40, 40 | | | | |
+| <span id="part-part-truck-sound"></span>`part_truck_sound` | | 136 | | | | | 1 | `level51.lua` | |
+| <span id="part-part-truck-humans"></span>`part_truck_humans` | | 137 | | | | | 1 | `level51.lua` | |
+| <span id="part-part-train-sound"></span>`part_train_sound` | | 138 | | | | | 16 | `level115.lua`, `level14.lua`, `level2.lua`, `level31.lua`, `level5.lua`, `level55_subway.lua` | |
+| <span id="part-part-train-splat"></span>`part_train_splat` | ![particles/part_train_splat.png](images/particles/part_train_splat.png){ width="96" } | 139 | `part_page1` | 6 | 64, 64 | | | | |
+| <span id="part-part-trans-five"></span>`part_trans_five` | | 140 | | | | | | | |
+| <span id="part-part-trans-four"></span>`part_trans_four` | | 141 | | | | | | | |
+| <span id="part-part-trans-one"></span>`part_trans_one` | | 142 | | | | | | | |
+| <span id="part-part-trans-three"></span>`part_trans_three` | | 143 | | | | | | | |
+| <span id="part-part-trans-two"></span>`part_trans_two` | | 144 | | | | | | | |
+| <span id="part-part-tv"></span>`part_tv` | ![particles/part_tv.png](images/particles/part_tv.png){ width="96" } | 145 | `part_tv` | 0 | 30, 30 | | | | |
+| <span id="part-part-tv-light"></span>`part_tv_light` | | 146 | | | | | | | |
+| <span id="part-part-urine-spray"></span>`part_urine_spray` | | 147 | | | | | | | |
+| <span id="part-part-urine-stain2"></span>`part_urine_stain2` | ![particles/part_urine_stain2.png](images/particles/part_urine_stain2.png){ width="96" } | 148 | `part_page1` | 6 | 64, 64 | | | | |
+| <span id="part-part-water"></span>`part_water` | | 149 | | | | | | | |
+| <span id="part-pee-pee"></span>`pee_pee` | | 150 | | | | | | | |
+| <span id="part-pee-tracer"></span>`pee_tracer` | | 151 | | | | | | | |
+| <span id="part-power-mist"></span>`power_mist` | | 153 | | | | | | | |
+| <span id="part-puk-splat"></span>`puk_splat` | | 156 | | | | | | | |
+| <span id="part-rubble"></span>`rubble` | | 158 | | | | [sub_shack_puff](particles.md#part-sub-shack-puff) | | | |
+| <span id="part-spark"></span>`spark` | ![particles/spark.png](images/particles/spark.png){ width="96" } | 161 | `part_page1` | 41 | 30, 30 | | | | |
+| <span id="part-spawn-delayed"></span>`spawn_delayed` | | 163 | | | | | | | |
+| <span id="part-spray-mist"></span>`spray_mist` | | 164 | | | | | | | |
+| <span id="part-sub-anim-notes"></span>`sub_anim_notes` | | 167 | | | | [glasstest](particles.md#part-glasstest), [sub_wood_splinter](particles.md#part-sub-wood-splinter) | | | |
+| <span id="part-sub-anim-spark"></span>`sub_anim_spark` | ![particles/sub_anim_spark.png](images/particles/sub_anim_spark.png){ width="96" } | 168 | `part_page1` | 50 | 16, 16 | | | | |
+| <span id="part-sub-barlamp-glow"></span>`sub_barlamp_glow` | ![particles/sub_barlamp_glow.png](images/particles/sub_barlamp_glow.png){ width="96" } | 169 | `lighting` | 3 | 120, 120 | | | | |
+| <span id="part-sub-blight-glow"></span>`sub_blight_glow` | ![particles/sub_blight_glow.png](images/particles/sub_blight_glow.png){ width="96" } | 171 | `lighting` | 3 | 120, 120 | | | | |
+| <span id="part-sub-blo"></span>`sub_blo` | | 172 | | | | | | | |
+| <span id="part-sub-blood-effect"></span>`sub_blood_effect` | | 173 | | | | | | | |
+| <span id="part-sub-blood-gout"></span>`sub_blood_gout` | ![particles/sub_blood_gout.png](images/particles/sub_blood_gout.png){ width="96" } | 174 | `part_page1` | 2 | 32, 32 | | | | |
+| <span id="part-sub-blood-gush"></span>`sub_blood_gush` | | 175 | | | | | | | |
+| <span id="part-sub-blood-spray"></span>`sub_blood_spray` | ![particles/sub_blood_spray.png](images/particles/sub_blood_spray.png){ width="96" } | 176 | `part_page1` | 6 | 64, 64 | | | | |
+| <span id="part-sub-burn"></span>`sub_burn` | | 177 | | | | | | | |
+| <span id="part-sub-car-damage"></span>`sub_car_damage` | | 178 | | | | [sub_shack_puff](particles.md#part-sub-shack-puff) | | | |
+| <span id="part-sub-car-rubble"></span>`sub_car_rubble` | ![particles/sub_car_rubble.png](images/particles/sub_car_rubble.png){ width="96" } | 179 | `part_page1` | 24 | 32, 32 | | | | |
+| <span id="part-sub-car-spark-emitter"></span>`sub_car_spark_emitter` | | 180 | | | | | | | |
+| <span id="part-sub-car-sparks"></span>`sub_car_sparks` | ![particles/sub_car_sparks.png](images/particles/sub_car_sparks.png){ width="96" } | 181 | `part_page1` | 45 | 16, 3 | | | | |
+| <span id="part-sub-car-steam"></span>`sub_car_steam` | | 182 | | | | | | | |
+| <span id="part-sub-car-steam-emitter"></span>`sub_car_steam_emitter` | | 183 | | | | | | | |
+| <span id="part-sub-coloured-glass"></span>`sub_coloured_glass` | | 184 | | | | | | | |
+| <span id="part-sub-coloured-shards"></span>`sub_coloured_shards` | | 185 | | | | | | | |
+| <span id="part-sub-debris"></span>`sub_debris` | | 186 | | | | | | | |
+| <span id="part-sub-detergent"></span>`sub_detergent` | | 187 | | | | [sub_debris](particles.md#part-sub-debris), [sub_paint_splat](particles.md#part-sub-paint-splat), [sub_shack_puff](particles.md#part-sub-shack-puff) | | | |
+| <span id="part-sub-dus"></span>`sub_dus` | | 188 | | | | [sub_shack_puff](particles.md#part-sub-shack-puff) | | | |
+| <span id="part-sub-embers"></span>`sub_embers` | ![particles/sub_embers.png](images/particles/sub_embers.png){ width="96" } | 189 | `part_page1` | 20 | 64, 64 | | | | |
+| <span id="part-sub-explode"></span>`sub_explode` | ![particles/sub_explode.png](images/particles/sub_explode.png){ width="96" } | 190 | `part_page1` | 17 | 64, 64 | | | | |
+| <span id="part-sub-explosion-embers"></span>`sub_explosion_embers` | | 191 | | | | | | | |
+| <span id="part-sub-explosion-group"></span>`sub_explosion_group` | | 193 | | | | | | | |
+| <span id="part-sub-fade-flame"></span>`sub_fade_flame` | ![particles/sub_fade_flame.png](images/particles/sub_fade_flame.png){ width="96" } | 194 | `part_fire` | 0 | 40, 40 | | | | |
+| <span id="part-sub-fire"></span>`sub_fire` | | 195 | | | | | | | |
+| <span id="part-sub-fire-smoke"></span>`sub_fire_smoke` | ![particles/sub_fire_smoke.png](images/particles/sub_fire_smoke.png){ width="96" } | 197 | `part_page1` | 42 | 64, 64 | | | | |
+| <span id="part-sub-fire2"></span>`sub_fire2` | | 198 | | | | | | | |
+| <span id="part-sub-fire2-smoke"></span>`sub_fire2_smoke` | | 200 | | | | | | | |
+| <span id="part-sub-fireball"></span>`sub_fireball` | | 201 | | | | | | | |
+| <span id="part-sub-fireball-emitter"></span>`sub_fireball_emitter` | | 202 | | | | | 1 | `level93_chapter6.lua` | |
+| <span id="part-sub-flame-reflect"></span>`sub_flame_reflect` | ![particles/sub_flame_reflect.png](images/particles/sub_flame_reflect.png){ width="96" } | 204 | `part_fire` | 0 | 40, 40 | | | | |
+| <span id="part-sub-flames"></span>`sub_flames` | | 205 | | | | | | | |
+| <span id="part-sub-flaming-debris"></span>`sub_flaming_debris` | ![particles/sub_flaming_debris.png](images/particles/sub_flaming_debris.png){ width="96" } | 206 | `part_fire` | 0 | 40, 40 | | | | |
+| <span id="part-sub-flashing-light"></span>`sub_flashing_light` | | 207 | | | | | | | |
+| <span id="part-sub-fog"></span>`sub_fog` | | 208 | | | | | | | |
+| <span id="part-sub-glass"></span>`sub_glass` | | 210 | | | | | | | |
+| <span id="part-sub-glint"></span>`sub_glint` | ![particles/sub_glint.png](images/particles/sub_glint.png){ width="96" } | 211 | `part_page1` | 41 | 30, 30 | | | | |
+| <span id="part-sub-glt"></span>`sub_glt` | | 212 | | | | | | | |
+| <span id="part-sub-gun"></span>`sub_gun` | | 213 | | | | | | | |
+| <span id="part-sub-hood-smoke"></span>`sub_hood_smoke` | | 214 | | | | | | | |
+| <span id="part-sub-molotv-flame"></span>`sub_molotv_flame` | | 216 | | | | | | | |
+| <span id="part-sub-muzzle-flash"></span>`sub_muzzle_flash` | ![particles/sub_muzzle_flash.png](images/particles/sub_muzzle_flash.png){ width="96" } | 219 | `part_page1` | 35 | 16, 8 | | | | |
+| <span id="part-sub-objective-glow"></span>`sub_objective_glow` | ![particles/sub_objective_glow.png](images/particles/sub_objective_glow.png){ width="96" } | 223 | `lighting` | 3 | 120, 120 | | | | |
+| <span id="part-sub-paint-splat"></span>`sub_paint_splat` | | 225 | | | | | | | |
+| <span id="part-sub-pch"></span>`sub_pch` | | 226 | | | | | | | |
+| <span id="part-sub-pee"></span>`sub_pee` | | 227 | | | | | | | |
+| <span id="part-sub-pla"></span>`sub_pla` | | 228 | | | | | | | |
+| <span id="part-sub-plaster-drop"></span>`sub_plaster_drop` | | 229 | | | | | | | |
+| <span id="part-sub-polar-bugs"></span>`sub_polar_bugs` | ![particles/sub_polar_bugs.png](images/particles/sub_polar_bugs.png){ width="96" } | 230 | `part_page1` | 19 | 16, 16 | | | | |
+| <span id="part-sub-powerup-glow"></span>`sub_powerup_glow` | ![particles/sub_powerup_glow.png](images/particles/sub_powerup_glow.png){ width="96" } | 232 | `part_page1` | 29 | 64, 64 | | | | |
+| <span id="part-sub-puk"></span>`sub_puk` | | 233 | | | | | | | |
+| <span id="part-sub-punch-flash"></span>`sub_punch_flash` | | 234 | | | | | | | |
+| <span id="part-sub-ripple"></span>`sub_ripple` | | 235 | | | | | | | |
+| <span id="part-sub-rubble"></span>`sub_rubble` | | 236 | | | | [rubble](particles.md#part-rubble) | | | |
+| <span id="part-sub-shack-puff"></span>`sub_shack_puff` | ![particles/sub_shack_puff.png](images/particles/sub_shack_puff.png){ width="96" } | 237 | `part_page1` | 42 | 64, 64 | | | | |
+| <span id="part-sub-shack-puff-aligned"></span>`sub_shack_puff_aligned` | ![particles/sub_shack_puff_aligned.png](images/particles/sub_shack_puff_aligned.png){ width="96" } | 238 | `part_page1` | 42 | 64, 64 | | | | |
+| <span id="part-sub-shk"></span>`sub_shk` | | 239 | | | | | | | |
+| <span id="part-sub-smk"></span>`sub_smk` | | 241 | | | | | | | |
+| <span id="part-sub-smoke"></span>`sub_smoke` | | 242 | | | | | | | |
+| <span id="part-sub-spark-effect"></span>`sub_spark_effect` | | 243 | | | | | | | |
+| <span id="part-sub-spk"></span>`sub_spk` | | 244 | | | | | | | |
+| <span id="part-sub-splash"></span>`sub_splash` | ![particles/sub_splash.png](images/particles/sub_splash.png){ width="96" } | 245 | `part_page1` | 51 | 16, 8 | | | | |
+| <span id="part-sub-spr"></span>`sub_spr` | | 246 | | | | | | | |
+| <span id="part-sub-stained-glass"></span>`sub_stained_glass` | | 247 | | | | | | | |
+| <span id="part-sub-sweat-effect"></span>`sub_sweat_effect` | | 248 | | | | | | | |
+| <span id="part-sub-thrown-dust-puff"></span>`sub_thrown_dust_puff` | ![particles/sub_thrown_dust_puff.png](images/particles/sub_thrown_dust_puff.png){ width="96" } | 251 | `part_page1` | 42 | 64, 64 | | | | |
+| <span id="part-sub-train-splat"></span>`sub_train_splat` | ![particles/sub_train_splat.png](images/particles/sub_train_splat.png){ width="96" } | 252 | `part_page1` | 2 | 32, 32 | | | | |
+| <span id="part-sub-train-splat-mist"></span>`sub_train_splat_mist` | ![particles/sub_train_splat_mist.png](images/particles/sub_train_splat_mist.png){ width="96" } | 253 | `part_page1` | 6 | 64, 64 | | | | |
+| <span id="part-sub-triglint"></span>`sub_triglint` | | 254 | | | | | | | |
+| <span id="part-sub-water"></span>`sub_water` | | 256 | | | | | | | |
+| <span id="part-sub-wood-splinter"></span>`sub_wood_splinter` | | 257 | | | | [wood_splinter_bit](particles.md#part-wood-splinter-bit) | | | |
+| <span id="part-subway-lensflare"></span>`subway_lensflare` | ![particles/subway_lensflare.png](images/particles/subway_lensflare.png){ width="96" } | 258 | `cf4c87d3` | 0 | 102, 50 | | | | |
+| <span id="part-subway-loop"></span>`subway_loop` | | 260 | | | | | | | |
+| <span id="part-subway-spark"></span>`subway_spark` | ![particles/subway_spark.png](images/particles/subway_spark.png){ width="96" } | 261 | `part_page1` | 54 | 32, 32 | | | | Sprite to recheck: the traced rectangle 54 shows a grey box, not this effect |
+| <span id="part-sweat-drop"></span>`sweat_drop` | | 263 | | | | | | | |
+| <span id="part-sweat-mist"></span>`sweat_mist` | | 264 | | | | | | | |
+| <span id="part-sweat-spray"></span>`sweat_spray` | | 265 | | | | | | | |
+| <span id="part-urine-spray"></span>`urine_spray` | ![particles/urine_spray.png](images/particles/urine_spray.png){ width="96" } | 267 | `part_page1` | 54 | 32, 32 | | | | Sprite to recheck: the traced rectangle 54 shows a grey box, not this effect |
+| <span id="part-wind-manager"></span>`Wind_Manager` | | 268 | | | | | | | |
+| <span id="part-wood-splinter-bit"></span>`wood_splinter_bit` | | 269 | | | | | | | |
 
 ## object behaviour {#object-behaviour}
 
@@ -311,7 +311,7 @@ behaviours, lights and glass that share the table ([Particles](../research/parti
 
 ## Sources and evidence
 
-Evidence levels used: confirmed-code.
+Evidence levels used: confirmed-code, speculative.
 
 - SLUS_212.15, script type table 0x00512f28
 
