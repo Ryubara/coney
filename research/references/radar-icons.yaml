@@ -112,6 +112,7 @@ entries:
     calls: 1
     scripts: [caps.lua]
     meaning: "The item in the `caps` Rumble mode"
+    image: radar/icon-34.png
   - id: icon-69
     kind: icon
     number: 69
