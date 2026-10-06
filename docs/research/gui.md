@@ -104,7 +104,8 @@ sheet's name, the same number that names its WAD file in the decimal block
 
 **Disc check (corroboration):** 576 records; `size` is the resource's size in bytes. Names matched so far: 0
 `part_page0`, 1 `part_page1`, **3 `menu_system`** (the menu sprites), 7 `part_fire`, 8 `lighting`, 10
-`hud_minigames`, **13 `big_font`**, 51 `legal_screen`.
+`hud_minigames`, **13 `big_font`**, 51 `legal_screen`, 530 `part_fog_00` and 531 `part_fog_01`
+(the [3D fog](particles.md#fog)'s wisps).
 
 ### Resource instances (sprite batches) {#resource-instances}
 

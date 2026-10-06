@@ -901,9 +901,9 @@ Start3DFog(texture, colour, drift, fadeSpeed, fadeRate)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `texture` | number, truncated to an unsigned integer | Sprite word of the fog wisp image (such as 34734080: sheet in the top 16 bits, rectangle in the low 16). |
+| 1 | `texture` | number, truncated to an unsigned integer | Sprite word of the fog wisp image: sheet-table record in the top 16 bits, rectangle in the low 16. 15 of the 17 calls pass 34734080 (0x2120000): record 530, the sheet `part_fog_00`; the other two 34799616 (0x2130000): record 531, `part_fog_01`; each one 64 × 64 texture, rectangle 0. |
 | 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Wisp colour `{r, g, b, a}`, 0-255; alpha is the opacity a wisp fades in to. Written back unchanged. |
-| 3 | `drift` | number (single precision) | Speed each wisp drifts at (× 1.75-2.25 at random); scripts use 0.4-4.6. |
+| 3 | `drift` | number (single precision) | Speed each wisp drifts at, metres per second (× 1.75-2.25 at random), toward the player's camera with a sideways spread of up to ±2 m along the camera's x axis; scripts use 0.4-4.6. |
 | 4 | `fadeSpeed` | number (single precision) | Sets the fade-in length: 9 / fadeSpeed steps (at least 1); scripts use 0.3-1. |
 | 5 | `fadeRate` | number (single precision) | Whole-number multiplier on the opacity added per fade step; scripts use 1-7. |
 
@@ -912,7 +912,8 @@ Start3DFog(texture, colour, drift, fadeSpeed, fadeRate)
 Starts drifting ground fog for each player's view: for both screen-effects managers it kills any fog emitter (message
 0x15) and creates a `part_fog` emitter (template 0x00552fb8). Every 5 frames the emitter tops its viewport up to 20 live
 wisps (`sub_fog`, up to 10 at a time), placed at random within 20 m of the camera's target and 0.5-2 m above it, each
-drifting and fading in to the colour's alpha.
+drifting toward the camera and fading in to the colour's alpha. Details: [Particles, Drifting
+fog](../../research/particles.md#fog).
 
 **Notes.** Wisps are dropped when their viewer is more than 20 m away or a near test fails, and hidden within 4 m.
 MaxFogParticles changes the 20. The three numbers' visible effect is read from `sub_fog`'s init (0x003ca658) and update
@@ -986,11 +987,14 @@ StartGarbage(kind)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `kind` | number, truncated to an unsigned integer | Litter kind 0-3, each with its own sprite set and sizes (0 is the one `global.lua` uses); other values do nothing. |
+| 1 | `kind` | number, truncated to an unsigned integer | Litter kind 0-3 (`part_page1` rectangles 54-58, 30-32, 8-11 or 18; sizes about 0.4, 0.4, 0.06-0.13 or 0.17-0.2 m; 0 is the one `global.lua` uses); other values do nothing. |
 
 **Returns** nothing.
 
-Starts the blowing-litter camera effect (`ICameraGarbage`, 0x005971a0): 64 litter particles drifting around the camera.
+Starts the blowing-litter camera effect (`ICameraGarbage`, 0x005971a0): 64 flat cards of litter on an 8 × 8 grid (7 m
+apart) around the camera, each falling, tumbling and blown by the wind vector at 30 Hz, settling on the ground and
+respawning when it leaves a 28 m square around the camera or its 600-900-update life ends. Not drawn while a scene
+plays. Details: [Particles, Blowing litter](../../research/particles.md#garbage).
 
 - **Evidence:** confirmed (code) at `0x003977a8`; detail: traced
 - **Wrapper** `0x00378298` (registered by `RegisterBindings`); **calls** `0x003977a8` `Garbage_Start`

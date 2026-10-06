@@ -161,15 +161,73 @@ vent passes 0.
 `f = age / life`:
 
 - velocity = `v0 + wind − v0 × f × (dragH, dragH, dragV)`, then × a random 0.75-1.15, where `v0` is the start
-  velocity and `wind` is the vector at `0x006f31a0` × the wind factor × the current size. So **drag scales linearly
-  with the life**: 0 keeps the speed, 1 brings the start velocity to 0 at the end of the life (more than 1
-  reverses it); the wind part is not dragged. The wind vector's source is not traced (inferred: the level's wind).
+  velocity and `wind` is the [wind vector](#garbage) at `0x006f31a0` × the wind factor × the current size. So
+  **drag scales linearly with the life**: 0 keeps the speed, 1 brings the start velocity to 0 at the end of the life
+  (more than 1 reverses it); the wind part is not dragged.
 - size = current size + `growth × 0.8-1.2`: **growth is per puff update**, not per second.
 - alpha = `start alpha × (life − age) / life`, 0 on the last update or when the particle budget is short.
 
 The task keeps each value twice (`+0xb0`/`+0xb4` colour, `+0xbc`/`+0xc0` size): the update writes the second, and
 the size it grows from is the first; that the draw blends from the first to the second over the update is inferred.
 `part_steam_huge` (`0x003f6d70`) and `part_steam_large` (`0x003f7138`) have their own code, not read.
+
+### Drifting fog {#fog}
+
+`Start3DFog` (`Fog3D_Start`, `0x0018e148`) makes one `part_fog` emitter (init `0x003cadd8`) per screen-effects
+manager; the emitter's sprite batch is `PTank_New(10000, sprite, ...)` with the script's sprite word, whose high half
+is a [sheet-table record](gui.md#sprite-sheet-table-chunk-0x4d-particle-page-header). 15 of the 17 calls pass
+`0x2120000`: record **530 (`0x212`), the sheet `part_fog_00`** (CRC-32 `0x7513cd85`), rectangle 0; the other two
+`0x2130000`, record 531 `part_fog_01` (`0x0214fd13`). Each sheet is one 64 × 64 texture of the same name with one
+rectangle covering it. Confirmed (code) for the record; the names and sizes are a disc check (2026-10-06).
+
+**A wisp's drift** (`sub_fog` init `0x003ca658`): its velocity is set once, at birth, and integrated like any task's
+(metres per second; inferred, as for the [steam](#steam) puffs). The direction is from the wisp **toward the player's
+camera** (the camera task's position, vtable `+0x21c`), plus a sideways offset: the camera's rotation (vtable `+0x224`)
+applied to (r, 0, 0) with r a random −2 to 2 m, i.e. along the camera's own x axis. The sum is normalised and scaled
+by `drift` × 1.75-2.25. So every wisp drifts toward the viewer, spread a little to either side, and rises or sinks
+with the height difference. Confirmed (code).
+
+### Blowing litter {#garbage}
+
+`StartGarbage(kind)` (`0x00170330`, on the object at `0x005971a0`, which `0x0016fcc8` creates at start) arms 64
+pieces of litter (`0x70` bytes each); `EndGarbage` (`0x00170528`) clears its active flag. Each piece is a
+flat, textured card with its own position, velocity and orientation, stepped by `0x00170c88` from `Humans_Update`
+at 30 Hz (fixed `dt` 1/30) and drawn by `0x001712c0` (nothing while a scene plays). Confirmed (code).
+
+**Per kind** (the sprite is a rectangle of sprite batch 0, `part_page1`; the draw ignores the word's high half;
+size in metres, inferred from the quad being 1 × 1 before scaling):
+
+| Kind | Rectangles (texels) | Size byte → metres |
+| --- | --- | --- |
+| 0 | 54-58 (32 × 32, 55 is 34 × 29) | 96-102 → 0.38-0.40 |
+| 1 | 30-32 (32 × 32 to 33 × 36) | 96-102 → 0.38-0.40 |
+| 2 | 8-11 (20 × 20, 10 is 10 × 20, 11 is 8 × 20) | 16-32 → 0.06-0.13 |
+| 3 | 18 (20 × 20) | 43-50 → 0.17-0.20 |
+
+Other kinds do nothing. Each piece takes a random rectangle and size in its kind's range (`0x003353f0`, both ends
+included), a grey of 128-190 in all three channels, a wind threshold of 0.5-10, a lifetime of 600-900 updates and an
+orientation a quarter turn about a fixed axis (`0x00511720`). Breakables throw extra pieces through `0x00170b28`
+(table `0x0050cc08`, 12-byte entries; start speed 6 m/s along the given direction). Confirmed (code).
+
+**Placement**: the pieces start on an 8 × 8 grid around the camera's position, 7 m apart (offsets −28 to +21 m), at
+the camera's height −1 to +5 m. Every 20 updates (staggered) each piece casts a ray 25 m down: no ground makes it
+respawn; a piece just placed drops onto the hit. A piece more than 28 m from the camera on x or y fades out (its
+alpha is 4.25 × a 60-update countdown) and respawns; so does one whose lifetime ends after it has touched the ground.
+The start (and, inferred, each respawn) gives a piece a wind push of at least 10 m/s horizontally. Confirmed (code).
+
+**Motion, each update**:
+
+- gravity: z velocity −0.327 × (1 − 0.5 × |tilt|) per update, i.e. 9.8 m/s² edge-on and half that flat (tilt from
+  the piece's orientation matrix);
+- wind, every 1-30 updates at random (`0x00170600`): w = the wind vector at `0x006f31a0` × 0.75-1.0; below the
+  piece's threshold nothing; above it the piece tumbles (a random spin and a tilt kept within ±15°, slerped over
+  30-60 updates) and its velocity becomes `0.7 × v + (w × (1 − threshold / |w|) + random × 0.4 × excess) / 30`;
+- collision: a ray along the velocity from 0.5 m behind the piece; a hit within 0.7 m removes the velocity's part
+  into the surface, lays the piece flat on it (slerped over up to 8 updates) and marks it grounded;
+- position += velocity / 30.
+
+The wind vector is written by `Wind_Manager`'s code (`0x00407318`, `0x00407758`; not read); steam puffs read the same
+vector. Confirmed (code) for the reads; that it is wind is inferred from the name.
 
 ## Coney's implementation {#coneys-implementation}
 

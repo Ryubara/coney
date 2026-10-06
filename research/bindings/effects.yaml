@@ -226,16 +226,17 @@
     - {addr: 0x0018e148, name: Fog3D_Start}
     - {addr: 0x003cadd8}
   args:
-    - {name: texture, lua: number, ctype: unsigned, desc: "Sprite word of the fog wisp image (such as 34734080: sheet in the top 16 bits, rectangle in the low 16)."}
+    - {name: texture, lua: number, ctype: unsigned, desc: "Sprite word of the fog wisp image: sheet-table record in the top 16 bits, rectangle in the low 16. 15 of the 17 calls pass 34734080 (0x2120000): record 530, the sheet `part_fog_00`; the other two 34799616 (0x2130000): record 531, `part_fog_01`; each one 64 × 64 texture, rectangle 0."}
     - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Wisp colour `{r, g, b, a}`, 0-255; alpha is the opacity a wisp fades in to. Written back unchanged."}
-    - {name: drift, lua: number, ctype: float, desc: "Speed each wisp drifts at (× 1.75-2.25 at random); scripts use 0.4-4.6."}
+    - {name: drift, lua: number, ctype: float, desc: "Speed each wisp drifts at, metres per second (× 1.75-2.25 at random), toward the player's camera with a sideways spread of up to ±2 m along the camera's x axis; scripts use 0.4-4.6."}
     - {name: fadeSpeed, lua: number, ctype: float, desc: "Sets the fade-in length: 9 / fadeSpeed steps (at least 1); scripts use 0.3-1."}
     - {name: fadeRate, lua: number, ctype: float, desc: "Whole-number multiplier on the opacity added per fade step; scripts use 1-7."}
   description: >-
     Starts drifting ground fog for each player's view: for both screen-effects managers it kills any fog emitter
     (message 0x15) and creates a `part_fog` emitter (template 0x00552fb8). Every 5 frames the emitter tops its
     viewport up to 20 live wisps (`sub_fog`, up to 10 at a time), placed at random within 20 m of the camera's target
-    and 0.5-2 m above it, each drifting and fading in to the colour's alpha.
+    and 0.5-2 m above it, each drifting toward the camera and fading in to the colour's alpha. Details:
+    [Particles, Drifting fog](../../research/particles.md#fog).
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -440,10 +441,12 @@
   calls:
     - {addr: 0x003977a8, name: Garbage_Start}
   args:
-    - {name: kind, lua: number, ctype: unsigned, desc: "Litter kind 0-3, each with its own sprite set and sizes (0 is the one `global.lua` uses); other values do nothing."}
+    - {name: kind, lua: number, ctype: unsigned, desc: "Litter kind 0-3 (`part_page1` rectangles 54-58, 30-32, 8-11 or 18; sizes about 0.4, 0.4, 0.06-0.13 or 0.17-0.2 m; 0 is the one `global.lua` uses); other values do nothing."}
   description: >-
-    Starts the blowing-litter camera effect (`ICameraGarbage`, 0x005971a0): 64 litter particles drifting around the
-    camera.
+    Starts the blowing-litter camera effect (`ICameraGarbage`, 0x005971a0): 64 flat cards of litter on an 8 × 8 grid
+    (7 m apart) around the camera, each falling, tumbling and blown by the wind vector at 30 Hz, settling on the
+    ground and respawning when it leaves a 28 m square around the camera or its 600-900-update life ends. Not
+    drawn while a scene plays. Details: [Particles, Blowing litter](../../research/particles.md#garbage).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false, levels: [87, 86, 52]}
