@@ -163,6 +163,35 @@ TEST_CASE("a goal starts only once the action queue is empty, and a push suspend
     CHECK(brain.goalsRanOut() == 1);
 }
 
+// A goal whose End pushes the next goal, as a script handler the End reaches may.
+class PushingGoal final : public coney::ai::Goal {
+  public:
+    PushingGoal(std::vector<std::string>& log) : Goal(coney::ai::GoalType::Fight), m_log(&log) {}
+    void end(Brain& brain) override {
+        m_log->push_back("pusher end");
+        REQUIRE(brain.pushGoal(std::make_unique<LoggingGoal>("next", *m_log)));
+    }
+    coney::ai::GoalStatus process(Brain& /*brain*/) override { return coney::ai::GoalStatus::Stop; }
+
+  private:
+    std::vector<std::string>* m_log;
+};
+
+TEST_CASE("a goal pushed from a popped goal's End stays on the stack", "[ai]") {
+    Scene scene;
+    Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
+    std::vector<std::string> log;
+    REQUIRE(brain.pushGoal(std::make_unique<LoggingGoal>("base", log)));
+    REQUIRE(brain.pushGoal(std::make_unique<PushingGoal>(log)));
+    REQUIRE(brain.goalCount() == 2);
+    brain.popGoal();
+    // The pusher is gone and the goal its End pushed is on top of the base, not popped in the pusher's place.
+    CHECK(brain.goalCount() == 2);
+    log.clear();
+    brain.update(stepMs(1));
+    CHECK(log == std::vector<std::string>{"next start", "next process"});
+}
+
 TEST_CASE("a done goal is popped and the new top is processed in the same update", "[ai]") {
     Scene scene;
     Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);

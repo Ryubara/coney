@@ -121,8 +121,11 @@ void Brain::popGoal() {
     if (m_goals.empty()) {
         return;
     }
-    m_goals.back()->end(*this);
+    // Off the stack before its End: an End can reach Lua (a flag's message 8), whose handler may push the next goal
+    // (level99's `P1.ReachCenter` pushes GoalAddressPerson), which must stay above, not be popped in its place.
+    const std::unique_ptr<Goal> ended = std::move(m_goals.back());
     m_goals.pop_back();
+    ended->end(*this);
     if (Goal* top = topGoal(); top != nullptr) {
         top->m_resumePending = top->m_started;
     } else {

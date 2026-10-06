@@ -1222,7 +1222,9 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   an update every step at the brains' place in the characters' step (`Humans::setBrains`), so before every
   dispatcher. The player has a type-0 brain that only keeps his enemies, which feed `Player::setNearestEnemy`.
 - **Goals and actions**: a stack of 10 (Start, Process, End, Resume; Stop, Again, Done) and a circular queue of 8
-  (a delay, Start, Update, an Abort that can refuse); goals start or resume only on an empty queue.
+  (a delay, Start, Update, an Abort that can refuse); goals start or resume only on an empty queue. A goal leaves the
+  stack before its End runs: an End can reach Lua (a flag's message), whose handler may push the next goal (level99's
+  `P1.ReachCenter` pushes `GoalAddressPerson`), which must stay on the stack.
 - **Fighting**: `FightGoal`, the weighted pick, `Brain_QueueAttack`'s chains timed by the chain clip's first event,
   `AttackAction` (the command once in Start, the delay halved when the target targets the attacker or the brain is
   type 3, then a wait on `0x5c0221f`), `MoveToHumanAction` (a heading and speed in the record's `move`, no stick).
