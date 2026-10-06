@@ -290,13 +290,16 @@ CarExplode(car, quiet)
 
 **Returns** nothing.
 
-Blows up a car that has not yet exploded: every part not already off is knocked off and the car is marked exploded
-(`+0x12d5`). Without `quiet` it also plays the explosion effects and sound, deals 300 damage to every human within 5 m
-with a clear line to it, sends the car message 0x19 (heard by SetGeneralCarMsgHandler and SetMsgHandler), scores a
-statistic for whoever caused it (stat 0xb, up to 10 for the parts) and alerts the AI nearby.
+Blows up a car that has not yet exploded: every part not already off takes full damage (it then draws its crumpled form;
+parts marked to fly off are thrown clear, or hidden when `quiet`) and the car is marked exploded (`+0x12d5`). Without
+`quiet` it also plays the fireball, screen shake, heat wave and sound, deals 300 damage to every human within 5 m with a
+clear line to it, breaks glass within 10 m, sends the car message 0x19 as (car, NilHandle, -1, 1) (heard only by
+SetGeneralCarMsgHandler), scores a statistic for whoever caused it (stat 0xb, up to 10 for the parts) and alerts the AI
+within 30 m.
 
 **Notes.** A car with `+0x1200` set is ignored (meaning not traced). Blast: Explosion_DamageHumansInRadius 0x00392638 (5
-m, 300). The calls 0x002936a8 (30 m) and 0x003963b8 (10 m) are inferred to alert humans and push objects.
+m, 300); 0x002936a8 sends AI event 0x17 within 30 m; 0x003963b8 is World_BreakGlassInRadius. What is drawn and who hears
+the message: [Cars: explosion](../../research/cars.md#explode).
 
 - **Evidence:** confirmed (code) at `0x0038dfa0`, `0x0038ab18`, `0x0038ab50`; detail: traced
 - **Wrapper** `0x003786a0` (registered by `RegisterBindings`); **calls** `0x0038dfa0` `Car_Explode`, `0x0038ab18`

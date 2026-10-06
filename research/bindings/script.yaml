@@ -60,13 +60,14 @@
   description: >-
     Registers one Lua callback for a message from any car: the car manager (`0x00512c7c + 0x844`) keeps the
     function's reference in its slot for that number (`+0x18 + 4 × message`). Scripts use it to hear every car
-    explosion (Car_DoExplode sends message 0x19, with the car as self) without a SetMsgHandler on each car.
-  evidence: inferred
+    explosion: Car_DoExplode sends message 0x19 and the callback runs as (car, NilHandle, -1, 1). It is the only
+    way to hear a car: a car has no handler component, so SetMsgHandler on a car is never called.
+  evidence: confirmed-code
   depth: thorough
   notes: >-
     The store is confirmed (code) at 0x0038e538; the reference comes from the script system's slot `+0xcc`. The
-    code that reads the manager's slots when a car gets a message, and the callback's arguments, are not traced
-    (message 0x19 marshals as `(self, other, n, flag)`, [Scripts](../../research/scripting.md#message-handlers)).
+    car's message slot (vtable 0x00544c08 `+0x44`, 0x00389700) forwards every message to 0x0038ebf8, which calls
+    the marshaller with the stored reference when the slot is set ([Cars: explosion](../../research/cars.md#explode)).
   usage: {chunks: 10, calls: 20, boot: false, mission1: false, result_used: false, levels: [34, 2, 3, 5, 93, 14, 82, 92]}
 
 - name: SetMsgHandlerEx

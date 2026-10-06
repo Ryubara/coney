@@ -20,7 +20,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SetAllClearCallBack`](#setallclearcallback) | - | 2 | no | no | confirmed (code) |
 | [`SetArmiesMultiplayerCallback`](#setarmiesmultiplayercallback) | - | 0 | no | no | inferred |
 | [`SetCheatCallback`](#setcheatcallback) | - | 1 | yes | no | confirmed (code) |
-| [`SetGeneralCarMsgHandler`](#setgeneralcarmsghandler) | - | 10 | no | no | inferred |
+| [`SetGeneralCarMsgHandler`](#setgeneralcarmsghandler) | - | 10 | no | no | confirmed (code) |
 | [`SetHatCallBack`](#sethatcallback) | - | 2 | no | no | confirmed (code) |
 | [`SetMsgHandler`](#setmsghandler) | - | 195 | yes | yes | confirmed (code) |
 | [`SetMsgHandlerEx`](#setmsghandlerex) | - | 43 | yes | yes | confirmed (code) |
@@ -281,14 +281,15 @@ SetGeneralCarMsgHandler(message, callback)
 **Returns** nothing.
 
 Registers one Lua callback for a message from any car: the car manager (`0x00512c7c + 0x844`) keeps the function's
-reference in its slot for that number (`+0x18 + 4 × message`). Scripts use it to hear every car explosion (Car_DoExplode
-sends message 0x19, with the car as self) without a SetMsgHandler on each car.
+reference in its slot for that number (`+0x18 + 4 × message`). Scripts use it to hear every car explosion: Car_DoExplode
+sends message 0x19 and the callback runs as (car, NilHandle, -1, 1). It is the only way to hear a car: a car has no
+handler component, so SetMsgHandler on a car is never called.
 
 **Notes.** The store is confirmed (code) at 0x0038e538; the reference comes from the script system's slot `+0xcc`. The
-code that reads the manager's slots when a car gets a message, and the callback's arguments, are not traced (message
-0x19 marshals as `(self, other, n, flag)`, [Scripts](../../research/scripting.md#message-handlers)).
+car's message slot (vtable 0x00544c08 `+0x44`, 0x00389700) forwards every message to 0x0038ebf8, which calls the
+marshaller with the stored reference when the slot is set ([Cars: explosion](../../research/cars.md#explode)).
 
-- **Evidence:** inferred; detail: traced
+- **Evidence:** confirmed (code) at `0x00386340`, `0x0038e538`; detail: traced
 - **Wrapper** `0x0036d2e8` (registered by `RegisterBindings`); **calls** `0x00386340` `Script_SetGeneralCarMsgHandler`,
   `0x0038e538` `CarManager_SetMsgHandler`
 - **Used by** 10 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no

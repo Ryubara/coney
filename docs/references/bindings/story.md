@@ -313,7 +313,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`MaxFogParticles`](effects.md#maxfogparticles) | Effects and lighting | traced | inferred | implemented |
 | [`ForceCrimeLevel`](level.md#forcecrimelevel) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`GetLUASaveDataBool`](level.md#getluasavedatabool) | Levels and game state | traced | confirmed (code) | implemented |
-| [`SetGeneralCarMsgHandler`](script.md#setgeneralcarmsghandler) | Script flow | traced | inferred | not implemented |
+| [`SetGeneralCarMsgHandler`](script.md#setgeneralcarmsghandler) | Script flow | traced | confirmed (code) | not implemented |
 | [`CfgChanceToGetHelp`](config.md#cfgchancetogethelp) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`GetRTTI`](util.md#getrtti) | Utilities | traced | confirmed (code) | not implemented |
 

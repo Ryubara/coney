@@ -238,7 +238,7 @@ message was consumed. Confirmed (code); the meanings in the last column are from
 | `0xf` | `(subject, other)` | yes |
 | `0x11` | `(subject, other or NilHandle, n)`, `n` from `+0x04` | no |
 | `0x12`, `0x13` | `(subject, other or NilHandle)`: died or knocked out / revived; `other` is the attacker | no |
-| `0x19` | `(self, other or NilHandle, n, flag)`: the shorts `+0x04` and `+0x06` | no |
+| `0x19` | `(self, other or NilHandle, n, flag)`: `n` the signed short `+0x04`, `flag` the number 1 or 0 (`+0x06` ≠ 0, not a boolean); a car's explosion sends `(car, NilHandle, -1, 1)` ([Cars](cars.md#explode)) | no |
 
 `self` is the object the handler belongs to; `subject` is the record's `+0x24`; `other` is `+0x00` unless the row
 says otherwise. A gang's handlers
