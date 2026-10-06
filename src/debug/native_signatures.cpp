@@ -797,7 +797,7 @@ constexpr std::array<NativeArg, 1> kArgs_SoundSetSystemMusicState{{{"state", A::
 constexpr std::array<NativeArg, 1> kArgs_SoundStart{{{"sound", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_SoundStop{{{"sound", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_StartObjectSound{{{"object", A::Handle, "", 0}}};
-constexpr std::array<NativeArg, 2> kArgs_PlayMovie{{{"name", A::String, "", 0}, {"flag", A::Boolean, "true", 0}}};
+constexpr std::array<NativeArg, 2> kArgs_PlayMovie{{{"name", A::String, "", 0}, {"skippable", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_SceneAddObject{{{"scene", A::Integer, "", 0}, {"object", A::Handle, "", 0}, {"slot", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_SceneDone{{{"scene", A::Integer, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SceneDone{R::Boolean};

@@ -29,22 +29,27 @@ entry are on the [masterlist](index.md).
 ## PlayMovie {#playmovie}
 
 ```lua
-PlayMovie(name, flag)
+PlayMovie(name, skippable)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Movie name (level100 passes `TRAILER` or `L1_IN`). |
-| 2 | `flag` | boolean (nil or 0 is false); default true | A flag passed to the player, default true; its effect is not traced. |
+| 1 | `name` | string | Movie name, the file `PSS/<name>.BIK` (level100 passes `TRAILER` or `L1_IN`; the 16 movies are on [Movies](../../research/movies.md#the-movies)). |
+| 2 | `skippable` | boolean (nil or 0 is false); default true | Whether any pad button ends the movie early ([Movies](../../research/movies.md#skipping)); default true. |
 
 **Returns** nothing.
 
-Plays a full-screen movie and returns when it ends; when subtitles are on it also loads `<name>_sub.scn` for them. The
-front end uses it for the trailer and the attract movie.
+Plays a full-screen Bink movie and returns when it ends or is skipped. Around it the music and sounds are stopped and
+the screen blacked; when the loaded level's Subtitles chunk has captions for `<name>_sub`, the scene `<name>_sub.scn`
+times them and they show if the subtitle option is on. The front end uses it for the trailer (EXTRAS) and the attract
+movie.
 
-**Notes.** The movie player (0x0042a938) stops other streaming first; the subtitle check is the global 0x0050ea74. On
-return it sets both screen-effects managers fully black, so the screen stays black until a fade in ([Front
-end](../../research/frontend.md#movies)).
+**Notes.** The wrapper reads the flag as a number, default 1, and passes flag != 0. The movie player (0x0042a938) stops
+the music and sounds first; it looks for `<name>_sub.scn` only when a level's Subtitles chunk is loaded (the global
+0x0050ea74; the subtitle option is read when drawing). On return it sets both screen-effects managers fully black, so
+the screen stays black until a fade in ([Front end](../../research/frontend.md#movies)). The C++ code calls Movie_Play
+itself for the boot movies (LOGO cannot be skipped) and the levels' intro and outro movies. Nothing else in the game
+runs while a movie plays.
 
 - **Evidence:** confirmed (code) at `0x0042a938`; detail: traced
 - **Wrapper** `0x0036c258` (registered by `RegisterBindings`); **calls** `0x0042a938` `Movie_Play`

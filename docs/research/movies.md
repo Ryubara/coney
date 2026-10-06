@@ -15,7 +15,7 @@ blocks its caller until the movie ends: it stops the music and sounds, hands the
 screen, then decodes frame after frame, copying each one unscaled into the middle of the frame buffer, until the last
 frame, a read error, or (when skippable) any button. Captions are not in the movie: the loaded level file's Subtitles
 chunk holds their text, and a small scene record `<name>_sub.scn` holds their timing, as caption events on its camera
-track that the player advances with the real clock. Afterwards the screen is blacked again and the sound driver
+track that the player advances with the real clock. Afterwards the screen is left faded to black and the sound driver
 restored.
 
 ## Original structure
@@ -120,9 +120,9 @@ On the front end, `Menu.playMovie(2)` (`L1_IN`) is the attract movie after 70 s 
 7. **Give the sound back**: commands `0x2a` (2), `0x2a` (4), `0x3c`; fast load modes 1, 4 and 7
    (`0x00151640`); `0x57`; `0x53` (0) and `0x53` (1); send and wait.
 8. **Free the caption scene**: destroy the camera (`0x0011e440(camera, 1)`), the instance and the record.
-9. **Black again and no fade**: flush; twice, clear to black and show, each time queuing effect type 0 (fade in)
-   with **0 s** on one of the two screen-effects managers (`0x0018cc60`, `0x005fdeb8`), which leaves no fade
-   running; flush.
+9. **Black, and kept black**: flush; twice, clear to black and show, each time setting one of the two
+   screen-effects managers (`0x005fdeb8`) to a **fade out to black over 0 s** (`0x0018cc60(0 s, manager, out, black,
+   0)`), so the screen stays fully black until someone fades in ([Front end](frontend.md#movies)); flush.
 
 `Movie_Play` restarts neither the music nor the reverb nor `+0x1c4`: whoever called it does (inferred; see
 [Open questions](#open-questions)). Nothing else runs while it blocks: no game update, task, script or clock
