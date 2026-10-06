@@ -23,11 +23,20 @@
 // until the level makes it (ScriptedBrains::hold()). After each characters' step update() lets the leaving gangs go.
 // Research: docs/references/bindings/story.md, docs/research/ai.md#warrior-commands
 
+namespace coney::world_objects {
+class VolumeBoxes;
+} // namespace coney::world_objects
+
 namespace coney::ai {
 
 class Brain;
 class Gang;
 class ScriptedBrains;
+
+/// Whether `point` lies in one of `gang`'s turf boxes among `boxes`; no gang, no boxes or a gang with no turf takes
+/// any point.
+/// @orig 0x001652e8 Gang_IsPointInTurf (unknown)
+[[nodiscard]] bool pointInTurf(const Gang* gang, const world_objects::VolumeBoxes* boxes, anim::Vec3 point);
 
 /// A level's paths hold at most this many (`0x006fd870`, 32 slots).
 inline constexpr std::size_t kPathSlots = 32;
@@ -94,6 +103,8 @@ class ScriptedStory final : public script::StoryBindingHost {
     void setTagHandler(TagHandler handler) { m_tagHandler = std::move(handler); }
     /// Hands the call to the tag handler; without one nothing happens.
     void tag(double human, double tag, double flag) override;
+    /// The level's volume boxes, where the gangs' turf boxes are found (null for none: every point is in turf).
+    void setBoxes(const world_objects::VolumeBoxes* boxes) { m_boxes = boxes; }
 
     /// The brain's off flag set (as `BrDead`) unless it is a player's, then the exit goal; flag 0 takes the nearest
     /// exit flag (`HuExitWorld`), and with none nothing happens.
@@ -154,12 +165,16 @@ class ScriptedStory final : public script::StoryBindingHost {
     void onBrain(double handle, const std::function<void(Brain&)>& body);
     // Runs `body` on the gang with `id` now, or once the calls held are replayed; nothing when no gang has it.
     void onGang(int id, const std::function<void(Gang&)>& body);
-    // The nearest enabled exit flag to `from` other than `exclude`.
-    [[nodiscard]] std::optional<double> nearestExit(anim::Vec3 from, double exclude) const;
+    // The nearest enabled exit flag to `from` other than `exclude` (and, given `accept`, whose position it accepts).
+    [[nodiscard]] std::optional<double> nearestExit(anim::Vec3 from, double exclude,
+                                                    const std::function<bool(anim::Vec3)>& accept = {}) const;
+    // Fills m_riot: the riot goal's services on this level.
+    void makeRiotServices();
     // Pushes the exit goal toward `flag` on `brain`.
     void leave(Brain& brain, double flag, int gait, float angle, float distance, float radius);
 
     ScriptedBrains* m_scripted;
+    const world_objects::VolumeBoxes* m_boxes = nullptr;
     std::map<double, WorldPath> m_paths;
     RiotServices m_riot; // what every rioter asks of the level (set on the first GoalRiot)
     int m_warriorCommand = -1;

@@ -2032,12 +2032,16 @@ clears the mark (**stand-in**: no wounded clips, and nothing reads the 14 s stam
 `GoalStationaryThrower` (`0x8c`, `src/ai/riot_goals.*`) walks back within 0.5 m of where the goal began, turns to the
 nearest hostile within three quarters of its sight range, plays clip `0x225` and waits 1000 × delay to 1000 × delay +
 1000 ms (**stand-ins**: nothing is thrown, the eight object types are kept; the one wait in five with another idle is
-not built). `GoalRiot` (84) roams and decides every 60 updates (**Coney choice**: half the time is an even roll); near a
-player within its radius, a gang-member rioter may pick a fight with a civilian within 15 m (or, by the gang-fight
-chance, a gang member) and then leaves through the nearest exit flag, as `GoalMoveToExitFlag` with its defaults.
-**Stand-ins**: the roam walks to random points within 8 m of the start; the smash and loot searches find nothing (no
-breakables or loot are hooked), so no act is made and a rioter leaves only after a fight; the fight is not cut at 8 s;
-the shouts are not said; the gang test `0x0028ff58` is taken as passed.
+not built). `GoalRiot` (84) follows [GoalRiot](#riot): the free act at Init, the turf gate on the nearest player
+(`pointInTurf` over the gang's turf volume boxes), the one-draw decision, the roam (toward the player every 27th
+destination, the turf every 79th, else the 10 m wander, else a point 5 m away; arrival 0.5 m, gait 4, the move deadline
+rolling over each second, 30 failed moves to leave), the acts counting down, the fight pick (gang soldiers only, the
+sixth argument letting the player be picked) and the exit flag in the gang's turf at gait 4. **Stand-ins**: the
+smash and loot searches find nothing (no vandalisable objects or store loot are hooked), so an act only counts down;
+the fight's 8 s deadline is not built (Coney's fight goal ends at once beyond melee range, the melee goals beneath it
+not being built); a turf box's centre and radius are its middle and half its diagonal; "on an area" and "reached in
+a straight line" are both the planner's straight-line test and no point is dropped to the ground; human `+0x333` is
+0; a running move is replaced rather than retargeted; the shouts, taunt and head glances are not made.
 
 **The story's tactics** (`src/ai/story_tactics.*`; Attack and Confront are the Rumble's above). Group moves give the
 leader the moving goal and have the others track him (3, 1, 0.75 and 4 m; **stand-in** for `Goal_FollowPlayer` in
@@ -2105,8 +2109,8 @@ when `GangCanFlee` turns it on.
   defaults for formations made later.
 - What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
 - The perception struct (`+0xf8`).
-- The riot goal's roam (where a rioter walks between decisions), its smash and loot targets in Coney's objects,
-  how the 8 s fight ends, and the gang test `0x0028ff58`.
+- Human `+0x333` (the riot's move deadline adds 1000 × it ms; Coney: 0) and a turf box's radius `+0x40` (Coney:
+  half its diagonal).
 - The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of
   `GoalBoxer`.
 - Which sound each hub goal line plays (`beckon`, `store_greet`, `phone_gang`, `dead_meat`, `cower`, `mug_grunt`).

@@ -176,17 +176,8 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
 
   private:
     // Whether `point` lies in one of the gang's turf boxes; a gang with no turf (or no boxes kept) takes any point.
-    // @orig 0x001652e8 Gang_IsPointInTurf (unknown)
     [[nodiscard]] bool inTurf(int gang, anim::Vec3 point) const {
-        const ai::Gang* found = m_scripted->owner().gangs().find(gang);
-        if (found == nullptr || m_boxes == nullptr || found->turfCount() == 0) {
-            return true;
-        }
-        const std::array<float, 3> at{point.x, point.y, point.z};
-        return std::ranges::any_of(found->orders().turf, [this, &at](double handle) {
-            const world_objects::VolumeBox* box = handle != 0.0 ? m_boxes->find(handle) : nullptr;
-            return box != nullptr && world_objects::VolumeBoxes::inside(*box, at);
-        });
+        return ai::pointInTurf(m_scripted->owner().gangs().find(gang), m_boxes, point);
     }
 
     ai::ScriptedBrains* m_scripted;
@@ -359,6 +350,7 @@ void GameplayMode::enter() {
         [this](double human, double tag, double flag) { startTag(human, tag, flag); });
     m_context.flagNet = &m_flagNet;
     m_scripted->setFlagNet(&m_flagNet);
+    m_scripted->storyHost().setBoxes(m_context.boxes);
     // Player 1's cameras, which the script sets up before the level makes him; CamSetSecondary finds its human live.
     m_cameras = std::make_unique<camera::Cameras>();
     m_cameras->setLocator([scripted = m_scripted.get()](double handle) -> std::optional<anim::Vec3> {

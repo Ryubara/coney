@@ -300,7 +300,7 @@ TEST_CASE("The fourth mission's brain calls reach the brains: pedestrian type, w
     REQUIRE(riot != nullptr);
     CHECK(riot->order().radius == 10.0F);
     CHECK(riot->order().acts == 2);
-    CHECK(riot->order().gangFightChance == 65);
+    CHECK(riot->order().playerFightChance == 65);
     // The shout left out takes its default.
     CHECK(riot->order().shout);
     level.call("GoalStationaryThrower", {Value(3.0), Value(5.0), array({12, 13, 14, 15, 16, 0, 0, 0})});

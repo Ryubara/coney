@@ -16,7 +16,7 @@ enemies and wrecked cars.
 | # | Status | Note |
 | --- | --- | --- |
 | 1 | 🚧 In Progress | Every binding is in and the scripts run 20 s with no error; the bar staff's throws play their clip without a bottle. |
-| 2 | 🚧 In Progress | The rioters roam and pick fights; their smashing and looting find nothing to act on yet. |
+| 2 | 🚧 In Progress | The rioters roam their gang's turf, decide, pick fights and leave as the original does; their smashing and looting find nothing to act on yet. |
 | 3 | 🚧 In Progress | The riot waves and the wrecked car run; the forced crime level holds the police's interest. |
 | 4 | 🚧 In Progress | The riot waves run; how the checkpoint ends is not yet played through. |
 | 5 | 🚧 In Progress | The scripts run with no error; the checkpoint is not yet played to its end. |
@@ -63,7 +63,7 @@ coney_tests "[disc][story]"
 
 ## Open questions {#questions}
 
-- What the riot goal's smash and loot acts target, and how its 8 s fight ends.
+- How Coney's objects and stores give the riot's smash and loot acts their targets (the original's are on the AI page).
 - What an exploded car looks like, and what its message 0x19 carries.
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

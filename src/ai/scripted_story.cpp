@@ -24,8 +24,20 @@
 #include "combat/meters.h"
 #include "human/human.h"
 #include "human/victim.h"
+#include "world_objects/volume_boxes.h"
 
 namespace coney::ai {
+
+bool pointInTurf(const Gang* gang, const world_objects::VolumeBoxes* boxes, anim::Vec3 point) {
+    if (gang == nullptr || boxes == nullptr || gang->turfCount() == 0) {
+        return true;
+    }
+    const std::array<float, 3> at{point.x, point.y, point.z};
+    return std::ranges::any_of(gang->orders().turf, [boxes, &at](double handle) {
+        const world_objects::VolumeBox* box = handle != 0.0 ? boxes->find(handle) : nullptr;
+        return box != nullptr && world_objects::VolumeBoxes::inside(*box, at);
+    });
+}
 
 namespace {
 
@@ -277,7 +289,8 @@ void ScriptedStory::tag(double human, double tag, double flag) {
     }
 }
 
-std::optional<double> ScriptedStory::nearestExit(anim::Vec3 from, double exclude) const {
+std::optional<double> ScriptedStory::nearestExit(anim::Vec3 from, double exclude,
+                                                 const std::function<bool(anim::Vec3)>& accept) const {
     std::optional<double> best;
     float bestDistance = std::numeric_limits<float>::max();
     for (const world_objects::WorldFlag& flag : m_scripted->flags().all()) {
@@ -289,6 +302,9 @@ std::optional<double> ScriptedStory::nearestExit(anim::Vec3 from, double exclude
             continue;
         }
         const anim::Vec3 at{placement->position[0], placement->position[1], placement->position[2]};
+        if (accept && !accept(at)) {
+            continue;
+        }
         if (const float distance = anim::distance(from, at); distance < bestDistance) {
             best = flag.handle;
             bestDistance = distance;
@@ -360,36 +376,67 @@ void ScriptedStory::goalThrowObject(const script::ThrowObjectCall& call) {
     });
 }
 
+void ScriptedStory::makeRiotServices() {
+    m_riot.players = [this] {
+        std::vector<anim::Vec3> players;
+        if (const Brain* player = m_scripted->player(); player != nullptr) {
+            players.push_back(player->human().position());
+        }
+        return players;
+    };
+    // Every bound human, the player too (the pick decides whom it may take).
+    m_riot.candidates = [this] {
+        std::vector<Brain*> brains;
+        for (const auto& [handle, brain] : m_scripted->bound()) {
+            brains.push_back(brain);
+        }
+        return brains;
+    };
+    m_riot.inTurf = [this](const Brain& brain, anim::Vec3 point) { return pointInTurf(brain.gang(), m_boxes, point); };
+    // Coney stand-in for a turf box's centre and radius (`+0x30`, `+0x40`): the box's middle and half its diagonal.
+    m_riot.turf = [this](const Brain& brain) {
+        std::vector<TurfCircle> circles;
+        const Gang* gang = brain.gang();
+        if (gang == nullptr || m_boxes == nullptr) {
+            return circles;
+        }
+        for (const double handle : gang->orders().turf) {
+            const world_objects::VolumeBox* box = handle != 0.0 ? m_boxes->find(handle) : nullptr;
+            if (box == nullptr) {
+                continue;
+            }
+            const anim::Vec3 low{box->low[0], box->low[1], box->low[2]};
+            const anim::Vec3 high{box->high[0], box->high[1], box->high[2]};
+            circles.push_back(TurfCircle{.centre = anim::scale(anim::add(low, high), 0.5F),
+                                         .radius = 0.5F * anim::distance(low, high)});
+        }
+        return circles;
+    };
+    // The nearest enabled exit flag in the rioter's gang's turf, walked to at gait 4 (the rest the exit goal's
+    // defaults: Coney choice).
+    m_riot.leave = [this](Brain& brain) {
+        constexpr script::ExitFlagCall kLeave;
+        constexpr int kRiotLeaveGait = 4;
+        const Gang* gang = brain.gang();
+        const std::optional<double> exit = nearestExit(
+            brain.human().position(), 0.0, [this, gang](anim::Vec3 at) { return pointInTurf(gang, m_boxes, at); });
+        if (!exit) {
+            return false;
+        }
+        leave(brain, *exit, kRiotLeaveGait, kLeave.angle, kLeave.distance, kLeave.radius);
+        return true;
+    };
+}
+
 void ScriptedStory::goalRiot(const script::RiotCall& call) {
-    // Coney choice for the leaving goal's walk (the riot's own values are not on the page): the exit goal's defaults.
-    constexpr script::ExitFlagCall kLeave;
     if (!m_riot.leave) {
-        m_riot.players = [this] {
-            std::vector<anim::Vec3> players;
-            if (const Brain* player = m_scripted->player(); player != nullptr) {
-                players.push_back(player->human().position());
-            }
-            return players;
-        };
-        m_riot.candidates = [this] {
-            const Brain* player = m_scripted->player();
-            std::vector<Brain*> brains;
-            for (const auto& [handle, brain] : m_scripted->bound()) {
-                if (brain != player) {
-                    brains.push_back(brain);
-                }
-            }
-            return brains;
-        };
-        m_riot.leave = [this](Brain& brain) {
-            leave(brain, 0.0, kLeave.gait, kLeave.angle, kLeave.distance, kLeave.radius);
-        };
+        makeRiotServices();
     }
     const RiotOrder order{.radius = call.radius,
                           .actChance = call.actChance,
                           .acts = call.acts,
                           .fightChance = call.fightChance,
-                          .gangFightChance = call.gangFightChance,
+                          .playerFightChance = call.gangFightChance,
                           .shout = call.shout};
     onBrain(call.human, [this, order](Brain& brain) { brain.pushGoal(std::make_unique<RiotGoal>(order, m_riot)); });
 }
