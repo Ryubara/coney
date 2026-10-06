@@ -11,6 +11,7 @@
 #include "combat/being_hit.h"
 #include "combat/combat_tuning.h"
 #include "combat/lock_on.h"
+#include "core/pad.h"
 #include "core/ps2_float.h"
 #include "human/body.h"
 #include "human/jump.h"
@@ -90,6 +91,7 @@ PlayerRecord recordOf(const HumanInput& input) {
                         .command = input.command,
                         .padCommand = combat::command::kNone,
                         .buttons = input.buttons,
+                        .padDriven = true,
                         .move = std::nullopt};
 }
 
@@ -257,6 +259,40 @@ void Human::locomote(bool gated) {
     const bool clipMoves = gated || !m_animator.gaitBlendPlaying();
     const float horizontal = clipMoves ? 0.0F : newSpeed;
     m_velocity = anim::Vec3{direction.x * horizontal, direction.y * horizontal, m_velocity.z};
+}
+
+void Human::wheelchairControl(bool locked) {
+    // Per update (docs/research/characters.md#wheelchair): both shoulders push toward the sprint speed; one alone slows
+    // a little and turns, more at low speed; neither lets it roll down; cross brakes on top.
+    // @orig 0x002427e8 Human_WheelchairControl (unknown)
+    constexpr float kPush = 0.5F;       // 0x005104d4
+    constexpr float kDecay = 0.04F;     // 0x005104d8
+    constexpr float kBrake = 0.5F;      // 0x005104dc
+    constexpr float kTurnFloor = 0.03F; // 0x005104e0
+    constexpr float kTurnSpan = 0.05F;  // 0x005104e4 (0.08) less the floor
+    const bool left = (m_record.buttons & pad::kL1) != 0;
+    const bool right = (m_record.buttons & pad::kR1) != 0;
+    const float top = m_animator.speeds().sprint;
+    float speed = std::hypot(m_velocity.x, m_velocity.y);
+    float turn = 0.0F;
+    if (left && right) {
+        speed = std::min(speed + kPush, top);
+    } else {
+        speed = std::max(speed - kDecay, 0.0F);
+        if (left != right) {
+            const float share = top > 0.0F ? 1.0F - std::min(speed / top, 1.0F) : 1.0F;
+            turn = (kTurnFloor + kTurnSpan * share) * (left ? 1.0F : -1.0F);
+        }
+    }
+    if ((m_record.buttons & pad::kCross) != 0) {
+        speed = std::max(speed - kBrake, 0.0F);
+    }
+    // **Coney stand-ins**: the start clip from a standstill (state code 5), the animation layer's flag 2 and event
+    // groups above 4.5 m/s are not built; a locked human (the movement lock, an arrest, a hold) does not roll.
+    m_heading = wrapAngle(m_heading + turn);
+    const float rolled = locked ? 0.0F : speed;
+    const anim::Vec3 direction = facing(m_heading);
+    m_velocity = anim::Vec3{direction.x * rolled, direction.y * rolled, m_velocity.z};
 }
 
 void Human::airControl() {
@@ -736,8 +772,16 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     }
     // An arrested human is not moved by its stick or its brain (**Coney stand-in**, human/script_state.h), nor is one
     // a grab holds, nor one whose movement a script locked (human/human_flags.h).
-    if (m_script.arrested || m_script.knockedOut || m_fighter.holdState().has_value() ||
-        hasFlag(flag::kMovementLocked)) {
+    // In a wheelchair a pad-driven human's sticks are not read (wheelchairControl()). **Coney stand-in**: so the
+    // locomotion's clips, which would move the body, do not start; the wheelchair's clips are not played.
+    const bool wheelchair = hasFlag(flag::kWheelchair) && m_record.padDriven;
+    if (wheelchair) {
+        m_intent.magnitude = 0.0F;
+        m_lastStick.magnitude = 0.0F;
+    }
+    const bool movementHeld =
+        m_script.arrested || m_script.knockedOut || m_fighter.holdState().has_value() || hasFlag(flag::kMovementLocked);
+    if (movementHeld) {
         m_intent.magnitude = 0.0F;
         m_moveSpeed.reset();
     }
@@ -772,6 +816,9 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
         if (m_jumping) {
             airControl();
         }
+    } else if (wheelchair) {
+        // A pad-driven human in a wheelchair runs its control instead; a brain-driven one keeps its own.
+        wheelchairControl(movementHeld);
     } else if (const GateInput gate = gateInput(); m_fighter.holdsMovement(m_animator) || stickBusy(gate)) {
         // The stick step is skipped: combat's states, or the record's +0x08 makes the human busy.
         holdForCombat();

@@ -4,8 +4,8 @@
 // (docs/research/rumble.md): a QUICK RUMBLE Brawl the player loses ends on the result screen with the other gang's
 // win, the winner cheering and the player revived on the way; in a WAR PARTY the pad passes to a team-mate when the
 // player goes down; in King of the hill the player held on the top wins for his gang; in Battle royal the side left in
-// the ring wins; in Survival the spawned enemies beat the player and his time is the result; in Wheelchair the CPU
-// racer wins. They run only when
+// the ring wins; in Survival the spawned enemies beat the player and his time is the result; in Wheelchair the player
+// rolls with L1 and R1 and the CPU racer wins. They run only when
 // CONEY_DISC names the disc and skip otherwise; they print counts only (LEGAL.md).
 
 #include <algorithm>
@@ -232,14 +232,24 @@ TEST_CASE("the disc's Wheelchair race is won by the CPU racer that drives the co
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    // One player in arena 104, the pad left alone: player 2 is the CPU, on the WheelChairRace path.
-    coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript);
+    // One player in arena 104: player 2 is the CPU, on the WheelChairRace path. The player pushes both wheels (L1 and
+    // R1) for a second, then lets the pad go.
+    std::string script(coney::test::kQuickRumbleScript);
+    script += "1000 press l1\n1000 press r1\n1030 release l1\n1030 release r1\n";
+    coney::test::DiscGame game(*wad, script);
     game.chooseRumble(24, 104, 1);
     game.run(1000 - game.frames());
     REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
     const coney::platform::PlayLevelMode* play = game.play();
     REQUIRE(play != nullptr);
     CHECK(play->player().human().hasFlag(coney::human::flag::kWheelchair));
+    const coney::anim::Vec3 before = play->player().human().position();
+    game.run(30);
+    const coney::anim::Vec3 after = play->player().human().position();
+    // 0.5 m/s more each update, up to the sprint speed: about 9 m in the second.
+    const float pushed = std::hypot(after.x - before.x, after.y - before.y);
+    CHECK(pushed > 3.0F);
+    std::printf("  wheelchair: the player rolled %.2f m in a second of L1 and R1\n", static_cast<double>(pushed));
 
     // Its glow moves on at each checkpoint it reaches (the trigger sphere on the teleported glow); a lap and the
     // finish line give it the race.

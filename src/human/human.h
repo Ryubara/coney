@@ -78,12 +78,14 @@ struct PlayerRecord {
     /// (docs/references/bindings/input.md#padsethandlerex).
     combat::CommandId padCommand = combat::command::kNone;
     std::uint16_t buttons = 0; ///< The held buttons.
+    /// A pad drives the human (per-player `+0x1b`); Humans::update() sets it every step.
+    bool padDriven = false;
     /// The brain's move, which replaces the stick while set. **Coney choice**: kept beside the record, as Coney's
     /// locomotion reads only the record; the original keeps it in the brain.
     std::optional<BrainMove> move;
 };
 
-/// The record part of `input`.
+/// The record part of `input`, a pad's (so pad-driven).
 [[nodiscard]] PlayerRecord recordOf(const HumanInput& input);
 
 /// What the human is doing beyond walking and standing, for the debug menus and the tests.
@@ -341,6 +343,9 @@ class Human final : public Holdable {
 
     // The locomotion: target speed, skid, turn, acceleration; sets the horizontal velocity, none while `gated`.
     void locomote(bool gated);
+    // `wheelchairControl` for a pad-driven human with the wheelchair flag: L1 and R1 push, one alone turns, cross
+    // brakes; the sticks are not read (docs/research/characters.md#wheelchair).
+    void wheelchairControl(bool locked);
     // The jump's state function: the heading turns toward the stick at the air limit, the speed is kept.
     // @orig 0x00240898 Human_AirControl (unknown)
     void airControl();

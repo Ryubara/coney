@@ -1330,7 +1330,10 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   clips that move the body, locomotion through the gate, air control or a climb's move, gravity, move or fall, the
   meters, the lean) and `updateActions()` (the dispatcher from the record, triangle's actions, then the anim state);
   the ground snap, the fall and landing, the walking body, the airborne push-out, and the climb from its probe to its
-  last clip (the move to the start point, the re-probe at the first clip's end, the rise onto a wall).
+  last clip (the move to the start point, the re-probe at the first clip's end, the rise onto a wall). A pad-driven
+  human with the wheelchair flag runs [wheelchair control](#wheelchair) in place of the locomotion, its constants
+  per 1/30 s step; **stand-ins**: its sticks are ignored so no locomotion clip starts, and no start or wheelchair clip
+  plays.
 - `src/human/humans.*` is the characters' step (`Humans_Update`): every human's record (the commands of those no pad
   drives cleared), the brains' hook (empty until the AI lands), then the animation of all, the locomotion of all and
   the actions of all, walked forward and backward on alternate steps. It runs on Coney's fixed 1/30 s step.

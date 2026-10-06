@@ -3573,6 +3573,12 @@ subsystem = "Human"
 size = 3160
 
 [[function]]
+address = 0x002427e8
+name = "Human_WheelchairControl"
+subsystem = "Human"
+size = 1272
+
+[[function]]
 address = 0x00244e78
 name = "Human_MoveAttached"
 subsystem = "Human"

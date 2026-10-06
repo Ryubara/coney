@@ -299,3 +299,32 @@ TEST_CASE("HuUseAnim's idle replacement plays in the idle's place, under the idl
     fight.run("", 10);
     CHECK(playing() == own);
 }
+
+TEST_CASE("a pad-driven human in a wheelchair pushes with L1 and R1, turns with one, and brakes with cross",
+          "[human][script]") {
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().setFlag(flag::kWheelchair, true);
+    const float top = fight.human().animator().speeds().sprint;
+    // The stick is not read.
+    fight.run("0 stick left 0 70\n", 10);
+    CHECK(fight.human().position().y == 40.0F);
+    // Both shoulders: 0.5 an update up to the sprint speed, along the facing (+y).
+    fight.run("0 press l1\n0 press r1\n", 4);
+    CHECK(std::fabs(fight.human().speed() - 2.0F) < 1e-3F);
+    fight.run("0 press l1\n0 press r1\n", 60);
+    CHECK(std::fabs(fight.human().speed() - top) < 1e-3F);
+    CHECK(fight.human().position().y > 45.0F);
+    CHECK(std::fabs(fight.human().heading()) < 1e-4F);
+    // L1 alone turns left (the heading up) by 0.03 + 0.05 x (1 - speed / top) and loses 0.04.
+    fight.run("0 press l1\n", 1);
+    const float slower = top - 0.04F;
+    CHECK(std::fabs(fight.human().speed() - slower) < 1e-3F);
+    CHECK(std::fabs(fight.human().heading() - (0.03F + (0.05F * (1.0F - (slower / top))))) < 1e-4F);
+    // Cross brakes 0.5 on top of the roll's 0.04.
+    fight.run("0 press cross\n", 1);
+    CHECK(std::fabs(fight.human().speed() - (slower - 0.54F)) < 1e-3F);
+    // Neither: it rolls to a stop.
+    fight.run("", 400);
+    CHECK(fight.human().speed() == 0.0F);
+}

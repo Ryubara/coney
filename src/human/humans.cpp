@@ -58,6 +58,7 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     // 1. The records: one no pad drives has its command cleared, so only what a brain writes this step is read, and no
     // buttons, which only a pad gives.
     for (std::size_t i = 0; i < m_humans.size(); ++i) {
+        m_humans[i]->record().padDriven = m_padControlled[i];
         if (!m_padControlled[i]) {
             m_humans[i]->record().command = combat::command::kNone;
             m_humans[i]->record().padCommand = combat::command::kNone;

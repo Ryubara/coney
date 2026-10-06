@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.2% of the game's own code (442,212 of 3,354,776 bytes, 1,357 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.2% of the game's own code (443,484 of 3,354,776 bytes, 1,358 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▉░░░░░░░░░░░░░░` | 29.5% | 88 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 12.2% | 405 | 1,096,672 |
+| `Human` | `██▌░░░░░░░░░░░░░░░░░` | 12.3% | 406 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -729,6 +729,7 @@ at the top of the repository's `README.md`.
 | `0x00240898` | `Human_AirControl` | `Human` | not filled in |
 | `0x00240e38` | `Human_PlayerLocomotion` | `Human` | not filled in |
 | `0x00241b90` | `Human_FightStanceMove` | `Human` | 3,160 |
+| `0x002427e8` | `Human_WheelchairControl` | `Human` | 1,272 |
 | `0x00244e78` | `Human_MoveAttached` | `Human` | 1,176 |
 | `0x00245310` | `Human_MoveGrabbing` | `Human` | 1,552 |
 | `0x00245920` | `Human_HandleMessage` | `Human` | 8,248 |

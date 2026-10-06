@@ -336,22 +336,21 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HuSetNoAutoLock", humanCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
                             host.setFlags(handleArg(args, 0), human::flag::kNoAutoLock, boolArg(args, 1));
                         }));
-    // `HuSetWheelchairControl(human, on)`: the wheelchair flag, the player commands 46 and 47 removed (on) or restored,
-    // and the cameras' look-behind switch (11) cleared. **Coney stand-in**: the locomotion it swaps in is not on the
-    // page, so the human moves on its own.
+    // `HuSetWheelchairControl(human, on)`: on, the wheelchair flag (which gives a pad-driven human the wheelchair's
+    // control, Human::updateState()), every player command off and the cameras' look-behind switch (11) off; off, the
+    // flag cleared, every command on again and the switch on. **Coney stand-in**: the commands 46 and 47 it adds for L1
+    // and R1 are not, as the control reads the two buttons itself.
     // @orig 0x00234188 Human_SetWheelchairControl (unknown)
     vm.registerFunction("HuSetWheelchairControl", [context = &context](std::span<const Value> args) {
-        constexpr int kFirstCommand = 46;
-        constexpr int kSecondCommand = 47;
+        constexpr int kAllCommands = 0;
         const double human = handleArg(args, 0);
         const bool on = boolArg(args, 1);
         if (HumanBindingHost* host = humansOf(*context); host != nullptr) {
             host->setFlags(human, human::flag::kWheelchair, on);
-            host->enableCommand(human, kFirstCommand, !on);
-            host->enableCommand(human, kSecondCommand, !on);
+            host->enableCommand(human, kAllCommands, !on);
         }
         if (context->cameras != nullptr) {
-            context->cameras->enable(camera::Cameras::kSwitchLookBehind, false);
+            context->cameras->enable(camera::Cameras::kSwitchLookBehind, !on);
         }
         return binding::none();
     });

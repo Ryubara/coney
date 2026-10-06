@@ -366,9 +366,12 @@ built yet.
   match with his time.
 - **Wheelchair**: the scripts' own race runs: the CPU racer drives `WheelChairRace`, its checkpoint glow moved on by
   `Teleport` (which moves a spawned object's record as well as a human, so the glow's trigger sphere follows), the
-  finish line tinted with `ObjColor`. `HuSetWheelchairControl` sets the wheelchair flag, takes away commands 46 and 47
-  and clears the look-behind switch, but the wheelchair's locomotion is not on the page, so the racers move on their
-  own (a stand-in); `HuSetNoAutoLock` and `CamAssignRevCamButton` are kept, and `ActGiveWay` does nothing.
+  finish line tinted with `ObjColor`. `HuSetWheelchairControl` sets the wheelchair flag, turns every command off and
+  the look-behind switch off; the player then drives with L1 and R1 and brakes with cross
+  ([Characters: wheelchair control](characters.md#wheelchair), `repo:src/human/human.h`), while the CPU racer keeps
+  its own locomotion. Stand-ins: no start clip or wheelchair clips (the body slides in its idle), commands 46 and 47
+  are not added (the control reads the buttons itself), and `DeclareWinner`'s pad lock stops the pushes.
+  `HuSetNoAutoLock` and `CamAssignRevCamButton` are kept, and `ActGiveWay` does nothing.
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
@@ -379,7 +382,7 @@ test; the switch's choice and the brain left behind; a dynamic clip's rate; a lo
 brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
 scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight; a knock-out without its clips
 or its wake-up after 14 s; the spawners' type pick and out-of-sight placement; the engage goal's range; the
-wheelchair's locomotion and the give-way action.
+wheelchair's clips and the give-way action.
 
 ## Open questions {#open-questions}
 
@@ -411,8 +414,8 @@ wheelchair's locomotion and the give-way action.
 - How a spawner picks from its ten types, and where `0x001673b8` puts a human out of the camera's sight (Coney: the
   types in turn; a level flag out of the view whose distance from the player is nearest the value).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
-- The wheelchair control's locomotion (`0x00234188`): its speeds, turning and the L1 / R1 wheel pushes the arena's
-  prompt describes, and commands 46 and 47 (Coney: the human's own locomotion).
+- The wheelchair's clips and start (state code 5), and whether the update is 1/30 s or 1/60 s (Coney: no clips, the
+  constants per 1/30 s step).
 - What `ActGiveWay`'s action (`0x002fe4b0`) does (Coney: nothing).
 - Mercy is versus only, and Coney has no second player yet; its one-player path (`GoalGrabTarget` on `P21` against
   Mercy) is not reachable from the menus.

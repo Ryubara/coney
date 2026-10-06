@@ -366,12 +366,12 @@ TEST_CASE("Wheelchair's control, auto-lock flag, reverse button, colour and a te
     cameras.enable(coney::camera::Cameras::kSwitchLookBehind, true);
     level.call("HuSetWheelchairControl", {Value(handle), Value(1.0)});
     CHECK(racer.human().hasFlag(coney::human::flag::kWheelchair));
-    constexpr std::uint64_t kCommands46And47 = (std::uint64_t{1} << 46U) | (std::uint64_t{1} << 47U);
-    CHECK((racer.human().script().disabledCommands & kCommands46And47) == kCommands46And47);
+    CHECK(racer.human().script().disabledCommands == ~std::uint64_t{0});
     CHECK_FALSE(cameras.enabled(coney::camera::Cameras::kSwitchLookBehind));
     level.call("HuSetWheelchairControl", {Value(handle), Value(0.0)});
     CHECK_FALSE(racer.human().hasFlag(coney::human::flag::kWheelchair));
-    CHECK((racer.human().script().disabledCommands & kCommands46And47) == 0);
+    CHECK(racer.human().script().disabledCommands == 0);
+    CHECK(cameras.enabled(coney::camera::Cameras::kSwitchLookBehind));
 
     level.call("HuSetNoAutoLock", {Value(handle), Value(1.0)});
     CHECK(racer.human().hasFlag(coney::human::flag::kNoAutoLock));
