@@ -1531,6 +1531,18 @@ subsystem = "GUI"
 size = 64
 
 [[function]]
+address = 0x0019f1b0
+name = "ActionPrompt_SetText"
+subsystem = "GUI"
+size = 192
+
+[[function]]
+address = 0x0019f430
+name = "ActionPrompt_SetRaise"
+subsystem = "GUI"
+size = 152
+
+[[function]]
 address = 0x001a0fd0
 name = "Bar::Bar"
 subsystem = "GUI"
@@ -1564,10 +1576,142 @@ subsystem = "GUI"
 size = 72
 
 [[function]]
+address = 0x001acee0
+name = "HUD::HUD"
+subsystem = "GUI"
+size = 1704
+
+[[function]]
+address = 0x001af010
+name = "HUD_Update"
+subsystem = "GUI"
+size = 9776
+
+[[function]]
+address = 0x001b1688
+name = "HUD_Render"
+subsystem = "GUI"
+size = 2224
+
+[[function]]
+address = 0x001b1f38
+name = "HUD_HideAll"
+subsystem = "GUI"
+size = 248
+
+[[function]]
+address = 0x001b2030
+name = "HUD_HidePlayers"
+subsystem = "GUI"
+size = 88
+
+[[function]]
+address = 0x001b2088
+name = "HUD_ShowPlayers"
+subsystem = "GUI"
+size = 88
+
+[[function]]
+address = 0x001b20f8
+name = "HUD_ShowAll"
+subsystem = "GUI"
+size = 176
+
+[[function]]
+address = 0x001b2200
+name = "HUD_AttachPlayer"
+subsystem = "GUI"
+size = 240
+
+[[function]]
+address = 0x001b3f98
+name = "HUD_RadarAddObjective"
+subsystem = "GUI"
+size = 40
+
+[[function]]
+address = 0x001b4038
+name = "HUD_RadarSetIcon"
+subsystem = "GUI"
+size = 96
+
+[[function]]
+address = 0x001b4098
+name = "HUD_RadarRemove"
+subsystem = "GUI"
+size = 40
+
+[[function]]
+address = 0x001b4168
+name = "HUD_RadarAddHuman"
+subsystem = "GUI"
+size = 304
+
+[[function]]
+address = 0x001b4298
+name = "HUD_RadarFlash"
+subsystem = "GUI"
+size = 64
+
+[[function]]
+address = 0x001b4328
+name = "HUD_RadarOn"
+subsystem = "GUI"
+size = 128
+
+[[function]]
+address = 0x001b43a8
+name = "HUD_RadarOff"
+subsystem = "GUI"
+size = 144
+
+[[function]]
+address = 0x001b4790
+name = "HUD_PanelAlloc"
+subsystem = "GUI"
+size = 40
+
+[[function]]
+address = 0x001b47b8
+name = "HUD_PanelRelease"
+subsystem = "GUI"
+size = 40
+
+[[function]]
+address = 0x001b47e0
+name = "HUD_PanelSetValue"
+subsystem = "GUI"
+size = 40
+
+[[function]]
 address = 0x001b4908
 name = "LightManager_SetColourOffset"
 subsystem = "GUI"
 size = 64
+
+[[function]]
+address = 0x001b5b08
+name = "HUD_SetAnnounceMessage"
+subsystem = "GUI"
+size = 120
+
+[[function]]
+address = 0x001b5c30
+name = "HUD_EnableInstructionArrow"
+subsystem = "GUI"
+size = 152
+
+[[function]]
+address = 0x001b5e90
+name = "Tutorial_SetCallback"
+subsystem = "GUI"
+size = 24
+
+[[function]]
+address = 0x001b5ff0
+name = "GameState_SetTutorialText"
+subsystem = "GUI"
+size = 16
 
 [[function]]
 address = 0x001b7a18
@@ -1660,6 +1804,18 @@ subsystem = "GUI"
 size = 456
 
 [[function]]
+address = 0x001c8b08
+name = "ScrollIn_Queue"
+subsystem = "GUI"
+size = 680
+
+[[function]]
+address = 0x001c9028
+name = "ScrollIn_Update"
+subsystem = "GUI"
+size = 1184
+
+[[function]]
 address = 0x001ca950
 name = "Captions_Draw"
 subsystem = "GUI"
@@ -1723,6 +1879,42 @@ address = 0x001cd1e0
 name = "TextWidget_SetText"
 subsystem = "GUI"
 size = 160
+
+[[function]]
+address = 0x001cdc80
+name = "HintBox_Update"
+subsystem = "GUI"
+size = 1384
+
+[[function]]
+address = 0x001ce3c0
+name = "HintBox_Queue"
+subsystem = "GUI"
+size = 400
+
+[[function]]
+address = 0x001ce550
+name = "HintBox_Contains"
+subsystem = "GUI"
+size = 112
+
+[[function]]
+address = 0x001ce5c0
+name = "HintBox_Withdraw"
+subsystem = "GUI"
+size = 344
+
+[[function]]
+address = 0x001ce748
+name = "HintBox_FlushPriority"
+subsystem = "GUI"
+size = 368
+
+[[function]]
+address = 0x001ce8b8
+name = "HintBox_Draw"
+subsystem = "GUI"
+size = 240
 
 [[function]]
 address = 0x001cea70
@@ -1814,6 +2006,12 @@ subsystem = "GUI"
 address = 0x001d6c10
 name = "YesNoBox_OnCommand"
 subsystem = "GUI"
+
+[[function]]
+address = 0x001dad88
+name = "HUD_SetObjective"
+subsystem = "GUI"
+size = 1216
 
 [[function]]
 address = 0x001db3c0
@@ -2255,6 +2453,42 @@ subsystem = "GUI"
 size = 160
 
 [[function]]
+address = 0x0020dc98
+name = "PlayerHUD_SetBanner"
+subsystem = "GUI"
+size = 824
+
+[[function]]
+address = 0x0020e028
+name = "PlayerHUD_Show"
+subsystem = "GUI"
+size = 48
+
+[[function]]
+address = 0x00211ca0
+name = "PlayerHUD::PlayerHUD"
+subsystem = "GUI"
+size = 600
+
+[[function]]
+address = 0x00212840
+name = "PlayerHUD_Init"
+subsystem = "GUI"
+size = 2080
+
+[[function]]
+address = 0x00213290
+name = "PlayerHUD_Render"
+subsystem = "GUI"
+size = 1160
+
+[[function]]
+address = 0x00214138
+name = "PlayerHUD_Update"
+subsystem = "GUI"
+size = 2704
+
+[[function]]
 address = 0x00218008
 name = "Human_Init"
 subsystem = "Human"
@@ -2374,6 +2608,12 @@ address = 0x00226510
 name = "Human_PowerFraction"
 subsystem = "Human"
 size = 192
+
+[[function]]
+address = 0x00229570
+name = "Human_BannerKind"
+subsystem = "Human"
+size = 176
 
 [[function]]
 address = 0x0022ae40
@@ -4764,9 +5004,51 @@ subsystem = "Scripting"
 size = 96
 
 [[function]]
+address = 0x0036e858
+name = "HUDSetAnnounceMsg"
+subsystem = "Scripting"
+size = 128
+
+[[function]]
+address = 0x0036e998
+name = "HUDGetNewPH"
+subsystem = "Scripting"
+size = 168
+
+[[function]]
+address = 0x0036ea40
+name = "HUDReleasePH"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x0036ea78
+name = "HUDSetPHValue"
+subsystem = "Scripting"
+size = 264
+
+[[function]]
+address = 0x0036ebe0
+name = "ForceShowPlayerHud"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x0036eec8
+name = "HUDEnableGameTutorialText"
+subsystem = "Scripting"
+size = 48
+
+[[function]]
 address = 0x0036eef8
 name = "ShowProfileManager_Binding"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x0036f0d0
+name = "HUDShowMissionSummaryText"
+subsystem = "Scripting"
+size = 96
 
 [[function]]
 address = 0x0036f130
@@ -4778,6 +5060,144 @@ address = 0x0036f218
 name = "HUDLaunchMissionComplete"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x0036f280
+name = "HUDSetObjective"
+subsystem = "Scripting"
+size = 224
+
+[[function]]
+address = 0x0036f360
+name = "HUDRemoveAllGoalText"
+subsystem = "Scripting"
+size = 32
+
+[[function]]
+address = 0x0036f380
+name = "HUDSetTutorialText"
+subsystem = "Scripting"
+size = 104
+
+[[function]]
+address = 0x0036f3e8
+name = "HUDCheckTutorialText"
+subsystem = "Scripting"
+size = 72
+
+[[function]]
+address = 0x0036f430
+name = "HUDFlushTutorialText"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x0036fdd0
+name = "HUDEnableInstArrow"
+subsystem = "Scripting"
+size = 192
+
+[[function]]
+address = 0x0036fe90
+name = "HUDSetInstArrowAnimSpeed"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00370098
+name = "HUDSetTutorialCallback"
+subsystem = "Scripting"
+size = 48
+
+[[function]]
+address = 0x003700c8
+name = "HUDTurnOnRadar"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00370100
+name = "HUDTurnOffRadar"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00370690
+name = "HUDSetRadarObjectFlash"
+subsystem = "Scripting"
+size = 152
+
+[[function]]
+address = 0x00370760
+name = "HUDAddRadarMissionObjective"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00370798
+name = "HUDAddSecondaryRadarMissionObjective"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x003708c8
+name = "HUDSetRadarItemTexture"
+subsystem = "Scripting"
+size = 184
+
+[[function]]
+address = 0x00370980
+name = "HUDDeleteRadarMissionObjective"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00370a30
+name = "HUDDeleteRadarObject"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00370a68
+name = "HUDAddRadarHuman"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00370c68
+name = "ShowHud"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00370ca0
+name = "HideHud"
+subsystem = "Scripting"
+size = 32
+
+[[function]]
+address = 0x00370cc0
+name = "RestoreHud"
+subsystem = "Scripting"
+size = 32
+
+[[function]]
+address = 0x00370ce0
+name = "HidePlayerHud"
+subsystem = "Scripting"
+size = 32
+
+[[function]]
+address = 0x00370d00
+name = "ShowPlayerHud"
+subsystem = "Scripting"
+size = 32
+
+[[function]]
+address = 0x00370d20
+name = "FlashRageBar"
+subsystem = "Scripting"
+size = 120
 
 [[function]]
 address = 0x00371230

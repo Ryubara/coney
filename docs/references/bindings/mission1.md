@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 180 implemented, 0 partial, 35 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 206 implemented, 0 partial, 9 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -139,33 +139,33 @@ leave part of its effect open; its notes say which.
 | [`SetFogColor`](effects.md#setfogcolor) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`SetLight`](effects.md#setlight) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`SpawnParticle`](effects.md#spawnparticle) | Effects and lighting | traced | confirmed (code) | implemented |
-| [`FlashRageBar`](hud.md#flashragebar) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`ForceShowPlayerHud`](hud.md#forceshowplayerhud) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HideHud`](hud.md#hidehud) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDAddRadarHuman`](hud.md#hudaddradarhuman) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDAddRadarMissionObjective`](hud.md#hudaddradarmissionobjective) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDAddSecondaryRadarMissionObjective`](hud.md#hudaddsecondaryradarmissionobjective) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDDeleteRadarMissionObjective`](hud.md#huddeleteradarmissionobjective) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDDeleteRadarObject`](hud.md#huddeleteradarobject) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDEnableGameTutorialText`](hud.md#hudenablegametutorialtext) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDEnableInstArrow`](hud.md#hudenableinstarrow) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDFlushTutorialText`](hud.md#hudflushtutorialtext) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDGetNewPH`](hud.md#hudgetnewph) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`FlashRageBar`](hud.md#flashragebar) | HUD and menus | traced | confirmed (code) | implemented |
+| [`ForceShowPlayerHud`](hud.md#forceshowplayerhud) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HideHud`](hud.md#hidehud) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDAddRadarHuman`](hud.md#hudaddradarhuman) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDAddRadarMissionObjective`](hud.md#hudaddradarmissionobjective) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDAddSecondaryRadarMissionObjective`](hud.md#hudaddsecondaryradarmissionobjective) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDDeleteRadarMissionObjective`](hud.md#huddeleteradarmissionobjective) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDDeleteRadarObject`](hud.md#huddeleteradarobject) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDEnableGameTutorialText`](hud.md#hudenablegametutorialtext) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDEnableInstArrow`](hud.md#hudenableinstarrow) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDFlushTutorialText`](hud.md#hudflushtutorialtext) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDGetNewPH`](hud.md#hudgetnewph) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDLaunchMissionComplete`](hud.md#hudlaunchmissioncomplete) | HUD and menus | traced | confirmed (code) | implemented |
-| [`HUDReleasePH`](hud.md#hudreleaseph) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDRemoveAllGoalText`](hud.md#hudremoveallgoaltext) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDSetAnnounceMsg`](hud.md#hudsetannouncemsg) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDSetObjective`](hud.md#hudsetobjective) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDSetPHValue`](hud.md#hudsetphvalue) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDSetRadarItemTexture`](hud.md#hudsetradaritemtexture) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDSetRadarObjectFlash`](hud.md#hudsetradarobjectflash) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDSetTutorialCallback`](hud.md#hudsettutorialcallback) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDSetTutorialText`](hud.md#hudsettutorialtext) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDShowMissionSummaryText`](hud.md#hudshowmissionsummarytext) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDTurnOffRadar`](hud.md#hudturnoffradar) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDTurnOnRadar`](hud.md#hudturnonradar) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`RestoreHud`](hud.md#restorehud) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`ShowHud`](hud.md#showhud) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDReleasePH`](hud.md#hudreleaseph) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDRemoveAllGoalText`](hud.md#hudremoveallgoaltext) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDSetAnnounceMsg`](hud.md#hudsetannouncemsg) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDSetObjective`](hud.md#hudsetobjective) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDSetPHValue`](hud.md#hudsetphvalue) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDSetRadarItemTexture`](hud.md#hudsetradaritemtexture) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDSetRadarObjectFlash`](hud.md#hudsetradarobjectflash) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDSetTutorialCallback`](hud.md#hudsettutorialcallback) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDSetTutorialText`](hud.md#hudsettutorialtext) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDShowMissionSummaryText`](hud.md#hudshowmissionsummarytext) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDTurnOffRadar`](hud.md#hudturnoffradar) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDTurnOnRadar`](hud.md#hudturnonradar) | HUD and menus | traced | confirmed (code) | implemented |
+| [`RestoreHud`](hud.md#restorehud) | HUD and menus | traced | confirmed (code) | implemented |
+| [`ShowHud`](hud.md#showhud) | HUD and menus | traced | confirmed (code) | implemented |
 | [`AddAmbientSoundEmitter2`](sound.md#addambientsoundemitter2) | Sound and music | traced | confirmed (code) | implemented |
 | [`SetAmbientEmitterPositions`](sound.md#setambientemitterpositions) | Sound and music | traced | confirmed (code) | implemented |
 | [`SetAmbientTrackVolume`](sound.md#setambienttrackvolume) | Sound and music | traced | confirmed (code) | implemented |

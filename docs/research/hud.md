@@ -595,7 +595,41 @@ mission ends through `HUDLaunchMissionComplete` and mode 0xb ([Front end](fronte
 
 ## Coney's implementation
 
-None yet.
+`src/hud/` is the HUD, platform-neutral, stepped on the fixed 1/30 s step with the game time in ms; `src/platform/hud_layer.h`
+loads its sheets and draws it through the [sprite batches and the 2D pass](gui.md#coneys-implementation).
+
+- **`hud::Hud`** (`0x001acee0`): the panels, the hint box, the checklist and its scroll-in queue, the announcement,
+  the counter panels, the arrow and the radars' state. `update` (`HUD_Update`) steps them; `render` (`HUD_Render`)
+  draws in the [render order](#the-huds-frame) with [what hides what](#the-huds-frame), nothing while hidden. A mode
+  that stops stepping it (mode 0xb) draws it as it was left.
+- **`hud::PlayerPanel`**: the [layout](#the-player-panel-layout-0x0050fa10), the banner by type, the
+  [meter](#the-rage-meter) (caps and strips of `part_page0` 54-57, one-texel inset, the full meter's pulse and sound,
+  `FlashRageBar`), the [score and money](#score-and-money) counting by a sixteenth plus one with their popups,
+  the [counters and their slots](#item-counters), and the 2 s hold and 1 s fade. Activity: a changed value, SELECT, the
+  force-show flag. The parts land within a pixel of the page's 640 × 448 figures (`tests/hud/player_panel_test.cpp`).
+- **`hud::HintBox`**: the [hint queue](#hints-hudsettutorialtext) of 20 sorted by priority, interrupt and restart, a
+  hint's time only from its `<DISPLAYTIME>` (else until flushed), the box laid out from the
+  [table](#hint-box-layout-0x0050eb50) and following the text's fade.
+- **`ScrollInQueue`**, **`CounterPanels`**, the announcements and the action prompt: the objectives' messages at
+  (0.025, 0.88); the five panels; the bottom-left and centred [announcements](#announcements-and-other-messages),
+  each replaced at once and timed by its markup; player 0's [prompt](#action-prompts) at (0.5, 0.86) raised over the
+  hint box or message. Nothing draws while `HudFrame::letterbox` is set.
+- **The bindings** (`src/scripting/hud_bindings.h`): every HUD binding `level99` calls, through `BindingContext::hud`.
+  `HUDSetTutorialCallback` keeps the name for combat to call.
+- **Sound**: the cues by the table `SoundCfgInterfaceSound` fills, and the named sounds, play through
+  `audio::SoundPlayer` ([Sound](sound.md#interface-sounds)); silent without sound.
+- **In play**: the play mode steps the HUD with player 1's rage and draws it over the frame; the story shares the
+  flow's HUD with the scripts. The debug menus' HUD page sets its values ([Debug menu](../guides/debug-menu.md#pages)).
+
+**Coney's stand-ins** (marked in the code): text sizes read as the glyph height (`(0.04, 0.05)` as w × h, 0.05 as h);
+the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons
+`part_page0` 31 and 34; the money's icon a `$`; the popups' places; the money cue once per count; the built-in
+announcements' texts from `GSTRING.ANNOUNCE` by kind; a `<FREEZE>` hint shown for its time (at least 2 s) as the game
+timer does not freeze yet; the prompt's text set by the game code or the debug menu, not chosen by `HUD_Update`, and no
+letterbox state given by the play mode yet; the counter panels' texts right-aligned on x 0.96; the radar disc
+`big_font` 256 sized from the measurement, a dark disc for the map, the player's icon 362 at the centre and no other
+blips drawn; the arrow turned only by half turns (no rotated sprites yet); player 1's other parts 0.09 right of player
+0's; the HUD shown at start.
 
 ## Open questions
 
@@ -613,3 +647,11 @@ None yet.
 - Human state flag `0x200000`, which turns the banner blue-grey.
 - The layouts of the other video modes (16:9, progressive, PAL) that `0x00211ef8`, `0x001af010` and `0x001cdc80` apply
   (the radar's are [above](#the-radar-on-screen)).
+- The values at `0x00510040`/`0x00510044` (slot `x0`) and `0x00510048`/`0x0051004c` (the counter lines), and the
+  counters' text offset.
+- The money's icon (rectangle and sheet) and where the score's and the money's popups sit.
+- The size arguments of the HUD's texts: a glyph's height, or `(w, h)`, or a `Font_Size` scale.
+- Whether the built-in announcements (`0x00622e20`) are `GSTRING.ANNOUNCE`.
+- Whether the money's cue `0x10` plays once or every counting frame.
+- The counter panels' text layout and alignment, and a bar panel's look.
+- Player 1's score, money and counter offsets.

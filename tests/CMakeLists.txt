@@ -62,6 +62,8 @@ add_executable(coney_tests
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
+    hud/hud_test.cpp
+    hud/player_panel_test.cpp
     platform/disc_change_character_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_story_start_test.cpp
@@ -89,6 +91,7 @@ add_executable(coney_tests
     scripting/anim_callbacks_test.cpp
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
+    scripting/hud_bindings_test.cpp
     scripting/disc_strings_test.cpp
     scripting/camera_bindings_test.cpp
     scripting/level_bindings_test.cpp

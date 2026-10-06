@@ -4,6 +4,7 @@
 #include <format>
 #include <utility>
 
+#include "scripting/hud_bindings.h"
 #include "warriors/disk_profile_store.h"
 
 namespace coney {
@@ -50,6 +51,9 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
       m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;
+    // The HUD the scripts' HUD bindings act on; the scripts start later (start()).
+    m_context.hud = &m_hud;
+    m_hud.setServices(script::hudServicesOf(m_context));
     m_services.attachScripts(&m_scripts);
     m_gameplay.setMoviePlayer(&m_services);
     m_missionComplete.setProfiles(m_profiles.get());

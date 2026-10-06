@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 11.2%](https://img.shields.io/badge/reimplemented-11.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 12.2%](https://img.shields.io/badge/reimplemented-12.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▎░░░░░░░░░░░░░░░░░` | 11.2% of the game's own code (375,388 of 3,354,776 bytes, 1,043 functions) |
+| **Reimplemented** | `██▍░░░░░░░░░░░░░░░░░` | 12.2% of the game's own code (407,716 of 3,354,776 bytes, 1,113 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -61,14 +61,14 @@ at the top of the repository's `README.md`.
 | `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 6 | 7,120 |
 | `GameModes` | `█████░░░░░░░░░░░░░░░` | 25.0% | 63 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 54 | 195,624 |
-| `GUI` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 128 | 497,416 |
-| `Human` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 296 | 1,096,672 |
+| `GUI` | `███▌░░░░░░░░░░░░░░░░` | 17.6% | 167 | 497,416 |
+| `Human` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 297 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 138 | 197,192 |
+| `Scripting` | `█████▋░░░░░░░░░░░░░░` | 28.2% | 168 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 49 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -372,13 +372,37 @@ at the top of the repository's `README.md`.
 | `0x00198e20` | `SectorPlugin_StreamRead` | `Graphics` | not filled in |
 | `0x0019ee70` | `GlobalString_Get` | `GUI` | 48 |
 | `0x0019eea0` | `GlobalString_Set` | `GUI` | 64 |
+| `0x0019f1b0` | `ActionPrompt_SetText` | `GUI` | 192 |
+| `0x0019f430` | `ActionPrompt_SetRaise` | `GUI` | 152 |
 | `0x001a0fd0` | `Bar::Bar` | `GUI` | not filled in |
 | `0x001a1138` | `Bar_Render` | `GUI` | not filled in |
 | `0x001a1bf8` | `BaseWidget::BaseWidget` | `GUI` | 56 |
 | `0x001a1db8` | `BaseWidget_Setup` | `GUI` | not filled in |
 | `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
+| `0x001acee0` | `HUD::HUD` | `GUI` | 1,704 |
+| `0x001af010` | `HUD_Update` | `GUI` | 9,776 |
+| `0x001b1688` | `HUD_Render` | `GUI` | 2,224 |
+| `0x001b1f38` | `HUD_HideAll` | `GUI` | 248 |
+| `0x001b2030` | `HUD_HidePlayers` | `GUI` | 88 |
+| `0x001b2088` | `HUD_ShowPlayers` | `GUI` | 88 |
+| `0x001b20f8` | `HUD_ShowAll` | `GUI` | 176 |
+| `0x001b2200` | `HUD_AttachPlayer` | `GUI` | 240 |
+| `0x001b3f98` | `HUD_RadarAddObjective` | `GUI` | 40 |
+| `0x001b4038` | `HUD_RadarSetIcon` | `GUI` | 96 |
+| `0x001b4098` | `HUD_RadarRemove` | `GUI` | 40 |
+| `0x001b4168` | `HUD_RadarAddHuman` | `GUI` | 304 |
+| `0x001b4298` | `HUD_RadarFlash` | `GUI` | 64 |
+| `0x001b4328` | `HUD_RadarOn` | `GUI` | 128 |
+| `0x001b43a8` | `HUD_RadarOff` | `GUI` | 144 |
+| `0x001b4790` | `HUD_PanelAlloc` | `GUI` | 40 |
+| `0x001b47b8` | `HUD_PanelRelease` | `GUI` | 40 |
+| `0x001b47e0` | `HUD_PanelSetValue` | `GUI` | 40 |
 | `0x001b4908` | `LightManager_SetColourOffset` | `GUI` | 64 |
+| `0x001b5b08` | `HUD_SetAnnounceMessage` | `GUI` | 120 |
+| `0x001b5c30` | `HUD_EnableInstructionArrow` | `GUI` | 152 |
+| `0x001b5e90` | `Tutorial_SetCallback` | `GUI` | 24 |
+| `0x001b5ff0` | `GameState_SetTutorialText` | `GUI` | 16 |
 | `0x001b7a18` | `LockPickDial_SetDifficulty` | `GUI` | 336 |
 | `0x001b8530` | `LockPickDial_Draw` | `GUI` | 2,056 |
 | `0x001b8d38` | `LockPickDial_Judge` | `GUI` | 408 |
@@ -395,6 +419,8 @@ at the top of the repository's `README.md`.
 | `0x001c81e8` | `ScreenFlowController_Unwind` | `GUI` | 256 |
 | `0x001c82e8` | `ScreenFlowController_Pop` | `GUI` | 224 |
 | `0x001c83c8` | `ScreenFlowController_Update` | `GUI` | 456 |
+| `0x001c8b08` | `ScrollIn_Queue` | `GUI` | 680 |
+| `0x001c9028` | `ScrollIn_Update` | `GUI` | 1,184 |
 | `0x001ca950` | `Captions_Draw` | `GUI` | 576 |
 | `0x001cab90` | `Subtitles_ChunkHandler` | `GUI` | 48 |
 | `0x001cabc0` | `Captions_Init` | `GUI` | 184 |
@@ -406,6 +432,12 @@ at the top of the repository's `README.md`.
 | `0x001ccf88` | `TextWidget::TextWidget` | `GUI` | 56 |
 | `0x001cd060` | `TextWidget_Setup` | `GUI` | not filled in |
 | `0x001cd1e0` | `TextWidget_SetText` | `GUI` | 160 |
+| `0x001cdc80` | `HintBox_Update` | `GUI` | 1,384 |
+| `0x001ce3c0` | `HintBox_Queue` | `GUI` | 400 |
+| `0x001ce550` | `HintBox_Contains` | `GUI` | 112 |
+| `0x001ce5c0` | `HintBox_Withdraw` | `GUI` | 344 |
+| `0x001ce748` | `HintBox_FlushPriority` | `GUI` | 368 |
+| `0x001ce8b8` | `HintBox_Draw` | `GUI` | 240 |
 | `0x001cea70` | `UsageInfo::UsageInfo` | `GUI` | 64 |
 | `0x001ceb40` | `UsageInfo_Setup` | `GUI` | not filled in |
 | `0x001cec28` | `UsageInfo_SetText` | `GUI` | 80 |
@@ -423,6 +455,7 @@ at the top of the repository's `README.md`.
 | `0x001d52c8` | `OptionGrid_Render` | `GUI` | not filled in |
 | `0x001d6738` | `YesNoBox_Setup` | `GUI` | not filled in |
 | `0x001d6c10` | `YesNoBox_OnCommand` | `GUI` | not filled in |
+| `0x001dad88` | `HUD_SetObjective` | `GUI` | 1,216 |
 | `0x001db3c0` | `PauseMenu_Construct` | `GUI` | not filled in |
 | `0x001dbee0` | `PauseMenu_Open` | `GUI` | not filled in |
 | `0x001ddcf8` | `PauseMenu_Update` | `GUI` | not filled in |
@@ -498,6 +531,12 @@ at the top of the repository's `README.md`.
 | `0x0020c8d0` | `PM_Subtitles::PM_Subtitles` | `GUI` | 264 |
 | `0x0020cab8` | `PM_Subtitles::Init` | `GUI` | 848 |
 | `0x0020cf30` | `PM_Subtitles::HandleCommand` | `GUI` | 160 |
+| `0x0020dc98` | `PlayerHUD_SetBanner` | `GUI` | 824 |
+| `0x0020e028` | `PlayerHUD_Show` | `GUI` | 48 |
+| `0x00211ca0` | `PlayerHUD::PlayerHUD` | `GUI` | 600 |
+| `0x00212840` | `PlayerHUD_Init` | `GUI` | 2,080 |
+| `0x00213290` | `PlayerHUD_Render` | `GUI` | 1,160 |
+| `0x00214138` | `PlayerHUD_Update` | `GUI` | 2,704 |
 | `0x00218008` | `Human_Init` | `Human` | not filled in |
 | `0x0021a490` | `Human_PushOutInAir` | `Human` | not filled in |
 | `0x0021b290` | `Strike_Contact` | `Human` | 3,488 |
@@ -519,6 +558,7 @@ at the top of the repository's `README.md`.
 | `0x00223cb0` | `Human_IsBusy` | `Human` | 136 |
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
+| `0x00229570` | `Human_BannerKind` | `Human` | 176 |
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x0022d790` | `LockPick_Start` | `Human` | 376 |
@@ -929,9 +969,39 @@ at the top of the repository's `README.md`.
 | `0x0036df48` | `MenuLoadLevel` | `Scripting` | not filled in |
 | `0x0036df98` | `SetStartGameCallback` | `Scripting` | 48 |
 | `0x0036e050` | `GetGameTime` | `Scripting` | 96 |
+| `0x0036e858` | `HUDSetAnnounceMsg` | `Scripting` | 128 |
+| `0x0036e998` | `HUDGetNewPH` | `Scripting` | 168 |
+| `0x0036ea40` | `HUDReleasePH` | `Scripting` | 56 |
+| `0x0036ea78` | `HUDSetPHValue` | `Scripting` | 264 |
+| `0x0036ebe0` | `ForceShowPlayerHud` | `Scripting` | 96 |
+| `0x0036eec8` | `HUDEnableGameTutorialText` | `Scripting` | 48 |
 | `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
+| `0x0036f0d0` | `HUDShowMissionSummaryText` | `Scripting` | 96 |
 | `0x0036f130` | `HUDLaunchMissionFailed` | `Scripting` | not filled in |
 | `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | 56 |
+| `0x0036f280` | `HUDSetObjective` | `Scripting` | 224 |
+| `0x0036f360` | `HUDRemoveAllGoalText` | `Scripting` | 32 |
+| `0x0036f380` | `HUDSetTutorialText` | `Scripting` | 104 |
+| `0x0036f3e8` | `HUDCheckTutorialText` | `Scripting` | 72 |
+| `0x0036f430` | `HUDFlushTutorialText` | `Scripting` | 56 |
+| `0x0036fdd0` | `HUDEnableInstArrow` | `Scripting` | 192 |
+| `0x0036fe90` | `HUDSetInstArrowAnimSpeed` | `Scripting` | 56 |
+| `0x00370098` | `HUDSetTutorialCallback` | `Scripting` | 48 |
+| `0x003700c8` | `HUDTurnOnRadar` | `Scripting` | 56 |
+| `0x00370100` | `HUDTurnOffRadar` | `Scripting` | 56 |
+| `0x00370690` | `HUDSetRadarObjectFlash` | `Scripting` | 152 |
+| `0x00370760` | `HUDAddRadarMissionObjective` | `Scripting` | 56 |
+| `0x00370798` | `HUDAddSecondaryRadarMissionObjective` | `Scripting` | 56 |
+| `0x003708c8` | `HUDSetRadarItemTexture` | `Scripting` | 184 |
+| `0x00370980` | `HUDDeleteRadarMissionObjective` | `Scripting` | 56 |
+| `0x00370a30` | `HUDDeleteRadarObject` | `Scripting` | 56 |
+| `0x00370a68` | `HUDAddRadarHuman` | `Scripting` | 56 |
+| `0x00370c68` | `ShowHud` | `Scripting` | 56 |
+| `0x00370ca0` | `HideHud` | `Scripting` | 32 |
+| `0x00370cc0` | `RestoreHud` | `Scripting` | 32 |
+| `0x00370ce0` | `HidePlayerHud` | `Scripting` | 32 |
+| `0x00370d00` | `ShowPlayerHud` | `Scripting` | 32 |
+| `0x00370d20` | `FlashRageBar` | `Scripting` | 120 |
 | `0x00371230` | `SoundPlayMusicTrack` | `Scripting` | 168 |
 | `0x00371348` | `SoundLoopMusicTrack` | `Scripting` | 176 |
 | `0x003713f8` | `SoundStopMusicTrack` | `Scripting` | 32 |

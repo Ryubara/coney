@@ -37,6 +37,10 @@ void addSpawnerPage(DebugSession& session);
 /// The AI fighters page: spawn a fighter in front of the player, clear them, switch their engaging on or off, and watch
 /// them. Over PlayControls.
 void addFightersPage(DebugSession& session);
+/// The HUD page: the in-game HUD's parts on and off (the HUD, the player panel, force-show, the rage bar's flashing,
+/// the radar, the arrow), player 0's rage, score, money and items set, and an objective, a hint and an announcement
+/// fired. Over PlayControls::hud(); says so when no mode draws a HUD.
+void addHudPage(DebugSession& session);
 /// The Debug draw page: the lines of DebugDrawOptions.
 void addDebugDrawPage(DebugSession& session);
 /// Fills `page` with the tunables of `category`: each as a toggle or a number with its default, then a reset. The

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The pages over a play mode (Player, Camera, Spawner, Debug draw) and the Levels page's levels and sandboxes, driven
-// through the menu model over a fake PlayControls: no game, no disc.
+// The pages over a play mode (Player, Camera, Spawner, HUD, Debug draw) and the Levels page's levels and sandboxes,
+// driven through the menu model over a fake PlayControls: no game, no disc.
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,6 +17,7 @@
 #include "debug/debug_session.h"
 #include "debug/menu_model.h"
 #include "debug/play_controls.h"
+#include "hud/hud.h"
 
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
@@ -71,6 +74,11 @@ class FakePlay final : public coney::debug::PlayControls {
         return {};
     }
 
+    // The HUD the HUD page acts on, when `withHud`.
+    [[nodiscard]] coney::hud::Hud* hud() override { return withHud ? &hudObject : nullptr; }
+
+    coney::hud::Hud hudObject;
+    bool withHud = false;
     coney::anim::Vec3 feet{0.0F, 0.0F, 0.0F};
     float heading = 0.0F;
     int teleports = 0;
@@ -114,9 +122,47 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
     // The pages come after Levels, and Debug draw needs no player.
     const auto titles = session.model().pageTitles();
     CHECK(titles == std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console", "Cheats", "Levels", "Player",
-                                             "Camera", "Spawner", "AI fighters", "Debug draw", "Display", "Audio",
-                                             "Input"});
+                                             "Camera", "Spawner", "AI fighters", "HUD", "Debug draw", "Display",
+                                             "Audio", "Input"});
     CHECK(session.model().openPage("Debug draw")->items().size() == 6);
+}
+
+TEST_CASE("the HUD page switches the HUD's parts, sets the panel's values and fires messages", "[debug][hud]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    // A mode without a HUD says so.
+    auto page = session.model().openPage("HUD");
+    REQUIRE(page != nullptr);
+    REQUIRE(page->items().size() == 1);
+    play.withHud = true;
+    page = session.model().openPage("HUD");
+    REQUIRE(page != nullptr);
+    coney::hud::Hud& hud = play.hudObject;
+    itemOn(*page, "HUD shown").setBool(false);
+    CHECK_FALSE(hud.visible());
+    itemOn(*page, "HUD shown").setBool(true);
+    itemOn(*page, "Force show panel").setBool(true);
+    CHECK(hud.panel(0).forceShow());
+    itemOn(*page, "Flash rage bar").setBool(true);
+    CHECK(hud.panel(0).flashFrames() == 5);
+    itemOn(*page, "Instruction arrow").setBool(true);
+    CHECK(hud.arrow().on);
+    itemOn(*page, "Money").setNumber(250.0);
+    CHECK(hud.overrides(0).money == std::optional<int>(250));
+    CHECK(itemOn(*page, "Money").getNumber() == 250.0);
+    itemOn(*page, "Money").setNumber(-1.0);
+    CHECK_FALSE(hud.overrides(0).money.has_value());
+    itemOn(*page, "Give one of each item").run();
+    CHECK(hud.overrides(0).items == std::optional<std::array<int, 4>>(std::array<int, 4>{1, 1, 1, 1}));
+    itemOn(*page, "Fire an objective").run();
+    CHECK(hud.scrollIn().messages().size() == 1);
+    itemOn(*page, "Fire a hint").run();
+    CHECK(hud.hints().queued().size() == 1);
+    itemOn(*page, "Fire an announcement").run();
+    CHECK(hud.centredAnnouncement().has_value());
+    itemOn(*page, "Action prompt").setBool(true);
+    CHECK(hud.actionPrompt(0) == "Debug action prompt");
 }
 
 TEST_CASE("the Player page shows the player, freezes it and teleports it", "[debug]") {

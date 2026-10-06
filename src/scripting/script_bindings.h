@@ -51,6 +51,14 @@ class AnimCallbacks;
 class SoundHost;
 class MessageHandlers;
 
+} // namespace coney::script
+
+namespace coney::hud {
+class Hud;
+}
+
+namespace coney::script {
+
 /// What the bindings ask of the game outside the script system and the game state: the menus, the level flow, the
 /// screen effects and the audio and movie stand-ins. The front end (gamemodes/start_up_flow.h) implements it.
 class BindingHost {
@@ -166,6 +174,7 @@ struct BindingContext {
     effects::LevelEffects* effects = nullptr;    ///< The level's particles and motion blur; null: none drawn.
     SoundHost* sound = nullptr;                  ///< The game's sound (sound_bindings.h); null plays nothing.
     world_objects::Cars* cars = nullptr;         ///< The level's parked cars (`CarSpawn`); null keeps none.
+    hud::Hud* hud = nullptr;                     ///< The HUD the HUD bindings act on; null acts on none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

@@ -23,6 +23,7 @@
 #include "graphics/screen_fade.h"
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
+#include "hud/hud.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
@@ -118,6 +119,8 @@ class StartUpFlow final : public script::BindingHost {
     /// The dynamic objects' spawn records (`ObjSpawn`).
     [[nodiscard]] world_objects::SpawnRecords& spawnRecords() { return m_spawnRecords; }
     [[nodiscard]] const world_objects::SpawnRecords& spawnRecords() const { return m_spawnRecords; }
+    /// The in-game HUD the scripts' HUD bindings act on (the original's one HUD object); the play mode draws it.
+    [[nodiscard]] hud::Hud& hud() { return m_hud; }
 
     void showProfileManager(std::string_view onRumble, std::string_view onStartGame) override;
     void showRumbleModeInterface(std::string_view onCancel, std::string_view onStart, double players) override;
@@ -147,6 +150,7 @@ class StartUpFlow final : public script::BindingHost {
     world_objects::ObjectTypes m_objectTypes;
     world_objects::SpawnRecords m_spawnRecords;
     gui::RumbleData m_rumbleData; // the Rumble menu's lists, which its chunks build
+    hud::Hud m_hud;
     FrontEndServices m_services;
     std::unique_ptr<ProfileStore> m_profiles;
     graphics::ScreenFade m_fade;

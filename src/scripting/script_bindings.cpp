@@ -21,6 +21,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/effects_bindings.h"
 #include "scripting/gang_bindings.h"
+#include "scripting/hud_bindings.h"
 #include "scripting/human_bindings.h"
 #include "scripting/level_bindings.h"
 #include "scripting/lighting_bindings.h"
@@ -718,6 +719,37 @@ constexpr std::array kBindings{
     real("ConvertJumpToDoor"),
     real("CfgSetLockPickHandler"),
     real("CfgSetLockPickStageFailHandler"),
+    // The in-game HUD: the player panels, objectives, hints, counter panels, the arrow and the radars (hud_bindings.h).
+    real("FlashRageBar"),
+    real("ForceShowPlayerHud"),
+    real("HUDAddRadarHuman"),
+    real("HUDAddRadarMissionObjective"),
+    real("HUDAddSecondaryRadarMissionObjective"),
+    real("HUDCheckTutorialText"),
+    real("HUDDeleteRadarMissionObjective"),
+    real("HUDDeleteRadarObject"),
+    real("HUDEnableGameTutorialText"),
+    real("HUDEnableInstArrow"),
+    real("HUDFlushTutorialText"),
+    real("HUDGetNewPH"),
+    real("HUDReleasePH"),
+    real("HUDRemoveAllGoalText"),
+    real("HUDSetAnnounceMsg"),
+    real("HUDSetInstArrowAnimSpeed"),
+    real("HUDSetObjective"),
+    real("HUDSetPHValue"),
+    real("HUDSetRadarItemTexture"),
+    real("HUDSetRadarObjectFlash"),
+    real("HUDSetTutorialCallback"),
+    real("HUDSetTutorialText"),
+    real("HUDShowMissionSummaryText"),
+    real("HUDTurnOffRadar"),
+    real("HUDTurnOnRadar"),
+    real("HidePlayerHud"),
+    real("HideHud"),
+    real("RestoreHud"),
+    real("ShowHud"),
+    real("ShowPlayerHud"),
     // The Rumble menu's lists, which its chunks build (rumble_bindings.h).
     real("CfgRumbleGame"),
     real("CfgRumbleGang"),
@@ -978,8 +1010,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
             vm.registerFunction(info.name, maker->make(factory));
             continue;
         }
-        // Every real binding has a maker or is a string, level, Rumble, AI, gang, scene or lighting binding
-        // (CONEY_ASSERT).
+        // Every real binding has a maker or is a string, level, Rumble, AI, gang, scene, lighting or HUD
+        // binding (CONEY_ASSERT).
         CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end() ||
                      std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
                      std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
@@ -996,7 +1028,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kPlayerBindings, info.name) != kPlayerBindings.end() ||
                      std::ranges::find(kHumanBindings, info.name) != kHumanBindings.end() ||
                      std::ranges::find(kEffectsBindings, info.name) != kEffectsBindings.end() ||
-                     std::ranges::find(kCarBindings, info.name) != kCarBindings.end());
+                     std::ranges::find(kCarBindings, info.name) != kCarBindings.end() ||
+                     std::ranges::find(kHudBindings, info.name) != kHudBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1006,6 +1039,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addLightingBindings(vm, context);
     addPlayerBindings(scripts, vm, context);
     addSoundBindings(scripts, vm, context);
+    addHudBindings(vm, context);
     // With no scene system at the call (a test, the menus, a mode that plays no scenes), the stand-in keeps the
     // scripts' scene flow moving.
     addSceneBindings(vm, context,

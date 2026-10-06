@@ -12,6 +12,10 @@
 #include "core/error.h"
 #include "sandbox/sandbox_layout.h"
 
+namespace coney::hud {
+class Hud;
+}
+
 namespace coney::debug {
 
 /// A named place the player can be put: the feet, in the game's axes (z up, metres), and the heading in degrees (0
@@ -140,6 +144,9 @@ class PlayControls {
     virtual std::expected<void, Error> changeCharacter(int /*type*/) {
         return std::unexpected(Error{ErrorCode::InvalidArgument, "no character types here"});
     }
+
+    /// The in-game HUD the mode draws, for the HUD page; null when it has none.
+    [[nodiscard]] virtual hud::Hud* hud() { return nullptr; }
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from

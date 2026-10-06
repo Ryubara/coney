@@ -96,6 +96,7 @@ add_library(coney_core STATIC
     scripting/config_strings.cpp
     scripting/gang_bindings.cpp
     scripting/human_bindings.cpp
+    scripting/hud_bindings.cpp
     scripting/level_bindings.cpp
     scripting/lighting_bindings.cpp
     scripting/lua_chunk.cpp
@@ -274,11 +275,22 @@ target_sources(coney_core PRIVATE
     debug/native_signatures.cpp
     debug/pad_menu_input.cpp
     debug/pages_engine.cpp
+    debug/pages_hud.cpp
     debug/pages_play.cpp
     debug/pages_scripts.cpp
     debug/time_control.cpp
     debug/time_series.cpp
     debug/tunables.cpp)
+# The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
+target_sources(coney_core PRIVATE
+    hud/counter_panels.cpp
+    hud/counting_number.cpp
+    hud/hint_box.cpp
+    hud/hud.cpp
+    hud/hud_canvas.cpp
+    hud/messages.cpp
+    hud/player_panel.cpp
+    hud/player_panel_render.cpp)
 # The pad debug menu's renderer: the in-game list in the game's font or Coney's bitmap font.
 target_sources(coney_core PRIVATE graphics/bitmap_font.cpp gui/debug_menu_view.cpp gui/debug_text_painter.cpp)
 coney_target_defaults(coney_core)

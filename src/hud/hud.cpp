@@ -1,0 +1,347 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "hud/hud.h"
+
+#include <cmath>
+#include <numbers>
+#include <utility>
+
+#include "gui/text_layout.h"
+
+namespace coney::hud {
+
+namespace {
+
+// Objective slots and modes.
+constexpr int kObjectiveSet = 0;
+constexpr int kObjectiveClear = 1;
+constexpr int kObjectiveMark = 2;
+constexpr int kObjectiveSetMarked = 3;
+// The announcement kind that shows the script's own text.
+constexpr int kAnnounceCustom = 5;
+// The Armies of the Night levels, where the first-objective hint is not given.
+constexpr int kArmiesFirstLevel = 60;
+constexpr int kArmiesLastLevel = 64;
+// The player's blip's colour (`0x787878ff`) and Coney's size for it.
+constexpr graphics::Rgba kPlayerBlipColour{0x78, 0x78, 0x78, 0xff};
+constexpr float kPlayerBlipSize = 0.025F;
+// Coney's stand-in for the map inside the radar disc.
+constexpr graphics::Rgba kRadarMapStandIn{40, 40, 40, 255};
+
+// The radars a player argument names: 0 or 1 one, anything else (2, the default) both.
+std::array<bool, kPlayers> radarsOf(int player) {
+    if (player == 0) {
+        return {true, false};
+    }
+    if (player == 1) {
+        return {false, true};
+    }
+    return {true, true};
+}
+
+} // namespace
+
+GuiPoint InstructionArrow::offset() const {
+    return GuiPoint{step * std::sin(angle) / kArrowBobDivisor, -step * std::cos(angle) / kArrowBobDivisor};
+}
+
+Hud::Hud(HudServices services) : m_services(std::move(services)) {}
+
+std::string Hud::read(const std::function<std::string(std::uint32_t)>& service, std::uint32_t id) {
+    return service ? service(id) : std::string{};
+}
+
+int Hud::attachPlayer(int slot, int type) {
+    if (slot < 0 || static_cast<std::size_t>(slot) >= kPlayers) {
+        return -1;
+    }
+    PlayerPanel& target = m_panels.at(static_cast<std::size_t>(slot));
+    if (!target.attach(type)) {
+        return -1;
+    }
+    if (!m_visible) {
+        target.hide();
+    }
+    return slot;
+}
+
+void Hud::hideAll() {
+    // The Armies of the Night exception (game state +0x14c) does not arise in Coney's levels yet.
+    for (PlayerPanel& panel : m_panels) {
+        panel.hide();
+    }
+    m_radar.on = {false, false};
+    m_visible = false;
+}
+
+void Hud::showAll() {
+    for (PlayerPanel& panel : m_panels) {
+        panel.show();
+    }
+    m_radar.on = {true, true};
+    m_visible = true;
+}
+
+void Hud::hidePlayers() {
+    for (PlayerPanel& panel : m_panels) {
+        panel.setMayShow(false);
+        panel.hide();
+    }
+}
+
+void Hud::showPlayers() {
+    for (PlayerPanel& panel : m_panels) {
+        panel.setMayShow(true);
+        panel.show();
+    }
+}
+
+std::string Hud::objectiveHeader(int slot) const {
+    // The objective icon (yellow for slot 0 at 0.8, blue for slot 1), the HUD colour, the heading string.
+    const std::size_t index = slot == 1 ? 1 : 0;
+    const std::string icon = index == 0 ? "<SIZE 0.8><YOBJ></SIZE>" : "<BOBJ>";
+    const std::string colour =
+        m_services.hudColour ? m_services.hudColour(kObjectiveHeaderColours.at(index)) : std::string{};
+    return icon + colour + read(m_services.hudString, kObjectiveHeaderStrings.at(index));
+}
+
+void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, std::uint32_t ms) {
+    if (slot < 0 || static_cast<std::size_t>(slot) >= m_checklist.slots.size()) {
+        return;
+    }
+    std::optional<ChecklistLine>& line = m_checklist.slots.at(static_cast<std::size_t>(slot));
+    switch (mode) {
+    case kObjectiveSet:
+        line = ChecklistLine{std::string(text), false};
+        if (!silent && slot < 2) {
+            m_scrollIn.queue(ScrollInMessage{objectiveHeader(slot) + "<CR>" + std::string(text), kObjectiveMessagePlace,
+                                             ms, kCueObjective});
+        }
+        // The first slot-1 objective with the game's hints on queues one hint, once.
+        if (slot == 1 && m_gameTutorialText && !m_firstObjectiveHintGiven &&
+            (m_levelNumber < kArmiesFirstLevel || m_levelNumber > kArmiesLastLevel)) {
+            m_firstObjectiveHintGiven = true;
+            m_hints.queue(read(m_services.tutorialString, kFirstObjectiveHint), kGameHintPriority);
+        }
+        break;
+    case kObjectiveClear:
+        line.reset();
+        break;
+    case kObjectiveMark:
+        if (!line) {
+            line = ChecklistLine{std::string(text), false};
+        }
+        line->marked = true;
+        // Two messages: the heading, then the text.
+        m_scrollIn.queue(ScrollInMessage{objectiveHeader(slot), kObjectiveMessagePlace, ms, kCueObjective});
+        m_scrollIn.queue(ScrollInMessage{std::string(text), kObjectiveMessagePlace, ms, std::nullopt});
+        break;
+    case kObjectiveSetMarked:
+        line = ChecklistLine{std::string(text), true};
+        break;
+    default:
+        break;
+    }
+}
+
+void Hud::removeGoalText() { m_checklist.slots.at(0).reset(); }
+
+void Hud::setAnnouncement(int kind, std::string_view text, bool flag) {
+    Announcement announcement;
+    announcement.startMs = m_nowMs;
+    announcement.flag = flag;
+    if (kind == kAnnounceCustom) {
+        announcement.text = std::string(text);
+        announcement.displayMs = markupTimesOf(announcement.text).displayMs;
+        m_centred = std::move(announcement);
+        return;
+    }
+    // The built-in messages: Coney takes them from GSTRING.ANNOUNCE by kind (inferred from the five entries).
+    announcement.text = read(m_services.announceString, static_cast<std::uint32_t>(kind));
+    announcement.displayMs = markupTimesOf(announcement.text).displayMs;
+    m_services.sound.playCue(kCueAnnounce);
+    m_announcement = std::move(announcement);
+}
+
+float Hud::promptRaise(const gui::FontLookup& fonts) const {
+    // Over the hint box while it shows (and no scroll-in message does), else over the scroll-in message, if any.
+    if (m_hints.showing() && !m_scrollIn.showing()) {
+        return kPromptRaiseOverHint - m_hints.boxHeight(fonts);
+    }
+    return kPromptRaiseOverMessage - m_scrollIn.showingHeight(fonts);
+}
+
+void Hud::enableArrow(bool on, float x, float y, float angle) {
+    m_arrow.on = on;
+    if (on) {
+        m_arrow.place = GuiPoint{x, y};
+        m_arrow.angle = angle;
+        m_arrow.step = 0.0F;
+        m_arrow.rising = true;
+    }
+}
+
+void Hud::radarOn(int player) {
+    const std::array<bool, kPlayers> which = radarsOf(player);
+    for (std::size_t i = 0; i < kPlayers; ++i) {
+        if (which.at(i)) {
+            m_radar.on.at(i) = true;
+        }
+    }
+    m_radar.scriptOn = true;
+}
+
+void Hud::radarOff(int player) {
+    const std::array<bool, kPlayers> which = radarsOf(player);
+    for (std::size_t i = 0; i < kPlayers; ++i) {
+        if (which.at(i)) {
+            m_radar.on.at(i) = false;
+        }
+    }
+    m_radar.scriptOn = false;
+}
+
+void Hud::update(const HudFrame& frame) {
+    m_nowMs = frame.nowMs;
+    m_levelNumber = frame.levelNumber;
+    // 1. The player panels, with their values and pads.
+    for (std::size_t i = 0; i < kPlayers; ++i) {
+        PanelValues values = frame.players.at(i);
+        const PanelOverrides& overrides = m_overrides.at(i);
+        values.rage = overrides.rage.value_or(values.rage);
+        values.score = overrides.score.value_or(values.score);
+        values.money = overrides.money.value_or(values.money);
+        values.items = overrides.items.value_or(values.items);
+        m_panels.at(i).update(values, frame.pads.at(i), frame.nowMs, m_services.sound);
+    }
+    // 2. A screen fade turns both radars off. Their automatic return needs HUD +0x177ac, whose setter is not traced, so
+    // in Coney a radar comes back only by script.
+    m_letterbox = frame.letterbox;
+    if (frame.screenFading || frame.letterbox) {
+        m_radar.on = {false, false};
+    }
+    // 3. The messages, the hint box and the counter panels on their game-time clocks; an announcement ends when its
+    // `<DISPLAYTIME>` has passed.
+    m_scrollIn.update(frame.nowMs, m_services.sound);
+    m_hints.update(frame.nowMs, m_services.sound);
+    m_counters.update(frame.nowMs);
+    for (std::optional<Announcement>* announcement : {&m_announcement, &m_centred}) {
+        if (*announcement && (*announcement)->displayMs &&
+            frame.nowMs - (*announcement)->startMs >= *(*announcement)->displayMs) {
+            announcement->reset();
+        }
+    }
+    // 4. The arrow's bob: up by 2 a frame to the top, back down by 0.5.
+    if (m_arrow.on) {
+        if (m_arrow.rising) {
+            m_arrow.step += kArrowStepUp;
+            if (m_arrow.step >= kArrowStepMax) {
+                m_arrow.step = kArrowStepMax;
+                m_arrow.rising = false;
+            }
+        } else {
+            m_arrow.step -= kArrowStepDown;
+            if (m_arrow.step <= 0.0F) {
+                m_arrow.step = 0.0F;
+                m_arrow.rising = true;
+            }
+        }
+    }
+}
+
+void Hud::renderRadar(const HudCanvas& canvas) const {
+    if (!m_radar.on.at(0)) {
+        return;
+    }
+    // The disc's centre in overlay-camera space at depth 1.0, its size from the runtime measurement.
+    const graphics::OverlayCamera camera;
+    const graphics::LogicalPoint size =
+        camera.unprojectSize(graphics::LogicalPoint{kRadarPixelsWide, kRadarPixelsHigh}, kRadarDepth);
+    const graphics::OverlayPoint centre{kRadarX, kRadarY, kRadarDepth};
+    if (canvas.radar != nullptr && kRadarDiscRect < canvas.radar->sheet().page.rects.size()) {
+        const graphics::UvRect uv = canvas.radar->sheet().page.rect(kRadarDiscRect);
+        canvas.radar->addSprite(graphics::Sprite{centre, size.x, size.y, uv, kRadarColour});
+        canvas.radar->addSprite(
+            graphics::Sprite{centre, size.x * kRadarInnerScale, size.y * kRadarInnerScale, uv, kRadarMapStandIn});
+    }
+    if (canvas.parts != nullptr && kRadarPlayerIcon < canvas.parts->sheet().page.rects.size()) {
+        const graphics::UvRect uv = canvas.parts->sheet().page.rect(kRadarPlayerIcon);
+        const float side = kPlayerBlipSize * kRadarDepth / graphics::OverlayCamera::kGuiDepth;
+        const float width =
+            graphics::OverlayCamera::guiWidthToOverlay(squareTexelWidth(canvas.parts->sheet(), uv, side));
+        canvas.parts->addSprite(graphics::Sprite{centre, width, side, uv, kPlayerBlipColour});
+    }
+}
+
+void Hud::renderArrow(const HudCanvas& canvas) const {
+    if (!m_arrow.on || canvas.minigames == nullptr || kArrowRect >= canvas.minigames->sheet().page.rects.size()) {
+        return;
+    }
+    graphics::UvRect uv = canvas.minigames->sheet().page.rect(kArrowRect);
+    // Coney's stand-in for the rotated sprite (format 1, not implemented): the angle to the nearest half turn, a half
+    // turn drawn by flipping the rectangle both ways.
+    const float halfTurns = std::round(m_arrow.angle / std::numbers::pi_v<float>);
+    if (static_cast<long>(halfTurns) % 2 != 0) {
+        std::swap(uv.u0, uv.u1);
+        std::swap(uv.v0, uv.v1);
+    }
+    const GuiPoint bob = m_arrow.offset();
+    const float width =
+        squareTexelWidth(canvas.minigames->sheet(), canvas.minigames->sheet().page.rect(kArrowRect), kArrowSize);
+    canvas.minigames->addSprite(
+        guiSprite(m_arrow.place.x + bob.x, m_arrow.place.y + bob.y, width, kArrowSize, uv, kArrowColour));
+}
+
+void Hud::render(const HudCanvas& canvas) const {
+    if (!m_visible || m_letterbox) {
+        return;
+    }
+    renderRadar(canvas);
+    renderArrow(canvas);
+    m_counters.render(canvas);
+    for (const PlayerPanel& panel : m_panels) {
+        panel.render(canvas, m_levelNumber);
+    }
+    // The announcements' own `<DISPLAYTIME>` fades them, timed from when they were set.
+    if (m_announcement) {
+        gui::TextStyle style = messageStyle(kAnnouncePlace.x);
+        style.timeMs = static_cast<std::uint32_t>(m_nowMs - m_announcement->startMs);
+        drawMessage(canvas, m_announcement->text, style, kAnnouncePlace.y);
+    }
+    if (m_centred) {
+        gui::TextStyle style = messageStyle(kCentredAnnouncePlace.x);
+        style.alignment = gui::TextAlignment::Centre;
+        style.timeMs = static_cast<std::uint32_t>(m_nowMs - m_centred->startMs);
+        drawMessage(canvas, m_centred->text, style, kCentredAnnouncePlace.y);
+    }
+    if (!scrollInHidden()) {
+        m_scrollIn.render(canvas);
+    }
+    if (!hintsHidden()) {
+        m_hints.render(canvas);
+    }
+    if (!scrollInHidden()) {
+        renderPrompt(canvas);
+    }
+}
+
+void Hud::renderPrompt(const HudCanvas& canvas) const {
+    const std::string& text = m_prompts.at(0);
+    if (text.empty() || !canvas.text.fonts) {
+        return;
+    }
+    gui::TextStyle style;
+    style.x = kPromptPlace.x;
+    style.scale = metricsOfHeight(kPromptTextHeight).width * 30.0F;
+    style.colour = kPromptColour;
+    style.alignment = gui::TextAlignment::Centre;
+    // The base y plus the raise; a prompt of several lines moves up a further step per line.
+    const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
+    float y = kPromptPlace.y + promptRaise(canvas.text.fonts);
+    if (measured.lines > 1) {
+        y -= kPromptLineRaise * static_cast<float>(measured.lines);
+    }
+    style.y = y;
+    gui::addTextSprites(gui::layoutText(text, style, canvas.text.fonts), canvas.text.textBatch);
+}
+
+} // namespace coney::hud

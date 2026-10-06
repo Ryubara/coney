@@ -81,6 +81,7 @@
     box and the action prompts are hidden. Details: [The in-game
     HUD](../../research/hud.md#announcements-and-other-messages).
   usage: {chunks: 17, calls: 50, boot: true, mission1: true, result_used: false, levels: [95, 34, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HUDSetANBossTexture
   wrapper: 0x0036e8d8
@@ -140,6 +141,7 @@
   notes: >-
     Panels live in the HUD object at 0x0060b4f0, 0xa50 bytes each.
   usage: {chunks: 20, calls: 40, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDReleasePH
   wrapper: 0x0036ea40
@@ -152,6 +154,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 16, calls: 37, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDSetPHValue
   wrapper: 0x0036ea78
@@ -170,6 +173,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 53, calls: 239, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDSetPHLabelFlashing
   wrapper: 0x0036eb80
@@ -200,6 +204,7 @@
     While the flag is set the panel's render restarts its 2 s show and 1 s fade every frame (0x00213290). Behaviour:
     [The in-game HUD](../../research/hud.md#the-player-panel).
   usage: {chunks: 43, calls: 131, boot: true, mission1: true, result_used: false, levels: [95, 34, 2, 5, 31, 14, 9, 51, 52, 92, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HUDShowMissionSelect
   wrapper: 0x0036ec40
@@ -326,6 +331,7 @@
   notes: >-
     What reads the flag is not traced.
   usage: {chunks: 36, calls: 38, boot: false, mission1: true, result_used: false, levels: [86]}
+  coney: implemented
 
 - name: ShowProfileManager
   wrapper: 0x0036eef8
@@ -373,6 +379,7 @@
   notes: >-
     global.lua still calls it after scenes; Coney can implement it as a no-op.
   usage: {chunks: 3, calls: 3, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: HUDLaunchMissionFailed
   wrapper: 0x0036f130
@@ -511,6 +518,7 @@
     inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour:
     [The in-game HUD](../../research/hud.md#objectives-hudsetobjective).
   usage: {chunks: 149, calls: 675, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDRemoveAllGoalText
   wrapper: 0x0036f360
@@ -521,6 +529,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 7, calls: 7, boot: false, mission1: true, result_used: false, levels: [80, 86, 52, 92]}
+  coney: implemented
 
 - name: HUDSetTutorialText
   wrapper: 0x0036f380
@@ -540,6 +549,7 @@
     markup ends it, or until it is flushed, withdrawn or interrupted; without either tag it stays. Queue and timing:
     [The in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
   usage: {chunks: 53, calls: 244, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDCheckTutorialText
   wrapper: 0x0036f3e8
@@ -559,6 +569,7 @@
     The test compares string objects, which works because Lua 4 interns strings; a hint built from a different but
     equal-looking string still matches. Hint box at 0x00609250 ([HUD](../../research/hud.md)).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [3, 31]}
+  coney: implemented
 
 - name: HUDFlushTutorialText
   wrapper: 0x0036f430
@@ -571,6 +582,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 13, calls: 55, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDSetChaseHUDState_NORMAL
   wrapper: 0x0036f468
@@ -806,6 +818,7 @@
     The arrow is rectangle 10 of hud_minigames, size 0.06, grey (191, 191, 191), and bobs along its direction
     (0x001b7330). Behaviour: [The in-game HUD](../../research/hud.md#the-instruction-arrow-hudenableinstarrow).
   usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: HUDSetInstArrowAnimSpeed
   wrapper: 0x0036fe90
@@ -818,6 +831,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: HUDSetInstArrowLocation
   wrapper: 0x0036ff40
@@ -871,6 +885,7 @@
     call it. Because the name is not interned, the original relies on the script keeping the string alive (constants
     in a chunk are). Details: [The in-game HUD](../../research/hud.md#tutorial-callback).
   usage: {chunks: 2, calls: 20, boot: false, mission1: true, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HUDTurnOnRadar
   wrapper: 0x003700c8
@@ -885,6 +900,7 @@
   notes: >-
     Also sets the radar-on global 0x00617fec and the HUD manager's flag +0x177b0.
   usage: {chunks: 52, calls: 87, boot: false, mission1: true, result_used: false, levels: [80, 95, 34, 2, 3, 5, 86, 31, 14, 55, 84, 82, 92, 83, 20]}
+  coney: implemented
 
 - name: HUDTurnOffRadar
   wrapper: 0x00370100
@@ -900,6 +916,7 @@
     HUD_Update turns both radars back on when no screen fade runs, HUD +0x177ac is set and +0x177b0 is 0; who sets
     +0x177ac is not traced. Behaviour: [The in-game HUD](../../research/hud.md#the-radar-on-screen).
   usage: {chunks: 67, calls: 121, boot: false, mission1: true, result_used: false, levels: [95, 3, 5, 81, 51, 55, 84, 92, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HUDSetNumIndicator
   wrapper: 0x00370138
@@ -993,6 +1010,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 9, calls: 18, boot: false, mission1: true, result_used: false, levels: [87, 95, 5, 51, 11]}
+  coney: implemented
 
 - name: HUDSetRadarZoomScale
   wrapper: 0x00370728
@@ -1023,6 +1041,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 66, calls: 129, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDAddSecondaryRadarMissionObjective
   wrapper: 0x00370798
@@ -1035,6 +1054,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 6, calls: 9, boot: false, mission1: true, result_used: false, levels: [87, 95, 9, 83]}
+  coney: implemented
 
 - name: HUDChangeRadarMissionObjective
   wrapper: 0x003707d0
@@ -1063,6 +1083,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 70, calls: 154, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDDeleteRadarMissionObjective
   wrapper: 0x00370980
@@ -1075,6 +1096,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 63, calls: 149, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HUDRadarSetRange
   wrapper: 0x003709b8
@@ -1107,6 +1129,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 16, calls: 25, boot: false, mission1: true, result_used: false, levels: [80, 95, 86, 93, 9, 51, 52, 82, 92, 83]}
+  coney: implemented
 
 - name: HUDAddRadarHuman
   wrapper: 0x00370a68
@@ -1120,6 +1143,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 9, calls: 25, boot: false, mission1: true, result_used: false, levels: [80, 51, 52, 82]}
+  coney: implemented
 
 - name: HUDAddRadarObject
   wrapper: 0x00370aa0
@@ -1189,6 +1213,7 @@
   notes: >-
     level99's Main calls ShowHud(0) then RestoreHud().
   usage: {chunks: 5, calls: 5, boot: false, mission1: true, result_used: false, levels: [34, 2, 31, 20]}
+  coney: implemented
 
 - name: HideHud
   wrapper: 0x00370ca0
@@ -1203,6 +1228,7 @@
     Skipped when 0x0041d110 is true and `W_GameState + 0x14c` is 1; clears the HUD manager's visible flag +0x177a0.
     Behaviour: [The in-game HUD](../../research/hud.md#showing-and-hiding).
   usage: {chunks: 56, calls: 97, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: RestoreHud
   wrapper: 0x00370cc0
@@ -1213,6 +1239,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 82, calls: 199, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 51, 52, 54, 55, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HidePlayerHud
   wrapper: 0x00370ce0
@@ -1229,6 +1256,7 @@
     Panel calls 0x0020dfe0(panel, 0) then 0x0020dfe8 (hide), for the panels at HUD +0x08 and +0x0c ([HUD: showing and
     hiding](../../research/hud.md#showing-and-hiding)). HideHud hides more (radars, score board).
   usage: {chunks: 44, calls: 50, boot: false, mission1: false, result_used: false, levels: [95, 3, 84, 92]}
+  coney: implemented
 
 - name: ShowPlayerHud
   wrapper: 0x00370d00
@@ -1243,6 +1271,7 @@
   notes: >-
     Panel calls 0x0020dfe0(panel, 1) then 0x0020e008; a panel not attached to a player stays hidden.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 3, 92]}
+  coney: implemented
 
 - name: FlashRageBar
   wrapper: 0x00370d20
@@ -1258,6 +1287,7 @@
   notes: >-
     The counter is +0x4118 (0x00213290). Behaviour: [The in-game HUD](../../research/hud.md#the-rage-meter).
   usage: {chunks: 1, calls: 2, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CNSEnableMissionInfo
   wrapper: 0x0037d3f0
