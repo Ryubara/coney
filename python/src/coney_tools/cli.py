@@ -101,6 +101,8 @@ def _add_wad_commands(groups: Any) -> None:
     extract.add_argument("--only", nargs="+", metavar="HASH_OR_NAME", help="extract just these entries")
     names = commands.add_parser("names", help="recover names by hashing strings found on the disc")
     names.add_argument("paths", nargs="+", metavar="[DISC] OUT_FILE", help=f"[DISC] ({disc_help}) and OUT_FILE")
+    scene_check = commands.add_parser("scenes", help="parse every scene record of scene_list.cnk; counts and hashes")
+    scene_check.add_argument("disc", nargs="?", help=disc_help)
 
 
 def _add_xbox_commands(groups: Any) -> None:
@@ -257,6 +259,8 @@ def _run_wad(args: argparse.Namespace) -> int:
         return wad_cli.run_list(args.disc, args.names)
     if args.command == "extract":
         return wad_cli.run_extract(args.paths, args.names, args.only)
+    if args.command == "scenes":
+        return wad_cli.run_scenes(args.disc)
     return wad_cli.run_names(args.paths)
 
 

@@ -68,6 +68,18 @@ takes entry hashes (8 hex digits) or names (`global.lua`), and without it every 
     must never be committed ([LEGAL.md](repo:LEGAL.md#no-game-data)). Use a
     folder beside the checkout, such as `../../scratch/`.
 
+## scenes {#scenes}
+
+```sh
+uv run --project python coney-tools wad scenes [DISC]
+```
+
+Parses every record `scene_list.cnk` lists (scene headers and the segments of long scenes) with the layout on
+[Scenes](../research/scenes.md#data) and prints counts and hashes only: records parsed and failed, roles, objects,
+cameras and lights, total frames, broken segment chains, how many headers' frame counts differ from their parts, the
+event types seen, and SHA-256 digests of the list and of the records. Records whose list names are cut to 16
+characters are found by content. Exits 1 when a record fails to parse.
+
 ## xbox {#xbox}
 
 The Xbox version is an optional asset source ([Xbox assets](../research/xbox-assets.md)). The `xbox` commands read
