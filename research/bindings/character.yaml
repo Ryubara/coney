@@ -263,16 +263,22 @@
   wrapper: 0x00358c90
   calls:
     - {addr: 0x0023b0e0, name: Human_SetScale}
+    - {addr: 0x00219608, name: Human_StoreScale}
+    - {addr: 0x0021d020, name: Human_GetScale}
+    - {addr: 0x00341f28, name: PhysicsBody_ApplyHumanScale}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: scale, lua: number, ctype: float, desc: "Size factor, 1 for normal (scripts use 0.97 to 1.28)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: scale, lua: number, ctype: float, desc: "Size factor, 1 for normal (scripts use 0.97 to 1.28); not range-checked."}
   description: >-
-    Scales a human: 0x00219608 stores the factor (human `+0x65c`) and resizes its physics body, making bosses and
-    henchmen bigger or smaller.
+    Sets the human's body scale (`+0x65c`) and rebuilds its physics body (`+0x1a0`) at that size: the collision
+    capsule's height becomes 2 x scale and its radius 0.35 x scale, and each of its ten collision spheres is scaled.
+    Everything that asks for the human's size (camera framing, reach and steering in fights, lights, the speed check)
+    reads the same factor, so bosses and henchmen become bigger or smaller.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Whether the drawn model scales by the same factor is not traced.
+    While the human is linked to another in a grab (+0x280 set) or its move state has flag 0x800000, a scale below
+    1.1 counts as 1; whether the drawn model scales too is not traced.
   usage: {chunks: 17, calls: 29, boot: false, mission1: false, result_used: false, levels: [95, 3, 51, 52, 84, 82, 83, 20]}
 
 - name: HuSetLookPos
@@ -312,13 +318,17 @@
   wrapper: 0x00358ef0
   calls:
     - {addr: 0x00238078, name: Human_SetName}
+    - {addr: 0x0021cda8, name: Human_StoreName}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: name, lua: string, desc: "New name (up to 15 characters, stored at +0x80)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: name, lua: string, desc: "New name; the first 15 characters are kept."}
   description: >-
-    Renames the human (0x0021cda8), so lookups by name find it under the new one.
-  evidence: inferred
-  depth: brief
+    Renames the human: clears its 16-byte name field (`+0x80`) and copies up to 15 characters of `name` into it, so
+    HuFind finds it under the new name.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Longer names are cut silently; nothing checks that the name is unique (HuFind returns the first match).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuIsAimingAt
@@ -418,14 +428,18 @@
 - name: HuBlockTackle
   wrapper: 0x00359200
   calls:
-    - {addr: 0x00237b70}
+    - {addr: 0x00237b70, name: Human_SetBlockTackle}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: block, lua: boolean, desc: "True stops the human being tackled."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: block, lua: boolean, desc: "true sets the flag, false (or nil) clears it."}
   description: >-
-    Blocks or allows tackles on this human (flag 0x100000000 at +0xe0).
+    Sets or clears bit `0x100000000` of the human's 64-bit flag word (`+0xe0`), which from the name keeps the human from
+    being tackled (a boss the player must fight standing).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Only the storage is confirmed: the tackle code that reads the bit was not found (it is not tested in the tackle
+    start `0x002707a8`); scripts set it on hub and level-52 bosses.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 52]}
 
 - name: HuSetTireless
@@ -761,14 +775,22 @@
   wrapper: 0x00359ae0
   calls:
     - {addr: 0x00235e70, name: Human_SetUnarrestable}
+    - {addr: 0x00240800, name: Human_RegisterContextAction}
+    - {addr: 0x00240850, name: Human_UnregisterContextAction}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: "on", lua: boolean, desc: "true makes the human unarrestable, false arrestable again."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: "on", lua: boolean, desc: "true marks the human and offers the uncuff action on it; false (or nil) removes both."}
   description: >-
-    Sets or clears flag bit 0x8000 of the human's flag word and calls a virtual function on it (slot +0x124 when set,
-    +0x12c when cleared); from the name, the police cannot arrest the human.
-  evidence: inferred
-  depth: brief
+    Despite the name, this makes a human one the player can un-arrest: true sets flag `0x8000` of its flag word
+    (`+0xe0`) and registers the human (record at `+0x664`) as a context action of kind 0, a handcuffed human, so a
+    player within reach gets the uncuff prompt (`GSTRING.HUD` 2) and triangle starts the uncuff mash
+    ([Crimes: context records](../../research/crimes.md#context-records)). false clears the flag and withdraws the
+    action.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Registering does nothing when the human already has a context record; what else reads flag 0x8000 of +0xe0 is not
+    traced.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 82]}
 
 - name: HuIsOnFire
@@ -850,14 +872,21 @@
 - name: HuGiveCuffs
   wrapper: 0x0035aa28
   calls:
-    - {addr: 0x002372a8}
+    - {addr: 0x002372a8, name: Human_GiveCuffs}
+    - {addr: 0x00222980, name: Human_AddCuffs}
+    - {addr: 0x0041e5b0, name: Inventory_AddItem}
+    - {addr: 0x00222908, name: Human_GetCuffCount}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: count, lua: number, ctype: unsigned, desc: "How many handcuffs to give (scripts pass 1 to 3)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many handcuffs to add (scripts pass 1 to 3); read as unsigned, so a negative number wraps and, added in 32 or 8 bits, takes cuffs away."}
   description: >-
-    Gives the human handcuffs; for a player it goes through the player's HUD (message 5), so the pickup is shown.
-  evidence: inferred
-  depth: brief
+    Adds handcuffs. For a player it adds `count` to item 5 (handcuffs) of that player's inventory (game state `+0x480`,
+    the player's block `+0x380`), clamped to the item's limits, and runs the inventory's Lua callbacks for the change;
+    for an AI human it adds to the human's own cuff count (byte `+0x378`), clamped to 0-9.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    No HUD message is sent; cops always count as having cuffs (Human_GetCuffCount answers 1 for brain type 1).
   usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuSetWounded
@@ -1137,15 +1166,21 @@
 - name: HuGetPosition
   wrapper: 0x0035b2d0
   calls:
-    - {addr: 0x002352b0}
+    - {addr: 0x002352b0, name: Human_GetPositionRef}
+    - {addr: 0x0021d080, name: Human_GetPosition}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: usertype, desc: "An M_Vector4 (fields x, y, z, w) with the position in metres; the zero vector for an invalid handle."}
+    - {lua: usertype, type: M_Vector4, desc: "The human's position (x, y, z in metres, game axes with z up; w); for an invalid handle the shared zero vector at 0x005116c0."}
   description: >-
-    Returns the human's position.
+    Returns the human's position: its entry in the world position table (`0x00714b00` + index x 0x20), or, while it is
+    jumping or falling (state flags `0x1c00000000`) or climbing (state flag `0x40`), the point where the fall will end
+    or the climb starts (`+0x2c0`).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The usertype is pushed as a pointer into game memory, not a copy, so it follows the human as it moves and writing
+    its fields would move the stored vector; copy x, y, z out to keep a snapshot.
   usage: {chunks: 5, calls: 11, boot: false, mission1: false, result_used: true, levels: [95, 61]}
 
 - name: HuGetHeading
@@ -1372,15 +1407,18 @@
 - name: HuGetCharType
   wrapper: 0x0035b848
   calls:
-    - {addr: 0x00235890}
+    - {addr: 0x00235890, name: Human_GetCharType}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: number, desc: "The human's behaviour class (+0xcc, the type after the remapping at creation), or 0 for an invalid handle."}
+    - {lua: number, desc: "The human's behaviour class (`+0xcc`), or 0 for an invalid handle."}
   description: >-
-    Returns the human's character class.
+    Returns the human's behaviour class: the character type it was created with after `Human_Init`'s remap (Rembrandt,
+    created as type 32, answers 30), which selects its class record (speeds, brain type, attack table).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The type the human was created as is at `+0xd0` and is not returned; 0 is also a valid class number.
   usage: {chunks: 7, calls: 14, boot: false, mission1: false, result_used: true, levels: [95, 31, 20]}
 
 - name: HuSetDamage
@@ -1652,15 +1690,20 @@
   wrapper: 0x0035c030
   calls:
     - {addr: 0x0023a1b0, name: Human_SetCombatMode}
+    - {addr: 0x0022fe80, name: Human_EnterFightStance}
+    - {addr: 0x0022fef0, name: Human_LeaveFightStance}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: combat, lua: boolean, desc: "True puts it in combat mode, false takes it out."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: combat, lua: boolean, desc: "true puts it in fight stance, false (or nil) takes it out."}
   description: >-
-    Turns a human's fight stance on (true, 0x0022fe80) or off (anything else, 0x0022fef0).
+    Turns a human's fight stance on or off. On sets state flags `0x3` and restarts the stance timer (record `+0xfc` =
+    now + the global `0x00510994` seconds), unless the human is being tackled or in a state of `0xe0000`. Off clears
+    flags `0x7` (stance and target); for a pad-driven human standing idle it also resets its stance animation.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Only exactly true (1) turns it on. Fight stance: [Combat](../../research/combat.md#state-flags).
+    Fight stance: [Combat](../../research/combat.md#state-flags). An AI's brain can put it back in stance on its next
+    fight decision.
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [95, 54, 55, 83]}
 
 - name: HuSetIdleAnim
@@ -1786,15 +1829,18 @@
 - name: HuGetMoney
   wrapper: 0x0035c418
   calls:
-    - {addr: 0x00238158}
+    - {addr: 0x00238158, name: Human_GetMoney}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: number, desc: "The money the human carries (+0x370), or 0."}
+    - {lua: number, desc: "The cash the human carries (`+0x370`, 0-999 dollars), or 0 for an invalid handle."}
   description: >-
-    Returns how much money the human carries.
+    Returns how much cash the human carries: the money a player takes from it by mugging or beating it, set with
+    HuSetMoney.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    A player's own money is inventory item 2 (InvGetMoney), not this field.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true, levels: [95]}
 
 - name: HuSetCarriedItem
@@ -1861,34 +1907,50 @@
   wrapper: 0x0035c878
   calls:
     - {addr: 0x002345f8, name: Human_SetWorkoutCallbacks}
+    - {addr: 0x002346a0, name: Workout_CallStart}
+    - {addr: 0x00234768, name: Workout_CallRep}
+    - {addr: 0x00234830, name: Workout_CallEnd}
   args:
-    - {name: onStart, lua: string, desc: "Lua function called when the workout starts."}
-    - {name: onRep, lua: string, desc: "Lua function called for each repetition."}
-    - {name: onQuit, lua: string, desc: "Lua function called when the player quits the workout."}
+    - {name: onStart, lua: string, desc: "Lua function called with the human's handle when a workout begins (the start animation is set up), or nil."}
+    - {name: onRep, lua: string, desc: "Lua function called with the human's handle from the workout's loop animation, once per repetition (inferred), or nil."}
+    - {name: onEnd, lua: string, desc: "Lua function called with the human's handle when the workout ends, by quitting, running out of effort or HuStopWorkout, or nil."}
   description: >-
-    Stores three Lua callback names for the clubhouse workout (globals 0x0051023c, 0x00510234, 0x00510238); roles
-    taken from level95_workout's handler names.
-  evidence: inferred
-  depth: brief
+    Interns three Lua function names as the game-wide workout callbacks (globals `0x0051023c`, `0x00510234`,
+    `0x00510238`); every human's workout calls the same three, each with the working-out human's handle. Each is called
+    only when it is set and the script system finds the function.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    One set for the whole game, replaced by the next call; the repetition callback is handed to the loop animation
+    node (`0x002557b0`), so its exact timing is not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuWorkout
   wrapper: 0x0035c8f0
   calls:
     - {addr: 0x00238bd8, name: Human_StartWorkout}
+    - {addr: 0x00255540, name: Human_UpdateWorkout}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who works out."}
-    - {name: equipment, lua: number, ctype: unsigned, desc: "Handle of the workout object (level95_workout passes the player itself)."}
-    - {name: anim1, lua: string, desc: "Animation file for anim id 0x2b3."}
-    - {name: anim2, lua: string, desc: "Animation file for anim id 0x2b4."}
-    - {name: anim3, lua: string, desc: "Animation file for anim id 0x2b5."}
-    - {name: anim4, lua: string, desc: "Animation file for anim id 0x2b6."}
-    - {name: anim5, lua: string, desc: "Animation file for anim id 0x2b7."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who works out; a bad handle does nothing."}
+    - {name: equipment, lua: number, ctype: unsigned, desc: "Handle of the object worked out on (any world object; it becomes the human's target object); a bad handle does nothing."}
+    - {name: startAnim, lua: string, desc: "Animation file bound to anim id 691 (`ANIM_WORKOUT_START`) on this human."}
+    - {name: endAnim, lua: string, desc: "Animation file bound to anim id 692 (`ANIM_WORKOUT_END`)."}
+    - {name: loop1, lua: string, desc: "Animation file bound to anim id 693 (`ANIM_WORKOUT_LOOP_01`)."}
+    - {name: loop2, lua: string, desc: "Animation file bound to anim id 694 (`ANIM_WORKOUT_LOOP_02`)."}
+    - {name: loop3, lua: string, desc: "Animation file bound to anim id 695 (`ANIM_WORKOUT_LOOP_03`)."}
   description: >-
-    Starts a workout in the clubhouse: binds five animation files to the workout anim ids, sets the equipment as the
-    human's target and enters the workout state (0x1b).
-  evidence: inferred
-  depth: brief
+    Starts a workout: binds the five clips, makes `equipment` the human's target and sets its state code (record `+0x14`) to `0x1b`. On its next
+    update the human, if within the start clip's reach of the equipment, turns to it, plays the start clip into a
+    blended loop of the workout clips, sets the working-out flag (`0x20000000000` of its state) with a blend of 1
+    (`+0x670`) and calls the start callback; out of reach the state code goes back to 0. A player then pumps the effort with
+    one button (blend rises per press by a per-phase table, decays otherwise) and quits with another; an AI's blend
+    comes from HuSetWorkoutBlend.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    All five clips must load or the workout never starts; the loop node also names ids 696-697, which this binding
+    does not bind; the button commands are 0x12 (pump) and 10 (quit) from the player's input record; which pad
+    buttons they are is not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuStopWorkout
@@ -1896,11 +1958,15 @@
   calls:
     - {addr: 0x00238d30, name: Human_StopWorkout}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
   description: >-
-    Ends the human's workout (state 0x1c), or returns it to state 0 when it is still walking to the equipment.
-  evidence: inferred
-  depth: brief
+    Ends a workout: a human working out (state flag `0x20000000000`) gets state code `0x1c`, which clears the flag, calls
+    the end callback and plays the end clip (anim id 692); one that HuWorkout has started but who has not begun yet
+    (state code still `0x1b`) goes back to state code 0. Otherwise nothing.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    A cancelled start does not call the end callback.
   usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuSetWorkoutBlend
@@ -1909,11 +1975,15 @@
     - {addr: 0x00238cd8, name: Human_SetWorkoutBlend}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human working out."}
-    - {name: blend, lua: number, ctype: float, desc: "Blend value, stored at +0x670 (0 to 1 is likely)."}
+    - {name: blend, lua: number, ctype: float, desc: "Effort: below 1 the first loop clip plays and the value sets its speed; from 1 up, the value minus 1 blends toward the harder loop clips."}
   description: >-
-    Sets the blend of the workout animation (+0x670) while the human is working out; does nothing otherwise.
-  evidence: inferred
-  depth: brief
+    Sets the effort (`+0x670`) of a human who is working out (state flag `0x20000000000`); does nothing otherwise. For
+    an AI human the workout update uses it as is each frame; for a player the update overwrites it from the pad.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Not clamped; the player's own effort ranges 0-1 and is scaled by 3 before the same use, so an AI's 0-3 matches
+    the player's range.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuSpecial
@@ -2063,13 +2133,17 @@
   calls:
     - {addr: 0x00238640, name: Human_SetPedReaction}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (a pedestrian)."}
-    - {name: reaction, lua: number, ctype: int, desc: "Reaction type number (16-bit); level95 uses 3. The values are not listed."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (a pedestrian); a bad handle does nothing."}
+    - {name: reaction, lua: number, ctype: int, desc: "Reaction style, read as 16 bits and sign-extended; the pedestrian goals use 1-6 (7 there means a random one of 1-6, but this binding stores 7 as is); level95 uses 3."}
   description: >-
-    Stores the pedestrian reaction type in the human's AI record (+0x270), choosing how it reacts to the player (flee,
-    fight, ignore).
-  evidence: inferred
-  depth: brief
+    Stores the pedestrian's reaction style in its brain (`+0x270`), the same field the pedestrian path and flag goals
+    (types 68, 69, constructors `0x002a6178`, `0x002a6760`) set from their own argument when they start, choosing how
+    the pedestrian reacts to trouble around it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only the storage is confirmed; no reader of brain +0x270 was found, so what each style does is open; a pedestrian
+    goal pushed later overwrites the value.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuGetHUD
@@ -2167,15 +2241,18 @@
 - name: HuGetVoiceIndex
   wrapper: 0x0035d308
   calls:
-    - {addr: 0x0023adc8}
+    - {addr: 0x0023adc8, name: Human_GetVoiceIndex}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: number, desc: "The human's voice index (+0x3b0), or -1 (as 4294967295) for an invalid handle."}
+    - {lua: number, desc: "The human's voice set (`+0x3b0`), or -1 (as 4294967295) for an invalid handle."}
   description: >-
-    Returns which voice set the human speaks with, for choosing speech files.
+    Returns which voice set the human speaks with: the set Human_SayCommand picks speech-command lines from
+    ([Sound: speech](../../research/sound.md#speech)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Voice sets: [Speech](../speech.md).
   usage: {chunks: 2, calls: 30, boot: false, mission1: false, result_used: true, levels: [95]}
 
 - name: HuSetStateRespVoiceIndex
@@ -2214,13 +2291,13 @@
   calls:
     - {addr: 0x00239ee0, name: Human_SetMug}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: "on", lua: boolean, desc: "Stored as given: true lets the human be mugged, false (or nil) prevents it (the scripts pass false for bosses)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: "on", lua: boolean, desc: "true lets the human be mugged, false (or nil) prevents it (the scripts pass false for bosses)."}
   description: >-
-    Stores whether the human can be mugged (+0x5b0); Mug_CanMugVictim (0x00225ff0) needs it unless the human is set up
-    for interrogation ([Crimes: mugging](../../research/crimes.md#mugging)).
+    Stores whether the human can be mugged (word `+0x5b0`, 1 or 0); Mug_CanMugVictim (`0x00225ff0`) requires it unless
+    the human is set up for interrogation ([Crimes: mugging](../../research/crimes.md#mugging)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   usage: {chunks: 18, calls: 111, boot: false, mission1: false, result_used: false, levels: [95, 83, 60, 61, 62, 63, 64]}
 
 - name: HuSetInterrogation
@@ -2404,9 +2481,10 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (ignored)."}
     - {name: target, lua: number, ctype: unsigned, desc: "Handle of the target (ignored)."}
   description: >-
-    Does nothing in this build: the function it calls (0x00299238) returns at once. Use HuSetLookTarget instead.
+    Does nothing in this build: the wrapper reads both handles and calls 0x00299238, which returns at once. Use
+    HuSetLookTarget to make a human look at something.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuShutUp
@@ -2428,14 +2506,16 @@
 - name: HuSay
   wrapper: 0x00364c08
   calls:
-    - {addr: 0x00239340}
+    - {addr: 0x00239340, name: Human_Say}
+    - {addr: 0x00239370, name: Human_Speak}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: line, lua: string, desc: "Name of the speech (audio) line."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the speaker."}
+    - {name: line, lua: string, desc: "Speech file name, as for HuSpeak; nil plays nothing."}
   description: >-
-    Makes the human say a speech line.
-  evidence: inferred
-  depth: brief
+    Shorthand for HuSpeak with no callback, no callback argument, the flag true and no listener: the human says the
+    line unless it is already speaking, speech is off or the human does not exist.
+  evidence: confirmed-code
+  depth: thorough
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95, 86, 82]}
 
 - name: HuEnableSpeaking
@@ -2454,14 +2534,18 @@
 - name: HuEnableSoundCommands
   wrapper: 0x00364cc8
   calls:
-    - {addr: 0x00239240}
+    - {addr: 0x00239240, name: Human_EnableSoundCommands}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: enable, lua: boolean, default: true, desc: "True (the default) enables them."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: enable, lua: boolean, default: true, desc: "true (the default) lets the human say speech commands; false silences them."}
   description: >-
-    Enables or disables the human's spoken command sounds (byte +0x199).
-  evidence: inferred
-  depth: brief
+    Sets the human's can-speak byte (`+0x199`). Human_SayCommand (`0x002205e0`) says nothing while it is clear, so
+    a disabled human makes none of its automatic speech-command lines (taunts, pain, greetings, the goals' lines) nor
+    those scripts ask for with SoundPlayCommand ([Sound: speech](../../research/sound.md#speech)).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Whether HuSpeak's named lines also check the byte is not traced.
   usage: {chunks: 57, calls: 196, boot: false, mission1: false, result_used: false, levels: [95, 60, 61, 62, 63, 64]}
 
 - name: HuEnableTagDone
@@ -2584,14 +2668,19 @@
 - name: HuPlayDynAnim
   wrapper: 0x003651a0
   calls:
-    - {addr: 0x00238948}
+    - {addr: 0x00238948, name: Human_PlayDynAnim}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
     - {name: anim, lua: string, desc: "Name of a dynamic animation (.anm) loaded for the level with SetDynamicAnimation."}
   description: >-
-    Plays a level-specific animation on the human, unless it is dead or busy.
-  evidence: inferred
-  depth: brief
+    Binds the clip to the human's dynamic animation slot (anim id 668) and sets its state code to 16 (`0x10`, record
+    `+0x14`), so the human plays it at once, without going through its brain. Refused for a human without a model or
+    animation record, or in state `0x100000000` or `0x80000000`.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    No callback; GoalPlayDynAnimation is the brain-driven, queued version; what state 16 does when the clip ends is not
+    traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuPlayDynPair
@@ -2836,14 +2925,21 @@
   wrapper: 0x0036cbc0
   calls:
     - {addr: 0x00385bb8, name: Object_Teleport}
+    - {addr: 0x0023d440, name: Human_SetTransform}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of any world object: a human, a car, a prop or an effect."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of any world object: a human, a car, a prop or an effect; a bad handle does nothing."}
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Destination {x, y, z} in metres, game axes (z up); written back unchanged."}
     - {name: heading, lua: number, ctype: int, default: -1, desc: "New heading in whole degrees about the z axis; -1 (the default) keeps the current rotation."}
   description: >-
-    Moves an object to a position (and optionally turns it) through the object's own position setter.
+    Moves an object: reads its transform (vtable `+0xac`), replaces the position (w = 1) and, unless the heading is -1,
+    the rotation with one about z, and hands it back through the object's set-transform slot (`+0x6c`). For a human
+    that slot (`0x0023d440`) casts a short ray down from the point (0.5) and lowers it onto what it hits, marks the
+    human moved, points its brain's move heading the new way and drops a move action in progress.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Other object kinds take the transform as given; a human linked in a grab (+0x280 set) is not lowered; this
+    corrects 'neither snaps to the ground' on Characters for the 0.5 ray only (the ray's units are not checked).
   usage: {chunks: 54, calls: 140, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 86, 14, 9, 51, 55, 84, 83]}
 
 - name: TeleportToFlag

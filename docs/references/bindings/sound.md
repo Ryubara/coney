@@ -14,7 +14,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`AddAmbientSoundEmitter`](#addambientsoundemitter) | number | 10 | no | no | inferred |
 | [`AddAmbientSoundEmitter2`](#addambientsoundemitter2) | number | 58 | no | yes | confirmed (code) |
 | [`DuplicateSoundMaterials`](#duplicatesoundmaterials) | - | 3 | yes | no | confirmed (code) |
-| [`EnableAmbientEmitter`](#enableambientemitter) | - | 15 | no | no | inferred |
+| [`EnableAmbientEmitter`](#enableambientemitter) | - | 15 | no | no | confirmed (code) |
 | [`NewAnimSlots`](#newanimslots) | - | 3 | yes | no | confirmed (code) |
 | [`NewAnimSound`](#newanimsound) | - | 3 | yes | no | confirmed (code) |
 | [`NewMaterialSlots`](#newmaterialslots) | - | 3 | yes | no | confirmed (code) |
@@ -34,8 +34,8 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SndLoadMatrix`](#sndloadmatrix) | - | 2 | yes | no | confirmed (code) |
 | [`SndSetCommandSoundPercent`](#sndsetcommandsoundpercent) | - | 1 | yes | no | confirmed (code) |
 | [`SndSetListener`](#sndsetlistener) | - | 20 | yes | yes | confirmed (code) |
-| [`SndSetNIDuck`](#sndsetniduck) | - | 2 | no | no | inferred |
-| [`SndSetPitchMod`](#sndsetpitchmod) | - | 1 | no | no | inferred |
+| [`SndSetNIDuck`](#sndsetniduck) | - | 2 | no | no | confirmed (code) |
+| [`SndSetPitchMod`](#sndsetpitchmod) | - | 1 | no | no | confirmed (code) |
 | [`SoundCfgInterfaceSound`](#soundcfginterfacesound) | - | 1 | yes | no | confirmed (code) |
 | [`SoundDisableCombatMusic`](#sounddisablecombatmusic) | - | 1 | no | no | confirmed (code) |
 | [`SoundEnableEffects`](#soundenableeffects) | - | 14 | yes | no | confirmed (code) |
@@ -208,15 +208,22 @@ EnableAmbientEmitter(emitter, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `emitter` | number, truncated to an integer | Emitter id. |
+| 1 | `emitter` | number, truncated to an integer | Emitter id as returned by AddAmbientSoundEmitter2 (its slot in the ambient manager); not range-checked. |
 | 2 | `on` | boolean (nil or 0 is false); default true | true (the default) enables the emitter, false silences it. |
 
 **Returns** nothing.
 
-Switches an ambient emitter on or off.
+Switches an ambient sound emitter on or off (emitter +0x8c, records of 0xd0 bytes in the ambient manager at audio
+manager +0x24280). An emitter switched off has its playing sound stopped at its next update and plays nothing more;
+switched on, it resumes playing at its random intervals while a listener is in range.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003726a0` (registered by `RegisterBindings`); **calls** `0x00113bc8`
+**Notes.** The update is 0x0010c100, at most once a second. An emitter with a limited play count clears the same flag
+itself when the count runs out; re-enabling it then lets it play on without a limit (count byte at -1), inferred from
+the code.
+
+- **Evidence:** confirmed (code) at `0x00113bc8`, `0x0010d570`; detail: traced
+- **Wrapper** `0x003726a0` (registered by `RegisterBindings`); **calls** `0x00113bc8` `Audio_EnableAmbientEmitter`,
+  `0x0010d570` `AmbientManager_EnableEmitter`
 - **Used by** 15 of 467 script chunks (43 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 12 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -693,15 +700,20 @@ SndSetNIDuck(level)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `level` | number (single precision) | Volume factor (0-1) other sounds are lowered to; the scripts use 0.2 and 0.35. |
+| 1 | `level` | number (single precision) | Volume factor (0-1) applied while a non-duckable sound plays; default 0.2, the scripts use 0.2 and 0.35. |
 
 **Returns** nothing.
 
-Sets the factor (default 0.2) that directional sounds not owned by a player are lowered to while a non-duckable sound
-plays (audio manager +0x3faac; inferred: the lines of HuSpeakNI).
+Sets the duck factor (audio manager +0x3faac): while a non-duckable sound plays (such as a scripted line), every
+duckable directional sound not owned by a player, chiefly the other humans' voices, is scaled by this factor. Higher
+values duck less.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003710f8` (registered by `RegisterBindings`); **calls** `0x001133b0`
+**Notes.** Applied in SoundTask_Update (0x0011ad58; [Sound: sound tasks](../../research/sound.md#sound-tasks)); reset to
+0.2 on every level load (0x001582e0). Which lines are non-duckable (task +0xa4 = 0; HuSpeakNI's, inferred) is not traced
+here.
+
+- **Evidence:** confirmed (code) at `0x001133b0`; detail: traced
+- **Wrapper** `0x003710f8` (registered by `RegisterBindings`); **calls** `0x001133b0` `Audio_SetNIDuck`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -714,14 +726,21 @@ SndSetPitchMod(pitch)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pitch` | number (single precision) | Pitch multiplier for game sounds, 1 normal (one script uses 0.65 for a slowed-down effect). |
+| 1 | `pitch` | number (single precision) | Global pitch factor for the game's sounds, 1.0 normal (one hub script uses 0.65 for a slowed-down effect); not clamped. |
 
 **Returns** nothing.
 
-Sets a global pitch modifier for sound effects (audio manager +0x3fa5c).
+Sets the audio manager's global pitch factor (+0x3fa5c), which the sound tasks multiply into every playing sound's
+pitch, so lower values slow and deepen all game sound. It stays until changed again or until the next level load, which
+resets it to 1.0.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003710c0` (registered by `RegisterBindings`); **calls** `0x00113370`
+**Notes.** Reset to 1.0 by mode 1's Enter (0x001582e0) and Exit (0x00158488). Mode 1's update also lowers it towards 0.7
+by itself, by 0.7 / (0.9 × the level-end countdown) a frame (0x00158728 at 0x001589c8; inferred: the slow-down as a
+level ends), and saves and restores it around one other state (0x00158bd4, not traced). Its readers are SoundTask_Update
+(0x0011b048), 0x0011daa8 and the device 0x0014caf8.
+
+- **Evidence:** confirmed (code) at `0x00113370`; detail: traced
+- **Wrapper** `0x003710c0` (registered by `RegisterBindings`); **calls** `0x00113370` `Audio_SetPitchMod`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -860,10 +879,16 @@ SoundPauseSound(on)
 
 **Returns** nothing.
 
-Pauses or resumes all game sound, for example around a scripted pause.
+Pauses or resumes every playing voice, for example around a scripted pause or a menu: the audio manager's paused flag
+(+0x3fa24) is set or cleared and the sound device pauses or resumes all voices; paused sounds continue where they
+stopped.
 
-- **Evidence:** confirmed (code) at `0x00114088`; detail: brief
-- **Wrapper** `0x00372fb0` (registered by `RegisterBindings`); **calls** `0x00114088`
+**Notes.** Through the device's slots +0x64 / +0x6c (0x0014c5e0 / 0x0014c600). While paused, pitch updates stop; whether
+sounds started meanwhile play is not traced.
+
+- **Evidence:** confirmed (code) at `0x00114088`, `0x0010fb20`, `0x0010fb68`; detail: traced
+- **Wrapper** `0x00372fb0` (registered by `RegisterBindings`); **calls** `0x00114088` `Audio_PauseSound`, `0x0010fb20`
+  `AudioManager_Pause`, `0x0010fb68` `AudioManager_Resume`
 - **Used by** 36 of 467 script chunks (139 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -876,15 +901,20 @@ SoundPlay(sound, pos) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `sound` | string | Sound name (such as "vags/doors/opengate_01"). |
-| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | Position {x, y, z} the sound plays at; written back to the table. |
+| 1 | `sound` | string | Sound name (such as "vags/doors/opengate_01"), hashed with the game's name hash (0x00143f68); see [Sound](../sound.md). |
+| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} in metres the sound plays at; written back unchanged. |
 
-**Returns** number: The sound's handle (a number) for SoundStop or SndFadeOut.
+**Returns** number: Handle of the playing sound, for SoundStop or SndFadeOut; the null sound handle (0x00598690) when it
+could not start.
 
-Plays a sound once at a position in the world, at normal volume and pitch.
+Plays a sound once as a positional (3D) sound at a point in the world, at full caller volume and normal pitch; it is
+heard with the usual distance falloff and panning to each listener and then ends by itself.
 
-- **Evidence:** confirmed (code) at `0x00113680`; detail: brief
-- **Wrapper** `0x003715f8` (registered by `RegisterBindings`); **calls** `0x00113680`
+**Notes.** PlaySound3D (0x0010fdd0) with volume, pitch and a third factor of 1.0 and its last flag 1; a name that is not
+in the sound list, or no free task, gives the null handle. Converted as unsigned.
+
+- **Evidence:** confirmed (code) at `0x00113680`, `0x0010fdd0`; detail: traced
+- **Wrapper** `0x003715f8` (registered by `RegisterBindings`); **calls** `0x00113680` `Audio_PlaySoundAt`, `0x0010fdd0`
 - **Used by** 17 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 10 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

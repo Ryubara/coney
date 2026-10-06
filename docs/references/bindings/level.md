@@ -11,7 +11,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | --- | --- | --- | --- | --- | --- |
 | [`AddMoneyToBank`](#addmoneytobank) | - | 0 | no | no | confirmed (code) |
 | [`AdjustBossLizzies`](#adjustbosslizzies) | - | 0 | no | no | confirmed (code) |
-| [`CheckMultiplayer`](#checkmultiplayer) | - | 1 | no | no | inferred |
+| [`CheckMultiplayer`](#checkmultiplayer) | - | 1 | no | no | confirmed (code) |
 | [`CreateDongle`](#createdongle) | number | 1 | no | no | confirmed (code) |
 | [`CreateDongleChallengeKey`](#createdonglechallengekey) | number | 1 | no | no | confirmed (code) |
 | [`CrimeIsHappening`](#crimeishappening) | - | 12 | yes | no | confirmed (code) |
@@ -49,9 +49,9 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`IsDongleValid`](#isdonglevalid) | boolean | 1 | no | no | confirmed (code) |
 | [`MenuLoadLevel`](#menuloadlevel) | - | 44 | yes | yes | confirmed (code) |
 | [`MissionComplete`](#missioncomplete) | - | 0 | no | no | confirmed (code) |
-| [`PrecacheWorld`](#precacheworld) | - | 36 | no | no | inferred |
+| [`PrecacheWorld`](#precacheworld) | - | 36 | no | no | confirmed (code) |
 | [`ProcessTag`](#processtag) | - | 10 | yes | no | confirmed (code) |
-| [`QueueFileToPrecache`](#queuefiletoprecache) | - | 34 | no | no | inferred |
+| [`QueueFileToPrecache`](#queuefiletoprecache) | - | 34 | no | no | confirmed (code) |
 | [`Quit`](#quit) | - | 0 | no | no | confirmed (code) |
 | [`ReportCrime`](#reportcrime) | - | 9 | no | yes | confirmed (code) |
 | [`ResetStore`](#resetstore) | - | 1 | no | no | confirmed (code) |
@@ -158,13 +158,20 @@ No arguments.
 
 **Returns** nothing.
 
-Re-checks whether a second player has joined or left and adds or removes their character accordingly (`0x0041a460` with
--1). `level95.lua` calls it in the hub.
+Brings the player characters in line with the game's two-player setting (W_GameState +0x56ec, or +0x56f4 in the Armies
+of the Night levels): when two players are set but only player 1 exists, a Warrior of player 1's gang (the lowest rank
+byte +0x1b1, else any Warrior) becomes player 2 with split screen; when one player is set but a second exists, player 2
+goes back to the AI. The multiplayer callback (SetMultiplayerCallback) is called with the human and true or false. The
+hub calls it after its menus.
 
-**Notes.** The callee handles the player list at `W_GameState + 0x224`; the join/leave reading is inferred.
+**Notes.** Only while joining is allowed (CfgMultiplayerJoin, +0x56e8) and the game mode +0x158 is 0 or 3; otherwise,
+with two players present, it only refreshes their viewports. Each player-2 change rebuilds the split screen (0x00122ed0)
+and the war chief is reassigned at the end. Does nothing with no game state or no player. The same function runs with -1
+after every level load.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036e468` (registered by `RegisterBindings`); **calls** `0x0041dd90`
+- **Evidence:** confirmed (code) at `0x0041dd90`, `0x0041a460`; detail: traced
+- **Wrapper** `0x0036e468` (registered by `RegisterBindings`); **calls** `0x0041dd90` `Game_CheckMultiplayer`,
+  `0x0041a460` `GameState_SyncPlayers`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -427,15 +434,16 @@ GetGameTime() -> number
 
 No arguments.
 
-**Returns** number: The game timer in milliseconds (the timer object at `0x0050b734`, the clock the schedule uses).
+**Returns** number: Game time in milliseconds (GameTimer +0x48), an unsigned 32-bit count.
 
-Returns the current game time in milliseconds, for scripts that time things themselves.
+Returns the game clock in milliseconds, the clock the schedule and the stopwatch use: it advances 1/30 s per frame in
+fixed-step play, stops while the game is paused and skips the paused time, so scripts can time things in game time.
 
-**Notes.** Read through the timer's vtable slot `+0x34`; inferred to be the same clock as `+0x48`, which the schedule
-uses.
+**Notes.** GameTimer (0x0050b734) virtual slot +0x30, Milliseconds ([Boot: timers](../../research/boot.md#timers));
+converted as unsigned (values of 2^31 and over stay positive).
 
-- **Evidence:** confirmed (code) at `0x003864b0`; detail: brief
-- **Wrapper** `0x0036e050` (registered by `RegisterBindings`); **calls** `0x003864b0`
+- **Evidence:** confirmed (code) at `0x003864b0`; detail: traced
+- **Wrapper** `0x0036e050` (registered by `RegisterBindings`); **calls** `0x003864b0` `GameTimer_GetMilliseconds`
 - **Used by** 2 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** implemented
@@ -959,25 +967,30 @@ pushes the mission-complete mode with kind 0.
 ## PrecacheWorld {#precacheworld}
 
 ```lua
-PrecacheWorld(a, b, name)
+PrecacheWorld(budgetMs, radius, pack)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `a` | number (single precision) | First tuning number; every call passes 10000 (inferred: a time budget or limit). |
-| 2 | `b` | number (single precision) | Second tuning number; the scripts pass 50 or 500. |
-| 3 | `name` | string | Name of the precache set, such as a level section's name or a Rumble pack name. |
+| 1 | `budgetMs` | number (single precision) | Time budget of the streaming loop in milliseconds, truncated to an integer; every call passes 10000. |
+| 2 | `radius` | number (single precision) | Distance in metres within which missing world sectors are waited for (the scripts pass 50 or 500); replaced by player 1's camera draw distance whenever that camera exists. |
+| 3 | `pack` | string | Name of a pack to load first, without extension: `<pack>.pak` is loaded when it exists (a level section or a Rumble pack name); nil for none. |
 
 **Returns** nothing.
 
-Asks the world streamer to precache a named set of world data (calls `0x0040c948`). Level scripts call it before moving
-the player to another part of the map.
+Blocks the game while the world around the camera is streamed in, before a script moves the player somewhere new: the
+game clock is paused, `<pack>.pak` is loaded if present, the world streamer runs until the sectors within the radius are
+in or the budget runs out, then every pack queued by QueueFileToPrecache is loaded. The preload indicator shows
+meanwhile unless a loading screen already does.
 
-**Notes.** Its callee `0x0040c948` is in the address range the draft's callee filter drops (0x00408000-0x0040d000), so
-the draft entry has no `calls`.
+**Notes.** Steps: [Level loading: preload](../../research/level-loading.md#preload). Does nothing when no level is
+loaded (world manager +0x40 null), and then leaves the game clock paused if it was running (the resume sits inside the
+same test). A second call while a preload runs is refused. With a camera the radius argument is ignored (the callee's
+value argument is 0), so the scripts' 50 and 500 differ only with no camera.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036c7a0` (registered by `RegisterBindings`); **calls** `0x0040c948`
+- **Evidence:** confirmed (code) at `0x0040c948`, `0x0040e2d8`; detail: traced
+- **Wrapper** `0x0036c7a0` (registered by `RegisterBindings`); **calls** `0x0040c948` `World_Precache`, `0x0040e2d8`
+  `WorldManager_Preload`
 - **Used by** 36 of 467 script chunks (136 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1016,16 +1029,20 @@ QueueFileToPrecache(file)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `file` | string | A WAD file name with extension, such as a `.pak` pack. |
+| 1 | `file` | string | A file name with its extension, such as a character `.pak` pack; copied. |
 
 **Returns** nothing.
 
-Adds a file to the precache queue (calls `0x0040cc40`), so a later PrecacheWorld or level change finds it loaded.
+Appends a file to the world manager's precache queue (+0x0c, an unbounded list). The next preload (PrecacheWorld, or the
+level load's own) loads every queued file that exists with the resource manager, in order, after its streaming, and
+empties the queue.
 
-**Notes.** Callee `0x0040cc40` is outside the draft's callee list for the same reason as PrecacheWorld.
+**Notes.** A name that does not exist is dropped silently at load time; nothing checks it when queued. The Rumble set-up
+queues the gangs' character packs this way ([Front end](../../research/frontend.md)).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036c838` (registered by `RegisterBindings`); **calls** `0x0040cc40`
+- **Evidence:** confirmed (code) at `0x0040cc40`, `0x0040e1a0`; detail: traced
+- **Wrapper** `0x0036c838` (registered by `RegisterBindings`); **calls** `0x0040cc40` `World_QueuePackToPrecache`,
+  `0x0040e1a0` `WorldManager_QueuePack`
 - **Used by** 34 of 467 script chunks (167 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1079,17 +1096,21 @@ ResetStore(store)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `store` | number, truncated to an unsigned integer | Handle of a store object. |
+| 1 | `store` | number, truncated to an unsigned integer | Handle of the store's front flag (a world flag of activity 14); any other handle does nothing. |
 
 **Returns** nothing.
 
-Restocks a store: clears a flag bit of the store object, then, if the player is within 7 m (squared distance under 49),
-sends it message 0x13 through the world's message queue.
+Undoes a break-in on a store: the store front's robbed bit (bit 16 of its group word +0xd8) is cleared, and the nearest
+`strobe` object within 7 m of the store front is sent message 0x13 (inferred: the alarm light off), the counterpart of
+the 0x12 a break-in sends.
 
-**Notes.** What message 0x13 does to the store is not traced.
+**Notes.** The 7 m test is the strobe's distance from the store flag, not the player's (squared distance under 49 from
+0x0039c7d8); crimes.md#stores says the player must be within 7 m, which is wrong. It also sets bits 8-15 of the group
+word to 0xff and the gang bits 18-22 to 31 (no gang). The browsers and buyers a break-in switched off are not switched
+back on here.
 
-- **Evidence:** confirmed (code) at `0x0041ddd8`; detail: brief
-- **Wrapper** `0x0036da10` (registered by `RegisterBindings`); **calls** `0x0041ddd8`
+- **Evidence:** confirmed (code) at `0x0041ddd8`; detail: traced
+- **Wrapper** `0x0036da10` (registered by `RegisterBindings`); **calls** `0x0041ddd8` `Store_Reset`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1638,10 +1659,16 @@ No arguments.
 
 **Returns** nothing.
 
-Clears all statistics (stats object `0x006fe490`). The hub calls it.
+Clears both players' statistics in the stats object (0x006fe490, 0xc0 bytes per player): every event counter of the six
+categories and the per-player header word and flag, so every category score starts again from zero. The hub calls it.
 
-- **Evidence:** confirmed (code) at `0x004226f8`; detail: brief
-- **Wrapper** `0x0037cc10` (registered by `RegisterBindings`); **calls** `0x004226f8`
+**Notes.** The checkpoint copy SetCheckPoint takes is not touched. The word at player +0x04 is cleared only when the
+current level is 60 (the first Armies of the Night level); its meaning is not traced. Categories: [Player state:
+statistics](../../research/player-state.md#statistics).
+
+- **Evidence:** confirmed (code) at `0x004226f8`, `0x00422930`, `0x00420a70`; detail: traced
+- **Wrapper** `0x0037cc10` (registered by `RegisterBindings`); **calls** `0x004226f8` `Stats_ResetAll`, `0x00422930`
+  `Stats_ResetPlayers`, `0x00420a70` `PlayerStats_Reset`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1695,15 +1722,20 @@ UM_GetRecordData(index, field) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `index` | number, truncated to an integer | Record index. |
-| 2 | `field` | number, truncated to an integer | 0 level, 1 group, 2 item, 3 type, 4 the 16-bit extra, 5 the data id. |
+| 1 | `index` | number, truncated to an integer | 0-based record index (as UM_GetUnlockablesByType returns; the position in global.lua's list minus 1). |
+| 2 | `field` | number, truncated to an integer | 0 level, 1 group, 2 item, 3 type (bytes), 4 the 16-bit extra, 5 the 32-bit data id. |
 
-**Returns** number: The field's value; 0 for a bad index or field.
+**Returns** number: The field's value, unsigned; 0 for an index out of range, a field above 5 or no unlockables loaded.
 
-Reads one field of an unlockable record.
+Reads one field of an unlockable record (12 bytes in the manager at 0x006fe998), for example the level a story record
+unlocks or a clubhouse display's data id.
 
-- **Evidence:** confirmed (code) at `0x004238e8`; detail: brief
-- **Wrapper** `0x0037d318` (registered by `RegisterBindings`); **calls** `0x004238e8`
+**Notes.** An index of 65535 (an unused UM_GetUnlockablesByType entry) is out of range and gives 0, which a script
+cannot tell from a real 0.
+
+- **Evidence:** confirmed (code) at `0x004238e8`, `0x00423cf0`; detail: traced
+- **Wrapper** `0x0037d318` (registered by `RegisterBindings`); **calls** `0x004238e8` `UM_GetRecordField`, `0x00423cf0`
+  `Unlockables_GetRecord`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1737,15 +1769,21 @@ UM_GetUnlockablesByType(type, out)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `type` | number, truncated to an unsigned integer | Record type byte to match. |
-| 2 | `out` | table of 32 numbers (t[1]..t[32]) | A table the binding fills with 32 record indices. |
+| 1 | `type` | number, truncated to an unsigned integer | Record type (low byte) to match: 0 story level, 1-4 Rumble, 6 upgrade and so on ([Unlockables](../unlockables.md)). |
+| 2 | `out` | table of 32 numbers (t[1]..t[32]) | A table whose entries 1-32 are overwritten: the 0-based indices of the matching records in table order, then 65535 for the unused entries. |
 
 **Returns** nothing.
 
-Lists the unlockable records of one type into a table.
+Lists the unlockable records of one type, locked or not: the indices of every record whose type byte matches are written
+into `out[1..32]` in record order and the rest of the 32 entries are set to 65535. Use the indices with
+UM_GetRecordData.
 
-- **Evidence:** confirmed (code) at `0x004237a8`; detail: brief
-- **Wrapper** `0x0037cf78` (registered by `RegisterBindings`); **calls** `0x004237a8`
+**Notes.** The 32 entries are read from the table first and then all overwritten. More than 32 matches overrun the
+binding's 32-entry buffer (no bound check). With no unlockables loaded every entry is 65535.
+
+- **Evidence:** confirmed (code) at `0x004237a8`, `0x00423eb0`; detail: traced
+- **Wrapper** `0x0037cf78` (registered by `RegisterBindings`); **calls** `0x004237a8` `UM_GetUnlockablesByType`,
+  `0x00423eb0` `Unlockables_ListByType`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1758,16 +1796,23 @@ UM_IsDataDirty(type, data, clear) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `type` | number, truncated to an unsigned integer | Record type byte. |
-| 2 | `data` | number, truncated to an unsigned integer | Record data id. |
-| 3 | `clear` | boolean (nil or 0 is false); default true | true (default) also clears the mark. |
+| 1 | `type` | number, truncated to an unsigned integer | Record type (low byte). |
+| 2 | `data` | number, truncated to an unsigned integer | Record data id (record +8), as in UM_IsDataUnlocked. |
+| 3 | `clear` | boolean (nil or 0 is false); default true | true (default) also clears the record's new mark when it was set. |
 
-**Returns** boolean (1 for true, nil for false): true if that record was newly unlocked.
+**Returns** boolean (1 for true, nil for false): true (1) when the first record with this type and data has its new mark
+set; nil otherwise.
 
-Asks whether one unlockable (by type and data id) is newly unlocked, optionally clearing the mark.
+Asks whether an unlockable, found by type and data id, is marked new (newly unlocked and not yet shown), and by default
+clears the mark so the hub announces each unlock once. The marks are a bit set at 0x006fe948, one bit per record,
+separate from the locked set.
 
-- **Evidence:** confirmed (code) at `0x004239b0`; detail: brief
-- **Wrapper** `0x0037d280` (registered by `RegisterBindings`); **calls** `0x004239b0`
+**Notes.** Only the first record with the type and data is looked at, as in the game's other tests. Who sets the mark
+(UM_Unlock, inferred) is not traced here.
+
+- **Evidence:** confirmed (code) at `0x004239b0`, `0x00424958`; detail: traced
+- **Wrapper** `0x0037d280` (registered by `RegisterBindings`); **calls** `0x004239b0` `UM_IsDataDirty`, `0x00424958`
+  `Unlockables_TestDirtyByData`
 - **Used by** 2 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1978,12 +2023,17 @@ W_GetStopWatchTime() -> number
 
 No arguments.
 
-**Returns** number: The stopwatch's current time in milliseconds.
+**Returns** number: The stopwatch's current time in milliseconds (stopwatch +0x08): the time left when counting down,
+the time reached when counting up.
 
-Returns the stopwatch's remaining (or elapsed) time.
+Returns the mission stopwatch's current time in milliseconds, as last stepped by the frame update; it does not change
+while the stopwatch is stopped.
 
-- **Evidence:** confirmed (code) at `0x00423638`; detail: brief
-- **Wrapper** `0x00370e28` (registered by `RegisterBindings`); **calls** `0x00423638`
+**Notes.** The stopwatch object is *0x0051504c ([Scripts: the mission
+stopwatch](../../research/scripting.md#stopwatch)).
+
+- **Evidence:** confirmed (code) at `0x00423638`; detail: traced
+- **Wrapper** `0x00370e28` (registered by `RegisterBindings`); **calls** `0x00423638` `StopWatch_GetTime`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -2023,19 +2073,24 @@ W_ShowStopWatch(show, label, warnMs)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `show` | boolean (nil or 0 is false) | true to show the stopwatch on the HUD, false to hide it. |
-| 2 | `label` | string | Text shown with the time (may carry text-format tags); nil for none. |
-| 3 | `warnMs` | number, truncated to an integer; default 10000 | Milliseconds before the end at which the display starts warning (default 10000). |
+| 1 | `show` | boolean (nil or 0 is false) | true shows the stopwatch on the HUD, false hides it. |
+| 2 | `label` | string | Text drawn before the time (may carry text-format tags); nil for none. |
+| 3 | `warnMs` | number, truncated to an integer; default 10000 | Warning window in milliseconds: while counting down within it, a beep plays at most once a second (default 10000). |
 
 **Returns** nothing.
 
-Shows or hides the stopwatch on the HUD with an optional label; when shown, the warning point is set to `warnMs` (stored
-with 1000 added at `+0x48`).
+Shows or hides the mission stopwatch on the HUD. While shown, the HUD draws `label` followed by the time as
+minutes:seconds (seconds truncated) each frame. Showing also arms the countdown warning beep for the last `warnMs`
+milliseconds; hiding disarms it (window 0).
 
-**Notes.** That the third value is a warning threshold is inferred from its default and use.
+**Notes.** Writes stopwatch +0x40 (window) and +0x48 (window + 1000 when shown, 1000 when hidden), +0x18 (shown) and
++0x1c (label). The label pointer is kept, not copied, so it must stay alive (the scripts pass constants). A HUD byte
+(+0x225d5, set when the HUD is built) switches to a whole-seconds display instead (0x001cd748); what sets it is not
+traced.
 
-- **Evidence:** confirmed (code) at `0x00423670`; detail: brief
-- **Wrapper** `0x00370e98` (registered by `RegisterBindings`); **calls** `0x00423670`
+- **Evidence:** confirmed (code) at `0x00423670`, `0x004235e0`, `0x001cd5e8`; detail: traced
+- **Wrapper** `0x00370e98` (registered by `RegisterBindings`); **calls** `0x00423670` `StopWatch_Show`, `0x004235e0`
+  `StopWatch_SetDisplay`, `0x001cd5e8` `StopWatchHud_UpdateMinutes`
 - **Used by** 30 of 467 script chunks (64 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

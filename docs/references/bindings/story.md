@@ -17,7 +17,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | --- | --- | --- | --- | --- | --- |
 | [`level80`](#level80) | mission 2 | 178 | 50 | 15 | 4 |
 | [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 9 |
-| [`level95`](#level95) | the hub | 323 | 91 | 22 | 3 |
+| [`level95`](#level95) | the hub | 323 | 91 | 91 | 3 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 3 | 0 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 1 | 1 |
 | [`level3`](#level3) | mission 6 | 259 | 22 | 0 | 0 |
@@ -197,98 +197,98 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level95: the hub {#level95}
 
-323 bindings, 91 new: 22 traced, 3 implemented in Coney (72 of all 323).
+323 bindings, 91 new: 91 traced, 3 implemented in Coney (72 of all 323).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`HuAttachGear`](character.md#huattachgear) | Characters | traced | confirmed (code) | not implemented |
-| [`HuBlockTackle`](character.md#hublocktackle) | Characters | brief | confirmed (code) | not implemented |
-| [`HuEnableSoundCommands`](character.md#huenablesoundcommands) | Characters | brief | inferred | not implemented |
-| [`HuGetCharType`](character.md#hugetchartype) | Characters | brief | confirmed (code) | not implemented |
-| [`HuGetMoney`](character.md#hugetmoney) | Characters | brief | confirmed (code) | not implemented |
-| [`HuGetPosition`](character.md#hugetposition) | Characters | brief | confirmed (code) | not implemented |
-| [`HuGetVoiceIndex`](character.md#hugetvoiceindex) | Characters | brief | confirmed (code) | not implemented |
-| [`HuGiveCuffs`](character.md#hugivecuffs) | Characters | brief | inferred | not implemented |
+| [`HuBlockTackle`](character.md#hublocktackle) | Characters | traced | confirmed (code) | not implemented |
+| [`HuEnableSoundCommands`](character.md#huenablesoundcommands) | Characters | traced | confirmed (code) | not implemented |
+| [`HuGetCharType`](character.md#hugetchartype) | Characters | traced | confirmed (code) | not implemented |
+| [`HuGetMoney`](character.md#hugetmoney) | Characters | traced | confirmed (code) | not implemented |
+| [`HuGetPosition`](character.md#hugetposition) | Characters | traced | confirmed (code) | not implemented |
+| [`HuGetVoiceIndex`](character.md#hugetvoiceindex) | Characters | traced | confirmed (code) | not implemented |
+| [`HuGiveCuffs`](character.md#hugivecuffs) | Characters | traced | confirmed (code) | not implemented |
 | [`HuIsDead`](character.md#huisdead) | Characters | traced | confirmed (code) | not implemented |
-| [`HuPlayDynAnim`](character.md#huplaydynanim) | Characters | brief | inferred | not implemented |
-| [`HuSay`](character.md#husay) | Characters | brief | inferred | not implemented |
-| [`HuSetCombatMode`](character.md#husetcombatmode) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetLookAtTarget`](character.md#husetlookattarget) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetMug`](character.md#husetmug) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetName`](character.md#husetname) | Characters | brief | inferred | not implemented |
-| [`HuSetPedReaction`](character.md#husetpedreaction) | Characters | brief | inferred | not implemented |
-| [`HuSetScale`](character.md#husetscale) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetUnarrestable`](character.md#husetunarrestable) | Characters | brief | inferred | not implemented |
-| [`HuSetWorkoutBlend`](character.md#husetworkoutblend) | Characters | brief | inferred | not implemented |
-| [`HuSetWorkoutCallbacks`](character.md#husetworkoutcallbacks) | Characters | brief | inferred | not implemented |
-| [`HuStopWorkout`](character.md#hustopworkout) | Characters | brief | inferred | not implemented |
-| [`HuWorkout`](character.md#huworkout) | Characters | brief | inferred | not implemented |
-| [`Teleport`](character.md#teleport) | Characters | brief | confirmed (code) | not implemented |
+| [`HuPlayDynAnim`](character.md#huplaydynanim) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSay`](character.md#husay) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetCombatMode`](character.md#husetcombatmode) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetLookAtTarget`](character.md#husetlookattarget) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetMug`](character.md#husetmug) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetName`](character.md#husetname) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetPedReaction`](character.md#husetpedreaction) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetScale`](character.md#husetscale) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetUnarrestable`](character.md#husetunarrestable) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetWorkoutBlend`](character.md#husetworkoutblend) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetWorkoutCallbacks`](character.md#husetworkoutcallbacks) | Characters | traced | confirmed (code) | not implemented |
+| [`HuStopWorkout`](character.md#hustopworkout) | Characters | traced | confirmed (code) | not implemented |
+| [`HuWorkout`](character.md#huworkout) | Characters | traced | confirmed (code) | not implemented |
+| [`Teleport`](character.md#teleport) | Characters | traced | confirmed (code) | not implemented |
 | [`BrCanUseWorldFlags`](ai.md#brcanuseworldflags) | AI | traced | confirmed (code) | not implemented |
-| [`BrHasEnemies`](ai.md#brhasenemies) | AI | brief | confirmed (code) | not implemented |
-| [`BrSetType`](ai.md#brsettype) | AI | brief | confirmed (code) | not implemented |
+| [`BrHasEnemies`](ai.md#brhasenemies) | AI | traced | confirmed (code) | not implemented |
+| [`BrSetType`](ai.md#brsettype) | AI | traced | confirmed (code) | not implemented |
 | [`GoalAreaWalker`](ai.md#goalareawalker) | AI | traced | confirmed (code) | not implemented |
-| [`GoalBoxer`](ai.md#goalboxer) | AI | brief | inferred | not implemented |
-| [`GoalGrabTarget`](ai.md#goalgrabtarget) | AI | brief | inferred | not implemented |
-| [`GoalPeddler`](ai.md#goalpeddler) | AI | brief | inferred | not implemented |
-| [`GoalPlayGenAnim`](ai.md#goalplaygenanim) | AI | brief | inferred | not implemented |
-| [`GoalShopkeeper`](ai.md#goalshopkeeper) | AI | brief | inferred | not implemented |
-| [`GangCanFlee`](gang.md#gangcanflee) | Gangs | brief | inferred | not implemented |
-| [`GangClearBums`](gang.md#gangclearbums) | Gangs | brief | inferred | not implemented |
-| [`GangClearHandlers`](gang.md#gangclearhandlers) | Gangs | brief | inferred | not implemented |
-| [`GangGoodToGo`](gang.md#ganggoodtogo) | Gangs | brief | confirmed (code) | not implemented |
-| [`GangIsASpawner`](gang.md#gangisaspawner) | Gangs | brief | confirmed (code) | not implemented |
-| [`GangMakeNeutralOfType`](gang.md#gangmakeneutraloftype) | Gangs | brief | confirmed (code) | not implemented |
-| [`CarDestroy`](world.md#cardestroy) | World and objects | brief | confirmed (code) | not implemented |
-| [`FindFlag`](world.md#findflag) | World and objects | brief | confirmed (code) | implemented |
-| [`FlagNetClear`](world.md#flagnetclear) | World and objects | brief | confirmed (code) | not implemented |
+| [`GoalBoxer`](ai.md#goalboxer) | AI | traced | confirmed (code) | not implemented |
+| [`GoalGrabTarget`](ai.md#goalgrabtarget) | AI | traced | confirmed (code) | not implemented |
+| [`GoalPeddler`](ai.md#goalpeddler) | AI | traced | confirmed (code) | not implemented |
+| [`GoalPlayGenAnim`](ai.md#goalplaygenanim) | AI | traced | confirmed (code) | not implemented |
+| [`GoalShopkeeper`](ai.md#goalshopkeeper) | AI | traced | confirmed (code) | not implemented |
+| [`GangCanFlee`](gang.md#gangcanflee) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangClearBums`](gang.md#gangclearbums) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangClearHandlers`](gang.md#gangclearhandlers) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangGoodToGo`](gang.md#ganggoodtogo) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangIsASpawner`](gang.md#gangisaspawner) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangMakeNeutralOfType`](gang.md#gangmakeneutraloftype) | Gangs | traced | confirmed (code) | not implemented |
+| [`CarDestroy`](world.md#cardestroy) | World and objects | traced | confirmed (code) | not implemented |
+| [`FindFlag`](world.md#findflag) | World and objects | traced | confirmed (code) | implemented |
+| [`FlagNetClear`](world.md#flagnetclear) | World and objects | traced | confirmed (code) | not implemented |
 | [`GetFlagPos`](world.md#getflagpos) | World and objects | traced | confirmed (code) | implemented |
-| [`GetObjectName`](world.md#getobjectname) | World and objects | brief | confirmed (code) | not implemented |
+| [`GetObjectName`](world.md#getobjectname) | World and objects | traced | confirmed (code) | not implemented |
 | [`GetPTank`](world.md#getptank) | World and objects | traced | confirmed (code) | not implemented |
-| [`ObjIsAlive`](world.md#objisalive) | World and objects | brief | confirmed (code) | not implemented |
-| [`ObjMarkZone`](world.md#objmarkzone) | World and objects | brief | confirmed (code) | not implemented |
-| [`OpenDoor`](world.md#opendoor) | World and objects | brief | confirmed (code) | not implemented |
-| [`OpenDoorAnimated`](world.md#opendooranimated) | World and objects | brief | confirmed (code) | not implemented |
+| [`ObjIsAlive`](world.md#objisalive) | World and objects | traced | confirmed (code) | not implemented |
+| [`ObjMarkZone`](world.md#objmarkzone) | World and objects | traced | confirmed (code) | not implemented |
+| [`OpenDoor`](world.md#opendoor) | World and objects | traced | confirmed (code) | not implemented |
+| [`OpenDoorAnimated`](world.md#opendooranimated) | World and objects | traced | confirmed (code) | not implemented |
 | [`ReleasePTank`](world.md#releaseptank) | World and objects | traced | confirmed (code) | not implemented |
-| [`KillParticle`](effects.md#killparticle) | Effects and lighting | brief | confirmed (code) | not implemented |
+| [`KillParticle`](effects.md#killparticle) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`SetLightFlicker`](effects.md#setlightflicker) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`SetMotionAlpha`](effects.md#setmotionalpha) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`CNSEnableMissionInfo`](hud.md#cnsenablemissioninfo) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HidePlayerHud`](hud.md#hideplayerhud) | HUD and menus | brief | confirmed (code) | not implemented |
+| [`CNSEnableMissionInfo`](hud.md#cnsenablemissioninfo) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HidePlayerHud`](hud.md#hideplayerhud) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`HUDEnableClubActionText`](hud.md#hudenableclubactiontext) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDShowMissionSelect`](hud.md#hudshowmissionselect) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDTurnOffActionCycleAnim`](hud.md#hudturnoffactioncycleanim) | HUD and menus | brief | inferred | not implemented |
-| [`HUDTurnOnActionCycleAnim`](hud.md#hudturnonactioncycleanim) | HUD and menus | brief | inferred | not implemented |
-| [`ShowGameStatsInterface`](hud.md#showgamestatsinterface) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`ShowPlayerHud`](hud.md#showplayerhud) | HUD and menus | brief | confirmed (code) | not implemented |
+| [`HUDShowMissionSelect`](hud.md#hudshowmissionselect) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDTurnOffActionCycleAnim`](hud.md#hudturnoffactioncycleanim) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDTurnOnActionCycleAnim`](hud.md#hudturnonactioncycleanim) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`ShowGameStatsInterface`](hud.md#showgamestatsinterface) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`ShowPlayerHud`](hud.md#showplayerhud) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`ShowRumbleModeInterface`](hud.md#showrumblemodeinterface) | HUD and menus | traced | confirmed (code) | partial |
-| [`EnableAmbientEmitter`](sound.md#enableambientemitter) | Sound and music | brief | inferred | not implemented |
+| [`EnableAmbientEmitter`](sound.md#enableambientemitter) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SndLoadMatrix`](sound.md#sndloadmatrix) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SndSetNIDuck`](sound.md#sndsetniduck) | Sound and music | brief | inferred | not implemented |
-| [`SndSetPitchMod`](sound.md#sndsetpitchmod) | Sound and music | brief | inferred | not implemented |
-| [`SoundPauseSound`](sound.md#soundpausesound) | Sound and music | brief | confirmed (code) | not implemented |
-| [`SoundPlay`](sound.md#soundplay) | Sound and music | brief | confirmed (code) | not implemented |
+| [`SndSetNIDuck`](sound.md#sndsetniduck) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SndSetPitchMod`](sound.md#sndsetpitchmod) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SoundPauseSound`](sound.md#soundpausesound) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SoundPlay`](sound.md#soundplay) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SoundPlay2D`](sound.md#soundplay2d) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SoundSetMusicVolume`](sound.md#soundsetmusicvolume) | Sound and music | traced | confirmed (code) | not implemented |
-| [`CheckMultiplayer`](level.md#checkmultiplayer) | Levels and game state | brief | inferred | not implemented |
-| [`GetGameTime`](level.md#getgametime) | Levels and game state | brief | confirmed (code) | implemented |
-| [`PrecacheWorld`](level.md#precacheworld) | Levels and game state | brief | inferred | not implemented |
-| [`QueueFileToPrecache`](level.md#queuefiletoprecache) | Levels and game state | brief | inferred | not implemented |
-| [`ResetStore`](level.md#resetstore) | Levels and game state | brief | confirmed (code) | not implemented |
+| [`CheckMultiplayer`](level.md#checkmultiplayer) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`GetGameTime`](level.md#getgametime) | Levels and game state | traced | confirmed (code) | implemented |
+| [`PrecacheWorld`](level.md#precacheworld) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`QueueFileToPrecache`](level.md#queuefiletoprecache) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`ResetStore`](level.md#resetstore) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`SetLUASaveDataBool`](level.md#setluasavedatabool) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`SSMC_StartSaveSequence`](level.md#ssmc_startsavesequence) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`StatReset`](level.md#statreset) | Levels and game state | brief | confirmed (code) | not implemented |
-| [`UM_GetRecordData`](level.md#um_getrecorddata) | Levels and game state | brief | confirmed (code) | not implemented |
-| [`UM_GetUnlockablesByType`](level.md#um_getunlockablesbytype) | Levels and game state | brief | confirmed (code) | not implemented |
-| [`UM_IsDataDirty`](level.md#um_isdatadirty) | Levels and game state | brief | confirmed (code) | not implemented |
+| [`StatReset`](level.md#statreset) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`UM_GetRecordData`](level.md#um_getrecorddata) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`UM_GetUnlockablesByType`](level.md#um_getunlockablesbytype) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`UM_IsDataDirty`](level.md#um_isdatadirty) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`UM_IsTypeDirty`](level.md#um_istypedirty) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`W_GetStopWatchTime`](level.md#w_getstopwatchtime) | Levels and game state | brief | confirmed (code) | not implemented |
-| [`W_ShowStopWatch`](level.md#w_showstopwatch) | Levels and game state | brief | confirmed (code) | not implemented |
+| [`W_GetStopWatchTime`](level.md#w_getstopwatchtime) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`W_ShowStopWatch`](level.md#w_showstopwatch) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`CfgActionDistance`](config.md#cfgactiondistance) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgEnableCrimeType`](config.md#cfgenablecrimetype) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
+| [`CfgEnableCrimeType`](config.md#cfgenablecrimetype) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgEnableTurfInvasion`](config.md#cfgenableturfinvasion) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgMoneyCallback`](config.md#cfgmoneycallback) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
-| [`CfgObjectValueMod`](config.md#cfgobjectvaluemod) | Configuration (Cfg) | brief | inferred | not implemented |
+| [`CfgMoneyCallback`](config.md#cfgmoneycallback) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgObjectValueMod`](config.md#cfgobjectvaluemod) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgPlayerCombatWalkOnly`](config.md#cfgplayercombatwalkonly) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgStickDeflection`](config.md#cfgstickdeflection) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgWorkoutParams`](config.md#cfgworkoutparams) | Configuration (Cfg) | traced | confirmed (code) | not implemented |

@@ -195,25 +195,43 @@
   wrapper: 0x0036ec40
   calls:
     - {addr: 0x00155180, name: MissionSelect_Show}
+    - {addr: 0x0015d5e0, name: MissionSelect_SetCallbacks}
+    - {addr: 0x0015d728, name: MissionSelect_Exit}
   args:
-    - {name: onCancel, lua: string, desc: "Name of the Lua function called when the player backs out (at most 31 characters)."}
-    - {name: onChoose, lua: string, desc: "Name of the Lua function called with the chosen level (at most 31 characters)."}
+    - {name: onCancel, lua: string, desc: "Name of the Lua function called with no arguments when the player backs out (copied, at most 31 characters); nil for none."}
+    - {name: onChoose, lua: string, desc: "Name of the Lua function called as onChoose(level, checkpoint) when the player picks a mission (copied, at most 31 characters); nil for none."}
   description: >-
-    Opens the clubhouse mission-select screen (game mode 0x10) unless it is already open. level95 uses it.
+    Opens the clubhouse mission-select screen (game mode 0x10, pushed on the mode stack) unless it is already the
+    current mode; the world stops updating while it shows. On entry it loads the `menu` sound bank. When the player
+    backs out, the `sound` bank is loaded back and `onCancel()` is called; when the player picks an entry,
+    `onChoose(level, checkpoint)` is called with the entry's level number and its 1-based checkpoint.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The choice comes from 0x001bdd38: level = level record +0x14d8 of the entry's level index, checkpoint = entry
+    +0x70 + 1; for a checkpoint above 1 it also calls 0x0041e040(W_GameState + 0x480, 1) and resets and re-copies the
+    statistics (0x00422930, 0x00422c60) before the callback. Callbacks run through the script system by name, so dotted
+    names work. The menu's list and layout are not traced.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: ShowGameStatsInterface
   wrapper: 0x0036ec98
   calls:
-    - {addr: 0x001551e0}
+    - {addr: 0x001551e0, name: GameStats_Show}
+    - {addr: 0x001594e0, name: GameStats_SetCloseCallback}
+    - {addr: 0x00159630, name: GameStats_Exit}
   args:
-    - {name: onClose, lua: string, desc: "Name of the Lua function called when the screen closes (interned)."}
+    - {name: onClose, lua: string, desc: "Name of the Lua function called with no arguments when the screen closes (interned through the script system); nil for none."}
   description: >-
-    Opens the game statistics screen (game mode 0x13) unless it is already open.
+    Opens the game statistics screen (game mode 0x13, pushed on the mode stack) unless it is already the current
+    mode; the world stops updating while it shows. When the player closes it, the `sound` bank is loaded back and
+    `onClose()` is called.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The interned name is kept in a global (0x005e57d0), so a second call replaces the first's callback. What the screen
+    lists (the [statistics](../../research/player-state.md#statistics) categories, inferred) and its enter path
+    (vtable 0x005384c8) are not traced.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: ShowRumbleModeInterface
@@ -646,31 +664,43 @@
 - name: HUDTurnOnActionCycleAnim
   wrapper: 0x0036fc80
   calls:
-    - {addr: 0x001b5a90}
+    - {addr: 0x001b5a90, name: HUD_TurnOnActionCycleAnim}
+    - {addr: 0x0019f270, name: ActionPrompt_StartCycle}
+    - {addr: 0x0019f328, name: ActionPrompt_UpdateCycle}
   args:
-    - {name: "n", lua: number, ctype: unsigned, desc: "A count or slot (scripts pass 3 or 4)."}
-    - {name: seconds, lua: number, ctype: float, desc: "Frame time of the cycle (scripts pass 0.1 or 0.15)."}
-    - {name: kind, lua: number, ctype: unsigned, desc: "A number (scripts pass 2 or 6)."}
-    - {name: iconA, lua: number, ctype: unsigned, desc: "First button-icon id of the cycle (scripts pass 73 or 79)."}
-    - {name: iconB, lua: number, ctype: unsigned, desc: "Second button-icon id."}
-    - {name: player, lua: number, ctype: unsigned, desc: "Player index (0 or 1)."}
+    - {name: framesPerIcon, lua: number, ctype: unsigned, desc: "HUD updates each icon stays before switching to the other (scripts pass 3 or 4); 0 crashes the update (division by zero)."}
+    - {name: seconds, lua: number, ctype: float, desc: "Ignored: the callee overwrites it with a fixed 0.1 (scripts pass 0.1 or 0.15)."}
+    - {name: blinkFrames, lua: number, ctype: unsigned, desc: "The icon shows for this many HUD updates, then hides for as many (scripts pass 2 or 6); 0 means no blinking."}
+    - {name: iconA, lua: number, ctype: unsigned, desc: "First button sprite word of the cycle (scripts pass 73 or 79)."}
+    - {name: iconB, lua: number, ctype: unsigned, desc: "Second button sprite word."}
+    - {name: player, lua: number, ctype: unsigned, desc: "Player index (0 or 1): which player's action prompt (HUD +0x6b40 + player × 0x590)."}
   description: >-
-    Shows an animated button prompt that alternates between two icons (the `mash this button` prompts in chases and
-    workouts).
-  evidence: inferred
-  depth: brief
+    Animates a player's action-prompt icon as a `press this button` hint: the icon alternates between two button
+    sprites every `framesPerIcon` HUD updates and blinks on and off every `blinkFrames` updates, until
+    HUDTurnOffActionCycleAnim. The scripts use it for the mash prompts in chases, fights and workouts.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Stores the two icons at prompt +0x440/+0x444, the rates at +0x448 and +0x458, sets the cycle flag +0x45c and hides
+    the prompt widget until its next update; the icon sprite (+0x480) is set up with a fixed size 0.1. The cycle runs
+    in ActionPrompt_Update ([HUD: action prompts](../../research/hud.md#action-prompts)), so it shows only while that
+    player's prompt itself is shown.
   usage: {chunks: 7, calls: 13, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 51, 54, 84]}
 
 - name: HUDTurnOffActionCycleAnim
   wrapper: 0x0036fd98
   calls:
-    - {addr: 0x001b5ae0}
+    - {addr: 0x001b5ae0, name: HUD_TurnOffActionCycleAnim}
+    - {addr: 0x0019f320, name: ActionPrompt_StopCycle}
   args:
-    - {name: player, lua: number, ctype: unsigned, desc: "Player index (0 or 1)."}
+    - {name: player, lua: number, ctype: unsigned, desc: "Player index (0 or 1) whose action prompt stops cycling."}
   description: >-
-    Removes the animated button prompt for a player.
-  evidence: inferred
-  depth: brief
+    Stops the icon cycle that HUDTurnOnActionCycleAnim started on a player's action prompt (clears the prompt's cycle
+    flag +0x45c); the prompt goes back to its normal, steady icon.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only the flag is cleared: the icon last shown and its visibility stay until the prompt next sets them.
   usage: {chunks: 8, calls: 27, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 51, 54, 84]}
 
 - name: HUDEnableInstArrow
@@ -1073,21 +1103,31 @@
 - name: HidePlayerHud
   wrapper: 0x00370ce0
   calls:
-    - {addr: 0x001b3ef0}
+    - {addr: 0x001b3ef0, name: HUD_HidePlayerPanels}
+    - {addr: 0x001b2030}
   description: >-
-    Hides both players' panels (name banner, rage meter, score, money) only.
+    Hides both players' status panels (name banner, rage meter, score, money and item counters) and keeps them hidden:
+    each panel's `may show` flag (+0x4108) is cleared, so activity no longer brings it back, until ShowPlayerHud. The
+    radar, objective texts and prompts are not affected.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Panel calls 0x0020dfe0(panel, 0) then 0x0020dfe8 (hide), for the panels at HUD +0x08 and +0x0c ([HUD: showing and
+    hiding](../../research/hud.md#showing-and-hiding)). HideHud hides more (radars, score board).
   usage: {chunks: 44, calls: 50, boot: false, mission1: false, result_used: false, levels: [95, 3, 84, 92]}
 
 - name: ShowPlayerHud
   wrapper: 0x00370d00
   calls:
-    - {addr: 0x001b3f10}
+    - {addr: 0x001b3f10, name: HUD_ShowPlayerPanels}
+    - {addr: 0x001b2088}
   description: >-
-    Shows both players' status panels again.
+    Lets both players' status panels show again (sets each panel's `may show` flag +0x4108) and shows each one that is
+    attached to a player; the usual fade after inactivity then applies.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Panel calls 0x0020dfe0(panel, 1) then 0x0020e008; a panel not attached to a player stays hidden.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 3, 92]}
 
 - name: FlashRageBar
@@ -1108,11 +1148,15 @@
 - name: CNSEnableMissionInfo
   wrapper: 0x0037d3f0
   calls:
-    - {addr: 0x0023b128}
+    - {addr: 0x0023b128, name: CNS_SetMissionInfoEnabled}
   args:
-    - {name: "on", lua: boolean, desc: "true enables the hub's mission information, false disables it."}
+    - {name: "on", lua: boolean, desc: "true stores 1, false (or nil) stores 0."}
   description: >-
-    Sets a global flag (0x005109ac) that enables mission information in the hub (level95 turns it on, level101 off).
+    Sets the global word 0x005109ac to 1 or 0. Nothing in the executable reads it, so the call has no visible effect;
+    level95 turns it on and level101 off.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The only reference to 0x005109ac is this store (no other load in the program), so whatever `CNS` mission info was
+    meant to show is not built.
   usage: {chunks: 34, calls: 35, boot: false, mission1: false, result_used: false, levels: [95]}

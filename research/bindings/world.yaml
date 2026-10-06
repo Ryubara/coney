@@ -41,13 +41,18 @@
   calls:
     - {addr: 0x003859f0, name: Obj_GetTypeName}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object (prop, door, pickup ...)."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (prop, door, pickup...), including an ObjSpawn record handle."}
   results:
-    - {lua: string, desc: "The object's type name as defined by the object configuration (for example a `dyn_...` name), or the string `<null>` when the handle does not resolve to an object."}
+    - {lua: string, desc: "The object's type name from the object type table (for example a `dyn_...` name), or `<null>` when the handle resolves to nothing or to something that is not a world object (a human, a flag, a car)."}
   description: >-
-    Returns the type name of a game object, read from the object type table (type record +0x28).
+    Returns the type name of a world object: the type table record (0x00512c04) at the object's type index (+0x112),
+    name at +0x28. Scripts use it to tell which kind of object a message came from.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Resolving an ObjSpawn record handle spawns the object if it is not live
+    ([Objects: spawning](../../research/objects.md#spawning)).
+    The world-object check is 0x00395f38.
   usage: {chunks: 8, calls: 26, boot: false, mission1: false, result_used: true, levels: [95, 34, 2, 31, 55, 92, 11]}
 
 - name: OrientObject
@@ -290,13 +295,17 @@
   calls:
     - {addr: 0x00397598, name: Obj_Exists}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of any game object (world object, human, car, flag...)."}
   results:
-    - {lua: boolean, desc: "True when the handle still resolves to a live object; false (nil) after it has been destroyed or for NilHandle."}
+    - {lua: boolean, desc: "true (1) when the handle resolves to a live object; nil for NilHandle, a stale handle (the object destroyed and its slot reused) or a removed spawn record."}
   description: >-
-    Tests whether a game object handle is still valid.
+    Tests whether a handle still names an object, for example whether a breakable prop has been destroyed. It works for
+    every kind of handle, not only world objects.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    For an ObjSpawn record handle, resolving spawns the object when it is not live, so the call answers true (and
+    brings it into the world) unless the record is removed ([Tasks: handles](../../research/tasks.md#handles)).
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [95, 93, 92]}
 
 - name: ObjGetIndex
@@ -455,16 +464,22 @@
   wrapper: 0x00377bd0
   calls:
     - {addr: 0x003967e0, name: ObjZone_Mark}
+    - {addr: 0x003983b0}
   args:
-    - {name: zone, lua: number, ctype: unsigned, desc: "Zone number."}
+    - {name: zone, lua: number, ctype: unsigned, desc: "Object zone number (the zone ObjSpawn gave the records, [Object zones](../zones.md))."}
     - {name: kind, lua: number, ctype: int, desc: "Must be 0; any other value makes the call do nothing."}
-    - {name: mark, lua: number, ctype: int, desc: "Non-zero sets the zone's mark, 0 clears it (a second per-zone bit set, 0x003983b0)."}
+    - {name: removed, lua: number, ctype: int, desc: "Non-zero marks every record of the zone removed; 0 restores them (the scripts always pass 0)."}
   description: >-
-    Sets or clears a second per-zone flag in the spawn table; the scripts call it with (zone, 0, 0).
+    Marks or unmarks every spawn record of an object zone as removed (record +0x24 bit 0x40000): a removed record is
+    never spawned again and its handle resolves to NilHandle. With 0, the zone's records come back, and live objects
+    that were stored hidden are stored back into their records (shown again when next spawned). Scripts call
+    `ObjMarkZone(zone, 0, 0)` to bring a zone's objects back.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    What the mark means (for example 'already visited, do not respawn') is not traced.
+    The record bits are on [Objects: spawn records](../../research/objects.md#spawn-records). Unmarking also clears the
+    stored-hidden bit 0x100000 and stores (0x00399428) a live record whose object has flag 0x800000. Whether marking
+    removes objects already live is not traced. Different from ObjEnableZone, which switches the zone's streaming bit.
   usage: {chunks: 12, calls: 27, boot: false, mission1: false, result_used: false, levels: [95, 5, 93, 51, 84, 82]}
 
 - name: ObjGetZone
@@ -631,12 +646,18 @@
   wrapper: 0x003784f0
   calls:
     - {addr: 0x0038dea8, name: Car_Destroy}
+    - {addr: 0x00387ad8, name: Car_Release}
   args:
-    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car (CarCreate's or a parked car's)."}
   description: >-
-    Deletes a car (its destroy method, vtable +0x4c).
+    Removes a car from the world at once, without an explosion or any effect: its model instance and physics bodies
+    are released, its handle freed, it is taken off the task wheel, the objects it owns (its police lights at +0x1210
+    and the object at +0x1204) are released the same way, and the car goes back to the car pool.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Calls the object's virtual slot +0x4c (Car_Release, car vtable 0x00544c08); any other kind of handle gets that
+    class's own slot +0x4c (Task_Unschedule in the base), so pass only cars. NilHandle or a stale handle does nothing.
   usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false, levels: [95, 34, 5, 93]}
 
 - name: CarSetPartDamage
@@ -895,12 +916,16 @@
   calls:
     - {addr: 0x00396ea0, name: Door_Open}
   args:
-    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of a swinging door."}
   description: >-
-    Opens a door (state command 2): a swinging door that is not pickable swings to 170 degrees with its open sound,
-    and its collision goes about half a second later.
+    Swings a door open with no one opening it: state command 2 (message 0x22). A door that is not pickable resets its
+    leaves, swings to 170 degrees with its open sound, and its collision goes about half a second later; a pickable
+    (locked) door ignores it.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The door's side of it: [Objects: door states](../../research/objects.md#door-states). Any object that answers
+    message 0x22 receives command 2; NilHandle does nothing.
   usage: {chunks: 46, calls: 85, boot: false, mission1: false, result_used: false, levels: [95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 54, 55, 82, 92, 83, 20, 11, 60, 61, 62, 64]}
   coney: implemented
 
@@ -912,10 +937,14 @@
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the door or button object to use."}
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who uses it."}
   description: >-
-    Makes a human walk up to and use a door or button with an animation: the human's target becomes the object
-    (0x00227080) and it is given action 0x1a (0x002266a8).
+    Makes a human use a door or button with an animation: the human's object target becomes the object (0x00227080)
+    and its state code becomes 26 (0x002266a8), the door-opening action; the door itself is not sent anything here.
+    This is the same path a player's triangle press on a door takes.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Does nothing unless the second handle is a human and the first resolves. What state 26 plays and how it opens the
+    door (anim 666, inferred) is not traced ([Objects: opening](../../research/objects.md#opening)).
   usage: {chunks: 6, calls: 7, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 14, 51]}
   coney: implemented
 
@@ -1121,14 +1150,16 @@
   calls:
     - {addr: 0x00415c48, name: Flag_FindByName}
   args:
-    - {name: name, lua: string, desc: "Flag name given to `AddFlag`."}
+    - {name: name, lua: string, desc: "Flag name given to `AddFlag` (compared case-sensitively with the stored 15-character name)."}
   results:
     - {lua: number, desc: "Handle of the first flag with that name, or NilHandle."}
   description: >-
-    Looks up a flag by name (linear search over the flags in creation order, case-sensitive strcmp against the
-    stored 15-character name). Three scripts call it, once each.
+    Looks up a world flag by name: a linear search over the flags in creation order, returning the first whose name
+    equals `name` (plain strcmp). Three scripts call it, once each.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    A name longer than the 15 characters a flag keeps never matches. Converted as unsigned.
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
   coney: implemented
 
@@ -1198,9 +1229,13 @@
   calls:
     - {addr: 0x002a7328, name: FlagNet_Clear}
   description: >-
-    Empties the flag network: all 128 nodes and their links become NilHandle.
+    Empties the flag network that FlagNetAddLink builds: the node count (0x006e9f40) goes to 0, and all 128 nodes'
+    flag and four links become NilHandle with their 16-bit field (0x006e9e40) set to 0xffff. The level teardown does
+    the same, so scripts need it only to rebuild a network within a level.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    What happens to humans already walking the network (FlagNetTraverse) is not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: AddPath

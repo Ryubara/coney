@@ -94,26 +94,38 @@
 - name: SndSetPitchMod
   wrapper: 0x003710c0
   calls:
-    - {addr: 0x00113370}
+    - {addr: 0x00113370, name: Audio_SetPitchMod}
   args:
-    - {name: pitch, lua: number, ctype: float, desc: "Pitch multiplier for game sounds, 1 normal (one script uses 0.65 for a slowed-down effect)."}
+    - {name: pitch, lua: number, ctype: float, desc: "Global pitch factor for the game's sounds, 1.0 normal (one hub script uses 0.65 for a slowed-down effect); not clamped."}
   description: >-
-    Sets a global pitch modifier for sound effects (audio manager +0x3fa5c).
-  evidence: inferred
-  depth: brief
+    Sets the audio manager's global pitch factor (+0x3fa5c), which the sound tasks multiply into every playing
+    sound's pitch, so lower values slow and deepen all game sound. It stays until changed again or until the next
+    level load, which resets it to 1.0.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Reset to 1.0 by mode 1's Enter (0x001582e0) and Exit (0x00158488). Mode 1's update also lowers it towards 0.7 by
+    itself, by 0.7 / (0.9 × the level-end countdown) a frame (0x00158728 at 0x001589c8; inferred: the slow-down as a
+    level ends), and saves and restores it around one other state (0x00158bd4, not traced). Its readers are
+    SoundTask_Update (0x0011b048), 0x0011daa8 and the device 0x0014caf8.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SndSetNIDuck
   wrapper: 0x003710f8
   calls:
-    - {addr: 0x001133b0}
+    - {addr: 0x001133b0, name: Audio_SetNIDuck}
   args:
-    - {name: level, lua: number, ctype: float, desc: "Volume factor (0-1) other sounds are lowered to; the scripts use 0.2 and 0.35."}
+    - {name: level, lua: number, ctype: float, desc: "Volume factor (0-1) applied while a non-duckable sound plays; default 0.2, the scripts use 0.2 and 0.35."}
   description: >-
-    Sets the factor (default 0.2) that directional sounds not owned by a player are lowered to while a non-duckable
-    sound plays (audio manager +0x3faac; inferred: the lines of HuSpeakNI).
-  evidence: inferred
-  depth: brief
+    Sets the duck factor (audio manager +0x3faac): while a non-duckable sound plays (such as a scripted line), every
+    duckable directional sound not owned by a player, chiefly the other humans' voices, is scaled by this factor. Higher
+    values duck less.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Applied in SoundTask_Update (0x0011ad58; [Sound: sound tasks](../../research/sound.md#sound-tasks)); reset to 0.2 on
+    every level load (0x001582e0). Which lines are non-duckable (task +0xa4 = 0; HuSpeakNI's, inferred) is not traced
+    here.
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SndLoadBank
@@ -324,16 +336,21 @@
 - name: SoundPlay
   wrapper: 0x003715f8
   calls:
-    - {addr: 0x00113680}
+    - {addr: 0x00113680, name: Audio_PlaySoundAt}
+    - {addr: 0x0010fdd0}
   args:
-    - {name: sound, lua: string, desc: "Sound name (such as \"vags/doors/opengate_01\")."}
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} the sound plays at; written back to the table."}
+    - {name: sound, lua: string, desc: "Sound name (such as \"vags/doors/opengate_01\"), hashed with the game's name hash (0x00143f68); see [Sound](../sound.md)."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres the sound plays at; written back unchanged."}
   results:
-    - {lua: number, desc: "The sound's handle (a number) for SoundStop or SndFadeOut."}
+    - {lua: number, desc: "Handle of the playing sound, for SoundStop or SndFadeOut; the null sound handle (0x00598690) when it could not start."}
   description: >-
-    Plays a sound once at a position in the world, at normal volume and pitch.
+    Plays a sound once as a positional (3D) sound at a point in the world, at full caller volume and normal pitch; it is
+    heard with the usual distance falloff and panning to each listener and then ends by itself.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    PlaySound3D (0x0010fdd0) with volume, pitch and a third factor of 1.0 and its last flag 1; a name that is not in the
+    sound list, or no free task, gives the null handle. Converted as unsigned.
   usage: {chunks: 17, calls: 27, boot: false, mission1: false, result_used: true, levels: [95, 2, 3, 5, 81, 93, 14, 82, 83, 11]}
 
 - name: SoundPlay2D
@@ -535,14 +552,21 @@
 - name: EnableAmbientEmitter
   wrapper: 0x003726a0
   calls:
-    - {addr: 0x00113bc8}
+    - {addr: 0x00113bc8, name: Audio_EnableAmbientEmitter}
+    - {addr: 0x0010d570, name: AmbientManager_EnableEmitter}
   args:
-    - {name: emitter, lua: number, ctype: int, desc: "Emitter id."}
+    - {name: emitter, lua: number, ctype: int, desc: "Emitter id as returned by AddAmbientSoundEmitter2 (its slot in the ambient manager); not range-checked."}
     - {name: "on", lua: boolean, default: true, desc: "true (the default) enables the emitter, false silences it."}
   description: >-
-    Switches an ambient emitter on or off.
-  evidence: inferred
-  depth: brief
+    Switches an ambient sound emitter on or off (emitter +0x8c, records of 0xd0 bytes in the ambient manager at audio
+    manager +0x24280). An emitter switched off has its playing sound stopped at its next update and plays nothing
+    more; switched on, it resumes playing at its random intervals while a listener is in range.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The update is 0x0010c100, at most once a second. An emitter with a limited play count clears the same flag
+    itself when the count runs out; re-enabling it then lets it play on without a limit (count byte at -1), inferred
+    from the code.
   usage: {chunks: 15, calls: 43, boot: false, mission1: false, result_used: false, levels: [95, 34, 2, 3, 5, 81, 86, 93, 14, 54, 82, 11]}
 
 - name: NewMaterialSlots
@@ -760,13 +784,20 @@
 - name: SoundPauseSound
   wrapper: 0x00372fb0
   calls:
-    - {addr: 0x00114088}
+    - {addr: 0x00114088, name: Audio_PauseSound}
+    - {addr: 0x0010fb20, name: AudioManager_Pause}
+    - {addr: 0x0010fb68, name: AudioManager_Resume}
   args:
     - {name: "on", lua: boolean, default: true, desc: "true (the default) pauses all game sound, false resumes it."}
   description: >-
-    Pauses or resumes all game sound, for example around a scripted pause.
+    Pauses or resumes every playing voice, for example around a scripted pause or a menu: the audio manager's paused
+    flag (+0x3fa24) is set or cleared and the sound device pauses or resumes all voices; paused sounds continue where
+    they stopped.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Through the device's slots +0x64 / +0x6c (0x0014c5e0 / 0x0014c600). While paused, pitch updates stop; whether
+    sounds started meanwhile play is not traced.
   usage: {chunks: 36, calls: 139, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SoundPlayCommand

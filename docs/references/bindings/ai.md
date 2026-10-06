@@ -57,7 +57,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalBigThrower`](#goalbigthrower) | - | 0 | no | no | speculative |
 | [`GoalBossDiego`](#goalbossdiego) | - | 0 | no | no | speculative |
 | [`GoalBossLizzies`](#goalbosslizzies) | - | 0 | no | no | speculative |
-| [`GoalBoxer`](#goalboxer) | - | 2 | no | no | inferred |
+| [`GoalBoxer`](#goalboxer) | - | 2 | no | no | confirmed (code) |
 | [`GoalBumLogic`](#goalbumlogic) | - | 26 | no | yes | confirmed (code) |
 | [`GoalBumLogicTrigger`](#goalbumlogictrigger) | - | 2 | no | no | confirmed (code) |
 | [`GoalCallGang`](#goalcallgang) | - | 1 | no | no | inferred |
@@ -75,7 +75,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalFollowObject`](#goalfollowobject) | - | 2 | no | no | inferred |
 | [`GoalFollowPlayer`](#goalfollowplayer) | - | 3 | yes | no | confirmed (code) |
 | [`GoalGetItem`](#goalgetitem) | - | 2 | no | no | inferred |
-| [`GoalGrabTarget`](#goalgrabtarget) | - | 2 | no | no | inferred |
+| [`GoalGrabTarget`](#goalgrabtarget) | - | 2 | no | no | confirmed (code) |
 | [`GoalGuardFlag`](#goalguardflag) | - | 4 | no | no | inferred |
 | [`GoalHoldPosition`](#goalholdposition) | - | 1 | no | no | inferred |
 | [`GoalHooker`](#goalhooker) | - | 0 | no | no | speculative |
@@ -94,16 +94,16 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalMoveToUseFlag`](#goalmovetouseflag) | - | 28 | no | yes | confirmed (code) |
 | [`GoalObjectThrower`](#goalobjectthrower) | - | 4 | no | no | inferred |
 | [`GoalPathBlocker`](#goalpathblocker) | - | 0 | no | no | inferred |
-| [`GoalPeddler`](#goalpeddler) | - | 4 | no | no | inferred |
+| [`GoalPeddler`](#goalpeddler) | - | 4 | no | no | confirmed (code) |
 | [`GoalPedestrianFlag`](#goalpedestrianflag) | - | 0 | no | no | inferred |
 | [`GoalPedestrianPath`](#goalpedestrianpath) | - | 0 | no | no | inferred |
 | [`GoalPlayAnimation`](#goalplayanimation) | - | 0 | no | no | inferred |
 | [`GoalPlayDynAnimation`](#goalplaydynanimation) | - | 22 | no | yes | confirmed (code) |
 | [`GoalPlayDynIdle`](#goalplaydynidle) | - | 21 | no | no | confirmed (code) |
-| [`GoalPlayGenAnim`](#goalplaygenanim) | - | 4 | no | no | inferred |
+| [`GoalPlayGenAnim`](#goalplaygenanim) | - | 4 | no | no | confirmed (code) |
 | [`GoalRiot`](#goalriot) | - | 8 | no | no | inferred |
 | [`GoalRunCarrotRun`](#goalruncarrotrun) | - | 4 | no | no | inferred |
-| [`GoalShopkeeper`](#goalshopkeeper) | - | 4 | no | no | inferred |
+| [`GoalShopkeeper`](#goalshopkeeper) | - | 4 | no | no | confirmed (code) |
 | [`GoalStandIdle`](#goalstandidle) | - | 0 | no | no | inferred |
 | [`GoalStartParlay`](#goalstartparlay) | boolean | 0 | no | no | speculative |
 | [`GoalStationaryThrower`](#goalstationarythrower) | - | 5 | no | no | inferred |
@@ -533,15 +533,21 @@ BrHasEnemies(human) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human, in practice the player. |
 
-**Returns** boolean (1 for true, nil for false): true (1) if the brain currently has an enemy (brain byte `+0x152`);
-false (nil) otherwise or for a bad handle.
+**Returns** boolean (1 for true, nil for false): true (1) when at least one AI human has this human on its enemy list
+(brain byte `+0x152`); false (nil) otherwise or for a bad handle.
 
-Tells whether a human currently considers anyone an enemy.
+Tells whether anyone is after the human: the player's brain update counts, every 300 brain updates, the non-player
+members of all 32 gangs whose enemy list (brain `+0x164`, 16 slots) holds this human, and stores the count at brain
+`+0x152`; this returns whether it is non-zero. The camera uses the same byte to pick its sprint view.
 
-- **Evidence:** confirmed (code) at `0x00292c68`; detail: brief
-- **Wrapper** `0x0035f050` (registered by `RegisterBindings`); **calls** `0x00292c68` `Brain_HasEnemies`
+**Notes.** Only the player brain (type 0) refreshes the count, so for an AI human it stays 0 (false); it can lag up to
+300 brain updates (counter at brain `+0x34`) behind the enemy lists.
+
+- **Evidence:** confirmed (code) at `0x00292c68`, `0x003035d8`; detail: traced
+- **Wrapper** `0x0035f050` (registered by `RegisterBindings`); **calls** `0x00292c68` `Brain_HasEnemies`, `0x003035d8`
+  `PlayerBrain_Update`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -969,18 +975,23 @@ BrSetType(human, brainType)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `brainType` | number, truncated to an integer | Brain type 0-6. 0 is the pad-driven player brain; scripts use 2 for gang members who fight alongside the player and 4 for some story characters. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `brainType` | number, truncated to an integer | Brain type 0-6 (AI types: 0 player, 1 cop, 2 gang soldier, 3 Warrior, 4 civilian or bum, 5 dealer, 6 the civl_co_di kind); scripts use 2 and 4. Not range-checked. |
 
 **Returns** nothing.
 
-Changes the kind of brain a human has (brain `+0x04`) and rebuilds its behaviour handlers from that type's table, as
-`BrDead(human, false)` would. Setting type 0 makes the human pad-controlled.
+Changes the kind of brain a human has (brain `+0x04`) and reinstalls its update, think and event handlers from that
+type's tables (`0x00715530`, `0x00715568`, `0x007155a0`), so the human behaves like a cop, gang soldier, Warrior,
+civilian and so on from its next update. Type 0 also hands the human's player record the pad (record `+0x1b` = 1) and
+resets its player-side bookkeeping.
 
-**Notes.** Seven types (tables at 0x00715530); the meaning of each type beyond 0 is inferred from the scripts' use.
+**Notes.** A brain made dead with BrDead keeps the script-only handlers (the type is stored but only used when BrDead is
+lifted); a value above 6 indexes past the tables; type 0 is only meaningful for a human that has a player slot; the
+goals already on the stack are kept.
 
-- **Evidence:** confirmed (code) at `0x00292410`; detail: brief
-- **Wrapper** `0x0035ec38` (registered by `RegisterBindings`); **calls** `0x00292410` `Brain_SetType`
+- **Evidence:** confirmed (code) at `0x00292410`, `0x0028ceb8`, `0x0028c1a8`; detail: traced
+- **Wrapper** `0x0035ec38` (registered by `RegisterBindings`); **calls** `0x00292410` `Brain_SetType`, `0x0028ceb8`
+  `Brain_StoreType`, `0x0028c1a8` `Brain_InstallHandlers`
 - **Used by** 8 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1283,20 +1294,27 @@ The Lizzies' boss behaviour. No script calls it (the fight uses `TacticBossScena
 ## GoalBoxer {#goalboxer}
 
 ```lua
-GoalBoxer(human, bag)
+GoalBoxer(human, target)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `bag` | number, truncated to an unsigned integer | Handle of the heavy bag object. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the boxer; a bad handle does nothing. |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to box (read as a human: the goal targets and attacks it); while it is not a valid target the goal waits. |
 
 **Returns** nothing.
 
-Makes a human work out on a heavy bag (the hideout's training bag).
+Pushes the Boxer goal (type 158) onto the human's brain: he goes into fight stance, makes `target` his target and keeps
+throwing attacks at it, picked with a boxing attack-weight table (`0x00511120`, set at brain `+0x208` while the goal
+runs) and closing in when out of reach. Between attacks he dances (`combat_fidget_boxersdance`, bound to anim id 603),
+holds a block (606, 609 or 611) or pauses 0.5-1.5 s; out of reach he waits 2 s (three times in four) or walks up to it.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00363ff8` (registered by `RegisterBindings`); **calls** `0x002d97c0` `Goal_Boxer`
+**Notes.** The goal never ends by itself; the attacks are ordinary attacks, so they hit whatever the target is; the
+'heavy bag' reading of the target is from the hub's scripts and is not checked here.
+
+- **Evidence:** confirmed (code) at `0x002d97c0`, `0x002d9848`, `0x002d9870`, `0x002d98f8`, `0x002d98b0`; detail: traced
+- **Wrapper** `0x00363ff8` (registered by `RegisterBindings`); **calls** `0x002d97c0` `Goal_Boxer`, `0x002d9848`
+  `BoxerGoal_Init`, `0x002d9870` `BoxerGoal_Start`, `0x002d98f8` `BoxerGoal_Process`, `0x002d98b0` `BoxerGoal_End`
 - **Used by** 2 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1723,15 +1741,25 @@ GoalGrabTarget(human, target)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the grabber. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to grab. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the grabber; a bad handle does nothing. |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to grab and hold; the goal ends when it no longer resolves to a valid target. |
 
 **Returns** nothing.
 
-Makes a human grab another human.
+Pushes the GrabTarget goal (type 31): the grabber walks up to the target, grabs it (fighting it first with a short Fight
+goal, or an EngageEnemy goal when out of reach, when the grab is not possible) and then holds it, dealing the hold
+damage (global `0x00510acc`) every 30 brain updates; the held victim screams (speech command 9) now and then, and the
+grabber turns to face the nearest player when more than 45 degrees off. While it runs the grabber cannot be attacked
+(brain `+0x120` = 0), will not fight on his own (threat response 0) and uses the grab attack weights (`0x00511098`).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00364500` (registered by `RegisterBindings`); **calls** `0x002bb3d0` `Goal_GrabTarget`
+**Notes.** The goal never lets go by itself; it ends only when the target becomes invalid or the goal is popped or
+flushed; End restores the brain's targetable flag, two brain bytes (+0x0b, +0x0c) and the target's brain +0x11f, but not
+the saved threat response (kept in the goal).
+
+- **Evidence:** confirmed (code) at `0x002bb3d0`, `0x002bb458`, `0x002bb4c0`, `0x002bb858`, `0x002bb598`; detail: traced
+- **Wrapper** `0x00364500` (registered by `RegisterBindings`); **calls** `0x002bb3d0` `Goal_GrabTarget`, `0x002bb458`
+  `GrabTargetGoal_Init`, `0x002bb4c0` `GrabTargetGoal_Start`, `0x002bb858` `GrabTargetGoal_Process`, `0x002bb598`
+  `GrabTargetGoal_End`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -2267,23 +2295,31 @@ Wrapper `0x00362250`; calls `0x002a57e8`.
 ## GoalPeddler {#goalpeddler}
 
 ```lua
-GoalPeddler(human, range, option, greetAnim, idleAnim)
+GoalPeddler(human, range, reacts, greetAnim, idleAnim)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the vendor. |
-| 2 | `range` | number (single precision) | A distance in metres (scripts use 5). |
-| 3 | `option` | boolean (nil or 0 is false) | A flag. |
-| 4 | `greetAnim` | string | Greeting animation file name (`.anm`). |
-| 5 | `idleAnim` | string | Idle animation file name (`.anm`). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the vendor; a bad handle does nothing. |
+| 2 | `range` | number (single precision) | Beckoning range in metres (scripts use 5): a passer-by within it is greeted; the vendor keeps watching the nearest player out to 1.1 times it. |
+| 3 | `reacts` | boolean (nil or 0 is false) | true makes a civilian-brained vendor who is attacked push a pedestrian reaction goal (type 0x6b) against the attacker; false leaves him standing. |
+| 4 | `greetAnim` | string | Animation file (`.anm`) bound to anim id 604 (`ANIM_FIDGET_IDLE`) on this human and played as the beckon. |
+| 5 | `idleAnim` | string | Animation file (`.anm`) bound to anim id 388 (`ANIM_NORMAL_IDLE`) on this human, his standing idle. |
 
 **Returns** nothing.
 
-Makes a human act as a street vendor that greets passers-by within range.
+Pushes the Peddler goal (type 80) onto the human's brain: the vendor holds the spot and heading he had when it was given
+(walking back beyond 0.3 m, turning back beyond 15 degrees) and sets his threat response to 0 (never fights). Every 20
+brain updates he picks a passer-by within `range`; he beckons him once with the greet animation and `beckon_player` (a
+player, always) or `beckon` (anyone else, half the time) and looks at him for the clip's length.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00363a68` (registered by `RegisterBindings`); **calls** `0x002ad2c0` `Goal_Peddler`
+**Notes.** The two animations are bound (human +0x418, +0x440, flag 0x20000000) only when both names are non-empty, and
+the vendor beckons only when both clips loaded; the threat response is saved in the goal (+0x2e) and restored when it
+ends (`0x002ad530`); the brain event that pushes the reaction is the civilian type's (`0x002ff898`).
+
+- **Evidence:** confirmed (code) at `0x002ad2c0`, `0x002ad378`, `0x002ad6c0`, `0x002ad5a8`; detail: traced
+- **Wrapper** `0x00363a68` (registered by `RegisterBindings`); **calls** `0x002ad2c0` `Goal_Peddler`, `0x002ad378`
+  `PeddlerGoal_Init`, `0x002ad6c0` `PeddlerGoal_Process`, `0x002ad5a8` `PeddlerGoal_OnAttacked`
 - **Used by** 4 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -2419,16 +2455,23 @@ GoalPlayGenAnim(human, anim, callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `anim` | number, truncated to an unsigned integer | A generic animation number (scripts use 0 and 1). |
-| 3 | `callback` | string | Name of a Lua function called when it ends, or nil. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `anim` | number, truncated to an unsigned integer | Which generic animation: 0 the shoulder charge (anim id 0, `ANIM_RUNNING_ATTACK_CHARGE`), 1 using the camera flash (anim id 665, `ANIM_SPECIAL_FLASH`); any other value plays nothing. |
+| 3 | `callback` | string | Name of a Lua function called with the human's handle 33 ms after the goal ends, or nil (or an empty string) for none. |
 
 **Returns** nothing.
 
-Plays one of a few generic animations on a human and calls the script back.
+Pushes the PlayGenAnim goal (type 38) onto the human's brain: once the human has no queued actions and its current move
+is not one of the busy states (move-state flags other than bit 30), it queues one play-animation action for the chosen
+anim id with 0.1 s blends, and ends once that action has left the queue. Ending, also when cut short, schedules the
+callback.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003636c8` (registered by `RegisterBindings`); **calls** `0x002d4628` `Goal_PlayGenericAnimation`
+**Notes.** Only two animations are reachable (scripts use 0 and 1); an unknown number ends the goal at once without
+playing anything; the callback gets only the handle, no completed flag.
+
+- **Evidence:** confirmed (code) at `0x002d4628`, `0x002d46b8`, `0x002d47d0`, `0x002d4748`; detail: traced
+- **Wrapper** `0x003636c8` (registered by `RegisterBindings`); **calls** `0x002d4628` `Goal_PlayGenericAnimation`,
+  `0x002d46b8` `PlayGenAnimGoal_Init`, `0x002d47d0` `PlayGenAnimGoal_Process`, `0x002d4748` `PlayGenAnimGoal_End`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -2490,26 +2533,37 @@ Makes a human run a path just ahead of a chasing gang, the 'carrot' in chase mis
 ## GoalShopkeeper {#goalshopkeeper}
 
 ```lua
-GoalShopkeeper(human, store, value, option, range, anim1, anim2, option2)
+GoalShopkeeper(human, store, kind, broom, range, onDisturbed, onPhone, pleads)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the shopkeeper. |
-| 2 | `store` | number, truncated to an unsigned integer | Handle of the store's volume (a `VolumeBox` the level defines). |
-| 3 | `value` | number, truncated to an integer | A number (scripts use 1 and 3). |
-| 4 | `option` | boolean (nil or 0 is false) | A flag (scripts pass false). |
-| 5 | `range` | number (single precision); default 9 | A distance in metres (default 9). |
-| 6 | `anim1` | string | An animation name, or nil. |
-| 7 | `anim2` | string | An animation name, or nil. |
-| 8 | `option2` | boolean (nil or 0 is false); default true | A flag (default true). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the shopkeeper; a bad handle does nothing. |
+| 2 | `store` | number, truncated to an unsigned integer | Handle of the store's volume (a `VolumeBox` the level defines); the shopkeeper stays and wanders inside it and reacts to the player entering it. |
+| 3 | `kind` | number, truncated to an integer | How the shopkeeper reacts to trouble: 1 phones his gang, 2 fights the intruder (with a switchblade), 3 cowers, 4 cowers and never pleads; 0 picks 2 (70%) or 3 (30%) at start. Scripts use 1 and 3. |
+| 4 | `broom` | boolean (nil or 0 is false) | true puts a broom (`dyn_broom`) in his hand to sweep with; ignored (cleared) for kind 1. |
+| 5 | `range` | number (single precision); default 9 | Distance in metres: he greets the player within half of it (at least 4 m), walks back into the store beyond it and gives up on the player beyond twice it (at least 30 m). |
+| 6 | `onDisturbed` | string | Name of a Lua function called the first time a crime happens in the store, or nil. |
+| 7 | `onPhone` | string | Name of a Lua function called when a kind-1 shopkeeper phones for help, instead of the game's own break-and-enter crime report; or nil. |
+| 8 | `pleads` | boolean (nil or 0 is false); default true | true lets a cowering shopkeeper (kind 3) give in once beaten below 40% health. |
 
 **Returns** nothing.
 
-Makes a human run a store: stay behind the counter, greet and react to the player in the store's volume.
+Pushes the Shopkeeper goal (type 130) onto the human's brain and makes it a type-6 brain that never starts a fight on
+its own: he idles at the counter (`phone_idle` for kind 1, `push_broom` otherwise), wanders to flags inside the store
+every 3-5 s, greets the player with `store_greet` when he comes close and chats (`store_chat`) every 10-20 s. When a
+crime happens in the store (the type-6 brain's event handler `0x00304070`), he reacts by `kind`: phones (`phone_gang`,
+then a crime report type 1 or the `onPhone` callback), attacks the offender (`dead_meat`), or cowers (`cower`).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00363128` (registered by `RegisterBindings`); **calls** `0x002e5a00` `Goal_Shopkeeper`
+**Notes.** Animations are fixed by kind, not by the string arguments (6 and 7 are Lua callback names interned by the
+script system); a beaten pleading shopkeeper says `mug_grunt` and offers a kind-5 context action (prompt `GSTRING.HUD`
+8); a later state hands his money (+0x370) to the player with `collect_resp`, inferred to follow that action; an
+offender friendly to him is only faced, not fought.
+
+- **Evidence:** confirmed (code) at `0x002e5a00`, `0x002e5ae0`, `0x002e6668`, `0x002e5fa0`, `0x002e65b0`; detail: traced
+- **Wrapper** `0x00363128` (registered by `RegisterBindings`); **calls** `0x002e5a00` `Goal_Shopkeeper`, `0x002e5ae0`
+  `ShopkeeperGoal_Init`, `0x002e6668` `ShopkeeperGoal_Process`, `0x002e5fa0` `ShopkeeperGoal_OnDisturbed`, `0x002e65b0`
+  `ShopkeeperGoal_Reset`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

@@ -483,12 +483,18 @@
   wrapper: 0x00379288
   calls:
     - {addr: 0x00397730, name: Particle_Kill}
+    - {addr: 0x003a2e00, name: Task_SendMessage}
   args:
-    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle object."}
+    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle system (as returned by the particle-creating bindings); a stale or nil handle does nothing."}
   description: >-
-    Destroys a particle object at once (message 0x15).
+    Sends message `0x15` (destroy) to the object at once through the task manager, bracketed by the manager's
+    enter/leave pair (`0x003a2d20`, `0x003a2d40`): the particle system stops and is removed by its own message handler
+    ([Particles](../../research/particles.md), [Tasks: messages](../../research/tasks.md#messages)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The handle is not checked to be a particle: any object that handles message 0x15 (glass, glints, objects) is
+    destroyed the same way; whether a system fades out or vanishes depends on its type's handler, not traced per type.
   usage: {chunks: 11, calls: 297, boot: false, mission1: false, result_used: true, levels: [95, 3, 81, 93, 31, 54, 83, 63]}
 
 - name: SetGamma

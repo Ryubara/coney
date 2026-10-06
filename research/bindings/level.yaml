@@ -291,48 +291,61 @@
 - name: PrecacheWorld
   wrapper: 0x0036c7a0
   calls:
-    - {addr: 0x0040c948}
+    - {addr: 0x0040c948, name: World_Precache}
+    - {addr: 0x0040e2d8, name: WorldManager_Preload}
   args:
-    - {name: a, lua: number, ctype: float, desc: "First tuning number; every call passes 10000 (inferred: a time budget or limit)."}
-    - {name: b, lua: number, ctype: float, desc: "Second tuning number; the scripts pass 50 or 500."}
-    - {name: name, lua: string, desc: "Name of the precache set, such as a level section's name or a Rumble pack name."}
+    - {name: budgetMs, lua: number, ctype: float, desc: "Time budget of the streaming loop in milliseconds, truncated to an integer; every call passes 10000."}
+    - {name: radius, lua: number, ctype: float, desc: "Distance in metres within which missing world sectors are waited for (the scripts pass 50 or 500); replaced by player 1's camera draw distance whenever that camera exists."}
+    - {name: pack, lua: string, desc: "Name of a pack to load first, without extension: `<pack>.pak` is loaded when it exists (a level section or a Rumble pack name); nil for none."}
   description: >-
-    Asks the world streamer to precache a named set of world data (calls `0x0040c948`). Level scripts call it before
-    moving the player to another part of the map.
-  evidence: inferred
-  depth: brief
+    Blocks the game while the world around the camera is streamed in, before a script moves the player somewhere
+    new: the game clock is paused, `<pack>.pak` is loaded if present, the world streamer runs until the sectors within
+    the radius are in or the budget runs out, then every pack queued by QueueFileToPrecache is loaded. The preload
+    indicator shows meanwhile unless a loading screen already does.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Its callee `0x0040c948` is in the address range the draft's callee filter drops (0x00408000-0x0040d000), so the
-    draft entry has no `calls`.
+    Steps: [Level loading: preload](../../research/level-loading.md#preload). Does nothing when no level is loaded
+    (world manager +0x40 null), and then leaves the game clock paused if it was running (the resume sits inside the
+    same test). A second call while a preload runs is refused. With a camera the radius argument is ignored (the
+    callee's value argument is 0), so the scripts' 50 and 500 differ only with no camera.
   usage: {chunks: 36, calls: 136, boot: false, mission1: false, result_used: false, levels: [95, 11]}
 
 - name: QueueFileToPrecache
   wrapper: 0x0036c838
   calls:
-    - {addr: 0x0040cc40}
+    - {addr: 0x0040cc40, name: World_QueuePackToPrecache}
+    - {addr: 0x0040e1a0, name: WorldManager_QueuePack}
   args:
-    - {name: file, lua: string, desc: "A WAD file name with extension, such as a `.pak` pack."}
+    - {name: file, lua: string, desc: "A file name with its extension, such as a character `.pak` pack; copied."}
   description: >-
-    Adds a file to the precache queue (calls `0x0040cc40`), so a later PrecacheWorld or level change finds it loaded.
-  evidence: inferred
-  depth: brief
+    Appends a file to the world manager's precache queue (+0x0c, an unbounded list). The next preload (PrecacheWorld,
+    or the level load's own) loads every queued file that exists with the resource manager, in order, after its
+    streaming, and empties the queue.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Callee `0x0040cc40` is outside the draft's callee list for the same reason as PrecacheWorld.
+    A name that does not exist is dropped silently at load time; nothing checks it when queued. The Rumble set-up
+    queues the gangs' character packs this way ([Front end](../../research/frontend.md)).
   usage: {chunks: 34, calls: 167, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: ResetStore
   wrapper: 0x0036da10
   calls:
-    - {addr: 0x0041ddd8}
+    - {addr: 0x0041ddd8, name: Store_Reset}
   args:
-    - {name: store, lua: number, ctype: unsigned, desc: "Handle of a store object."}
+    - {name: store, lua: number, ctype: unsigned, desc: "Handle of the store's front flag (a world flag of activity 14); any other handle does nothing."}
   description: >-
-    Restocks a store: clears a flag bit of the store object, then, if the player is within 7 m (squared distance under
-    49), sends it message 0x13 through the world's message queue.
+    Undoes a break-in on a store: the store front's robbed bit (bit 16 of its group word +0xd8) is cleared, and the
+    nearest `strobe` object within 7 m of the store front is sent message 0x13 (inferred: the alarm light off), the
+    counterpart of the 0x12 a break-in sends.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    What message 0x13 does to the store is not traced.
+    The 7 m test is the strobe's distance from the store flag, not the player's (squared distance under 49 from
+    0x0039c7d8); crimes.md#stores says the player must be within 7 m, which is wrong. It also sets bits 8-15 of the
+    group word to 0xff and the gang bits 18-22 to 31 (no gang). The browsers and buyers a break-in switched off are not
+    switched back on here.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: MissionComplete
@@ -381,29 +394,39 @@
 - name: GetGameTime
   wrapper: 0x0036e050
   calls:
-    - {addr: 0x003864b0}
+    - {addr: 0x003864b0, name: GameTimer_GetMilliseconds}
   results:
-    - {lua: number, desc: "The game timer in milliseconds (the timer object at `0x0050b734`, the clock the schedule uses)."}
+    - {lua: number, desc: "Game time in milliseconds (GameTimer +0x48), an unsigned 32-bit count."}
   description: >-
-    Returns the current game time in milliseconds, for scripts that time things themselves.
+    Returns the game clock in milliseconds, the clock the schedule and the stopwatch use: it advances 1/30 s per frame
+    in fixed-step play, stops while the game is paused and skips the paused time, so scripts can time things in game
+    time.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Read through the timer's vtable slot `+0x34`; inferred to be the same clock as `+0x48`, which the schedule uses.
+    GameTimer (0x0050b734) virtual slot +0x30, Milliseconds ([Boot: timers](../../research/boot.md#timers));
+    converted as unsigned (values of 2^31 and over stay positive).
   usage: {chunks: 2, calls: 14, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
 - name: CheckMultiplayer
   wrapper: 0x0036e468
   calls:
-    - {addr: 0x0041dd90}
+    - {addr: 0x0041dd90, name: Game_CheckMultiplayer}
+    - {addr: 0x0041a460, name: GameState_SyncPlayers}
   description: >-
-    Re-checks whether a second player has joined or left and adds or removes their character accordingly (`0x0041a460`
-    with -1). `level95.lua` calls it in the hub.
-  evidence: inferred
-  depth: brief
+    Brings the player characters in line with the game's two-player setting (W_GameState +0x56ec, or +0x56f4 in the
+    Armies of the Night levels): when two players are set but only player 1 exists, a Warrior of player 1's gang
+    (the lowest rank byte +0x1b1, else any Warrior) becomes player 2 with split screen; when one player is set but a
+    second exists, player 2 goes back to the AI. The multiplayer callback (SetMultiplayerCallback) is called with the
+    human and true or false. The hub calls it after its menus.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    The callee handles the player list at `W_GameState + 0x224`; the join/leave reading is inferred.
+    Only while joining is allowed (CfgMultiplayerJoin, +0x56e8) and the game mode +0x158 is 0 or 3; otherwise, with two
+    players present, it only refreshes their viewports. Each player-2 change rebuilds the split screen (0x00122ed0) and
+    the war chief is reassigned at the end. Does nothing with no game state or no player. The same function runs with
+    -1 after every level load.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SetLoadPriority
@@ -486,13 +509,16 @@
 - name: W_GetStopWatchTime
   wrapper: 0x00370e28
   calls:
-    - {addr: 0x00423638}
+    - {addr: 0x00423638, name: StopWatch_GetTime}
   results:
-    - {lua: number, desc: "The stopwatch's current time in milliseconds."}
+    - {lua: number, desc: "The stopwatch's current time in milliseconds (stopwatch +0x08): the time left when counting down, the time reached when counting up."}
   description: >-
-    Returns the stopwatch's remaining (or elapsed) time.
+    Returns the mission stopwatch's current time in milliseconds, as last stepped by the frame update; it does not
+    change while the stopwatch is stopped.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The stopwatch object is *0x0051504c ([Scripts: the mission stopwatch](../../research/scripting.md#stopwatch)).
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
@@ -516,18 +542,24 @@
 - name: W_ShowStopWatch
   wrapper: 0x00370e98
   calls:
-    - {addr: 0x00423670}
+    - {addr: 0x00423670, name: StopWatch_Show}
+    - {addr: 0x004235e0, name: StopWatch_SetDisplay}
+    - {addr: 0x001cd5e8, name: StopWatchHud_UpdateMinutes}
   args:
-    - {name: show, lua: boolean, desc: "true to show the stopwatch on the HUD, false to hide it."}
-    - {name: label, lua: string, desc: "Text shown with the time (may carry text-format tags); nil for none."}
-    - {name: warnMs, lua: number, ctype: int, default: 10000, desc: "Milliseconds before the end at which the display starts warning (default 10000)."}
+    - {name: show, lua: boolean, desc: "true shows the stopwatch on the HUD, false hides it."}
+    - {name: label, lua: string, desc: "Text drawn before the time (may carry text-format tags); nil for none."}
+    - {name: warnMs, lua: number, ctype: int, default: 10000, desc: "Warning window in milliseconds: while counting down within it, a beep plays at most once a second (default 10000)."}
   description: >-
-    Shows or hides the stopwatch on the HUD with an optional label; when shown, the warning point is set to `warnMs`
-    (stored with 1000 added at `+0x48`).
+    Shows or hides the mission stopwatch on the HUD. While shown, the HUD draws `label` followed by the time as
+    minutes:seconds (seconds truncated) each frame. Showing also arms the countdown warning beep for the last `warnMs`
+    milliseconds; hiding disarms it (window 0).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    That the third value is a warning threshold is inferred from its default and use.
+    Writes stopwatch +0x40 (window) and +0x48 (window + 1000 when shown, 1000 when hidden), +0x18 (shown) and +0x1c
+    (label). The label pointer is kept, not copied, so it must stay alive (the scripts pass constants). A HUD byte
+    (+0x225d5, set when the HUD is built) switches to a whole-seconds display instead (0x001cd748); what sets it is not
+    traced.
   usage: {chunks: 30, calls: 64, boot: false, mission1: false, result_used: false, levels: [95, 3, 92, 83, 60, 61, 62, 63, 64]}
 
 - name: ProcessTag
@@ -1155,11 +1187,19 @@
 - name: StatReset
   wrapper: 0x0037cc10
   calls:
-    - {addr: 0x004226f8}
+    - {addr: 0x004226f8, name: Stats_ResetAll}
+    - {addr: 0x00422930, name: Stats_ResetPlayers}
+    - {addr: 0x00420a70, name: PlayerStats_Reset}
   description: >-
-    Clears all statistics (stats object `0x006fe490`). The hub calls it.
+    Clears both players' statistics in the stats object (0x006fe490, 0xc0 bytes per player): every event counter of
+    the six categories and the per-player header word and flag, so every category score starts again from zero. The
+    hub calls it.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The checkpoint copy SetCheckPoint takes is not touched. The word at player +0x04 is cleared only when the current
+    level is 60 (the first Armies of the Night level); its meaning is not traced. Categories: [Player state:
+    statistics](../../research/player-state.md#statistics).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
   coney: implemented
 
@@ -1258,14 +1298,20 @@
 - name: UM_GetUnlockablesByType
   wrapper: 0x0037cf78
   calls:
-    - {addr: 0x004237a8}
+    - {addr: 0x004237a8, name: UM_GetUnlockablesByType}
+    - {addr: 0x00423eb0, name: Unlockables_ListByType}
   args:
-    - {name: type, lua: number, ctype: unsigned, desc: "Record type byte to match."}
-    - {name: out, lua: table, elem: number, count: 32, written_back: true, desc: "A table the binding fills with 32 record indices."}
+    - {name: type, lua: number, ctype: unsigned, desc: "Record type (low byte) to match: 0 story level, 1-4 Rumble, 6 upgrade and so on ([Unlockables](../unlockables.md))."}
+    - {name: out, lua: table, elem: number, count: 32, written_back: true, desc: "A table whose entries 1-32 are overwritten: the 0-based indices of the matching records in table order, then 65535 for the unused entries."}
   description: >-
-    Lists the unlockable records of one type into a table.
+    Lists the unlockable records of one type, locked or not: the indices of every record whose type byte matches are
+    written into `out[1..32]` in record order and the rest of the 32 entries are set to 65535. Use the indices with
+    UM_GetRecordData.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The 32 entries are read from the table first and then all overwritten. More than 32 matches overrun the binding's
+    32-entry buffer (no bound check). With no unlockables loaded every entry is 65535.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: UM_Unlock
@@ -1351,33 +1397,44 @@
 - name: UM_IsDataDirty
   wrapper: 0x0037d280
   calls:
-    - {addr: 0x004239b0}
+    - {addr: 0x004239b0, name: UM_IsDataDirty}
+    - {addr: 0x00424958, name: Unlockables_TestDirtyByData}
   args:
-    - {name: type, lua: number, ctype: unsigned, desc: "Record type byte."}
-    - {name: data, lua: number, ctype: unsigned, desc: "Record data id."}
-    - {name: clear, lua: boolean, default: true, desc: "true (default) also clears the mark."}
+    - {name: type, lua: number, ctype: unsigned, desc: "Record type (low byte)."}
+    - {name: data, lua: number, ctype: unsigned, desc: "Record data id (record +8), as in UM_IsDataUnlocked."}
+    - {name: clear, lua: boolean, default: true, desc: "true (default) also clears the record's new mark when it was set."}
   results:
-    - {lua: boolean, desc: "true if that record was newly unlocked."}
+    - {lua: boolean, desc: "true (1) when the first record with this type and data has its new mark set; nil otherwise."}
   description: >-
-    Asks whether one unlockable (by type and data id) is newly unlocked, optionally clearing the mark.
+    Asks whether an unlockable, found by type and data id, is marked new (newly unlocked and not yet shown), and by
+    default clears the mark so the hub announces each unlock once. The marks are a bit set at 0x006fe948, one bit per
+    record, separate from the locked set.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Only the first record with the type and data is looked at, as in the game's other tests. Who sets the mark
+    (UM_Unlock, inferred) is not traced here.
   usage: {chunks: 2, calls: 9, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
 - name: UM_GetRecordData
   wrapper: 0x0037d318
   calls:
-    - {addr: 0x004238e8}
+    - {addr: 0x004238e8, name: UM_GetRecordField}
+    - {addr: 0x00423cf0, name: Unlockables_GetRecord}
   args:
-    - {name: index, lua: number, ctype: int, desc: "Record index."}
-    - {name: field, lua: number, ctype: int, desc: "0 level, 1 group, 2 item, 3 type, 4 the 16-bit extra, 5 the data id."}
+    - {name: index, lua: number, ctype: int, desc: "0-based record index (as UM_GetUnlockablesByType returns; the position in global.lua's list minus 1)."}
+    - {name: field, lua: number, ctype: int, desc: "0 level, 1 group, 2 item, 3 type (bytes), 4 the 16-bit extra, 5 the 32-bit data id."}
   results:
-    - {lua: number, desc: "The field's value; 0 for a bad index or field."}
+    - {lua: number, desc: "The field's value, unsigned; 0 for an index out of range, a field above 5 or no unlockables loaded."}
   description: >-
-    Reads one field of an unlockable record.
+    Reads one field of an unlockable record (12 bytes in the manager at 0x006fe998), for example the level a story
+    record unlocks or a clubhouse display's data id.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    An index of 65535 (an unused UM_GetUnlockablesByType entry) is out of range and gives 0, which a script cannot tell
+    from a real 0.
   usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 

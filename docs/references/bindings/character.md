@@ -43,7 +43,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuDropWeapon`](#hudropweapon) | - | 29 | yes | yes | confirmed (code) |
 | [`HuEnableController`](#huenablecontroller) | - | 7 | no | no | confirmed (code) |
 | [`HuEnableOnFire`](#huenableonfire) | - | 1 | no | no | inferred |
-| [`HuEnableSoundCommands`](#huenablesoundcommands) | - | 57 | no | no | inferred |
+| [`HuEnableSoundCommands`](#huenablesoundcommands) | - | 57 | no | no | confirmed (code) |
 | [`HuEnableSpeaking`](#huenablespeaking) | - | 21 | no | no | inferred |
 | [`HuEnableTagCheer`](#huenabletagcheer) | - | 1 | no | no | confirmed (code) |
 | [`HuEnableTagDone`](#huenabletagdone) | - | 3 | no | no | confirmed (code) |
@@ -64,7 +64,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuGetPlayer`](#hugetplayer) | number | 0 | no | no | confirmed (code) |
 | [`HuGetPosition`](#hugetposition) | usertype | 5 | no | no | confirmed (code) |
 | [`HuGetVoiceIndex`](#hugetvoiceindex) | number | 2 | no | no | confirmed (code) |
-| [`HuGiveCuffs`](#hugivecuffs) | - | 2 | no | no | inferred |
+| [`HuGiveCuffs`](#hugivecuffs) | - | 2 | no | no | confirmed (code) |
 | [`HuGiveWeapon`](#hugiveweapon) | - | 0 | no | no | speculative |
 | [`HuHasHat`](#huhashat) | number | 8 | no | no | confirmed (code) |
 | [`HuInCombat`](#huincombat) | boolean | 1 | no | no | inferred |
@@ -90,7 +90,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuPlaceHatOnHead`](#huplacehatonhead) | - | 0 | no | no | inferred |
 | [`HuPlaceItemInHand`](#huplaceiteminhand) | number | 62 | yes | yes | confirmed (code) |
 | [`HuPlayDynamicAnim`](#huplaydynamicanim) | - | 1 | no | no | inferred |
-| [`HuPlayDynAnim`](#huplaydynanim) | - | 1 | no | no | inferred |
+| [`HuPlayDynAnim`](#huplaydynanim) | - | 1 | no | no | confirmed (code) |
 | [`HuPlayDynPair`](#huplaydynpair) | - | 1 | no | no | inferred |
 | [`HuPutItemInPocket`](#huputiteminpocket) | - | 28 | no | no | inferred |
 | [`HuRemoveItemInPocket`](#huremoveiteminpocket) | - | 36 | no | no | confirmed (code) |
@@ -98,7 +98,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuRender`](#hurender) | - | 0 | no | no | speculative |
 | [`HuRevive`](#hurevive) | - | 55 | yes | yes | confirmed (code) |
 | [`HuRubberNeck`](#hurubberneck) | - | 2 | no | no | inferred |
-| [`HuSay`](#husay) | - | 3 | no | no | inferred |
+| [`HuSay`](#husay) | - | 3 | no | no | confirmed (code) |
 | [`HuSetAccurate`](#husetaccurate) | - | 0 | no | no | speculative |
 | [`HuSetArrested`](#husetarrested) | - | 51 | yes | yes | confirmed (code) |
 | [`HuSetAutoCombat`](#husetautocombat) | - | 4 | no | no | inferred |
@@ -140,7 +140,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetMoney`](#husetmoney) | - | 55 | no | yes | confirmed (code) |
 | [`HuSetMug`](#husetmug) | - | 18 | no | no | confirmed (code) |
 | [`HuSetMugCallback`](#husetmugcallback) | - | 6 | no | yes | confirmed (code) |
-| [`HuSetName`](#husetname) | - | 1 | no | no | inferred |
+| [`HuSetName`](#husetname) | - | 1 | no | no | confirmed (code) |
 | [`HuSetNoAutoLock`](#husetnoautolock) | - | 4 | no | no | inferred |
 | [`HuSetNoEscape`](#husetnoescape) | - | 0 | no | no | inferred |
 | [`HuSetNoReact`](#husetnoreact) | - | 10 | no | no | inferred |
@@ -148,7 +148,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetNoTarget`](#husetnotarget) | - | 31 | no | yes | confirmed (code) |
 | [`HuSetNoThrowWeapon`](#husetnothrowweapon) | - | 1 | no | yes | confirmed (code) |
 | [`HuSetOnFire`](#husetonfire) | - | 3 | no | no | confirmed (code) |
-| [`HuSetPedReaction`](#husetpedreaction) | - | 2 | no | no | inferred |
+| [`HuSetPedReaction`](#husetpedreaction) | - | 2 | no | no | confirmed (code) |
 | [`HuSetPreventRage`](#husetpreventrage) | - | 44 | no | yes | confirmed (code) |
 | [`HuSetPushable`](#husetpushable) | - | 48 | yes | yes | confirmed (code) |
 | [`HuSetRageFrac`](#husetragefrac) | - | 1 | no | yes | confirmed (code) |
@@ -163,7 +163,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetStrong`](#husetstrong) | - | 0 | no | no | inferred |
 | [`HuSetStunned`](#husetstunned) | - | 1 | no | no | inferred |
 | [`HuSetTireless`](#husettireless) | - | 50 | yes | yes | confirmed (code) |
-| [`HuSetUnarrestable`](#husetunarrestable) | - | 4 | no | no | inferred |
+| [`HuSetUnarrestable`](#husetunarrestable) | - | 4 | no | no | confirmed (code) |
 | [`HuSetUngrabbable`](#husetungrabbable) | - | 23 | yes | yes | confirmed (code) |
 | [`HuSetUngroundable`](#husetungroundable) | - | 29 | yes | yes | confirmed (code) |
 | [`HuSetUnstunnable`](#husetunstunnable) | - | 40 | yes | yes | confirmed (code) |
@@ -171,8 +171,8 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetWarChief`](#husetwarchief) | boolean | 4 | no | no | inferred |
 | [`HuSetWarChiefHUD`](#husetwarchiefhud) | - | 0 | no | no | speculative |
 | [`HuSetWheelchairControl`](#husetwheelchaircontrol) | - | 1 | no | no | inferred |
-| [`HuSetWorkoutBlend`](#husetworkoutblend) | - | 1 | no | no | inferred |
-| [`HuSetWorkoutCallbacks`](#husetworkoutcallbacks) | - | 1 | no | no | inferred |
+| [`HuSetWorkoutBlend`](#husetworkoutblend) | - | 1 | no | no | confirmed (code) |
+| [`HuSetWorkoutCallbacks`](#husetworkoutcallbacks) | - | 1 | no | no | confirmed (code) |
 | [`HuSetWorkoutParams`](#husetworkoutparams) | - | 0 | no | no | speculative |
 | [`HuSetWoundable`](#husetwoundable) | - | 20 | no | no | inferred |
 | [`HuSetWounded`](#husetwounded) | - | 1 | no | no | inferred |
@@ -182,8 +182,8 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSpeakNI`](#huspeakni) | - | 101 | no | yes | confirmed (code) |
 | [`HuSpecial`](#huspecial) | - | 0 | no | no | inferred |
 | [`HuStopSpecial`](#hustopspecial) | - | 0 | no | no | inferred |
-| [`HuStopWorkout`](#hustopworkout) | - | 1 | no | no | inferred |
-| [`HuSwitchPlayer`](#huswitchplayer) | number | 34 | no | no | confirmed (code) |
+| [`HuStopWorkout`](#hustopworkout) | - | 1 | no | no | confirmed (code) |
+| [`HuSwitchPlayer`](#huswitchplayer) | number | 34 | no | no | inferred |
 | [`HuTag`](#hutag) | - | 10 | yes | no | confirmed (code) |
 | [`HuTagColor`](#hutagcolor) | - | 9 | no | no | confirmed (code) |
 | [`HuTagDifficulty`](#hutagdifficulty) | - | 0 | no | no | confirmed (code) |
@@ -193,7 +193,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuUseAnim`](#huuseanim) | boolean | 103 | no | yes | confirmed (code) |
 | [`HuUseAnyAnim`](#huuseanyanim) | boolean | 4 | no | no | confirmed (code) |
 | [`HuWhatAmIHolding`](#huwhatamiholding) | number | 3 | no | no | inferred |
-| [`HuWorkout`](#huworkout) | - | 1 | no | no | inferred |
+| [`HuWorkout`](#huworkout) | - | 1 | no | no | confirmed (code) |
 | [`IsAHuman`](#isahuman) | boolean | 1 | no | no | confirmed (code) |
 | [`IssueWarriorCommand`](#issuewarriorcommand) | - | 7 | no | no | confirmed (code) |
 | [`KillHumans`](#killhumans) | - | 4 | yes | no | confirmed (code) |
@@ -747,15 +747,19 @@ HuBlockTackle(human, block)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `block` | boolean (nil or 0 is false) | True stops the human being tackled. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `block` | boolean (nil or 0 is false) | true sets the flag, false (or nil) clears it. |
 
 **Returns** nothing.
 
-Blocks or allows tackles on this human (flag 0x100000000 at +0xe0).
+Sets or clears bit `0x100000000` of the human's 64-bit flag word (`+0xe0`), which from the name keeps the human from
+being tackled (a boss the player must fight standing).
 
-- **Evidence:** confirmed (code) at `0x00237b70`; detail: brief
-- **Wrapper** `0x00359200` (registered by `RegisterBindings`); **calls** `0x00237b70`
+**Notes.** Only the storage is confirmed: the tackle code that reads the bit was not found (it is not tested in the
+tackle start `0x002707a8`); scripts set it on hub and level-52 bosses.
+
+- **Evidence:** confirmed (code) at `0x00237b70`; detail: traced
+- **Wrapper** `0x00359200` (registered by `RegisterBindings`); **calls** `0x00237b70` `Human_SetBlockTackle`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1031,15 +1035,19 @@ HuEnableSoundCommands(human, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `enable` | boolean (nil or 0 is false); default true | True (the default) enables them. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `enable` | boolean (nil or 0 is false); default true | true (the default) lets the human say speech commands; false silences them. |
 
 **Returns** nothing.
 
-Enables or disables the human's spoken command sounds (byte +0x199).
+Sets the human's can-speak byte (`+0x199`). Human_SayCommand (`0x002205e0`) says nothing while it is clear, so a
+disabled human makes none of its automatic speech-command lines (taunts, pain, greetings, the goals' lines) nor those
+scripts ask for with SoundPlayCommand ([Sound: speech](../../research/sound.md#speech)).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00364cc8` (registered by `RegisterBindings`); **calls** `0x00239240`
+**Notes.** Whether HuSpeak's named lines also check the byte is not traced.
+
+- **Evidence:** confirmed (code) at `0x00239240`; detail: traced
+- **Wrapper** `0x00364cc8` (registered by `RegisterBindings`); **calls** `0x00239240` `Human_EnableSoundCommands`
 - **Used by** 57 of 467 script chunks (196 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1224,13 +1232,15 @@ HuGetCharType(human) -> number
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** number: The human's behaviour class (+0xcc, the type after the remapping at creation), or 0 for an invalid
-handle.
+**Returns** number: The human's behaviour class (`+0xcc`), or 0 for an invalid handle.
 
-Returns the human's character class.
+Returns the human's behaviour class: the character type it was created with after `Human_Init`'s remap (Rembrandt,
+created as type 32, answers 30), which selects its class record (speeds, brain type, attack table).
 
-- **Evidence:** confirmed (code) at `0x00235890`; detail: brief
-- **Wrapper** `0x0035b848` (registered by `RegisterBindings`); **calls** `0x00235890`
+**Notes.** The type the human was created as is at `+0xd0` and is not returned; 0 is also a valid class number.
+
+- **Evidence:** confirmed (code) at `0x00235890`; detail: traced
+- **Wrapper** `0x0035b848` (registered by `RegisterBindings`); **calls** `0x00235890` `Human_GetCharType`
 - **Used by** 7 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1392,12 +1402,14 @@ HuGetMoney(human) -> number
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** number: The money the human carries (+0x370), or 0.
+**Returns** number: The cash the human carries (`+0x370`, 0-999 dollars), or 0 for an invalid handle.
 
-Returns how much money the human carries.
+Returns how much cash the human carries: the money a player takes from it by mugging or beating it, set with HuSetMoney.
 
-- **Evidence:** confirmed (code) at `0x00238158`; detail: brief
-- **Wrapper** `0x0035c418` (registered by `RegisterBindings`); **calls** `0x00238158`
+**Notes.** A player's own money is inventory item 2 (InvGetMoney), not this field.
+
+- **Evidence:** confirmed (code) at `0x00238158`; detail: traced
+- **Wrapper** `0x0035c418` (registered by `RegisterBindings`); **calls** `0x00238158` `Human_GetMoney`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1424,20 +1436,26 @@ Returns the human a player controls, from the game state's player list (+0x228).
 ## HuGetPosition {#hugetposition}
 
 ```lua
-HuGetPosition(human) -> usertype
+HuGetPosition(human) -> M_Vector4
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** tolua object (nil for none): An M_Vector4 (fields x, y, z, w) with the position in metres; the zero vector
-for an invalid handle.
+**Returns** `M_Vector4` object (nil for none): The human's position (x, y, z in metres, game axes with z up; w); for an
+invalid handle the shared zero vector at 0x005116c0.
 
-Returns the human's position.
+Returns the human's position: its entry in the world position table (`0x00714b00` + index x 0x20), or, while it is
+jumping or falling (state flags `0x1c00000000`) or climbing (state flag `0x40`), the point where the fall will end or
+the climb starts (`+0x2c0`).
 
-- **Evidence:** confirmed (code) at `0x002352b0`; detail: brief
-- **Wrapper** `0x0035b2d0` (registered by `RegisterBindings`); **calls** `0x002352b0`
+**Notes.** The usertype is pushed as a pointer into game memory, not a copy, so it follows the human as it moves and
+writing its fields would move the stored vector; copy x, y, z out to keep a snapshot.
+
+- **Evidence:** confirmed (code) at `0x002352b0`, `0x0021d080`; detail: traced
+- **Wrapper** `0x0035b2d0` (registered by `RegisterBindings`); **calls** `0x002352b0` `Human_GetPositionRef`,
+  `0x0021d080` `Human_GetPosition`
 - **Used by** 5 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1452,12 +1470,15 @@ HuGetVoiceIndex(human) -> number
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** number: The human's voice index (+0x3b0), or -1 (as 4294967295) for an invalid handle.
+**Returns** number: The human's voice set (`+0x3b0`), or -1 (as 4294967295) for an invalid handle.
 
-Returns which voice set the human speaks with, for choosing speech files.
+Returns which voice set the human speaks with: the set Human_SayCommand picks speech-command lines from ([Sound:
+speech](../../research/sound.md#speech)).
 
-- **Evidence:** confirmed (code) at `0x0023adc8`; detail: brief
-- **Wrapper** `0x0035d308` (registered by `RegisterBindings`); **calls** `0x0023adc8`
+**Notes.** Voice sets: [Speech](../speech.md).
+
+- **Evidence:** confirmed (code) at `0x0023adc8`; detail: traced
+- **Wrapper** `0x0035d308` (registered by `RegisterBindings`); **calls** `0x0023adc8` `Human_GetVoiceIndex`
 - **Used by** 2 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1470,15 +1491,20 @@ HuGiveCuffs(human, count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `count` | number, truncated to an unsigned integer | How many handcuffs to give (scripts pass 1 to 3). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `count` | number, truncated to an unsigned integer | How many handcuffs to add (scripts pass 1 to 3); read as unsigned, so a negative number wraps and, added in 32 or 8 bits, takes cuffs away. |
 
 **Returns** nothing.
 
-Gives the human handcuffs; for a player it goes through the player's HUD (message 5), so the pickup is shown.
+Adds handcuffs. For a player it adds `count` to item 5 (handcuffs) of that player's inventory (game state `+0x480`, the
+player's block `+0x380`), clamped to the item's limits, and runs the inventory's Lua callbacks for the change; for an AI
+human it adds to the human's own cuff count (byte `+0x378`), clamped to 0-9.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035aa28` (registered by `RegisterBindings`); **calls** `0x002372a8`
+**Notes.** No HUD message is sent; cops always count as having cuffs (Human_GetCuffCount answers 1 for brain type 1).
+
+- **Evidence:** confirmed (code) at `0x002372a8`, `0x00222980`, `0x0041e5b0`, `0x00222908`; detail: traced
+- **Wrapper** `0x0035aa28` (registered by `RegisterBindings`); **calls** `0x002372a8` `Human_GiveCuffs`, `0x00222980`
+  `Human_AddCuffs`, `0x0041e5b0` `Inventory_AddItem`, `0x00222908` `Human_GetCuffCount`
 - **Used by** 2 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -2028,15 +2054,20 @@ HuPlayDynAnim(human, anim)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
 | 2 | `anim` | string | Name of a dynamic animation (.anm) loaded for the level with SetDynamicAnimation. |
 
 **Returns** nothing.
 
-Plays a level-specific animation on the human, unless it is dead or busy.
+Binds the clip to the human's dynamic animation slot (anim id 668) and sets its state code to 16 (`0x10`, record
+`+0x14`), so the human plays it at once, without going through its brain. Refused for a human without a model or
+animation record, or in state `0x100000000` or `0x80000000`.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003651a0` (registered by `RegisterBindings`); **calls** `0x00238948`
+**Notes.** No callback; GoalPlayDynAnimation is the brain-driven, queued version; what state 16 does when the clip ends
+is not traced.
+
+- **Evidence:** confirmed (code) at `0x00238948`; detail: traced
+- **Wrapper** `0x003651a0` (registered by `RegisterBindings`); **calls** `0x00238948` `Human_PlayDynAnim`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -2203,15 +2234,17 @@ HuSay(human, line)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `line` | string | Name of the speech (audio) line. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the speaker. |
+| 2 | `line` | string | Speech file name, as for HuSpeak; nil plays nothing. |
 
 **Returns** nothing.
 
-Makes the human say a speech line.
+Shorthand for HuSpeak with no callback, no callback argument, the flag true and no listener: the human says the line
+unless it is already speaking, speech is off or the human does not exist.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00364c08` (registered by `RegisterBindings`); **calls** `0x00239340`
+- **Evidence:** confirmed (code) at `0x00239340`, `0x00239370`; detail: traced
+- **Wrapper** `0x00364c08` (registered by `RegisterBindings`); **calls** `0x00239340` `Human_Say`, `0x00239370`
+  `Human_Speak`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -2417,17 +2450,21 @@ HuSetCombatMode(human, combat)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `combat` | boolean (nil or 0 is false) | True puts it in combat mode, false takes it out. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `combat` | boolean (nil or 0 is false) | true puts it in fight stance, false (or nil) takes it out. |
 
 **Returns** nothing.
 
-Turns a human's fight stance on (true, 0x0022fe80) or off (anything else, 0x0022fef0).
+Turns a human's fight stance on or off. On sets state flags `0x3` and restarts the stance timer (record `+0xfc` = now +
+the global `0x00510994` seconds), unless the human is being tackled or in a state of `0xe0000`. Off clears flags `0x7`
+(stance and target); for a pad-driven human standing idle it also resets its stance animation.
 
-**Notes.** Only exactly true (1) turns it on. Fight stance: [Combat](../../research/combat.md#state-flags).
+**Notes.** Fight stance: [Combat](../../research/combat.md#state-flags). An AI's brain can put it back in stance on its
+next fight decision.
 
-- **Evidence:** confirmed (code) at `0x0023a1b0`; detail: brief
-- **Wrapper** `0x0035c030` (registered by `RegisterBindings`); **calls** `0x0023a1b0` `Human_SetCombatMode`
+- **Evidence:** confirmed (code) at `0x0023a1b0`, `0x0022fe80`, `0x0022fef0`; detail: traced
+- **Wrapper** `0x0035c030` (registered by `RegisterBindings`); **calls** `0x0023a1b0` `Human_SetCombatMode`,
+  `0x0022fe80` `Human_EnterFightStance`, `0x0022fef0` `Human_LeaveFightStance`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -2923,9 +2960,10 @@ HuSetLookAtTarget(human, target)
 
 **Returns** nothing.
 
-Does nothing in this build: the function it calls (0x00299238) returns at once. Use HuSetLookTarget instead.
+Does nothing in this build: the wrapper reads both handles and calls 0x00299238, which returns at once. Use
+HuSetLookTarget to make a human look at something.
 
-- **Evidence:** confirmed (code) at `0x00299238`; detail: brief
+- **Evidence:** confirmed (code) at `0x00299238`; detail: traced
 - **Wrapper** `0x00364b30` (registered by `RegisterBindings`); **calls** `0x00299238` `Human_SetLookAtTarget`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -3102,15 +3140,15 @@ HuSetMug(human, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | Stored as given: true lets the human be mugged, false (or nil) prevents it (the scripts pass false for bosses). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true lets the human be mugged, false (or nil) prevents it (the scripts pass false for bosses). |
 
 **Returns** nothing.
 
-Stores whether the human can be mugged (+0x5b0); Mug_CanMugVictim (0x00225ff0) needs it unless the human is set up for
-interrogation ([Crimes: mugging](../../research/crimes.md#mugging)).
+Stores whether the human can be mugged (word `+0x5b0`, 1 or 0); Mug_CanMugVictim (`0x00225ff0`) requires it unless the
+human is set up for interrogation ([Crimes: mugging](../../research/crimes.md#mugging)).
 
-- **Evidence:** confirmed (code) at `0x00239ee0`; detail: brief
+- **Evidence:** confirmed (code) at `0x00239ee0`; detail: traced
 - **Wrapper** `0x0035d438` (registered by `RegisterBindings`); **calls** `0x00239ee0` `Human_SetMug`
 - **Used by** 18 of 467 script chunks (111 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -3149,15 +3187,19 @@ HuSetName(human, name)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `name` | string | New name (up to 15 characters, stored at +0x80). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `name` | string | New name; the first 15 characters are kept. |
 
 **Returns** nothing.
 
-Renames the human (0x0021cda8), so lookups by name find it under the new one.
+Renames the human: clears its 16-byte name field (`+0x80`) and copies up to 15 characters of `name` into it, so HuFind
+finds it under the new name.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00358ef0` (registered by `RegisterBindings`); **calls** `0x00238078` `Human_SetName`
+**Notes.** Longer names are cut silently; nothing checks that the name is unique (HuFind returns the first match).
+
+- **Evidence:** confirmed (code) at `0x00238078`, `0x0021cda8`; detail: traced
+- **Wrapper** `0x00358ef0` (registered by `RegisterBindings`); **calls** `0x00238078` `Human_SetName`, `0x0021cda8`
+  `Human_StoreName`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -3333,15 +3375,19 @@ HuSetPedReaction(human, reaction)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human (a pedestrian). |
-| 2 | `reaction` | number, truncated to an integer | Reaction type number (16-bit); level95 uses 3. The values are not listed. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human (a pedestrian); a bad handle does nothing. |
+| 2 | `reaction` | number, truncated to an integer | Reaction style, read as 16 bits and sign-extended; the pedestrian goals use 1-6 (7 there means a random one of 1-6, but this binding stores 7 as is); level95 uses 3. |
 
 **Returns** nothing.
 
-Stores the pedestrian reaction type in the human's AI record (+0x270), choosing how it reacts to the player (flee,
-fight, ignore).
+Stores the pedestrian's reaction style in its brain (`+0x270`), the same field the pedestrian path and flag goals (types
+68, 69, constructors `0x002a6178`, `0x002a6760`) set from their own argument when they start, choosing how the
+pedestrian reacts to trouble around it.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Only the storage is confirmed; no reader of brain +0x270 was found, so what each style does is open; a
+pedestrian goal pushed later overwrites the value.
+
+- **Evidence:** confirmed (code) at `0x00238640`; detail: traced
 - **Wrapper** `0x0035d050` (registered by `RegisterBindings`); **calls** `0x00238640` `Human_SetPedReaction`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -3495,18 +3541,22 @@ HuSetScale(human, scale)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `scale` | number (single precision) | Size factor, 1 for normal (scripts use 0.97 to 1.28). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `scale` | number (single precision) | Size factor, 1 for normal (scripts use 0.97 to 1.28); not range-checked. |
 
 **Returns** nothing.
 
-Scales a human: 0x00219608 stores the factor (human `+0x65c`) and resizes its physics body, making bosses and henchmen
-bigger or smaller.
+Sets the human's body scale (`+0x65c`) and rebuilds its physics body (`+0x1a0`) at that size: the collision capsule's
+height becomes 2 x scale and its radius 0.35 x scale, and each of its ten collision spheres is scaled. Everything that
+asks for the human's size (camera framing, reach and steering in fights, lights, the speed check) reads the same factor,
+so bosses and henchmen become bigger or smaller.
 
-**Notes.** Whether the drawn model scales by the same factor is not traced.
+**Notes.** While the human is linked to another in a grab (+0x280 set) or its move state has flag 0x800000, a scale
+below 1.1 counts as 1; whether the drawn model scales too is not traced.
 
-- **Evidence:** confirmed (code) at `0x0023b0e0`; detail: brief
-- **Wrapper** `0x00358c90` (registered by `RegisterBindings`); **calls** `0x0023b0e0` `Human_SetScale`
+- **Evidence:** confirmed (code) at `0x0023b0e0`, `0x00219608`, `0x0021d020`, `0x00341f28`; detail: traced
+- **Wrapper** `0x00358c90` (registered by `RegisterBindings`); **calls** `0x0023b0e0` `Human_SetScale`, `0x00219608`
+  `Human_StoreScale`, `0x0021d020` `Human_GetScale`, `0x00341f28` `PhysicsBody_ApplyHumanScale`
 - **Used by** 17 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -3674,16 +3724,22 @@ HuSetUnarrestable(human, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | true makes the human unarrestable, false arrestable again. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true marks the human and offers the uncuff action on it; false (or nil) removes both. |
 
 **Returns** nothing.
 
-Sets or clears flag bit 0x8000 of the human's flag word and calls a virtual function on it (slot +0x124 when set, +0x12c
-when cleared); from the name, the police cannot arrest the human.
+Despite the name, this makes a human one the player can un-arrest: true sets flag `0x8000` of its flag word (`+0xe0`)
+and registers the human (record at `+0x664`) as a context action of kind 0, a handcuffed human, so a player within reach
+gets the uncuff prompt (`GSTRING.HUD` 2) and triangle starts the uncuff mash ([Crimes: context
+records](../../research/crimes.md#context-records)). false clears the flag and withdraws the action.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00359ae0` (registered by `RegisterBindings`); **calls** `0x00235e70` `Human_SetUnarrestable`
+**Notes.** Registering does nothing when the human already has a context record; what else reads flag 0x8000 of +0xe0 is
+not traced.
+
+- **Evidence:** confirmed (code) at `0x00235e70`, `0x00240800`, `0x00240850`; detail: traced
+- **Wrapper** `0x00359ae0` (registered by `RegisterBindings`); **calls** `0x00235e70` `Human_SetUnarrestable`,
+  `0x00240800` `Human_RegisterContextAction`, `0x00240850` `Human_UnregisterContextAction`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -3849,13 +3905,17 @@ HuSetWorkoutBlend(human, blend)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human working out. |
-| 2 | `blend` | number (single precision) | Blend value, stored at +0x670 (0 to 1 is likely). |
+| 2 | `blend` | number (single precision) | Effort: below 1 the first loop clip plays and the value sets its speed; from 1 up, the value minus 1 blends toward the harder loop clips. |
 
 **Returns** nothing.
 
-Sets the blend of the workout animation (+0x670) while the human is working out; does nothing otherwise.
+Sets the effort (`+0x670`) of a human who is working out (state flag `0x20000000000`); does nothing otherwise. For an AI
+human the workout update uses it as is each frame; for a player the update overwrites it from the pad.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Not clamped; the player's own effort ranges 0-1 and is scaled by 3 before the same use, so an AI's 0-3
+matches the player's range.
+
+- **Evidence:** confirmed (code) at `0x00238cd8`; detail: traced
 - **Wrapper** `0x0035ca38` (registered by `RegisterBindings`); **calls** `0x00238cd8` `Human_SetWorkoutBlend`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -3864,22 +3924,27 @@ Sets the blend of the workout animation (+0x670) while the human is working out;
 ## HuSetWorkoutCallbacks {#husetworkoutcallbacks}
 
 ```lua
-HuSetWorkoutCallbacks(onStart, onRep, onQuit)
+HuSetWorkoutCallbacks(onStart, onRep, onEnd)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `onStart` | string | Lua function called when the workout starts. |
-| 2 | `onRep` | string | Lua function called for each repetition. |
-| 3 | `onQuit` | string | Lua function called when the player quits the workout. |
+| 1 | `onStart` | string | Lua function called with the human's handle when a workout begins (the start animation is set up), or nil. |
+| 2 | `onRep` | string | Lua function called with the human's handle from the workout's loop animation, once per repetition (inferred), or nil. |
+| 3 | `onEnd` | string | Lua function called with the human's handle when the workout ends, by quitting, running out of effort or HuStopWorkout, or nil. |
 
 **Returns** nothing.
 
-Stores three Lua callback names for the clubhouse workout (globals 0x0051023c, 0x00510234, 0x00510238); roles taken from
-level95_workout's handler names.
+Interns three Lua function names as the game-wide workout callbacks (globals `0x0051023c`, `0x00510234`, `0x00510238`);
+every human's workout calls the same three, each with the working-out human's handle. Each is called only when it is set
+and the script system finds the function.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035c878` (registered by `RegisterBindings`); **calls** `0x002345f8` `Human_SetWorkoutCallbacks`
+**Notes.** One set for the whole game, replaced by the next call; the repetition callback is handed to the loop
+animation node (`0x002557b0`), so its exact timing is not traced.
+
+- **Evidence:** confirmed (code) at `0x002345f8`, `0x002346a0`, `0x00234768`, `0x00234830`; detail: traced
+- **Wrapper** `0x0035c878` (registered by `RegisterBindings`); **calls** `0x002345f8` `Human_SetWorkoutCallbacks`,
+  `0x002346a0` `Workout_CallStart`, `0x00234768` `Workout_CallRep`, `0x00234830` `Workout_CallEnd`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -4106,13 +4171,17 @@ HuStopWorkout(human)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
 
 **Returns** nothing.
 
-Ends the human's workout (state 0x1c), or returns it to state 0 when it is still walking to the equipment.
+Ends a workout: a human working out (state flag `0x20000000000`) gets state code `0x1c`, which clears the flag, calls
+the end callback and plays the end clip (anim id 692); one that HuWorkout has started but who has not begun yet (state
+code still `0x1b`) goes back to state code 0. Otherwise nothing.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** A cancelled start does not call the end callback.
+
+- **Evidence:** confirmed (code) at `0x00238d30`; detail: traced
 - **Wrapper** `0x0035ca00` (registered by `RegisterBindings`); **calls** `0x00238d30` `Human_StopWorkout`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -4131,14 +4200,10 @@ HuSwitchPlayer(human) -> number
 **Returns** number: Handle of the gang member who now has the player's pad, or NilHandle when there is no one to switch
 to.
 
-Hands the player's control from `human` to another member of its gang (a standing, non-player member, preferring the
-lowest non-zero priority byte +0x1b1), moving the pad and the camera target. Used in Rumble mode and when a player
-character is out.
+Hands the player's control from `human` to another member of its gang (the first free one, by gang order), moving the
+pad and the camera target. Used in Rumble mode and when a player character is out.
 
-**Notes.** 0x0041a8c0; the member is chosen by 0x0022a770 (also used by other player hand-overs). Behaviour:
-[Rumble](../../research/rumble.md#switch-player).
-
-- **Evidence:** confirmed (code) at `0x00239e08`; detail: brief
+- **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035d218` (registered by `RegisterBindings`); **calls** `0x00239e08` `GameState_SwitchPlayer`
 - **Used by** 34 of 467 script chunks (266 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** not implemented
@@ -4357,26 +4422,35 @@ Tells a script what kind of object (weapon, bottle, bag) the human is holding.
 ## HuWorkout {#huworkout}
 
 ```lua
-HuWorkout(human, equipment, anim1, anim2, anim3, anim4, anim5)
+HuWorkout(human, equipment, startAnim, endAnim, loop1, loop2, loop3)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human who works out. |
-| 2 | `equipment` | number, truncated to an unsigned integer | Handle of the workout object (level95_workout passes the player itself). |
-| 3 | `anim1` | string | Animation file for anim id 0x2b3. |
-| 4 | `anim2` | string | Animation file for anim id 0x2b4. |
-| 5 | `anim3` | string | Animation file for anim id 0x2b5. |
-| 6 | `anim4` | string | Animation file for anim id 0x2b6. |
-| 7 | `anim5` | string | Animation file for anim id 0x2b7. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human who works out; a bad handle does nothing. |
+| 2 | `equipment` | number, truncated to an unsigned integer | Handle of the object worked out on (any world object; it becomes the human's target object); a bad handle does nothing. |
+| 3 | `startAnim` | string | Animation file bound to anim id 691 (`ANIM_WORKOUT_START`) on this human. |
+| 4 | `endAnim` | string | Animation file bound to anim id 692 (`ANIM_WORKOUT_END`). |
+| 5 | `loop1` | string | Animation file bound to anim id 693 (`ANIM_WORKOUT_LOOP_01`). |
+| 6 | `loop2` | string | Animation file bound to anim id 694 (`ANIM_WORKOUT_LOOP_02`). |
+| 7 | `loop3` | string | Animation file bound to anim id 695 (`ANIM_WORKOUT_LOOP_03`). |
 
 **Returns** nothing.
 
-Starts a workout in the clubhouse: binds five animation files to the workout anim ids, sets the equipment as the human's
-target and enters the workout state (0x1b).
+Starts a workout: binds the five clips, makes `equipment` the human's target and sets its state code (record `+0x14`) to
+`0x1b`. On its next update the human, if within the start clip's reach of the equipment, turns to it, plays the start
+clip into a blended loop of the workout clips, sets the working-out flag (`0x20000000000` of its state) with a blend of
+1 (`+0x670`) and calls the start callback; out of reach the state code goes back to 0. A player then pumps the effort
+with one button (blend rises per press by a per-phase table, decays otherwise) and quits with another; an AI's blend
+comes from HuSetWorkoutBlend.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035c8f0` (registered by `RegisterBindings`); **calls** `0x00238bd8` `Human_StartWorkout`
+**Notes.** All five clips must load or the workout never starts; the loop node also names ids 696-697, which this
+binding does not bind; the button commands are 0x12 (pump) and 10 (quit) from the player's input record; which pad
+buttons they are is not traced.
+
+- **Evidence:** confirmed (code) at `0x00238bd8`, `0x00255540`; detail: traced
+- **Wrapper** `0x0035c8f0` (registered by `RegisterBindings`); **calls** `0x00238bd8` `Human_StartWorkout`, `0x00255540`
+  `Human_UpdateWorkout`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -4598,16 +4672,23 @@ Teleport(object, pos, heading)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of any world object: a human, a car, a prop or an effect. |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of any world object: a human, a car, a prop or an effect; a bad handle does nothing. |
 | 2 | `pos` | table of 3 numbers (t[1]..t[3]) | Destination {x, y, z} in metres, game axes (z up); written back unchanged. |
 | 3 | `heading` | number, truncated to an integer; default -1 | New heading in whole degrees about the z axis; -1 (the default) keeps the current rotation. |
 
 **Returns** nothing.
 
-Moves an object to a position (and optionally turns it) through the object's own position setter.
+Moves an object: reads its transform (vtable `+0xac`), replaces the position (w = 1) and, unless the heading is -1, the
+rotation with one about z, and hands it back through the object's set-transform slot (`+0x6c`). For a human that slot
+(`0x0023d440`) casts a short ray down from the point (0.5) and lowers it onto what it hits, marks the human moved,
+points its brain's move heading the new way and drops a move action in progress.
 
-- **Evidence:** confirmed (code) at `0x00385bb8`; detail: brief
-- **Wrapper** `0x0036cbc0` (registered by `RegisterBindings`); **calls** `0x00385bb8` `Object_Teleport`
+**Notes.** Other object kinds take the transform as given; a human linked in a grab (+0x280 set) is not lowered; this
+corrects 'neither snaps to the ground' on Characters for the 0.5 ray only (the ray's units are not checked).
+
+- **Evidence:** confirmed (code) at `0x00385bb8`, `0x0023d440`; detail: traced
+- **Wrapper** `0x0036cbc0` (registered by `RegisterBindings`); **calls** `0x00385bb8` `Object_Teleport`, `0x0023d440`
+  `Human_SetTransform`
 - **Used by** 54 of 467 script chunks (140 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

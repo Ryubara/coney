@@ -142,15 +142,19 @@
 - name: CfgObjectValueMod
   wrapper: 0x0035a2f8
   calls:
-    - {addr: 0x0041d618}
+    - {addr: 0x0041d618, name: GameState_SetObjectValueMod}
+    - {addr: 0x0023bf00, name: Human_PickUpObject}
+    - {addr: 0x00232c60, name: Human_DropCarried}
   args:
-    - {name: factor, lua: number, ctype: float, desc: "Multiplier on the money value of stolen or sold objects (1 normal, 0.5 half)."}
+    - {name: factor, lua: number, ctype: float, desc: "Multiplier on the cash value of stolen loot (1 full value, 0.5 half); not range-checked."}
   description: >-
-    Stores a value multiplier in the game state (+0x380); level scripts set 0.5 or 1.
-  evidence: inferred
-  depth: brief
+    Sets the loot value factor (float at game state `+0x380`). When a player, or an AI Warrior for his leader, picks up
+    a stolen object, he gains loot item 10 and money (item 2) equal to the object type's value byte (`+0x5a`) times
+    this factor, truncated; a beaten player who drops carried loot loses the same amount. Level scripts set 0.5 or 1.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Storage confirmed (code) at 0x0041d618; the money meaning is inferred from the name and the levels that call it.
+    The factor persists in the game state until set again; with 0 loot is worth nothing.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 31, 11]}
 
 - name: CfgCharClassAttribs
@@ -1673,14 +1677,20 @@
 - name: CfgEnableCrimeType
   wrapper: 0x0036bec8
   calls:
-    - {addr: 0x0041da80}
+    - {addr: 0x0041da80, name: Cfg_EnableCrimeType}
+    - {addr: 0x0041d0d0, name: GameState_SetCrimeTypeEnabled}
   args:
-    - {name: crime, lua: number, ctype: int, desc: "[Crime type](../crime-types.md) 0-14; larger values are ignored. Only type 12 (trespassing) is read back, by the police brain."}
-    - {name: enabled, lua: boolean, desc: "true enables the crime type; false disables it."}
+    - {name: crime, lua: number, ctype: int, desc: "[Crime type](../crime-types.md) 0-14; anything else (also a negative number) is ignored."}
+    - {name: enabled, lua: boolean, desc: "true enables the crime type; false (or nil) disables it."}
   description: >-
-    Enables or disables one crime type (byte at game state + 0x32b + crime).
+    Enables or disables one crime type: a byte at game state `+0x32b + crime`. Only type 12 (trespassing) is read back,
+    by the police brain (`0x00300910`, `0x00301770`), so in practice this switches whether cops act on trespassing
+    ([AI: crimes](../../research/ai.md#crimes)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Disabling another type has no effect: crime reports do not check the byte; what the police brain does differently
+    for type 12 is not traced here.
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95, 9]}
 
 - name: CfgSetCrimeCallback
@@ -1755,13 +1765,20 @@
 - name: CfgMoneyCallback
   wrapper: 0x0036c0c8
   calls:
-    - {addr: 0x0041ed60}
+    - {addr: 0x0041ed60, name: Cfg_SetMoneyCallback}
+    - {addr: 0x0041e4f0, name: Inventory_SetMoneyCallback}
+    - {addr: 0x0041e5b0, name: Inventory_AddItem}
   args:
-    - {name: fn, lua: string, desc: "Lua function name called when the player's money changes, or nil."}
+    - {name: fn, lua: string, desc: "Name of a Lua function (up to 32 characters, copied, not interned) called when a player's money changes, or nil to clear it."}
   description: >-
-    Stores the money callback name in the inventory block (0x0041e4f0).
+    Stores the money callback's name in the inventory block (game state `+0x480 + 0x1034`). Whenever money (item 2) is
+    added to or taken from a player's inventory, Inventory_AddItem calls the function, if it exists, with the player
+    index (0 or 1) and the signed change in dollars.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Called for every change, notify flag or not; the call happens after the count is clamped, but passes the
+    requested change, not the clamped one.
   usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false, levels: [95, 34, 31, 11]}
 
 - name: CfgBreakAndEnterDelay

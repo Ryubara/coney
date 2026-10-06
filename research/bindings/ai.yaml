@@ -103,16 +103,22 @@
   wrapper: 0x0035ec38
   calls:
     - {addr: 0x00292410, name: Brain_SetType}
+    - {addr: 0x0028ceb8, name: Brain_StoreType}
+    - {addr: 0x0028c1a8, name: Brain_InstallHandlers}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: brainType, lua: number, ctype: int, desc: "Brain type 0-6. 0 is the pad-driven player brain; scripts use 2 for gang members who fight alongside the player and 4 for some story characters."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: brainType, lua: number, ctype: int, desc: "Brain type 0-6 (AI types: 0 player, 1 cop, 2 gang soldier, 3 Warrior, 4 civilian or bum, 5 dealer, 6 the civl_co_di kind); scripts use 2 and 4. Not range-checked."}
   description: >-
-    Changes the kind of brain a human has (brain `+0x04`) and rebuilds its behaviour handlers from that type's table,
-    as `BrDead(human, false)` would. Setting type 0 makes the human pad-controlled.
+    Changes the kind of brain a human has (brain `+0x04`) and reinstalls its update, think and event handlers from
+    that type's tables (`0x00715530`, `0x00715568`, `0x007155a0`), so the human behaves like a cop, gang soldier,
+    Warrior, civilian and so on from its next update. Type 0 also hands the human's player record the pad (record
+    `+0x1b` = 1) and resets its player-side bookkeeping.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Seven types (tables at 0x00715530); the meaning of each type beyond 0 is inferred from the scripts' use.
+    A brain made dead with BrDead keeps the script-only handlers (the type is stored but only used when BrDead is
+    lifted); a value above 6 indexes past the tables; type 0 is only meaningful for a human that has a player slot;
+    the goals already on the stack are kept.
   usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false, levels: [95, 3, 82, 83]}
 
 - name: BrSetPedType
@@ -286,14 +292,21 @@
   wrapper: 0x0035f050
   calls:
     - {addr: 0x00292c68, name: Brain_HasEnemies}
+    - {addr: 0x003035d8, name: PlayerBrain_Update}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human, in practice the player."}
   results:
-    - {lua: boolean, desc: "true (1) if the brain currently has an enemy (brain byte `+0x152`); false (nil) otherwise or for a bad handle."}
+    - {lua: boolean, desc: "true (1) when at least one AI human has this human on its enemy list (brain byte `+0x152`); false (nil) otherwise or for a bad handle."}
   description: >-
-    Tells whether a human currently considers anyone an enemy.
+    Tells whether anyone is after the human: the player's brain update counts, every 300 brain updates, the non-player
+    members of all 32 gangs whose enemy list (brain `+0x164`, 16 slots) holds this human, and stores the count at
+    brain `+0x152`; this returns whether it is non-zero. The camera
+    uses the same byte to pick its sprint view.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Only the player brain (type 0) refreshes the count, so for an AI human it stays 0 (false); it can lag up to 300 brain
+    updates (counter at brain `+0x34`) behind the enemy lists.
   usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: true, levels: [95, 14, 20]}
 
 - name: BrHasAttackers
@@ -1394,19 +1407,33 @@
   wrapper: 0x00363128
   calls:
     - {addr: 0x002e5a00, name: Goal_Shopkeeper}
+    - {addr: 0x002e5ae0, name: ShopkeeperGoal_Init}
+    - {addr: 0x002e6668, name: ShopkeeperGoal_Process}
+    - {addr: 0x002e5fa0, name: ShopkeeperGoal_OnDisturbed}
+    - {addr: 0x002e65b0, name: ShopkeeperGoal_Reset}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the shopkeeper."}
-    - {name: store, lua: number, ctype: unsigned, desc: "Handle of the store's volume (a `VolumeBox` the level defines)."}
-    - {name: value, lua: number, ctype: int, desc: "A number (scripts use 1 and 3)."}
-    - {name: option, lua: boolean, desc: "A flag (scripts pass false)."}
-    - {name: range, lua: number, ctype: float, default: 9, desc: "A distance in metres (default 9)."}
-    - {name: anim1, lua: string, desc: "An animation name, or nil."}
-    - {name: anim2, lua: string, desc: "An animation name, or nil."}
-    - {name: option2, lua: boolean, default: true, desc: "A flag (default true)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the shopkeeper; a bad handle does nothing."}
+    - {name: store, lua: number, ctype: unsigned, desc: "Handle of the store's volume (a `VolumeBox` the level defines); the shopkeeper stays and wanders inside it and reacts to the player entering it."}
+    - {name: kind, lua: number, ctype: int, desc: "How the shopkeeper reacts to trouble: 1 phones his gang, 2 fights the intruder (with a switchblade), 3 cowers, 4 cowers and never pleads; 0 picks 2 (70%) or 3 (30%) at start. Scripts use 1 and 3."}
+    - {name: broom, lua: boolean, desc: "true puts a broom (`dyn_broom`) in his hand to sweep with; ignored (cleared) for kind 1."}
+    - {name: range, lua: number, ctype: float, default: 9, desc: "Distance in metres: he greets the player within half of it (at least 4 m), walks back into the store beyond it and gives up on the player beyond twice it (at least 30 m)."}
+    - {name: onDisturbed, lua: string, desc: "Name of a Lua function called the first time a crime happens in the store, or nil."}
+    - {name: onPhone, lua: string, desc: "Name of a Lua function called when a kind-1 shopkeeper phones for help, instead of the game's own break-and-enter crime report; or nil."}
+    - {name: pleads, lua: boolean, default: true, desc: "true lets a cowering shopkeeper (kind 3) give in once beaten below 40% health."}
   description: >-
-    Makes a human run a store: stay behind the counter, greet and react to the player in the store's volume.
-  evidence: inferred
-  depth: brief
+    Pushes the Shopkeeper goal (type 130) onto the human's brain and makes it a type-6 brain that never starts a fight
+    on its own: he idles at the counter (`phone_idle` for kind 1, `push_broom` otherwise), wanders to flags inside the
+    store every 3-5 s, greets the player with `store_greet` when he comes close and chats (`store_chat`) every 10-20 s.
+    When a crime happens in the store (the type-6 brain's event handler `0x00304070`), he reacts by `kind`: phones
+    (`phone_gang`, then a crime report type 1 or the `onPhone` callback), attacks the offender (`dead_meat`), or cowers
+    (`cower`).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Animations are fixed by kind, not by the string arguments (6 and 7 are Lua callback names interned by the script
+    system); a beaten pleading shopkeeper says `mug_grunt` and offers a kind-5 context action (prompt `GSTRING.HUD` 8);
+    a later state hands his money (+0x370) to the player with `collect_resp`, inferred to follow that action; an
+    offender friendly to him is only faced, not fought.
   usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [95, 93, 20]}
 
 - name: GoalRiot
@@ -1514,14 +1541,23 @@
   wrapper: 0x003636c8
   calls:
     - {addr: 0x002d4628, name: Goal_PlayGenericAnimation}
+    - {addr: 0x002d46b8, name: PlayGenAnimGoal_Init}
+    - {addr: 0x002d47d0, name: PlayGenAnimGoal_Process}
+    - {addr: 0x002d4748, name: PlayGenAnimGoal_End}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: anim, lua: number, ctype: unsigned, desc: "A generic animation number (scripts use 0 and 1)."}
-    - {name: callback, lua: string, desc: "Name of a Lua function called when it ends, or nil."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: anim, lua: number, ctype: unsigned, desc: "Which generic animation: 0 the shoulder charge (anim id 0, `ANIM_RUNNING_ATTACK_CHARGE`), 1 using the camera flash (anim id 665, `ANIM_SPECIAL_FLASH`); any other value plays nothing."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called with the human's handle 33 ms after the goal ends, or nil (or an empty string) for none."}
   description: >-
-    Plays one of a few generic animations on a human and calls the script back.
-  evidence: inferred
-  depth: brief
+    Pushes the PlayGenAnim goal (type 38) onto the human's brain: once the human has no queued actions and its current
+    move is not one of the busy states (move-state flags other than bit 30), it queues one play-animation action for
+    the chosen anim id with 0.1 s blends, and ends once that action has left the queue. Ending, also when cut short,
+    schedules the callback.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only two animations are reachable (scripts use 0 and 1); an unknown number ends the goal at once without playing
+    anything; the callback gets only the handle, no completed flag.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 5, 62]}
 
 - name: GoalStandIdle
@@ -1586,16 +1622,26 @@
   wrapper: 0x00363a68
   calls:
     - {addr: 0x002ad2c0, name: Goal_Peddler}
+    - {addr: 0x002ad378, name: PeddlerGoal_Init}
+    - {addr: 0x002ad6c0, name: PeddlerGoal_Process}
+    - {addr: 0x002ad5a8, name: PeddlerGoal_OnAttacked}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the vendor."}
-    - {name: range, lua: number, ctype: float, desc: "A distance in metres (scripts use 5)."}
-    - {name: option, lua: boolean, desc: "A flag."}
-    - {name: greetAnim, lua: string, desc: "Greeting animation file name (`.anm`)."}
-    - {name: idleAnim, lua: string, desc: "Idle animation file name (`.anm`)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the vendor; a bad handle does nothing."}
+    - {name: range, lua: number, ctype: float, desc: "Beckoning range in metres (scripts use 5): a passer-by within it is greeted; the vendor keeps watching the nearest player out to 1.1 times it."}
+    - {name: reacts, lua: boolean, desc: "true makes a civilian-brained vendor who is attacked push a pedestrian reaction goal (type 0x6b) against the attacker; false leaves him standing."}
+    - {name: greetAnim, lua: string, desc: "Animation file (`.anm`) bound to anim id 604 (`ANIM_FIDGET_IDLE`) on this human and played as the beckon."}
+    - {name: idleAnim, lua: string, desc: "Animation file (`.anm`) bound to anim id 388 (`ANIM_NORMAL_IDLE`) on this human, his standing idle."}
   description: >-
-    Makes a human act as a street vendor that greets passers-by within range.
-  evidence: inferred
-  depth: brief
+    Pushes the Peddler goal (type 80) onto the human's brain: the vendor holds the spot and heading he had when it was
+    given (walking back beyond 0.3 m, turning back beyond 15 degrees) and sets his threat response to 0 (never fights).
+    Every 20 brain updates he picks a passer-by within `range`; he beckons him once with the greet animation and
+    `beckon_player` (a player, always) or `beckon` (anyone else, half the time) and looks at him for the clip's length.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The two animations are bound (human +0x418, +0x440, flag 0x20000000) only when both names are non-empty, and the
+    vendor beckons only when both clips loaded; the threat response is saved in the goal (+0x2e) and restored when it
+    ends (`0x002ad530`); the brain event that pushes the reaction is the civilian type's (`0x002ff898`).
   usage: {chunks: 4, calls: 9, boot: false, mission1: false, result_used: false, levels: [95, 93, 20]}
 
 - name: GoalBigLedgeThrower
@@ -1660,13 +1706,24 @@
   wrapper: 0x00363ff8
   calls:
     - {addr: 0x002d97c0, name: Goal_Boxer}
+    - {addr: 0x002d9848, name: BoxerGoal_Init}
+    - {addr: 0x002d9870, name: BoxerGoal_Start}
+    - {addr: 0x002d98f8, name: BoxerGoal_Process}
+    - {addr: 0x002d98b0, name: BoxerGoal_End}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: bag, lua: number, ctype: unsigned, desc: "Handle of the heavy bag object."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the boxer; a bad handle does nothing."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to box (read as a human: the goal targets and attacks it); while it is not a valid target the goal waits."}
   description: >-
-    Makes a human work out on a heavy bag (the hideout's training bag).
-  evidence: inferred
-  depth: brief
+    Pushes the Boxer goal (type 158) onto the human's brain: he goes into fight stance, makes `target` his target and
+    keeps throwing attacks at it, picked with a boxing attack-weight table (`0x00511120`, set at brain `+0x208` while
+    the goal runs) and closing in when out of reach. Between attacks he dances (`combat_fidget_boxersdance`, bound to
+    anim id 603), holds a block (606, 609 or 611) or pauses 0.5-1.5 s; out of reach he waits 2 s (three times in four)
+    or walks up to it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The goal never ends by itself; the attacks are ordinary attacks, so they hit whatever the target is; the 'heavy bag'
+    reading of the target is from the hub's scripts and is not checked here.
   usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: GoalBigBrawler
@@ -1732,13 +1789,26 @@
   wrapper: 0x00364500
   calls:
     - {addr: 0x002bb3d0, name: Goal_GrabTarget}
+    - {addr: 0x002bb458, name: GrabTargetGoal_Init}
+    - {addr: 0x002bb4c0, name: GrabTargetGoal_Start}
+    - {addr: 0x002bb858, name: GrabTargetGoal_Process}
+    - {addr: 0x002bb598, name: GrabTargetGoal_End}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the grabber."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to grab."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the grabber; a bad handle does nothing."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to grab and hold; the goal ends when it no longer resolves to a valid target."}
   description: >-
-    Makes a human grab another human.
-  evidence: inferred
-  depth: brief
+    Pushes the GrabTarget goal (type 31): the grabber walks up to the target, grabs it (fighting it first with a short
+    Fight goal, or an EngageEnemy goal when out of reach, when the grab is not possible) and then holds it, dealing the
+    hold damage (global `0x00510acc`) every 30 brain updates; the held victim screams (speech command 9) now and then,
+    and the grabber turns to face the nearest player when more than 45 degrees off. While it runs the grabber cannot be
+    attacked (brain `+0x120` = 0), will not fight on his own (threat response 0) and uses the grab attack weights
+    (`0x00511098`).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The goal never lets go by itself; it ends only when the target becomes invalid or the goal is popped or flushed;
+    End restores the brain's targetable flag, two brain bytes (+0x0b, +0x0c) and the target's brain +0x11f, but not
+    the saved threat response (kept in the goal).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: ActTurn

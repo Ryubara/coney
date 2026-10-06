@@ -73,9 +73,9 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`HUDShowMissionSelect`](#hudshowmissionselect) | - | 2 | no | no | confirmed (code) |
 | [`HUDShowMissionSummaryText`](#hudshowmissionsummarytext) | - | 3 | yes | yes | confirmed (code) |
 | [`HUDShowWarCommand`](#hudshowwarcommand) | - | 9 | no | no | confirmed (code) |
-| [`HUDTurnOffActionCycleAnim`](#hudturnoffactioncycleanim) | - | 8 | no | no | inferred |
+| [`HUDTurnOffActionCycleAnim`](#hudturnoffactioncycleanim) | - | 8 | no | no | confirmed (code) |
 | [`HUDTurnOffRadar`](#hudturnoffradar) | - | 67 | no | yes | confirmed (code) |
-| [`HUDTurnOnActionCycleAnim`](#hudturnonactioncycleanim) | - | 7 | no | no | inferred |
+| [`HUDTurnOnActionCycleAnim`](#hudturnonactioncycleanim) | - | 7 | no | no | confirmed (code) |
 | [`HUDTurnOnRadar`](#hudturnonradar) | - | 52 | no | yes | confirmed (code) |
 | [`PreloadCredits`](#preloadcredits) | - | 2 | no | no | inferred |
 | [`RestoreHud`](#restorehud) | - | 82 | no | yes | confirmed (code) |
@@ -96,14 +96,18 @@ CNSEnableMissionInfo(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false) | true enables the hub's mission information, false disables it. |
+| 1 | `on` | boolean (nil or 0 is false) | true stores 1, false (or nil) stores 0. |
 
 **Returns** nothing.
 
-Sets a global flag (0x005109ac) that enables mission information in the hub (level95 turns it on, level101 off).
+Sets the global word 0x005109ac to 1 or 0. Nothing in the executable reads it, so the call has no visible effect;
+level95 turns it on and level101 off.
 
-- **Evidence:** confirmed (code) at `0x0023b128`; detail: brief
-- **Wrapper** `0x0037d3f0` (registered by `RegisterBindings`); **calls** `0x0023b128`
+**Notes.** The only reference to 0x005109ac is this store (no other load in the program), so whatever `CNS` mission info
+was meant to show is not built.
+
+- **Evidence:** confirmed (code) at `0x0023b128`; detail: traced
+- **Wrapper** `0x0037d3f0` (registered by `RegisterBindings`); **calls** `0x0023b128` `CNS_SetMissionInfoEnabled`
 - **Used by** 34 of 467 script chunks (35 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -226,10 +230,16 @@ No arguments.
 
 **Returns** nothing.
 
-Hides both players' panels (name banner, rage meter, score, money) only.
+Hides both players' status panels (name banner, rage meter, score, money and item counters) and keeps them hidden: each
+panel's `may show` flag (+0x4108) is cleared, so activity no longer brings it back, until ShowPlayerHud. The radar,
+objective texts and prompts are not affected.
 
-- **Evidence:** confirmed (code) at `0x001b3ef0`; detail: brief
-- **Wrapper** `0x00370ce0` (registered by `RegisterBindings`); **calls** `0x001b3ef0`
+**Notes.** Panel calls 0x0020dfe0(panel, 0) then 0x0020dfe8 (hide), for the panels at HUD +0x08 and +0x0c ([HUD: showing
+and hiding](../../research/hud.md#showing-and-hiding)). HideHud hides more (radars, score board).
+
+- **Evidence:** confirmed (code) at `0x001b3ef0`, `0x001b2030`; detail: traced
+- **Wrapper** `0x00370ce0` (registered by `RegisterBindings`); **calls** `0x001b3ef0` `HUD_HidePlayerPanels`,
+  `0x001b2030`
 - **Used by** 44 of 467 script chunks (50 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1433,15 +1443,24 @@ HUDShowMissionSelect(onCancel, onChoose)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `onCancel` | string | Name of the Lua function called when the player backs out (at most 31 characters). |
-| 2 | `onChoose` | string | Name of the Lua function called with the chosen level (at most 31 characters). |
+| 1 | `onCancel` | string | Name of the Lua function called with no arguments when the player backs out (copied, at most 31 characters); nil for none. |
+| 2 | `onChoose` | string | Name of the Lua function called as onChoose(level, checkpoint) when the player picks a mission (copied, at most 31 characters); nil for none. |
 
 **Returns** nothing.
 
-Opens the clubhouse mission-select screen (game mode 0x10) unless it is already open. level95 uses it.
+Opens the clubhouse mission-select screen (game mode 0x10, pushed on the mode stack) unless it is already the current
+mode; the world stops updating while it shows. On entry it loads the `menu` sound bank. When the player backs out, the
+`sound` bank is loaded back and `onCancel()` is called; when the player picks an entry, `onChoose(level, checkpoint)` is
+called with the entry's level number and its 1-based checkpoint.
 
-- **Evidence:** confirmed (code) at `0x00155180`; detail: brief
-- **Wrapper** `0x0036ec40` (registered by `RegisterBindings`); **calls** `0x00155180` `MissionSelect_Show`
+**Notes.** The choice comes from 0x001bdd38: level = level record +0x14d8 of the entry's level index, checkpoint = entry
++0x70 + 1; for a checkpoint above 1 it also calls 0x0041e040(W_GameState + 0x480, 1) and resets and re-copies the
+statistics (0x00422930, 0x00422c60) before the callback. Callbacks run through the script system by name, so dotted
+names work. The menu's list and layout are not traced.
+
+- **Evidence:** confirmed (code) at `0x00155180`, `0x0015d5e0`, `0x0015d728`; detail: traced
+- **Wrapper** `0x0036ec40` (registered by `RegisterBindings`); **calls** `0x00155180` `MissionSelect_Show`, `0x0015d5e0`
+  `MissionSelect_SetCallbacks`, `0x0015d728` `MissionSelect_Exit`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1505,14 +1524,18 @@ HUDTurnOffActionCycleAnim(player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `player` | number, truncated to an unsigned integer | Player index (0 or 1). |
+| 1 | `player` | number, truncated to an unsigned integer | Player index (0 or 1) whose action prompt stops cycling. |
 
 **Returns** nothing.
 
-Removes the animated button prompt for a player.
+Stops the icon cycle that HUDTurnOnActionCycleAnim started on a player's action prompt (clears the prompt's cycle flag
++0x45c); the prompt goes back to its normal, steady icon.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036fd98` (registered by `RegisterBindings`); **calls** `0x001b5ae0`
+**Notes.** Only the flag is cleared: the icon last shown and its visibility stay until the prompt next sets them.
+
+- **Evidence:** confirmed (code) at `0x001b5ae0`, `0x0019f320`; detail: traced
+- **Wrapper** `0x0036fd98` (registered by `RegisterBindings`); **calls** `0x001b5ae0` `HUD_TurnOffActionCycleAnim`,
+  `0x0019f320` `ActionPrompt_StopCycle`
 - **Used by** 8 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1543,25 +1566,32 @@ sets +0x177ac is not traced. Behaviour: [The in-game HUD](../../research/hud.md#
 ## HUDTurnOnActionCycleAnim {#hudturnonactioncycleanim}
 
 ```lua
-HUDTurnOnActionCycleAnim(n, seconds, kind, iconA, iconB, player)
+HUDTurnOnActionCycleAnim(framesPerIcon, seconds, blinkFrames, iconA, iconB, player)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `n` | number, truncated to an unsigned integer | A count or slot (scripts pass 3 or 4). |
-| 2 | `seconds` | number (single precision) | Frame time of the cycle (scripts pass 0.1 or 0.15). |
-| 3 | `kind` | number, truncated to an unsigned integer | A number (scripts pass 2 or 6). |
-| 4 | `iconA` | number, truncated to an unsigned integer | First button-icon id of the cycle (scripts pass 73 or 79). |
-| 5 | `iconB` | number, truncated to an unsigned integer | Second button-icon id. |
-| 6 | `player` | number, truncated to an unsigned integer | Player index (0 or 1). |
+| 1 | `framesPerIcon` | number, truncated to an unsigned integer | HUD updates each icon stays before switching to the other (scripts pass 3 or 4); 0 crashes the update (division by zero). |
+| 2 | `seconds` | number (single precision) | Ignored: the callee overwrites it with a fixed 0.1 (scripts pass 0.1 or 0.15). |
+| 3 | `blinkFrames` | number, truncated to an unsigned integer | The icon shows for this many HUD updates, then hides for as many (scripts pass 2 or 6); 0 means no blinking. |
+| 4 | `iconA` | number, truncated to an unsigned integer | First button sprite word of the cycle (scripts pass 73 or 79). |
+| 5 | `iconB` | number, truncated to an unsigned integer | Second button sprite word. |
+| 6 | `player` | number, truncated to an unsigned integer | Player index (0 or 1): which player's action prompt (HUD +0x6b40 + player × 0x590). |
 
 **Returns** nothing.
 
-Shows an animated button prompt that alternates between two icons (the `mash this button` prompts in chases and
-workouts).
+Animates a player's action-prompt icon as a `press this button` hint: the icon alternates between two button sprites
+every `framesPerIcon` HUD updates and blinks on and off every `blinkFrames` updates, until HUDTurnOffActionCycleAnim.
+The scripts use it for the mash prompts in chases, fights and workouts.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036fc80` (registered by `RegisterBindings`); **calls** `0x001b5a90`
+**Notes.** Stores the two icons at prompt +0x440/+0x444, the rates at +0x448 and +0x458, sets the cycle flag +0x45c and
+hides the prompt widget until its next update; the icon sprite (+0x480) is set up with a fixed size 0.1. The cycle runs
+in ActionPrompt_Update ([HUD: action prompts](../../research/hud.md#action-prompts)), so it shows only while that
+player's prompt itself is shown.
+
+- **Evidence:** confirmed (code) at `0x001b5a90`, `0x0019f270`, `0x0019f328`; detail: traced
+- **Wrapper** `0x0036fc80` (registered by `RegisterBindings`); **calls** `0x001b5a90` `HUD_TurnOnActionCycleAnim`,
+  `0x0019f270` `ActionPrompt_StartCycle`, `0x0019f328` `ActionPrompt_UpdateCycle`
 - **Used by** 7 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1650,14 +1680,21 @@ ShowGameStatsInterface(onClose)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `onClose` | string | Name of the Lua function called when the screen closes (interned). |
+| 1 | `onClose` | string | Name of the Lua function called with no arguments when the screen closes (interned through the script system); nil for none. |
 
 **Returns** nothing.
 
-Opens the game statistics screen (game mode 0x13) unless it is already open.
+Opens the game statistics screen (game mode 0x13, pushed on the mode stack) unless it is already the current mode; the
+world stops updating while it shows. When the player closes it, the `sound` bank is loaded back and `onClose()` is
+called.
 
-- **Evidence:** confirmed (code) at `0x001551e0`; detail: brief
-- **Wrapper** `0x0036ec98` (registered by `RegisterBindings`); **calls** `0x001551e0`
+**Notes.** The interned name is kept in a global (0x005e57d0), so a second call replaces the first's callback. What the
+screen lists (the [statistics](../../research/player-state.md#statistics) categories, inferred) and its enter path
+(vtable 0x005384c8) are not traced.
+
+- **Evidence:** confirmed (code) at `0x001551e0`, `0x001594e0`, `0x00159630`; detail: traced
+- **Wrapper** `0x0036ec98` (registered by `RegisterBindings`); **calls** `0x001551e0` `GameStats_Show`, `0x001594e0`
+  `GameStats_SetCloseCallback`, `0x00159630` `GameStats_Exit`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1713,10 +1750,14 @@ No arguments.
 
 **Returns** nothing.
 
-Shows both players' status panels again.
+Lets both players' status panels show again (sets each panel's `may show` flag +0x4108) and shows each one that is
+attached to a player; the usual fade after inactivity then applies.
 
-- **Evidence:** confirmed (code) at `0x001b3f10`; detail: brief
-- **Wrapper** `0x00370d00` (registered by `RegisterBindings`); **calls** `0x001b3f10`
+**Notes.** Panel calls 0x0020dfe0(panel, 1) then 0x0020e008; a panel not attached to a player stays hidden.
+
+- **Evidence:** confirmed (code) at `0x001b3f10`, `0x001b2088`; detail: traced
+- **Wrapper** `0x00370d00` (registered by `RegisterBindings`); **calls** `0x001b3f10` `HUD_ShowPlayerPanels`,
+  `0x001b2088`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

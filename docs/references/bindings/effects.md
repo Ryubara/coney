@@ -338,14 +338,20 @@ KillParticle(particle)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `particle` | number, truncated to an unsigned integer | Handle of the particle object. |
+| 1 | `particle` | number, truncated to an unsigned integer | Handle of the particle system (as returned by the particle-creating bindings); a stale or nil handle does nothing. |
 
 **Returns** nothing.
 
-Destroys a particle object at once (message 0x15).
+Sends message `0x15` (destroy) to the object at once through the task manager, bracketed by the manager's enter/leave
+pair (`0x003a2d20`, `0x003a2d40`): the particle system stops and is removed by its own message handler
+([Particles](../../research/particles.md), [Tasks: messages](../../research/tasks.md#messages)).
 
-- **Evidence:** confirmed (code) at `0x00397730`; detail: brief
-- **Wrapper** `0x00379288` (registered by `RegisterBindings`); **calls** `0x00397730` `Particle_Kill`
+**Notes.** The handle is not checked to be a particle: any object that handles message 0x15 (glass, glints, objects) is
+destroyed the same way; whether a system fades out or vanishes depends on its type's handler, not traced per type.
+
+- **Evidence:** confirmed (code) at `0x00397730`, `0x003a2e00`; detail: traced
+- **Wrapper** `0x00379288` (registered by `RegisterBindings`); **calls** `0x00397730` `Particle_Kill`, `0x003a2e00`
+  `Task_SendMessage`
 - **Used by** 11 of 467 script chunks (297 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 8 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

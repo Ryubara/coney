@@ -66,7 +66,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgMultiplayerJoin`](#cfgmultiplayerjoin) | - | 52 | no | yes | confirmed (code) |
 | [`CfgObj`](#cfgobj) | - | 2 | yes | no | confirmed (code) |
 | [`CfgObjectGroup`](#cfgobjectgroup) | - | 0 | no | no | confirmed (code) |
-| [`CfgObjectValueMod`](#cfgobjectvaluemod) | - | 4 | no | no | inferred |
+| [`CfgObjectValueMod`](#cfgobjectvaluemod) | - | 4 | no | no | confirmed (code) |
 | [`CfgPedInteractDelay`](#cfgpedinteractdelay) | - | 1 | no | no | inferred |
 | [`CfgPickupIsAction`](#cfgpickupisaction) | - | 1 | yes | no | confirmed (code) |
 | [`CfgPickupIsGrab`](#cfgpickupisgrab) | - | 1 | yes | no | confirmed (code) |
@@ -838,15 +838,21 @@ CfgEnableCrimeType(crime, enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `crime` | number, truncated to an integer | [Crime type](../crime-types.md) 0-14; larger values are ignored. Only type 12 (trespassing) is read back, by the police brain. |
-| 2 | `enabled` | boolean (nil or 0 is false) | true enables the crime type; false disables it. |
+| 1 | `crime` | number, truncated to an integer | [Crime type](../crime-types.md) 0-14; anything else (also a negative number) is ignored. |
+| 2 | `enabled` | boolean (nil or 0 is false) | true enables the crime type; false (or nil) disables it. |
 
 **Returns** nothing.
 
-Enables or disables one crime type (byte at game state + 0x32b + crime).
+Enables or disables one crime type: a byte at game state `+0x32b + crime`. Only type 12 (trespassing) is read back, by
+the police brain (`0x00300910`, `0x00301770`), so in practice this switches whether cops act on trespassing ([AI:
+crimes](../../research/ai.md#crimes)).
 
-- **Evidence:** confirmed (code) at `0x0041da80`; detail: brief
-- **Wrapper** `0x0036bec8` (registered by `RegisterBindings`); **calls** `0x0041da80`
+**Notes.** Disabling another type has no effect: crime reports do not check the byte; what the police brain does
+differently for type 12 is not traced here.
+
+- **Evidence:** confirmed (code) at `0x0041da80`, `0x0041d0d0`; detail: traced
+- **Wrapper** `0x0036bec8` (registered by `RegisterBindings`); **calls** `0x0041da80` `Cfg_EnableCrimeType`,
+  `0x0041d0d0` `GameState_SetCrimeTypeEnabled`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1398,14 +1404,20 @@ CfgMoneyCallback(fn)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `fn` | string | Lua function name called when the player's money changes, or nil. |
+| 1 | `fn` | string | Name of a Lua function (up to 32 characters, copied, not interned) called when a player's money changes, or nil to clear it. |
 
 **Returns** nothing.
 
-Stores the money callback name in the inventory block (0x0041e4f0).
+Stores the money callback's name in the inventory block (game state `+0x480 + 0x1034`). Whenever money (item 2) is added
+to or taken from a player's inventory, Inventory_AddItem calls the function, if it exists, with the player index (0 or
+1) and the signed change in dollars.
 
-- **Evidence:** confirmed (code) at `0x0041ed60`; detail: brief
-- **Wrapper** `0x0036c0c8` (registered by `RegisterBindings`); **calls** `0x0041ed60`
+**Notes.** Called for every change, notify flag or not; the call happens after the count is clamped, but passes the
+requested change, not the clamped one.
+
+- **Evidence:** confirmed (code) at `0x0041ed60`, `0x0041e4f0`, `0x0041e5b0`; detail: traced
+- **Wrapper** `0x0036c0c8` (registered by `RegisterBindings`); **calls** `0x0041ed60` `Cfg_SetMoneyCallback`,
+  `0x0041e4f0` `Inventory_SetMoneyCallback`, `0x0041e5b0` `Inventory_AddItem`
 - **Used by** 6 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1510,17 +1522,19 @@ CfgObjectValueMod(factor)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `factor` | number (single precision) | Multiplier on the money value of stolen or sold objects (1 normal, 0.5 half). |
+| 1 | `factor` | number (single precision) | Multiplier on the cash value of stolen loot (1 full value, 0.5 half); not range-checked. |
 
 **Returns** nothing.
 
-Stores a value multiplier in the game state (+0x380); level scripts set 0.5 or 1.
+Sets the loot value factor (float at game state `+0x380`). When a player, or an AI Warrior for his leader, picks up a
+stolen object, he gains loot item 10 and money (item 2) equal to the object type's value byte (`+0x5a`) times this
+factor, truncated; a beaten player who drops carried loot loses the same amount. Level scripts set 0.5 or 1.
 
-**Notes.** Storage confirmed (code) at 0x0041d618; the money meaning is inferred from the name and the levels that call
-it.
+**Notes.** The factor persists in the game state until set again; with 0 loot is worth nothing.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035a2f8` (registered by `RegisterBindings`); **calls** `0x0041d618`
+- **Evidence:** confirmed (code) at `0x0041d618`, `0x0023bf00`, `0x00232c60`; detail: traced
+- **Wrapper** `0x0035a2f8` (registered by `RegisterBindings`); **calls** `0x0041d618` `GameState_SetObjectValueMod`,
+  `0x0023bf00` `Human_PickUpObject`, `0x00232c60` `Human_DropCarried`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

@@ -16,11 +16,11 @@ read an entry are on the [masterlist](index.md).
 | [`GangBrDead`](#gangbrdead) | - | 76 | no | yes | confirmed (code) |
 | [`GangBrFlush`](#gangbrflush) | - | 35 | yes | yes | confirmed (code) |
 | [`GangCallForHelp`](#gangcallforhelp) | - | 0 | no | no | inferred |
-| [`GangCanFlee`](#gangcanflee) | - | 7 | no | no | inferred |
+| [`GangCanFlee`](#gangcanflee) | - | 7 | no | no | confirmed (code) |
 | [`GangCanSaveAllys`](#gangcansaveallys) | - | 5 | no | no | inferred |
 | [`GangCanUseWorldFlags`](#gangcanuseworldflags) | - | 17 | yes | no | confirmed (code) |
-| [`GangClearBums`](#gangclearbums) | - | 2 | no | no | inferred |
-| [`GangClearHandlers`](#gangclearhandlers) | - | 2 | no | no | inferred |
+| [`GangClearBums`](#gangclearbums) | - | 2 | no | no | confirmed (code) |
+| [`GangClearHandlers`](#gangclearhandlers) | - | 2 | no | no | confirmed (code) |
 | [`GangClearResponders`](#gangclearresponders) | - | 17 | yes | yes | confirmed (code) |
 | [`GangClearWanted`](#gangclearwanted) | - | 11 | yes | yes | confirmed (code) |
 | [`GangCreate`](#gangcreate) | number | 119 | no | yes | confirmed (code) |
@@ -259,15 +259,24 @@ GangCanFlee(gang, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 or an unused slot does nothing. |
-| 2 | `on` | boolean (nil or 0 is false) | true allows the gang's members to run away when beaten; false keeps them fighting. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31, read as 16 bits); -1 or an unused slot does nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true lets the gang's members run away once the gang is beaten down; false (or nil) keeps them fighting. |
 
 **Returns** nothing.
 
-Sets whether the gang may flee (a byte at gang +0xdf).
+Sets the gang's can-flee byte (`+0xdf`). With it set, a gang tactic's start (`0x00307fe0`) notes how many members the
+gang has (`+0xe0`) and, when the gang kind has a flee percentage (table `0x0050caa8`, byte `+0x72` of the kind's
+0x7a-byte record), substitutes `gen_cower_plead.anm` for the members' anim 668. When a member goes down (`0x00307d40`)
+and the members still standing are no more than that percentage of the starting count, each standing member of class
+kind 11 drops his enemies, stops fighting (threat response 0) and is pushed a pedestrian reaction goal (type 0x6b, mode
+9) away from the nearest enemy: he flees.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035f890` (registered by `RegisterBindings`); **calls** `0x0016bcf0`
+**Notes.** A gang kind with a 0 percentage never flees; only members whose class byte +0x11b is 11 run; a gang of kind 6
+with +0xd9 set skips all of this; the default at gang creation is set by 0x00164808.
+
+- **Evidence:** confirmed (code) at `0x0016bcf0`, `0x00307fe0`, `0x00307d40`; detail: traced
+- **Wrapper** `0x0035f890` (registered by `RegisterBindings`); **calls** `0x0016bcf0` `Gang_SetCanFlee`, `0x00307fe0`
+  `GangTactic_StartFlee`, `0x00307d40` `GangTactic_CheckFlee`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -329,13 +338,16 @@ No arguments.
 
 **Returns** nothing.
 
-Removes the bums (homeless characters, character class 6) from the player's gang, so recruited bums leave the player.
+Deletes the bums in player 1's gang: takes the human at game state `+0x228`, walks the 16 member slots of its brain's
+gang (`+0x20c`) and destroys (`0x0021c7c8`) every member whose character class has class byte `+0x11b` = 6, removing him
+from the world, his gang and his formation. From the hub's use, this sends away bums the player recruited.
 
-**Notes.** Looks up the player's human (game state +0x228), takes its gang and releases every member whose class byte
-(+0x11b of its character record) is 6.
+**Notes.** Destroys, does not just release: the handles become invalid; does nothing when there is no player 1; player
+2's gang is not checked.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035f970` (registered by `RegisterBindings`); **calls** `0x0016b8d0`
+- **Evidence:** confirmed (code) at `0x0016b8d0`, `0x0021c7c8`; detail: traced
+- **Wrapper** `0x0035f970` (registered by `RegisterBindings`); **calls** `0x0016b8d0` `Gang_ClearBums`, `0x0021c7c8`
+  `Human_Destroy`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -348,14 +360,20 @@ GangClearHandlers(gang)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 or an unused slot does nothing. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31, read as 16 bits); -1 or an unused slot does nothing. |
 
 **Returns** nothing.
 
-Removes all of the gang's message handlers and the per-member handlers of its current members.
+Removes every Lua message handler of the gang (the 26 slots at `+0xe4` that GangSetMsgHandler fills) and, for each
+current member, all 26 of the human's own script handlers (the set returned by its vtable `+0x3c`), so no script
+callback fires for the gang's or its members' events any more.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00373400` (registered by `RegisterBindings`); **calls** `0x0016ab90`
+**Notes.** Members who join later keep their own handlers; the members' handlers set with SetMsgHandler are cleared too,
+not only those the gang installed.
+
+- **Evidence:** confirmed (code) at `0x0016ab90`, `0x001647e0`, `0x003858b8`; detail: traced
+- **Wrapper** `0x00373400` (registered by `RegisterBindings`); **calls** `0x0016ab90` `Gang_ClearHandlers`, `0x001647e0`
+  `Gang_ClearMsgHandlers`, `0x003858b8` `ScriptHandlers_ClearAll`
 - **Used by** 2 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -599,16 +617,24 @@ GangGoodToGo(gang, ignoreBusy) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31). |
-| 2 | `ignoreBusy` | boolean (nil or 0 is false) | false: also require every member's AI to be free (0x002904a0); true: skip that check. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31, as returned by GangCreate); -1 always answers nil. |
+| 2 | `ignoreBusy` | boolean (nil or 0 is false) | false (or left off): a member whose AI is engaged in a fight also makes the answer nil; true: skip that check. |
 
-**Returns** boolean (1 for true, nil for false): true (1) when no member (bums excepted) is down, hurt or busy; nil
-otherwise or for gang id -1.
+**Returns** boolean (1 for true, nil for false): true (1) when every member is ready; nil otherwise or for gang id -1.
 
-Asks whether every member of the gang is ready to move on, for example before a scripted walk.
+Asks whether the gang's members are free to move on, for example before a scripted walk. Each of the gang's 16 member
+slots that holds a living human is checked, except humans whose character class is a bum: none may be in any of five
+busy states (powered out, attached or held, recovering from a hit, and two more), and unless `ignoreBusy` is true none
+may be engaged in a fight (another human holds one of its attack slots, or its brain has a target).
 
-- **Evidence:** confirmed (code) at `0x0016a4e8`; detail: brief
-- **Wrapper** `0x003736a0` (registered by `RegisterBindings`); **calls** `0x0016a4e8`
+**Notes.** The five state tests are human-record state bits 0x20000 (0x00223b70), 0x800000 or human +0x280 attached
+(0x00227d28), 0x40000 recovery (0x00227dd8), 0x80000000 (0x00227e18) and 0x100000000 (0x00227eb0); the last two are not
+named. The bum exception is character class byte +0x11b = 6 (record 0x684620 + type × 0x1ac). The fight test is
+0x002904a0 (brain attack slots +0x1a4, target +0x124). Empty member slots count as ready, so an empty gang answers true.
+
+- **Evidence:** confirmed (code) at `0x0016a4e8`, `0x00165430`; detail: traced
+- **Wrapper** `0x003736a0` (registered by `RegisterBindings`); **calls** `0x0016a4e8` `Gang_IsGoodToGoById`,
+  `0x00165430` `Gang_AreMembersReady`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -644,16 +670,23 @@ GangIsASpawner(gang, name) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31). |
-| 2 | `name` | string | Spawner name. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 always answers nil. |
+| 2 | `name` | string | Spawner name as given to GangAddSpawner (compared case-sensitively). |
 
-**Returns** boolean (1 for true, nil for false): true (1) when the gang has a spawner in use with this name; nil
-otherwise or for gang id -1.
+**Returns** boolean (1 for true, nil for false): true (1) when one of the gang's four spawners is in use and has this
+name; nil otherwise or for gang id -1.
 
-Asks whether a gang owns a spawner of the given name.
+Asks whether a gang still has an active spawner of the given name, for example to know whether reinforcements can still
+come. The gang's four spawner slots (gang +0x640, 0x130 bytes each) are searched for one in use (+0x50) whose name
+(+0x14) equals `name`.
 
-- **Evidence:** confirmed (code) at `0x0016b618`; detail: brief
-- **Wrapper** `0x00374108` (registered by `RegisterBindings`); **calls** `0x0016b618`
+**Notes.** A spawner stops counting as in use once it has made its total number of humans ([AI:
+spawners](../../research/ai.md#spawners)), so the answer turns false when a spawner is exhausted. Plain strcmp
+(0x00430c4c).
+
+- **Evidence:** confirmed (code) at `0x0016b618`, `0x00168b58`; detail: traced
+- **Wrapper** `0x00374108` (registered by `RegisterBindings`); **calls** `0x0016b618` `Gang_HasSpawnerById`,
+  `0x00168b58` `Gang_HasSpawnerNamed`
 - **Used by** 2 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -783,14 +816,22 @@ GangMakeNeutralOfType(gang, type)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `type` | number, truncated to an integer | Gang type id; every gang in use with this type is affected. |
+| 2 | `type` | number, truncated to an integer | Gang type id (GangCreate's type, gang +0x2c; 0 the Warriors, 1 the police, [Gangs](../gangs.md)); every gang in use of this type is affected. |
 
 **Returns** nothing.
 
-Makes the gang neutral (neither friend nor enemy) towards every existing gang of the given type, both ways.
+Makes the gang neutral towards every gang in use of the given type, both ways: each side's enemy and friend bits for the
+other are cleared, so they neither fight nor help each other. Gangs that are already friends (either way, including
+same-type or allied kinds) are left alone, and so is the gang itself.
 
-- **Evidence:** confirmed (code) at `0x0016ae90`; detail: brief
-- **Wrapper** `0x00373ce0` (registered by `RegisterBindings`); **calls** `0x0016ae90`
+**Notes.** Nothing happens when the gang is not in use. With type 0 the gang's own members, and the members of each
+type-0 gang made neutral when the given gang is itself of type 0, get brain byte +0x290 cleared (0x00169cc8; meaning not
+traced). The callee's third argument (0 here) would also calm the members and set a 3,000 ms timer; that path is not
+used by this binding.
+
+- **Evidence:** confirmed (code) at `0x0016ae90`, `0x0016c470`; detail: traced
+- **Wrapper** `0x00373ce0` (registered by `RegisterBindings`); **calls** `0x0016ae90` `Gang_MakeNeutralOfTypeById`,
+  `0x0016c470` `Gang_MakeNeutralWithType`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

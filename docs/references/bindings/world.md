@@ -256,14 +256,20 @@ CarDestroy(car)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `car` | number, truncated to an unsigned integer | Handle of the car. |
+| 1 | `car` | number, truncated to an unsigned integer | Handle of the car (CarCreate's or a parked car's). |
 
 **Returns** nothing.
 
-Deletes a car (its destroy method, vtable +0x4c).
+Removes a car from the world at once, without an explosion or any effect: its model instance and physics bodies are
+released, its handle freed, it is taken off the task wheel, the objects it owns (its police lights at +0x1210 and the
+object at +0x1204) are released the same way, and the car goes back to the car pool.
 
-- **Evidence:** confirmed (code) at `0x0038dea8`; detail: brief
-- **Wrapper** `0x003784f0` (registered by `RegisterBindings`); **calls** `0x0038dea8` `Car_Destroy`
+**Notes.** Calls the object's virtual slot +0x4c (Car_Release, car vtable 0x00544c08); any other kind of handle gets
+that class's own slot +0x4c (Task_Unschedule in the base), so pass only cars. NilHandle or a stale handle does nothing.
+
+- **Evidence:** confirmed (code) at `0x0038dea8`, `0x00387ad8`; detail: traced
+- **Wrapper** `0x003784f0` (registered by `RegisterBindings`); **calls** `0x0038dea8` `Car_Destroy`, `0x00387ad8`
+  `Car_Release`
 - **Used by** 5 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -737,14 +743,16 @@ FindFlag(name) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Flag name given to `AddFlag`. |
+| 1 | `name` | string | Flag name given to `AddFlag` (compared case-sensitively with the stored 15-character name). |
 
 **Returns** number: Handle of the first flag with that name, or NilHandle.
 
-Looks up a flag by name (linear search over the flags in creation order, case-sensitive strcmp against the stored
-15-character name). Three scripts call it, once each.
+Looks up a world flag by name: a linear search over the flags in creation order, returning the first whose name equals
+`name` (plain strcmp). Three scripts call it, once each.
 
-- **Evidence:** confirmed (code) at `0x00415c48`; detail: brief
+**Notes.** A name longer than the 15 characters a flag keeps never matches. Converted as unsigned.
+
+- **Evidence:** confirmed (code) at `0x00415c48`; detail: traced
 - **Wrapper** `0x0037a770` (registered by `RegisterBindings`); **calls** `0x00415c48` `Flag_FindByName`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -835,9 +843,13 @@ No arguments.
 
 **Returns** nothing.
 
-Empties the flag network: all 128 nodes and their links become NilHandle.
+Empties the flag network that FlagNetAddLink builds: the node count (0x006e9f40) goes to 0, and all 128 nodes' flag and
+four links become NilHandle with their 16-bit field (0x006e9e40) set to 0xffff. The level teardown does the same, so
+scripts need it only to rebuild a network within a level.
 
-- **Evidence:** confirmed (code) at `0x002a7328`; detail: brief
+**Notes.** What happens to humans already walking the network (FlagNetTraverse) is not traced.
+
+- **Evidence:** confirmed (code) at `0x002a7328`; detail: traced
 - **Wrapper** `0x0037ab18` (registered by `RegisterBindings`); **calls** `0x002a7328` `FlagNet_Clear`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -1006,14 +1018,18 @@ GetObjectName(object) -> string
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of a game object (prop, door, pickup ...). |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of a world object (prop, door, pickup...), including an ObjSpawn record handle. |
 
-**Returns** string (nil for none): The object's type name as defined by the object configuration (for example a
-`dyn_...` name), or the string `<null>` when the handle does not resolve to an object.
+**Returns** string (nil for none): The object's type name from the object type table (for example a `dyn_...` name), or
+`<null>` when the handle resolves to nothing or to something that is not a world object (a human, a flag, a car).
 
-Returns the type name of a game object, read from the object type table (type record +0x28).
+Returns the type name of a world object: the type table record (0x00512c04) at the object's type index (+0x112), name at
++0x28. Scripts use it to tell which kind of object a message came from.
 
-- **Evidence:** confirmed (code) at `0x003859f0`; detail: brief
+**Notes.** Resolving an ObjSpawn record handle spawns the object if it is not live ([Objects:
+spawning](../../research/objects.md#spawning)). The world-object check is 0x00395f38.
+
+- **Evidence:** confirmed (code) at `0x003859f0`; detail: traced
 - **Wrapper** `0x0036c9c8` (registered by `RegisterBindings`); **calls** `0x003859f0` `Obj_GetTypeName`
 - **Used by** 8 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 7 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -1321,14 +1337,18 @@ ObjIsAlive(object) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of a game object. |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of any game object (world object, human, car, flag...). |
 
-**Returns** boolean (1 for true, nil for false): True when the handle still resolves to a live object; false (nil) after
-it has been destroyed or for NilHandle.
+**Returns** boolean (1 for true, nil for false): true (1) when the handle resolves to a live object; nil for NilHandle,
+a stale handle (the object destroyed and its slot reused) or a removed spawn record.
 
-Tests whether a game object handle is still valid.
+Tests whether a handle still names an object, for example whether a breakable prop has been destroyed. It works for
+every kind of handle, not only world objects.
 
-- **Evidence:** confirmed (code) at `0x00397598`; detail: brief
+**Notes.** For an ObjSpawn record handle, resolving spawns the object when it is not live, so the call answers true (and
+brings it into the world) unless the record is removed ([Tasks: handles](../../research/tasks.md#handles)).
+
+- **Evidence:** confirmed (code) at `0x00397598`; detail: traced
 - **Wrapper** `0x0036de88` (registered by `RegisterBindings`); **calls** `0x00397598` `Obj_Exists`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -1357,23 +1377,29 @@ Tests whether an object zone is enabled.
 ## ObjMarkZone {#objmarkzone}
 
 ```lua
-ObjMarkZone(zone, kind, mark)
+ObjMarkZone(zone, kind, removed)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `zone` | number, truncated to an unsigned integer | Zone number. |
+| 1 | `zone` | number, truncated to an unsigned integer | Object zone number (the zone ObjSpawn gave the records, [Object zones](../zones.md)). |
 | 2 | `kind` | number, truncated to an integer | Must be 0; any other value makes the call do nothing. |
-| 3 | `mark` | number, truncated to an integer | Non-zero sets the zone's mark, 0 clears it (a second per-zone bit set, 0x003983b0). |
+| 3 | `removed` | number, truncated to an integer | Non-zero marks every record of the zone removed; 0 restores them (the scripts always pass 0). |
 
 **Returns** nothing.
 
-Sets or clears a second per-zone flag in the spawn table; the scripts call it with (zone, 0, 0).
+Marks or unmarks every spawn record of an object zone as removed (record +0x24 bit 0x40000): a removed record is never
+spawned again and its handle resolves to NilHandle. With 0, the zone's records come back, and live objects that were
+stored hidden are stored back into their records (shown again when next spawned). Scripts call `ObjMarkZone(zone, 0, 0)`
+to bring a zone's objects back.
 
-**Notes.** What the mark means (for example 'already visited, do not respawn') is not traced.
+**Notes.** The record bits are on [Objects: spawn records](../../research/objects.md#spawn-records). Unmarking also
+clears the stored-hidden bit 0x100000 and stores (0x00399428) a live record whose object has flag 0x800000. Whether
+marking removes objects already live is not traced. Different from ObjEnableZone, which switches the zone's streaming
+bit.
 
-- **Evidence:** confirmed (code) at `0x003967e0`; detail: brief
-- **Wrapper** `0x00377bd0` (registered by `RegisterBindings`); **calls** `0x003967e0` `ObjZone_Mark`
+- **Evidence:** confirmed (code) at `0x003967e0`, `0x003983b0`; detail: traced
+- **Wrapper** `0x00377bd0` (registered by `RegisterBindings`); **calls** `0x003967e0` `ObjZone_Mark`, `0x003983b0`
 - **Used by** 12 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
@@ -1612,14 +1638,18 @@ OpenDoor(door)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `door` | number, truncated to an unsigned integer | Handle of the door. |
+| 1 | `door` | number, truncated to an unsigned integer | Handle of a swinging door. |
 
 **Returns** nothing.
 
-Opens a door (state command 2): a swinging door that is not pickable swings to 170 degrees with its open sound, and its
-collision goes about half a second later.
+Swings a door open with no one opening it: state command 2 (message 0x22). A door that is not pickable resets its
+leaves, swings to 170 degrees with its open sound, and its collision goes about half a second later; a pickable (locked)
+door ignores it.
 
-- **Evidence:** confirmed (code) at `0x00396ea0`; detail: brief
+**Notes.** The door's side of it: [Objects: door states](../../research/objects.md#door-states). Any object that answers
+message 0x22 receives command 2; NilHandle does nothing.
+
+- **Evidence:** confirmed (code) at `0x00396ea0`; detail: traced
 - **Wrapper** `0x00379ac8` (registered by `RegisterBindings`); **calls** `0x00396ea0` `Door_Open`
 - **Used by** 46 of 467 script chunks (85 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 23 of 28 levels, first [`level95`](story.md#level95) (the hub)
@@ -1638,10 +1668,14 @@ OpenDoorAnimated(object, human)
 
 **Returns** nothing.
 
-Makes a human walk up to and use a door or button with an animation: the human's target becomes the object (0x00227080)
-and it is given action 0x1a (0x002266a8).
+Makes a human use a door or button with an animation: the human's object target becomes the object (0x00227080) and its
+state code becomes 26 (0x002266a8), the door-opening action; the door itself is not sent anything here. This is the same
+path a player's triangle press on a door takes.
 
-- **Evidence:** confirmed (code) at `0x00396fa8`; detail: brief
+**Notes.** Does nothing unless the second handle is a human and the first resolves. What state 26 plays and how it opens
+the door (anim 666, inferred) is not traced ([Objects: opening](../../research/objects.md#opening)).
+
+- **Evidence:** confirmed (code) at `0x00396fa8`; detail: traced
 - **Wrapper** `0x00379b00` (registered by `RegisterBindings`); **calls** `0x00396fa8` `Door_OpenAnimated`
 - **Used by** 6 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level95`](story.md#level95) (the hub)
