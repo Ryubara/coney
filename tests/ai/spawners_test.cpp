@@ -32,8 +32,9 @@ class TestWorld final : public coney::ai::SpawnerWorld {
         made.push_back(request);
         return static_cast<double>(100 + made.size());
     }
-    void spawned(std::string_view callback, double handle) override {
-        callbacks.push_back(std::string(callback) + ":" + std::to_string(static_cast<int>(handle)));
+    void spawned(std::string_view callback, double handle, int gang, std::string_view spawner) override {
+        callbacks.push_back(std::string(callback) + ":" + std::to_string(static_cast<int>(handle)) + ":" +
+                            std::to_string(gang) + ":" + std::string(spawner));
     }
 
     std::optional<coney::anim::Vec3> player = coney::anim::Vec3{0.0F, 0.0F, 0.0F};
@@ -44,12 +45,12 @@ class TestWorld final : public coney::ai::SpawnerWorld {
     std::vector<std::string> callbacks;
 };
 
-// A spawner on gang 3 at (10, 0, 0) making types 5 and 7, at most two alive, 500 ms apart.
+// A spawner on gang 3 at (10, 0, 0) making types 5 and 7 (then a 0 ending the list), at most two alive, 500 ms apart.
 coney::script::SpawnerCall spawnerCall(int state) {
     coney::script::SpawnerCall call;
     call.gang = 3;
     call.name = "ENEMYspawner";
-    call.types = {5, 0, 7, 0, 0, 0, 0, 0, 0, 0};
+    call.types = {5, 7, 0, 0, 0, 0, 0, 0, 0, 0};
     call.model = "warr_sw";
     call.position = {10.0F, 0.0F, 0.0F};
     call.heading = 33;
@@ -72,25 +73,26 @@ TEST_CASE("an on spawner makes a human per delay up to its limit alive, and anot
     spawners.update(0, world);
     REQUIRE(world.made.size() == 1);
     CHECK(world.made[0].name == "ENEMYspawner0");
-    CHECK(world.made[0].type == 5);
+    // The index moves on before the pick, so a new spawner starts with its second type.
+    CHECK(world.made[0].type == 7);
     CHECK(world.made[0].gang == 3);
     CHECK(world.made[0].model == "warr_sw");
     CHECK(world.made[0].heading == 33);
-    CHECK(world.callbacks == std::vector<std::string>{"CreateENEMY:101"});
+    CHECK(world.callbacks == std::vector<std::string>{"CreateENEMY:101:3:ENEMYspawner"});
 
-    // Not before the delay; then the next type of the list.
+    // Not before the delay; then the next type of the list, back to the first at the 0.
     spawners.update(400, world);
     CHECK(world.made.size() == 1);
     spawners.update(500, world);
     REQUIRE(world.made.size() == 2);
-    CHECK(world.made[1].type == 7);
+    CHECK(world.made[1].type == 5);
     // Two alive: no third until one is down.
     spawners.update(2000, world);
     CHECK(world.made.size() == 2);
     world.dead.insert(101.0);
     spawners.update(2100, world);
     REQUIRE(world.made.size() == 3);
-    CHECK(world.made[2].type == 5);
+    CHECK(world.made[2].type == 7);
     CHECK(world.made[2].name == "ENEMYspawner2");
 }
 
@@ -201,4 +203,21 @@ TEST_CASE("the out-of-sight spot is an unseen one nearest the distance, the best
     CHECK(coney::ai::outOfSightSpot(far, player, view, 15.0F, 0) == coney::anim::Vec3{0.0F, 200.0F, 0.0F});
     const std::vector<coney::anim::Vec3> seenOnly{{0.0F, 20.0F, 0.0F}};
     CHECK_FALSE(coney::ai::outOfSightSpot(seenOnly, player, view, 15.0F, 0).has_value());
+}
+
+TEST_CASE("a spawner whose second type is 0 makes its first type every time", "[ai][spawners]") {
+    coney::ai::Spawners spawners;
+    coney::script::SpawnerCall call = spawnerCall(1);
+    call.types = {5, 0, 7, 0, 0, 0, 0, 0, 0, 0};
+    call.maxConcurrent = 3;
+    spawners.add(call);
+    TestWorld world;
+    spawners.update(0, world);
+    spawners.update(500, world);
+    spawners.update(1000, world);
+    REQUIRE(world.made.size() == 3);
+    // The 0 ends the list, so the 7 after it is never reached.
+    for (const coney::ai::SpawnRequest& request : world.made) {
+        CHECK(request.type == 5);
+    }
 }

@@ -1471,6 +1471,12 @@ subsystem = "GameModes"
 size = 672
 
 [[function]]
+address = 0x0016d810
+name = "Gang_SpawnerNextType"
+subsystem = "GameModes"
+size = 80
+
+[[function]]
 address = 0x0016e258
 name = "CharacterData_OnLoaded"
 subsystem = "GameModes"

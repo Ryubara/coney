@@ -68,8 +68,9 @@ class SpawnerWorld {
     [[nodiscard]] virtual bool alive(double handle) const = 0;
     /// Makes the human and returns its handle; 0 (NilHandle) when none was made.
     virtual double spawn(const SpawnRequest& request) = 0;
-    /// Calls the Lua function `callback` with the new human's handle.
-    virtual void spawned(std::string_view callback, double handle) = 0;
+    /// Calls the Lua function `callback` (a dotted or `:` name) with the new human's handle, the gang's id and the
+    /// spawner's name, when it names a function.
+    virtual void spawned(std::string_view callback, double handle, int gang, std::string_view spawner) = 0;
 
   protected:
     SpawnerWorld(SpawnerWorld&&) = default;
@@ -103,7 +104,7 @@ struct Spawner {
     std::uint64_t nextSpawnMs = 0; ///< `+0x64`: the earliest game time of the next spawn.
     std::uint64_t deadlineMs = 0;  ///< `+0x7c`: state 2's deadline.
     std::vector<double> humans;    ///< The handles of the humans it made that may still be alive.
-    std::size_t nextType = 0;      ///< The next entry of the type list to make (Coney stand-in, see pickType()).
+    std::size_t typeIndex = 0;     ///< `+0x4c`: the type list's entry made last (0 for a new spawner).
 };
 
 /// The level's spawners, by gang.
@@ -130,7 +131,9 @@ class Spawners {
   private:
     // Whether `spawner`'s state lets it spawn now (the update's first step).
     [[nodiscard]] static bool ready(const Spawner& spawner, std::uint64_t nowMs, const SpawnerWorld& world);
-    // The next character type of the spawner's list (0 when the list is empty).
+    // The next character type of the spawner's list: the index moves on first, back to 0 at the list's end or at an
+    // entry of 0.
+    // @orig 0x0016d810 Gang_SpawnerNextType (unknown)
     [[nodiscard]] static int pickType(Spawner& spawner);
     // Makes one human from `spawner`, counts it and calls its callback.
     void spawnOne(Spawner& spawner, std::uint64_t nowMs, SpawnerWorld& world);

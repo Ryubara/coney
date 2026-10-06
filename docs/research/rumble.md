@@ -381,7 +381,7 @@ lengths; the result lines' look and the grids' rows; the melee and confront goal
 test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
 brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
 scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight; a knock-out without its clips
-or its wake-up after 14 s; the spawners' type pick and out-of-sight placement (the original's are on
+or its wake-up after 14 s; the spawners' out-of-sight placement (the original's is on
 [AI: spawners](ai.md#spawner-placement)); the engage goal's range; the wheelchair's clips and the give-way action.
 
 ## Open questions {#open-questions}

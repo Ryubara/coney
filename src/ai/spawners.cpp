@@ -149,17 +149,13 @@ bool Spawners::ready(const Spawner& spawner, std::uint64_t nowMs, const SpawnerW
 }
 
 int Spawners::pickType(Spawner& spawner) {
-    // Coney stand-in: how the original picks from the list is not on the page; Coney takes the non-zero entries in
-    // turn, which keeps a run deterministic.
+    // The index is not reset by GangAddSpawner, so a new spawner takes its second type first when it has one.
     const auto& types = spawner.call.types;
-    for (std::size_t tried = 0; tried < types.size(); ++tried) {
-        const std::size_t at = (spawner.nextType + tried) % types.size();
-        if (types[at] != 0) {
-            spawner.nextType = at + 1;
-            return types[at];
-        }
+    ++spawner.typeIndex;
+    if (spawner.typeIndex >= types.size() || types.at(spawner.typeIndex) == 0) {
+        spawner.typeIndex = 0;
     }
-    return 0;
+    return types.at(spawner.typeIndex);
 }
 
 void Spawners::spawnOne(Spawner& spawner, std::uint64_t nowMs, SpawnerWorld& world) {
@@ -194,7 +190,7 @@ void Spawners::spawnOne(Spawner& spawner, std::uint64_t nowMs, SpawnerWorld& wor
         spawner.inUse = false;
     }
     if (!spawner.call.callback.empty()) {
-        world.spawned(spawner.call.callback, handle);
+        world.spawned(spawner.call.callback, handle, spawner.call.gang, spawner.call.name);
     }
 }
 

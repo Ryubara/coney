@@ -99,8 +99,13 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return made->front().number().value_or(0.0);
     }
 
-    void spawned(std::string_view callback, double handle) override {
-        const std::array<script::Value, 1> args{script::Value(handle)};
+    void spawned(std::string_view callback, double handle, int gang, std::string_view spawner) override {
+        // A name that is not a function calls nothing, without a message (0x0016d860 checks before it calls).
+        if (!m_scripts->hasFunction(callback)) {
+            return;
+        }
+        const std::array<script::Value, 3> args{script::Value(handle), script::Value(static_cast<double>(gang)),
+                                                script::Value(std::string(spawner))};
         m_scripts->call(callback, args);
     }
 

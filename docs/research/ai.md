@@ -1509,8 +1509,9 @@ non-police gangs named `Responder<n>`. `BrSetThugWantsWeapon` and `SetInterrogat
 state is ready (1, 6, 7, 8 and 10 always; 2 past its deadline; 3 and 5 by player 1's distance, taken in 3D) makes a
 human once its delay has passed, while fewer of its humans are alive than its limit and it has not made its total
 (-1 none). The human is made through the scripts' own `HuCreate` (named `<spawner><count>`, the spawner's model string
-as the fifth argument, in its gang), then the callback is called with its handle. **Stand-ins**: the types are taken in
-turn from the list (the pick is not traced); 6, 7, 8 and 10 place the human on a level flag out of the camera's view
+as the fifth argument, in its gang), of the next type in turn (the index moved on first, as `0x0016d810` does), then
+the callback, when it names a function, is called with its handle, the gang's id and the spawner's name.
+**Stand-ins**: 6, 7, 8 and 10 place the human on a level flag out of the camera's view
 (its cone and far clip) whose distance from the player is nearest the value (7: nearest the player), the best four in
 turn, since `0x001673b8` is not on the page; the others at the spawner; no door opens; 7 does not send its human to the
 gang's first live member; the dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept)

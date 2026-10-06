@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.2% of the game's own code (443,484 of 3,354,776 bytes, 1,358 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.2% of the game's own code (443,564 of 3,354,776 bytes, 1,359 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -59,7 +59,7 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `██▋░░░░░░░░░░░░░░░░░` | 13.0% | 7 | 7,120 |
-| `GameModes` | `█████▉░░░░░░░░░░░░░░` | 29.5% | 88 | 100,440 |
+| `GameModes` | `█████▉░░░░░░░░░░░░░░` | 29.6% | 89 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
 | `Human` | `██▌░░░░░░░░░░░░░░░░░` | 12.3% | 406 | 1,096,672 |
@@ -365,6 +365,7 @@ at the top of the repository's `README.md`.
 | `0x0016be30` | `Gang_CanUseWorldFlags` | `GameModes` | not filled in |
 | `0x0016cdf0` | `Gang_Create` | `GameModes` | 632 |
 | `0x0016d170` | `Gangs_Update` | `GameModes` | 672 |
+| `0x0016d810` | `Gang_SpawnerNextType` | `GameModes` | 80 |
 | `0x0016e258` | `CharacterData_OnLoaded` | `GameModes` | 304 |
 | `0x0016e8f0` | `ResourceManager_LoadCharacterData` | `Graphics` | 304 |
 | `0x00174320` | `HumanRender_Draw` | `Graphics` | 2,008 |
