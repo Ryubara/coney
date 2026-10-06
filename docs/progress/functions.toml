@@ -127,6 +127,11 @@ name = "GaitBlend_Sample"
 subsystem = "Animation"
 
 [[function]]
+address = 0x0010fb20
+name = "SoundPauseSound"
+subsystem = "Audio"
+
+[[function]]
 address = 0x001254f0
 name = "Cam_Follow_StepZoom"
 subsystem = "Camera"

@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% of the game's own code (245,020 of 3,354,776 bytes, 582 functions) |
+| **Reimplemented** | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% of the game's own code (245,020 of 3,354,776 bytes, 583 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-120 reimplemented function(s) have no size yet and add no bytes.
+121 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -53,7 +53,7 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `█████▍░░░░░░░░░░░░░░` | 26.9% | 20 | 54,616 |
-| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 57,368 |
+| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 57,368 |
 | `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 12 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -124,6 +124,7 @@ at the top of the repository's `README.md`.
 | `0x0010a558` | `GaitBlend_SetValue` | `Animation` | not filled in |
 | `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
 | `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
+| `0x0010fb20` | `SoundPauseSound` | `Audio` | not filled in |
 | `0x001254f0` | `Cam_Follow_StepZoom` | `Camera` | 152 |
 | `0x00126a30` | `Cam_Follow_EnableSprintZoom` | `Camera` | 56 |
 | `0x00127d88` | `Cam_Follow_LookAt` | `Camera` | 1,296 |

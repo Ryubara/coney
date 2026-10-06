@@ -111,6 +111,10 @@ void Mixer::setPitch(VoiceHandle voice, float pitch) { sendVoice(CommandKind::Pi
 
 void Mixer::setPaused(VoiceHandle voice, bool paused) { sendVoice(CommandKind::Pause, voice, 0.0F, paused); }
 
+void Mixer::pauseAll() { send(Command{.kind = CommandKind::PauseAll}); }
+
+void Mixer::resumeAll() { send(Command{.kind = CommandKind::ResumeAll}); }
+
 void Mixer::setBusVolume(Bus bus, float volume) {
     const float clamped = clampFinite(volume, 0.0F, 1.0F);
     m_busVolume.at(static_cast<std::size_t>(bus)) = clamped;
@@ -191,6 +195,16 @@ void Mixer::apply(const Command& command) {
             endVoice(slot);
         }
         return;
+    // The queue keeps the game thread's order, so a voice played after pauseAll() is not active yet here and is
+    // not caught.
+    case CommandKind::PauseAll:
+    case CommandKind::ResumeAll:
+        for (Voice& voice : m_voices) {
+            if (voice.active) {
+                voice.pausedByAll = command.kind == CommandKind::PauseAll;
+            }
+        }
+        return;
     case CommandKind::BusVolume:
         m_mixBusVolume.at(static_cast<std::size_t>(command.bus)) = command.value;
         for (Voice& voice : m_voices) {
@@ -259,6 +273,7 @@ void Mixer::startVoice(const Command& command) {
     voice.priority = command.params.priority;
     voice.startOrder = m_startOrder++;
     voice.paused = command.params.paused;
+    voice.pausedByAll = false;
     voice.volume = clampFinite(command.params.volume, 0.0F, 1.0F);
     voice.pan = clampFinite(command.params.pan, -1.0F, 1.0F);
     voice.pitch = clampFinite(command.params.pitch, kMinPitch, kMaxPitch);
@@ -374,7 +389,7 @@ void Mixer::mix(std::span<std::int16_t> out) {
         std::fill_n(m_accumulator.begin(), count * kChannels, 0);
         for (std::size_t slot = 0; slot < m_voices.size(); ++slot) {
             Voice& voice = m_voices.at(slot);
-            if (voice.active && !voice.paused) {
+            if (voice.active && !voice.paused && !voice.pausedByAll) {
                 render(voice, slot, count);
             }
         }

@@ -45,6 +45,10 @@ class SoundPlayer {
     VoiceHandle play(std::string_view name, const VoiceParams& params = {}) { return play(soundIdOf(name), params); }
     /// Stops a voice play() started.
     void stop(VoiceHandle voice) { m_mixer.stop(voice); }
+    /// Pauses every sound playing now, music included; sounds played afterwards play (Mixer::pauseAll()).
+    void pauseAll() { m_mixer.pauseAll(); }
+    /// Resumes the sounds pauseAll() paused (Mixer::resumeAll()).
+    void resumeAll() { m_mixer.resumeAll(); }
     /// Whether that voice is still playing.
     [[nodiscard]] bool isPlaying(VoiceHandle voice) const { return m_mixer.isPlaying(voice); }
     /// Sets the volume of `bus` (0 to 1).

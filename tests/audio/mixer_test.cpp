@@ -201,6 +201,22 @@ TEST_CASE("a paused voice holds its place and resumes from it", "[audio]") {
     CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{2, 2});
 }
 
+TEST_CASE("pauseAll holds the voices playing then, plays later ones, and resumeAll frees only those", "[audio]") {
+    Mixer mixer;
+    const auto before = mixer.play(soundOf({1, 2, 3, 4}));
+    const auto pausedAlone = mixer.play(constant(1000), VoiceParams{.paused = true});
+    CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{1, 1});
+    // The pause menu's cue, played while everything else is held.
+    mixer.pauseAll();
+    const auto cue = mixer.play(soundOf({10, 20, 30, 40}));
+    CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{10, 10});
+    CHECK(mixer.isPlaying(before));
+    mixer.resumeAll();
+    CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{22, 22});
+    CHECK(mixer.isPlaying(cue));
+    CHECK(mixer.isPlaying(pausedAlone));
+}
+
 TEST_CASE("with every voice busy, a play steals the lowest priority, oldest first, or is dropped", "[audio]") {
     Mixer mixer;
     const auto looping = soundOf({100, 100}, 1, kOutputRate, LoopPoints{.start = 0, .end = 2});

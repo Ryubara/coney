@@ -95,6 +95,14 @@ class Mixer {
     void setPitch(VoiceHandle voice, float pitch);
     /// Pauses a voice where it is, or resumes it.
     void setPaused(VoiceHandle voice, bool paused);
+    /// Pauses every voice playing now where it is, remembering which, as the pause mode does on entry; voices started
+    /// afterwards (the pause menu's sounds) play normally. A second call adds the voices started since.
+    /// Resuming is the same function's other half (0x0010fb68), resumeAll().
+    /// @orig 0x0010fb20 SoundPauseSound (unknown)
+    /// Research: docs/research/sound.md#volumes-and-the-options, docs/research/pause.md#pausing
+    void pauseAll();
+    /// Resumes exactly the voices pauseAll() paused; one paused on its own with setPaused() stays paused.
+    void resumeAll();
     /// Sets the volume of `bus` (0 to 1), for every voice on it.
     void setBusVolume(Bus bus, float volume);
     /// The volume last set for `bus` (1 at the start).
@@ -124,7 +132,19 @@ class Mixer {
 
   private:
     // What a command asks the mix thread to do.
-    enum class CommandKind : std::uint8_t { Play, Stop, StopAll, Volume, Pan, Pitch, Pause, BusVolume, MasterVolume };
+    enum class CommandKind : std::uint8_t {
+        Play,
+        Stop,
+        StopAll,
+        Volume,
+        Pan,
+        Pitch,
+        Pause,
+        PauseAll,
+        ResumeAll,
+        BusVolume,
+        MasterVolume
+    };
 
     // One command from the game thread. Plain data: the pointers stay valid through m_held.
     struct Command {
@@ -157,6 +177,7 @@ class Mixer {
         std::uint8_t priority = 0;
         std::uint64_t startOrder = 0;
         bool paused = false;
+        bool pausedByAll = false; // by pauseAll(), apart from paused so resumeAll() leaves setPaused() alone
         float volume = 1.0F;
         float pan = 0.0F;
         float pitch = 1.0F;
