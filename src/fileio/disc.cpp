@@ -28,7 +28,29 @@ std::uint16_t loadU16Le(std::span<const std::byte> bytes, std::size_t at) {
     return static_cast<std::uint16_t>(static_cast<unsigned>(bytes[at]) | (static_cast<unsigned>(bytes[at + 1]) << 8));
 }
 
+// The files of the ISO 9660 directory of `size` bytes at sector `extent`, and its folders into `folders` when that is
+// not null. Fails as readIsoRoot() does.
+std::expected<std::vector<IsoFile>, Error> readIsoDirectory(Stream& image, std::uint32_t extent, std::uint32_t size,
+                                                            std::vector<IsoFile>* folders);
+
 } // namespace
+
+void Disc::addFolderFiles(const std::filesystem::path& folder, const std::string& prefix,
+                          std::map<std::string, Location, std::less<>>& files, std::error_code& ec) {
+    // increment(ec) rather than a range-for: the iterator's operator++ reports errors by throwing.
+    for (std::filesystem::directory_iterator it(folder, ec), end; !ec && it != end; it.increment(ec)) {
+        std::error_code fileEc;
+        if (!it->is_regular_file(fileEc)) {
+            continue;
+        }
+        const std::uintmax_t size = it->file_size(fileEc);
+        if (fileEc) {
+            continue;
+        }
+        const std::u8string leaf = it->path().filename().u8string();
+        files.emplace(prefix + cleanDiscName(std::string(leaf.begin(), leaf.end())), Location{it->path(), 0, size});
+    }
+}
 
 std::string cleanDiscName(std::string_view name) {
     std::string clean(name.substr(0, name.find(';')));
@@ -36,7 +58,9 @@ std::string cleanDiscName(std::string_view name) {
         clean.pop_back();
     }
     for (char& c : clean) {
-        if (c >= 'a' && c <= 'z') {
+        if (c == '\\') {
+            c = '/';
+        } else if (c >= 'a' && c <= 'z') {
             c = static_cast<char>(c - 'a' + 'A');
         }
     }
@@ -63,24 +87,44 @@ std::expected<std::vector<IsoFile>, Error> readIsoRoot(Stream& image) {
     if (loadU16Le(pvd, kBlockSizeOffset) != kIsoSectorSize) {
         return fail(ErrorCode::Invalid, "unsupported ISO logical block size (only 2048-byte sectors)");
     }
-    // Find the root directory's extent and read all of it.
+    // Read the root directory, then each folder directly below it, whose files are named `FOLDER/FILE`.
     const auto root = std::span<const std::byte>(pvd).subspan(kRootRecordOffset, kMinRecordLength);
-    const std::uint32_t rootExtent = loadU32Le(root.subspan(2, 4));
-    const std::uint32_t rootSize = loadU32Le(root.subspan(10, 4));
-
-    const std::uint64_t rootStart = std::uint64_t{rootExtent} * kIsoSectorSize;
-    if (rootStart > image.size() || rootSize > image.size() - rootStart) {
-        return fail(ErrorCode::Truncated, "the root directory is cut off (image truncated?)");
+    std::vector<IsoFile> folders;
+    auto files = readIsoDirectory(image, loadU32Le(root.subspan(2, 4)), loadU32Le(root.subspan(10, 4)), &folders);
+    if (!files) {
+        return files;
     }
-    std::vector<std::byte> directory(rootSize);
-    if (auto moved = image.seek(rootStart); !moved) {
+    for (const IsoFile& folder : folders) {
+        // A folder past the end of a cut-down image: its files are simply not there.
+        auto inner = readIsoDirectory(image, folder.extent, folder.size, nullptr);
+        if (!inner) {
+            continue;
+        }
+        for (IsoFile& file : *inner) {
+            file.name = folder.name + "/" + file.name;
+            files->push_back(std::move(file));
+        }
+    }
+    return files;
+}
+
+namespace {
+
+std::expected<std::vector<IsoFile>, Error> readIsoDirectory(Stream& image, std::uint32_t extent, std::uint32_t size,
+                                                            std::vector<IsoFile>* folders) {
+    const std::uint64_t start = std::uint64_t{extent} * kIsoSectorSize;
+    if (start > image.size() || size > image.size() - start) {
+        return fail(ErrorCode::Truncated, "a directory is cut off (image truncated?)");
+    }
+    std::vector<std::byte> directory(size);
+    if (auto moved = image.seek(start); !moved) {
         return std::unexpected(std::move(moved.error()));
     }
     if (auto done = image.read(directory); !done) {
         return std::unexpected(std::move(done.error()));
     }
 
-    // Walk its records, keeping the files.
+    // Walk its records, keeping the files (and the folders, when asked).
     std::vector<IsoFile> files;
     std::size_t pos = 0;
     while (pos < directory.size()) {
@@ -91,52 +135,56 @@ std::expected<std::vector<IsoFile>, Error> readIsoRoot(Stream& image) {
             continue;
         }
         if (length < kMinRecordLength || length > directory.size() - pos) {
-            return fail(ErrorCode::Invalid,
-                        std::format("damaged directory record at byte {} of the root directory", pos));
+            return fail(ErrorCode::Invalid, std::format("damaged directory record at byte {} of a directory", pos));
         }
         const auto record = std::span<const std::byte>(directory).subspan(pos, length);
         pos += length;
         const auto nameLength = static_cast<std::size_t>(record[32]);
         if (33 + nameLength > length) {
             return fail(ErrorCode::Invalid,
-                        std::format("damaged directory record at byte {} of the root directory", pos - length));
+                        std::format("damaged directory record at byte {} of a directory", pos - length));
         }
         const auto flags = static_cast<std::uint8_t>(record[25]);
         std::string name;
         for (const std::byte b : record.subspan(33, nameLength)) {
             name.push_back(static_cast<char>(b));
         }
-        // Skip directories, and the "." and ".." records, whose one-byte names are 0 and 1.
-        if ((flags & kDirectoryFlag) != 0 || name == std::string_view("\0", 1) || name == "\x01") {
+        // Skip the "." and ".." records, whose one-byte names are 0 and 1.
+        if (name == std::string_view("\0", 1) || name == "\x01") {
             continue;
         }
-        files.push_back(
-            IsoFile{cleanDiscName(name), loadU32Le(record.subspan(2, 4)), loadU32Le(record.subspan(10, 4))});
+        IsoFile entry{cleanDiscName(name), loadU32Le(record.subspan(2, 4)), loadU32Le(record.subspan(10, 4))};
+        if ((flags & kDirectoryFlag) == 0) {
+            files.push_back(std::move(entry));
+        } else if (folders != nullptr) {
+            folders->push_back(std::move(entry));
+        }
     }
     return files;
 }
+
+} // namespace
 
 std::expected<Disc, Error> Disc::open(const std::filesystem::path& path) {
     Disc disc;
     disc.m_path = path;
     std::error_code ec;
-    // A folder: every regular file directly inside it is a root file.
+    // A folder: every regular file directly inside it is a root file, and one inside a folder below it is
+    // `FOLDER/FILE`, as on the disc (`IOP/BFW.SND`).
     if (std::filesystem::is_directory(path, ec)) {
-        // increment(ec) rather than a range-for: the iterator's operator++ reports errors by throwing.
+        addFolderFiles(path, {}, disc.m_files, ec);
+        if (ec) {
+            return fail(ErrorCode::Io, std::format("{}: cannot list the folder ({})", path.string(), ec.message()));
+        }
         for (std::filesystem::directory_iterator it(path, ec), end; !ec && it != end; it.increment(ec)) {
-            std::error_code fileEc;
-            if (!it->is_regular_file(fileEc)) {
-                continue;
-            }
-            const std::uintmax_t size = it->file_size(fileEc);
-            if (fileEc) {
+            std::error_code folderEc;
+            if (!it->is_directory(folderEc)) {
                 continue;
             }
             const std::u8string leaf = it->path().filename().u8string();
-            disc.m_files.emplace(cleanDiscName(std::string(leaf.begin(), leaf.end())), Location{it->path(), 0, size});
-        }
-        if (ec) {
-            return fail(ErrorCode::Io, std::format("{}: cannot list the folder ({})", path.string(), ec.message()));
+            // A folder that cannot be listed (a system folder of a mounted disc) simply adds nothing.
+            addFolderFiles(it->path(), cleanDiscName(std::string(leaf.begin(), leaf.end())) + "/", disc.m_files,
+                           folderEc);
         }
         return disc;
     }

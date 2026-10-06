@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -109,6 +110,9 @@ class TempDir {
     /// Writes `bytes` to `name` inside the folder and returns the file's path.
     std::filesystem::path write(std::string_view name, std::span<const std::byte> bytes) const {
         const auto file = m_path / name;
+        // A name with a folder in it (`IOP/BFW.SND`) makes the folder first.
+        std::error_code ec;
+        std::filesystem::create_directories(file.parent_path(), ec);
         std::ofstream out(file, std::ios::binary);
         out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
         REQUIRE(out.good());
@@ -131,7 +135,8 @@ struct IsoFixtureFile {
 };
 
 /// Builds a minimal ISO 9660 image: the primary volume descriptor at sector 16, a root directory at sector 18 holding
-/// "." and ".." records, one subdirectory record and `files`, and each file's data from sector 20 on.
+/// "." and ".." records, one subdirectory (`SUBDIR`, at sector 19) and
+/// `files`, and each file's data from sector 20 on. A file named `SUBDIR/NAME;1` goes into the subdirectory.
 inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> files) {
     constexpr std::uint32_t kSector = 2048;
     constexpr std::uint32_t kRootSector = 18;
@@ -155,14 +160,25 @@ inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> fil
         dir.padTo(start + length);
     };
 
-    // The root directory: ".", "..", a subdirectory the reader must skip, then one record per file.
+    // The root directory: ".", "..", the subdirectory, then one record per file; the subdirectory: ".", "..", then
+    // its files.
+    constexpr std::string_view kSubdir = "SUBDIR/";
+    constexpr std::uint32_t kSubdirSector = 19;
     Bytes dir;
     record(dir, kRootSector, kSector, 2, std::string_view("\0", 1));
     record(dir, kRootSector, kSector, 2, "\x01");
-    record(dir, 19, kSector, 2, "SUBDIR");
+    record(dir, kSubdirSector, kSector, 2, "SUBDIR");
+    Bytes subdir;
+    record(subdir, kSubdirSector, kSector, 2, std::string_view("\0", 1));
+    record(subdir, kRootSector, kSector, 2, "\x01");
     std::uint32_t sector = kFirstFileSector;
     for (const IsoFixtureFile& file : files) {
-        record(dir, sector, static_cast<std::uint32_t>(file.data.size()), 0, file.name);
+        const auto size = static_cast<std::uint32_t>(file.data.size());
+        if (file.name.starts_with(kSubdir)) {
+            record(subdir, sector, size, 0, std::string_view(file.name).substr(kSubdir.size()));
+        } else {
+            record(dir, sector, size, 0, file.name);
+        }
         sector += static_cast<std::uint32_t>((file.data.size() + kSector - 1) / kSector);
     }
 
@@ -180,6 +196,8 @@ inline std::vector<std::byte> buildIso(std::initializer_list<IsoFixtureFile> fil
     image.append(root.span());
     image.padTo(std::size_t{kRootSector} * kSector);
     image.append(dir.span());
+    image.padTo(std::size_t{19} * kSector);
+    image.append(subdir.span());
     image.padTo(std::size_t{kFirstFileSector} * kSector);
     for (const IsoFixtureFile& file : files) {
         image.append(file.data);

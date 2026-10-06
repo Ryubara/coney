@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 #include "core/error.h"
@@ -27,15 +28,18 @@ struct IsoFile {
     std::uint32_t size;   ///< Size in bytes.
 };
 
-/// Reads the primary volume descriptor (sector 16) and the root directory of an ISO 9660 image. Subdirectories are
-/// listed by neither name nor content: the game's files all sit in the root (docs/research/formats/wad-dir.md).
+/// Reads the primary volume descriptor (sector 16), the root directory of an ISO 9660 image and each folder directly
+/// below it: the game's files sit in the root (docs/research/formats/wad-dir.md) but for the streamed sound and music
+/// in `IOP/` (docs/research/formats/audio.md#bfw-snd). A folder's files are named `FOLDER/FILE`; deeper folders are
+/// not read, and a folder that is cut off is skipped.
 ///
 /// Fails with ErrorCode::Invalid when `image` is not an ISO 9660 image with 2048-byte sectors or a directory record
 /// is damaged, and ErrorCode::Truncated when the root directory runs past the end of the image.
 [[nodiscard]] std::expected<std::vector<IsoFile>, Error> readIsoRoot(Stream& image);
 
 /// The player's disc: a folder (a mounted disc such as `H:\`, or a copy of its files) or an ISO 9660 image. Files are
-/// found in its root by name, ignoring letter case, as `coney-tools` does (python/src/coney_tools/disc.py).
+/// found in its root by name, ignoring letter case, and in a folder directly below it as `FOLDER/FILE` (`IOP/BFW.SND`),
+/// as `coney-tools` does (python/src/coney_tools/disc.py).
 ///
 /// It replaces the original's `cdrom0:` device: the game opens `cdrom0:\WARRIORS.DIR;1` and `cdrom0:\WARRIORS.WAD;1`
 /// at boot (docs/research/file-io.md#opening-the-wad-at-boot).
@@ -73,6 +77,10 @@ class Disc {
         std::uint64_t size = 0;
     };
 
+    /// Adds the regular files directly inside the host folder `folder` to `files`, each keyed by `prefix` and its
+    /// cleaned name; `ec` reports a folder that cannot be listed.
+    static void addFolderFiles(const std::filesystem::path& folder, const std::string& prefix,
+                               std::map<std::string, Location, std::less<>>& files, std::error_code& ec);
     /// The location of the root file `name`, matched by cleanDiscName(); nullptr when there is none.
     [[nodiscard]] const Location* find(std::string_view name) const;
 
@@ -81,7 +89,8 @@ class Disc {
     std::map<std::string, Location, std::less<>> m_files; ///< Keyed by cleanDiscName().
 };
 
-/// The key a root file is found by: upper case, without an ISO `;1` version suffix or a trailing dot.
+/// The key a file is found by: upper case, without an ISO `;1` version suffix or a trailing dot, a backslash between a
+/// folder and its file written `/`.
 [[nodiscard]] std::string cleanDiscName(std::string_view name);
 
 } // namespace coney::io

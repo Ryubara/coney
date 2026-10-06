@@ -67,6 +67,24 @@ TEST_CASE("an ISO image's root directory is read", "[disc]") {
     CHECK(disc->readFile("OTHER.BIN") == payload(5, 9));
 }
 
+TEST_CASE("a file in a folder below the root is found as FOLDER/FILE, on an image and in a folder", "[disc]") {
+    TempDir dir;
+    const auto image = coney::test::buildIso({{"A.BIN;1", payload(4, 1)}, {"SUBDIR/BFW.SND;1", payload(2100, 5)}});
+    auto iso = Disc::open(dir.write("game.iso", image));
+    REQUIRE(iso.has_value());
+    CHECK(iso->has("subdir/bfw.snd"));
+    CHECK(iso->has("SUBDIR\\BFW.SND;1"));
+    CHECK_FALSE(iso->has("BFW.SND"));
+    CHECK(iso->readFile("SUBDIR/BFW.SND") == payload(2100, 5));
+
+    TempDir folder;
+    folder.write("Iop/Bfw.snd", payload(30, 2));
+    auto disc = Disc::open(folder.path());
+    REQUIRE(disc.has_value());
+    CHECK(disc->has("IOP/BFW.SND"));
+    CHECK(disc->readFile("iop/bfw.snd") == payload(30, 2));
+}
+
 TEST_CASE("a file that is not an ISO image is refused", "[disc]") {
     TempDir dir;
     const auto path = dir.write("junk.iso", payload(40000, 3));
