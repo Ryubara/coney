@@ -46,6 +46,7 @@ the profile-manager screens, in a file not yet named ([Source map](source-map.md
 | `0x001a1008` / `0x001a1138` | `HudBar_Setup` / `HudBar_Draw` | the meter used for rage (and the mini-game bars) | confirmed (code) |
 | `0x001b6c50` | `HudCounter_Setup` | icon plus number (the item counters) | confirmed (code) |
 | `0x001cdc80` | `HintBox_Update` | `TutorialHUD.cpp`; the box at HUD `+0x8a10` (`0x00609250`) | confirmed (code) |
+| `0x001ce9a8` | `Tutorial_CallCallback` | calls the `HUDSetTutorialCallback` function on each player-1 hit ([Tutorial callback](#tutorial-callback)) | confirmed (code) |
 | `0x001c8b08` / `0x001c9028` | `ScrollIn_Queue` / `ScrollIn_Update` | queued messages at HUD `+0x8dd0` | confirmed (code) |
 | `0x001dad88` | `HUD_SetObjective` | `HUDSetObjective` | confirmed (code) |
 | `0x001b7330` | `InstArrow_Update` | the instruction arrow at HUD `+0x134a0` | confirmed (code) |
@@ -318,6 +319,25 @@ The hint box (`TutorialHUD.cpp`, HUD `+0x8a10`) shows one queued hint at a time 
 when it is free it takes the next hint, sets the text with the style `0x0050ebd8` (one player) or `0x0050ebd0`, plays
 interface cue `0x15`, and lays out the box ([layout](#hint-box-layout-0x0050eb50)). It is hidden while a scroll-in
 message or an announcement shows. Confirmed (code) at `0x001cdc80`, `0x001b1688`; seen at runtime.
+
+### The tutorial callback (`HUDSetTutorialCallback`) {#tutorial-callback}
+
+Despite its place in the hint box (`+0x3a0`, `0x006095f0`), the callback has nothing to do with the hint text: it is
+the combat tutorial's **"player 1 hit someone"** hook. Confirmed (code):
+
+- `HUDSetTutorialCallback(name)` (`0x001b5e90`) stores the name pointer as given; nil stores 0.
+- The only reader is `Tutorial_CallCallback(box, animId)` (`0x001ce9a8`): when the name is set and the Lua function
+  is found (script slot `+0x4c`, [Scripting](scripting.md)), it is called at once with **one argument, the attacker's
+  current anim id** (pushed as an unsigned number, slot `+0x74`; call `+0x8c` with 1).
+- Its one caller is the attack-scoring step `0x002653d8(attacker, victim, landed)`, which `Human_ApplyPendingDamage`
+  (`0x00265f70`) runs on the victim's pending hit when the attacker is pad-controlled (player record `+0x1b`): with
+  `landed` 1 for a hit that lands and 0 for one a block stops (both call the callback). `0x002653d8` returns first when
+  the attacker's brain `+0x4` is not 0 or the two are allies (`0x00290230`), then calls the callback only when the
+  attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage ([Combat](combat.md#rage)). The anim id
+  is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat.md#attacks)).
+- So it fires **once per hit, every hit**, for as long as it is set; nothing in the engine clears it after a call. It is
+  cleared by `HUDSetTutorialCallback(nil)` and when the HUD is released at `UnloadLevel` (`0x001607b8` →
+  `0x001ae980` → `0x001cdc20`, which zeroes `+0x3a0`).
 
 ### Announcements and other messages
 

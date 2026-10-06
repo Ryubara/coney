@@ -1332,15 +1332,18 @@ HUDSetTutorialCallback(name)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Name of the Lua function the tutorial calls (for example `P1.BasicAttacks`); nil clears it. |
+| 1 | `name` | string | Name of the Lua function to call on each hit player 1 deals (for example `P1.BasicAttacks`); nil clears it. |
 
 **Returns** nothing.
 
-Sets the Lua function the tutorial system calls back, used by the first mission's combat tutorial to move to its next
-lesson. The pointer is stored as given (0x006095f0), not interned.
+Sets the Lua function called each time player 1 lands a hit, or has one blocked, on a non-ally, with one argument: the
+attacker's current anim id (11 X1, 12 S1, ...). The first mission's combat tutorial counts the attacks with it. The call
+is synchronous, from the damage step (0x00265f70 -> 0x002653d8 -> 0x001ce9a8), on every hit until the name is cleared.
+The pointer is stored as given (0x006095f0), not interned.
 
-**Notes.** When the tutorial calls it is not traced. Because the name is not interned, the original relies on the script
-keeping the string alive (constants in a chunk are).
+**Notes.** Not tied to the hint text. Cleared only by nil or when the HUD is released at UnloadLevel. Player 2's hits do
+not call it. Because the name is not interned, the original relies on the script keeping the string alive (constants in
+a chunk are). Details: [The in-game HUD](../../research/hud.md#tutorial-callback).
 
 - **Evidence:** confirmed (code) at `0x001b5e90`; detail: traced
 - **Wrapper** `0x00370098` (registered by `RegisterBindings`); **calls** `0x001b5e90` `Tutorial_SetCallback`
