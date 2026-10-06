@@ -88,6 +88,7 @@ PlayerRecord recordOf(const HumanInput& input) {
                         .sprintHeld = input.sprintHeld,
                         .actionPressed = input.actionPressed,
                         .command = input.command,
+                        .padCommand = combat::command::kNone,
                         .buttons = input.buttons,
                         .move = std::nullopt};
 }

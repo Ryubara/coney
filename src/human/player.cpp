@@ -215,7 +215,9 @@ void Player::drive(Human& human) {
     // The human left behind keeps only what its brain writes; the new one takes the pad as it stands, with no
     // command history carried over.
     m_humans.setPadControlled(*m_driven, false);
-    m_driven->record() = PlayerRecord{.cameraForward = m_driven->record().cameraForward};
+    PlayerRecord left;
+    left.cameraForward = m_driven->record().cameraForward;
+    m_driven->record() = left;
     m_driven = &human;
     m_humans.setPadControlled(*m_driven, m_padControlled);
     m_matcher = combat::CommandMatcher{};
@@ -250,7 +252,11 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
                                           .buttons = buttons,
                                           .move = std::nullopt};
     } else {
-        m_driven->record() = PlayerRecord{.cameraForward = cameraForward, .move = m_driven->record().move};
+        // Only the view and the brain's move survive; the pad's fields read as released.
+        PlayerRecord idle;
+        idle.cameraForward = cameraForward;
+        idle.move = m_driven->record().move;
+        m_driven->record() = idle;
     }
     // The characters' step: 1/30 s, or slow motion's share of it while a slow-motion event holds it.
     m_humans.update(mesh, targets, m_cameras != nullptr ? m_cameras->slowMotion().stepSeconds() : kStepSeconds);
