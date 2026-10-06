@@ -291,8 +291,8 @@ while mode 0xa or 0xc is on top gameplay does not update at all, and the paused 
 the menu's layer over it, after the HUD's (`GameplayMode::renderWithOverlay`, which the play mode implements). `coney
 --disc` gives the modes the sheet-table records (the background is record 12, the gang-logo picture), pauses and
 resumes every sound through the sound player, hands the HUD's three checklist slots to the Objectives screen and
-turns both radars off on open (and, Coney's stand-in, back as they were on close). Timings, positions, string ids, cues, the item grids,
-the Yes/No box and the leaving actions follow this page; tests in `repo:tests/gui/pause_menu_test.cpp` and
+turns both radars off on open (and, Coney's stand-in, back as they were on close). Timings, positions, string ids,
+cues, the item grids, the Yes/No box and the leaving actions follow this page; tests in `repo:tests/gui/pause_menu_test.cpp` and
 `repo:tests/gamemodes/pause_mode_test.cpp` drive them with scripted START, d-pad, cross and triangle.
 
 Coney stand-ins, each an open question below:
