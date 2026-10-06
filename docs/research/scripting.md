@@ -275,6 +275,12 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
       "Dead" here (`0x00227eb0`) is no brain or state flag `0x100000000`; a human taken out by `HuDelete` (flag
       `0x200000000`) is neither, so while it still resolves it leaves like anyone else (message 4). When the deleted
       human stops resolving is not traced.
+- **A kind-2 box is a player trigger** (vtable `0x00545cb8`, made by `0x004133d0`; update `0x004134f8`): the same
+  messages 3, 5 and 4 with the same inside test and repeat period (next time at `+0xf8`), but its only candidates
+  are the **two players' humans** (the handles at `0x0051489c + 0x228` and `+0x22c`) and it keeps just those two
+  occupants (`+0xf0`). An AI human never sets one off, however it moves. The chase levels mark their camera and
+  hint zones with kind 2 (`level2`: 5 boxes, `level3`: 29, among them `vbStartRail`, which hands the player back his
+  pad in [`level3`'s chase](#level3)). Confirmed (code). Kind-3 boxes (turf) have no trigger update traced.
 - **Disabling** a box (`EnableVolumeBox(box, false)`, `0x004152e0`) empties its occupant list without sending
   message 4, so a human still inside when it is enabled again gets a fresh message 3.
 - **Teleporting** (`TeleportToFlag`, `0x00385db0`) only sets the object's position (and calls a human's slot
@@ -714,6 +720,118 @@ Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Points an implementer n
   from the disassembly of the script; the game side is confirmed where linked.
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
+
+### `level2.lua` (mission 5) {#level2}
+
+Story mission 5, loaded from the hub's checkpoint 2: the Warriors (six, Cleon player 1 and Fox player 2) against the
+Orphans. Read from the disassembly of `level2.lua` and its four chapter scripts; the bindings each call reaches are
+on [Story coverage](../references/bindings/story.md#level2). Inferred unless marked.
+
+- **`Main`**: fog colour, radar on, `SetupCars` (colours, radios and trunk items of five parked coupes),
+  `SetSpawnMax(25)`, then the checkpoint table, the same shape as `level99`'s: 1 `level2_clinic` /
+  `P1.SetupClinic`, 2 `level2_tenement` / `P2.SetupTenement`, 3 `level2_clubhouse` / `P3.SetupClubhouse`, 4
+  `level2_junkyard` / `P4.SetupJunkyard`, each with its own Warriors set-up at the chapter's start.
+- **`RunLevel`**: the Warriors; `preLoadFile` of the chapter; the follow camera (`AddCameras`, then
+  `CameraSetClipping(MainCam, 0.1, 90)`); the mission's objective; at checkpoints **2-4** only: `peds = 1`,
+  **`SetupFlagNet2()`**, system music on and the subway-intro objects destroyed. Then the anim preloads, the start
+  callback `StartAmbient`, three bums (`GoalBumLogic`), `ReportCrime(true)`, `CfgSetMaxThrowError(5, 5)`, the dealer
+  "factory" (`StartFactory`: a revive dealer and a paint dealer that respawn through gang spawners, all Lua) and the
+  tag spots (`TagInfo.SetupTags`, a `global.lua` helper over the tagging bindings).
+- **`SetupFlagNet2`** is a **Lua function of `level2.lua` itself** (function 96 of the main chunk), not a binding: it
+  links the 13 flags `PedNet_01`-`13` (made by `AddFlagsBoxesPaths`) into a pedestrian network with 13
+  [`FlagNetAddLink`](../references/bindings/ai.md#flagnetaddlink) calls (two or three neighbours each), calls
+  `AddCivilians` (gang 23 "Civilians" with one spawner whose per-spawn callback, `global.lua`'s `CivFlagNet`, sets
+  each civilian walking the net with [`FlagNetTraverse`](../references/bindings/ai.md#flagnettraverse)) and then
+  sets itself and its twin `SetupFlagNet52` (a 28-node net for `level52`, never called here) to nil, so it runs once.
+  Its other caller is `P2.SetupTenement`, when `peds` is still 0 (the player came from checkpoint 1 in the same
+  level). Nothing for the engine to register.
+- **`StartAmbient`**: from checkpoint 2 on, the subway loop and `LoadBonus` (the bonus count from Lua save float 1);
+  a fade-in at checkpoints 3 and 4; the traffic ambient; Warrior command 4 (scatter) off.
+- **The bonus**: every Orphan killed counts (`AnyOrphanDied`, also hooked to most Orphan gangs' message 18) toward
+  40 on a second objective line; the 40th unlocks `UM_Unlock(2, 1, 2)`. Each checkpoint saves the count
+  (`SaveBonus`, `SetLUASaveDataFloat(1, n)`) and the tags (`TagInfo.SaveTags`).
+
+| Checkpoint | Chapter | What happens | Ends with |
+| --- | --- | --- | --- |
+| 1 | `level2_clinic` | Fade out, a locked intro camera, jumping blocked for both players, the scene `l2_subexit` (out of the subway). Three **kind-2** boxes switch the player's camera on the way down to the street: `vbIntroCam` back to the locked camera, `vbLeadRail` a rail down the stairs (two points, field of view 50, `CamLeadRail(3, 0, nil)`: trailing 3 m behind, mode 2), `vbSideRail` a level rail (distance 3.5 m, height 3 m). `vEnterStreet` (kind 0, a Warrior) kills them, gives the follow camera back and plays `l2_c1_a`. The Orphans at the dice game run to a fence and fight; five down, the bums open a gate (a path camera); the clinic scene, then 13 Orphans to beat (a backup gang spawns after 4) and a counter tutorial | `vJesseScene`: `SetCheckPoint(2)`, `preLoadFile` of the tenement |
+| 2 | `level2_tenement` | `SetupFlagNet2` when not run yet; the scene `l2_c2_a`; Jesse runs a [lead chase](../references/bindings/ai.md#goalleadchase) along a path ahead of the player, in god mode, and is [interrogated](../references/bindings/character.md#husetinterrogation) when caught; wandering, dancing and roof gangs; entering `vStartWander01` already preloads the clubhouse chapter (its set-up runs then) | Jesse gives up → an objective (`ObjectiveSetup`) → a cut-away → `SetCheckPoint(3)`, bonus and tags saved |
+| 3 | `level2_clubhouse` | The Orphans' clubhouse, friendly until `vNearClubhouse` (or a hit) plays `l2_c7`; then 15 to beat (backup after 4), a rage-throw tutorial; breaking the two speakers quiets the radio (`SetAmbientEmitterVolumeMod`, then off) | the scene `l2_c3` → `SetCheckPoint(4)`, saves, `preLoadFile` of the junkyard |
+| 4 | `level2_junkyard` | Sully and the junkyard Orphans (suspended), Sully's car spawned; an objective to the gate whose callback removes the street gangs, shuts the dealer factory, drops molotovs and plays `l2_c5`; then a backup spawner, Sully shaking a fence and fleeing the player (trigger sphere 3 m / 6 m), a HUD bar for the car (`HUDEnableBar`, `HUDSetBarPercentage`); every car message 25 (`SetGeneralCarMsgHandler`) about Sully's car with its flag true counts one hit, 15 hits empty the bar | the final scene `l2_c6_b` → `HUDLaunchMissionComplete()` |
+
+Engine behaviour this mission needs beyond its bindings: [kind-2 boxes](#triggers) (the intro cameras) and the
+[rail camera](camera.md#rail), mode 0 and the trailing lead. Open: which car events send message 25 with the flag
+true besides `Car_DoExplode` (`0x0038ab50`, flag 1), since the junkyard needs 15 of them on one car.
+
+### `level3.lua` (mission 6) {#level3}
+
+Story mission 6, loaded from the hub's checkpoint 3: the tag competition in Hi-Hat turf and the rooftop chase. Read
+from the disassembly of `level3.lua` and its five chapter scripts; bindings on
+[Story coverage](../references/bindings/story.md#level3). Inferred unless marked.
+
+- **The main chunk** sets `CHAPTER = GetCheckPoint()`, a chapter table (1 `level3_street`, 2 `level3_comp`, 3
+  `level3_balcony`, 4 `level3_chase`, 5 `level3_gallery`), the Warriors' five tag patterns, and runs `Main` then
+  `RunMission`. `Main`: radar range, objective, fog, ambient sound boxes, the pedestrian flag net (`SetupFlagNet`, as
+  in `level2`), the chapter's Warriors (`PlayerGang[CHAPTER]`), the rival gangs' tag settings; player 1 is
+  **Rembrandt** at chapters 1-2 and **Snow** from 3, player 2 Ajax; the follow camera; outdoor mode.
+- **`RunMission`** `preLoadFile`s the chapter with its `Setup`; **`NextMission`** runs the chapter's `Cleanup`, adds
+  1 to `CHAPTER`, `SetCheckPoint(CHAPTER)` and runs `RunMission`: every chapter hands over to the next in place.
+  The global `Startup` is true only for the chapter the level was entered at, so a chapter knows whether it starts
+  the level (its own scene set-up, `SetStartGameCallback`) or continues from the last.
+
+| Checkpoint | Chapter | What happens | Ends with |
+| --- | --- | --- | --- |
+| 1 | `level3_street` | The clubhouse scene, then the Soho street: three gangs at their spots (`GoalGuardFlag`, `GoalPlayDynIdle`, walks started by trigger spheres), a truce (hitting any of them fails the mission, `C0.Damage`), an objective to the competition | entering the gate: the Warriors walk in (brain off, `GoalMoveToFlag`), two locked cameras, `NextMission` 3 s later |
+| 2 | `level3_comp` | The tag competition: the scene `l3_c1_a`, locked cameras for the tutorial, the Warriors' wall (`SetMsgHandlerEx` message 0 → `HuTag` with patterns; message 14 per tag finished), rival painters ([`GoalTag`](../references/bindings/ai.md#goaltag)), [`HuEnableTagCheer`](../references/bindings/character.md#huenabletagcheer) | the victory scene → `NextMission` |
+| 3 | `level3_balcony` | Chatterbox throws molotovs, bottles and bricks from a balcony (`GoalBigLedgeThrower`), vans to save, a button and an elevator (`HuUseAnyAnim` for the button press, `HuSetAutoCombat`), mimes, a pulley | the balcony scene → `NextMission` |
+| 4 | `level3_chase` | **The rooftop chase**, below | `vbEnterGallery`: the jump scene → warp to the gallery, `NextMission` |
+| 5 | `level3_gallery` | A 180 s stopwatch (`W_SetStopWatch`), the gallery's statues and paintings to wreck (a HUD bar; `vGallery` hears message 6, `ChangeCollision` on statues that fall), seven tag spots; falling (`vDeathGallery`) or time running out fails | damage ≥ 200: player brain off, fade, the end scene → `HUDLaunchMissionComplete()` |
+
+**The rooftop chase (checkpoint 4).** Snow is player 1. In order:
+
+1. **`Setup`**: the Hi-Hat pursuers (`AddPursuit`: five, gang type 20, and a spawner off-screen), each taking 5× damage
+   (`HuApplyDamageModifier`); the path `roofpath2` (eight rooftop flags); a fade to black; Snow tireless; five locked
+   cameras for the jumps and a locked intro camera made **current**; the **rail camera** (`ch4.SetupRailCam`:
+   `CamSetupRail("ch4.railCam", player, 78, {0, 0, 2}, 0.05, 150)` with two points, (−273.776, 349, 29.971) and
+   (248, 349, 29.971)) and its main framing (`ch4.MainRail`: settings 9 = 2, 2 = 78, 3 = −8, 4 = 6, 0 = 5.5, 1 = 4,
+   eased over 0.5 s); Warrior commands 0-5 off, radar and command HUD off. Entered at checkpoint 4 the start
+   callback is `ch4.HoldIntroPoizo`; continuing from checkpoint 3 it runs at once.
+2. **`ch4.HoldIntroPoizo`**: switches 3 off and 4 on; every non-player Warrior brain off, short sight, fast climber;
+   **`BrDead(player, true)`**: the player's brain is off, which also [takes his pad away](ai.md#handlers); fade in
+   over 2 s; schedules the mimes' door (0.1 s), `ch4.SetupPoizo` (3 s) and the pursuit (4 s).
+3. **`ch4.SetupPoizo`**: a path camera from the intro camera through three points (the second calls Snow's line);
+   every other Warrior: brain flushed, normal mode, a friendly [devil run](ai.md#devil-run) on `roofpath2` against the
+   Warriors' gang (gait 4, pace 4 m, up to 10 m/s, urgency 3) under a `GoalMoveToFlag` to the first chase flag
+   (gait 5); **the player**: normal mode and `GoalMoveToFlag(player, fRoofChase[1], 4, ...)`. With his brain off the
+   player's brain still runs the goals a script pushes (`Brain_UpdateGoals`), so **the AI walks Snow** from the
+   warp point (−268.5, 353.6, 16.6) toward the first chase flag (−214.7, 364, 20.2) while the pad is ignored.
+4. **`ch4.StartMimePursuit`** (4 s): the pursuers run to the first chase flag; two Hi-Hat lines.
+5. **`ch4.StartRail`**, message 3 of **`vbStartRail`**, a [kind-2 box](#triggers) (x −260.5 to −256.1, y 357.4 to
+   376.1, z 18.3 to 27.6), which only a player can set off: the box disabled; the pursuit spawner started; the
+   objective to the roof's end; the pursuers made enemies and each given a hostile devil run on `roofpath2` against
+   the Warriors (gait 5, attack at 1 m, pace 13 m, up to 13 m/s, urgency 0.5); switches 3 on and 4 off; **the rail
+   camera made current over 0.5 s**; `HuLockPad` and `HuLockPadMovement` cleared and **`BrDead(player, false)`**:
+   from here the stick moves Snow, [relative to the rail camera's heading](characters.md#input). Player 2 gets the
+   same.
+6. **During the chase**, all by kind-2 boxes (message 3): `vMainRail` / `vSideRail` / `vTopRail` / `vBigRail`
+   re-frame the rail with `CamModifyRail` (side: distance 8, height 2, setting 3 = 2, 4 = 0, field of view 65 or 78;
+   top: height 20; big: distance 10, height 7, field of view 65, setting 9 = 4). `vFixCam` boxes switch to a locked
+   (box 13: a fixed) camera over a jump; while no second player is alive they also give **slow motion 0.2** for
+   2.5 s (boxes 1-9) or 2 s (box 13, the first time only, `HuSetSlowMo`) and **lock the pad** (`HuLockPad`,
+   `HuLockPadMovement`; not in boxes 11 and 14, and no more once box 13 has been entered) until `ch4.TurnOffSlow` or
+   leaving the box (message 4, which also returns to the rail camera). `vbJumpWarn` boxes show a jump prompt
+   (`HUDTurnOnActionCycleAnim`) for 1.5 s. Falling into `vChaseKill` (kind 0) fades and fails the mission (`MF_4`);
+   a pursuer there dies, a Warrior is warped to the gallery.
+7. **`ch4.EnterGallery`** (`vbEnterGallery`, kind 2): objective done, handlers off, the chase gangs removed,
+   tireless and fast-climber cleared, the jump scene, then the Warriors warped to the gallery and `NextMission`.
+
+So **the player has no control from the fade-in until he reaches `vbStartRail`**, by design: the original walks him
+there with a goal on a brain-dead player. A port in which a kind-2 box never sends message 3, or in which a pushed
+goal does not move a brain-dead player, leaves the player standing for good. Confirmed (code) for the brain and box
+behaviour; that Snow's walk crosses `vbStartRail` is inferred from the positions (not seen at runtime).
+
+Engine behaviour this mission needs beyond its bindings: [kind-2 boxes](#triggers), the [rail
+camera](camera.md#rail) mode 0 and [GoalDevilRun](ai.md#devil-run). Open: who sends the gallery box message 6 when
+an object inside it is damaged.
 
 ### Errors in a fresh state {#errors-in-a-fresh-state}
 

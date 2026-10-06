@@ -155,7 +155,7 @@ AddVolumeBox(name, kind, corner, size, enable, flags) -> number
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `name` | string | Box name, for scripts' own reference (such as `vFinishLine`). |
-| 2 | `kind` | number, truncated to an integer | Box kind: 0 a plain trigger box, 2 another pooled kind, 3 a kind made by a factory (the turf boxes use 3); 1 is refused and returns NilHandle. |
+| 2 | `kind` | number, truncated to an integer | Box kind: 0 a trigger box for any human, 2 a trigger box for the two players only, 3 a kind made by a factory (the turf boxes use 3); 1 is refused and returns NilHandle. |
 | 3 | `corner` | table of 3 numbers (t[1]..t[3]) | Minimum corner `{x, y, z}` in world metres. Written back unchanged. |
 | 4 | `size` | table of 3 numbers (t[1]..t[3]) | Extent `{dx, dy, dz}` in metres, added to the corner to give the opposite corner. Written back unchanged. |
 | 5 | `enable` | boolean (nil or 0 is false); default true | True (default) creates the box enabled. |
@@ -166,11 +166,13 @@ AddVolumeBox(name, kind, corner, size, enable, flags) -> number
 Creates an axis-aligned volume box, used to test whether characters are inside an area (`IsInsideBox`), to switch
 collision (`ChangeCollision`) and to mark turf. A kind-0 box is also a trigger: while enabled it tracks up to 60 humans
 inside it and sends itself message 3 when one enters, 5 while one stays (at most once per period) and 4 when one leaves
-or dies, so `SetMsgHandler(box, 3, ...)` fires on entry (scripting.md#triggers).
+or dies, so `SetMsgHandler(box, 3, ...)` fires on entry (scripting.md#triggers). A kind-2 box sends the same messages
+for the two players' humans only (the chase levels' camera and hint zones).
 
-**Notes.** Kinds 0 and 2 come from two pools (0x0051483c, 0x00514814); kind 3 from the factory at 0x00514834. What
-distinguishes the kinds in play is not traced. Rotate the box about the vertical axis with `RotateVolumeBox`. The
-trigger update of a kind-0 box is confirmed (code) at 0x00415378.
+**Notes.** Kinds 0 and 2 come from two pools (0x0051483c, 0x00514814); kind 3 from the factory at 0x00514834. Kind 2:
+vtable 0x00545cb8, update 0x004134f8, candidates the player handles at 0x0051489c + 0x228; kind 3 in play is not traced.
+Rotate the box about the vertical axis with `RotateVolumeBox`. The trigger update of a kind-0 box is confirmed (code) at
+0x00415378.
 
 - **Evidence:** confirmed (code) at `0x004125b8`; detail: traced
 - **Wrapper** `0x0037ac70` (registered by `RegisterBindings`); **calls** `0x004125b8` `VolumeBox_Add`

@@ -655,6 +655,100 @@ time to the **next** point. Its update (`PoizoCam_Update`, `0x001426c0`) runs on
 camera, so a script makes it active itself. Confirmed (code); details per call on
 [Cameras](../references/bindings/camera.md#camsetuppoizo).
 
+### Rail cameras {#rail}
+
+A rail camera (type 9, one per player, `Camera_GetPlayerRail` `0x0011fbb0`) slides along a polyline of up to 16
+points while it frames its targets: the chases of `level2`, `level3` and 17 later levels. Confirmed (code) at the
+addresses cited; the bindings' arguments are on [Cameras](../references/bindings/camera.md#camsetuprail).
+
+**Set-up.** [`CamSetupRail`](../references/bindings/camera.md#camsetuprail) (`Camera_SetupRail` `0x0011cce8`) names
+the camera, adds the human to the camera target list (`CameraTargets_Add(human, 1)`), sets the field of view, near
+and far planes (far at most 150) and the look-at offset (`+0x320`, its z also the start of setting 9), then
+`CamRail_Reset` (`0x0013b2b8`): no points (`+0x350` count, `+0x352` current segment), mode 0 (`+0x3ed`), the
+distance, setting 3 and 4 targets 0, the height target −1 (off), the angle targets off (−FLT_MAX), all ease times 0,
+the field-of-view target the current one, and switches 7 and 8 back on. [`CamAddRailPoint`](../references/bindings/camera.md#camaddrailpoint)
+appends points (`+0x1e0`, 16 bytes each). The camera does nothing until a script makes it current
+(`CameraMakeActive(rail, seconds, nil, player)`).
+
+**Settings.** [`CamModifyRail(setting, value, seconds, player)`](../references/bindings/camera.md#cammodifyrail)
+(`Camera_ModifyRail` `0x0011d228`) stores a target and an ease time; every update `CamRail_EaseValue` (`0x0013f930`)
+moves each current value toward its target by `(target − current) × dt / time left` and takes the frame's time off,
+so the value arrives linearly in `seconds` (0: at once).
+
+| Setting | Target / time / current | Unit | Used by mode 0 as |
+| --- | --- | --- | --- |
+| 0 | `+0x378` / `+0x3a8` / `+0x3c8` | m, 0 = off (negative stored as 0) | the most the camera stays from its target point in plan |
+| 1 | `+0x37c` / `+0x3a4` / `+0x358` | m, negative = off | the most the camera stands above the first target's feet |
+| 2 | `+0x374` / `+0x3a0` / the lens | degrees, negative ignored | field of view |
+| 3 | `+0x380` / `+0x3ac` / `+0x360` | m | the target point's shift along the rail |
+| 4 | `+0x384` / `+0x3b0` / `+0x364` | m | the look-at point's further shift along the rail |
+| 5 | `+0x388` / `+0x3b4` / `+0x368` | degrees, below −360 = off | switches the rail to mode 3 (`0x0013fac8`); not traced |
+| 6, 7 | `+0x38c`, `+0x390` / `+0x3b8`, `+0x3bc` / `+0x3d0`, `+0x3d4` | | not read by modes 0-2; not traced |
+| 8 | `+0x394` / `+0x3c0` / `+0x36c` | degrees, below −360 = off | a fixed pitch for the look-at (below) |
+| 9 | `+0x398` / `+0x3c4` / `+0x328` | m | the look-at offset's height above the targets |
+
+Settings 0 and 1 start from the camera's present distance and height when they are switched on from off, and a
+height set negative eases back to the present height before it switches off. Setting 2 eases the lens itself.
+
+**One update** (`CamRail_Update`, `0x0013d010`, skipped when the frame time is 0), in order:
+
+1. Ease the settings (above) and the lead (`+0x35c` toward `+0x370`, [`CamLeadRail`](../references/bindings/camera.md#camleadrail)).
+2. **Targets** (`CamRail_GatherTargets`, `0x0013b7b8`): the humans of the camera target list (two entries, one per
+   player), each kept by the [switches](#switches) 3, 8 and 12 and whether the player still counts; with switch 3
+   on and two player views, each player's rail camera keeps only its own player. None: the update stops here.
+3. **The target point** (`CamRail_UpdateTargetPoint`, `0x0013bad0`) `P` = the targets' mean position (their feet).
+   In mode 0, with `d` the current segment's direction flattened to the ground plane and normalised:
+   - the look-at point starts as `P`; `P.z` += the offset's z (setting 9);
+   - setting 3 non-zero: `P` += `d` × setting 3, and the look-at point = `P` + `d` × setting 4;
+   - setting 3 zero, one target: the look-at point += the whole offset `(x, y, z)` when setting 4 is 0, else its z and
+     then `d` × setting 4;
+   - setting 3 zero, two targets: the look-at point = `P`.
+
+   In modes 1-3 `P` += the offset and the look-at point = `P` (with two targets, modes 1 and 2 first pull `P` back
+   toward the camera when the targets are spread wider than the camera's distance to them). With a split screen
+   (`0x0050b1a4` = 0 and the view's `+0x44` ≠ `+0x48`) settings 3 and 4 and the offset's x and y are halved.
+   In modes 0-2, unless `+0x3e8` is set or the first target has a state flag of `0x1c00000000`, `0x0013bfe0` then
+   **damps** `P` and the look-at point toward last frame's values. With `Δ` = new − old, `h` its length in plan and
+   `dz` its rise (the rise tests are skipped when the segment has no length in plan):
+   `dz` > 0.5 → old + `Δ` × 0.5, then its z keeps only a quarter of its rise; else `h` > 1 → old + `Δ` × 0.25;
+   else `dz` > 0.1 → with `f` = 1 − 1.875 (`dz` − 0.1), old + `Δ` × min(2`f`, 1), then its z keeps `f` of its
+   rise; else `h` > 0.4 → old + `Δ` × (1 − 1.25 (`h` − 0.4)); else no damping. While `+0x3ec` is 1 the look-at
+   point moves only 40% of the way each frame, until it arrives (then `+0x3ec` = 0).
+4. **Placement** by mode (`+0x3ed`): 0 `CamRail_UpdatePosition` (`0x0013d6b0`, below), 1 and 2 `CamRail_PlaceLeading`
+   (`0x0013e708`, set by `CamLeadRail`: the camera stands the lead ahead of or behind the target's place on the
+   rail), 3 `0x0013dcc8` (not traced).
+5. Split-screen extras (`0x0013cf20`, only with two player cameras); a timer at `+0x3e0` drives a byte copied to both
+   player records' `+0x1b4` (not traced); then the camera's distance to `P` is kept at `+0x3d8` and the flags
+   `+0x3e5`, `+0x3e7`, `+0x3e8`, `+0x3e9` cleared.
+
+**Mode 0 placement** (`CamRail_UpdatePosition`):
+
+1. Unless the camera is **held** (`+0x3e4`), choose the segment (`CamRail_ChooseSegment`, `0x0013fba0`): the rail
+   point nearest `P` (3D) starts the segment, the last point giving the last segment (a tie between two points takes
+   the later one only when `P` projects inside its segment); then, when `P` projects inside that segment
+   (0 ≤ t ≤ length) it stays, else it moves to the previous or the next segment, whichever `P` projects inside. A
+   change of segment sets a blend `+0x3cc` = 0.1.
+2. **Project** `P` on the segment (`CamRail_ProjectOnSegment`, `0x00140308`): `Q` = the foot of the perpendicular,
+   clamped to the segment's ends. With setting 0 on, when `Q` is farther than it from `P` in plan, `Q` moves toward
+   `P` (in plan) until it is exactly that far: the camera leaves the rail to stay within reach.
+3. While the blend is on, `Q` = camera + (`Q` − camera) × blend and the blend grows by 5% a frame until it reaches
+   1 or the step is under 1 cm: a soft hand-over between segments. `Q` += the vector at `+0x330` (not set by any rail
+   binding).
+4. **Height**: with setting 1 on, `Q.z` is lowered to the first target's feet + setting 1 when it is higher (a
+   ceiling, it never raises the camera). The camera stands at `Q`.
+5. **Look-at**: with setting 8 on, the look-at point is replaced by the point 6 m from `Q` toward the targets in plan,
+   raised by 6 × tan(setting 8). The camera then faces the look-at point.
+6. **Ends**: at the first point with the look-at point behind the rail's start, or at the last point with it beyond
+   the end, the camera is held (`+0x3e4` = 1): it keeps the previous frame's position, orientation, `P` and look-at
+   point; what clears the hold is not traced.
+7. **Collision**: `0x00140830` sweeps a 0.3 m sphere from the target's head (position + offset) to 2 m behind the
+   camera and pulls the camera in front of a hit (two targets and switch 8: `0x00140708` instead).
+
+**In `level3`'s chase** ([`level3`](scripting.md#level3)) the rail runs straight along y = 349 at z = 29.97, beside the
+rooftops the player runs along; the main framing (setting 3 = −8, 4 = 6, 0 = 5.5, 1 = 4, 9 = 2, field of view 78°)
+puts the camera 8 m behind the player along the rail, at most 5.5 m from him in plan and 4 m above his feet, looking
+at a point 2 m behind him and 2 m up. Inferred from the code above with the script's values.
+
 ### Combat camera {#combat-camera}
 
 While the player fights with a lock-on, the follow camera pulls in and frames the enemy. Confirmed (code) in the
@@ -907,5 +1001,7 @@ scene's or for player 2), `CamGetPos` its position, and `CamSetFollowPos` puts t
 - **Slow motion's game time**: whether the combat timers (stun, ground) count the shorter step or the frames.
 - **Locked cameras**: the conventions of `CameraCreateLocked`'s heading, pitch and roll.
 - **The combat camera's 0.4 keep-in-view** (`0x0012e170(0.4)` in the update's one-target case): which human it keeps.
+- **Rail cameras** ([Rail cameras](#rail)): mode 3 (`0x0013dcc8`, set by `CamModifyRail` 5) and settings 6 and 7;
+  what clears the end hold `+0x3e4`; the vector at `+0x330`; the `+0x3e0` timer and the byte it gives the players.
 - **Scenes**: the scene camera's own update (type 4) and the "a scene is playing" flag at `0x0051489c + 0x410` (see
   [Scenes](#scenes)).

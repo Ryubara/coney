@@ -922,6 +922,62 @@ the target brain's byte `+0x11f` is 0 (`Brain_IsAttackableBy(target, nil)`, not 
 fight goal the riot goal is in state 3, so when the fight (and the melee goals beneath it) are done, the rioter
 leaves.
 
+#### GoalDevilRun {#devil-run}
+
+Type 152 (`Goal_DevilRun` `0x002e1760`, constructor `DevilRunGoal_Init` `0x002e1850`, vtable `0x00541ad0`;
+[binding](../references/bindings/ai.md#goaldevilrun)): a runner heads for the end of a path while pacing itself
+against a gang, the chases of `level3` and `level54`. A **friendly** runner (`hostile` false) runs ahead of the gang
+and speeds up as they close on it; a **hostile** one (a pursuer) speeds up as it falls behind and attacks when it
+catches up. Confirmed (code) at the addresses cited.
+
+Fields: `+0x10` the path (an `AddPath` object: its point count `u16 +0x32`, its flags `+0x10[i]`), `+0x14` the gang,
+`+0x18` the gait, `+0x1c` attack distance, `+0x20` pace distance, `+0x24` maximum speed, `+0x28` urgency, `+0x2c`
+the saved field of view, `+0x30` the chaser's handle (−1 at first), `+0x34` the current speed, `+0x38` the hindmost
+gang member's segment (`0xff` at first), `+0x39` / `+0x3a` the brain's saved `+0x0b` / threat response, `+0x3b` an
+update counter (a byte), `+0x3c` hostile.
+
+- **Start** (`DevilRunGoal_Start` `0x002e18d8`): save the brain's byte `+0x0b` and threat response, speed = the
+  gait's (`Human_SpeedForGait`), save the field of view and set it to 2π (the runner sees all round), then Resume.
+- **Resume** (`DevilRunGoal_Resume` `0x002e1998`): threat response 0 (it ignores attackers); counter = 16.
+- **End** (`DevilRunGoal_End` `0x002e1950`): restore the byte `+0x0b`, the threat response and the field of view.
+- **Process** (`DevilRunGoal_Process` `0x002e2230`), each update, counter + 1:
+    1. Every 17th update, **the hindmost segment** (`0x002e1b60`): for each of the gang's 16 member slots that
+       resolves, its segment (below), keeping the smallest in `+0x38`. When the gang has no member left, the goal
+       ends (2).
+    2. **The chaser**: re-chosen (`0x002e1c18`) when there is none, every 29th update, and, for a hostile runner,
+       when the chaser is down or dead or `0x00223b70` holds for it. The choice takes the gang's live members (not
+       down or dead, not `0x00223b70`), projects each on the line of the hindmost segment (points `+0x38` and
+       `+0x38` + 1) and keeps the one whose projection is nearest the segment's start: the gang member farthest
+       back along the path. None → the goal ends (2).
+    3. Every 7th update, **pace** (`0x002e1e10`), below; it may end the update with the fight goals it pushes.
+    4. With no action queued: fight stance off and a **move action** (`0x002fbae0`) to the path's **last** point at
+       the current speed (at least the gait-2 speed), radius 1.5 m. The runner does not visit the path's other
+       points: the [move action](#move-action) plans its own route; the path only measures progress.
+- **Segment of a position** (`0x002e19b0`): walking the path's segments from the first, the distance from the
+  position to each segment (`0x00336d28`); the answer is the segment before the first whose distance grows, or the
+  last segment (count − 2), never more than the limit passed in.
+- **Pace** (`0x002e1e10`), with `R` the runner, `C` the chaser:
+    1. The distance `d`: when the runner's segment is the hindmost segment, `d` = 0 if the chaser is already past
+       the runner along the segment (friendly: ahead of it; hostile: behind it), else the distance between the
+       runner and the chaser's projection on the segment's line (`0x00336ee0`, `0x00336e08`). On different segments,
+       `d` = |`R` − `C`| (3D).
+    2. A **hostile** runner attacks when the chaser is running (its gait `+0x1a8` above 2) and `d` ≤ the attack
+       distance, or when the chaser is slower and `d` ≤ (1.1 × the runner's far melee range `+0x140`)², a distance
+       compared with a squared length as written. It then sets threat response 2, targets the chaser
+       (`Brain_SetTarget`), pushes a [melee goal](#goals) (`0x002ade10`, 2000, 2000) and, in the running case, an
+       engage-enemy goal (`0x47`) whose `+0x30` is set to 4.0; the devil run stays below them and resumes when they
+       end.
+    3. Otherwise the blend `f`: hostile `min(d / pace distance, 1)`; friendly `max(1 − d / pace distance, 0)` (1
+       while the chaser is ahead). Speed = gait speed + (maximum speed − gait speed) × `f`, stored at `+0x34` and
+       given to a running move action at once (`0x0029f710` → action `+0x40`). The brain's byte `+0x0b` = the saved
+       value + urgency × `f`, rounded (0 for two human types and two states, `0x0028cdf8`); what reads it is not
+       traced.
+
+In `level3`'s chase the Warriors run as friendly runners on the rooftop path against their own gang (gait 4, pace
+distance 4 m, up to 10 m/s, urgency 3), the player being the one they wait for; the Hi-Hat pursuers run as hostile
+runners against the Warriors (gait 5, attack at 1 m, pace distance 13 m, up to 13 m/s, urgency 0.5)
+([`level3`](scripting.md#level3)).
+
 ### Gangs, tactics and formations {#gangs}
 
 #### The gang {#gang-record}

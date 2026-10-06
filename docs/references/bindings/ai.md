@@ -1673,7 +1673,7 @@ GoalDevilRun(human, path, gang, gait, attackDistance, paceDistance, maxSpeed, ur
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the runner; a bad handle does nothing. |
 | 2 | `path` | userdata (only read when given) | The path the chase runs along (read only when a second argument is given). |
-| 3 | `gang` | number, truncated to an integer | Gang id (16-bit) the runner paces itself against (scripts pass the Warriors' gang); its members are the chasers. |
+| 3 | `gang` | number, truncated to an integer | Gang id (16-bit) the runner paces itself against (scripts pass the Warriors' gang); its hindmost live member along the path is the chaser. |
 | 4 | `gait` | number, truncated to an integer | Base gait id (16-bit): its speed (Human_SpeedForGait) is the runner's slowest speed; scripts use constants such as 5. |
 | 5 | `attackDistance` | number (single precision) | Hostile runner only: metres (measured along the path) at which it turns to attack a running chaser (goal `+0x1c`). |
 | 6 | `paceDistance` | number (single precision) | Metres over which the speed is blended (goal `+0x20`): the distance to the chaser divided by this gives the 0-1 blend factor. |
@@ -1683,15 +1683,17 @@ GoalDevilRun(human, path, gang, gait, attackDistance, paceDistance, maxSpeed, ur
 
 **Returns** nothing.
 
-Pushes a devil-run goal (type 152), the rooftop and street chases: the runner heads for the path's last point while
-pacing itself against the gang. Every 7 updates it measures the distance to its chosen chaser (the gang member nearest
-the path, re-chosen every 29 updates) and sets its speed between the gait's and `maxSpeed` by that distance over
-`paceDistance`. Every 17 updates it ends once a gang member has passed the path's last point.
+Pushes a devil-run goal (type 152), the rooftop and street chases: the runner moves straight for the path's last point
+(a move action that plans its own route) while pacing itself against the gang. Every 7 updates it measures the distance
+along the path to its chaser (the gang member farthest back along the path, re-chosen every 29 updates) and sets its
+speed between the gait's and `maxSpeed` by that distance over `paceDistance`; a hostile runner attacks a chaser that
+catches it. It ends when the gang has no member or no live member left.
 
 **Notes.** Hostile attack test (0x002e1e10): a running chaser (`+0x1a8` above 2) within attackDistance, or a slower one
 within (1.1 × runner `+0x140`)² (a squared reach against metres); it then sets threat response 2 and pushes goals
-0x002ade10 (2000, 2000) and, in the first case, an engage-enemy goal (0x47). Chaser choice: 0x002e1c18; progress:
-0x002e1b60. The objects of other runners' gangs are not checked.
+0x002ade10 (2000, 2000) and, in the first case, an engage-enemy goal (0x47). Chaser choice: 0x002e1c18; hindmost
+segment: 0x002e1b60. Start / Resume / End save and restore the threat response, the field of view (2π while it runs) and
+a brain byte. Full behaviour: [AI: GoalDevilRun](../../research/ai.md#devil-run).
 
 - **Evidence:** confirmed (code) at `0x002e1760`, `0x002e1850`, `0x002e2230`; detail: traced
 - **Wrapper** `0x00360d98` (registered by `RegisterBindings`); **calls** `0x002e1760` `Goal_DevilRun`, `0x002e1850`

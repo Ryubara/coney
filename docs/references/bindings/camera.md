@@ -594,8 +594,8 @@ projection counts.
 
 **Notes.** Placement: CamRail_PlaceLeading 0x0013e708; it raises the camera to target z + the height (CamModifyRail 1)
 when that is above 0 and pushes it out of world collision. Switch 7 adds the lead to the look-at point ([Camera:
-switches](../../research/camera.md#switches)). Mode 0 (after CamSetupRail, 0x0013d6b0) is not traced. No rail camera:
-nothing.
+switches](../../research/camera.md#switches)). Mode 0 (after CamSetupRail, 0x0013d6b0): [Camera: rail
+cameras](../../research/camera.md#rail). No rail camera: nothing.
 
 - **Evidence:** confirmed (code) at `0x0011cf70`, `0x0013e708`; detail: traced
 - **Wrapper** `0x003666e8` (registered by `RegisterBindings`); **calls** `0x0011cf70` `Camera_SetRailLead`, `0x0013e708`
@@ -680,7 +680,7 @@ CamModifyRail(param, value, seconds, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `param` | number, truncated to an unsigned integer | Which setting: 0 distance kept from the target (m, 0 off), 1 height above the target (m, negative keeps the current), 2 field of view (degrees, negative ignored), 5 and 8 angles in degrees (below -360 switches them off), 9 the look-at offset's height (m); 3, 4, 6 and 7 are eased values not traced; others do nothing. |
+| 1 | `param` | number, truncated to an unsigned integer | Which setting: 0 the most the camera stays from its target point in plan (m, 0 off), 1 the most it stands above the target's feet (m, negative off), 2 field of view (degrees, negative ignored), 3 the target point's shift along the rail (m), 4 the look-at point's further shift along the rail (m), 5 an angle that switches the rail to mode 3, 8 a fixed look-at pitch (degrees; below -360 switches 5 and 8 off), 9 the look-at offset's height (m); 6 and 7 not traced; others do nothing. Meanings for mode 0: [Camera: rail cameras](../../research/camera.md#rail). |
 | 2 | `value` | number (single precision) | The new value, in the setting's unit. |
 | 3 | `seconds` | number (single precision) | Time in seconds to ease linearly from the current value to the new one; 0 for at once. |
 | 4 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player's rail camera. |
@@ -691,9 +691,10 @@ Changes one of a rail camera's settings, reached over `seconds`: the rail update
 by the remaining time every frame (targets at `+0x374`-`+0x398`, times at `+0x3a0`-`+0x3c4`). Scripts mostly change the
 field of view (2) and the height and distance to frame a chase.
 
-**Notes.** Setting 5 (0x0013fac8) switches the rail to mode 3 (placement 0x0013dcc8, not traced) and back to mode 0 when
-switched off; setting 8 (0x0013fb30) turns 0 into -0.05°. When an angle is switched on its current value starts from the
-camera's present angle (0x0013f9b0). Setting 0 starts from the present distance.
+**Notes.** Setting 1 is a ceiling in mode 0: it lowers the camera, never raises it. Setting 5 (0x0013fac8) switches the
+rail to mode 3 (placement 0x0013dcc8, not traced) and back to mode 0 when switched off; setting 8 (0x0013fb30) turns 0
+into -0.05°. When an angle is switched on its current value starts from the camera's present angle (0x0013f9b0). Setting
+0 starts from the present distance.
 
 - **Evidence:** confirmed (code) at `0x0011d228`, `0x0013d010`, `0x0013f930`; detail: traced
 - **Wrapper** `0x003668e8` (registered by `RegisterBindings`); **calls** `0x0011d228` `Camera_ModifyRail`, `0x0013d010`
