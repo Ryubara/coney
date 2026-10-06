@@ -49,8 +49,9 @@ struct StageCharacter {
 ///
 /// Coney's glue; the behaviour it shows is docs/research/scenes.md's. **Coney's choices**: without the cameras (the
 /// sandbox) the camera blend back is a cut; a puppet stays where its scene left it (Coney has no game human behind
-/// it yet); captions, particles, rumble and the brains' freeze are logged and counted, not shown; the soundtrack plays
-/// on the speech bus and stops when the cinematic ends, and other scene sounds play unplaced on the effects bus.
+/// it yet); captions, particles, rumble and the brains' freeze are logged and counted, not shown; the soundtrack (the
+/// sound engine's scene sound) stops when the cinematic ends, and a scene sound at a human the scene does not hold
+/// plays unplaced on the effects bus.
 class SceneStage final : public scenes::SceneHost {
   public:
     /// Loads the character `model` names, for drawing.
@@ -74,8 +75,8 @@ class SceneStage final : public scenes::SceneHost {
     /// Hands the scene camera to player 1's `cameras` (null: the stage keeps it alone); they must outlive the stage's
     /// use of them.
     void setCameras(camera::Cameras* cameras) { m_cameras = cameras; }
-    /// Tells the stage whether a cinematic is playing (the original's scene state): music ducks while one is, and the
-    /// soundtrack stops when it ends.
+    /// Tells the stage whether a cinematic is playing (the original's scene state): the soundtrack stops when it ends
+    /// (the engine ducks the music while its soundtrack plays).
     void setCinematic(bool playing);
     /// Sets the role names of the scene about to play (the human's model may follow its role), by role index.
     void setRoleNames(std::vector<std::string> names) { m_roleNames = std::move(names); }
@@ -137,6 +138,9 @@ class SceneStage final : public scenes::SceneHost {
     void log(std::string_view line) override { m_print(line); }
 
   private:
+    // The game's sound engine, or null when there is none.
+    [[nodiscard]] audio::SoundEngine* soundEngine() const;
+
     // A bound human the stage draws.
     struct Puppet {
         StageCharacter loaded;
@@ -172,9 +176,6 @@ class SceneStage final : public scenes::SceneHost {
     std::uint64_t m_sounds = 0;
     audio::SoundPlayer* m_soundPlayer = nullptr;
     camera::Cameras* m_cameras = nullptr;
-    std::optional<audio::SoundId> m_soundtrack; // prepared, waiting for its start event
-    audio::VoiceHandle m_soundtrackVoice;
-    std::optional<float> m_musicBeforeDuck; // the music bus's volume while ducked
     std::uint64_t m_particles = 0;
     std::uint64_t m_rumbles = 0;
     std::uint64_t m_soundtracks = 0;

@@ -312,48 +312,47 @@ void SceneStage::colouredFade(bool out, std::uint32_t /*rgb*/, float seconds) {
 
 void SceneStage::caption(std::string_view /*scene*/, int command) { m_captions += command == 0 ? 1 : 0; }
 
+// The game's sound engine, or null when there is none (no audio, no disc).
+audio::SoundEngine* SceneStage::soundEngine() const {
+    return m_soundPlayer != nullptr ? m_soundPlayer->engine() : nullptr;
+}
+
 void SceneStage::soundtrackPrepare(std::uint32_t hash) {
-    // The previous scene's soundtrack stops (docs/research/sound.md#scene-sound); Coney's sounds play from memory, so
-    // preparing is only remembering the id.
+    // The engine stops the previous scene's soundtrack and buffers this one silent on a stereo stream pair
+    // (docs/research/sound.md#scene-sound).
     ++m_soundtracks;
-    if (m_soundPlayer != nullptr) {
-        m_soundPlayer->stop(m_soundtrackVoice);
+    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr) {
+        engine->preloadSceneSound(hash);
     }
-    m_soundtrackVoice = {};
-    m_soundtrack = hash;
 }
 
 void SceneStage::soundtrackStart() {
-    // Coney's choice: the speech bus, as the soundtrack is thought to carry the dialogue (speculative in sound.md).
-    if (m_soundPlayer != nullptr && m_soundtrack) {
-        m_soundtrackVoice = m_soundPlayer->play(*m_soundtrack, audio::VoiceParams{.bus = audio::Bus::Speech});
+    // Scene event 13: the prepared soundtrack starts, and the music ducks while it plays.
+    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr) {
+        engine->startSceneSound();
     }
 }
 
-void SceneStage::sound(std::uint32_t hash, std::optional<double> /*object*/) {
-    // Coney's choice until humans carry speech handles: unplaced, on the effects bus.
+void SceneStage::sound(std::uint32_t hash, std::optional<double> object) {
+    // At the human the scene holds, when it holds him; otherwise Coney's choice: unplaced, on the effects bus.
     ++m_sounds;
-    if (m_soundPlayer != nullptr) {
-        m_soundPlayer->play(hash, audio::VoiceParams{.bus = audio::Bus::Sfx});
-    }
-}
-
-void SceneStage::setCinematic(bool playing) {
-    // Music x 0.75 while a cinematic plays (docs/research/sound.md#music); the old volume comes back after.
-    constexpr float kMusicDuck = 0.75F;
     if (m_soundPlayer == nullptr) {
         return;
     }
-    if (playing && !m_musicBeforeDuck) {
-        m_musicBeforeDuck = m_soundPlayer->busVolume(audio::Bus::Music);
-        m_soundPlayer->setBusVolume(audio::Bus::Music, *m_musicBeforeDuck * kMusicDuck);
-    } else if (!playing && m_musicBeforeDuck) {
-        m_soundPlayer->setBusVolume(audio::Bus::Music, *m_musicBeforeDuck);
-        m_musicBeforeDuck.reset();
-        // Coney's choice: the soundtrack ends with the cinematic, so a skip silences it.
-        m_soundPlayer->stop(m_soundtrackVoice);
-        m_soundtrackVoice = {};
-        m_soundtrack.reset();
+    if (object) {
+        if (const std::optional<scenes::RoleFrame> frame = frameOf(*object, 1.0F); frame) {
+            m_soundPlayer->play3D(hash, audio::SoundVec{frame->feet.x, frame->feet.y, frame->feet.z});
+            return;
+        }
+    }
+    m_soundPlayer->play(hash, audio::VoiceParams{.bus = audio::Bus::Sfx});
+}
+
+void SceneStage::setCinematic(bool playing) {
+    // The music's duck is the engine's while its scene soundtrack plays (docs/research/sound.md#music). Coney's choice:
+    // the soundtrack ends with the cinematic, so a skip silences it.
+    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr && !playing) {
+        engine->stopSceneSound();
     }
 }
 

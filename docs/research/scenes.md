@@ -523,11 +523,12 @@ frame. In a level the scene camera is player 1's ([Camera](camera.md#scenes)): t
 shown, its keys set the scene camera's view and its end pops the camera back over `BlendCam` seconds (in the sandbox,
 with no cameras, the end is a cut). The player and the level's cast (the humans its scripts made) are posed from
 their roles' frames and, when let go, stand where the scene left them (a cast human placed as a spawn places it);
-other bound humans are drawn as puppets of their characters. Sounds go through the sound player ([Sound](sound.md#scene-sound)):
-the soundtrack starts on its event on the speech bus, music is ducked to 0.75 while the cinematic plays, and the
-soundtrack stops when it ends (Coney's choice, so a skip silences it); events 14 and 71 play unplaced on the effects
-bus. **Coney stand-ins:** captions, particles and rumble are counted; a puppet's model follows its role's name
-(`warrcl` is Cleon's `warr_cl`, and so on); a cast human keeps running its brain while a scene poses it.
+other bound humans are drawn as puppets of their characters. Sounds go through the sound engine
+([Sound](sound.md#scene-sound)): the soundtrack is prepared on the scene's load and starts on its event, the engine
+ducking the music to 0.75 while it plays, and it stops when the cinematic ends (Coney's choice, so a skip silences
+it); events 14 and 71 play at the human the scene holds, else unplaced on the effects bus. **Coney stand-ins:**
+captions, particles and rumble are counted; a puppet's model follows its role's name (`warrcl` is Cleon's `warr_cl`,
+and so on); a cast human keeps running its brain while a scene poses it.
 `--scene NAME` with `--play-level` plays one scene at once ([Building](../guides/building.md#playing-a-level)).
 
 **In play** (`--play-level level99`, headless): at checkpoint 1 `StartAmbient` runs `SuperRunScene(IntroScene)`, and
