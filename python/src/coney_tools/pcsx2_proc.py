@@ -37,6 +37,8 @@ def _need_windows(what: str) -> None:
 @lru_cache(maxsize=1)
 def _kernel32() -> Any:
     """kernel32 with the argument and result types of the calls used here (64-bit handles must not truncate)."""
+    if sys.platform != "win32":  # callers check first; this also tells mypy the Win32-only ctypes names exist
+        raise ConfigError("the Win32 API needs Windows")
     lib = ctypes.WinDLL("kernel32", use_last_error=True)
     lib.OpenProcess.restype = wintypes.HANDLE
     lib.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
@@ -208,6 +210,8 @@ class Window:
 @lru_cache(maxsize=1)
 def _user32() -> Any:
     """user32 with the argument types of the calls used here."""
+    if sys.platform != "win32":  # callers check first; this also tells mypy the Win32-only ctypes names exist
+        raise ConfigError("the Win32 API needs Windows")
     lib = ctypes.WinDLL("user32", use_last_error=True)
     enum_proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
     lib.EnumWindows.argtypes = [enum_proc, wintypes.LPARAM]
@@ -230,6 +234,8 @@ def _user32() -> Any:
 @lru_cache(maxsize=1)
 def _gdi32() -> Any:
     """gdi32 with the argument types of the calls used here."""
+    if sys.platform != "win32":  # callers check first; this also tells mypy the Win32-only ctypes names exist
+        raise ConfigError("the Win32 API needs Windows")
     lib = ctypes.WinDLL("gdi32", use_last_error=True)
     lib.CreateCompatibleDC.restype = wintypes.HDC
     lib.CreateCompatibleDC.argtypes = [wintypes.HDC]
@@ -266,7 +272,9 @@ def _describe(hwnd: int, top_level: bool) -> Window:
 def windows_of(pid: int) -> list[Window]:
     """The windows of a process: its top-level windows, each followed by its child windows (Qt may draw the game in
     one of them). Raises ConfigError off Windows."""
-    _need_windows("window access")
+    if sys.platform != "win32":  # tells mypy the Win32-only ctypes names exist
+        _need_windows("window access")
+        return []
     user = _user32()
     found: list[Window] = []
     enum_proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
