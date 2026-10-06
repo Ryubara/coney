@@ -65,7 +65,8 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
             return std::nullopt;
         }
         // Coney choice: with no camera the player's own position is the eye, looking along +y.
-        ai::PlacementCamera camera{.eye = *player};
+        ai::PlacementCamera camera;
+        camera.eye = *player;
         if (m_cameras != nullptr) {
             const camera::CameraView& view = m_cameras->view();
             camera =
