@@ -5,6 +5,7 @@
 #include <expected>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -34,6 +35,7 @@
 #include "platform/texture_dictionary.h"
 #include "platform/world_renderer.h"
 #include "sandbox/sandbox_world.h"
+#include "warriors/created_humans.h"
 #include "world/debug_camera.h"
 #include "world/sector_budget.h"
 
@@ -82,11 +84,13 @@ struct PlayStats {
 /// scenery, where the original draws its objects (docs/guides/conventions.md#update-and-render). Game time only, so
 /// with `--frames` and `--input-script` a run is the same every time, and the simulation is the same at any frame rate.
 ///
-/// No level script or objects yet. Other characters are a sandbox layout's `target` lines, Coney's passive targets
-/// (human::TargetHuman) stepped after the player, and AI fighters (ai::AiHumans: a layout's `fighter` lines, or spawned
-/// from the debug menus), humans with a brain stepped in the player's characters' step; both are drawn with the
-/// player's model. The parts follow docs/research/characters.md, docs/research/combat.md, docs/research/ai.md and
-/// docs/research/camera.md; the mode is Coney's own glue.
+/// A level entered through GameplayMode (the story, `--play-level LEVEL`) brings its scripts' cast (ScriptedCast):
+/// player 1 is the scripts' first player, and every other human the scripts create is an AI human (ai::AiHumans on
+/// the level's brains) drawn with its own model (play_level_cast.cpp). Otherwise the other characters are a sandbox
+/// layout's `target` lines, Coney's passive targets (human::TargetHuman) stepped after the player, and AI fighters (a
+/// layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's characters'
+/// step; both are drawn with the player's model. The parts follow docs/research/characters.md, docs/research/combat.md,
+/// docs/research/ai.md and docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// It is also the debug menus' way into the game (debug::PlayControls, docs/guides/debug-menu.md): the Player, Camera
 /// and Spawner pages act on it between steps, and render() draws the Debug draw page's lines into the scene.
@@ -100,12 +104,14 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     static constexpr float kCharacterDirectional = 0.7F;
 
     /// Loads level `name` (LevelPlayScenery::load()) and the player's character from `wad`, the player at `start`
-    /// (player 1 as the level script created him) when given, as `setup` says. `print` receives what was loaded and
-    /// streamed (counts only). Everything given must outlive the mode. Fails as the loaders do.
+    /// (player 1 as the level script created him) when given, as `setup` says. With `cast` (the level's scripts' humans
+    /// and brains, from gameplay), the humans the scripts create are made AI humans in the scene (makeCast()).
+    /// `print` receives what was loaded and streamed (counts only). Everything given must outlive the mode. Fails as
+    /// the loaders do.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
     create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
            std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start = std::nullopt,
-           const PlayerSetup& setup = {});
+           const PlayerSetup& setup = {}, const ScriptedCast* cast = nullptr);
 
     /// The player in the sandbox `world` (SandboxPlayScenery::create()), at spawn point `spawn` (the layout's first
     /// when unset), with the character loaded from `wad`, as `setup` says (its start is always snapped). Fails as the
@@ -199,12 +205,13 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
 
     PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                   LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
-                  const PlayerSetup& setup);
+                  const PlayerSetup& setup, const ScriptedCast* cast);
 
     // The character and its texture from `wad`, then the mode round `scenery`: what both create functions share.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
     createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
-               std::function<void(std::string_view)> print, const PlayerSetup& setup = {});
+               std::function<void(std::string_view)> print, const PlayerSetup& setup = {},
+               const ScriptedCast* cast = nullptr);
     // Loads the character `model` names from `wad` and its textures, converted for drawing when `engine` draws: the
     // player's creation, at the start and at a change of character (src/platform/play_level_character.cpp).
     [[nodiscard]] static std::expected<LoadedCharacter, Error> loadCharacter(RenderEngine& engine, const io::Wad& wad,
@@ -226,6 +233,21 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void makeTargets(rw::Texture* texture);
     // Spawns a fighter dropped onto the ground below `spot`, with its mesh.
     void addFighter(anim::Vec3 spot, float headingDegrees);
+    // The level's scripts' humans as AI humans: the AI on the scripts' brains, then the scripts' hold released with
+    // castHuman() as its spawner, which makes the humans created so far and replays the calls on them.
+    void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
+    // One human the scripts created, made: player 1's first creation is the player (his brain bound to it); any other
+    // with a position an AI human of its type's class, drawn as its model, snapped as `HuCreate` snaps. Returns its
+    // brain; null for a creation with no position.
+    ai::Brain* castHuman(const HumanCreation& human);
+    // A character to draw and animate a human as, and its texture.
+    struct CastLook {
+        const human::PlayerCharacter* character = nullptr;
+        rw::Texture* texture = nullptr;
+    };
+    // The character `model` names, loaded once for every human of it; the scene's character when it is empty or fails
+    // to load.
+    CastLook castCharacter(const std::string& model);
     // Draws the character: its lights, the render states, the atomic.
     void drawCharacter() const;
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
@@ -272,11 +294,16 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
     std::vector<human::Combatant*> m_combatants; // the targets, as the player's step takes them
+    // The characters the scripts' humans are drawn as, by model, before the AI so they outlive the humans playing them.
+    std::map<std::string, LoadedCharacter, std::less<>> m_castCharacters;
+    ScriptedCast m_cast;            // the level's scripts' humans and brains; all null without them
+    bool m_castPlayerBound = false; // whether player 1's creation is bound to the player
     // The level's route planner (null without path data), before the AI so it outlives the brains that use it.
     std::unique_ptr<ai::RoutePlanner> m_planner;
     // The AI fighters, and a mesh each (in the fighters' order).
     std::unique_ptr<ai::AiHumans> m_ai;
     struct FighterMesh {
+        const human::PlayerCharacter* character = nullptr; // the character it is skinned as
         std::unique_ptr<CharacterMesh> mesh;
         std::vector<anim::Vec3> positions;
         std::vector<anim::Vec3> normals;

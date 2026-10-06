@@ -51,6 +51,10 @@ class KeepingServices final : public ai::ScriptServices {
         calls.push_back(ScriptCall{std::string(function), {args.begin(), args.end()}, 0, false});
         return callResult;
     }
+    bool humanEvent(ai::Brain& human, const ai::BrainEvent& event) override {
+        humanEvents.emplace_back(&human, event);
+        return humanEventTaken;
+    }
     void playScene(int scene, ai::Brain& /*human*/, std::string_view callback) override {
         scenes.emplace_back(scene, std::string(callback));
     }
@@ -70,6 +74,8 @@ class KeepingServices final : public ai::ScriptServices {
     ai::Brain* playerBrain = nullptr;
     std::vector<ScriptCall> calls;
     bool callResult = false;
+    std::vector<std::pair<ai::Brain*, ai::BrainEvent>> humanEvents; // offered to a human's own handlers
+    bool humanEventTaken = false;
     std::vector<std::pair<int, std::string>> scenes;
     bool sceneOver = false;
     std::vector<int> stopped;

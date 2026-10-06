@@ -23,6 +23,7 @@
     senders of 3, 4, 5 (volume boxes, trigger spheres) and 8 (flags) are confirmed, the meaning of the others is
     inferred from the scripts' handler names (references/script-events.md).
   usage: {chunks: 195, calls: 3040, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: SetObjZoneMsgHandler
   wrapper: 0x0036d258
@@ -71,6 +72,7 @@
     With message 0 and a non-empty prompt the object's prompt is set (vtable `+0x124`); otherwise its prompt is
     cleared (`+0x12c`).
   usage: {chunks: 43, calls: 212, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: doFile
   wrapper: 0x0036d648

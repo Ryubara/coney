@@ -114,7 +114,8 @@ bool samePlace(const std::array<float, 3>& a, const std::array<float, 3>& b) {
 coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& renderer, const coney::io::Wad& wad,
                                             coney::world::SectorBudget& budget) {
     return [&renderer, &wad,
-            &budget](const coney::LevelStart& start) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+            &budget](const coney::LevelStart& start,
+                     const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
         std::optional<coney::human::PlayerStart> playerStart;
         coney::platform::PlayerSetup setup;
         if (start.player) {
@@ -128,7 +129,7 @@ coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& rende
             setup.snapToGround = !player.teleported;
         }
         auto mode = coney::platform::PlayLevelMode::create(
-            renderer, wad, start.level, budget, [](std::string_view) {}, playerStart, setup);
+            renderer, wad, start.level, budget, [](std::string_view) {}, playerStart, setup, &cast);
         if (!mode) {
             return std::unexpected(std::move(mode.error()));
         }
@@ -205,8 +206,8 @@ TEST_CASE("the disc's STORY reaches Rembrandt standing in level99 under the pad'
         },
         strings, coney::LegalScreenSettings{}, [&log](std::string_view line) { log.emplace_back(line); },
         coney::script::wadScriptSource(*wad),
-        [&renderer, &theWad,
-         &budget](const coney::LevelStart& start) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+        [&renderer, &theWad, &budget](const coney::LevelStart& start, const coney::ScriptedCast& cast)
+            -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
             std::optional<coney::human::PlayerStart> playerStart;
             if (start.player && start.player->position) {
                 const std::array<float, 3> p = start.player->position.value_or(std::array<float, 3>{});
@@ -214,7 +215,7 @@ TEST_CASE("the disc's STORY reaches Rembrandt standing in level99 under the pad'
                                                         .headingDegrees = start.player->headingDegrees};
             }
             auto mode = coney::platform::PlayLevelMode::create(
-                renderer, theWad, start.level, budget, [](std::string_view) {}, playerStart);
+                renderer, theWad, start.level, budget, [](std::string_view) {}, playerStart, {}, &cast);
             if (!mode) {
                 return std::unexpected(std::move(mode.error()));
             }

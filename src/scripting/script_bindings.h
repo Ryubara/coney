@@ -18,9 +18,14 @@
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
 
+namespace coney::world_objects {
+class VolumeBoxes;
+} // namespace coney::world_objects
+
 namespace coney::script {
 
 class AiBindingHost;
+class MessageHandlers;
 
 /// What the bindings ask of the game outside the script system and the game state: the menus, the level flow, the
 /// screen effects and the audio and movie stand-ins. The front end (gamemodes/start_up_flow.h) implements it.
@@ -107,14 +112,16 @@ class RecordedCalls {
 
 /// What the bindings work on. Everything must outlive the script system's states.
 struct BindingContext {
-    GameState* state = nullptr;                 ///< Read by the getters, filled by `CfgLevelName`.
-    gui::GlobalStrings* strings = nullptr;      ///< Filled by `CfgHUDMessage` and the other string bindings.
-    BindingHost* host = nullptr;                ///< Menus, level flow, screen effects, audio and movies.
-    RecordedCalls* recorded = nullptr;          ///< The recording stubs' arguments.
-    CreatedHumans* humans = nullptr;            ///< Where `HuCreate` keeps the humans it makes; null keeps none.
-    world_objects::WorldFlags* flags = nullptr; ///< The level's world flags (`AddFlag`); null keeps none.
-    gui::RumbleData* rumble = nullptr;          ///< The Rumble menu's lists (`CfgRumble*`); null keeps none.
-    AiBindingHost* ai = nullptr;                ///< The brains the AI bindings drive; null drives none.
+    GameState* state = nullptr;                  ///< Read by the getters, filled by `CfgLevelName`.
+    gui::GlobalStrings* strings = nullptr;       ///< Filled by `CfgHUDMessage` and the other string bindings.
+    BindingHost* host = nullptr;                 ///< Menus, level flow, screen effects, audio and movies.
+    RecordedCalls* recorded = nullptr;           ///< The recording stubs' arguments.
+    CreatedHumans* humans = nullptr;             ///< Where `HuCreate` keeps the humans it makes; null keeps none.
+    world_objects::WorldFlags* flags = nullptr;  ///< The level's world flags (`AddFlag`); null keeps none.
+    gui::RumbleData* rumble = nullptr;           ///< The Rumble menu's lists (`CfgRumble*`); null keeps none.
+    AiBindingHost* ai = nullptr;                 ///< The brains the AI bindings drive; null drives none.
+    MessageHandlers* messages = nullptr;         ///< The objects' handlers (`SetMsgHandler`); null keeps none.
+    world_objects::VolumeBoxes* boxes = nullptr; ///< The level's volume boxes (`AddVolumeBox`); null keeps none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

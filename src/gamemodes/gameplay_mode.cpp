@@ -4,20 +4,51 @@
 #include <array>
 #include <format>
 #include <utility>
+#include <vector>
 
 #include "core/game_timer.h"
 
 namespace coney {
 
-GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem& scripts, GameState& state,
-                           CreatedHumans& humans, world_objects::WorldFlags& flags, LevelLoader loader,
+GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem& scripts,
+                           script::BindingContext& context, GameState& state, CreatedHumans& humans,
+                           world_objects::WorldFlags& flags, const script::RecordedCalls& recorded, LevelLoader loader,
                            std::function<void(std::string_view)> log)
-    : m_device(device), m_scripts(scripts), m_state(state), m_humans(humans), m_flags(flags),
-      m_loader(std::move(loader)), m_log(std::move(log)) {}
+    : m_device(device), m_scripts(scripts), m_context(context), m_state(state), m_humans(humans), m_flags(flags),
+      m_recorded(recorded), m_loader(std::move(loader)), m_log(std::move(log)) {}
+
+GameplayMode::~GameplayMode() { endLevel(); }
+
+void GameplayMode::endLevel() {
+    // The level first: its humans are what the brains refer to. Then the scripts' hold, then the brains it holds.
+    m_level.reset();
+    if (m_context.ai == m_scripted.get()) {
+        m_context.ai = nullptr;
+    }
+    m_scripted.reset();
+    m_brains.reset();
+}
 
 void GameplayMode::enter() {
+    // The level's brains and gangs (InitLevel's AI reset), which its script's bindings drive. The calls on the humans
+    // the script creates wait until the level has loaded its characters and made them.
+    endLevel();
+    m_brains = std::make_unique<ai::Brains>();
+    m_scripted = std::make_unique<ai::ScriptedBrains>(*m_brains, m_flags,
+                                                      [this](double handle) { return m_humans.placement(handle); });
+    m_scripted->setScripts(&m_scripts);
+    m_scripted->setMessages(m_context.messages);
+    m_scripted->hold();
+    // The last level's objects are gone, and their handlers and boxes with them.
+    if (m_context.messages != nullptr) {
+        m_context.messages->clear();
+    }
+    if (m_context.boxes != nullptr) {
+        m_context.boxes->clear();
+    }
+    m_context.ai = m_scripted.get();
+
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
-    m_level.reset();
     const LevelStart& start = m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName));
     const HumanCreation* player = start.player ? &*start.player : nullptr;
     m_playerTeleports = player != nullptr ? player->teleports : 0;
@@ -39,7 +70,10 @@ void GameplayMode::enter() {
     // The level itself, with the player at that start; entering it preloads the world around him.
     std::expected<std::unique_ptr<GameMode>, Error> level = fail(ErrorCode::NotFound, "no level loader");
     if (m_loader) {
-        level = m_loader(start);
+        level = m_loader(start, ScriptedCast{.humans = &m_humans,
+                                             .recorded = &m_recorded,
+                                             .brains = m_brains.get(),
+                                             .scripted = m_scripted.get()});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));
@@ -58,6 +92,7 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
+    updateBoxes(nowMs);
     m_scripts.update(nowMs, frame.seconds);
 
     // A script that teleported player 1 during the frame (the hub's door walk) moves him in the level.
@@ -74,6 +109,16 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     return result;
 }
 
+void GameplayMode::updateBoxes(std::uint64_t nowMs) {
+    if (m_context.boxes == nullptr || m_context.messages == nullptr || !m_scripted) {
+        return;
+    }
+    const std::vector<world_objects::BoxSubject> subjects = m_scripted->boxSubjects();
+    m_context.boxes->update(subjects, nowMs, [this](double box, int message, double human) {
+        m_context.messages->deliver(m_scripts, box, message, human, 0.0, 0.0);
+    });
+}
+
 void GameplayMode::render(const RenderTime& time) {
     if (m_level) {
         m_level->render(time);
@@ -86,10 +131,16 @@ void GameplayMode::render(const RenderTime& time) {
 void GameplayMode::exit() {
     if (m_level) {
         m_level->exit();
-        m_level.reset();
     }
+    endLevel();
     m_humans.clear();
     m_flags.clear();
+    if (m_context.messages != nullptr) {
+        m_context.messages->clear();
+    }
+    if (m_context.boxes != nullptr) {
+        m_context.boxes->clear();
+    }
     // UnloadLevel destroys the script system and makes it again: the next level starts from the bindings alone.
     if (m_scripts.exists()) {
         m_scripts.create();

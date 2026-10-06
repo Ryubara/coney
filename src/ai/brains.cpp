@@ -64,7 +64,33 @@ void Brains::update() {
             keepBooks(*brain);
         }
     }
+    reportDamage();
     reportDowns();
+}
+
+void Brains::reportDamage() {
+    for (const std::unique_ptr<Brain>& brain : m_brains) {
+        const int health = brain->human().fighter().health().value();
+        const int seen = brain->seenHealth();
+        brain->setSeenHealth(health);
+        if (seen < 0 || health >= seen) {
+            continue;
+        }
+        // The attacker is not passed down with the hit, so the nearest human that can fight stands in for it.
+        Brain* nearest = nullptr;
+        float best = std::numeric_limits<float>::max();
+        for (const std::unique_ptr<Brain>& other : m_brains) {
+            if (other.get() == brain.get() || !Brain::fightable(*other)) {
+                continue;
+            }
+            const float distance = brain->distanceTo(*other);
+            if (distance < best) {
+                best = distance;
+                nearest = other.get();
+            }
+        }
+        deliverEvent(*brain, BrainEvent{.id = kEventDamaged, .other = nearest, .value = seen - health});
+    }
 }
 
 void Brains::reportDowns() {

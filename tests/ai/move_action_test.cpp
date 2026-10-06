@@ -4,11 +4,13 @@
 // Synthetic clips, a flat floor and synthetic path data; game time is the steps run (1/30 s each).
 #include "ai/move_action.h"
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -27,6 +29,7 @@
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
 #include "support/path_fixtures.h"
+#include "warriors/created_humans.h"
 #include "world_objects/flags.h"
 
 using coney::ai::Brain;
@@ -363,4 +366,47 @@ TEST_CASE("the scripts' brains take GoalMoveToFlag and ActLookAt by handle and i
     CHECK(other.actionCount() == 0);
     scripted.unbind(2.0);
     CHECK(scripted.brain(2.0) == nullptr);
+}
+
+TEST_CASE("the scripts' brains hold calls until the level makes the humans, then run them in order", "[ai][flag]") {
+    MoveScene scene;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
+    scripted.hold();
+    coney::HumanCreation ash;
+    ash.name = "Ash";
+    ash.type = 40;
+    ash.position = std::array<float, 3>{41.0F, 41.0F, 0.0F};
+    ash.handle = 7.0;
+    scripted.humanCreated(ash);
+    scripted.brSuspend(7.0, true);
+    scripted.humanTeleported(
+        7.0, coney::world_objects::Placement{.position = {45.0F, 41.0F, 0.0F}, .headingDegrees = 30.0F});
+    CHECK(scripted.holding());
+    CHECK(scripted.held() == 3);
+    CHECK(scripted.brain(7.0) == nullptr);
+
+    std::vector<std::string> made;
+    scripted.release([&](const coney::HumanCreation& human) -> Brain* {
+        made.push_back(human.name);
+        return &scene.add({human.position->at(0), human.position->at(1), human.position->at(2)}, human.headingDegrees);
+    });
+    CHECK_FALSE(scripted.holding());
+    CHECK(made == std::vector<std::string>{"Ash"});
+    Brain* brain = scripted.brain(7.0);
+    REQUIRE(brain != nullptr);
+    CHECK(brain->handle() == 7.0);
+    CHECK(brain->characterClass() == 40);
+    CHECK(brain->suspended());
+    CHECK(brain->services() == &scripted);
+    // Teleported to the flag, and found there by its handle.
+    const coney::world_objects::Placement at = scripted.humanPlacement(7.0).value_or(coney::world_objects::Placement{});
+    REQUIRE(scripted.humanPlacement(7.0).has_value());
+    CHECK(std::fabs(at.position[0] - 45.0F) < 1e-3F);
+    CHECK(std::fabs(at.headingDegrees - 30.0F) < 1e-2F);
+
+    // Once released, calls run at once.
+    scripted.brSuspend(7.0, false);
+    CHECK_FALSE(brain->suspended());
 }

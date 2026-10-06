@@ -28,6 +28,7 @@ namespace coney::ai {
 class Brain;
 class Formation;
 class Gang;
+class ScriptServices;
 
 /// A brain's type (`+0x04`), from its character class's behaviour byte (docs/research/ai.md#types).
 enum class BrainType : std::uint8_t {
@@ -79,9 +80,11 @@ inline constexpr int kDefaultAttackDelayMs = 200;
 /// The base chance to block (`CfgBaseChanceToBlock`, `0x00510ac8`, percent), 60 at runtime.
 inline constexpr int kDefaultBaseBlockChance = 60;
 
-/// The events Coney delivers to a human (`Human_OnEvent`, docs/research/ai.md#events): an enemy added to its brain
+/// The events Coney delivers to a human (`Human_OnEvent`, docs/research/ai.md#events): damage taken (1, a **Coney
+/// stand-in** sender, Brains::reportDamage()), an enemy added to its brain
 /// (`0xb`, for the gang's tactic), an attack started on it within its brain's range and field of view (`0x10`), and its
 /// health run out (18, for its gang's message handler).
+inline constexpr int kEventDamaged = 1;
 inline constexpr int kEventEnemyAdded = 0x0b;
 inline constexpr int kEventAttackWarning = 0x10;
 inline constexpr int kEventDown = 18;
@@ -157,6 +160,13 @@ class Brain {
     /// Whether its human's health running out has been told (event 18).
     [[nodiscard]] bool downReported() const { return m_downReported; }
     void setDownReported(bool reported) { m_downReported = reported; }
+    /// Its human's health when the brains last looked (Brains::reportDamage()); -1 before the first look.
+    [[nodiscard]] int seenHealth() const { return m_seenHealth; }
+    void setSeenHealth(int health) { m_seenHealth = health; }
+    /// What its human's own script handlers are reached through (deliverEvent()); null for none. The level's scripted
+    /// brains set it when they bind the brain to a handle.
+    [[nodiscard]] ScriptServices* services() const { return m_services; }
+    void setServices(ScriptServices* services) { m_services = services; }
 
     // --- The update (docs/research/ai.md#update-goals).
 
@@ -413,11 +423,13 @@ class Brain {
     Formation* m_following = nullptr; // +0x212
     PadControl m_padControl;
     bool m_downReported = false;
+    int m_seenHealth = -1;
+    ScriptServices* m_services = nullptr;
 };
 
-/// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its gang first (`Gang_OnEvent`), then, unless the gang
-/// used it, its brain (Brain::onEvent()). Returns whether either used it. **Coney choice**: a human's own script
-/// handlers (`SetMsgHandler`), which come first in the original, are not built.
+/// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its own script handlers first (`SetMsgHandler`, through
+/// the brain's services, `0x00384c38`), then, unless they took it, its gang (`Gang_OnEvent`), then, unless the gang
+/// used it, its brain (Brain::onEvent()). Returns whether any used it.
 /// @orig 0x0021d4e8 Human_OnEvent (unknown)
 bool deliverEvent(Brain& brain, const BrainEvent& event);
 

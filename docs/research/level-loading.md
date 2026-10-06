@@ -570,8 +570,9 @@ and [Characters](characters.md#level-starts):
   and returns a handle, or `NilHandle` when all 60 are taken.
 - **The loading and the player** are the play mode's (`src/platform/play_level_mode.h`), given to gameplay as a level
   loader by `main`. It snaps the start to the ground as `HuCreate` does (a 2.5 m ray from 1 m above).
-- **`--play-level NAME [--checkpoint N]`** runs the same script step alone (`runLevelScriptAlone`): the preloads, a
-  fresh state, `SetCheckPoint(N)` and the level's index, then the level script; the play mode starts the player there.
+- **`--play-level NAME [--checkpoint N]`** enters the level through gameplay too, after the preloads, a fresh state,
+  `SetCheckPoint(N)` and the level's index (`LevelScripts`), so its scripts and their humans run in play as in the
+  story ([AI](ai.md#coney), [Scripts](scripting.md#coneys-implementation)).
 - **Disc check (NTSC-U, 2026-10-05, positions only):** `coney_tests "[disc][story]"` finds player 1 at the
   [Level starts](../references/level-starts.md) values for `level99` checkpoints 1 and 2, `level2` 3, `level3` 4 and
   `level5` 2, with the name and type each lists; `level99` checkpoint 1 makes 2 humans with no script error.
@@ -584,7 +585,7 @@ Coney's choices and stand-ins for mode 1:
   loads, and `preLoadFile` runs the checkpoint's script at once and then calls its callback by name. A teleport of
   player 1 by the scripts, at the start or later, moves the player. The player has control on the first frame.
 - `HuCreate` does not snap the position or write it back into the script's table (no collision is loaded while the
-  script runs; the play mode snaps it); the gang, the unused string and the flag are not kept.
+  script runs; the play mode snaps it); the unused string and the flag are not kept.
 - The player is drawn as the model his type names ([Characters](characters.md#coneys-implementation)), Rembrandt
   when there is none.
 - A creation whose position is not a table of three numbers is kept without a position and counts as a start only

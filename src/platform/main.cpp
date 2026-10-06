@@ -278,38 +278,28 @@ coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::str
     return options;
 }
 
-// Runs level `name`'s scripts alone, as the story would reach it at `checkpoint`
-// (docs/guides/building.md#playing-a-level), and prints what they made: the start and counts only. The run's
-// configuration calls stay in its recorded calls (the AI fighters' configuration).
-coney::LevelScriptRun scriptRunFor(const coney::io::Wad& wad, std::string_view name, int checkpoint) {
+// The scripts of level `name` as the story reaches it at `checkpoint`, without the menus
+// (docs/guides/building.md#playing-a-level): the preloads, a fresh Lua state and the checkpoint, ready for gameplay to
+// run the level's script. The player's turning comes from the preloads' configuration.
+std::unique_ptr<coney::LevelScripts> levelScriptsFor(const coney::io::Wad& wad, std::string_view name, int checkpoint) {
     std::vector<std::uint32_t> table;
-    const coney::LevelScriptRun run = coney::runLevelScriptAlone(coney::script::wadScriptSource(wad), name, checkpoint,
-                                                                 printText, levelScriptOptions(wad, name, table));
-    applyTurnConfig(run.recorded);
-    const std::optional<coney::human::PlayerStart> start = playerStartOf(run.start);
-    if (start && run.start.player) {
-        printText(std::format("level script: {} checkpoint {}: player 1 {} (type {}, model {}) at ({:.2f}, {:.2f}, "
-                              "{:.2f}) heading {:.0f}{}; {} humans, {} flags, {} script errors, {} skipped calls\n",
-                              name, checkpoint, run.start.player->name, run.start.player->type,
-                              run.start.player->model.empty() ? "unknown" : run.start.player->model, start->position.x,
-                              start->position.y, start->position.z, start->headingDegrees,
-                              run.start.player->teleported ? " (teleported to a flag)" : "", run.humans, run.flags,
-                              run.scriptErrors, run.skippedCalls));
-    } else {
-        printText(std::format("level script: {} checkpoint {}: no player 1 with a position; {} humans, {} flags, {} "
-                              "script errors, {} skipped calls\n",
-                              name, checkpoint, run.humans, run.flags, run.scriptErrors, run.skippedCalls));
-    }
-    return run;
+    auto scripts = std::make_unique<coney::LevelScripts>(coney::script::wadScriptSource(wad), name, checkpoint,
+                                                         printText, levelScriptOptions(wad, name, table));
+    applyTurnConfig(scripts->recorded());
+    return scripts;
 }
 
-// Player 1's setup for a level run alone: his model and snap, and the AI fighters' configuration and the character
-// types from the run.
-coney::platform::PlayerSetup playerSetupOf(const coney::LevelScriptRun& run) {
-    coney::platform::PlayerSetup setup = playerSetupOf(run.start);
-    setup.ai = coney::ai::aiConfigFrom(run.recorded);
-    setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
-    return setup;
+// The play mode gameplay loads for `start`: player 1 where the level's scripts left him, as the character his type
+// names; the AI fighters and the character types as the scripts configured them (`recorded`); and the scripts' cast.
+std::expected<std::unique_ptr<coney::platform::PlayLevelMode>, coney::Error>
+playModeFor(coney::platform::RenderEngine& renderer, const coney::io::Wad& wad, coney::world::SectorBudget& budget,
+            const coney::LevelStart& start, const coney::ScriptedCast& cast,
+            const coney::script::RecordedCalls& recorded) {
+    coney::platform::PlayerSetup setup = playerSetupOf(start);
+    setup.ai = coney::ai::aiConfigFrom(recorded);
+    setup.types = coney::characters::CharacterTypes::fromRecorded(recorded);
+    return coney::platform::PlayLevelMode::create(renderer, wad, start.level, budget, printText, playerStartOf(start),
+                                                  setup, &cast);
 }
 
 // The setup of a sandbox's player: **Coney's choice**, level99's configuration (the combat training level whose
@@ -462,6 +452,47 @@ int main(int argc, char** argv) {
     std::unique_ptr<coney::platform::SandboxViewerMode> sandboxViewer;
     // The debug lines a story level's play mode draws: the debug session's, once it exists (below).
     const coney::debug::DebugDrawOptions* storyDebugDraw = nullptr;
+    // A level played on its own (`--play-level NAME`, the Levels page): gameplay (mode 1) over the level's scripts as
+    // the story reaches them, its level loaded as the play mode. The scripts outlive the gameplay that runs them.
+    std::unique_ptr<coney::LevelScripts> levelScripts;
+    std::unique_ptr<coney::GameplayMode> levelGameplay;
+    // Makes that gameplay for level `name` at `checkpoint`, replacing any before (which must be off the stack); with
+    // `commandLine`, its play mode takes the command line's --start and --trace.
+    const auto makeLevelGameplay = [&](const std::string& name, int checkpoint, bool commandLine) {
+        levelGameplay.reset();
+        levelScripts = levelScriptsFor(*wad, name, checkpoint);
+        coney::LevelScripts& scripts = *levelScripts;
+        coney::GameplayMode::LevelLoader loader =
+            [&renderer, &wad, &sectorBudget, &storyDebugDraw, &scripts, &options, commandLine](
+                const coney::LevelStart& start,
+                const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+            auto mode = playModeFor(renderer, *wad, sectorBudget, start, cast, scripts.recorded());
+            if (!mode) {
+                return std::unexpected(std::move(mode.error()));
+            }
+            (*mode)->setDebugDraw(storyDebugDraw);
+            if (commandLine) {
+                // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's start.
+                if (const std::optional<coney::StartPlace> place = options->start; place) {
+                    (*mode)->startAt(*place);
+                }
+                if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
+                    if (auto traced = (*mode)->traceTo(*tracePath); !traced) {
+                        return std::unexpected(std::move(traced.error()));
+                    }
+                }
+            }
+            return std::unique_ptr<coney::GameMode>(std::move(*mode));
+        };
+        levelGameplay = std::make_unique<coney::GameplayMode>(renderer, scripts.scripts(), scripts.context(),
+                                                              scripts.state(), scripts.humans(), scripts.flags(),
+                                                              scripts.recorded(), std::move(loader), printText);
+        levelGameplay->setLevel(name);
+    };
+    // The play mode of a level played on its own; null when none is loaded.
+    const auto levelPlayMode = [&levelGameplay]() -> coney::platform::PlayLevelMode* {
+        return levelGameplay ? dynamic_cast<coney::platform::PlayLevelMode*>(levelGameplay->level()) : nullptr;
+    };
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
             return 2; // parseOptions refuses --view-txd without --disc, so this is never reached
@@ -535,35 +566,38 @@ int main(int argc, char** argv) {
             return 2; // parseOptions refuses --play-level without --disc, so this is never reached
         }
         // A level, or a sandbox layout (`sandbox:NAME`) with the same player and camera on its collision mesh.
-        std::expected<std::unique_ptr<coney::platform::PlayLevelMode>, coney::Error> playMode =
-            coney::fail(coney::ErrorCode::NotFound, "no level");
         if (const std::optional<std::string> layout = coney::sandboxOfPlayLevel(*playName); layout) {
             auto world = loadSandbox(*options, *layout);
-            playMode = world ? coney::platform::PlayLevelMode::createInSandbox(
-                                   renderer, *wad, std::move(*world), options->spawn, printText, sandboxSetup(*wad))
-                             : std::unexpected(std::move(world.error()));
-        } else {
-            // The level's script says where player 1 starts at the checkpoint, as when the story reaches it.
-            const coney::LevelScriptRun run = scriptRunFor(*wad, *playName, options->checkpoint.value_or(1));
-            playMode = coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText,
-                                                              playerStartOf(run.start), playerSetupOf(run));
-        }
-        if (!playMode) {
-            std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), playMode.error().message.c_str());
-            return 1;
-        }
-        playLevel = std::move(*playMode);
-        // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's start.
-        if (const std::optional<coney::StartPlace> start = options->start; start) {
-            playLevel->startAt(*start);
-        }
-        if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
-            if (auto traced = playLevel->traceTo(*tracePath); !traced) {
-                std::fprintf(stderr, "coney: %s\n", traced.error().message.c_str());
+            auto playMode =
+                world ? coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world),
+                                                                        options->spawn, printText, sandboxSetup(*wad))
+                      : std::unexpected(std::move(world.error()));
+            if (!playMode) {
+                std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), playMode.error().message.c_str());
                 return 1;
             }
+            playLevel = std::move(*playMode);
+            // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's start.
+            if (const std::optional<coney::StartPlace> start = options->start; start) {
+                playLevel->startAt(*start);
+            }
+            if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
+                if (auto traced = playLevel->traceTo(*tracePath); !traced) {
+                    std::fprintf(stderr, "coney: %s\n", traced.error().message.c_str());
+                    return 1;
+                }
+            }
+            modes.push(*playLevel);
+        } else {
+            // The level as the story reaches it: gameplay runs its scripts, whose `HuCreate` says where player 1
+            // starts at the checkpoint, and loads it with the scripts' humans in it. A level with no world fails here.
+            if (auto worlds = coney::platform::worldNamesFor(*wad, *playName); !worlds) {
+                std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), worlds.error().message.c_str());
+                return 1;
+            }
+            makeLevelGameplay(*playName, options->checkpoint.value_or(1), true);
+            modes.push(*levelGameplay);
         }
-        modes.push(*playLevel);
     } else if (const std::optional<std::string> sandboxName = options->sandbox; sandboxName) {
         // The sandbox with the free camera: no disc needed.
         auto world = loadSandbox(*options, *sandboxName);
@@ -585,16 +619,11 @@ int main(int argc, char** argv) {
         // Gameplay (mode 1) loads the chosen level as the play mode, with player 1 where the level script made him.
         const coney::io::Wad& gameWad = *wad;
         coney::GameplayMode::LevelLoader loadLevel =
-            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw, &startUp](
-                const coney::LevelStart& start) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw](
+                const coney::LevelStart& start,
+                const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
             // The fighters as the flow's scripts configured them.
-            coney::platform::PlayerSetup setup = playerSetupOf(start);
-            if (startUp) {
-                setup.ai = coney::ai::aiConfigFrom(startUp->recorded());
-                setup.types = coney::characters::CharacterTypes::fromRecorded(startUp->recorded());
-            }
-            auto mode = coney::platform::PlayLevelMode::create(renderer, gameWad, start.level, sectorBudget, printText,
-                                                               playerStartOf(start), setup);
+            auto mode = playModeFor(renderer, gameWad, sectorBudget, start, cast, *cast.recorded);
             if (!mode) {
                 return std::unexpected(std::move(mode.error()));
             }
@@ -715,9 +744,12 @@ int main(int argc, char** argv) {
     }
     // The play mode, for the Player, Camera and Spawner pages; and the sandbox layouts the Levels page plays, switched
     // to at the start of the next frame (playSandbox below), outside any step.
-    debugServices.play = [&playLevel, &startUp]() -> coney::debug::PlayControls* {
+    debugServices.play = [&playLevel, &levelPlayMode, &startUp]() -> coney::debug::PlayControls* {
         if (playLevel) {
             return playLevel.get();
+        }
+        if (coney::platform::PlayLevelMode* level = levelPlayMode(); level != nullptr) {
+            return level;
         }
         // A story level in play: gameplay's level is the play mode.
         return startUp ? dynamic_cast<coney::platform::PlayLevelMode*>(startUp->gameplay().level()) : nullptr;
@@ -759,6 +791,17 @@ int main(int argc, char** argv) {
         playLevel->setDebugDraw(&debugSession.debugDraw());
     }
     storyDebugDraw = &debugSession.debugDraw();
+    // The mode a sandbox or level the Levels page plays replaces: the play mode, the level's gameplay or the sandbox
+    // viewer; null when none of them runs.
+    const auto replaceable = [&playLevel, &levelGameplay, &sandboxViewer]() -> coney::GameMode* {
+        if (playLevel) {
+            return playLevel.get();
+        }
+        if (levelGameplay) {
+            return levelGameplay.get();
+        }
+        return sandboxViewer.get();
+    };
     // Plays sandbox layout `name` in place of the play mode or sandbox viewer on top (or above whatever runs): with
     // the player when there is a disc for his character, else with the free camera.
     const auto playSandbox = [&](const std::string& name) {
@@ -768,8 +811,7 @@ int main(int argc, char** argv) {
             return;
         }
         // The mode it replaces must be on top, so no mode above it still runs on it.
-        coney::GameMode* replaced = playLevel ? static_cast<coney::GameMode*>(playLevel.get())
-                                              : static_cast<coney::GameMode*>(sandboxViewer.get());
+        coney::GameMode* replaced = replaceable();
         if (replaced != nullptr && modes.top() != replaced) {
             debugSession.print("levels: finish the mode on top first");
             return;
@@ -785,6 +827,7 @@ int main(int argc, char** argv) {
                 modes.pop();
             }
             sandboxViewer.reset();
+            levelGameplay.reset();
             playLevel = std::move(*mode);
             playLevel->setDebugDraw(&debugSession.debugDraw());
             modes.push(*playLevel);
@@ -799,6 +842,7 @@ int main(int argc, char** argv) {
             modes.pop();
         }
         playLevel.reset();
+        levelGameplay.reset();
         sandboxViewer = std::move(*viewerMode);
         modes.push(*sandboxViewer);
     };
@@ -810,8 +854,7 @@ int main(int argc, char** argv) {
             debugSession.print("levels: " + worlds.error().message);
             return;
         }
-        coney::GameMode* replaced = playLevel ? static_cast<coney::GameMode*>(playLevel.get())
-                                              : static_cast<coney::GameMode*>(sandboxViewer.get());
+        coney::GameMode* replaced = replaceable();
         if (replaced != nullptr && modes.top() != replaced) {
             debugSession.print("levels: finish the mode on top first");
             return;
@@ -821,16 +864,8 @@ int main(int argc, char** argv) {
         }
         playLevel.reset();
         sandboxViewer.reset();
-        const coney::LevelScriptRun run = scriptRunFor(*wad, name, 1);
-        auto mode = coney::platform::PlayLevelMode::create(renderer, *wad, name, sectorBudget, printText,
-                                                           playerStartOf(run.start), playerSetupOf(run));
-        if (!mode) {
-            debugSession.print(std::format("levels: {}: {}", name, mode.error().message));
-            return;
-        }
-        playLevel = std::move(*mode);
-        playLevel->setDebugDraw(&debugSession.debugDraw());
-        modes.push(*playLevel);
+        makeLevelGameplay(name, 1, false);
+        modes.push(*levelGameplay);
         debugSession.print(std::format("levels: playing {}", name));
     };
     // The developer overlay (F1), only with a window; without it the pad menu still works.
@@ -921,6 +956,9 @@ int main(int argc, char** argv) {
     }
     if (playLevel) {
         printText(playLevel->summary());
+    }
+    if (const coney::platform::PlayLevelMode* level = levelPlayMode(); level != nullptr) {
+        printText(level->summary());
     }
     if (startUp) {
         if (const auto* storyLevel = dynamic_cast<const coney::platform::PlayLevelMode*>(startUp->gameplay().level());

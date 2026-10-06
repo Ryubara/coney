@@ -20,20 +20,6 @@ namespace coney {
 
 namespace {
 
-// What the bindings ask of the game while a level's scripts run alone: there are no menus, modes or audio, so every
-// request is dropped. A level script that asks for a level (`MenuLoadLevel`) or a movie is not acted on.
-class QuietHost final : public script::BindingHost {
-  public:
-    void showProfileManager(std::string_view /*onRumble*/, std::string_view /*onStartGame*/) override {}
-    void showRumbleModeInterface(std::string_view /*onCancel*/, std::string_view /*onStart*/,
-                                 double /*players*/) override {}
-    void menuLoadLevel(std::string_view /*level*/) override {}
-    void playMovie(std::string_view /*name*/) override {}
-    void playMusic(std::string_view /*track*/) override {}
-    void stopMusic() override {}
-    void queueScreenEffect(int /*type*/, double /*seconds*/) override {}
-};
-
 // The script frames runLevelScriptAlone() runs after the start: one second of the fixed 1/30 s step.
 constexpr std::uint64_t kSettleSteps = 30;
 
@@ -77,54 +63,55 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
     return start;
 }
 
-LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::string_view level, int checkpoint,
-                                   const std::function<void(std::string_view)>& log,
-                                   const LevelScriptOptions& options) {
-    // What the bindings work on: a game state, the strings and configuration the preloads fill, and the humans.
-    GameState state;
-    gui::GlobalStrings strings;
-    script::RecordedCalls recorded;
-    CreatedHumans humans;
-    world_objects::WorldFlags flags;
-    QuietHost host;
-    gui::RumbleData rumbleData;
-    const script::BindingContext context{&state, &strings, &host, &recorded, &humans, &flags, &rumbleData};
+LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view level, int checkpoint,
+                           const std::function<void(std::string_view)>& log, const LevelScriptOptions& options)
+    : m_context{&m_state, &m_strings,    &m_host, &m_recorded, &m_humans,
+                &m_flags, &m_rumbleData, nullptr, &m_messages, &m_boxes},
+      m_scripts(
+          source,
+          [this](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, m_context); },
+          log) {
     if (options.randomTable.size() == GameRandom::kTableSize) {
-        state.random.setTable(options.randomTable);
+        m_state.random.setTable(options.randomTable);
     }
     if (options.rumble) {
-        state.rumble = *options.rumble;
+        m_state.rumble = *options.rumble;
     }
-    script::ScriptSystem scripts(
-        source,
-        [&context](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, context); },
-        log);
 
     // The legal screen's preloads, in the first Lua state: they fill the level table.
-    scripts.create();
-    scripts.runFiles(script::kEnumPreloadScripts);
-    scripts.runFiles(script::kConfigPreloadScripts);
+    m_scripts.create();
+    m_scripts.runFiles(script::kEnumPreloadScripts);
+    m_scripts.runFiles(script::kConfigPreloadScripts);
 
     // An arena run alone gets the Rumble menu's default set-up: its chunks need the `RM_*` names `global.lua` defines.
     if (!options.rumble && options.rumbleArena) {
-        scripts.runFile(script::kGlobalScript);
+        m_scripts.runFile(script::kGlobalScript);
         const gui::RumbleMenuServices services{
-            .state = &state, .data = &rumbleData, .strings = &strings, .runChunk = [&scripts](std::string_view chunk) {
-                scripts.runFile(chunk);
-            }};
+            .state = &m_state,
+            .data = &m_rumbleData,
+            .strings = &m_strings,
+            .runChunk = [this](std::string_view chunk) { m_scripts.runFile(chunk); }};
         if (!gui::rumbleMenuDefaults(services, *options.rumbleArena)) {
-            scripts.log("rumble: the menu's chunks list no mode or gang; the set-up stays empty");
+            m_scripts.log("rumble: the menu's chunks list no mode or gang; the set-up stays empty");
         }
     }
 
     // The front end's unload makes a fresh state, and runNextMission sets the checkpoint and chooses the level by
     // name. A level the table does not list gets index 0 (Coney's choice: the menus never ask for one).
-    scripts.create();
-    state.checkPoint = checkpoint;
-    state.currentLevel = state.levels.find(level).value_or(0);
+    m_scripts.create();
+    m_state.checkPoint = checkpoint;
+    m_state.currentLevel = m_state.levels.find(level).value_or(0);
+}
+
+LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::string_view level, int checkpoint,
+                                   const std::function<void(std::string_view)>& log,
+                                   const LevelScriptOptions& options) {
+    LevelScripts prepared(source, level, checkpoint, log, options);
+    script::ScriptSystem& scripts = prepared.scripts();
+    CreatedHumans& humans = prepared.humans();
 
     LevelScriptRun run;
-    run.start = runLevelScript(scripts, state, humans, flags, level);
+    run.start = runLevelScript(scripts, prepared.state(), humans, prepared.flags(), level);
 
     // The first second of play's script frames, as gameplay would run them, so what the start schedules (the hub's
     // walk, 100 ms in) happens; player 1 is then where those calls left him.
@@ -139,8 +126,8 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     run.scriptErrors = scripts.errors();
     run.skippedCalls = scripts.skippedCalls();
     run.humans = humans.all().size();
-    run.flags = flags.all().size();
-    run.recorded = std::move(recorded);
+    run.flags = prepared.flags().all().size();
+    run.recorded = std::move(prepared.recorded());
     return run;
 }
 

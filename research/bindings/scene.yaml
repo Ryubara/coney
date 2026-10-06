@@ -21,6 +21,7 @@
     is unloaded when its scene has played (0x00353bf0), so a scene is preloaded again before its next play. Research:
     docs/research/scenes.md#loading.
   usage: {chunks: 110, calls: 256, boot: true, mission1: true, result_used: true}
+  coney: partial
 
 - name: SceneIsPreloaded
   wrapper: 0x003674d0
@@ -90,6 +91,7 @@
     bars, +0xe5 skippable, +0xeb looping, +0xef freeze, +0xe7 final, +0xe8 chain, BlendCam at +0x94 (0x003a13d0,
     0x00353818). Research: docs/research/scenes.md#playing.
   usage: {chunks: 9, calls: 14, boot: true, mission1: true, result_used: false}
+  coney: partial
 
 - name: ScenePlayFixedScene
   wrapper: 0x00367708
@@ -111,6 +113,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: false}
+  coney: partial
 
 - name: ScenePlay
   wrapper: 0x00367a20
@@ -171,6 +174,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
+  coney: partial
 
 - name: SceneStop
   wrapper: 0x00367e20

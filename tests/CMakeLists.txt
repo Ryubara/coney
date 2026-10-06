@@ -77,6 +77,7 @@ add_executable(coney_tests
     scripting/lua_vm_test.cpp
     scripting/script_bindings_test.cpp
     scripting/script_system_test.cpp
+    scripting/trigger_bindings_test.cpp
     warriors/level_table_test.cpp
     world/debug_camera_test.cpp
     world/level_object_test.cpp
@@ -88,7 +89,8 @@ add_executable(coney_tests
     world/world_streams_test.cpp
     world_objects/flags_test.cpp
     world_objects/disc_object_list_test.cpp
-    world_objects/object_list_test.cpp)
+    world_objects/object_list_test.cpp
+    world_objects/volume_boxes_test.cpp)
 # Characters: the animation format and player, and the character resources.
 target_sources(coney_tests PRIVATE
     animation/anim_clip_test.cpp

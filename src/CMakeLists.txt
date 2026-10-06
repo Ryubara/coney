@@ -73,9 +73,11 @@ add_library(coney_core STATIC
     scripting/lua_libraries.cpp
     scripting/lua_value.cpp
     scripting/lua_vm.cpp
+    scripting/message_handlers.cpp
     scripting/rumble_bindings.cpp
     scripting/script_bindings.cpp
     scripting/script_system.cpp
+    scripting/trigger_bindings.cpp
     warriors/created_humans.cpp
     warriors/level_table.cpp
     warriors/unlockables.cpp
@@ -89,7 +91,8 @@ add_library(coney_core STATIC
     world/world_streamer.cpp
     world/world_streams.cpp
     world_objects/flags.cpp
-    world_objects/object_list.cpp)
+    world_objects/object_list.cpp
+    world_objects/volume_boxes.cpp)
 # Characters: the animation format and player, and the character resources (docs/research/characters.md).
 target_sources(coney_core PRIVATE
     animation/anim_clip.cpp

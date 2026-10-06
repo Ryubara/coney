@@ -128,7 +128,7 @@ int levelNumberOf(std::string_view name) {
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view name, world::SectorBudget& budget,
                       std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start,
-                      const PlayerSetup& setup) {
+                      const PlayerSetup& setup, const ScriptedCast* cast) {
     auto scenery = LevelPlayScenery::load(engine, wad, name, budget, print, start);
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
@@ -136,7 +136,7 @@ PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view
     // A start that is not the level script's (the researched or stand-in start) is snapped as a creation is.
     PlayerSetup used = setup;
     used.snapToGround = setup.snapToGround || !start;
-    return createWith(engine, wad, std::move(*scenery), std::move(print), used);
+    return createWith(engine, wad, std::move(*scenery), std::move(print), used, cast);
 }
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
@@ -154,7 +154,8 @@ PlayLevelMode::createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
-                          std::function<void(std::string_view)> print, const PlayerSetup& setup) {
+                          std::function<void(std::string_view)> print, const PlayerSetup& setup,
+                          const ScriptedCast* cast) {
     // The player's character and its texture: the model the level script's type names, else Rembrandt's.
     std::string model = setup.model.empty() ? std::string(human::kPlayerModel) : setup.model;
     bool fellBack = false;
@@ -183,12 +184,12 @@ PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_
                       scenery->startSource(), setup.snapToGround ? "" : ", not snapped", speeds.walk, speeds.jog,
                       speeds.run, speeds.sprint));
     return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, wad, std::move(scenery), std::move(*loaded),
-                                                            std::move(print), std::move(model), used));
+                                                            std::move(print), std::move(model), used, cast));
 }
 
 PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                              LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
-                             const PlayerSetup& setup)
+                             const PlayerSetup& setup, const ScriptedCast* cast)
     : m_engine(engine), m_wad(wad), m_scenery(std::move(scenery)), m_character(std::move(loaded.character)),
       m_dictionaries(std::move(loaded.dictionaries)), m_types(setup.types), m_type(setup.type),
       m_levelNumber(levelNumberOf(m_scenery->name())),
@@ -203,19 +204,23 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     m_lights = std::make_unique<CharacterLights>(kCharacterAmbient, kCharacterDirectional,
                                                  directionToRenderWare(m_scenery->lightDirection()));
     makeTargets(m_texture);
-    // The AI fighters, in the player's step, and the layout's.
-    m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, setup.ai);
     // The brains plan their moves on the level's routes, when it has path data.
     if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
         m_planner = std::make_unique<ai::RoutePlanner>(*paths);
+    }
+    // The AI humans in the player's step: the level's scripts' humans, or the layout's fighters.
+    if (cast != nullptr && cast->brains != nullptr && cast->scripted != nullptr) {
+        makeCast(*cast, setup.ai);
+    } else {
+        m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, setup.ai);
         m_ai->brains().setPlanner(m_planner.get());
-    }
-    for (const sandbox::FighterPoint& point : m_scenery->fighters()) {
-        addFighter(point.position, point.headingDegrees);
-    }
-    if (m_ai->count() > 0) {
-        m_print(std::format("fighters: {} from the layout ({} configuration calls read)\n", m_ai->count(),
-                            m_ai->config().callsRead));
+        for (const sandbox::FighterPoint& point : m_scenery->fighters()) {
+            addFighter(point.position, point.headingDegrees);
+        }
+        if (m_ai->count() > 0) {
+            m_print(std::format("fighters: {} from the layout ({} configuration calls read)\n", m_ai->count(),
+                                m_ai->config().callsRead));
+        }
     }
 }
 
@@ -264,6 +269,7 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees) {
     m_ai->spawnFighter(&m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
     const std::size_t vertices = m_character->assets().model.vertices.size();
     FighterMesh mesh;
+    mesh.character = m_character.get();
     mesh.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture);
     mesh.positions.resize(vertices);
     mesh.normals.resize(vertices);
@@ -444,7 +450,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             const human::TargetSnapshot pose =
                 human::interpolate(fighters[i].previous, fighters[i].current, time.alpha);
             FighterMesh& mesh = m_fighterMeshes[i];
-            skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
+            skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
             mesh.mesh->update(mesh.positions, mesh.normals);
         }
     }

@@ -1209,6 +1209,7 @@
     distinguishes the kinds in play is not traced. Rotate the box about the vertical axis with `RotateVolumeBox`. The
     trigger update of a kind-0 box is confirmed (code) at 0x00415378.
   usage: {chunks: 53, calls: 974, boot: false, mission1: true, result_used: true}
+  coney: implemented
 
 - name: RotateVolumeBox
   wrapper: 0x0037ae68
@@ -1228,6 +1229,7 @@
     The inside test (0x00412a18) rotates the box's four corners about its centre by this matrix (x' = m00 dx + m01 dy,
     y' = m10 dx + m11 dy), confirmed (code); that the values are a cos/sin pair follows from the scripts' values.
   usage: {chunks: 31, calls: 211, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: EnableVolumeBox
   wrapper: 0x0037af58

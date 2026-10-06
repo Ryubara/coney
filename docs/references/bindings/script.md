@@ -318,7 +318,7 @@ scripts' handler names (references/script-events.md).
 - **Evidence:** confirmed (code) at `0x00386298`; detail: traced
 - **Wrapper** `0x0036d1c8` (registered by `RegisterBindings`); **calls** `0x00386298`
 - **Used by** 195 of 467 script chunks (3040 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetMsgHandlerEx {#setmsghandlerex}
 
@@ -345,7 +345,7 @@ cleared (`+0x12c`).
 - **Evidence:** confirmed (code) at `0x00386168`; detail: traced
 - **Wrapper** `0x0036d348` (registered by `RegisterBindings`); **calls** `0x00386168`
 - **Used by** 43 of 467 script chunks (212 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetMultiplayerCallback {#setmultiplayercallback}
 

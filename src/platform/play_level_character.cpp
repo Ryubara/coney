@@ -78,6 +78,10 @@ std::string PlayLevelMode::characterState() const {
 }
 
 std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
+    // **Coney choice**: not in a level whose scripts drive the cast, whose brains hold the player by his handle.
+    if (m_cast.brains != nullptr) {
+        return fail(ErrorCode::InvalidArgument, "the level's scripts hold the player; change him in a sandbox");
+    }
     // The type must be configured and name a model a player of it is drawn as.
     if (m_types.find(type) == nullptr) {
         return fail(ErrorCode::NotFound, std::format("type {} is not in the configuration", type));

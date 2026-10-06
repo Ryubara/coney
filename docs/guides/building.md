@@ -437,7 +437,8 @@ sticks, with the follow camera behind him ([Characters](../research/characters.m
 world viewer](#the-world-viewer); he stands where the level's own script creates player 1, as when the story reaches the
 level: Coney runs the scripts the original runs before it (the preloads, then a fresh Lua state with `SetCheckPoint`),
 then `global.lua` and the level's script, and takes the position and heading of its `HuCreate` for player 1, and prints
-them (`level script: level2 checkpoint 3: player 1 Cleon (type 1) at ...`). `--checkpoint N` picks the checkpoint (1 by
+them (`gameplay: level2 checkpoint 3: player 1 Cleon (type 1, model warr_cl) at ...`). `--checkpoint N` picks the
+checkpoint (1 by
 default), so `--play-level level2 --checkpoint 3` starts where level2's third checkpoint does. He is drawn as the
 character the script's type names (Cleon at `level2 --checkpoint 3`, Snow at `level3 --checkpoint 4`), through the
 type's `CfgChar` model ([Characters](../research/characters.md#type-to-model)); a type with no model falls back to
@@ -445,8 +446,11 @@ Rembrandt with a log line. The scripts' world flags are kept, so a script that t
 there with the flag's heading, without snapping him to the ground, as the original: the hub, `level95`, starts the
 Warchief at one of its doors, chosen with the game's own random numbers (read from your disc's executable; door 5 while
 the tutorial is locked, which it always is for now), and an arena run alone (`--play-level level102`) uses the Rumble
-menu's default set-up ([Flags](../research/flags.md#coneys-implementation)). The scripts run one second (30 steps) after
-the level starts, so a start callback's teleports are in place. A level whose script creates no player 1 puts him above
+menu's default set-up ([Flags](../research/flags.md#coneys-implementation)). The scripts keep running in play, one
+script frame per step: their scheduled calls, their volume-box triggers and their message handlers, and every other
+human they create is an AI human with its own model, driven by the scripts' goals and gangs
+([AI](../research/ai.md#coney)); bindings Coney lacks are skipped with a log line. A level whose script creates no
+player 1 puts him above
 the middle of its first world's part 1, Coney's stand-in. He walks, runs, sprints, turns and leans into turns, stops,
 steps onto kerbs under 25 cm, slides along walls, jumps, climbs fences and walls, and falls off ledges on the level's
 collision mesh, with the original's speeds, turn rates and clips: the walk or run start, a blend across walk, jog, run
@@ -454,11 +458,11 @@ and sprint, the idle, the run stop, the jump and its landing, and the climbs
 ([Characters](../research/characters.md#sprint)). He fights as the original's player does
 ([Combat](../research/combat.md#coneys-implementation)): the square and cross chains, the snaps, the run attack, the
 charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with the
-original's commands, timing and clips; in a level there is no one to hit yet, and the sandbox's fight yard
+original's commands, timing and clips; the sandbox's fight yard
 (`--play-level sandbox:combat`) has passive targets that take the hits. With a target (the one he attacked, or the one
 L1 picks) he locks onto it, as the original's default settings do: he faces it and the stick walks him at one speed in
-any direction with the combat walk until it is more than 2.5 m away or down. The level script runs only for the start:
-there are no objects, other characters or missions yet; a fall out of the world puts him back at the start. Coney prints
+any direction with the combat walk until it is more than 2.5 m away or down. There are no objects yet, and scenes end at
+once; a fall out of the world puts him back at the start. Coney prints
 a line whenever the clip changes and a summary when it stops (the player's position, speed, gait, clip, traversal state,
 stamina, the camera's distance and counts only).
 

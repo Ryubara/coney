@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 44 implemented, 2 partial, 169 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 48 implemented, 6 partial, 161 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -115,7 +115,7 @@ leave part of its effect open; its notes say which.
 | [`CamSetupFollow`](camera.md#camsetupfollow) | Cameras | traced | confirmed (code) | not implemented |
 | [`CamTarget`](camera.md#camtarget) | Cameras | traced | confirmed (code) | not implemented |
 | [`AddFlag`](world.md#addflag) | World and objects | traced | confirmed (code) | implemented |
-| [`AddVolumeBox`](world.md#addvolumebox) | World and objects | traced | confirmed (code) | not implemented |
+| [`AddVolumeBox`](world.md#addvolumebox) | World and objects | traced | confirmed (code) | implemented |
 | [`CarMakeGoodAsNew`](world.md#carmakegoodasnew) | World and objects | traced | confirmed (code) | not implemented |
 | [`CarSetColor`](world.md#carsetcolor) | World and objects | traced | confirmed (code) | not implemented |
 | [`CarSpawn`](world.md#carspawn) | World and objects | traced | confirmed (code) | not implemented |
@@ -129,7 +129,7 @@ leave part of its effect open; its notes say which.
 | [`ObjEnableZone`](world.md#objenablezone) | World and objects | traced | confirmed (code) | not implemented |
 | [`ObjShow`](world.md#objshow) | World and objects | traced | confirmed (code) | not implemented |
 | [`ObjSpawn`](world.md#objspawn) | World and objects | traced | confirmed (code) | not implemented |
-| [`RotateVolumeBox`](world.md#rotatevolumebox) | World and objects | traced | confirmed (code) | not implemented |
+| [`RotateVolumeBox`](world.md#rotatevolumebox) | World and objects | traced | confirmed (code) | implemented |
 | [`SpawnBreakableGlass`](world.md#spawnbreakableglass) | World and objects | traced | confirmed (code) | not implemented |
 | [`SpawnDoor`](world.md#spawndoor) | World and objects | traced | confirmed (code) | not implemented |
 | [`TriggerSphereCfg`](world.md#triggerspherecfg) | World and objects | traced | confirmed (code) | not implemented |
@@ -175,10 +175,10 @@ leave part of its effect open; its notes say which.
 | [`SoundStopAmbientTrack`](sound.md#soundstopambienttrack) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SoundStopMusicTrack`](sound.md#soundstopmusictrack) | Sound and music | traced | confirmed (code) | partial |
 | [`SceneAddObject`](scene.md#sceneaddobject) | Scenes and movies | traced | confirmed (code) | not implemented |
-| [`ScenePlayAnimation`](scene.md#sceneplayanimation) | Scenes and movies | traced | confirmed (code) | not implemented |
-| [`ScenePlayCinematic`](scene.md#sceneplaycinematic) | Scenes and movies | traced | confirmed (code) | not implemented |
-| [`ScenePlayFixedScene`](scene.md#sceneplayfixedscene) | Scenes and movies | traced | confirmed (code) | not implemented |
-| [`ScenePreload`](scene.md#scenepreload) | Scenes and movies | traced | confirmed (code) | not implemented |
+| [`ScenePlayAnimation`](scene.md#sceneplayanimation) | Scenes and movies | traced | confirmed (code) | partial |
+| [`ScenePlayCinematic`](scene.md#sceneplaycinematic) | Scenes and movies | traced | confirmed (code) | partial |
+| [`ScenePlayFixedScene`](scene.md#sceneplayfixedscene) | Scenes and movies | traced | confirmed (code) | partial |
+| [`ScenePreload`](scene.md#scenepreload) | Scenes and movies | traced | confirmed (code) | partial |
 | [`EnterStore`](level.md#enterstore) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`ExitStore`](level.md#exitstore) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`GetCheckPoint`](level.md#getcheckpoint) | Levels and game state | traced | confirmed (code) | implemented |
@@ -210,8 +210,8 @@ leave part of its effect open; its notes say which.
 | [`preLoadFile`](script.md#preloadfile) | Script flow | traced | confirmed (code) | implemented |
 | [`ScheduleFunc`](script.md#schedulefunc) | Script flow | traced | confirmed (code) | implemented |
 | [`ScheduleFuncArg1`](script.md#schedulefuncarg1) | Script flow | traced | confirmed (code) | implemented |
-| [`SetMsgHandler`](script.md#setmsghandler) | Script flow | traced | confirmed (code) | not implemented |
-| [`SetMsgHandlerEx`](script.md#setmsghandlerex) | Script flow | traced | confirmed (code) | not implemented |
+| [`SetMsgHandler`](script.md#setmsghandler) | Script flow | traced | confirmed (code) | implemented |
+| [`SetMsgHandlerEx`](script.md#setmsghandlerex) | Script flow | traced | confirmed (code) | implemented |
 | [`SetStartGameCallback`](script.md#setstartgamecallback) | Script flow | traced | confirmed (code) | implemented |
 | [`PadSetHandler`](input.md#padsethandler) | Pad input | traced | confirmed (code) | not implemented |
 | [`PadSetHandlerEx`](input.md#padsethandlerex) | Pad input | traced | confirmed (code) | not implemented |

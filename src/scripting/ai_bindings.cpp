@@ -49,10 +49,11 @@ std::string nameArg(std::span<const Value> args, std::size_t i) {
     return absent(args, i) ? std::string{} : binding::string(args, i);
 }
 
-// A binding that hands its arguments to the host when there is one and returns nothing.
+// A binding that hands its arguments to the host when there is one and returns nothing. The host is read at each call,
+// not at registration: a level gives its brains to a Lua state made before it (gamemodes/gameplay_mode.h).
 template <typename Body> NativeFunction hostCall(const BindingContext& context, Body body) {
-    return [host = context.ai, body](std::span<const Value> args) {
-        if (host != nullptr) {
+    return [context = &context, body](std::span<const Value> args) {
+        if (AiBindingHost* host = context->ai; host != nullptr) {
             body(*host, args);
         }
         return binding::none();

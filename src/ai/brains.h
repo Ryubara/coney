@@ -68,6 +68,9 @@ class Brains {
 
     // Event 18 for each human whose health has run out since the last step.
     void reportDowns();
+    // Event 1 for each human whose health fell since the last step (**Coney stand-in**: the original's sender of
+    // message 1 is not traced), about the nearest other human that can fight, the damage as its value.
+    void reportDamage();
 
     // Declared before the brains, so they outlive them (a gang's tactic and a formation refer to brains).
     Gangs m_gangs;

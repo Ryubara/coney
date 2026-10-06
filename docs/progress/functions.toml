@@ -2528,6 +2528,30 @@ name = "CollisionMesh_SpherePush"
 subsystem = "RayCast"
 
 [[function]]
+address = 0x00353c68
+name = "Scene_PlayCinematic"
+subsystem = "Scene"
+size = 248
+
+[[function]]
+address = 0x00353d60
+name = "Scene_PlayFixed"
+subsystem = "Scene"
+size = 216
+
+[[function]]
+address = 0x00353f40
+name = "Scene_PlayAnimation"
+subsystem = "Scene"
+size = 72
+
+[[function]]
+address = 0x00353f88
+name = "Scene_Preload"
+subsystem = "Scene"
+size = 64
+
+[[function]]
 address = 0x00356390
 name = "ScriptSystem_Create"
 subsystem = "Scripting"
@@ -2961,6 +2985,18 @@ subsystem = "Scripting"
 size = 27408
 
 [[function]]
+address = 0x00384c38
+name = "MessageHandler_Deliver"
+subsystem = "Scripting"
+size = 168
+
+[[function]]
+address = 0x00384ce0
+name = "MessageHandler_Marshal"
+subsystem = "Scripting"
+size = 3032
+
+[[function]]
 address = 0x00385a50
 name = "Object_GetPosition"
 subsystem = "Scripting"
@@ -2971,6 +3007,24 @@ address = 0x00385db0
 name = "Object_TeleportToFlag"
 subsystem = "Scripting"
 size = 248
+
+[[function]]
+address = 0x003860b8
+name = "MessageHandler_Set"
+subsystem = "Scripting"
+size = 176
+
+[[function]]
+address = 0x00386168
+name = "SetMsgHandlerEx"
+subsystem = "Scripting"
+size = 304
+
+[[function]]
+address = 0x00386298
+name = "SetMsgHandler"
+subsystem = "Scripting"
+size = 112
 
 [[function]]
 address = 0x00386370
@@ -3116,6 +3170,30 @@ subsystem = "World"
 address = 0x004123e8
 name = "World_ResetVisibility"
 subsystem = "World"
+
+[[function]]
+address = 0x004125b8
+name = "VolumeBox_Add"
+subsystem = "unattributed"
+size = 520
+
+[[function]]
+address = 0x00412a18
+name = "VolumeBox_IsInside"
+subsystem = "unattributed"
+size = 480
+
+[[function]]
+address = 0x00412c40
+name = "VolumeBox_SetRotation"
+subsystem = "unattributed"
+size = 96
+
+[[function]]
+address = 0x00415378
+name = "VolumeBox_Update"
+subsystem = "WorldObjects"
+size = 792
 
 [[function]]
 address = 0x004158f8

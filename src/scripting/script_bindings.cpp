@@ -17,6 +17,7 @@
 #include "scripting/gang_bindings.h"
 #include "scripting/level_bindings.h"
 #include "scripting/rumble_bindings.h"
+#include "scripting/trigger_bindings.h"
 
 namespace coney::script {
 
@@ -275,13 +276,13 @@ int currentLevelNumber(const GameState& state) {
 }
 
 // `HuCreate(name, type, {x, y, z}, heading, unused, player, gang, flag)`: makes a human and returns its handle, or
-// `NilHandle` when every slot is taken. Coney has no characters as game objects yet, so the human is kept in the
-// context's CreatedHumans, where the play mode takes player 1 from. Coney's choices: the position is not snapped to
-// the ground here (no collision is loaded while the script runs) and so not written back into the table; the play mode
-// snaps the player the same way when it places him (docs/research/characters.md#creation). The gang is kept for
-// the AI (nil is none); the unused string and the flag are not. The model the type is drawn as is resolved here from
-// the recorded `CfgChar` calls (characters::modelNameFor(), docs/research/characters.md#type-to-model); the play mode
-// loads it.
+// `NilHandle` when every slot is taken. The human is kept in the context's CreatedHumans and told to the AI host,
+// which (in play) makes it a character with a brain once the level has loaded (ai::ScriptedBrains). Coney's choices:
+// the position is not snapped to the ground here (no collision is loaded while the script runs) and so not written back
+// into the table; the play mode snaps the player the same way when it places him
+// (docs/research/characters.md#creation). The gang is kept for the AI (nil is none); the unused string and the flag are
+// not. The model the type is drawn as is resolved here from the recorded `CfgChar` calls (characters::modelNameFor(),
+// docs/research/characters.md#type-to-model); the play mode loads it.
 // @orig 0x00358428 HuCreate (unknown)
 // @orig 0x00233d60 Human_Create (unknown)
 NativeFunction makeHuCreate(const Factory& factory) {
@@ -303,6 +304,10 @@ NativeFunction makeHuCreate(const Factory& factory) {
             return binding::number(kNilHandle);
         }
         handles->next += 1;
+        // The AI host makes the human in the world (or once the level's characters are loaded).
+        if (context->ai != nullptr) {
+            context->ai->humanCreated(human);
+        }
         return binding::number(human.handle);
     };
 }
@@ -312,8 +317,8 @@ NativeFunction makeHuCreate(const Factory& factory) {
 // later handles stay the same.
 // @orig 0x00373148 GangCreate (unknown)
 NativeFunction makeGangCreate(const Factory& factory) {
-    return [host = factory.context->ai, handles = factory.handles](std::span<const Value> args) {
-        if (host != nullptr) {
+    return [context = factory.context, handles = factory.handles](std::span<const Value> args) {
+        if (AiBindingHost* host = context->ai; host != nullptr) {
             return binding::number(
                 host->gangCreate(static_cast<int>(std::trunc(binding::number(args, 0))), binding::string(args, 1)));
         }
@@ -329,6 +334,44 @@ NativeFunction makeHudLaunchMissionComplete(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
         host->launchMissionComplete(static_cast<int>(std::trunc(binding::number(args, 0))));
         return binding::none();
+    };
+}
+
+// ---- Coney's scene stand-in (docs/research/scenes.md): no scene player yet, so a scene loads and ends at once ----
+
+// Schedules the Lua function named by string argument `i` (none for nil or a number) with the scene id, to run at the
+// scripts' next update: the original calls it later too (on the file's arrival, at the scene's end), never inside the
+// binding, and `SuperRunScene` stores its table only after `ScenePreload` returns.
+void scheduleSceneCallback(ScriptSystem& scripts, std::span<const Value> args, std::size_t i, double scene) {
+    if (i >= args.size() || args[i].type() != Value::Type::String) {
+        return;
+    }
+    const std::array<double, 1> callArgs{scene};
+    scripts.schedule(binding::string(args, i), 0, callArgs);
+}
+
+// `ScenePreload(name, onLoaded)`: a new handle as the scene's id, and **Coney's stand-in** for the load: `onLoaded` is
+// called with the id at the next script update (docs/research/scenes.md#loading).
+// @orig 0x00353f88 Scene_Preload (unknown)
+NativeFunction makeScenePreload(const Factory& factory) {
+    return [scripts = factory.scripts, handles = factory.handles](std::span<const Value> args) {
+        const double scene = handles->next;
+        handles->next += 1;
+        scheduleSceneCallback(*scripts, args, 1, scene);
+        return binding::number(scene);
+    };
+}
+
+// `ScenePlayCinematic(scene, delay, onEnd, ...)`, `ScenePlayAnimation` and `ScenePlayFixedScene` (`onEnd` third in
+// each): true, and **Coney's stand-in** for the scene: it ends at once, its end function called with the scene id at
+// the next script update (docs/research/scenes.md#ending). A looping scene ends too.
+// @orig 0x00353c68 Scene_PlayCinematic (unknown)
+// @orig 0x00353d60 Scene_PlayFixed (unknown)
+// @orig 0x00353f40 Scene_PlayAnimation (unknown)
+NativeFunction makeScenePlay(const Factory& factory) {
+    return [scripts = factory.scripts](std::span<const Value> args) {
+        scheduleSceneCallback(*scripts, args, 2, binding::number(args, 0));
+        return binding::boolean(true);
     };
 }
 
@@ -387,6 +430,10 @@ constexpr std::array kMakers{
     Maker{"HuCreate", makeHuCreate},
     Maker{"MenuLoadLevel", makeMenuLoadLevel},
     Maker{"PlayMovie", makePlayMovie},
+    Maker{"ScenePlayAnimation", makeScenePlay},
+    Maker{"ScenePlayCinematic", makeScenePlay},
+    Maker{"ScenePlayFixedScene", makeScenePlay},
+    Maker{"ScenePreload", makeScenePreload},
     Maker{"ScheduleFunc", makeScheduleFunc},
     Maker{"ScheduleFuncArg1", makeScheduleFuncArg1},
     Maker{"ScreenQueueEffect", makeScreenQueueEffect},
@@ -472,6 +519,11 @@ constexpr std::array kBindings{
     real("SetStartGameCallback"),
     real("GetRumbleModeData"),
     real("GetRumbleModeGangName"),
+    // The objects' message handlers and the volume boxes that send them (trigger_bindings.h).
+    real("AddVolumeBox"),
+    real("RotateVolumeBox"),
+    real("SetMsgHandler"),
+    real("SetMsgHandlerEx"),
     // The level scripts' goals and actions for a human's brain (ai_bindings.h).
     real("GoalMoveToFlag"),
     real("ActLookAt"),
@@ -508,6 +560,12 @@ constexpr std::array kBindings{
     real("CfgRumbleGang"),
     real("CfgRumbleArena"),
     real("CfgRumbleChar"),
+    // Coney's scene stand-in: a scene loads and ends at once.
+    routed("ScenePreload"),
+    routed("ScenePlayCinematic"),
+    routed("ScenePlayAnimation"),
+    routed("ScenePlayFixedScene"),
+    stub("SceneAddObject"), // a loaded scene's cast, which the stand-in does not play
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     routed("SoundPlayMusicTrack"),
@@ -637,7 +695,6 @@ constexpr std::array kBindings{
     stub("ObjSpawn", StubResult::Handle),
     stub("ReleasePTank"),
     stub("SceneIsPreloaded", StubResult::False),
-    stub("ScenePreload", StubResult::Handle),
     stub("SceneStop"),
 };
 
@@ -739,18 +796,21 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
                      std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
                      std::ranges::find(kAiBindings, info.name) != kAiBindings.end() ||
-                     std::ranges::find(kGangBindings, info.name) != kGangBindings.end());
+                     std::ranges::find(kGangBindings, info.name) != kGangBindings.end() ||
+                     std::ranges::find(kTriggerBindings, info.name) != kTriggerBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
     addAiBindings(vm, context);
     addGangBindings(vm, context);
     // The level bindings make world objects, so they take their handles from the same counter as the stubs.
-    addLevelBindings(vm, context, [handles = factory.handles] {
+    const auto nextHandle = [handles = factory.handles] {
         const double handle = handles->next;
         handles->next += 1;
         return handle;
-    });
+    };
+    addLevelBindings(vm, context, nextHandle);
+    addTriggerBindings(vm, context, nextHandle);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

@@ -1162,8 +1162,9 @@ sparring fight below then confirmed the Warriors' own numbers.
 
 The scenarios `warriors_passive` (no input) and `warriors_block` (square every 15 updates) record `level99`'s
 `CombatWarriors` fight as the script runs it: the three Warriors `Generic1`-`3` (classes 58-60, brain type 2,
-`Att_Normal`) each get `GoalFight(warrior, player, 0)` from `P1.SendWarriors` when the scene `l99_c5` ends, about 290
-updates after `P1.SetupWarriors` starts it. Results: [the attack delay](#attack-action), [the block](#block) and
+`Att_Normal`) each get `GoalFight(warrior, player, 0)` from `P1.SendWarriors` when the scene `l99_c5` ends: in the
+recording, 481 updates (16.0 s) after the saved state, which was taken just after `P1.SetupWarriors` started the
+16.7 s scene ([Scenes](scenes.md#humans)). Results: [the attack delay](#attack-action), [the block](#block) and
 [the cast's numbers](#level99).
 
 #### Reaching the fight without a playthrough {#level99-save}
@@ -1224,8 +1225,13 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   `CfgBaseChanceToBlock` from the scripts' recorded calls. Without the disc the reference values stand in: power
   class 40's AI fields (block 0.2, 0.1 hurt, delay factors 20, counter 0.08), base block chance 60, the
   `config_preload2` delays, `Att_Normal`.
-- **Play**: `fighter` lines in sandbox layouts ([Sandbox](../guides/sandbox.md#ai-fighters)), fighters in
-  `--play-level`, and the debug menu's *AI fighters* page.
+- **Play**: `fighter` lines in sandbox layouts ([Sandbox](../guides/sandbox.md#ai-fighters)), the debug menu's *AI
+  fighters* page, and a level's scripted cast. Gameplay (`repo:src/gamemodes/gameplay_mode.h`) makes the level's
+  `Brains` and `ScriptedBrains` before its script runs and holds every AI call on a human (`ScriptedBrains::hold`)
+  until the play mode has loaded the level and made the humans; `release` then makes each `HuCreate`d human (player 1
+  bound to the player's brain, the others AI humans of the class `aiConfigFrom` gives their type, drawn with their own
+  model, `repo:src/platform/play_level_cast.cpp`) and replays the held calls in order. A teleport moves an AI human;
+  `GetPosition` and the look-ats read a human's live position.
 - **Routes** (`world::PathMap`, `RoutePlanner`): the path data decoded ([Path data](level-loading.md#path-data)), the
   inside test, the walkable-line test, the request (the human's polygon, the straight line, the ends' nodes within 30
   tries), A\* from the destination's node with the edge costs and the 65000 cap, the retry with `0x8c` and the jump
@@ -1247,7 +1253,9 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   (`repo:src/scripting/gang_bindings.h`, `GangCreate` in `repo:src/scripting/script_bindings.cpp`) hand their calls to
   the binding context's AI host. `ScriptedBrains` is that host and the goals' `ScriptServices`: it names brains by
   handle (`bind`, with `HuCreate`'s gang), finds flags and look-at targets, and runs the callbacks, message handlers
-  and tactic callbacks in a `ScriptSystem`.
+  and tactic callbacks in a `ScriptSystem`. An event goes first to the human's own handlers (`SetMsgHandler`,
+  `Brain::services`), and a flag arrival sends the flag message 8 with (flag, human)
+  ([Scripts: message handlers](scripting.md#message-handlers)).
 - **Gangs** (`Gangs`, `Gang`, in `Brains`): 32 records with kind, name, enemy and friend masks, members (10, 16 for
   the police kinds), suspension, message handlers and a tactic; `Gangs::friends` and `enemies`; the whole-gang
   switches (`GangBrDead`, `GangBrFlush`, `GangSetThreatResponse` on the current members, `GangSuspend`). An event goes
@@ -1300,7 +1308,9 @@ words (PlayDyn's `0x7bf9e9f7ff0`, the crowd's free test, the standing count's th
 health left. AddressPerson's turn leads the target by one second of its velocity. `BrSuspend` clears the actions,
 then suspends. A full gang drops its first member; a human with no gang is no one's friend. A handler's call counts as
 returning true when it runs (Coney's script system does not hand back the result). Event 18 is sent at the brains'
-next step after the health runs out, with no attacker. A formation slot is usable when the leader's planner finds the
+next step after the health runs out, with no attacker. **Stand-in:** event 1 (damage taken, whose sender is not
+traced) is sent at the brains' step after a human's health falls, with the nearest other human that can fight as the
+attacker and the damage as its value. A formation slot is usable when the leader's planner finds the
 line to it walkable (always without a planner) and keeps the leader's height. The idle and spectate goals stand
 still (their Process is not traced). Both of a crowd reaction's clip actions are `PlayAnimAction`. The dealer rolls
 dirty at Start; his wary scan looks for members of enemy gangs.
@@ -1310,10 +1320,9 @@ is not built, and neither are grabs and tackles between two humans that would ca
 the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; line of sight (the move's sight checks);
 the steering round humans, choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to face; the turn clip
-(398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off, message 8 (Coney's flags take none)
-and the gang's notice; the level scripts run alone before play and their humans are not AI humans yet, so `level99`'s
-goals reach no brain in play; the scene system, the dynamic clip slot and clips by id; the head look-ats; a human's own
-message handlers (`SetMsgHandler`); the gang's alert state, bounds, return to calm, neutral rule and spawners; the anim
+(398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off and the gang's notice; the scene
+system, the dynamic clip slot and clips by id; the head look-ats; the sender of message 1 and its attacker; the gang's
+alert state, bounds, return to calm, neutral rule and spawners; the anim
 substitutions; the crowd's cheer idles; the formation's ground ray, line of sight and assignment mode `+0x275`; the
 dealer's run to a flag, gestures, buy clip and icons; the other tactics; the attack's steer, the post-block pause and
 the run-stop.

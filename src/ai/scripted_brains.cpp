@@ -3,7 +3,9 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <memory>
+#include <numbers>
 #include <string>
 #include <utility>
 #include <vector>
@@ -15,9 +17,19 @@
 #include "ai/track_human_goal.h"
 #include "ai/turn_action.h"
 #include "scripting/lua_value.h"
+#include "scripting/message_handlers.h"
 #include "scripting/script_system.h"
 
 namespace coney::ai {
+
+namespace {
+
+// `NilHandle`'s value (script_bindings.cpp sets the global).
+constexpr double kNilHandle = 0.0;
+// The message a flag sends when a human arrives at it.
+constexpr int kFlagArrival = 8;
+
+} // namespace
 
 ScriptedBrains::ScriptedBrains(Brains& brains, const world_objects::WorldFlags& flags,
                                world_objects::ObjectLocator locate)
@@ -34,6 +46,7 @@ ScriptedBrains::~ScriptedBrains() {
 void ScriptedBrains::bind(double handle, Brain& brain, int gang) {
     m_brains[handle] = &brain;
     brain.setHandle(handle);
+    brain.setServices(this);
     if (gang >= 0) {
         m_owner->gangs().addMember(gang, brain);
     }
@@ -59,6 +72,9 @@ std::optional<anim::Vec3> ScriptedBrains::locate(double handle) const {
 }
 
 void ScriptedBrains::goalMoveToFlag(const script::MoveToFlagCall& call) {
+    if (held([this, call] { goalMoveToFlag(call); })) {
+        return;
+    }
     if (Brain* found = named(call.human); found != nullptr) {
         ai::goalMoveToFlag(*found,
                            MoveToFlagOrder{.flag = call.flag,
@@ -74,6 +90,9 @@ void ScriptedBrains::goalMoveToFlag(const script::MoveToFlagCall& call) {
 }
 
 void ScriptedBrains::actLookAt(const script::LookAtCall& call) {
+    if (held([this, call] { actLookAt(call); })) {
+        return;
+    }
     if (Brain* found = named(call.human); found != nullptr) {
         found->queueAction(
             TurnAction::lookAt([this](double target) { return locate(target); }, call.target, call.turn, call.delayMs));
@@ -81,6 +100,9 @@ void ScriptedBrains::actLookAt(const script::LookAtCall& call) {
 }
 
 void ScriptedBrains::goalFight(double human, double target) {
+    if (held([this, human, target] { goalFight(human, target); })) {
+        return;
+    }
     Brain* fighter = named(human);
     Brain* opponent = named(target);
     if (fighter != nullptr && opponent != nullptr && fighter != opponent) {
@@ -89,18 +111,27 @@ void ScriptedBrains::goalFight(double human, double target) {
 }
 
 void ScriptedBrains::brFlush(double human) {
+    if (held([this, human] { brFlush(human); })) {
+        return;
+    }
     if (Brain* found = named(human); found != nullptr) {
         found->flush();
     }
 }
 
 void ScriptedBrains::brDead(double human, bool dead) {
+    if (held([this, human, dead] { brDead(human, dead); })) {
+        return;
+    }
     if (Brain* found = named(human); found != nullptr) {
         found->setDead(dead);
     }
 }
 
 void ScriptedBrains::brSuspend(double human, bool suspended) {
+    if (held([this, human, suspended] { brSuspend(human, suspended); })) {
+        return;
+    }
     if (Brain* found = named(human); found != nullptr) {
         found->clearActions();
         found->setSuspended(suspended);
@@ -108,18 +139,27 @@ void ScriptedBrains::brSuspend(double human, bool suspended) {
 }
 
 void ScriptedBrains::brSetThreatResponse(double human, int response) {
+    if (held([this, human, response] { brSetThreatResponse(human, response); })) {
+        return;
+    }
     if (Brain* found = named(human); found != nullptr) {
         found->setThreatResponse(response);
     }
 }
 
 void ScriptedBrains::goalPlayDynAnimation(const script::DynAnimationCall& call) {
+    if (held([this, call] { goalPlayDynAnimation(call); })) {
+        return;
+    }
     if (Brain* found = named(call.human); found != nullptr) {
         ai::goalPlayDynAnimation(*found, *this, call.anim, call.callback, call.option);
     }
 }
 
 void ScriptedBrains::goalAddressPerson(const script::AddressPersonCall& call) {
+    if (held([this, call] { goalAddressPerson(call); })) {
+        return;
+    }
     if (Brain* speaker = named(call.human); speaker != nullptr) {
         ai::goalAddressPerson(*speaker, *this,
                               AddressOrder{.target = call.target,
@@ -131,12 +171,18 @@ void ScriptedBrains::goalAddressPerson(const script::AddressPersonCall& call) {
 }
 
 void ScriptedBrains::goalTrackHuman(double human, double target, float distance) {
+    if (held([this, human, target, distance] { goalTrackHuman(human, target, distance); })) {
+        return;
+    }
     if (Brain* found = named(human); found != nullptr) {
         ai::goalTrackHuman(*found, *this, m_owner->formations(), target, distance);
     }
 }
 
 void ScriptedBrains::goalDealer(const script::DealerCall& call) {
+    if (held([this, call] { goalDealer(call); })) {
+        return;
+    }
     if (Brain* found = named(call.human); found != nullptr) {
         found->pushGoal(std::make_unique<DealerGoal>(*this, dealerTypeFor(found->characterClass(), call.type),
                                                      call.range, call.runChance, call.dirtyChance, call.option));
@@ -144,6 +190,9 @@ void ScriptedBrains::goalDealer(const script::DealerCall& call) {
 }
 
 void ScriptedBrains::brSetNumFollowSlots(double leader, int count, int allowed) {
+    if (held([this, leader, count, allowed] { brSetNumFollowSlots(leader, count, allowed); })) {
+        return;
+    }
     if (Brain* found = named(leader); found != nullptr) {
         if (Formation* formation = m_owner->formations().of(*found, true); formation != nullptr) {
             formation->setSlotCount(count, allowed, m_owner->nowMs());
@@ -152,6 +201,9 @@ void ScriptedBrains::brSetNumFollowSlots(double leader, int count, int allowed) 
 }
 
 void ScriptedBrains::brSetFollowSlot(double leader, int slot, float x, float y, int set) {
+    if (held([this, leader, slot, x, y, set] { brSetFollowSlot(leader, slot, x, y, set); })) {
+        return;
+    }
     if (Brain* found = named(leader); found != nullptr) {
         if (Formation* formation = m_owner->formations().of(*found, true); formation != nullptr) {
             formation->setSlot(slot, x, y, set, m_owner->nowMs());
@@ -160,6 +212,9 @@ void ScriptedBrains::brSetFollowSlot(double leader, int slot, float x, float y, 
 }
 
 void ScriptedBrains::brSetFollowSlotSet(double leader, int set) {
+    if (held([this, leader, set] { brSetFollowSlotSet(leader, set); })) {
+        return;
+    }
     if (Brain* found = named(leader); found != nullptr) {
         if (Formation* formation = m_owner->formations().of(*found, true); formation != nullptr) {
             formation->setSlotSet(set, m_owner->nowMs());
@@ -168,10 +223,16 @@ void ScriptedBrains::brSetFollowSlotSet(double leader, int set) {
 }
 
 void ScriptedBrains::tacticCrowd(int gang, std::string_view callback, bool cheering) {
+    if (held([this, gang, name = std::string(callback), cheering] { tacticCrowd(gang, name, cheering); })) {
+        return;
+    }
     m_owner->gangs().setTactic(gang, std::make_unique<TacticCrowd>(std::string(callback), cheering, m_owner->nowMs()));
 }
 
 void ScriptedBrains::tacticTrigger(int gang, int what, bool on) {
+    if (held([this, gang, what, on] { tacticTrigger(gang, what, on); })) {
+        return;
+    }
     Gang* found = m_owner->gangs().find(gang);
     if (found == nullptr) {
         return;
@@ -181,35 +242,79 @@ void ScriptedBrains::tacticTrigger(int gang, int what, bool on) {
     }
 }
 
-void ScriptedBrains::tacticClear(int gang) { m_owner->gangs().setTactic(gang, nullptr); }
+void ScriptedBrains::tacticClear(int gang) {
+    if (held([this, gang] { tacticClear(gang); })) {
+        return;
+    }
+    m_owner->gangs().setTactic(gang, nullptr);
+}
 
 int ScriptedBrains::gangCreate(int kind, std::string_view name) { return m_owner->gangs().create(kind, name); }
 
-void ScriptedBrains::gangDelete(int gang) { m_owner->gangs().remove(gang); }
+void ScriptedBrains::gangDelete(int gang) {
+    if (held([this, gang] { gangDelete(gang); })) {
+        return;
+    }
+    m_owner->gangs().remove(gang);
+}
 
 void ScriptedBrains::gangAddMember(int gang, double human) {
+    if (held([this, gang, human] { gangAddMember(gang, human); })) {
+        return;
+    }
     if (Brain* found = named(human); found != nullptr) {
         m_owner->gangs().addMember(gang, *found);
     }
 }
 
-void ScriptedBrains::gangBrDead(int gang, bool dead) { m_owner->gangs().setDead(gang, dead); }
+void ScriptedBrains::gangBrDead(int gang, bool dead) {
+    if (held([this, gang, dead] { gangBrDead(gang, dead); })) {
+        return;
+    }
+    m_owner->gangs().setDead(gang, dead);
+}
 
-void ScriptedBrains::gangBrFlush(int gang) { m_owner->gangs().flush(gang); }
+void ScriptedBrains::gangBrFlush(int gang) {
+    if (held([this, gang] { gangBrFlush(gang); })) {
+        return;
+    }
+    m_owner->gangs().flush(gang);
+}
 
 void ScriptedBrains::gangSetThreatResponse(int gang, int response) {
+    if (held([this, gang, response] { gangSetThreatResponse(gang, response); })) {
+        return;
+    }
     m_owner->gangs().setThreatResponse(gang, response);
 }
 
-void ScriptedBrains::gangMakeEnemies(int a, int b) { m_owner->gangs().makeEnemies(a, b); }
+void ScriptedBrains::gangMakeEnemies(int a, int b) {
+    if (held([this, a, b] { gangMakeEnemies(a, b); })) {
+        return;
+    }
+    m_owner->gangs().makeEnemies(a, b);
+}
 
-void ScriptedBrains::gangMakeFriends(int a, int b) { m_owner->gangs().makeFriends(a, b); }
+void ScriptedBrains::gangMakeFriends(int a, int b) {
+    if (held([this, a, b] { gangMakeFriends(a, b); })) {
+        return;
+    }
+    m_owner->gangs().makeFriends(a, b);
+}
 
 void ScriptedBrains::gangSetMsgHandler(int gang, int message, std::string_view handler) {
+    if (held([this, gang, message, name = std::string(handler)] { gangSetMsgHandler(gang, message, name); })) {
+        return;
+    }
     m_owner->gangs().setMessageHandler(gang, message, std::string(handler));
 }
 
-void ScriptedBrains::gangSuspend(int gang, bool suspended) { m_owner->gangs().suspend(gang, suspended); }
+void ScriptedBrains::gangSuspend(int gang, bool suspended) {
+    if (held([this, gang, suspended] { gangSuspend(gang, suspended); })) {
+        return;
+    }
+    m_owner->gangs().suspend(gang, suspended);
+}
 
 int ScriptedBrains::gangHeadCount(int gang, bool living) {
     const Gang* found = m_owner->gangs().find(gang);
@@ -237,7 +342,33 @@ std::optional<world_objects::Placement> ScriptedBrains::flag(double handle) cons
                                     .headingDegrees = world_objects::WorldFlags::headingDegrees(*found, m_locate)};
 }
 
-void ScriptedBrains::arrived(double /*handle*/, Brain& /*user*/) { ++m_arrivals; }
+void ScriptedBrains::arrived(double handle, Brain& user) {
+    ++m_arrivals;
+    if (m_messages != nullptr && m_scripts != nullptr) {
+        m_messages->deliver(*m_scripts, handle, kFlagArrival, user.handle(), kNilHandle, 0.0);
+    }
+}
+
+bool ScriptedBrains::humanEvent(Brain& human, const BrainEvent& event) {
+    if (m_messages == nullptr || m_scripts == nullptr || human.handle() == kNilHandle) {
+        return false;
+    }
+    const double other = event.other != nullptr ? event.other->handle() : kNilHandle;
+    return m_messages->deliver(*m_scripts, human.handle(), event.id, human.handle(), other,
+                               static_cast<double>(event.value));
+}
+
+std::vector<world_objects::BoxSubject> ScriptedBrains::boxSubjects() const {
+    std::vector<world_objects::BoxSubject> subjects;
+    subjects.reserve(m_brains.size());
+    for (const auto& [handle, brain] : m_brains) {
+        const anim::Vec3 feet = brain->human().position();
+        subjects.push_back({.handle = handle,
+                            .position = {feet.x, feet.y, feet.z},
+                            .alive = !brain->human().fighter().health().depleted()});
+    }
+    return subjects;
+}
 
 void ScriptedBrains::schedule(std::string_view function, std::span<const double> args, std::uint32_t delayMs) {
     if (m_scripts != nullptr) {
@@ -255,6 +386,60 @@ bool ScriptedBrains::call(std::string_view function, std::span<const double> arg
         values.emplace_back(arg);
     }
     return m_scripts->call(function, values);
+}
+
+bool ScriptedBrains::held(std::function<void()> call) {
+    if (!m_holding) {
+        return false;
+    }
+    m_held.push_back(std::move(call));
+    return true;
+}
+
+void ScriptedBrains::release(Spawner spawner) {
+    m_spawner = std::move(spawner);
+    // The calls held run in their order, as they would have when the script made them; one that is held again cannot
+    // happen, as the hold ends first.
+    m_holding = false;
+    std::vector<std::function<void()>> calls = std::exchange(m_held, {});
+    for (const std::function<void()>& call : calls) {
+        call();
+    }
+}
+
+void ScriptedBrains::humanCreated(const HumanCreation& human) {
+    if (held([this, human] { humanCreated(human); })) {
+        return;
+    }
+    if (!m_spawner) {
+        return;
+    }
+    if (Brain* made = m_spawner(human); made != nullptr) {
+        made->setCharacterClass(human.type);
+        bind(human.handle, *made, human.gang);
+    }
+}
+
+void ScriptedBrains::humanTeleported(double handle, const world_objects::Placement& placement) {
+    if (held([this, handle, placement] { humanTeleported(handle, placement); })) {
+        return;
+    }
+    Brain* found = named(handle);
+    if (found == nullptr || found->type() == BrainType::Player) {
+        return;
+    }
+    const std::array<float, 3>& p = placement.position;
+    found->human().spawn(nullptr, anim::Vec3{p[0], p[1], p[2]}, placement.headingDegrees);
+}
+
+std::optional<world_objects::Placement> ScriptedBrains::humanPlacement(double handle) const {
+    const Brain* found = brain(handle);
+    if (found == nullptr) {
+        return std::nullopt;
+    }
+    const anim::Vec3 p = found->human().position();
+    return world_objects::Placement{.position = {p.x, p.y, p.z},
+                                    .headingDegrees = found->human().heading() * 180.0F / std::numbers::pi_v<float>};
 }
 
 void ScriptedBrains::playScene(int /*scene*/, Brain& human, std::string_view callback) {

@@ -177,3 +177,48 @@ TEST_CASE("a member's gang hears its events before its brain, and a handler retu
     CHECK(member.attackWarnings() == 1); // used by the handler
     CHECK(scene.services.calls.size() == 2);
 }
+
+TEST_CASE("a human's own handlers hear its event before its gang, and one that takes it stops the gang and the brain",
+          "[ai][gangs]") {
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    const int gang = gangs.create(19, "Enemy");
+    Brain& member = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    gangs.addMember(gang, member);
+    gangs.setMessageHandler(gang, coney::ai::kEventAttackWarning, "P1.Warned");
+    member.setServices(&scene.services);
+    const coney::ai::BrainEvent warning{.id = coney::ai::kEventAttackWarning, .other = &scene.player(), .value = 4};
+
+    CHECK(coney::ai::deliverEvent(member, warning));
+    REQUIRE(scene.services.humanEvents.size() == 1);
+    CHECK(scene.services.humanEvents[0].first == &member);
+    CHECK(scene.services.humanEvents[0].second.other == &scene.player());
+    CHECK(scene.services.calls.size() == 1); // the gang's handler still ran
+
+    scene.services.humanEventTaken = true;
+    CHECK(coney::ai::deliverEvent(member, warning));
+    CHECK(scene.services.humanEvents.size() == 2);
+    CHECK(scene.services.calls.size() == 1); // not the gang's
+    CHECK(member.attackWarnings() == 1);     // nor the brain's
+}
+
+TEST_CASE("a fall in a human's health is event 1 about the nearest human that can fight, with the damage",
+          "[ai][gangs]") {
+    AiScene scene;
+    Brain& victim = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    Brain& near = scene.add({45.0F, 40.0F, 0.0F}, 0.0F);
+    scene.add({50.0F, 40.0F, 0.0F}, 0.0F);
+    victim.setServices(&scene.services);
+    scene.run(3);
+    CHECK(scene.services.humanEvents.empty());
+
+    static_cast<void>(victim.human().fighter().health().apply(20));
+    scene.run(1);
+    REQUIRE(scene.services.humanEvents.size() == 1);
+    const coney::ai::BrainEvent& event = scene.services.humanEvents[0].second;
+    CHECK(event.id == coney::ai::kEventDamaged);
+    CHECK(event.other == &near);
+    CHECK(event.value == 20);
+    scene.run(3);
+    CHECK(scene.services.humanEvents.size() == 1); // once per fall
+}

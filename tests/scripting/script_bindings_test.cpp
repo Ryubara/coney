@@ -19,6 +19,7 @@
 #include "core/error.h"
 #include "core/language.h"
 #include "gui/global_strings.h"
+#include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_system.h"
@@ -282,4 +283,26 @@ TEST_CASE("HuCreate returns NilHandle once every human slot is taken", "[script_
     }
     CHECK(h.first("HuCreate", {str("one too many"), Value(1.0)}).number() == 0.0);
     CHECK(h.humans.all().size() == coney::CreatedHumans::kCapacity);
+}
+
+TEST_CASE("Coney's scene stand-in: a preloaded scene is loaded, and a played one ends, at the next script update",
+          "[script_bindings]") {
+    Harness h;
+    std::vector<std::vector<double>> calls;
+    h.scripts.vm().registerFunction("Record", [&calls](std::span<const Value> args) -> coney::script::binding::Results {
+        std::vector<double>& numbers = calls.emplace_back();
+        for (const Value& arg : args) {
+            numbers.push_back(arg.number().value_or(-1.0));
+        }
+        return std::vector<Value>{};
+    });
+    const double scene = h.first("ScenePreload", {str("l99_c5"), str("Record")}).number().value_or(-1.0);
+    CHECK(calls.empty());
+    h.scripts.update(10, 1.0 / 30.0);
+    CHECK(calls == std::vector<std::vector<double>>{{scene}});
+
+    CHECK(h.first("ScenePlayCinematic", {Value(scene), Value(0.0), str("Record"), Value(1.0)}).number() == 1.0);
+    CHECK(h.first("ScenePlayFixedScene", {Value(scene), Value(0.0), Value()}).number() == 1.0); // no end function
+    h.scripts.update(20, 1.0 / 30.0);
+    CHECK(calls == std::vector<std::vector<double>>{{scene}, {scene}});
 }

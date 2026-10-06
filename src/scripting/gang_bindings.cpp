@@ -32,10 +32,11 @@ double handleArg(std::span<const Value> args, std::size_t i) {
     return static_cast<double>(static_cast<std::uint32_t>(std::trunc(binding::number(args, i))));
 }
 
-// A binding that hands its arguments to the host when there is one and returns nothing.
+// A binding that hands its arguments to the host when there is one and returns nothing. The host is read at each call,
+// not at registration: a level gives its brains to a Lua state made before it (gamemodes/gameplay_mode.h).
 template <typename Body> NativeFunction hostCall(const BindingContext& context, Body body) {
-    return [host = context.ai, body](std::span<const Value> args) {
-        if (host != nullptr) {
+    return [context = &context, body](std::span<const Value> args) {
+        if (AiBindingHost* host = context->ai; host != nullptr) {
             body(*host, args);
         }
         return binding::none();
@@ -75,7 +76,8 @@ NativeFunction makeGangDelete(const BindingContext& context) {
 // `GangGetHeadCount(gang, living) -> number`: 0 without a host.
 // @orig 0x003735d0 GangGetHeadCount (unknown)
 NativeFunction makeGangGetHeadCount(const BindingContext& context) {
-    return [host = context.ai](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        AiBindingHost* host = context->ai;
         return binding::number(host != nullptr ? host->gangHeadCount(intArg(args, 0), boolArg(args, 1)) : 0);
     };
 }
@@ -83,7 +85,8 @@ NativeFunction makeGangGetHeadCount(const BindingContext& context) {
 // `GangGetStandingCount(gang) -> number`: 0 without a host.
 // @orig 0x00373648 GangGetStandingCount (unknown)
 NativeFunction makeGangGetStandingCount(const BindingContext& context) {
-    return [host = context.ai](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        AiBindingHost* host = context->ai;
         return binding::number(host != nullptr ? host->gangStandingCount(intArg(args, 0)) : 0);
     };
 }

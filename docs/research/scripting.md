@@ -676,16 +676,29 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   which keeps the humans a level script makes, [Level loading](level-loading.md#coneys-implementation), and the level
   bindings of `src/scripting/level_bindings.h`: the flags, `GetPosition`, the saved script numbers,
   `SetStartGameCallback`, `GetRumbleModeData`, `GetRumbleModeGangName` and `CfgSetDatabaseSizes`,
-  [World flags](flags.md#coneys-implementation), and the AI and gang bindings, which hand their calls to the AI host,
-  [AI](ai.md#coney)),
+  [World flags](flags.md#coneys-implementation), the AI and gang bindings, which hand their calls to the AI host,
+  [AI](ai.md#coney), and the trigger bindings of `src/scripting/trigger_bindings.h`: `SetMsgHandler`,
+  `SetMsgHandlerEx`, `AddVolumeBox` and `RotateVolumeBox`, below),
   **routed** (handed to a
-  Coney stand-in that logs it: `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`) or a **stub** (returns
-  its documented default: nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn` and `CameraCreateLocked`,
+  Coney stand-in: `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`, and the scene stand-in's
+  `ScenePreload`, `ScenePlayCinematic`, `ScenePlayAnimation` and `ScenePlayFixedScene`) or a **stub** (returns
+  its documented default: nothing, a new handle for `GetPTank`, `ObjSpawn` and `CameraCreateLocked`,
   0 for `InvNumberOf`,
   false for `SceneIsPreloaded` and `UM_IsTypeDirty`). The configuration stubs (the `Cfg*` bindings, `CfgObj`, sound, unlockables
-  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 74 real, 5 routed and 109
+  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 78 real, 9 routed and 109
   stubs (72 of them recording): every binding the front-end path calls, and what the level scripts need for their
   starts.
+- **Message handlers and triggers** (`src/scripting/message_handlers.h`, `src/world_objects/volume_boxes.h`): an
+  object's callback per message number (26 slots), delivered with the arguments of the
+  [table above](#message-handlers); the volume boxes with their turn and the kind-0 trigger update (3, 5 once per
+  1000 ms, 4) over the scripts' humans, run by gameplay every frame before the scripts' frame. A human's events reach
+  its own handlers through its brain, a flag arrival is message 8 ([AI](ai.md#coney)).
+- **Play** (`src/gamemodes/gameplay_mode.h`): the scripts keep running in a level, stepped every frame after the
+  level's step; `--play-level LEVEL` enters a level the same way, after the preloads and a fresh state
+  (`LevelScripts`, `src/gamemodes/level_start.h`). In `level99` at checkpoint 1 the tutorial runs from the intro
+  through the two markers (`vMark01`, `vMark03`), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
+  lesson then waits for the tutorial callback (`HUDSetTutorialCallback`) and the animation callbacks
+  (`AddAnimCallback`), not built yet.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
   `GetLevelId` and the level flow (record 0 is `level100`).
 - **The front end** runs the preloads at the legal screen and `global.lua` and `level100.lua` in the same state when the
@@ -714,6 +727,11 @@ Coney's choices, where the page is silent or Coney differs:
   (`...; last skipped call HuTagPattern`).
 - `GetLUASaveDataFloat` and `SetLUASaveDataFloat` outside slots 1 to 8 read 0 and write nothing (the original does not
   check).
+- **Scene stand-in** until the scene player exists ([Scenes](scenes.md)): `ScenePreload` returns a new handle and calls
+  its load function with it at the next script update; the three play bindings return true and call their end
+  function (third argument) with the scene at the next update, so a scene ends at once. `SceneAddObject` is a stub.
+- A message is delivered whatever the level-end state (`W_GameState + 0x14c`), which Coney does not keep yet; a
+  message that asks for a result counts as taken when its call runs. `SetMsgHandlerEx`'s prompts are not kept.
 - `ScheduleFuncArg1(name, n, ms)` takes the number before the delay, as the original does; the hub's chat events
   (`events.ChatEvent`) run without errors since (`coney_tests "[disc][story]"` runs `level95` for 20 seconds of
   script frames).

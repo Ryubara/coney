@@ -171,7 +171,7 @@ trigger update of a kind-0 box is confirmed (code) at 0x00415378.
 - **Evidence:** confirmed (code) at `0x004125b8`; detail: traced
 - **Wrapper** `0x0037ac70` (registered by `RegisterBindings`); **calls** `0x004125b8` `VolumeBox_Add`
 - **Used by** 53 of 467 script chunks (974 references); boot to menu: no; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BreakGlassInRadius {#breakglassinradius}
 
@@ -1666,7 +1666,7 @@ m01 dy, y' = m10 dx + m11 dy), confirmed (code); that the values are a cos/sin p
 - **Evidence:** confirmed (code) at `0x00412c40`; detail: traced
 - **Wrapper** `0x0037ae68` (registered by `RegisterBindings`); **calls** `0x00412c40` `VolumeBox_SetRotation`
 - **Used by** 31 of 467 script chunks (211 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetDoorPickable {#setdoorpickable}
 

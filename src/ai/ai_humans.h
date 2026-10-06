@@ -46,13 +46,23 @@ class AiHumans {
     AiHumans& operator=(const AiHumans&) = delete;
     AiHumans(AiHumans&&) = delete;
     AiHumans& operator=(AiHumans&&) = delete;
-    /// Takes its humans out of the player's step and its brains out of it.
+    /// The AI humans of a level whose scripts drive them, in `player`'s characters' step: the brains are `brains`
+    /// (the level's, whose gangs the scripts make; it must outlive this) and the player's brain is added to them in no
+    /// gang (the scripts' `HuCreate` puts him in one). There is no stand-in gang and engaging() is off: the scripts'
+    /// `GoalFight` starts the fights. Who fights whom follows the gangs, as above.
+    AiHumans(human::Player& player, const human::PlayerCharacter& character, AiConfig config, Brains& brains);
+    /// Takes its humans out of the player's step and its brains (the player's too) out of the brains.
     ~AiHumans();
 
     /// Spawns a fighter (AiConfig::fighter, of the power class AiConfig::powerClass) with its feet at `feet` on `mesh`
     /// (may be null) facing `headingDegrees`; with engaging() on it fights the player once he comes within its far
     /// melee range. Returns its human.
     human::Human& spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees);
+    /// Spawns an AI human playing `character` (which must outlive it), of the class and power class `config` gives,
+    /// fighting by its settings, with its feet at `feet` on `mesh` (may be null: no snap) facing `headingDegrees`, in
+    /// no gang. Returns its brain.
+    Brain& spawn(const human::PlayerCharacter& character, const AiConfig& config, const raycast::CollisionMesh* mesh,
+                 anim::Vec3 feet, float headingDegrees);
     /// Removes every AI human.
     void clear();
     /// Makes `fighter`'s brain fight the player at once (`GoalFight(fighter, player, 0)`); nothing for a human that is
@@ -71,17 +81,21 @@ class AiHumans {
     /// The AI humans spawned, their brains and the player's brain.
     [[nodiscard]] std::size_t count() const { return m_humans.size(); }
     [[nodiscard]] const std::vector<AiHuman>& humans() const { return m_humans; }
-    [[nodiscard]] Brains& brains() { return m_brains; }
-    [[nodiscard]] const Brains& brains() const { return m_brains; }
+    [[nodiscard]] Brains& brains() { return *m_brains; }
+    [[nodiscard]] const Brains& brains() const { return *m_brains; }
     [[nodiscard]] Brain& playerBrain() { return *m_playerBrain; }
     /// `human`'s brain (null for a human that is not one of these, or the player's).
-    [[nodiscard]] Brain* brainOf(const human::Human& human) { return m_brains.find(human); }
+    [[nodiscard]] Brain* brainOf(const human::Human& human) { return m_brains->find(human); }
     [[nodiscard]] const AiConfig& config() const { return m_config; }
-    /// The player's gang and the fighters' (ids in brains().gangs()).
+    /// The player's gang and the fighters' (ids in brains().gangs()); -1 until a level's scripts make them.
     [[nodiscard]] int playerGang() const { return m_playerGang; }
     [[nodiscard]] int fighterGang() const { return m_fighterGang; }
 
   private:
+    // The player's brain in the brains, and the hooks into his step: what both constructors share.
+    void install();
+    // The fighters' gang, made the first time a fighter is spawned in a scripted level (the enemy of the player's).
+    int fighterGang();
     // The brains' place in the step: the engaging stand-in, the brains, then the player's nearest enemy.
     void step();
     // The snapshot of `human` now.
@@ -90,7 +104,8 @@ class AiHumans {
     human::Player& m_player;
     const human::PlayerCharacter& m_character;
     AiConfig m_config;
-    Brains m_brains;
+    std::unique_ptr<Brains> m_ownBrains; // its own, without a level's scripts
+    Brains* m_brains;
     Brain* m_playerBrain = nullptr;
     std::vector<AiHuman> m_humans;
     bool m_engaging = true;

@@ -18,10 +18,12 @@
 #include "graphics/screen_fade.h"
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
+#include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "world_objects/volume_boxes.h"
 
 namespace coney {
 
@@ -99,6 +101,8 @@ class StartUpFlow final : public script::BindingHost {
     script::RecordedCalls m_recorded;
     CreatedHumans m_humans;
     world_objects::WorldFlags m_flags;
+    script::MessageHandlers m_messages;
+    world_objects::VolumeBoxes m_boxes;
     gui::RumbleData m_rumbleData; // the Rumble menu's lists, which its chunks build
     FrontEndServices m_services;
     graphics::ScreenFade m_fade;

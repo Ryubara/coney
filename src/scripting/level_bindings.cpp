@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "world_objects/flags.h"
 
@@ -32,13 +33,19 @@ int intArg(std::span<const Value> args, std::size_t i) {
     return static_cast<int>(std::trunc(binding::number(args, i)));
 }
 
-// The flags' locator over the context's humans: the live objects a flag can follow.
+// The flags' locator over the context's humans: the live objects a flag can follow. Where the AI host has the human
+// (a level in play), where it stands now; otherwise where the script made it or last teleported it.
 world_objects::ObjectLocator locatorOf(const BindingContext& context) {
-    return [humans = context.humans](double handle) -> std::optional<world_objects::Placement> {
-        if (humans == nullptr || handle == kNilHandle) {
+    return [context = &context](double handle) -> std::optional<world_objects::Placement> {
+        if (context->humans == nullptr || handle == kNilHandle) {
             return std::nullopt;
         }
-        return humans->placement(handle);
+        if (context->ai != nullptr) {
+            if (std::optional<world_objects::Placement> live = context->ai->humanPlacement(handle)) {
+                return live;
+            }
+        }
+        return context->humans->placement(handle);
     };
 }
 
@@ -121,9 +128,10 @@ NativeFunction makeGetPosition(const BindingContext& context) {
 // @orig 0x0036cdc0 TeleportToFlag (unknown)
 // @orig 0x00385db0 Object_TeleportToFlag (unknown)
 NativeFunction makeTeleportToFlag(const BindingContext& context) {
-    return [flags = context.flags, humans = context.humans, locate = locatorOf(context)](std::span<const Value> args) {
+    return [context = &context, locate = locatorOf(context)](std::span<const Value> args) {
+        const world_objects::WorldFlags* flags = context->flags;
         const world_objects::WorldFlag* flag = flags != nullptr ? flags->find(binding::number(args, 1)) : nullptr;
-        HumanCreation* human = humans != nullptr ? humans->find(binding::number(args, 0)) : nullptr;
+        HumanCreation* human = context->humans != nullptr ? context->humans->find(binding::number(args, 0)) : nullptr;
         if (flag == nullptr || human == nullptr) {
             return binding::none();
         }
@@ -133,6 +141,10 @@ NativeFunction makeTeleportToFlag(const BindingContext& context) {
             .headingDegrees = heading == kFlagHeading ? world_objects::WorldFlags::headingDegrees(*flag, locate)
                                                       : static_cast<float>(heading)};
         ++human->teleports;
+        // A human in play is moved there too.
+        if (context->ai != nullptr) {
+            context->ai->humanTeleported(human->handle, *human->teleported);
+        }
         return binding::none();
     };
 }

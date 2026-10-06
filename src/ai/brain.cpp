@@ -9,6 +9,7 @@
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/reaction_goals.h"
+#include "ai/script_services.h"
 #include "ai/tactic.h"
 #include "human/locomotion.h"
 
@@ -431,6 +432,9 @@ float Brain::distanceTo(const Brain& other) const {
 bool Brain::fightable(const Brain& other) { return !other.human().fighter().health().depleted(); }
 
 bool deliverEvent(Brain& brain, const BrainEvent& event) {
+    if (brain.services() != nullptr && brain.services()->humanEvent(brain, event)) {
+        return true;
+    }
     if (brain.gang() != nullptr && brain.gang()->onEvent(brain, event)) {
         return true;
     }

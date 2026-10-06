@@ -145,7 +145,8 @@ struct RumbleRun {
                 }
                 return found->second;
             },
-            [this](const coney::LevelStart& start) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+            [this](const coney::LevelStart& start, const coney::ScriptedCast& /*cast*/)
+                -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
                 starts.push_back(start);
                 return std::make_unique<FakeLevel>();
             });

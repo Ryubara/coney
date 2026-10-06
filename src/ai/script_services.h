@@ -17,6 +17,7 @@
 namespace coney::ai {
 
 class Brain;
+struct BrainEvent;
 
 /// A goal's Lua callback is scheduled this long after its End, ms: `ScheduleFuncArg2(name, handle, completed, 33)`
 /// (docs/research/ai.md#scripted).
@@ -46,6 +47,9 @@ class ScriptServices {
     /// Calls the Lua function `function` with `args` now. Returns whether it returned a true value (anything but
     /// nil); false when there is no script state or no such function.
     virtual bool call(std::string_view /*function*/, std::span<const double> /*args*/) { return false; }
+    /// Offers `event` to `human`'s own script handlers (`SetMsgHandler`, `0x00384c38`). Returns whether a handler took
+    /// it (only a message that asks for a result can be taken).
+    virtual bool humanEvent(Brain& /*human*/, const BrainEvent& /*event*/) { return false; }
 
     /// Starts scene `scene` with `human` in it; its end calls `callback` (empty for none) back (`0x003541a0`,
     /// `0x00353f40`).

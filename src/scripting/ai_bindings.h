@@ -152,6 +152,16 @@ class AiBindingHost {
     /// `GangGetHeadCount(gang, living)` and `GangGetStandingCount(gang)`.
     [[nodiscard]] virtual int gangHeadCount(int /*gang*/, bool /*living*/) { return 0; }
     [[nodiscard]] virtual int gangStandingCount(int /*gang*/) { return 0; }
+
+    /// `HuCreate` made `human` (kept in the context's CreatedHumans): from now on its handle names it.
+    virtual void humanCreated(const HumanCreation& /*human*/) {}
+    /// `TeleportToFlag` put the human with `handle` at `placement`, with no ground snap.
+    virtual void humanTeleported(double /*handle*/, const world_objects::Placement& /*placement*/) {}
+    /// Where the human with `handle` stands now; nothing when the host has no such human, and the place it was made
+    /// or teleported to then stands in (CreatedHumans::placement()).
+    [[nodiscard]] virtual std::optional<world_objects::Placement> humanPlacement(double /*handle*/) const {
+        return std::nullopt;
+    }
 };
 
 /// Registers kAiBindings in `vm`, handing each call to `context.ai` (a null one does nothing). They return nothing.

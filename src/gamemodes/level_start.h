@@ -9,11 +9,15 @@
 #include <string>
 #include <string_view>
 
+#include "gui/global_strings.h"
+#include "gui/rumble_mode_gui/rumble_data.h"
+#include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
+#include "world_objects/volume_boxes.h"
 
 namespace coney {
 
@@ -70,7 +74,62 @@ struct LevelScriptOptions {
     std::optional<int> rumbleArena;
 };
 
-/// The story's way into `level` at `checkpoint` without the menus, for `--play-level`: a script system of its own
+/// What the bindings ask of the game while a level's scripts run without the menus: there are no menus, modes or
+/// audio, so every request is dropped. A level script that asks for a level (`MenuLoadLevel`) or a movie is not acted
+/// on.
+class QuietBindingHost final : public script::BindingHost {
+  public:
+    void showProfileManager(std::string_view /*onRumble*/, std::string_view /*onStartGame*/) override {}
+    void showRumbleModeInterface(std::string_view /*onCancel*/, std::string_view /*onStart*/,
+                                 double /*players*/) override {}
+    void menuLoadLevel(std::string_view /*level*/) override {}
+    void playMovie(std::string_view /*name*/) override {}
+    void playMusic(std::string_view /*track*/) override {}
+    void stopMusic() override {}
+    void queueScreenEffect(int /*type*/, double /*seconds*/) override {}
+};
+
+/// The story's way into a level without the menus, as `--play-level` plays it: what the level's scripts work on (a
+/// game state, the strings and configuration the preloads fill, the humans, flags and binding context, with the
+/// bindings' requests dropped) and a script system that has run what the original runs before a level's script, in its
+/// order: the preloads (the legal screen's, which fill the level table), then a fresh Lua state (the front end's
+/// unload), then `SetCheckPoint(checkpoint)` and the level's index, as `runNextMission` leaves them. Gameplay
+/// (GameplayMode over these) then enters the level as the level flow would. Scripts are read through `source`; `log`
+/// gets the scripts' lines.
+///
+/// Research: docs/research/level-loading.md#story-into-level99, docs/research/scripting.md#life-of-the-lua-state
+class LevelScripts {
+  public:
+    LevelScripts(const script::ScriptSource& source, std::string_view level, int checkpoint,
+                 const std::function<void(std::string_view)>& log, const LevelScriptOptions& options = {});
+    LevelScripts(const LevelScripts&) = delete;
+    LevelScripts& operator=(const LevelScripts&) = delete;
+    LevelScripts(LevelScripts&&) = delete;
+    LevelScripts& operator=(LevelScripts&&) = delete;
+    ~LevelScripts() = default;
+
+    [[nodiscard]] script::ScriptSystem& scripts() { return m_scripts; }
+    [[nodiscard]] script::BindingContext& context() { return m_context; }
+    [[nodiscard]] GameState& state() { return m_state; }
+    [[nodiscard]] CreatedHumans& humans() { return m_humans; }
+    [[nodiscard]] world_objects::WorldFlags& flags() { return m_flags; }
+    [[nodiscard]] script::RecordedCalls& recorded() { return m_recorded; }
+
+  private:
+    GameState m_state;
+    gui::GlobalStrings m_strings;
+    script::RecordedCalls m_recorded;
+    CreatedHumans m_humans;
+    world_objects::WorldFlags m_flags;
+    script::MessageHandlers m_messages;
+    world_objects::VolumeBoxes m_boxes;
+    QuietBindingHost m_host;
+    gui::RumbleData m_rumbleData;
+    script::BindingContext m_context;
+    script::ScriptSystem m_scripts; // after everything its bindings refer to
+};
+
+/// The story's way into `level` at `checkpoint` without the menus, run once: a script system of its own
 /// running what the original runs before a level's script, in its order: the preloads (the legal screen's, which fill
 /// the level table), then a fresh Lua state (the front end's unload), then `SetCheckPoint(checkpoint)`, the level's
 /// index and runLevelScript(); then the scripts' frames of the first second of play (**Coney's choice**, so that what

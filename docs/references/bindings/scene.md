@@ -254,7 +254,7 @@ Plays a loaded scene as an animation only (no position or orientation override),
 - **Evidence:** confirmed (code) at `0x00353f40`; detail: traced
 - **Wrapper** `0x00367cd8` (registered by `RegisterBindings`); **calls** `0x00353f40` `Scene_PlayAnimation`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** partial
 
 ## ScenePlayCinematic {#sceneplaycinematic}
 
@@ -287,7 +287,7 @@ until it ends or is skipped.
 - **Evidence:** confirmed (code) at `0x00353c68`; detail: traced
 - **Wrapper** `0x00367580` (registered by `RegisterBindings`); **calls** `0x00353c68` `Scene_PlayCinematic`
 - **Used by** 9 of 467 script chunks (14 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** partial
 
 ## ScenePlayFixedScene {#sceneplayfixedscene}
 
@@ -313,7 +313,7 @@ for scene tables whose Animation field is a value other than 1.
 - **Evidence:** confirmed (code) at `0x00353d60`; detail: traced
 - **Wrapper** `0x00367708` (registered by `RegisterBindings`); **calls** `0x00353d60` `Scene_PlayFixed`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** partial
 
 ## ScenePreload {#scenepreload}
 
@@ -339,7 +339,7 @@ docs/research/scenes.md#loading.
 - **Evidence:** confirmed (code) at `0x00353f88`; detail: traced
 - **Wrapper** `0x00367448` (registered by `RegisterBindings`); **calls** `0x00353f88` `Scene_Preload`
 - **Used by** 110 of 467 script chunks (256 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** partial
 
 ## SceneSetCallback {#scenesetcallback}
 
