@@ -261,8 +261,26 @@ Coney keeps each profile as one file holding the 1,284-byte record above (same f
 platform's per-user data folder, writes it whenever the original would autosave, and has no format, space or icon
 dialogs.
 
+### Coney's implementation {#coneys-implementation}
+
+- [`ProfileRecord`](repo:src/warriors/profile_record.h) writes and reads the record field by field; a record of
+  another size or version is an error, and the store lists that file as a damaged ("not loadable") profile under the
+  name in its header. `SavedProgress` holds the fields with no other home in Coney's game state
+  (`GameState::saved`), with the money bank's add and the unlock and script-flag bits.
+- [`DiskProfileStore`](repo:src/warriors/disk_profile_store.h) is the save system: six slots, `profile-1.sav` to
+  `profile-6.sav` in one folder. `create` makes a profile from the template with the three screen choices and writes
+  it at once (the autosave after a new game); `save` is the autosave (only while saving is enabled); `remove` deletes
+  the file, with no undo.
+- The folder ([`profileFolder`](repo:src/platform/profile_folder.h)) is `--profiles DIR`, else `profiles` in SDL's
+  per-user data folder; test mode without `--profiles` keeps the profiles in memory for the run.
+- **Coney's choices**: bit *i* of the unlockable and script-flag sets is byte *i* / 8, bit *i* % 8 (the little-endian
+  layout of 32-bit words, inferred); the three bytes after the brightness byte are written as zero; the date and time a
+  slot keeps (`+0x16`) are not stored; the fourth-difficulty unlock (slot `+0xb4`) leaves the "every story level
+  unlocked" test to its caller until the unlockables have records.
+
 ## Open questions
 
 - The option block's `+0x00` and `+0x10` and the record's `W_GameState + 0x00` word: what they hold.
 - The second 640-bit unlockables set (`0x006fe948`): that it marks new unlocks is inferred.
+- The bit order of the unlockable and script-flag sets in the record (byte *i* / 8, bit *i* % 8 is inferred).
 - Which message a slot-1 card change shows (`0xa1`-`0xa4`) in each case, not traced.

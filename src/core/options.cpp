@@ -22,6 +22,7 @@ constexpr std::string_view kUsage =
     "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
+    "             [--profiles DIR]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
     "             [--trace FILE] [--scene NAME]] [--sandbox [NAME]]\n"
@@ -90,6 +91,8 @@ constexpr std::string_view kUsage =
     "                     play the pad input in FILE instead of the keyboard and gamepads\n"
     "  --tunables FILE    the debug menus' tunable overrides to load and save (default: coney-tunables.ini\n"
     "                     in your config folder)\n"
+    "  --profiles DIR     the folder of saved player profiles (default: profiles in your data folder;\n"
+    "                     none in test mode, where profiles last the run)\n"
     "  --dev-overlay N    show the developer overlay (F1) for the first N frames, then hide it; a test aid\n"
     "  --headless        run with no window and no GPU (nothing is drawn)\n"
     "  --help             show this text and exit\n";
@@ -524,6 +527,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
         } else if (arg == "--tunables") {
             if (auto value = takeValue(args, i, options.tunablesFile, "--tunables", "the path of a tunables file");
                 !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--profiles") {
+            if (auto value = takeValue(args, i, options.profilesDir, "--profiles", "a folder"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--view-text") {

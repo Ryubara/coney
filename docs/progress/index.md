@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 8.7%](https://img.shields.io/badge/reimplemented-8.7%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 8.8%](https://img.shields.io/badge/reimplemented-8.8%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.7% of the game's own code (291,252 of 3,354,776 bytes, 668 functions) |
+| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 675 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -74,7 +74,7 @@ at the top of the repository's `README.md`.
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
-| `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,264 |
+| `Warriors` | `█▎░░░░░░░░░░░░░░░░░░` | 6.2% | 19 | 54,264 |
 | `Movie` | `██████▊░░░░░░░░░░░░░` | 33.9% | 1 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -770,6 +770,13 @@ at the top of the repository's `README.md`.
 | `0x0041d800` | `GetDifficulty` | `Warriors` | 16 |
 | `0x0041d820` | `GetProfileDifficulty` | `Warriors` | 16 |
 | `0x0041f118` | `W_GameState_SetLevelRecord` | `Warriors` | 384 |
+| `0x00421638` | `ProfileHeader_Write` | `Warriors` | 208 |
+| `0x00421708` | `Profile_Write` | `Warriors` | 712 |
+| `0x004219d0` | `ProfileHeader_Read` | `Warriors` | 256 |
+| `0x00421ad0` | `Profile_Read` | `Warriors` | 712 |
+| `0x00421d98` | `SaveSystem_WriteCurrent` | `Warriors` | 56 |
+| `0x00421e68` | `Profile_Create` | `Warriors` | 304 |
+| `0x00421f98` | `Profile_Delete` | `Warriors` | 144 |
 | `0x004238a8` | `UM_IsLevelComplete` | `Warriors` | 64 |
 | `0x0042a938` | `Movie_Play` | `Movie` | 1,768 |
 <!-- progress:end -->

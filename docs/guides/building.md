@@ -152,7 +152,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
                    [--scene NAME]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE] [--no-audio | --audio-test]
-      [--dev-overlay N]
+      [--profiles DIR] [--dev-overlay N]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -169,6 +169,11 @@ Without `--headless`, a machine with no display or no OpenGL fails at start-up w
 `--screenshot PATH` saves the last frame (the one `--frames N` stops at) as a PNG and prints how many of its pixels
 differ from the background and a hash of the frame, so a script can check that something was drawn without keeping
 the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place).
+
+The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav`) in `profiles` in your data folder
+(`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application
+Support/Coney/Coney/` on macOS); `--profiles DIR` names another folder. A test-mode run without `--profiles` keeps
+its profiles in memory, so tests never touch yours ([Profiles and saving](../research/save.md#coney)).
 
 ### Frame rate {#frame-rate}
 

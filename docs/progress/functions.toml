@@ -3861,6 +3861,48 @@ subsystem = "Warriors"
 size = 384
 
 [[function]]
+address = 0x00421638
+name = "ProfileHeader_Write"
+subsystem = "Warriors"
+size = 208
+
+[[function]]
+address = 0x00421708
+name = "Profile_Write"
+subsystem = "Warriors"
+size = 712
+
+[[function]]
+address = 0x004219d0
+name = "ProfileHeader_Read"
+subsystem = "Warriors"
+size = 256
+
+[[function]]
+address = 0x00421ad0
+name = "Profile_Read"
+subsystem = "Warriors"
+size = 712
+
+[[function]]
+address = 0x00421d98
+name = "SaveSystem_WriteCurrent"
+subsystem = "Warriors"
+size = 56
+
+[[function]]
+address = 0x00421e68
+name = "Profile_Create"
+subsystem = "Warriors"
+size = 304
+
+[[function]]
+address = 0x00421f98
+name = "Profile_Delete"
+subsystem = "Warriors"
+size = 144
+
+[[function]]
 address = 0x004238a8
 name = "UM_IsLevelComplete"
 subsystem = "Warriors"

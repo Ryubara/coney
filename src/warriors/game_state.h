@@ -9,6 +9,7 @@
 #include "core/game_random.h"
 #include "core/language.h"
 #include "warriors/level_table.h"
+#include "warriors/profile_record.h"
 #include "warriors/unlockables.h"
 
 namespace coney {
@@ -69,6 +70,10 @@ struct GameState {
     LevelTable levels;            ///< `+0x14d4`: the level records.
     /// `+0x570c`: the saved script numbers, slot n at index n - 1; the constructor zeroes them.
     std::array<float, kLuaSaveFloats> luaSaveFloats{};
+    /// The rest of what a profile saves (the banked money `+0x480`, the options, the unlockables' bits, the script
+    /// flags `+0x572c`, the mission bests, the Rumble data): a fresh profile's until one is loaded
+    /// (docs/research/save.md#record).
+    SavedProgress saved;
 
     // Globals of the original kept here because every binding state shares them.
     GameRandom random;             ///< The random table's index (`0x006eb880`) and the table.

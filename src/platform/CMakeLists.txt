@@ -23,6 +23,8 @@ target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
 target_sources(coney_platform PRIVATE error_dialogs.cpp)
 # The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
 target_sources(coney_platform PRIVATE debug_menus.cpp)
+# Where the player profiles are kept: the per-user data folder (docs/research/save.md#coney).
+target_sources(coney_platform PRIVATE profile_folder.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
 target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp)
 coney_target_defaults(coney_platform)

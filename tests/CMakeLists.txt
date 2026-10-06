@@ -60,6 +60,7 @@ add_executable(coney_tests
     platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/imgui_model_view_test.cpp
+    platform/profile_folder_test.cpp
     platform/sdl_input_test.cpp
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp
@@ -81,7 +82,9 @@ add_executable(coney_tests
     scripting/script_bindings_test.cpp
     scripting/script_system_test.cpp
     scripting/trigger_bindings_test.cpp
+    warriors/disk_profile_store_test.cpp
     warriors/level_table_test.cpp
+    warriors/profile_record_test.cpp
     world/debug_camera_test.cpp
     world/level_object_test.cpp
     world/path_map_test.cpp

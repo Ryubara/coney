@@ -87,7 +87,9 @@ add_library(coney_core STATIC
     scripting/script_system.cpp
     scripting/trigger_bindings.cpp
     warriors/created_humans.cpp
+    warriors/disk_profile_store.cpp
     warriors/level_table.cpp
+    warriors/profile_record.cpp
     warriors/profile_store.cpp
     warriors/unlockables.cpp
     world/debug_camera.cpp

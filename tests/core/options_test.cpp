@@ -459,6 +459,16 @@ TEST_CASE("the tunables option takes the debug menus' overrides file once", "[op
     CHECK(coney::usageText().find("--tunables FILE") != std::string_view::npos);
 }
 
+TEST_CASE("the profiles option takes the profile folder once", "[options]") {
+    auto given = parse(std::array<std::string_view, 2>{"--profiles", "saves"});
+    REQUIRE(given.has_value());
+    CHECK(given->profilesDir == "saves");
+    CHECK_FALSE(parse(std::array<std::string_view, 0>{})->profilesDir.has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--profiles"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--profiles", "a", "--profiles", "b"}).has_value());
+    CHECK(coney::usageText().find("--profiles DIR") != std::string_view::npos);
+}
+
 TEST_CASE("the developer overlay option takes a frame count once", "[options]") {
     auto shown = parse(std::array<std::string_view, 2>{"--dev-overlay", "5"});
     REQUIRE(shown.has_value());
