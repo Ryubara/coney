@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hud/hud.h"
 
+#include <algorithm>
 #include <cmath>
+#include <format>
 #include <numbers>
+#include <string>
 #include <utility>
 
 #include "gui/text_layout.h"
@@ -208,6 +211,47 @@ void Hud::setNumIndicator(int player, bool on, int gang) {
     m_indicators.at(static_cast<std::size_t>(player)) = NumIndicator{.on = on && gang != -1, .gang = gang};
 }
 
+void Hud::enableTextProgress(bool on, std::span<const std::string> labels, std::uint32_t count, std::uint32_t slot) {
+    const std::size_t rows = std::min<std::size_t>(count, kTextProgressRows);
+    m_progressCounts.at(slot == 1 ? 1 : 0) = static_cast<std::uint32_t>(rows);
+    if (!on) {
+        m_progress.fill(TextProgressRow{});
+        return;
+    }
+    for (std::size_t i = 0; i < rows; ++i) {
+        TextProgressRow& row = m_progress.at(i);
+        if (!row.active) {
+            row = TextProgressRow{.active = true,
+                                  .label = i < labels.size() ? labels[i] : std::string{},
+                                  .score = 0,
+                                  .colour = graphics::kWhite};
+        }
+    }
+}
+
+void Hud::setTextProgress(std::string_view label, std::uint32_t value, graphics::Rgba colour, std::uint32_t slot) {
+    const auto found = std::ranges::find_if(
+        m_progress, [label](const TextProgressRow& row) { return row.active && row.label == label; });
+    if (found == m_progress.end()) {
+        return;
+    }
+    found->score = value;
+    found->colour = colour;
+    // A selection sort of the first rows, highest score first; only a strictly higher score moves up.
+    const std::size_t rows = std::min<std::size_t>(m_progressCounts.at(slot == 1 ? 1 : 0), kTextProgressRows);
+    for (std::size_t i = 0; i < rows; ++i) {
+        std::size_t best = i;
+        for (std::size_t j = i + 1; j < rows; ++j) {
+            if (m_progress.at(j).score > m_progress.at(best).score) {
+                best = j;
+            }
+        }
+        if (best != i) {
+            std::swap(m_progress.at(i), m_progress.at(best));
+        }
+    }
+}
+
 void Hud::update(const HudFrame& frame) {
     m_nowMs = frame.nowMs;
     m_levelNumber = frame.levelNumber;
@@ -299,12 +343,35 @@ void Hud::renderArrow(const HudCanvas& canvas) const {
         guiSprite(m_arrow.place.x + bob.x, m_arrow.place.y + bob.y, width, kArrowSize, uv, kArrowColour));
 }
 
+void Hud::renderScores(const HudCanvas& canvas) const {
+    const graphics::FontMetrics metrics = metricsOfHeight(kScoreRowHeight);
+    for (std::size_t i = 0; i < kTextProgressRows; ++i) {
+        const TextProgressRow& row = m_progress.at(i);
+        if (!row.active) {
+            continue;
+        }
+        const float y = kScoreRowsPlace.y + (static_cast<float>(i) * kScoreRowStep);
+        drawPlainText(canvas, gui::kTextFontSlot, row.label, kScoreRowsPlace.x, y, metrics, row.colour);
+        drawPlainText(canvas, gui::kTextFontSlot, std::to_string(row.score), kScoreRowsPlace.x + kScoreValueOffset, y,
+                      metrics, row.colour);
+    }
+    if (m_stopWatch.shown) {
+        // Minutes:seconds, the seconds truncated.
+        const std::int32_t ms = m_services.stopWatchTime ? std::max(0, m_services.stopWatchTime()) : 0;
+        const std::int32_t seconds = ms / 1000;
+        const std::string text = std::format("{}{}:{:02}", m_stopWatch.label, seconds / 60, seconds % 60);
+        drawPlainText(canvas, gui::kTextFontSlot, text, kStopWatchPlace.x, kStopWatchPlace.y, metrics,
+                      graphics::kWhite);
+    }
+}
+
 void Hud::render(const HudCanvas& canvas) const {
     if (!m_visible || m_letterbox) {
         return;
     }
     renderRadar(canvas);
     renderArrow(canvas);
+    renderScores(canvas);
     m_counters.render(canvas);
     for (const PlayerPanel& panel : m_panels) {
         panel.render(canvas, m_levelNumber);

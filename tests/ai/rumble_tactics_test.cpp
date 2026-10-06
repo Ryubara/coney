@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The tactics a Rumble match runs (docs/research/ai.md#tactic-kinds, docs/research/rumble.md#match-end):
-// TacticConfront's ranges and events, TacticAttack's melee and codes, and a tactic replaced from inside its own update.
+// TacticConfront's ranges and events, TacticAttack's melee and codes, a tactic replaced from inside its own update, and
+// TacticDomination's hold on a flag.
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <utility>
@@ -12,10 +14,13 @@
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
+#include "ai/scripted_brains.h"
 #include "ai/tactic.h"
 #include "ai/tactic_attack.h"
 #include "ai/tactic_confront.h"
+#include "ai/tactic_domination.h"
 #include "support/ai_fixtures.h"
+#include "world_objects/flags.h"
 
 using coney::ai::Brain;
 using coney::ai::BrainEvent;
@@ -34,6 +39,9 @@ int makeGang(AiScene& scene, int kind, const std::string& name, const std::vecto
     }
     return gang;
 }
+
+// The distance in plan between two points.
+float planDistance(coney::anim::Vec3 a, coney::anim::Vec3 b) { return std::hypot(a.x - b.x, a.y - b.y); }
 
 // The codes `function` was called with for `gang`, oldest first.
 std::vector<int> codes(const AiScene& scene, const std::string& function, int gang) {
@@ -162,4 +170,39 @@ TEST_CASE("a tactic that replaces itself from its own update is freed only after
     scene.run(3);
     CHECK(scene.brains.gangs().find(gang)->tactic() == nextTactic);
     CHECK(nextTactic->started());
+}
+
+TEST_CASE("TacticDomination sends its members to the flag and fights only the enemies near it",
+          "[ai][tactics][rumble]") {
+    AiScene scene;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    const double top = flags.add(100.0, "fTopTier", {50.0F, 40.0F, 0.0F}, 0.0F).handle;
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
+    std::vector<Brain*> ours;
+    std::vector<Brain*> theirs;
+    const int gang = makeGang(scene, 3, "Gang1", {{42.0F, 40.0F, 0.0F}}, ours);
+    const int other = makeGang(scene, 19, "Gang2", {{50.0F, 52.0F, 0.0F}}, theirs);
+    scene.brains.gangs().makeEnemies(gang, other);
+    scene.brains.gangs().setTactic(gang, std::make_unique<coney::ai::TacticDomination>(top, 3.0F, scripted, ""));
+    scene.run(1);
+    REQUIRE(ours[0]->topGoal() != nullptr);
+    CHECK(ours[0]->topGoal()->type() == coney::ai::kHoldFlagGoal);
+
+    // To the flag, ignoring the enemy 12 m from it.
+    for (int k = 0; k < 10 * 30 && planDistance(ours[0]->human().position(), {50.0F, 40.0F, 0.0F}) > 1.0F; ++k) {
+        scene.run(1);
+    }
+    CHECK(planDistance(ours[0]->human().position(), {50.0F, 40.0F, 0.0F}) <= 1.0F);
+    CHECK(ours[0]->target() == nullptr);
+
+    // The enemy steps onto the ground held: he is the target, and the fight goal goes on top.
+    theirs[0]->human().spawn(nullptr, {51.5F, 40.0F, 0.0F}, 180.0F);
+    for (int k = 0;
+         k < 60 && (ours[0]->topGoal() == nullptr || ours[0]->topGoal()->type() != coney::ai::GoalType::Fight); ++k) {
+        scene.run(1);
+    }
+    CHECK(ours[0]->target() == theirs[0]);
+    REQUIRE(ours[0]->topGoal() != nullptr);
+    CHECK(ours[0]->topGoal()->type() == coney::ai::GoalType::Fight);
 }

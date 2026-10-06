@@ -184,7 +184,7 @@ has.
 - **Evidence:** confirmed (code) at `0x0016b2c8`; detail: brief
 - **Wrapper** `0x0035f128` (registered by `RegisterBindings`); **calls** `0x0016b2c8`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangBrDead {#gangbrdead}
 
@@ -912,7 +912,7 @@ Removes the spinning marker icon from every member of a gang (the counterpart of
 - **Evidence:** confirmed (code) at `0x0016b358`; detail: brief
 - **Wrapper** `0x0035f1c0` (registered by `RegisterBindings`); **calls** `0x0016b358`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangRemoveTurfBox {#gangremoveturfbox}
 

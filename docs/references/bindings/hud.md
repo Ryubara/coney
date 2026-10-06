@@ -773,7 +773,7 @@ starts at 0. Used for the king-of-the-hill fight in level 92.
 - **Wrapper** `0x0036fa28` (registered by `RegisterBindings`); **calls** `0x001b5590` `HUD_EnableTextProgress`
 - **Used by** 4 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDFlushTutorialText {#hudflushtutorialtext}
 
@@ -1479,7 +1479,7 @@ first.
 - **Wrapper** `0x0036fb38` (registered by `RegisterBindings`); **calls** `0x001b57c8` `HUD_SetTextProgress`
 - **Used by** 4 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDSetTutorialCallback {#hudsettutorialcallback}
 

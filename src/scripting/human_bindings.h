@@ -259,6 +259,9 @@ class HumanBindingHost {
     virtual void setTargetable(int /*gang*/, bool /*on*/) {}
     /// `GangSetDamageResponse`: every current member's.
     virtual void setGangDamageResponse(int /*gang*/, int /*response*/) {}
+    /// `GangAttachSpinningIcon` and `GangRemoveSpinningIcon` (an empty `object`): every current member's icon, as
+    /// setIcon() gives one human's.
+    virtual void setGangIcon(int /*gang*/, std::string_view /*object*/, int /*param*/) {}
 
     /// The game state's characters' rules changed (a configuration binding): the host takes what it uses of them.
     virtual void applyRules(const CharacterRules& /*rules*/) {}

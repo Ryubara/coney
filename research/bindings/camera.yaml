@@ -706,6 +706,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CamAssignRevCamButton
   wrapper: 0x003672a8

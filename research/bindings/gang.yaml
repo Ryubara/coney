@@ -18,6 +18,7 @@
   notes: >-
     Calls 0x002271f0 for each of the 16 member slots.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: GangRemoveSpinningIcon
   wrapper: 0x0035f1c0
@@ -30,6 +31,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: GangSetThreatResponse
   wrapper: 0x0035f1f8

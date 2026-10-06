@@ -2134,7 +2134,7 @@ traced.
   `StopWatch_SetDisplay`, `0x001cd5e8` `StopWatchHud_UpdateMinutes`
 - **Used by** 30 of 467 script chunks (64 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## W_StartStopWatch {#w_startstopwatch}
 

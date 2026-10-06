@@ -135,6 +135,15 @@ NativeFunction makeCamSetFollowAngle(const BindingContext& context) {
     });
 }
 
+// `CamSetSplitMode(mode)`.
+// @orig 0x00367270 CamSetSplitMode (unknown)
+NativeFunction makeCamSetSplitMode(const BindingContext& context) {
+    return camerasCall(context, [](camera::Cameras& cameras, std::span<const Value> args) {
+        cameras.setSplitMode(
+            static_cast<std::uint32_t>(static_cast<std::int64_t>(std::trunc(binding::number(args, 0)))));
+    });
+}
+
 // `CamSetSecondary(object, range, player)`: player 1's only (index 0, the default).
 // @orig 0x003670c0 CamSetSecondary (unknown)
 NativeFunction makeCamSetSecondary(const BindingContext& context) {
@@ -174,6 +183,7 @@ void addCameraBindings(LuaVm& vm, const BindingContext& context, std::function<d
     vm.registerFunction("CameraReset", makeCameraReset(context));
     vm.registerFunction("CamSetFollowAngle", makeCamSetFollowAngle(context));
     vm.registerFunction("CamSetFollowZoom", makeCamSetFollowZoom(context));
+    vm.registerFunction("CamSetSplitMode", makeCamSetSplitMode(context));
     vm.registerFunction("CamSetSecondary", makeCamSetSecondary(context));
     vm.registerFunction("CamSetupFollow", makeCamSetupFollow(context, std::move(nextHandle)));
     vm.registerFunction("CamTarget", makeCamTarget(context));

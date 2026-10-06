@@ -741,6 +741,7 @@
     A row already shown is not recreated; the count is recorded even when `on` is false. Row fields: label `+0x540`,
     score `+0x558`, active `+0x434`. The exact text layout (0x001ccf10) is not traced.
   usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false, levels: [92]}
+  coney: implemented
 
 - name: HUDSetTextProgress
   wrapper: 0x0036fb38
@@ -760,6 +761,7 @@
   notes: >-
     The sort is a selection sort with ties keeping their order. Scores are unsigned, so a negative value sorts first.
   usage: {chunks: 4, calls: 16, boot: false, mission1: false, result_used: false, levels: [92]}
+  coney: implemented
 
 - name: HUDTurnOnActionCycleAnim
   wrapper: 0x0036fc80

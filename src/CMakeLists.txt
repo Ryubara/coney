@@ -246,6 +246,7 @@ target_sources(coney_core PRIVATE
     ai/tactic.cpp
     ai/tactic_attack.cpp
     ai/tactic_confront.cpp
+    ai/tactic_domination.cpp
     ai/tactic_crowd.cpp
     ai/track_human_goal.cpp
     ai/turn_action.cpp)

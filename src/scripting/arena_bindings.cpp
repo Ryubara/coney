@@ -22,6 +22,8 @@ namespace {
 
 // `Teleport`'s heading that keeps the object's rotation.
 constexpr int kKeepHeading = -1;
+// `TacticDomination`'s range when none is given, metres.
+constexpr float kDominationRange = 3.0F;
 // The largest pocket count: a byte (`+0x254`).
 constexpr int kMaxPocketCount = 255;
 // The game modes that set the flag at `+0x56f0`.
@@ -219,6 +221,42 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
                             }
                         }));
     vm.registerFunction("Teleport", makeTeleport(context));
+    // `GangAttachSpinningIcon(gang, icon, arg)`: -1 does nothing. **Coney stand-in**: the two icon names swapped for
+    // another language's (`0x002271f0`) are not, as their names are not on the page.
+    // @orig 0x0016b2c8 Gang_AttachSpinningIcon (unknown)
+    vm.registerFunction("GangAttachSpinningIcon",
+                        humanCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
+                            if (const int gang = intArg(args, 0); gang != -1) {
+                                host.setGangIcon(gang, binding::string(args, 1), intArg(args, 2));
+                            }
+                        }));
+    // `GangRemoveSpinningIcon(gang)`: -1 does nothing.
+    // @orig 0x0016b358 Gang_RemoveSpinningIcon (unknown)
+    vm.registerFunction("GangRemoveSpinningIcon",
+                        humanCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
+                            if (const int gang = intArg(args, 0); gang != -1) {
+                                host.setGangIcon(gang, {}, 0);
+                            }
+                        }));
+    // `HuForceEnableReticule(human, enable)`: one global; a handle that names no human leaves it.
+    // @orig 0x00236978 Human_ForceEnableReticule (unknown)
+    vm.registerFunction("HuForceEnableReticule", [context = &context](std::span<const Value> args) {
+        HumanBindingHost* host = humansOf(*context);
+        if (host != nullptr && context->state != nullptr && host->status(handleArg(args, 0)).has_value()) {
+            context->state->forceReticules = boolArg(args, 1);
+        }
+        return binding::none();
+    });
+    // `TacticDomination(gang, flag, range, callback)`: range defaults to 3 m; a nil callback is none.
+    // @orig 0x00316b30 Tactic_Domination (unknown)
+    vm.registerFunction("TacticDomination", [context = &context](std::span<const Value> args) {
+        if (AiBindingHost* ai = context->ai; ai != nullptr) {
+            const float range = absent(args, 2) ? kDominationRange : static_cast<float>(binding::number(args, 2));
+            const std::string callback = absent(args, 3) ? std::string{} : binding::string(args, 3);
+            ai->tacticDomination(intArg(args, 0), handleArg(args, 1), range, callback);
+        }
+        return binding::none();
+    });
 }
 
 } // namespace

@@ -165,6 +165,10 @@ TEST_CASE("the tutorial's follow camera calls: zoom, angle, switches, targets an
     CHECK(h.cameras.secondaryPoint().value_or(coney::anim::Vec3{}).x == 50.0F);
     h.call("CamSetSecondary", {Value(0.0), Value(0.0), Value(0.0)});
     CHECK_FALSE(h.cameras.secondaryPoint().has_value());
+    // The split-screen layout: 0 or 1, other values ignored.
+    h.call("CamSetSplitMode", {Value(1.0)});
+    h.call("CamSetSplitMode", {Value(4.0)});
+    CHECK(h.cameras.splitMode() == 1);
 }
 
 TEST_CASE("with no cameras the making bindings still return handles and the rest do nothing", "[camera_bindings]") {

@@ -107,6 +107,9 @@ struct GameState {
     /// `+0x431` (`WCEnableAutomaticSwitching`): the game may move the player to another gang member by itself
     /// (inferred from the name; its reader is not on the page, so Coney only keeps it). **Coney choice** until set: on.
     bool autoSwitch = true;
+    /// `0x005104f8` (`HuForceEnableReticule`): every player's reticule drawn at full strength. **Coney stand-in**:
+    /// Coney draws no reticules yet, so it is only kept.
+    bool forceReticules = false;
     /// `0x005109ac` (`CNSEnableMissionInfo`): nothing in the original reads it.
     bool missionInfo = false;
     /// The world manager's precache queue (`+0x0c`, `QueueFileToPrecache`): the files the next `PrecacheWorld` loads.

@@ -281,16 +281,14 @@ flight may have some). Each links to its reference entry by name.
 - **Every arena** (`level1xx.lua`, 62): `CamUseDeathCamera`, `End3DFog`, `EndFog`, `EndRain`, `EndRoomSmoke`; partial
   `ShowRumbleModeInterface`.
 - **Brawl** (with the Fight Pen's flag chunk): `EndGarbage`, `SoundEnableSystemMusic`.
-- **King of the hill**: `CamSetSplitMode`, `CameraSetClipping`, `GangAttachSpinningIcon`, `GangRemoveSpinningIcon`,
-  `HUDEnableTextProgress`, `HUDSetTextProgress`, `HuForceEnableReticule`, `TacticDomination`, `W_ShowStopWatch`.
-- **Battle royal**: `CameraSetClipping`, `HuForceEnableReticule`, `HuSetConscious`, `HuSetSlowMo`, `TacticDomination`,
-  `TurnWarriorCommands`.
+- **King of the hill**: `CameraSetClipping`.
+- **Battle royal**: `CameraSetClipping`, `HuSetConscious`, `HuSetSlowMo`, `TurnWarriorCommands`.
 - **Survival**: `BrSetAttackWeight`, `BrSetType`, `GoalEngageEnemy`, `GoalMoveToHuman`, `HuGetCharType`,
-  `HuGetPosition`, `TacticHanginOut`, `TurnWarriorCommands`, `W_ShowStopWatch`.
+  `HuGetPosition`, `TacticHanginOut`, `TurnWarriorCommands`.
 - **Tag battle**: `CfgHuInventoryCallback`, `CfgTagSettings`, `GoalTag`, `HUDEnableBar`, `HUDEnableGenBar`,
   `HUDSetBarPercentage`, `HUDSetRadarZoomScale`, `HuSetMug`, `HuTag`, `TacticDefend`, `TacticMoveToFlag`.
 - **Mercy**: `GoalGrabTarget`.
-- **Wheelchair**: `ActGiveWay`, `CamAssignRevCamButton`, `CamSetSplitMode`, `CameraSetClipping`, `HuSetNoAutoLock`,
+- **Wheelchair**: `ActGiveWay`, `CamAssignRevCamButton`, `CameraSetClipping`, `HuSetNoAutoLock`,
   `HuSetWheelchairControl`, `ObjColor`.
 - **Other arenas' set dressing**: `CfgSteam`, `EndParticle`, `GetPTank`, `ObjSetTrainPoint`, `ObjStartTrain`,
   `ObjStopTrain`, `ReleasePTank`, `SoundPlay`, `StartParticle`, `StartRain`; partial `PlayMovie`.
@@ -298,9 +296,9 @@ flight may have some). Each links to its reference entry by name.
 ## Coney's implementation {#coney}
 
 A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the
-set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the
-player's revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. The
-other game types are not built yet.
+set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's
+revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. King of the hill
+plays to its result screen when the player holds the top. The other game types are not built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
@@ -321,6 +319,12 @@ other game types are not built yet.
 - **Arena set-up** (`repo:src/scripting/arena_bindings.h`): `SetGameMode` and `GetGameMode` (the hand-over's
   kind-0 fallback needs mode 0), the precache queue, `HuLockMovement`, `HuEnableSoundCommands`, the pocket, the damage
   response and `Teleport`; `HUDSetNumIndicator` and `SoundPauseSound` with the HUD and sound bindings.
+- **King of the hill**: `TacticDomination` (`repo:src/ai/tactic_domination.h`, the hold-flag goal), the scoreboard
+  (`HUDEnableTextProgress`, `HUDSetTextProgress`) and the stopwatch's display (`W_ShowStopWatch`) on the HUD, the
+  leader's crown (`GangAttachSpinningIcon`, kept, not drawn), `HuForceEnableReticule` (kept) and `CamSetSplitMode`
+  (kept: one view). In arenas 101, 129 and 130 the AI is held at the foot of the top tier (inferred: the way up
+  needs the flag-`0x80` jump legs the goal's `+0xe0` bit 2 allows, [AI: route follow](ai.md#route-follow), which
+  Coney's move action does not take), so only the player scores.
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
@@ -328,7 +332,8 @@ other game types are not built yet.
 Coney's stand-ins, each an open question below where the page is silent: the intro's layout, separator text and voice
 lengths; the result lines' look and the grids' rows; the melee and confront goals; the confront tactic's radii and route
 test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
-brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue.
+brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
+scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight.
 
 ## Open questions {#open-questions}
 
@@ -336,6 +341,10 @@ brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, whic
 - What `SetGameMode`'s arguments 3 and 19 select, and who reads them; where the mode returns to 0 after an arena.
 - What reads `HuLockMovement`'s flag (`0x200000000`) and so what a locked human may still do.
 - Where `HUDSetNumIndicator`'s count is drawn and how it looks.
+- King of the hill in Coney scores 2 a tick (every 1,850 ms) for a gang whose player stands alone on top, where the
+  rules above give 1; what `X.Update` adds per member on top.
+- The hold-flag goal's `+0xe0` bit 2 and the move action's flag-`0x80` (jump) edges: how a holder climbs to the top,
+  and the domination tactic's and hold-flag goal's type ids.
 - The win camera's stop condition (`0x005fdeb8 + 0x1d8` / `+0x1dc`) and the base camera slots `+0x194` / `+0x1ac`.
 - What the sound call on `"menu"` (`0x0010fa50`) does when the result screen's choices appear.
 - The countdown's first sound (`+0xfc` of the intro, loaded before the screen opens).

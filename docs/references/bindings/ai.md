@@ -3666,7 +3666,7 @@ marks the human (record `+0xe0` bit 2) and raises brain `+0x0b` while it runs. V
   `0x002b9730` `HoldFlagGoal_FilterTarget`
 - **Used by** 3 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticGetString {#tacticgetstring}
 

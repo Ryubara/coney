@@ -2703,6 +2703,7 @@
     marks the human (record `+0xe0` bit 2) and raises brain `+0x0b` while it runs. Vtables 0x00543860 (tactic),
     0x0053fc10 (goal).
   usage: {chunks: 3, calls: 10, boot: false, mission1: false, result_used: false, levels: [92]}
+  coney: implemented
 
 - name: TacticRing
   wrapper: 0x003760c0

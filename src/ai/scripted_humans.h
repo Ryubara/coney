@@ -91,6 +91,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void setInvincible(int gang, bool on) override;
     void setTargetable(int gang, bool on) override;
     void setGangDamageResponse(int gang, int response) override;
+    void setGangIcon(int gang, std::string_view object, int param) override;
     /// Takes the rage handlers and the formations' default slots.
     void applyRules(const CharacterRules& rules) override;
 

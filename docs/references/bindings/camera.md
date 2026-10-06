@@ -945,7 +945,7 @@ Sets the split-screen layout and re-lays out the views.
 - **Evidence:** confirmed (code) at `0x0011e0a8`; detail: brief
 - **Wrapper** `0x00367270` (registered by `RegisterBindings`); **calls** `0x0011e0a8`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetupFollow {#camsetupfollow}
 

@@ -159,6 +159,8 @@ class AiBindingHost {
     virtual void tacticAttack(int /*gang*/, std::string_view /*callback*/) {}
     /// `TacticConfront(gang, ...)`.
     virtual void tacticConfront(const ConfrontCall& /*call*/) {}
+    /// `TacticDomination(gang, flag, range, callback)`: the gang holds the ground within `range` metres of the flag.
+    virtual void tacticDomination(int /*gang*/, double /*flag*/, float /*range*/, std::string_view /*callback*/) {}
     /// `BrFlushActions(human)`: the actions cleared, the goals kept.
     virtual void brFlushActions(double /*human*/) {}
     /// `BrFlushGoals(human)`: every goal ended and popped, the actions kept.

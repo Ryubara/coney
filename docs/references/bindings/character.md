@@ -1265,7 +1265,7 @@ on for every fighter.
   `0x0024b780` `Reticules_Update`
 - **Used by** 3 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuForceLook {#huforcelook}
 

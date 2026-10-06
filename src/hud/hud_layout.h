@@ -159,6 +159,15 @@ inline constexpr GuiPoint kCentredAnnouncePlace{0.5F, 0.25F};
 /// One player's prompt: centred on x, its base y, glyph height and colour.
 inline constexpr GuiPoint kPromptPlace{0.5F, 0.86F};
 inline constexpr float kPromptTextHeight = 0.06F;
+
+/// The text scoreboard (`HUDEnableTextProgress`) and the stopwatch. **Coney stand-ins**: the original's places (the
+/// floats at `0x0050d56c`, `0x0050d574`, `0x0050d57c`) and its text layout (`0x001ccf10`) are not on the page, so the
+/// rows stand down the left side and the stopwatch top centre, in the text font.
+inline constexpr GuiPoint kScoreRowsPlace{0.06F, 0.22F};
+inline constexpr float kScoreRowStep = 0.05F;
+inline constexpr float kScoreValueOffset = 0.3F;
+inline constexpr float kScoreRowHeight = 0.04F;
+inline constexpr GuiPoint kStopWatchPlace{0.44F, 0.08F};
 inline constexpr graphics::Rgba kPromptColour{128, 128, 128, 255};
 /// The raise over a showing hint box (less the box's height), else over a scroll-in message (less its height).
 inline constexpr float kPromptRaiseOverHint = 0.05F;

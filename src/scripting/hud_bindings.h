@@ -12,7 +12,7 @@ namespace coney::script {
 
 /// The HUD bindings Coney implements: every HUD binding the first mission calls, and the few beside them that share
 /// their state. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 31> kHudBindings{"FlashRageBar",
+inline constexpr std::array<std::string_view, 34> kHudBindings{"FlashRageBar",
                                                                "ForceShowPlayerHud",
                                                                "HUDAddRadarHuman",
                                                                "HUDAddRadarMissionObjective",
@@ -22,6 +22,7 @@ inline constexpr std::array<std::string_view, 31> kHudBindings{"FlashRageBar",
                                                                "HUDDeleteRadarObject",
                                                                "HUDEnableGameTutorialText",
                                                                "HUDEnableInstArrow",
+                                                               "HUDEnableTextProgress",
                                                                "HUDFlushTutorialText",
                                                                "HUDGetNewPH",
                                                                "HUDReleasePH",
@@ -33,6 +34,7 @@ inline constexpr std::array<std::string_view, 31> kHudBindings{"FlashRageBar",
                                                                "HUDSetPHValue",
                                                                "HUDSetRadarItemTexture",
                                                                "HUDSetRadarObjectFlash",
+                                                               "HUDSetTextProgress",
                                                                "HUDSetTutorialCallback",
                                                                "HUDSetTutorialText",
                                                                "HUDShowMissionSummaryText",
@@ -42,7 +44,8 @@ inline constexpr std::array<std::string_view, 31> kHudBindings{"FlashRageBar",
                                                                "HideHud",
                                                                "RestoreHud",
                                                                "ShowHud",
-                                                               "ShowPlayerHud"};
+                                                               "ShowPlayerHud",
+                                                               "W_ShowStopWatch"};
 
 /// What `HUDGetNewPH` returns when no panel is free (or there is no HUD): -1 as an unsigned 32-bit number.
 inline constexpr double kNoCounterPanel = 4294967295.0;

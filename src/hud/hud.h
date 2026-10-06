@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -50,6 +51,7 @@ struct HudServices {
     std::function<std::string(std::uint32_t id)> announceString; ///< `GSTRING.ANNOUNCE[id]`.
     std::function<std::string(int slot)> hudColour;              ///< `CfgHUDColor(slot, colour)`'s colour markup.
     HudSound sound;                                              ///< The sound output and the interface cue table.
+    std::function<std::int32_t()> stopWatchTime; ///< The mission stopwatch's time, ms (`W_GetStopWatchTime`).
 };
 
 /// The instruction arrow (`HUDEnableInstArrow`, HUD `+0x134a0`): a sprite pointing at something on screen, bobbing
@@ -86,6 +88,24 @@ struct RadarState {
 struct NumIndicator {
     bool on = false;
     int gang = -1; ///< The gang whose count it shows; -1 for none.
+};
+
+/// One row of the text scoreboard (`HUDEnableTextProgress`, widgets at `0x00615320`): a label, its score and the
+/// text's colour.
+struct TextProgressRow {
+    bool active = false;                      ///< `+0x434`.
+    std::string label;                        ///< `+0x540`.
+    std::uint32_t score = 0;                  ///< `+0x558`.
+    graphics::Rgba colour = graphics::kWhite; ///< **Coney choice** until set (not on the page): white.
+};
+
+/// The text scoreboard's rows.
+inline constexpr std::size_t kTextProgressRows = 6;
+
+/// The stopwatch's display (`W_ShowStopWatch`): shown or not, and the text before the time.
+struct StopWatchDisplay {
+    bool shown = false; ///< Stopwatch `+0x18`.
+    std::string label;  ///< `+0x1c`.
 };
 
 /// The whole in-game HUD: the original's one static object at `0x00600840`. It holds the two player panels, the hint
@@ -202,6 +222,27 @@ class Hud {
     [[nodiscard]] RadarState& radar() { return m_radar; }
     [[nodiscard]] const RadarState& radar() const { return m_radar; }
 
+    /// `HUDEnableTextProgress(on, labels, count, slot)`: on, rows 0 to `count` - 1 (at most 6) not shown yet show
+    /// label i with score 0; off, every row goes. Either way `count` is recorded as row count `slot` (1 the main, 0
+    /// the second).
+    /// @orig 0x001b5590 HUD_EnableTextProgress (unknown)
+    void enableTextProgress(bool on, std::span<const std::string> labels, std::uint32_t count, std::uint32_t slot);
+    /// `HUDSetTextProgress(label, value, colour, slot)`: the shown row labelled `label` takes the score and colour,
+    /// then the first rows (row count `slot`) are sorted by score, highest first, ties keeping their order. A label no
+    /// shown row has does nothing.
+    /// @orig 0x001b57c8 HUD_SetTextProgress (unknown)
+    void setTextProgress(std::string_view label, std::uint32_t value, graphics::Rgba colour, std::uint32_t slot);
+    /// The scoreboard's rows, top first.
+    [[nodiscard]] const std::array<TextProgressRow, kTextProgressRows>& textProgress() const { return m_progress; }
+
+    /// `W_ShowStopWatch(show, label, ...)`: the stopwatch's time shown after `label`, as minutes:seconds.
+    /// @orig 0x004235e0 StopWatch_SetDisplay (unknown)
+    void showStopWatch(bool show, std::string label) {
+        m_stopWatch = StopWatchDisplay{.shown = show, .label = std::move(label)};
+    }
+    /// The stopwatch's display.
+    [[nodiscard]] const StopWatchDisplay& stopWatch() const { return m_stopWatch; }
+
     /// The number indicators: player 0's, player 1's and the shared one.
     static constexpr std::size_t kNumIndicators = 3;
     /// `HUDSetNumIndicator(player, on, gang)`: indicator `player` (0-2) shows gang `gang`'s count; gang -1 turns it
@@ -243,6 +284,8 @@ class Hud {
     void renderRadar(const HudCanvas& canvas) const;
     // The arrow sprite.
     void renderArrow(const HudCanvas& canvas) const;
+    // The scoreboard's rows and the stopwatch (Coney's places and sizes, hud_layout.h).
+    void renderScores(const HudCanvas& canvas) const;
     // Player 0's action prompt, centred and raised clear of the text below.
     void renderPrompt(const HudCanvas& canvas) const;
 
@@ -263,6 +306,9 @@ class Hud {
     InstructionArrow m_arrow;
     RadarState m_radar;
     std::array<NumIndicator, kNumIndicators> m_indicators{};
+    std::array<TextProgressRow, kTextProgressRows> m_progress{};
+    std::array<std::uint32_t, 2> m_progressCounts{}; // 0x00622e44 (slot 0) and 0x00622e40 (slot 1)
+    StopWatchDisplay m_stopWatch;
     std::array<PanelOverrides, kPlayers> m_overrides{};
     std::uint64_t m_nowMs = 0;
     int m_levelNumber = 0;

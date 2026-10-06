@@ -1,18 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/hud_bindings.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <span>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include "hud/hud.h"
 #include "scripting/binding_args.h"
+#include "warriors/game_state.h"
 
 namespace coney::script {
 
 namespace {
+
+// `W_ShowStopWatch`'s warning window when none is given, ms.
+constexpr int kStopWatchWarnMs = 10000;
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
 std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
@@ -273,7 +280,56 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
 
 } // namespace
 
+// The colour table {r, g, b} at argument `i` (each 0-255), opaque; white when it is not a table.
+graphics::Rgba colourArg(std::span<const Value> args, std::size_t i) {
+    if (i >= args.size() || args[i].table() == nullptr) {
+        return graphics::kWhite;
+    }
+    const Table& table = *args[i].table();
+    const auto channel = [&table](double k) {
+        const double value = table.get(Value(k)).number().value_or(0.0);
+        return static_cast<std::uint8_t>(std::clamp(value, 0.0, 255.0));
+    };
+    return graphics::Rgba{channel(1.0), channel(2.0), channel(3.0), 255};
+}
+
+// The scoreboard and the stopwatch's display.
+void addScoreBindings(LuaVm& vm, const BindingContext& context) {
+    // `HUDEnableTextProgress(on, labels, count, slot)`: up to six labels; slot defaults to 1.
+    // @orig 0x0036fa28 HUDEnableTextProgress (unknown)
+    vm.registerFunction("HUDEnableTextProgress", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            std::vector<std::string> labels;
+                            if (args.size() > 1 && args[1].table() != nullptr) {
+                                for (std::size_t k = 1; k <= hud::kTextProgressRows; ++k) {
+                                    const Value label = args[1].table()->get(Value(static_cast<double>(k)));
+                                    labels.emplace_back(label.string().value_or(std::string_view{}));
+                                }
+                            }
+                            hud.enableTextProgress(boolArg(args, 0), labels, unsignedArg(args, 2),
+                                                   unsignedArg(args, 3, 1));
+                        }));
+    // `HUDSetTextProgress(label, value, {r, g, b}, slot)`: slot defaults to 1.
+    // @orig 0x0036fb38 HUDSetTextProgress (unknown)
+    vm.registerFunction("HUDSetTextProgress", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            hud.setTextProgress(binding::string(args, 0), unsignedArg(args, 1), colourArg(args, 2),
+                                                unsignedArg(args, 3, 1));
+                        }));
+    // `W_ShowStopWatch(show, label, warnMs)`: the warning window (10 s by default) armed while shown, 0 when hidden.
+    // @orig 0x00423670 StopWatch_Show (unknown)
+    vm.registerFunction("W_ShowStopWatch", [context = &context](std::span<const Value> args) {
+        const bool show = boolArg(args, 0);
+        if (context->state != nullptr) {
+            context->state->player.stopWatch.setWarning(show ? intArg(args, 2, kStopWatchWarnMs) : 0);
+        }
+        if (context->hud != nullptr) {
+            context->hud->showStopWatch(show, absent(args, 1) ? std::string{} : binding::string(args, 1));
+        }
+        return binding::none();
+    });
+}
+
 void addHudBindings(LuaVm& vm, const BindingContext& context) {
+    addScoreBindings(vm, context);
     addPanelBindings(vm, context);
     addMessageBindings(vm, context);
     addPanelAndArrowBindings(vm, context);
@@ -293,6 +349,7 @@ hud::HudServices hudServicesOf(const BindingContext& context) {
     }
     services.hudColour = [recorded = context.recorded](int slot) { return recordedHudColour(recorded, slot); };
     services.sound.cueName = [recorded = context.recorded](int cue) { return recordedInterfaceSound(recorded, cue); };
+    services.stopWatchTime = [state = context.state] { return state != nullptr ? state->player.stopWatch.time() : 0; };
     return services;
 }
 

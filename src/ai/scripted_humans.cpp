@@ -369,6 +369,14 @@ void ScriptedHumans::setGangDamageResponse(int gang, int response) {
     }
 }
 
+void ScriptedHumans::setGangIcon(int gang, std::string_view object, int param) {
+    if (Gang* found = m_scripted->owner().gangs().find(gang); found != nullptr) {
+        for (Brain* member : found->members()) {
+            setIcon(member->handle(), object, param);
+        }
+    }
+}
+
 void ScriptedHumans::setInvincible(int gang, bool on) { m_scripted->owner().gangs().setInvincible(gang, on); }
 
 void ScriptedHumans::setTargetable(int gang, bool on) { m_scripted->owner().gangs().setTargetable(gang, on); }

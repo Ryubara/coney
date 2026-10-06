@@ -491,6 +491,12 @@ name = "Camera_EnableFeature"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0011e0a8
+name = "Camera_SetSplitMode"
+subsystem = "Camera"
+size = 56
+
+[[function]]
 address = 0x0011e878
 name = "Cameras_Update"
 subsystem = "Camera"
@@ -1303,6 +1309,18 @@ name = "Gang_StartSpawner"
 subsystem = "GameModes"
 
 [[function]]
+address = 0x0016b2c8
+name = "Gang_AttachSpinningIcon"
+subsystem = "GameModes"
+size = 144
+
+[[function]]
+address = 0x0016b358
+name = "Gang_RemoveSpinningIcon"
+subsystem = "GameModes"
+size = 120
+
+[[function]]
 address = 0x0016b3d0
 name = "Gang_SetThreatResponse"
 subsystem = "GameModes"
@@ -1858,6 +1876,18 @@ size = 64
 address = 0x001b4948
 name = "HUD_ShowWarCommand"
 subsystem = "GUI"
+
+[[function]]
+address = 0x001b5590
+name = "HUD_EnableTextProgress"
+subsystem = "GUI"
+size = 568
+
+[[function]]
+address = 0x001b57c8
+name = "HUD_SetTextProgress"
+subsystem = "GUI"
+size = 712
 
 [[function]]
 address = 0x001b5b08
@@ -3024,6 +3054,12 @@ subsystem = "Human"
 [[function]]
 address = 0x00236508
 name = "Cfg_SetStereoTheftHandler"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x00236978
+name = "Human_ForceEnableReticule"
 subsystem = "Human"
 size = 64
 
@@ -4266,6 +4302,30 @@ subsystem = "Human"
 size = 184
 
 [[function]]
+address = 0x002b9538
+name = "Goal_HoldFlag"
+subsystem = "Human"
+size = 152
+
+[[function]]
+address = 0x002b9730
+name = "HoldFlagGoal_FilterTarget"
+subsystem = "Human"
+size = 144
+
+[[function]]
+address = 0x002b97c0
+name = "HoldFlagGoal_MoveToFlag"
+subsystem = "Human"
+size = 304
+
+[[function]]
+address = 0x002b98f0
+name = "HoldFlagGoal_Process"
+subsystem = "Human"
+size = 416
+
+[[function]]
 address = 0x002c6c88
 name = "Goal_Dealer"
 subsystem = "Human"
@@ -4766,6 +4826,30 @@ address = 0x00310100
 name = "TacticCrowd_Event"
 subsystem = "Human"
 size = 216
+
+[[function]]
+address = 0x00310be0
+name = "DominationTactic_Init"
+subsystem = "Human"
+size = 136
+
+[[function]]
+address = 0x00310c68
+name = "DominationTactic_AssignGoals"
+subsystem = "Human"
+size = 224
+
+[[function]]
+address = 0x00310d78
+name = "DominationTactic_OnEvent"
+subsystem = "Human"
+size = 136
+
+[[function]]
+address = 0x00316b30
+name = "Tactic_Domination"
+subsystem = "Human"
+size = 160
 
 [[function]]
 address = 0x00316fa0
@@ -5426,6 +5510,12 @@ name = "CamEnable"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00367270
+name = "CamSetSplitMode"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
 address = 0x00367448
 name = "ScenePreload"
 subsystem = "Scripting"
@@ -5710,6 +5800,18 @@ address = 0x0036f430
 name = "HUDFlushTutorialText"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x0036fa28
+name = "HUDEnableTextProgress"
+subsystem = "Scripting"
+size = 272
+
+[[function]]
+address = 0x0036fb38
+name = "HUDSetTextProgress"
+subsystem = "Scripting"
+size = 328
 
 [[function]]
 address = 0x0036fdd0
@@ -7198,6 +7300,12 @@ subsystem = "Warriors"
 size = 432
 
 [[function]]
+address = 0x004235e0
+name = "StopWatch_SetDisplay"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
 address = 0x004235f0
 name = "W_SetStopWatch"
 subsystem = "Warriors"
@@ -7208,6 +7316,12 @@ address = 0x00423638
 name = "W_GetStopWatchTime"
 subsystem = "Warriors"
 size = 16
+
+[[function]]
+address = 0x00423670
+name = "StopWatch_Show"
+subsystem = "Warriors"
+size = 96
 
 [[function]]
 address = 0x004236d0

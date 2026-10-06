@@ -225,3 +225,54 @@ TEST_CASE("HUDSetNumIndicator shows a gang's count on an indicator; no gang turn
     CHECK_FALSE(level.hud.numIndicator(0).on);
     level.call("HUDSetNumIndicator", {Value(3.0), Value(1.0), Value(5.0)});
 }
+
+TEST_CASE("the text scoreboard shows its labels and sorts by score, ties keeping their order", "[scripting][rumble]") {
+    Level level;
+    auto labels = std::make_shared<coney::script::Table>();
+    REQUIRE(labels->set(Value(1.0), str("FURIES")).has_value());
+    REQUIRE(labels->set(Value(2.0), str("ORPHANS")).has_value());
+    REQUIRE(labels->set(Value(3.0), str("RIFFS")).has_value());
+    level.call("HUDEnableTextProgress", {Value(1.0), Value(labels), Value(3.0)});
+    const auto& rows = level.hud.textProgress();
+    CHECK(rows[0].label == "FURIES");
+    CHECK(rows[2].label == "RIFFS");
+    CHECK_FALSE(rows[3].active);
+    // ORPHANS ahead; then RIFFS level with them stays below.
+    level.call("HUDSetTextProgress", {str("ORPHANS"), Value(5.0), position(255.0, 0.0, 0.0)});
+    CHECK(rows[0].label == "ORPHANS");
+    CHECK(rows[0].score == 5);
+    CHECK(rows[0].colour.r == 255);
+    CHECK(rows[0].colour.g == 0);
+    level.call("HUDSetTextProgress", {str("RIFFS"), Value(5.0), position(0.0, 255.0, 0.0)});
+    CHECK(rows[1].label == "RIFFS");
+    level.call("HUDSetTextProgress", {str("NOBODY"), Value(9.0), position(0.0, 0.0, 0.0)});
+    CHECK(rows[0].score == 5);
+    level.call("HUDEnableTextProgress", {Value(0.0), Value(labels), Value(3.0)});
+    CHECK_FALSE(rows[0].active);
+}
+
+TEST_CASE("W_ShowStopWatch shows the watch with its label and arms the warning", "[scripting][rumble]") {
+    Level level;
+    level.call("W_ShowStopWatch", {Value(1.0), str("TIME ")});
+    CHECK(level.hud.stopWatch().shown);
+    CHECK(level.hud.stopWatch().label == "TIME ");
+    level.call("W_ShowStopWatch", {Value(0.0)});
+    CHECK_FALSE(level.hud.stopWatch().shown);
+}
+
+TEST_CASE("King of the hill's crown, reticules and split mode", "[scripting][rumble]") {
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scene.brains.gangs().create(3, "Gang1");
+    level.scene.brains.gangs().addMember(gang, thug);
+    level.call("GangAttachSpinningIcon", {Value(static_cast<double>(gang)), str("dyn_crown"), Value(0.0)});
+    CHECK(thug.human().script().icon == "dyn_crown");
+    level.call("GangRemoveSpinningIcon", {Value(static_cast<double>(gang))});
+    CHECK(thug.human().script().icon.empty());
+
+    // A handle no human has leaves the reticules as they are.
+    level.call("HuForceEnableReticule", {Value(99.0), Value(1.0)});
+    CHECK_FALSE(level.state.forceReticules);
+    level.call("HuForceEnableReticule", {Value(thug.handle()), Value(1.0)});
+    CHECK(level.state.forceReticules);
+}

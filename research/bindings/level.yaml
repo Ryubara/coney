@@ -581,6 +581,7 @@
     (+0x225d5, set when the HUD is built) switches to a whole-seconds display instead (0x001cd748); what sets it is not
     traced.
   usage: {chunks: 30, calls: 64, boot: false, mission1: false, result_used: false, levels: [95, 3, 92, 83, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: ProcessTag
   wrapper: 0x00379540

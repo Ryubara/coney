@@ -167,6 +167,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void tacticAttack(int gang, std::string_view callback) override;
     /// Gives the gang a TacticConfront.
     void tacticConfront(const script::ConfrontCall& call) override;
+    /// Gives the gang a TacticDomination over the level's flags.
+    void tacticDomination(int gang, double flag, float range, std::string_view callback) override;
     /// Brain::clearActions().
     void brFlushActions(double human) override;
     /// Brain::clearGoals().

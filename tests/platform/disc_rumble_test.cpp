@@ -3,8 +3,8 @@
 // Rumble matches played on the player's own disc, from boot through the menus, headless, with the game's own scripts
 // (docs/research/rumble.md): a QUICK RUMBLE Brawl the player loses ends on the result screen with the other gang's
 // win, the winner cheering and the player revived on the way; in a WAR PARTY the pad passes to a team-mate when the
-// player goes down. They run only when CONEY_DISC names the disc and skip otherwise; they print counts only
-// (LEGAL.md).
+// player goes down; in King of the hill the player held on the top wins for his gang. They run only when CONEY_DISC
+// names the disc and skip otherwise; they print counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -102,4 +102,41 @@ TEST_CASE("the disc's WAR PARTY hands the pad to a team-mate when the player goe
     std::printf("  war party: the pad passed %lld time(s); the new player moved %.2f m\n",
                 static_cast<long long>(passes),
                 static_cast<double>(std::hypot(after.x - before.x, after.y - before.y)));
+}
+
+TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose player holds the top",
+          "[disc][rumble]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // Three a side in arena 101; once the countdown is over the player is put on the top tier's flag.
+    coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript);
+    game.chooseRumble(2, 101, 3);
+    game.run(1000 - game.frames());
+    REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
+    const auto& humans = game.flow().humans().all();
+    const auto p11 = std::ranges::find(humans, std::string_view("P11"), &coney::HumanCreation::name);
+    REQUIRE(p11 != humans.end());
+    const std::optional<double> top = game.flow().scripts().vm().global("fTopTier").number();
+    REQUIRE(top.has_value());
+    const std::array<coney::script::Value, 2> args{coney::script::Value(p11->handle), coney::script::Value(*top)};
+    REQUIRE(game.flow().scripts().call("TeleportToFlag", args));
+
+    // X.Update every 1,850 ms: the Furies score while their player stands in vTopTier, and lead the scoreboard.
+    game.run(900);
+    const auto& rows = game.flow().hud().textProgress();
+    REQUIRE(rows[0].active);
+    CHECK(rows[0].label.find("FURIES") != std::string::npos);
+    CHECK(rows[0].score >= 3);
+    CHECK(rows[1].score == 0);
+    std::printf("  king of the hill: %s %u, %s %u after 15 s on top\n", rows[0].label.c_str(), rows[0].score,
+                rows[1].label.c_str(), rows[1].score);
+
+    // Held to 100: the movement lock, X.GameOver 4 s later and the result screen naming the Furies.
+    const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 9000);
+    REQUIRE(ended);
+    CHECK(game.flow().rumbleResult().winner().find("FURIES") != std::string::npos);
+    CHECK(game.flow().scripts().errors() == 0);
+    std::printf("  king of the hill: result screen at frame %llu\n", static_cast<unsigned long long>(game.frames()));
 }

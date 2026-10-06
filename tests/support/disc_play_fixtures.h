@@ -39,6 +39,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/script_bindings.h"
 #include "warriors/created_humans.h"
+#include "warriors/game_state.h"
 #include "world/sector_budget.h"
 
 namespace coney::test {
@@ -156,6 +157,18 @@ class DiscGame {
             run(kChunk);
         }
         return m_stack.topId() == id;
+    }
+
+    /// Runs kQuickRumbleScript's menus (to frame 330, while the Rumble menu fades out) and then makes the fight game
+    /// type `gameType` (a mode's number) in arena `level` with `gangSize` fighters a side, as the Rumble menu would
+    /// have set it had the profile unlocked them (frontend.md#rumble-setup).
+    void chooseRumble(std::uint16_t gameType, int level, std::uint16_t gangSize) {
+        constexpr std::uint64_t kMenuFadingOut = 330;
+        run(kMenuFadingOut - m_frames);
+        RumbleSetup& rumble = m_flow->state().rumble;
+        rumble.values.at(RumbleSetup::kGameType) = gameType;
+        rumble.values.at(RumbleSetup::kGangSize) = gangSize;
+        rumble.levelNumber = level;
     }
 
     [[nodiscard]] GameModeStack& stack() { return m_stack; }

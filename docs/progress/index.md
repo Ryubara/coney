@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 12.7%](https://img.shields.io/badge/reimplemented-12.7%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 12.8%](https://img.shields.io/badge/reimplemented-12.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.7% of the game's own code (426,884 of 3,354,776 bytes, 1,270 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,289 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -54,27 +54,27 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
 | `Audio` | `█▍░░░░░░░░░░░░░░░░░░` | 6.7% | 50 | 57,368 |
-| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 3.9% | 40 | 165,680 |
+| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 41 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 25 | 62,808 |
 | `FileIO` | `██▋░░░░░░░░░░░░░░░░░` | 13.0% | 7 | 7,120 |
-| `GameModes` | `█████▎░░░░░░░░░░░░░░` | 25.9% | 82 | 100,440 |
+| `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 84 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
-| `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 178 | 497,416 |
-| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.4% | 358 | 1,096,672 |
+| `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
+| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.5% | 367 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████▉░░░░░░░░░░░░░░` | 29.5% | 188 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 29.8% | 191 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 55 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% | 31 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 23 | 22,008 |
-| `Warriors` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 89 | 54,264 |
+| `Warriors` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 91 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -190,6 +190,7 @@ at the top of the repository's `README.md`.
 | `0x0011c858` | `Camera_CreateWin` | `Camera` | 392 |
 | `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
 | `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
+| `0x0011e0a8` | `Camera_SetSplitMode` | `Camera` | 56 |
 | `0x0011e878` | `Cameras_Update` | `Camera` | not filled in |
 | `0x0011ee08` | `Camera_MakeActive` | `Camera` | not filled in |
 | `0x001210f8` | `Cam_StartShake` | `Camera` | not filled in |
@@ -334,6 +335,8 @@ at the top of the repository's `README.md`.
 | `0x0016acf0` | `GangMakeEnemies` | `GameModes` | 144 |
 | `0x0016ad80` | `GangMakeFriends` | `GameModes` | 144 |
 | `0x0016afc8` | `Gang_StartSpawner` | `GameModes` | not filled in |
+| `0x0016b2c8` | `Gang_AttachSpinningIcon` | `GameModes` | 144 |
+| `0x0016b358` | `Gang_RemoveSpinningIcon` | `GameModes` | 120 |
 | `0x0016b3d0` | `Gang_SetThreatResponse` | `GameModes` | 144 |
 | `0x0016b460` | `Gang_SetDamageResponse` | `GameModes` | 144 |
 | `0x0016b4f0` | `Gang_SetInvestigateResponse` | `GameModes` | not filled in |
@@ -430,6 +433,8 @@ at the top of the repository's `README.md`.
 | `0x001b47e0` | `HUD_PanelSetValue` | `GUI` | 40 |
 | `0x001b4908` | `LightManager_SetColourOffset` | `GUI` | 64 |
 | `0x001b4948` | `HUD_ShowWarCommand` | `GUI` | not filled in |
+| `0x001b5590` | `HUD_EnableTextProgress` | `GUI` | 568 |
+| `0x001b57c8` | `HUD_SetTextProgress` | `GUI` | 712 |
 | `0x001b5b08` | `HUD_SetAnnounceMessage` | `GUI` | 120 |
 | `0x001b5c30` | `HUD_EnableInstructionArrow` | `GUI` | 152 |
 | `0x001b5e90` | `Tutorial_SetCallback` | `GUI` | 24 |
@@ -631,6 +636,7 @@ at the top of the repository's `README.md`.
 | `0x00235d50` | `Human_SetReducedReact` | `Human` | 96 |
 | `0x00235db0` | `Human_SetRevivable` | `Human` | not filled in |
 | `0x00236508` | `Cfg_SetStereoTheftHandler` | `Human` | 64 |
+| `0x00236978` | `Human_ForceEnableReticule` | `Human` | 64 |
 | `0x002369b8` | `Human_SetRageFrac` | `Human` | 176 |
 | `0x00236a68` | `Human_SetFullRage` | `Human` | 104 |
 | `0x00236ad0` | `Human_SetPreventRage` | `Human` | 104 |
@@ -848,6 +854,10 @@ at the top of the repository's `README.md`.
 | `0x002b5520` | `BlockGoal_Start` | `Human` | 328 |
 | `0x002b5808` | `BlockGoal_Process` | `Human` | 656 |
 | `0x002b75b8` | `Brain_Melee` | `Human` | 184 |
+| `0x002b9538` | `Goal_HoldFlag` | `Human` | 152 |
+| `0x002b9730` | `HoldFlagGoal_FilterTarget` | `Human` | 144 |
+| `0x002b97c0` | `HoldFlagGoal_MoveToFlag` | `Human` | 304 |
+| `0x002b98f0` | `HoldFlagGoal_Process` | `Human` | 416 |
 | `0x002c6c88` | `Goal_Dealer` | `Human` | 264 |
 | `0x002c6d90` | `DealerGoal_Init` | `Human` | 232 |
 | `0x002c6e78` | `DealerGoal_Start` | `Human` | 288 |
@@ -934,6 +944,10 @@ at the top of the repository's `README.md`.
 | `0x0030fc48` | `TacticCrowd_React` | `Human` | 528 |
 | `0x0030fe78` | `TacticCrowd_Process` | `Human` | 648 |
 | `0x00310100` | `TacticCrowd_Event` | `Human` | 216 |
+| `0x00310be0` | `DominationTactic_Init` | `Human` | 136 |
+| `0x00310c68` | `DominationTactic_AssignGoals` | `Human` | 224 |
+| `0x00310d78` | `DominationTactic_OnEvent` | `Human` | 136 |
+| `0x00316b30` | `Tactic_Domination` | `Human` | 160 |
 | `0x00316fa0` | `Tactic_TriggerCrowd` | `Human` | 176 |
 | `0x00336a00` | `QuaternionSlerp` | `Maths (unnamed)` | 440 |
 | `0x00336bb8` | `VectorLerp` | `Maths (unnamed)` | 64 |
@@ -1048,6 +1062,7 @@ at the top of the repository's `README.md`.
 | `0x00366360` | `CameraCreateWin` | `Scripting` | 440 |
 | `0x003670c0` | `CamSetSecondary` | `Scripting` | not filled in |
 | `0x003671e0` | `CamEnable` | `Scripting` | not filled in |
+| `0x00367270` | `CamSetSplitMode` | `Scripting` | 56 |
 | `0x00367448` | `ScenePreload` | `Scripting` | 136 |
 | `0x003674d0` | `SceneIsPreloaded` | `Scripting` | 72 |
 | `0x00367518` | `SceneUnload` | `Scripting` | 56 |
@@ -1097,6 +1112,8 @@ at the top of the repository's `README.md`.
 | `0x0036f380` | `HUDSetTutorialText` | `Scripting` | 104 |
 | `0x0036f3e8` | `HUDCheckTutorialText` | `Scripting` | 72 |
 | `0x0036f430` | `HUDFlushTutorialText` | `Scripting` | 56 |
+| `0x0036fa28` | `HUDEnableTextProgress` | `Scripting` | 272 |
+| `0x0036fb38` | `HUDSetTextProgress` | `Scripting` | 328 |
 | `0x0036fdd0` | `HUDEnableInstArrow` | `Scripting` | 192 |
 | `0x0036fe90` | `HUDSetInstArrowAnimSpeed` | `Scripting` | 56 |
 | `0x00370098` | `HUDSetTutorialCallback` | `Scripting` | 48 |
@@ -1357,8 +1374,10 @@ at the top of the repository's `README.md`.
 | `0x00422b00` | `Stats_CategoryPercent` | `Warriors` | 216 |
 | `0x004233a8` | `StopWatch_Start` | `Warriors` | 80 |
 | `0x004233f8` | `StopWatch_Update` | `Warriors` | 432 |
+| `0x004235e0` | `StopWatch_SetDisplay` | `Warriors` | 16 |
 | `0x004235f0` | `W_SetStopWatch` | `Warriors` | 72 |
 | `0x00423638` | `W_GetStopWatchTime` | `Warriors` | 16 |
+| `0x00423670` | `StopWatch_Show` | `Warriors` | 96 |
 | `0x004236d0` | `UM_Reset` | `Warriors` | 32 |
 | `0x004236f0` | `UM_SetNumUnlockables` | `Warriors` | 40 |
 | `0x00423718` | `Unlocks_SetRecord` | `Warriors` | 80 |

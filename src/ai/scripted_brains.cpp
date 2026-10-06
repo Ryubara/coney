@@ -18,6 +18,7 @@
 #include "ai/tactic_attack.h"
 #include "ai/tactic_confront.h"
 #include "ai/tactic_crowd.h"
+#include "ai/tactic_domination.h"
 #include "ai/track_human_goal.h"
 #include "ai/turn_action.h"
 #include "combat/meters.h"
@@ -420,6 +421,14 @@ void ScriptedBrains::tacticConfront(const script::ConfrontCall& call) {
                                     .criticalRange = call.criticalRange,
                                     .confrontation = call.confrontation};
     m_owner->gangs().setTactic(call.gang, std::make_unique<TacticConfront>(settings, call.callback));
+}
+
+void ScriptedBrains::tacticDomination(int gang, double flag, float range, std::string_view callback) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
+    if (held([this, gang, flag, range, name = std::string(callback)] { tacticDomination(gang, flag, range, name); })) {
+        return;
+    }
+    m_owner->gangs().setTactic(gang, std::make_unique<TacticDomination>(flag, range, *this, std::string(callback)));
 }
 
 int ScriptedBrains::gangCreate(int kind, std::string_view name) { return m_owner->gangs().create(kind, name); }

@@ -1203,6 +1203,7 @@
     list at 0x006c72d8 records, are not traced (inferred: the target-lock button and recent hits). Rumble turns it on
     for every fighter.
   usage: {chunks: 3, calls: 9, boot: false, mission1: false, result_used: false, levels: [86]}
+  coney: implemented
 
 - name: HuGiveWeapon
   wrapper: 0x0035ae00

@@ -148,6 +148,16 @@ class Cameras {
     /// `CamSetFollowZoom(preset)` and `CamSetFollowAngle(degrees)` on the follow camera.
     void setFollowZoom(FollowZoom preset);
     void setFollowAngle(float degrees);
+    /// `CamSetSplitMode(mode)`: the two-player split-screen layout, 0 or 1 (any other value is ignored). **Coney
+    /// stand-in**: Coney has one player and one view, so the layout is kept and not applied.
+    /// @orig 0x0011e0a8 Camera_SetSplitMode (unknown)
+    void setSplitMode(std::uint32_t mode) {
+        if (mode <= 1) {
+            m_splitMode = mode;
+        }
+    }
+    /// The split-screen layout.
+    [[nodiscard]] std::uint32_t splitMode() const { return m_splitMode; }
 
     /// A scene with a camera starts: the current camera (a blend's destination) is pushed on the stack and the scene
     /// camera, showing `view`, made current at once.
@@ -213,6 +223,7 @@ class Cameras {
     std::vector<double> m_targets;
     double m_secondary = 0.0;
     float m_secondaryRange = 0.0F;
+    std::uint32_t m_splitMode = 0;
     Locator m_locate;
     CameraShake m_shake;
     SlowMotion m_slowMotion;
