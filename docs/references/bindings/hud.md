@@ -21,7 +21,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`HUDAddRadarObject`](#hudaddradarobject) | number | 0 | no | no | confirmed (code) |
 | [`HUDAddSecondaryRadarMissionObjective`](#hudaddsecondaryradarmissionobjective) | - | 6 | no | yes | confirmed (code) |
 | [`HUDANEnableChkIndicator`](#hudanenablechkindicator) | - | 0 | no | no | confirmed (code) |
-| [`HUDANEnableJoinMsg`](#hudanenablejoinmsg) | - | 10 | no | no | inferred |
+| [`HUDANEnableJoinMsg`](#hudanenablejoinmsg) | - | 10 | no | no | confirmed (code) |
 | [`HUDANGetCredit`](#hudangetcredit) | number | 5 | no | no | confirmed (code) |
 | [`HUDANLaunchEndScreen`](#hudanlaunchendscreen) | - | 1 | no | no | confirmed (code) |
 | [`HUDANSetCredit`](#hudansetcredit) | - | 7 | yes | no | confirmed (code) |
@@ -77,9 +77,9 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`HUDTurnOffRadar`](#hudturnoffradar) | - | 67 | no | yes | confirmed (code) |
 | [`HUDTurnOnActionCycleAnim`](#hudturnonactioncycleanim) | - | 7 | no | no | confirmed (code) |
 | [`HUDTurnOnRadar`](#hudturnonradar) | - | 52 | no | yes | confirmed (code) |
-| [`PreloadCredits`](#preloadcredits) | - | 2 | no | no | inferred |
+| [`PreloadCredits`](#preloadcredits) | - | 2 | no | no | confirmed (code) |
 | [`RestoreHud`](#restorehud) | - | 82 | no | yes | confirmed (code) |
-| [`ShowCredits`](#showcredits) | - | 1 | no | no | inferred |
+| [`ShowCredits`](#showcredits) | - | 1 | no | no | confirmed (code) |
 | [`ShowGameStatsInterface`](#showgamestatsinterface) | - | 2 | no | no | confirmed (code) |
 | [`ShowHud`](#showhud) | - | 5 | no | yes | confirmed (code) |
 | [`ShowOptionMenu`](#showoptionmenu) | - | 0 | no | no | confirmed (code) |
@@ -353,15 +353,21 @@ HUDANEnableJoinMsg(player, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `player` | number, truncated to an unsigned integer | Player HUD index (0 or 1). |
+| 1 | `player` | number, truncated to an unsigned integer | Player HUD index: 0 for player 1, 1 for player 2. |
 | 2 | `on` | boolean (nil or 0 is false) | true shows the message, false hides it. |
 
 **Returns** nothing.
 
-Shows or hides the `press start to join` message on a player's Armies of the Night HUD.
+Shows or hides the `press start to join` message on one player's Armies of the Night HUD (flag at `+0x4614` of the HUD
+panel, set by vtable `+0x7c` 0x002107d8). While the flag is set and the player's panel is not active, the HUD draws the
+message text (`ANHud_Draw` 0x00211938), and pressing Start with credits left revives that player, restores the panel,
+clears the flag and spends a credit (main loop 0x00158728).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003701c8` (registered by `RegisterBindings`); **calls** `0x001b46a0`
+**Notes.** Only Armies of the Night HUDs act on it (vtable 0x0053ecc0); no range check on `player`. The game-over screen
+sets the flag on both HUDs itself after a continue that leaves credits.
+
+- **Evidence:** confirmed (code) at `0x001b46a0`; detail: traced
+- **Wrapper** `0x003701c8` (registered by `RegisterBindings`); **calls** `0x001b46a0` `HUD_ANEnableJoinMsg`
 - **Used by** 10 of 467 script chunks (78 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -374,12 +380,16 @@ HUDANGetCredit() -> number
 
 No arguments.
 
-**Returns** number: The Armies of the Night credit counter.
+**Returns** number: Credits left in Armies of the Night (the global at 0x00619910).
 
-Returns the Armies of the Night credit counter.
+Returns how many Armies of the Night credits are left. A credit is spent each time a player joins or rejoins with Start
+(main loop 0x00158728) or continues on the game-over screen (0x001cf468); with none left, Start does nothing and the
+game-over screen ends the run.
 
-- **Evidence:** confirmed (code) at `0x001b4700`; detail: brief
-- **Wrapper** `0x00370290` (registered by `RegisterBindings`); **calls** `0x001b4700`
+**Notes.** The counter is set by `HUD_ANSetCredits` (0x001b46e0); it is a plain global, not reset by the level set-up.
+
+- **Evidence:** confirmed (code) at `0x001b4700`; detail: traced
+- **Wrapper** `0x00370290` (registered by `RegisterBindings`); **calls** `0x001b4700` `HUD_ANGetCredits`
 - **Used by** 5 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -392,14 +402,19 @@ HUDANLaunchEndScreen(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false) | true creates the end-screen sprite and hides the HUD; false removes it and restores the HUD. |
+| 1 | `on` | boolean (nil or 0 is false) | true shows the end screen and hides the HUD; false removes it and restores the HUD. |
 
 **Returns** nothing.
 
-Shows or removes the Armies of the Night end screen.
+Shows the Armies of the Night end screen: a full-screen white-tinted sprite of texture 0x18e0000 (a widget kept at
+0x0061995c) is created and the HUD is hidden (0x001b1f38). With false the widget is destroyed and the HUD shown again
+(0x001b20f8).
 
-- **Evidence:** confirmed (code) at `0x001b44d8`; detail: brief
-- **Wrapper** `0x00370228` (registered by `RegisterBindings`); **calls** `0x001b44d8`
+**Notes.** Not guarded: calling true twice leaks the first widget, and false with no screen up uses a null pointer. Used
+once at the end of level 64.
+
+- **Evidence:** confirmed (code) at `0x001b44d8`; detail: traced
+- **Wrapper** `0x00370228` (registered by `RegisterBindings`); **calls** `0x001b44d8` `HUD_ANLaunchEndScreen`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level64`](story.md#level64) (Armies of the Night 5)
 - **Coney:** not implemented
@@ -432,14 +447,18 @@ HUDANSetGOSignMode(mode)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `mode` | number, truncated to an unsigned integer | Mode of the `GO` arrow sign in Armies of the Night (scripts use 0, 1 and 2). |
+| 1 | `mode` | number, truncated to an unsigned integer | Mode of the `GO` arrow sign in Armies of the Night, stored as a byte (scripts use 0, 1 and 2). |
 
 **Returns** nothing.
 
-Sets the Armies of the Night `GO` sign mode (a byte at 0x0060f260).
+Stores the Armies of the Night `GO` sign mode in the byte at 0x0060f260, which the HUD uses to show the arcade-style
+`GO` prompt that tells the players to move on.
 
-- **Evidence:** confirmed (code) at `0x001b4690`; detail: brief
-- **Wrapper** `0x00370c00` (registered by `RegisterBindings`); **calls** `0x001b4690`
+**Notes.** No direct reader of 0x0060f260 was found (it may be read through a base pointer), so what modes 0, 1 and 2
+look like is open; inferred: 0 off, 1 and 2 two directions or styles.
+
+- **Evidence:** confirmed (code) at `0x001b4690`; detail: traced
+- **Wrapper** `0x00370c00` (registered by `RegisterBindings`); **calls** `0x001b4690` `HUD_ANSetGOSignMode`
 - **Used by** 19 of 467 script chunks (136 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -639,14 +658,20 @@ HUDEnableFixedCamIcon(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false) | true shows the fixed-camera icon on both players' HUDs, false hides it. |
+| 1 | `on` | boolean (nil or 0 is false) | true shows the fixed-camera icon, false hides it. |
 
 **Returns** nothing.
 
-Shows or hides the HUD icon that marks a fixed (non-player) camera.
+Shows or hides the HUD's fixed-camera icons: stores the switch at HUD `+0x177b4` (HUD object 0x00600840) and passes it
+to the show method (vtable `+0x44`) of the two icon widgets at `+0x135e0` and `+0x136e0`, one per player, built at HUD
+set-up (0x001ad588) with icon id 0x57.
 
-- **Evidence:** confirmed (code) at `0x001b4740`; detail: brief
-- **Wrapper** `0x0036f250` (registered by `RegisterBindings`); **calls** `0x001b4740`
+**Notes.** HUD set-up writes 1 to `+0x177b4` on every level load; no reader of that field was found, so the widget calls
+are what matter. That the icon marks a fixed camera is inferred from the binding name.
+
+- **Evidence:** confirmed (code) at `0x001b4740`, `0x001b2818`; detail: traced
+- **Wrapper** `0x0036f250` (registered by `RegisterBindings`); **calls** `0x001b4740` `HUD_EnableFixedCamIcon`,
+  `0x001b2818` `HUD_SetFixedCamIconVisible`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -725,22 +750,27 @@ it on.
 ## HUDEnableTextProgress {#hudenabletextprogress}
 
 ```lua
-HUDEnableTextProgress(on, labels, count, flag)
+HUDEnableTextProgress(on, labels, count, slot)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false) | true creates the rows, false removes them. |
-| 2 | `labels` | table of 6 strings (t[1]..t[6]) | Table of up to 6 row labels (gang names). |
-| 3 | `count` | number, truncated to an unsigned integer | How many rows. |
-| 4 | `flag` | number, truncated to an unsigned integer; default 1 | true (default) or false: which of two row-count slots to set. |
+| 1 | `on` | boolean (nil or 0 is false) | true creates the rows, false removes every shown row. |
+| 2 | `labels` | table of 6 strings (t[1]..t[6]) | Up to 6 row labels (gang names); row i shows label i. Written back unchanged. |
+| 3 | `count` | number, truncated to an unsigned integer | How many rows to create (1-6), from the top. |
+| 4 | `slot` | number, truncated to an unsigned integer; default 1 | Which row count to record: 1 (default) the main count (0x00622e40) that HUDSetTextProgress sorts by when its own slot is 1, 0 the second count (0x00622e44). |
 
 **Returns** nothing.
 
-Creates or removes the text scoreboard (up to six labelled rows) used in Rumble and king-of-the-hill fights.
+Creates or removes the text scoreboard: up to six HUD text rows (widgets at 0x00615320, 0x560 bytes each) stacked down
+the screen at fixed positions (x 0x0050d56c, y 0x0050d574 + row × 0x0050d57c), each showing its label and a score that
+starts at 0. Used for the king-of-the-hill fight in level 92.
 
-- **Evidence:** confirmed (code) at `0x001b5590`; detail: brief
-- **Wrapper** `0x0036fa28` (registered by `RegisterBindings`); **calls** `0x001b5590`
+**Notes.** A row already shown is not recreated; the count is recorded even when `on` is false. Row fields: label
+`+0x540`, score `+0x558`, active `+0x434`. The exact text layout (0x001ccf10) is not traced.
+
+- **Evidence:** confirmed (code) at `0x001b5590`; detail: traced
+- **Wrapper** `0x0036fa28` (registered by `RegisterBindings`); **calls** `0x001b5590` `HUD_EnableTextProgress`
 - **Used by** 4 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented
@@ -799,14 +829,24 @@ HUDLaunchANGameOver(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false) | Read but not used by the callee (scripts pass true). |
+| 1 | `on` | boolean (nil or 0 is false) | Read but not used (scripts pass true). |
 
 **Returns** nothing.
 
-Pushes the Armies of the Night game-over screen (game mode 0xd).
+Opens the Armies of the Night game-over screen (game mode 0xd, pushed from 0x005e53a0); the main loop does the same
+itself when a failed Armies of the Night level fades out. The screen (`ANGameOver_Update` 0x001cf468) counts down and
+lets either player press Start to continue: with credits left a credit is spent, the Lua function `F1.Time` is called
+and both HUDs show the join message; with no credits, or when the countdown ends, the screen fades out. Calling it while
+the screen is already up closes it and applies the result: continuing players are revived and their HUD restored,
+otherwise the game either reloads `level60` or calls `runNextMission(0)`.
 
-- **Evidence:** confirmed (code) at `0x001cede8`; detail: brief
-- **Wrapper** `0x0036f1b8` (registered by `RegisterBindings`); **calls** `0x001cede8`
+**Notes.** It is a toggle: a second call while game mode 0xd is current pops the screen instead of opening it again.
+Which menu outcome (game-over menu `+0x7a4`/`+0x7a8`) maps to reloading `level60` and which to `runNextMission` is
+inferred, not traced to the button. Credits are the counter read by `HUDANGetCredit` (0x00619910).
+
+- **Evidence:** confirmed (code) at `0x001cede8`, `0x001557f8`; detail: traced
+- **Wrapper** `0x0036f1b8` (registered by `RegisterBindings`); **calls** `0x001cede8` `HUD_LaunchANGameOver`,
+  `0x001557f8` `ANGameOver_Toggle`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -959,15 +999,23 @@ HUDSetANBossTexture(human, texture, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the boss human in an Armies of the Night level. |
-| 2 | `texture` | number, truncated to an unsigned integer | Portrait texture id for the boss (scripts pass ids around 1966080, 0x1e0000 + n). |
-| 3 | `on` | boolean (nil or 0 is false); default true | true (default) shows the boss portrait, false removes it. |
+| 2 | `texture` | number, truncated to an unsigned integer | Texture id of the portrait to show for that boss (scripts pass ids around 1966080, 0x1e0000 + n). |
+| 3 | `on` | boolean (nil or 0 is false); default true | true (default) registers the portrait, false removes the human's entry. |
 
 **Returns** nothing.
 
-Shows or removes a boss portrait on both players' Armies of the Night HUDs (the arcade mini-game, levels 60-64).
+Registers (or removes) a boss portrait on both players' Armies of the Night HUDs. Each HUD's target panel keeps a table
+of 6 (human, texture) pairs: `on` puts the pair in the first free slot, false clears the slot holding that human. While
+a player fights a registered human, the enemy health panel the HUD shows for its target (`TargetPanel_Update`
+0x0020e6f8) swaps in that portrait texture; other enemies get the plain panel.
 
-- **Evidence:** confirmed (code) at `0x001b5b80`; detail: brief
-- **Wrapper** `0x0036e8d8` (registered by `RegisterBindings`); **calls** `0x001b5b80`
+**Notes.** Only Armies of the Night HUDs (built by `ANHud_Construct` 0x0020fd80 when the level index is 60-69) implement
+the call; on a normal player HUD the method is an empty stub (vtable 0x0053edf8 `+0x74`). A full table (6 entries)
+silently ignores further adds, and the same human can be added twice. Free slots hold the null handle (0x006ebd30).
+
+- **Evidence:** confirmed (code) at `0x001b5b80`, `0x00210dc0`, `0x0020fc98`; detail: traced
+- **Wrapper** `0x0036e8d8` (registered by `RegisterBindings`); **calls** `0x001b5b80` `HUD_SetANBossTexture`,
+  `0x00210dc0` `ANHud_SetBossTexture`, `0x0020fc98` `TargetPanel_SetBossTexture`
 - **Used by** 15 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -1219,14 +1267,21 @@ HUDSetMissionFailedCallbacks(onRetry)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `onRetry` | string | Name of the Lua function (at most 31 characters) called when the player retries from the mission-failed screen; nil clears it. |
+| 1 | `onRetry` | string | Name of the Lua function (at most 31 characters kept) to call when the player retries from the mission-failed screen; nil clears it. |
 
 **Returns** nothing.
 
-Sets the Lua function the mission-failed screen calls to restart the current chapter instead of reloading the level.
+Stores a Lua function name in the mission-failed menu (`+0x7b0`,
+[Pause](../../research/pause.md#the-mission-failed-screen)). When the menu closes with its checkpoint choice (menu
+`+0x7a8`), a stored name is called with no arguments instead of reloading the level: the game first restores player 1's
+screen colour and blur when he is in state 0xc, clears game state `+0x14c`, resets the mission statistics (0x00422d00)
+and resumes play. With no name the level is reloaded from its checkpoint as usual.
 
-- **Evidence:** confirmed (code) at `0x001d1ff0`; detail: brief
-- **Wrapper** `0x0036f1e8` (registered by `RegisterBindings`); **calls** `0x001d1ff0`
+**Notes.** The close logic is confirmed (code) at 0x00155408; that `+0x7a8` is the "Last checkpoint" item (and `+0x7a4`
+Restart level, `+0x7a0` Quit) is inferred from their effects. The name stays until replaced or cleared.
+
+- **Evidence:** confirmed (code) at `0x001d1ff0`, `0x001d2398`, `0x00155408`; detail: traced
+- **Wrapper** `0x0036f1e8` (registered by `RegisterBindings`); **calls** `0x001d1ff0`, `0x001d2398`, `0x00155408`
 - **Used by** 6 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -1402,22 +1457,26 @@ frames, not at once.
 ## HUDSetTextProgress {#hudsettextprogress}
 
 ```lua
-HUDSetTextProgress(label, value, colour, flag)
+HUDSetTextProgress(label, value, colour, slot)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `label` | string | The row's label, as given to HUDEnableTextProgress. |
+| 1 | `label` | string | The row's label, as given to HUDEnableTextProgress; a label no shown row has does nothing. |
 | 2 | `value` | number, truncated to an unsigned integer | The row's new score. |
-| 3 | `colour` | table of 3 numbers (t[1]..t[3]) | Table {r, g, b}, each 0-255, for the row's text. |
-| 4 | `flag` | number, truncated to an unsigned integer; default 1 | true (default) or false: which row-count slot to sort by. |
+| 3 | `colour` | table of 3 numbers (t[1]..t[3]) | Table {r, g, b}, each 0-255, for the row's text; written back. |
+| 4 | `slot` | number, truncated to an unsigned integer; default 1 | Which recorded row count bounds the sort: 1 (default) the main count, 0 the second (see HUDEnableTextProgress). |
 
 **Returns** nothing.
 
-Updates a scoreboard row's score and colour and re-sorts the rows by score, highest first.
+Finds the shown row whose label matches, sets its score and text colour and redraws it, then sorts the first `count`
+rows by score, highest at the top, by swapping labels, scores and colours between rows (the row widgets stay in place).
 
-- **Evidence:** confirmed (code) at `0x001b57c8`; detail: brief
-- **Wrapper** `0x0036fb38` (registered by `RegisterBindings`); **calls** `0x001b57c8`
+**Notes.** The sort is a selection sort with ties keeping their order. Scores are unsigned, so a negative value sorts
+first.
+
+- **Evidence:** confirmed (code) at `0x001b57c8`; detail: traced
+- **Wrapper** `0x0036fb38` (registered by `RegisterBindings`); **calls** `0x001b57c8` `HUD_SetTextProgress`
 - **Used by** 4 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented
@@ -1669,10 +1728,16 @@ No arguments.
 
 **Returns** nothing.
 
-Loads what the end credits need ahead of ShowCredits (called by level84_end).
+Prepares the end credits (the HUD's credits element at HUD `0x00600840 + 0xea30`): allocates the credit list
+(0x0050d340) and its string cache, runs the script `credits.lua` (whose CfgCredits calls fill the list), and creates the
+70 text widgets the scroll reuses. Called by level84_end ahead of ShowCredits.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036ee08` (registered by `RegisterBindings`); **calls** `0x001b5fb0`
+**Notes.** Sets the element's loaded flag (`+0x44`) and a duration-like field `+0x16c` to 8000 (ms, inferred); scroll
+fields `+0x170`-`+0x18c` are set here but their use is not traced. Calling it twice allocates again.
+
+- **Evidence:** confirmed (code) at `0x001b5fb0`, `0x001b38b8`, `0x001a9130`; detail: traced
+- **Wrapper** `0x0036ee08` (registered by `RegisterBindings`); **calls** `0x001b5fb0`, `0x001b38b8`, `0x001a9130`
+  `Credits_Load`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented
@@ -1705,10 +1770,15 @@ No arguments.
 
 **Returns** nothing.
 
-Starts the end credits on the HUD (called by level84_end).
+Starts the end-credits scroll on the HUD (called by level84_end): if PreloadCredits has loaded them and they are not
+already running, the credits element is marked running (`+0xc` = 1, `+0x10` = 0) with the current time (`+0x168`) as its
+start.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036ee28` (registered by `RegisterBindings`); **calls** `0x001b5fd0`
+**Notes.** Does nothing without PreloadCredits first. The update and drawing of the scroll (speed, end) are not traced.
+
+- **Evidence:** confirmed (code) at `0x001b5fd0`, `0x001b38d8`, `0x001a9480`; detail: traced
+- **Wrapper** `0x0036ee28` (registered by `RegisterBindings`); **calls** `0x001b5fd0`, `0x001b38d8`, `0x001a9480`
+  `Credits_Start`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented

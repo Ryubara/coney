@@ -188,7 +188,7 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 | `0x400000000` | a block holds even against strength 3 (`0x00269f30`) | |
 | `0x2000000000` | never escapes when the grabber's power runs out | |
 | `0x20000000000` | one hit cannot take health below a fraction of the maximum (`0x00265f70`); it then sets `0x10` | |
-| `0x100000000000` | never picked as a target (`HuSetNoAutoLock`, `0x00279410`) | |
+| `0x100000000000` | never picked as a target (tested by `0x00227d78` in the filter `0x00279410`; not `HuSetNoAutoLock`, which sets `0x8000000000`, a bit with no reader found) | |
 
 ### The Anim Range List and damage {#damage-table}
 
@@ -1121,7 +1121,7 @@ when health is full and an upgrade allows it (confirmed (code)).
    `+0x844`, `+0x840`, `+0x84c`), then, with no current target, humans within range × 0.9 at any angle; then within
    135°: objects at × 0.8 and humans at × 0.7 (`0x002796a0`). The nearest wins (`0x003868d0`).
 3. The filters (`0x00279410`, `0x00279568`) skip allies and the same gang (brain `+0x20c`), humans more than 2 m
-   higher or lower (`0x00510970`), those with `HuSetNoAutoLock` (flag `0x100000000000`), the dead and the airborne;
+   higher or lower (`0x00510970`), those with flag `0x100000000000` (`0x00227d78`), the dead and the airborne;
    the first also skips the knocked down.
 
 **Lock-on** is the fight stance's movement state `0x00241b90` (the normal one is `0x00240e38`), confirmed (code):

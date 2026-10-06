@@ -29,15 +29,24 @@
   wrapper: 0x0036d258
   calls:
     - {addr: 0x00386308}
+    - {addr: 0x0039a7e0, name: ObjZone_SetMsgHandler}
+    - {addr: 0x003982a0, name: ObjZone_DispatchMessage}
+    - {addr: 0x00392520}
   args:
-    - {name: zone, lua: number, ctype: unsigned, desc: "Object zone id."}
-    - {name: message, lua: number, ctype: int, desc: "Message number (the scripts use 1 for damage, 2 for destroyed)."}
-    - {name: callback, lua: string, desc: "Lua function name, or nil to remove."}
+    - {name: zone, lua: number, ctype: unsigned, desc: "Object zone number 0-254 ([Object zones](../../references/zones.md)); not range-checked."}
+    - {name: message, lua: number, ctype: int, desc: "Message number 0-25, as for SetMsgHandler ([Script events](../../references/script-events.md)); scripts use 1 (damaged) and 2 (broken). Not range-checked."}
+    - {name: callback, lua: string, desc: "Lua function name, interned; nil clears the slot."}
   description: >-
-    Registers a Lua callback for a message about an object zone (a group of world objects), kept by the world's zone
-    list (`0x0039a7e0`).
+    Registers one Lua callback for a message on every world object of an object zone, in the object manager's table
+    (255 zones of 26 slots, object manager `+0x50 + zone * 0x68 + message * 4`). Whenever a world object gets a message
+    (0x00392520), the manager finds its spawn record, and when that record's zone has a callback for the message it is
+    called like an object's own handler (same arguments, [Scripts: message handlers](../../research/scripting.md#message-handlers));
+    the object's own handlers run after it.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Only objects spawned from the level's spawn table belong to a zone. The table is cleared when the spawn table is
+    reset (0x00398130). Out-of-range zone or message numbers write past the table.
   usage: {chunks: 5, calls: 34, boot: false, mission1: false, result_used: false, levels: [93, 51, 92, 83]}
 
 - name: SetGeneralCarMsgHandler
@@ -227,24 +236,42 @@
   wrapper: 0x003705d0
   calls:
     - {addr: 0x0041add0}
+    - {addr: 0x0041adf8, name: GameState_SetAllClearCallback}
+    - {addr: 0x001698f0, name: Gang_UpdateWanted}
+    - {addr: 0x00169a20, name: Gang_ClearWanted}
   args:
-    - {name: callback, lua: string, desc: "Lua function name (at most 31 characters), or nil to clear."}
+    - {name: callback, lua: string, desc: "Lua function name (copied, at most 31 characters, to `W_GameState + 0x2bc`), or nil to clear it."}
   description: >-
-    Sets the function called when all enemies of the current area have been cleared (kept at `W_GameState + 0x2bc`).
-  evidence: inferred
-  depth: brief
+    Sets the function called, with no arguments, when player 1's gang is in the clear: when its police wanted timer
+    (gang `+0x5e8`) runs out with no crime in progress and the police turn neutral again (0x00169a20, which also tells
+    the HUD and sets the last crime type to 0xe), or when its second timer (gang `+0x5f0`, set by GangRespond and
+    GoalCallGang) runs out.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Setting a name also clears game state byte `+0x2db` (the byte before the name). The callback is only called if the
+    name is a Lua function. Other readers of `+0x2bc` (0x0016cc60, Crime_UpdateLevel 0x0041c128) are not traced.
+    Wanted timers: [Crimes](../../research/crimes.md#wanted).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: SetHatCallBack
   wrapper: 0x00370600
   calls:
     - {addr: 0x0041af20}
+    - {addr: 0x0041af48, name: GameState_SetHatCallback}
+    - {addr: 0x0041af80, name: GameState_CallHatCallback}
   args:
-    - {name: callback, lua: string, desc: "Lua function name (at most 31 characters), or nil to clear."}
+    - {name: callback, lua: string, desc: "Lua function name (copied, at most 31 characters, to `W_GameState + 0x33c`), or nil to clear it."}
   description: >-
-    Sets the function called when the player takes a hat (kept at `W_GameState + 0x33c`).
-  evidence: inferred
-  depth: brief
+    Sets the function called as f(humanHandle, hatHandle, typeName) whenever a human takes a hat: the human message
+    handler (0x0024667c in `Human_HandleMessage`) stores the hat object's handle at human `+0x364` and then calls it,
+    with the hat's object type name. Not called while a scene plays (game state `+0x410`) or when either handle no
+    longer resolves.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Fires for any human (thugs going for hats included), not only the player. Setting a name clears game state byte
+    `+0x35b`. Cleared on every level load (0x00418c68). The message that leads there is not identified.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [11]}
 
 - name: SetMultiplayerCallback

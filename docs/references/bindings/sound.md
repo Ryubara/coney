@@ -28,7 +28,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SetupRadio`](#setupradio) | - | 4 | no | no | confirmed (code) |
 | [`SndAllocateCharacterVoices`](#sndallocatecharactervoices) | - | 1 | yes | no | confirmed (code) |
 | [`SndCfgMusicInfo`](#sndcfgmusicinfo) | - | 1 | yes | no | confirmed (code) |
-| [`SndEnableMusicDuck`](#sndenablemusicduck) | - | 1 | no | no | inferred |
+| [`SndEnableMusicDuck`](#sndenablemusicduck) | - | 1 | no | no | confirmed (code) |
 | [`SndFadeOut`](#sndfadeout) | - | 0 | no | no | inferred |
 | [`SndLoadBank`](#sndloadbank) | - | 19 | no | no | confirmed (code) |
 | [`SndLoadMatrix`](#sndloadmatrix) | - | 2 | yes | no | confirmed (code) |
@@ -50,7 +50,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SoundPreLoad`](#soundpreload) | number | 3 | no | no | confirmed (code) |
 | [`SoundPreLoadScene`](#soundpreloadscene) | - | 0 | no | no | inferred |
 | [`SoundSetEffect`](#soundseteffect) | - | 3 | yes | no | confirmed (code) |
-| [`SoundSetMusicStateCallback`](#soundsetmusicstatecallback) | - | 1 | no | no | inferred |
+| [`SoundSetMusicStateCallback`](#soundsetmusicstatecallback) | - | 1 | no | no | confirmed (code) |
 | [`SoundSetMusicTrack`](#soundsetmusictrack) | - | 73 | no | no | confirmed (code) |
 | [`SoundSetMusicVolume`](#soundsetmusicvolume) | - | 50 | yes | no | confirmed (code) |
 | [`SoundSetSoundVolume`](#soundsetsoundvolume) | - | 2 | no | no | confirmed (code) |
@@ -376,16 +376,21 @@ PreLoadObjectSound(object, sound)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of a world object (a vehicle, for example). |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of a world object (a vehicle, for example); other kinds of object do nothing. |
 | 2 | `sound` | string | Name of the sound to load for it (a path such as a cutscene sound). |
 
 **Returns** nothing.
 
-Loads a sound positioned on a world object so that it can be started later (StartObjectSound); any sound the object
-already had is stopped and replaced.
+Loads a sound positioned on a world object so that StartObjectSound (WorldObject_StartSound, 0x00397998) can start it
+later: the sound is loaded at the object's position (`+0x10`) and its handle kept at `+0xf8`; a sound the object already
+had is stopped and replaced. The object's record is also pinned (ObjRecord_SetPinned) so it is never streamed out while
+it carries the sound.
 
-- **Evidence:** confirmed (code) at `0x003978d0`; detail: brief
-- **Wrapper** `0x0036dd40` (registered by `RegisterBindings`); **calls** `0x003978d0`
+**Notes.** Only objects whose class reports kind bit 8 accept it (0x00395f38; that these are the placed world objects is
+inferred). The pin is not undone.
+
+- **Evidence:** confirmed (code) at `0x003978d0`; detail: traced
+- **Wrapper** `0x0036dd40` (registered by `RegisterBindings`); **calls** `0x003978d0` `WorldObject_PreloadSound`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level51`](story.md#level51) (mission 14)
 - **Coney:** not implemented
@@ -577,14 +582,19 @@ SndEnableMusicDuck(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false); default true | true (the default) lets other sounds (speech) lower the music; false disables ducking. Stored as given (one script passes 16). |
+| 1 | `on` | boolean (nil or 0 is false); default true | true (the default) lets scenes lower the music; false keeps it at full volume. Any non-false value counts as true (one script passes 16). |
 
 **Returns** nothing.
 
-Turns music ducking on or off (audio manager +0x3fab4).
+Turns music ducking on or off (audio manager `+0x3fab4`). While a cinematic scene plays (game state `+0x410` not 0) and
+ducking is on, Music_UpdateVolumes (0x0010e558) multiplies both music streams' volume by the duck level (`+0x3fab0`,
+0.75 from the level load, [Level loading](../../research/level-loading.md)).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00370fa0` (registered by `RegisterBindings`); **calls** `0x00113390`
+**Notes.** Its value at level start is written at 0x001582e0 and 0x0010f618 (not traced). Ducking does not follow speech
+outside scenes.
+
+- **Evidence:** confirmed (code) at `0x00113390`; detail: traced
+- **Wrapper** `0x00370fa0` (registered by `RegisterBindings`); **calls** `0x00113390` `Audio_EnableMusicDuck`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level54`](story.md#level54) (mission 16)
 - **Coney:** not implemented
@@ -791,10 +801,17 @@ No arguments.
 
 **Returns** nothing.
 
-Turns the automatic (system) music off, as SoundEnableSystemMusic(false) does.
+Turns the automatic (system) music off, as SoundEnableSystemMusic(false) does: when it was on, game state `+0x3f8` is
+cleared, the playing music fades out or stops (0x0010d9a0, as SoundStopMusicTrack), and the mood is reset (to the
+forced-change value 3, then 4 while off), so the fight and search tracks stop following the action. When it was already
+off only the mood timer (`+0x3f4`) is cleared.
 
-- **Evidence:** confirmed (code) at `0x00113e30`; detail: brief
-- **Wrapper** `0x00371418` (registered by `RegisterBindings`); **calls** `0x00113e30`
+**Notes.** Scripted tracks (SoundPlayMusicTrack, SoundLoopMusicTrack) still play. SoundEnableSystemMusic(true) turns it
+back on.
+
+- **Evidence:** confirmed (code) at `0x00113e30`, `0x0041a008`; detail: traced
+- **Wrapper** `0x00371418` (registered by `RegisterBindings`); **calls** `0x00113e30`, `0x0041a008`
+  `GameState_SetSystemMusic`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
@@ -1024,15 +1041,19 @@ SoundPlayMusicTrack(track, callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `track` | string | Music track name; it must have been configured with SndCfgMusicInfo. |
-| 2 | `callback` | string | Name of a Lua function to call when the track ends, or nil. |
+| 1 | `track` | string | Music track name (as `music/in_the_city`), hashed with the game's name hash; it must have been configured with SndCfgMusicInfo. |
+| 2 | `callback` | string | Name of a Lua function to call when the track reaches its end, or nil. |
 
 **Returns** nothing.
 
-Plays a music track once (not looped), with an optional callback when it finishes. Does nothing while the game state
-forbids music, or when the track is not in the configured list.
+Plays a music track once (not looped) through Music_Play with a fade of one bar ([Sound:
+music](../../research/sound.md#music)): the track preloads on the free stream pair, starts at once when nothing plays or
+on the current track's next bar boundary (the old one fading out), and when its stream ends the callback is called. Does
+nothing while the game state forbids music or when the track is not in the configured list.
 
-**Notes.** 0x00113510 → 0x0010d8e8 with loop off. The string form is the one the scripts use.
+**Notes.** 0x00113510 hashes the name (0x00143f68) and calls Music_Play(player, hash, loop 0, callback, 1 bar) via
+0x00112e08. The system music, if on, can replace the track on its next mood change. The string form is the one the
+scripts use.
 
 **Overload** (registered first; the wrapper above checks its argument types and calls this one when they do not match):
 Used when the first argument is not a string or there are more than two arguments: the same call with a precomputed
@@ -1051,8 +1072,9 @@ SoundPlayMusicTrack(trackHash, callback)
 
 Wrapper `0x003711d0`; calls `0x001134e0`.
 
-- **Evidence:** confirmed (code) at `0x00113510`; detail: brief
-- **Wrapper** `0x00371230` (registered by `RegisterBindings`); **calls** `0x00113510`
+- **Evidence:** confirmed (code) at `0x00113510`, `0x00112e08`, `0x0010d8e8`, `0x0010dfe0`; detail: traced
+- **Wrapper** `0x00371230` (registered by `RegisterBindings`); **calls** `0x00113510`, `0x00112e08`, `0x0010d8e8`
+  `Music_Play`, `0x0010dfe0` `MusicChannel_Update`
 - **Used by** 8 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** implemented
@@ -1140,14 +1162,20 @@ SoundSetMusicStateCallback(callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `callback` | string | Name of a Lua function called when the system music changes state, or nil to clear it. |
+| 1 | `callback` | string | Name of the Lua function to call (copied, at most 31 characters, to `W_GameState + 0x384`), or nil to clear it. |
 
 **Returns** nothing.
 
-Registers a Lua function to be told when the system music changes state (0x0041b4c0).
+Registers a Lua function that the system-music update (0x0010e7d0) calls as f(oldMood, newMood) whenever it acts on a
+mood change (game state `+0x40c`: 0, 1 or 2, inferred idle, fight, search) or a forced re-pick; the call comes after the
+new mood's track is started. Only one callback is kept; a new call replaces it.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00371540` (registered by `RegisterBindings`); **calls** `0x00113ff0`
+**Notes.** Not called while the music update is deferred (`0x00512c7c + 0x82c`); a forced re-pick passes the same mood
+twice. A name that is not a Lua function is skipped silently. Moods: sound.md#system-music.
+
+- **Evidence:** confirmed (code) at `0x00113ff0`, `0x0041b4c0`, `0x0041b520`; detail: traced
+- **Wrapper** `0x00371540` (registered by `RegisterBindings`); **calls** `0x00113ff0`, `0x0041b4c0`
+  `GameState_SetMusicStateCallback`, `0x0041b520` `GameState_CallMusicStateCallback`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
@@ -1212,14 +1240,17 @@ SoundSetSoundVolume(volume)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `volume` | number (single precision) | Read but ignored. |
+| 1 | `volume` | number (single precision) | Read as a number but ignored. |
 
 **Returns** nothing.
 
-Does nothing in this build: the function it calls (0x001140d0) returns at once.
+Does nothing in this build: the function it calls (0x001140d0) is an empty stub that returns at once, and the wrapper is
+its only caller.
 
-- **Evidence:** confirmed (code) at `0x001140d0`; detail: brief
-- **Wrapper** `0x00371160` (registered by `RegisterBindings`); **calls** `0x001140d0`
+**Notes.** A reimplementation can ignore it; the volume the scripts pass has no effect on the original.
+
+- **Evidence:** confirmed (code) at `0x001140d0`; detail: traced
+- **Wrapper** `0x00371160` (registered by `RegisterBindings`); **calls** `0x001140d0` `Sound_SetSoundVolume`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level64`](story.md#level64) (Armies of the Night 5)
 - **Coney:** not implemented

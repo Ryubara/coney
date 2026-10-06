@@ -42,7 +42,7 @@ and how to read an entry are on the [masterlist](index.md).
 | [`FlagNetAddLink`](#flagnetaddlink) | - | 29 | no | yes | confirmed (code) |
 | [`FlagNetClear`](#flagnetclear) | - | 1 | no | no | confirmed (code) |
 | [`FlagNetTraverse`](#flagnettraverse) | - | 27 | yes | yes | confirmed (code) |
-| [`FlagNetValidate`](#flagnetvalidate) | - | 1 | no | no | inferred |
+| [`FlagNetValidate`](#flagnetvalidate) | - | 1 | no | no | confirmed (code) |
 | [`FreezeWorld`](#freezeworld) | - | 0 | no | no | inferred |
 | [`GetFlagPos`](#getflagpos) | usertype | 14 | yes | no | confirmed (code) |
 | [`GetHitpoints`](#gethitpoints) | number | 2 | no | no | confirmed (code) |
@@ -82,13 +82,13 @@ and how to read an entry are on the [masterlist](index.md).
 | [`RotateVolumeBox`](#rotatevolumebox) | - | 31 | no | yes | confirmed (code) |
 | [`SetDoorPickable`](#setdoorpickable) | - | 16 | no | no | confirmed (code) |
 | [`SetFlagPos`](#setflagpos) | - | 19 | no | no | confirmed (code) |
-| [`SetPositionOfWater`](#setpositionofwater) | - | 4 | no | no | inferred |
+| [`SetPositionOfWater`](#setpositionofwater) | - | 4 | no | no | confirmed (code) |
 | [`SpawnBreakableGlass`](#spawnbreakableglass) | number | 32 | no | yes | confirmed (code) |
 | [`SpawnDoor`](#spawndoor) | number | 46 | no | yes | confirmed (code) |
 | [`TriggerSphereCfg`](#triggerspherecfg) | - | 70 | yes | yes | confirmed (code) |
 | [`TriggerSphereEnable`](#triggersphereenable) | - | 30 | yes | no | confirmed (code) |
 | [`TriggerSphereSetRadius`](#triggerspheresetradius) | - | 2 | no | no | confirmed (code) |
-| [`UnloadTimedObjects`](#unloadtimedobjects) | - | 1 | no | no | inferred |
+| [`UnloadTimedObjects`](#unloadtimedobjects) | - | 1 | no | no | confirmed (code) |
 
 ## AddFlag {#addflag}
 
@@ -456,19 +456,22 @@ CarSetPartOpen(car, part, open)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `car` | number, truncated to an unsigned integer | Handle of the car object. |
-| 2 | `part` | number, truncated to an unsigned integer | Which opening: 0-5 map to the car's internal part ids 5, 4, 14, 16, 18 and 20 (doors, bonnet and boot; the exact part per number is not traced). Other values do nothing. |
-| 3 | `open` | boolean (nil or 0 is false) | True to open the part, false to close it. |
+| 1 | `car` | number, truncated to an unsigned integer | Handle of the car object; a handle that is not a car does nothing. |
+| 2 | `part` | number, truncated to an unsigned integer | Which opening: 0 boot (part 5), 1 bonnet (4), 2-5 the four doors (parts 14, 16, 18, 20). Other values do nothing. |
+| 3 | `open` | boolean (nil or 0 is false) | true to open the part, false to close it. |
 
 **Returns** nothing.
 
-Opens or closes a door, bonnet or boot of a car.
+Opens or closes a door, the bonnet or the boot of a parked car ([Cars](../../research/cars.md#car-object)): Car_OpenPart
+sets the part's open bit (part state `+0x96` bit 2) and, once the model is loaded, swings the part and its damaged form
+on their hinge (±45°, 0x0038cb70).
 
-**Notes.** The number-to-part mapping is confirmed (code) at 0x0038d5b8; which physical panel each id is, is inferred
-from the name.
+**Notes.** Nothing happens for a part the car has removed or marks as unable to open (`+0x11f4`). Which door each of 2-5
+is (front/back, left/right) is inferred from the part boxes only.
 
-- **Evidence:** confirmed (code) at `0x0038d5b8`; detail: brief
-- **Wrapper** `0x0036ddc0` (registered by `RegisterBindings`); **calls** `0x0038d5b8` `Car_SetPartOpen`
+- **Evidence:** confirmed (code) at `0x0038d5b8`, `0x0038d020`, `0x0038cb70`; detail: traced
+- **Wrapper** `0x0036ddc0` (registered by `RegisterBindings`); **calls** `0x0038d5b8` `Car_SetPartOpen`, `0x0038d020`
+  `Car_OpenPart`, `0x0038cb70`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
@@ -954,10 +957,16 @@ No arguments.
 
 **Returns** nothing.
 
-Checks every link of the flag network (0x002a73a8 per non-empty link); a debugging aid used once.
+Does nothing visible: it walks the flag network (128 nodes of 0x14 bytes at 0x006e9440, each a flag handle and up to
+four linked flag handles) and looks up the node of every non-empty link, discarding the result. A debugging check whose
+reporting was compiled out; used once, by level 82.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0037aaf8` (registered by `RegisterBindings`); **calls** `0x002a7c48` `FlagNet_Validate`
+**Notes.** A link to a flag with no node gives -1 from 0x002a73a8 and is silently ignored. No arguments, no results, no
+state changes.
+
+- **Evidence:** confirmed (code) at `0x002a7c48`, `0x002a73a8`; detail: traced
+- **Wrapper** `0x0037aaf8` (registered by `RegisterBindings`); **calls** `0x002a7c48` `FlagNet_Validate`, `0x002a73a8`
+  `FlagNet_FindNode`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level82`](story.md#level82) (flashback 1)
 - **Coney:** not implemented
@@ -1017,14 +1026,18 @@ GetHitpoints(object) -> number
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of a world object (a breakable or damageable object, not a human). |
 
-**Returns** number: The object's remaining hitpoints (+0x128), or 0 when the handle is not a live object.
+**Returns** number: The object's remaining hitpoints (+0x128), or 0 when the handle does not resolve or the object is
+not damageable (its type-flags call lacks bit 8).
 
-Returns a world object's remaining hitpoints, for scripts that wait for something to be broken.
+Returns a world object's remaining hitpoints, for scripts that wait for something to be broken. The handle is resolved,
+the object is checked to be of the damageable kind (vtable `+0x24` flags & 8, 0x00395f38), and its hitpoints word is
+returned.
 
 **Notes.** Doors and barriers keep their hitpoints in their data and mirror them at +0x128 after every hit (0x003a6ec8),
-so this reads a door's too ([World objects: breaking a door](../../research/objects.md#door-break)).
+so this reads a door's too ([World objects: breaking a door](../../research/objects.md#door-break)). The value is pushed
+as unsigned (a negative word would read as 2^32 minus it).
 
-- **Evidence:** confirmed (code) at `0x00385918`; detail: brief
+- **Evidence:** confirmed (code) at `0x00385918`; detail: traced
 - **Wrapper** `0x0036c900` (registered by `RegisterBindings`); **calls** `0x00385918` `Object_GetHitpoints`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
@@ -1433,13 +1446,16 @@ ObjIsZoneEnabled(zone) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `zone` | number, truncated to an unsigned integer | Zone number. |
+| 1 | `zone` | number, truncated to an unsigned integer | Object zone number 0-254 ([Object zones](../../references/zones.md)); not range-checked. |
 
-**Returns** boolean (1 for true, nil for false): True when the zone's bit is set in the zone mask.
+**Returns** boolean (1 for true, nil for false): true when the zone is enabled: its bit is set in the object manager's
+zone mask (`+0x20`, eight words).
 
-Tests whether an object zone is enabled.
+Tests whether an object zone is enabled, i.e. whether ObjEnableZone last switched it on (zone 0 is on and 1-254 off when
+a level starts, [Tasks](../../research/tasks.md#classes)). Enabled zones are those whose spawn records the object
+manager creates.
 
-- **Evidence:** confirmed (code) at `0x003967a8`; detail: brief
+- **Evidence:** confirmed (code) at `0x003967a8`; detail: traced
 - **Wrapper** `0x00377b80` (registered by `RegisterBindings`); **calls** `0x003967a8` `ObjZone_IsEnabled`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
@@ -1699,14 +1715,21 @@ ObjStopTrain(train)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `train` | number, truncated to an unsigned integer | Train slot index. |
+| 1 | `train` | number, truncated to an unsigned integer | Train slot index 0-3 (0x150-byte records at 0x006f3a10); not range-checked. |
 
 **Returns** nothing.
 
-Stops a running scripted train (clears its running flag).
+Clears the running byte (`+0x148`) of a scripted train slot. A running train is a chain of points (ObjSetTrainPoint)
+with a radius (`+0x144`, ObjStartTrain's second argument) that AI movement treats as a barrier: Trains_IsPathClear
+(0x00414188, from MoveAction_Update and 0x002221e0) rejects a human-sized step that passes within the radius of any
+segment. Once stopped, AI humans may cross the line again; the points stay set.
 
-- **Evidence:** confirmed (code) at `0x00413828`; detail: brief
-- **Wrapper** `0x0036e1f0` (registered by `RegisterBindings`); **calls** `0x00413828` `Train_Stop`
+**Notes.** Nothing visible moves or stops: the slot holds no objects of its own beyond the points (inferred: the subway
+train's danger zone). ObjStartTrain resets the slot and runs it again.
+
+- **Evidence:** confirmed (code) at `0x00413828`, `0x00414188`, `0x00413c48`; detail: traced
+- **Wrapper** `0x0036e1f0` (registered by `RegisterBindings`); **calls** `0x00413828` `Train_Stop`, `0x00414188`
+  `Trains_IsPathClear`, `0x00413c48` `TrainRecord_IsPathClear`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
@@ -1916,28 +1939,31 @@ spot; a flag that follows a parent keeps reporting the parent's position.
 ## SetPositionOfWater {#setpositionofwater}
 
 ```lua
-SetPositionOfWater(pos, rot, width, length, colour, param1, param2)
+SetPositionOfWater(pos, rot, width, length, colour, waveHeight, waveSpeed)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | Centre `{x, y, z}` of the water plane in world metres (z is the water height). |
-| 2 | `rot` | table of 4 numbers (t[1]..t[4]) | Orientation `{x, y, z, w}` of the plane; the scripts pass `{0, 0, 0, -1}` or `{-0.01, -0.01, -1, 1}`. |
-| 3 | `width` | number (single precision) | Size of the plane along x in metres (110-300 in the scripts). |
-| 4 | `length` | number (single precision) | Size of the plane along y in metres (110-1339). |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | Origin `{x, y, z}` of the water plane in world metres (z is the water height); the 0-1 grid runs from here, so it is a corner (inferred). |
+| 2 | `rot` | table of 4 numbers (t[1]..t[4]) | Orientation quaternion `{x, y, z, w}`, normalised; all zeros means none. The scripts pass `{0, 0, 0, -1}` (none) or `{-0.01, -0.01, -1, 1}`. |
+| 3 | `width` | number (single precision) | Size of the plane along its x in metres (110-300 in the scripts). |
+| 4 | `length` | number (single precision) | Size of the plane along its y in metres (110-1339). |
 | 5 | `colour` | table of 3 numbers (t[1]..t[3]) | Water colour `{r, g, b}`, components 0-1. |
-| 6 | `param1` | number (single precision) | Number such as 0, 0.1 or 1; likely a wave or reflection strength. Not traced. |
-| 7 | `param2` | number (single precision) | Number such as 0.1 or 0.25; likely a scroll speed or transparency. Not traced. |
+| 6 | `waveHeight` | number (single precision) | Wave amplitude in metres: each grid column's vertices rise and fall by sin(time × waveSpeed + column) × this (scripts 0, 0.1 or 1). |
+| 7 | `waveSpeed` | number (single precision) | Time multiplier of the waves; it also scrolls the texture along x (scripts 0.1 or 0.25). |
 
 **Returns** nothing.
 
-Places and colours the level's water surface (0x0040ca18), used by the river and dock levels.
+Places, sizes and colours the level's water surface, a 9 × 5 vertex grid textured `water_tex` (`ocean_tex` for the
+second texture) with 4 texture repeats across. The first call creates the WaterEffect (kept at `0x005147c4 + 0x5c`);
+later calls move it, resize it, recolour it and change its waves. Used by the river and dock levels.
 
-**Notes.** The wrapper calls 0x0040ca18 directly; the meaning of the size and last two values is inferred from the
-scripts' numbers.
+**Notes.** The wrapper writes the three tables back unchanged. The wave also modulates each vertex's alpha. The update
+(0x00191dd8) runs at most every `0x0050cd84` seconds. There is no binding to remove the water.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0037ba48` (registered by `RegisterBindings`); **calls** `0x0040ca18` `Water_Set`
+- **Evidence:** confirmed (code) at `0x0040ca18`, `0x00191230`, `0x001915a0`, `0x00191dd8`; detail: traced
+- **Wrapper** `0x0037ba48` (registered by `RegisterBindings`); **calls** `0x0040ca18` `Water_Set`, `0x00191230`
+  `WaterEffect_Init`, `0x001915a0` `WaterEffect_SetFrame`, `0x00191dd8` `WaterEffect_Update`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented
@@ -2092,13 +2118,17 @@ No arguments.
 
 **Returns** nothing.
 
-Asks the object manager's spawn table (object manager +0x840) to unload its timed objects (0x00399b20). Used once, by
-the final level.
+Removes the live objects that the object manager's spawn table (object manager `+0x840`) placed with a timer: for each
+spawned object whose timer word (`+0x120`) is non-zero and that still has a spawn record (matched by its 16-bit id), the
+record is marked done (bit 0x40000 of record `+0x24`, so it is not spawned again) and the object is told to unload
+itself (its vtable `+0x4c`). Used once, by the final level.
 
-**Notes.** What makes an object 'timed' is not traced.
+**Notes.** What sets an object's `+0x120` (the 'timed' mark) is not traced; inferred: objects placed to appear or vanish
+at a scripted time. Records are 0x28 bytes at table `+0x14`, count `+0x18`.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036dda0` (registered by `RegisterBindings`); **calls** `0x003978a8` `ObjMgr_UnloadTimed`
+- **Evidence:** confirmed (code) at `0x003978a8`, `0x00399b20`, `0x00399cd0`; detail: traced
+- **Wrapper** `0x0036dda0` (registered by `RegisterBindings`); **calls** `0x003978a8` `ObjMgr_UnloadTimed`, `0x00399b20`
+  `SpawnTable_UnloadTimed`, `0x00399cd0` `SpawnTable_FindRecord`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented

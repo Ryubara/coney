@@ -186,30 +186,36 @@ Returns a scene's length. No script calls it.
 ## ScenePlay {#sceneplay}
 
 ```lua
-ScenePlay(scene, pos, heading, delay, onEnd, flag1, flag2, blendCam) -> boolean
+ScenePlay(scene, pos, heading, delay, onEnd, looping, freeze, blendCam) -> boolean
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `scene` | number, truncated to an unsigned integer | Scene id from ScenePreload. |
-| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} in metres to play the scene at. |
-| 3 | `heading` | number (single precision) | Heading in degrees. |
-| 4 | `delay` | number, truncated to an unsigned integer | Delay before it starts. |
-| 5 | `onEnd` | string | Name of the Lua function called when it ends. |
-| 6 | `flag1` | boolean (nil or 0 is false) | A flag passed to the scene player (inferred: looping). |
-| 7 | `flag2` | boolean (nil or 0 is false); default true | A flag, default true (inferred: freeze). |
-| 8 | `blendCam` | number (single precision) | Camera blend time (inferred). |
+| 1 | `scene` | number, truncated to an unsigned integer | Scene id from ScenePreload; a scene not yet loaded is requested and waited for on the spot. |
+| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` in metres the scene's origin is placed at; written back. |
+| 3 | `heading` | number (single precision) | Rotation of the scene about the vertical in **radians** (a quaternion about `(0, 0, -1)`, 0x00335ea0). Was listed as degrees. |
+| 4 | `delay` | number, truncated to an unsigned integer | The longest the start waits for the bound humans to reach their marks, delay × 60 scene updates, as in ScenePlayCinematic; 0 does not wait. |
+| 5 | `onEnd` | string | Name of the Lua function called with the scene id when it ends, or nil. |
+| 6 | `looping` | boolean (nil or 0 is false) | true loops the scene (task `+0xeb`). |
+| 7 | `freeze` | boolean (nil or 0 is false); default true | true (the default) suspends every brain while it plays (task `+0xef`). |
+| 8 | `blendCam` | number (single precision) | Camera blend time in seconds when the scene hands the camera back (task `+0x94`). |
 
-**Returns** boolean (1 for true, nil for false): true (1) when the scene started.
+**Returns** boolean (1 for true, nil for false): true (1) when the scene task was created and started; false when the
+scene could not be loaded or no task was free.
 
-Plays a loaded scene at a given world position and orientation instead of its authored one.
+Plays a loaded scene placed at a given world position and orientation instead of the world origin ([Scenes:
+playing](../../research/scenes.md#playing)). It is not a cinematic: no letterbox, preload or player hand-over, and it
+cannot be skipped; only the looping and freeze flags are set (bars, skippable, final and chain are 0).
+
+**Notes.** Flag mapping confirmed (code) through 0x00353e70 / 0x00353e38 into Scene_Play and the task constructor
+0x003a13d0.
 
 **Overload** (registered first; the wrapper above checks its argument types and calls this one when they do not match):
 The quaternion form is used when argument 3 is a table; the heading form's type check fails then and it falls back to
 this one.
 
 ```lua
-ScenePlay(scene, pos, rot, delay, onEnd, flag1, flag2, blendCam) -> boolean
+ScenePlay(scene, pos, rot, delay, onEnd, looping, freeze, blendCam) -> boolean
 ```
 
 | # | Argument | Read as | Meaning |
@@ -217,18 +223,19 @@ ScenePlay(scene, pos, rot, delay, onEnd, flag1, flag2, blendCam) -> boolean
 | 1 | `scene` | number, truncated to an unsigned integer | Scene id. |
 | 2 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z}. |
 | 3 | `rot` | table of 4 numbers (t[1]..t[4]) | Orientation as a quaternion {i, j, k, r}. |
-| 4 | `delay` | number, truncated to an unsigned integer | Delay before it starts. |
+| 4 | `delay` | number, truncated to an unsigned integer | As above. |
 | 5 | `onEnd` | string | Name of the Lua function called when it ends. |
-| 6 | `flag1` | boolean (nil or 0 is false) | A flag (inferred: looping). |
-| 7 | `flag2` | boolean (nil or 0 is false); default true | A flag, default true (inferred: freeze). |
-| 8 | `blendCam` | number (single precision) | Camera blend time (inferred). |
+| 6 | `looping` | boolean (nil or 0 is false) | true loops the scene. |
+| 7 | `freeze` | boolean (nil or 0 is false); default true | true (the default) suspends every brain while it plays. |
+| 8 | `blendCam` | number (single precision) | Camera blend time in seconds. |
 
 **Returns** boolean (1 for true, nil for false): true (1) when the scene started.
 
 Wrapper `0x00367810`; calls `0x00353e38`.
 
-- **Evidence:** confirmed (code) at `0x00353e70`; detail: brief
-- **Wrapper** `0x00367a20` (registered by `RegisterBindings`); **calls** `0x00353e70`
+- **Evidence:** confirmed (code) at `0x00353e70`, `0x00335ea0`, `0x00353818`, `0x003a13d0`; detail: traced
+- **Wrapper** `0x00367a20` (registered by `RegisterBindings`); **calls** `0x00353e70`, `0x00335ea0`, `0x00353818`
+  `Scene_Play`, `0x003a13d0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** implemented

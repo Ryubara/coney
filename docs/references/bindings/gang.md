@@ -17,7 +17,7 @@ read an entry are on the [masterlist](index.md).
 | [`GangBrFlush`](#gangbrflush) | - | 35 | yes | yes | confirmed (code) |
 | [`GangCallForHelp`](#gangcallforhelp) | - | 0 | no | no | inferred |
 | [`GangCanFlee`](#gangcanflee) | - | 7 | no | no | confirmed (code) |
-| [`GangCanSaveAllys`](#gangcansaveallys) | - | 5 | no | no | inferred |
+| [`GangCanSaveAllys`](#gangcansaveallys) | - | 5 | no | no | confirmed (code) |
 | [`GangCanUseWorldFlags`](#gangcanuseworldflags) | - | 17 | yes | no | confirmed (code) |
 | [`GangClearBums`](#gangclearbums) | - | 2 | no | no | confirmed (code) |
 | [`GangClearHandlers`](#gangclearhandlers) | - | 2 | no | no | confirmed (code) |
@@ -40,14 +40,14 @@ read an entry are on the [masterlist](index.md).
 | [`GangMakeEnemiesOfType`](#gangmakeenemiesoftype) | - | 8 | no | no | confirmed (code) |
 | [`GangMakeFriends`](#gangmakefriends) | - | 37 | yes | yes | confirmed (code) |
 | [`GangMakeNeutralOfType`](#gangmakeneutraloftype) | - | 2 | no | no | confirmed (code) |
-| [`GangQueueResponders`](#gangqueueresponders) | - | 3 | no | no | inferred |
+| [`GangQueueResponders`](#gangqueueresponders) | - | 3 | no | no | confirmed (code) |
 | [`GangRemoveSpinningIcon`](#gangremovespinningicon) | - | 1 | no | no | confirmed (code) |
 | [`GangRemoveTurfBox`](#gangremoveturfbox) | - | 5 | no | no | confirmed (code) |
 | [`GangRespond`](#gangrespond) | - | 2 | no | no | confirmed (code) |
 | [`GangSetAlwaysSeen`](#gangsetalwaysseen) | - | 8 | no | no | confirmed (code) |
-| [`GangSetAttackable`](#gangsetattackable) | - | 4 | no | no | inferred |
+| [`GangSetAttackable`](#gangsetattackable) | - | 4 | no | no | confirmed (code) |
 | [`GangSetCustomSpotDialog`](#gangsetcustomspotdialog) | - | 0 | no | no | confirmed (code) |
-| [`GangSetDamageResponse`](#gangsetdamageresponse) | - | 2 | no | no | inferred |
+| [`GangSetDamageResponse`](#gangsetdamageresponse) | - | 2 | no | no | confirmed (code) |
 | [`GangSetEnemy`](#gangsetenemy) | - | 1 | no | no | confirmed (code) |
 | [`GangSetFriend`](#gangsetfriend) | - | 0 | no | no | confirmed (code) |
 | [`GangSetHearRange`](#gangsethearrange) | - | 7 | no | no | confirmed (code) |
@@ -58,7 +58,7 @@ read an entry are on the [masterlist](index.md).
 | [`GangSetMoney`](#gangsetmoney) | - | 15 | no | no | confirmed (code) |
 | [`GangSetMsgHandler`](#gangsetmsghandler) | - | 140 | yes | yes | confirmed (code) |
 | [`GangSetNeutral`](#gangsetneutral) | - | 3 | no | no | confirmed (code) |
-| [`GangSetReactToViolence`](#gangsetreacttoviolence) | - | 1 | no | no | inferred |
+| [`GangSetReactToViolence`](#gangsetreacttoviolence) | - | 1 | no | no | confirmed (code) |
 | [`GangSetRespondPercentage`](#gangsetrespondpercentage) | - | 10 | no | no | confirmed (code) |
 | [`GangSetSpawnerModel`](#gangsetspawnermodel) | - | 0 | no | no | confirmed (code) |
 | [`GangSetSpawnerMustBeOffScreen`](#gangsetspawnermustbeoffscreen) | - | 12 | no | no | confirmed (code) |
@@ -294,15 +294,22 @@ GangCanSaveAllys(gang, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `on` | boolean (nil or 0 is false) | true lets the members come to the rescue of allies under attack; false stops them. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 or an unused slot does nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true lets the members answer an ally's call for help; false stops them (the brain default is false). No default: a missing value is false. |
 
 **Returns** nothing.
 
-Sets whether the gang's current members help allies who are being attacked (a byte in each member's AI, +0x2d6).
+Sets the can-save-allies byte (brain `+0x2d6`) of every current member of a gang in use. A human in trouble (a brain in
+state 2, checked every 30th update by 0x002b6eb0) looks within 20 m for an allied human whose byte is set, who is not
+down or busy and has no goal 0x5f; the first one found is given a goal (0x002b7e00, vtable 0x0053fd30) that makes him
+come to the caller's aid.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035f688` (registered by `RegisterBindings`); **calls** `0x0016b980`
+**Notes.** Only one helper is recorded per caller (brain `+0x204`), and none while game state `+0x14c` is set. What the
+help goal does and what brain state 2 means are inferred, not traced.
+
+- **Evidence:** confirmed (code) at `0x0016b980`, `0x0029c570`, `0x002b6eb0`, `0x002b7d80`; detail: traced
+- **Wrapper** `0x0035f688` (registered by `RegisterBindings`); **calls** `0x0016b980`, `0x0029c570`, `0x002b6eb0`,
+  `0x002b7d80`
 - **Used by** 5 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
@@ -738,15 +745,19 @@ GangLookAt(gang, target)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the object or human to look at. |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the object or human to look at; its position is taken once, at the call. |
 
 **Returns** nothing.
 
-Makes every current member stop what it is doing and turn to look at a target, each after a short random delay (up to
-500 ms).
+Makes every current member (up to 16) stop and turn to face a target: each member's brain is switched off as by BrDead
+(Brain_SetDead, 0x00292330), its goals flushed, and a turn-to-point action queued toward the target's position after a
+random delay of 0-499 ms. The members then stand facing it until a script switches their brains back on (GangBrDead or
+BrDead with false).
 
-- **Evidence:** confirmed (code) at `0x0016a910`; detail: brief
-- **Wrapper** `0x003739a8` (registered by `RegisterBindings`); **calls** `0x0016a910`
+**Notes.** The delay unit (ms) is inferred from the 500 range; the facing is not updated if the target moves.
+
+- **Evidence:** confirmed (code) at `0x0016a910`; detail: traced
+- **Wrapper** `0x003739a8` (registered by `RegisterBindings`); **calls** `0x0016a910` `Gang_LookAt`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level52`](story.md#level52) (mission 15)
 - **Coney:** not implemented
@@ -856,23 +867,30 @@ used by this binding.
 ## GangQueueResponders {#gangqueueresponders}
 
 ```lua
-GangQueueResponders(pos, arg2, arg3, human)
+GangQueueResponders(pos, count, delaySec, human)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | Position {x, y, z} the responders go to; written back to the table. |
-| 2 | `arg2` | number, truncated to an unsigned integer | A number passed to the responder queue (0x0016e0f0); meaning not traced. |
-| 3 | `arg3` | number, truncated to an unsigned integer | A number passed to the responder queue; meaning not traced. |
-| 4 | `human` | number, truncated to an unsigned integer | Handle of the human who called for help; when it is in a gang, that gang gets a 10 s response timer. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | Position `{x, y, z}` in metres the responders are sent to (also how the nearest spawner is chosen); written back. |
+| 2 | `count` | number, truncated to an unsigned integer | How many humans the spawner sends (queue entry `+0x14`); 0 queues nothing. |
+| 3 | `delaySec` | number, truncated to an unsigned integer | Seconds before the dispatch is due. |
+| 4 | `human` | number, truncated to an unsigned integer | Handle of the human who called for help: his gang id goes in the entry, and his gang gets a 10 s wanted timer (gang `+0x5f0`). |
 
 **Returns** nothing.
 
-Queues a response (gangs coming to help) to a position, as when a character calls for backup; only when the responder
-system is free (0x0016cb78).
+Queues reinforcements like a gang dispatch: when any gang has a spawner in the gang-dispatch states (9 or 10, [Spawner
+states](../../references/spawner-states.md#spawner-9)), the nearest such spawner with room in its four-entry queue gets
+an entry (due now + `delaySec`, the position, `count`, the caller's gang). When it is due the spawner makes a new gang
+of its own type and sends it to the position ([AI: spawners](../../research/ai.md#spawners)). Without such a spawner it
+does nothing.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003743f0` (registered by `RegisterBindings`); **calls** `0x0016b678`
+**Notes.** The entry's kind byte is 4 (crime reports use their own kinds via 0x0016df68). The 10 s timer is set whenever
+such a spawner exists, even when no entry was queued; Gang_UpdateWanted reads it.
+
+- **Evidence:** confirmed (code) at `0x0016b678`, `0x0016cb78`, `0x0016e0f0`, `0x0016dc70`, `0x001698c8`; detail: traced
+- **Wrapper** `0x003743f0` (registered by `RegisterBindings`); **calls** `0x0016b678`, `0x0016cb78`, `0x0016e0f0`
+  `Responders_QueueGangCall`, `0x0016dc70`, `0x001698c8`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -927,22 +945,28 @@ members' brains to decide where they go and whom they chase.
 ## GangRespond {#gangrespond}
 
 ```lua
-GangRespond(gang, pos, caller)
+GangRespond(gang, pos, offender)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31) that responds; -1 or an unused slot does nothing. |
-| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | Position {x, y, z} to respond to; written back to the table. |
-| 3 | `caller` | number, truncated to an unsigned integer | Handle of the human who called; must be a valid human, and its gang gets a 10 s timer. |
+| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | Position {x, y, z} in metres to respond to; written back unchanged. |
+| 3 | `offender` | number, truncated to an unsigned integer | Handle of the human the gang responds to (the scripts pass the player); must be a live human or nothing happens. |
 
 **Returns** nothing.
 
-Sends every current member of the gang to respond to an incident at a position (each gets a respond goal); non-police
-gangs also get a lost-target search animation set.
+Sends every current member of the gang to respond to an incident at the position: each gets a respond goal of reason 4
+(0x002c2d80) aimed at the offender, and its brain `+0x28d` is set. A police gang (kind 1) puts the offender's gang on
+its wanted timer for 10 s (gang `+0x5e8`); any other gang sets the offender gang's second timer (`+0x5f0`) for 10 s and
+first substitutes its spot animation 0x29c with a search set (0x0050cb58, 4 clips).
 
-- **Evidence:** confirmed (code) at `0x0016b728`; detail: brief
-- **Wrapper** `0x00374518` (registered by `RegisterBindings`); **calls** `0x0016b728`
+**Notes.** Members spawned later are not sent. The respond goal (0x002c2d80) is not traced here; wanted timers: [Crimes:
+wanted](../../research/crimes.md#wanted). The second timer's effect is not traced.
+
+- **Evidence:** confirmed (code) at `0x0016b728`, `0x002c2d80`, `0x00169878`, `0x001698c8`; detail: traced
+- **Wrapper** `0x00374518` (registered by `RegisterBindings`); **calls** `0x0016b728` `Gang_Respond`, `0x002c2d80`,
+  `0x00169878` `Gang_SetWantedTimer`, `0x001698c8` `Gang_SetSecondWantedTimer`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
@@ -982,18 +1006,21 @@ GangSetAttackable(gang, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 or an unused slot does nothing. |
-| 2 | `on` | boolean (nil or 0 is false); default true | true (the default) lets others attack the members; false makes them not attackable. |
+| 2 | `on` | boolean (nil or 0 is false); default true | true (the default) lets other AI humans pick the members as targets; false makes them not attackable. |
 
 **Returns** nothing.
 
-Writes the byte at brain `+0x11f` of every current member of a gang in use; from the name, whether others may attack
-them.
+Writes the attackable byte (brain `+0x11f`) of every current member of a gang in use. Brain_IsAttackableBy (0x00290ea8)
+returns it when an AI chooses whom to hit (Brain_PickAttack, FightGoal_Process and four other callers), so with false
+the members are left alone by AI attackers; the player can still hit them.
 
-**Notes.** The store is confirmed (code) at 0x0016bb58; the readers of brain `+0x11f` are not traced. Later members keep
-their own value.
+**Notes.** Members added later keep their own value; grab goals clear and restore the byte themselves (0x002bb560,
+0x002bb614). Brain_IsAttackableBy has extra rules for an attacker of character type 0xdd and for police (gang kind 0x17)
+brains of kind 4, not traced further.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035f790` (registered by `RegisterBindings`); **calls** `0x0016bb58` `Gang_SetAttackable`
+- **Evidence:** confirmed (code) at `0x0016bb58`, `0x00290ea8`; detail: traced
+- **Wrapper** `0x0035f790` (registered by `RegisterBindings`); **calls** `0x0016bb58` `Gang_SetAttackable`, `0x00290ea8`
+  `Brain_IsAttackableBy`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -1030,13 +1057,18 @@ GangSetDamageResponse(gang, response)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `response` | number, truncated to an integer | Damage response mode written to every current member's AI (+0x220); values as for GangSetThreatResponse (not traced). |
+| 2 | `response` | number, truncated to an integer | Damage response mode (16-bit) written to every current member's brain (`+0x220`), as BrSetDamageResponse does for one human; scripts use the same values (0, 3, 4). |
 
 **Returns** nothing.
 
-Sets how the gang's current members react when they take damage.
+Writes the damage response (brain `+0x220`) of every current member of the gang; members added later keep their own. It
+is the gang form of BrSetDamageResponse.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** No code that reads brain `+0x220` was found (writers only: Brain_SetDamageResponse 0x00292758, brain init
+0x0028a570, and goal inits that zero it such as Goal_ObjectThrower), so the value may have no effect in this build. The
+gang's in-use flag is not checked.
+
+- **Evidence:** confirmed (code) at `0x0016b460`; detail: traced
 - **Wrapper** `0x0035f2f0` (registered by `RegisterBindings`); **calls** `0x0016b460`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
@@ -1051,17 +1083,20 @@ GangSetEnemy(gang, other)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31) whose attitude changes; -1 does nothing. |
-| 2 | `other` | number, truncated to an integer | Gang id that the first gang now treats as an enemy. |
+| 2 | `other` | number, truncated to an integer | Gang id that the first gang now treats as an enemy; its bit is its gang index (gang `+0x30`). |
 
 **Returns** nothing.
 
-One-way relation: the first gang treats the second as an enemy (bit set in the enemy mask, cleared in the friend mask).
-Use GangMakeEnemies for both directions.
+One-way relation: the first gang treats the second as an enemy. The other gang's bit is cleared in the first gang's
+friend mask (`+0x3c`, setter 0x00168f30) and set in its enemy mask (`+0x38`, setter 0x00168f08); the second gang's own
+masks are untouched. Use GangMakeEnemies for both directions.
 
-**Notes.** One script calls it.
+**Notes.** One script calls it. No check that the first gang slot is in use. The mask setters may do more than store
+(not traced).
 
-- **Evidence:** confirmed (code) at `0x0016ac98`; detail: brief
-- **Wrapper** `0x00373b00` (registered by `RegisterBindings`); **calls** `0x0016ac98`
+- **Evidence:** confirmed (code) at `0x0016ac98`, `0x001690c8`; detail: traced
+- **Wrapper** `0x00373b00` (registered by `RegisterBindings`); **calls** `0x0016ac98` `Gang_SetEnemyById`, `0x001690c8`
+  `Gang_SetEnemyBit`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** not implemented
@@ -1171,14 +1206,17 @@ GangSetLOS(gang, range)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `range` | number (single precision) | Line-of-sight (vision) distance in metres, written to every current member's AI (+0x130). |
+| 2 | `range` | number (single precision) | Sight range in metres, written to every current member's brain (`+0x130`). |
 
 **Returns** nothing.
 
-Sets the sight range in metres (brain `+0x130`, as `HuSetLOSRange`) of every current member of the gang; later members
-keep their own.
+Sets the sight range (brain `+0x130`, as `HuSetLOSRange`) of every current member of the gang: how far they see enemies,
+used with the field of view `+0x12c` by the sight checks ([AI](../../research/ai.md)). Later members keep their own.
 
-- **Evidence:** confirmed (code) at `0x0016a5e8`; detail: brief
+**Notes.** Unlike GangSetAttackable it does not check that the gang is in use; an unused slot's empty member list makes
+it a no-op.
+
+- **Evidence:** confirmed (code) at `0x0016a5e8`; detail: traced
 - **Wrapper** `0x00373808` (registered by `RegisterBindings`); **calls** `0x0016a5e8` `Gang_SetSightRange`
 - **Used by** 6 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level93`](story.md#level93) (mission 10)
@@ -1221,14 +1259,19 @@ GangSetMoney(gang, money)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 or an unused slot does nothing. |
-| 2 | `money` | number, truncated to an integer | Money each member carries, in dollars; clamped to 0-999. |
+| 2 | `money` | number, truncated to an integer | Money each member carries, in dollars; above 999 becomes 999, negative becomes 0. |
 
 **Returns** nothing.
 
-Sets the money every current member carries (what the player can mug or loot from them), at +0x370 of each human.
+Sets the money carried by every current member of the gang (up to 16 member slots): the clamped value goes to `+0x370`
+of each member human, which is what the player gets from mugging or looting that member. Armies of the Night uses it to
+set how much each enemy wave drops.
 
-- **Evidence:** confirmed (code) at `0x0016bd38`; detail: brief
-- **Wrapper** `0x0035f8f8` (registered by `RegisterBindings`); **calls** `0x0016bd38`
+**Notes.** Only members present at the call are changed; humans that join the gang later keep their own money. Empty
+member slots are skipped.
+
+- **Evidence:** confirmed (code) at `0x0016bd38`; detail: traced
+- **Wrapper** `0x0035f8f8` (registered by `RegisterBindings`); **calls** `0x0016bd38` `Gang_SetMoney`
 - **Used by** 15 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -1275,10 +1318,16 @@ GangSetNeutral(gang, other)
 
 **Returns** nothing.
 
-One-way relation: clears the second gang's bit in both of the first gang's masks (0x00169130).
+One-way relation: clears the second gang's bit in both the enemy mask (gang `+0x38`) and the friend mask (`+0x3c`) of
+the first gang, and stamps the relation-change time (`+0x34`) when a mask changed. The first gang's members then neither
+attack the second gang on sight nor count it as friends; the second gang's own attitude is unchanged.
 
-- **Evidence:** confirmed (code) at `0x0016ae10`; detail: brief
-- **Wrapper** `0x00373d58` (registered by `RegisterBindings`); **calls** `0x0016ae10`
+**Notes.** Gangs of the same kind, or both police kinds, still count as friends ([AI:
+gangs](../../research/ai.md#gang-record)). Call it both ways for a mutual truce.
+
+- **Evidence:** confirmed (code) at `0x0016ae10`, `0x00169130`; detail: traced
+- **Wrapper** `0x00373d58` (registered by `RegisterBindings`); **calls** `0x0016ae10` `Gang_SetNeutral`, `0x00169130`
+  `Gang_ClearRelationBits`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -1292,14 +1341,21 @@ GangSetReactToViolence(gang, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 or an unused slot does nothing. |
-| 2 | `on` | boolean (nil or 0 is false) | true: members react to violence they witness; false: they ignore it. |
+| 2 | `on` | boolean (nil or 0 is false) | true: members react to violence they witness; false (or nil): they ignore it. |
 
 **Returns** nothing.
 
-Sets whether the gang's current members react to fights and violence nearby (a byte in each member's AI, +0x267).
+Sets brain byte `+0x267` on each current member of the gang (as BrSetReactToViolence does for one human). Only the
+civilian brain reads it: on a violence event (0x14) within 15 m, a civilian with it set may report the crime, call the
+police or its gang (`Goal_CallGang`), join the fight or react (PedReaction); with it clear the event is ignored.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00374718` (registered by `RegisterBindings`); **calls** `0x0016bee0`
+**Notes.** Members spawned later keep their own default (set at brain init 0x0028a570, value not traced). Other brain
+kinds ignore the byte. The reaction rules (crime type enabled, 40 s since the gang's last report, chance) live in
+0x002ffb30; see [AI](../../research/ai.md).
+
+- **Evidence:** confirmed (code) at `0x0016bee0`, `0x002ffb30`; detail: traced
+- **Wrapper** `0x00374718` (registered by `RegisterBindings`); **calls** `0x0016bee0` `Gang_SetReactToViolence`,
+  `0x002ffb30` `CivilianBrain_OnEvent`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented

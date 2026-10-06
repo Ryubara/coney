@@ -15,7 +15,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CreateDongle`](#createdongle) | number | 1 | no | no | confirmed (code) |
 | [`CreateDongleChallengeKey`](#createdonglechallengekey) | number | 1 | no | no | confirmed (code) |
 | [`CrimeIsHappening`](#crimeishappening) | - | 12 | yes | no | confirmed (code) |
-| [`EnableGameOverCheck`](#enablegameovercheck) | - | 3 | no | no | inferred |
+| [`EnableGameOverCheck`](#enablegameovercheck) | - | 3 | no | no | confirmed (code) |
 | [`EnterStore`](#enterstore) | - | 2 | yes | yes | confirmed (code) |
 | [`ExitStore`](#exitstore) | - | 1 | yes | yes | confirmed (code) |
 | [`ForceCrimeLevel`](#forcecrimelevel) | - | 9 | no | no | confirmed (code) |
@@ -63,7 +63,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`SetCrimeSceneTimeLength`](#setcrimescenetimelength) | - | 0 | no | no | confirmed (code) |
 | [`SetDifficulty`](#setdifficulty) | - | 6 | yes | no | confirmed (code) |
 | [`SetGameMode`](#setgamemode) | - | 33 | no | no | confirmed (code) |
-| [`SetLoadPriority`](#setloadpriority) | - | 1 | no | no | speculative |
+| [`SetLoadPriority`](#setloadpriority) | - | 1 | no | no | confirmed (code) |
 | [`SetLUASaveDataBool`](#setluasavedatabool) | - | 1 | yes | no | confirmed (code) |
 | [`SetLUASaveDataFloat`](#setluasavedatafloat) | - | 21 | yes | no | confirmed (code) |
 | [`SetSpawnMax`](#setspawnmax) | - | 48 | no | no | confirmed (code) |
@@ -251,17 +251,22 @@ EnableGameOverCheck(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false) | true to let the game end the mission when the player is beaten, false to suspend that check (for scripted defeats). |
+| 1 | `on` | boolean (nil or 0 is false) | true to let the game end the mission when the players are beaten or arrested, false to suspend that check (for scripted defeats). Missing counts as false. |
 
 **Returns** nothing.
 
-Sets the game-over check flag (`W_GameState + 0x155`).
+Switches the per-frame game-over check (`W_GameState + 0x155`, on after the level reset 0x00418c68). While it is on and
+no level end is pending, GameState_CheckGameOver (0x004197a8, every frame from 0x0041a370) fails the mission when every
+player is out or cuffed: a cuffed player holding a handcuff key ([item 6](../../references/inventory.md#item-6)) is
+spared, and while a crew mate can still come to help the failure waits for four checks. The failure shows a reason
+message (busted when cuffed, `+0x118` = 1) through the HUD (0x001d1fb8) and sets the level end (`+0x14c` = 1).
 
-**Notes.** The store is confirmed (code); its use as the game-over check is inferred from the name and the scripts that
-clear it around scripted fights.
+**Notes.** 0x00223b70 tests state flag `0x20000`, cuffed (0x002843f8 spends a handcuff key to clear it); the meanings of
+0x00227dd8 (`0x40000`, or no state record) and 0x00227eb0 (`0x100000000`) are inferred as out of the fight. Any player
+in the `0x100000000` state fails the mission at once.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036c710` (registered by `RegisterBindings`); **calls** `0x0041d890`
+- **Evidence:** confirmed (code) at `0x0041d890`; detail: traced
+- **Wrapper** `0x0036c710` (registered by `RegisterBindings`); **calls** `0x0041d890` `GameState_EnableGameOverCheck`
 - **Used by** 3 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level51`](story.md#level51) (mission 14)
 - **Coney:** not implemented
@@ -855,15 +860,21 @@ InvPlayerHasItem(item, player) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `item` | number, truncated to an integer | Inventory item id (0-22): 1 revive, 2 money, 3 spray-paint charges, 5 handcuffs, 6 handcuff keys; 7 is used by level 11. |
-| 2 | `player` | number, truncated to an integer; default 1 | Player 1 or 2 (default 1). |
+| 1 | `item` | number, truncated to an integer | Inventory item id (0-22): 1 revive, 2 money, 3 spray-paint charges, 5 handcuffs, 6 handcuff keys, 7 the pass (level 11); other ids give nil. |
+| 2 | `player` | number, truncated to an integer; default 1 | Player 1 or 2 (default 1); any other value gives nil. |
 
-**Returns** boolean (1 for true, nil for false): true if the player has at least one of the item.
+**Returns** boolean (1 for true, nil for false): true if the player's count of the item (block `+0x24 + item × 0x2c`) is
+above 0, nil otherwise.
 
-Tests whether a player holds an inventory item.
+Tests whether a player holds an inventory item: it reads the item's count in that player's inventory block
+(`W_GameState+0x480+(player-1)×0x3f4`) and answers whether it is positive.
 
-- **Evidence:** confirmed (code) at `0x0041ed88`; detail: brief
-- **Wrapper** `0x0037b090` (registered by `RegisterBindings`); **calls** `0x0041ed88`
+**Notes.** Inventory layout: [Player state](../../research/player-state.md#inventory); items: [Inventory
+items](../inventory.md).
+
+- **Evidence:** confirmed (code) at `0x0041ed88`, `0x0041e3d8`; detail: traced
+- **Wrapper** `0x0037b090` (registered by `RegisterBindings`); **calls** `0x0041ed88` `Inv_PlayerHasItem`, `0x0041e3d8`
+  `Inv_HasItem`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** implemented
@@ -1182,14 +1193,18 @@ SetCopSpawnMax(count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `count` | number, truncated to an integer | Most police officers that may be spawned at once. |
+| 1 | `count` | number, truncated to an integer | Most police that may be spawned as responders at once (16-bit); the level set-up resets it to 16. |
 
 **Returns** nothing.
 
-Sets the cap on spawned police (`W_GameState + 0x326`, 16-bit).
+Sets the cap on spawned police (`W_GameState + 0x326`). A responder spawner only makes a new police responder while the
+game's police count (`+0x324`) is under this cap ([AI: spawners](../../research/ai.md#spawners)).
 
-- **Evidence:** confirmed (code) at `0x00299520`; detail: brief
-- **Wrapper** `0x0035b0d8` (registered by `RegisterBindings`); **calls** `0x00299520`
+**Notes.** Reset to 16 on every level load (0x00418c68). Also read by Gang_CachePlayerInfo (0x00166954), not traced. 0
+stops police responders entirely (inferred).
+
+- **Evidence:** confirmed (code) at `0x00299520`; detail: traced
+- **Wrapper** `0x0035b0d8` (registered by `RegisterBindings`); **calls** `0x00299520` `GameState_SetCopSpawnMax`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** not implemented
@@ -1323,16 +1338,21 @@ SetLoadPriority(priority)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `priority` | number (single precision) | A fraction; the only call passes 0.01. |
+| 1 | `priority` | number (single precision) | Weight on the distance of the nearest model still to load; the level default is 0.001 and the only call passes 0.01. |
 
 **Returns** nothing.
 
-Sets the world streamer's load priority (calls `0x0040c938`).
+Sets how the world streamer weighs models against world sectors when choosing what to load next (global `0x005147cc`).
+The streamer's update (0x0040f8a0) multiplies the distance of the nearest model the resource manager still needs by this
+value and loads a world sector first only when the sector is nearer than that product, so a larger value lets sectors go
+ahead of models. The full level load (0x0040dbb8) resets it to 0.001; the Rumble menu mode raises it to 10 while open
+([Front end](../../research/frontend.md)).
 
-**Notes.** Callee outside the draft's callee list (address-range filter).
+**Notes.** The weighing is read from 0x0040f8a0's comparisons; how much it changes load order in play is inferred. The
+same product below 75 m also sets an urgency flag (`0x005147c8`) whose reader was not traced.
 
-- **Evidence:** speculative; detail: brief
-- **Wrapper** `0x0036e630` (registered by `RegisterBindings`); **calls** `0x0040c938`
+- **Evidence:** confirmed (code) at `0x0040c938`; detail: traced
+- **Wrapper** `0x0036e630` (registered by `RegisterBindings`); **calls** `0x0040c938` `WorldManager_SetLoadPriority`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level51`](story.md#level51) (mission 14)
 - **Coney:** not implemented
@@ -1415,24 +1435,29 @@ only the spawner path reads it). What counts `+0x432` up and down is not traced.
 ## SpawnCustomCrime {#spawncustomcrime}
 
 ```lua
-SpawnCustomCrime(pos, offender, responders, sound)
+SpawnCustomCrime(pos, offender, responders, text)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | Table {x, y, z}, the crime's position; written back unchanged. |
-| 2 | `offender` | number, truncated to an unsigned integer | Handle of the offender. |
-| 3 | `responders` | number, truncated to an unsigned integer | Number of police to send (the scripts pass 1, 2 or a constant). |
-| 4 | `sound` | string | Optional name of a sound or speech to play for the offender; nil for none. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | Table {x, y, z}, the crime's position in metres; written back unchanged. |
+| 2 | `offender` | number, truncated to an unsigned integer | Handle of the offender (the scripts pass a player's human). |
+| 3 | `responders` | number, truncated to an unsigned integer | Number of police responders queued on the nearest spawner (the report's count, used as is for type 4); the scripts pass 1, 2 or a constant. |
+| 4 | `text` | string | Optional text key for the crime's name on the offender's HUD crime panel; nil keeps the panel's default. |
 
 **Returns** nothing.
 
-Raises a crime of kind 4 at a position that police respond to, optionally playing a sound for the offender.
+Reports a crime of type 4 (the custom crime) at a position with reporting mode 1, so police turn hostile to the
+offender's gang, the crime callback runs and `responders` police are sent ([AI: crimes](../../research/ai.md#crimes)).
+When the offender is a player's human (human `+0x1b0` not -1) the text is first interned into that player's HUD crime
+panel (HUD `0x00600840 + 0x177d0 + player × 0xab0`), which shows it in place of a type name for type 4.
 
-**Notes.** The responders reading is inferred from the scripts.
+**Notes.** The position is transformed by 0x00252ae0 before the report, as in CrimeIsHappening. Victim is none, severity
+0. Signature: arg 4 is a HUD text, not a sound. When the panel actually shows type 4 is not traced (0x001b2520).
 
-- **Evidence:** confirmed (code) at `0x0041b7a0`; detail: brief
-- **Wrapper** `0x0037a4a8` (registered by `RegisterBindings`); **calls** `0x0041b7a0`
+- **Evidence:** confirmed (code) at `0x0041b7a0`, `0x0041b8b0`, `0x001aa678`; detail: traced
+- **Wrapper** `0x0037a4a8` (registered by `RegisterBindings`); **calls** `0x0041b7a0` `GameState_SpawnCustomCrime`,
+  `0x0041b8b0`, `0x001aa678` `HudCrimePanel_SetCustomText`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level82`](story.md#level82) (flashback 1)
 - **Coney:** not implemented

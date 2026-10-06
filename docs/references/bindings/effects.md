@@ -40,9 +40,9 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SetShadowColor`](#setshadowcolor) | - | 1 | yes | no | confirmed (code) |
 | [`SetShadowLightOffset`](#setshadowlightoffset) | - | 1 | yes | no | confirmed (code) |
 | [`SetWorldAmbient`](#setworldambient) | - | 3 | yes | no | confirmed (code) |
-| [`SpawnAreaEffect`](#spawnareaeffect) | - | 1 | no | no | inferred |
+| [`SpawnAreaEffect`](#spawnareaeffect) | - | 1 | no | no | confirmed (code) |
 | [`SpawnParticle`](#spawnparticle) | number | 36 | no | yes | confirmed (code) |
-| [`SpawnRainPlane`](#spawnrainplane) | - | 3 | no | no | inferred |
+| [`SpawnRainPlane`](#spawnrainplane) | - | 3 | no | no | confirmed (code) |
 | [`Start3DFog`](#start3dfog) | - | 17 | no | no | confirmed (code) |
 | [`StartFilmGrain`](#startfilmgrain) | - | 0 | no | no | confirmed (code) |
 | [`StartFog`](#startfog) | - | 0 | no | no | confirmed (code) |
@@ -129,14 +129,21 @@ EnableHeat(enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `enable` | boolean (nil or 0 is false) | True starts, false stops the heat-haze screen effect. |
+| 1 | `enable` | boolean (nil or 0 is false) | True switches both views to look 7 (heat); false ends it and returns to the base look. |
 
 **Returns** nothing.
 
-Switches the heat-haze screen effect (screen effect 7) on or off on both screen-effects managers.
+Switches the heat look (screen-effects look 7, [Screen effects](../../references/screen-effects.md#fx-look-7)) on or off
+on both screen-effects managers. On, each view makes look 7 current and blends its tint and motion-blur strength to look
+7's over look 7's in time (default 1 s); off, it goes back to the base look (the level colour, look 9, or the store
+look) over look 7's out time (default 5 s).
 
-- **Evidence:** confirmed (code) at `0x0018dcc0`; detail: brief
-- **Wrapper** `0x00368278` (registered by `RegisterBindings`); **calls** `0x0018dcc0` `ScreenFx_EnableHeat`
+**Notes.** What the player sees is whatever look 7 holds: its defaults (no tint, blur 1) can be changed by CfgScrFx
+before. No distortion pass of its own was found; the "heat" is the tint and blur blend (inferred from 0x0018b7d0).
+
+- **Evidence:** confirmed (code) at `0x0018dcc0`, `0x0018b7d0`, `0x0018b950`; detail: traced
+- **Wrapper** `0x00368278` (registered by `RegisterBindings`); **calls** `0x0018dcc0` `ScreenFx_EnableHeat`,
+  `0x0018b7d0`, `0x0018b950`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -316,21 +323,28 @@ Returns the display brightness. No script calls it.
 ## InitFallingEmbers {#initfallingembers}
 
 ```lua
-InitFallingEmbers(object, p1, p2)
+InitFallingEmbers(object, minRate, maxRate)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of the flag or object where the embers fall. |
-| 2 | `p1` | number, truncated to an unsigned integer | Number such as 80 (count or radius). |
-| 3 | `p2` | number, truncated to an unsigned integer | Number such as 110 (count or height). |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of the object (a flag) the embers fall around; its position is taken once. A bad handle does nothing. |
+| 2 | `minRate` | number, truncated to an unsigned integer | Fewest embers per second (divided by 30, whole numbers, for a per-frame count); the script passes 80. |
+| 3 | `maxRate` | number, truncated to an unsigned integer | Most embers per second, likewise divided by 30; the script passes 110. |
 
 **Returns** nothing.
 
-Starts falling embers at an object's position (0x00179310), used in a burning building.
+Starts (creating it on first use, 0x005971ac) the falling-embers effect of a burning building and centres it on the
+object. Each frame it spawns a random count between `minRate/30` and `maxRate/30` embers at random points of a 10 x 10 m
+horizontal square around the centre; each is a sprite (sheet 1, rectangles 8-10) with a random brightness 128-225 that
+falls under 0.8-1.0 of gravity and lives 2-3 s (60-90 frames).
 
-- **Evidence:** confirmed (code) at `0x00179758`; detail: brief
-- **Wrapper** `0x003781d8` (registered by `RegisterBindings`); **calls** `0x00179758` `Embers_Init`
+**Notes.** Counts and times are per frame (fixed 30 Hz). A second call only moves the centre and changes the rates. The
+meaning of ember `+0x28` as brightness is inferred; the draw is not traced.
+
+- **Evidence:** confirmed (code) at `0x00179758`, `0x00178fd8`, `0x00179310`, `0x00179378`; detail: traced
+- **Wrapper** `0x003781d8` (registered by `RegisterBindings`); **calls** `0x00179758` `Embers_Init`, `0x00178fd8`,
+  `0x00179310`, `0x00179378` `Embers_Update`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -794,24 +808,30 @@ Sets the world's ambient light colour; the game adds 0.07 to each component, so 
 ## SpawnAreaEffect {#spawnareaeffect}
 
 ```lua
-SpawnAreaEffect(human, radius, amount, flag, kind)
+SpawnAreaEffect(human, radius, damage, excludeSelf, sparedKind)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human at the centre of the effect. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human at the centre, who is also the attacker; a handle that is not a human does nothing. |
 | 2 | `radius` | number (single precision) | Radius in metres (20 in the one script call). |
-| 3 | `amount` | number, truncated to an unsigned integer | Integer strength or duration (100 in the script call). |
-| 4 | `flag` | boolean (nil or 0 is false) | Boolean passed through (true in the script call). |
-| 5 | `kind` | number, truncated to an integer | Effect kind number (6 in the script call). |
+| 3 | `damage` | number, truncated to an unsigned integer | Damage dealt to each human hit (100 in the script call). |
+| 4 | `excludeSelf` | boolean (nil or 0 is false) | true spares the centre human himself (true in the script call). |
+| 5 | `sparedKind` | number, truncated to an integer | Gang kind (gang `+0x2c`) whose members are spared, or -1 for none (6 in the script call). |
 
 **Returns** nothing.
 
-Applies an area effect around a human (0x00392638), such as a shockwave that affects nearby characters; used once, in a
-boss fight.
+Deals a one-off blast of damage around a human, as an explosion does (Explosion_DamageHumansInRadius): up to 60 humans
+within the radius of his centre are found, and each one with a clear line from the centre (a world ray cast) gets the
+damage as pending damage from him, with a hit reaction, through the normal damage path ([Combat:
+damage](../../research/combat.md#damage)). Used once, in a boss fight.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036ca88` (registered by `RegisterBindings`); **calls** `0x00385b08` `AreaEffect_Spawn`
+**Notes.** Humans the centre human counts as friends (0x00222a90) get the damage negated and no reaction, so (inferred)
+they take none. Nothing is drawn or played by this call; any visual comes from the script.
+
+- **Evidence:** confirmed (code) at `0x00385b08`, `0x00392638`; detail: traced
+- **Wrapper** `0x0036ca88` (registered by `RegisterBindings`); **calls** `0x00385b08` `AreaEffect_Spawn`, `0x00392638`
+  `Explosion_DamageHumansInRadius`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
@@ -848,19 +868,27 @@ SpawnRainPlane(corner, cornerU, cornerV, uv0, uv1)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `corner` | table of 3 numbers (t[1]..t[3]) | First corner `{x, y, z}` of the rain plane in world metres. |
-| 2 | `cornerU` | table of 3 numbers (t[1]..t[3]) | Corner along the plane's width. |
-| 3 | `cornerV` | table of 3 numbers (t[1]..t[3]) | Corner along the plane's height. |
-| 4 | `uv0` | table of 2 numbers (t[1]..t[2]) | Texture coordinates `{u, v}` at the first corner (the scripts pass `{0, 0}`). |
-| 5 | `uv1` | table of 2 numbers (t[1]..t[2]) | Texture coordinates at the opposite corner (`{1, 1}`). |
+| 1 | `corner` | table of 3 numbers (t[1]..t[3]) | First corner `{x, y, z}` of the rain sheet in world metres. |
+| 2 | `cornerU` | table of 3 numbers (t[1]..t[3]) | The corner along the sheet's width. |
+| 3 | `cornerV` | table of 3 numbers (t[1]..t[3]) | The corner along the sheet's height; the three corners also give the side it is seen from. |
+| 4 | `uv0` | table of 2 numbers (t[1]..t[2]) | Read and written back but not used: the sheet takes its texture coordinates from the rain layer (scripts pass `{0, 0}`). |
+| 5 | `uv1` | table of 2 numbers (t[1]..t[2]) | Read and written back but not used (scripts pass `{1, 1}`). |
 
 **Returns** nothing.
 
-Adds a vertical sheet of falling rain in the world (for doorways and awnings), handled by the screen-effects code
-(0x0018be58).
+Adds a world-space sheet of falling rain (for doorways, windows and awnings) to a list of at most 25 kept at 0x005fdec0;
+further calls do nothing. While StartRain is running and the overlay is switched to world sheets (rain object `+0x90`),
+each sheet whose front faces the camera (normal `(cornerU - corner) × (cornerV - corner)`) is drawn with both rain
+layers' textures, scrolling with them.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00368990` (registered by `RegisterBindings`); **calls** `0x0018dd38` `ScreenFx_SpawnRainPlane`
+**Notes.** The record is 0x28 bytes and only its three corners are written; the draw also reads `+0x24` (compared with
+12 to halve the repeats), left unset here. What sets rain object `+0x90` (inferred: the camera under cover) is not
+traced. The rain copies the list when it is created (0x00199ba8), so sheets added while it runs are drawn only after
+EndRain and a new StartRain.
+
+- **Evidence:** confirmed (code) at `0x0018dd38`, `0x0018be58`, `0x0019a780`, `0x0019a8e0`; detail: traced
+- **Wrapper** `0x00368990` (registered by `RegisterBindings`); **calls** `0x0018dd38` `ScreenFx_SpawnRainPlane`,
+  `0x0018be58`, `0x0019a780`, `0x0019a8e0`
 - **Used by** 3 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -998,33 +1026,38 @@ objects](../../research/objects.md), types: [Particles](../../research/particles
 ## StartRain {#startrain}
 
 ```lua
-StartRain(texture1, param1, param2, speed1, length1, colour1, texture2, param3, param4, speed2, length2, colour2)
+StartRain(texture1, tilesV1, tilesU1, driftU1, fallV1, colour1, texture2, tilesV2, tilesU2, driftU2, fallV2, colour2)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `texture1` | number, truncated to an unsigned integer | Packed texture or sprite resource id for the first rain layer (sheet in the top 16 bits). |
-| 2 | `param1` | number, truncated to an unsigned integer | Small integer for layer 1 (1 or 2 in the scripts; likely a density or blend mode). |
-| 3 | `param2` | number, truncated to an unsigned integer | Small integer for layer 1 (6 or 7; likely a drop count or size). |
-| 4 | `speed1` | number (single precision) | Number for layer 1 (0.01-0.015; likely a speed or size). |
-| 5 | `length1` | number (single precision) | Number for layer 1 (0.07-0.3; likely streak length). |
-| 6 | `colour1` | table of 4 numbers (t[1]..t[4]) | Layer 1 colour `{r, g, b, a}`, 0-255. |
-| 7 | `texture2` | number, truncated to an unsigned integer | Resource id for the second rain layer. |
-| 8 | `param3` | number, truncated to an unsigned integer | Small integer for layer 2. |
-| 9 | `param4` | number, truncated to an unsigned integer | Small integer for layer 2. |
-| 10 | `speed2` | number (single precision) | Number for layer 2. |
-| 11 | `length2` | number (single precision) | Number for layer 2. |
+| 1 | `texture1` | number, truncated to an unsigned integer | Sprite word of the near rain layer's texture: sheet in the top 16 bits, rectangle in the low ([Particles: sprite words](../../research/particles.md#sprite-words)). |
+| 2 | `tilesV1` | number, truncated to an unsigned integer | How many times the texture repeats down the screen (byte; scripts use 1 or 2). |
+| 3 | `tilesU1` | number, truncated to an unsigned integer | How many times it repeats across the screen (byte; scripts use 6 or 7). |
+| 4 | `driftU1` | number (single precision) | Sideways scroll per frame in texture widths (0.01-0.015 in the scripts: a slant). |
+| 5 | `fallV1` | number (single precision) | Downward scroll per frame in texture heights (0.07-0.3: the fall speed). |
+| 6 | `colour1` | table of 4 numbers (t[1]..t[4]) | Layer 1 colour `{r, g, b, a}`, 0-255 (the alpha sets how heavy it looks). |
+| 7 | `texture2` | number, truncated to an unsigned integer | Sprite word of the second (far) layer's texture. |
+| 8 | `tilesV2` | number, truncated to an unsigned integer | Vertical repeats of layer 2. |
+| 9 | `tilesU2` | number, truncated to an unsigned integer | Horizontal repeats of layer 2. |
+| 10 | `driftU2` | number (single precision) | Sideways scroll per frame of layer 2. |
+| 11 | `fallV2` | number (single precision) | Downward scroll per frame of layer 2. |
 | 12 | `colour2` | table of 4 numbers (t[1]..t[4]) | Layer 2 colour `{r, g, b, a}`, 0-255. |
 
 **Returns** nothing.
 
-Starts the two-layer rain screen effect (screen effect 0) on both views with the given textures, sizes and colours.
+Starts the rain effect (screen-effects layer 0, `OE_Rain`) on both views, or changes its settings when it is already
+running. Each layer is a textured sheet drawn over the view (and on every rain plane from SpawnRainPlane) whose texture
+coordinates span `tilesU × tilesV` repeats and scroll each frame by `(driftU, fallV)`, wrapping at 1, so the streaks
+fall and slant. It also switches on the ground splashes that CfgRaindrops configures.
 
-**Notes.** Which number controls what is inferred from the values; the packing into the effect's parameter block is
-confirmed (code) at 0x0018dda0.
+**Notes.** Scrolling is per rendered frame, not per second. The sheet's size follows a fixed field-of-view scale (1.7,
+2.0 in one display mode, times 1.15 in one game state, 0x0019a8e0). EndRain stops it. The colour tables are written back
+as read.
 
-- **Evidence:** confirmed (code) at `0x0018dda0`; detail: brief
-- **Wrapper** `0x00368670` (registered by `RegisterBindings`); **calls** `0x0018dda0` `ScreenFx_StartRain`
+- **Evidence:** confirmed (code) at `0x0018dda0`, `0x0018bae0`, `0x00199ba8`, `0x00199e50`, `0x0019a8e0`; detail: traced
+- **Wrapper** `0x00368670` (registered by `RegisterBindings`); **calls** `0x0018dda0` `ScreenFx_StartRain`,
+  `0x0018bae0`, `0x00199ba8`, `0x00199e50`, `0x0019a8e0`
 - **Used by** 10 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -1069,10 +1102,11 @@ No arguments.
 
 **Returns** nothing.
 
-Stops the falling embers effect (0x001790a8).
+Stops the falling embers: deletes the embers object (0x005971ac) with every ember still falling, so they vanish at once.
+Does nothing when no embers are running.
 
-- **Evidence:** confirmed (code) at `0x001797e8`; detail: brief
-- **Wrapper** `0x00378278` (registered by `RegisterBindings`); **calls** `0x001797e8` `Embers_Term`
+- **Evidence:** confirmed (code) at `0x001797e8`, `0x001790a8`; detail: traced
+- **Wrapper** `0x00378278` (registered by `RegisterBindings`); **calls** `0x001797e8` `Embers_Term`, `0x001790a8`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented

@@ -42,7 +42,7 @@ constexpr std::array<NativeArg, 2> kArgs_HuBlockJump{{{"human", A::Handle, "", 0
 constexpr std::array<NativeArg, 2> kArgs_HuBlockLook{{{"human", A::Handle, "", 0}, {"block", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuBlockRearGrab{{{"human", A::Handle, "", 0}, {"block", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuBlockTackle{{{"human", A::Handle, "", 0}, {"block", A::Boolean, "", 0}}};
-constexpr std::array<NativeArg, 7> kArgs_HuButtonMiniGame{{{"human", A::Handle, "", 0}, {"buttons", A::Integer, "", 0}, {"startMs", A::Integer, "", 0}, {"endMs", A::Integer, "", 0}, {"callback", A::String, "", 0}, {"successAnim", A::String, "", 0}, {"failAnim", A::String, "", 0}}};
+constexpr std::array<NativeArg, 7> kArgs_HuButtonMiniGame{{{"human", A::Handle, "", 0}, {"buttons", A::Integer, "", 0}, {"startMs", A::Integer, "", 0}, {"endMs", A::Integer, "", 0}, {"callback", A::String, "", 0}, {"loopAnim", A::String, "", 0}, {"failAnim", A::String, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuCanSee{{{"viewer", A::Handle, "", 0}, {"target", A::Handle, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_HuCanSee{R::Boolean};
 constexpr std::array<NativeArg, 2> kArgs_HuChangePlayerGang{{{"gang", A::Integer, "", 0}, {"stamp", A::Boolean, "", 0}}};
@@ -317,10 +317,10 @@ constexpr std::array<NativeArg, 2> kArgs_GoalBossLizzies{{{"human", A::Handle, "
 constexpr std::array<NativeArg, 2> kArgs_GoalBoxer{{{"human", A::Handle, "", 0}, {"target", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 7> kArgs_GoalBumLogic{{{"human", A::Handle, "", 0}, {"bumType", A::Integer, "", 0}, {"option", A::Boolean, "true", 0}, {"chance", A::Integer, "", 0}, {"value", A::Integer, "3", 0}, {"callback", A::String, "", 0}, {"option2", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_GoalBumLogicTrigger{{{"human", A::Handle, "", 0}}};
-constexpr std::array<NativeArg, 6> kArgs_GoalCallGang{{{"human", A::Handle, "", 0}, {"gang", A::Integer, "", 0}, {"value1", A::Integer, "", 0}, {"value2", A::Integer, "", 0}, {"value3", A::Number, "", 0}, {"option", A::Boolean, "true", 0}}};
-constexpr std::array<NativeArg, 5> kArgs_GoalCallPolice{{{"human", A::Handle, "", 0}, {"crime", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"criminal", A::Handle, "", 0}, {"other", A::Handle, "", 0}}};
+constexpr std::array<NativeArg, 6> kArgs_GoalCallGang{{{"human", A::Handle, "", 0}, {"target", A::Handle, "", 0}, {"count", A::Integer, "", 0}, {"delaySec", A::Integer, "", 0}, {"runOff", A::Number, "", 0}, {"hurry", A::Boolean, "true", 0}}};
+constexpr std::array<NativeArg, 5> kArgs_GoalCallPolice{{{"human", A::Handle, "", 0}, {"crime", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"victim", A::Handle, "", 0}, {"offender", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 4> kArgs_GoalCopperGuard{{{"human", A::Handle, "", 0}, {"flag", A::Handle, "", 0}, {"value1", A::Integer, "", 0}, {"value2", A::Integer, "", 0}}};
-constexpr std::array<NativeArg, 5> kArgs_GoalCopperPatrol{{{"human", A::Handle, "", 0}, {"path", A::Userdata, "", 0}, {"gait", A::Integer, "", 0}, {"start", A::Integer, "", 0}, {"option", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 5> kArgs_GoalCopperPatrol{{{"human", A::Handle, "", 0}, {"path", A::Userdata, "", 0}, {"mode", A::Integer, "", 0}, {"value1", A::Integer, "", 0}, {"value2", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_GoalCopperRespond{{{"human", A::Handle, "", 0}, {"value1", A::Integer, "", 0}, {"value2", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 5> kArgs_GoalCopRespond{{{"human", A::Handle, "", 0}, {"crime", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"criminal", A::Handle, "", 0}, {"victim", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GoalCower{{{"human", A::Handle, "", 0}, {"despawn", A::Boolean, "", 0}}};
@@ -341,9 +341,9 @@ constexpr std::array<NativeArg, 5> kArgs_GoalJoinCinematic{{{"human", A::Handle,
 constexpr std::array<NativeArg, 5> kArgs_GoalJoinFixedScene{{{"human", A::Handle, "", 0}, {"scene", A::Handle, "", 0}, {"role", A::Integer, "", 0}, {"gait", A::Integer, "", 0}, {"processNow", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 7> kArgs_GoalJoinScene{{{"human", A::Handle, "", 0}, {"scene", A::Handle, "", 0}, {"role", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"heading", A::Number, "", 0}, {"gait", A::Integer, "", 0}, {"processNow", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 7> kArgs_GoalLeadChase{{{"human", A::Handle, "", 0}, {"path", A::Userdata, "", 0}, {"chaser", A::Handle, "", 0}, {"distance1", A::Number, "", 0}, {"distance2", A::Number, "", 0}, {"distance3", A::Number, "", 0}, {"distance4", A::Number, "", 0}}};
-constexpr std::array<NativeArg, 10> kArgs_GoalLutherShooter{{{"human", A::Handle, "", 0}, {"shots", A::Integer, "6", 0}, {"value1", A::Number, "10", 0}, {"value2", A::Number, "10", 0}, {"timeMs1", A::Integer, "100", 0}, {"timeMs2", A::Integer, "500", 0}, {"name1", A::String, "", 0}, {"name2", A::String, "", 0}, {"name3", A::String, "", 0}, {"name4", A::String, "", 0}}};
+constexpr std::array<NativeArg, 10> kArgs_GoalLutherShooter{{{"human", A::Handle, "", 0}, {"shots", A::Integer, "6", 0}, {"spreadYaw", A::Number, "10", 0}, {"spreadPitch", A::Number, "10", 0}, {"shotDelayMs", A::Integer, "100", 0}, {"damage", A::Integer, "500", 0}, {"callback", A::String, "", 0}, {"speech1", A::String, "", 0}, {"speech2", A::String, "", 0}, {"speech3", A::String, "", 0}}};
 constexpr std::array<NativeArg, 11> kArgs_GoalManWeaponPile{{{"human", A::Handle, "", 0}, {"maxThrows", A::Integer, "", 0}, {"pickupRadius", A::Number, "", 0}, {"throwRange", A::Number, "", 0}, {"pauseS", A::Integer, "", 0}, {"style", A::Integer, "", 0}, {"closeRange", A::Integer, "", 0}, {"wantsWeapon", A::Boolean, "", 0}, {"checkLine", A::Boolean, "true", 0}, {"callback", A::String, "", 0}, {"delayMs", A::Integer, "500", 0}}};
-constexpr std::array<NativeArg, 3> kArgs_GoalMark{{{"human", A::Handle, "", 0}, {"flag", A::Handle, "", 0}, {"value", A::Number, "", 0}}};
+constexpr std::array<NativeArg, 3> kArgs_GoalMark{{{"human", A::Handle, "", 0}, {"flag", A::Handle, "", 0}, {"radius", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GoalMelee{{{"human", A::Handle, "", 0}, {"target", A::Handle, "4294967295", 0}}};
 constexpr std::array<NativeArg, 6> kArgs_GoalMoveToExitFlag{{{"human", A::Handle, "", 0}, {"flag", A::Handle, "", 0}, {"gait", A::Integer, "", 0}, {"angle", A::Number, "", 0}, {"distance", A::Number, "", 0}, {"radius", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 9> kArgs_GoalMoveToFlag{{{"human", A::Handle, "", 0}, {"flag", A::Handle, "", 0}, {"gait", A::Integer, "", 0}, {"angle", A::Number, "", 0}, {"distance", A::Number, "", 0}, {"radius", A::Number, "", 0}, {"intervalMs", A::Integer, "", 0}, {"faceFlag", A::Boolean, "", 0}, {"option", A::Boolean, "", 0}}};
@@ -381,8 +381,8 @@ constexpr std::array<NativeArg, 14> kArgs_TacticBossScenarioA{{{"gang", A::Integ
 constexpr std::array<NativeArg, 12> kArgs_TacticBossScenarioB{{{"gang", A::Integer, "", 0}, {"maxBullets", A::Integer, "6", 0}, {"criticalRange", A::Number, "5", 0}, {"hSpread", A::Number, "20", 0}, {"vSpread", A::Number, "10", 0}, {"fireRate", A::Integer, "250", 0}, {"shotDamage", A::Integer, "100", 0}, {"reloadTime", A::Integer, "5", 0}, {"trackTime", A::Integer, "4", 0}, {"warnTime", A::Integer, "3", 0}, {"callback", A::String, "", 0}, {"mark", A::Handle, "-1", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_TacticBossScenarioC{{{"gang", A::Integer, "", 0}, {"stage", A::Integer, "", 0}, {"callback", A::String, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_TacticBossScenarioD{{{"gang", A::Integer, "", 0}, {"stage", A::Integer, "1", 0}, {"callback", A::String, "", 0}}};
-constexpr std::array<NativeArg, 8> kArgs_TacticBossScenarioE{{{"gang", A::Integer, "", 0}, {"stage", A::Integer, "1", 0}, {"shots", A::Integer, "6", 0}, {"value1", A::Number, "20", 0}, {"value2", A::Number, "10", 0}, {"timeMs1", A::Integer, "100", 0}, {"timeMs2", A::Integer, "500", 0}, {"callback", A::String, "", 0}}};
-constexpr std::array<NativeArg, 9> kArgs_TacticBossScenarioF{{{"gang", A::Integer, "", 0}, {"boss", A::Handle, "", 0}, {"positions", A::NumberTable, "", 3}, {"shots", A::Integer, "6", 0}, {"value1", A::Number, "20", 0}, {"value2", A::Number, "10", 0}, {"timeMs1", A::Integer, "100", 0}, {"timeMs2", A::Integer, "500", 0}, {"callback", A::String, "", 0}}};
+constexpr std::array<NativeArg, 8> kArgs_TacticBossScenarioE{{{"gang", A::Integer, "", 0}, {"stage", A::Integer, "1", 0}, {"shots", A::Integer, "6", 0}, {"spreadYaw", A::Number, "20", 0}, {"spreadPitch", A::Number, "10", 0}, {"shotDelayMs", A::Integer, "100", 0}, {"damage", A::Integer, "500", 0}, {"callback", A::String, "", 0}}};
+constexpr std::array<NativeArg, 9> kArgs_TacticBossScenarioF{{{"gang", A::Integer, "", 0}, {"stage", A::Handle, "", 0}, {"positions", A::NumberTable, "", 3}, {"shots", A::Integer, "6", 0}, {"hSpread", A::Number, "20", 0}, {"vSpread", A::Number, "10", 0}, {"timeMs1", A::Integer, "100", 0}, {"timeMs2", A::Integer, "500", 0}, {"callback", A::String, "", 0}}};
 constexpr std::array<NativeArg, 4> kArgs_TacticBossScenarioG{{{"gang", A::Integer, "", 0}, {"stage", A::Integer, "", 0}, {"flag", A::Handle, "", 0}, {"callback", A::String, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_TacticBossScenarioH{{{"gang", A::Integer, "", 0}, {"stage", A::Integer, "1", 0}, {"callback", A::String, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_TacticClear{{{"gang", A::Integer, "", 0}}};
@@ -398,7 +398,7 @@ constexpr std::array<NativeArg, 6> kArgs_TacticIdle{{{"gang", A::Integer, "", 0}
 constexpr std::array<NativeArg, 9> kArgs_TacticInfo{{{"gang", A::Integer, "", 0}, {"value", A::Integer, "", 0}, {"name1", A::String, "", 0}, {"name2", A::String, "", 0}, {"name3", A::String, "", 0}, {"name4", A::String, "", 0}, {"name5", A::String, "", 0}, {"value2", A::Number, "4", 0}, {"callback", A::String, "", 0}}};
 constexpr std::array<NativeArg, 6> kArgs_TacticManWeaponPile{{{"gang", A::Integer, "", 0}, {"range", A::Number, "", 0}, {"maxThrow", A::Number, "", 0}, {"delay", A::Integer, "", 0}, {"value", A::Integer, "", 0}, {"callback", A::String, "", 0}}};
 constexpr std::array<NativeArg, 6> kArgs_TacticMoveToFlag{{{"gang", A::Integer, "", 0}, {"flag", A::Handle, "", 0}, {"gait", A::Integer, "2", 0}, {"slotSet", A::Integer, "-1", 0}, {"callback", A::String, "", 0}, {"banter", A::Boolean, "", 0}}};
-constexpr std::array<NativeArg, 8> kArgs_TacticPathScout{{{"gang", A::Integer, "", 0}, {"gait", A::Integer, "", 0}, {"value1", A::Integer, "", 0}, {"range", A::Number, "", 0}, {"flags", A::NumberTable, "", 16}, {"loop", A::Boolean, "true", 0}, {"callback", A::String, "", 0}, {"option", A::Boolean, "", 0}}};
+constexpr std::array<NativeArg, 8> kArgs_TacticPathScout{{{"gang", A::Integer, "", 0}, {"callCount", A::Integer, "", 0}, {"callDelaySec", A::Integer, "", 0}, {"range", A::Number, "", 0}, {"flags", A::NumberTable, "", 16}, {"loop", A::Boolean, "true", 0}, {"callback", A::String, "", 0}, {"option", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 8> kArgs_TacticPursue{{{"gang", A::Integer, "", 0}, {"targetGang", A::Integer, "-1", 0}, {"range", A::Number, "5", 0}, {"gait", A::Integer, "2", 0}, {"angle1", A::Number, "90", 0}, {"angle2", A::Number, "45", 0}, {"callback", A::String, "", 0}, {"searchMs", A::Integer, "30000", 0}}};
 constexpr std::array<NativeArg, 7> kArgs_TacticRing{{{"gang", A::Integer, "", 0}, {"centre", A::Handle, "", 0}, {"radius", A::Number, "15", 0}, {"target", A::Handle, "", 0}, {"value", A::Number, "", 0}, {"callback", A::String, "", 0}, {"option", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_TacticRiotCop{{{"gang", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"callback", A::String, "", 0}}};
@@ -450,10 +450,10 @@ constexpr std::array<NativeArg, 2> kArgs_GangMakeEnemies{{{"gang", A::Integer, "
 constexpr std::array<NativeArg, 2> kArgs_GangMakeEnemiesOfType{{{"gang", A::Integer, "", 0}, {"type", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GangMakeFriends{{{"gang", A::Integer, "", 0}, {"other", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GangMakeNeutralOfType{{{"gang", A::Integer, "", 0}, {"type", A::Integer, "", 0}}};
-constexpr std::array<NativeArg, 4> kArgs_GangQueueResponders{{{"pos", A::NumberTable, "", 3}, {"arg2", A::Integer, "", 0}, {"arg3", A::Integer, "", 0}, {"human", A::Handle, "", 0}}};
+constexpr std::array<NativeArg, 4> kArgs_GangQueueResponders{{{"pos", A::NumberTable, "", 3}, {"count", A::Integer, "", 0}, {"delaySec", A::Integer, "", 0}, {"human", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_GangRemoveSpinningIcon{{{"gang", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GangRemoveTurfBox{{{"gang", A::Integer, "", 0}, {"box", A::Handle, "", 0}}};
-constexpr std::array<NativeArg, 3> kArgs_GangRespond{{{"gang", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"caller", A::Handle, "", 0}}};
+constexpr std::array<NativeArg, 3> kArgs_GangRespond{{{"gang", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"offender", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GangSetAlwaysSeen{{{"gang", A::Integer, "", 0}, {"on", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GangSetAttackable{{{"gang", A::Integer, "", 0}, {"on", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GangSetCustomSpotDialog{{{"gang", A::Integer, "", 0}, {"sound", A::String, "", 0}}};
@@ -623,7 +623,7 @@ constexpr std::array<NativeArg, 1> kArgs_ReleasePTank{{{"ptank", A::Handle, "", 
 constexpr std::array<NativeArg, 5> kArgs_RotateVolumeBox{{{"box", A::Handle, "", 0}, {"m00", A::Number, "", 0}, {"m01", A::Number, "", 0}, {"m10", A::Number, "", 0}, {"m11", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_SetDoorPickable{{{"door", A::Handle, "", 0}, {"pickable", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_SetFlagPos{{{"flag", A::Handle, "", 0}, {"pos", A::NumberTable, "", 3}}};
-constexpr std::array<NativeArg, 7> kArgs_SetPositionOfWater{{{"pos", A::NumberTable, "", 3}, {"rot", A::NumberTable, "", 4}, {"width", A::Number, "", 0}, {"length", A::Number, "", 0}, {"colour", A::NumberTable, "", 3}, {"param1", A::Number, "", 0}, {"param2", A::Number, "", 0}}};
+constexpr std::array<NativeArg, 7> kArgs_SetPositionOfWater{{{"pos", A::NumberTable, "", 3}, {"rot", A::NumberTable, "", 4}, {"width", A::Number, "", 0}, {"length", A::Number, "", 0}, {"colour", A::NumberTable, "", 3}, {"waveHeight", A::Number, "", 0}, {"waveSpeed", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 9> kArgs_SpawnBreakableGlass{{{"glassType", A::Integer, "", 0}, {"corner", A::NumberTable, "", 3}, {"cornerU", A::NumberTable, "", 3}, {"cornerV", A::NumberTable, "", 3}, {"uv0", A::NumberTable, "", 2}, {"uv1", A::NumberTable, "", 2}, {"flag", A::Integer, "", 0}, {"triangle1", A::Integer, "", 0}, {"triangle2", A::Integer, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SpawnBreakableGlass{R::Number};
 constexpr std::array<NativeArg, 5> kArgs_SpawnDoor{{{"typeName", A::String, "", 0}, {"pos", A::NumberTable, "", 3}, {"rot", A::NumberTable, "", 4}, {"triangles", A::NumberTable, "", 2}, {"number", A::Integer, "", 0}}};
@@ -640,7 +640,7 @@ constexpr std::array<NativeArg, 1> kArgs_EnableHeat{{{"enable", A::Boolean, "", 
 constexpr std::array<NativeArg, 2> kArgs_EnableShadow{{{"object", A::Integer, "", 0}, {"enable", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_EndParticle{{{"particle", A::Handle, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_GetGamma{R::Number};
-constexpr std::array<NativeArg, 3> kArgs_InitFallingEmbers{{{"object", A::Handle, "", 0}, {"p1", A::Integer, "", 0}, {"p2", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 3> kArgs_InitFallingEmbers{{{"object", A::Handle, "", 0}, {"minRate", A::Integer, "", 0}, {"maxRate", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_KillParticle{{{"particle", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_MaxFogParticles{{{"count", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_ParticleChangeState{{{"particle", A::Handle, "", 0}, {"state", A::Integer, "", 0}}};
@@ -659,7 +659,7 @@ constexpr std::array<NativeArg, 1> kArgs_SetMotionAlpha{{{"alpha", A::Integer, "
 constexpr std::array<NativeArg, 3> kArgs_SetShadowColor{{{"r", A::Number, "", 0}, {"g", A::Number, "", 0}, {"b", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_SetShadowLightOffset{{{"x", A::Number, "", 0}, {"y", A::Number, "", 0}, {"z", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_SetWorldAmbient{{{"r", A::Number, "", 0}, {"g", A::Number, "", 0}, {"b", A::Number, "", 0}}};
-constexpr std::array<NativeArg, 5> kArgs_SpawnAreaEffect{{{"human", A::Handle, "", 0}, {"radius", A::Number, "", 0}, {"amount", A::Integer, "", 0}, {"flag", A::Boolean, "", 0}, {"kind", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 5> kArgs_SpawnAreaEffect{{{"human", A::Handle, "", 0}, {"radius", A::Number, "", 0}, {"damage", A::Integer, "", 0}, {"excludeSelf", A::Boolean, "", 0}, {"sparedKind", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 4> kArgs_SpawnParticle{{{"typeName", A::String, "", 0}, {"pos", A::NumberTable, "", 3}, {"rot", A::NumberTable, "", 4}, {"attachTo", A::Handle, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SpawnParticle{R::Number};
 constexpr std::array<NativeArg, 5> kArgs_SpawnRainPlane{{{"corner", A::NumberTable, "", 3}, {"cornerU", A::NumberTable, "", 3}, {"cornerV", A::NumberTable, "", 3}, {"uv0", A::NumberTable, "", 2}, {"uv1", A::NumberTable, "", 2}}};
@@ -668,7 +668,7 @@ constexpr std::array<NativeArg, 4> kArgs_StartFilmGrain{{{"texture", A::Integer,
 constexpr std::array<NativeArg, 11> kArgs_StartFog{{{"texture", A::Integer, "", 0}, {"colour", A::NumberTable, "", 5}, {"p1", A::Number, "", 0}, {"p2", A::Number, "", 0}, {"p3", A::Number, "", 0}, {"p4", A::Number, "", 0}, {"p5", A::Number, "", 0}, {"p6", A::Number, "", 0}, {"p7", A::Number, "", 0}, {"p8", A::Integer, "", 0}, {"p9", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_StartGarbage{{{"kind", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_StartParticle{{{"particle", A::Handle, "", 0}}};
-constexpr std::array<NativeArg, 12> kArgs_StartRain{{{"texture1", A::Integer, "", 0}, {"param1", A::Integer, "", 0}, {"param2", A::Integer, "", 0}, {"speed1", A::Number, "", 0}, {"length1", A::Number, "", 0}, {"colour1", A::NumberTable, "", 4}, {"texture2", A::Integer, "", 0}, {"param3", A::Integer, "", 0}, {"param4", A::Integer, "", 0}, {"speed2", A::Number, "", 0}, {"length2", A::Number, "", 0}, {"colour2", A::NumberTable, "", 4}}};
+constexpr std::array<NativeArg, 12> kArgs_StartRain{{{"texture1", A::Integer, "", 0}, {"tilesV1", A::Integer, "", 0}, {"tilesU1", A::Integer, "", 0}, {"driftU1", A::Number, "", 0}, {"fallV1", A::Number, "", 0}, {"colour1", A::NumberTable, "", 4}, {"texture2", A::Integer, "", 0}, {"tilesV2", A::Integer, "", 0}, {"tilesU2", A::Integer, "", 0}, {"driftU2", A::Number, "", 0}, {"fallV2", A::Number, "", 0}, {"colour2", A::NumberTable, "", 4}}};
 constexpr std::array<NativeArg, 2> kArgs_StartRoomSmoke{{{"colour", A::NumberTable, "", 5}, {"amount", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_WidgetSetColour{{{"object", A::Handle, "", 0}, {"colour", A::NumberTable, "", 4}, {"viaMessage", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CNSEnableMissionInfo{{{"on", A::Boolean, "", 0}}};
@@ -700,7 +700,7 @@ constexpr std::array<NativeArg, 1> kArgs_HUDEnableFixedCamIcon{{{"on", A::Boolea
 constexpr std::array<NativeArg, 1> kArgs_HUDEnableGameTutorialText{{{"on", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 4> kArgs_HUDEnableGenBar{{{"on", A::Boolean, "", 0}, {"label", A::String, "", 0}, {"index", A::Integer, "", 0}, {"style", A::Integer, "1", 0}}};
 constexpr std::array<NativeArg, 4> kArgs_HUDEnableInstArrow{{{"on", A::Boolean, "", 0}, {"x", A::Number, "", 0}, {"y", A::Number, "", 0}, {"angle", A::Number, "", 0}}};
-constexpr std::array<NativeArg, 4> kArgs_HUDEnableTextProgress{{{"on", A::Boolean, "", 0}, {"labels", A::StringTable, "", 6}, {"count", A::Integer, "", 0}, {"flag", A::Integer, "1", 0}}};
+constexpr std::array<NativeArg, 4> kArgs_HUDEnableTextProgress{{{"on", A::Boolean, "", 0}, {"labels", A::StringTable, "", 6}, {"count", A::Integer, "", 0}, {"slot", A::Integer, "1", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_HUDFlushTutorialText{{{"priority", A::Integer, "4", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_HUDGetNewPH{{{"kind", A::Integer, "", 0}, {"label", A::String, "", 0}, {"width", A::Number, "0.22", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_HUDGetNewPH{R::Number};
@@ -727,7 +727,7 @@ constexpr std::array<NativeArg, 6> kArgs_HUDSetPHValue{{{"panel", A::Integer, ""
 constexpr std::array<NativeArg, 4> kArgs_HUDSetRadarItemTexture{{{"object", A::Handle, "", 0}, {"icon", A::Integer, "", 0}, {"scale", A::Number, "1", 0}, {"flag", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_HUDSetRadarObjectFlash{{{"object", A::Handle, "", 0}, {"on", A::Boolean, "", 0}, {"n", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_HUDSetRadarZoomScale{{{"scale", A::Number, "", 0}}};
-constexpr std::array<NativeArg, 4> kArgs_HUDSetTextProgress{{{"label", A::String, "", 0}, {"value", A::Integer, "", 0}, {"colour", A::NumberTable, "", 3}, {"flag", A::Integer, "1", 0}}};
+constexpr std::array<NativeArg, 4> kArgs_HUDSetTextProgress{{{"label", A::String, "", 0}, {"value", A::Integer, "", 0}, {"colour", A::NumberTable, "", 3}, {"slot", A::Integer, "1", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_HUDSetTutorialCallback{{{"name", A::String, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HUDSetTutorialText{{{"text", A::String, "", 0}, {"priority", A::Integer, "1", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HUDShowMissionSelect{{{"onCancel", A::String, "", 0}, {"onChoose", A::String, "", 0}}};
@@ -809,7 +809,7 @@ constexpr std::array<NativeArg, 1> kArgs_SceneIsPreloaded{{{"name", A::String, "
 constexpr std::array<NativeResultType, 1> kResults_SceneIsPreloaded{R::Boolean};
 constexpr std::array<NativeArg, 1> kArgs_SceneLength{{{"scene", A::Integer, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SceneLength{R::Number};
-constexpr std::array<NativeArg, 8> kArgs_ScenePlay{{{"scene", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"heading", A::Number, "", 0}, {"delay", A::Integer, "", 0}, {"onEnd", A::String, "", 0}, {"flag1", A::Boolean, "", 0}, {"flag2", A::Boolean, "true", 0}, {"blendCam", A::Number, "", 0}}};
+constexpr std::array<NativeArg, 8> kArgs_ScenePlay{{{"scene", A::Integer, "", 0}, {"pos", A::NumberTable, "", 3}, {"heading", A::Number, "", 0}, {"delay", A::Integer, "", 0}, {"onEnd", A::String, "", 0}, {"looping", A::Boolean, "", 0}, {"freeze", A::Boolean, "true", 0}, {"blendCam", A::Number, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_ScenePlay{R::Boolean};
 constexpr std::array<NativeArg, 8> kArgs_ScenePlayAnimation{{{"scene", A::Integer, "", 0}, {"onEnd", A::String, "", 0}, {"looping", A::Boolean, "", 0}, {"flag", A::Boolean, "", 0}, {"delay", A::Integer, "", 0}, {"flag2", A::Boolean, "", 0}, {"freeze", A::Boolean, "", 0}, {"blendCam", A::Number, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_ScenePlayAnimation{R::Boolean};
@@ -889,7 +889,7 @@ constexpr std::array<NativeArg, 1> kArgs_SetLoadPriority{{{"priority", A::Number
 constexpr std::array<NativeArg, 2> kArgs_SetLUASaveDataBool{{{"flag", A::Integer, "", 0}, {"on", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_SetLUASaveDataFloat{{{"slot", A::Integer, "", 0}, {"value", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_SetSpawnMax{{{"count", A::Integer, "", 0}}};
-constexpr std::array<NativeArg, 4> kArgs_SpawnCustomCrime{{{"pos", A::NumberTable, "", 3}, {"offender", A::Handle, "", 0}, {"responders", A::Integer, "", 0}, {"sound", A::String, "", 0}}};
+constexpr std::array<NativeArg, 4> kArgs_SpawnCustomCrime{{{"pos", A::NumberTable, "", 3}, {"offender", A::Handle, "", 0}, {"responders", A::Integer, "", 0}, {"text", A::String, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SSMC_format{R::Boolean};
 constexpr std::array<NativeArg, 4> kArgs_StatAdd{{{"human", A::Handle, "", 0}, {"group", A::Integer, "", 0}, {"stat", A::Integer, "", 0}, {"amount", A::Integer, "1", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_StatGetHighScore{{{"level", A::Integer, "", 0}}};
@@ -976,7 +976,7 @@ constexpr std::array<NativeArg, 1> kArgs_CfgDamageEndurance{{{"factor", A::Numbe
 constexpr std::array<NativeArg, 1> kArgs_CfgDisableMusicForScenes{{{"enabled", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_CfgDistances{{{"near", A::Number, "", 0}, {"mid", A::Number, "", 0}, {"far", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_CfgEnableCrimeType{{{"crime", A::Integer, "", 0}, {"enabled", A::Boolean, "", 0}}};
-constexpr std::array<NativeArg, 2> kArgs_CfgEnableDispatcher{{{"enabled", A::Boolean, "true", 0}, {"value", A::Integer, "-1", 0}}};
+constexpr std::array<NativeArg, 2> kArgs_CfgEnableDispatcher{{{"enabled", A::Boolean, "true", 0}, {"voice", A::Integer, "-1", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgEnableGrappleCounters{{{"enabled", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgEnableTurfInvasion{{{"enabled", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgExcludedVandalizeZone{{{"zone", A::Integer, "-1", 0}}};
@@ -1016,7 +1016,7 @@ constexpr std::array<NativeArg, 1> kArgs_CfgQueueGrappleCombos{{{"enabled", A::B
 constexpr std::array<NativeArg, 5> kArgs_CfgRageHandlers{{{"enterFn", A::String, "", 0}, {"exitFn", A::String, "", 0}, {"fullFn", A::String, "", 0}, {"durationMs", A::Integer, "", 0}, {"warnMs", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_CfgRagePoints{{{"points", A::Number, "", 0}, {"gain", A::Number, "", 0}, {"decay", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgRagePowerMode{{{"mode", A::Integer, "", 0}}};
-constexpr std::array<NativeArg, 3> kArgs_CfgRaindrops{{{"colour", A::NumberTable, "", 4}, {"kind", A::Integer, "", 0}, {"scale", A::Number, "", 0}}};
+constexpr std::array<NativeArg, 3> kArgs_CfgRaindrops{{{"colour", A::NumberTable, "", 4}, {"count", A::Integer, "", 0}, {"scale", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_CfgRumbleArena{{{"levelId", A::Integer, "", 0}, {"value", A::Integer, "", 0}, {"modes", A::NumberTable, "", 16}}};
 constexpr std::array<NativeArg, 8> kArgs_CfgRumbleChar{{{"charType", A::Integer, "", 0}, {"name", A::String, "", 0}, {"gangName", A::String, "", 0}, {"gang", A::Integer, "", 0}, {"rank", A::Integer, "", 0}, {"n6", A::Integer, "", 0}, {"n7", A::Integer, "", 0}, {"bio", A::String, "", 0}}};
 constexpr std::array<NativeArg, 10> kArgs_CfgRumbleGame{{{"title", A::String, "", 0}, {"mode", A::Integer, "", 0}, {"flagA", A::Boolean, "", 0}, {"flagB", A::Boolean, "", 0}, {"flagC", A::Boolean, "", 0}, {"unused", A::Integer, "", 0}, {"n7", A::Integer, "", 0}, {"n8", A::Integer, "", 0}, {"n9", A::Integer, "", 0}, {"description", A::String, "", 0}}};

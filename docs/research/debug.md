@@ -84,9 +84,9 @@ Square.
 **Native side** (confirmed (code) at `0x00163c68`, called once per frame by mode 1's
 [frame of play](level-loading.md#a-frame-of-play)):
 
-1. Run only when `W_GameState + 0x224` (the player count) is above 0, `W_GameState + 0x410` is 0 (a flag we have not
-   named), and player 1's human and its controller resolve. The pad is the controller's (`+0x19`); only player 1 is
-   read.
+1. Run only when `W_GameState + 0x224` (the player count) is above 0, `W_GameState + 0x410` is 0 (set while a cinematic
+   scene plays: the speech players `0x0021e400` / `0x0021e698` stay silent and music ducks only then), and
+   player 1's human and its controller resolve. The pad is the controller's (`+0x19`); only player 1 is read.
 2. Take the pad's **whole current button word** (`0x00144a08(pad, 0)`). If it is 0, reset the last word and stop.
    If it equals the last word, stop. Otherwise shift it into the six-word history (`0x005e6df0`).
 3. Compare the history with each table entry. Because whole words are compared, every step must be **one button
@@ -230,7 +230,6 @@ index, as the checker does on a match; the checker itself is not in Coney yet.
 
 ## Open questions
 
-- What `W_GameState + 0x410` is (it blocks the cheat check).
 - What player slot `+0x214` returns (the FPS line's "Cur View").
 - Who, if anyone, calls memory manager slot `+0x1b4`, and what the two other reports (`0x0033aa30`,
   `0x00338798`) print.

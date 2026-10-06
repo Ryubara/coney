@@ -85,15 +85,25 @@
 - name: HUDSetANBossTexture
   wrapper: 0x0036e8d8
   calls:
-    - {addr: 0x001b5b80}
+    - {addr: 0x001b5b80, name: HUD_SetANBossTexture}
+    - {addr: 0x00210dc0, name: ANHud_SetBossTexture}
+    - {addr: 0x0020fc98, name: TargetPanel_SetBossTexture}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the boss human in an Armies of the Night level."}
-    - {name: texture, lua: number, ctype: unsigned, desc: "Portrait texture id for the boss (scripts pass ids around 1966080, 0x1e0000 + n)."}
-    - {name: "on", lua: boolean, default: true, desc: "true (default) shows the boss portrait, false removes it."}
+    - {name: texture, lua: number, ctype: unsigned, desc: "Texture id of the portrait to show for that boss (scripts pass ids around 1966080, 0x1e0000 + n)."}
+    - {name: "on", lua: boolean, default: true, desc: "true (default) registers the portrait, false removes the human's entry."}
   description: >-
-    Shows or removes a boss portrait on both players' Armies of the Night HUDs (the arcade mini-game, levels 60-64).
+    Registers (or removes) a boss portrait on both players' Armies of the Night HUDs. Each HUD's target panel keeps a
+    table of 6 (human, texture) pairs: `on` puts the pair in the first free slot, false clears the slot holding that
+    human. While a player fights a registered human, the enemy health panel the HUD shows for its target
+    (`TargetPanel_Update` 0x0020e6f8) swaps in that portrait texture; other enemies get the plain panel.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Only Armies of the Night HUDs (built by `ANHud_Construct` 0x0020fd80 when the level index is 60-69) implement
+    the call; on a normal player HUD the method is an empty stub (vtable 0x0053edf8 `+0x74`). A full table (6
+    entries) silently ignores further adds, and the same human can be added twice. Free slots hold the null
+    handle (0x006ebd30).
   usage: {chunks: 15, calls: 38, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDEnableClubActionText
@@ -273,20 +283,33 @@
   wrapper: 0x0036ee08
   calls:
     - {addr: 0x001b5fb0}
+    - {addr: 0x001b38b8}
+    - {addr: 0x001a9130, name: Credits_Load}
   description: >-
-    Loads what the end credits need ahead of ShowCredits (called by level84_end).
-  evidence: inferred
-  depth: brief
+    Prepares the end credits (the HUD's credits element at HUD `0x00600840 + 0xea30`): allocates the credit list
+    (0x0050d340) and its string cache, runs the script `credits.lua` (whose CfgCredits calls fill the list), and
+    creates the 70 text widgets the scroll reuses. Called by level84_end ahead of ShowCredits.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Sets the element's loaded flag (`+0x44`) and a duration-like field `+0x16c` to 8000 (ms, inferred); scroll
+    fields `+0x170`-`+0x18c` are set here but their use is not traced. Calling it twice allocates again.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [84]}
 
 - name: ShowCredits
   wrapper: 0x0036ee28
   calls:
     - {addr: 0x001b5fd0}
+    - {addr: 0x001b38d8}
+    - {addr: 0x001a9480, name: Credits_Start}
   description: >-
-    Starts the end credits on the HUD (called by level84_end).
-  evidence: inferred
-  depth: brief
+    Starts the end-credits scroll on the HUD (called by level84_end): if PreloadCredits has loaded them and they are
+    not already running, the credits element is marked running (`+0xc` = 1, `+0x10` = 0) with the current time
+    (`+0x168`) as its start.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Does nothing without PreloadCredits first. The update and drawing of the scroll (speed, end) are not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [84]}
 
 - name: HUDEnableGameTutorialText
@@ -389,26 +412,45 @@
 - name: HUDLaunchANGameOver
   wrapper: 0x0036f1b8
   calls:
-    - {addr: 0x001cede8}
+    - {addr: 0x001cede8, name: HUD_LaunchANGameOver}
+    - {addr: 0x001557f8, name: ANGameOver_Toggle}
   args:
-    - {name: "on", lua: boolean, desc: "Read but not used by the callee (scripts pass true)."}
+    - {name: "on", lua: boolean, desc: "Read but not used (scripts pass true)."}
   description: >-
-    Pushes the Armies of the Night game-over screen (game mode 0xd).
+    Opens the Armies of the Night game-over screen (game mode 0xd, pushed from 0x005e53a0); the main loop does the
+    same itself when a failed Armies of the Night level fades out. The screen (`ANGameOver_Update` 0x001cf468)
+    counts down and lets either player press Start to continue: with credits left a credit is spent, the Lua
+    function `F1.Time` is called and both HUDs show the join message; with no credits, or when the countdown
+    ends, the screen fades out. Calling it while the screen is already up closes it and applies the result:
+    continuing players are revived and their HUD restored, otherwise the game either reloads `level60` or calls
+    `runNextMission(0)`.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    It is a toggle: a second call while game mode 0xd is current pops the screen instead of opening it again. Which
+    menu outcome (game-over menu `+0x7a4`/`+0x7a8`) maps to reloading `level60` and which to `runNextMission` is
+    inferred, not traced to the button. Credits are the counter read by `HUDANGetCredit` (0x00619910).
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDSetMissionFailedCallbacks
   wrapper: 0x0036f1e8
   calls:
     - {addr: 0x001d1ff0}
+    - {addr: 0x001d2398}
+    - {addr: 0x00155408}
   args:
-    - {name: onRetry, lua: string, desc: "Name of the Lua function (at most 31 characters) called when the player retries from the mission-failed screen; nil clears it."}
+    - {name: onRetry, lua: string, desc: "Name of the Lua function (at most 31 characters kept) to call when the player retries from the mission-failed screen; nil clears it."}
   description: >-
-    Sets the Lua function the mission-failed screen calls to restart the current chapter instead of reloading the
-    level.
+    Stores a Lua function name in the mission-failed menu (`+0x7b0`, [Pause](../../research/pause.md#the-mission-failed-screen)).
+    When the menu closes with its checkpoint choice (menu `+0x7a8`), a stored name is called with no arguments
+    instead of reloading the level: the game first restores player 1's screen colour and blur when he is in state
+    0xc, clears game state `+0x14c`, resets the mission statistics (0x00422d00) and resumes play. With no name the level
+    is reloaded from its checkpoint as usual.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The close logic is confirmed (code) at 0x00155408; that `+0x7a8` is the "Last checkpoint" item (and `+0x7a4`
+    Restart level, `+0x7a0` Quit) is inferred from their effects. The name stays until replaced or cleared.
   usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false, levels: [93, 51, 84, 82]}
 
 - name: HUDLaunchMissionComplete
@@ -432,13 +474,19 @@
 - name: HUDEnableFixedCamIcon
   wrapper: 0x0036f250
   calls:
-    - {addr: 0x001b4740}
+    - {addr: 0x001b4740, name: HUD_EnableFixedCamIcon}
+    - {addr: 0x001b2818, name: HUD_SetFixedCamIconVisible}
   args:
-    - {name: "on", lua: boolean, desc: "true shows the fixed-camera icon on both players' HUDs, false hides it."}
+    - {name: "on", lua: boolean, desc: "true shows the fixed-camera icon, false hides it."}
   description: >-
-    Shows or hides the HUD icon that marks a fixed (non-player) camera.
+    Shows or hides the HUD's fixed-camera icons: stores the switch at HUD `+0x177b4` (HUD object 0x00600840) and
+    passes it to the show method (vtable `+0x44`) of the two icon widgets at `+0x135e0` and `+0x136e0`, one per
+    player, built at HUD set-up (0x001ad588) with icon id 0x57.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    HUD set-up writes 1 to `+0x177b4` on every level load; no reader of that field was found, so the widget calls
+    are what matter. That the icon marks a fixed camera is inferred from the binding name.
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDSetObjective
@@ -662,31 +710,40 @@
 - name: HUDEnableTextProgress
   wrapper: 0x0036fa28
   calls:
-    - {addr: 0x001b5590}
+    - {addr: 0x001b5590, name: HUD_EnableTextProgress}
   args:
-    - {name: "on", lua: boolean, desc: "true creates the rows, false removes them."}
-    - {name: labels, lua: table, elem: string, count: 6, written_back: true, desc: "Table of up to 6 row labels (gang names)."}
-    - {name: count, lua: number, ctype: unsigned, desc: "How many rows."}
-    - {name: flag, lua: number, ctype: unsigned, default: 1, desc: "true (default) or false: which of two row-count slots to set."}
+    - {name: "on", lua: boolean, desc: "true creates the rows, false removes every shown row."}
+    - {name: labels, lua: table, elem: string, count: 6, written_back: true, desc: "Up to 6 row labels (gang names); row i shows label i. Written back unchanged."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many rows to create (1-6), from the top."}
+    - {name: slot, lua: number, ctype: unsigned, default: 1, desc: "Which row count to record: 1 (default) the main count (0x00622e40) that HUDSetTextProgress sorts by when its own slot is 1, 0 the second count (0x00622e44)."}
   description: >-
-    Creates or removes the text scoreboard (up to six labelled rows) used in Rumble and king-of-the-hill fights.
+    Creates or removes the text scoreboard: up to six HUD text rows (widgets at 0x00615320, 0x560 bytes each) stacked
+    down the screen at fixed positions (x 0x0050d56c, y 0x0050d574 + row × 0x0050d57c), each showing its label and a
+    score that starts at 0. Used for the king-of-the-hill fight in level 92.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    A row already shown is not recreated; the count is recorded even when `on` is false. Row fields: label `+0x540`,
+    score `+0x558`, active `+0x434`. The exact text layout (0x001ccf10) is not traced.
   usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false, levels: [92]}
 
 - name: HUDSetTextProgress
   wrapper: 0x0036fb38
   calls:
-    - {addr: 0x001b57c8}
+    - {addr: 0x001b57c8, name: HUD_SetTextProgress}
   args:
-    - {name: label, lua: string, desc: "The row's label, as given to HUDEnableTextProgress."}
+    - {name: label, lua: string, desc: "The row's label, as given to HUDEnableTextProgress; a label no shown row has does nothing."}
     - {name: value, lua: number, ctype: unsigned, desc: "The row's new score."}
-    - {name: colour, lua: table, elem: number, count: 3, written_back: true, desc: "Table {r, g, b}, each 0-255, for the row's text."}
-    - {name: flag, lua: number, ctype: unsigned, default: 1, desc: "true (default) or false: which row-count slot to sort by."}
+    - {name: colour, lua: table, elem: number, count: 3, written_back: true, desc: "Table {r, g, b}, each 0-255, for the row's text; written back."}
+    - {name: slot, lua: number, ctype: unsigned, default: 1, desc: "Which recorded row count bounds the sort: 1 (default) the main count, 0 the second (see HUDEnableTextProgress)."}
   description: >-
-    Updates a scoreboard row's score and colour and re-sorts the rows by score, highest first.
+    Finds the shown row whose label matches, sets its score and text colour and redraws it, then sorts the first
+    `count` rows by score, highest at the top, by swapping labels, scores and colours between rows (the row widgets
+    stay in place).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The sort is a selection sort with ties keeping their order. Scores are unsigned, so a negative value sorts first.
   usage: {chunks: 4, calls: 16, boot: false, mission1: false, result_used: false, levels: [92]}
 
 - name: HUDTurnOnActionCycleAnim
@@ -862,26 +919,37 @@
 - name: HUDANEnableJoinMsg
   wrapper: 0x003701c8
   calls:
-    - {addr: 0x001b46a0}
+    - {addr: 0x001b46a0, name: HUD_ANEnableJoinMsg}
   args:
-    - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index (0 or 1)."}
+    - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index: 0 for player 1, 1 for player 2."}
     - {name: "on", lua: boolean, desc: "true shows the message, false hides it."}
   description: >-
-    Shows or hides the `press start to join` message on a player's Armies of the Night HUD.
-  evidence: inferred
-  depth: brief
+    Shows or hides the `press start to join` message on one player's Armies of the Night HUD (flag at `+0x4614` of
+    the HUD panel, set by vtable `+0x7c` 0x002107d8). While the flag is set and the player's panel is not active,
+    the HUD draws the message text (`ANHud_Draw` 0x00211938), and pressing Start with credits left revives that
+    player, restores the panel, clears the flag and spends a credit (main loop 0x00158728).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only Armies of the Night HUDs act on it (vtable 0x0053ecc0); no range check on `player`. The game-over screen
+    sets the flag on both HUDs itself after a continue that leaves credits.
   usage: {chunks: 10, calls: 78, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDANLaunchEndScreen
   wrapper: 0x00370228
   calls:
-    - {addr: 0x001b44d8}
+    - {addr: 0x001b44d8, name: HUD_ANLaunchEndScreen}
   args:
-    - {name: "on", lua: boolean, desc: "true creates the end-screen sprite and hides the HUD; false removes it and restores the HUD."}
+    - {name: "on", lua: boolean, desc: "true shows the end screen and hides the HUD; false removes it and restores the HUD."}
   description: >-
-    Shows or removes the Armies of the Night end screen.
+    Shows the Armies of the Night end screen: a full-screen white-tinted sprite of texture 0x18e0000 (a widget kept
+    at 0x0061995c) is created and the HUD is hidden (0x001b1f38). With false the widget is destroyed and the HUD
+    shown again (0x001b20f8).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Not guarded: calling true twice leaks the first widget, and false with no screen up uses a null pointer. Used
+    once at the end of level 64.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [64]}
 
 - name: HUDANSetCredit
@@ -899,13 +967,17 @@
 - name: HUDANGetCredit
   wrapper: 0x00370290
   calls:
-    - {addr: 0x001b4700}
+    - {addr: 0x001b4700, name: HUD_ANGetCredits}
   results:
-    - {lua: number, desc: "The Armies of the Night credit counter."}
+    - {lua: number, desc: "Credits left in Armies of the Night (the global at 0x00619910)."}
   description: >-
-    Returns the Armies of the Night credit counter.
+    Returns how many Armies of the Night credits are left. A credit is spent each time a player joins or rejoins
+    with Start (main loop 0x00158728) or continues on the game-over screen (0x001cf468); with none left, Start
+    does nothing and the game-over screen ends the run.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The counter is set by `HUD_ANSetCredits` (0x001b46e0); it is a plain global, not reset by the level set-up.
   usage: {chunks: 5, calls: 30, boot: false, mission1: false, result_used: true, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDSetRadarObjectFlash
@@ -1079,13 +1151,17 @@
 - name: HUDANSetGOSignMode
   wrapper: 0x00370c00
   calls:
-    - {addr: 0x001b4690}
+    - {addr: 0x001b4690, name: HUD_ANSetGOSignMode}
   args:
-    - {name: mode, lua: number, ctype: unsigned, desc: "Mode of the `GO` arrow sign in Armies of the Night (scripts use 0, 1 and 2)."}
+    - {name: mode, lua: number, ctype: unsigned, desc: "Mode of the `GO` arrow sign in Armies of the Night, stored as a byte (scripts use 0, 1 and 2)."}
   description: >-
-    Sets the Armies of the Night `GO` sign mode (a byte at 0x0060f260).
+    Stores the Armies of the Night `GO` sign mode in the byte at 0x0060f260, which the HUD uses to show the
+    arcade-style `GO` prompt that tells the players to move on.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    No direct reader of 0x0060f260 was found (it may be read through a base pointer), so what modes 0, 1 and 2
+    look like is open; inferred: 0 off, 1 and 2 two directions or styles.
   usage: {chunks: 19, calls: 136, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDANEnableChkIndicator

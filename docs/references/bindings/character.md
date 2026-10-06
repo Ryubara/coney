@@ -12,7 +12,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`AddAllAnimCallback`](#addallanimcallback) | boolean | 1 | no | no | confirmed (code) |
 | [`AddAnimCallback`](#addanimcallback) | boolean | 3 | no | yes | confirmed (code) |
 | [`AddCommand`](#addcommand) | - | 2 | yes | no | confirmed (code) |
-| [`ClimbFilter`](#climbfilter) | - | 1 | no | no | speculative |
+| [`ClimbFilter`](#climbfilter) | - | 1 | no | no | confirmed (code) |
 | [`CullCorpses`](#cullcorpses) | boolean | 3 | no | no | confirmed (code) |
 | [`DelAnimCallback`](#delanimcallback) | - | 3 | no | yes | confirmed (code) |
 | [`DelCommand`](#delcommand) | - | 6 | no | no | confirmed (code) |
@@ -32,7 +32,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuBlockLook`](#hublocklook) | - | 46 | no | no | confirmed (code) |
 | [`HuBlockRearGrab`](#hublockreargrab) | - | 1 | no | no | confirmed (code) |
 | [`HuBlockTackle`](#hublocktackle) | - | 3 | no | no | confirmed (code) |
-| [`HuButtonMiniGame`](#hubuttonminigame) | - | 2 | no | no | inferred |
+| [`HuButtonMiniGame`](#hubuttonminigame) | - | 2 | no | no | confirmed (code) |
 | [`HuCanSee`](#hucansee) | boolean | 2 | no | no | confirmed (code) |
 | [`HuChangePlayerGang`](#huchangeplayergang) | boolean | 12 | no | yes | confirmed (code) |
 | [`HuClearLook`](#huclearlook) | - | 5 | no | no | confirmed (code) |
@@ -42,9 +42,9 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuDrop`](#hudrop) | - | 0 | no | no | speculative |
 | [`HuDropWeapon`](#hudropweapon) | - | 29 | yes | yes | confirmed (code) |
 | [`HuEnableController`](#huenablecontroller) | - | 7 | no | no | confirmed (code) |
-| [`HuEnableOnFire`](#huenableonfire) | - | 1 | no | no | inferred |
+| [`HuEnableOnFire`](#huenableonfire) | - | 1 | no | no | confirmed (code) |
 | [`HuEnableSoundCommands`](#huenablesoundcommands) | - | 57 | no | no | confirmed (code) |
-| [`HuEnableSpeaking`](#huenablespeaking) | - | 21 | no | no | inferred |
+| [`HuEnableSpeaking`](#huenablespeaking) | - | 21 | no | no | confirmed (code) |
 | [`HuEnableTagCheer`](#huenabletagcheer) | - | 1 | no | no | confirmed (code) |
 | [`HuEnableTagDone`](#huenabletagdone) | - | 3 | no | no | confirmed (code) |
 | [`HuExitWorld`](#huexitworld) | - | 41 | no | no | confirmed (code) |
@@ -67,15 +67,15 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuGiveCuffs`](#hugivecuffs) | - | 2 | no | no | confirmed (code) |
 | [`HuGiveWeapon`](#hugiveweapon) | - | 0 | no | no | speculative |
 | [`HuHasHat`](#huhashat) | number | 8 | no | no | confirmed (code) |
-| [`HuInCombat`](#huincombat) | boolean | 1 | no | no | inferred |
+| [`HuInCombat`](#huincombat) | boolean | 1 | no | no | confirmed (code) |
 | [`HuIsAimingAt`](#huisaimingat) | boolean | 1 | no | no | confirmed (code) |
 | [`HuIsAlive`](#huisalive) | boolean | 157 | yes | yes | confirmed (code) |
 | [`HuIsAPlayer`](#huisaplayer) | boolean | 167 | yes | yes | confirmed (code) |
 | [`HuIsArrested`](#huisarrested) | boolean | 13 | yes | yes | confirmed (code) |
 | [`HuIsDead`](#huisdead) | boolean | 3 | yes | no | confirmed (code) |
 | [`HuIsGrabbed`](#huisgrabbed) | boolean | 2 | no | no | confirmed (code) |
-| [`HuIsHidden`](#huishidden) | boolean | 4 | no | no | inferred |
-| [`HuIsInScene`](#huisinscene) | boolean | 1 | no | no | inferred |
+| [`HuIsHidden`](#huishidden) | boolean | 4 | no | no | confirmed (code) |
+| [`HuIsInScene`](#huisinscene) | boolean | 1 | no | no | confirmed (code) |
 | [`HuIsMugged`](#huismugged) | boolean | 0 | no | no | confirmed (code) |
 | [`HuIsOnFire`](#huisonfire) | boolean | 2 | no | no | confirmed (code) |
 | [`HuIsProne`](#huisprone) | boolean | 0 | no | no | inferred |
@@ -84,15 +84,15 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuLockMovement`](#hulockmovement) | - | 35 | no | no | confirmed (code) |
 | [`HuLockPad`](#hulockpad) | - | 37 | no | yes | confirmed (code) |
 | [`HuLockPadMovement`](#hulockpadmovement) | - | 10 | no | no | confirmed (code) |
-| [`HuMakeBeatUp`](#humakebeatup) | - | 1 | no | no | inferred |
-| [`HuMakeGrounded`](#humakegrounded) | - | 3 | no | no | inferred |
+| [`HuMakeBeatUp`](#humakebeatup) | - | 1 | no | no | confirmed (code) |
+| [`HuMakeGrounded`](#humakegrounded) | - | 3 | no | no | confirmed (code) |
 | [`HuMarkReachable`](#humarkreachable) | - | 9 | no | no | confirmed (code) |
 | [`HuPlaceHatOnHead`](#huplacehatonhead) | - | 0 | no | no | inferred |
 | [`HuPlaceItemInHand`](#huplaceiteminhand) | number | 62 | yes | yes | confirmed (code) |
-| [`HuPlayDynamicAnim`](#huplaydynamicanim) | - | 1 | no | no | inferred |
+| [`HuPlayDynamicAnim`](#huplaydynamicanim) | - | 1 | no | no | confirmed (code) |
 | [`HuPlayDynAnim`](#huplaydynanim) | - | 1 | no | no | confirmed (code) |
 | [`HuPlayDynPair`](#huplaydynpair) | - | 1 | no | no | confirmed (code) |
-| [`HuPutItemInPocket`](#huputiteminpocket) | - | 28 | no | no | inferred |
+| [`HuPutItemInPocket`](#huputiteminpocket) | - | 28 | no | no | confirmed (code) |
 | [`HuRemoveItemInPocket`](#huremoveiteminpocket) | - | 36 | no | no | confirmed (code) |
 | [`HuRemoveSpinningIcon`](#huremovespinningicon) | - | 55 | no | yes | confirmed (code) |
 | [`HuRender`](#hurender) | - | 0 | no | no | speculative |
@@ -109,10 +109,10 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetCanBlockKD`](#husetcanblockkd) | - | 0 | no | no | speculative |
 | [`HuSetCarriedItem`](#husetcarrieditem) | - | 37 | no | yes | confirmed (code) |
 | [`HuSetCombatMode`](#husetcombatmode) | - | 5 | no | no | confirmed (code) |
-| [`HuSetConscious`](#husetconscious) | - | 4 | no | no | inferred |
+| [`HuSetConscious`](#husetconscious) | - | 4 | no | no | confirmed (code) |
 | [`HuSetDamage`](#husetdamage) | - | 2 | no | no | confirmed (code) |
 | [`HuSetDemiGodMode`](#husetdemigodmode) | - | 8 | no | yes | confirmed (code) |
-| [`HuSetDoubleDamage`](#husetdoubledamage) | - | 1 | no | no | inferred |
+| [`HuSetDoubleDamage`](#husetdoubledamage) | - | 1 | no | no | confirmed (code) |
 | [`HuSetFastClimber`](#husetfastclimber) | - | 12 | no | yes | confirmed (code) |
 | [`HuSetFireProof`](#husetfireproof) | - | 8 | no | no | confirmed (code) |
 | [`HuSetFullRage`](#husetfullrage) | - | 1 | yes | yes | confirmed (code) |
@@ -121,9 +121,9 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetHealth`](#husethealth) | - | 23 | no | no | confirmed (code) |
 | [`HuSetHealthPercent`](#husethealthpercent) | - | 17 | no | yes | confirmed (code) |
 | [`HuSetHearRange`](#husethearrange) | - | 5 | no | no | confirmed (code) |
-| [`HuSetHelpHearRange`](#husethelphearrange) | - | 2 | no | no | inferred |
+| [`HuSetHelpHearRange`](#husethelphearrange) | - | 2 | no | no | confirmed (code) |
 | [`HuSetIdleAnim`](#husetidleanim) | - | 0 | no | no | inferred |
-| [`HuSetIdleDialogMaxIter`](#husetidledialogmaxiter) | - | 2 | no | no | inferred |
+| [`HuSetIdleDialogMaxIter`](#husetidledialogmaxiter) | - | 2 | no | no | confirmed (code) |
 | [`HuSetIncreasedReact`](#husetincreasedreact) | - | 2 | yes | yes | confirmed (code) |
 | [`HuSetInterrogation`](#husetinterrogation) | boolean | 5 | no | no | confirmed (code) |
 | [`HuSetKeepHat`](#husetkeephat) | - | 7 | no | no | confirmed (code) |
@@ -161,7 +161,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetSpinningIconColor`](#husetspinningiconcolor) | - | 0 | no | no | speculative |
 | [`HuSetStateRespVoiceIndex`](#husetstaterespvoiceindex) | - | 4 | no | no | confirmed (code) |
 | [`HuSetStrong`](#husetstrong) | - | 0 | no | no | inferred |
-| [`HuSetStunned`](#husetstunned) | - | 1 | no | no | inferred |
+| [`HuSetStunned`](#husetstunned) | - | 1 | no | no | confirmed (code) |
 | [`HuSetTireless`](#husettireless) | - | 50 | yes | yes | confirmed (code) |
 | [`HuSetUnarrestable`](#husetunarrestable) | - | 4 | no | no | confirmed (code) |
 | [`HuSetUngrabbable`](#husetungrabbable) | - | 23 | yes | yes | confirmed (code) |
@@ -229,12 +229,14 @@ AddAllAnimCallback(anim, callback) -> boolean
 in use.
 
 Registers a Lua function to be called, as f(humanHandle, animId), each time any human starts playing the given
-animation. Shares the 16-slot callback table at 0x006b6710 with AddAnimCallback.
+animation. It takes the first of the 16 slots at 0x006b6710 whose handle does not resolve and whose all-humans flag is
+0, stores the anim id, sets the flag and interns the name; the slot's handle field is left as it was.
 
-**Notes.** The slot is marked as an all-humans entry; dispatch as for AddAnimCallback (first matching slot only). Remove
-it with DelAnimCallback(0, anim). Details: [Characters](../../research/characters.md#anim-callbacks).
+**Notes.** Dispatch as for AddAnimCallback (first matching slot only). Remove it with DelAnimCallback(0, anim);
+AddAnimCallback can overwrite the slot since it does not test the flag. Details:
+[Characters](../../research/characters.md#anim-callbacks).
 
-- **Evidence:** confirmed (code) at `0x0023aab0`; detail: brief
+- **Evidence:** confirmed (code) at `0x0023aab0`; detail: traced
 - **Wrapper** `0x0035ea90` (registered by `RegisterBindings`); **calls** `0x0023aab0` `AnimCallback_AddForAll`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
@@ -306,16 +308,19 @@ ClimbFilter(enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `enabled` | boolean (nil or 0 is false) | true to turn the filter on, false to turn it off. |
+| 1 | `enabled` | boolean (nil or 0 is false) | true turns the route penalties on (0x0051059c = 1), false off. |
 
 **Returns** nothing.
 
-Sets a global switch (0x0051059c) read by the human climbing code (0x00251260, 0x002518ac). Only one level calls it,
-with true.
+Makes AI route planning avoid special path edges. While on, each edge cost in the A* search (0x00251890) gets +200 (12.5
+m) for flag-8 edges, +320 (20 m) for flag-0x80 edges (inferred: jumps/climbs) and +80 (5 m) for flag-4 choke points, and
+a route found through a 0x80 edge is searched again without such edges and the cheaper one kept (0x002511c8). Route
+requests whose edge mask has 0x100 are exempt. Only level 82 calls it, with true.
 
-**Notes.** What the filter excludes is not traced (speculative: which ledges or objects count as climbable).
+**Notes.** The name says climb; what edge flags 8 and 0x80 look like in play is not traced (ai.md#path-planning). The
+switch is global and stays set until changed (not traced whether a level load clears it).
 
-- **Evidence:** speculative; detail: brief
+- **Evidence:** confirmed (code) at `0x002511b8`; detail: traced
 - **Wrapper** `0x0036e438` (registered by `RegisterBindings`); **calls** `0x002511b8` `Climb_SetFilter`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level82`](story.md#level82) (flashback 1)
@@ -378,13 +383,18 @@ DelCommand(command)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `command` | number, truncated to an integer | Command id, 1 to 57, as given to AddCommand. |
+| 1 | `command` | number, truncated to an integer | Command id, 1 to 57, as given to AddCommand; other values do nothing. |
 
 **Returns** nothing.
 
-Removes a command's button binding, so its buttons no longer produce it.
+Removes a command's button binding, so its buttons no longer produce it. The nine trigger tables (12-byte entries at
+0x005ddd10 onwards, counts at 0x0050b740-0x0050b760) are searched in order and the first entry with this id is cleared
+and the rest of its table moved down one place.
 
-- **Evidence:** confirmed (code) at `0x00146b90`; detail: brief
+**Notes.** Only the first matching entry goes; a command bound twice (AddCommand already removes an old binding, so only
+by other means) keeps its second binding. An id with no binding does nothing.
+
+- **Evidence:** confirmed (code) at `0x00146b90`; detail: traced
 - **Wrapper** `0x00369600` (registered by `RegisterBindings`); **calls** `0x00146b90` `PlayerCommand_Remove`
 - **Used by** 6 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level84`](story.md#level84) (mission 18)
@@ -750,15 +760,20 @@ HuBlockRearGrab(human, block)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `block` | boolean (nil or 0 is false) | True stops the human being grabbed from behind. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `block` | boolean (nil or 0 is false) | true forbids grabs from behind involving this human; false allows them. Missing counts as false. |
 
 **Returns** nothing.
 
-Blocks or allows grabs from behind on this human (flag 0x80000000 at +0xe0).
+Sets or clears human flag `0x80000000` (`+0xe0`). When a grab's intro ends (Grab_IntroEnd, 0x0026c1d8) and the grabber
+is behind the victim, the rear grab only starts when neither has this flag, so a flagged human can neither be grabbed
+from behind nor grab someone from behind. HuBlockFrontGrab is the same for front grabs (`0x40000000`); a player with
+both flags cannot start a grab at all (Player_GrabOrTackle, 0x00284920).
 
-- **Evidence:** confirmed (code) at `0x00237b00`; detail: brief
-- **Wrapper** `0x00359140` (registered by `RegisterBindings`); **calls** `0x00237b00`
+**Notes.** A blocked grab simply does not continue past the intro; no other reaction was seen.
+
+- **Evidence:** confirmed (code) at `0x00237b00`; detail: traced
+- **Wrapper** `0x00359140` (registered by `RegisterBindings`); **calls** `0x00237b00` `Human_SetBlockRearGrab`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level52`](story.md#level52) (mission 15)
 - **Coney:** not implemented
@@ -791,29 +806,33 @@ tackle start `0x002707a8`); scripts set it on hub and level-52 bosses.
 ## HuButtonMiniGame {#hubuttonminigame}
 
 ```lua
-HuButtonMiniGame(human, buttons, startMs, endMs, callback, successAnim, failAnim)
+HuButtonMiniGame(human, buttons, startMs, endMs, callback, loopAnim, failAnim)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the player's human doing the mini-game. |
-| 2 | `buttons` | number, truncated to an unsigned integer | The button (pad mask, low 8 bits kept) the player must press. |
-| 3 | `startMs` | number, truncated to an unsigned integer | When the press window opens, in milliseconds from now. |
-| 4 | `endMs` | number, truncated to an unsigned integer | When it closes, in milliseconds from now. |
-| 5 | `callback` | string | Name of the Lua function told the outcome. |
-| 6 | `successAnim` | string | Dynamic animation (.anm name) played on success. |
-| 7 | `failAnim` | string | Dynamic animation played on failure. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the player's human doing the mini-game; a bad handle does nothing. |
+| 2 | `buttons` | number, truncated to an unsigned integer | Pad button mask (low 8 bits kept) the player must press; all its buttons are needed. |
+| 3 | `startMs` | number, truncated to an unsigned integer | When the press window opens, in ms of game time from now; earlier presses are ignored. |
+| 4 | `endMs` | number, truncated to an unsigned integer | When it closes, in ms from now; no press by then counts as a failure. |
+| 5 | `callback` | string | Name of the Lua function told the outcome: called with (success, human); its result decides whether the mini-game goes on. nil for none. |
+| 6 | `loopAnim` | string | Dynamic animation (.anm) loaded into slot 4 (anim id 668) and played looping from the start. Was listed as the success animation. |
+| 7 | `failAnim` | string | Dynamic animation loaded into slot 5 (anim id 669) and played once after a failure. |
 
 **Returns** nothing.
 
-Starts a timed button-press mini-game (the dance contests): the player must press the given button inside the window,
-and the matching animation plays. It is mini-game mode 5 of the shared record
-([Crimes](../../research/crimes.md#mini-game-record)).
+Starts or re-arms a timed button press, mini-game mode 5 of the shared record
+([Crimes](../../research/crimes.md#mini-game-record)), used by the dance contests. Each update after the window opens, a
+press of exactly the mask's buttons is a success and any other button a failure; when the window closes or a result is
+in, the callback runs with (success, human). A truthy return keeps the mode running so the script can arm the next press
+(called again while running, it only reloads the animations and times); otherwise the mini-game ends.
 
-**Notes.** Inferred from the callee 0x0023aee0 and the scripts' calls; the outcome passed to the callback is not traced.
+**Notes.** A press of only some of the buttons waits for the rest. With no callback the mode never ends by itself once a
+result is in. Starting sets human state `0x4000000`; ending clears it and sets state `0x20000000` (0x00255f08).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035d610` (registered by `RegisterBindings`); **calls** `0x0023aee0`
+- **Evidence:** confirmed (code) at `0x0023aee0`, `0x0026b848`, `0x0022e4c0`, `0x0022e558`; detail: traced
+- **Wrapper** `0x0035d610` (registered by `RegisterBindings`); **calls** `0x0023aee0` `Human_StartButtonMiniGame`,
+  `0x0026b848` `ButtonMiniGame_Update`, `0x0022e4c0`, `0x0022e558`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
@@ -902,16 +921,20 @@ HuColor(human, rgba)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `rgba` | table of 4 numbers (t[1]..t[4]) | Table {r, g, b, a}, each 0 to 1; {1, 1, 1, 1} is the normal colour, {0.3, 0.3, 0.3, 1} darkens the model. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `rgba` | table of 4 numbers (t[1]..t[4]) | Table {r, g, b, a}, each 0 to 1 (packed to bytes by 0x0017aca8); {1, 1, 1, 1} is the normal colour, {0.3, 0.3, 0.3, 1} darkens the model. Written back unchanged. |
 
 **Returns** nothing.
 
-Tints the human's model by the given colour: the render instance's colour word (+0x28), its material colour when drawn
-(docs/research/lighting.md#humans).
+Tints the human's model: the packed colour goes to the render instance's colour word (human `+0xd8`, `+0x28`) and, when
+the instance has a second part (`+0x10`), to that part's `+0x20` too; the renderer multiplies the material colour by it
+([Lighting: humans](../../research/lighting.md#humans)). Armies of the Night uses it to shade fighters.
 
-- **Evidence:** confirmed (code) at `0x00239100`; detail: brief
-- **Wrapper** `0x0035d730` (registered by `RegisterBindings`); **calls** `0x00239100`
+**Notes.** Skipped when the human has no model instance yet (0x00217a70). The tint stays until set again; it is not
+reset on respawn (not traced). The second part at `+0x10` is inferred to be an attachment or shadow instance.
+
+- **Evidence:** confirmed (code) at `0x00239100`; detail: traced
+- **Wrapper** `0x0035d730` (registered by `RegisterBindings`); **calls** `0x00239100` `Human_SetColour`
 - **Used by** 6 of 467 script chunks (84 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -1026,15 +1049,20 @@ HuEnableController(human, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of a player's human. |
-| 2 | `enable` | boolean (nil or 0 is false) | True gives the human back to its pad; false hands it to the AI. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of a player's human; a bad handle does nothing. |
+| 2 | `enable` | boolean (nil or 0 is false) | true gives the human back to its pad; false (or nil) hands it to the AI. |
 
 **Returns** nothing.
 
-Switches a player's human between pad control and AI control (player record +0x1b).
+Switches a player's human between pad control and AI control by setting its per-player record byte `+0x1b` (record
+`0x00660f50 + i × 0x2c`, via `Human_GetPlayerRecord`). With 0 the brain drives it (its goals and actions run, AI grab
+counters apply); with 1 the pad's commands drive it again.
 
-- **Evidence:** confirmed (code) at `0x002384f8`; detail: brief
-- **Wrapper** `0x0035c120` (registered by `RegisterBindings`); **calls** `0x002384f8`
+**Notes.** Readers: [AI](../../research/ai.md), [Combat](../../research/combat.md) and the follow camera (camera.md),
+which only acts for a pad-controlled player. Armies of the Night uses it for players that have not joined.
+
+- **Evidence:** confirmed (code) at `0x002384f8`; detail: traced
+- **Wrapper** `0x0035c120` (registered by `RegisterBindings`); **calls** `0x002384f8` `Human_EnableController`
 - **Used by** 7 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -1047,15 +1075,22 @@ HuEnableOnFire(human, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `enable` | boolean (nil or 0 is false); default true | True (the default) lets the human be set on fire. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `enable` | boolean (nil or 0 is false); default true | True (the default) lets the human shout the `onfire` line; false keeps it quiet. |
 
 **Returns** nothing.
 
-Allows or prevents the human catching fire (byte +0x19b).
+Allows or silences the human's `onfire` speech command (107, [Speech](../../references/speech.md)) by writing human byte
+`+0x19b` (1 at spawn). When the human catches fire (0x00219238, reached from a strike's contact and from a burn timer)
+and on the human's sound event `0x8b` (0x0021f700), it says command 107 through Human_SayCommand only while the byte is
+set. It does not stop the human burning.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00364de8` (registered by `RegisterBindings`); **calls** `0x00239280`
+**Notes.** That 0x00219238 is the moment the human is set alight is inferred (it sets state flags and plays a reaction);
+the line still needs the can-speak byte `+0x199` (HuEnableSoundCommands) and voice lines for command 107.
+
+- **Evidence:** confirmed (code) at `0x00239280`, `0x00219238`, `0x0021f700`; detail: traced
+- **Wrapper** `0x00364de8` (registered by `RegisterBindings`); **calls** `0x00239280` `Human_EnableOnFireSpeech`,
+  `0x00219238`, `0x0021f700`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -1093,15 +1128,20 @@ HuEnableSpeaking(human, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `enable` | boolean (nil or 0 is false); default true | True (the default) lets the human speak. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `enable` | boolean (nil or 0 is false); default true | true (the default) lets the human speak; false silences it. |
 
 **Returns** nothing.
 
-Allows or silences the human's ambient speech (byte +0x198).
+Allows or silences all of the human's voice lines (human byte `+0x198`, which Human_Init sets to 1). Both speech
+players, 0x0021e400 and the interrupting 0x0021e698, play nothing while it is 0 (or while a cinematic scene plays, game
+state `+0x410`); they serve scripted lines (Human_Speak, Human_SpeakInterrupt), speech commands (Human_SayCommand), idle
+chatter and reactions. A script callback given with a silenced line is called at once.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00364c68` (registered by `RegisterBindings`); **calls** `0x00239200`
+**Notes.** The on-fire, tag and idle gates (`+0x19b`, `+0x19a`, `+0x197`) are separate and apply on top of this one.
+
+- **Evidence:** confirmed (code) at `0x00239200`; detail: traced
+- **Wrapper** `0x00364c68` (registered by `RegisterBindings`); **calls** `0x00239200` `Human_EnableSpeaking`
 - **Used by** 21 of 467 script chunks (125 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level54`](story.md#level54) (mission 16)
 - **Coney:** not implemented
@@ -1138,17 +1178,19 @@ HuEnableTagDone(human, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `enable` | boolean (nil or 0 is false); default true | True (the default) enables it. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `enable` | boolean (nil or 0 is false); default true | true (the default) lets the human comment on tags; false silences it. |
 
 **Returns** nothing.
 
-Lets the human comment on a crew mate's tag (byte +0x19a): 0x00273a68 picks a random gang member in range with it set to
-say tagdone (83) when a tag is finished or tagcheer (80) on a slip ([Crimes:
-tagging](../../research/crimes.md#tagging)).
+Lets the human comment on a crew mate's tag (human byte `+0x19a`, which Human_Init sets to 1): when a tag is finished or
+fumbled, 0x00273a68 picks a random gang member in range with this set to say tagdone (speech 83) or tagcheer (80)
+([Crimes: tagging](../../research/crimes.md#tagging)).
 
-- **Evidence:** confirmed (code) at `0x002392c0`; detail: brief
-- **Wrapper** `0x00364d28` (registered by `RegisterBindings`); **calls** `0x002392c0`
+**Notes.** 0x00273bf4 is the only reader of the byte.
+
+- **Evidence:** confirmed (code) at `0x002392c0`; detail: traced
+- **Wrapper** `0x00364d28` (registered by `RegisterBindings`); **calls** `0x002392c0` `Human_EnableTagDoneSpeech`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level9`](story.md#level9) (mission 13)
 - **Coney:** not implemented
@@ -1620,12 +1662,18 @@ HuInCombat(human) -> boolean
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** boolean (1 for true, nil for false): True when the human's AI is in combat.
+**Returns** boolean (1 for true, nil for false): true when someone holds one of the human's attack slots or its brain
+has a live target; nil otherwise or for a bad handle.
 
-Tells whether the human is fighting.
+Tells whether the human is fighting, as its AI sees it: it is engaged when any of the 16 attack slots on it (brain
+`+0x1a4`, the attackers that claimed it) is taken, or its brain target (`+0x124`) still resolves.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035bfe0` (registered by `RegisterBindings`); **calls** `0x00237db8`
+**Notes.** Works for players too (their brain's slots fill when AIs attack them). A stale target handle counts as no
+target.
+
+- **Evidence:** confirmed (code) at `0x00237db8`, `0x002904a0`; detail: traced
+- **Wrapper** `0x0035bfe0` (registered by `RegisterBindings`); **calls** `0x00237db8` `Human_IsInCombat`, `0x002904a0`
+  `Brain_IsEngaged`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
@@ -1777,12 +1825,18 @@ HuIsHidden(human) -> boolean
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** boolean (1 for true, nil for false): True when the human is hidden.
+**Returns** boolean (1 for true, nil for false): true while the human is hiding in a shadow; false otherwise or for a
+handle that is not a human.
 
-Tells whether the human is hiding (a flag in its AI record).
+Tells whether the human is hidden in a shadow: brain byte `+0x2d4`, set by Brain_SetHiddenInShadow (0x0028ee88) when the
+human enters or leaves a hiding spot (0x0023e6e8, 0x0023eab8) and cleared when the brain resets. While it is set,
+enemies only notice the human's attacks within 2 m ([AI](../../research/ai.md)) and the camera holds a fixed look-at
+height ([Camera](../../research/camera.md#update)).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035b758` (registered by `RegisterBindings`); **calls** `0x00235798`
+**Notes.** What makes a spot a hiding spot (the callers at 0x0023e6e8 and 0x0023eab8) was not traced.
+
+- **Evidence:** confirmed (code) at `0x00235798`; detail: traced
+- **Wrapper** `0x0035b758` (registered by `RegisterBindings`); **calls** `0x00235798` `Human_IsHidden`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level51`](story.md#level51) (mission 14)
 - **Coney:** not implemented
@@ -1797,12 +1851,18 @@ HuIsInScene(human) -> boolean
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** boolean (1 for true, nil for false): True while the human takes part in a scripted scene.
+**Returns** boolean (1 for true, nil for false): true while the human is bound to a playing scene; nil for a bad handle
+or a human not in one.
 
-Tells whether the human is in a scene.
+Tells whether the human is taking part in a scripted scene: true when its scene id (human `+0x280`) is not -1, or when
+it carries the in-scene state flag 0x800000 that the scene player sets on bound humans while a scene starts.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035b668` (registered by `RegisterBindings`); **calls** `0x002356c8`
+**Notes.** Human `+0x280` is also read as an attachment by the movement code (characters.md); scene binding:
+[Scenes](../../research/scenes.md). A human with no record (`+0xd4` = 0) and `+0x280` = -1 gives nil.
+
+- **Evidence:** confirmed (code) at `0x002356c8`, `0x00227d28`; detail: traced
+- **Wrapper** `0x0035b668` (registered by `RegisterBindings`); **calls** `0x002356c8` `Human_IsInScene`, `0x00227d28`
+  `Human_IsInSceneState`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
@@ -1999,14 +2059,22 @@ HuMakeBeatUp(human)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
 
 **Returns** nothing.
 
-Puts the human into the beaten-down state: drops what it holds and sets it lying on the ground with 1 hitpoint.
+Leaves the human beaten and helpless: its brain is put on hold (brain `+0x09` = 1, as at the Rumble intro), it drops
+what it carries, and, unless record state flag 0x10000 is already set, its anim-mode stack is emptied, state flags
+0x180040000 cleared, it is knocked down, its state code set to 0, its health to 1 hit point and state flag 0x20000000
+set. Finally human flag `+0xe0` 0x10 and state flag 0x40000000 are set.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003593e0` (registered by `RegisterBindings`); **calls** `0x00234d70`
+**Notes.** The AI stays held until something releases brain `+0x09` (not traced which binding). State flags 0x10000,
+0x20000000 and 0x40000000 and human flag 0x10 (also set by a hit stopped at a health floor) are not named yet; inferred:
+lying beaten on the ground. Bit meanings: characters.md#the-record, combat.md#state-flags.
+
+- **Evidence:** confirmed (code) at `0x00234d70`, `0x0022f100`; detail: traced
+- **Wrapper** `0x003593e0` (registered by `RegisterBindings`); **calls** `0x00234d70` `Human_MakeBeatUp`, `0x0022f100`
+  `Human_KnockDown`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented
@@ -2019,15 +2087,22 @@ HuMakeGrounded(human, down)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `down` | boolean (nil or 0 is false) | True knocks the human to the ground (unless already down); false lets it get up. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `down` | boolean (nil or 0 is false) | true knocks the human down and keeps it down; false lets it get up. Missing counts as false. |
 
 **Returns** nothing.
 
-Knocks the human down or lets it get up.
+With true, a human that is not already down or dead is knocked down (Human_KnockDown, no attacker and no stun: state
+`0x80000`, grounded), its state code set to 3 and state flags `0x20000000` and `0x40000000` set. With false, state flag
+`0x40000000` is cleared, which (inferred) is what lets it rise when its down time runs out
+([Combat](../../research/combat.md)).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00359418` (registered by `RegisterBindings`); **calls** `0x00234e58`
+**Notes.** The meaning of state flags `0x20000000` and `0x40000000` is inferred from this pairing; false does not itself
+make the human stand.
+
+- **Evidence:** confirmed (code) at `0x00234e58`, `0x0022f100`; detail: traced
+- **Wrapper** `0x00359418` (registered by `RegisterBindings`); **calls** `0x00234e58` `Human_MakeGrounded`, `0x0022f100`
+  `Human_KnockDown`
 - **Used by** 3 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level54`](story.md#level54) (mission 16)
 - **Coney:** not implemented
@@ -2109,17 +2184,21 @@ HuPlayDynamicAnim(human, unused, anim, unused2)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `unused` | number, truncated to an unsigned integer | Not used by the callee (scripts pass 0). |
-| 3 | `anim` | string | Name of a dynamic animation (.anm). |
-| 4 | `unused2` | number, truncated to an integer | Not used by the callee (scripts pass 1). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `unused` | number, truncated to an unsigned integer | Read but never used (scripts pass 0). |
+| 3 | `anim` | string | Name of a dynamic animation (.anm) loaded for the level with SetDynamicAnimation. |
+| 4 | `unused2` | number, truncated to an integer | Read but not used by the callee (scripts pass 1). |
 
 **Returns** nothing.
 
-Plays a dynamic animation on the human, like HuPlayDynAnim.
+Same as HuPlayDynAnim with two ignored extra arguments: binds the clip to the human's dynamic animation slot (anim id
+668) and sets its state code to 16 (`0x10`), so the human plays it at once without going through its brain. Refused for
+a human without a model or animation record, or in state `0x100000000` or `0x80000000`.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003652b0` (registered by `RegisterBindings`); **calls** `0x002389e8`
+**Notes.** The body at 0x002389e8 matches Human_PlayDynAnim (0x00238948) apart from the unused parameter.
+
+- **Evidence:** confirmed (code) at `0x002389e8`; detail: traced
+- **Wrapper** `0x003652b0` (registered by `RegisterBindings`); **calls** `0x002389e8` `Human_PlayDynamicAnim`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level52`](story.md#level52) (mission 15)
 - **Coney:** not implemented
@@ -2188,19 +2267,20 @@ HuPutItemInPocket(human, item, count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `item` | number, truncated to an integer | Item id (0 empties the pocket). |
-| 3 | `count` | number, truncated to an integer; default 1 | How many (default 1). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `item` | number, truncated to an integer | [Inventory item](../../references/inventory.md) id 0-22 (0 empties the pocket). |
+| 3 | `count` | number, truncated to an integer; default 1 | How many (default 1); stored as a byte, so 0-255. Forced to 0 when item is 0. |
 
 **Returns** nothing.
 
-Gives a human a pocket item: the item id goes to human `+0x250` and the count to `+0x254` (0 when the item is 0); the
-pocket is what mugging or beating the human yields.
+Gives a human a pocket item: the item id goes to human `+0x250` and the count to `+0x254`. The pocket is what the player
+gets by mugging the human (Mug_CanMugVictim, 0x00226130, checks the count) and what the human drops when knocked down
+(Human_DropCarried, 0x00232d24). HuRemoveItemInPocket (0x00238214) empties it.
 
-**Notes.** The stores are confirmed (code) at 0x00238190; that mugging and knock-outs drop the pocket is inferred from
-the scripts' use.
+**Notes.** Item 12 (the ledger) makes the human unmuggable ([Crimes: mugging](../../research/crimes.md#mugging)); the
+item id is not range-checked here.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00238190`; detail: traced
 - **Wrapper** `0x0035c4d0` (registered by `RegisterBindings`); **calls** `0x00238190` `Human_SetPocketItem`
 - **Used by** 28 of 467 script chunks (78 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 12 of 28 levels, first [`level9`](story.md#level9) (mission 13)
@@ -2214,14 +2294,17 @@ HuRemoveItemInPocket(human)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
 
 **Returns** nothing.
 
-Empties the human's pocket.
+Empties the human's pocket: the item id (human `+0x250`) and the count (byte `+0x254`) become 0, so a mugging or a
+knock-down no longer yields the item set by HuPutItemInPocket.
 
-- **Evidence:** confirmed (code) at `0x002381f0`; detail: brief
-- **Wrapper** `0x0035c568` (registered by `RegisterBindings`); **calls** `0x002381f0`
+**Notes.** Pocket fields: [Crimes](../../research/crimes.md) and player-state.md. Money (`+0x370`) is untouched.
+
+- **Evidence:** confirmed (code) at `0x002381f0`; detail: traced
+- **Wrapper** `0x0035c568` (registered by `RegisterBindings`); **calls** `0x002381f0` `Human_RemoveItemInPocket`
 - **Used by** 36 of 467 script chunks (69 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
@@ -2297,15 +2380,18 @@ HuRubberNeck(human, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `enable` | boolean (nil or 0 is false) | True enables rubbernecking. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `enable` | boolean (nil or 0 is false) | true sets the flag, false clears it. Missing counts as false. |
 
 **Returns** nothing.
 
-Lets the human stop and stare at nearby events (flag 0x1000000 at +0xe0).
+Sets or clears human flag `0x1000000` (`+0xe0`), from the name letting the human stop and stare at nearby events.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00358b38` (registered by `RegisterBindings`); **calls** `0x0023a258`
+**Notes.** The store is confirmed (code) at 0x0023a258; no reader of the human flag (as opposed to the state flag of the
+same value) was found, so its effect is open.
+
+- **Evidence:** inferred; detail: traced
+- **Wrapper** `0x00358b38` (registered by `RegisterBindings`); **calls** `0x0023a258` `Human_SetRubberNeck`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level54`](story.md#level54) (mission 16)
 - **Coney:** not implemented
@@ -2585,15 +2671,24 @@ HuSetConscious(human, conscious)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `conscious` | boolean (nil or 0 is false) | False knocks the human out; true wakes it. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `conscious` | boolean (nil or 0 is false) | false (or nil) knocks the human out; true brings it round. |
 
 **Returns** nothing.
 
-Knocks the human unconscious or brings it round.
+false knocks the human unconscious (0x00230328): it drops into the knocked-out state (record state flag 0x40000,
+blocking 0x8000 cleared), its brain is switched off (0x0028c3b0), its wake-up time (record `+0xf0`) is set 14 s ahead
+(0x00510794 = 14000 ms), and a player human also ends slow motion (0x0041ab60). A knock-out of a player's gang member
+counts a statistic and may show a hint. true wakes it (0x00230598): the knocked-out flags (0x1c8007) are cleared, it
+plays its get-up mode (anim mode 0x12) and its brain resumes. Both set state flag 0x20000000.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035ace0` (registered by `RegisterBindings`); **calls** `0x00237778`
+**Notes.** Knocking out does nothing to a human that is already knocked out (state 0x40000) or has no record. What wakes
+it after the 14 s (the reader of `+0xf0`) is not traced; inferred: it gets up by itself. The optional `+0xfc` timer
+(0x002800b8) is off because its setting 0x00510994 is -1.
+
+- **Evidence:** confirmed (code) at `0x00237778`, `0x00230328`, `0x00230598`; detail: traced
+- **Wrapper** `0x0035ace0` (registered by `RegisterBindings`); **calls** `0x00237778` `Human_SetConscious`, `0x00230328`
+  `Human_KnockOut`, `0x00230598` `Human_WakeUp`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -2666,14 +2761,19 @@ HuSetDoubleDamage(human, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | true sets the flag, false clears it. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true sets the flag, false (or nil) clears it. |
 
 **Returns** nothing.
 
-Sets or clears flag bit 0x4000 of the human's flag word; from the name, the human then deals double damage.
+Sets or clears human flag `+0xe0` 0x4000. With it the human's hits deal double damage and ignore the victim's hit armour
+(`Human_AddPendingDamage` 0x00264bd8); as a grabbed victim it also escapes when the grabber's power runs out
+(0x002562d0).
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Effects of the flag: [Combat](../../research/combat.md#human-flags). Weapon and thrown hits go through the
+same damage path (inferred).
+
+- **Evidence:** confirmed (code) at `0x00235e10`; detail: traced
 - **Wrapper** `0x00359a80` (registered by `RegisterBindings`); **calls** `0x00235e10` `Human_SetDoubleDamage`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level83`](story.md#level83) (flashback 3)
@@ -2877,14 +2977,19 @@ HuSetHelpHearRange(human, range)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `range` | number (single precision) | Distance in metres. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `range` | number (single precision) | Hearing range in metres for gang calls for help. |
 
 **Returns** nothing.
 
-Sets how far the human's AI hears calls for help from its allies (+0x138 of its AI record).
+Sets how far this human's AI hears its gang's calls for help (brain `+0x138`). When a gang member is attacked or mugged,
+Gang_BroadcastHelpCall (0x00293640) sends message 0x14 to every member of the gang, and Brain_IsInHearRange (0x002935d8)
+lets a member react only when it is within this range; other messages use the general hearing range at `+0x134`.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** The brain's reset (0x0028a570) sets it to 20 m and the general range to 50 m. The help call's senders include
+GangBrain_OnEvent and Player_UpdateMugging (both callers of 0x00293640).
+
+- **Evidence:** confirmed (code) at `0x00238430`; detail: traced
 - **Wrapper** `0x0035c2f0` (registered by `RegisterBindings`); **calls** `0x00238430` `Human_SetHelpHearRange`
 - **Used by** 2 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level9`](story.md#level9) (mission 13)
@@ -2920,14 +3025,21 @@ HuSetIdleDialogMaxIter(human, count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `count` | number, truncated to an integer | How many times the idle chatter may repeat (0-255); scripts use 0 to 2. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `count` | number, truncated to an integer | Number of idle lines the human has for this checkpoint (byte, 0-255); 0 disables its idle chatter. Scripts use 0 to 2. |
 
 **Returns** nothing.
 
-Stores a byte at +0x197 of the human that, from the name, limits how often it repeats its idle dialogue.
+Sets how many numbered idle-chatter lines this crew member has (human byte `+0x197`). When the player's gang has had
+nobody fighting for 25 seconds, the crew idle logic (0x00311638) picks a random member whose next line exists
+(Human_HasIdleDialogLine, 0x00220360) and plays it (Human_PlayIdleDialogLine, 0x00220430); the others look at the
+speaker for 4 seconds. Lines are the voice files `l<level>_c<checkpoint>_idle_<NN>` of the human's voice; the index
+(`+0x196`) advances after each line and wraps to 1 past this count.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** If the next line's file is missing, line 1 is played and the index goes to 2. Human_Init gives `+0x197` a
+value from the character setup (0x002184ec), not traced further.
+
+- **Evidence:** confirmed (code) at `0x002391c0`; detail: traced
 - **Wrapper** `0x00365058` (registered by `RegisterBindings`); **calls** `0x002391c0` `Human_SetIdleDialogMaxIter`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level9`](story.md#level9) (mission 13)
@@ -3353,15 +3465,19 @@ HuSetNoAutoLock(human, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | true sets the flag, false clears it. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true sets the flag, false clears it. Missing counts as false. |
 
 **Returns** nothing.
 
-Sets or clears flag bit 0x8000000000 of the human's flag word; from the name, the player's automatic target lock skips
-this human.
+Sets or clears human flag `0x8000000000` (`+0xe0`); from the name, the player's automatic target lock skips a human with
+it set.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** The store is confirmed (code) at 0x002340a8; no reader of bit `0x8000000000` was found. Combat's flag table
+pairs this binding with `0x100000000000` (tested by 0x00227d78 in the target filter 0x00279410); that is a different bit
+and the pairing looks wrong.
+
+- **Evidence:** inferred; detail: traced
 - **Wrapper** `0x003587b0` (registered by `RegisterBindings`); **calls** `0x002340a8` `Human_SetNoAutoLock`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level54`](story.md#level54) (mission 16)
@@ -3838,15 +3954,23 @@ HuSetStunned(human, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | true stuns the human, false ends the stun. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true stuns the human, false ends the stun at once. |
 
 **Returns** nothing.
 
-Puts the human into its stunned state (0x0022f658) or takes it out (0x0022f8d8).
+Stuns a human as a fighting stun would, with no attacker: it enters the stunned motion state (0xe), gets state flag
+0x100000, and the stun ends at now + its stun time (the stats block's `+0x30`, in ms, scaled when 0x00222ff8 holds); if
+human flag `+0xe0` 0x8000000 is set the stun lasts until ended by script. With false the stun state is left, flag
+0x100000 cleared and the human recovers. Both set state flag 0x20000000.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035ac80` (registered by `RegisterBindings`); **calls** `0x002354b8` `Human_SetStunned`
+**Notes.** A human with `+0xe1` bit 1 set (stun immune) ignores the stun unless it has the endless-stun flag. Humans in
+states 7-10 or 0xf, knocked down, or flagged 0xcf0/0x10200 are not stunned. Ending a stun on a dead, downed or grabbed
+human only clears the flag. What state flag 0x20000000 means is open. Used on Luther in level 64.
+
+- **Evidence:** confirmed (code) at `0x002354b8`, `0x0022f658`, `0x0022f8d8`, `0x00223720`; detail: traced
+- **Wrapper** `0x0035ac80` (registered by `RegisterBindings`); **calls** `0x002354b8` `Human_SetStunned`, `0x0022f658`
+  `Human_Stun`, `0x0022f8d8` `Human_EndStun`, `0x00223720` `Human_GetStunTime`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level64`](story.md#level64) (Armies of the Night 5)
 - **Coney:** not implemented
@@ -4660,13 +4784,19 @@ IsAHuman(handle) -> boolean
 | --- | --- | --- | --- |
 | 1 | `handle` | number, truncated to an unsigned integer | Any handle. |
 
-**Returns** boolean (1 for true, nil for false): true when the handle belongs to a living human slot, false (nil)
-otherwise (an object, a flag or NilHandle).
+**Returns** boolean (1 for true, nil for false): true when the handle resolves to a live entry of the handle table, nil
+otherwise (NilHandle, a freed or stale handle).
 
-Tests whether a handle is a human's.
+Tests whether a handle still refers to something alive. Despite its name it does not check the kind: it resolves the
+handle through the shared handle table (0x006ebd38, serial must match; a serial-0 handle is first looked up as an
+object-manager spawn id) and answers whether anything came back. The one script use checks a human handle.
 
-- **Evidence:** confirmed (code) at `0x00385b90`; detail: brief
-- **Wrapper** `0x0036cb70` (registered by `RegisterBindings`); **calls** `0x00385b90` `IsHumanHandle`
+**Notes.** A live world object's handle also gives true (the table holds humans and objects alike;
+characters.md#the-human-object). -1 gives nil.
+
+- **Evidence:** confirmed (code) at `0x00385b90`, `0x00390180`; detail: traced
+- **Wrapper** `0x0036cb70` (registered by `RegisterBindings`); **calls** `0x00385b90` `IsHumanHandle`, `0x00390180`
+  `Handle_Resolve`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented

@@ -281,7 +281,9 @@ flag, not the player's (confirmed (code)). `EnterStore` / `ExitStore` only chang
 passes, `GangClearWanted`'s work runs (`0x00169a20`): the police are neutral again and, for the player's gang, the HUD
 is told (`0x001b2520` message `0xb`) and the last crime type becomes 14 (`NoCrime`). The HUD shows the time left as a
 fraction of 10 s (`0x001aa9b0`; full above 0.9). Gang `+0x5f0` is a second timer drawn the same way, and
-`GangIsWanted(gang, false)` tests it (who sets it is not traced). The first time the player's gang is wanted, hint 6
+`GangIsWanted(gang, false)` tests it. `GangRespond` and `GoalCallGang` set it (`Gang_SetSecondWantedTimer`,
+`0x001698c8`); when it runs out, `Gang_UpdateWanted` (`0x001698f0`) calls the all-clear callback at game state
+`+0x2bc`. Confirmed (code). The first time the player's gang is wanted, hint 6
 (`Humans_Update`).
 
 **The crime level** (game state `+0x291`, 0-3) is set only by `InitLevel` and `SetCrimeLevel`, which no script calls.
@@ -322,7 +324,6 @@ the assault statistic is scored once per victim through the service.
 
 - Which objects register context records of kinds 1, 4 and 5, and with what second value.
 - Who sets mini-game mode 4.
-- Who sets gang `+0x5f0`, the second wanted timer.
 - The prompt widgets' base position and text style.
 - The lock-picking dial's rate at runtime (one step per drawn frame is inferred).
 - The responder spawn kind of a break-in (type 1) and of a custom crime (type 4).

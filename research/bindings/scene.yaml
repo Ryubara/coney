@@ -122,17 +122,20 @@
   wrapper: 0x00367a20
   calls:
     - {addr: 0x00353e70}
+    - {addr: 0x00335ea0}
+    - {addr: 0x00353818, name: Scene_Play}
+    - {addr: 0x003a13d0}
   args:
-    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id from ScenePreload."}
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres to play the scene at."}
-    - {name: heading, lua: number, ctype: float, desc: "Heading in degrees."}
-    - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts."}
-    - {name: onEnd, lua: string, desc: "Name of the Lua function called when it ends."}
-    - {name: flag1, lua: boolean, desc: "A flag passed to the scene player (inferred: looping)."}
-    - {name: flag2, lua: boolean, default: true, desc: "A flag, default true (inferred: freeze)."}
-    - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time (inferred)."}
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id from ScenePreload; a scene not yet loaded is requested and waited for on the spot."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` in metres the scene's origin is placed at; written back."}
+    - {name: heading, lua: number, ctype: float, desc: "Rotation of the scene about the vertical in **radians** (a quaternion about `(0, 0, -1)`, 0x00335ea0). Was listed as degrees."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "The longest the start waits for the bound humans to reach their marks, delay × 60 scene updates, as in ScenePlayCinematic; 0 does not wait."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called with the scene id when it ends, or nil."}
+    - {name: looping, lua: boolean, desc: "true loops the scene (task `+0xeb`)."}
+    - {name: freeze, lua: boolean, default: true, desc: "true (the default) suspends every brain while it plays (task `+0xef`)."}
+    - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time in seconds when the scene hands the camera back (task `+0x94`)."}
   results:
-    - {lua: boolean, desc: "true (1) when the scene started."}
+    - {lua: boolean, desc: "true (1) when the scene task was created and started; false when the scene could not be loaded or no task was free."}
   overloads:
   - wrapper: 0x00367810
     calls:
@@ -141,20 +144,25 @@
       - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
       - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z}."}
       - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation as a quaternion {i, j, k, r}."}
-      - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts."}
+      - {name: delay, lua: number, ctype: unsigned, desc: "As above."}
       - {name: onEnd, lua: string, desc: "Name of the Lua function called when it ends."}
-      - {name: flag1, lua: boolean, desc: "A flag (inferred: looping)."}
-      - {name: flag2, lua: boolean, default: true, desc: "A flag, default true (inferred: freeze)."}
-      - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time (inferred)."}
+      - {name: looping, lua: boolean, desc: "true loops the scene."}
+      - {name: freeze, lua: boolean, default: true, desc: "true (the default) suspends every brain while it plays."}
+      - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time in seconds."}
     results:
       - {lua: boolean, desc: "true (1) when the scene started."}
     note: >-
       The quaternion form is used when argument 3 is a table; the heading form's type check fails then and it falls
       back to this one.
   description: >-
-    Plays a loaded scene at a given world position and orientation instead of its authored one.
+    Plays a loaded scene placed at a given world position and orientation instead of the world origin
+    ([Scenes: playing](../../research/scenes.md#playing)). It is not a cinematic: no letterbox, preload or player
+    hand-over, and it cannot be skipped; only the looping and freeze flags are set (bars, skippable, final and chain
+    are 0).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Flag mapping confirmed (code) through 0x00353e70 / 0x00353e38 into Scene_Play and the task constructor 0x003a13d0.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [14]}
   coney: implemented
 

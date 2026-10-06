@@ -40,10 +40,10 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgDisableMusicForScenes`](#cfgdisablemusicforscenes) | - | 21 | yes | no | confirmed (code) |
 | [`CfgDistances`](#cfgdistances) | - | 1 | yes | no | confirmed (code) |
 | [`CfgEnableCrimeType`](#cfgenablecrimetype) | - | 3 | no | no | confirmed (code) |
-| [`CfgEnableDispatcher`](#cfgenabledispatcher) | - | 3 | no | no | inferred |
+| [`CfgEnableDispatcher`](#cfgenabledispatcher) | - | 3 | no | no | confirmed (code) |
 | [`CfgEnableGrappleCounters`](#cfgenablegrapplecounters) | - | 1 | no | no | confirmed (code) |
 | [`CfgEnableTurfInvasion`](#cfgenableturfinvasion) | - | 2 | yes | no | confirmed (code) |
-| [`CfgExcludedVandalizeZone`](#cfgexcludedvandalizezone) | - | 1 | no | no | inferred |
+| [`CfgExcludedVandalizeZone`](#cfgexcludedvandalizezone) | - | 1 | no | no | confirmed (code) |
 | [`CfgFollowCamera`](#cfgfollowcamera) | - | 13 | yes | yes | confirmed (code) |
 | [`CfgGang`](#cfggang) | - | 1 | yes | no | confirmed (code) |
 | [`CfgGangMusic`](#cfggangmusic) | - | 1 | yes | no | confirmed (code) |
@@ -61,13 +61,13 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgLanguage`](#cfglanguage) | - | 1 | yes | no | confirmed (code) |
 | [`CfgLevelName`](#cfglevelname) | - | 1 | yes | no | confirmed (code) |
 | [`CfgLockOn`](#cfglockon) | - | 0 | no | no | inferred |
-| [`CfgMercyStruggleDamage`](#cfgmercystruggledamage) | - | 1 | no | no | inferred |
+| [`CfgMercyStruggleDamage`](#cfgmercystruggledamage) | - | 1 | no | no | confirmed (code) |
 | [`CfgMoneyCallback`](#cfgmoneycallback) | - | 6 | no | no | confirmed (code) |
 | [`CfgMultiplayerJoin`](#cfgmultiplayerjoin) | - | 52 | no | yes | confirmed (code) |
 | [`CfgObj`](#cfgobj) | - | 2 | yes | no | confirmed (code) |
 | [`CfgObjectGroup`](#cfgobjectgroup) | - | 0 | no | no | confirmed (code) |
 | [`CfgObjectValueMod`](#cfgobjectvaluemod) | - | 4 | no | no | confirmed (code) |
-| [`CfgPedInteractDelay`](#cfgpedinteractdelay) | - | 1 | no | no | inferred |
+| [`CfgPedInteractDelay`](#cfgpedinteractdelay) | - | 1 | no | no | confirmed (code) |
 | [`CfgPickupIsAction`](#cfgpickupisaction) | - | 1 | yes | no | confirmed (code) |
 | [`CfgPickupIsGrab`](#cfgpickupisgrab) | - | 1 | yes | no | confirmed (code) |
 | [`CfgPlayerCombatWalkOnly`](#cfgplayercombatwalkonly) | - | 13 | yes | no | confirmed (code) |
@@ -80,7 +80,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgRageHandlers`](#cfgragehandlers) | - | 2 | yes | yes | confirmed (code) |
 | [`CfgRagePoints`](#cfgragepoints) | - | 1 | yes | no | confirmed (code) |
 | [`CfgRagePowerMode`](#cfgragepowermode) | - | 1 | yes | no | confirmed (code) |
-| [`CfgRaindrops`](#cfgraindrops) | - | 9 | no | no | inferred |
+| [`CfgRaindrops`](#cfgraindrops) | - | 9 | no | no | confirmed (code) |
 | [`CfgRumbleArena`](#cfgrumblearena) | - | 1 | no | no | confirmed (code) |
 | [`CfgRumbleChar`](#cfgrumblechar) | - | 5 | no | no | confirmed (code) |
 | [`CfgRumbleGame`](#cfgrumblegame) | - | 1 | no | no | confirmed (code) |
@@ -865,23 +865,26 @@ differently for type 12 is not traced here.
 ## CfgEnableDispatcher {#cfgenabledispatcher}
 
 ```lua
-CfgEnableDispatcher(enabled, value)
+CfgEnableDispatcher(enabled, voice)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) turns the police dispatcher on; false off. Game state +0x32a. |
-| 2 | `value` | number, truncated to an integer; default -1 | Dispatcher value stored at game state +0x328; -1 (the default) means 125. |
+| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) turns the police radio dispatcher on; false off (game state `+0x32a`). |
+| 2 | `voice` | number, truncated to an integer; default -1 | Voice id of the dispatcher (game state `+0x328`, 16-bit); -1 (the default) means voice 125. |
 
 **Returns** nothing.
 
-Turns the police dispatcher on or off and sets its 16-bit parameter (default 125).
+Turns the police radio dispatcher on or off and picks its voice. When a cop says a line that has a radio code
+(Human_SayCopLine, 0x0021ed28) and the dispatcher is on, the dispatcher's reply in that voice is queued on the cop
+(human `+0x184`); the dispatcher voice also builds the cops' radio-code file names (0x00233890, 0x002af670) and the
+reply itself (0x0021ede0). The game state's reset (0x00418c68) turns it on with voice 125.
 
-**Notes.** Storage confirmed (code) at 0x0041d8e0 and 0x0041d0a8; the police meaning is inferred from the name and the
-crime fields beside it.
+**Notes.** Turning it off only stops the queued replies; the cop's own lines still play. How the queued reply at
+`+0x184` is later played was not traced.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035e418` (registered by `RegisterBindings`); **calls** `0x0041d8e0`
+- **Evidence:** confirmed (code) at `0x0041d8e0`; detail: traced
+- **Wrapper** `0x0035e418` (registered by `RegisterBindings`); **calls** `0x0041d8e0` `GameState_EnableDispatcher`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level9`](story.md#level9) (mission 13)
 - **Coney:** not implemented
@@ -939,16 +942,18 @@ CfgExcludedVandalizeZone(zone)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `zone` | number, truncated to an integer; default -1 | Zone index in which vandalism is not counted; -1 (the default) for none. |
+| 1 | `zone` | number, truncated to an integer; default -1 | Object zone number ([Object zones](../../references/zones.md)) whose objects may not be vandalised; -1 (the default) for none. |
 
 **Returns** nothing.
 
-Stores a 16-bit zone index (0x005148bc) excluded from vandalism (tagging, smashing) checks; one level uses it.
+Stores a 16-bit object zone (`0x005148bc`) excluded from vandalism. The vandalisable-object test (0x00394f30, used by
+the AI's object searches 0x0029d4f8 and 0x0029d558) refuses any object whose zone (object `+0x114`) is this one, so
+characters looking for things to smash leave that zone's objects alone. The level reset (0x00418c68) sets it back to -1.
 
-**Notes.** Storage confirmed (code) at 0x0041d978.
+**Notes.** Only one zone can be excluded at a time. Which AI behaviours call the two searches was not traced.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035e598` (registered by `RegisterBindings`); **calls** `0x0041d978`
+- **Evidence:** confirmed (code) at `0x0041d978`; detail: traced
+- **Wrapper** `0x0035e598` (registered by `RegisterBindings`); **calls** `0x0041d978` `Cfg_SetExcludedVandalizeZone`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
@@ -1393,16 +1398,18 @@ CfgMercyStruggleDamage(damage)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `damage` | number, truncated to an integer | Damage dealt per mercy-struggle step (integer). |
+| 1 | `damage` | number, truncated to an integer | Damage dealt to a held human every 30 brain updates (default 2). |
 
 **Returns** nothing.
 
-Stores the mercy-struggle damage (0x00510acc); one level sets it.
+Sets the damage a character holding someone with the GrabTarget goal (type 0x1f) deals to them while holding
+(`0x00510acc`, default 2): GrabTargetGoal_Process (0x002bb858) adds it as pending damage to the held human every 30th
+update of the holder's brain. Named for Mercy, whom gangs grab and carry in the Mercy mode and in level 55.
 
-**Notes.** Storage confirmed (code) at 0x00294860.
+**Notes.** The value is a global, never reset by the level; it applies to every GrabTarget holder.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035e8a8` (registered by `RegisterBindings`); **calls** `0x00294860`
+- **Evidence:** confirmed (code) at `0x00294860`; detail: traced
+- **Wrapper** `0x0035e8a8` (registered by `RegisterBindings`); **calls** `0x00294860` `Cfg_SetMercyStruggleDamage`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
@@ -1560,16 +1567,21 @@ CfgPedInteractDelay(delay)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `delay` | number, truncated to an unsigned integer | Delay between pedestrian interactions (one level sets 2). |
+| 1 | `delay` | number, truncated to an unsigned integer | Milliseconds after one pedestrian conversation ends before another may start anywhere (default 10000; the one level sets 2). |
 
 **Returns** nothing.
 
-Stores the pedestrian interaction delay (0x00510fcc).
+Sets the global gap between pedestrian interactions (0x00510fcc). When two pedestrians finish a conversation (greeting,
+chat lines 0xab/0xac, 0xb3, 0xb4, 0xb5), the interaction goal (0x002a9508) sets the next allowed start time 0x00510fc8
+to now + `delay`, and the pedestrian think (0x002ab4b8) starts no new one before it. A small value makes the street
+chatter constantly.
 
-**Notes.** Storage confirmed (code) at 0x002948a0; unit not traced.
+**Notes.** InitLevel (0x0015fe90) resets the next-start time but not the delay, so a set delay carries over to later
+levels until set again (inferred from the writes found). Level 20 calls it.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035e990` (registered by `RegisterBindings`); **calls** `0x002948a0`
+- **Evidence:** confirmed (code) at `0x002948a0`, `0x002a9508`; detail: traced
+- **Wrapper** `0x0035e990` (registered by `RegisterBindings`); **calls** `0x002948a0` `Peds_SetInteractDelay`,
+  `0x002a9508` `PedInteractGoal_Process`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
@@ -1773,14 +1785,19 @@ CfgPowerupPickup(enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) lets power-ups be picked up. |
+| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) lets players pick up power-ups; false stops them. |
 
 **Returns** nothing.
 
-Stores the power-up pickup switch (byte at game state +0x56e5).
+Stores the power-up pickup switch (byte at game state `+0x56e5`, 1 after every level load). With it 0, the three pickup
+paths (`Human_OnContact` 0x0021a3d8, 0x00219550, 0x00395510) skip objects of class 14 (power-ups, object type `+0x86`)
+for player humans (`+0x1b0` not -1); AI humans and other objects are unaffected.
 
-- **Evidence:** confirmed (code) at `0x0041da70`; detail: brief
-- **Wrapper** `0x0036c208` (registered by `RegisterBindings`); **calls** `0x0041da70`
+**Notes.** Reset to 1 by the level set-up (0x00418c68). Used by Armies of the Night (levels 60-64) to control when
+power-ups can be collected.
+
+- **Evidence:** confirmed (code) at `0x0041da70`; detail: traced
+- **Wrapper** `0x0036c208` (registered by `RegisterBindings`); **calls** `0x0041da70` `GameState_SetPowerupPickup`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -1881,23 +1898,28 @@ Stores the rage power mode in the global 0x00510298.
 ## CfgRaindrops {#cfgraindrops}
 
 ```lua
-CfgRaindrops(colour, kind, scale)
+CfgRaindrops(colour, count, scale)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `colour` | table of 4 numbers (t[1]..t[4]) | Raindrop colour {r, g, b, a}, each 0-255; packed into one word. |
-| 2 | `kind` | number, truncated to an unsigned integer | Integer stored at +0x08 of the rain object (levels pass 1-3). |
-| 3 | `scale` | number (single precision) | Float stored at +0x0c of the rain object (0.75 or 1). |
+| 1 | `colour` | table of 4 numbers (t[1]..t[4]) | Splash colour `{r, g, b, a}`, each 0-255, packed as one word `r<<24 \| g<<16 \| b<<8 \| a` (raindrops `+0x10`; default white at alpha 64). |
+| 2 | `count` | number, truncated to an unsigned integer | Splashes spawned per frame per view (raindrops `+0x08`, default 2); levels pass 1-3. |
+| 3 | `scale` | number (single precision) | Size given to each splash particle (raindrops `+0x0c`, default 0.6); levels pass 0.75 or 1. |
 
 **Returns** nothing.
 
-Sets the colour and two parameters of the rain effect object (0x005971a8).
+Configures the ground splashes of rain: the raindrops object (0x005971a8, created at 0x00183510) that runs while
+StartRain's main layer is on. Each frame, per view, it picks `count` random points on upward-facing collision triangles
+near the camera and spawns a `sub_splash` particle there with this colour and size, plus a `sub_ripple` when the point
+is within 15 m of the camera.
 
-**Notes.** Storage confirmed (code) at 0x0018dd58 / 0x00183630; the meaning of kind and scale is inferred.
+**Notes.** The colour table is written back as read. The settings stay until changed (no reset at level end traced).
+Splashes stop when the game is paused (0x00184568 checks the task clock).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00368550` (registered by `RegisterBindings`); **calls** `0x0018dd58`
+- **Evidence:** confirmed (code) at `0x0018dd58`, `0x00183630`, `0x00184568`; detail: traced
+- **Wrapper** `0x00368550` (registered by `RegisterBindings`); **calls** `0x0018dd58` `ScreenFx_SetRaindrops`,
+  `0x00183630` `Raindrops_Configure`, `0x00184568` `Raindrops_Update`
 - **Used by** 9 of 467 script chunks (21 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -2137,14 +2159,21 @@ CfgSetCrimeCallback(fn)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `fn` | string | Lua function name (up to 31 characters) called when a crime is committed, or nil to clear. |
+| 1 | `fn` | string | Name of a global Lua function (up to 31 characters), or nil to clear it. |
 
 **Returns** nothing.
 
-Stores the crime script callback name in the game state (+0x2dc).
+Names a script function to call whenever a crime with a known offender is reported (game state `+0x2dc`). The crime
+report (GameState_ReportCrime, 0x0041b8b0, see [AI: crimes](../../research/ai.md#crimes)) calls it through
+GameState_RunCrimeCallback (0x0041ae60) with two numbers: the offender's gang id and the [crime
+type](../../references/crime-types.md). The level reset (0x00418c68) clears it.
 
-- **Evidence:** confirmed (code) at `0x0041dab0`; detail: brief
-- **Wrapper** `0x0036bf28` (registered by `RegisterBindings`); **calls** `0x0041dab0`
+**Notes.** Not called while crime reporting is off, for an offender in a police gang, or for a crime without an
+offender. A name that does not resolve to a function is skipped silently.
+
+- **Evidence:** confirmed (code) at `0x0041dab0`, `0x0041ae30`; detail: traced
+- **Wrapper** `0x0036bf28` (registered by `RegisterBindings`); **calls** `0x0041dab0` `Script_SetCrimeCallback`,
+  `0x0041ae30` `GameState_SetCrimeCallback`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level9`](story.md#level9) (mission 13)
 - **Coney:** not implemented
@@ -2597,14 +2626,18 @@ CfgSetWarriorVandalize(enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) lets the Warriors vandalise. |
+| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) sets the switch, false clears it. |
 
 **Returns** nothing.
 
-Stores the warrior-vandalise switch in the game state (+0x5700).
+Stores the warrior-vandalise switch, a word at `W_GameState + 0x5700`. The level set-up (0x00418c68, from InitLevel
+0x0015fe90) clears it to 0 on every level load. No code reading it was found, so it has no visible effect in this build.
 
-- **Evidence:** confirmed (code) at `0x0041d758`; detail: brief
-- **Wrapper** `0x0036bdf0` (registered by `RegisterBindings`); **calls** `0x0041d758`
+**Notes.** Only one level (92) calls it. Searched for direct `0x5700` accesses only; a read through another base
+register would have been missed. Inferred intent from the name: let the Warrior squad AI smash objects.
+
+- **Evidence:** confirmed (code) at `0x0041d758`; detail: traced
+- **Wrapper** `0x0036bdf0` (registered by `RegisterBindings`); **calls** `0x0041d758` `GameState_SetWarriorVandalize`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented

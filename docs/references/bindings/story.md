@@ -24,25 +24,25 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 1 |
 | [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 3 |
 | [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 2 |
-| [`level93`](#level93) | mission 10 | 295 | 24 | 11 | 2 |
-| [`level31`](#level31) | mission 11 | 266 | 9 | 0 | 1 |
-| [`level14`](#level14) | mission 12 | 226 | 6 | 0 | 1 |
-| [`level9`](#level9) | mission 13 | 225 | 6 | 0 | 0 |
-| [`level51`](#level51) | mission 14 | 256 | 6 | 1 | 1 |
-| [`level52`](#level52) | mission 15 | 235 | 4 | 0 | 0 |
-| [`level54`](#level54) | mission 16 | 241 | 7 | 0 | 0 |
-| [`level55`](#level55) | mission 17 | 226 | 8 | 1 | 1 |
-| [`level84`](#level84) | mission 18 | 219 | 8 | 2 | 0 |
-| [`level82`](#level82) | flashback 1 | 250 | 4 | 0 | 0 |
-| [`level92`](#level92) | flashback 2 | 237 | 8 | 0 | 1 |
-| [`level83`](#level83) | flashback 3 | 250 | 1 | 0 | 0 |
-| [`level20`](#level20) | flashback 4 | 258 | 11 | 1 | 1 |
-| [`level11`](#level11) | flashback 5 | 260 | 7 | 0 | 1 |
-| [`level60`](#level60) | Armies of the Night 1 | 150 | 15 | 3 | 0 |
+| [`level93`](#level93) | mission 10 | 295 | 24 | 24 | 2 |
+| [`level31`](#level31) | mission 11 | 266 | 9 | 9 | 1 |
+| [`level14`](#level14) | mission 12 | 226 | 6 | 6 | 1 |
+| [`level9`](#level9) | mission 13 | 225 | 6 | 6 | 0 |
+| [`level51`](#level51) | mission 14 | 256 | 6 | 6 | 1 |
+| [`level52`](#level52) | mission 15 | 235 | 4 | 4 | 0 |
+| [`level54`](#level54) | mission 16 | 241 | 7 | 7 | 0 |
+| [`level55`](#level55) | mission 17 | 226 | 8 | 8 | 1 |
+| [`level84`](#level84) | mission 18 | 219 | 8 | 8 | 0 |
+| [`level82`](#level82) | flashback 1 | 250 | 4 | 4 | 0 |
+| [`level92`](#level92) | flashback 2 | 237 | 8 | 8 | 1 |
+| [`level83`](#level83) | flashback 3 | 250 | 1 | 1 | 0 |
+| [`level20`](#level20) | flashback 4 | 258 | 11 | 11 | 1 |
+| [`level11`](#level11) | flashback 5 | 260 | 7 | 7 | 1 |
+| [`level60`](#level60) | Armies of the Night 1 | 150 | 15 | 15 | 0 |
 | [`level61`](#level61) | Armies of the Night 2 | 168 | 0 | 0 | 0 |
-| [`level62`](#level62) | Armies of the Night 3 | 127 | 1 | 0 | 0 |
+| [`level62`](#level62) | Armies of the Night 3 | 127 | 1 | 1 | 0 |
 | [`level63`](#level63) | Armies of the Night 4 | 150 | 0 | 0 | 0 |
-| [`level64`](#level64) | Armies of the Night 5 | 154 | 4 | 0 | 0 |
+| [`level64`](#level64) | Armies of the Night 5 | 154 | 4 | 4 | 0 |
 
 ## level80: mission 2 {#level80}
 
@@ -448,232 +448,232 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level93: mission 10 {#level93}
 
-295 bindings, 24 new: 11 traced, 2 implemented in Coney (145 of all 295).
+295 bindings, 24 new: 24 traced, 2 implemented in Coney (145 of all 295).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`HuBlockGrab`](character.md#hublockgrab) | Characters | traced | confirmed (code) | not implemented |
-| [`HuEnableOnFire`](character.md#huenableonfire) | Characters | brief | inferred | not implemented |
+| [`HuEnableOnFire`](character.md#huenableonfire) | Characters | traced | confirmed (code) | not implemented |
 | [`HuIsOnFire`](character.md#huisonfire) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetOnFire`](character.md#husetonfire) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetStateRespVoiceIndex`](character.md#husetstaterespvoiceindex) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetVoiceIndex`](character.md#husetvoiceindex) | Characters | traced | confirmed (code) | not implemented |
 | [`GoalTravelPath2`](ai.md#goaltravelpath2) | AI | traced | confirmed (code) | not implemented |
 | [`TacticBossScenarioG`](ai.md#tacticbossscenariog) | AI | traced | confirmed (code) | not implemented |
-| [`GangQueueResponders`](gang.md#gangqueueresponders) | Gangs | brief | inferred | not implemented |
-| [`GangSetAttackable`](gang.md#gangsetattackable) | Gangs | brief | inferred | not implemented |
-| [`GangSetLOS`](gang.md#gangsetlos) | Gangs | brief | confirmed (code) | not implemented |
-| [`GangSetNeutral`](gang.md#gangsetneutral) | Gangs | brief | confirmed (code) | not implemented |
+| [`GangQueueResponders`](gang.md#gangqueueresponders) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetAttackable`](gang.md#gangsetattackable) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetLOS`](gang.md#gangsetlos) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetNeutral`](gang.md#gangsetneutral) | Gangs | traced | confirmed (code) | not implemented |
 | [`CamCanSee`](camera.md#camcansee) | Cameras | traced | confirmed (code) | not implemented |
-| [`EnableHeat`](effects.md#enableheat) | Effects and lighting | brief | confirmed (code) | not implemented |
+| [`EnableHeat`](effects.md#enableheat) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`EndRain`](effects.md#endrain) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`InitFallingEmbers`](effects.md#initfallingembers) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`SpawnRainPlane`](effects.md#spawnrainplane) | Effects and lighting | brief | inferred | not implemented |
-| [`StartRain`](effects.md#startrain) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`TermFallingEmbers`](effects.md#termfallingembers) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`HUDSetMissionFailedCallbacks`](hud.md#hudsetmissionfailedcallbacks) | HUD and menus | brief | confirmed (code) | not implemented |
+| [`InitFallingEmbers`](effects.md#initfallingembers) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`SpawnRainPlane`](effects.md#spawnrainplane) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`StartRain`](effects.md#startrain) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`TermFallingEmbers`](effects.md#termfallingembers) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`HUDSetMissionFailedCallbacks`](hud.md#hudsetmissionfailedcallbacks) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`SceneSetCallback`](scene.md#scenesetcallback) | Scenes and movies | traced | confirmed (code) | implemented |
-| [`SetObjZoneMsgHandler`](script.md#setobjzonemsghandler) | Script flow | brief | confirmed (code) | not implemented |
-| [`CfgRaindrops`](config.md#cfgraindrops) | Configuration (Cfg) | brief | inferred | not implemented |
+| [`SetObjZoneMsgHandler`](script.md#setobjzonemsghandler) | Script flow | traced | confirmed (code) | not implemented |
+| [`CfgRaindrops`](config.md#cfgraindrops) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`GetPlatform`](util.md#getplatform) | Utilities | traced | confirmed (code) | implemented |
 
 ## level31: mission 11 {#level31}
 
-266 bindings, 9 new: 0 traced, 1 implemented in Coney (143 of all 266).
+266 bindings, 9 new: 9 traced, 1 implemented in Coney (143 of all 266).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`GoalGetItem`](ai.md#goalgetitem) | AI | brief | inferred | not implemented |
-| [`GoalHoldPosition`](ai.md#goalholdposition) | AI | brief | inferred | not implemented |
-| [`TacticBossScenarioF`](ai.md#tacticbossscenariof) | AI | brief | inferred | not implemented |
-| [`GangCanSaveAllys`](gang.md#gangcansaveallys) | Gangs | brief | inferred | not implemented |
-| [`GangSetDamageResponse`](gang.md#gangsetdamageresponse) | Gangs | brief | inferred | not implemented |
-| [`CamGhostDoor`](camera.md#camghostdoor) | Cameras | brief | inferred | not implemented |
-| [`ObjStopTrain`](world.md#objstoptrain) | World and objects | brief | confirmed (code) | not implemented |
-| [`SoundDisableCombatMusic`](sound.md#sounddisablecombatmusic) | Sound and music | brief | confirmed (code) | not implemented |
-| [`SoundPlayMusicTrack`](sound.md#soundplaymusictrack) | Sound and music | brief | confirmed (code) | implemented |
+| [`GoalGetItem`](ai.md#goalgetitem) | AI | traced | confirmed (code) | not implemented |
+| [`GoalHoldPosition`](ai.md#goalholdposition) | AI | traced | confirmed (code) | not implemented |
+| [`TacticBossScenarioF`](ai.md#tacticbossscenariof) | AI | traced | confirmed (code) | not implemented |
+| [`GangCanSaveAllys`](gang.md#gangcansaveallys) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetDamageResponse`](gang.md#gangsetdamageresponse) | Gangs | traced | confirmed (code) | not implemented |
+| [`CamGhostDoor`](camera.md#camghostdoor) | Cameras | traced | confirmed (code) | not implemented |
+| [`ObjStopTrain`](world.md#objstoptrain) | World and objects | traced | confirmed (code) | not implemented |
+| [`SoundDisableCombatMusic`](sound.md#sounddisablecombatmusic) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SoundPlayMusicTrack`](sound.md#soundplaymusictrack) | Sound and music | traced | confirmed (code) | implemented |
 
 ## level14: mission 12 {#level14}
 
-226 bindings, 6 new: 0 traced, 1 implemented in Coney (119 of all 226).
+226 bindings, 6 new: 6 traced, 1 implemented in Coney (119 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`GoalCallPolice`](ai.md#goalcallpolice) | AI | brief | inferred | not implemented |
-| [`TacticPathScout`](ai.md#tacticpathscout) | AI | brief | inferred | not implemented |
-| [`CamReversePoizo`](camera.md#camreversepoizo) | Cameras | brief | inferred | not implemented |
-| [`CarSetPartOpen`](world.md#carsetpartopen) | World and objects | brief | confirmed (code) | not implemented |
-| [`ObjIsZoneEnabled`](world.md#objiszoneenabled) | World and objects | brief | confirmed (code) | not implemented |
-| [`ScenePlay`](scene.md#sceneplay) | Scenes and movies | brief | confirmed (code) | implemented |
+| [`GoalCallPolice`](ai.md#goalcallpolice) | AI | traced | confirmed (code) | not implemented |
+| [`TacticPathScout`](ai.md#tacticpathscout) | AI | traced | confirmed (code) | not implemented |
+| [`CamReversePoizo`](camera.md#camreversepoizo) | Cameras | traced | confirmed (code) | not implemented |
+| [`CarSetPartOpen`](world.md#carsetpartopen) | World and objects | traced | confirmed (code) | not implemented |
+| [`ObjIsZoneEnabled`](world.md#objiszoneenabled) | World and objects | traced | confirmed (code) | not implemented |
+| [`ScenePlay`](scene.md#sceneplay) | Scenes and movies | traced | confirmed (code) | implemented |
 
 ## level9: mission 13 {#level9}
 
-225 bindings, 6 new: 0 traced, 0 implemented in Coney (120 of all 225).
+225 bindings, 6 new: 6 traced, 0 implemented in Coney (120 of all 225).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuEnableTagDone`](character.md#huenabletagdone) | Characters | brief | confirmed (code) | not implemented |
-| [`HuPutItemInPocket`](character.md#huputiteminpocket) | Characters | brief | inferred | not implemented |
-| [`HuSetHelpHearRange`](character.md#husethelphearrange) | Characters | brief | inferred | not implemented |
-| [`HuSetIdleDialogMaxIter`](character.md#husetidledialogmaxiter) | Characters | brief | inferred | not implemented |
-| [`CfgEnableDispatcher`](config.md#cfgenabledispatcher) | Configuration (Cfg) | brief | inferred | not implemented |
-| [`CfgSetCrimeCallback`](config.md#cfgsetcrimecallback) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
+| [`HuEnableTagDone`](character.md#huenabletagdone) | Characters | traced | confirmed (code) | not implemented |
+| [`HuPutItemInPocket`](character.md#huputiteminpocket) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetHelpHearRange`](character.md#husethelphearrange) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetIdleDialogMaxIter`](character.md#husetidledialogmaxiter) | Characters | traced | confirmed (code) | not implemented |
+| [`CfgEnableDispatcher`](config.md#cfgenabledispatcher) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgSetCrimeCallback`](config.md#cfgsetcrimecallback) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level51: mission 14 {#level51}
 
-256 bindings, 6 new: 1 traced, 1 implemented in Coney (138 of all 256).
+256 bindings, 6 new: 6 traced, 1 implemented in Coney (138 of all 256).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuIsHidden`](character.md#huishidden) | Characters | brief | inferred | not implemented |
-| [`CamSetupHood`](camera.md#camsetuphood) | Cameras | brief | confirmed (code) | not implemented |
+| [`HuIsHidden`](character.md#huishidden) | Characters | traced | confirmed (code) | not implemented |
+| [`CamSetupHood`](camera.md#camsetuphood) | Cameras | traced | confirmed (code) | not implemented |
 | [`SetWorldAmbient`](effects.md#setworldambient) | Effects and lighting | traced | confirmed (code) | implemented |
-| [`PreLoadObjectSound`](sound.md#preloadobjectsound) | Sound and music | brief | confirmed (code) | not implemented |
-| [`EnableGameOverCheck`](level.md#enablegameovercheck) | Levels and game state | brief | inferred | not implemented |
-| [`SetLoadPriority`](level.md#setloadpriority) | Levels and game state | brief | speculative | not implemented |
+| [`PreLoadObjectSound`](sound.md#preloadobjectsound) | Sound and music | traced | confirmed (code) | not implemented |
+| [`EnableGameOverCheck`](level.md#enablegameovercheck) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`SetLoadPriority`](level.md#setloadpriority) | Levels and game state | traced | confirmed (code) | not implemented |
 
 ## level52: mission 15 {#level52}
 
-235 bindings, 4 new: 0 traced, 0 implemented in Coney (126 of all 235).
+235 bindings, 4 new: 4 traced, 0 implemented in Coney (126 of all 235).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuBlockRearGrab`](character.md#hublockreargrab) | Characters | brief | confirmed (code) | not implemented |
-| [`HuPlayDynamicAnim`](character.md#huplaydynamicanim) | Characters | brief | inferred | not implemented |
-| [`GoalCopperPatrol`](ai.md#goalcopperpatrol) | AI | brief | inferred | not implemented |
-| [`GangLookAt`](gang.md#ganglookat) | Gangs | brief | confirmed (code) | not implemented |
+| [`HuBlockRearGrab`](character.md#hublockreargrab) | Characters | traced | confirmed (code) | not implemented |
+| [`HuPlayDynamicAnim`](character.md#huplaydynamicanim) | Characters | traced | confirmed (code) | not implemented |
+| [`GoalCopperPatrol`](ai.md#goalcopperpatrol) | AI | traced | confirmed (code) | not implemented |
+| [`GangLookAt`](gang.md#ganglookat) | Gangs | traced | confirmed (code) | not implemented |
 
 ## level54: mission 16 {#level54}
 
-241 bindings, 7 new: 0 traced, 0 implemented in Coney (134 of all 241).
+241 bindings, 7 new: 7 traced, 0 implemented in Coney (134 of all 241).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuEnableSpeaking`](character.md#huenablespeaking) | Characters | brief | inferred | not implemented |
-| [`HuMakeGrounded`](character.md#humakegrounded) | Characters | brief | inferred | not implemented |
-| [`HuRubberNeck`](character.md#hurubberneck) | Characters | brief | inferred | not implemented |
-| [`HuSetNoAutoLock`](character.md#husetnoautolock) | Characters | brief | inferred | not implemented |
-| [`BrHasAttackers`](ai.md#brhasattackers) | AI | brief | confirmed (code) | not implemented |
-| [`BrProcessGoal`](ai.md#brprocessgoal) | AI | brief | confirmed (code) | not implemented |
-| [`SndEnableMusicDuck`](sound.md#sndenablemusicduck) | Sound and music | brief | inferred | not implemented |
+| [`HuEnableSpeaking`](character.md#huenablespeaking) | Characters | traced | confirmed (code) | not implemented |
+| [`HuMakeGrounded`](character.md#humakegrounded) | Characters | traced | confirmed (code) | not implemented |
+| [`HuRubberNeck`](character.md#hurubberneck) | Characters | traced | inferred | not implemented |
+| [`HuSetNoAutoLock`](character.md#husetnoautolock) | Characters | traced | inferred | not implemented |
+| [`BrHasAttackers`](ai.md#brhasattackers) | AI | traced | confirmed (code) | not implemented |
+| [`BrProcessGoal`](ai.md#brprocessgoal) | AI | traced | confirmed (code) | not implemented |
+| [`SndEnableMusicDuck`](sound.md#sndenablemusicduck) | Sound and music | traced | confirmed (code) | not implemented |
 
 ## level55: mission 17 {#level55}
 
-226 bindings, 8 new: 1 traced, 1 implemented in Coney (131 of all 226).
+226 bindings, 8 new: 8 traced, 1 implemented in Coney (131 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuButtonMiniGame`](character.md#hubuttonminigame) | Characters | brief | inferred | not implemented |
-| [`TacticBossScenarioB`](ai.md#tacticbossscenariob) | AI | brief | inferred | not implemented |
-| [`GetHitpoints`](world.md#gethitpoints) | World and objects | brief | confirmed (code) | implemented |
+| [`HuButtonMiniGame`](character.md#hubuttonminigame) | Characters | traced | confirmed (code) | not implemented |
+| [`TacticBossScenarioB`](ai.md#tacticbossscenariob) | AI | traced | confirmed (code) | not implemented |
+| [`GetHitpoints`](world.md#gethitpoints) | World and objects | traced | confirmed (code) | implemented |
 | [`SetLevelColour`](effects.md#setlevelcolour) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`SpawnAreaEffect`](effects.md#spawnareaeffect) | Effects and lighting | brief | inferred | not implemented |
-| [`SoundSetMusicStateCallback`](sound.md#soundsetmusicstatecallback) | Sound and music | brief | inferred | not implemented |
-| [`CfgExcludedVandalizeZone`](config.md#cfgexcludedvandalizezone) | Configuration (Cfg) | brief | inferred | not implemented |
-| [`CfgMercyStruggleDamage`](config.md#cfgmercystruggledamage) | Configuration (Cfg) | brief | inferred | not implemented |
+| [`SpawnAreaEffect`](effects.md#spawnareaeffect) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`SoundSetMusicStateCallback`](sound.md#soundsetmusicstatecallback) | Sound and music | traced | confirmed (code) | not implemented |
+| [`CfgExcludedVandalizeZone`](config.md#cfgexcludedvandalizezone) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgMercyStruggleDamage`](config.md#cfgmercystruggledamage) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level84: mission 18 {#level84}
 
-219 bindings, 8 new: 2 traced, 0 implemented in Coney (125 of all 219).
+219 bindings, 8 new: 8 traced, 0 implemented in Coney (125 of all 219).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`AddCommand`](character.md#addcommand) | Characters | traced | confirmed (code) | not implemented |
-| [`DelCommand`](character.md#delcommand) | Characters | brief | confirmed (code) | not implemented |
+| [`DelCommand`](character.md#delcommand) | Characters | traced | confirmed (code) | not implemented |
 | [`SetDeathTimer`](character.md#setdeathtimer) | Characters | traced | confirmed (code) | not implemented |
-| [`TacticBossScenarioE`](ai.md#tacticbossscenarioe) | AI | brief | inferred | not implemented |
-| [`SetPositionOfWater`](world.md#setpositionofwater) | World and objects | brief | inferred | not implemented |
-| [`UnloadTimedObjects`](world.md#unloadtimedobjects) | World and objects | brief | inferred | not implemented |
-| [`PreloadCredits`](hud.md#preloadcredits) | HUD and menus | brief | inferred | not implemented |
-| [`ShowCredits`](hud.md#showcredits) | HUD and menus | brief | inferred | not implemented |
+| [`TacticBossScenarioE`](ai.md#tacticbossscenarioe) | AI | traced | confirmed (code) | not implemented |
+| [`SetPositionOfWater`](world.md#setpositionofwater) | World and objects | traced | confirmed (code) | not implemented |
+| [`UnloadTimedObjects`](world.md#unloadtimedobjects) | World and objects | traced | confirmed (code) | not implemented |
+| [`PreloadCredits`](hud.md#preloadcredits) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`ShowCredits`](hud.md#showcredits) | HUD and menus | traced | confirmed (code) | not implemented |
 
 ## level82: flashback 1 {#level82}
 
-250 bindings, 4 new: 0 traced, 0 implemented in Coney (122 of all 250).
+250 bindings, 4 new: 4 traced, 0 implemented in Coney (122 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`ClimbFilter`](character.md#climbfilter) | Characters | brief | speculative | not implemented |
-| [`TacticBossScenarioD`](ai.md#tacticbossscenariod) | AI | brief | inferred | not implemented |
-| [`FlagNetValidate`](world.md#flagnetvalidate) | World and objects | brief | inferred | not implemented |
-| [`SpawnCustomCrime`](level.md#spawncustomcrime) | Levels and game state | brief | confirmed (code) | not implemented |
+| [`ClimbFilter`](character.md#climbfilter) | Characters | traced | confirmed (code) | not implemented |
+| [`TacticBossScenarioD`](ai.md#tacticbossscenariod) | AI | traced | confirmed (code) | not implemented |
+| [`FlagNetValidate`](world.md#flagnetvalidate) | World and objects | traced | confirmed (code) | not implemented |
+| [`SpawnCustomCrime`](level.md#spawncustomcrime) | Levels and game state | traced | confirmed (code) | not implemented |
 
 ## level92: flashback 2 {#level92}
 
-237 bindings, 8 new: 0 traced, 1 implemented in Coney (130 of all 237).
+237 bindings, 8 new: 8 traced, 1 implemented in Coney (130 of all 237).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`AddAllAnimCallback`](character.md#addallanimcallback) | Characters | brief | confirmed (code) | implemented |
-| [`HuMakeBeatUp`](character.md#humakebeatup) | Characters | brief | inferred | not implemented |
-| [`IsAHuman`](character.md#isahuman) | Characters | brief | confirmed (code) | not implemented |
-| [`BrSetPlayerResponse`](ai.md#brsetplayerresponse) | AI | brief | inferred | not implemented |
-| [`TacticDomination`](ai.md#tacticdomination) | AI | brief | inferred | not implemented |
-| [`HUDEnableTextProgress`](hud.md#hudenabletextprogress) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDSetTextProgress`](hud.md#hudsettextprogress) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`CfgSetWarriorVandalize`](config.md#cfgsetwarriorvandalize) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
+| [`AddAllAnimCallback`](character.md#addallanimcallback) | Characters | traced | confirmed (code) | implemented |
+| [`HuMakeBeatUp`](character.md#humakebeatup) | Characters | traced | confirmed (code) | not implemented |
+| [`IsAHuman`](character.md#isahuman) | Characters | traced | confirmed (code) | not implemented |
+| [`BrSetPlayerResponse`](ai.md#brsetplayerresponse) | AI | traced | confirmed (code) | not implemented |
+| [`TacticDomination`](ai.md#tacticdomination) | AI | traced | confirmed (code) | not implemented |
+| [`HUDEnableTextProgress`](hud.md#hudenabletextprogress) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDSetTextProgress`](hud.md#hudsettextprogress) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`CfgSetWarriorVandalize`](config.md#cfgsetwarriorvandalize) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level83: flashback 3 {#level83}
 
-250 bindings, 1 new: 0 traced, 0 implemented in Coney (144 of all 250).
+250 bindings, 1 new: 1 traced, 0 implemented in Coney (144 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuSetDoubleDamage`](character.md#husetdoubledamage) | Characters | brief | inferred | not implemented |
+| [`HuSetDoubleDamage`](character.md#husetdoubledamage) | Characters | traced | confirmed (code) | not implemented |
 
 ## level20: flashback 4 {#level20}
 
-258 bindings, 11 new: 1 traced, 1 implemented in Coney (138 of all 258).
+258 bindings, 11 new: 11 traced, 1 implemented in Coney (138 of all 258).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuInCombat`](character.md#huincombat) | Characters | brief | inferred | not implemented |
-| [`HuIsInScene`](character.md#huisinscene) | Characters | brief | inferred | not implemented |
-| [`HuRemoveItemInPocket`](character.md#huremoveiteminpocket) | Characters | brief | confirmed (code) | not implemented |
-| [`BrFlushActions`](ai.md#brflushactions) | AI | brief | confirmed (code) | not implemented |
-| [`GoalCallGang`](ai.md#goalcallgang) | AI | brief | inferred | not implemented |
-| [`GoalMark`](ai.md#goalmark) | AI | brief | inferred | not implemented |
-| [`GangRespond`](gang.md#gangrespond) | Gangs | brief | confirmed (code) | not implemented |
-| [`GangSetReactToViolence`](gang.md#gangsetreacttoviolence) | Gangs | brief | inferred | not implemented |
-| [`SetAllClearCallBack`](script.md#setallclearcallback) | Script flow | brief | inferred | not implemented |
+| [`HuInCombat`](character.md#huincombat) | Characters | traced | confirmed (code) | not implemented |
+| [`HuIsInScene`](character.md#huisinscene) | Characters | traced | confirmed (code) | not implemented |
+| [`HuRemoveItemInPocket`](character.md#huremoveiteminpocket) | Characters | traced | confirmed (code) | not implemented |
+| [`BrFlushActions`](ai.md#brflushactions) | AI | traced | confirmed (code) | not implemented |
+| [`GoalCallGang`](ai.md#goalcallgang) | AI | traced | confirmed (code) | not implemented |
+| [`GoalMark`](ai.md#goalmark) | AI | traced | confirmed (code) | not implemented |
+| [`GangRespond`](gang.md#gangrespond) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetReactToViolence`](gang.md#gangsetreacttoviolence) | Gangs | traced | confirmed (code) | not implemented |
+| [`SetAllClearCallBack`](script.md#setallclearcallback) | Script flow | traced | confirmed (code) | not implemented |
 | [`CfgInventoryItem`](config.md#cfginventoryitem) | Configuration (Cfg) | traced | confirmed (code) | implemented |
-| [`CfgPedInteractDelay`](config.md#cfgpedinteractdelay) | Configuration (Cfg) | brief | inferred | not implemented |
+| [`CfgPedInteractDelay`](config.md#cfgpedinteractdelay) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level11: flashback 5 {#level11}
 
-260 bindings, 7 new: 0 traced, 1 implemented in Coney (145 of all 260).
+260 bindings, 7 new: 7 traced, 1 implemented in Coney (145 of all 260).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`GoalFollowFormation`](ai.md#goalfollowformation) | AI | brief | inferred | not implemented |
-| [`TacticBossScenarioC`](ai.md#tacticbossscenarioc) | AI | brief | inferred | not implemented |
-| [`TacticStandGround`](ai.md#tacticstandground) | AI | brief | inferred | not implemented |
-| [`GangSetEnemy`](gang.md#gangsetenemy) | Gangs | brief | confirmed (code) | not implemented |
-| [`InvPlayerHasItem`](level.md#invplayerhasitem) | Levels and game state | brief | confirmed (code) | implemented |
-| [`SetCopSpawnMax`](level.md#setcopspawnmax) | Levels and game state | brief | confirmed (code) | not implemented |
-| [`SetHatCallBack`](script.md#sethatcallback) | Script flow | brief | inferred | not implemented |
+| [`GoalFollowFormation`](ai.md#goalfollowformation) | AI | traced | confirmed (code) | not implemented |
+| [`TacticBossScenarioC`](ai.md#tacticbossscenarioc) | AI | traced | confirmed (code) | not implemented |
+| [`TacticStandGround`](ai.md#tacticstandground) | AI | traced | confirmed (code) | not implemented |
+| [`GangSetEnemy`](gang.md#gangsetenemy) | Gangs | traced | confirmed (code) | not implemented |
+| [`InvPlayerHasItem`](level.md#invplayerhasitem) | Levels and game state | traced | confirmed (code) | implemented |
+| [`SetCopSpawnMax`](level.md#setcopspawnmax) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`SetHatCallBack`](script.md#sethatcallback) | Script flow | traced | confirmed (code) | not implemented |
 
 ## level60: Armies of the Night 1 {#level60}
 
-150 bindings, 15 new: 3 traced, 0 implemented in Coney (100 of all 150).
+150 bindings, 15 new: 15 traced, 0 implemented in Coney (100 of all 150).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuColor`](character.md#hucolor) | Characters | brief | confirmed (code) | not implemented |
-| [`HuEnableController`](character.md#huenablecontroller) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetConscious`](character.md#husetconscious) | Characters | brief | inferred | not implemented |
-| [`GangSetMoney`](gang.md#gangsetmoney) | Gangs | brief | confirmed (code) | not implemented |
-| [`CamLockRail`](camera.md#camlockrail) | Cameras | brief | inferred | not implemented |
-| [`HUDANEnableJoinMsg`](hud.md#hudanenablejoinmsg) | HUD and menus | brief | inferred | not implemented |
-| [`HUDANGetCredit`](hud.md#hudangetcredit) | HUD and menus | brief | confirmed (code) | not implemented |
+| [`HuColor`](character.md#hucolor) | Characters | traced | confirmed (code) | not implemented |
+| [`HuEnableController`](character.md#huenablecontroller) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetConscious`](character.md#husetconscious) | Characters | traced | confirmed (code) | not implemented |
+| [`GangSetMoney`](gang.md#gangsetmoney) | Gangs | traced | confirmed (code) | not implemented |
+| [`CamLockRail`](camera.md#camlockrail) | Cameras | traced | confirmed (code) | not implemented |
+| [`HUDANEnableJoinMsg`](hud.md#hudanenablejoinmsg) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDANGetCredit`](hud.md#hudangetcredit) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`HUDANSetCredit`](hud.md#hudansetcredit) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDANSetGOSignMode`](hud.md#hudansetgosignmode) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDEnableFixedCamIcon`](hud.md#hudenablefixedcamicon) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDLaunchANGameOver`](hud.md#hudlaunchangameover) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDSetANBossTexture`](hud.md#hudsetanbosstexture) | HUD and menus | brief | confirmed (code) | not implemented |
+| [`HUDANSetGOSignMode`](hud.md#hudansetgosignmode) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDEnableFixedCamIcon`](hud.md#hudenablefixedcamicon) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDLaunchANGameOver`](hud.md#hudlaunchangameover) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDSetANBossTexture`](hud.md#hudsetanbosstexture) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`SetMultiplayerCallback`](script.md#setmultiplayercallback) | Script flow | traced | confirmed (code) | not implemented |
 | [`CfgBaseChanceToBlock`](config.md#cfgbasechancetoblock) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgPowerupPickup`](config.md#cfgpoweruppickup) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
+| [`CfgPowerupPickup`](config.md#cfgpoweruppickup) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level61: Armies of the Night 2 {#level61}
 
@@ -681,11 +681,11 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level62: Armies of the Night 3 {#level62}
 
-127 bindings, 1 new: 0 traced, 0 implemented in Coney (77 of all 127).
+127 bindings, 1 new: 1 traced, 0 implemented in Coney (77 of all 127).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`BrSetThugWantsHat`](ai.md#brsetthugwantshat) | AI | brief | inferred | not implemented |
+| [`BrSetThugWantsHat`](ai.md#brsetthugwantshat) | AI | traced | confirmed (code) | not implemented |
 
 ## level63: Armies of the Night 4 {#level63}
 
@@ -693,11 +693,11 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level64: Armies of the Night 5 {#level64}
 
-154 bindings, 4 new: 0 traced, 0 implemented in Coney (90 of all 154).
+154 bindings, 4 new: 4 traced, 0 implemented in Coney (90 of all 154).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuSetStunned`](character.md#husetstunned) | Characters | brief | inferred | not implemented |
-| [`GoalLutherShooter`](ai.md#goalluthershooter) | AI | brief | inferred | not implemented |
-| [`HUDANLaunchEndScreen`](hud.md#hudanlaunchendscreen) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`SoundSetSoundVolume`](sound.md#soundsetsoundvolume) | Sound and music | brief | confirmed (code) | not implemented |
+| [`HuSetStunned`](character.md#husetstunned) | Characters | traced | confirmed (code) | not implemented |
+| [`GoalLutherShooter`](ai.md#goalluthershooter) | AI | traced | confirmed (code) | not implemented |
+| [`HUDANLaunchEndScreen`](hud.md#hudanlaunchendscreen) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`SoundSetSoundVolume`](sound.md#soundsetsoundvolume) | Sound and music | traced | confirmed (code) | not implemented |

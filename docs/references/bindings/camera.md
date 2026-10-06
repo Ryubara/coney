@@ -28,13 +28,13 @@ entry are on the [masterlist](index.md).
 | [`CameraTransformPoint`](#cameratransformpoint) | - | 0 | no | no | confirmed (code) |
 | [`CamGetLastTarget`](#camgetlasttarget) | number | 0 | no | no | inferred |
 | [`CamGetPos`](#camgetpos) | usertype | 2 | no | no | confirmed (code) |
-| [`CamGhostDoor`](#camghostdoor) | - | 2 | no | no | inferred |
+| [`CamGhostDoor`](#camghostdoor) | - | 2 | no | no | confirmed (code) |
 | [`CamLeadRail`](#camleadrail) | - | 9 | no | no | confirmed (code) |
 | [`CamLockLocked`](#camlocklocked) | - | 1 | no | no | confirmed (code) |
-| [`CamLockRail`](#camlockrail) | - | 15 | no | no | inferred |
+| [`CamLockRail`](#camlockrail) | - | 15 | no | no | confirmed (code) |
 | [`CamModifyRail`](#cammodifyrail) | - | 26 | no | no | confirmed (code) |
 | [`CamRegisterObject`](#camregisterobject) | - | 0 | no | no | inferred |
-| [`CamReversePoizo`](#camreversepoizo) | boolean | 2 | no | no | inferred |
+| [`CamReversePoizo`](#camreversepoizo) | boolean | 2 | no | no | confirmed (code) |
 | [`CamSetFollowAngle`](#camsetfollowangle) | - | 76 | no | yes | confirmed (code) |
 | [`CamSetFollowHeading`](#camsetfollowheading) | - | 68 | no | no | confirmed (code) |
 | [`CamSetFollowPos`](#camsetfollowpos) | - | 12 | no | no | confirmed (code) |
@@ -553,14 +553,21 @@ CamGhostDoor(door)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `door` | number, truncated to an unsigned integer | Handle of a door. |
+| 1 | `door` | number, truncated to an unsigned integer | Handle of a door object (object kinds 0x0f, 0x19, 0x1e or 0x21); anything else does nothing. |
 
 **Returns** nothing.
 
-Sets render flag 0x200 on both parts of a door, inferred to let the camera see through it.
+Lets the camera pass through a door: sets type bit 9 (`0x200`) on the door's two collision triangles (door `+0xd8` /
+`+0xdc`, [World objects](../../research/objects.md)) in the world collision mesh. The camera's rays use mask `0x200` and
+skip such triangles ([Collision: ray cast](../../research/collision.md#ray-cast)), so the camera no longer stops at the
+door.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00379be8` (registered by `RegisterBindings`); **calls** `0x003973a0`
+**Notes.** There is no way back: no binding clears the bit, and it lasts until the collision mesh is reloaded. Other
+queries whose mask has bit 9 skip the triangles too (not listed).
+
+- **Evidence:** confirmed (code) at `0x003973a0`, `0x00395020`, `0x003a4a40`; detail: traced
+- **Wrapper** `0x00379be8` (registered by `RegisterBindings`); **calls** `0x003973a0` `Door_SetCameraGhost`,
+  `0x00395020`, `0x003a4a40` `CollisionMesh_OrTriangleTypeBits`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
@@ -633,15 +640,22 @@ CamLockRail(on, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false) | true locks the rail camera in place, false releases it (inferred). |
-| 2 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player. |
+| 1 | `on` | boolean (nil or 0 is false) | true freezes the rail camera, false lets it follow its rail again. |
+| 2 | `player` | number, truncated to an integer; default -1 | Player index whose rail camera to set; -1 (the default) sets player 0's and every other player's (up to the player count, game state `+0x224`). |
 
 **Returns** nothing.
 
-Locks or releases a rail camera.
+Locks or releases a player's rail camera (camera type 9) by setting its byte `+0x3e4`. While locked, the rail update
+(0x0013d6b0) no longer moves the camera along its rail after the target: it keeps its position and view from the
+previous frame. The rail camera also locks itself when the target passes the rail's end point. Armies of the Night
+(levels 60-64) uses it to hold the side-scrolling view.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00366880` (registered by `RegisterBindings`); **calls** `0x0011d180`
+**Notes.** A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Other readers of `+0x3e4`
+(0x0013b358, 0x0013dcc8, 0x00140708) are not traced; the rail camera is not on [Camera](../../research/camera.md) yet.
+
+- **Evidence:** confirmed (code) at `0x0011d180`, `0x0013d6b0`; detail: traced
+- **Wrapper** `0x00366880` (registered by `RegisterBindings`); **calls** `0x0011d180` `Camera_LockRail`, `0x0013d6b0`
+  `CamRail_UpdatePosition`
 - **Used by** 15 of 467 script chunks (118 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
@@ -705,14 +719,22 @@ CamReversePoizo(onEnd) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `onEnd` | string | Name of the Lua function called when the reversed path ends, or nil. |
+| 1 | `onEnd` | string | Name of the Lua function called when the reversed path ends (interned into the camera, `+0x2e8`), or nil. |
 
-**Returns** boolean (1 for true, nil for false): true (1) when there is a path camera.
+**Returns** boolean (1 for true, nil for false): true when the path camera exists (it is created on first use, so false
+only when that allocation fails).
 
-Plays the scripted camera path backwards.
+Turns the path camera ([Camera: path cameras](../../research/camera.md#path-cameras)) round: its points' positions and
+orientations are put in reverse order, the segment times shifted to match (a point's time is to the next point), the
+progress reset to the start, the camera placed at the new first point and the path started again with the new end
+callback. Scripts use it to fly a path back to where it began.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00366dd0` (registered by `RegisterBindings`); **calls** `0x0011cb70`
+**Notes.** It does not make the path camera current; it moves only while it is player 0's camera. Calling it twice
+restores the original order.
+
+- **Evidence:** confirmed (code) at `0x0011cb70`, `0x00120038`, `0x00142578`; detail: traced
+- **Wrapper** `0x00366dd0` (registered by `RegisterBindings`); **calls** `0x0011cb70`, `0x00120038` `Cam_GetPoizo`,
+  `0x00142578`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
@@ -955,20 +977,28 @@ CamSetupHood(human, vehicle, fov, lookOffset, mountOffset, near, far) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the player human riding the vehicle. |
-| 2 | `vehicle` | number, truncated to an unsigned integer | Handle of the vehicle object the camera is mounted on. |
-| 3 | `fov` | number (single precision) | Field of view in degrees. |
-| 4 | `lookOffset` | table of 3 numbers (t[1]..t[3]) | Offset {x, y, z} (scripts pass zeros). |
-| 5 | `mountOffset` | table of 3 numbers (t[1]..t[3]) | Camera offset {x, y, z} from the vehicle (scripts put it a few metres up and forward). |
-| 6 | `near` | number (single precision) | Near clip distance. |
-| 7 | `far` | number (single precision) | Far clip distance, at most 150. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the player human riding the vehicle; added to the camera targets (CameraTargets_Add). |
+| 2 | `vehicle` | number, truncated to an unsigned integer | Handle of the object the camera is mounted on (hood camera `+0x1e0`). |
+| 3 | `fov` | number (single precision) | Field of view in degrees (default 60). |
+| 4 | `lookOffset` | table of 3 numbers (t[1]..t[3]) | Offset {x, y, z} of the look-at point (`+0x1f0`); only z is used, as a height added to the players' average position. Default {0, 0, 1.53}; scripts pass zeros. |
+| 5 | `mountOffset` | table of 3 numbers (t[1]..t[3]) | Camera position {x, y, z} relative to the mount (`+0x200`), in metres: x along the mount's right, y along its forward, z up. Default {0, 0.3, 1.7}. |
+| 6 | `near` | number (single precision) | Near clip distance in metres (default 0.1). |
+| 7 | `far` | number (single precision) | Far clip distance in metres, capped at 150 (default 115). |
 
-**Returns** number: The hood camera's handle, or NilHandle.
+**Returns** number: Handle of player 0's hood camera, or NilHandle when either handle does not resolve.
 
-Sets up the camera mounted on a vehicle (the bus and car chases), for every player.
+Sets up the hood camera ([type 11](../../references/cameras.md#cam-type-11)) for every player: each player's camera
+(made on first use by HoodCam_GetForPlayer, 0x0011ff50) is mounted on the vehicle at the mount offset and gets the lens
+values. Each update (HoodCam_Update, 0x00135138) places it on the mount (0x00134d78) and aims it at the average position
+of the live players raised by the look offset's z (0x00134f08). The camera is not made active; scripts follow with
+CameraMakeActive.
 
-- **Evidence:** confirmed (code) at `0x0011d808`; detail: brief
-- **Wrapper** `0x003669b0` (registered by `RegisterBindings`); **calls** `0x0011d808`
+**Notes.** Both tables are read and written back unchanged. lookOffset x and y are stored but no reader was found. Each
+update moves the field of view toward `+0x214` (60, set only by the constructor 0x00134b90) by at most the frame step,
+so a script's fov appears to drift back to 60° at about 1° a second (inferred from the step being in seconds).
+
+- **Evidence:** confirmed (code) at `0x0011d808`; detail: traced
+- **Wrapper** `0x003669b0` (registered by `RegisterBindings`); **calls** `0x0011d808` `HoodCam_Setup`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level51`](story.md#level51) (mission 14)
 - **Coney:** not implemented

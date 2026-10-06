@@ -19,15 +19,20 @@
 - name: PreLoadObjectSound
   wrapper: 0x0036dd40
   calls:
-    - {addr: 0x003978d0}
+    - {addr: 0x003978d0, name: WorldObject_PreloadSound}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (a vehicle, for example)."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (a vehicle, for example); other kinds of object do nothing."}
     - {name: sound, lua: string, desc: "Name of the sound to load for it (a path such as a cutscene sound)."}
   description: >-
-    Loads a sound positioned on a world object so that it can be started later (StartObjectSound); any sound the
-    object already had is stopped and replaced.
+    Loads a sound positioned on a world object so that StartObjectSound (WorldObject_StartSound, 0x00397998) can start
+    it later: the sound is loaded at the object's position (`+0x10`) and its handle kept at `+0xf8`; a sound the
+    object already had is stopped and replaced. The object's record is also pinned (ObjRecord_SetPinned) so it is
+    never streamed out while it carries the sound.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Only objects whose class reports kind bit 8 accept it (0x00395f38; that these are the placed world objects is
+    inferred). The pin is not undone.
   usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [51, 84]}
 
 - name: SndFadeOut
@@ -48,13 +53,18 @@
 - name: SndEnableMusicDuck
   wrapper: 0x00370fa0
   calls:
-    - {addr: 0x00113390}
+    - {addr: 0x00113390, name: Audio_EnableMusicDuck}
   args:
-    - {name: "on", lua: boolean, default: true, desc: "true (the default) lets other sounds (speech) lower the music; false disables ducking. Stored as given (one script passes 16)."}
+    - {name: "on", lua: boolean, default: true, desc: "true (the default) lets scenes lower the music; false keeps it at full volume. Any non-false value counts as true (one script passes 16)."}
   description: >-
-    Turns music ducking on or off (audio manager +0x3fab4).
-  evidence: inferred
-  depth: brief
+    Turns music ducking on or off (audio manager `+0x3fab4`). While a cinematic scene plays (game state `+0x410` not
+    0) and ducking is on, Music_UpdateVolumes (0x0010e558) multiplies both music streams' volume by the duck level
+    (`+0x3fab0`, 0.75 from the level load, [Level loading](../../research/level-loading.md)).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Its value at level start is written at 0x001582e0 and 0x0010f618 (not traced). Ducking does not follow speech
+    outside scenes.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [54]}
 
 - name: SndCfgMusicInfo
@@ -154,13 +164,16 @@
 - name: SoundSetSoundVolume
   wrapper: 0x00371160
   calls:
-    - {addr: 0x001140d0}
+    - {addr: 0x001140d0, name: Sound_SetSoundVolume}
   args:
-    - {name: volume, lua: number, ctype: float, desc: "Read but ignored."}
+    - {name: volume, lua: number, ctype: float, desc: "Read as a number but ignored."}
   description: >-
-    Does nothing in this build: the function it calls (0x001140d0) returns at once.
+    Does nothing in this build: the function it calls (0x001140d0) is an empty stub that returns at once, and the
+    wrapper is its only caller.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    A reimplementation can ignore it; the volume the scripts pass has no effect on the original.
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [64]}
 
 - name: SoundSetMusicVolume
@@ -182,9 +195,12 @@
   wrapper: 0x00371230
   calls:
     - {addr: 0x00113510}
+    - {addr: 0x00112e08}
+    - {addr: 0x0010d8e8, name: Music_Play}
+    - {addr: 0x0010dfe0, name: MusicChannel_Update}
   args:
-    - {name: track, lua: string, desc: "Music track name; it must have been configured with SndCfgMusicInfo."}
-    - {name: callback, lua: string, desc: "Name of a Lua function to call when the track ends, or nil."}
+    - {name: track, lua: string, desc: "Music track name (as `music/in_the_city`), hashed with the game's name hash; it must have been configured with SndCfgMusicInfo."}
+    - {name: callback, lua: string, desc: "Name of a Lua function to call when the track reaches its end, or nil."}
   overloads:
   - wrapper: 0x003711d0
     calls:
@@ -196,12 +212,16 @@
       Used when the first argument is not a string or there are more than two arguments: the same call with a
       precomputed hash.
   description: >-
-    Plays a music track once (not looped), with an optional callback when it finishes. Does nothing while the game
-    state forbids music, or when the track is not in the configured list.
+    Plays a music track once (not looped) through Music_Play with a fade of one bar ([Sound: music](../../research/sound.md#music)):
+    the track preloads on the free stream pair, starts at once when nothing plays or on the current track's next
+    bar boundary (the old one fading out), and when its stream ends the callback is called. Does nothing while the
+    game state forbids music or when the track is not in the configured list.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    0x00113510 → 0x0010d8e8 with loop off. The string form is the one the scripts use.
+    0x00113510 hashes the name (0x00143f68) and calls Music_Play(player, hash, loop 0, callback, 1 bar) via
+    0x00112e08. The system music, if on, can replace the track on its next mood change. The string form is the one
+    the scripts use.
   usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false, levels: [31, 51, 55, 84, 64]}
   coney: implemented
 
@@ -247,10 +267,17 @@
   wrapper: 0x00371418
   calls:
     - {addr: 0x00113e30}
+    - {addr: 0x0041a008, name: GameState_SetSystemMusic}
   description: >-
-    Turns the automatic (system) music off, as SoundEnableSystemMusic(false) does.
+    Turns the automatic (system) music off, as SoundEnableSystemMusic(false) does: when it was on, game state `+0x3f8`
+    is cleared, the playing music fades out or stops (0x0010d9a0, as SoundStopMusicTrack), and the mood is reset (to
+    the forced-change value 3, then 4 while off), so the fight and search tracks stop following the action. When it
+    was already off only the mood timer (`+0x3f4`) is cleared.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Scripted tracks (SoundPlayMusicTrack, SoundLoopMusicTrack) still play. SoundEnableSystemMusic(true) turns it back
+    on.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [31]}
 
 - name: SoundSetSystemMusicState
@@ -316,12 +343,19 @@
   wrapper: 0x00371540
   calls:
     - {addr: 0x00113ff0}
+    - {addr: 0x0041b4c0, name: GameState_SetMusicStateCallback}
+    - {addr: 0x0041b520, name: GameState_CallMusicStateCallback}
   args:
-    - {name: callback, lua: string, desc: "Name of a Lua function called when the system music changes state, or nil to clear it."}
+    - {name: callback, lua: string, desc: "Name of the Lua function to call (copied, at most 31 characters, to `W_GameState + 0x384`), or nil to clear it."}
   description: >-
-    Registers a Lua function to be told when the system music changes state (0x0041b4c0).
-  evidence: inferred
-  depth: brief
+    Registers a Lua function that the system-music update (0x0010e7d0) calls as f(oldMood, newMood) whenever it acts
+    on a mood change (game state `+0x40c`: 0, 1 or 2, inferred idle, fight, search) or a forced re-pick; the call
+    comes after the new mood's track is started. Only one callback is kept; a new call replaces it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Not called while the music update is deferred (`0x00512c7c + 0x82c`); a forced re-pick passes the same mood twice.
+    A name that is not a Lua function is skipped silently. Moods: sound.md#system-music.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [55]}
 
 - name: SoundPlayAmbientTrack

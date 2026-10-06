@@ -25,14 +25,17 @@
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (a breakable or damageable object, not a human)."}
   results:
-    - {lua: number, desc: "The object's remaining hitpoints (+0x128), or 0 when the handle is not a live object."}
+    - {lua: number, desc: "The object's remaining hitpoints (+0x128), or 0 when the handle does not resolve or the object is not damageable (its type-flags call lacks bit 8)."}
   description: >-
-    Returns a world object's remaining hitpoints, for scripts that wait for something to be broken.
+    Returns a world object's remaining hitpoints, for scripts that wait for something to be broken. The handle is
+    resolved, the object is checked to be of the damageable kind (vtable `+0x24` flags & 8, 0x00395f38), and its
+    hitpoints word is returned.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
     Doors and barriers keep their hitpoints in their data and mirror them at +0x128 after every hit (0x003a6ec8), so
-    this reads a door's too ([World objects: breaking a door](../../research/objects.md#door-break)).
+    this reads a door's too ([World objects: breaking a door](../../research/objects.md#door-break)). The value is
+    pushed as unsigned (a negative word would read as 2^32 minus it).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [55]}
   coney: implemented
 
@@ -254,30 +257,39 @@
   wrapper: 0x0036dda0
   calls:
     - {addr: 0x003978a8, name: ObjMgr_UnloadTimed}
+    - {addr: 0x00399b20, name: SpawnTable_UnloadTimed}
+    - {addr: 0x00399cd0, name: SpawnTable_FindRecord}
   description: >-
-    Asks the object manager's spawn table (object manager +0x840) to unload its timed objects (0x00399b20). Used once,
-    by the final level.
-  evidence: inferred
-  depth: brief
+    Removes the live objects that the object manager's spawn table (object manager `+0x840`) placed with a timer: for
+    each spawned object whose timer word (`+0x120`) is non-zero and that still has a spawn record (matched by its
+    16-bit id), the record is marked done (bit 0x40000 of record `+0x24`, so it is not spawned again) and the object
+    is told to unload itself (its vtable `+0x4c`). Used once, by the final level.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    What makes an object 'timed' is not traced.
+    What sets an object's `+0x120` (the 'timed' mark) is not traced; inferred: objects placed to appear or vanish at
+    a scripted time. Records are 0x28 bytes at table `+0x14`, count `+0x18`.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [84]}
 
 - name: CarSetPartOpen
   wrapper: 0x0036ddc0
   calls:
     - {addr: 0x0038d5b8, name: Car_SetPartOpen}
+    - {addr: 0x0038d020, name: Car_OpenPart}
+    - {addr: 0x0038cb70}
   args:
-    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car object."}
-    - {name: part, lua: number, ctype: unsigned, desc: "Which opening: 0-5 map to the car's internal part ids 5, 4, 14, 16, 18 and 20 (doors, bonnet and boot; the exact part per number is not traced). Other values do nothing."}
-    - {name: open, lua: boolean, desc: "True to open the part, false to close it."}
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car object; a handle that is not a car does nothing."}
+    - {name: part, lua: number, ctype: unsigned, desc: "Which opening: 0 boot (part 5), 1 bonnet (4), 2-5 the four doors (parts 14, 16, 18, 20). Other values do nothing."}
+    - {name: open, lua: boolean, desc: "true to open the part, false to close it."}
   description: >-
-    Opens or closes a door, bonnet or boot of a car.
+    Opens or closes a door, the bonnet or the boot of a parked car ([Cars](../../research/cars.md#car-object)):
+    Car_OpenPart sets the part's open bit (part state `+0x96` bit 2) and, once the model is loaded, swings the part
+    and its damaged form on their hinge (±45°, 0x0038cb70).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    The number-to-part mapping is confirmed (code) at 0x0038d5b8; which physical panel each id is, is inferred from
-    the name.
+    Nothing happens for a part the car has removed or marks as unable to open (`+0x11f4`). Which door each of 2-5 is
+    (front/back, left/right) is inferred from the part boxes only.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [14]}
 
 - name: CarSpawnRadio
@@ -376,12 +388,20 @@
   wrapper: 0x0036e1f0
   calls:
     - {addr: 0x00413828, name: Train_Stop}
+    - {addr: 0x00414188, name: Trains_IsPathClear}
+    - {addr: 0x00413c48, name: TrainRecord_IsPathClear}
   args:
-    - {name: train, lua: number, ctype: unsigned, desc: "Train slot index."}
+    - {name: train, lua: number, ctype: unsigned, desc: "Train slot index 0-3 (0x150-byte records at 0x006f3a10); not range-checked."}
   description: >-
-    Stops a running scripted train (clears its running flag).
+    Clears the running byte (`+0x148`) of a scripted train slot. A running train is a chain of points (ObjSetTrainPoint)
+    with a radius (`+0x144`, ObjStartTrain's second argument) that AI movement treats as a barrier: Trains_IsPathClear
+    (0x00414188, from MoveAction_Update and 0x002221e0) rejects a human-sized step that passes within the radius of
+    any segment. Once stopped, AI humans may cross the line again; the points stay set.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Nothing visible moves or stops: the slot holds no objects of its own beyond the points (inferred: the subway train's
+    danger zone). ObjStartTrain resets the slot and runs it again.
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [31, 63]}
 
 - name: ConvertJumpToDoor
@@ -481,13 +501,15 @@
   calls:
     - {addr: 0x003967a8, name: ObjZone_IsEnabled}
   args:
-    - {name: zone, lua: number, ctype: unsigned, desc: "Zone number."}
+    - {name: zone, lua: number, ctype: unsigned, desc: "Object zone number 0-254 ([Object zones](../../references/zones.md)); not range-checked."}
   results:
-    - {lua: boolean, desc: "True when the zone's bit is set in the zone mask."}
+    - {lua: boolean, desc: "true when the zone is enabled: its bit is set in the object manager's zone mask (`+0x20`, eight words)."}
   description: >-
-    Tests whether an object zone is enabled.
+    Tests whether an object zone is enabled, i.e. whether ObjEnableZone last switched it on (zone 0 is on and 1-254
+    off when a level starts, [Tasks](../../research/tasks.md#classes)). Enabled zones are those whose spawn records the
+    object manager creates.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [14]}
 
 - name: ObjMarkZone
@@ -1308,10 +1330,16 @@
   wrapper: 0x0037aaf8
   calls:
     - {addr: 0x002a7c48, name: FlagNet_Validate}
+    - {addr: 0x002a73a8, name: FlagNet_FindNode}
   description: >-
-    Checks every link of the flag network (0x002a73a8 per non-empty link); a debugging aid used once.
-  evidence: inferred
-  depth: brief
+    Does nothing visible: it walks the flag network (128 nodes of 0x14 bytes at 0x006e9440, each a flag handle and up
+    to four linked flag handles) and looks up the node of every non-empty link, discarding the result. A debugging
+    check whose reporting was compiled out; used once, by level 82.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    A link to a flag with no node gives -1 from 0x002a73a8 and is silently ignored. No arguments, no results, no state
+    changes.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [82]}
 
 - name: FlagNetClear
@@ -1435,19 +1463,25 @@
   wrapper: 0x0037ba48
   calls:
     - {addr: 0x0040ca18, name: Water_Set}
+    - {addr: 0x00191230, name: WaterEffect_Init}
+    - {addr: 0x001915a0, name: WaterEffect_SetFrame}
+    - {addr: 0x00191dd8, name: WaterEffect_Update}
   args:
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Centre `{x, y, z}` of the water plane in world metres (z is the water height)."}
-    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation `{x, y, z, w}` of the plane; the scripts pass `{0, 0, 0, -1}` or `{-0.01, -0.01, -1, 1}`."}
-    - {name: width, lua: number, ctype: float, desc: "Size of the plane along x in metres (110-300 in the scripts)."}
-    - {name: length, lua: number, ctype: float, desc: "Size of the plane along y in metres (110-1339)."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Origin `{x, y, z}` of the water plane in world metres (z is the water height); the 0-1 grid runs from here, so it is a corner (inferred)."}
+    - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation quaternion `{x, y, z, w}`, normalised; all zeros means none. The scripts pass `{0, 0, 0, -1}` (none) or `{-0.01, -0.01, -1, 1}`."}
+    - {name: width, lua: number, ctype: float, desc: "Size of the plane along its x in metres (110-300 in the scripts)."}
+    - {name: length, lua: number, ctype: float, desc: "Size of the plane along its y in metres (110-1339)."}
     - {name: colour, lua: table, elem: number, count: 3, written_back: true, desc: "Water colour `{r, g, b}`, components 0-1."}
-    - {name: param1, lua: number, ctype: float, desc: "Number such as 0, 0.1 or 1; likely a wave or reflection strength. Not traced."}
-    - {name: param2, lua: number, ctype: float, desc: "Number such as 0.1 or 0.25; likely a scroll speed or transparency. Not traced."}
+    - {name: waveHeight, lua: number, ctype: float, desc: "Wave amplitude in metres: each grid column's vertices rise and fall by sin(time × waveSpeed + column) × this (scripts 0, 0.1 or 1)."}
+    - {name: waveSpeed, lua: number, ctype: float, desc: "Time multiplier of the waves; it also scrolls the texture along x (scripts 0.1 or 0.25)."}
   description: >-
-    Places and colours the level's water surface (0x0040ca18), used by the river and dock levels.
-  evidence: inferred
-  depth: brief
+    Places, sizes and colours the level's water surface, a 9 × 5 vertex grid textured `water_tex` (`ocean_tex` for
+    the second texture) with 4 texture repeats across. The first call creates the WaterEffect (kept at
+    `0x005147c4 + 0x5c`); later calls move it, resize it, recolour it and change its waves. Used by the river and dock
+    levels.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    The wrapper calls 0x0040ca18 directly; the meaning of the size and last two values is inferred from the scripts'
-    numbers.
+    The wrapper writes the three tables back unchanged. The wave also modulates each vertex's alpha. The update
+    (0x00191dd8) runs at most every `0x0050cd84` seconds. There is no binding to remove the water.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [84, 82, 83, 64]}

@@ -6,12 +6,20 @@
   wrapper: 0x00368278
   calls:
     - {addr: 0x0018dcc0, name: ScreenFx_EnableHeat}
+    - {addr: 0x0018b7d0}
+    - {addr: 0x0018b950}
   args:
-    - {name: enable, lua: boolean, desc: "True starts, false stops the heat-haze screen effect."}
+    - {name: enable, lua: boolean, desc: "True switches both views to look 7 (heat); false ends it and returns to the base look."}
   description: >-
-    Switches the heat-haze screen effect (screen effect 7) on or off on both screen-effects managers.
+    Switches the heat look (screen-effects look 7, [Screen effects](../../references/screen-effects.md#fx-look-7)) on
+    or off on both screen-effects managers. On, each view makes look 7 current and blends its tint and motion-blur
+    strength to look 7's over look 7's in time (default 1 s); off, it goes back to the base look (the level colour,
+    look 9, or the store look) over look 7's out time (default 5 s).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    What the player sees is whatever look 7 holds: its defaults (no tint, blur 1) can be changed by CfgScrFx before.
+    No distortion pass of its own was found; the "heat" is the tint and blur blend (inferred from 0x0018b7d0).
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: ScreenQueueEffect
@@ -50,27 +58,35 @@
   wrapper: 0x00368670
   calls:
     - {addr: 0x0018dda0, name: ScreenFx_StartRain}
+    - {addr: 0x0018bae0}
+    - {addr: 0x00199ba8}
+    - {addr: 0x00199e50}
+    - {addr: 0x0019a8e0}
   args:
-    - {name: texture1, lua: number, ctype: unsigned, desc: "Packed texture or sprite resource id for the first rain layer (sheet in the top 16 bits)."}
-    - {name: param1, lua: number, ctype: unsigned, desc: "Small integer for layer 1 (1 or 2 in the scripts; likely a density or blend mode)."}
-    - {name: param2, lua: number, ctype: unsigned, desc: "Small integer for layer 1 (6 or 7; likely a drop count or size)."}
-    - {name: speed1, lua: number, ctype: float, desc: "Number for layer 1 (0.01-0.015; likely a speed or size)."}
-    - {name: length1, lua: number, ctype: float, desc: "Number for layer 1 (0.07-0.3; likely streak length)."}
-    - {name: colour1, lua: table, elem: number, count: 4, written_back: true, desc: "Layer 1 colour `{r, g, b, a}`, 0-255."}
-    - {name: texture2, lua: number, ctype: unsigned, desc: "Resource id for the second rain layer."}
-    - {name: param3, lua: number, ctype: unsigned, desc: "Small integer for layer 2."}
-    - {name: param4, lua: number, ctype: unsigned, desc: "Small integer for layer 2."}
-    - {name: speed2, lua: number, ctype: float, desc: "Number for layer 2."}
-    - {name: length2, lua: number, ctype: float, desc: "Number for layer 2."}
+    - {name: texture1, lua: number, ctype: unsigned, desc: "Sprite word of the near rain layer's texture: sheet in the top 16 bits, rectangle in the low ([Particles: sprite words](../../research/particles.md#sprite-words))."}
+    - {name: tilesV1, lua: number, ctype: unsigned, desc: "How many times the texture repeats down the screen (byte; scripts use 1 or 2)."}
+    - {name: tilesU1, lua: number, ctype: unsigned, desc: "How many times it repeats across the screen (byte; scripts use 6 or 7)."}
+    - {name: driftU1, lua: number, ctype: float, desc: "Sideways scroll per frame in texture widths (0.01-0.015 in the scripts: a slant)."}
+    - {name: fallV1, lua: number, ctype: float, desc: "Downward scroll per frame in texture heights (0.07-0.3: the fall speed)."}
+    - {name: colour1, lua: table, elem: number, count: 4, written_back: true, desc: "Layer 1 colour `{r, g, b, a}`, 0-255 (the alpha sets how heavy it looks)."}
+    - {name: texture2, lua: number, ctype: unsigned, desc: "Sprite word of the second (far) layer's texture."}
+    - {name: tilesV2, lua: number, ctype: unsigned, desc: "Vertical repeats of layer 2."}
+    - {name: tilesU2, lua: number, ctype: unsigned, desc: "Horizontal repeats of layer 2."}
+    - {name: driftU2, lua: number, ctype: float, desc: "Sideways scroll per frame of layer 2."}
+    - {name: fallV2, lua: number, ctype: float, desc: "Downward scroll per frame of layer 2."}
     - {name: colour2, lua: table, elem: number, count: 4, written_back: true, desc: "Layer 2 colour `{r, g, b, a}`, 0-255."}
   description: >-
-    Starts the two-layer rain screen effect (screen effect 0) on both views with the given textures, sizes and
-    colours.
+    Starts the rain effect (screen-effects layer 0, `OE_Rain`) on both views, or changes its settings when it is
+    already running. Each layer is a textured sheet drawn over the view (and on every rain plane from
+    SpawnRainPlane) whose texture coordinates span `tilesU × tilesV` repeats and scroll each frame by
+    `(driftU, fallV)`, wrapping at 1, so the streaks fall and slant. It also switches on the ground splashes that
+    CfgRaindrops configures.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Which number controls what is inferred from the values; the packing into the effect's parameter block is confirmed
-    (code) at 0x0018dda0.
+    Scrolling is per rendered frame, not per second. The sheet's size follows a fixed field-of-view scale (1.7, 2.0
+    in one display mode, times 1.15 in one game state, 0x0019a8e0). EndRain stops it. The colour tables are written
+    back as read.
   usage: {chunks: 10, calls: 22, boot: false, mission1: false, result_used: false, levels: [93, 51, 82, 61, 64]}
 
 - name: EndRain
@@ -88,17 +104,26 @@
   wrapper: 0x00368990
   calls:
     - {addr: 0x0018dd38, name: ScreenFx_SpawnRainPlane}
+    - {addr: 0x0018be58}
+    - {addr: 0x0019a780}
+    - {addr: 0x0019a8e0}
   args:
-    - {name: corner, lua: table, elem: number, count: 3, written_back: true, desc: "First corner `{x, y, z}` of the rain plane in world metres."}
-    - {name: cornerU, lua: table, elem: number, count: 3, written_back: true, desc: "Corner along the plane's width."}
-    - {name: cornerV, lua: table, elem: number, count: 3, written_back: true, desc: "Corner along the plane's height."}
-    - {name: uv0, lua: table, elem: number, count: 2, written_back: true, desc: "Texture coordinates `{u, v}` at the first corner (the scripts pass `{0, 0}`)."}
-    - {name: uv1, lua: table, elem: number, count: 2, written_back: true, desc: "Texture coordinates at the opposite corner (`{1, 1}`)."}
+    - {name: corner, lua: table, elem: number, count: 3, written_back: true, desc: "First corner `{x, y, z}` of the rain sheet in world metres."}
+    - {name: cornerU, lua: table, elem: number, count: 3, written_back: true, desc: "The corner along the sheet's width."}
+    - {name: cornerV, lua: table, elem: number, count: 3, written_back: true, desc: "The corner along the sheet's height; the three corners also give the side it is seen from."}
+    - {name: uv0, lua: table, elem: number, count: 2, written_back: true, desc: "Read and written back but not used: the sheet takes its texture coordinates from the rain layer (scripts pass `{0, 0}`)."}
+    - {name: uv1, lua: table, elem: number, count: 2, written_back: true, desc: "Read and written back but not used (scripts pass `{1, 1}`)."}
   description: >-
-    Adds a vertical sheet of falling rain in the world (for doorways and awnings), handled by the screen-effects code
-    (0x0018be58).
-  evidence: inferred
-  depth: brief
+    Adds a world-space sheet of falling rain (for doorways, windows and awnings) to a list of at most 25 kept at
+    0x005fdec0; further calls do nothing. While StartRain is running and the overlay is switched to world sheets
+    (rain object `+0x90`), each sheet whose front faces the camera (normal `(cornerU - corner) × (cornerV - corner)`)
+    is drawn with both rain layers' textures, scrolling with them.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The record is 0x28 bytes and only its three corners are written; the draw also reads `+0x24` (compared with 12 to
+    halve the repeats), left unset here. What sets rain object `+0x90` (inferred: the camera under cover) is not
+    traced. The rain copies the list when it is created (0x00199ba8), so sheets added while it runs are drawn only after EndRain and a new StartRain.
   usage: {chunks: 3, calls: 27, boot: false, mission1: false, result_used: false, levels: [93, 51, 82]}
 
 - name: StartFog
@@ -265,17 +290,23 @@
   wrapper: 0x0036ca88
   calls:
     - {addr: 0x00385b08, name: AreaEffect_Spawn}
+    - {addr: 0x00392638, name: Explosion_DamageHumansInRadius}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human at the centre of the effect."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human at the centre, who is also the attacker; a handle that is not a human does nothing."}
     - {name: radius, lua: number, ctype: float, desc: "Radius in metres (20 in the one script call)."}
-    - {name: amount, lua: number, ctype: unsigned, desc: "Integer strength or duration (100 in the script call)."}
-    - {name: flag, lua: boolean, desc: "Boolean passed through (true in the script call)."}
-    - {name: kind, lua: number, ctype: int, desc: "Effect kind number (6 in the script call)."}
+    - {name: damage, lua: number, ctype: unsigned, desc: "Damage dealt to each human hit (100 in the script call)."}
+    - {name: excludeSelf, lua: boolean, desc: "true spares the centre human himself (true in the script call)."}
+    - {name: sparedKind, lua: number, ctype: int, desc: "Gang kind (gang `+0x2c`) whose members are spared, or -1 for none (6 in the script call)."}
   description: >-
-    Applies an area effect around a human (0x00392638), such as a shockwave that affects nearby characters; used once,
-    in a boss fight.
-  evidence: inferred
-  depth: brief
+    Deals a one-off blast of damage around a human, as an explosion does (Explosion_DamageHumansInRadius): up to 60
+    humans within the radius of his centre are found, and each one with a clear line from the centre (a world ray
+    cast) gets the damage as pending damage from him, with a hit reaction, through the normal damage path
+    ([Combat: damage](../../research/combat.md#damage)). Used once, in a boss fight.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Humans the centre human counts as friends (0x00222a90) get the damage negated and no reaction, so (inferred) they
+    take none. Nothing is drawn or played by this call; any visual comes from the script.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [55]}
 
 - name: SetWorldAmbient
@@ -373,24 +404,35 @@
   wrapper: 0x003781d8
   calls:
     - {addr: 0x00179758, name: Embers_Init}
+    - {addr: 0x00178fd8}
+    - {addr: 0x00179310}
+    - {addr: 0x00179378, name: Embers_Update}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the flag or object where the embers fall."}
-    - {name: p1, lua: number, ctype: unsigned, desc: "Number such as 80 (count or radius)."}
-    - {name: p2, lua: number, ctype: unsigned, desc: "Number such as 110 (count or height)."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object (a flag) the embers fall around; its position is taken once. A bad handle does nothing."}
+    - {name: minRate, lua: number, ctype: unsigned, desc: "Fewest embers per second (divided by 30, whole numbers, for a per-frame count); the script passes 80."}
+    - {name: maxRate, lua: number, ctype: unsigned, desc: "Most embers per second, likewise divided by 30; the script passes 110."}
   description: >-
-    Starts falling embers at an object's position (0x00179310), used in a burning building.
+    Starts (creating it on first use, 0x005971ac) the falling-embers effect of a burning building and centres it on the
+    object. Each frame it spawns a random count between `minRate/30` and `maxRate/30` embers at random points of a 10 x
+    10 m horizontal square around the centre; each is a sprite (sheet 1, rectangles 8-10) with a random brightness
+    128-225 that falls under 0.8-1.0 of gravity and lives 2-3 s (60-90 frames).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Counts and times are per frame (fixed 30 Hz). A second call only moves the centre and changes the rates. The
+    meaning of ember `+0x28` as brightness is inferred; the draw is not traced.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: TermFallingEmbers
   wrapper: 0x00378278
   calls:
     - {addr: 0x001797e8, name: Embers_Term}
+    - {addr: 0x001790a8}
   description: >-
-    Stops the falling embers effect (0x001790a8).
+    Stops the falling embers: deletes the embers object (0x005971ac) with every ember still falling, so they vanish
+    at once. Does nothing when no embers are running.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: StartGarbage

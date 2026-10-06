@@ -17,11 +17,11 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`RegisterUpdate`](#registerupdate) | - | 0 | no | no | confirmed (code) |
 | [`ScheduleFunc`](#schedulefunc) | - | 204 | yes | yes | confirmed (code) |
 | [`ScheduleFuncArg1`](#schedulefuncarg1) | - | 89 | yes | yes | confirmed (code) |
-| [`SetAllClearCallBack`](#setallclearcallback) | - | 2 | no | no | inferred |
+| [`SetAllClearCallBack`](#setallclearcallback) | - | 2 | no | no | confirmed (code) |
 | [`SetArmiesMultiplayerCallback`](#setarmiesmultiplayercallback) | - | 0 | no | no | inferred |
 | [`SetCheatCallback`](#setcheatcallback) | - | 1 | yes | no | confirmed (code) |
 | [`SetGeneralCarMsgHandler`](#setgeneralcarmsghandler) | - | 10 | no | no | inferred |
-| [`SetHatCallBack`](#sethatcallback) | - | 2 | no | no | inferred |
+| [`SetHatCallBack`](#sethatcallback) | - | 2 | no | no | confirmed (code) |
 | [`SetMsgHandler`](#setmsghandler) | - | 195 | yes | yes | confirmed (code) |
 | [`SetMsgHandlerEx`](#setmsghandlerex) | - | 43 | yes | yes | confirmed (code) |
 | [`SetMultiplayerCallback`](#setmultiplayercallback) | - | 6 | yes | no | confirmed (code) |
@@ -207,14 +207,22 @@ SetAllClearCallBack(callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `callback` | string | Lua function name (at most 31 characters), or nil to clear. |
+| 1 | `callback` | string | Lua function name (copied, at most 31 characters, to `W_GameState + 0x2bc`), or nil to clear it. |
 
 **Returns** nothing.
 
-Sets the function called when all enemies of the current area have been cleared (kept at `W_GameState + 0x2bc`).
+Sets the function called, with no arguments, when player 1's gang is in the clear: when its police wanted timer (gang
+`+0x5e8`) runs out with no crime in progress and the police turn neutral again (0x00169a20, which also tells the HUD and
+sets the last crime type to 0xe), or when its second timer (gang `+0x5f0`, set by GangRespond and GoalCallGang) runs
+out.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003705d0` (registered by `RegisterBindings`); **calls** `0x0041add0`
+**Notes.** Setting a name also clears game state byte `+0x2db` (the byte before the name). The callback is only called
+if the name is a Lua function. Other readers of `+0x2bc` (0x0016cc60, Crime_UpdateLevel 0x0041c128) are not traced.
+Wanted timers: [Crimes](../../research/crimes.md#wanted).
+
+- **Evidence:** confirmed (code) at `0x0041add0`, `0x0041adf8`, `0x001698f0`, `0x00169a20`; detail: traced
+- **Wrapper** `0x003705d0` (registered by `RegisterBindings`); **calls** `0x0041add0`, `0x0041adf8`
+  `GameState_SetAllClearCallback`, `0x001698f0` `Gang_UpdateWanted`, `0x00169a20` `Gang_ClearWanted`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
@@ -295,14 +303,20 @@ SetHatCallBack(callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `callback` | string | Lua function name (at most 31 characters), or nil to clear. |
+| 1 | `callback` | string | Lua function name (copied, at most 31 characters, to `W_GameState + 0x33c`), or nil to clear it. |
 
 **Returns** nothing.
 
-Sets the function called when the player takes a hat (kept at `W_GameState + 0x33c`).
+Sets the function called as f(humanHandle, hatHandle, typeName) whenever a human takes a hat: the human message handler
+(0x0024667c in `Human_HandleMessage`) stores the hat object's handle at human `+0x364` and then calls it, with the hat's
+object type name. Not called while a scene plays (game state `+0x410`) or when either handle no longer resolves.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00370600` (registered by `RegisterBindings`); **calls** `0x0041af20`
+**Notes.** Fires for any human (thugs going for hats included), not only the player. Setting a name clears game state
+byte `+0x35b`. Cleared on every level load (0x00418c68). The message that leads there is not identified.
+
+- **Evidence:** confirmed (code) at `0x0041af20`, `0x0041af48`, `0x0041af80`; detail: traced
+- **Wrapper** `0x00370600` (registered by `RegisterBindings`); **calls** `0x0041af20`, `0x0041af48`
+  `GameState_SetHatCallback`, `0x0041af80` `GameState_CallHatCallback`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** not implemented
@@ -396,17 +410,24 @@ SetObjZoneMsgHandler(zone, message, callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `zone` | number, truncated to an unsigned integer | Object zone id. |
-| 2 | `message` | number, truncated to an integer | Message number (the scripts use 1 for damage, 2 for destroyed). |
-| 3 | `callback` | string | Lua function name, or nil to remove. |
+| 1 | `zone` | number, truncated to an unsigned integer | Object zone number 0-254 ([Object zones](../../references/zones.md)); not range-checked. |
+| 2 | `message` | number, truncated to an integer | Message number 0-25, as for SetMsgHandler ([Script events](../../references/script-events.md)); scripts use 1 (damaged) and 2 (broken). Not range-checked. |
+| 3 | `callback` | string | Lua function name, interned; nil clears the slot. |
 
 **Returns** nothing.
 
-Registers a Lua callback for a message about an object zone (a group of world objects), kept by the world's zone list
-(`0x0039a7e0`).
+Registers one Lua callback for a message on every world object of an object zone, in the object manager's table (255
+zones of 26 slots, object manager `+0x50 + zone * 0x68 + message * 4`). Whenever a world object gets a message
+(0x00392520), the manager finds its spawn record, and when that record's zone has a callback for the message it is
+called like an object's own handler (same arguments, [Scripts: message
+handlers](../../research/scripting.md#message-handlers)); the object's own handlers run after it.
 
-- **Evidence:** confirmed (code) at `0x00386308`; detail: brief
-- **Wrapper** `0x0036d258` (registered by `RegisterBindings`); **calls** `0x00386308`
+**Notes.** Only objects spawned from the level's spawn table belong to a zone. The table is cleared when the spawn table
+is reset (0x00398130). Out-of-range zone or message numbers write past the table.
+
+- **Evidence:** confirmed (code) at `0x00386308`, `0x0039a7e0`, `0x003982a0`, `0x00392520`; detail: traced
+- **Wrapper** `0x0036d258` (registered by `RegisterBindings`); **calls** `0x00386308`, `0x0039a7e0`
+  `ObjZone_SetMsgHandler`, `0x003982a0` `ObjZone_DispatchMessage`, `0x00392520`
 - **Used by** 5 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented

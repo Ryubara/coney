@@ -431,14 +431,21 @@
 - name: CamLockRail
   wrapper: 0x00366880
   calls:
-    - {addr: 0x0011d180}
+    - {addr: 0x0011d180, name: Camera_LockRail}
+    - {addr: 0x0013d6b0, name: CamRail_UpdatePosition}
   args:
-    - {name: "on", lua: boolean, desc: "true locks the rail camera in place, false releases it (inferred)."}
-    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+    - {name: "on", lua: boolean, desc: "true freezes the rail camera, false lets it follow its rail again."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index whose rail camera to set; -1 (the default) sets player 0's and every other player's (up to the player count, game state `+0x224`)."}
   description: >-
-    Locks or releases a rail camera.
-  evidence: inferred
-  depth: brief
+    Locks or releases a player's rail camera (camera type 9) by setting its byte `+0x3e4`. While locked, the rail
+    update (0x0013d6b0) no longer moves the camera along its rail after the target: it keeps its position and view
+    from the previous frame. The rail camera also locks itself when the target passes the rail's end point.
+    Armies of the Night (levels 60-64) uses it to hold the side-scrolling view.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Other readers of `+0x3e4`
+    (0x0013b358, 0x0013dcc8, 0x00140708) are not traced; the rail camera is not on [Camera](../../research/camera.md) yet.
   usage: {chunks: 15, calls: 118, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: CamModifyRail
@@ -467,21 +474,30 @@
 - name: CamSetupHood
   wrapper: 0x003669b0
   calls:
-    - {addr: 0x0011d808}
+    - {addr: 0x0011d808, name: HoodCam_Setup}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the player human riding the vehicle."}
-    - {name: vehicle, lua: number, ctype: unsigned, desc: "Handle of the vehicle object the camera is mounted on."}
-    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
-    - {name: lookOffset, lua: table, elem: number, count: 3, written_back: true, desc: "Offset {x, y, z} (scripts pass zeros)."}
-    - {name: mountOffset, lua: table, elem: number, count: 3, written_back: true, desc: "Camera offset {x, y, z} from the vehicle (scripts put it a few metres up and forward)."}
-    - {name: near, lua: number, ctype: float, desc: "Near clip distance."}
-    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the player human riding the vehicle; added to the camera targets (CameraTargets_Add)."}
+    - {name: vehicle, lua: number, ctype: unsigned, desc: "Handle of the object the camera is mounted on (hood camera `+0x1e0`)."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees (default 60)."}
+    - {name: lookOffset, lua: table, elem: number, count: 3, written_back: true, desc: "Offset {x, y, z} of the look-at point (`+0x1f0`); only z is used, as a height added to the players' average position. Default {0, 0, 1.53}; scripts pass zeros."}
+    - {name: mountOffset, lua: table, elem: number, count: 3, written_back: true, desc: "Camera position {x, y, z} relative to the mount (`+0x200`), in metres: x along the mount's right, y along its forward, z up. Default {0, 0.3, 1.7}."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance in metres (default 0.1)."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance in metres, capped at 150 (default 115)."}
   results:
-    - {lua: number, desc: "The hood camera's handle, or NilHandle."}
+    - {lua: number, desc: "Handle of player 0's hood camera, or NilHandle when either handle does not resolve."}
   description: >-
-    Sets up the camera mounted on a vehicle (the bus and car chases), for every player.
+    Sets up the hood camera ([type 11](../../references/cameras.md#cam-type-11)) for every player: each player's
+    camera (made on first use by HoodCam_GetForPlayer, 0x0011ff50) is mounted on the vehicle at the mount offset
+    and gets the lens values. Each update (HoodCam_Update, 0x00135138) places it on the mount (0x00134d78) and aims
+    it at the average position of the live players raised by the look offset's z (0x00134f08). The camera is not made
+    active; scripts follow with CameraMakeActive.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Both tables are read and written back unchanged. lookOffset x and y are stored but no reader was found. Each
+    update moves the field of view toward `+0x214` (60, set only by the constructor 0x00134b90) by at most the frame
+    step, so a script's fov appears to drift back to 60° at about 1° a second (inferred from the step being in
+    seconds).
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: true, levels: [51, 84]}
 
 - name: CamUseDeathCamera
@@ -529,14 +545,22 @@
   wrapper: 0x00366dd0
   calls:
     - {addr: 0x0011cb70}
+    - {addr: 0x00120038, name: Cam_GetPoizo}
+    - {addr: 0x00142578}
   args:
-    - {name: onEnd, lua: string, desc: "Name of the Lua function called when the reversed path ends, or nil."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called when the reversed path ends (interned into the camera, `+0x2e8`), or nil."}
   results:
-    - {lua: boolean, desc: "true (1) when there is a path camera."}
+    - {lua: boolean, desc: "true when the path camera exists (it is created on first use, so false only when that allocation fails)."}
   description: >-
-    Plays the scripted camera path backwards.
-  evidence: inferred
-  depth: brief
+    Turns the path camera ([Camera: path cameras](../../research/camera.md#path-cameras)) round: its points'
+    positions and orientations are put in reverse order, the segment times shifted to match (a point's time is to
+    the next point), the progress reset to the start, the camera placed at the new first point and the path started
+    again with the new end callback. Scripts use it to fly a path back to where it began.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    It does not make the path camera current; it moves only while it is player 0's camera. Calling it twice restores
+    the original order.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [14]}
 
 - name: CamAddPoizoPoint
@@ -757,11 +781,19 @@
 - name: CamGhostDoor
   wrapper: 0x00379be8
   calls:
-    - {addr: 0x003973a0}
+    - {addr: 0x003973a0, name: Door_SetCameraGhost}
+    - {addr: 0x00395020}
+    - {addr: 0x003a4a40, name: CollisionMesh_OrTriangleTypeBits}
   args:
-    - {name: door, lua: number, ctype: unsigned, desc: "Handle of a door."}
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of a door object (object kinds 0x0f, 0x19, 0x1e or 0x21); anything else does nothing."}
   description: >-
-    Sets render flag 0x200 on both parts of a door, inferred to let the camera see through it.
-  evidence: inferred
-  depth: brief
+    Lets the camera pass through a door: sets type bit 9 (`0x200`) on the door's two collision triangles (door
+    `+0xd8` / `+0xdc`, [World objects](../../research/objects.md)) in the world collision mesh. The camera's rays use
+    mask `0x200` and skip such triangles ([Collision: ray cast](../../research/collision.md#ray-cast)), so the camera
+    no longer stops at the door.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    There is no way back: no binding clears the bit, and it lasts until the collision mesh is reloaded. Other queries
+    whose mask has bit 9 skip the triangles too (not listed).
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [31, 54]}
