@@ -46,7 +46,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level80: mission 2 {#level80}
 
-178 bindings, 50 new: 50 traced, 10 implemented in Coney (109 of all 178).
+178 bindings, 50 new: 50 traced, 10 implemented in Coney (110 of all 178).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -103,7 +103,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level87: mission 3 {#level87}
 
-261 bindings, 87 new: 87 traced, 11 implemented in Coney (130 of all 261).
+261 bindings, 87 new: 87 traced, 11 implemented in Coney (131 of all 261).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -197,7 +197,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level95: the hub {#level95}
 
-323 bindings, 91 new: 91 traced, 11 implemented in Coney (147 of all 323).
+323 bindings, 91 new: 91 traced, 11 implemented in Coney (149 of all 323).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -295,7 +295,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level34: mission 4 {#level34}
 
-204 bindings, 17 new: 3 traced, 1 implemented in Coney (107 of all 204).
+204 bindings, 17 new: 3 traced, 1 implemented in Coney (108 of all 204).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -319,7 +319,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level2: mission 5 {#level2}
 
-243 bindings, 19 new: 1 traced, 1 implemented in Coney (127 of all 243).
+243 bindings, 19 new: 1 traced, 1 implemented in Coney (128 of all 243).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -345,7 +345,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 0 traced, 0 implemented in Coney (120 of all 259).
+259 bindings, 22 new: 0 traced, 0 implemented in Coney (121 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -374,7 +374,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level5: mission 7 {#level5}
 
-274 bindings, 16 new: 2 traced, 1 implemented in Coney (134 of all 274).
+274 bindings, 16 new: 2 traced, 1 implemented in Coney (135 of all 274).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -397,7 +397,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level81: mission 8 {#level81}
 
-236 bindings, 20 new: 1 traced, 3 implemented in Coney (118 of all 236).
+236 bindings, 20 new: 1 traced, 3 implemented in Coney (119 of all 236).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -424,7 +424,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level86: mission 9 {#level86}
 
-245 bindings, 17 new: 2 traced, 2 implemented in Coney (120 of all 245).
+245 bindings, 17 new: 2 traced, 2 implemented in Coney (121 of all 245).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -448,7 +448,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level93: mission 10 {#level93}
 
-295 bindings, 24 new: 3 traced, 2 implemented in Coney (133 of all 295).
+295 bindings, 24 new: 3 traced, 2 implemented in Coney (134 of all 295).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -479,7 +479,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level31: mission 11 {#level31}
 
-266 bindings, 9 new: 0 traced, 0 implemented in Coney (129 of all 266).
+266 bindings, 9 new: 0 traced, 0 implemented in Coney (130 of all 266).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -495,7 +495,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level14: mission 12 {#level14}
 
-226 bindings, 6 new: 0 traced, 1 implemented in Coney (108 of all 226).
+226 bindings, 6 new: 0 traced, 1 implemented in Coney (109 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -508,7 +508,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level9: mission 13 {#level9}
 
-225 bindings, 6 new: 0 traced, 0 implemented in Coney (111 of all 225).
+225 bindings, 6 new: 0 traced, 0 implemented in Coney (112 of all 225).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -521,7 +521,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level51: mission 14 {#level51}
 
-256 bindings, 6 new: 1 traced, 1 implemented in Coney (127 of all 256).
+256 bindings, 6 new: 1 traced, 1 implemented in Coney (128 of all 256).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -534,7 +534,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level52: mission 15 {#level52}
 
-235 bindings, 4 new: 0 traced, 0 implemented in Coney (117 of all 235).
+235 bindings, 4 new: 0 traced, 0 implemented in Coney (118 of all 235).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -559,7 +559,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level55: mission 17 {#level55}
 
-226 bindings, 8 new: 1 traced, 1 implemented in Coney (120 of all 226).
+226 bindings, 8 new: 1 traced, 1 implemented in Coney (121 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -589,7 +589,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level82: flashback 1 {#level82}
 
-250 bindings, 4 new: 0 traced, 0 implemented in Coney (112 of all 250).
+250 bindings, 4 new: 0 traced, 0 implemented in Coney (113 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -600,7 +600,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level92: flashback 2 {#level92}
 
-237 bindings, 8 new: 0 traced, 1 implemented in Coney (121 of all 237).
+237 bindings, 8 new: 0 traced, 1 implemented in Coney (122 of all 237).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -615,7 +615,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level83: flashback 3 {#level83}
 
-250 bindings, 1 new: 0 traced, 0 implemented in Coney (133 of all 250).
+250 bindings, 1 new: 0 traced, 0 implemented in Coney (134 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -623,7 +623,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level20: flashback 4 {#level20}
 
-258 bindings, 11 new: 1 traced, 1 implemented in Coney (127 of all 258).
+258 bindings, 11 new: 1 traced, 1 implemented in Coney (128 of all 258).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -641,7 +641,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level11: flashback 5 {#level11}
 
-260 bindings, 7 new: 0 traced, 1 implemented in Coney (133 of all 260).
+260 bindings, 7 new: 0 traced, 1 implemented in Coney (134 of all 260).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -677,7 +677,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level61: Armies of the Night 2 {#level61}
 
-168 bindings, 0 new: 0 traced, 0 implemented in Coney (101 of all 168).
+168 bindings, 0 new: 0 traced, 0 implemented in Coney (102 of all 168).
 
 ## level62: Armies of the Night 3 {#level62}
 
@@ -689,11 +689,11 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level63: Armies of the Night 4 {#level63}
 
-150 bindings, 0 new: 0 traced, 0 implemented in Coney (92 of all 150).
+150 bindings, 0 new: 0 traced, 0 implemented in Coney (93 of all 150).
 
 ## level64: Armies of the Night 5 {#level64}
 
-154 bindings, 4 new: 0 traced, 0 implemented in Coney (82 of all 154).
+154 bindings, 4 new: 0 traced, 0 implemented in Coney (83 of all 154).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

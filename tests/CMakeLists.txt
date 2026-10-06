@@ -13,6 +13,8 @@ add_executable(coney_tests
     core/ps2_float_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
+    effects/motion_blur_test.cpp
+    effects/particles_test.cpp
     fileio/disc_test.cpp
     fileio/executable_test.cpp
     fileio/reader_test.cpp
@@ -96,6 +98,7 @@ add_executable(coney_tests
     scripting/object_bindings_test.cpp
     scripting/script_bindings_test.cpp
     scripting/script_system_test.cpp
+    scripting/effects_bindings_test.cpp
     scripting/spawn_bindings_test.cpp
     scripting/trigger_bindings_test.cpp
     warriors/disk_profile_store_test.cpp

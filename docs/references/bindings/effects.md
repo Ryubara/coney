@@ -442,7 +442,7 @@ Wrapper `0x0037be18`; calls `0x0040cce8`.
 - **Wrapper** `0x0037be90` (registered by `RegisterBindings`); **calls** `0x0040cd28` `ScreenFx_QueueMotionBlurColour`
 - **Used by** 4 of 467 script chunks (14 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ScreenQueueEffect {#screenqueueeffect}
 
@@ -827,7 +827,7 @@ its handle.
 - **Wrapper** `0x00378958` (registered by `RegisterBindings`); **calls** `0x0039bfb0` `Particle_Spawn`
 - **Used by** 36 of 467 script chunks (596 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SpawnRainPlane {#spawnrainplane}
 

@@ -18,6 +18,8 @@ target_sources(coney_platform PRIVATE sandbox_renderer.cpp sandbox_viewer_mode.c
 target_sources(coney_platform PRIVATE reference_renderer.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
+# A level's particle systems and motion blur, drawn in play (docs/research/particles.md#coneys-implementation).
+target_sources(coney_platform PRIVATE motion_blur_pass.cpp particle_renderer.cpp play_level_effects.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).

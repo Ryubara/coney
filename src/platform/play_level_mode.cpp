@@ -20,6 +20,7 @@
 #include "gamemodes/game_mode_stack.h"
 #include "human/human_animator.h"
 #include "human/player_trace.h"
+#include "platform/play_level_effects.h"
 #include "raycast/collision_mesh.h"
 #include "scenes/scene_list.h"
 #include "scenes/scene_player.h"
@@ -240,9 +241,13 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         const HumanCreation* player = cast->humans != nullptr ? cast->humans->player(1) : nullptr;
         attachScenes(cast->scenes, player != nullptr ? player->handle : 0.0);
     }
+    if (cast != nullptr && cast->effects != nullptr) {
+        m_levelEffects = std::make_unique<PlayLevelEffects>(m_engine, m_wad, *cast->effects, m_print);
+    }
 }
 
 PlayLevelMode::~PlayLevelMode() {
+    m_levelEffects.reset();
     attachScenes(nullptr, 0.0); // the scenes may outlive the stage they were hosted by
     m_scenery->setLighting(nullptr);
     m_lights.reset();
@@ -528,11 +533,18 @@ void PlayLevelMode::render(const RenderTime& time) {
     }
     // The scenery draws itself through the blended view, with the character and the debug lines among its objects;
     // the scene's letterbox and fade go over it.
-    m_engine.setFrameOverlay(
-        [this, nowMs = millisecondsOf(time.gameTicks)](RenderEngine& engine) { m_stage->drawOverlay(engine, nowMs); });
-    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot] {
+    m_engine.setFrameOverlay([this, nowMs = millisecondsOf(time.gameTicks)](RenderEngine& engine) {
+        if (m_levelEffects) {
+            m_levelEffects->drawOverlay(engine);
+        }
+        m_stage->drawOverlay(engine, nowMs);
+    });
+    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot, &blended] {
         drawCharacter();
         drawDebugLines(snapshot);
+        if (m_levelEffects) {
+            m_levelEffects->drawInScene(blended.pose);
+        }
     });
 }
 

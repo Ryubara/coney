@@ -22,6 +22,10 @@ namespace coney::camera {
 class Cameras;
 } // namespace coney::camera
 
+namespace coney::effects {
+struct LevelEffects;
+} // namespace coney::effects
+
 namespace coney::world_objects {
 class ObjectTypes;
 class SpawnRecords;
@@ -154,6 +158,7 @@ struct BindingContext {
     scenes::SceneSystem* scenes = nullptr;          ///< The scenes the bindings play; null: Coney's stand-in.
     camera::Cameras* cameras = nullptr;          ///< Player 1's cameras, which the camera bindings drive; null: none.
     graphics::LevelLighting* lighting = nullptr; ///< The lights and fog the lighting bindings set; null keeps none.
+    effects::LevelEffects* effects = nullptr;    ///< The level's particles and motion blur; null: none drawn.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

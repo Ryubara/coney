@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▏░░░░░░░░░░░░░░░░░` | 10.7% of the game's own code (358,652 of 3,354,776 bytes, 974 functions) |
+| **Reimplemented** | `██▏░░░░░░░░░░░░░░░░░` | 10.7% of the game's own code (358,652 of 3,354,776 bytes, 982 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-237 reimplemented function(s) have no size yet and add no bytes.
+245 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -60,7 +60,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 25 | 62,808 |
 | `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 6 | 7,120 |
 | `GameModes` | `█████░░░░░░░░░░░░░░░` | 25.0% | 63 | 100,440 |
-| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 53 | 195,624 |
+| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 54 | 195,624 |
 | `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.4% | 122 | 497,416 |
 | `Human` | `██▏░░░░░░░░░░░░░░░░░` | 10.6% | 290 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
@@ -68,11 +68,11 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████▏░░░░░░░░░░░░░░` | 25.4% | 122 | 197,192 |
+| `Scripting` | `█████▏░░░░░░░░░░░░░░` | 25.4% | 125 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 41 | 531,312 |
+| `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 43 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `World` | `▎░░░░░░░░░░░░░░░░░░░` | 1.1% | 26 | 24,344 |
+| `World` | `▎░░░░░░░░░░░░░░░░░░░` | 1.1% | 28 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
 | `Warriors` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 71 | 54,264 |
 | `Movie` | `██████▊░░░░░░░░░░░░░` | 33.9% | 1 | 5,208 |
@@ -331,6 +331,7 @@ at the top of the repository's `README.md`.
 | `0x00184890` | `ResourceMgr_CompareOverlayKeys` | `Graphics` | 64 |
 | `0x00185cc8` | `ResourceMgr_EmptyInstances` | `Graphics` | 88 |
 | `0x00185d20` | `ResourceMgr_RenderOverlay` | `Graphics` | 840 |
+| `0x0018c8c8` | `ScreenFx_BlendMotionBlur` | `Graphics` | not filled in |
 | `0x0018cc60` | `ScreenQueueEffect` | `Graphics` | 504 |
 | `0x0018ce58` | `ScreenEffects_UpdateFade` | `Graphics` | not filled in |
 | `0x0018e6b8` | `EnterStore` | `Graphics` | 200 |
@@ -905,6 +906,7 @@ at the top of the repository's `README.md`.
 | `0x00375648` | `TacticCrowd` | `Scripting` | 128 |
 | `0x00377a10` | `TacticTrigger` | `Scripting` | 160 |
 | `0x00377cc8` | `ObjSpawn` | `Scripting` | not filled in |
+| `0x00378958` | `SpawnParticle` | `Scripting` | not filled in |
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
 | `0x0037a770` | `FindFlag` | `Scripting` | 112 |
@@ -912,6 +914,8 @@ at the top of the repository's `README.md`.
 | `0x0037b6e8` | `SSMC_StartDeleteSequence_Binding` | `Scripting` | 32 |
 | `0x0037b7d8` | `SetLUASaveDataFloat` | `Scripting` | 120 |
 | `0x0037b850` | `GetLUASaveDataFloat` | `Scripting` | 88 |
+| `0x0037be18` | `QueueMotionBlurEffect_Alpha` | `Scripting` | not filled in |
+| `0x0037be90` | `QueueMotionBlurEffect` | `Scripting` | not filled in |
 | `0x0037d420` | `RegisterBindings` | `Scripting` | 27,408 |
 | `0x00384c38` | `MessageHandler_Deliver` | `Scripting` | 168 |
 | `0x00384ce0` | `MessageHandler_Marshal` | `Scripting` | 3,032 |
@@ -941,6 +945,7 @@ at the top of the repository's `README.md`.
 | `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
 | `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |
+| `0x0039bfb0` | `Particle_Spawn` | `TaskEngine` | not filled in |
 | `0x0039c0e0` | `Glass_Spawn` | `TaskEngine` | 432 |
 | `0x0039cbf0` | `SceneTask_Update` | `TaskEngine` | 1,672 |
 | `0x0039d870` | `SceneTask_Start` | `TaskEngine` | 5,104 |
@@ -955,6 +960,7 @@ at the top of the repository's `README.md`.
 | `0x003a4768` | `Triangle_MakeTwoSided` | `TaskEngine` | 88 |
 | `0x003b2180` | `DoorFence_Hit` | `TaskEngine` | 3,520 |
 | `0x003b2f40` | `DoorFence_Init` | `TaskEngine` | 536 |
+| `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |
 | `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
 | `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |
 | `0x003e4cb8` | `SubGlass_Update` | `TaskEngine` | 984 |
@@ -968,6 +974,8 @@ at the top of the repository's `README.md`.
 | `0x003fbba0` | `DoorSwing_Update` | `TaskEngine` | 760 |
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |
 | `0x0040c908` | `Level_SetFogDistance` | `World` | 48 |
+| `0x0040cce8` | `ScreenFx_QueueMotionBlurAlpha` | `World` | not filled in |
+| `0x0040cd28` | `ScreenFx_QueueMotionBlurColour` | `World` | not filled in |
 | `0x0040cd78` | `ResourceManager_SetDynamicAnimation` | `World` | 48 |
 | `0x0040cdd8` | `LevelObject_LinkModel` | `World` | not filled in |
 | `0x0040ce30` | `LevelObject_OnLoaded` | `World` | not filled in |

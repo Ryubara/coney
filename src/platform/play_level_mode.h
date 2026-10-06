@@ -54,6 +54,8 @@ class SceneSystem;
 
 namespace coney::platform {
 
+class PlayLevelEffects;
+
 /// Who the play mode's player is and how he is first placed, beyond where (the scenery's start).
 struct PlayerSetup {
     /// The Character List model the player is drawn and animated as (the level script's type, through `CfgChar`,
@@ -373,6 +375,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;
+    // The level's particles and motion blur (play_level_effects.h), drawn when gameplay brought them.
+    std::unique_ptr<PlayLevelEffects> m_levelEffects;
 };
 
 } // namespace coney::platform

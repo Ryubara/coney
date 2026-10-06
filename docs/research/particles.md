@@ -134,6 +134,24 @@ from its sheet's texture and scaled to fit 64 × 64 (the `lighting` glows are 12
 Three types traced to rectangle 54 of `part_page1` (`part_s_subway_sparks`, `subway_spark`, `urine_spray`) show a
 grey box there, not a spark or a spray (checked on the images), so their trace is in doubt.
 
+## Coney's implementation {#coneys-implementation}
+
+`effects::ParticleSystems` (`repo:src/effects/particles.h`) is the particle manager: a pool of 1,400 systems spawned
+by name (`SpawnParticle`, `repo:src/scripting/effects_bindings.h`) with the position, rotation and parent above,
+stepped on the fixed step with its own seeded generator, and drawn by `platform::ParticleRenderer`
+(`repo:src/platform/particle_renderer.h`) as camera-facing squares cut from `part_page0`, `part_page1`, `part_fire`
+and `lighting`. `effects::particleTypes()` (`repo:src/effects/particle_types.h`) lists the types Coney draws, with the
+traced sprites of [Particle effects](../references/particles.md). Combat can call `spawnBlood` and `spawnSparks`; a
+pane's [shatter](objects.md#shatter) makes its shards with `spawnShard`, and the objects' dust and bursts are
+`sub_shack_puff`, through gameplay's object services (`repo:src/gamemodes/level_object_services.h`).
+
+**Coney's stand-ins**, until the type code is traced: each type's motion is one of eight behaviours chosen by its name
+(glow, flash, flame stream, puff, spray, sparks, shard, inert), with sizes, tints and lives of Coney's choosing; the
+budget is 4,096 sprites; a name Coney does not draw, or the table lacks, makes an inert system that still answers to
+its handle; an attached system keeps its spawn offset from its parent; glows, flashes, flames and sparks add to what
+is behind them, the rest blend by alpha; a shard is an untextured quad; a shatter wants player 1 within 10 m and room
+for 158 sprites.
+
 ## Open questions
 
 - Whether the type functions were generated from the `Particle Source` / `Particle Asm Debug` chunk types (`0x19`-`0x21`,
@@ -142,3 +160,7 @@ grey box there, not a spark or a spray (checked on the images), so their trace i
 - The sprites of the 212 types with no constant sprite word, and what sheet records 2, 9, 27 and 409 are called.
 - What `part_s_subway_sparks`, `subway_spark` and `urine_spray` really draw: rectangle 54 of `part_page1` does not look
   like either.
+- Each type's update: the lives, speeds, counts, sizes and blending of its sprites (Coney's behaviours stand in).
+- How `PTank` draws a batch: facing, blend modes, and what `+0xc8`-`+0xd0` (1.0, 5.0, 0.3) scale.
+- `glasstest`'s sprite and fall, and which types the objects' dust (`0x003c57d8`) and bursts (`0x003c6038`) make.
+- Which combat hits spawn which blood and spark types.

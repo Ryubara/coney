@@ -18,6 +18,7 @@
 #include "scripting/binding_args.h"
 #include "scripting/camera_bindings.h"
 #include "scripting/config_strings.h"
+#include "scripting/effects_bindings.h"
 #include "scripting/gang_bindings.h"
 #include "scripting/human_bindings.h"
 #include "scripting/level_bindings.h"
@@ -755,6 +756,9 @@ constexpr std::array kBindings{
     real("GoalJoinCinematic"),
     real("GoalJoinFixedScene"),
     real("GoalJoinAnimation"),
+    // The particle systems and the motion blur (effects_bindings.h).
+    real("SpawnParticle"),
+    real("QueueMotionBlurEffect"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     routed("SoundPlayMusicTrack"),
@@ -988,7 +992,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kObjectBindings, info.name) != kObjectBindings.end() ||
                      std::ranges::find(kLightingBindings, info.name) != kLightingBindings.end() ||
                      std::ranges::find(kPlayerBindings, info.name) != kPlayerBindings.end() ||
-                     std::ranges::find(kHumanBindings, info.name) != kHumanBindings.end());
+                     std::ranges::find(kHumanBindings, info.name) != kHumanBindings.end() ||
+                     std::ranges::find(kEffectsBindings, info.name) != kEffectsBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1014,6 +1019,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addSpawnBindings(vm, context, nextHandle);
     addObjectBindings(vm, context, nextHandle);
     addHumanBindings(vm, context, nextHandle);
+    addEffectsBindings(vm, context, nextHandle);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

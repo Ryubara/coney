@@ -268,6 +268,10 @@ over look 8's out time);
 `0x0018b460` sets the base look (`SetLevelColour` 9, `EnterStore` 10, `ExitStore` 9). `QueueMotionBlurEffect`
 blends the blur alone ([effects bindings](../references/bindings/effects.md)). Confirmed (code).
 
+Coney (`effects::MotionBlur`, `repo:src/effects/motion_blur.h`; `platform::MotionBlurPass`) blends the blur's colour
+and strength linearly over the time given and lays the last frame over the new one at that strength, a stand-in for
+the `+0x108` slot's drawing, which is not traced; the looks' own blur values are not applied yet.
+
 ## Behaviour
 
 ### Start-up {#start-up}
@@ -617,6 +621,8 @@ Still for the analysts:
 - **The overlay world** (`ResourceManager + 0x9034`) rendered before the sprites. The sort order of the queued
   PTanks is answered on [GUI](gui.md#draw-order): ascending key; that the 2D key is the creation depth is inferred.
 - **librw and PS2 alpha:** does librw's PS2 native texture reader scale palette alpha from 0-128 to 0-255?
+- **How the blur slot `+0x108` draws** (`0x00193d80`): what the 512 × 256 raster holds and how the strength and colour
+  apply (Coney lays the last frame over the new one).
 - **Texture dictionary list order** for name lookups (newest first is RenderWare's usual behaviour; not read here).
 - **The remaining slots**: `+0xf0` (`0x001931f8`, not a defined function in our Ghidra project), `+0x148`
   (`0x004dee48`), `+0x180` (`0x004e3820`), and the byte `+0x448`.

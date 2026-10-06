@@ -430,6 +430,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 36, calls: 596, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 55, 82, 92, 83, 20, 11, 61, 63, 64]}
+  coney: implemented
 
 - name: WidgetSetColour
   wrapper: 0x00378b00
@@ -593,6 +594,7 @@
     Both forms end in 0x0018c8c8 on the manager at 0x005fdeb8 (0x0040cd28 for the colour form, 0x0040cce8 for the
     alpha form).
   usage: {chunks: 4, calls: 14, boot: true, mission1: true, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: SetLight
   wrapper: 0x0037c348

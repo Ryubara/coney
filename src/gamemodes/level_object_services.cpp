@@ -76,4 +76,39 @@ void LevelObjectServices::scoreEvent(double human, int category, int event) {
 
 void LevelObjectServices::countPaneBroken(double breaker) { scoreEvent(breaker, 4, 10); }
 
+namespace {
+
+// The most sprites a shatter makes: twice its capped count of 79 tries (docs/research/objects.md#shatter).
+constexpr std::size_t kShatterMostShards = 158;
+// How near player 1 a shatter must be for shards (the page's second test).
+constexpr float kShardReach = 10.0F;
+
+} // namespace
+
+bool LevelObjectServices::shardsWanted(anim::Vec3 centre) {
+    if (m_particles == nullptr || !m_particles->hasRoom(kShatterMostShards)) {
+        return false;
+    }
+    const std::optional<anim::Vec3> player = m_player ? m_player() : std::nullopt;
+    return !player || anim::distance(*player, centre) <= kShardReach;
+}
+
+void LevelObjectServices::spawnShard(anim::Vec3 at, float size, std::uint32_t colour) {
+    if (m_particles != nullptr) {
+        m_particles->spawnShard(at, size, colour);
+    }
+}
+
+void LevelObjectServices::dust(anim::Vec3 at, float /*radius*/) {
+    if (m_particles != nullptr) {
+        m_particles->spawn("sub_shack_puff", at);
+    }
+}
+
+void LevelObjectServices::burst(anim::Vec3 at) {
+    if (m_particles != nullptr) {
+        m_particles->spawn("sub_shack_puff", at);
+    }
+}
+
 } // namespace coney

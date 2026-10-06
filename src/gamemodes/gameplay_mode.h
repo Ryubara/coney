@@ -13,6 +13,7 @@
 #include "ai/scripted_brains.h"
 #include "camera/cameras.h"
 #include "core/error.h"
+#include "effects/level_effects.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/level_object_services.h"
 #include "gamemodes/level_start.h"
@@ -63,6 +64,7 @@ struct ScriptedCast {
     /// (LevelObjects::world), steps them and sends them its hits.
     world_objects::LevelObjects* objects = nullptr;
     graphics::LevelLighting* lighting = nullptr; ///< The level's lights and fog, as its scripts set them.
+    effects::LevelEffects* effects = nullptr;    ///< The level's particles and motion blur, which it draws.
 };
 
 /// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the
@@ -124,6 +126,8 @@ class PauseMode;
 ///   Their script callbacks, the `CrimeScene` flag, their sounds, their crime reports and statistics (to the players'
 ///   state, GameState::player) go through LevelObjectServices.
 /// - A level that fails to load leaves the frame black, with the error logged.
+/// - The level's effects (effects::LevelEffects: the particle systems `SpawnParticle` and the engine start, and the
+///   motion blur) are made before its script and stepped after the scripts' frame; the level draws them.
 /// - Leaving (exit) is `UnloadLevel`'s script part only: a fresh Lua state.
 ///
 /// Research: docs/research/level-loading.md#mode-1, docs/research/level-loading.md#story-into-level99
@@ -221,6 +225,8 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] camera::Cameras* cameras() const { return m_cameras.get(); }
     /// The level's glass panes and doors (empty while no level is entered).
     [[nodiscard]] world_objects::LevelObjects& objects() { return m_objects; }
+    /// The level's particles and motion blur; null while no level is entered.
+    [[nodiscard]] effects::LevelEffects* effects() const { return m_effects.get(); }
 
   private:
     // InitLevel's script step and the level from the loader, entered (its preload).
@@ -263,6 +269,7 @@ class GameplayMode final : public GameMode {
     LevelObjectServices m_objectServices;
     world_objects::LevelObjects m_objects;
     std::unique_ptr<graphics::LevelLighting> m_lighting; // the level's, fresh for each (its scripts' lighting bindings)
+    std::unique_ptr<effects::LevelEffects> m_effects;    // before the level, which draws them
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0; // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;        // what START pauses through; not owned

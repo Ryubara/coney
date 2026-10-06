@@ -45,6 +45,11 @@ void GameplayMode::endLevel() {
     // The level's objects go with it, and with them the level's collision mesh and path data they pointed at.
     m_objects.clear();
     m_objects.world = world_objects::ObjectWorld{.services = &m_objectServices, .random = &m_state.random};
+    if (m_context.effects == m_effects.get()) {
+        m_context.effects = nullptr;
+    }
+    m_objectServices.setParticles(nullptr, {});
+    m_effects.reset();
     if (m_context.ai == m_scripted.get()) {
         m_context.ai = nullptr;
     }
@@ -115,6 +120,26 @@ void GameplayMode::enter() {
     // A fresh light manager and fog for the level, which its scripts' SetLight and SetFogColor fill.
     m_lighting = std::make_unique<graphics::LevelLighting>();
     m_context.lighting = m_lighting.get();
+    // The level's particles and motion blur; an attached particle system follows a human the scripts made.
+    m_effects = std::make_unique<effects::LevelEffects>();
+    m_effects->particles.setLocator([scripted = m_scripted.get()](double handle) -> std::optional<anim::Vec3> {
+        const std::optional<world_objects::Placement> placement = scripted->humanPlacement(handle);
+        if (!placement) {
+            return std::nullopt;
+        }
+        return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
+    });
+    m_context.effects = m_effects.get();
+    // The panes' shards and the objects' dust go to the level's particles, culled round player 1.
+    m_objectServices.setParticles(&m_effects->particles, [this]() -> std::optional<anim::Vec3> {
+        const HumanCreation* player = m_humans.player(1);
+        const std::optional<world_objects::Placement> placement =
+            player != nullptr && m_scripted ? m_scripted->humanPlacement(player->handle) : std::nullopt;
+        if (!placement) {
+            return std::nullopt;
+        }
+        return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
+    });
 
     // With a loading screen the level loads once it has faded in (updateLoadingScreen()); begun by the first update,
     // which knows the time.
@@ -159,7 +184,8 @@ void GameplayMode::loadLevel() {
                                              .cameras = m_cameras.get(),
                                              .scenes = m_scenes.get(),
                                              .objects = &m_objects,
-                                             .lighting = m_lighting.get()});
+                                             .lighting = m_lighting.get(),
+                                             .effects = m_effects.get()});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));
@@ -237,6 +263,9 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     updateBoxes(nowMs);
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
+    if (m_effects) {
+        m_effects->step(static_cast<float>(frame.seconds));
+    }
 
     // A script that teleported player 1 during the frame (the hub's door walk) moves him in the level.
     if (const HumanCreation* player = m_humans.player(1);

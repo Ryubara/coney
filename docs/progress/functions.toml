@@ -1290,6 +1290,11 @@ subsystem = "Graphics"
 size = 840
 
 [[function]]
+address = 0x0018c8c8
+name = "ScreenFx_BlendMotionBlur"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0018cc60
 name = "ScreenQueueEffect"
 subsystem = "Graphics"
@@ -4619,6 +4624,11 @@ name = "ObjSpawn"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00378958
+name = "SpawnParticle"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00379fd0
 name = "AddFlag"
 subsystem = "Scripting"
@@ -4659,6 +4669,16 @@ address = 0x0037b850
 name = "GetLUASaveDataFloat"
 subsystem = "Scripting"
 size = 88
+
+[[function]]
+address = 0x0037be18
+name = "QueueMotionBlurEffect_Alpha"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x0037be90
+name = "QueueMotionBlurEffect"
+subsystem = "Scripting"
 
 [[function]]
 address = 0x0037d420
@@ -4829,6 +4849,11 @@ name = "ObjRecord_GetHandle"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x0039bfb0
+name = "Particle_Spawn"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x0039c0e0
 name = "Glass_Spawn"
 subsystem = "TaskEngine"
@@ -4913,6 +4938,11 @@ subsystem = "TaskEngine"
 size = 536
 
 [[function]]
+address = 0x003c55e8
+name = "ScriptType_Find"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x003e29e8
 name = "GlassScript_Init"
 subsystem = "TaskEngine"
@@ -4989,6 +5019,16 @@ address = 0x0040c908
 name = "Level_SetFogDistance"
 subsystem = "World"
 size = 48
+
+[[function]]
+address = 0x0040cce8
+name = "ScreenFx_QueueMotionBlurAlpha"
+subsystem = "World"
+
+[[function]]
+address = 0x0040cd28
+name = "ScreenFx_QueueMotionBlurColour"
+subsystem = "World"
 
 [[function]]
 address = 0x0040cd78

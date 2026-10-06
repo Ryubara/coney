@@ -2,8 +2,12 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <string_view>
 
+#include "animation/anim_math.h"
+#include "effects/particles.h"
 #include "gamemodes/level_crime_services.h"
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
@@ -16,8 +20,9 @@ namespace coney {
 /// What gameplay gives the level's glass panes, doors and barriers of the world they change beyond its triangles and
 /// links: the lock pick's script callbacks, the `CrimeScene` flag a break-in moves, and the sounds, which go to
 /// `sounds` (the audio's ObjectSounds; null: none), and, once setPlayers() gives it the game state, the crime reports
-/// (through LevelCrimeServices) and the players' statistics. The rest of ObjectServices (shards, loose objects, models)
-/// does nothing until those systems are in Coney.
+/// (through LevelCrimeServices) and the players' statistics, and once setParticles() gives it the level's particles,
+/// the panes' shards and the objects' dust. The rest of ObjectServices (loose objects, models) does nothing until those
+/// systems are in Coney.
 ///
 /// Research: docs/research/objects.md#coneys-implementation, docs/research/crimes.md#lockpick
 class LevelObjectServices final : public world_objects::ObjectServices {
@@ -36,6 +41,12 @@ class LevelObjectServices final : public world_objects::ObjectServices {
 
     /// Sounds go to `sounds` from now on (null: none).
     void setSounds(world_objects::ObjectServices* sounds) { m_sounds = sounds; }
+    /// Shards, dust and bursts go to `particles` from now on (null: none), culled round where `player` says player 1
+    /// is (empty: not culled by distance).
+    void setParticles(effects::ParticleSystems* particles, std::function<std::optional<anim::Vec3>()> player) {
+        m_particles = particles;
+        m_player = std::move(player);
+    }
 
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
     void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at) override;
@@ -50,11 +61,24 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     void scoreEvent(double human, int category, int event) override;
     /// Crime statistic 4-10 for a player who broke a pane (a player's gang member is not told apart yet).
     void countPaneBroken(double breaker) override;
+    /// Whether a shatter makes shards: room in the particle budget for the most a shatter makes, and player 1 within
+    /// 10 m of `centre`. **Coney's stand-in**: the two tests' points (15 m and 10 m) are not on the page, so player 1
+    /// stands for both.
+    [[nodiscard]] bool shardsWanted(anim::Vec3 centre) override;
+    /// A `glasstest` shard (effects::ParticleSystems::spawnShard()).
+    void spawnShard(anim::Vec3 at, float size, std::uint32_t colour) override;
+    /// Dust: a `sub_shack_puff`. **Coney's stand-in**: which types `0x003c57d8` makes is not traced; `radius` is not
+    /// used.
+    void dust(anim::Vec3 at, float radius) override;
+    /// A leaf's burst: a `sub_shack_puff` (**Coney's stand-in**, as dust()).
+    void burst(anim::Vec3 at) override;
 
   private:
     script::ScriptSystem& m_scripts;
     world_objects::WorldFlags& m_flags;
     world_objects::ObjectServices* m_sounds;
+    effects::ParticleSystems* m_particles = nullptr;
+    std::function<std::optional<anim::Vec3>()> m_player;
     LevelCrimeServices m_crimes;
     GameState* m_state = nullptr;
     CreatedHumans* m_humans = nullptr;

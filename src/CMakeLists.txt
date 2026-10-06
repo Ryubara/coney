@@ -142,6 +142,12 @@ add_library(coney_core STATIC
     world_objects/spawn_records.cpp
     world_objects/object_services.cpp
     world_objects/volume_boxes.cpp)
+# Effects: the particle systems and the motion blur (docs/research/particles.md, docs/research/graphics.md#looks).
+target_sources(coney_core PRIVATE
+    effects/motion_blur.cpp
+    effects/particle_types.cpp
+    effects/particles.cpp
+    scripting/effects_bindings.cpp)
 # Characters: the animation format and player, and the character resources (docs/research/characters.md).
 target_sources(coney_core PRIVATE
     animation/anim_clip.cpp
