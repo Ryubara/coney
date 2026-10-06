@@ -67,8 +67,8 @@ class DiskProfileStore final : public ProfileStore {
     /// (2), the loaded profile earns the fourth difficulty (save-system `+0xb4`). The original also requires every
     /// story level (mission bytes 1-23) unlocked; the caller checks that, as Coney's unlockables have no records yet.
     void noteStoryFinished();
-    /// Reads the folder again, forgetting the loaded profile (RELOAD PROFILES).
-    void reload();
+    /// Reads the folder again, forgetting the loaded profile (mode 6's load: at boot and RELOAD PROFILES).
+    void reload() override;
 
     /// The record in `slot`, or null for an empty or damaged slot.
     [[nodiscard]] const ProfileRecord* record(std::size_t slot) const;
@@ -84,6 +84,9 @@ class DiskProfileStore final : public ProfileStore {
         std::optional<ProfileRecord> record;
     };
 
+    // Reads every slot's file and forgets the loaded profile (the constructor's read and reload(), kept non-virtual so
+    // the constructor makes no virtual call).
+    void readFolder();
     // Reads one slot's file: nothing when there is none, a damaged slot when it is not a record.
     [[nodiscard]] std::optional<Slot> readSlot(std::size_t slot) const;
     // Writes `record` as `slot`'s file through a temporary file, so a failed write never leaves half a record.

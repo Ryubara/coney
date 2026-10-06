@@ -631,6 +631,18 @@ subsystem = "FileIO"
 size = 88
 
 [[function]]
+address = 0x00155378
+name = "SSMC_StartLoadSequence"
+subsystem = "FileIO"
+size = 72
+
+[[function]]
+address = 0x001553c0
+name = "SSMC_StartDeleteSequence"
+subsystem = "FileIO"
+size = 72
+
+[[function]]
 address = 0x001582e0
 name = "Mode1::Enter"
 subsystem = "GameModes"
@@ -3989,6 +4001,18 @@ address = 0x0037a770
 name = "FindFlag"
 subsystem = "Scripting"
 size = 112
+
+[[function]]
+address = 0x0037b6c8
+name = "SSMC_StartLoadSequence_Binding"
+subsystem = "Scripting"
+size = 32
+
+[[function]]
+address = 0x0037b6e8
+name = "SSMC_StartDeleteSequence_Binding"
+subsystem = "Scripting"
+size = 32
 
 [[function]]
 address = 0x0037b7d8

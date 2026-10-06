@@ -873,6 +873,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SSMC_StartDeleteSequence
   wrapper: 0x0037b6e8
@@ -884,6 +885,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 2, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SSMC_detect
   wrapper: 0x0037b708

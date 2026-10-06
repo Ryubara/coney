@@ -41,8 +41,9 @@ namespace coney {
 /// It is also what the script bindings reach outside the script system (script::BindingHost): `ShowProfileManager`
 /// shows the menus, `MenuLoadLevel` chooses a level in the level flow, `HUDLaunchMissionComplete` pushes the
 /// mission-complete mode, `HuCreate` and `AddFlag` keep the level scripts' humans and flags, `ScreenQueueEffect` starts
-/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11), and music and movies go
-/// to FrontEndServices.
+/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11), `SSMC_StartLoadSequence` and
+/// `SSMC_StartDeleteSequence` push the memory-card mode (6) to read the profiles again or after a delete, and music
+/// and movies go to FrontEndServices.
 ///
 /// Research: docs/research/boot.md#main, docs/research/frontend.md#mode-flow, docs/research/scripting.md
 class StartUpFlow final : public script::BindingHost {
@@ -113,6 +114,8 @@ class StartUpFlow final : public script::BindingHost {
     void stopMusic() override;
     void queueScreenEffect(int type, double seconds) override;
     void launchMissionComplete(int kind) override;
+    void startLoadSequence() override;
+    void startDeleteSequence() override;
 
   private:
     GameModeStack& m_stack;

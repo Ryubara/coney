@@ -73,6 +73,8 @@ class ProfileManagerMode final : public GameMode {
     static constexpr std::string_view kSoundBank = "menu";
     /// The fade out when the menus are done, seconds.
     static constexpr double kDoneFadeSeconds = 1.0;
+    /// The fade in after the memory-card mode (`0x0050f5bc`), seconds.
+    static constexpr double kCardDoneFadeSeconds = 1.0;
 
     /// Loads a sprite sheet by its resource name; the platform layer reads it from the disc.
     using SheetLoader = std::function<std::expected<graphics::SpriteSheet, Error>(std::string_view resourceName)>;
@@ -115,6 +117,10 @@ class ProfileManagerMode final : public GameMode {
     /// @orig 0x0015e130 Mode12::Exit (unknown)
     void exit() override;
 
+    /// The memory-card mode (a load or a delete) left with the menus below it (its exit, `0x00203fa8(1)`): the next
+    /// update fades in over 1.0 s and, Coney's choice, re-opens the screen on top so it lists the profiles held.
+    void memoryCardDone() { m_cardDonePending = true; }
+
     /// The controller: which screen is on top.
     [[nodiscard]] const gui::PmController& controller() const { return m_controller; }
     /// The first Lua callback show() kept (`Menu.fadeToRMI`).
@@ -154,10 +160,11 @@ class ProfileManagerMode final : public GameMode {
     FrontEndScene* m_scene = nullptr; // the front-end world, not owned
     std::string m_onRumble;
     std::string m_onStartGame;
-    std::string m_lastScreen;    // the screen logged last, so each change is logged once
-    bool m_finished = false;     // the controller reported done
-    bool m_fadingOut = false;    // done, and the fade out runs before the mode leaves
-    bool m_startPending = false; // enter() ran; the controller starts on the next update
+    std::string m_lastScreen;       // the screen logged last, so each change is logged once
+    bool m_finished = false;        // the controller reported done
+    bool m_fadingOut = false;       // done, and the fade out runs before the mode leaves
+    bool m_startPending = false;    // enter() ran; the controller starts on the next update
+    bool m_cardDonePending = false; // memoryCardDone(): fade in and re-open the screen on the next update
 };
 
 } // namespace coney

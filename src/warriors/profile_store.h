@@ -71,6 +71,9 @@ class ProfileStore {
     /// Saves the game state into the loaded profile when one is in use (the autosave the mission-complete mode asks
     /// for). Returns false when the medium refuses it.
     virtual bool save() = 0;
+    /// Reads the medium again, forgetting the loaded profile: the load kind of the memory-card mode (6), at boot and
+    /// for RELOAD PROFILES (`SSMC_StartLoadSequence`). The session store has nothing to read.
+    virtual void reload() {}
 };
 
 /// **Coney's stand-in** for the save system: profiles live in memory for the session only. There is no memory card in

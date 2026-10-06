@@ -92,6 +92,13 @@ bool PmController::update() {
     return m_shared.session.done || empty;
 }
 
+void PmController::reopen() {
+    // Unwinding to the top screen itself exits it and enters it again.
+    if (ScreenFlowState* screen = m_flow.top(); screen != nullptr) {
+        m_flow.unwind(*screen);
+    }
+}
+
 void PmController::stop() { m_flow.clear(); }
 
 std::string_view PmController::currentName() const {

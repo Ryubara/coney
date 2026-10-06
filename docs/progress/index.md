@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% of the game's own code (322,436 of 3,354,776 bytes, 809 functions) |
+| **Reimplemented** | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% of the game's own code (322,644 of 3,354,776 bytes, 813 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -58,7 +58,7 @@ at the top of the repository's `README.md`.
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 21 | 62,808 |
-| `FileIO` | `█░░░░░░░░░░░░░░░░░░░` | 4.9% | 3 | 7,120 |
+| `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 5 | 7,120 |
 | `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 48 | 100,440 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 33 | 195,624 |
 | `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.3% | 112 | 497,416 |
@@ -68,7 +68,7 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 114 | 197,192 |
+| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 116 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 41 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -219,6 +219,8 @@ at the top of the repository's `README.md`.
 | `0x00154440` | `Stream_SkipBytes` | `FileIO` | 128 |
 | `0x00155228` | `RumbleMenu_Show` | `FileIO` | 136 |
 | `0x001552b0` | `ShowProfileManager` | `FileIO` | 88 |
+| `0x00155378` | `SSMC_StartLoadSequence` | `FileIO` | 72 |
+| `0x001553c0` | `SSMC_StartDeleteSequence` | `FileIO` | 72 |
 | `0x001582e0` | `Mode1::Enter` | `GameModes` | 424 |
 | `0x00158728` | `Mode1::Update` | `GameModes` | 3,392 |
 | `0x00159a58` | `Mode5::Enter` | `GameModes` | 96 |
@@ -798,6 +800,8 @@ at the top of the repository's `README.md`.
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
 | `0x0037a770` | `FindFlag` | `Scripting` | 112 |
+| `0x0037b6c8` | `SSMC_StartLoadSequence_Binding` | `Scripting` | 32 |
+| `0x0037b6e8` | `SSMC_StartDeleteSequence_Binding` | `Scripting` | 32 |
 | `0x0037b7d8` | `SetLUASaveDataFloat` | `Scripting` | 120 |
 | `0x0037b850` | `GetLUASaveDataFloat` | `Scripting` | 88 |
 | `0x0037d420` | `RegisterBindings` | `Scripting` | 27,408 |

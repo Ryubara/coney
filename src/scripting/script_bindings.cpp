@@ -352,6 +352,24 @@ NativeFunction makeHudLaunchMissionComplete(const Factory& factory) {
     };
 }
 
+// `SSMC_StartLoadSequence()`: reads the profiles again (RELOAD PROFILES; docs/research/save.md#mode-6).
+// @orig 0x0037b6c8 SSMC_StartLoadSequence_Binding (unknown)
+NativeFunction makeStartLoadSequence(const Factory& factory) {
+    return [host = factory.context->host](std::span<const Value>) {
+        host->startLoadSequence();
+        return binding::none();
+    };
+}
+
+// `SSMC_StartDeleteSequence()`: writes the deleted profiles out, after PM_Delete (docs/research/save.md#mode-6).
+// @orig 0x0037b6e8 SSMC_StartDeleteSequence_Binding (unknown)
+NativeFunction makeStartDeleteSequence(const Factory& factory) {
+    return [host = factory.context->host](std::span<const Value>) {
+        host->startDeleteSequence();
+        return binding::none();
+    };
+}
+
 // ---- Coney's scene stand-in (docs/research/scenes.md): with no scene system, a scene loads and ends at once ----
 
 // Schedules the Lua function named by string argument `i` (none for nil or a number) with the scene id, to run at the
@@ -441,6 +459,8 @@ constexpr std::array kMakers{
     Maker{"HuCreate", makeHuCreate},
     Maker{"MenuLoadLevel", makeMenuLoadLevel},
     Maker{"PlayMovie", makePlayMovie},
+    Maker{"SSMC_StartDeleteSequence", makeStartDeleteSequence},
+    Maker{"SSMC_StartLoadSequence", makeStartLoadSequence},
     Maker{"ScheduleFunc", makeScheduleFunc},
     Maker{"ScheduleFuncArg1", makeScheduleFuncArg1},
     Maker{"ScreenQueueEffect", makeScreenQueueEffect},
@@ -513,6 +533,8 @@ constexpr std::array kBindings{
     real("MenuLoadLevel"),
     real("ScreenQueueEffect"),
     real("HUDLaunchMissionComplete"),
+    real("SSMC_StartDeleteSequence"),
+    real("SSMC_StartLoadSequence"),
     // The level scripts' humans, flags, saved numbers, start callback and Rumble set-up (level_bindings.h).
     real("HuCreate"),
     real("AddFlag"),

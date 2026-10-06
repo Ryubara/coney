@@ -34,6 +34,8 @@
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
+#include "warriors/disk_profile_store.h"
+#include "warriors/game_state.h"
 #include "warriors/profile_record.h"
 
 using coney::GameModeStack;
@@ -177,18 +179,26 @@ std::map<std::string, std::vector<std::byte>, std::less<>> frontEndScripts() {
         files[empty] = coney::test::luaChunk(LuaAsm().end());
     }
     // level100.lua: Menu = {}; Menu.onStart = function() ShowProfileManager("Menu.fadeToRMI", "Menu.startGame");
-    // ScreenQueueEffect(0, 1) end;
-    // Menu.startGame = function() MenuLoadLevel("level1") end
+    // ScreenQueueEffect(0, 1) end; Menu.startGame = function() MenuLoadLevel("level1") end; Menu.reloadProfiles =
+    // function() SSMC_StartLoadSequence() end (the game's fades out first and calls it 700 ms later);
+    // Menu.deleteProfile = function() ScreenQueueEffect(1, 0) SSMC_StartDeleteSequence() end (the game's)
     LuaAsm onStart;
     onStart.getGlobal("ShowProfileManager").pushString("Menu.fadeToRMI").pushString("Menu.startGame").call(2);
     onStart.getGlobal("ScreenQueueEffect").pushInt(0).pushInt(1).call(2);
     LuaAsm startGame;
     startGame.getGlobal("MenuLoadLevel").pushString("level1").call(1);
+    LuaAsm reloadProfiles;
+    reloadProfiles.getGlobal("SSMC_StartLoadSequence").call(0);
+    LuaAsm deleteProfile;
+    deleteProfile.getGlobal("ScreenQueueEffect").pushInt(1).pushInt(0).call(2);
+    deleteProfile.getGlobal("SSMC_StartDeleteSequence").call(0);
     LuaAsm level;
-    level.spec.protos = {onStart.end(), startGame.end()};
+    level.spec.protos = {onStart.end(), startGame.end(), reloadProfiles.end(), deleteProfile.end()};
     level.newTable().setGlobal("Menu");
     level.getGlobal("Menu").pushString("onStart").closure(0).setTable();
     level.getGlobal("Menu").pushString("startGame").closure(1).setTable();
+    level.getGlobal("Menu").pushString("reloadProfiles").closure(2).setTable();
+    level.getGlobal("Menu").pushString("deleteProfile").closure(3).setTable();
     files["level100.lua"] = coney::test::luaChunk(level.end());
     return files;
 }
@@ -403,4 +413,65 @@ TEST_CASE("start-up: an input script goes PM_Greet, PM_Mode, EXTRAS and back, wi
     }
     CHECK(screens == std::vector<std::string>{"profile manager: PM_Greet\n", "profile manager: PM_Mode\n",
                                               "profile manager: PM_Extras\n", "profile manager: PM_Mode\n"});
+}
+
+TEST_CASE("start-up with scripts: the boot's memory-card mode loads the profiles, RELOAD PROFILES again",
+          "[start_up]") {
+    const coney::test::TempDir folder;
+    // START on PM_Greet, cross on STORY (PM_Profile: CREATE NEW PROFILE, RELOAD PROFILES), down, then cross on RELOAD.
+    auto script = coney::parseInputScript("200 tap start\n215 tap cross\n240 tap down\n250 tap cross\n");
+    REQUIRE(script.has_value());
+    ScriptedRun run(std::move(script).value(), folder.path());
+    run.frames(152);
+    CHECK(run.flow->memoryCard().loads() == 1);
+    run.frames(90);
+    REQUIRE(run.flow->profileManager().controller().currentName() == "PM_Profile");
+    CHECK(run.flow->profiles().count() == 0);
+
+    // A profile appears in the folder while the menus are up (another run, or a copied file).
+    {
+        coney::GameState other;
+        coney::DiskProfileStore writer(folder.path(), other);
+        REQUIRE(writer.create(0, coney::Profile{.name = "SWAN"}));
+    }
+    CHECK(run.flow->profiles().count() == 0);
+
+    // RELOAD PROFILES: Menu.reloadProfiles pushes mode 6, which reads the folder and leaves; the menus fade in with
+    // PM_Profile opened again over the profile read.
+    run.frames(12);
+    CHECK(run.flow->memoryCard().loads() == 2);
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    REQUIRE(run.flow->profiles().profile(0) != nullptr);
+    CHECK(run.flow->profiles().profile(0)->name == "SWAN");
+    CHECK(run.logged("profile manager: 1 profile(s) after the memory-card mode"));
+    CHECK(run.flow->profileManager().controller().currentName() == "PM_Profile");
+    CHECK(run.flow->scripts().errors() == 0);
+}
+
+TEST_CASE("start-up with scripts: deleting a profile removes its file and the menus fade back in", "[start_up]") {
+    const coney::test::TempDir folder;
+    {
+        coney::GameState other;
+        coney::DiskProfileStore writer(folder.path(), other);
+        REQUIRE(writer.create(0, coney::Profile{.name = "SWAN"}));
+    }
+    // START, STORY, down twice to DELETE PROFILE, cross; cross on SWAN in PM_Load; left to YES on PM_Delete, cross.
+    auto script = coney::parseInputScript(
+        "200 tap start\n215 tap cross\n240 tap down\n250 tap down\n260 tap cross\n270 tap cross\n280 tap left\n"
+        "290 tap cross\n");
+    REQUIRE(script.has_value());
+    ScriptedRun run(std::move(script).value(), folder.path());
+    run.frames(152);
+    REQUIRE(run.flow->profiles().count() == 1);
+    run.frames(185);
+
+    // Menu.deleteProfile blacked the screen and pushed mode 6, which left; the menus faded in over PM_Profile.
+    CHECK_FALSE(std::filesystem::exists(folder.path() / "profile-1.sav"));
+    CHECK(run.flow->profiles().count() == 0);
+    CHECK(run.logged("profile manager: 0 profile(s) after the memory-card mode"));
+    CHECK(run.flow->memoryCard().loads() == 1);
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    CHECK(run.flow->profileManager().controller().currentName() == "PM_Profile");
+    CHECK(run.flow->fade().level() == 0.0F);
+    CHECK(run.flow->scripts().errors() == 0);
 }

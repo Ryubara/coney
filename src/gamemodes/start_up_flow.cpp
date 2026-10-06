@@ -47,6 +47,8 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
     m_services.attachScripts(&m_scripts);
     m_gameplay.setMoviePlayer(&m_services);
     m_missionComplete.setProfiles(m_profiles.get());
+    m_memoryCard.setProfiles(m_profiles.get());
+    m_memoryCard.setProfileManager(&m_profileManager);
 }
 
 void StartUpFlow::start() {
@@ -86,5 +88,9 @@ void StartUpFlow::stopMusic() { m_services.stopMusic(); }
 void StartUpFlow::queueScreenEffect(int type, double seconds) { m_fade.queue(type, seconds, m_scripts.now()); }
 
 void StartUpFlow::launchMissionComplete(int kind) { m_missionComplete.launch(kind); }
+
+void StartUpFlow::startLoadSequence() { m_memoryCard.startLoadSequence(); }
+
+void StartUpFlow::startDeleteSequence() { m_memoryCard.startDeleteSequence(); }
 
 } // namespace coney

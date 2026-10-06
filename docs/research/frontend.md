@@ -957,7 +957,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | --- | --- | --- | --- |
 | [x] | Legal screen | the picture, overfilled, 5 s | nothing |
 | [ ] | Start-up movies | skipped through the `MoviePlayer` hook; the music stops and the screen is left black | a player for `LOGO`, `PLOGO`, `L1_IN`, START skipping ([Movies](#movies)) |
-| [ ] | Mode 6 at boot | `0xb5` centred for 3 s in the message box, then the menus; no card, so no scan or dialog | the card dialogs once Coney has saves; which one a boot with no card shows ([message box](#message-box)) |
+| [ ] | Mode 6 | reads the profile folder (boot, RELOAD PROFILES); `0xb5` centred for 3 s in the message box, then the menus; no card, so no scan or dialog | the card dialogs; which one a boot with no card shows ([message box](#message-box)) |
 | [ ] | 3D background | `level100`'s world from the scene's first camera pose; the sign; the spawned objects drawn once a scene binds them | the `WonderWheel_100` scene and its camera, lights, the tint ([Background](#background)) |
 | [ ] | Menu music | the `menu` bank and the cues go to the `FrontEndAudio` hook; recorded and logged without one | `music/wonderwheel_132b` looped by `Menu.startScene`, `MenuTrack` by `launchRMI`; the `menu` bank's cues ([Sound](sound.md)) |
 | [x] | Fades | out over `t − 0.2` s, in from black, the one-frame start, clamped (one manager: one view) | the real speed (open: [Fades](#fades)) |
@@ -972,7 +972,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [x] | PM_Difficulty | three or four items, default index 1 (3), `W_GameState + 0x43c` | the fourth item's query |
 | [ ] | PM_Light | square, bar and hint; value 40, step 5 | the brightness applied (`0x0017ec38`), the bar's exact width |
 | [x] | PM_Subtitles | ON : OFF, default by language; sets done | nothing known |
-| [ ] | PM_Load / PM_Continue / PM_Delete | over Coney's saved profiles ([save](save.md#coneys-implementation)) | Menu.reloadProfiles re-reading the folder |
+| [ ] | PM_Load / PM_Continue / PM_Delete | over Coney's saved profiles ([save](save.md#coneys-implementation)); RELOAD PROFILES reads the folder again; after a delete the menus fade back in | what the menus do after the original's load |
 | [ ] | Leaving the menus | done flag, 1.0 s fade out, the profile created, `Menu.startGame` | the 16:9 apply, the card dialogs, the fade's arithmetic |
 | [ ] | Rumble menu frame | the cycling background, centred titles (2.23 at 0.08), usage at 0.91, fades 0.7 in and 1.5 / 0.7 out, the bank and cues | `RM_Camera` and the world behind, once the 3D fighters need them ([Rumble screens](#rumble-screens)) |
 | [ ] | Game Mode | three-row `ScrollingMenu` of title over description, no wrap, cues 4 / `0xe`, 100 ms | the backdrops and scroll arrows (record 28), the animated scroll, the measured entry spacing |
@@ -1052,13 +1052,20 @@ Coney's choices for the pads, where the original does something else or the page
 
 **Mode 6, the memory-card check** (`src/gamemodes/memory_card_mode.h`, `MemoryCardMode`): `setBootCheck` is
 `0x0015a270(1)`; `exit` is the original's (`0x0015c2c0`): the boot flag becomes 2 and, because the mode below is the
-level flow, its "load the front end on resume" (`+0x28`) is cleared. **Coney's choice:** Coney has no memory card (its
-saves will be files, and none exist yet), so its scan finds nothing to ask about: the mode shows the "checking"
-message (string `0xb5`) centred in the [message box](#message-box) for 3,000 ms on black, then leaves, as the original
-does with an unformatted card. No card dialog is shown; what the original shows with no card is an
-[open question](#open-questions). **Test mode:** the message's time is an argument of the start-up flow; `coney`
-passes 3,000 ms and the frame-scripted tests 0, so their scripts keep the menus at frame 152 (one test covers the
-3 s message).
+level flow, its "load the front end on resume" (`+0x28`) is cleared; when the mode below is the menus (RELOAD
+PROFILES), it asks them to fade in (`0x00203fa8(1)`, a 1.0 s fade in on their next update). `startLoadSequence` is
+`SSMC_StartLoadSequence` (`0x00155378`), which `Menu.reloadProfiles` calls after its fade out, and
+`startDeleteSequence` is `SSMC_StartDeleteSequence` (`0x001553c0`), which `Menu.deleteProfile` calls after blacking the
+screen: each pushes the mode unless it is on top. **Coney's choices:** Coney has no memory card: its profiles are files
+([save](save.md#coney)), so the load kind's `enter` is the profile store's reload and a delete has nothing left to
+write. The scan finds nothing to ask about, so every entry shows the "checking" message (string `0xb5`) centred in the
+[message box](#message-box) for 3,000 ms on black, then leaves, as the original does with an unformatted card. No
+reload confirmation (`0xa8`, `0xba`, `0xbb`) and no card dialogs; what the original shows with no card is an
+[open question](#open-questions). After a reload or delete the menus re-open the screen on top (PM_Profile), which
+builds its items from the profiles when it opens; what the original's menus do after the load is not traced. The fade
+in is asked for only over the menus, so the boot's path is as before. **Test mode:** the message's time is an argument
+of the start-up flow; `coney` passes 3,000 ms and the frame-scripted tests 0, so their scripts keep the menus at frame
+152 (one test covers the 3 s message).
 
 **Mode 8, the level flow** (`src/gamemodes/level_flow_mode.h`, `LevelFlowMode`): the three fields of
 [Mode 8 fields](#mode-8-fields); `enter` sets `+0x28` and calls `resume`, which starts the front end when `+0x28` is set
@@ -1318,7 +1325,6 @@ TODO for the analysts, found while implementing:
 
 What the implementer still needs:
 
-- Mode 6's load at boot and RELOAD PROFILES (`Menu.reloadProfiles`) re-reading the profile folder.
 - PM_Extras and the message box mode 6 uses ([GUI](gui.md#open-questions)).
 - The Rumble menu's other entries: the mode list's and the gang records' addresses (so their names and values can be
   read from the player's executable), the other gangs and arenas, the warchief choice, the screens' layout, titles,

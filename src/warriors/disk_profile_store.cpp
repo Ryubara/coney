@@ -52,10 +52,12 @@ void captureProfile(const GameState& state, ProfileRecord& record) {
 
 DiskProfileStore::DiskProfileStore(std::filesystem::path folder, GameState& state)
     : m_folder(std::move(folder)), m_state(state) {
-    reload();
+    readFolder();
 }
 
-void DiskProfileStore::reload() {
+void DiskProfileStore::reload() { readFolder(); }
+
+void DiskProfileStore::readFolder() {
     for (std::size_t slot = 0; slot < kSlots; ++slot) {
         m_slots.at(slot) = readSlot(slot);
     }

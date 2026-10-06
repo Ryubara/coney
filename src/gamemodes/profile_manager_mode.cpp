@@ -79,6 +79,14 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
         m_startPending = false;
         m_controller.start(m_onRumble);
     }
+    // Back from the memory-card mode (a load or a delete): fade in (`0x0050f5bc`) and re-open the screen on top, which
+    // reads the profiles when it opens (Coney's choice; mode 6's doc comment).
+    if (m_cardDonePending) {
+        m_cardDonePending = false;
+        m_controller.reopen();
+        m_fade.queue(graphics::ScreenFade::kFadeIn, kCardDoneFadeSeconds, nowMs);
+        m_log(std::format("profile manager: {} profile(s) after the memory-card mode\n", m_profiles.count()));
+    }
 
     // The menus list their sprites for the 2D pass; the fade's level is taken where the original draws it, before
     // the scripts run.

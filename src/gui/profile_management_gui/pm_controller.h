@@ -45,6 +45,10 @@ class PmController {
     /// @orig 0x00204ba0 PM_Controller_Update (PM_Controller.cpp)
     bool update();
 
+    /// Exits the screen on top and enters it again, so it rebuilds what it shows (after the profiles were read
+    /// again). Does nothing when the flow is empty. Coney's: the original's response to a reload is not traced.
+    void reopen();
+
     /// Exits the screen on top and empties the flow.
     /// @orig 0x00204c20 PM_Controller_Stop (PM_Controller.cpp)
     void stop();

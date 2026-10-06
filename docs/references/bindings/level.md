@@ -1419,7 +1419,7 @@ they are already up: the profiles marked deleted are written out. Called from th
 - **Evidence:** confirmed (code) at `0x001553c0`; detail: traced
 - **Wrapper** `0x0037b6e8` (registered by `RegisterBindings`); **calls** `0x001553c0`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SSMC_StartLoadSequence {#ssmc_startloadsequence}
 
@@ -1438,7 +1438,7 @@ the reload confirmation flag `0x0050c6fc` set) unless they are already up. The f
 - **Evidence:** confirmed (code) at `0x00155378`; detail: traced
 - **Wrapper** `0x0037b6c8` (registered by `RegisterBindings`); **calls** `0x00155378`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SSMC_StartSaveSequence {#ssmc_startsavesequence}
 

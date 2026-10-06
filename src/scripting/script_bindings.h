@@ -66,6 +66,12 @@ class BindingHost {
     /// `HUDLaunchMissionComplete(kind)`: show the mission-complete mode (0xb) with `kind`. Does nothing by default, for
     /// a host without game modes.
     virtual void launchMissionComplete(int /*kind*/) {}
+    /// `SSMC_StartLoadSequence()`: read the profiles again (the memory-card mode, 6, in its load kind). Does nothing by
+    /// default, for a host without game modes.
+    virtual void startLoadSequence() {}
+    /// `SSMC_StartDeleteSequence()`: write the deleted profiles out (the memory-card mode after PM_Delete). Does
+    /// nothing by default, for a host without game modes.
+    virtual void startDeleteSequence() {}
 };
 
 /// How far Coney implements a binding.

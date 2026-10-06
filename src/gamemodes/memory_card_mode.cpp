@@ -6,11 +6,12 @@
 
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/profile_manager_mode.h"
 #include "gui/text_layout.h"
 
 namespace coney {
 
-MemoryCardMode::MemoryCardMode(graphics::RenderDevice& device, const GameModeStack& stack, LevelFlowMode& levelFlow,
+MemoryCardMode::MemoryCardMode(graphics::RenderDevice& device, GameModeStack& stack, LevelFlowMode& levelFlow,
                                SheetLoader loadSheet, const gui::GlobalStrings& strings, std::uint64_t checkingMs,
                                std::function<void(std::string_view)> log)
     : m_device(device), m_stack(stack), m_levelFlow(levelFlow), m_loadSheet(std::move(loadSheet)), m_strings(strings),
@@ -20,7 +21,27 @@ MemoryCardMode::MemoryCardMode(graphics::RenderDevice& device, const GameModeSta
     m_canvas.textBatch = [this](int /*slot*/) -> graphics::SpriteBatch* { return m_bigBatch ? &*m_bigBatch : nullptr; };
 }
 
+void MemoryCardMode::startLoadSequence() { startSequence(Kind::Load); }
+
+void MemoryCardMode::startDeleteSequence() { startSequence(Kind::Delete); }
+
+void MemoryCardMode::startSequence(Kind kind) {
+    if (m_stack.topId() != kId) {
+        m_kind = kind;
+        m_stack.push(*this);
+    }
+}
+
 void MemoryCardMode::enter() {
+    // The original scans the card and reads or writes its save here. Coney's profiles are files: a load reads them
+    // again; a delete has nothing to write, as the store removed the file when PM_Delete asked.
+    if (m_kind == Kind::Load) {
+        if (m_profiles != nullptr) {
+            m_profiles->reload();
+        }
+        ++m_loads;
+    }
+    // The "checking" message's font.
     auto sheet = m_loadSheet
                      ? m_loadSheet(gui::kBigFontSheet)
                      : std::expected<graphics::SpriteSheet, Error>(fail(ErrorCode::NotFound, "no sheet loader"));
@@ -64,9 +85,13 @@ void MemoryCardMode::render(const RenderTime& /*time*/) {
 
 void MemoryCardMode::exit() {
     m_bootCheck = BootCheck::Done;
+    m_kind = Kind::Load;
     // The stack calls exit() after removing this mode, so its top is the mode that was below.
     if (m_stack.top() == &m_levelFlow) {
         m_levelFlow.cancelFrontEndLoad();
+    }
+    if (m_profileManager != nullptr && m_stack.top() == m_profileManager) {
+        m_profileManager->memoryCardDone();
     }
     // The queue points at the batch released below.
     m_pass.empty();
