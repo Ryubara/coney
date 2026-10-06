@@ -1,0 +1,14 @@
+# Lights: a part of research/references/lights.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level124:1", level: level124, type: point, pos: [-5.62, 7.47, -196.49], dir: [0, 0, 0], rgba: [1, 0.902, 0.725, 1], swatch: FFE6B9FF, radius: 8, cone: 0, flicker: 0, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}
+  - {id: "level124:2", level: level124, type: point, pos: [-6.07, -6.58, -196.49], dir: [0, 0, 0], rgba: [1, 0.902, 0.725, 1], swatch: FFE6B9FF, radius: 8, cone: 0, flicker: 0, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}
+  - {id: "level124:3", level: level124, type: point, pos: [3.24, 9.43, -196.22], dir: [0, 0, 0], rgba: [0.725, 0.925, 1, 1], swatch: B9ECFFFF, radius: 7, cone: 0, flicker: 1, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level124}
+  - {id: "level124:4", level: level124, type: point, pos: [6.82, -9.79, -196.12], dir: [0, 0, 0], rgba: [1, 0.961, 0.725, 1], swatch: FFF5B9FF, radius: 0, cone: 0, flicker: 5, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}
+  - {id: "level124:5", level: level124, type: point, pos: [2.34, -9.79, -196.12], dir: [0, 0, 0], rgba: [1, 0.961, 0.725, 1], swatch: FFF5B9FF, radius: 0, cone: 0, flicker: 5, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}
+  - {id: "level124:6", level: level124, type: point, pos: [-0.1, -11.31, -196.25], dir: [0, 0, 0], rgba: [1, 0.961, 0.725, 1], swatch: FFF5B9FF, radius: 0, cone: 0, flicker: 5, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}
+  - {id: "level124:7", level: level124, type: point, pos: [5.7, 3.48, -196.22], dir: [0, 0, 0], rgba: [0.725, 0.933, 1, 1], swatch: B9EEFFFF, radius: 7, cone: 0, flicker: 1, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level124}
+  - {id: "level124:8", level: level124, type: point, pos: [13.99, 6.3, -197.16], dir: [0, 0, 0], rgba: [0.725, 1, 0.843, 1], swatch: B9FFD7FF, radius: 8, cone: 0, flicker: 0, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}
+  - {id: "level124:9", level: level124, type: point, pos: [4.71, -7.76, -197.02], dir: [0, 0, 0], rgba: [1, 0.961, 0.725, 1], swatch: FFF5B9FF, radius: 10, cone: 0, flicker: 0, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}
+  - {id: "level124:10", level: level124, type: point, pos: [-2.34, -11.11, -197.2], dir: [0, 0, 0], rgba: [1, 0.961, 0.725, 1], swatch: FFF5B9FF, radius: 10, cone: 0, flicker: 0, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}
+  - {id: "level124:11", level: level124, type: point, pos: [13.99, -1.85, -197.16], dir: [0, 0, 0], rgba: [0.725, 1, 0.843, 1], swatch: B9FFD7FF, radius: 8, cone: 0, flicker: 0, flicker_params: [0, 0.25, 1.5], group: 1, state: 1, script: level124}

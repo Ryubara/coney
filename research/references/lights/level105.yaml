@@ -1,0 +1,13 @@
+# Lights: a part of research/references/lights.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level105:1", level: level105, type: point, pos: [-5.82, -7.85, 1.65], dir: [0, 0, 0], rgba: [0.843, 0.945, 1, 1], swatch: D7F1FFFF, radius: 8, cone: 0, flicker: 0, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level105}
+  - {id: "level105:2", level: level105, type: point, pos: [12.29, -5.43, 1.8], dir: [0, 0, 0], rgba: [1, 0.843, 0.843, 1], swatch: FFD7D7FF, radius: 10, cone: 0, flicker: 0, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level105}
+  - {id: "level105:3", level: level105, type: point, pos: [-12.95, -5.6, 1.18], dir: [0, 0, 0], rgba: [1, 0.957, 0.843, 1], swatch: FFF4D7FF, radius: 8, cone: 0, flicker: 1, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level105}
+  - {id: "level105:4", level: level105, type: point, pos: [-11.48, -7.62, 1.18], dir: [0, 0, 0], rgba: [1, 0.957, 0.843, 1], swatch: FFF4D7FF, radius: 0, cone: 0, flicker: 1, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level105}
+  - {id: "level105:5", level: level105, type: point, pos: [13.53, -7.23, 2.23], dir: [0, 0, 0], rgba: [1, 0.843, 0.843, 1], swatch: FFD7D7FF, radius: 0, cone: 0, flicker: 3, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level105}
+  - {id: "level105:6", level: level105, type: point, pos: [13.52, -6.01, 2.05], dir: [0, 0, 0], rgba: [1, 0.843, 0.843, 1], swatch: FFD7D7FF, radius: 0, cone: 0, flicker: 3, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level105}
+  - {id: "level105:7", level: level105, type: point, pos: [13.56, -4.85, 2.06], dir: [0, 0, 0], rgba: [1, 0.843, 0.843, 1], swatch: FFD7D7FF, radius: 0, cone: 0, flicker: 3, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level105}
+  - {id: "level105:8", level: level105, type: point, pos: [10.18, 5.95, 0.85], dir: [0, 0, 0], rgba: [0.843, 0.957, 1, 1], swatch: D7F4FFFF, radius: 8, cone: 0, flicker: 0, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level105}
+  - {id: "level105:9", level: level105, type: point, pos: [-8.25, 5.95, 0.85], dir: [0, 0, 0], rgba: [0.843, 0.957, 1, 1], swatch: D7F4FFFF, radius: 8, cone: 0, flicker: 0, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level105}
+  - {id: "level105:10", level: level105, type: point, pos: [6.06, -5.43, 1.8], dir: [0, 0, 0], rgba: [1, 0.843, 0.843, 1], swatch: FFD7D7FF, radius: 12, cone: 0, flicker: 0, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level105}

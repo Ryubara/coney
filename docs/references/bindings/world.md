@@ -1035,13 +1035,14 @@ ObjColor(object, colour)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of the game object. |
-| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Colour `{r, g, b, a}`; each component is multiplied by 255, so components are meant as 0-1 (the one script call passes 0-255 values). Written back unchanged. |
+| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Colour `{r, g, b, a}` as whole numbers 0-255. The binding and the packer each multiply by 255 and keep the low 8 bits, so a whole 0-255 component comes out as itself and a 0-1 one does not (1.0 gives 1). Written back unchanged. |
 
 **Returns** nothing.
 
 Sets a tint colour on a game object (stored twice in the object, +0xc8 and +0xcc).
 
-**Notes.** The components are passed to the colour packer 0x0017aca8 in reverse order (a, b, g, r).
+**Notes.** The components are passed to the colour packer 0x0017aca8 in reverse order (a, b, g, r), giving the word
+`0xRRGGBBAA` that `ObjSpawn`'s tint also sets ([Object tints](../tints.md)).
 
 - **Evidence:** confirmed (code) at `0x00396bd0`; detail: brief
 - **Wrapper** `0x00378088` (registered by `RegisterBindings`); **calls** `0x00396bd0` `Obj_SetColour`
@@ -1438,8 +1439,8 @@ ObjSpawn(typeName, pos, rot, unused, zone, flags, extra, flagName) -> number
 | 3 | `rot` | table of 4 numbers (t[1]..t[4]) | Orientation as a quaternion `{x, y, z, w}` (the scripts pass `{0, 0, 0, -1}` or rotations about z). Written back unchanged. |
 | 4 | `unused` | number, truncated to an integer | Not used by the callee; the scripts always pass -1. |
 | 5 | `zone` | number, truncated to an unsigned integer | Object zone number the object belongs to (stored in the spawn record's top bits); 0 for none. |
-| 6 | `flags` | number, truncated to an unsigned integer | Spawn flags: bit 0 (1) keeps the extra value below, bit 1 (2) a physics-related bit for most types, bit 6 (64) another record bit; the scripts pass 0, 64 and similar. |
-| 7 | `extra` | number, truncated to an unsigned integer; default 4294967295 | Extra value kept only with flag bit 0; default 4294967295 (all bits set, which the scripts also pass). |
+| 6 | `flags` | number, truncated to an unsigned integer | Spawn flags: bit 0 (1) makes the record take an id the caller passes (the binding passes none), bit 1 (2) a physics-related bit for most types, bit 6 (64) another record bit; the scripts pass 0, 64 and similar. |
+| 7 | `extra` | number, truncated to an unsigned integer; default 4294967295 | The object's tint, a colour word `0xRRGGBBAA` (record `+0x14`, then object `+0xc8`); default 4294967295, white, no tint ([Object tints](../tints.md)). |
 | 8 | `flagName` | string | Optional name of a flag (marker) the object is linked to; nil for none. |
 
 **Returns** number: The new object's handle, or NilHandle when it was not spawned.
@@ -1448,7 +1449,8 @@ Spawns a game object of a configured type at a position and orientation and retu
 (`dyn_key...`) and the power cuffs (`dyn_powercuffs`) are suppressed unless the matching unlockable is set (0x00424130
 on the unlockables manager at 0x006fe998).
 
-**Notes.** Callee 0x00396858 builds a spawn record through 0x00398940. The meaning of the flag bits and of `extra` is
+**Notes.** Callee 0x00396858 builds a spawn record through 0x00398940. `extra` goes to the record (`+0x14`) and from
+there to the object's tint (`0x003992a4`, [Object tints](../tints.md)), confirmed (code); the flag bits' meaning is
 inferred from how the record is filled. The power cuffs are additionally suppressed when 0x0041d160 on the game state is
 non-zero.
 
@@ -1702,28 +1704,28 @@ scripts' numbers.
 ## SpawnBreakableGlass {#spawnbreakableglass}
 
 ```lua
-SpawnBreakableGlass(glassType, corner, cornerU, cornerV, uv0, uv1, flag, id1, id2) -> number
+SpawnBreakableGlass(glassType, corner, cornerU, cornerV, uv0, uv1, flag, triangle1, triangle2) -> number
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `glassType` | number, truncated to an integer | Glass type number; the object spawned is the type named by this number as text (format `%d`), such as type 1 or 13. |
+| 1 | `glassType` | number, truncated to an integer | [Glass type](../glass-types.md) 0-18; the pane task is named by the number as text (format `%d`). |
 | 2 | `corner` | table of 3 numbers (t[1]..t[3]) | First corner `{x, y, z}` of the pane in world metres. |
 | 3 | `cornerU` | table of 3 numbers (t[1]..t[3]) | Corner along the pane's width `{x, y, z}`. |
 | 4 | `cornerV` | table of 3 numbers (t[1]..t[3]) | Corner along the pane's height `{x, y, z}`. |
 | 5 | `uv0` | table of 2 numbers (t[1]..t[2]) | Texture coordinates `{u, v}` at the first corner. |
 | 6 | `uv1` | table of 2 numbers (t[1]..t[2]) | Texture coordinates `{u, v}` at the opposite corner. |
-| 7 | `flag` | number, truncated to an integer | Integer passed with the pane; the scripts pass 0. |
-| 8 | `id1` | number, truncated to an integer | Integer id passed with the pane (consecutive numbers per pane in the scripts, such as 765). |
-| 9 | `id2` | number, truncated to an integer | Second integer id (the next number, such as 766). |
+| 7 | `flag` | number, truncated to an integer | Pushed with the pane but discarded by its initialiser (`0x003e29e8`); the scripts pass 0. |
+| 8 | `triangle1` | number, truncated to an integer | First collision triangle the pane covers (pane `+0xd8`): made two-sided, disabled when it breaks. |
+| 9 | `triangle2` | number, truncated to an integer | Second collision triangle (`+0xdc`). |
 
 **Returns** number: Handle of the glass object.
 
 Creates a breakable glass pane from three corners and texture coordinates and returns its handle; levels place hundreds
 of these for windows and shop fronts.
 
-**Notes.** What the two ids identify (likely the collision triangles or a pair of links the pane replaces) is not
-traced.
+**Notes.** The two numbers are collision triangle indices (`0x003a4768`, `0x003a46c8`); the types and what breaking a
+pane does: [World objects](../../research/objects.md#glass).
 
 - **Evidence:** confirmed (code) at `0x0039c0e0`; detail: traced
 - **Wrapper** `0x00378db0` (registered by `RegisterBindings`); **calls** `0x0039c0e0` `Glass_Spawn`
@@ -1733,7 +1735,7 @@ traced.
 ## SpawnDoor {#spawndoor}
 
 ```lua
-SpawnDoor(typeName, pos, rot, ids, lockType) -> number
+SpawnDoor(typeName, pos, rot, triangles, number) -> number
 ```
 
 | # | Argument | Read as | Meaning |
@@ -1741,14 +1743,15 @@ SpawnDoor(typeName, pos, rot, ids, lockType) -> number
 | 1 | `typeName` | string | Door type name, such as `dyn_door_cabin_a` or `dyn_door_store`. |
 | 2 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` of the door. Written back unchanged. |
 | 3 | `rot` | table of 4 numbers (t[1]..t[4]) | Orientation quaternion `{x, y, z, w}`. Written back unchanged. |
-| 4 | `ids` | table of 2 numbers (t[1]..t[2]) | Two integers `{a, b}` passed with the door, consecutive per door in the scripts (such as `{328, 329}`); likely the ids of its two leaves or navigation links. |
-| 5 | `lockType` | number, truncated to an unsigned integer | Integer passed with the door (1-7 in the scripts); meaning not traced (a lock or door class). |
+| 4 | `triangles` | table of 2 numbers (t[1]..t[2]) | The two collision triangles the door owns `{a, b}` (door `+0xd8`, `+0xdc`). Written back unchanged. |
+| 5 | `number` | number, truncated to an unsigned integer | The door's number in its level (1-27, unique per level; door `+0xe0`): the level's navigation links carrying it belong to the door ([Doors](../doors.md)). |
 
 **Returns** number: Handle of the door object; `GetLeftDoorHandle` / `GetRightDoorHandle` give its leaves.
 
 Creates a door object of a configured type at a position and returns its handle.
 
-**Notes.** The spawn passes position, rotation and the three integers as message arguments to 0x003a2e60.
+**Notes.** The spawn passes position, rotation and the three integers as message arguments to 0x003a2e60; the door's
+initialiser (`0x003fb5f8` for `dyn_door_swinging`) reads them back ([World objects](../../research/objects.md#doors)).
 
 - **Evidence:** confirmed (code) at `0x00397230`; detail: traced
 - **Wrapper** `0x003796b8` (registered by `RegisterBindings`); **calls** `0x00397230` `Door_Spawn`

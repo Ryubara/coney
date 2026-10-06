@@ -1,0 +1,497 @@
+# Doors: a Coney game reference list. The page docs/references/doors.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: Doors
+about: |
+  Every door level scripts spawn with `SpawnDoor(type, pos, rot, {triangle1, triangle2}, number)`
+  ([World objects: doors](../research/objects.md#doors)). The number was thought to be a lock kind; it is
+  the door's number in its level, which ties the level's navigation links to the door.
+complete: |
+  Every `SpawnDoor` call (484 doors in 45 levels). What the navigation links' kind `0x40` does,
+  and who else reads the number, are not traced.
+defaults: {source: "the level scripts, SpawnDoor", evidence: confirmed-code}
+entries:
+  - {id: "level2:1", level: level2, number: 1, type: dyn_door_cabin_a, pos: [440.79, 104.48, 0.22], triangles: [738, 739], script: level2}
+  - {id: "level2:2", level: level2, number: 2, type: dyn_door_chainlnk_a, pos: [388.07, 40.82, -187.17], triangles: [740, 741], script: level2}
+  - {id: "level2:3", level: level2, number: 3, type: dyn_door_chainlnk_a, pos: [465.35, -64.03, -0.31], triangles: [746, 747], script: level2}
+  - {id: "level2:4", level: level2, number: 4, type: dyn_door_fence, pos: [439.57, 15.65, 1.2], triangles: [770, 771], marks_links: true, script: level2}
+  - {id: "level2:5", level: level2, number: 5, type: dyn_door_fence, pos: [503.25, 105.36, 1.37], triangles: [762, 763], marks_links: true, script: level2}
+  - {id: "level2:6", level: level2, number: 6, type: dyn_door_fence, pos: [503.25, 102.88, 1.37], triangles: [764, 765], marks_links: true, script: level2}
+  - {id: "level2:7", level: level2, number: 7, type: dyn_door_chainlnk_a, pos: [465.03, 120.67, -0.01], triangles: [748, 749], script: level2}
+  - {id: "level2:8", level: level2, number: 8, type: dyn_door_chainlnk_a, pos: [499.98, 82.5, 0.01], triangles: [742, 743], script: level2}
+  - {id: "level2:9", level: level2, number: 9, type: dyn_door_fence, pos: [479.93, -70.39, 0.9], triangles: [754, 755], marks_links: true, script: level2}
+  - {id: "level2:10", level: level2, number: 10, type: dyn_door_bar_bani, pos: [479.83, -61.3, 0.6], triangles: [728, 729], marks_links: true, script: level2}
+  - {id: "level2:11", level: level2, number: 11, type: dyn_door_ornate, pos: [474.99, 93.09, 0], triangles: [772, 773], script: level2}
+  - {id: "level2:12", level: level2, number: 12, type: dyn_door_storeb, pos: [441.02, 99.17, 0], triangles: [774, 775], script: level2}
+  - {id: "level2:13", level: level2, number: 13, type: dyn_door_cabin_a, pos: [433.84, 104.48, 0.22], triangles: [732, 733], script: level2}
+  - {id: "level2:14", level: level2, number: 14, type: dyn_door_temple, pos: [441.45, 171.56, 0.29], triangles: [776, 777], script: level2}
+  - {id: "level2:15", level: level2, number: 15, type: dyn_door_cabin_a, pos: [438.82, 104.48, 0.22], triangles: [736, 737], script: level2}
+  - {id: "level2:16", level: level2, number: 16, type: dyn_door_fence, pos: [441.12, 19.69, 1.2], triangles: [768, 769], marks_links: true, script: level2}
+  - {id: "level2:17", level: level2, number: 17, type: dyn_door_fence, pos: [478.15, -77.27, 0.9], triangles: [760, 761], marks_links: true, script: level2}
+  - {id: "level2:18", level: level2, number: 18, type: dyn_door_fence, pos: [482.07, -69.15, 0.9], triangles: [756, 757], marks_links: true, script: level2}
+  - {id: "level2:19", level: level2, number: 19, type: dyn_door_chainlnk_a, pos: [461.44, -66.29, -0.31], triangles: [744, 745], script: level2}
+  - {id: "level2:20", level: level2, number: 20, type: dyn_door_chainlnk_a, pos: [402.12, -33.77, 6.43], triangles: [752, 753], script: level2}
+  - {id: "level2:21", level: level2, number: 21, type: dyn_door_chainlnk_a, pos: [406.02, -31.48, 6.43], triangles: [750, 751], script: level2}
+  - {id: "level2:22", level: level2, number: 22, type: dyn_door_fence, pos: [441.12, 17.21, 1.2], triangles: [766, 767], marks_links: true, script: level2}
+  - {id: "level2:23", level: level2, number: 23, type: dyn_door_fence, pos: [479.39, -79.41, 0.9], triangles: [758, 759], marks_links: true, script: level2}
+  - {id: "level2:24", level: level2, number: 24, type: dyn_door_bar_bani, pos: [478.25, -58.56, 0.6], triangles: [726, 727], marks_links: true, script: level2}
+  - {id: "level2:25", level: level2, number: 25, type: dyn_door_cabin_a, pos: [435.73, 104.48, 0.22], triangles: [734, 735], script: level2}
+  - {id: "level2:26", level: level2, number: 26, type: dyn_door_bar_bani, pos: [481.41, -64.04, 0.6], triangles: [730, 731], marks_links: true, script: level2}
+  - {id: "level3:1", level: level3, number: 1, type: dyn_door_bar_bani, pos: [203.72, 371.77, 10.38], triangles: [88, 89], marks_links: true, script: level3}
+  - {id: "level3:2", level: level3, number: 2, type: dyn_door_bar_bani, pos: [210.05, 371.77, 10.38], triangles: [84, 85], marks_links: true, script: level3}
+  - {id: "level3:3", level: level3, number: 3, type: dyn_door_ele, pos: [-76.96, -192.42, 13], triangles: [94, 95], script: level3}
+  - {id: "level3:4", level: level3, number: 4, type: dyn_door_fence, pos: [85.15, 369.87, 16.24], triangles: [100, 101], marks_links: true, script: level3}
+  - {id: "level3:5", level: level3, number: 5, type: dyn_door_ele, pos: [-81.78, -187.4, 0], triangles: [92, 93], script: level3}
+  - {id: "level3:6", level: level3, number: 6, type: dyn_door_fence, pos: [85.15, 367.39, 16.24], triangles: [102, 103], marks_links: true, script: level3}
+  - {id: "level3:7", level: level3, number: 7, type: dyn_door_bar_bani, pos: [206.88, 371.77, 10.38], triangles: [86, 87], marks_links: true, script: level3}
+  - {id: "level3:8", level: level3, number: 8, type: dyn_door_bar_bani, pos: [213.21, 371.77, 10.38], triangles: [82, 83], marks_links: true, script: level3}
+  - {id: "level3:9", level: level3, number: 9, type: dyn_door_fence_s, pos: [-57.08, -167.3, 0.01], triangles: [106, 107], script: level3}
+  - {id: "level3:10", level: level3, number: 10, type: dyn_door_fence, pos: [85.15, 364.91, 16.24], triangles: [104, 105], marks_links: true, script: level3}
+  - {id: "level3:11", level: level3, number: 11, type: dyn_door_ele_c, pos: [221.58, 382.82, 7.78], triangles: [98, 99], script: level3}
+  - {id: "level3:12", level: level3, number: 12, type: dyn_door_chainlnk_a, pos: [-67.59, -190.38, 13], triangles: [90, 91], script: level3}
+  - {id: "level3:13", level: level3, number: 13, type: dyn_door_bar_bani, pos: [216.37, 371.77, 10.38], triangles: [80, 81], marks_links: true, script: level3}
+  - {id: "level3:14", level: level3, number: 14, type: dyn_door_ele, pos: [-249.76, 356.01, 13.28], triangles: [96, 97], script: level3}
+  - {id: "level5:1", level: level5, number: 1, type: dyn_door_bar_bani, pos: [-7.92, 0.15, -198.8], triangles: [308, 309], marks_links: true, script: level5}
+  - {id: "level5:2", level: level5, number: 2, type: dyn_door_woodfnce_xl, pos: [-89.01, -98.87, 0.02], triangles: [346, 347], script: level5}
+  - {id: "level5:3", level: level5, number: 3, type: dyn_door_steel_b, pos: [-60.1, -77.95, 0], triangles: [328, 329], script: level5}
+  - {id: "level5:4", level: level5, number: 4, type: dyn_door_steel_b, pos: [162.28, 121.67, 0], triangles: [336, 337], script: level5}
+  - {id: "level5:5", level: level5, number: 5, type: dyn_door_vargas, pos: [47.52, 229.36, 3.22], triangles: [340, 341], marks_links: true, script: level5}
+  - {id: "level5:6", level: level5, number: 6, type: dyn_door_steel_b, pos: [48.67, 210.43, 1.98], triangles: [326, 327], script: level5}
+  - {id: "level5:7", level: level5, number: 7, type: dyn_door_fence, pos: [-76.96, -172.59, 1.23], triangles: [316, 317], marks_links: true, script: level5}
+  - {id: "level5:8", level: level5, number: 8, type: dyn_door_fence, pos: [131.32, 116.1, 1.21], triangles: [322, 323], marks_links: true, script: level5}
+  - {id: "level5:9", level: level5, number: 9, type: dyn_door_steel_b, pos: [101.37, 5.01, 4.75], triangles: [338, 339], script: level5}
+  - {id: "level5:10", level: level5, number: 10, type: dyn_door_steel_b, pos: [147.23, 113.13, 0], triangles: [330, 331], script: level5}
+  - {id: "level5:11", level: level5, number: 11, type: dyn_door_chainlnk_a, pos: [138.32, 28.29, 0.01], triangles: [314, 315], script: level5}
+  - {id: "level5:12", level: level5, number: 12, type: dyn_door_bar_bani, pos: [4.24, 0.13, -198.8], triangles: [302, 303], marks_links: true, script: level5}
+  - {id: "level5:13", level: level5, number: 13, type: dyn_door_woodfnce_xl, pos: [-48.98, -72.26, 0.02], triangles: [350, 351], script: level5}
+  - {id: "level5:14", level: level5, number: 14, type: dyn_door_bar_bani, pos: [9.98, 3.36, -198.8], triangles: [310, 311], marks_links: true, script: level5}
+  - {id: "level5:15", level: level5, number: 15, type: dyn_door_woodfnce_xl, pos: [102.74, 20.37, 0.02], triangles: [344, 345], script: level5}
+  - {id: "level5:16", level: level5, number: 16, type: dyn_door_bar_bani, pos: [-4.74, 0.13, -198.8], triangles: [306, 307], marks_links: true, script: level5}
+  - {id: "level5:17", level: level5, number: 17, type: dyn_door_wood, pos: [40.06, 223.45, 2.02], triangles: [342, 343], script: level5}
+  - {id: "level5:18", level: level5, number: 18, type: dyn_door_fence, pos: [-74.48, -172.59, 1.23], triangles: [320, 321], marks_links: true, script: level5}
+  - {id: "level5:19", level: level5, number: 19, type: dyn_door_ornate_single, pos: [47.23, 235.27, 5.81], triangles: [324, 325], script: level5}
+  - {id: "level5:20", level: level5, number: 20, type: dyn_door_steel_b, pos: [19.23, 2.08, -200], triangles: [334, 335], script: level5}
+  - {id: "level5:21", level: level5, number: 21, type: dyn_door_steel_b, pos: [141.66, 98.06, 1], triangles: [332, 333], script: level5}
+  - {id: "level5:22", level: level5, number: 22, type: dyn_door_fence, pos: [-67.42, -152.52, 1.23], triangles: [318, 319], marks_links: true, script: level5}
+  - {id: "level5:23", level: level5, number: 23, type: dyn_door_bar_bani, pos: [7.4, 0.13, -198.8], triangles: [300, 301], marks_links: true, script: level5}
+  - {id: "level5:24", level: level5, number: 24, type: dyn_door_bar_bani, pos: [-1.59, 0.13, -198.8], triangles: [304, 305], marks_links: true, script: level5}
+  - {id: "level5:25", level: level5, number: 25, type: dyn_door_woodfnce_xl, pos: [31.03, 7.73, 0.02], triangles: [348, 349], script: level5}
+  - {id: "level5:26", level: level5, number: 26, type: dyn_door_bar_bani, pos: [9.98, 9.17, -198.8], triangles: [312, 313], marks_links: true, script: level5}
+  - {id: "level9:1", level: level9, number: 1, type: dyn_door_chainlnk_a, pos: [100.98, 287.66, 0], triangles: [124, 125], script: level9}
+  - {id: "level9:2", level: level9, number: 2, type: dyn_door_steel_b, pos: [-114.31, 282.85, 0], triangles: [134, 135], script: level9}
+  - {id: "level9:3", level: level9, number: 3, type: dyn_door_steel_b, pos: [30.96, 261.54, 0.01], triangles: [138, 139], script: level9}
+  - {id: "level9:4", level: level9, number: 4, type: dyn_door_steel_b, pos: [-1.89, 262.31, 0.02], triangles: [140, 141], script: level9}
+  - {id: "level9:5", level: level9, number: 5, type: dyn_door_chainlnk_a, pos: [-151.57, 273.62, 0], triangles: [126, 127], script: level9}
+  - {id: "level9:6", level: level9, number: 6, type: dyn_door_steel_b, pos: [-134.1, 282.85, 0], triangles: [136, 137], script: level9}
+  - {id: "level9:7", level: level9, number: 7, type: dyn_door_wall_b, pos: [80.96, 363.63, 5.77], triangles: [144, 145], marks_links: true, script: level9}
+  - {id: "level9:8", level: level9, number: 8, type: dyn_door_rollup, pos: [5.9, 275.28, 0], triangles: [132, 133], script: level9}
+  - {id: "level9:9", level: level9, number: 9, type: dyn_door_chainlnk_a, pos: [100.98, 292.18, 0], triangles: [130, 131], script: level9}
+  - {id: "level9:10", level: level9, number: 10, type: dyn_door_chainlnk_a, pos: [-60.74, 248.97, 0], triangles: [128, 129], script: level9}
+  - {id: "level9:11", level: level9, number: 11, type: dyn_door_wall_b, pos: [78.44, 363.61, 5.77], triangles: [142, 143], marks_links: true, script: level9}
+  - {id: "level11:1", level: level11, number: 1, type: dyn_door_strip, pos: [132.7, -52.89, 1.43], triangles: [824, 825], script: level11}
+  - {id: "level11:2", level: level11, number: 2, type: dyn_door_stlslot, pos: [-4.28, 42.73, 0], triangles: [814, 815], script: level11}
+  - {id: "level11:3", level: level11, number: 3, type: dyn_door_chainlnk_a, pos: [38.87, -5.15, -0.01], triangles: [802, 803], script: level11}
+  - {id: "level11:4", level: level11, number: 4, type: dyn_door_cabin_a, pos: [-68.77, -2.17, 0.22], triangles: [800, 801], script: level11}
+  - {id: "level11:5", level: level11, number: 5, type: dyn_door_fence, pos: [-63.14, -64.91, -0.8], triangles: [810, 811], marks_links: true, script: level11}
+  - {id: "level11:6", level: level11, number: 6, type: dyn_door_wall_a, pos: [101.05, 7.21, 5.97], triangles: [826, 827], marks_links: true, script: level11}
+  - {id: "level11:7", level: level11, number: 7, type: dyn_door_chainlnk_a, pos: [-48.71, 21.72, -2], triangles: [804, 805], script: level11}
+  - {id: "level11:8", level: level11, number: 8, type: dyn_door_stlslot, pos: [-29.8, -61.75, 0], triangles: [820, 821], script: level11}
+  - {id: "level11:9", level: level11, number: 9, type: dyn_door_stlslot, pos: [49.19, -68.05, 2], triangles: [812, 813], script: level11}
+  - {id: "level11:10", level: level11, number: 10, type: dyn_door_fence, pos: [-63.14, -67.39, -0.8], triangles: [808, 809], marks_links: true, script: level11}
+  - {id: "level11:11", level: level11, number: 11, type: dyn_door_store, pos: [-70.41, -11.12, 0], triangles: [822, 823], script: level11}
+  - {id: "level11:12", level: level11, number: 12, type: dyn_door_stlslot, pos: [11.89, -79.05, 0], triangles: [816, 817], script: level11}
+  - {id: "level11:13", level: level11, number: 13, type: dyn_door_wall_a, pos: [102.86, 17.66, 5.97], triangles: [830, 831], marks_links: true, script: level11}
+  - {id: "level11:14", level: level11, number: 14, type: dyn_door_chainlnk_a, pos: [-44.2, 21.57, -2], triangles: [806, 807], script: level11}
+  - {id: "level11:15", level: level11, number: 15, type: dyn_door_wall_a, pos: [98.31, 9.81, 5.97], triangles: [828, 829], marks_links: true, script: level11}
+  - {id: "level11:16", level: level11, number: 16, type: dyn_door_stlslot, pos: [-51.66, -29.42, 0], triangles: [818, 819], script: level11}
+  - {id: "level14:1", level: level14, number: 1, type: dyn_door_storeb, pos: [-137.71, 39.22, 0], triangles: [584, 585], script: level14}
+  - {id: "level14:2", level: level14, number: 2, type: dyn_door_dblgate, pos: [-100.15, 53.21, 3.75], triangles: [570, 571], script: level14}
+  - {id: "level14:3", level: level14, number: 3, type: dyn_door_cabin_a, pos: [-145.97, 43.07, 0.22], triangles: [546, 547], script: level14}
+  - {id: "level14:4", level: level14, number: 4, type: dyn_door_storeb, pos: [-146.62, 40.39, 0], triangles: [590, 591], script: level14}
+  - {id: "level14:5", level: level14, number: 5, type: dyn_door_cabin_a, pos: [-116.46, 9.67, 0.22], triangles: [554, 555], script: level14}
+  - {id: "level14:6", level: level14, number: 6, type: dyn_door_cabin_a, pos: [-143.66, 34.67, 0.22], triangles: [564, 565], script: level14}
+  - {id: "level14:7", level: level14, number: 7, type: dyn_door_cabin_a, pos: [12.9, -3.41, 0.22], triangles: [558, 559], script: level14}
+  - {id: "level14:8", level: level14, number: 8, type: dyn_door_cabin_a, pos: [-152.68, 43.05, 0.22], triangles: [544, 545], script: level14}
+  - {id: "level14:9", level: level14, number: 9, type: dyn_door_fence, pos: [-148.33, -30.76, 1.28], triangles: [572, 573], marks_links: true, script: level14}
+  - {id: "level14:10", level: level14, number: 10, type: dyn_door_storeb, pos: [-116.69, 14.98, 0], triangles: [582, 583], script: level14}
+  - {id: "level14:11", level: level14, number: 11, type: dyn_door_cabin_a, pos: [-152.68, 37.86, 0.22], triangles: [556, 557], script: level14}
+  - {id: "level14:12", level: level14, number: 12, type: dyn_door_storeb, pos: [-153.35, 38.22, 0], triangles: [588, 589], script: level14}
+  - {id: "level14:13", level: level14, number: 13, type: dyn_door_cabin_a, pos: [-109.51, 9.67, 0.22], triangles: [548, 549], script: level14}
+  - {id: "level14:14", level: level14, number: 14, type: dyn_door_store, pos: [3.96, -1.78, 0], triangles: [580, 581], script: level14}
+  - {id: "level14:15", level: level14, number: 15, type: dyn_door_cabin_a, pos: [-114.49, 9.67, 0.22], triangles: [552, 553], script: level14}
+  - {id: "level14:16", level: level14, number: 16, type: dyn_door_cabin_a, pos: [-23.53, -16.52, 0.22], triangles: [568, 569], script: level14}
+  - {id: "level14:17", level: level14, number: 17, type: dyn_door_cabin_a, pos: [-146.63, 12.49, 0.22], triangles: [562, 563], script: level14}
+  - {id: "level14:18", level: level14, number: 18, type: dyn_door_ornate, pos: [-67.01, 21.39, 2.5], triangles: [574, 575], script: level14}
+  - {id: "level14:19", level: level14, number: 19, type: dyn_door_cabin_a, pos: [-146.63, 8.51, 0.22], triangles: [560, 561], script: level14}
+  - {id: "level14:20", level: level14, number: 20, type: dyn_door_cabin_a, pos: [-20.54, -12.23, 0.22], triangles: [542, 543], script: level14}
+  - {id: "level14:21", level: level14, number: 21, type: dyn_door_ornate, pos: [-74.84, 68.73, -0.51], triangles: [576, 577], script: level14}
+  - {id: "level14:22", level: level14, number: 22, type: dyn_door_cabin_a, pos: [-23.53, -14.58, 0.22], triangles: [566, 567], script: level14}
+  - {id: "level14:23", level: level14, number: 23, type: dyn_door_cabin_a, pos: [-111.4, 9.67, 0.22], triangles: [550, 551], script: level14}
+  - {id: "level14:24", level: level14, number: 24, type: dyn_door_storeb, pos: [-138.31, 9.28, 0], triangles: [586, 587], script: level14}
+  - {id: "level14:25", level: level14, number: 25, type: dyn_door_store, pos: [-14.59, -17.53, 0], triangles: [578, 579], script: level14}
+  - {id: "level20:1", level: level20, number: 1, type: dyn_door_storeb, pos: [344.8, -157.68, 0.2], triangles: [672, 673], script: level20}
+  - {id: "level20:2", level: level20, number: 2, type: dyn_door_storeb, pos: [285.19, -52.84, 0.2], triangles: [674, 675], script: level20}
+  - {id: "level20:3", level: level20, number: 3, type: dyn_door_cabin_a, pos: [276.52, -50.61, 0.42], triangles: [652, 653], script: level20}
+  - {id: "level20:4", level: level20, number: 4, type: dyn_door_cabin_a, pos: [304.25, -24.86, 0.45], triangles: [656, 657], script: level20}
+  - {id: "level20:5", level: level20, number: 5, type: dyn_door_chainlnk_a, pos: [297.09, -3.27, -199.79], triangles: [662, 663], script: level20}
+  - {id: "level20:6", level: level20, number: 6, type: dyn_door_chainlnk_a, pos: [531.31, 55.43, 0.2], triangles: [666, 667], script: level20}
+  - {id: "level20:7", level: level20, number: 7, type: dyn_door_cabin_a, pos: [278.9, -42.25, 0.42], triangles: [650, 651], script: level20}
+  - {id: "level20:8", level: level20, number: 8, type: dyn_door_cabin_a, pos: [277.8, -51.89, 0.42], triangles: [654, 655], script: level20}
+  - {id: "level20:9", level: level20, number: 9, type: dyn_door_chainlnk_a, pos: [329.68, -42.55, 0.2], triangles: [664, 665], script: level20}
+  - {id: "level20:10", level: level20, number: 10, type: dyn_door_temple, pos: [358.79, -80.63, -5.78], triangles: [688, 689], script: level20}
+  - {id: "level20:11", level: level20, number: 11, type: dyn_door_temple, pos: [347.05, -109.83, 0.21], triangles: [680, 681], script: level20}
+  - {id: "level20:12", level: level20, number: 12, type: dyn_door_storeb, pos: [363.01, -166.38, 0.2], triangles: [676, 677], script: level20}
+  - {id: "level20:13", level: level20, number: 13, type: dyn_door_temple, pos: [494.82, 40.79, -0.97], triangles: [684, 685], script: level20}
+  - {id: "level20:14", level: level20, number: 14, type: dyn_door_store, pos: [309.39, -32.55, 0.2], triangles: [670, 671], script: level20}
+  - {id: "level20:15", level: level20, number: 15, type: dyn_door_rollup, pos: [500.38, 76.27, 4.22], triangles: [668, 669], script: level20}
+  - {id: "level20:16", level: level20, number: 16, type: dyn_door_chainlnk_a, pos: [517.63, 71.41, 0.2], triangles: [660, 661], script: level20}
+  - {id: "level20:17", level: level20, number: 17, type: dyn_door_chainlnk_a, pos: [453.42, 88.53, 0.2], triangles: [658, 659], script: level20}
+  - {id: "level20:18", level: level20, number: 18, type: dyn_door_temple, pos: [285.35, -154.61, 0.21], triangles: [686, 687], script: level20}
+  - {id: "level20:19", level: level20, number: 19, type: dyn_door_temple, pos: [288.31, -87.17, 2.15], triangles: [682, 683], script: level20}
+  - {id: "level20:20", level: level20, number: 20, type: dyn_door_storeb, pos: [499.21, 87.38, 4.22], triangles: [678, 679], script: level20}
+  - {id: "level31:1", level: level31, number: 1, type: dyn_door_cabin_a, pos: [102.65, 42.89, 6.2], triangles: [247, 248], script: level31}
+  - {id: "level31:2", level: level31, number: 2, type: dyn_door_dblstlwin, pos: [-58.1, 109.47, 5.31], triangles: [253, 254], script: level31}
+  - {id: "level31:3", level: level31, number: 3, type: dyn_door_cabin_a, pos: [98.27, 38.25, 6.2], triangles: [249, 250], script: level31}
+  - {id: "level31:4", level: level31, number: 4, type: dyn_door_cabin_a, pos: [100.76, 42.89, 6.2], triangles: [245, 246], script: level31}
+  - {id: "level31:5", level: level31, number: 5, type: dyn_door_stlslot, pos: [147.14, 85.24, 5.98], triangles: [263, 264], script: level31}
+  - {id: "level31:6", level: level31, number: 6, type: dyn_door_fence, pos: [-44.34, 70.05, 6.51], triangles: [259, 260], marks_links: true, script: level31}
+  - {id: "level31:7", level: level31, number: 7, type: dyn_door_dblstlwin, pos: [-35.01, 94.86, 5.31], triangles: [255, 256], script: level31}
+  - {id: "level31:8", level: level31, number: 8, type: dyn_door_storeb, pos: [93.7, 37.5, 5.97], triangles: [265, 266], script: level31}
+  - {id: "level31:9", level: level31, number: 9, type: dyn_door_chainlnk_ap, pos: [69.58, 86.84, -0.09], triangles: [251, 252], script: level31}
+  - {id: "level31:10", level: level31, number: 10, type: dyn_door_dclub, pos: [5.4, 173.96, 8.11], triangles: [257, 258], marks_links: true, script: level31}
+  - {id: "level31:11", level: level31, number: 11, type: dyn_door_redgate, pos: [73.16, 153.18, -0.58], triangles: [261, 262], script: level31}
+  - {id: "level31:12", level: level31, number: 12, type: dyn_door_storeb, pos: [99.94, 55.29, 5.97], triangles: [267, 268], script: level31}
+  - {id: "level34:1", level: level34, number: 1, type: dyn_door_store, pos: [-67.73, -268.01, 0], triangles: [568, 569], script: level34}
+  - {id: "level34:2", level: level34, number: 2, type: dyn_door_dblgate, pos: [-111.86, -256.28, 0], triangles: [556, 557], script: level34}
+  - {id: "level34:3", level: level34, number: 3, type: dyn_door_cabin_a, pos: [-98.67, -212.28, 0.22], triangles: [528, 529], script: level34}
+  - {id: "level34:4", level: level34, number: 4, type: dyn_door_cabin_a, pos: [-22.24, -238.08, 0.22], triangles: [532, 533], script: level34}
+  - {id: "level34:5", level: level34, number: 5, type: dyn_door_cabin_a, pos: [-72.37, -71.92, 0.22], triangles: [538, 539], script: level34}
+  - {id: "level34:6", level: level34, number: 6, type: dyn_door_cabin_a, pos: [-64.51, -148.83, 0.22], triangles: [552, 553], script: level34}
+  - {id: "level34:7", level: level34, number: 7, type: dyn_door_cabin_a, pos: [-98.29, -174.74, 0.22], triangles: [524, 525], script: level34}
+  - {id: "level34:8", level: level34, number: 8, type: dyn_door_cabin_a, pos: [-66.41, -148.83, 0.22], triangles: [550, 551], script: level34}
+  - {id: "level34:9", level: level34, number: 9, type: dyn_door_cabin_a, pos: [-70.47, -71.92, 0.22], triangles: [540, 541], script: level34}
+  - {id: "level34:10", level: level34, number: 10, type: dyn_door_cabin_a, pos: [-22.19, -239.87, 0.22], triangles: [534, 535], script: level34}
+  - {id: "level34:11", level: level34, number: 11, type: dyn_door_cabin_a, pos: [-76.68, -271.17, 0.22], triangles: [530, 531], script: level34}
+  - {id: "level34:12", level: level34, number: 12, type: dyn_door_dblgate, pos: [-109.39, -223.97, 0], triangles: [558, 559], script: level34}
+  - {id: "level34:13", level: level34, number: 13, type: dyn_door_store, pos: [-89.66, -212.29, 0], triangles: [566, 567], script: level34}
+  - {id: "level34:14", level: level34, number: 14, type: dyn_door_store, pos: [-49.89, -99.03, 0], triangles: [574, 575], script: level34}
+  - {id: "level34:15", level: level34, number: 15, type: dyn_door_storeb, pos: [-21.41, -248.28, 0], triangles: [576, 577], script: level34}
+  - {id: "level34:16", level: level34, number: 16, type: dyn_door_cabin_a, pos: [-65.42, -71.92, 0.22], triangles: [544, 545], script: level34}
+  - {id: "level34:17", level: level34, number: 17, type: dyn_door_cabin_a, pos: [-98.73, -179.66, 0.22], triangles: [526, 527], script: level34}
+  - {id: "level34:18", level: level34, number: 18, type: dyn_door_store, pos: [-33.87, -237.28, 0], triangles: [570, 571], script: level34}
+  - {id: "level34:19", level: level34, number: 19, type: dyn_door_store, pos: [-65.2, -77.22, 0], triangles: [562, 563], script: level34}
+  - {id: "level34:20", level: level34, number: 20, type: dyn_door_cabin_a, pos: [-71.46, -148.83, 0.22], triangles: [546, 547], script: level34}
+  - {id: "level34:21", level: level34, number: 21, type: dyn_door_cabin_a, pos: [-40.77, -101.66, 0.22], triangles: [554, 555], script: level34}
+  - {id: "level34:22", level: level34, number: 22, type: dyn_door_cabin_a, pos: [-69.51, -148.83, 0.22], triangles: [548, 549], script: level34}
+  - {id: "level34:23", level: level34, number: 23, type: dyn_door_dblgate, pos: [-144.94, -270.82, 0], triangles: [560, 561], script: level34}
+  - {id: "level34:24", level: level34, number: 24, type: dyn_door_store, pos: [-89.14, -172.19, 0], triangles: [564, 565], script: level34}
+  - {id: "level34:25", level: level34, number: 25, type: dyn_door_store, pos: [-73.37, -154.13, 0], triangles: [572, 573], script: level34}
+  - {id: "level34:26", level: level34, number: 26, type: dyn_door_cabin_a, pos: [-67.37, -71.92, 0.22], triangles: [542, 543], script: level34}
+  - {id: "level34:27", level: level34, number: 27, type: dyn_door_cabin_a, pos: [-22.24, -245.75, 0.22], triangles: [536, 537], script: level34}
+  - {id: "level51:1", level: level51, number: 1, type: dyn_door_dblgate, pos: [-76.77, 530.5, 0.05], triangles: [125, 126], script: level51}
+  - {id: "level51:2", level: level51, number: 2, type: dyn_door_chainlnk_a, pos: [-180.3, 573.04, 16.08], triangles: [113, 114], script: level51}
+  - {id: "level51:3", level: level51, number: 3, type: dyn_door_chainlnk_a, pos: [175.71, 221.44, 0.2], triangles: [119, 120], script: level51}
+  - {id: "level51:4", level: level51, number: 4, type: dyn_door_steel_b, pos: [64.46, 347.33, 6.17], triangles: [131, 132], script: level51}
+  - {id: "level51:5", level: level51, number: 5, type: dyn_door_steel_b, pos: [49.98, 341.32, 6.17], triangles: [135, 136], script: level51}
+  - {id: "level51:6", level: level51, number: 6, type: dyn_door_dblwoodfnce_xl, pos: [167.52, 324.2, 0.01], triangles: [127, 128], script: level51}
+  - {id: "level51:7", level: level51, number: 7, type: dyn_door_steel_b, pos: [64.07, 331.82, 6.17], triangles: [137, 138], script: level51}
+  - {id: "level51:8", level: level51, number: 8, type: dyn_door_chainlnk_a, pos: [-74.2, 488.35, -0.93], triangles: [121, 122], script: level51}
+  - {id: "level51:9", level: level51, number: 9, type: dyn_door_steel_b, pos: [-142.02, 563.66, 22.17], triangles: [133, 134], script: level51}
+  - {id: "level51:10", level: level51, number: 10, type: dyn_door_chainlnk_a, pos: [175.71, 225.92, 0.2], triangles: [117, 118], script: level51}
+  - {id: "level51:11", level: level51, number: 11, type: dyn_door_chainlnk_a, pos: [89.98, 323.82, 0], triangles: [123, 124], script: level51}
+  - {id: "level51:12", level: level51, number: 12, type: dyn_door_chainlnk_a, pos: [115.19, 315.4, 0], triangles: [115, 116], script: level51}
+  - {id: "level51:13", level: level51, number: 13, type: dyn_door_rollup, pos: [126.87, 310.76, 0.01], triangles: [129, 130], script: level51}
+  - {id: "level52:1", level: level52, number: 1, type: dyn_door_dblgate, pos: [467.1, -60.59, 1], triangles: [350, 351], script: level52}
+  - {id: "level52:2", level: level52, number: 2, type: dyn_door_chainlnk_a, pos: [504.02, -212.51, 0], triangles: [344, 345], script: level52}
+  - {id: "level52:3", level: level52, number: 3, type: dyn_door_fence, pos: [499.25, -177.98, 1.21], triangles: [354, 355], marks_links: true, script: level52}
+  - {id: "level52:4", level: level52, number: 4, type: dyn_door_storeb, pos: [481.62, -110.18, 0], triangles: [356, 357], script: level52}
+  - {id: "level52:5", level: level52, number: 5, type: dyn_door_fence, pos: [488.14, -189.76, 1.21], triangles: [352, 353], marks_links: true, script: level52}
+  - {id: "level52:6", level: level52, number: 6, type: dyn_door_chainlnk_a, pos: [520.85, -203.65, 0], triangles: [346, 347], script: level52}
+  - {id: "level52:7", level: level52, number: 7, type: dyn_door_chainlnk_a, pos: [519.86, -217.16, 0], triangles: [348, 349], script: level52}
+  - {id: "level52:8", level: level52, number: 8, type: dyn_door_cabin_a, pos: [490.67, -107.93, 0.22], triangles: [342, 343], script: level52}
+  - {id: "level54:1", level: level54, number: 1, type: dyn_door_dblgate, pos: [-886.97, -213.37, -13.39], triangles: [82, 83], script: level54}
+  - {id: "level54:2", level: level54, number: 2, type: dyn_door_chainlnk_pick, pos: [-589.76, 49.3, 4.83], triangles: [80, 81], script: level54}
+  - {id: "level54:3", level: level54, number: 3, type: dyn_door_chainlnk_a, pos: [-678.33, -261.74, -3], triangles: [74, 75], script: level54}
+  - {id: "level54:4", level: level54, number: 4, type: dyn_door_chainlnk_a, pos: [-638.51, 51.93, 2.93], triangles: [76, 77], script: level54}
+  - {id: "level54:5", level: level54, number: 5, type: dyn_door_cemgate, pos: [-948.4, -105.88, -13.03], triangles: [72, 73], script: level54}
+  - {id: "level54:6", level: level54, number: 6, type: dyn_door_chainlnk_pick, pos: [-630.44, 52.8, 2.93], triangles: [78, 79], script: level54}
+  - {id: "level54:7", level: level54, number: 7, type: dyn_door_dblgate, pos: [-923.93, -113.93, -13.39], triangles: [86, 87], script: level54}
+  - {id: "level54:8", level: level54, number: 8, type: dyn_door_dblgate, pos: [-966.46, -55.89, -13.39], triangles: [84, 85], script: level54}
+  - {id: "level55:1", level: level55, number: 1, type: dyn_door_liz, pos: [378.31, 7.72, 4.21], triangles: [80, 81], marks_links: true, script: level55}
+  - {id: "level55:2", level: level55, number: 2, type: dyn_door_stall, pos: [378.45, 14.73, -195.77], triangles: [84, 85], script: level55}
+  - {id: "level55:3", level: level55, number: 3, type: dyn_door_steel_b, pos: [362.17, 3.94, 0.2], triangles: [90, 91], script: level55}
+  - {id: "level55:4", level: level55, number: 4, type: dyn_door_stall, pos: [378.45, 12.3, -195.77], triangles: [82, 83], script: level55}
+  - {id: "level55:5", level: level55, number: 5, type: dyn_door_wood, pos: [384.55, 23.85, 4.21], triangles: [94, 95], script: level55}
+  - {id: "level55:6", level: level55, number: 6, type: dyn_door_stall, pos: [378.45, 17.14, -195.77], triangles: [86, 87], script: level55}
+  - {id: "level55:7", level: level55, number: 7, type: dyn_door_stall, pos: [378.45, 19.57, -195.77], triangles: [88, 89], script: level55}
+  - {id: "level55:8", level: level55, number: 8, type: dyn_door_wood, pos: [371.92, 23.85, 4.21], triangles: [96, 97], script: level55}
+  - {id: "level55:9", level: level55, number: 9, type: dyn_door_subcan, pos: [373.54, 26.55, -195.78], triangles: [92, 93], script: level55}
+  - {id: "level60:1", level: level60, number: 1, type: dyn_door_rollup, pos: [-795, 20.17, 0], triangles: [36, 37], script: level60}
+  - {id: "level60:2", level: level60, number: 2, type: dyn_door_rollup, pos: [-719.52, 20.17, 0], triangles: [34, 35], script: level60}
+  - {id: "level60:3", level: level60, number: 3, type: dyn_door_temple, pos: [-194.21, 17.04, 0], triangles: [40, 41], script: level60}
+  - {id: "level60:4", level: level60, number: 4, type: dyn_door_rollup, pos: [-687.89, 20.17, 0], triangles: [30, 31], script: level60}
+  - {id: "level60:5", level: level60, number: 5, type: dyn_door_rollup, pos: [-94.69, 19.66, 0], triangles: [38, 39], script: level60}
+  - {id: "level60:6", level: level60, number: 6, type: dyn_door_rollup, pos: [-680.44, 20.17, 0], triangles: [32, 33], script: level60}
+  - {id: "level60:7", level: level60, number: 7, type: dyn_door_temple, pos: [-185.8, 17.04, 0], triangles: [42, 43], script: level60}
+  - {id: "level61:1", level: level61, number: 1, type: dyn_door_ele, pos: [-498.27, 19.87, 0], triangles: [32, 33], script: level61}
+  - {id: "level61:2", level: level61, number: 2, type: dyn_door_steel_b, pos: [-549.64, 19.91, 0.02], triangles: [38, 39], script: level61}
+  - {id: "level61:3", level: level61, number: 3, type: dyn_door_steel_b, pos: [-572.87, 19.91, 0.02], triangles: [40, 41], script: level61}
+  - {id: "level61:4", level: level61, number: 4, type: dyn_door_ele, pos: [-434.99, 19.87, 0], triangles: [30, 31], script: level61}
+  - {id: "level61:5", level: level61, number: 5, type: dyn_door_temple, pos: [-251.09, 19.88, 0], triangles: [46, 47], script: level61}
+  - {id: "level61:6", level: level61, number: 6, type: dyn_door_ele, pos: [-603.07, 24.24, 0], triangles: [34, 35], script: level61}
+  - {id: "level61:7", level: level61, number: 7, type: dyn_door_subway, pos: [-779.66, 19.7, 0.18], triangles: [42, 43], script: level61}
+  - {id: "level61:8", level: level61, number: 8, type: dyn_door_subway, pos: [-762.91, 19.7, 0.18], triangles: [44, 45], script: level61}
+  - {id: "level61:9", level: level61, number: 9, type: dyn_door_ele, pos: [-684.29, 19.52, 3.6], triangles: [36, 37], script: level61}
+  - {id: "level62:1", level: level62, number: 1, type: dyn_door_strip, pos: [-507.29, 19.91, 0], triangles: [22, 23], script: level62}
+  - {id: "level62:2", level: level62, number: 2, type: dyn_door_vargas, pos: [-881.56, 19.87, 1.22], triangles: [30, 31], marks_links: true, script: level62}
+  - {id: "level62:3", level: level62, number: 3, type: dyn_door_steel_b, pos: [-805.55, 19.16, 0], triangles: [12, 13], script: level62}
+  - {id: "level62:4", level: level62, number: 4, type: dyn_door_steel_b, pos: [-466.62, 19.91, 0], triangles: [20, 21], script: level62}
+  - {id: "level62:5", level: level62, number: 5, type: dyn_door_steel_b, pos: [-860.53, 19.91, 0], triangles: [14, 15], script: level62}
+  - {id: "level62:6", level: level62, number: 6, type: dyn_door_strip, pos: [-538.87, 19.91, 0], triangles: [24, 25], script: level62}
+  - {id: "level62:7", level: level62, number: 7, type: dyn_door_steel_b, pos: [-438.14, 19.91, 0], triangles: [18, 19], script: level62}
+  - {id: "level62:8", level: level62, number: 8, type: dyn_door_subway, pos: [-160.92, 19.65, -0.15], triangles: [26, 27], script: level62}
+  - {id: "level62:9", level: level62, number: 9, type: dyn_door_subway, pos: [-188.71, 19.72, 0.15], triangles: [28, 29], script: level62}
+  - {id: "level62:10", level: level62, number: 10, type: dyn_door_ornate, pos: [-238.44, 19.66, 0], triangles: [10, 11], script: level62}
+  - {id: "level62:11", level: level62, number: 11, type: dyn_door_steel_b, pos: [-425.37, 19.91, 0], triangles: [16, 17], script: level62}
+  - {id: "level64:1", level: level64, number: 1, type: dyn_door_fence_s, pos: [-308.31, 21.88, 0], triangles: [60, 61], script: level64}
+  - {id: "level64:2", level: level64, number: 2, type: dyn_door_fence_s, pos: [-773.44, 21.88, 0], triangles: [62, 63], script: level64}
+  - {id: "level80:1", level: level80, number: 1, type: dyn_door_chainlnk_a, pos: [-227.26, 258.87, 1.21], triangles: [62, 63], script: level80}
+  - {id: "level80:2", level: level80, number: 2, type: dyn_door_cabin_a, pos: [-244.61, 218.86, 1.44], triangles: [52, 53], script: level80}
+  - {id: "level80:3", level: level80, number: 3, type: dyn_door_chainlnk_a, pos: [-208.74, 140.33, 1.22], triangles: [56, 57], script: level80}
+  - {id: "level80:4", level: level80, number: 4, type: dyn_door_woodfnce_xl, pos: [-231.59, 249.59, 1.22], triangles: [70, 71], script: level80}
+  - {id: "level80:5", level: level80, number: 5, type: dyn_door_wood, pos: [-187.68, 93.98, 5.55], triangles: [68, 69], script: level80}
+  - {id: "level80:6", level: level80, number: 6, type: dyn_door_storeb, pos: [-242.97, 227.8, 1.23], triangles: [64, 65], script: level80}
+  - {id: "level80:7", level: level80, number: 7, type: dyn_door_chainlnk_a, pos: [-187.21, 98.91, 6.12], triangles: [54, 55], script: level80}
+  - {id: "level80:8", level: level80, number: 8, type: dyn_door_chainlnk_a, pos: [-201.09, 214.46, 1.22], triangles: [60, 61], script: level80}
+  - {id: "level80:9", level: level80, number: 9, type: dyn_door_chainlnk_a, pos: [-192.39, 218.04, 1.2], triangles: [58, 59], script: level80}
+  - {id: "level80:10", level: level80, number: 10, type: dyn_door_storeb, pos: [-244.87, 217.8, 1.23], triangles: [66, 67], script: level80}
+  - {id: "level81:1", level: level81, number: 1, type: dyn_door_chainlnk_a, pos: [38.96, -21.99, 0.22], triangles: [99, 100], script: level81}
+  - {id: "level81:2", level: level81, number: 2, type: dyn_door_ornate, pos: [207.62, -29.64, -209.85], triangles: [105, 106], script: level81}
+  - {id: "level81:3", level: level81, number: 3, type: dyn_door_steel_b, pos: [57.33, -19.01, 3.28], triangles: [109, 110], script: level81}
+  - {id: "level81:4", level: level81, number: 4, type: dyn_door_ornate, pos: [207.62, -40.89, -209.48], triangles: [107, 108], script: level81}
+  - {id: "level81:5", level: level81, number: 5, type: dyn_door_ornate, pos: [188.01, -33.58, -209.85], triangles: [103, 104], script: level81}
+  - {id: "level81:6", level: level81, number: 6, type: dyn_door_ornate, pos: [99.61, -34.04, -209.5], triangles: [101, 102], script: level81}
+  - {id: "level82:1", level: level82, number: 1, type: dyn_door_storeb, pos: [325.96, -147.25, -198.77], triangles: [398, 399], script: level82}
+  - {id: "level82:2", level: level82, number: 2, type: dyn_door_steel_b, pos: [306.07, -132.09, -195.17], triangles: [390, 391], script: level82}
+  - {id: "level82:3", level: level82, number: 3, type: dyn_door_fence, pos: [190.34, -35.54, 1.45], triangles: [382, 383], marks_links: true, script: level82}
+  - {id: "level82:4", level: level82, number: 4, type: dyn_door_steel_b, pos: [192.28, -2.12, 0.43], triangles: [392, 393], script: level82}
+  - {id: "level82:5", level: level82, number: 5, type: dyn_door_fence, pos: [186.7, -69.75, 1.45], triangles: [376, 377], marks_links: true, script: level82}
+  - {id: "level82:6", level: level82, number: 6, type: dyn_door_rollup, pos: [335.92, -136.8, -199.75], triangles: [386, 387], script: level82}
+  - {id: "level82:7", level: level82, number: 7, type: dyn_door_storeb, pos: [356.24, -115.13, -198.77], triangles: [396, 397], script: level82}
+  - {id: "level82:8", level: level82, number: 8, type: dyn_door_storeb, pos: [349.01, -117.57, -195.17], triangles: [400, 401], script: level82}
+  - {id: "level82:9", level: level82, number: 9, type: dyn_door_fence, pos: [192.82, -35.54, 1.45], triangles: [380, 381], marks_links: true, script: level82}
+  - {id: "level82:10", level: level82, number: 10, type: dyn_door_rollup, pos: [335.91, -129.35, -199.76], triangles: [388, 389], script: level82}
+  - {id: "level82:11", level: level82, number: 11, type: dyn_door_fence, pos: [186.7, -72.23, 1.45], triangles: [378, 379], marks_links: true, script: level82}
+  - {id: "level82:12", level: level82, number: 12, type: dyn_door_store, pos: [206.71, -105.88, 0.23], triangles: [394, 395], script: level82}
+  - {id: "level82:13", level: level82, number: 13, type: dyn_door_fence_s, pos: [372.18, -50.89, 0.05], triangles: [384, 385], script: level82}
+  - {id: "level83:1", level: level83, number: 1, type: dyn_door_store, pos: [313.77, 66.73, 0.23], triangles: [520, 521], script: level83}
+  - {id: "level83:2", level: level83, number: 2, type: dyn_door_chainlnk_a, pos: [18.62, -82.95, 0.22], triangles: [494, 495], script: level83}
+  - {id: "level83:3", level: level83, number: 3, type: dyn_door_cabin_a, pos: [56.95, -125.22, 0.44], triangles: [482, 483], script: level83}
+  - {id: "level83:4", level: level83, number: 4, type: dyn_door_fence, pos: [186.7, -68.47, 1.48], triangles: [502, 503], marks_links: true, script: level83}
+  - {id: "level83:5", level: level83, number: 5, type: dyn_door_chainlnk_a, pos: [113.74, -105.52, 0.22], triangles: [496, 497], script: level83}
+  - {id: "level83:6", level: level83, number: 6, type: dyn_door_chainlnk_a, pos: [159.7, -70.72, 0.22], triangles: [488, 489], script: level83}
+  - {id: "level83:7", level: level83, number: 7, type: dyn_door_fence, pos: [191.61, -31.73, 1.45], triangles: [500, 501], marks_links: true, script: level83}
+  - {id: "level83:8", level: level83, number: 8, type: dyn_door_store, pos: [314.5, 48.35, 0.23], triangles: [518, 519], script: level83}
+  - {id: "level83:9", level: level83, number: 9, type: dyn_door_store, pos: [58.58, -116.27, 0.21], triangles: [514, 515], script: level83}
+  - {id: "level83:10", level: level83, number: 10, type: dyn_door_ornate_single, pos: [69.03, -84.61, 4.6], triangles: [510, 511], script: level83}
+  - {id: "level83:11", level: level83, number: 11, type: dyn_door_chainlnk_a, pos: [169.5, 44.87, 0.22], triangles: [492, 493], script: level83}
+  - {id: "level83:12", level: level83, number: 12, type: dyn_door_cabin_a, pos: [37.57, -90.03, 0.82], triangles: [486, 487], script: level83}
+  - {id: "level83:13", level: level83, number: 13, type: dyn_door_store, pos: [44.96, -98.1, 0.6], triangles: [512, 513], script: level83}
+  - {id: "level83:14", level: level83, number: 14, type: dyn_door_ornate, pos: [69.04, -91.14, 4.6], triangles: [508, 509], script: level83}
+  - {id: "level83:15", level: level83, number: 15, type: dyn_door_ornate, pos: [50.59, -94.03, 0.63], triangles: [506, 507], script: level83}
+  - {id: "level83:16", level: level83, number: 16, type: dyn_door_cabin_a, pos: [44.56, -82.8, 0.82], triangles: [484, 485], script: level83}
+  - {id: "level83:17", level: level83, number: 17, type: dyn_door_chainlnk_a, pos: [253.92, 16.36, 0.22], triangles: [490, 491], script: level83}
+  - {id: "level83:18", level: level83, number: 18, type: dyn_door_chainlnk_a, pos: [49.53, -89.66, 0.6], triangles: [498, 499], script: level83}
+  - {id: "level83:19", level: level83, number: 19, type: dyn_door_fence, pos: [186.7, -65.99, 1.48], triangles: [504, 505], marks_links: true, script: level83}
+  - {id: "level83:20", level: level83, number: 20, type: dyn_door_store, pos: [267.4, 33.67, 0.23], triangles: [516, 517], script: level83}
+  - {id: "level84:1", level: level84, number: 1, type: dyn_door_chainlnk_a, pos: [66.04, -103.62, -0.4], triangles: [212, 213], script: level84}
+  - {id: "level86:1", level: level86, number: 1, type: dyn_door_store, pos: [-54.46, 10.14, 0.22], triangles: [384, 385], script: level86}
+  - {id: "level86:2", level: level86, number: 2, type: dyn_door_cabin_a, pos: [-50.81, 14.82, 0.44], triangles: [370, 371], script: level86}
+  - {id: "level86:3", level: level86, number: 3, type: dyn_door_steel_b, pos: [-113.44, -5.36, 0.2], triangles: [376, 377], script: level86}
+  - {id: "level86:4", level: level86, number: 4, type: dyn_door_steel_b, pos: [-118.13, 5.43, 0.2], triangles: [378, 379], script: level86}
+  - {id: "level86:5", level: level86, number: 5, type: dyn_door_cabin_a, pos: [-52.7, 14.82, 0.44], triangles: [372, 373], script: level86}
+  - {id: "level86:6", level: level86, number: 6, type: dyn_door_fence_s, pos: [48.37, 47.72, 0.26], triangles: [374, 375], script: level86}
+  - {id: "level86:7", level: level86, number: 7, type: dyn_door_store, pos: [-130.19, 7.64, 0.22], triangles: [386, 387], script: level86}
+  - {id: "level86:8", level: level86, number: 8, type: dyn_door_store, pos: [-120.84, 46.11, 0.22], triangles: [382, 383], script: level86}
+  - {id: "level86:9", level: level86, number: 9, type: dyn_door_steel_b, pos: [54.33, 52.49, 0.27], triangles: [380, 381], script: level86}
+  - {id: "level86:12", level: level86, number: 12, type: dyn_door_store, pos: [-120.84, 46.05, 0.22], triangles: [870, 871], script: level86_chapter1_reg}
+  - {id: "level87:1", level: level87, number: 1, type: dyn_door_storeb, pos: [371.95, 154.45, 0.21], triangles: [315, 316], script: level87}
+  - {id: "level87:2", level: level87, number: 2, type: dyn_door_bar_bani, pos: [460.26, 128.74, 1.62], triangles: [285, 286], marks_links: true, script: level87}
+  - {id: "level87:3", level: level87, number: 3, type: dyn_door_bar_bani, pos: [459.2, 148.52, 1.62], triangles: [277, 278], marks_links: true, script: level87}
+  - {id: "level87:4", level: level87, number: 4, type: dyn_door_chainlnk_a, pos: [372.81, 92.56, 0.29], triangles: [297, 298], script: level87}
+  - {id: "level87:5", level: level87, number: 5, type: dyn_door_chainlnk_a, pos: [405.95, -137.49, 2.51], triangles: [307, 308], script: level87}
+  - {id: "level87:6", level: level87, number: 6, type: dyn_door_cabin_a, pos: [449.3, 118.85, 0.44], triangles: [295, 296], script: level87}
+  - {id: "level87:7", level: level87, number: 7, type: dyn_door_cabin_a, pos: [447.94, 124.77, 0.44], triangles: [289, 290], script: level87}
+  - {id: "level87:8", level: level87, number: 8, type: dyn_door_steel_b, pos: [492.33, 146.41, 1.22], triangles: [311, 312], script: level87}
+  - {id: "level87:9", level: level87, number: 9, type: dyn_door_chainlnk_a, pos: [418.41, 123.82, 0.2], triangles: [299, 300], script: level87}
+  - {id: "level87:10", level: level87, number: 10, type: dyn_door_bar_bani, pos: [462.33, 146.9, 1.62], triangles: [271, 272], marks_links: true, script: level87}
+  - {id: "level87:11", level: level87, number: 11, type: dyn_door_bar_bani, pos: [457.1, 127.11, 1.62], triangles: [279, 280], marks_links: true, script: level87}
+  - {id: "level87:12", level: level87, number: 12, type: dyn_door_bar_bani, pos: [463.42, 128.74, 1.62], triangles: [283, 284], marks_links: true, script: level87}
+  - {id: "level87:13", level: level87, number: 13, type: dyn_door_bar_bani, pos: [468.66, 148.52, 1.62], triangles: [275, 276], marks_links: true, script: level87}
+  - {id: "level87:14", level: level87, number: 14, type: dyn_door_store, pos: [335.95, 136.68, 0.21], triangles: [313, 314], script: level87}
+  - {id: "level87:15", level: level87, number: 15, type: dyn_door_chainlnk_a, pos: [354.22, 51.83, 0.23], triangles: [303, 304], script: level87}
+  - {id: "level87:16", level: level87, number: 16, type: dyn_door_chainlnk_a, pos: [421.47, 78.38, 0.23], triangles: [305, 306], script: level87}
+  - {id: "level87:17", level: level87, number: 17, type: dyn_door_cabin_a, pos: [449.3, 120.79, 0.44], triangles: [293, 294], script: level87}
+  - {id: "level87:18", level: level87, number: 18, type: dyn_door_dblstlwin, pos: [396.58, -136.61, 3.82], triangles: [309, 310], script: level87}
+  - {id: "level87:19", level: level87, number: 19, type: dyn_door_cabin_a, pos: [380.92, 154.24, 0.45], triangles: [291, 292], script: level87}
+  - {id: "level87:20", level: level87, number: 20, type: dyn_door_chainlnk_a, pos: [348.09, 67.66, 0.2], triangles: [301, 302], script: level87}
+  - {id: "level87:21", level: level87, number: 21, type: dyn_door_cabin_a, pos: [380.92, 156.24, 0.45], triangles: [287, 288], script: level87}
+  - {id: "level87:22", level: level87, number: 22, type: dyn_door_storeb, pos: [440.34, 117.3, 0.21], triangles: [317, 318], script: level87}
+  - {id: "level87:23", level: level87, number: 23, type: dyn_door_bar_bani, pos: [465.5, 146.9, 1.62], triangles: [273, 274], marks_links: true, script: level87}
+  - {id: "level87:24", level: level87, number: 24, type: dyn_door_bar_bani, pos: [466.56, 127.11, 1.62], triangles: [281, 282], marks_links: true, script: level87}
+  - {id: "level92:1", level: level92, number: 1, type: dyn_door_store, pos: [-54.63, 10.14, 0.22], triangles: [702, 703], script: level92}
+  - {id: "level92:2", level: level92, number: 2, type: dyn_door_cabin_a, pos: [-50.81, 14.82, 0.44], triangles: [682, 683], script: level92}
+  - {id: "level92:3", level: level92, number: 3, type: dyn_door_stlslot, pos: [-162.63, 81.33, -197.57], triangles: [692, 693], script: level92}
+  - {id: "level92:4", level: level92, number: 4, type: dyn_door_steel_b, pos: [-113.44, -5.36, 0.2], triangles: [686, 687], script: level92}
+  - {id: "level92:5", level: level92, number: 5, type: dyn_door_steel_b, pos: [-118, 5.43, 0.2], triangles: [688, 689], script: level92}
+  - {id: "level92:6", level: level92, number: 6, type: dyn_door_stlslot, pos: [-187.59, 93.99, -194.31], triangles: [698, 699], script: level92}
+  - {id: "level92:7", level: level92, number: 7, type: dyn_door_stlslot, pos: [-187.8, 101.43, -197.58], triangles: [690, 691], script: level92}
+  - {id: "level92:8", level: level92, number: 8, type: dyn_door_cabin_a, pos: [-52.7, 14.82, 0.44], triangles: [684, 685], script: level92}
+  - {id: "level92:9", level: level92, number: 9, type: dyn_door_stlslot, pos: [-173.17, 81.32, -194.4], triangles: [694, 695], script: level92}
+  - {id: "level92:10", level: level92, number: 10, type: dyn_door_store, pos: [-130.19, 7.56, 0.22], triangles: [704, 705], script: level92}
+  - {id: "level92:11", level: level92, number: 11, type: dyn_door_store, pos: [-120.84, 46.05, 0.22], triangles: [700, 701], script: level92}
+  - {id: "level92:12", level: level92, number: 12, type: dyn_door_stlslot, pos: [-186.38, 111.85, -193.78], triangles: [696, 697], script: level92}
+  - {id: "level93:1", level: level93, number: 1, type: dyn_door_storeb, pos: [371.7, 154.45, 0.21], triangles: [232, 233], script: level93}
+  - {id: "level93:2", level: level93, number: 2, type: dyn_door_cabin_a, pos: [342.38, 103.86, 0.45], triangles: [204, 205], script: level93}
+  - {id: "level93:3", level: level93, number: 3, type: dyn_door_barricade, pos: [337.69, -44.96, -199.77], triangles: [194, 195], script: level93}
+  - {id: "level93:4", level: level93, number: 4, type: dyn_door_chainlnk_a, pos: [372.81, 92.56, 0.29], triangles: [210, 211], script: level93}
+  - {id: "level93:5", level: level93, number: 5, type: dyn_door_cabin_a, pos: [380.92, 156.24, 0.45], triangles: [206, 207], script: level93}
+  - {id: "level93:6", level: level93, number: 6, type: dyn_door_steel_b, pos: [391.07, -133.81, 3.82], triangles: [224, 225], script: level93}
+  - {id: "level93:7", level: level93, number: 7, type: dyn_door_chainlnk_a, pos: [348.09, 67.71, 0.2], triangles: [218, 219], script: level93}
+  - {id: "level93:8", level: level93, number: 8, type: dyn_door_barricade, pos: [339.09, -31.9, -197.74], triangles: [198, 199], script: level93}
+  - {id: "level93:9", level: level93, number: 9, type: dyn_door_chainlnk_a, pos: [418.41, 123.82, 0.2], triangles: [212, 213], script: level93}
+  - {id: "level93:10", level: level93, number: 10, type: dyn_door_cabin_a, pos: [341.03, 107.84, 0.45], triangles: [202, 203], script: level93}
+  - {id: "level93:11", level: level93, number: 11, type: dyn_door_wood, pos: [409.26, 208.5, 0.29], triangles: [234, 235], script: level93}
+  - {id: "level93:12", level: level93, number: 12, type: dyn_door_chainlnk_a, pos: [354.22, -48.18, 0.23], triangles: [216, 217], script: level93}
+  - {id: "level93:13", level: level93, number: 13, type: dyn_door_cabin_a, pos: [380.92, 154.24, 0.45], triangles: [208, 209], script: level93}
+  - {id: "level93:14", level: level93, number: 14, type: dyn_door_dclub, pos: [395.06, -138.15, 3.82], triangles: [222, 223], marks_links: true, script: level93}
+  - {id: "level93:15", level: level93, number: 15, type: dyn_door_barricade, pos: [323.46, -32.2, -199.77], triangles: [196, 197], script: level93}
+  - {id: "level93:16", level: level93, number: 16, type: dyn_door_chainlnk_a, pos: [405.94, -137.48, 2.51], triangles: [220, 221], script: level93}
+  - {id: "level93:17", level: level93, number: 17, type: dyn_door_steel_b, pos: [409.39, 183.6, 0.23], triangles: [228, 229], script: level93}
+  - {id: "level93:18", level: level93, number: 18, type: dyn_door_steel_b, pos: [384.68, -113.7, 3.82], triangles: [226, 227], script: level93}
+  - {id: "level93:19", level: level93, number: 19, type: dyn_door_chainlnk_a, pos: [348.09, -32.29, 0.2], triangles: [214, 215], script: level93}
+  - {id: "level93:20", level: level93, number: 20, type: dyn_door_cabin_a, pos: [341.03, 109.78, 0.45], triangles: [200, 201], script: level93}
+  - {id: "level93:21", level: level93, number: 21, type: dyn_door_store, pos: [350.24, 111.33, 0.21], triangles: [230, 231], script: level93}
+  - {id: "level95:1", level: level95, number: 1, type: dyn_door_store, pos: [-54.47, 10.14, 0.22], triangles: [741, 742], script: level95}
+  - {id: "level95:2", level: level95, number: 2, type: dyn_door_cabin_a, pos: [-50.81, 14.82, 0.44], triangles: [711, 712], script: level95}
+  - {id: "level95:3", level: level95, number: 3, type: dyn_door_cabin_a, pos: [-184.1, 138.34, 0.45], triangles: [709, 710], script: level95}
+  - {id: "level95:4", level: level95, number: 4, type: dyn_door_stlslot, pos: [-162.63, 81.33, -197.57], triangles: [723, 724], script: level95}
+  - {id: "level95:5", level: level95, number: 5, type: dyn_door_stlslot, pos: [-201.38, 77.53, 5.62], triangles: [731, 732], script: level95}
+  - {id: "level95:6", level: level95, number: 6, type: dyn_door_stlslot, pos: [-190.84, 77.53, 2.43], triangles: [739, 740], script: level95}
+  - {id: "level95:7", level: level95, number: 7, type: dyn_door_chainlnk_a, pos: [-157.38, 37.78, 0.22], triangles: [715, 716], script: level95}
+  - {id: "level95:8", level: level95, number: 8, type: dyn_door_steel_b, pos: [-113.44, -5.36, 0.2], triangles: [717, 718], script: level95}
+  - {id: "level95:9", level: level95, number: 9, type: dyn_door_steel_b, pos: [-118.13, 5.43, 0.2], triangles: [719, 720], script: level95}
+  - {id: "level95:10", level: level95, number: 10, type: dyn_door_stlslot, pos: [-187.59, 93.99, -194.31], triangles: [729, 730], script: level95}
+  - {id: "level95:11", level: level95, number: 11, type: dyn_door_stlslot, pos: [-187.8, 101.43, -197.58], triangles: [721, 722], script: level95}
+  - {id: "level95:12", level: level95, number: 12, type: dyn_door_stlslot, pos: [-215.78, 89.98, 5.68], triangles: [737, 738], script: level95}
+  - {id: "level95:13", level: level95, number: 13, type: dyn_door_cabin_a, pos: [-52.7, 14.82, 0.44], triangles: [713, 714], script: level95}
+  - {id: "level95:14", level: level95, number: 14, type: dyn_door_storeb, pos: [-183.87, 133.04, 0.23], triangles: [745, 746], script: level95}
+  - {id: "level95:15", level: level95, number: 15, type: dyn_door_cabin_a, pos: [-191.05, 138.34, 0.45], triangles: [703, 704], script: level95}
+  - {id: "level95:16", level: level95, number: 16, type: dyn_door_stlslot, pos: [-173.17, 81.32, -194.4], triangles: [725, 726], script: level95}
+  - {id: "level95:17", level: level95, number: 17, type: dyn_door_stlslot, pos: [-215.66, 97.39, 2.43], triangles: [733, 734], script: level95}
+  - {id: "level95:18", level: level95, number: 18, type: dyn_door_cabin_a, pos: [-186.07, 138.34, 0.45], triangles: [707, 708], script: level95}
+  - {id: "level95:19", level: level95, number: 19, type: dyn_door_store, pos: [-130.19, 7.76, 0.22], triangles: [743, 744], script: level95}
+  - {id: "level95:20", level: level95, number: 20, type: dyn_door_cabin_a, pos: [-189.16, 138.34, 0.45], triangles: [705, 706], script: level95}
+  - {id: "level95:21", level: level95, number: 21, type: dyn_door_stlslot, pos: [-214.59, 107.82, 6.2], triangles: [735, 736], script: level95}
+  - {id: "level95:22", level: level95, number: 22, type: dyn_door_stlslot, pos: [-186.38, 111.85, -193.78], triangles: [727, 728], script: level95}
+  - {id: "level99:1", level: level99, number: 1, type: dyn_door_cabin_a, pos: [57.98, 52.08, 0.44], triangles: [22, 23], script: level99}
+  - {id: "level99:2", level: level99, number: 2, type: dyn_door_dblwoodfnce_xl, pos: [49.25, 31.18, 0.21], triangles: [26, 27], script: level99}
+  - {id: "level99:3", level: level99, number: 3, type: dyn_door_chainlnk_a, pos: [-276.44, 123.64, 0.22], triangles: [24, 25], script: level99}
+  - {id: "level99:4", level: level99, number: 4, type: dyn_door_cabin_a, pos: [57.98, 59.02, 0.44], triangles: [16, 17], script: level99}
+  - {id: "level99:5", level: level99, number: 5, type: dyn_door_cabin_a, pos: [57.98, 54.04, 0.44], triangles: [20, 21], script: level99}
+  - {id: "level99:6", level: level99, number: 6, type: dyn_door_fence, pos: [27.98, -6.67, 1.48], triangles: [30, 31], marks_links: true, script: level99}
+  - {id: "level99:7", level: level99, number: 7, type: dyn_door_fence, pos: [23.6, -6.67, 1.48], triangles: [28, 29], marks_links: true, script: level99}
+  - {id: "level99:8", level: level99, number: 8, type: dyn_door_cabin_a, pos: [57.98, 57.13, 0.44], triangles: [18, 19], script: level99}
+  - {id: "level99:9", level: level99, number: 9, type: dyn_door_store, pos: [52.67, 51.1, 0.22], triangles: [32, 33], script: level99}
+  - {id: "level103:1", level: level103, number: 1, type: dyn_door_cabin_a, pos: [-51.37, 33.27, 0.44], triangles: [334, 335], script: level103}
+  - {id: "level103:2", level: level103, number: 2, type: dyn_door_dblwoodfnce_xl, pos: [-60.1, 12.37, 0.21], triangles: [336, 337], script: level103}
+  - {id: "level103:3", level: level103, number: 3, type: dyn_door_cabin_a, pos: [-51.37, 40.21, 0.44], triangles: [328, 329], script: level103}
+  - {id: "level103:4", level: level103, number: 4, type: dyn_door_cabin_a, pos: [-51.37, 35.24, 0.44], triangles: [332, 333], script: level103}
+  - {id: "level103:5", level: level103, number: 5, type: dyn_door_cabin_a, pos: [-51.37, 38.32, 0.44], triangles: [330, 331], script: level103}
+  - {id: "level103:6", level: level103, number: 6, type: dyn_door_store, pos: [-56.68, 32.29, 0.22], triangles: [338, 339], script: level103}
+  - {id: "level107:1", level: level107, number: 1, type: dyn_door_ele, pos: [1.55, -34.92, 0], triangles: [30, 31], script: level107}
+  - {id: "level109:1", level: level109, number: 1, type: dyn_door_templedoor, pos: [321.1, -86.51, 2.2], triangles: [120, 121], script: level109}
+  - {id: "level109:2", level: level109, number: 2, type: dyn_door_templedoor, pos: [325.39, -125.83, 2.2], triangles: [126, 127], script: level109}
+  - {id: "level109:3", level: level109, number: 3, type: dyn_door_templeshutter, pos: [302.41, -109.87, 7.45], triangles: [128, 129], script: level109}
+  - {id: "level109:4", level: level109, number: 4, type: dyn_door_temple, pos: [303.13, -94, 2.15], triangles: [118, 119], script: level109}
+  - {id: "level109:5", level: level109, number: 5, type: dyn_door_temple, pos: [347.05, -109.83, 0.21], triangles: [116, 117], script: level109}
+  - {id: "level109:6", level: level109, number: 6, type: dyn_door_templedoor, pos: [308.93, -88.78, 2.2], triangles: [122, 123], script: level109}
+  - {id: "level109:7", level: level109, number: 7, type: dyn_door_ornate, pos: [316.39, -122.16, 2.2], triangles: [114, 115], script: level109}
+  - {id: "level109:8", level: level109, number: 8, type: dyn_door_templedoor, pos: [309.71, -128.14, 2.2], triangles: [124, 125], script: level109}
+  - {id: "level111:1", level: level111, number: 1, type: dyn_door_cabin_a, pos: [-18.41, 21.29, 0.22], triangles: [166, 167], script: level111}
+  - {id: "level111:2", level: level111, number: 2, type: dyn_door_storeb, pos: [-19.17, 18.61, 0], triangles: [174, 175], script: level111}
+  - {id: "level111:3", level: level111, number: 3, type: dyn_door_cabin_a, pos: [-16.1, 12.89, 0.22], triangles: [170, 171], script: level111}
+  - {id: "level111:4", level: level111, number: 4, type: dyn_door_cabin_a, pos: [-25.13, 21.27, 0.22], triangles: [164, 165], script: level111}
+  - {id: "level111:5", level: level111, number: 5, type: dyn_door_cabin_a, pos: [-25.13, 16.08, 0.22], triangles: [168, 169], script: level111}
+  - {id: "level111:6", level: level111, number: 6, type: dyn_door_storeb, pos: [-25.98, 16.43, 0], triangles: [172, 173], script: level111}
+  - {id: "level112:1", level: level112, number: 1, type: dyn_door_store, pos: [-54.63, 10.14, 0.22], triangles: [410, 411], script: level112}
+  - {id: "level112:2", level: level112, number: 2, type: dyn_door_cabin_a, pos: [-50.81, 14.82, 0.44], triangles: [400, 401], script: level112}
+  - {id: "level112:3", level: level112, number: 3, type: dyn_door_steel_b, pos: [-113.44, -5.36, 0.2], triangles: [404, 405], script: level112}
+  - {id: "level112:4", level: level112, number: 4, type: dyn_door_steel_b, pos: [-118.13, 5.43, 0.2], triangles: [406, 407], script: level112}
+  - {id: "level112:5", level: level112, number: 5, type: dyn_door_cabin_a, pos: [-52.7, 14.82, 0.44], triangles: [402, 403], script: level112}
+  - {id: "level112:6", level: level112, number: 6, type: dyn_door_store, pos: [-130.19, 7.76, 0.22], triangles: [412, 413], script: level112}
+  - {id: "level112:7", level: level112, number: 7, type: dyn_door_store, pos: [-120.84, 46.05, 0.22], triangles: [408, 409], script: level112}
+  - {id: "level114:1", level: level114, number: 1, type: dyn_door_storeb, pos: [16.6, -31.44, 0.2], triangles: [198, 199], script: level114}
+  - {id: "level114:2", level: level114, number: 2, type: dyn_door_cabin_a, pos: [19.78, -40.07, 0.42], triangles: [188, 189], script: level114}
+  - {id: "level114:3", level: level114, number: 3, type: dyn_door_storeb, pos: [22.22, -38.71, 0.2], triangles: [202, 203], script: level114}
+  - {id: "level114:4", level: level114, number: 4, type: dyn_door_cabin_a, pos: [24.09, -32.5, 0.42], triangles: [196, 197], script: level114}
+  - {id: "level114:5", level: level114, number: 5, type: dyn_door_cabin_a, pos: [24.55, -44.81, 0.42], triangles: [186, 187], script: level114}
+  - {id: "level114:6", level: level114, number: 6, type: dyn_door_cabin_a, pos: [28.22, -41.14, 0.42], triangles: [190, 191], script: level114}
+  - {id: "level114:7", level: level114, number: 7, type: dyn_door_cabin_a, pos: [-32.88, -63.23, 0.42], triangles: [194, 195], script: level114}
+  - {id: "level114:8", level: level114, number: 8, type: dyn_door_cabin_a, pos: [-30.07, -66.04, 0.42], triangles: [192, 193], script: level114}
+  - {id: "level114:9", level: level114, number: 9, type: dyn_door_storeb, pos: [-24.24, -59.13, 0.2], triangles: [200, 201], script: level114}
+  - {id: "level115:1", level: level115, number: 1, type: dyn_door_chainlnk_ap, pos: [69.58, 86.88, -0.13], triangles: [10, 11], script: level115}
+  - {id: "level115:2", level: level115, number: 2, type: dyn_door_redgate, pos: [73.16, 153.21, -0.62], triangles: [12, 13], script: level115}
+  - {id: "level121:1", level: level121, number: 1, type: dyn_door_bar_bani, pos: [7.83, -2.07, 0.6], triangles: [63, 64], marks_links: true, script: level121}
+  - {id: "level121:2", level: level121, number: 2, type: dyn_door_chainlnk_a, pos: [-5.18, -7.27, -0.31], triangles: [67, 68], script: level121}
+  - {id: "level121:3", level: level121, number: 3, type: dyn_door_fence, pos: [9.4, -13.62, 0.9], triangles: [69, 70], marks_links: true, script: level121}
+  - {id: "level121:4", level: level121, number: 4, type: dyn_door_bar_bani, pos: [9.41, -4.81, 0.6], triangles: [61, 62], marks_links: true, script: level121}
+  - {id: "level121:5", level: level121, number: 5, type: dyn_door_fence, pos: [7.62, -20.51, 0.9], triangles: [75, 76], marks_links: true, script: level121}
+  - {id: "level121:6", level: level121, number: 6, type: dyn_door_fence, pos: [11.55, -12.39, 0.9], triangles: [71, 72], marks_links: true, script: level121}
+  - {id: "level121:7", level: level121, number: 7, type: dyn_door_chainlnk_a, pos: [-9.09, -9.53, -0.31], triangles: [65, 66], script: level121}
+  - {id: "level121:8", level: level121, number: 8, type: dyn_door_fence, pos: [8.86, -22.65, 0.9], triangles: [73, 74], marks_links: true, script: level121}
+  - {id: "level121:9", level: level121, number: 9, type: dyn_door_bar_bani, pos: [11, -7.55, 0.6], triangles: [59, 60], marks_links: true, script: level121}
+  - {id: "level123:1", level: level123, number: 1, type: dyn_door_stall, pos: [2.97, -3.19, 0.14], triangles: [2, 3], script: level123}
+  - {id: "level123:2", level: level123, number: 2, type: dyn_door_stall, pos: [2.97, -5.62, 0.14], triangles: [0, 1], script: level123}
+  - {id: "level123:3", level: level123, number: 3, type: dyn_door_stall, pos: [2.97, -0.78, 0.14], triangles: [4, 5], script: level123}
+  - {id: "level123:4", level: level123, number: 4, type: dyn_door_stall, pos: [2.97, 1.65, 0.14], triangles: [6, 7], script: level123}
+  - {id: "level123:5", level: level123, number: 5, type: dyn_door_subcan, pos: [-1.94, 8.63, 0.13], triangles: [8, 9], script: level123}
+  - {id: "level124:1", level: level124, number: 1, type: dyn_door_bar_bani, pos: [-7.92, 0.15, -198.8], triangles: [8, 9], marks_links: true, script: level124}
+  - {id: "level124:2", level: level124, number: 2, type: dyn_door_bar_bani, pos: [4.24, 0.13, -198.8], triangles: [2, 3], marks_links: true, script: level124}
+  - {id: "level124:3", level: level124, number: 3, type: dyn_door_bar_bani, pos: [9.98, 3.36, -198.8], triangles: [10, 11], marks_links: true, script: level124}
+  - {id: "level124:4", level: level124, number: 4, type: dyn_door_bar_bani, pos: [-4.74, 0.13, -198.8], triangles: [6, 7], marks_links: true, script: level124}
+  - {id: "level124:5", level: level124, number: 5, type: dyn_door_steel_b, pos: [19.23, 2.08, -200], triangles: [14, 15], script: level124}
+  - {id: "level124:6", level: level124, number: 6, type: dyn_door_bar_bani, pos: [7.4, 0.13, -198.8], triangles: [0, 1], marks_links: true, script: level124}
+  - {id: "level124:7", level: level124, number: 7, type: dyn_door_bar_bani, pos: [-1.59, 0.13, -198.8], triangles: [4, 5], marks_links: true, script: level124}
+  - {id: "level124:8", level: level124, number: 8, type: dyn_door_bar_bani, pos: [9.98, 9.17, -198.8], triangles: [12, 13], marks_links: true, script: level124}
+  - {id: "level126:1", level: level126, number: 1, type: dyn_door_fence_s, pos: [45.16, -57.38, 0.21], triangles: [59, 60], script: level126}
+  - {id: "level128:1", level: level128, number: 1, type: dyn_door_steel_b, pos: [-142.02, 563.69, 22.17], triangles: [30, 31], script: level128}
+  - {id: "level131:1", level: level131, number: 1, type: dyn_door_bar_bani, pos: [-6.43, -6.3, 17.5], triangles: [134, 135], marks_links: true, script: level131}
+  - {id: "level131:2", level: level131, number: 2, type: dyn_door_bar_bani, pos: [10.57, 0.34, 17.5], triangles: [126, 127], marks_links: true, script: level131}
+  - {id: "level131:3", level: level131, number: 3, type: dyn_door_bar_bani, pos: [4.24, -6.25, 17.5], triangles: [120, 121], marks_links: true, script: level131}
+  - {id: "level131:4", level: level131, number: 4, type: dyn_door_bar_bani, pos: [-9.59, 4.47, 17.5], triangles: [128, 129], marks_links: true, script: level131}
+  - {id: "level131:5", level: level131, number: 5, type: dyn_door_bar_bani, pos: [-3.26, -6.3, 17.5], triangles: [132, 133], marks_links: true, script: level131}
+  - {id: "level131:6", level: level131, number: 6, type: dyn_door_bar_bani, pos: [10.57, -4.62, 17.5], triangles: [124, 125], marks_links: true, script: level131}
+  - {id: "level131:7", level: level131, number: 7, type: dyn_door_bar_bani, pos: [7.4, -6.25, 17.5], triangles: [122, 123], marks_links: true, script: level131}
+  - {id: "level131:8", level: level131, number: 8, type: dyn_door_bar_bani, pos: [-9.61, 1.38, 17.5], triangles: [130, 131], marks_links: true, script: level131}
+  - {id: "level133:1", level: level133, number: 1, type: dyn_door_bar_bani, pos: [-61.89, 3.36, 14.34], triangles: [80, 81], marks_links: true, script: level133}
+  - {id: "level133:2", level: level133, number: 2, type: dyn_door_bar_bani, pos: [-61.89, 9.65, 14.34], triangles: [76, 77], marks_links: true, script: level133}
+  - {id: "level133:3", level: level133, number: 3, type: dyn_door_bar_bani, pos: [-50.35, 1.46, 14.34], triangles: [68, 69], marks_links: true, script: level133}
+  - {id: "level133:4", level: level133, number: 4, type: dyn_door_bar_bani, pos: [-61.89, 6.5, 14.34], triangles: [78, 79], marks_links: true, script: level133}
+  - {id: "level133:5", level: level133, number: 5, type: dyn_door_bar_bani, pos: [-60.21, 11.38, 14.34], triangles: [62, 63], marks_links: true, script: level133}
+  - {id: "level133:6", level: level133, number: 6, type: dyn_door_bar_bani, pos: [-48.77, 3.01, 14.34], triangles: [70, 71], marks_links: true, script: level133}
+  - {id: "level133:7", level: level133, number: 7, type: dyn_door_bar_bani, pos: [-48.77, 9.31, 14.34], triangles: [74, 75], marks_links: true, script: level133}
+  - {id: "level133:8", level: level133, number: 8, type: dyn_door_bar_bani, pos: [-52.59, 1.46, 14.34], triangles: [66, 67], marks_links: true, script: level133}
+  - {id: "level133:9", level: level133, number: 9, type: dyn_door_bar_bani, pos: [-57.06, 11.38, 14.34], triangles: [64, 65], marks_links: true, script: level133}
+  - {id: "level133:10", level: level133, number: 10, type: dyn_door_bar_bani, pos: [-48.77, 6.16, 14.34], triangles: [72, 73], marks_links: true, script: level133}
+  - {id: "level134:1", level: level134, number: 1, type: dyn_door_fence, pos: [-9.66, -7.5, 1.2], triangles: [178, 179], marks_links: true, script: level134}
+  - {id: "level134:2", level: level134, number: 2, type: dyn_door_fence, pos: [-8.11, -3.47, 1.2], triangles: [176, 177], marks_links: true, script: level134}
+  - {id: "level134:3", level: level134, number: 3, type: dyn_door_fence, pos: [-8.11, -5.94, 1.2], triangles: [174, 175], marks_links: true, script: level134}
+  - {id: "level136:1", level: level136, number: 1, type: dyn_door_chainlnk_a, pos: [-377.51, 578.03, 16.08], triangles: [0, 1], script: level136}
+  - {id: "level136:2", level: level136, number: 2, type: dyn_door_chainlnk_a, pos: [-377.51, 572.88, 16.08], triangles: [2, 3], script: level136}
+  - {id: "level136:3", level: level136, number: 3, type: dyn_door_chainlnk_a, pos: [-216.35, 578.03, 16.08], triangles: [6, 7], script: level136}
+  - {id: "level136:4", level: level136, number: 4, type: dyn_door_chainlnk_a, pos: [-216.35, 572.88, 16.08], triangles: [4, 5], script: level136}
+  - {id: "level137:1", level: level137, number: 1, type: dyn_door_chainlnk_a, pos: [24.21, 2.38, 0], triangles: [0, 1], script: level137}
+  - {id: "level137:2", level: level137, number: 2, type: dyn_door_chainlnk_a, pos: [24.21, 47.95, 0], triangles: [2, 3], script: level137}
+  - {id: "level137:3", level: level137, number: 3, type: dyn_door_chainlnk_a, pos: [29.39, 14.01, 0], triangles: [6, 7], script: level137}
+  - {id: "level137:4", level: level137, number: 4, type: dyn_door_chainlnk_a, pos: [29.39, 57.05, 0], triangles: [4, 5], script: level137}

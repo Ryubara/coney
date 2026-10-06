@@ -1,0 +1,10 @@
+# Lights: a part of research/references/lights.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level128:1", level: level128, type: point, pos: [-142.96, 561.38, 25.06], dir: [0, 0, 0], rgba: [1, 0.824, 0.675, 1], swatch: FFD2ACFF, radius: 10, cone: 0, flicker: 0, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level128}
+  - {id: "level128:2", level: level128, type: point, pos: [-176.7, 561.22, 20.37], dir: [0, 0, 0], rgba: [1, 0.824, 0.675, 1], swatch: FFD2ACFF, radius: 10, cone: 0, flicker: 0, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level128}
+  - {id: "level128:3", level: level128, type: point, pos: [-112.24, 545.36, 14.58], dir: [0, 0, 0], rgba: [1, 0.824, 0.675, 1], swatch: FFD2ACFF, radius: 10, cone: 0, flicker: 0, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level128}
+  - {id: "level128:4", level: level128, type: point, pos: [-110.31, 552.33, 17.1], dir: [0, 0, 0], rgba: [1, 0.824, 0.675, 1], swatch: FFD2ACFF, radius: 10, cone: 0, flicker: 0, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level128}
+  - {id: "level128:5", level: level128, type: point, pos: [-142.97, 563.27, 25.12], dir: [0, 0, 0], rgba: [1, 0.824, 0.675, 1], swatch: FFD2ACFF, radius: 0, cone: 0, flicker: 3, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level128}
+  - {id: "level128:6", level: level128, type: point, pos: [-174.23, 561.23, 20.2], dir: [0, 0, 0], rgba: [1, 0.824, 0.675, 1], swatch: FFD2ACFF, radius: 0, cone: 0, flicker: 3, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level128}
+  - {id: "level128:7", level: level128, type: point, pos: [-114.58, 545.36, 14.69], dir: [0, 0, 0], rgba: [1, 0.824, 0.675, 1], swatch: FFD2ACFF, radius: 0, cone: 0, flicker: 3, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level128}

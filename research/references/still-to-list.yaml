@@ -40,24 +40,6 @@ families:
     count: "366 character ids, 46 gangs, 29 arenas"
     image: none
     needs: Disc extraction
-  - family: Glass types
-    what: The breakable-glass kinds of `SpawnBreakableGlass`.
-    source: "`CfgSetGlassProperties` (19 types, `config_preload2.lua`); `SpawnBreakableGlass` (10 used)"
-    count: "19"
-    image: none
-    needs: "Disc extraction; RE for the two flags"
-  - family: Spawner behaviours and states
-    what: How a gang spawner produces humans, and the states `GangStartSpawner` sets.
-    source: "`GangAddSpawner` behaviour ids (7 used), `GangStartSpawner` states (0-11)"
-    count: "about 12"
-    image: none
-    needs: RE
-  - family: Crime types
-    what: The crimes the police respond to.
-    source: "`CfgCrimeResponders`, `CfgEnableCrimeType`, `CrimeIsHappening` (kinds 1, 5, 7, 12 used); bytes at game state `+0x294`"
-    count: not counted
-    image: none
-    needs: RE
   - family: Camera types and switches
     what: The camera classes the factory makes and the switches of `CamEnable`.
     source: "Factory `0x0011e1b0` (types 0-5, 7, 8, 0xc, 0xd, 0x10; [Boot](../research/boot.md)); `CamEnable` switches 0-13"
@@ -70,30 +52,12 @@ families:
     count: "6 types"
     image: none
     needs: "RE for types 2-5"
-  - family: Object and car tints
-    what: Colours scripts give cars, spinning icons and spawned objects.
-    source: "`ObjColor`, `HuSetSpinningIconColor`; `ObjSpawn`'s extra value (34 values that look like packed colours, inferred)"
-    count: not counted
-    image: swatch
-    needs: "RE: which values are colours, and their layout"
   - family: Statistics
     what: The stat tables the end-of-level screens score.
     source: "`CfgSetStatValue` (tables 0-5, 46 calls), `CfgSetStatTypeMax`"
     count: "6 tables"
     image: none
     needs: RE
-  - family: Door lock kinds
-    what: The number `SpawnDoor` takes after the door's ids.
-    source: "`SpawnDoor` (484 calls; 27 values used)"
-    count: "27 used"
-    image: none
-    needs: RE
-  - family: Light presets
-    what: The named lights each level's script builds with `SetLight`.
-    source: "The level scripts' `Lights` and `LightData` tables (`SetLight`, 5,299 calls)"
-    count: not counted
-    image: swatch
-    needs: Disc extraction
   - family: AI goal types
     what: The goal classes behind the `Goal*` bindings.
     source: "148 goal classes, type id at vtable `+0x0c` ([AI](../research/ai.md#goals) names 22)"

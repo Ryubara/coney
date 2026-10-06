@@ -1,0 +1,11 @@
+# Lights: a part of research/references/lights.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level116:1", level: level116, type: point, pos: [-11.34, 5.74, 4.84], dir: [0, 0, 0], rgba: [1, 0.941, 0.843, 1], swatch: FFF0D7FF, radius: 0, cone: 0, flicker: 1, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level116}
+  - {id: "level116:2", level: level116, type: point, pos: [-11.34, -5.76, 4.84], dir: [0, 0, 0], rgba: [1, 0.941, 0.843, 1], swatch: FFF0D7FF, radius: 0, cone: 0, flicker: 1, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level116}
+  - {id: "level116:3", level: level116, type: point, pos: [12.54, 0.1, 4.84], dir: [0, 0, 0], rgba: [1, 0.941, 0.843, 1], swatch: FFF0D7FF, radius: 0, cone: 0, flicker: 1, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level116}
+  - {id: "level116:4", level: level116, type: point, pos: [12.55, 0.11, 2.97], dir: [0, 0, 0], rgba: [1, 0.941, 0.843, 1], swatch: FFF0D7FF, radius: 7, cone: 0, flicker: 0, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level116}
+  - {id: "level116:5", level: level116, type: point, pos: [12.54, -5.76, 4.84], dir: [0, 0, 0], rgba: [1, 0.941, 0.843, 1], swatch: FFF0D7FF, radius: 0, cone: 0, flicker: 1, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level116}
+  - {id: "level116:6", level: level116, type: point, pos: [12.55, -5.75, 2.98], dir: [0, 0, 0], rgba: [1, 0.941, 0.843, 1], swatch: FFF0D7FF, radius: 7, cone: 0, flicker: 0, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level116}
+  - {id: "level116:7", level: level116, type: point, pos: [9.46, 7.66, 3.99], dir: [0, 0, 0], rgba: [1, 0.843, 0.843, 1], swatch: FFD7D7FF, radius: 8, cone: 0, flicker: 0, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level116}
+  - {id: "level116:8", level: level116, type: point, pos: [14.53, 7.79, 4.02], dir: [0, 0, 0], rgba: [0.843, 0.847, 1, 1], swatch: D7D8FFFF, radius: 8, cone: 0, flicker: 0, flicker_params: [-0.8, 0.5, 2.5], group: 1, state: 1, script: level116}

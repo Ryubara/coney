@@ -1,0 +1,8 @@
+# Lights: a part of research/references/lights.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level123:1", level: level123, type: point, pos: [-2.99, 6.67, 4.84], dir: [0, 0, 0], rgba: [0.973, 1, 0.882, 1], swatch: F8FFE1FF, radius: 8, cone: 0, flicker: 6, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level123}
+  - {id: "level123:2", level: level123, type: point, pos: [4.82, 0.59, 4.84], dir: [0, 0, 0], rgba: [0.973, 1, 0.882, 1], swatch: F8FFE1FF, radius: 0, cone: 0, flicker: 6, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level123}
+  - {id: "level123:3", level: level123, type: point, pos: [4.96, -3.55, 4.84], dir: [0, 0, 0], rgba: [0.973, 1, 0.882, 1], swatch: F8FFE1FF, radius: 0, cone: 0, flicker: 6, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level123}
+  - {id: "level123:4", level: level123, type: point, pos: [-5.72, -5.62, 4.84], dir: [0, 0, 0], rgba: [0.973, 1, 0.882, 1], swatch: F8FFE1FF, radius: 8, cone: 0, flicker: 6, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level123}
+  - {id: "level123:5", level: level123, type: point, pos: [4.96, -1.49, 4.84], dir: [0, 0, 0], rgba: [0.973, 1, 0.882, 1], swatch: F8FFE1FF, radius: 12, cone: 0, flicker: 0, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level123}

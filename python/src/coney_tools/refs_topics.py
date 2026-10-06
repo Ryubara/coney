@@ -9,6 +9,7 @@ Research: docs/guides/research-workflow.md#reference-lists
 
 from __future__ import annotations
 
+from coney_tools import refs_env
 from coney_tools.refs import Field, Topic
 
 F = Field
@@ -787,6 +788,7 @@ TOPICS: tuple[Topic, ...] = (
     OBJECT_ZONES,
     VOLUME_BOXES,
     SCENES,
+    *refs_env.TOPICS,
     ANIMATIONS,
     ANIM_IDS,
     CONTROLS,

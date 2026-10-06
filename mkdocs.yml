@@ -12,6 +12,7 @@ validation:
 # The per-level pages of a split reference list are reached from its overview page, not the navigation.
 not_in_nav: |
   /references/flags/
+  /references/lights/
 
 theme:
   name: material
@@ -84,6 +85,7 @@ nav:
           - Characters: research/characters.md
           - Combat: research/combat.md
           - Tasks (the TaskEngine): research/tasks.md
+          - "World objects: tint, glass, doors": research/objects.md
           - AI humans: research/ai.md
           - Cars: research/cars.md
           - Camera: research/camera.md
@@ -117,6 +119,12 @@ nav:
       - Object zones: references/zones.md
       - Volume boxes: references/boxes.md
       - Scenes and movies: references/scenes.md
+      - Glass types: references/glass-types.md
+      - Doors: references/doors.md
+      - Object tints: references/tints.md
+      - Lights: references/lights.md
+      - Spawner states: references/spawner-states.md
+      - Crime types: references/crime-types.md
       - Animation clips: references/animations.md
       - Anim ids: references/anim-ids.md
       - Controls: references/controls.md

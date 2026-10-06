@@ -1,0 +1,84 @@
+# Spawner states: a Coney game reference list. The page docs/references/spawner-states.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Spawner states"
+about: |
+  A gang's spawners (four per gang, `GangAddSpawner`) make humans according to their state:
+  `GangAddSpawner`'s kind starts one in a state and `GangStartSpawner(gang, name, state, value)` switches it
+  ([AI: spawners](../research/ai.md#spawners)).
+complete: |
+  All twelve states are listed; 6 and 10 only the game sets.
+defaults: {source: "SLUS_212.15, spawner update 0x001681a0", evidence: confirmed-code}
+entries:
+  - id: 0
+    name: stopped
+    behaviour: "Makes nobody."
+    settable: true
+    added: 75
+    started: 127
+    scripts: ["36763710", survival, level2, level2_junkyard, level3, level3_chase]
+  - id: 1
+    name: "on"
+    behaviour: "Spawns at its position whenever it may (delay, alive and total limits)."
+    settable: true
+    added: 28
+    started: 25
+    scripts: [hifi, kinghill, level2, level2_junkyard, level3, level3_chase]
+  - id: 2
+    name: delayed
+    behaviour: "Spawns once `value` seconds have passed since it was given the state."
+    settable: true
+  - id: 3
+    name: "near the player"
+    behaviour: "Spawns while player 1 is within `value` metres."
+    settable: true
+  - id: 4
+    name: "police dispatch"
+    behaviour: "Waits for a crime to be routed to it, then makes a new gang of type 1 (police) named `Responder<n>` and goes to 6; only while the game's police count is under its limit (game state `+0x324` < `+0x326`). Starts with `value` 75."
+    settable: true
+    added: 11
+    scripts: [level5, level9, level11, level14, level82, level86]
+    evidence: inferred
+  - id: 5
+    name: "far from the player"
+    behaviour: "Spawns while player 1 is farther than `value` metres."
+    settable: true
+    added: 6
+    started: 2
+    scripts: [level52, level83]
+  - id: 6
+    name: "dispatching police"
+    behaviour: "Spawns the police squad out of the camera's sight around the player, `value` metres off; back to 4 once the squad is complete."
+    settable: false
+    evidence: inferred
+  - id: 7
+    name: reinforcements
+    behaviour: "Spawns around the player out of the camera's sight and sends each human to the gang's first live member."
+    settable: true
+    added: 59
+    started: 44
+    scripts: [level2, level3, level5, level9, level11, level14]
+    evidence: inferred
+  - id: 8
+    name: "out of sight"
+    behaviour: "Spawns out of the camera's sight around the player, `value` metres off."
+    settable: true
+    added: 27
+    started: 14
+    scripts: [level3_chase, level9, level11, level11_chapter1, level11_chapter3, level20]
+  - id: 9
+    name: "gang dispatch"
+    behaviour: "Like 4, without the police limit, and the new gang takes the spawner's gang type and relations; goes to 10."
+    settable: true
+    added: 15
+    scripts: [level5, level9, level11, level14, level20, level51]
+    evidence: inferred
+  - id: 10
+    name: "dispatching gang"
+    behaviour: "Like 6 for the gang made in 9; back to 9."
+    settable: false
+    evidence: inferred
+  - id: 11
+    name: "keep up the numbers"
+    behaviour: "Tops the gang up while its living members are fewer than the gang's limit, never where a camera sees the spot; stops (0) once the gang has spawned its total."
+    settable: true

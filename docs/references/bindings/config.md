@@ -737,7 +737,7 @@ CfgCrimeResponders(crime, count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `crime` | number, truncated to an unsigned integer | Crime type index. |
+| 1 | `crime` | number, truncated to an unsigned integer | [Crime type](../crime-types.md). |
 | 2 | `count` | number, truncated to an unsigned integer | Number of responders (police) sent for that crime (0-2 in the scripts). |
 
 **Returns** nothing.
@@ -824,7 +824,7 @@ CfgEnableCrimeType(crime, enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `crime` | number, truncated to an integer | Crime type 0-14; larger values are ignored. |
+| 1 | `crime` | number, truncated to an integer | [Crime type](../crime-types.md) 0-14; larger values are ignored. Only type 12 (trespassing) is read back, by the police brain. |
 | 2 | `enabled` | boolean (nil or 0 is false) | true enables the crime type; false disables it. |
 
 **Returns** nothing.
@@ -2143,22 +2143,23 @@ Stores the enemy-spotting switch in the game state (+0x56f8).
 ## CfgSetGlassProperties {#cfgsetglassproperties}
 
 ```lua
-CfgSetGlassProperties(glassType, flagA, flagB, soundA, soundB)
+CfgSetGlassProperties(glassType, windowLink, alarm, sprite, brokenSprite)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `glassType` | number, truncated to an unsigned integer | Glass type index (0-11 in config_preload2.lua); selects a 16-byte entry. |
-| 2 | `flagA` | boolean (nil or 0 is false) | Boolean stored at entry +0x14. |
-| 3 | `flagB` | boolean (nil or 0 is false) | Boolean stored at entry +0x18. |
-| 4 | `soundA` | number, truncated to an unsigned integer | Number stored at entry +0x1c (65556 or 65558: a sound id, inferred). |
-| 5 | `soundB` | number, truncated to an unsigned integer | Number stored at entry +0x20 (65557 or 65559). |
+| 1 | `glassType` | number, truncated to an unsigned integer | [Glass type](../glass-types.md) (0-18 in config_preload2.lua); selects a 16-byte entry. |
+| 2 | `windowLink` | boolean (nil or 0 is false) | Entry +0x14: the pane closes the navigation jump link through it until it breaks. |
+| 3 | `alarm` | boolean (nil or 0 is false) | Entry +0x18: breaking the pane reports a break-in (crime type 1). |
+| 4 | `sprite` | number, truncated to an unsigned integer | Entry +0x1c: the whole pane's sprite word; its low 16 bits are the rectangle drawn (65556 is rectangle 20). |
+| 5 | `brokenSprite` | number, truncated to an unsigned integer | Entry +0x20: the sprite word left after the pane breaks; 0 draws nothing. |
 
 **Returns** nothing.
 
 Sets one breakable-glass type's two flags and two ids in the world object's glass table (0x00512c7c + 0x84c).
 
-**Notes.** The ids look like bank << 16 | index sound ids; not confirmed.
+**Notes.** The readers are the glass pane's initialiser and hit handler (0x003e29e8, 0x003e2d90) and its break
+(0x0038f378); [World objects: glass](../../research/objects.md#glass).
 
 - **Evidence:** confirmed (code) at `0x0039c290`; detail: traced
 - **Wrapper** `0x0036ad80` (registered by `RegisterBindings`); **calls** `0x0039c290` `Cfg_SetGlassProperties`

@@ -693,11 +693,11 @@
     - {name: total, lua: number, ctype: int, desc: "How many characters the spawner makes in all; the scripts use -1 for no limit (inferred)."}
     - {name: delay, lua: number, ctype: unsigned, desc: "Delay between spawns, in milliseconds (the scripts pass 1, 500 or 1000) (inferred)."}
     - {name: maxConcurrent, lua: number, ctype: int, desc: "How many of its characters may be alive at once (spawner +0x5a; GangSetMaxConcurrent changes it)."}
-    - {name: kind, lua: number, ctype: int, desc: "Spawner behaviour id (spawner +0x52): 2 is timed (it starts a timer of value seconds); 4 and others select other behaviours not traced."}
+    - {name: kind, lua: number, ctype: int, desc: "The [spawner state](../spawner-states.md) it starts in (spawner `+0x52`): 0 off, 1 on, 2 after `value` seconds, 3 or 5 by distance from player 1, 4 and 9 dispatch squads, 7 and 8 out of sight, 11 keeps the gang topped up."}
     - {name: target, lua: number, ctype: unsigned, desc: "A handle stored with the spawner (the scripts pass NilHandle); meaning not traced."}
     - {name: arg13, lua: number, ctype: int, desc: "A number stored with the spawner (the scripts pass 0); meaning not traced."}
     - {name: callback, lua: string, desc: "Name of a Lua function called for each character spawned, or nil."}
-    - {name: value, lua: number, ctype: int, desc: "A number used by the behaviour (seconds for the timed kind 2); GangStartSpawner's last argument replaces it."}
+    - {name: value, lua: number, ctype: int, desc: "The state's number (spawner +0x68): seconds for state 2, metres for 3, 5, 6 and 8; GangStartSpawner's last argument replaces it."}
     - {name: arg16, lua: number, ctype: unsigned, desc: "A handle stored with the spawner (the scripts pass NilHandle); meaning not traced."}
     - {name: anim, lua: string, desc: "Name of an animation or behaviour given to spawned characters; \"nothing\" for none (inferred)."}
   description: >-
@@ -764,14 +764,14 @@
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
     - {name: spawner, lua: string, desc: "Spawner name; an unknown name does nothing."}
-    - {name: mode, lua: number, ctype: int, desc: "New spawner state: 0 stops it, 1 starts it; 2-5, 7, 8, 9 and 11 select other states (the scripts use 7 and 8); other values leave the state unchanged."}
+    - {name: mode, lua: number, ctype: int, desc: "New [spawner state](../spawner-states.md): 0 stops it, 1 starts it, 2-5, 7, 8, 9 and 11 the others; other values leave the state unchanged."}
     - {name: value, lua: number, ctype: int, desc: "Replaces the spawner's value (GangAddSpawner's 15th argument) unless -1."}
   description: >-
     Starts, stops or switches the state of a gang's spawner, and records the time of the change.
   evidence: confirmed-code
   depth: brief
   notes: >-
-    0x00168cd0; the meaning of each state other than 0 and 1 is not traced.
+    0x00168cd0; what each state does is in [AI: spawners](../../research/ai.md#spawners).
   usage: {chunks: 45, calls: 229, boot: false, mission1: false, result_used: false}
 
 - name: GangSetMaxConcurrent

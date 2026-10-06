@@ -785,6 +785,66 @@ no time limit, `+0x28` the option.
 - **`TacticTrigger(gang, what, on)`** (`0x00316fa0`), crowd tactics only: what 0 switches the periodic reactions;
   what 1 sends every free member to move and cheer at once.
 
+#### Spawners {#spawners}
+
+A gang has four **spawners** of 0x130 at gang `+0x640` (`GangAddSpawner`, `0x00166ff8`; a fifth is ignored). Their
+update, `0x001681a0`, runs each in use against its **state** at `+0x52`; the states, their names and the scripts'
+uses are in [Spawner states](../references/spawner-states.md). Confirmed (code):
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00` / `+0x14` | position / name |
+| `+0x50` | in use; cleared once the spawner has made its total (`+0x56` against `+0x58`) |
+| `+0x52` | state; `GangAddSpawner`'s kind, `GangStartSpawner`'s mode (`0x00168cd0` accepts 0-5, 7, 8, 9, 11) |
+| `+0x5a` | how many of its humans may be alive at once |
+| `+0x60` / `+0x64` | delay between spawns / the next spawn time |
+| `+0x68` | the state's **value**: seconds for 2, metres for 3, 5, 6 and 8 (`GangStartSpawner`'s last argument) |
+| `+0x70` / `+0x74` | a door it opens to let each human out, and how long it stays open |
+| `+0x7c` | state 2's deadline: the value in seconds after the state was set |
+| `+0xac` / `+0xb4` | the dispatch queue: the entry being served, then 4 entries of 0x1c (a time, a count at `+0x14`, bytes) |
+
+1. **Ready?** 0 never; 1, 6, 7, 8 and 10 always; 2 once past its deadline; 3 while player 1 is within the value
+   (`0x00336d88`), 5 while he is farther; 11 while the gang's living members (`0x00166158`) are fewer than gang
+   `+0xb04`, and back to 0 once the gang has spawned (`+0xb02`) its total (`+0xb00`).
+2. **Dispatch** (4 and 9): when a queued entry is due (`0x0016dda8`) and a gang slot is free (`0x0016d458`), a new gang
+   `Responder<n>` is made: of type 1 for 4, only while the game's count `+0x324` is under `+0x326`, of the spawner's own
+   type for 9, which also takes its owner's friend and enemy masks. The state becomes 6 (from 4) or 10 (from 9), and
+   returns once the entry's squad is complete; an entry whose byte `+0x17` is 3 may also start `Tactic_RiotCop`.
+3. **Place** the human: 6, 8 and 10 at the value's distance from the player, out of the camera's view (`0x001673b8`);
+   7 out of view and sent to the gang's first live member (`0x001679e8`, the second part inferred); the others at the
+   spawner. State 11 skips a spot a camera can see (`0x001202e8`).
+4. **Spawn** (`0x00167ea8`, named `<spawner><count>`), open the spawner's door, count it.
+
+#### Crimes and the police {#crimes}
+
+A **crime report**, `0x0041b8b0(state, pos, type, offender, victim, severity, mode, count)` on the game state
+`0x0051489c`, is how scripts and the game raise the [crime types](../references/crime-types.md). The game state's
+crime fields, confirmed (code): `+0x270` the crime scene, `+0x288` reporting on (`ReportCrime`), `+0x290` the
+player's last crime type, `+0x294 + type` the responders per type (`CfgCrimeResponders`), `+0x2dc` the Lua callback
+(`CfgSetCrimeCallback`), `+0x32b + type` enabled (`CfgEnableCrimeType`; read only for type 12, by the police brain at
+`0x00300910` and `0x00301770`).
+
+1. Nothing while reporting is off. An offender in a gang of kind 1 (police) or `0x17` is ignored.
+2. With an offender: every police gang turns hostile to his gang, and his gang to them except for types 7 and 12
+   (`0x0016c3a8`); the callback runs with his gang and the type (`0x0041ae60`).
+3. The `CrimeScene` flag moves to the position when it changed.
+4. **Responders**, when `mode` is 1: `0x0016df68(type, kind, count, ...)` queues the crime on the nearest spawner of
+   any gang in state 4 or 6 ([Spawners](#spawners)); kind 1 for types 0, 2, 3, 5, 8, 11 and 13, kind 3 for 9; count
+   the type's responders, or `count` itself for type 4. Types 6, 7, 10, 12 and 14 send none. For types 0, 2, 3 and 8
+   the offender's gang also notes the time (gang `+0x5f4`, a wanted timer, inferred).
+5. Type 1 also marks the nearest store flag (kind `0xe`) robbed and sends message `0x12` to the `strobe` object
+   nearest it (within 36, 6 m if squared). Types 0, 2 and 8 score a statistic for a player offender against a victim
+   of brain kind 1, 4 or 5, once per victim (`0x004ed948` on `0x006fe490`; a statistic, inferred).
+6. When the offender is in player 1's gang, `+0x290` takes the type unless it holds 7 or 12, and the HUD is told
+   (`0x001b2520`).
+
+Who reports, confirmed (code): `CrimeIsHappening` (`0x0041b6e0`, mode 1), `SpawnCustomCrime` (`0x0041b7a0`, type 4),
+an alarmed glass pane ([World objects](objects.md#pane)) and the code at `0x0021b290`, `0x0022d908`, `0x002e6668`,
+`0x003961d0` and `0x00394da8` (type 1), `0x00301cf8` (type 2), `0x0041bec8` (type 9), and `0x002a83f8` and
+`0x002c4360` (a type from their own records). The crime names are a function (`0x0041d2c0`) with no callers; the
+numbers they go with are inferred from those types (4 `Custom`, 1 `BreakAndEnter` for the store, 9
+`PrecinctAttack`).
+
 #### Warrior commands {#warrior-commands}
 
 A war chief (a player human whose `+0x3ac` is 1) orders the crew, his gang, with one of seven **Warrior

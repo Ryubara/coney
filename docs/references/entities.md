@@ -14,14 +14,15 @@ icon of at most 64 × 64 that Coney renders from the disc), **swatch** (a colour
 
 | Kind | What it is | Made with | Refer by | Limit | Lists | Bindings | Image |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| <span id="human"></span>Human | Every person, the player included (GTA's ped) | `HuCreate`, a gang's spawner (`GangAddSpawner`) | handle | 60 | [Characters](characters.md), [Character models](character-models.md), [Speed classes](speed-classes.md), [Anim ids](anim-ids.md), [Speech](speech.md) | [Characters](bindings/character.md) | model render (done) |
+| <span id="human"></span>Human | Every person, the player included (GTA's ped) | `HuCreate`, a gang's spawner (`GangAddSpawner`, [Spawner states](spawner-states.md)) | handle | 60 | [Characters](characters.md), [Character models](character-models.md), [Speed classes](speed-classes.md), [Anim ids](anim-ids.md), [Speech](speech.md) | [Characters](bindings/character.md) | model render (done) |
 | <span id="brain"></span>Brain | A human's AI: goal stack, action queue, target | with its human | the human's handle | 60 | | [AI](bindings/ai.md) | none |
-| <span id="gang"></span>Gang | A group of humans with relations to other gangs | `GangCreate` | gang id, the slot 0-31 | 32 | [Gangs](gangs.md), [Commands](commands.md#warrior-command), [Script events](script-events.md) | [Gangs](bindings/gang.md) | none |
-| <span id="object"></span>World object | Props, weapons, hats, pick-ups, doors, icons: one class, its kind a `CfgObj` type | `ObjSpawn`, `SpawnDoor`; placed by the level | handle; its type by name or `ObjGetIndex` | 384 live | [Objects and weapons](objects.md), [Object groups](object-groups.md), [Script enums](enums.md) | [World and objects](bindings/world.md) | model render (coming) |
+| <span id="gang"></span>Gang | A group of humans with relations to other gangs | `GangCreate` | gang id, the slot 0-31 | 32 | [Gangs](gangs.md), [Spawner states](spawner-states.md), [Commands](commands.md#warrior-command), [Script events](script-events.md) | [Gangs](bindings/gang.md) | none |
+| <span id="object"></span>World object | Props, weapons, hats, pick-ups, doors, icons: one class, its kind a `CfgObj` type | `ObjSpawn`, `SpawnDoor`; placed by the level | handle; its type by name or `ObjGetIndex` | 384 live | [Objects and weapons](objects.md), [Object groups](object-groups.md), [Doors](doors.md), [Object tints](tints.md), [Script enums](enums.md) | [World and objects](bindings/world.md) | model render (coming) |
 | <span id="car"></span>Car | A parked car that can be damaged or wrecked | `CarSpawn` | handle | 18 | [Cars](cars.md) | [World and objects](bindings/world.md) | model render: Coney must load the `<type>_geo` clump (chunk `0x47`, no skin) and its dictionary through the Object List ([Cars](../research/cars.md#model)) |
-| <span id="glass"></span>Glass pane | A breakable window pane | `SpawnBreakableGlass` | handle | 100 | still to list | [World and objects](bindings/world.md) | none |
+| <span id="glass"></span>Glass pane | A breakable window pane | `SpawnBreakableGlass` | handle | 100 | [Glass types](glass-types.md) | [World and objects](bindings/world.md) | none |
 | <span id="particle"></span>Particle system | Fire, smoke, sparks, strobes | `SpawnParticle` | handle | 1,400 | [Particle effects](particles.md) | [Effects and lighting](bindings/effects.md) | icon render: cut the type's rectangle from its sheet record and fit it to 64 × 64 (sprite traced for 58 types; [Particles](../research/particles.md#sprite-words)) |
-| <span id="light"></span>Dynamic light | A point, spot, directional or ambient light | `SetLight` | its own light handle | not traced | still to list | [Effects and lighting](bindings/effects.md) | swatch |
+| <span id="light"></span>Dynamic light | A point, spot, directional or ambient light | `SetLight` | its own light handle | not traced | [Lights](lights.md) | [Effects and lighting](bindings/effects.md) | swatch (done) |
+| <span id="crime"></span>Crime | A reported offence the police answer: responders from a gang's dispatch spawner | `CrimeIsHappening`, `SpawnCustomCrime`; the game itself | crime type | one crime scene | [Crime types](crime-types.md) | [Levels and game state](bindings/level.md), [Configuration](bindings/config.md) | none |
 | <span id="flag"></span>World flag | A named point with a heading: spawn point, waypoint, objective | `AddFlag` | handle; `FindFlag` by name | per level | [World flags](flags.md) | [World and objects](bindings/world.md) | none |
 | <span id="path"></span>Path | A route of points AI humans follow | `AddPath` | a userdata | 32 | | [World and objects](bindings/world.md), [AI](bindings/ai.md) | none |
 | <span id="box"></span>Volume, turf and player boxes | Trigger boxes; a gang's turf | `AddVolumeBox`, `GangAddTurfBox` | handle | per level | [Volume boxes](boxes.md) | [World and objects](bindings/world.md), [Gangs](bindings/gang.md) | none |
@@ -114,7 +115,7 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | Vehicle | [car](#car), parked; trains and moving vehicles are world objects (`ObjStartTrain`) | [Cars](cars.md) | [World and objects](bindings/world.md) |
 | Weapon | a world object of a weapon class, held (`HuPlaceItemInHand`, `HuGiveWeapon`) | [Objects and weapons](objects.md) | [Characters](bindings/character.md) |
 | Pickup | a world object of class `pickup_item` or `powerup_item`; inventory items | [Objects and weapons](objects.md); inventory still to list | [Levels and game state](bindings/level.md) |
-| Door | a world object (`SpawnDoor`, `DoorOpen`) | [Objects and weapons](objects.md) | [World and objects](bindings/world.md) |
+| Door | a world object (`SpawnDoor`, `DoorOpen`) | [Doors](doors.md), [Objects and weapons](objects.md) | [World and objects](bindings/world.md) |
 | Blip | [radar blip](#blip) | [Radar icons and blips](radar-icons.md) | [HUD and menus](bindings/hud.md) |
 | Marker | [spinning icon](#icon); the HUD's tutorial arrow (`HUDEnableInstArrow`) | [Objects and weapons](objects.md) | [Characters](bindings/character.md), [HUD and menus](bindings/hud.md) |
 | Checkpoint (race) | none; a [trigger sphere](#trigger) or [volume box](#box) does the job. A Warriors checkpoint is a restart point (`SetCheckPoint`) | [Level starts](level-starts.md) | [Levels and game state](bindings/level.md) |
@@ -128,6 +129,7 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | HUD colour | the `CL` colours | [HUD colours](hud-colours.md) | [HUD and menus](bindings/hud.md) |
 | Text label | a string table key | [Text labels](text-labels.md) | [HUD and menus](bindings/hud.md) |
 | Animation dictionary, clip | anim ids and clips | [Anim ids](anim-ids.md), [Animation clips](animations.md) | [Characters](bindings/character.md) |
+| Wanted level, dispatch | [crime](#crime): police responders from dispatch spawners | [Crime types](crime-types.md), [Spawner states](spawner-states.md) | [Levels and game state](bindings/level.md) |
 | Network, multiplayer | none: two players share one screen | | |
 
 ## Open questions {#open-questions}

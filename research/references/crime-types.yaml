@@ -1,0 +1,83 @@
+# Crime types: a Coney game reference list. The page docs/references/crime-types.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Crime types"
+about: |
+  The crimes the police respond to. Scripts report one with `CrimeIsHappening` or
+  `SpawnCustomCrime`, set how many responders each type draws with `CfgCrimeResponders` and switch one with
+  `CfgEnableCrimeType`; the game reports others itself ([AI: crimes](../research/ai.md#crimes)).
+complete: |
+  All 15 types are listed. The names come from a table no code calls, so which name goes with
+  which number is inferred from the types the code raises.
+defaults: {source: "SLUS_212.15, crime report 0x0041b8b0 and crime-name table 0x0041d2c0", evidence: confirmed-code}
+entries:
+  - id: 0
+    name: Assault
+    response: "Responders; the offender's time is noted (a wanted timer, inferred); a player offender scores a statistic."
+    responders: ["config_easy: 1", "level82_chapter2: 1", "level87: 0"]
+  - id: 1
+    name: BreakAndEnter
+    response: "Marks the nearest store flag (kind `0xe`) robbed and switches on the `strobe` object near it; responders when the call asks."
+    responders: ["config_easy: 2", "level14: 2", "level87: 1", "level95_robinhood: 1"]
+    reported: 2
+    scripts: [hifi]
+  - id: 2
+    name: CopAssault
+    response: "As 0."
+    responders: ["config_easy: 2", "level9: 3", "level14: 1", "level82_chapter2: 1", "level87: 1", "level95_robinhood: 1"]
+    enabled: ["level95_busted: off", "level95_freedom: off"]
+  - id: 3
+    name: CopKill
+    response: "Responders; the offender's time is noted."
+    responders: ["level87: 0"]
+  - id: 4
+    name: Custom
+    response: "The responder count `SpawnCustomCrime` gives."
+    reported: 4
+    scripts: [level82, level82_chapter2]
+  - id: 5
+    name: DisorderlyConduct
+    response: "Responders (mode 1)."
+    responders: ["level87: 0", "level95_apephibian: 1", "level95_busted: 1", "level95_dealwithit: 1", "level95_freedom: 1"]
+    reported: 1
+    scripts: [level95_freedom]
+  - id: 6
+    name: GangFight
+    response: "No responders."
+    responders: ["level9: 3", "level87: 0"]
+  - id: 7
+    name: GangCurfew
+    response: "No responders; the police turn hostile to the offender's gang but not it to them."
+    responders: ["level87: 0"]
+    reported: 14
+    scripts: ["36763710", global, run4life, level31, level31_gclub, level31_streets]
+  - id: 8
+    name: Mugging
+    response: "As 0."
+    responders: ["config_easy: 1", "level82_chapter2: 1", "level87: 0"]
+  - id: 9
+    name: PrecinctAttack
+    response: "Responders (mode 3)."
+    responders: ["level87: 0"]
+  - id: 10
+    name: Tagging
+    response: "No responders."
+    responders: ["config_easy: 1", "level9: 1", "level87: 0"]
+  - id: 11
+    name: Theft
+    response: "Responders (mode 1)."
+    responders: ["config_easy: 1", "level87: 0"]
+  - id: 12
+    name: Trespassing
+    response: "No responders; hostility one way, as 7. The police brain tests whether this type is enabled."
+    responders: ["level9: 1", "level87: 0"]
+    enabled: ["level9: on"]
+    reported: 1
+    scripts: [level9_chap2_tags]
+  - id: 13
+    name: Vandalism
+    response: "Responders (mode 1)."
+    responders: ["config_easy: 1", "level82_chapter2: 1", "level87: 0", "level95_robinhood: 1"]
+  - id: 14
+    name: NoCrime
+    response: None.

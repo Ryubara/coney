@@ -462,8 +462,8 @@
     - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation as a quaternion `{x, y, z, w}` (the scripts pass `{0, 0, 0, -1}` or rotations about z). Written back unchanged."}
     - {name: unused, lua: number, ctype: int, desc: "Not used by the callee; the scripts always pass -1."}
     - {name: zone, lua: number, ctype: unsigned, desc: "Object zone number the object belongs to (stored in the spawn record's top bits); 0 for none."}
-    - {name: flags, lua: number, ctype: unsigned, desc: "Spawn flags: bit 0 (1) keeps the extra value below, bit 1 (2) a physics-related bit for most types, bit 6 (64) another record bit; the scripts pass 0, 64 and similar."}
-    - {name: extra, lua: number, ctype: unsigned, default: 4294967295, desc: "Extra value kept only with flag bit 0; default 4294967295 (all bits set, which the scripts also pass)."}
+    - {name: flags, lua: number, ctype: unsigned, desc: "Spawn flags: bit 0 (1) makes the record take an id the caller passes (the binding passes none), bit 1 (2) a physics-related bit for most types, bit 6 (64) another record bit; the scripts pass 0, 64 and similar."}
+    - {name: extra, lua: number, ctype: unsigned, default: 4294967295, desc: "The object's tint, a colour word `0xRRGGBBAA` (record `+0x14`, then object `+0xc8`); default 4294967295, white, no tint ([Object tints](../tints.md))."}
     - {name: flagName, lua: string, desc: "Optional name of a flag (marker) the object is linked to; nil for none."}
   results:
     - {lua: number, desc: "The new object's handle, or NilHandle when it was not spawned."}
@@ -474,7 +474,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Callee 0x00396858 builds a spawn record through 0x00398940. The meaning of the flag bits and of `extra` is
+    Callee 0x00396858 builds a spawn record through 0x00398940. `extra` goes to the record (`+0x14`) and from there to
+    the object's tint (`0x003992a4`, [Object tints](../tints.md)), confirmed (code); the flag bits' meaning is
     inferred from how the record is filled. The power cuffs are additionally suppressed when 0x0041d160 on the game
     state is non-zero.
   usage: {chunks: 123, calls: 2875, boot: true, mission1: true, result_used: true}
@@ -544,13 +545,14 @@
     - {addr: 0x00396bd0, name: Obj_SetColour}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
-    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour `{r, g, b, a}`; each component is multiplied by 255, so components are meant as 0-1 (the one script call passes 0-255 values). Written back unchanged."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour `{r, g, b, a}` as whole numbers 0-255. The binding and the packer each multiply by 255 and keep the low 8 bits, so a whole 0-255 component comes out as itself and a 0-1 one does not (1.0 gives 1). Written back unchanged."}
   description: >-
     Sets a tint colour on a game object (stored twice in the object, +0xc8 and +0xcc).
   evidence: confirmed-code
   depth: brief
   notes: >-
-    The components are passed to the colour packer 0x0017aca8 in reverse order (a, b, g, r).
+    The components are passed to the colour packer 0x0017aca8 in reverse order (a, b, g, r), giving the word
+    `0xRRGGBBAA` that `ObjSpawn`'s tint also sets ([Object tints](../tints.md)).
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
 
 - name: FlagGetOwner
@@ -748,15 +750,15 @@
   calls:
     - {addr: 0x0039c0e0, name: Glass_Spawn}
   args:
-    - {name: glassType, lua: number, ctype: int, desc: "Glass type number; the object spawned is the type named by this number as text (format `%d`), such as type 1 or 13."}
+    - {name: glassType, lua: number, ctype: int, desc: "[Glass type](../glass-types.md) 0-18; the pane task is named by the number as text (format `%d`)."}
     - {name: corner, lua: table, elem: number, count: 3, written_back: true, desc: "First corner `{x, y, z}` of the pane in world metres."}
     - {name: cornerU, lua: table, elem: number, count: 3, written_back: true, desc: "Corner along the pane's width `{x, y, z}`."}
     - {name: cornerV, lua: table, elem: number, count: 3, written_back: true, desc: "Corner along the pane's height `{x, y, z}`."}
     - {name: uv0, lua: table, elem: number, count: 2, written_back: true, desc: "Texture coordinates `{u, v}` at the first corner."}
     - {name: uv1, lua: table, elem: number, count: 2, written_back: true, desc: "Texture coordinates `{u, v}` at the opposite corner."}
-    - {name: flag, lua: number, ctype: int, desc: "Integer passed with the pane; the scripts pass 0."}
-    - {name: id1, lua: number, ctype: int, desc: "Integer id passed with the pane (consecutive numbers per pane in the scripts, such as 765)."}
-    - {name: id2, lua: number, ctype: int, desc: "Second integer id (the next number, such as 766)."}
+    - {name: flag, lua: number, ctype: int, desc: "Pushed with the pane but discarded by its initialiser (`0x003e29e8`); the scripts pass 0."}
+    - {name: triangle1, lua: number, ctype: int, desc: "First collision triangle the pane covers (pane `+0xd8`): made two-sided, disabled when it breaks."}
+    - {name: triangle2, lua: number, ctype: int, desc: "Second collision triangle (`+0xdc`)."}
   results:
     - {lua: number, desc: "Handle of the glass object."}
   description: >-
@@ -765,7 +767,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    What the two ids identify (likely the collision triangles or a pair of links the pane replaces) is not traced.
+    The two numbers are collision triangle indices (`0x003a4768`, `0x003a46c8`); the types and what breaking a pane
+    does: [World objects](../../research/objects.md#glass).
   usage: {chunks: 32, calls: 929, boot: false, mission1: true, result_used: true}
 
 - name: ObjectChangeState
@@ -790,8 +793,8 @@
     - {name: typeName, lua: string, desc: "Door type name, such as `dyn_door_cabin_a` or `dyn_door_store`."}
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` of the door. Written back unchanged."}
     - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Orientation quaternion `{x, y, z, w}`. Written back unchanged."}
-    - {name: ids, lua: table, elem: number, count: 2, written_back: true, desc: "Two integers `{a, b}` passed with the door, consecutive per door in the scripts (such as `{328, 329}`); likely the ids of its two leaves or navigation links."}
-    - {name: lockType, lua: number, ctype: unsigned, desc: "Integer passed with the door (1-7 in the scripts); meaning not traced (a lock or door class)."}
+    - {name: triangles, lua: table, elem: number, count: 2, written_back: true, desc: "The two collision triangles the door owns `{a, b}` (door `+0xd8`, `+0xdc`). Written back unchanged."}
+    - {name: number, lua: number, ctype: unsigned, desc: "The door's number in its level (1-27, unique per level; door `+0xe0`): the level's navigation links carrying it belong to the door ([Doors](../doors.md))."}
   results:
     - {lua: number, desc: "Handle of the door object; `GetLeftDoorHandle` / `GetRightDoorHandle` give its leaves."}
   description: >-
@@ -799,7 +802,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The spawn passes position, rotation and the three integers as message arguments to 0x003a2e60.
+    The spawn passes position, rotation and the three integers as message arguments to 0x003a2e60; the door's
+    initialiser (`0x003fb5f8` for `dyn_door_swinging`) reads them back ([World objects](../../research/objects.md#doors)).
   usage: {chunks: 46, calls: 484, boot: false, mission1: true, result_used: true}
 
 - name: DoorOpenDegree

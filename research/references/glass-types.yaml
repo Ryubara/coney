@@ -1,0 +1,135 @@
+# Glass types: a Coney game reference list. The page docs/references/glass-types.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Glass types"
+about: |
+  The breakable-glass types: `CfgSetGlassProperties(type, windowLink, alarm, sprite, brokenSprite)`
+  configures each in `config_preload2.lua`, and a level script places panes with
+  `SpawnBreakableGlass(type, corner, cornerU, cornerV, uv0, uv1, 0, triangle1, triangle2)`
+  ([World objects: glass](../research/objects.md#glass)).
+complete: |
+  All 19 types are listed with every argument. The sprite words' rectangles are in the glass
+  pane's sprite batch, whose sheet is not traced.
+defaults: {source: "config_preload2.lua, CfgSetGlassProperties; SpawnBreakableGlass in the scripts", evidence: confirmed-code}
+entries:
+  - id: 0
+    window_link: false
+    alarm: false
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    panes: 97
+    scripts: [level9, level86, level92, level95, level112]
+  - id: 1
+    window_link: false
+    alarm: false
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    behaviour: "Breaking it calls an empty hook with its two triangles (`0x003a4ad8`)."
+    panes: 422
+    scripts: [d26c7832, level2, level9, level11, level14, level20]
+  - id: 2
+    window_link: false
+    alarm: false
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    panes: 50
+    scripts: [level3]
+  - id: 3
+    window_link: false
+    alarm: false
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    panes: 14
+    scripts: [level55, level87]
+  - id: 4
+    window_link: false
+    alarm: true
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+  - id: 5
+    window_link: false
+    alarm: true
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+  - id: 6
+    window_link: false
+    alarm: true
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+  - id: 7
+    window_link: false
+    alarm: true
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+  - id: 8
+    window_link: true
+    alarm: false
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    panes: 157
+    scripts: [d26c7832, level5, level11, level20, level34, level52]
+  - id: 9
+    window_link: true
+    alarm: false
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    panes: 2
+    scripts: [level2]
+  - id: 10
+    window_link: true
+    alarm: false
+    sprite: 0x00010016
+    broken_sprite: 0x00010017
+  - id: 11
+    window_link: true
+    alarm: false
+    sprite: 0x00010016
+    broken_sprite: 0x00010017
+    panes: 25
+    scripts: [level51, level82, level87, level93, level99, level128]
+  - id: 12
+    window_link: false
+    alarm: false
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    behaviour: "A car window: breaking it frees every `dyn_carstereo` within 2 m (`0x00396090`)."
+    panes: 1
+    scripts: [level9]
+  - id: 13
+    window_link: true
+    alarm: true
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    panes: 142
+    scripts: [d26c7832, level2, level11, level14, level20, level31]
+  - id: 14
+    window_link: true
+    alarm: false
+    sprite: 0x00020000
+    broken_sprite: 0x00010015
+    behaviour: "Stained glass: draws with a sprite batch of its own (`0x00020000`, so its sprite word is unused) and shatters as `sub_stained_glass`."
+  - id: 15
+    window_link: false
+    alarm: false
+    sprite: 0x00010014
+    broken_sprite: 0x00010015
+    behaviour: "Invisible: colour 0, never drawn; still blocks until broken."
+  - id: 16
+    window_link: false
+    alarm: false
+    sprite: 0x00010016
+    broken_sprite: 0x00010017
+    panes: 19
+    scripts: [level3, level60, level61, level64]
+  - id: 17
+    window_link: false
+    alarm: false
+    sprite: 0x00010015
+    broken_sprite: 0x00010015
+    behaviour: "Placed already broken: no collision."
+  - id: 18
+    window_link: true
+    alarm: false
+    sprite: 0x00010015
+    broken_sprite: 0x00010015
+    behaviour: "Placed already broken: no collision; its sector bit `0x08` is set."

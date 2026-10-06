@@ -1,0 +1,49 @@
+# Lights: a part of research/references/lights.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "global:1", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:2", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:3", type: ambient, pos: [0, 0, 0], dir: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:4", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 0, script: global}
+  - {id: "global:5", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:6", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:7", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:8", type: ambient, pos: [0, 0, 0], dir: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:9", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 0, script: global}
+  - {id: "global:10", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:11", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:12", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:13", type: directional, pos: [0, 0, 0], rgba: [1, 0.75, 0, 1], swatch: FFBF00FF, radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:14", type: directional, pos: [0, 0, 0], rgba: [1, 0.75, 0, 1], swatch: FFBF00FF, radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:15", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:16", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:17", type: directional, pos: [0, 0, 0], rgba: [0.8, 0.7, 0, 1], swatch: CCB200FF, radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:18", type: directional, pos: [0, 0, 0], rgba: [0, 1, 0, 1], swatch: "00FF00FF", radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:19", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:20", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:21", type: directional, pos: [0, 0, 0], rgba: [1, 1, 1, 1], swatch: FFFFFFFF, radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:22", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:23", type: ambient, pos: [0, 0, 0], dir: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:24", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 0, script: global}
+  - {id: "global:25", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 0, script: global}
+  - {id: "global:26", type: ambient, pos: [0, 0, 0], dir: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:27", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:28", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:29", type: directional, pos: [0, 0, 0], dir: [0.4, 0.001, -0.9], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 3, state: 0, script: global}
+  - {id: "global:30", type: directional, pos: [0, 0, 0], dir: [0.4, 0.001, -0.9], rgba: [100, 100, 100, 100], swatch: FFFFFFFF, radius: 0, cone: 1, flicker: 0, group: 3, state: 1, script: global}
+  - {id: "global:31", type: ambient, pos: [0, 0, 0], dir: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:32", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 0, script: global}
+  - {id: "global:33", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 0, script: global}
+  - {id: "global:34", type: directional, pos: [0, 0, 0], dir: [0.4, 0.001, -0.9], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 3, state: 0, script: global}
+  - {id: "global:35", type: ambient, pos: [0, 0, 0], dir: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:36", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:37", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:38", type: directional, pos: [0, 0, 0], dir: [0.001, 0.4, -0.9], rgba: [255, 255, 255, 255], swatch: FFFFFFFF, radius: 0, cone: 1, flicker: 0, group: 3, state: 1, script: global}
+  - {id: "global:39", type: ambient, pos: [0, 0, 0], dir: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:40", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 0, script: global}
+  - {id: "global:41", type: directional, pos: [0, 0, 0], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 1, state: 0, script: global}
+  - {id: "global:42", type: directional, pos: [0, 0, 0], dir: [0.4, 0.001, -0.9], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 3, state: 0, script: global}
+  - {id: "global:43", type: ambient, pos: [0, 0, 0], dir: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:44", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:45", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
+  - {id: "global:46", type: directional, pos: [0, 0, 0], dir: [0.4, 0.001, -0.9], rgba: [0, 0, 0, 0], swatch: "00000000", radius: 0, cone: 1, flicker: 0, group: 3, state: 2, script: global}

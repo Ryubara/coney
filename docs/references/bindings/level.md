@@ -213,7 +213,7 @@ CrimeIsHappening(pos, kind, radius, severity, offender, victim, flags)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `pos` | table of 3 numbers (t[1]..t[3]) | Table {x, y, z}, the crime's position in world units (metres); written back unchanged. |
-| 2 | `kind` | number, truncated to an integer | Crime kind (16-bit); the scripts pass 1 and 7. |
+| 2 | `kind` | number, truncated to an integer | [Crime type](../crime-types.md) (16-bit); the scripts pass 1, 5, 7 and 12. |
 | 3 | `radius` | number (single precision) | A number read as a float but not passed on (the callee ignores it). |
 | 4 | `severity` | number, truncated to an integer | A value the scripts pass 0 or 100 (inferred: how much heat the crime adds). |
 | 5 | `offender` | number, truncated to an unsigned integer | Handle of the human committing the crime. |
@@ -225,8 +225,8 @@ CrimeIsHappening(pos, kind, radius, severity, offender, victim, flags)
 Reports a crime at a position so police and witnesses react (`0x0041b8b0` on the game state). Used for scripted crimes
 such as a mugging.
 
-**Notes.** The position is transformed (`0x00252ae0`) before being passed on; the meaning of kind and severity values is
-inferred.
+**Notes.** The position is transformed (`0x00252ae0`) before being passed on to the crime report 0x0041b8b0, which asks
+for responders; what each type does: [AI: crimes](../../research/ai.md#crimes). The severity value's use is not traced.
 
 - **Evidence:** confirmed (code) at `0x0041b6e0`; detail: traced
 - **Wrapper** `0x0037a2f8` (registered by `RegisterBindings`); **calls** `0x0041b6e0`

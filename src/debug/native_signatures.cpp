@@ -624,9 +624,9 @@ constexpr std::array<NativeArg, 5> kArgs_RotateVolumeBox{{{"box", A::Handle, "",
 constexpr std::array<NativeArg, 2> kArgs_SetDoorPickable{{{"door", A::Handle, "", 0}, {"pickable", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_SetFlagPos{{{"flag", A::Handle, "", 0}, {"pos", A::NumberTable, "", 3}}};
 constexpr std::array<NativeArg, 7> kArgs_SetPositionOfWater{{{"pos", A::NumberTable, "", 3}, {"rot", A::NumberTable, "", 4}, {"width", A::Number, "", 0}, {"length", A::Number, "", 0}, {"colour", A::NumberTable, "", 3}, {"param1", A::Number, "", 0}, {"param2", A::Number, "", 0}}};
-constexpr std::array<NativeArg, 9> kArgs_SpawnBreakableGlass{{{"glassType", A::Integer, "", 0}, {"corner", A::NumberTable, "", 3}, {"cornerU", A::NumberTable, "", 3}, {"cornerV", A::NumberTable, "", 3}, {"uv0", A::NumberTable, "", 2}, {"uv1", A::NumberTable, "", 2}, {"flag", A::Integer, "", 0}, {"id1", A::Integer, "", 0}, {"id2", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 9> kArgs_SpawnBreakableGlass{{{"glassType", A::Integer, "", 0}, {"corner", A::NumberTable, "", 3}, {"cornerU", A::NumberTable, "", 3}, {"cornerV", A::NumberTable, "", 3}, {"uv0", A::NumberTable, "", 2}, {"uv1", A::NumberTable, "", 2}, {"flag", A::Integer, "", 0}, {"triangle1", A::Integer, "", 0}, {"triangle2", A::Integer, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SpawnBreakableGlass{R::Number};
-constexpr std::array<NativeArg, 5> kArgs_SpawnDoor{{{"typeName", A::String, "", 0}, {"pos", A::NumberTable, "", 3}, {"rot", A::NumberTable, "", 4}, {"ids", A::NumberTable, "", 2}, {"lockType", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 5> kArgs_SpawnDoor{{{"typeName", A::String, "", 0}, {"pos", A::NumberTable, "", 3}, {"rot", A::NumberTable, "", 4}, {"triangles", A::NumberTable, "", 2}, {"number", A::Integer, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SpawnDoor{R::Number};
 constexpr std::array<NativeArg, 5> kArgs_TriggerSphereCfg{{{"object", A::Handle, "", 0}, {"enable", A::Boolean, "", 0}, {"radius", A::Number, "", 0}, {"mode", A::Integer, "", 0}, {"interval", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_TriggerSphereEnable{{{"object", A::Handle, "", 0}, {"enable", A::Boolean, "", 0}}};
@@ -1029,7 +1029,7 @@ constexpr std::array<NativeArg, 1> kArgs_CfgSetCrimeCallback{{{"fn", A::String, 
 constexpr std::array<NativeArg, 3> kArgs_CfgSetDatabaseSizes{{{"objectTasks", A::Integer, "", 0}, {"worldFlags", A::Integer, "", 0}, {"boxes", A::NumberTable, "", 4}}};
 constexpr std::array<NativeArg, 2> kArgs_CfgSetDefaultFollowSlotSet{{{"set", A::Integer, "", 0}, {"slots", A::NumberTable, "", 20}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgSetEnemySpotting{{{"enabled", A::Boolean, "true", 0}}};
-constexpr std::array<NativeArg, 5> kArgs_CfgSetGlassProperties{{{"glassType", A::Integer, "", 0}, {"flagA", A::Boolean, "", 0}, {"flagB", A::Boolean, "", 0}, {"soundA", A::Integer, "", 0}, {"soundB", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 5> kArgs_CfgSetGlassProperties{{{"glassType", A::Integer, "", 0}, {"windowLink", A::Boolean, "", 0}, {"alarm", A::Boolean, "", 0}, {"sprite", A::Integer, "", 0}, {"brokenSprite", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgSetGlobalTimeToLive{{{"ms", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_CfgSetLockPickHandler{{{"startFn", A::String, "", 0}, {"stopFn", A::String, "", 0}, {"successFn", A::String, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_CfgSetLockPickStageFailHandler{{{"fn", A::String, "", 0}}};

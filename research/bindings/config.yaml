@@ -1369,17 +1369,18 @@
   calls:
     - {addr: 0x0039c290, name: Cfg_SetGlassProperties}
   args:
-    - {name: glassType, lua: number, ctype: unsigned, desc: "Glass type index (0-11 in config_preload2.lua); selects a 16-byte entry."}
-    - {name: flagA, lua: boolean, desc: "Boolean stored at entry +0x14."}
-    - {name: flagB, lua: boolean, desc: "Boolean stored at entry +0x18."}
-    - {name: soundA, lua: number, ctype: unsigned, desc: "Number stored at entry +0x1c (65556 or 65558: a sound id, inferred)."}
-    - {name: soundB, lua: number, ctype: unsigned, desc: "Number stored at entry +0x20 (65557 or 65559)."}
+    - {name: glassType, lua: number, ctype: unsigned, desc: "[Glass type](../glass-types.md) (0-18 in config_preload2.lua); selects a 16-byte entry."}
+    - {name: windowLink, lua: boolean, desc: "Entry +0x14: the pane closes the navigation jump link through it until it breaks."}
+    - {name: alarm, lua: boolean, desc: "Entry +0x18: breaking the pane reports a break-in (crime type 1)."}
+    - {name: sprite, lua: number, ctype: unsigned, desc: "Entry +0x1c: the whole pane's sprite word; its low 16 bits are the rectangle drawn (65556 is rectangle 20)."}
+    - {name: brokenSprite, lua: number, ctype: unsigned, desc: "Entry +0x20: the sprite word left after the pane breaks; 0 draws nothing."}
   description: >-
     Sets one breakable-glass type's two flags and two ids in the world object's glass table (0x00512c7c + 0x84c).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The ids look like bank << 16 | index sound ids; not confirmed.
+    The readers are the glass pane's initialiser and hit handler (0x003e29e8, 0x003e2d90) and its break
+    (0x0038f378); [World objects: glass](../../research/objects.md#glass).
   usage: {chunks: 1, calls: 19, boot: true, mission1: false, result_used: false}
 
 - name: CfgScrFx
@@ -1631,7 +1632,7 @@
   calls:
     - {addr: 0x0041d8a0}
   args:
-    - {name: crime, lua: number, ctype: unsigned, desc: "Crime type index."}
+    - {name: crime, lua: number, ctype: unsigned, desc: "[Crime type](../crime-types.md)."}
     - {name: count, lua: number, ctype: unsigned, desc: "Number of responders (police) sent for that crime (0-2 in the scripts)."}
   description: >-
     Sets how many responders a crime type draws (byte at game state + 0x294 + crime); the difficulty configs and some
@@ -1647,7 +1648,7 @@
   calls:
     - {addr: 0x0041da80}
   args:
-    - {name: crime, lua: number, ctype: int, desc: "Crime type 0-14; larger values are ignored."}
+    - {name: crime, lua: number, ctype: int, desc: "[Crime type](../crime-types.md) 0-14; larger values are ignored. Only type 12 (trespassing) is read back, by the police brain."}
     - {name: enabled, lua: boolean, desc: "true enables the crime type; false disables it."}
   description: >-
     Enables or disables one crime type (byte at game state + 0x32b + crime).

@@ -40,6 +40,12 @@ copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").
 | [Object zones](zones.md) | 225 | Every zone number a level's scripts name (`Zone<n>` globals, `<TABLE>.<NAME>_ZONE` fields), switch or spawn objects into: 225 zones in 62 levels. |
 | [Volume boxes](boxes.md) | 974 | Every `AddVolumeBox` call whose name is a literal string: 974 boxes (547 volume, 251 player and 176 turf boxes) in 47 levels. |
 | [Scenes and movies](scenes.md) | 1,256 | All 16 movies, and every scene of `scene_list.cnk` except the 1,525 segments that continue a longer scene: 1,240 scenes, 24 of them under names cut to 16 characters. |
+| [Glass types](glass-types.md) | 19 | All 19 types are listed with every argument. |
+| [Doors](doors.md) | 484 | Every `SpawnDoor` call (484 doors in 45 levels). |
+| [Object tints](tints.md) | 37 | Every literal tint of `ObjSpawn` and `ObjColor` is listed. |
+| [Lights](lights.md) | 5,283 | Every 14-argument `SetLight` call; arguments the script computes show none. |
+| [Spawner states](spawner-states.md) | 12 | All twelve states are listed; 6 and 10 only the game sets. |
+| [Crime types](crime-types.md) | 15 | All 15 types are listed. |
 | [Animation clips](animations.md) | 1,875 | Every clip (1,875) is listed. |
 | [Anim ids](anim-ids.md) | 722 | All 722 ids are listed with the generic clip and Rembrandt's own clip where he has one. |
 | [Controls](controls.md) | 18 | Every button bit and both sticks are listed. |
@@ -75,15 +81,9 @@ it.
 | Attack delays and weights | Each attack kind's delay and the per-class weights the AI picks attacks by. | `CfgAttackDelay` (44 indices), the `Att_*` tables and `BrSetAttackWeight` (`config_preload2.lua`) | 45 attack kinds | none | Disc extraction |
 | Hat fittings | Where each hat sits on each head shape. | `CfgHat` (908 calls, `config_preload2.lua`; 41 hats per set) | 908 fittings | model render: the hats are objects (Coney renders characters only so far) | Disc extraction |
 | Rumble roster | The characters, gangs, arenas and rules of Rumble mode. | `CfgRumbleChar` (732 calls), `CfgRumbleGang` (46), `CfgRumbleArena` (29), `CfgRumbleGame` (9), the `rumble_*.lua` scripts | 366 character ids, 46 gangs, 29 arenas | none | Disc extraction |
-| Glass types | The breakable-glass kinds of `SpawnBreakableGlass`. | `CfgSetGlassProperties` (19 types, `config_preload2.lua`); `SpawnBreakableGlass` (10 used) | 19 | none | Disc extraction; RE for the two flags |
-| Spawner behaviours and states | How a gang spawner produces humans, and the states `GangStartSpawner` sets. | `GangAddSpawner` behaviour ids (7 used), `GangStartSpawner` states (0-11) | about 12 | none | RE |
-| Crime types | The crimes the police respond to. | `CfgCrimeResponders`, `CfgEnableCrimeType`, `CrimeIsHappening` (kinds 1, 5, 7, 12 used); bytes at game state `+0x294` | not counted | none | RE |
 | Camera types and switches | The camera classes the factory makes and the switches of `CamEnable`. | Factory `0x0011e1b0` (types 0-5, 7, 8, 0xc, 0xd, 0x10; [Boot](../research/boot.md)); `CamEnable` switches 0-13 | 11 types, 14 switches | none | RE for the untagged types and the switches |
 | Screen effects | The full-screen effects `ScreenQueueEffect` queues and `CfgScrFx` configures. | `ScreenQueueEffect` types 0-5 (653 calls); `CfgScrFx` (11 entries, `config_preload2.lua`) | 6 types | none | RE for types 2-5 |
-| Object and car tints | Colours scripts give cars, spinning icons and spawned objects. | `ObjColor`, `HuSetSpinningIconColor`; `ObjSpawn`'s extra value (34 values that look like packed colours, inferred) | not counted | swatch | RE: which values are colours, and their layout |
 | Statistics | The stat tables the end-of-level screens score. | `CfgSetStatValue` (tables 0-5, 46 calls), `CfgSetStatTypeMax` | 6 tables | none | RE |
-| Door lock kinds | The number `SpawnDoor` takes after the door's ids. | `SpawnDoor` (484 calls; 27 values used) | 27 used | none | RE |
-| Light presets | The named lights each level's script builds with `SetLight`. | The level scripts' `Lights` and `LightData` tables (`SetLight`, 5,299 calls) | not counted | swatch | Disc extraction |
 | AI goal types | The goal classes behind the `Goal*` bindings. | 148 goal classes, type id at vtable `+0x0c` ([AI](../research/ai.md#goals) names 22) | 148 | none | RE |
 
 Not to be listed: the credits (`CfgCredits`) and the text of any string table, which are game text; boss portraits

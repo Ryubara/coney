@@ -477,6 +477,9 @@ A light's flags say what it lights: bit 0 (1) objects, bit 1 (2) the world.
   in 9 levels. The light descriptor `0x0017c508` (RenderWare type at `+0x00`: 0x80 point, 0x81 spot, 1 directional,
   2 ambient; position `+0x04`, direction `+0x10`, colour `+0x20`, radius `+0x30`, flags `+0x44`, flicker `+0x4c`,
   enabled `+0x4e`).
+- Every light the scripts make is in [Lights](../references/lights.md): `global.lua` builds each level's moonlight,
+  reflected and ambient light from the level's `LightData`, and the level scripts add their lamps (5,283 calls, 841 of
+  them kept in `Lights` tables).
 
 (File counts from a scan of the disc's compiled Lua files for the binding names; corroboration.)
 

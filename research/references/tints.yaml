@@ -1,0 +1,267 @@
+# Object tints: a Coney game reference list. The page docs/references/tints.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Object tints"
+about: |
+  The colours scripts tint world objects with: `ObjSpawn`'s seventh argument, a colour word
+  `0xRRGGBBAA` (default `0xFFFFFFFF`, no tint), and `ObjColor(object, {r, g, b, a})`. Both end in the
+  object's tint word ([World objects: tint](../research/objects.md#tint)). The colours scripts give cars
+  are in [Cars](cars.md#colour) ([Cars: colour](../research/cars.md#colour)).
+complete: |
+  Every literal tint of `ObjSpawn` and `ObjColor` is listed. No script calls
+  `HuSetSpinningIconColor`; its default is listed.
+defaults: {source: "the scripts, ObjSpawn and ObjColor", evidence: confirmed-code}
+entries:
+  - id: "spawn:A49E98FF"
+    kind: "ObjSpawn tint"
+    rgba: A49E98FF
+    swatch: A49E98FF
+    calls: 60
+    objects: [dyn_subwaydoor_a]
+    scripts: [level51_chapter9, level52, level54, level84, level115]
+  - id: "spawn:888888FF"
+    kind: "ObjSpawn tint"
+    rgba: "888888FF"
+    swatch: "888888FF"
+    calls: 48
+    objects: [dyn_s_wwcart_simple_a, dyn_s_wwcart_simple_b, dyn_s_wwcart_simple_c]
+    scripts: [level100, level100main]
+  - id: "spawn:B1B1B1FF"
+    kind: "ObjSpawn tint"
+    rgba: B1B1B1FF
+    swatch: B1B1B1FF
+    calls: 48
+    objects: [dyn_s_wwcart_simple_c, dyn_s_wwcart_simple_a, dyn_s_wwcart_simple_b]
+    scripts: [level95_chapter2, level99]
+  - id: "spawn:5C584DFF"
+    kind: "ObjSpawn tint"
+    rgba: "5C584DFF"
+    swatch: "5C584DFF"
+    calls: 47
+    objects: [dyn_tomb_b, dyn_broom, dyn_porcelain_d, dyn_cash_roll]
+    scripts: [level86, level86_chapter1_reg, level86_scenetest, level119, level120, level130]
+  - id: "spawn:595459FF"
+    kind: "ObjSpawn tint"
+    rgba: "595459FF"
+    swatch: "595459FF"
+    calls: 32
+    objects: [dyn_tomb_a, dyn_tomb_b]
+    scripts: [survival, level119, level120, level130]
+  - id: "spawn:E8E3DEFF"
+    kind: "ObjSpawn tint"
+    rgba: E8E3DEFF
+    swatch: E8E3DEFF
+    calls: 24
+    objects: [dyn_subwaydoor_a]
+    scripts: [level2]
+  - id: "spawn:757A7EFF"
+    kind: "ObjSpawn tint"
+    rgba: "757A7EFF"
+    swatch: "757A7EFF"
+    calls: 18
+    objects: [dyn_s_train_med_full]
+    scripts: [level80, level83, level99]
+  - id: "spawn:E2DEDAFF"
+    kind: "ObjSpawn tint"
+    rgba: E2DEDAFF
+    swatch: E2DEDAFF
+    calls: 16
+    objects: [dyn_clublite]
+    scripts: [level11, level110]
+  - id: "spawn:F7F7F7FF"
+    kind: "ObjSpawn tint"
+    rgba: F7F7F7FF
+    swatch: F7F7F7FF
+    calls: 12
+    objects: [dyn_fx_train]
+    scripts: [level2, level31, level95_chapter1, level95_chapter2, level95_chapter3, level95_chapter4]
+  - id: "spawn:8A8682FF"
+    kind: "ObjSpawn tint"
+    rgba: "8A8682FF"
+    swatch: "8A8682FF"
+    calls: 11
+    objects: [dyn_special_key, dyn_revival, dyn_spraycan, dyn_cuffs_b, dyn_wrenchplumb, dyn_skullcandle]
+    scripts: [level52, level92, level93]
+  - id: "spawn:F9F9F9FF"
+    kind: "ObjSpawn tint"
+    rgba: F9F9F9FF
+    swatch: F9F9F9FF
+    calls: 9
+    objects: [dyn_barrel_b]
+    scripts: [level51]
+  - id: "spawn:787D81FF"
+    kind: "ObjSpawn tint"
+    rgba: "787D81FF"
+    swatch: "787D81FF"
+    calls: 6
+    objects: [dyn_s_train_med_half]
+    scripts: [level9]
+  - id: "spawn:DAD9D8FF"
+    kind: "ObjSpawn tint"
+    rgba: DAD9D8FF
+    swatch: DAD9D8FF
+    calls: 4
+    objects: [dyn_tag_warr, dyn_tag_warr_dest]
+    scripts: [level80, level80_chapter1, level80_chapter4]
+  - id: "spawn:111319FF"
+    kind: "ObjSpawn tint"
+    rgba: "111319FF"
+    swatch: "111319FF"
+    calls: 3
+    objects: [dyn_gbin_small_open]
+    scripts: [level51]
+  - id: "spawn:EBEBEBFF"
+    kind: "ObjSpawn tint"
+    rgba: EBEBEBFF
+    swatch: EBEBEBFF
+    calls: 3
+    objects: [dyn_boat]
+    scripts: [level84]
+  - id: "spawn:433831FF"
+    kind: "ObjSpawn tint"
+    rgba: "433831FF"
+    swatch: "433831FF"
+    calls: 2
+    objects: [dyn_fridge_b]
+    scripts: [level86]
+  - id: "spawn:474542FF"
+    kind: "ObjSpawn tint"
+    rgba: "474542FF"
+    swatch: "474542FF"
+    calls: 2
+    objects: [dyn_s_wwheel_a]
+    scripts: [level100, level100main]
+  - id: "spawn:838483FF"
+    kind: "ObjSpawn tint"
+    rgba: "838483FF"
+    swatch: "838483FF"
+    calls: 2
+    objects: [dyn_s_train_p]
+    scripts: [level51_chapter9]
+  - id: "spawn:868887FF"
+    kind: "ObjSpawn tint"
+    rgba: "868887FF"
+    swatch: "868887FF"
+    calls: 2
+    objects: [dyn_s_dumbells]
+    scripts: [level95_chapter2]
+  - id: "spawn:99948EFF"
+    kind: "ObjSpawn tint"
+    rgba: "99948EFF"
+    swatch: "99948EFF"
+    calls: 2
+    objects: [dyn_porcelain_d]
+    scripts: [level3, level5]
+  - id: "spawn:494341FF"
+    kind: "ObjSpawn tint"
+    rgba: "494341FF"
+    swatch: "494341FF"
+    calls: 1
+    objects: [dyn_pinball_fuzzballs_a]
+    scripts: [level95]
+  - id: "spawn:544F52FF"
+    kind: "ObjSpawn tint"
+    rgba: "544F52FF"
+    swatch: "544F52FF"
+    calls: 1
+    objects: [dyn_tomb_a]
+    scripts: [level130]
+  - id: "spawn:8080FFFF"
+    kind: "ObjSpawn tint"
+    rgba: "8080FFFF"
+    swatch: "8080FFFF"
+    calls: 1
+    objects: [dyn_poolball08_]
+    scripts: [level11]
+  - id: "spawn:80BF80FF"
+    kind: "ObjSpawn tint"
+    rgba: "80BF80FF"
+    swatch: "80BF80FF"
+    calls: 1
+    objects: [dyn_poolball08_]
+    scripts: [level11]
+  - id: "spawn:A0A06EFF"
+    kind: "ObjSpawn tint"
+    rgba: A0A06EFF
+    swatch: A0A06EFF
+    calls: 1
+    objects: [dyn_poolball08_]
+    scripts: [level11]
+  - id: "spawn:AEAEFFFF"
+    kind: "ObjSpawn tint"
+    rgba: AEAEFFFF
+    swatch: AEAEFFFF
+    calls: 1
+    objects: [dyn_poolball08_]
+    scripts: [level11]
+  - id: "spawn:AED6AEFF"
+    kind: "ObjSpawn tint"
+    rgba: AED6AEFF
+    swatch: AED6AEFF
+    calls: 1
+    objects: [dyn_poolball08_]
+    scripts: [level11]
+  - id: "spawn:E1E0E0FF"
+    kind: "ObjSpawn tint"
+    rgba: E1E0E0FF
+    swatch: E1E0E0FF
+    calls: 1
+    objects: [dyn_pinball_fuzzballs_b]
+    scripts: [level95]
+  - id: "spawn:F4F4F5FF"
+    kind: "ObjSpawn tint"
+    rgba: F4F4F5FF
+    swatch: F4F4F5FF
+    calls: 1
+    objects: [dyn_oil_fire]
+    scripts: [level2]
+  - id: "spawn:FCFCFCFF"
+    kind: "ObjSpawn tint"
+    rgba: FCFCFCFF
+    swatch: FCFCFCFF
+    calls: 1
+    objects: [dyn_s_blaster]
+    scripts: [level115]
+  - id: "spawn:FEFEFEFF"
+    kind: "ObjSpawn tint"
+    rgba: FEFEFEFF
+    swatch: FEFEFEFF
+    calls: 1
+    objects: [dyn_s_train_b]
+    scripts: [level34]
+  - id: "spawn:FF8181FF"
+    kind: "ObjSpawn tint"
+    rgba: FF8181FF
+    swatch: FF8181FF
+    calls: 1
+    objects: [dyn_poolball08_]
+    scripts: [level11]
+  - id: "spawn:FFADADFF"
+    kind: "ObjSpawn tint"
+    rgba: FFADADFF
+    swatch: FFADADFF
+    calls: 1
+    objects: [dyn_poolball08_]
+    scripts: [level11]
+  - id: "color:FF64647D"
+    kind: "ObjColor tint"
+    rgba: FF64647D
+    swatch: FF64647D
+    calls: 1
+    scripts: [wchair]
+  - id: "color:FFFF647D"
+    kind: "ObjColor tint"
+    rgba: FFFF647D
+    swatch: FFFF647D
+    calls: 1
+    scripts: [wchair]
+  - id: "color:FFFFFF7D"
+    kind: "ObjColor tint"
+    rgba: FFFFFF7D
+    swatch: FFFFFF7D
+    calls: 1
+    scripts: [wchair]
+  - id: "icon:default"
+    kind: "spinning icon colour"
+    rgba: FFFFFF00
+    swatch: FFFFFF00

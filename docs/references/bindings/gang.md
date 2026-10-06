@@ -110,11 +110,11 @@ GangAddSpawner(gang, name, arg3, types, model, pos, heading, total, delay, maxCo
 | 8 | `total` | number, truncated to an integer | How many characters the spawner makes in all; the scripts use -1 for no limit (inferred). |
 | 9 | `delay` | number, truncated to an unsigned integer | Delay between spawns, in milliseconds (the scripts pass 1, 500 or 1000) (inferred). |
 | 10 | `maxConcurrent` | number, truncated to an integer | How many of its characters may be alive at once (spawner +0x5a; GangSetMaxConcurrent changes it). |
-| 11 | `kind` | number, truncated to an integer | Spawner behaviour id (spawner +0x52): 2 is timed (it starts a timer of value seconds); 4 and others select other behaviours not traced. |
+| 11 | `kind` | number, truncated to an integer | The [spawner state](../spawner-states.md) it starts in (spawner `+0x52`): 0 off, 1 on, 2 after `value` seconds, 3 or 5 by distance from player 1, 4 and 9 dispatch squads, 7 and 8 out of sight, 11 keeps the gang topped up. |
 | 12 | `target` | number, truncated to an unsigned integer | A handle stored with the spawner (the scripts pass NilHandle); meaning not traced. |
 | 13 | `arg13` | number, truncated to an integer | A number stored with the spawner (the scripts pass 0); meaning not traced. |
 | 14 | `callback` | string | Name of a Lua function called for each character spawned, or nil. |
-| 15 | `value` | number, truncated to an integer | A number used by the behaviour (seconds for the timed kind 2); GangStartSpawner's last argument replaces it. |
+| 15 | `value` | number, truncated to an integer | The state's number (spawner +0x68): seconds for state 2, metres for 3, 5, 6 and 8; GangStartSpawner's last argument replaces it. |
 | 16 | `arg16` | number, truncated to an unsigned integer | A handle stored with the spawner (the scripts pass NilHandle); meaning not traced. |
 | 17 | `anim` | string | Name of an animation or behaviour given to spawned characters; "nothing" for none (inferred). |
 
@@ -1292,14 +1292,14 @@ GangStartSpawner(gang, spawner, mode, value)
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
 | 2 | `spawner` | string | Spawner name; an unknown name does nothing. |
-| 3 | `mode` | number, truncated to an integer | New spawner state: 0 stops it, 1 starts it; 2-5, 7, 8, 9 and 11 select other states (the scripts use 7 and 8); other values leave the state unchanged. |
+| 3 | `mode` | number, truncated to an integer | New [spawner state](../spawner-states.md): 0 stops it, 1 starts it, 2-5, 7, 8, 9 and 11 the others; other values leave the state unchanged. |
 | 4 | `value` | number, truncated to an integer | Replaces the spawner's value (GangAddSpawner's 15th argument) unless -1. |
 
 **Returns** nothing.
 
 Starts, stops or switches the state of a gang's spawner, and records the time of the change.
 
-**Notes.** 0x00168cd0; the meaning of each state other than 0 and 1 is not traced.
+**Notes.** 0x00168cd0; what each state does is in [AI: spawners](../../research/ai.md#spawners).
 
 - **Evidence:** confirmed (code) at `0x0016afc8`; detail: brief
 - **Wrapper** `0x00374288` (registered by `RegisterBindings`); **calls** `0x0016afc8`

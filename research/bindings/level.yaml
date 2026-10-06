@@ -539,7 +539,7 @@
     - {addr: 0x0041b6e0}
   args:
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}, the crime's position in world units (metres); written back unchanged."}
-    - {name: kind, lua: number, ctype: int, desc: "Crime kind (16-bit); the scripts pass 1 and 7."}
+    - {name: kind, lua: number, ctype: int, desc: "[Crime type](../crime-types.md) (16-bit); the scripts pass 1, 5, 7 and 12."}
     - {name: radius, lua: number, ctype: float, desc: "A number read as a float but not passed on (the callee ignores it)."}
     - {name: severity, lua: number, ctype: int, desc: "A value the scripts pass 0 or 100 (inferred: how much heat the crime adds)."}
     - {name: offender, lua: number, ctype: unsigned, desc: "Handle of the human committing the crime."}
@@ -551,8 +551,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The position is transformed (`0x00252ae0`) before being passed on; the meaning of kind and severity values is
-    inferred.
+    The position is transformed (`0x00252ae0`) before being passed on to the crime report 0x0041b8b0, which asks for
+    responders; what each type does: [AI: crimes](../../research/ai.md#crimes). The severity value's use is
+    not traced.
   usage: {chunks: 12, calls: 18, boot: true, mission1: false, result_used: false}
 
 - name: SpawnCustomCrime
