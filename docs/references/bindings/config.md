@@ -2823,19 +2823,21 @@ CfgTagSettings(object, sprite, start, fade, depth)
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of a tag spot (a `part_spray_tag` particle object); anything that is not a particle system is ignored. |
 | 2 | `sprite` | number, truncated to an unsigned integer | Sprite word of the finished tag's image: sheet in the top 16 bits, rectangle in the low 16 (0x50000 before any call). Message 0x27. |
-| 3 | `start` | number (single precision); default 0.5 | Where on the pattern's path the stick game starts, as a fraction (default 0.5). Message 0x37. |
+| 3 | `start` | number (single precision); default 0.5 | A fraction stored at the tag's `+0xc0` (default 0.5). Message 0x37. The stick game does not read it (it starts at the painted fraction `+0xc8`); its reader is not traced. |
 | 4 | `fade` | number (single precision); default 0.005 | Opacity change per update (every second frame) while the tag fades in or out (default 0.005). Message 0x38. |
 | 5 | `depth` | number (single precision); default 1 | Draw-order offset: the sprite batch's depth becomes 10 + depth × 0.1; a negative value gives 10 (default 1). Message 0x3b. |
 
 **Returns** nothing.
 
-Configures a graffiti tag spot through four messages: the image its sprite batch draws (the batch is rebuilt), the
-fraction of the path where the tagging stick game begins, how fast the painted tag fades in when sprayed and out when
-cleared, and its draw depth. Level scripts call it for each tag spot at setup.
+Configures a graffiti tag spot through four messages: the image its sprite batch draws (the batch is rebuilt), a start
+fraction (`+0xc0`), how fast the painted tag fades in when sprayed and out when cleared, and its draw depth. Level
+scripts call it for each tag spot at setup.
 
-**Notes.** Handler 0x003fc8d8, update 0x003fca68, init 0x003fc600. `start` is stored at the task's `+0xc0` and HuTag's
-stick game reads the tag's `+0xc8` through its handle (crimes.md#tagging); that they are the same field is inferred.
-That the batch depth orders drawing is inferred. Arguments renamed from n2, f3-f5.
+**Notes.** Handler 0x003fc8d8, update 0x003fca68 (every second frame), init 0x003fc600. `start` is stored at the
+object's `+0xc0` (0.5 from init); the stick game (TagGame_Init 0x002741d8) instead starts at the tag's painted fraction
+`+0xc8` (0 on a fresh tag), so `start` does not choose the stick game's start; who reads `+0xc0` is not traced. The fade
+runs while the spot fades in or out after a spray ([Crimes: tag spots](../../research/crimes.md#tag-spots)). That the
+batch depth orders drawing is inferred. Arguments renamed from n2, f3-f5.
 
 - **Evidence:** confirmed (code) at `0x0039bc28`, `0x003fc8d8`; detail: traced
 - **Wrapper** `0x003795c0` (registered by `RegisterBindings`); **calls** `0x0039bc28` `Tag_Configure`, `0x003fc8d8`

@@ -222,9 +222,15 @@ and a player occupies the flag.
 
 **The stick game**, confirmed (code) at `0x002741d8`, `0x002748a8`, `0x00274710`:
 
-1. The pattern's points (`0x00510914` count, pairs at `0x006cd978`) are sampled along a curve (`0x00273ff0`) into a
-   path of up to 300 points on a 256 × 256 grid, consecutive points at least √6 apart. The tag's own start fraction
-   (its `+0xc8`) sets where on the path the player starts.
+1. The pattern's points (`0x00510914` count n, float (x, y) pairs at `0x006cd978`) are sampled along a uniform
+   **Catmull-Rom** curve (`0x00273ff0`): segment i runs from point i to i + 1 with weights
+   (−t³/2 + t² − t/2, 3t³/2 − 5t²/2 + 1, −3t³/2 + 2t² + t/2, t³/2 − t²/2) on points i − 1, i, i + 1, i + 2, the
+   indices clamped to the first and last point (so the last segment stays on the last point). Each segment, i = 0
+   to n − 1, takes ⌊300 / n⌋ samples at t = k · n / 300 (k = 0, 1, ...). A sample's x and y are truncated to
+   integers and their low byte kept, so pattern values are **grid cells 0-255** directly (no scaling; larger values
+   wrap). A sample joins the path when its squared distance from the last one kept is more than 6 (the first is
+   compared with (0, 0)); at most 300 samples, so at most 300 path points. The tag's painted fraction (its `+0xc8`,
+   [tag spots](#tag-spots)) × the path length sets where on the path the player starts (0 for a fresh tag).
 2. The **cursor** moves with the left stick when it is past 0.2: by stick × elapsed ms (at most 30) × the speed,
    ramping linearly from 0 over the first 2 s; it stays inside the grid. Each cell at least 2 away from every cell
    already painted is painted.
@@ -249,10 +255,38 @@ The **tuning**, by the Warrior class's byte `+0x09` (1-3, 0 counting as 1), from
 
 **The end** (`Tag_End`, `0x0022e848`), confirmed (code): finished, the tag is marked sprayed (messages `0x41` 1.0 and
 `0x19` 3), a crew member says 83 `tagdone`, and a clean finish scores bonus event 1-3; unfinished with less than 30 %
-of the current charge left, one more charge is spent. The tagger's flag is freed, the tag's handler is told
-(message `0xe` with whether it was finished) and the flag object gets message `0x13`. Hint `0x10` in level `0x57`.
+of the current charge left, one more charge is spent. The tagger's flag is freed, the **tagger** gets event `0xe`
+(the tag's handle and whether it was finished, through its own vtable `+0x44`) and the **tag object** (human
+`+0x36c`) gets message `0x13`. Hint `0x10` in level `0x57`.
 `CfgTagStartCallback` names the script function called when a tag starts. Tagging is crime type 10, which sends no
 responders ([Crime types](../references/crime-types.md)).
+
+### Tag spots {#tag-spots}
+
+A `part_spray_tag` (init `0x003fc600`, handler `0x003fc8d8`, update `0x003fca68` every second frame) keeps a small
+record: its sprite batch, a **fade mode** (`+0x04`: 0 still, 1 fading out, 2 fading in), the sprite word, a **spray
+mode** (`+0x0c`: 7 the next spray paints the tag in, 5 it wipes the tag out; 7 at start), the **painted fraction**
+(`+0x10`, copied to object `+0xc8`, the drawn opacity and where the stick game starts; 0 at start), the fade step
+(`+0x14`, 0.005), the depth (`+0x18`) and the **tagger** (`+0x1c`, a human). Confirmed (code) at the addresses.
+
+| Message | Effect |
+| --- | --- |
+| `0x00` (tagger) | stores the tagger, then as `0x12` |
+| `0x12` (shown) | sets path flag 8 on the path polygon at the tag ([AI](ai.md#path-planning)); if the spray mode is 7 with fraction < 1, or 5 with fraction > 0, and there is a tagger: the tagger gets message `0x17` (state 1, the tag's position) and the tag sends itself `0x19` with the spray mode (7 starts the fade in, 5 the fade out); otherwise the tagger, if any, gets `0x13` |
+| `0x13` (hidden) | clears path flag 8 there, the tagger (if any) gets `0x13`, the fade stops (mode 0) |
+| `0x15` | frees the sprite batch and removes the object |
+| `0x19` state 3 | fade stops; the tagger (if any) gets `0x13` (sent by the update when a fade reaches 1 or 0) |
+| `0x19` state 4 | fraction 0 (blank), spray mode 7 |
+| `0x19` state 5 / 7 | fade out / fade in starts |
+| `0x19` state 6 | fraction 1 (fully painted) |
+| `0x27`, `0x37`, `0x38`, `0x3b` | [`CfgTagSettings`](../references/bindings/config.md#cfgtagsettings): sprite, `+0xc0`, fade step, depth |
+| `0x39` / `0x3a` | spray mode 7 / 5; the look is unchanged |
+| `0x41` (fraction) | sets the painted fraction; while it is between 0.03 and 0.95 a few spray particles are emitted across the tag (`0x003fbe98`) |
+| `0x0e` and any other | ignored by the tag's handler |
+
+**The fade**: each update in mode 2 adds the step to the fraction; reaching 1 it sends itself `0x19` state 3. Mode 1
+subtracts it down to 0 the same way. [`ProcessTag`](../references/bindings/level.md#processtag) sends `0x19` 4 or
+6, or `0x39` / `0x3a`. Confirmed (code).
 
 ### Taking owned items {#owned-items}
 

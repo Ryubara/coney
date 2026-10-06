@@ -1429,8 +1429,8 @@ dynamic animation 668 (when its two animation slots at human `+0x3e8` / `+0x410`
 slot `+0x4b0` is loaded and it is not busy). Both blend in over 0.3 s.
 
 **Notes.** Types are the `bumType` of GoalBumLogic (goal `+0x31`); the same two plays (0x002ac900, 0x002ac970) run from
-the goal's own process when the player is near. Which clip 668 and 669 are (beg, puke) is inferred from the animation
-list at 0x00510ff8.
+the goal's own process when the player is near. 668 is the type's fidget (`puke_fidget`, `bm_sleep_itch` or
+`bum_beg_itch`), 669 `puke_big` ([LoadBumAnims](character.md#loadbumanims)); confirmed (code) at 0x002ac000.
 
 - **Evidence:** confirmed (code) at `0x002abe08`, `0x002ac410`; detail: traced
 - **Wrapper** `0x003634c8` (registered by `RegisterBindings`); **calls** `0x002abe08` `Goal_BumTrigger`, `0x002ac410`

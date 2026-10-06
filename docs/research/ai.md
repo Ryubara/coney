@@ -734,6 +734,25 @@ human's **dynamic animation slot**, anim id **668**. Fields: `+0x10` callback, `
   (`0x0025a3e0`) and keeps the record flags it holds; done when that fails or once record `+0x08` no longer has
   them. Abort always allows.
 
+#### GoalBumLogic {#bum-logic}
+
+Type `0x4f` (constructor `0x002abef8`, vtable `0x0053f610`; [binding](../references/bindings/ai.md#goalbumlogic)).
+Fields: `+0x10` its spot, `+0x28` the fidget timer, `+0x30` the option (fidgets on), `+0x31` the **type**, `+0x37`
+the chance (at most 100). Confirmed (code) at the addresses.
+
+- **Set-up** (`0x002ac9e0`, from the constructor): type 0 (puking) is put in the arrested state
+  (`Human_SetArrested`); types 1 and 2 go down (`0x0022f100`, `0x00228388`, state flag `0x20000000`; inferred: on
+  the ground). The type's clips from [`LoadBumAnims`](../references/bindings/character.md#loadbumanims) are bound
+  into the human's dynamic animation slots (`0x002ac000`): type 0 the seven `puke_` clips as anim ids 668, 320-323,
+  669 and 324; type 1 `bm_sleep_itch`, `bm_sleep_idle`, `bm_hit_grd_idle` and type 2 `bum_beg_itch`, `bum_beg_idle`,
+  `bum_beg_hit` as 668, 196 (the down pose) and 195 (hit while down). A type-2 bum gets a talk prompt (kind 5,
+  global string 10).
+- **Process** (`0x002accc8`): a bum more than 1 (squared distance) from its spot walks back (move action, speed
+  0.5). With a player near (the nearest player within a squared distance of 100, inferred 10 m) and the option
+  set, the bum fidgets: anim 668 every 10 s (`0x002ac900`, blend 0.3 s); a type-0 bum whose `+0x36` is `0xff`
+  plays 669 (the big puke) once (`0x002ac970`). [`GoalBumLogicTrigger`](../references/bindings/ai.md#goalbumlogictrigger)
+  plays the same two at once.
+
 #### GoalDealer {#dealer}
 
 Type `0x80` (`0x002c6c88`, constructor `0x002c6d90`, vtable `0x00540c90`); `level99_lesson2`'s `FlashDealer`. The
@@ -1442,7 +1461,8 @@ the run-stop.
 
 ## Open questions {#open-questions}
 
-- What `GoalBackoff`, `GoalBumLogic`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
+- `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
+  `GoalBackoff`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
   and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what
   `GangInvincible` sets on a member (`0x0016a000`).
 

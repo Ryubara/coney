@@ -4611,8 +4611,11 @@ HuTagPattern(count, points)
 Loads the stick pattern for the next spray tag: `count` goes to 0x00510914 and 64 (x, y) pairs to 0x006cd978.
 `global.lua`'s tag helper calls it before HuTag. The player follows the pattern with the analog stick (inferred).
 
-**Notes.** The copy is confirmed (code) at 0x00274188; that the player traces it with the stick is inferred from the
-tagging minigame.
+**Notes.** The copy is confirmed (code) at 0x00274188. TagGame_Init (0x002741d8) samples the points along a uniform
+Catmull-Rom curve (0x00273ff0, end points clamped), ⌊300 / count⌋ samples a segment at t = k · count / 300, and keeps a
+sample whose squared distance from the last kept is over 6. Each value is truncated and its low byte kept, so x and y
+are cells of the 256 × 256 grid (0-255), unscaled (crimes.md#tagging). That the player traces it with the stick is
+inferred from the tagging minigame.
 
 - **Evidence:** confirmed (code) at `0x00239188`; detail: traced
 - **Wrapper** `0x0035cdc8` (registered by `RegisterBindings`); **calls** `0x00239188` `Tag_SetPattern`
@@ -4870,8 +4873,18 @@ at 0x00510ff8 starting with `puke_fidget.anm`): each goes through ResourceManage
 SetDynamicAnimation, so the 64-entry dynamic-animation list gains or loses those files. Level scripts call it before
 placing bums.
 
-**Notes.** Requesting fills 13 of the 64 dynamic-animation slots. Releasing also drops files another script requested
-separately by the same name.
+**Notes.** The table, in order: `puke_fidget.anm`, `puke_idle.anm`, `puke_hit_react.anm`, `puke_hit_die.anm`,
+`puke_hit_dead.anm`, `puke_big.anm`, `puke_hit_react.anm` again, `bm_sleep_itch.anm`, `bm_sleep_idle.anm`,
+`bm_hit_grd_idle.anm`, `bum_beg_itch.anm`, `bum_beg_idle.anm`, `bum_beg_hit.anm` (12 files, one requested twice).
+GoalBumLogic's set-up (0x002ac000) binds them into the bum's dynamic animation slots (human `+0x3c8`, 7 × 0x28: name,
+clip `+0x20`, anim id `+0x24`) by its type: type 0 (puke) the first seven as ids 668, 320, 321, 322, 323, 669, 324; type
+1 (sleeping) the `bm_` three as 668, 196, 195; type 2 (begging) the `bum_beg_` three as 668, 196, 195. 668 is the fidget
+(itch) the goal plays every 10 s with a player near, 669 the big puke, 196 and 195 the knocked-down pose and the hit
+while down ([Combat](../../research/combat.md)), so a sleeping or begging bum lies or sits in its own clips; 320-324
+being the arrested state's idle, hit, dying, dead and second hit is inferred (a type-0 bum is put in the arrested
+state). [AI: GoalBumLogic](../../research/ai.md#bum-logic). Requesting fills 13 of the 64 dynamic-animation list
+entries. Releasing also drops files another script requested separately by the same name. Confirmed (code) unless
+marked.
 
 - **Evidence:** confirmed (code) at `0x002abe98`; detail: traced
 - **Wrapper** `0x00363500` (registered by `RegisterBindings`); **calls** `0x002abe98` `LoadBumAnims`

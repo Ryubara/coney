@@ -1025,16 +1025,18 @@ ProcessTag(tag, second, instant)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `tag` | number, truncated to an unsigned integer | Handle of a tag (graffiti) object. |
-| 2 | `second` | boolean (nil or 0 is false) | Selects the other variant of the message: with `instant` false, message 0x19 is sent after setting the tag's state to 6 (true) or 4 (false); with `instant` true, message 0x39 (true) or 0x3a (false). |
-| 3 | `instant` | boolean (nil or 0 is false) | Chooses between the two message families above. |
+| 2 | `second` | boolean (nil or 0 is false) | With `instant` false: true shows the tag fully painted at once (message 0x19 with state 6), false wipes it blank (state 4). With `instant` true: true makes the next spray paint the tag in (message 0x39), false makes it wipe the tag out (message 0x3a). |
+| 3 | `instant` | boolean (nil or 0 is false) | False sets the tag's look now; true only chooses what the next spray at it does (see `second`). |
 
 **Returns** nothing.
 
-Marks a tag object as sprayed (or resets it) by sending it a message through the world's message queue. `global.lua`'s
-tag helpers call it when the player finishes a tag.
+Sets a graffiti tag spot's state through the world's message queue: painted or blank now, or whether the next spray
+paints it in or wipes it out. `global.lua`'s tag helpers call it when the player finishes a tag.
 
-**Notes.** The object must report type bit 0x10 (a tag); otherwise nothing happens. The exact visual effect of each
-message is not traced.
+**Notes.** The object must report type bit 0x10 (a tag); otherwise nothing happens. What each message does to a
+`part_spray_tag` (handler 0x003fc8d8): state 6 sets the painted fraction (`+0xc8`, the drawn opacity) to 1; state 4 sets
+it to 0 and the spray mode to "paint in" (7); 0x39 sets the spray mode to 7, 0x3a to "wipe out" (5), without changing
+the look. [Crimes: tag spots](../../research/crimes.md#tag-spots) has every message.
 
 - **Evidence:** confirmed (code) at `0x0039bd50`; detail: traced
 - **Wrapper** `0x00379540` (registered by `RegisterBindings`); **calls** `0x0039bd50`

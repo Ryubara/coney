@@ -1714,8 +1714,8 @@
   depth: thorough
   notes: >-
     Types are the `bumType` of GoalBumLogic (goal `+0x31`); the same two plays (0x002ac900, 0x002ac970) run from the
-    goal's own process when the player is near. Which clip 668 and 669 are (beg, puke) is inferred from the animation
-    list at 0x00510ff8.
+    goal's own process when the player is near. 668 is the type's fidget (`puke_fidget`, `bm_sleep_itch` or
+    `bum_beg_itch`), 669 `puke_big` ([LoadBumAnims](character.md#loadbumanims)); confirmed (code) at 0x002ac000.
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [87, 14]}
   coney: implemented
 
