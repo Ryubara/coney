@@ -28,7 +28,8 @@
   depth: thorough
   notes: >-
     Dispatch is a six-entry jump table at 0x00552f70 (0x0018d450); each type is described on
-    [Graphics](../../research/graphics.md#screen-effects).
+    [Graphics](../../research/graphics.md#screen-effects). A fade out of more than 0.2 s runs over seconds - 0.2; a fade
+    in starts at full black; the level is clamped to 0-1 ([Front end](../../research/frontend.md#fades)).
   usage: {chunks: 169, calls: 660, boot: true, mission1: true, result_used: false}
   coney: implemented
 

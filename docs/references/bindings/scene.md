@@ -42,7 +42,9 @@ PlayMovie(name, flag)
 Plays a full-screen movie and returns when it ends; when subtitles are on it also loads `<name>_sub.scn` for them. The
 front end uses it for the trailer and the attract movie.
 
-**Notes.** The movie player (0x0042a938) stops other streaming first; the subtitle check is the global 0x0050ea74.
+**Notes.** The movie player (0x0042a938) stops other streaming first; the subtitle check is the global 0x0050ea74. On
+return it sets both screen-effects managers fully black, so the screen stays black until a fade in ([Front
+end](../../research/frontend.md#movies)).
 
 - **Evidence:** confirmed (code) at `0x0042a938`; detail: traced
 - **Wrapper** `0x0036c258` (registered by `RegisterBindings`); **calls** `0x0042a938` `Movie_Play`

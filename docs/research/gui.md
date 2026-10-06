@@ -34,6 +34,10 @@ sheets belong to `Graphics/ParticlePage.cpp` (`0x00181b68`-`0x00182820`) and the
 | `0x001d3ef0` | `OptionGrid::OptionGrid` | a grid of selectable items (vtable `0x0053b768`) | confirmed (code) |
 | `0x001d4110`, `0x001d4230` | `OptionGrid` setup, add item | at most 50 items | confirmed (code) |
 | `0x001cea70` | `UsageInfo::UsageInfo` | the button legend line (`0x2d0` bytes); `0x001cec28` sets its text | confirmed (code) |
+| `0x001b8f98` | markup text widget (class `MessageHUD`) | marked-up text in a box; setup `0x001b9090` | confirmed (code) |
+| `0x001a0fd0` | `Bar` | a two-sprite meter (PM_Light, the Rumble gang screen) | confirmed (code) |
+| `0x001e1338` | `ScrollingMenu` | the Rumble screens' scrolling lists | confirmed (code) |
+| `0x0017ae38` | colour table set-up | fills the [colour table](#colour-table) at `0x005fd260` | confirmed (code) |
 | `0x001c7e80` | `ScreenFlowController::ScreenFlowController` | stack of screens (`SFC_States`, `SFC_SharedData`) | confirmed (code) |
 | `0x001c8010`, `0x001c80e8`, `0x001c82e8`, `0x001c81e8`, `0x001c83c8` | add transition, push, pop, unwind, update | | confirmed (code) |
 | `0x001c6b78`... | message box (`0x005e5840`) | timed messages and two-choice dialogs | confirmed (code); file unnamed |
@@ -170,6 +174,21 @@ PCSX2's screen the grey and the red text come out at the same 70 % of these valu
 at full colour, which fits one scale for all three (the cause of the 70 % is open,
 [Graphics](graphics.md#open-questions)).
 
+### The colour table {#colour-table}
+
+The menus take their colours from a table of `RwRGBA` at `0x005fd260`, 8 bytes apart, filled once by `0x0017ae38`.
+Confirmed (code); the three menu colours also confirmed (runtime), [Sprite colours](#sprite-colours):
+
+| Address | RGBA | Address | RGBA |
+| --- | --- | --- | --- |
+| `0x005fd260` | black | `0x005fd2c8` | (192, 96, 0, 255) |
+| `0x005fd268` | white | `0x005fd2d0` | (0, 128, 128, 128) |
+| `0x005fd270` | (127, 127, 127) | `0x005fd2d8` | (128, 128, 0, 255) |
+| `0x005fd278`-`0x005fd2a0` | red, green, blue, cyan, magenta, yellow | `0x005fd2e0`-`0x005fd2f8` | (32, 0, 0, 48), (4, 4, 4, 140), (0, 0, 32, 64), (10, 5, 40, 60) |
+| `0x005fd2a8`-`0x005fd2c0` | (255, 128, 0), (128, 0, 0), (0, 0, 128), (0, 128, 0), alpha 255 | `0x005fd300` / `0x005fd308` | (0, 0, 0, 0) / (36, 75, 130, 255) |
+| **`0x005fd310`** | **(178, 178, 178, 255)**: usage lines, Rumble titles, item text base | **`0x005fd318`** | **(178, 178, 178, 255)**: the selected grid item |
+| **`0x005fd320`** | **(80, 80, 80, 255)**: message-box and Game Type items | **`0x005fd328`** | **(170, 43, 43, 255)**: the front end's red (titles, items, the logo's tint, bar fill) |
+
 ### Widgets
 
 Every screen element derives from one base (`0x001a8e30`). A widget object has its vtable at `+0x00`, a second
@@ -198,6 +217,83 @@ For `PM_Greet` (`0x0053e050`): `Enter` (`0x00207d48`) resets the pad handlers an
 (`0x00207dd0`) sets the result to "stay" (`-0x100`), calls the widget's `Update` and `Render` and returns the result;
 `Exit` (`0x00207da0`) calls `Shutdown`. Confirmed (code).
 
+### The widget classes {#widget-classes}
+
+The classes the menus are built from. Confirmed (code) at the addresses given; the screens that use them are on
+[Front end](frontend.md#pm-screens).
+
+**`BaseWidget`** (`0x001a1bf8`, vtable `0x005394b8`), one sprite. Setup (slot `+0x68`, `0x001a1db8`): `(size, depth,
+widget, position, colour, visible, active, spriteWord, instance, anchor, aspectFix, ...)`.
+
+- **Sprite word** (`+0xc8`): sheet-table record in the high half, rectangle in the low half (`0x30000` is
+  `menu_system` rectangle 0). **Instance** `+0xc4`; -1 makes its own at the given depth.
+- **Size:** `0x001a2120(size, 0, widget, 0)` sets width = height = `size` in **overlay units** (not GUI units: 1.1 is
+  the screen's height, 1.595 its width in the default mode, [Graphics](graphics.md#2d-drawing)); each update keeps
+  the height and sets the width to height × the rectangle's pixel aspect ((u1 − u0) × texW / ((v1 − v0) × texH)),
+  times `*0x0050b208` × 0.80357 more when `aspectFix` (`+0xe0`) is set.
+- **Anchor** (`+0xc0`): 0 the centre is at the position, **1 the left edge** (the sprite moves right by half its
+  width), 2 the right edge; applied in `Render` (`0x001a2690`) only.
+- **Render:** colour `+0xb4`; an optional timed fade, alpha = byte `+0xf8` × (end `+0xf4` − now) / duration `+0xf0`;
+  an optional shadow record (`+0xec`, none after setup) at the position + (0.0025, 0.004), without the anchor shift,
+  alpha × 0.502.
+
+**`TextWidget`** (`0x001ccf88`, `0xd0` bytes, vtable `0x0053ae78`), one line without markup, used by grid items and the
+PM titles. Setup (slot `+0x68`, `0x001cd060`): `(widget, position, metrics, colour, visible, active, mode3D, flags,
+fontSlot)`. Fields: text `+0x04` (set by `0x001cd1e0`, which also measures it), visible / active `+0x50` / `+0x54`,
+colour `+0x5c`, position `+0x60`, `Font_Draw` flags `+0x70` (4 proportional, 1 right, 2 centred), metrics `+0x78`
+(`Font_Size` of the given scale), **font slot `+0xa0` as given**, measured width `+0xb0`, reveal `+0xc0` (1.0), shadow
+byte `+0xc4` = `0x80`. Render (`0x001cd288`) is one `Font_Draw` at the position: the pen starts at x and the glyphs
+are centred on y. Confirmed (runtime): text placed at y 0.81 has its capitals centred at 0.811.
+
+**The markup text widget** (`0x001b8f98`, vtable `0x0053a248`, layout [`0x001b9600`](#text)), used by `UsageInfo`, the
+hint texts and message boxes. Setup `0x001b9090(sizeScale, fontScale, widget, position, colour, visible, active, ?,
+fontSlot)`: the font slot is **6 if 6 is passed, otherwise 3** (`part_page0`; the constructor's default is 3); base
+size `+0x1d0` (`0x001b9288`); shadow byte `+0x18c` = `0x80`; box right limit `+0x184` = 10,000; proportional
+`+0x180` = 1; **alignment `+0x17c`** (`0x001b9478`): 0 left, 1 right, 2 centred.
+
+**`UsageInfo`** (`0x001cea70`, `0x2d0` bytes): a markup text widget at `+0x40`, size 1.0, colour `0x005fd310`, font slot
+3. `0x001ceb40(widget, position, leftAlign)` sets it up, **left-aligned when `leftAlign` ≠ 0**, centred otherwise
+(the PM screens pass 1, the Rumble screens 0); its first text is string `0x1a`, then the owner's (`0x001cec28`, at
+most `0x95` bytes).
+
+**`OptionGrid`** (`0x001d3ef0`, vtable `0x0053b768`: update `0x001d4f20`, render `0x001d52c8`, active `0x001d4418`,
+focus `0x001d4d28`, unfocus `0x001d4db8`; input interface `0x0053b740`, handler `0x001d4c40`):
+
+- **Setup** `0x001d4110(y, grid, rows, a2, owner)`: position (0, 0, y, 1); up to 5 **items-per-row** counts at
+  `+0xb0` from `rows`; the owner (`+0x80`) sees every command first; the HUD player 0's input record (`+0x50`);
+  centre x `+0x90` = 0.5; move cue `+0x94` = 4; wrap `+0x98` = 1; `+0x9c` = 0 (left and right walk all items); row
+  gap `+0xa0` = 0; selected `+0xa4` = 0. Owners then set `+0x8c` (left x), `+0x88` = 1 (left-packed) and their own cue.
+- **Add item** `0x001d4230(fontScale, grid, text, hasSeparator, code, flags, enabled, colour, fontSlot,
+  separatorAlphaMode)`, at most 50: an `OptionGridTextWidget` (`0x200` bytes, `0x001d5350`, vtable `0x0053b8c8`, setup
+  `0x001d5450`) in an `OptionGridItem` (`0x60` bytes, `0x001d3bb0`) holding the code at `+0x54` (read by
+  `0x001d43f0`; the selected index by `0x001d43e8`). The text is drawn in `0x005fd310`'s alpha with the colour below;
+  with `hasSeparator` a second text, **`" : "`** (`0x00555f98`), in font slot 3 and the given colour, follows it. The
+  item's box is its width (plus the separator's) by `h + lineGap` = 6h / 7 of `Font_Size(fontScale)`.
+- **Layout** (each update): rows in order; with `+0x88` = 1 items are packed left to right from `+0x8c` with no gap
+  (`0x001b5e60`), otherwise each row is centred on `+0x90` (`0x001b5dd8`); the row y starts at `+0x28` and moves by
+  the item height plus `+0xa0`. A grid of fewer than 3 items does not wrap.
+- **Colour** (item render `0x001d5700`): `0x005fd318` (grey 178) when enabled and focused, otherwise the item's
+  colour (`+0x1f4`); alpha from `0x005fd310`; the separator in the item's colour, alpha 255 or the text's by
+  `separatorAlphaMode`. **No highlight sprite and no size change**: selection is colour only.
+- **Input:** nothing until 20 ms after the last command or focus (`+0x84`); the d-pad by the auto-repeating query, or
+  the plain one after a refused move (`+0xc4`); buttons by the button pass (mask `0xffff0fff`). The owner's handler
+  runs first; if it returns 0: **up / down** (`0x001d4628` / `0x001d4790`, only with two or more rows) keep the column
+  (clamped to the row's length), wrap from the first row to the last and back, skip items that are not selectable,
+  and play `0xe` when they land on the same item; **left / right** (`0x001d48e0` / `0x001d4a30`) walk all items in
+  order with wrap (`+0x9c` = 0) or stay in the row (`+0x9c` set), skipping unselectable ones; a move
+  (`0x001d4b88(grid, i, 1)`) unfocuses the old item, focuses the new one and plays cue `+0x94`
+  (`0x0010fc30(*0x0050aa84, cue)`); `0x001d4b88(grid, i, 0)` selects without a sound (defaults). Accept and back are
+  the owner's.
+- **Focus** (`0x001d4d28`) clears the input record (`0x00146000`), marks the grid focused, focuses the selected item
+  and stamps `+0x84`.
+
+**`Bar`** (`0x001a0fd0(width, height, 0.5, widget, position, backColour, spriteWord, 1, 0)`, `0x70` bytes): a meter of
+two sprites from the given sheet rectangle, width and height in overlay units, left edge at the position (inferred
+from the runtime: PM_Light's bar starts at x 0); fill colour `+0x28`, fill fraction `+0x38`; drawn by
+`0x001a1138(0.25, bar, 0, 0)`.
+
+**`ScrollingMenu`** (`0x001e1338`, vtable `0x0053bfc8`), the Rumble lists: [Front end](frontend.md#rumble-screens).
+
 ### Markup tags {#markup}
 
 Text strings carry tags in angle brackets. The table at `0x0050d718` holds 66 tag strings of 61 bytes each; the
@@ -207,23 +303,23 @@ layout code (`0x001b9600`) compares the text after a `<` with each in turn and a
 | --- | --- | --- |
 | 0 | `<COLOR rrggbbaa>` | colour (hex); alpha multiplied by the widget's fade |
 | 1 | `<SIZE f>` | font size × `f` |
-| 2 | `<PULSE ms>` | colour pulses between × 1.5 and × 0.5 with that period |
+| 2 | `<PULSE ms>` | colour swings linearly between × 1.5 and × 0.5 (clamped to 255), reversing every period: a triangle wave |
 | 3 | `<SOUND name>` | plays the sound (CRC-32 of the name) once, on the first frame shown |
 | 4 | `<FREEZE ms>` | sets the display end and freezes the game timer for `ms` (`0x00145ea8(gameTimer, ms, 2000)`) |
-| 5 | `<DISPLAYTIME ms>` | the text disappears after `ms`; it fades during its last second |
+| 5 | `<DISPLAYTIME ms>` | the text disappears after `ms`; in its last 1,000 ms its alpha is the remaining ms × 0.255 |
 | 6 | `<BOLD>` | |
 | 7 | `<BIGFONT>` | font slot 6 (`big_font`) |
 | 8 | `<MONEYFONT>` | an icon font (glyph base set from the font) |
 | 9 | `<BGFONT>` | glyphs on a background (creates an instance over sheet 0, depth 8,000) |
 | 10, 11 | `<MONEYPLUS>`, `<MONEYMINUS>` | the icon characters `=` and `<` |
-| 12-16 | `<CENTER>`, `<CCENTER>`, `<RIGHT>`, `<RRIGHT>`, `<LEFT>` | alignment |
-| 17-20 | `<CR>`, `<CR2>`, `<CR3 f>`, `<CRM>` | new line; `CR2` only in single-player, `CR3` adds `f`, `CRM` conditional |
+| 12-16 | `<CENTER>`, `<CCENTER>`, `<RIGHT>`, `<RRIGHT>`, `<LEFT>` | alignment: `CENTER` (flags 6) and `RIGHT` (5) shift the whole line by its measured width; `CCENTER` and `RRIGHT` pass the same flags to each `Font_Draw` run, aligning each run about the pen; `LEFT` is 4 |
+| 17-20 | `<CR>`, `<CR2>`, `<CR3 f>`, `<CRM>` | new line; `CR2` only when the widget's `+0x188` is set and `*(s16)(W_GameState + 0x224)` < 2 (single player), `CR3` adds `f`, `CRM` only when `+0x188` and `+0x1b8` are set |
 | 21 | `<AUTOINDENT ...>` | |
 | 22-32 | `<FIST>` ... `<BGCIRCLE>` | HUD icons, each a single character of the current font (`:`, `>`, `?`, `;`, `@`, `A`, `B`, `C`, `E`, `F`, `y`) |
 | 33-49 | `<S>`, `<O>`, `<T>`, `<ST>`, `<X>`, `<START>`, `<SELECT>`, `<R1>`, `<R2>`, `<R3>`, `<L1>`, `<L2>`, `<L3>`, `<DU>`, `<DD>`, `<DL>`, `<DR>` | **button glyphs**: characters `0x9f`, `0x9d`, `0x96`, `n`, `0x9e`, `0x97`, `0x93`, `0x9c`, `0x94`, `0x92`, `0xa0`, `0x95`, `0x91`, `0x9b`, `0x99`, `0x9a`, `0x98` |
 | 50, 51 | `<LAS>`, `<RAS>` | (no character set) |
 | 52-55 | `<SDD>`, `<SDL>`, `<SDR>`, `<SDU>` | animated stick glyphs: alternate between two characters every 500 ms |
-| 56-65 | `</COLOR>`, `</SIZE>`, `</PULSE>`, `</BOLD>`, `</BIGFONT>`, `</MONEYFONT>`, `</BGFONT>`, `</CENTER>`, `</RIGHT>`, `</LEFT>` | restore |
+| 56-65 | `</COLOR>`, `</SIZE>`, `</PULSE>`, `</BOLD>`, `</BIGFONT>`, `</MONEYFONT>`, `</BGFONT>`, `</CENTER>`, `</RIGHT>`, `</LEFT>` | restore: `</COLOR>` the widget's colour, `</SIZE>` `Font_Size(1.0)` (not the base size), `</BIGFONT>` the saved font |
 
 A glyph tag is replaced by its one-character string (`"%c"`) and drawn like text, so the button icons are ordinary
 characters of the font sheet.
@@ -551,23 +647,26 @@ TODO for the analysts, found while implementing:
   without an extension (as Coney does), or look the name up some
   other way?
 - **The HUD string array** at `0x00600048`: its size, and what `GlobalString_Get` does with an id past it.
-- **The font a text widget starts in:** which instance slot (and so which sheet) does a `TextWidget` draw with
-  before any `<BIGFONT>`? Coney takes slot 2 (`part_page0`), the sheet whose characters `0x91`-`0xa0` are the button
-  pictures (above). And what does the explicit base of the two `Font_Measure`/`Font_Draw` call sites (slot 6 with
-  -1, slot 3 with `-'0'`) draw?
+- **The font a text widget starts in** (answered, [The widget classes](#widget-classes)): the light `TextWidget`
+  draws in the slot its owner passes (the PM items and titles pass 6, `big_font`); the markup widget starts in slot 3
+  (`part_page0`, the same sheet as Coney's slot 2) unless 6 is passed. Originally: which instance slot does a
+  `TextWidget` draw with before any `<BIGFONT>`? Coney takes slot 2 (`part_page0`), the sheet whose characters
+  `0x91`-`0xa0` are the button pictures (above). Still open: what the explicit base of the two
+  `Font_Measure`/`Font_Draw` call sites (slot 6 with -1, slot 3 with `-'0'`) draws.
 - **`<MONEYFONT>`:** the glyph base `0xd0100` (font 6) or `0xb` (font 3): which rectangles does it select? The strings
   wrap button tags in it (`<MONEYFONT><ST></MONEYFONT>`, 25 times in English); `part_page0`'s icons below its first
   glyph (fists, faces, W badges) look like its targets. Coney ignores it.
 - **HUD icon tags 23-31:** their names and characters. The English strings use `<BOBJ>`, `<YOBJ>` and `<ROBJ>`, which
   are not among the names on this page.
-- **Layout details:** what `<CCENTER>` and `<RRIGHT>` do differently from `<CENTER>` and `<RIGHT>`; when `<CRM>`
-  breaks; `<BOLD>` and `<AUTOINDENT>`; the two characters of each animated stick tag; whether a closing tag restores
-  the previous value or the widget's; whether the widget's y is the first line's centre (Coney) or its top; the shape
-  of `<PULSE>`'s swing; whether the shadow is drawn per glyph (Coney) or under the whole string first.
+- **Layout details** (answered in [the tag table](#markup): `CCENTER` / `RRIGHT`, `CRM`, the closing tags and
+  `PULSE`'s triangle swing; and the y is the first line's centre, confirmed (runtime) for the light widget). Still
+  open: `<BOLD>` and `<AUTOINDENT>`; the two characters of each animated stick tag; whether the shadow is drawn per
+  glyph (Coney) or under the whole string first.
 - Names: the `@orig` tags call `0x00179808`, `0x00179958` and `0x00179c30` `Font_Size`, `Font_Measure` and
   `Font_Draw`, and `0x001b9600` `TextWidget_Layout`, all with file `(unknown)`.
-- **Widget geometry:** where a sprite widget's rectangle is anchored (Coney: its centre) and what the setup slot
-  `+0x6c`'s flags do; the `OptionGrid`'s rows, columns, spacing and item colours.
+- **Widget geometry** (answered, [The widget classes](#widget-classes)): a sprite widget's anchor is chosen per
+  widget (0 centre, 1 left edge, 2 right edge; the PM logo uses 1) and its size is in overlay units; the
+  `OptionGrid`'s rows, packing, spacing and colours are listed there.
 - Names: the `@orig` tags call `0x001a2690` `BaseWidget_AddSprite`, `0x001cd1e0` `TextWidget_SetText`, `0x001cec28`
   `UsageInfo_SetText`, `0x001d4110` `OptionGrid_Setup`, `0x001d4230` `OptionGrid_AddItem`, `0x001d4d28`
   `OptionGrid_TakeFocus` and the screen-flow functions `ScreenFlowController_AddTransition`, `_Push`, `_Pop`,
@@ -589,14 +688,14 @@ What the implementer still needs:
 - **Radar batch `+0x48`** and **blip type 12**: who uses them.
 - **What icons 22 and 355 show**, and the dealer type 2's role.
 - **The 2D sort key** (answered): the creation depth; see [Draw order](#draw-order).
-- **The sheet `0x349348bd`** behind the Quick Rumble menus: its resource name (not one of the names tried).
+- **The sheet `0x349348bd`** behind the Quick Rumble menus (sheet-table record 12, inferred;
+  [Front end](frontend.md#rm-layout)): its resource name (not one of the names tried).
 - **`firstGlyph` of `part_page0` (94) and `part_page1` (20)**: which text uses them, and the two explicit-base call
   sites in `Font_Measure`/`Font_Draw`.
 - **`<MONEYFONT>`**: the glyph base it sets (`0xd0100` for font 6, `0xb` for font 3) looks like a packed value; how
   it is used is not worked out.
-- **The message box** used by the memory-card mode (`0x001c6b78`-`0x001c73e8`, `0x005e5840`): its file, layout and
-  input.
-- **`OptionGrid`**: how an item's code reaches the screen's result (the setup's last argument is a pointer that
-  receives it, inferred), and its layout rules (rows, columns, spacing).
+- **The message box** (answered for the layout and input: [Front end](frontend.md#message-box)): its file.
+- **`OptionGrid`** (answered, [The widget classes](#widget-classes)): the owner reads the code itself
+  (`0x001d43f0(grid, 0x001d43e8(grid))`). Still open: setup's `a2` (`+0xa8`) and the item flags argument (4).
 - **The widget base's fields** (`+0x0c` initialised, `+0x40`, `+0x50` the input record, `+0x54`-`+0x68`) and the
   second interface at `+0x6c`.

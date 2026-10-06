@@ -290,6 +290,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The movie player (0x0042a938) stops other streaming first; the subtitle check is the global 0x0050ea74.
+    The movie player (0x0042a938) stops other streaming first; the subtitle check is the global 0x0050ea74. On return
+    it sets both screen-effects managers fully black, so the screen stays black until a fade in
+    ([Front end](../../research/frontend.md#movies)).
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
   coney: partial

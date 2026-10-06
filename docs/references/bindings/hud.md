@@ -1661,7 +1661,8 @@ ShowProfileManager(onQuickRumble, onStartGame)
 **Returns** nothing.
 
 Opens the profile manager, the front end's menu flow (game mode 0x12), unless it is already on top, keeping both
-callback names interned. See [Front end](../../research/frontend.md#profile-manager).
+callback names interned. The menus end when a screen sets the done flag (0x0050f5b0); the mode then fades out over 1.0 s
+and calls the second callback. See [Front end](../../research/frontend.md#pm-screens).
 
 - **Evidence:** confirmed (code) at `0x001552b0`; detail: traced
 - **Wrapper** `0x0036eef8` (registered by `RegisterBindings`); **calls** `0x001552b0` `ProfileManager_Show`

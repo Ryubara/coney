@@ -324,9 +324,36 @@ nil), picks the sound matrix (`SndLoadMatrix("armies")` for levels 60-64, else `
 
 ### `level100.lua` (the front end)
 
-Its first calls are `TagInfo.NoTag()` and `NoScenes()` (helpers from `global.lua` that remove the tag and scene
-helpers for this level), then `CfgSetDatabaseSizes`, a locked camera (`ChangeCam(CameraCreateLocked("Black", ...))`),
-the table `Menu` and two particle tanks. The `Menu` functions (inferred from the disassembly):
+The main chunk, in order (inferred from the disassembly; what the result looks like is on
+[Front end](frontend.md#background)):
+
+1. `TagInfo.NoTag()` and `NoScenes()` (helpers from `global.lua` that remove the tag and scene helpers for this
+   level).
+2. `CfgSetDatabaseSizes(48, 34, {2, 1, 2, 3})`.
+3. `ChangeCam(CameraCreateLocked("Black", {0, 2, -10}, 40, 180, 0, 0, 0.5, 200), 0)`: a locked camera (fov 40°,
+   heading 180°, near 0.5, far 200, clamped to 150 by the binding), made active at once (`ChangeCam` is
+   `CameraMakeActive` then `CameraReset`). It sees nothing: the wheel is about 550 m away.
+4. `Menu = {}`, `Menu.movies = {[1] = "TRAILER", [2] = "L1_IN"}`, `Menu.movieID = 0`.
+5. Two sprite batches, `L100_RM_PTank1 = GetPTank(786437, {0, 0, 0}, 1, 9000, 256)` and `L100_RM_PTank2 =
+   GetPTank(1835027, ...)`: sprite words `0x000c0005` and `0x001c0013`, sheet-table records 12 and 28, the Rumble
+   menu's sheets ([Front end](frontend.md#rm-layout)); `level95_clubhouse.lua` makes the same two before its menus.
+6. The `Menu` functions (below), `AddObjects`, and the table `WonderWheelAnim` (`sceneName = "WonderWheel_100"`,
+   callbacks `preload = "WonderWheelAnim:startScene"` and `finished = "WonderWheelAnim:finishedScene"`, the latter
+   never defined nor passed) with `enable`, `start` and `startScene`.
+7. `if not Objects then AddObjects() end`: **29 `ObjSpawn` calls**, all with the rotation `{0, 0, 0.707107,
+   -0.707107}` (−90° about z): `dyn_s_neon_a`-`d` and `dyn_s_wwheel_a` (tint `0x474542FF`) at (515.51, −68.88,
+   −188.65), and the carts `dyn_s_wwcart_simple_a`, `_b`, `_c` with `_01`-`_07` copies (tint `0x888888FF`) in three
+   parked rows at z −208.59 (x 522.95-544.82; y −73.15, −65, −69.19); the scene moves them onto the wheel.
+
+`WonderWheelAnim:start` puts the 29 handles in scene-slot order (a-carts 0-7, b-carts 8-15, the wheel 16, c-carts
+17-24, neons 25-28), then `ScenePreload(name, "WonderWheelAnim:startScene")`, or, when the scene is already loaded,
+`GetSceneID(name)`, which no binding or script defines. `startScene(id)` adds the 29 objects (`SceneAddObject`) and
+calls `ScenePlayCinematic(id, 0, nil, false, false, true, false)`: no delay, no end callback, no letterbox, not
+skippable, looping, the world not frozen. `enable(true / false)` always loops `music/wonderwheel_132b` first, then
+starts or stops (`SceneStop`) the scene. The lights come from `global.lua`'s matrix entry for level 100
+([Front end](frontend.md#background)).
+
+The `Menu` functions (inferred from the disassembly):
 
 | Function | Does |
 | --- | --- |
@@ -341,9 +368,11 @@ the table `Menu` and two particle tanks. The `Menu` functions (inferred from the
 | `playMoviePostFade` | `stopScene`, `PlayMovie(Menu.movies[Menu.movieID])` (1 `TRAILER`, 2 `L1_IN`), `ScheduleFunc("Menu.movieFinished", 500)` |
 | `movieFinished` | `startScene`, fade in |
 | `startScene` / `stopScene` | `WonderWheelAnim:enable(true / false)` |
+| `reloadProfiles` | fade out (1.0 s), `ScheduleFunc("Menu.reloadProfilesPostFade", 700)`, which calls `SSMC_StartLoadSequence` |
+| `deleteProfile` | instant black (`ScreenQueueEffect(1, 0)`), `SSMC_StartDeleteSequence` |
 
-`ScreenQueueEffect(type, seconds)` with type 0 fades in and 1 fades out ([Front end](frontend.md#profile-manager)
-for what a fade blocks).
+`ScreenQueueEffect(type, seconds)` with type 0 fades in and 1 fades out ([Front end](frontend.md#fades) for the
+timing and what a fade blocks).
 
 ### `runNextMission` (story progress) {#run-next-mission}
 

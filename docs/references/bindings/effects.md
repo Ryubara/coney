@@ -438,7 +438,8 @@ Queues a full-screen effect, usually a fade, on both screen-effects managers. A 
 is what the front end waits on ([Front end](../../research/frontend.md#profile-manager)).
 
 **Notes.** Dispatch is a six-entry jump table at 0x00552f70 (0x0018d450); each type is described on
-[Graphics](../../research/graphics.md#screen-effects).
+[Graphics](../../research/graphics.md#screen-effects). A fade out of more than 0.2 s runs over seconds - 0.2; a fade in
+starts at full black; the level is clamped to 0-1 ([Front end](../../research/frontend.md#fades)).
 
 - **Evidence:** confirmed (code) at `0x0018b168`; detail: traced
 - **Wrapper** `0x003682a8` (registered by `RegisterBindings`); **calls** `0x0018b168` `ScreenFx_Queue`
