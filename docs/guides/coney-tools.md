@@ -1,8 +1,8 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers eight groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers nine groups:
 `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`audio`](#audio),
-which reads its sound data, [`xbox`](#xbox), which
+which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which
 reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
 current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the
 game reference lists, and [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update traces in
@@ -100,6 +100,18 @@ volume, pitch variation), per music track or per bank sound. `decode` writes one
 WAV file and prints its length, peak and RMS: `NAME` is a sound's name as the game writes it
 (`vags/character/voices/5/attack_01`), a track's (`music/warriors_theme`) or a `0x` hash; `--bank` takes a bank
 sound from that bank. Like `wad extract`, it refuses a path inside the repository.
+
+## movies {#movies}
+
+```sh
+uv run --project python coney-tools movies list [DISC]
+```
+
+Reads the header and frame index of each movie the game names (`PSS/<name>.BIK`) and prints one line per movie:
+file size, Bink revision letter, width and height, frame count, frame rate, running time and each audio track's rate,
+channels, sample size, transform (DCT or RDFT) and flags; then the totals and a SHA-256 of the headers and frame
+indexes. Nothing is decoded. Exits 1 when a movie is missing or its header does not hold together. What the values
+mean for playback: [Movies](../research/movies.md#the-movies).
 
 ## xbox {#xbox}
 

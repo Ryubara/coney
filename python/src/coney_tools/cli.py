@@ -13,6 +13,7 @@ from typing import Any
 
 from coney_tools import (
     audio_cli,
+    movies_cli,
     natives_cli,
     pcsx2_claims_cli,
     pcsx2_cli,
@@ -85,6 +86,7 @@ def _build_parser() -> argparse.ArgumentParser:
     check_title_parser.add_argument("file", help="a file whose first line (not blank, not #) is the title; - for stdin")
     _add_wad_commands(groups)
     _add_audio_commands(groups)
+    _add_movies_commands(groups)
     _add_xbox_commands(groups)
     _add_progress_commands(groups)
     _add_natives_commands(groups)
@@ -136,6 +138,14 @@ def _add_audio_commands(groups: Any) -> None:
         help=f"[DISC] ({disc_help}), a sound or track name or 0x hash, and the WAV file",
     )
     decode.add_argument("--bank", help="decode from this bank instead of where the sound list says")
+
+
+def _add_movies_commands(groups: Any) -> None:
+    """Register `coney-tools movies ...`."""
+    group = groups.add_parser("movies", help="the game's Bink movies (PSS/*.BIK): header values")
+    commands = group.add_subparsers(dest="command", required=True)
+    listing = commands.add_parser("list", help="one line per movie: size, Bink revision, size, frames, rate, audio")
+    listing.add_argument("disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir")
 
 
 def _add_xbox_commands(groups: Any) -> None:
@@ -384,6 +394,8 @@ def _run(args: argparse.Namespace) -> int:
         return _run_xbox(args)
     if args.group == "audio":
         return _run_audio(args)
+    if args.group == "movies":
+        return movies_cli.run_list(args.disc)
     if args.group == "progress":
         return _run_progress(args)
     if args.group == "natives":
