@@ -116,8 +116,8 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`SetGlobalPedRules`](#setglobalpedrules) | - | 1 | yes | no | confirmed (code) |
 | [`SetInterrogateParam`](#setinterrogateparam) | - | 1 | no | yes | confirmed (code) |
 | [`TacticAddress`](#tacticaddress) | - | 0 | no | no | speculative |
-| [`TacticAttack`](#tacticattack) | - | 54 | no | no | inferred |
-| [`TacticAvoidEnemies`](#tacticavoidenemies) | - | 25 | no | no | inferred |
+| [`TacticAttack`](#tacticattack) | - | 54 | no | no | confirmed (code) |
+| [`TacticAvoidEnemies`](#tacticavoidenemies) | - | 25 | no | no | confirmed (code) |
 | [`TacticBoss`](#tacticboss) | - | 0 | no | no | speculative |
 | [`TacticBossScenarioA`](#tacticbossscenarioa) | - | 1 | no | no | inferred |
 | [`TacticBossScenarioB`](#tacticbossscenariob) | - | 2 | no | no | inferred |
@@ -128,33 +128,33 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`TacticBossScenarioG`](#tacticbossscenariog) | - | 1 | no | no | inferred |
 | [`TacticBossScenarioH`](#tacticbossscenarioh) | - | 1 | no | no | inferred |
 | [`TacticClear`](#tacticclear) | - | 92 | yes | yes | confirmed (code) |
-| [`TacticConfront`](#tacticconfront) | - | 26 | no | no | inferred |
+| [`TacticConfront`](#tacticconfront) | - | 26 | no | no | confirmed (code) |
 | [`TacticCrowd`](#tacticcrowd) | - | 31 | no | yes | confirmed (code) |
-| [`TacticDefend`](#tacticdefend) | - | 23 | no | no | inferred |
+| [`TacticDefend`](#tacticdefend) | - | 23 | no | no | confirmed (code) |
 | [`TacticDomination`](#tacticdomination) | - | 3 | no | no | inferred |
 | [`TacticGetString`](#tacticgetstring) | string | 0 | no | no | confirmed (code) |
-| [`TacticHanginOut`](#tactichanginout) | - | 28 | no | no | inferred |
-| [`TacticHoldTheLine`](#tacticholdtheline) | - | 18 | no | no | inferred |
-| [`TacticIdle`](#tacticidle) | - | 21 | no | no | inferred |
+| [`TacticHanginOut`](#tactichanginout) | - | 28 | no | no | confirmed (code) |
+| [`TacticHoldTheLine`](#tacticholdtheline) | - | 18 | no | no | confirmed (code) |
+| [`TacticIdle`](#tacticidle) | - | 21 | no | no | confirmed (code) |
 | [`TacticInfo`](#tacticinfo) | - | 0 | no | no | speculative |
-| [`TacticManWeaponPile`](#tacticmanweaponpile) | - | 20 | no | no | inferred |
-| [`TacticMoveToFlag`](#tacticmovetoflag) | - | 28 | no | no | inferred |
+| [`TacticManWeaponPile`](#tacticmanweaponpile) | - | 20 | no | no | confirmed (code) |
+| [`TacticMoveToFlag`](#tacticmovetoflag) | - | 28 | no | no | confirmed (code) |
 | [`TacticPathScout`](#tacticpathscout) | - | 3 | no | no | inferred |
-| [`TacticPursue`](#tacticpursue) | - | 22 | no | no | inferred |
+| [`TacticPursue`](#tacticpursue) | - | 22 | no | no | confirmed (code) |
 | [`TacticRing`](#tacticring) | - | 0 | no | no | speculative |
 | [`TacticRiotCop`](#tacticriotcop) | - | 0 | no | no | speculative |
-| [`TacticScout`](#tacticscout) | - | 7 | no | no | inferred |
+| [`TacticScout`](#tacticscout) | - | 7 | no | no | confirmed (code) |
 | [`TacticShadow`](#tacticshadow) | - | 0 | no | no | speculative |
 | [`TacticStandGround`](#tacticstandground) | - | 1 | no | no | inferred |
-| [`TacticSteal`](#tacticsteal) | - | 19 | no | no | inferred |
+| [`TacticSteal`](#tacticsteal) | - | 19 | no | no | confirmed (code) |
 | [`TacticTaunt`](#tactictaunt) | - | 0 | no | no | speculative |
-| [`TacticTravelPath`](#tactictravelpath) | - | 20 | no | no | inferred |
+| [`TacticTravelPath`](#tactictravelpath) | - | 20 | no | no | confirmed (code) |
 | [`TacticTrigger`](#tactictrigger) | - | 3 | no | no | confirmed (code) |
-| [`TacticUseFlag`](#tacticuseflag) | - | 21 | no | no | inferred |
-| [`TacticVandalize`](#tacticvandalize) | - | 20 | no | no | inferred |
+| [`TacticUseFlag`](#tacticuseflag) | - | 21 | no | no | confirmed (code) |
+| [`TacticVandalize`](#tacticvandalize) | - | 20 | no | no | confirmed (code) |
 | [`TacticVandalizeCars`](#tacticvandalizecars) | - | 1 | no | no | inferred |
-| [`TacticWalkinTall`](#tacticwalkintall) | - | 18 | no | no | inferred |
-| [`TacticWander`](#tacticwander) | - | 19 | no | no | inferred |
+| [`TacticWalkinTall`](#tacticwalkintall) | - | 18 | no | no | confirmed (code) |
+| [`TacticWander`](#tacticwander) | - | 19 | no | no | confirmed (code) |
 
 ## ActExecuteAttack {#actexecuteattack}
 
@@ -2722,15 +2722,19 @@ TacticAttack(gang, callback)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `callback` | string | Name of the Lua function that receives the tactic's events (such as `TacNoEnemies`), or nil. |
+| 2 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Has a gang attack its enemies.
+Sets a gang's tactic to attacking (type 0): every member that is not a player gets threat response 2 and a melee goal,
+idle members join the nearest member's fight every 3 s, and the callback gets 9 `TacNoEnemies` once no member has an
+enemy (checked each second) and 13 `TacMemberDied` when a member dies.
 
-**Notes.** Constructor 0x003075c8 also sets two timers 1 s and 3 s ahead.
+**Notes.** Constructor 0x003075c8 (vtable 0x00543320): Start 0x00307fe0, Process 0x003081a8, event 0x00308478. A gang
+with `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10), not traced. Behaviour:
+[AI](../../research/ai.md#tactic-kinds).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00307548`; detail: traced
 - **Wrapper** `0x00375370` (registered by `RegisterBindings`); **calls** `0x00307548` `Tactic_Attack`
 - **Used by** 54 of 467 script chunks (184 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -2738,25 +2742,31 @@ Has a gang attack its enemies.
 ## TacticAvoidEnemies {#tacticavoidenemies}
 
 ```lua
-TacticAvoidEnemies(gang, callback, useThrowables, minRange, maxRange, minAllyRange, maxAllyRange, value)
+TacticAvoidEnemies(gang, callback, useThrowables, minRange, maxRange, minAllyRange, maxAllyRange, gait)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 3 | `useThrowables` | boolean (nil or 0 is false) | true to let members throw things. |
-| 4 | `minRange` | number (single precision); default 7 | Distance in metres (default 7). |
-| 5 | `maxRange` | number (single precision); default 14 | Distance in metres (default 14). |
-| 6 | `minAllyRange` | number (single precision) | Distance in metres from allies (inferred). |
-| 7 | `maxAllyRange` | number (single precision) | Distance in metres from allies (inferred). |
-| 8 | `value` | number, truncated to an unsigned integer | A number. |
+| 2 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 3 | `useThrowables` | boolean (nil or 0 is false) | true lets members fetch an item within 40 m and throw it at an enemy in range. |
+| 4 | `minRange` | number (single precision); default 7 | Flee distance in metres, scaled by the enemy's class (default 7). |
+| 5 | `maxRange` | number (single precision); default 14 | Second distance passed to the goal's flee-point search (default 14; inferred: how far to flee). |
+| 6 | `minAllyRange` | number (single precision) | Distance passed to the goal (+0x34; not traced). |
+| 7 | `maxAllyRange` | number (single precision) | Distance passed to the goal (+0x38; not traced). |
+| 8 | `gait` | number, truncated to an unsigned integer | Gait id to flee at; 0 lets the goal choose (5, or 4 when tired). |
 
 **Returns** nothing.
 
-Has a gang keep away from enemies, optionally throwing things.
+Has a gang keep away from its enemies (type 0x20): each member gets an `AvoidEnemies` goal that sees all round, drops
+its threat response to 0, runs from the nearest enemy that comes close or faces it, and with `useThrowables` picks up
+and throws things at him.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x003085d8 (vtable 0x00543380): Start 0x00308790 (0x00308698), event 0x003087c0 (hit 5, attack
+6); Process always 0. The goal (vtable 0x005419b0, Process 0x002e3630) re-picks the nearest enemy every 1.5 s and flees
+at gait 5 (4 when the human is tired) unless `gait` is given. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00316988`; detail: traced
 - **Wrapper** `0x00375d98` (registered by `RegisterBindings`); **calls** `0x00316988` `Tactic_AvoidEnemies`
 - **Used by** 25 of 467 script chunks (32 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3009,31 +3019,36 @@ tactic is kept at gang `+0xdd`.
 ## TacticConfront {#tacticconfront}
 
 ```lua
-TacticConfront(gang, targetGang, approachRange, criticalRange, confrontation, slotSet, callback, anim1, anim2, anim3, anim4, anim5, angle)
+TacticConfront(gang, targetGang, approachRange, criticalRange, confrontation, slotSet, callback, anim1, anim2, anim3, anim4, anim5, spotLine)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `targetGang` | number, truncated to an integer; default -1 | Gang index to confront (default -1). |
-| 3 | `approachRange` | number (single precision); default 10 | Approach range in metres (default 10). |
-| 4 | `criticalRange` | number (single precision); default 2 | Critical range in metres (default 2). |
-| 5 | `confrontation` | number, truncated to an unsigned integer | Confrontation type number. |
-| 6 | `slotSet` | number, truncated to an integer; default -1 | Follow slot set; -1 (the default) for the current one (inferred). |
-| 7 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 8 | `anim1` | string | Confrontation animation name, or nil. |
+| 2 | `targetGang` | number, truncated to an integer; default -1 | Gang index to confront; -1 (the default) takes the first member's current target gang, and with none the tactic does nothing. |
+| 3 | `approachRange` | number (single precision); default 10 | Distance in metres, added to both gangs' radii, inside which code 7 fires (default 10). |
+| 4 | `criticalRange` | number (single precision); default 2 | Distance in metres, added to both gangs' radii, inside which code 1 fires (default 2); also the members' `Confront` goal distance unless `confrontation` is non-zero. |
+| 5 | `confrontation` | number, truncated to an unsigned integer | Confrontation style: non-zero gives the members' goals `approachRange` instead of `criticalRange`; 2 also lets non-leader classes posture. |
+| 6 | `slotSet` | number, truncated to an integer; default -1 | Formation slot set for the members; -1 (the default) uses set 3 with one slot per member (up to 9). |
+| 7 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 8 | `anim1` | string | Posture animation name substituted for anim 0x253, or nil (with anims 1-4 all nil, four defaults are used). |
 | 9 | `anim2` | string | Confrontation animation name, or nil. |
 | 10 | `anim3` | string | Confrontation animation name, or nil. |
 | 11 | `anim4` | string | Confrontation animation name, or nil. |
-| 12 | `anim5` | string | Confrontation animation name, or nil. |
-| 13 | `angle` | number, truncated to an unsigned integer; default 135 | An angle in degrees (default 135). |
+| 12 | `anim5` | string | A last posture animation, kept apart from the random choice (inferred), or nil. |
+| 13 | `spotLine` | number, truncated to an unsigned integer; default 135 | Speech command the gang's spotter says on Start (default 135 `shadow`, which makes it say 136 `shadow_spot`; any other value says 22 `spot`) and members say when they face the other leader. |
 
 **Returns** nothing.
 
-Has a gang square up to another gang: approach, posture with up to five animations, and fight when the other side comes
-within the critical range.
+Has a gang square up to another (type 0x23): the members form up behind their leader and approach with `Confront` goals,
+posture with the given anims when facing the other leader, and the callback gets 7 `TacInRange` while the gangs are
+within `approachRange`, 1 inside `criticalRange`, 2 when they part again and 9 when the other gang is gone.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x0030e670 (vtable 0x00543740): Start 0x0030ec20, Process 0x0030eec0 (every 250 ms; posture every
+500 ms), event 0x0030f408. With no route between the leaders it returns 1 when the other leader is in view, else 9.
+Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00316dd8`; detail: traced
 - **Wrapper** `0x00376408` (registered by `RegisterBindings`); **calls** `0x00316dd8` `Tactic_Confront`
 - **Used by** 26 of 467 script chunks (35 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3072,14 +3087,20 @@ TacticDefend(gang, human, range, callback)
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
 | 2 | `human` | number, truncated to an unsigned integer | Handle of the human (or object) to defend; must be a valid human for the tactic to be set. |
-| 3 | `range` | number (single precision); default 2.25 | Defend range in metres (default 2.25). |
-| 4 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
+| 3 | `range` | number (single precision); default 2.25 | Distance in metres the `FollowAndDefend` goals keep (default 2.25). |
+| 4 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Has a gang stay near and defend a human (event `TacHumanToDefendDead` when it dies).
+Has a gang guard a human (type 2): the members join his formation with `FollowAndDefend` goals (dogs keep away from
+enemies instead), run to him when he is knocked out or arrested, and make enemies of anyone violent near him; the
+callback gets 11 `TacHumanToDefendDead` when he dies and 9 `TacNoEnemies` when no member has an enemy.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x003101d8 (vtable 0x00543800): Start 0x00310618, Process 0x00310768 (every 1.5 s), event
+0x00310a60. The formation uses set 3 with two slots per member (up to 9). Behaviour:
+[AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00315d98`; detail: traced
 - **Wrapper** `0x00374c18` (registered by `RegisterBindings`); **calls** `0x00315d98` `Tactic_Defend`
 - **Used by** 23 of 467 script chunks (25 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3138,18 +3159,22 @@ TacticHanginOut(gang, flag, callback, range, banter, respond, fullAware, harass)
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
 | 2 | `flag` | number, truncated to an unsigned integer | Handle of the hang-out flag. |
-| 3 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 4 | `range` | number (single precision); default 6 | Range in metres (default 6). |
-| 5 | `banter` | boolean (nil or 0 is false); default true | true (the default) lets members banter. |
-| 6 | `respond` | boolean (nil or 0 is false) | true to respond to the player (scripts' `RespondOff` negated). |
-| 7 | `fullAware` | boolean (nil or 0 is false) | true for full awareness of the surroundings. |
-| 8 | `harass` | boolean (nil or 0 is false); default true | true (the default) lets members harass passers-by. |
+| 3 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 4 | `range` | number (single precision); default 6 | Radius in metres round the flag the members keep to (default 6). |
+| 5 | `banter` | boolean (nil or 0 is false); default true | true (the default) lets pairs of members talk (statement and response lines). |
+| 6 | `respond` | boolean (nil or 0 is false) | true sends free members to help when someone is violent to the gang nearby (up to the gang's respond percentage). |
+| 7 | `fullAware` | boolean (nil or 0 is false) | false (the default) narrows the members' view by 20 degrees and their sight range by a quarter while they hang out. |
+| 8 | `harass` | boolean (nil or 0 is false); default true | true (the default) lets the `HangOut` goals harass passers-by. |
 
 **Returns** nothing.
 
-Has a gang hang out around a flag, chatting and reacting to what passes.
+Has a gang hang out round a flag (type 0x18): each member gets a `HangOut` goal within `range` of the flag, pairs of
+members banter every 3 s, and the callback gets the shared hit, sighting and attack codes (5, 4, 3, 6).
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x00311ad8 (vtable 0x00543920): Start 0x00312348, Process 0x00312518, event 0x00312580. Start
+also substitutes anim 0x25b with eight hang-out idles (0x00511480). Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00315fc8`; detail: traced
 - **Wrapper** `0x00374f00` (registered by `RegisterBindings`); **calls** `0x00315fc8` `Tactic_HanginOut`
 - **Used by** 28 of 467 script chunks (72 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3157,25 +3182,31 @@ Has a gang hang out around a flag, chatting and reacting to what passes.
 ## TacticHoldTheLine {#tacticholdtheline}
 
 ```lua
-TacticHoldTheLine(gang, flag1, flag2, flag3, value1, value2, value3, callback)
+TacticHoldTheLine(gang, flag1, flag2, flag3, hits, window, distance, callback)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `flag1` | number, truncated to an unsigned integer | Handle of the first flag of the line. |
-| 3 | `flag2` | number, truncated to an unsigned integer | Handle of the second flag of the line. |
-| 4 | `flag3` | number, truncated to an unsigned integer | Handle of the third flag of the line. |
-| 5 | `value1` | number, truncated to an unsigned integer; default 5 | A number (default 5; scripts pass 1). |
-| 6 | `value2` | number, truncated to an unsigned integer; default 20 | A number (default 20; scripts pass 0). |
-| 7 | `value3` | number (single precision); default 10 | A number (default 10; scripts pass 5). |
-| 8 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
+| 2 | `flag1` | number, truncated to an unsigned integer | Handle of the flag at one end of the line (its height is the line's). |
+| 3 | `flag2` | number, truncated to an unsigned integer | Handle of the flag at the other end. |
+| 4 | `flag3` | number, truncated to an unsigned integer | Handle of the flag on the attackers' side, where the extra members wait. |
+| 5 | `hits` | number, truncated to an unsigned integer; default 5 | Hits on members (event 16 with +4 = 1) within `window` that fire code 14 (default 5). |
+| 6 | `window` | number, truncated to an unsigned integer; default 20 | Seconds over which hits are counted (default 20). |
+| 7 | `distance` | number (single precision); default 10 | An enemy past the line counts only when farther than this from `flag3`, in metres (default 10). |
+| 8 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Has a gang hold a line between up to three flags and stop enemies crossing it (event `TacBehindLine`).
+Has a gang hold a line (type 4): defenders (`HTLDefense`) are spaced along `flag1`-`flag2` and the rest wait at `flag3`
+(`HTLOffense`) to replace a fallen defender; the callback gets 12 `TacBehindLine` when an enemy gets past the line, 14
+after `hits` hits on members within `window` seconds, 13 when a defender falls and 9 when no member has an enemy.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x00313f38 (vtable 0x00543a40): Start 0x00314038, Process 0x00314538 (every 1.75 s), event
+0x003147a0. The defenders are min(line length in metres, 60 % of the members). Behaviour:
+[AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00313e30`; detail: traced
 - **Wrapper** `0x00374ab8` (registered by `RegisterBindings`); **calls** `0x00313e30` `Tactic_HoldTheLine`
 - **Used by** 18 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3190,16 +3221,21 @@ TacticIdle(gang, banter, respond, clearAnims, callback, dynIdle)
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
 | 2 | `banter` | boolean (nil or 0 is false); default true | true (the default) lets members banter. |
-| 3 | `respond` | boolean (nil or 0 is false) | true to respond to the player. |
-| 4 | `clearAnims` | boolean (nil or 0 is false) | true to clear running animations first. |
-| 5 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 6 | `dynIdle` | boolean (nil or 0 is false) | true to use dynamic idle animations. |
+| 3 | `respond` | boolean (nil or 0 is false) | true sends free members to help when someone is violent to the gang nearby. |
+| 4 | `clearAnims` | boolean (nil or 0 is false) | Passed to each member's `Idle` goal (0x002caf78). |
+| 5 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 6 | `dynIdle` | boolean (nil or 0 is false) | true makes a hit, sighting or attack end the members' `PlayDynIdle` goals instead of calling back, then code 15. |
 
 **Returns** nothing.
 
-Has a gang stand idle where it is.
+Has a gang stand idle where it is (type 0x24): each member gets an `Idle` goal; with `dynIdle`, a hit, sighting or
+attack breaks the members off their idle animations and the callback gets 15 `TacAnimDone` once they are done, otherwise
+it gets the shared codes.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x003149f0 (vtable 0x00543aa0): Start 0x00314f38, Process 0x003150c8, event 0x00315228.
+Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00316ee8`; detail: traced
 - **Wrapper** `0x00376718` (registered by `RegisterBindings`); **calls** `0x00316ee8` `Tactic_Idle`
 - **Used by** 21 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3240,17 +3276,21 @@ TacticManWeaponPile(gang, range, maxThrow, delay, value, callback)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `range` | number (single precision) | Range in metres. |
-| 3 | `maxThrow` | number (single precision) | Throw distance or count limit (scripts' `MaxThrow`). |
-| 4 | `delay` | number, truncated to an integer | Delay between throws. |
-| 5 | `value` | number, truncated to an integer | A number (scripts use 0 and 5). |
-| 6 | `callback` | string | Name of the Lua function that receives the tactic's events (`TacObjectsThrown`), or nil. |
+| 2 | `range` | number (single precision) | Distance passed to the `ManWeaponPile` goals. |
+| 3 | `maxThrow` | number (single precision) | Second distance passed to the goals. |
+| 4 | `delay` | number, truncated to an integer | Number passed to the goals (16 bits). |
+| 5 | `value` | number, truncated to an integer | Number passed to the goals (16 bits). |
+| 6 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Has a gang man piles of throwable objects and bombard enemies.
+Has a gang man a pile of throwables (type 6): each member gets a `ManWeaponPile` goal with the four values; the callback
+gets 13 `TacMemberDied` when a member dies, and the hit and attack codes.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x00317050 (vtable 0x00543b60): Start 0x00317218 (0x00317108), event 0x00317350. The goal's own
+behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00316a68`; detail: traced
 - **Wrapper** `0x00375ef8` (registered by `RegisterBindings`); **calls** `0x00316a68` `Tactic_ManWeaponPile`
 - **Used by** 20 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3266,15 +3306,19 @@ TacticMoveToFlag(gang, flag, gait, slotSet, callback, banter)
 | 1 | `gang` | number, truncated to an integer | The gang index. |
 | 2 | `flag` | number, truncated to an unsigned integer | Handle of the destination flag. |
 | 3 | `gait` | number, truncated to an integer; default 2 | Gait id (default 2). |
-| 4 | `slotSet` | number, truncated to an integer; default -1 | Follow slot set; -1 (the default) for the current one (inferred). |
-| 5 | `callback` | string | Name of the Lua function that receives the tactic's events (`TacArrived`), or nil. |
-| 6 | `banter` | boolean (nil or 0 is false) | true lets members banter on the way. |
+| 4 | `slotSet` | number, truncated to an integer; default -1 | Formation slot set; -1 (the default) uses set 3 with one slot per member (up to 9). |
+| 5 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 6 | `banter` | boolean (nil or 0 is false) | true lets pairs of members talk on the way. |
 
 **Returns** nothing.
 
-Has a gang move together to a flag.
+Has a gang walk together to a flag (type 0x19): the leader gets a `MoveToFlag` goal and the others follow him in
+formation 3 m apart; the callback gets 8 `TacArrived` when the leader arrives, and the shared hit and sighting codes.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x00317410 (vtable 0x00543bc0): Start 0x00317700 (0x003174e8), Process 0x00317ad0, event
+0x00317b38. No time limit. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00316298`; detail: traced
 - **Wrapper** `0x003753d0` (registered by `RegisterBindings`); **calls** `0x00316298` `Tactic_MoveToFlag`
 - **Used by** 28 of 467 script chunks (69 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3314,19 +3358,24 @@ TacticPursue(gang, targetGang, range, gait, angle1, angle2, callback, searchMs)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `targetGang` | number, truncated to an integer; default -1 | Gang index to pursue (default -1). |
-| 3 | `range` | number (single precision); default 5 | A distance in metres (default 5). |
-| 4 | `gait` | number, truncated to an integer; default 2 | Gait id (default 2). |
-| 5 | `angle1` | number (single precision); default 90 | An angle in degrees (default 90). |
-| 6 | `angle2` | number (single precision); default 45 | An angle in degrees (default 45). |
-| 7 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 8 | `searchMs` | number, truncated to an unsigned integer; default 30000 | Search time in milliseconds (default 30000). |
+| 2 | `targetGang` | number, truncated to an integer; default -1 | Gang index to chase; -1 (the default) picks one (0x00317e90). |
+| 3 | `range` | number (single precision); default 5 | Distance in metres within which a chaser that sees a target engages it (code 7; default 5). |
+| 4 | `gait` | number, truncated to an integer; default 2 | Gait id of the chase (default 2). |
+| 5 | `angle1` | number (single precision); default 90 | Angle passed to the members' `Chase` goals (default 90). |
+| 6 | `angle2` | number (single precision); default 45 | Second angle passed to the `Chase` goals (default 45). |
+| 7 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 8 | `searchMs` | number, truncated to an unsigned integer; default 30000 | How long in milliseconds the gang keeps searching once no chaser sees the target, before code 9 (default 30000). |
 
 **Returns** nothing.
 
-Has a gang chase another gang, searching for it for a time when it loses sight.
+Has a gang chase another gang (type 0x14): each member gets a `Chase` goal after the target gang's leader, the callback
+gets 7 `TacInRange` when a member sees a target within `range` (who becomes his enemy), and 9 `TacNoEnemies` when the
+target gang is gone or the search after losing it runs out.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x00317c40 (vtable 0x00543c20): Start 0x00317f20, Process 0x003183b8 (every 150 ms), event
+0x00318770. Hits by a player's gang do not fire `TacDamage`. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00315ee8`; detail: traced
 - **Wrapper** `0x00374d90` (registered by `RegisterBindings`); **calls** `0x00315ee8` `Tactic_Pursue`
 - **Used by** 22 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3388,16 +3437,21 @@ TacticScout(gang, value1, value2, range, value3, value4, callback)
 | 1 | `gang` | number, truncated to an integer | The gang index. |
 | 2 | `value1` | number, truncated to an integer | A number (scripts use 0 and 5). |
 | 3 | `value2` | number, truncated to an integer | A number (scripts use 0 and 15). |
-| 4 | `range` | number (single precision); default 40 | A distance in metres (default 40). |
+| 4 | `range` | number (single precision); default 40 | Radius in metres of the call for help; below 0 the member's doubled hearing range is used (default 40). |
 | 5 | `value3` | number (single precision); default 10 | A number (default 10). |
 | 6 | `value4` | number (single precision); default 30 | A number (default 30). |
-| 7 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
+| 7 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Has a gang scout around for enemies (stealth sections).
+Has a gang scout for enemies (type 0x27), as in the stealth sections: each member gets a `Scout` (or `PathScout`) goal;
+a member hit, attacked or spotting someone fights him and calls his gang over, and the gang's alert state follows
+whether any member is fighting (checked every 200 ms). No code is sent from Process.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x0031a430 (vtable 0x00543da0): Start 0x0031af98, Process 0x0031b030, event 0x0031b1b0
+(0x0031a818). Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x0031a268`; detail: traced
 - **Wrapper** `0x003776d8` (registered by `RegisterBindings`); **calls** `0x0031a268` `Tactic_Scout`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3456,16 +3510,20 @@ TacticSteal(gang, zone, delayMs, callback, leaderRange)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `zone` | number, truncated to an unsigned integer | Zone or object type to loot. |
-| 3 | `delayMs` | number, truncated to an unsigned integer; default 1000 | Time in milliseconds (default 1000). |
-| 4 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 5 | `leaderRange` | number (single precision); default -1 | Distance from the leader in metres; -1 (the default) for no limit (inferred). |
+| 2 | `zone` | number, truncated to an unsigned integer | Object zone to loot ([Object zones](../zones.md)). |
+| 3 | `delayMs` | number, truncated to an unsigned integer; default 1000 | Milliseconds passed to each `Steal` goal (default 1000). |
+| 4 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 5 | `leaderRange` | number (single precision); default -1 | Distance in metres passed to the `Steal` goals; -1 (the default) for none. |
 
 **Returns** nothing.
 
-Has a gang loot a zone.
+Has a gang loot a zone (type 0x1d): each member gets a `Steal` goal for the zone; the callback gets only the shared hit
+and sighting codes.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x0031c030 (vtable 0x00543ec0): Start 0x0031c1d0 (0x0031c0e0), event 0x0031c258; Process always
+0. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00316638`; detail: traced
 - **Wrapper** `0x00375930` (registered by `RegisterBindings`); **calls** `0x00316638` `Tactic_Steal`
 - **Used by** 19 of 467 script chunks (19 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3507,18 +3565,24 @@ TacticTravelPath(gang, path, reverse, gait, delay, slotSet, startPoint, callback
 | 2 | `path` | userdata (only read when given) | The path object, or nil. |
 | 3 | `reverse` | boolean (nil or 0 is false) | true to travel it backwards. |
 | 4 | `gait` | number, truncated to an integer; default 2 | Gait id (default 2). |
-| 5 | `delay` | number, truncated to an unsigned integer | A delay (scripts pass 5 or a table field). |
-| 6 | `slotSet` | number, truncated to an integer; default -1 | Follow slot set; -1 (the default) for the current one (inferred). |
-| 7 | `startPoint` | number, truncated to an integer; default -1 | Starting point index; -1 (the default) for the nearest (inferred). |
-| 8 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
+| 5 | `delay` | number, truncated to an unsigned integer | Seconds the leader's `TravelPath` goal is given (stored as milliseconds; inferred: a pause at points). |
+| 6 | `slotSet` | number, truncated to an integer; default -1 | Formation slot set; -1 (the default) uses set 3 with one slot per member (up to 9). |
+| 7 | `startPoint` | number, truncated to an integer; default -1 | Path point to start from; -1 (the default) lets the goal choose. |
+| 8 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 | 9 | `banter` | boolean (nil or 0 is false); default true | true (the default) lets members banter. |
-| 10 | `loop` | boolean (nil or 0 is false); default true | true (the default) to loop the path. |
+| 10 | `loop` | boolean (nil or 0 is false); default true | true (the default) gives the goal mode 1 (loop), false mode 2. |
 
 **Returns** nothing.
 
-Has a gang travel along a path in formation.
+Has a gang travel a path (type 0x17): the leader gets a `TravelPath` goal and the others follow 1 m apart in formation;
+with no path the leader wanders the flag network (`TravelFlagNet`) instead. The callback gets only the shared hit and
+sighting codes.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x0031cbc0 (vtable 0x00543f80): Start 0x0031cf80, Process 0x0031d460, event 0x0031d758. A free
+member near the leader may stop to use a nearby usable flag (inferred). Behaviour:
+[AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x003161a0`; detail: traced
 - **Wrapper** `0x003751d0` (registered by `RegisterBindings`); **calls** `0x003161a0` `Tactic_TravelPath`
 - **Used by** 20 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3556,16 +3620,21 @@ TacticUseFlag(gang, flag, range, view, callback, banter)
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
 | 2 | `flag` | number, truncated to an unsigned integer | Handle of the usable flag (a hiding place, a world flag). |
-| 3 | `range` | number (single precision); default 4 | Range in metres (default 4). |
-| 4 | `view` | number (single precision); default 10 | A view distance or angle (default 10). |
-| 5 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 6 | `banter` | boolean (nil or 0 is false) | true lets members banter. |
+| 3 | `range` | number (single precision); default 4 | Distance in metres from the flag: members farther walk to it, and a player this close ends the use (default 4). |
+| 4 | `view` | number (single precision); default 10 | Sight range given to members using the flag (brain +0x130; default 10). |
+| 5 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 6 | `banter` | boolean (nil or 0 is false) | Stored with the tactic (+0x44); its use is not traced. |
 
 **Returns** nothing.
 
-Has a gang go to and use a flag, such as a hiding place.
+Has a gang use a flag (type 0x21), such as a hiding place: members walk to it and use it (`MoveToUseFlag`), and once the
+nearest player comes within `range` of the flag they leave it and the callback gets 7 `TacInRange`.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x0031d878 (vtable 0x00543fe0): Start 0x0031dc28, Process 0x0031e098 (every second), event
+0x0031e280. Hits, sightings and attacks alert the members without calling back. Behaviour:
+[AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00316ca0`; detail: traced
 - **Wrapper** `0x003761e8` (registered by `RegisterBindings`); **calls** `0x00316ca0` `Tactic_UseFlag`
 - **Used by** 21 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3579,16 +3648,22 @@ TacticVandalize(gang, zone, delayMs, callback, leaderRange)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `zone` | number, truncated to an unsigned integer | Zone or object type to vandalise (scripts pass a zone value or object type ids such as 29 and 51). |
-| 3 | `delayMs` | number, truncated to an unsigned integer; default 3000 | Time in milliseconds (default 3000). |
-| 4 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 5 | `leaderRange` | number (single precision); default -1 | Distance from the leader in metres; -1 (the default) for no limit (inferred). |
+| 2 | `zone` | number, truncated to an unsigned integer | Object zone to wreck ([Object zones](../zones.md)). |
+| 3 | `delayMs` | number, truncated to an unsigned integer; default 3000 | Milliseconds passed to each member's `Destroy` goal (default 3000; inferred: the pause between attacks). |
+| 4 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 5 | `leaderRange` | number (single precision); default -1 | Distance in metres passed to the `Destroy` goals; -1 (the default) for none (inferred: how far a member may stray). |
 
 **Returns** nothing.
 
-Has a gang smash things in a zone.
+Has a gang wreck a zone (type 0x1c): each member gets a `Destroy` goal for the zone; the callback gets 16
+`TacObjectDestroyed` the first time each zone object breaks, 1 `TacFinished` once the zone has nothing left to break
+(checked every 3 s), and the shared hit and sighting codes.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x0031e3b8 (vtable 0x00544040): Start 0x0031e5f8, Process 0x0031ea00, event 0x0031eaf0. The
+constructor can also take up to four objects instead of a zone; the binding never passes any. Behaviour:
+[AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x003164e0`; detail: traced
 - **Wrapper** `0x003756c8` (registered by `RegisterBindings`); **calls** `0x003164e0` `Tactic_Vandalize`
 - **Used by** 20 of 467 script chunks (31 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3624,15 +3699,21 @@ TacticWalkinTall(gang, target, range, callback)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the flag or object to walk to. |
-| 3 | `range` | number (single precision) | A range in metres. |
-| 4 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the flag to walk to. |
+| 3 | `range` | number (single precision) | Distance in metres to the nearest enemy gang member that fires code 7. |
+| 4 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Has a gang walk together, swaggering, to a flag or object.
+Has a gang swagger to a flag (type 0x15): the leader walks there (`MoveToFlag`, gait 2) with the others 0.75 m behind in
+formation, posture anims play when facing an enemy gang's leader, and the callback gets 7 `TacInRange` while the nearest
+enemy gang is within `range` (checked each second) and 8 `TacArrived`.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x0031ec90 (vtable 0x005440a0): Start 0x0031ef28, Process 0x0031efb8, event 0x0031f268. Start
+substitutes anim 0x253 with four swagger anims (0x00511620) and says the `shadow_spot` line. Behaviour:
+[AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x00315e48`; detail: traced
 - **Wrapper** `0x00374cd0` (registered by `RegisterBindings`); **calls** `0x00315e48` `Tactic_WalkinTall`
 - **Used by** 18 of 467 script chunks (36 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3646,11 +3727,11 @@ TacticWander(gang, gait, delay, callback, buffer, slotSet, banter, worldFlags, v
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `gait` | number, truncated to an integer; default 2 | Gait id (default 2). |
-| 3 | `delay` | number, truncated to an unsigned integer | A delay (scripts pass 0 or a table field). |
-| 4 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
-| 5 | `buffer` | number (single precision); default 10 | A distance in metres (default 10). |
-| 6 | `slotSet` | number, truncated to an integer; default -1 | Follow slot set to use; -1 (the default) for the leader's current one (inferred). |
+| 2 | `gait` | number, truncated to an integer; default 2 | Gait id of the leader's `Wander` goal (default 2). |
+| 3 | `delay` | number, truncated to an unsigned integer | Number passed to the `Wander` goal. |
+| 4 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
+| 5 | `buffer` | number (single precision); default 10 | Distance in metres passed to the `Wander` goal (default 10). |
+| 6 | `slotSet` | number, truncated to an integer; default -1 | Formation slot set; -1 (the default) uses set 3 with one slot per member (up to 9). |
 | 7 | `banter` | boolean (nil or 0 is false); default true | true (the default) lets members banter. |
 | 8 | `worldFlags` | boolean (nil or 0 is false); default true | true (the default) lets members use world flags. |
 | 9 | `vandal` | boolean (nil or 0 is false) | true to let them vandalise. |
@@ -3658,9 +3739,15 @@ TacticWander(gang, gait, delay, callback, buffer, slotSet, banter, worldFlags, v
 
 **Returns** nothing.
 
-Has a gang wander the streets in formation.
+Has a gang wander as a group (type 0x16): the leader gets a `Wander` goal and the others follow 4 m apart in formation;
+every 3 s pairs banter and, when allowed, members use world flags, vandalise or steal on the way. The callback gets the
+shared hit and sighting codes.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x0031f300 (vtable 0x00544100): Start 0x0031f638 (0x0031f410), Process 0x00320360 (world flags
+0x0031fb80, vandalism 0x0031fdc0, theft 0x003200c8), event 0x00320410. Behaviour:
+[AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x003160a8`; detail: traced
 - **Wrapper** `0x00375038` (registered by `RegisterBindings`); **calls** `0x003160a8` `Tactic_Wander`
 - **Used by** 19 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

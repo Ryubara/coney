@@ -719,6 +719,7 @@ the constructor), `+0x42` dealing.
 | `+0x32` | s16 | alert state (`0x00164a28`): 1 fighting, 0 calm |
 | `+0x38` / `+0x3c` | u32 | **enemy** / **friend** masks, a bit per gang id |
 | `+0x40` | ptr | the current **tactic**, 0 for none |
+| `+0x44` | handle | the **leader** ([tactics](#tactic-kinds)) |
 | `+0x48` | handle[16] | **members** |
 | `+0xd4` | u8 | suspended: its members' brains skip their update ([One update](#update-goals)) |
 | `+0xe4` | u32[] | the **Lua handler** per event id (interned name) |
@@ -805,6 +806,107 @@ no time limit, `+0x28` the option.
   Process calls it with (0, 1) on each tick.
 - **`TacticTrigger(gang, what, on)`** (`0x00316fa0`), crowd tactics only: what 0 sets the periodic switch to `on`;
   what 1 runs the reaction at once (`0x0030fe58`).
+
+##### The scripted tactics {#tactic-kinds}
+
+Every `Tactic<Name>` binding finds the gang (`0x0016c388`), takes a tactic from the pool, runs the class's
+constructor (base fields, the callback name interned by `0x003068f8`, then its own fields) and sets it (`0x00165640`),
+so the class's Start runs on the gang's next update. A tactic **fires its callback** with a code, the event names of
+[`TacticGetString`](../references/bindings/ai.md#tacticgetstring) (0 `TacRunning` ... 18 `TacAnimStart`), in two
+ways: a non-zero **Process** result (each update; codes such as 7 `TacInRange` are returned on every update the
+condition holds, so the callback runs repeatedly), and calls from the **event** slot. Confirmed (code) for each class
+below unless marked.
+
+Shared behaviour, confirmed (code):
+
+- **Leader**: gang `+0x44` holds the leader's handle; `0x00165678` returns him while he is alive, not a player, not down
+  (`0x00223b70`) and not out of the fight (`0x00227e60`), else another member (`0x00165738`).
+- **Moving as a group** (MoveToFlag, TravelPath, WalkinTall, Wander, Confront): the leader is flushed (`0x0028d8c0`,
+  `0x0028d8a0`) and given the moving goal; every other member that is not a player and not down joins the leader's
+  [formation](#formations) (`0x00295f28`) and gets `Goal_FollowPlayer(distance, member, leader, mode)`. The slot set:
+  the script's `slotSet`, or, when it is −1, set 3 with min(members − 1, 9) slots (`0x00295db0`, `0x00295dd8`,
+  `0x00296488`); the leader's set before is remembered.
+- **Event mapping** (the human events of [Script events](../references/script-events.md), offered to the gang's tactic
+  by `Gang_OnEvent`): 1 damage → code 5 `TacDamage`; 10 saw the player → 4 `TacSeePlayer`; 11 a member spotted
+  someone → the member's brain notes it (`0x0028c0c8`) and 3 `TacSeeEnemy`; 16 attacked → 6 `TacAttacked`; 8 arrived
+  at a flag → 8 `TacArrived` (MoveToFlag, WalkinTall). Event 20 (violence nearby) is consumed (result 1); events 2, 17,
+  18, 19 and 22 for one of the gang's own members make the tactic re-issue its members' goals. Each class handles only
+  some of these (below).
+- **Banter** (HanginOut, MoveToFlag, TravelPath, Wander, Idle with `banter` true): every 3 s, unless commands are
+  locked (game state `+0x411`), a scene plays (`+0x410`) or fewer than two members live, two idle members are picked
+  at 51 % each; the first says speech command 20 `statement` (`0x002208f0`), and when his line ends the second says
+  21 `response`; then the next pair after 3 s ([Speech](../references/speech.md)).
+- **Answering violence** (HanginOut, Idle with `respond` true): on event 20 against a gang member, while the share
+  of members already in goal `0x1d` HelpRespond is below the gang's percentage (`+0xd7`, `GangSetRespondPercentage`),
+  one more free member is sent to fight the attacker (`0x002b75b8`).
+- **The spot line**: `0x00165d40(gang, command)` makes one non-player member say a speech command once
+  (gang `+0xd2` armed, mode `0x56f8` = 1) when he sees a hostile within his sight range; 22 `spot` by default.
+
+| Binding | Type | Vtable | Members get | Process codes | Events |
+| --- | --- | --- | --- | --- | --- |
+| `TacticAttack` | `0x00` | `0x00543320` | melee (`Goal_Melee`), threat response 2 | 9 when no member has an enemy (checked each 1 s) | 1/11: an idle own member melees; 2 → 13 `TacMemberDied`; 20: idle members attack the offender |
+| `TacticDefend` | `0x02` | `0x00543800` | `FollowAndDefend` (53) round the human; dogs (type 221) `AvoidEnemies` (32) | 11 when the human is gone or dead; 9 when no member has an enemy (1.5 s) | 2 on the human → 11; 17/18 on the human: members rush to him; 20 near him: his attacker's gang becomes an enemy |
+| `TacticHoldTheLine` | `0x04` | `0x00543a40` | `HTLDefense` (100) spaced along the line, the rest `HTLOffense` (102) at `flag3` | 9 no enemies; 12 an enemy crossed (1.75 s); 14 after `hits` hits within `window` s | 2 on a defender: an attacker takes his spot, 13 |
+| `TacticManWeaponPile` | `0x06` | `0x00543b60` | `ManWeaponPile` (82) | none | 1 → 5; 2 → 13; 16 → 6 |
+| `TacticPursue` | `0x14` | `0x00543c20` | `Chase` (12) after the target gang's leader | 9 target gone or search over; 7 a member sees a target in range | 1 → 5 (not for a player's hit); 16 → 6 |
+| `TacticWalkinTall` | `0x15` | `0x005440a0` | leader `MoveToFlag` at walk, others follow at 0.75 m | 7 when the nearest enemy gang is within `range` (1 s) | 1, 8, 16 |
+| `TacticWander` | `0x16` | `0x00544100` | leader `Wander` (58), others follow at 4 m | none | 1, 10, 11, 16 |
+| `TacticTravelPath` | `0x17` | `0x00543f80` | leader `TravelPath` (56), others follow at 1 m | none | 1, 10, 11, 16 |
+| `TacticHanginOut` | `0x18` | `0x00543920` | `HangOut` (59) at the flag | none | 1, 10, 11, 16, 20 |
+| `TacticMoveToFlag` | `0x19` | `0x00543bc0` | leader `MoveToFlag`, others follow at 3 m | none | 1, 8, 10, 11, 16 |
+| `TacticVandalize` | `0x1c` | `0x00544040` | `Destroy` (91) | 1 when the zone has nothing left (3 s) | 1, 10, 11, 16; 23 a zone object broken → 16 `TacObjectDestroyed` |
+| `TacticSteal` | `0x1d` | `0x00543ec0` | `Steal` (92) | none | 1, 10, 11, 16 |
+| `TacticAvoidEnemies` | `0x20` | `0x00543380` | `AvoidEnemies` (32) | none | 1 → 5; 16 → 6 |
+| `TacticUseFlag` | `0x21` | `0x00543fe0` | `MoveToUseFlag` (4) | 7 once the player came within `range` and every member left the flag | 1/11/16 alert (no callback) |
+| `TacticConfront` | `0x23` | `0x00543740` | `Confront` (60) in formation | 9, 1, 7, 2 (below) | 1 → 5; 16 → 6 |
+| `TacticIdle` | `0x24` | `0x00543aa0` | `Idle` (0) where they stand | 15 `TacAnimDone` once broken off | 1, 10, 11, 16, 20 |
+| `TacticScout` | `0x27` | `0x00543da0` | `Scout` (111) or `PathScout` (112) | none | 1/11/16: the member fights and calls the gang |
+
+Class details, confirmed (code) unless marked:
+
+- **Attack** (constructor `0x003075c8`): Start (`0x00307fe0`) gives each member not in a `PedReaction` goal threat
+  response 2 (brain `+0x21c`) and a melee goal, and has the gang say `spot`. Process (`0x003081a8`): every 3 s,
+  members with no goal melee the nearest member that has one (`0x002b75b8`); every 7 s a gang with `+0xd9` set and
+  at least two living members starts one of seven coordinated sub-tactics chosen by weights per gang kind
+  (`0x00307a10`, not traced further).
+- **Confront** (`0x0030e670`): with `targetGang` −1 the first member's brain target gang (`+0x264`) is taken, and
+  without one nothing starts. Start (`0x0030ec20`) puts the posture anims in the gang's substitution table for anim
+  `0x253` (four defaults from `0x005113a8` when none is given; the fifth marks a last, separate anim) and says the spot
+  line (`spotLine` 135 `shadow` switches it to 136 `shadow_spot`). Process (`0x0030eec0`), every 250 ms between the
+  two gangs' bounds: no route between the leaders (`0x0024e078`) → 1 when the other leader is in view, else 9; inside
+  `approachRange` + both radii → 7, and 1 once inside `criticalRange`; leaving the approach range again → 2. Every
+  500 ms, members facing the other leader (within 0.99 of his heading) play a random posture anim (`0x0025a3e0`).
+- **HanginOut** (`0x00311ad8`): Start (`0x00312348`) without `fullAware` narrows each member's view (brain `+0x12c`
+  − 20°) and sight range (`+0x130` × 0.75), gives each a `HangOut` goal round the flag (`range`, `harass`) and
+  substitutes anim `0x25b` with eight idles (`0x00511480`).
+- **Idle** (`0x003149f0`): `clearAnims` is passed to each member's `Idle` goal. With `dynIdle` set, events 1, 11 and
+  16 do not fire the callback but end every member's `PlayDynIdle` goal (`0x00314fb8`), and Process returns 15 once
+  none is left.
+- **TravelPath** (`0x0031cbc0`): the leader's `TravelPath` goal (`0x002e0748`) takes the path, mode 1 when `loop` is
+  true else 2, `reverse`, `gait`, `startPoint` and `delay` × 1000 ms. With no path the leader gets a `TravelFlagNet`
+  goal (70) from where he stands. Every few seconds a free member within 5 m of the leader may use a usable flag
+  within 5 m (`MoveToUseFlag`, inferred: props on the way).
+- **UseFlag** (`0x0031d878`): each second members beyond `range` of the flag walk to it (`MoveToFlag`, gait 3) and those
+  near it use it (`MoveToUseFlag`) with sight range `view`; once the nearest player is within `range` of the flag the
+  tactic stops re-seating, gives each member's `MoveToUseFlag` goal a random 0-1 s delay (`0x002dbae8`) and returns 7
+  once every such goal reached state 3 (inferred: they have left the flag).
+- **HoldTheLine** (`0x00313f38`): `flag1`-`flag2` is the line and `flag3` the side the attackers wait on. The
+  defenders are min(line length in metres, 60 % of the members), spaced evenly; the others stand near `flag3`.
+  Code 12 fires when an enemy at `flag1`'s height (±0.5 m) is past the line and farther than `distance` from
+  `flag3`; 14 when members took `hits` hits (event 16 with `+4` = 1, inferred: thrown objects) within `window`
+  seconds.
+- **Pursue** (`0x00317c40`): the members' `Chase` goals (`0x002b04f0`) get the two angles, the gait and the target
+  leader. Process every 150 ms: 9 when the target gang is gone, empty or has no leader, or no route exists and the
+  gangs are not in contact; 7 when a member (with LOS, `0x002223e8`) is within `range` of a target, who is added as
+  his enemy. Every 100 ms it reads the members' `Chase` goals (`0x00318020`; whether they still see the target,
+  inferred) and arms the spot line from them; once the search time (`searchMs`, set when the target is lost) has
+  passed with no chase still running, the tactic ends the search (`0x00318130`) and returns 9.
+- **Scout** (`0x0031a430`): Start (`0x0031af98`) gives each member a scout goal and substitutes anim `0x29c`. Process
+  (`0x0031b030`), every 200 ms: members with enemies melee, and the gang's alert state is set when any is fighting.
+  A hit, a sighting or an attack (`0x0031a818`) makes that member melee and, when the crime rules allow, call his gang
+  (`Goal_CallGang`, radius `range` or twice the member's hearing).
+- **Vandalize** / **Steal**: each member's goal takes the zone, the delay and `leaderRange`; the vandal brain's
+  `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break.
 
 #### Spawners {#spawners}
 

@@ -1840,17 +1840,24 @@
     - {addr: 0x00313e30, name: Tactic_HoldTheLine}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: flag1, lua: number, ctype: unsigned, desc: "Handle of the first flag of the line."}
-    - {name: flag2, lua: number, ctype: unsigned, desc: "Handle of the second flag of the line."}
-    - {name: flag3, lua: number, ctype: unsigned, desc: "Handle of the third flag of the line."}
-    - {name: value1, lua: number, ctype: unsigned, default: 5, desc: "A number (default 5; scripts pass 1)."}
-    - {name: value2, lua: number, ctype: unsigned, default: 20, desc: "A number (default 20; scripts pass 0)."}
-    - {name: value3, lua: number, ctype: float, default: 10, desc: "A number (default 10; scripts pass 5)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: flag1, lua: number, ctype: unsigned, desc: "Handle of the flag at one end of the line (its height is the line's)."}
+    - {name: flag2, lua: number, ctype: unsigned, desc: "Handle of the flag at the other end."}
+    - {name: flag3, lua: number, ctype: unsigned, desc: "Handle of the flag on the attackers' side, where the extra members wait."}
+    - {name: hits, lua: number, ctype: unsigned, default: 5, desc: "Hits on members (event 16 with +4 = 1) within `window` that fire code 14 (default 5)."}
+    - {name: window, lua: number, ctype: unsigned, default: 20, desc: "Seconds over which hits are counted (default 20)."}
+    - {name: distance, lua: number, ctype: float, default: 10, desc: "An enemy past the line counts only when farther than this from `flag3`, in metres (default 10)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Has a gang hold a line between up to three flags and stop enemies crossing it (event `TacBehindLine`).
-  evidence: inferred
-  depth: brief
+    Has a gang hold a line (type 4): defenders (`HTLDefense`) are spaced along `flag1`-`flag2` and the rest wait at
+    `flag3` (`HTLOffense`) to replace a fallen defender; the callback gets 12 `TacBehindLine` when an enemy gets past
+    the line, 14 after `hits` hits on members within `window` seconds, 13 when a defender falls and 9 when no member
+    has an enemy.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x00313f38 (vtable 0x00543a40): Start 0x00314038, Process 0x00314538 (every 1.75 s), event
+    0x003147a0. The defenders are min(line length in metres, 60 % of the members). Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 18, calls: 18, boot: false, mission1: false, result_used: false}
 
 - name: TacticDefend
@@ -1860,12 +1867,17 @@
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (or object) to defend; must be a valid human for the tactic to be set."}
-    - {name: range, lua: number, ctype: float, default: 2.25, desc: "Defend range in metres (default 2.25)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: range, lua: number, ctype: float, default: 2.25, desc: "Distance in metres the `FollowAndDefend` goals keep (default 2.25)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Has a gang stay near and defend a human (event `TacHumanToDefendDead` when it dies).
-  evidence: inferred
-  depth: brief
+    Has a gang guard a human (type 2): the members join his formation with `FollowAndDefend` goals (dogs keep away
+    from enemies instead), run to him when he is knocked out or arrested, and make enemies of anyone violent near
+    him; the callback gets 11 `TacHumanToDefendDead` when he dies and 9 `TacNoEnemies` when no member has an enemy.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x003101d8 (vtable 0x00543800): Start 0x00310618, Process 0x00310768 (every 1.5 s), event 0x00310a60.
+    The formation uses set 3 with two slots per member (up to 9). Behaviour: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 23, calls: 25, boot: false, mission1: false, result_used: false}
 
 - name: TacticWalkinTall
@@ -1874,13 +1886,19 @@
     - {addr: 0x00315e48, name: Tactic_WalkinTall}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the flag or object to walk to."}
-    - {name: range, lua: number, ctype: float, desc: "A range in metres."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the flag to walk to."}
+    - {name: range, lua: number, ctype: float, desc: "Distance in metres to the nearest enemy gang member that fires code 7."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Has a gang walk together, swaggering, to a flag or object.
-  evidence: inferred
-  depth: brief
+    Has a gang swagger to a flag (type 0x15): the leader walks there (`MoveToFlag`, gait 2) with the others 0.75 m
+    behind in formation, posture anims play when facing an enemy gang's leader, and the callback gets 7 `TacInRange`
+    while the nearest enemy gang is within `range` (checked each second) and 8 `TacArrived`.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0031ec90 (vtable 0x005440a0): Start 0x0031ef28, Process 0x0031efb8, event 0x0031f268. Start
+    substitutes anim 0x253 with four swagger anims (0x00511620) and says the `shadow_spot` line. Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 18, calls: 36, boot: false, mission1: false, result_used: false}
 
 - name: TacticPursue
@@ -1889,17 +1907,22 @@
     - {addr: 0x00315ee8, name: Tactic_Pursue}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: targetGang, lua: number, ctype: int, default: -1, desc: "Gang index to pursue (default -1)."}
-    - {name: range, lua: number, ctype: float, default: 5, desc: "A distance in metres (default 5)."}
-    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id (default 2)."}
-    - {name: angle1, lua: number, ctype: float, default: 90, desc: "An angle in degrees (default 90)."}
-    - {name: angle2, lua: number, ctype: float, default: 45, desc: "An angle in degrees (default 45)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: searchMs, lua: number, ctype: unsigned, default: 30000, desc: "Search time in milliseconds (default 30000)."}
+    - {name: targetGang, lua: number, ctype: int, default: -1, desc: "Gang index to chase; -1 (the default) picks one (0x00317e90)."}
+    - {name: range, lua: number, ctype: float, default: 5, desc: "Distance in metres within which a chaser that sees a target engages it (code 7; default 5)."}
+    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id of the chase (default 2)."}
+    - {name: angle1, lua: number, ctype: float, default: 90, desc: "Angle passed to the members' `Chase` goals (default 90)."}
+    - {name: angle2, lua: number, ctype: float, default: 45, desc: "Second angle passed to the `Chase` goals (default 45)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: searchMs, lua: number, ctype: unsigned, default: 30000, desc: "How long in milliseconds the gang keeps searching once no chaser sees the target, before code 9 (default 30000)."}
   description: >-
-    Has a gang chase another gang, searching for it for a time when it loses sight.
-  evidence: inferred
-  depth: brief
+    Has a gang chase another gang (type 0x14): each member gets a `Chase` goal after the target gang's leader, the
+    callback gets 7 `TacInRange` when a member sees a target within `range` (who becomes his enemy), and 9
+    `TacNoEnemies` when the target gang is gone or the search after losing it runs out.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x00317c40 (vtable 0x00543c20): Start 0x00317f20, Process 0x003183b8 (every 150 ms), event
+    0x00318770. Hits by a player's gang do not fire `TacDamage`. Behaviour: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 22, calls: 23, boot: false, mission1: false, result_used: false}
 
 - name: TacticHanginOut
@@ -1909,16 +1932,21 @@
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
     - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the hang-out flag."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: range, lua: number, ctype: float, default: 6, desc: "Range in metres (default 6)."}
-    - {name: banter, lua: boolean, default: true, desc: "true (the default) lets members banter."}
-    - {name: respond, lua: boolean, desc: "true to respond to the player (scripts' `RespondOff` negated)."}
-    - {name: fullAware, lua: boolean, desc: "true for full awareness of the surroundings."}
-    - {name: harass, lua: boolean, default: true, desc: "true (the default) lets members harass passers-by."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: range, lua: number, ctype: float, default: 6, desc: "Radius in metres round the flag the members keep to (default 6)."}
+    - {name: banter, lua: boolean, default: true, desc: "true (the default) lets pairs of members talk (statement and response lines)."}
+    - {name: respond, lua: boolean, desc: "true sends free members to help when someone is violent to the gang nearby (up to the gang's respond percentage)."}
+    - {name: fullAware, lua: boolean, desc: "false (the default) narrows the members' view by 20 degrees and their sight range by a quarter while they hang out."}
+    - {name: harass, lua: boolean, default: true, desc: "true (the default) lets the `HangOut` goals harass passers-by."}
   description: >-
-    Has a gang hang out around a flag, chatting and reacting to what passes.
-  evidence: inferred
-  depth: brief
+    Has a gang hang out round a flag (type 0x18): each member gets a `HangOut` goal within `range` of the flag, pairs
+    of members banter every 3 s, and the callback gets the shared hit, sighting and attack codes (5, 4, 3, 6).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x00311ad8 (vtable 0x00543920): Start 0x00312348, Process 0x00312518, event 0x00312580. Start also
+    substitutes anim 0x25b with eight hang-out idles (0x00511480). Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 28, calls: 72, boot: false, mission1: false, result_used: false}
 
 - name: TacticWander
@@ -1927,19 +1955,25 @@
     - {addr: 0x003160a8, name: Tactic_Wander}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id (default 2)."}
-    - {name: delay, lua: number, ctype: unsigned, desc: "A delay (scripts pass 0 or a table field)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: buffer, lua: number, ctype: float, default: 10, desc: "A distance in metres (default 10)."}
-    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Follow slot set to use; -1 (the default) for the leader's current one (inferred)."}
+    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id of the leader's `Wander` goal (default 2)."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Number passed to the `Wander` goal."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: buffer, lua: number, ctype: float, default: 10, desc: "Distance in metres passed to the `Wander` goal (default 10)."}
+    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Formation slot set; -1 (the default) uses set 3 with one slot per member (up to 9)."}
     - {name: banter, lua: boolean, default: true, desc: "true (the default) lets members banter."}
     - {name: worldFlags, lua: boolean, default: true, desc: "true (the default) lets members use world flags."}
     - {name: vandal, lua: boolean, desc: "true to let them vandalise."}
     - {name: steal, lua: boolean, desc: "true to let them steal."}
   description: >-
-    Has a gang wander the streets in formation.
-  evidence: inferred
-  depth: brief
+    Has a gang wander as a group (type 0x16): the leader gets a `Wander` goal and the others follow 4 m apart in
+    formation; every 3 s pairs banter and, when allowed, members use world flags, vandalise or steal on the way. The
+    callback gets the shared hit and sighting codes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0031f300 (vtable 0x00544100): Start 0x0031f638 (0x0031f410), Process 0x00320360 (world flags
+    0x0031fb80, vandalism 0x0031fdc0, theft 0x003200c8), event 0x00320410. Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 19, calls: 20, boot: false, mission1: false, result_used: false}
 
 - name: TacticTravelPath
@@ -1951,16 +1985,22 @@
     - {name: path, lua: userdata, desc: "The path object, or nil."}
     - {name: reverse, lua: boolean, desc: "true to travel it backwards."}
     - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id (default 2)."}
-    - {name: delay, lua: number, ctype: unsigned, desc: "A delay (scripts pass 5 or a table field)."}
-    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Follow slot set; -1 (the default) for the current one (inferred)."}
-    - {name: startPoint, lua: number, ctype: int, default: -1, desc: "Starting point index; -1 (the default) for the nearest (inferred)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Seconds the leader's `TravelPath` goal is given (stored as milliseconds; inferred: a pause at points)."}
+    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Formation slot set; -1 (the default) uses set 3 with one slot per member (up to 9)."}
+    - {name: startPoint, lua: number, ctype: int, default: -1, desc: "Path point to start from; -1 (the default) lets the goal choose."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
     - {name: banter, lua: boolean, default: true, desc: "true (the default) lets members banter."}
-    - {name: loop, lua: boolean, default: true, desc: "true (the default) to loop the path."}
+    - {name: loop, lua: boolean, default: true, desc: "true (the default) gives the goal mode 1 (loop), false mode 2."}
   description: >-
-    Has a gang travel along a path in formation.
-  evidence: inferred
-  depth: brief
+    Has a gang travel a path (type 0x17): the leader gets a `TravelPath` goal and the others follow 1 m apart in
+    formation; with no path the leader wanders the flag network (`TravelFlagNet`) instead. The callback gets only the
+    shared hit and sighting codes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0031cbc0 (vtable 0x00543f80): Start 0x0031cf80, Process 0x0031d460, event 0x0031d758. A free member
+    near the leader may stop to use a nearby usable flag (inferred). Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 20, calls: 38, boot: false, mission1: false, result_used: false}
 
 - name: TacticAttack
@@ -1969,13 +2009,17 @@
     - {addr: 0x00307548, name: Tactic_Attack}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events (such as `TacNoEnemies`), or nil."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Has a gang attack its enemies.
-  evidence: inferred
-  depth: brief
+    Sets a gang's tactic to attacking (type 0): every member that is not a player gets threat response 2 and a melee
+    goal, idle members join the nearest member's fight every 3 s, and the callback gets 9 `TacNoEnemies` once no
+    member has an enemy (checked each second) and 13 `TacMemberDied` when a member dies.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Constructor 0x003075c8 also sets two timers 1 s and 3 s ahead.
+    Constructor 0x003075c8 (vtable 0x00543320): Start 0x00307fe0, Process 0x003081a8, event 0x00308478. A gang with
+    `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10), not traced. Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 54, calls: 184, boot: false, mission1: false, result_used: false}
 
 - name: TacticMoveToFlag
@@ -1986,13 +2030,18 @@
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
     - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the destination flag."}
     - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait id (default 2)."}
-    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Follow slot set; -1 (the default) for the current one (inferred)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events (`TacArrived`), or nil."}
-    - {name: banter, lua: boolean, desc: "true lets members banter on the way."}
+    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Formation slot set; -1 (the default) uses set 3 with one slot per member (up to 9)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: banter, lua: boolean, desc: "true lets pairs of members talk on the way."}
   description: >-
-    Has a gang move together to a flag.
-  evidence: inferred
-  depth: brief
+    Has a gang walk together to a flag (type 0x19): the leader gets a `MoveToFlag` goal and the others follow him in
+    formation 3 m apart; the callback gets 8 `TacArrived` when the leader arrives, and the shared hit and sighting
+    codes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x00317410 (vtable 0x00543bc0): Start 0x00317700 (0x003174e8), Process 0x00317ad0, event 0x00317b38.
+    No time limit. Behaviour: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 28, calls: 69, boot: false, mission1: false, result_used: false}
 
 - name: TacticAddress
@@ -2039,14 +2088,20 @@
     - {addr: 0x003164e0, name: Tactic_Vandalize}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: zone, lua: number, ctype: unsigned, desc: "Zone or object type to vandalise (scripts pass a zone value or object type ids such as 29 and 51)."}
-    - {name: delayMs, lua: number, ctype: unsigned, default: 3000, desc: "Time in milliseconds (default 3000)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: leaderRange, lua: number, ctype: float, default: -1, desc: "Distance from the leader in metres; -1 (the default) for no limit (inferred)."}
+    - {name: zone, lua: number, ctype: unsigned, desc: "Object zone to wreck ([Object zones](../zones.md))."}
+    - {name: delayMs, lua: number, ctype: unsigned, default: 3000, desc: "Milliseconds passed to each member's `Destroy` goal (default 3000; inferred: the pause between attacks)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: leaderRange, lua: number, ctype: float, default: -1, desc: "Distance in metres passed to the `Destroy` goals; -1 (the default) for none (inferred: how far a member may stray)."}
   description: >-
-    Has a gang smash things in a zone.
-  evidence: inferred
-  depth: brief
+    Has a gang wreck a zone (type 0x1c): each member gets a `Destroy` goal for the zone; the callback gets 16
+    `TacObjectDestroyed` the first time each zone object breaks, 1 `TacFinished` once the zone has nothing left to
+    break (checked every 3 s), and the shared hit and sighting codes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0031e3b8 (vtable 0x00544040): Start 0x0031e5f8, Process 0x0031ea00, event 0x0031eaf0. The
+    constructor can also take up to four objects instead of a zone; the binding never passes any. Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 20, calls: 31, boot: false, mission1: false, result_used: false}
 
 - name: TacticVandalizeCars
@@ -2070,14 +2125,18 @@
     - {addr: 0x00316638, name: Tactic_Steal}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: zone, lua: number, ctype: unsigned, desc: "Zone or object type to loot."}
-    - {name: delayMs, lua: number, ctype: unsigned, default: 1000, desc: "Time in milliseconds (default 1000)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: leaderRange, lua: number, ctype: float, default: -1, desc: "Distance from the leader in metres; -1 (the default) for no limit (inferred)."}
+    - {name: zone, lua: number, ctype: unsigned, desc: "Object zone to loot ([Object zones](../zones.md))."}
+    - {name: delayMs, lua: number, ctype: unsigned, default: 1000, desc: "Milliseconds passed to each `Steal` goal (default 1000)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: leaderRange, lua: number, ctype: float, default: -1, desc: "Distance in metres passed to the `Steal` goals; -1 (the default) for none."}
   description: >-
-    Has a gang loot a zone.
-  evidence: inferred
-  depth: brief
+    Has a gang loot a zone (type 0x1d): each member gets a `Steal` goal for the zone; the callback gets only the
+    shared hit and sighting codes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0031c030 (vtable 0x00543ec0): Start 0x0031c1d0 (0x0031c0e0), event 0x0031c258; Process always 0.
+    Behaviour: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false}
 
 - name: TacticShadow
@@ -2138,17 +2197,24 @@
     - {addr: 0x00316988, name: Tactic_AvoidEnemies}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: useThrowables, lua: boolean, desc: "true to let members throw things."}
-    - {name: minRange, lua: number, ctype: float, default: 7, desc: "Distance in metres (default 7)."}
-    - {name: maxRange, lua: number, ctype: float, default: 14, desc: "Distance in metres (default 14)."}
-    - {name: minAllyRange, lua: number, ctype: float, desc: "Distance in metres from allies (inferred)."}
-    - {name: maxAllyRange, lua: number, ctype: float, desc: "Distance in metres from allies (inferred)."}
-    - {name: value, lua: number, ctype: unsigned, desc: "A number."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: useThrowables, lua: boolean, desc: "true lets members fetch an item within 40 m and throw it at an enemy in range."}
+    - {name: minRange, lua: number, ctype: float, default: 7, desc: "Flee distance in metres, scaled by the enemy's class (default 7)."}
+    - {name: maxRange, lua: number, ctype: float, default: 14, desc: "Second distance passed to the goal's flee-point search (default 14; inferred: how far to flee)."}
+    - {name: minAllyRange, lua: number, ctype: float, desc: "Distance passed to the goal (+0x34; not traced)."}
+    - {name: maxAllyRange, lua: number, ctype: float, desc: "Distance passed to the goal (+0x38; not traced)."}
+    - {name: gait, lua: number, ctype: unsigned, desc: "Gait id to flee at; 0 lets the goal choose (5, or 4 when tired)."}
   description: >-
-    Has a gang keep away from enemies, optionally throwing things.
-  evidence: inferred
-  depth: brief
+    Has a gang keep away from its enemies (type 0x20): each member gets an `AvoidEnemies` goal that sees all round,
+    drops its threat response to 0, runs from the nearest enemy that comes close or faces it, and with
+    `useThrowables` picks up and throws things at him.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x003085d8 (vtable 0x00543380): Start 0x00308790 (0x00308698), event 0x003087c0 (hit 5, attack 6);
+    Process always 0. The goal (vtable 0x005419b0, Process 0x002e3630) re-picks the nearest enemy every 1.5 s and
+    flees at gait 5 (4 when the human is tired) unless `gait` is given. Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 25, calls: 32, boot: false, mission1: false, result_used: false}
 
 - name: TacticManWeaponPile
@@ -2157,15 +2223,19 @@
     - {addr: 0x00316a68, name: Tactic_ManWeaponPile}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: range, lua: number, ctype: float, desc: "Range in metres."}
-    - {name: maxThrow, lua: number, ctype: float, desc: "Throw distance or count limit (scripts' `MaxThrow`)."}
-    - {name: delay, lua: number, ctype: int, desc: "Delay between throws."}
-    - {name: value, lua: number, ctype: int, desc: "A number (scripts use 0 and 5)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events (`TacObjectsThrown`), or nil."}
+    - {name: range, lua: number, ctype: float, desc: "Distance passed to the `ManWeaponPile` goals."}
+    - {name: maxThrow, lua: number, ctype: float, desc: "Second distance passed to the goals."}
+    - {name: delay, lua: number, ctype: int, desc: "Number passed to the goals (16 bits)."}
+    - {name: value, lua: number, ctype: int, desc: "Number passed to the goals (16 bits)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Has a gang man piles of throwable objects and bombard enemies.
-  evidence: inferred
-  depth: brief
+    Has a gang man a pile of throwables (type 6): each member gets a `ManWeaponPile` goal with the four values; the
+    callback gets 13 `TacMemberDied` when a member dies, and the hit and attack codes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x00317050 (vtable 0x00543b60): Start 0x00317218 (0x00317108), event 0x00317350. The goal's own
+    behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 20, calls: 20, boot: false, mission1: false, result_used: false}
 
 - name: TacticDomination
@@ -2208,14 +2278,19 @@
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
     - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the usable flag (a hiding place, a world flag)."}
-    - {name: range, lua: number, ctype: float, default: 4, desc: "Range in metres (default 4)."}
-    - {name: view, lua: number, ctype: float, default: 10, desc: "A view distance or angle (default 10)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: banter, lua: boolean, desc: "true lets members banter."}
+    - {name: range, lua: number, ctype: float, default: 4, desc: "Distance in metres from the flag: members farther walk to it, and a player this close ends the use (default 4)."}
+    - {name: view, lua: number, ctype: float, default: 10, desc: "Sight range given to members using the flag (brain +0x130; default 10)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: banter, lua: boolean, desc: "Stored with the tactic (+0x44); its use is not traced."}
   description: >-
-    Has a gang go to and use a flag, such as a hiding place.
-  evidence: inferred
-  depth: brief
+    Has a gang use a flag (type 0x21), such as a hiding place: members walk to it and use it (`MoveToUseFlag`), and
+    once the nearest player comes within `range` of the flag they leave it and the callback gets 7 `TacInRange`.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0031d878 (vtable 0x00543fe0): Start 0x0031dc28, Process 0x0031e098 (every second), event
+    0x0031e280. Hits, sightings and attacks alert the members without calling back. Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 21, calls: 23, boot: false, mission1: false, result_used: false}
 
 - name: TacticStandGround
@@ -2252,23 +2327,29 @@
     - {addr: 0x00316dd8, name: Tactic_Confront}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: targetGang, lua: number, ctype: int, default: -1, desc: "Gang index to confront (default -1)."}
-    - {name: approachRange, lua: number, ctype: float, default: 10, desc: "Approach range in metres (default 10)."}
-    - {name: criticalRange, lua: number, ctype: float, default: 2, desc: "Critical range in metres (default 2)."}
-    - {name: confrontation, lua: number, ctype: unsigned, desc: "Confrontation type number."}
-    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Follow slot set; -1 (the default) for the current one (inferred)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: anim1, lua: string, desc: "Confrontation animation name, or nil."}
+    - {name: targetGang, lua: number, ctype: int, default: -1, desc: "Gang index to confront; -1 (the default) takes the first member's current target gang, and with none the tactic does nothing."}
+    - {name: approachRange, lua: number, ctype: float, default: 10, desc: "Distance in metres, added to both gangs' radii, inside which code 7 fires (default 10)."}
+    - {name: criticalRange, lua: number, ctype: float, default: 2, desc: "Distance in metres, added to both gangs' radii, inside which code 1 fires (default 2); also the members' `Confront` goal distance unless `confrontation` is non-zero."}
+    - {name: confrontation, lua: number, ctype: unsigned, desc: "Confrontation style: non-zero gives the members' goals `approachRange` instead of `criticalRange`; 2 also lets non-leader classes posture."}
+    - {name: slotSet, lua: number, ctype: int, default: -1, desc: "Formation slot set for the members; -1 (the default) uses set 3 with one slot per member (up to 9)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: anim1, lua: string, desc: "Posture animation name substituted for anim 0x253, or nil (with anims 1-4 all nil, four defaults are used)."}
     - {name: anim2, lua: string, desc: "Confrontation animation name, or nil."}
     - {name: anim3, lua: string, desc: "Confrontation animation name, or nil."}
     - {name: anim4, lua: string, desc: "Confrontation animation name, or nil."}
-    - {name: anim5, lua: string, desc: "Confrontation animation name, or nil."}
-    - {name: angle, lua: number, ctype: unsigned, default: 135, desc: "An angle in degrees (default 135)."}
+    - {name: anim5, lua: string, desc: "A last posture animation, kept apart from the random choice (inferred), or nil."}
+    - {name: spotLine, lua: number, ctype: unsigned, default: 135, desc: "Speech command the gang's spotter says on Start (default 135 `shadow`, which makes it say 136 `shadow_spot`; any other value says 22 `spot`) and members say when they face the other leader."}
   description: >-
-    Has a gang square up to another gang: approach, posture with up to five animations, and fight when the other side
-    comes within the critical range.
-  evidence: inferred
-  depth: brief
+    Has a gang square up to another (type 0x23): the members form up behind their leader and approach with `Confront`
+    goals, posture with the given anims when facing the other leader, and the callback gets 7 `TacInRange` while the
+    gangs are within `approachRange`, 1 inside `criticalRange`, 2 when they part again and 9 when the other gang is
+    gone.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0030e670 (vtable 0x00543740): Start 0x0030ec20, Process 0x0030eec0 (every 250 ms; posture every 500
+    ms), event 0x0030f408. With no route between the leaders it returns 1 when the other leader is in view, else 9.
+    Behaviour: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 26, calls: 35, boot: false, mission1: false, result_used: false}
 
 - name: TacticTaunt
@@ -2296,14 +2377,19 @@
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
     - {name: banter, lua: boolean, default: true, desc: "true (the default) lets members banter."}
-    - {name: respond, lua: boolean, desc: "true to respond to the player."}
-    - {name: clearAnims, lua: boolean, desc: "true to clear running animations first."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
-    - {name: dynIdle, lua: boolean, desc: "true to use dynamic idle animations."}
+    - {name: respond, lua: boolean, desc: "true sends free members to help when someone is violent to the gang nearby."}
+    - {name: clearAnims, lua: boolean, desc: "Passed to each member's `Idle` goal (0x002caf78)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
+    - {name: dynIdle, lua: boolean, desc: "true makes a hit, sighting or attack end the members' `PlayDynIdle` goals instead of calling back, then code 15."}
   description: >-
-    Has a gang stand idle where it is.
-  evidence: inferred
-  depth: brief
+    Has a gang stand idle where it is (type 0x24): each member gets an `Idle` goal; with `dynIdle`, a hit, sighting
+    or attack breaks the members off their idle animations and the callback gets 15 `TacAnimDone` once they are done,
+    otherwise it gets the shared codes.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x003149f0 (vtable 0x00543aa0): Start 0x00314f38, Process 0x003150c8, event 0x00315228. Behaviour:
+    [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 21, calls: 22, boot: false, mission1: false, result_used: false}
 
 - name: TacticBossScenarioA
@@ -2458,14 +2544,19 @@
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
     - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 0 and 5)."}
     - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 0 and 15)."}
-    - {name: range, lua: number, ctype: float, default: 40, desc: "A distance in metres (default 40)."}
+    - {name: range, lua: number, ctype: float, default: 40, desc: "Radius in metres of the call for help; below 0 the member's doubled hearing range is used (default 40)."}
     - {name: value3, lua: number, ctype: float, default: 10, desc: "A number (default 10)."}
     - {name: value4, lua: number, ctype: float, default: 30, desc: "A number (default 30)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Has a gang scout around for enemies (stealth sections).
-  evidence: inferred
-  depth: brief
+    Has a gang scout for enemies (type 0x27), as in the stealth sections: each member gets a `Scout` (or `PathScout`)
+    goal; a member hit, attacked or spotting someone fights him and calls his gang over, and the gang's alert state
+    follows whether any member is fighting (checked every 200 ms). No code is sent from Process.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x0031a430 (vtable 0x00543da0): Start 0x0031af98, Process 0x0031b030, event 0x0031b1b0 (0x0031a818).
+    Behaviour: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false}
 
 - name: TacticPathScout
