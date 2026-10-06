@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The path data decoded (docs/research/level-loading.md#path-data): the records handed out in order, the inside test
-// by slab lists and without, and the walkable-line test across neighbouring polygons. Synthetic chunks and maps only.
+// by slab lists and without, the areas and the walkable-line test from one area into the next. Synthetic chunks and
+// maps only.
 #include "world/path_map.h"
 
 #include <cstdint>
@@ -131,11 +132,12 @@ TEST_CASE("a polygon wound the other way contains nothing", "[world][paths]") {
     CHECK_FALSE(clockwise->inside(clockwise->polygons()[0], 1.0F, 1.0F));
 }
 
-TEST_CASE("a line is walkable while it stays inside the polygons, across their borders", "[world][paths]") {
+TEST_CASE("a line is walkable while it stays inside one area", "[world][paths]") {
     const PathMap map = coney::test::uCorridors();
     CHECK(map.walkable({1.0F, 1.0F, 0.0F}, {9.5F, 1.0F, 0.0F}));        // along the bottom
     CHECK(map.walkable({1.0F, 1.0F, 0.0F}, {9.5F, 1.5F, 0.0F}));        // into the side's overlap
     CHECK(map.walkable({9.0F, 1.0F, 0.0F}, {9.0F, 9.5F, 0.0F}));        // up the side, into the top
+    CHECK(map.walkable({9.0F, 9.0F, 0.0F}, {9.0F, 1.0F, 0.0F}));        // and back down
     CHECK_FALSE(map.walkable({1.0F, 1.0F, 0.0F}, {1.0F, 9.0F, 0.0F}));  // across the U's gap
     CHECK_FALSE(map.walkable({1.0F, 1.0F, 0.0F}, {9.0F, 5.0F, 0.0F}));  // cuts the inner corner
     CHECK_FALSE(map.walkable({1.0F, 1.0F, 0.0F}, {12.0F, 1.0F, 0.0F})); // off the end
@@ -150,6 +152,26 @@ TEST_CASE("the walkable-line test leaves out polygons with flag 8 or the caller'
     CHECK(map.walkable({1.0F, 1.0F, 0.0F}, {7.0F, 1.0F, 0.0F}));
     CHECK_FALSE(map.walkable({1.0F, 1.0F, 0.0F}, {7.0F, 1.0F, 0.0F}, 0x20));
     CHECK_FALSE(map.walkable({1.0F, 1.0F, 0.0F}, {9.0F, 1.0F, 0.0F}));
+}
+
+TEST_CASE("a hole in an area refuses a line through it, until it takes flag 8; a line may cross into one next area",
+          "[world][paths]") {
+    coney::test::PathBuilder builder;
+    builder.rectangle(0.0F, 10.0F, 0.0F, 10.0F);
+    builder.hole(2.0F, 8.0F, 4.9F, 5.1F); // a fence across the yard
+    builder.rectangle(10.0F, 20.0F, 0.0F, 10.0F);
+    builder.rectangle(20.0F, 30.0F, 0.0F, 10.0F);
+    PathMap map = builder.build();
+    CHECK(map.areaAt(5.0F, 2.0F) == 0U);
+    CHECK_FALSE(map.areaAt(5.0F, 5.0F).has_value()); // in the hole
+    CHECK(map.areaAt(15.0F, 5.0F) == 2U);
+    CHECK_FALSE(map.walkable({5.0F, 2.0F, 0.0F}, {5.0F, 8.0F, 0.0F}));
+    CHECK(map.walkable({1.0F, 2.0F, 0.0F}, {1.0F, 8.0F, 0.0F}));        // beside the fence
+    CHECK(map.walkable({5.0F, 2.0F, 0.0F}, {15.0F, 2.0F, 0.0F}));       // into the next area
+    CHECK_FALSE(map.walkable({5.0F, 2.0F, 0.0F}, {25.0F, 2.0F, 0.0F})); // through it into a third
+    // Opened (flag 8), the hole drops out of the tests.
+    map.mutablePolygons()[1].flags |= coney::world::kPathPolygonExcluded;
+    CHECK(map.walkable({5.0F, 2.0F, 0.0F}, {5.0F, 8.0F, 0.0F}));
 }
 
 TEST_CASE("a point's hole is the flag-4 polygon whose box holds it, the nearest centre among several",

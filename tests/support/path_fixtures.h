@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -34,6 +35,38 @@ class PathBuilder {
         m_vertices.push_back(anim::Vec3{x1, y0, 0.0F});
         m_vertices.push_back(anim::Vec3{x1, y1, 0.0F});
         m_vertices.push_back(anim::Vec3{x0, y1, 0.0F});
+        m_polygons.push_back(polygon);
+        m_nodesOf.emplace_back();
+        return static_cast<std::uint32_t>(m_polygons.size() - 1);
+    }
+
+    /// Adds the rectangle [x0, x1] × [y0, y1] as a hole (clockwise, off the graph) of the area of the polygon added
+    /// last, with `flags`; returns its index.
+    std::uint32_t hole(float x0, float x1, float y0, float y1, std::uint32_t flags = 7) {
+        m_polygons.back().nextInArea = true;
+        const std::uint32_t added = rectangle(x0, x1, y0, y1, 0, flags);
+        // Clockwise: the second and fourth corners swap.
+        std::swap(m_vertices[m_vertices.size() - 3], m_vertices[m_vertices.size() - 1]);
+        return added;
+    }
+
+    /// Adds the polygon through `corners` (x, y) in order, which must run anticlockwise, on the graph unless `graph`
+    /// is 0; returns its index.
+    std::uint32_t polygon(const std::vector<std::pair<float, float>>& corners, std::int16_t graph = 1) {
+        world::PathPolygon polygon;
+        polygon.firstVertex = static_cast<std::uint32_t>(m_vertices.size());
+        polygon.vertexCount = static_cast<std::uint32_t>(corners.size());
+        polygon.graph = graph;
+        polygon.xMin = polygon.xMax = corners.front().first;
+        polygon.yMin = polygon.yMax = corners.front().second;
+        for (const auto& [x, y] : corners) {
+            polygon.xMin = std::min(polygon.xMin, x);
+            polygon.xMax = std::max(polygon.xMax, x);
+            polygon.yMin = std::min(polygon.yMin, y);
+            polygon.yMax = std::max(polygon.yMax, y);
+            m_vertices.push_back(anim::Vec3{x, y, 0.0F});
+        }
+        polygon.slabStarts.fill(-1);
         m_polygons.push_back(polygon);
         m_nodesOf.emplace_back();
         return static_cast<std::uint32_t>(m_polygons.size() - 1);
@@ -102,14 +135,19 @@ class PathBuilder {
 /// bottom's left end the top's left end is out of a straight line.
 inline world::PathMap uCorridors(float x = 0.0F, float y = 0.0F) {
     PathBuilder builder;
-    const std::uint32_t bottom = builder.rectangle(x, x + 10.0F, y, y + 2.0F);
-    const std::uint32_t side = builder.rectangle(x + 8.0F, x + 10.0F, y, y + 10.0F);
-    const std::uint32_t top = builder.rectangle(x, x + 10.0F, y + 8.0F, y + 10.0F);
-    builder.node(bottom, x + 2.0F, y + 1.0F);
-    builder.node(bottom, x + 9.0F, y + 1.0F);
-    builder.node(side, x + 9.0F, y + 5.0F);
-    builder.node(top, x + 9.0F, y + 9.0F);
-    builder.node(top, x + 2.0F, y + 9.0F);
+    const std::uint32_t u = builder.polygon({{x, y},
+                                             {x + 10.0F, y},
+                                             {x + 10.0F, y + 10.0F},
+                                             {x, y + 10.0F},
+                                             {x, y + 8.0F},
+                                             {x + 8.0F, y + 8.0F},
+                                             {x + 8.0F, y + 2.0F},
+                                             {x, y + 2.0F}});
+    builder.node(u, x + 2.0F, y + 1.0F);
+    builder.node(u, x + 9.0F, y + 1.0F);
+    builder.node(u, x + 9.0F, y + 5.0F);
+    builder.node(u, x + 9.0F, y + 9.0F);
+    builder.node(u, x + 2.0F, y + 9.0F);
     for (std::uint32_t n = 0; n < 4; ++n) {
         builder.link(n, n + 1);
     }

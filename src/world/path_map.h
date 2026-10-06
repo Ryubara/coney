@@ -41,6 +41,8 @@ struct PathPolygon {
     /// polygon has no lists and every edge is walked.
     std::array<std::int16_t, kPathSlabCount> slabStarts{};
     std::uint32_t flags = 0;     ///< `+0x48`.
+    bool nextInArea = false;     ///< `+0x20` not 0: the next polygon is one of this area's holes.
+    std::uint32_t area = 0;      ///< Its area's first polygon (the outline), worked out from nextInArea.
     bool hasNodes = false;       ///< `+0x4c` not 0: it has an A record, so route nodes.
     std::uint32_t firstNode = 0; ///< Its first route node: the A records take the nodes in order.
     std::uint32_t nodeCount = 0; ///< The A record's `u16 +0x00`: its route nodes.
@@ -113,11 +115,17 @@ class PathMap {
     /// @orig 0x00250100 PathPolygon_FindAtPoint (unknown)
     [[nodiscard]] std::optional<std::uint32_t> holeAt(float x, float y) const;
 
-    /// The walkable-line test: whether the segment from `from` to `to` (in plan) never leaves the polygons that have
-    /// neither flag 8 (kPathPolygonExcluded) nor any of `mask`. **Coney choice**: the segment is cut at every edge of
-    /// those polygons it crosses and each piece's middle (and both ends) must lie inside one of them, which is the
-    /// same answer as the original's walk from polygon to polygon by slab (`0x0024e938`); the collision test that
-    /// refuses a blocked segment first (`0x00221f80`) is not made.
+    /// The area at (x, y): the first area whose polygons' winding numbers (the outline's and its holes', a polygon
+    /// with flag 8 left out) add up to a positive sum; nothing when none. Returns the area's first polygon.
+    /// @orig 0x00250708 PathArea_FindAtPoint (unknown)
+    [[nodiscard]] std::optional<std::uint32_t> areaAt(float x, float y) const;
+    /// The walkable-line test (docs/research/ai.md#path-planning): the segment from `from` to `to` (in plan) is
+    /// crossed with the edges of the start's area's polygons that have neither flag 8 (kPathPolygonExcluded) nor any
+    /// of `mask`, keeping the nearest crossing (one at the very end ignored). With none, it passes when the end lies in
+    /// the same area; with one, the end's area's farthest crossing must lie within 0.02 m of it, so the segment goes
+    /// straight from one area into the next: any hole on the way refuses it. **Coney choices**: the start's area is
+    /// found from the point; every edge is crossed rather than the slab lists'; the hazard spheres (`0x00221f80`)
+    /// are not built (only fire adds them).
     /// @orig 0x0024fbf8 PathMap_LineWalkable (unknown)
     [[nodiscard]] bool walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask = 0) const;
 
@@ -126,6 +134,12 @@ class PathMap {
     [[nodiscard]] static std::expected<PathMap, Error> checked(PathMap map);
     // Whether `polygon` takes part in the walkable-line test under `mask`.
     [[nodiscard]] static bool usable(const PathPolygon& polygon, std::uint32_t excludeFlags);
+    // The winding number of (x, y) in `polygon` (inside()'s sum).
+    [[nodiscard]] int winding(const PathPolygon& polygon, float x, float y) const;
+    // The nearest (or `farthest`) parameter in [0, 1) at which the segment crosses an edge of area `area`'s polygons
+    // without any of `exclude`; `any` says whether the area had such a polygon at all.
+    [[nodiscard]] std::optional<float> areaCrossing(std::uint32_t area, anim::Vec3 from, anim::Vec3 to,
+                                                    std::uint32_t exclude, bool farthest, bool& any) const;
 
     std::vector<anim::Vec3> m_vertices;
     std::vector<PathPolygon> m_polygons;

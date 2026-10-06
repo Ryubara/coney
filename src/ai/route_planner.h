@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <functional>
 #include <optional>
 #include <span>
 #include <vector>
@@ -126,15 +125,9 @@ class RoutePlanner {
     /// The path data.
     [[nodiscard]] const world::PathMap& map() const { return *m_map; }
 
-    /// The test that refuses a blocked line before the walkable-line test (`0x00221f80`, inferred: collision): true
-    /// when something solid lies between the two points. None set: nothing is blocked.
-    using BlockTest = std::function<bool(anim::Vec3 from, anim::Vec3 to)>;
-    void setBlockTest(BlockTest test) { m_blocked = std::move(test); }
-    /// The walkable-line test with the block test first: the line is clear when nothing blocks it and it never
-    /// leaves the walkable polygons (docs/research/ai.md#path-planning).
-    [[nodiscard]] bool lineClear(anim::Vec3 from, anim::Vec3 to) const {
-        return !(m_blocked && m_blocked(from, to)) && m_map->walkable(from, to);
-    }
+    /// The walkable-line test with the mask 0 (world::PathMap::walkable(), docs/research/ai.md#path-planning): a
+    /// hole in the path polygons on the way, a fence's among them, refuses the line.
+    [[nodiscard]] bool lineClear(anim::Vec3 from, anim::Vec3 to) const { return m_map->walkable(from, to); }
 
     /// A route from `from` to `to` over edges whose flags meet `mask`: none needed when the straight line is
     /// walkable; MoveFailure::NoRoute when either end lies on no polygon (or, off every polygon, none within
@@ -190,7 +183,6 @@ class RoutePlanner {
 
     const world::PathMap* m_map;
     PlannerSettings m_settings;
-    BlockTest m_blocked;
     std::vector<std::uint8_t> m_uses;
     std::size_t m_routesInUse = 0;
 };

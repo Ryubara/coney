@@ -23,9 +23,12 @@ constexpr std::size_t kVertexBytes = 16;
 constexpr std::size_t kPolygonBytes = 0x50;
 constexpr std::size_t kNodeBytes = 32;
 constexpr std::size_t kEdgeBytes = 8;
+constexpr std::size_t kNextInAreaAt = 0x20;
 constexpr std::size_t kSlabStartsAt = 0x28;
 constexpr std::size_t kFlagsAt = 0x48;
 constexpr std::size_t kARecordAt = 0x4c;
+// Two areas join where the segment leaves one within this distance squared of where it enters the next (0.02 m).
+constexpr float kAreaJoinSquared = 0.0004F;
 // An edge flatter than this in y never crosses a row (the inside test).
 constexpr float kFlatEdge = 0.0001F;
 // The avoid bit of an edge's word, and where its door number sits (the low 13 bits of its `+0x06` half).
@@ -113,6 +116,7 @@ std::expected<PathMap, Error> PathMap::decode(std::span<const std::byte> chunk) 
         for (std::size_t slab = 0; slab < kPathSlabCount; ++slab) {
             polygon.slabStarts.at(slab) = loadS16(chunk, at + kSlabStartsAt + slab * 2);
         }
+        polygon.nextInArea = loadU32(chunk, at + kNextInAreaAt) != 0;
         polygon.flags = loadU32(chunk, at + kFlagsAt);
         polygon.hasNodes = loadU32(chunk, at + kARecordAt) != 0;
         if (polygon.hasNodes) {
@@ -194,6 +198,14 @@ std::expected<PathMap, Error> PathMap::checked(PathMap map) {
             }
         }
     }
+    // Each polygon's area: an outline and the holes after it, chained by the +0x20 word.
+    std::uint32_t first = 0;
+    for (std::size_t p = 0; p < map.m_polygons.size(); ++p) {
+        map.m_polygons[p].area = first;
+        if (!map.m_polygons[p].nextInArea) {
+            first = static_cast<std::uint32_t>(p + 1);
+        }
+    }
     for (std::size_t c = 0; c < nodes; ++c) {
         const PathNode& node = map.m_nodes[c];
         if (std::size_t{node.firstEdge} + node.edgeCount > map.m_edges.size()) {
@@ -214,9 +226,11 @@ std::span<const PathEdge> PathMap::edgesOf(std::uint32_t node) const {
     return std::span(m_edges).subspan(owner.firstEdge, owner.edgeCount);
 }
 
-bool PathMap::inside(const PathPolygon& polygon, float x, float y) const {
+bool PathMap::inside(const PathPolygon& polygon, float x, float y) const { return winding(polygon, x, y) > 0; }
+
+int PathMap::winding(const PathPolygon& polygon, float x, float y) const {
     if (x < polygon.xMin || x > polygon.xMax || y < polygon.yMin || y > polygon.yMax || polygon.vertexCount < 3) {
-        return false;
+        return 0;
     }
     const std::span<const anim::Vec3> outline = std::span(m_vertices).subspan(polygon.firstVertex, polygon.vertexCount);
     // One edge's share of the winding number: it crosses the point's row to its left.
@@ -233,12 +247,12 @@ bool PathMap::inside(const PathPolygon& polygon, float x, float y) const {
         }
         return dy < 0.0F ? 1 : -1;
     };
-    int winding = 0;
+    int sum = 0;
     if (polygon.slabStarts[0] < 0) {
         for (std::size_t k = 0; k < outline.size(); ++k) {
-            winding += windingOf(k);
+            sum += windingOf(k);
         }
-        return winding > 0;
+        return sum;
     }
     // The point's slab, and its list of edge numbers up to the negative value that ends it.
     const float height = polygon.yMax - polygon.yMin;
@@ -249,15 +263,15 @@ bool PathMap::inside(const PathPolygon& polygon, float x, float y) const {
             : 0;
     const std::int16_t start = polygon.slabStarts.at(static_cast<std::size_t>(slab));
     if (start < 0) {
-        return false;
+        return 0;
     }
     for (auto at = static_cast<std::size_t>(start); at < m_edgeLists.size() && m_edgeLists[at] >= 0; ++at) {
         const auto k = static_cast<std::size_t>(m_edgeLists[at]);
         if (k < outline.size()) {
-            winding += windingOf(k);
+            sum += windingOf(k);
         }
     }
-    return winding > 0;
+    return sum;
 }
 
 bool PathMap::usable(const PathPolygon& polygon, std::uint32_t excludeFlags) {
@@ -328,45 +342,81 @@ std::optional<std::uint32_t> PathMap::holeAt(float x, float y) const {
     return *std::ranges::min_element(pool, {}, averageDistance);
 }
 
-bool PathMap::walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask) const {
-    const std::uint32_t exclude = kPathPolygonExcluded | mask;
-    const float xLow = std::min(from.x, to.x);
-    const float xHigh = std::max(from.x, to.x);
-    const float yLow = std::min(from.y, to.y);
-    const float yHigh = std::max(from.y, to.y);
-    // The polygons whose box the segment's box meets, and every parameter at which it crosses one of their edges.
-    std::vector<const PathPolygon*> near;
-    std::vector<float> cuts{0.0F, 1.0F};
-    for (const PathPolygon& polygon : m_polygons) {
-        if (!usable(polygon, exclude) || polygon.xMax < xLow || polygon.xMin > xHigh || polygon.yMax < yLow ||
-            polygon.yMin > yHigh) {
+std::optional<std::uint32_t> PathMap::areaAt(float x, float y) const {
+    for (std::size_t p = 0; p < m_polygons.size(); ++p) {
+        if (m_polygons[p].area != p) {
             continue;
         }
-        near.push_back(&polygon);
+        // The winding summed over the area's polygons (a hole's runs the other way), flag 8's left out.
+        int sum = 0;
+        for (std::size_t q = p; q < m_polygons.size() && m_polygons[q].area == p; ++q) {
+            if (usable(m_polygons[q], kPathPolygonExcluded)) {
+                sum += winding(m_polygons[q], x, y);
+            }
+        }
+        if (sum > 0) {
+            return static_cast<std::uint32_t>(p);
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<float> PathMap::areaCrossing(std::uint32_t area, anim::Vec3 from, anim::Vec3 to, std::uint32_t exclude,
+                                           bool farthest, bool& any) const {
+    std::optional<float> found;
+    any = false;
+    for (std::size_t q = area; q < m_polygons.size() && m_polygons[q].area == area; ++q) {
+        const PathPolygon& polygon = m_polygons[q];
+        if (!usable(polygon, exclude)) {
+            continue;
+        }
+        any = true;
         for (std::uint32_t k = 0; k < polygon.vertexCount; ++k) {
             const anim::Vec3 a = m_vertices[polygon.firstVertex + k];
             const anim::Vec3 b = m_vertices[polygon.firstVertex + (k + 1) % polygon.vertexCount];
-            if (const std::optional<float> t = crossing(from, to, a, b)) {
-                cuts.push_back(*t);
+            const std::optional<float> t = crossing(from, to, a, b);
+            // A crossing at the very end does not count.
+            if (!t || *t >= 1.0F) {
+                continue;
+            }
+            if (!found || (farthest ? *t > *found : *t < *found)) {
+                found = t;
             }
         }
     }
-    std::ranges::sort(cuts);
-    // Between two cuts the segment is inside a polygon all the way or nowhere: one point of each piece decides.
-    const auto covered = [&](float t) {
-        const float x = from.x + (to.x - from.x) * t;
-        const float y = from.y + (to.y - from.y) * t;
-        return std::ranges::any_of(near, [&](const PathPolygon* polygon) { return inside(*polygon, x, y); });
-    };
-    if (!covered(0.0F) || !covered(1.0F)) {
+    return found;
+}
+
+bool PathMap::walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask) const {
+    const std::uint32_t exclude = kPathPolygonExcluded | mask;
+    const std::optional<std::uint32_t> startArea = areaAt(from.x, from.y);
+    if (!startArea) {
         return false;
     }
-    for (std::size_t i = 0; i + 1 < cuts.size(); ++i) {
-        if (cuts[i + 1] - cuts[i] > std::numeric_limits<float>::epsilon() && !covered(0.5F * (cuts[i] + cuts[i + 1]))) {
-            return false;
-        }
+    // 1. The nearest crossing of the start area's edges (its outline and its holes); with none of its polygons left
+    // by the mask, refused.
+    bool any = false;
+    const std::optional<float> leaves = areaCrossing(*startArea, from, to, exclude, false, any);
+    if (!any) {
+        return false;
     }
-    return true;
+    const std::optional<std::uint32_t> endArea = areaAt(to.x, to.y);
+    // 2. No crossing: the end must be in the same area.
+    if (!leaves) {
+        return endArea == startArea;
+    }
+    // 3. A crossing: the end area's farthest crossing must be where the segment left the start's, so that it went
+    // straight from one area into the next.
+    if (!endArea) {
+        return false;
+    }
+    const std::optional<float> enters = areaCrossing(*endArea, from, to, exclude, true, any);
+    if (!enters) {
+        return false;
+    }
+    const float dx = (to.x - from.x) * (*enters - *leaves);
+    const float dy = (to.y - from.y) * (*enters - *leaves);
+    return dx * dx + dy * dy < kAreaJoinSquared;
 }
 
 } // namespace coney::world

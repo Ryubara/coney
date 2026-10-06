@@ -29,10 +29,6 @@ namespace coney::platform {
 
 namespace {
 
-// The height above the two points of the ray the route planner's block test casts (**Coney stand-in**: the original's
-// test, `0x00221f80`, is not traced), metres.
-constexpr float kBlockRayHeight = 1.0F;
-
 // Game time in milliseconds from GameTimer ticks.
 std::uint64_t millisecondsOf(std::uint64_t ticks) { return ticks / (GameTimer::kTicksPerSecond / 1000); }
 
@@ -228,19 +224,6 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     // The brains plan their moves on the level's routes, when it has path data.
     if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
         m_planner = std::make_unique<ai::RoutePlanner>(*paths);
-        // **Coney stand-in** for the block test `0x00221f80` (inferred: collision): a ray between the two points
-        // kBlockRayHeight above them meets the level's collision.
-        m_planner->setBlockTest([this](anim::Vec3 from, anim::Vec3 to) {
-            const raycast::Vec3 d{to.x - from.x, to.y - from.y, to.z - from.z};
-            const float length = std::sqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z));
-            if (length < 1e-4F) {
-                return false;
-            }
-            const raycast::Ray ray{.origin = {from.x, from.y, from.z + kBlockRayHeight},
-                                   .direction = {d.x / length, d.y / length, d.z / length},
-                                   .length = length};
-            return m_scenery->collision().rayCast(ray, {}, 0).has_value();
-        });
     }
     if (cast != nullptr) {
         bindObjects(cast->objects, cast->recorded);

@@ -1423,10 +1423,9 @@ in order (the counts add up to the C records in every file; `+0x08` does not alw
 "Fails at 128 nodes" is the open list's size (counted as nodes closed, a third of
 `level99`'s reachable pairs failed). The use term is 40 × uses − 8 on the node entered; `0x0051059c` is 1 and
 `0x005105a0` 0. An end off every polygon counts on the nearest within 1 m and takes its nearest node; the shortcut
-takes any edge that links back. The walkable line cuts the segment at every crossed edge rather than walking by slab.
-**Stand-in** for its block test (`0x00221f80`, inferred: collision): a ray between the two points 1 m above them must
-meet none of the level's collision (`RoutePlanner::setBlockTest`), for the straight line, the end nodes and the route's
-cuts alike; without it the straight line ran through `level99`'s fence. A climb leg's climb that has ended moves the
+takes any edge that links back. The walkable line crosses every edge of the two areas rather than the slab lists',
+finds the start's area from the point, and has no hazard spheres (Coney has no fire to add them). A climb leg's climb
+that has ended moves the
 follower on past the leg's waypoint (the original's step there is open); the fast climber's early start within
 4.5 m, the jump legs (kind 4), the charge (`0x40`), the link's clear test and the waypoint claims are not built.
 A corner is the turn at the next two waypoints, simulated as an arc at the gait's turn rate
@@ -1547,7 +1546,6 @@ the run-stop.
   goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`).
 - Which climb clips Vermin's fence plays (tall or short fence, standing or running) and how the climb's end moves
   the follower to the next waypoint (route state 3 → 0).
-- What the walkable-line test's block test `0x00221f80` casts (Coney's stand-in is a ray 1 m above the points).
 - A\*'s "fails at 128 nodes": nodes closed, or the open heap's size? And the use term: (40 × uses) − 8, or
   40 × (uses − 8), and on which node of the edge?
 - Which edge sign the inside test counts +1, and what the clockwise polygons (most of them, nearly all with polygon

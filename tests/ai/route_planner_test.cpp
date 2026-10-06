@@ -172,14 +172,19 @@ TEST_CASE("a search with a narrower mask that fails tries again with the choke, 
           "in the default mask",
           "[ai][routes]") {
     coney::test::PathBuilder builder;
-    const std::uint32_t left = builder.rectangle(0.0F, 4.0F, 0.0F, 2.0F);
-    const std::uint32_t up = builder.rectangle(3.0F, 4.0F, 0.0F, 6.0F);
-    const std::uint32_t top = builder.rectangle(0.0F, 4.0F, 4.0F, 6.0F);
-    builder.node(left, 1.0F, 1.0F);
-    builder.node(left, 3.5F, 1.0F);
-    builder.node(up, 3.5F, 3.0F);
-    builder.node(top, 3.5F, 5.0F);
-    builder.node(top, 1.0F, 5.0F);
+    const std::uint32_t u = builder.polygon({{0.0F, 0.0F},
+                                             {4.0F, 0.0F},
+                                             {4.0F, 6.0F},
+                                             {0.0F, 6.0F},
+                                             {0.0F, 4.0F},
+                                             {3.0F, 4.0F},
+                                             {3.0F, 2.0F},
+                                             {0.0F, 2.0F}});
+    builder.node(u, 1.0F, 1.0F);
+    builder.node(u, 3.5F, 1.0F);
+    builder.node(u, 3.5F, 3.0F);
+    builder.node(u, 3.5F, 5.0F);
+    builder.node(u, 1.0F, 5.0F);
     builder.link(0, 1);
     builder.link(1, 2, coney::ai::edge_flag::kChoke);
     builder.link(2, 3);
@@ -265,16 +270,18 @@ TEST_CASE("the follower moves on at each waypoint and skips the ones it reaches 
 }
 
 TEST_CASE("a blocked straight line takes the route; the follower names a climb leg's kind", "[ai][routes]") {
-    // One open yard cut by a fence at y = 3 that only the block test sees; nodes either side linked by a climb.
+    // One open yard cut by a fence, a hole of the yard's area across x 0.5 to 3.5 at y 3; nodes either side linked by
+    // a climb.
     coney::test::PathBuilder builder;
     const std::uint32_t yard = builder.rectangle(0.0F, 4.0F, 0.0F, 6.0F);
+    builder.hole(0.5F, 3.5F, 2.9F, 3.1F);
     builder.node(yard, 2.0F, 2.0F);
     builder.node(yard, 2.0F, 4.0F);
     builder.link(0, 1, coney::ai::edge_flag::kClimb);
     const coney::world::PathMap map = builder.build();
     RoutePlanner planner(map);
-    planner.setBlockTest([](Vec3 from, Vec3 to) { return (from.y - 3.0F) * (to.y - 3.0F) < 0.0F; });
     CHECK(planner.lineClear({1.0F, 1.0F, 0.0F}, {3.0F, 2.5F, 0.0F}));
+    CHECK(planner.lineClear({0.2F, 1.0F, 0.0F}, {0.2F, 5.0F, 0.0F}));
     CHECK_FALSE(planner.lineClear({2.0F, 1.0F, 0.0F}, {2.0F, 5.0F, 0.0F}));
     auto plan = planner.request({2.0F, 1.0F, 0.0F}, {2.0F, 5.0F, 0.0F});
     REQUIRE(plan.has_value());

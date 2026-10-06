@@ -3629,6 +3629,11 @@ name = "PathPolygon_FindAtPoint"
 subsystem = "Human"
 
 [[function]]
+address = 0x00250708
+name = "PathArea_FindAtPoint"
+subsystem = "Human"
+
+[[function]]
 address = 0x002508b8
 name = "NavLink_DoorPolygon"
 subsystem = "Human"
