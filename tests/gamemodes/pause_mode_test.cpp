@@ -45,6 +45,7 @@ struct Run {
     std::vector<std::string> log;
     std::vector<bool> soundPauses;
     int radarsOff = 0;
+    int radarsBack = 0;
     std::unique_ptr<StartUpFlow> flow;
     std::unique_ptr<coney::ScriptedInput> input;
     GameTimer timer;
@@ -68,6 +69,7 @@ struct Run {
             .pauseSound = [this](bool paused) { soundPauses.push_back(paused); },
             .objectives = {},
             .radarsOff = [this] { ++radarsOff; },
+            .radarsBack = [this] { ++radarsBack; },
         });
         coney::GameState& state = flow->state();
         coney::LevelRecord front;
@@ -119,6 +121,7 @@ TEST_CASE("pause: triangle resumes after the fade and hold, and START is ignored
     REQUIRE(run.stack.topId() == GameplayMode::kId);
     CHECK(run.soundPauses == std::vector<bool>{true, false});
     CHECK(run.flow->pause().cooldown() == 0);
+    CHECK(run.radarsBack == 1);
 }
 
 TEST_CASE("pause: START closes the menu only after 1.5 s", "[pause]") {

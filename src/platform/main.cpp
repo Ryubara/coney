@@ -738,6 +738,20 @@ int main(int argc, char** argv) {
                 return std::unique_ptr<coney::FrontEndScene>(std::move(*scene));
             });
         startUp->gameplay().setObjectSounds(&objectSounds);
+        // The sheet-table records the pause menu and the mission-failed screen draw (docs/research/pause.md#layout-gui-
+        // coordinates): a record's sheet is the WAD file named by its name hash.
+        startUp->setSheetRecordLoader(
+            [&renderer, &gameWad, &chunkHandlers, hashes = coney::platform::sheetTableHashes(gameWad)](
+                std::uint32_t record) -> std::expected<coney::graphics::SpriteSheet, coney::Error> {
+                if (record >= hashes.size()) {
+                    return coney::fail(coney::ErrorCode::NotFound, std::format("no sheet-table record {}", record));
+                }
+                auto entry = gameWad.lookup(std::to_string(hashes[record]));
+                if (!entry) {
+                    return std::unexpected(std::move(entry.error()));
+                }
+                return coney::platform::loadSpriteSheet(gameWad, **entry, chunkHandlers, renderer.drawsPixels());
+            });
         // The game's random table, from the disc's own executable (docs/research/flags.md#player-starts).
         std::vector<std::uint32_t> table;
         if (levelScriptOptions(*wad, {}, table).randomTable.size() == coney::GameRandom::kTableSize) {
@@ -866,6 +880,37 @@ int main(int argc, char** argv) {
     }
     if (startUp) {
         startUp->hud().setSoundOutput(hudSound());
+        // What the pause and the mission-failed screen ask of the game (docs/research/pause.md#pausing): all sound
+        // paused, the HUD's objectives for the Objectives screen, both radars off.
+        auto radarsBeforePause = std::make_shared<std::array<bool, 2>>(std::array<bool, 2>{true, true});
+        startUp->setPauseHooks(coney::PauseHooks{
+            .pauseSound =
+                [&audio](bool paused) {
+                    if (audio && paused) {
+                        audio->sounds().pauseAll();
+                    } else if (audio) {
+                        audio->sounds().resumeAll();
+                    }
+                },
+            .objectives =
+                [&startUp] {
+                    std::array<std::vector<std::string>, 3> lists;
+                    const coney::hud::Checklist& checklist = startUp->hud().checklist();
+                    for (std::size_t i = 0; i < lists.size(); ++i) {
+                        if (const auto& line = checklist.slots.at(i)) {
+                            lists.at(i).push_back(line->text);
+                        }
+                    }
+                    return lists;
+                },
+            // Both radars off while paused, leaving the scripts' own radar wish alone, and back as they were after.
+            .radarsOff =
+                [&startUp, radarsBeforePause] {
+                    *radarsBeforePause = startUp->hud().radar().on;
+                    startUp->hud().radar().on = {false, false};
+                },
+            .radarsBack = [&startUp, radarsBeforePause] { startUp->hud().radar().on = *radarsBeforePause; },
+        });
     }
     // The front end's banks, music and cues, and the scripts' sound bindings, go to the game's sound.
     if (startUp && gameSound != nullptr) {

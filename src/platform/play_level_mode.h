@@ -110,7 +110,7 @@ struct PlayStats {
 ///
 /// It is also the debug menus' way into the game (debug::PlayControls, docs/guides/debug-menu.md): the Player, Camera
 /// and Spawner pages act on it between steps, and render() draws the Debug draw page's lines into the scene.
-class PlayLevelMode final : public GameMode, public debug::PlayControls, public ScriptedPlayer {
+class PlayLevelMode final : public GameMode, public debug::PlayControls, public ScriptedPlayer, public OverlaidLevel {
   public:
     /// The mode's id, outside the original's range.
     static constexpr std::uint32_t kId = 0x106;
@@ -146,6 +146,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Draws a frame between the last two steps and presents it.
     void render(const RenderTime& time) override;
+    /// render() with `overlay` drawn over the HUD before the present: the pause menu over the paused level.
+    void renderWithOverlay(const RenderTime& time,
+                           const std::function<void(graphics::RenderDevice&)>& overlay) override;
     /// One line: frames, the player's position, heading, speed, gait, clip and state, then the scenery's counts.
     [[nodiscard]] std::string summary() const;
 
@@ -385,6 +388,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
     std::unique_ptr<HudLayer> m_hud; // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
+    // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
+    const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;
 };
 
 } // namespace coney::platform

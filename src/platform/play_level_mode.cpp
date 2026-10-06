@@ -569,6 +569,10 @@ void PlayLevelMode::render(const RenderTime& time) {
     m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
     m_engine.addFrameOverlay(
         [this, nowMs = millisecondsOf(time.gameTicks)](RenderEngine& engine) { m_stage->drawOverlay(engine, nowMs); });
+    // A layer over all of them (the pause menu), added last so it draws last.
+    if (m_overlay != nullptr) {
+        m_engine.addFrameOverlay([overlay = *m_overlay](RenderEngine& engine) { overlay(engine); });
+    }
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot, &blended] {
         // The parked cars, lit as the level lights humans (**Coney's stand-in**: how cars are lit is not traced).
         if (m_levelEffects) {
@@ -580,6 +584,13 @@ void PlayLevelMode::render(const RenderTime& time) {
             m_levelEffects->drawInScene(blended.pose);
         }
     });
+}
+
+void PlayLevelMode::renderWithOverlay(const RenderTime& time,
+                                      const std::function<void(graphics::RenderDevice&)>& overlay) {
+    m_overlay = &overlay;
+    render(time);
+    m_overlay = nullptr;
 }
 
 world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::DebugCamera>& camera, float alpha) {

@@ -25,7 +25,8 @@ constexpr float kBigTextDepth = 9000.0F;
 constexpr float kPartsDepth = 10000.0F;
 constexpr float kMinigamesDepth = 10000.0F;
 
-// The sprite sheet table of warriors.glr: the name hash of every record, or none when it does not load.
+} // namespace
+
 std::vector<std::uint32_t> sheetTableHashes(const io::Wad& wad) {
     std::vector<std::uint32_t> hashes;
     auto entry = wad.lookup("warriors.glr");
@@ -49,8 +50,6 @@ std::vector<std::uint32_t> sheetTableHashes(const io::Wad& wad) {
     }
     return hashes;
 }
-
-} // namespace
 
 HudLayer::HudLayer(const io::Wad& wad, bool drawsPixels)
     : m_wad(wad), m_drawsPixels(drawsPixels), m_handlers(chunk::ChunkHandlerTable::withDefaults()) {

@@ -44,6 +44,10 @@ struct PauseHooks {
     std::function<std::array<std::vector<std::string>, 3>()> objectives;
     /// Turns both radars off (`0x001b2658`), when the pause menu opens.
     std::function<void()> radarsOff;
+    /// Puts the radars back as they were before radarsOff(), when the pause ends. Coney's stand-in: the original's
+    /// automatic return (HUD `+0x177ac`, docs/research/hud.md) is not traced, and without it a pause would leave them
+    /// off.
+    std::function<void()> radarsBack;
 };
 
 /// The loaded fonts and batches a pause-style menu draws with, and the 2D pass over them: one per mode.

@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include "core/chunk_system.h"
 #include "fileio/wad.h"
@@ -18,6 +19,11 @@
 #include "hud/hud.h"
 
 namespace coney::platform {
+
+/// The name hash of every record of the sprite-sheet table in `warriors.glr` (chunk 0x4D,
+/// docs/research/gui.md#sprite-sheet-table-chunk-0x4d-particle-page-header), by record; none when it does not load.
+/// A record's sheet is the WAD file named by its hash in decimal.
+[[nodiscard]] std::vector<std::uint32_t> sheetTableHashes(const io::Wad& wad);
 
 /// The HUD on screen: the sprite sheets and batches the HUD draws with, loaded from the disc, and the 2D pass that
 /// draws them over the play mode's frame. It drives a hud::Hud (its own, or one the game shares with the scripts'

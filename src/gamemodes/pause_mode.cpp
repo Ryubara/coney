@@ -224,6 +224,9 @@ void PauseMode::exit() {
     if (!m_previousBank.empty() && m_previousBank != kSoundBank) {
         m_services.loadBank(m_previousBank);
     }
+    if (m_hooks.radarsBack) {
+        m_hooks.radarsBack();
+    }
     if (m_hooks.pauseSound) {
         m_hooks.pauseSound(false);
     }
