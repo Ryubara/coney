@@ -11,6 +11,7 @@
 
 #include "characters/character_class.h"
 #include "core/assert.h"
+#include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "scripting/config_strings.h"
 #include "scripting/level_bindings.h"
@@ -451,6 +452,9 @@ constexpr std::array kBindings{
     real("SetStartGameCallback"),
     real("GetRumbleModeData"),
     real("GetRumbleModeGangName"),
+    // The level scripts' goals and actions for a human's brain (ai_bindings.h).
+    real("GoalMoveToFlag"),
+    real("ActLookAt"),
     // The Rumble menu's lists, which its chunks build (rumble_bindings.h).
     real("CfgRumbleGame"),
     real("CfgRumbleGang"),
@@ -684,13 +688,15 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
             vm.registerFunction(info.name, maker->make(factory));
             continue;
         }
-        // Every real binding has a maker or is a string, level or Rumble binding (CONEY_ASSERT).
+        // Every real binding has a maker or is a string, level, Rumble or AI binding (CONEY_ASSERT).
         CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end() ||
                      std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
-                     std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end());
+                     std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
+                     std::ranges::find(kAiBindings, info.name) != kAiBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
+    addAiBindings(vm, context);
     // The level bindings make world objects, so they take their handles from the same counter as the stubs.
     addLevelBindings(vm, context, [handles = factory.handles] {
         const double handle = handles->next;

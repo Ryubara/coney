@@ -538,6 +538,7 @@
     Constructor 0x002da3b0, start 0x002da408 (offset point by angle and distance, 0x003376c0), update 0x002da588. The
     meaning of the last argument is inferred.
   usage: {chunks: 84, calls: 304, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalMoveToExitFlag
   wrapper: 0x00360090
@@ -1743,6 +1744,7 @@
     0x005430a0); update 0x002fe1b0 / 0x002fdd08 writes the heading to the target into brain `+0x110` each update.
     Behaviour: [AI](../../research/ai.md#look-at).
   usage: {chunks: 37, calls: 112, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: ActGiveWay
   wrapper: 0x003648a0

@@ -348,6 +348,15 @@ void Brain::setMove(anim::Vec3 way, float speed) {
     m_human->record().move = human::BrainMove{.heading = heading, .speed = speed};
 }
 
+void Brain::setMoveHeading(float heading, float speed) {
+    m_human->record().move = human::BrainMove{.heading = human::wrapAngle(heading), .speed = speed};
+}
+
+void Brain::setMoveAim(anim::Vec3 point, float radius) {
+    m_moveAim = point;
+    m_moveAimRadius = radius;
+}
+
 void Brain::stopMove() { m_human->record().move.reset(); }
 
 void Brain::writeStick(anim::Vec3 way, float magnitude) {

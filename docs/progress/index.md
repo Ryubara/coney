@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 6.0%](https://img.shields.io/badge/reimplemented-6.0%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 6.4%](https://img.shields.io/badge/reimplemented-6.4%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.0% of the game's own code (201,132 of 3,342,936 bytes, 428 functions) |
+| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.4% of the game's own code (214,652 of 3,342,936 bytes, 464 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,12 +62,12 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
-| `Human` | `██░░░░░░░░░░░░░░░░░░` | 10.2% | 64 | 358,360 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.6% | 74 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 51 | 197,192 |
+| `Scripting` | `███▉░░░░░░░░░░░░░░░░` | 19.1% | 53 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -76,7 +76,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 108 | 1,524,752 |
+| Unattributed | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 132 | 1,524,752 |
 
 ## Research coverage
 
@@ -296,6 +296,7 @@ at the top of the repository's `README.md`.
 | `0x00223cb0` | `Human_IsBusy` | `Human` | 136 |
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
+| `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x0022f100` | `Human_KnockDown` | `Human` | 712 |
 | `0x0022f658` | `Human_Stun` | `Human` | 640 |
@@ -320,6 +321,15 @@ at the top of the repository's `README.md`.
 | `0x00248df0` | `Human_Lean` | `Human` | not filled in |
 | `0x00249108` | `Humans_Update` | `Human` | 2,704 |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
+| `0x0024eef0` | `PathPolygon_Contains` | `Human` | 928 |
+| `0x0024fbf8` | `PathMap_LineWalkable` | `Human` | 1,288 |
+| `0x00251150` | `Route_NearestNode` | `Human` | 56 |
+| `0x002511c8` | `Route_Search` | `Human` | 480 |
+| `0x002513a8` | `Route_Build` | `Human` | 728 |
+| `0x00251680` | `Route_Free` | `Human` | 80 |
+| `0x002517b0` | `Route_Heuristic` | `Human` | 112 |
+| `0x00251890` | `Route_EdgeCost` | `Human` | 368 |
+| `0x00251a70` | `Route_AStar` | `Human` | 696 |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
 | `0x002548f0` | `AnimRange_ApplyClassDamage` | `Human` | not filled in |
@@ -398,6 +408,10 @@ at the top of the repository's `README.md`.
 | `0x002911f8` | `Brain_GetAttackWeight` | `unattributed` | 32 |
 | `0x00292530` | `Brain_FlushAll` | `unattributed` | 96 |
 | `0x00293b28` | `Brains_Update` | `unattributed` | 320 |
+| `0x0029a8c0` | `Route_Request` | `unattributed` | 352 |
+| `0x0029aa88` | `Route_Follow` | `unattributed` | 856 |
+| `0x0029b4b8` | `Route_CanSkip` | `unattributed` | 544 |
+| `0x0029b6d8` | `Route_MoveOn` | `unattributed` | 368 |
 | `0x0029ed58` | `Goal_Start` | `unattributed` | 128 |
 | `0x0029edd8` | `Goal_End` | `unattributed` | 88 |
 | `0x0029ee30` | `Goal_Resume` | `unattributed` | 112 |
@@ -410,11 +424,31 @@ at the top of the repository's `README.md`.
 | `0x002b54d8` | `BlockGoal_Init` | `unattributed` | 72 |
 | `0x002b5520` | `BlockGoal_Start` | `unattributed` | 328 |
 | `0x002b5808` | `BlockGoal_Process` | `unattributed` | 656 |
+| `0x002da2c0` | `Goal_MoveToFlag` | `unattributed` | 240 |
+| `0x002da3b0` | `MoveToFlagGoal_Init` | `unattributed` | 88 |
+| `0x002da408` | `MoveToFlagGoal_Start` | `unattributed` | 152 |
+| `0x002da4a0` | `MoveToFlagGoal_End` | `unattributed` | 176 |
+| `0x002da550` | `MoveToFlagGoal_Resume` | `unattributed` | 56 |
+| `0x002da588` | `MoveToFlagGoal_Process` | `unattributed` | 648 |
 | `0x002fa918` | `AttackAction_Init` | `unattributed` | 144 |
 | `0x002fa9a8` | `AttackAction_Start` | `unattributed` | 904 |
 | `0x002fad30` | `AttackAction_Abort` | `unattributed` | 64 |
 | `0x002fad70` | `AttackAction_Update` | `unattributed` | 320 |
+| `0x002fb9e8` | `MoveAction_Init` | `unattributed` | 248 |
+| `0x002fbd18` | `MoveAction_CornerTrial` | `unattributed` | 472 |
+| `0x002fc158` | `MoveAction_CornerSpeed` | `unattributed` | 472 |
+| `0x002fc330` | `MoveAction_Stuck` | `unattributed` | 184 |
+| `0x002fc420` | `MoveAction_Start` | `unattributed` | 320 |
+| `0x002fc5c0` | `MoveAction_Update` | `unattributed` | 2,000 |
 | `0x002fcf50` | `MoveToHumanAction_Init` | `unattributed` | 160 |
+| `0x002fdc28` | `TurnAction_Init` | `unattributed` | 64 |
+| `0x002fdc68` | `TurnAction_Start` | `unattributed` | 96 |
+| `0x002fdcc8` | `TurnAction_Abort` | `unattributed` | 64 |
+| `0x002fdd08` | `TurnAction_Update` | `unattributed` | 224 |
+| `0x002fe000` | `TurnToPointAction_Init` | `unattributed` | 88 |
+| `0x002fe0c8` | `Action_LookAt` | `unattributed` | 152 |
+| `0x002fe160` | `LookAtAction_Init` | `unattributed` | 80 |
+| `0x002fe1b0` | `LookAtAction_Update` | `unattributed` | 152 |
 | `0x00336a00` | `QuaternionSlerp` | `unattributed` | 440 |
 | `0x00336bb8` | `VectorLerp` | `unattributed` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `unattributed` | 160 |
@@ -456,6 +490,8 @@ at the top of the repository's `README.md`.
 | `0x00357a68` | `preLoadFile` | `Scripting` | 312 |
 | `0x00358428` | `HuCreate` | `Scripting` | 480 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
+| `0x0035ff18` | `GoalMoveToFlag` | `Scripting` | 376 |
+| `0x003647d8` | `ActLookAt` | `Scripting` | 200 |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
 | `0x0036b4f0` | `CfgRumbleGame` | `Scripting` | 384 |
 | `0x0036b670` | `CfgRumbleArena` | `Scripting` | 288 |

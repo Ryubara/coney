@@ -63,6 +63,7 @@ add_library(coney_core STATIC
     gui/text_widget.cpp
     gui/usage_info.cpp
     gui/widget.cpp
+    scripting/ai_bindings.cpp
     scripting/config_strings.cpp
     scripting/level_bindings.cpp
     scripting/lua_chunk.cpp
@@ -77,6 +78,7 @@ add_library(coney_core STATIC
     warriors/unlockables.cpp
     world/debug_camera.cpp
     world/level_object.cpp
+    world/path_map.cpp
     world/sector_budget.cpp
     world/streamed_world.cpp
     world/view_frustum.cpp
@@ -133,8 +135,14 @@ target_sources(coney_core PRIVATE
     ai/brain.cpp
     ai/brains.cpp
     ai/fight_goal.cpp
+    ai/move_action.cpp
+    ai/move_to_flag_goal.cpp
     ai/move_to_human_action.cpp
-    ai/reaction_goals.cpp)
+    ai/reaction_goals.cpp
+    ai/route_follower.cpp
+    ai/route_planner.cpp
+    ai/scripted_brains.cpp
+    ai/turn_action.cpp)
 # Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat.md).
 target_sources(coney_core PRIVATE
     combat/anim_ranges.cpp

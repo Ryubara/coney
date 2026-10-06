@@ -9,6 +9,8 @@ namespace coney::ai {
 
 Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed) {
     m_brains.push_back(std::make_unique<Brain>(human, type, settings, seed));
+    m_brains.back()->setSlot(m_brains.size() - 1);
+    m_brains.back()->setPlanner(m_planner);
     return *m_brains.back();
 }
 
@@ -22,12 +24,22 @@ void Brains::remove(const human::Human& human) {
         other->forget(**found);
     }
     m_brains.erase(found);
+    for (std::size_t slot = 0; slot < m_brains.size(); ++slot) {
+        m_brains[slot]->setSlot(slot);
+    }
 }
 
 Brain* Brains::find(const human::Human& human) {
     const auto found =
         std::ranges::find_if(m_brains, [&human](const std::unique_ptr<Brain>& b) { return &b->human() == &human; });
     return found == m_brains.end() ? nullptr : found->get();
+}
+
+void Brains::setPlanner(RoutePlanner* planner) {
+    m_planner = planner;
+    for (const std::unique_ptr<Brain>& brain : m_brains) {
+        brain->setPlanner(planner);
+    }
 }
 
 void Brains::update() {

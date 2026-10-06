@@ -28,6 +28,8 @@ class Brains {
     void remove(const human::Human& human);
     /// `human`'s brain; null when it has none.
     [[nodiscard]] Brain* find(const human::Human& human);
+    /// Gives every brain, and each added later, `planner` (null for none; it must outlive them or be replaced).
+    void setPlanner(RoutePlanner* planner);
 
     /// One step: the game time advances by one step, then each enabled brain whose human is in the world thinks when
     /// `index % 5 == step % 5` and updates; then every player brain's books (its enemies: the brains that target it).
@@ -55,6 +57,7 @@ class Brains {
 
     std::vector<std::unique_ptr<Brain>> m_brains;
     std::uint64_t m_steps = 0;
+    RoutePlanner* m_planner = nullptr;
 };
 
 } // namespace coney::ai

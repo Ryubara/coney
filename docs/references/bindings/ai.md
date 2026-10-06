@@ -223,7 +223,7 @@ Behaviour: [AI](../../research/ai.md#look-at).
 - **Evidence:** confirmed (code) at `0x002fe0c8`; detail: traced
 - **Wrapper** `0x003647d8` (registered by `RegisterBindings`); **calls** `0x002fe0c8` `Action_LookAt`
 - **Used by** 37 of 467 script chunks (112 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ActMoveTo {#actmoveto}
 
@@ -2040,7 +2040,7 @@ The meaning of the last argument is inferred.
 - **Evidence:** confirmed (code) at `0x002da2c0`; detail: traced
 - **Wrapper** `0x0035ff18` (registered by `RegisterBindings`); **calls** `0x002da2c0` `Goal_MoveToFlag`
 - **Used by** 84 of 467 script chunks (304 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalMoveToHuman {#goalmovetohuman}
 

@@ -263,6 +263,18 @@ other 12 have none) taking 77,678 bytes.
 therefore 64 × 16 = 1,024 bytes of the 0x20-byte header, the 77,678 bytes of edge lists and the 770 bytes of tails.
 No record size or count is missing.
 
+**The records' values** (disc check, NTSC-U, 2026-10-06, counts only, all 64 files; `coney_tests "[disc][routes]"`
+and a one-off count):
+
+- **A records:** the node count is a 16-bit value (the upper half is always 0), and the counts add up to the C count
+  in every file, so the nodes belong to the paths with A records in order. `+0x08` is not that running index in every
+  record (in some it is past the C records), so its meaning is open.
+- **Winding:** 1,593 paths are anticlockwise (x right, y up), among them 1,584 of the 1,754 with route nodes; 9,399
+  are clockwise, nearly all with path flag 1 or 2 (`+0x48`; no path has flag 8). Counting an edge going down as +1,
+  42,373 of the 43,234 route nodes lie inside the path that owns them, and no point lies inside a clockwise path.
+- **Edges:** each has exactly one flag: 1 (238,422), 2 (2,126), 4 (5,890), 8 (982), `0x10` (746, every one with bit
+  31 set) and `0x80` (4,730); 250,963 have an edge back. Path `+0x02` is not 0 on 1,263 paths.
+
 ### The world manager (0x60 bytes) {#world-manager}
 
 `0x005147c4`, built by `0x0040d900`. Confirmed (code) for the offsets used on these pages:
@@ -635,7 +647,8 @@ What the implementer still needs:
 that the counted records fit, walks every path's slab lists (16 `s16` starts at `+0x28`, each an index into the edge
 lists and each list ended by a negative value, a path with a negative first start having none) and requires the chunk
 to be `align16(end of the furthest list + 4)` bytes ([Path data](#path-data)). The disc test (`[disc][level]`) counts
-77,678 bytes of edge lists and 770 bytes of tails over the 64 files.
+77,678 bytes of edge lists and 770 bytes of tails over the 64 files. `world::PathMap` (`src/world/path_map.h`) decodes
+the records for the AI's route planner, with the inside and walkable-line tests ([AI](ai.md#coney)).
 
 ## Open questions
 
@@ -648,8 +661,8 @@ to be `align16(end of the furthest list + 4)` bytes ([Path data](#path-data)). T
   world ([The level in a frame](#render-order)). The "shadow" model is a skyline backdrop (inferred).
 - **The level object's destructor** (`0x0040cf80`): no caller on the unload path was found; is it called through the
   vtable from elsewhere, or does the pool's destruction alone end the level's RenderWare objects?
-- **The subtitles chunk** (`0x51`) and the path records A, C and D ([Path data](#path-data)): their contents, and
-  what the areas are used for.
+- **The subtitles chunk** (`0x51`); the A record's `+0x08`, and what the clockwise paths and the path flags are for
+  ([Path data](#path-data)).
 - **The path data's size** (answered): the header is 0x20 bytes, and the chunk ends with the paths' edge lists and a
   4- to 18-byte tail; the 79,472 bytes Coney's disc test left uncounted were the header's second 16 bytes, the lists and
   the tails ([Path data](#path-data)). Still open: whether the tail's first 4 bytes mean anything (no reader found).

@@ -14,6 +14,7 @@ class Brain;
 
 /// The goal types Coney builds, by the original's type ids (the vtable's `+0x0c`, docs/research/ai.md#goals).
 enum class GoalType : std::uint8_t {
+    MoveToFlag = 0x01,       ///< MoveToFlagGoal.
     Fight = 0x0f,            ///< FightGoal.
     ReactGrabbing = 0x12,    ///< Reaction: grabbing (state `0xc0`).
     ReactTackling = 0x13,    ///< Reaction: tackling (`0x400`).

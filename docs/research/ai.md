@@ -986,8 +986,9 @@ read from each goal vtable's `+0x0c` function, confirmed (code) at the construct
 
 ## Coney's implementation {#coney}
 
-Steps 3-7 of [What an implementer needs](#implementer) are in `repo:src/ai/`, each original function tagged with
-`@orig` in the code; tests in `repo:tests/ai/`.
+Steps 3-7 and step 8's sub-steps 1-4 of [What an implementer needs](#implementer) are in `repo:src/ai/` (the path data
+in `repo:src/world/path_map.h`), each original function tagged with `@orig` in the code; tests in `repo:tests/ai/` and
+`repo:tests/world/path_map_test.cpp`.
 
 - **Brains** (`Brains`, `Brain`): a type from the class's behaviour byte, a think one step in five staggered by slot,
   an update every step at the brains' place in the characters' step (`Humans::setBrains`), so before every
@@ -1010,6 +1011,24 @@ Steps 3-7 of [What an implementer needs](#implementer) are in `repo:src/ai/`, ea
   `config_preload2` delays, `Att_Normal`.
 - **Play**: `fighter` lines in sandbox layouts ([Sandbox](../guides/sandbox.md#ai-fighters)), fighters in
   `--play-level`, and the debug menu's *AI fighters* page.
+- **Routes** (`world::PathMap`, `RoutePlanner`): the path data decoded ([Path data](level-loading.md#path-data)), the
+  inside test, the walkable-line test, the request (the human's polygon, the straight line, the ends' nodes within 30
+  tries), A\* from the destination's node with the edge costs and the 65000 cap, the retry with `0x8c` and the jump
+  detour, and routes from a pool of 32 with the leading, shortcut (4 ahead) and trailing cuts and the nodes' use
+  counts. A brain gets the level's planner from `Brains::setPlanner`; with none, every move goes straight.
+- **Moving** (`MoveAction`, `RouteFollower`): straight when the line is walkable, else the route's waypoints (0.25 m,
+  moving on when reached and every 6th call, skipping what is in a straight line); the straight re-check every 30
+  updates; the turn on the spot beyond 30° while standing; the corner speed; the stuck test; brain `+0x284`
+  (`Brain::moveFailure`). The human's locomotion turns it to a brain's heading at speed 0 (`human::Human::locomote`).
+- **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
+  short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
+  15°, 3 s) and the bindings `GoalMoveToFlag` and `ActLookAt` (`repo:src/scripting/ai_bindings.h`), which hand
+  their calls to the binding context's AI host; `ScriptedBrains` is that host, naming brains by handle and finding
+  flags and look-at targets.
+- **Disc check (NTSC-U, counts only):** `coney_tests "[disc][routes]"` decodes all 64 levels' path data; 42,373 of the
+  43,234 route nodes lie inside the polygon that owns them. Of 500 seeded pairs of `level99`'s 415 nodes, 101 are a
+  straight line, 52 routed (200 route nodes), 34 refused (a polygon off the graph), 151 linked only over flag `0x10`
+  edges, which a move does not ask for, and 162 not linked at all.
 
 **Coney choices.** A fighter is class 58 (brain type 2, 1400 health) with the sparring Warriors' runtime brain values (4
 attack slots, melee 3 / 5 m, sight 30 m, field of view 1.92 rad), drawn and animated as the player's character; sides
@@ -1021,11 +1040,29 @@ not either human is busy. Command `0x11` chains as square. A reaction goal clear
 when its target is not on its feet (Coney has no state word); the counter test leaves out the face-to-face and class
 gates. Each brain's generator is seeded by its slot. A think only counts (the types' think handlers are not traced).
 
+**Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
+nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes
+in order (the counts add up to the C records in every file; `+0x08` does not always hold the running index). A move
+searches with the edge mask `0x3` (on the disc every edge has one flag of 1, 2, 4, 8, `0x10` or `0x80`), so `0x10`
+edges are never asked for. "Fails at 128 nodes" is the open list's size (counted as nodes closed, a third of
+`level99`'s reachable pairs failed). The use term is 40 × uses − 8 on the node entered; `0x0051059c` is 1 and
+`0x005105a0` 0. An end off every polygon counts on the nearest within 1 m and takes its nearest node; the shortcut
+takes any edge that links back. The walkable line cuts the segment at every crossed edge rather than walking by slab,
+with no collision test. A corner is the turn at the next two waypoints, simulated as an arc at the gait's turn rate
+from the waypoint, the trial falling by 1 m/s; the braking distance is 0.5 s at the first corner's speed, within which
+the slower of the two corners' speeds is used. A move clears `+0x284` at its start and waits while the human is busy
+(`Human_IsBusy`). The look-at's turn value is kept, not read; no turn is ever refused its abort. GoalMoveToFlag's
+angle is a world direction (the headings' convention).
+
 **Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired
 moves) is not built, and neither are grabs and tackles between two humans that would call for it; the pattern read
-at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; line of sight; path
-following and steering; step 8 (scripted goals, gangs, tactics, follow slots); the attack's steer, the post-block
-pause and the run-stop.
+at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; line of sight (the move's
+sight checks); the steering round humans, choke points and the waypoint queues; the dynamic obstacles; the legs of
+edges 8, `0x10`, `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to
+face; the turn clip (398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off, message 8
+(Coney's flags take none) and the gang's notice (a hook until gangs exist); the play mode gives no planner yet, and the
+scripts' humans are not AI humans yet, so `level99`'s `GoalMoveToFlag` and `ActLookAt` reach no brain in play; the rest
+of step 8 (callbacks, gangs, tactics, follow slots); the attack's steer, the post-block pause and the run-stop.
 
 ## Open questions {#open-questions}
 
@@ -1033,6 +1070,15 @@ pause and the run-stop.
 - The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.
 - What the edge flags mean in play (4, 8, `0x10`, `0x40`, `0x80`, `0x100`), polygon `+0x02` and flag 8, and the
   globals `0x0051059c`, `0x005105a0`, `0x005112b4`.
+- The edge mask a move searches with (route state `+0x14`): who sets it, and does a human that can climb ask for
+  `0x10`?
+- A\*'s "fails at 128 nodes": nodes closed, or the open heap's size? And the use term: (40 × uses) − 8, or
+  40 × (uses − 8), and on which node of the edge?
+- Which edge sign the inside test counts +1, and what the clockwise polygons (most of them, nearly all with polygon
+  flag 1 or 2) are for if they contain nothing.
+- The move action's braking distance `+0x48` (how it is worked out) and how a corner's arc is predicted
+  (`0x0022aae8`, `0x002fbef0`).
+- GoalMoveToFlag's offset (`0x003376c0`): is the angle a world direction or turned by the flag's heading?
 - The slot transform (`0x00294f38`): is the offset turned by the leader's heading, with y forward?
 - `GoalFollowPlayer`'s Process (vtable `0x00541d70`) and the formation's assignment mode `+0x275`.
 - What reads the turn action's `+0x10` (`ActLookAt`'s turn value) and the play-anim action's flag (loop or hold?).

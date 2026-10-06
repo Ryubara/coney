@@ -50,7 +50,7 @@ struct Occluder {
 /// @orig 0x0017a560 Occluders_Load (unknown)
 [[nodiscard]] std::expected<std::vector<Occluder>, Error> readOccluders(std::span<const std::byte> chunk);
 
-/// The path data chunk's header (0x40). The records' meaning is not traced; Coney keeps the chunk's bytes.
+/// The path data chunk's header (0x40). Coney keeps the chunk's bytes; world::PathMap decodes the records.
 struct PathDataHeader {
     std::uint32_t paths = 0;       ///< +0x00: paths, 0x50 bytes each.
     std::uint32_t bCount = 0;      ///< +0x04: B records, 16 bytes each.
@@ -85,7 +85,7 @@ class PathDataObject final : public chunk::LoadedObject {
 
 /// The chunk 0x40 handler: pops the path data, checks its header and pushes it as a PathDataObject. The original
 /// fixes the records up in place and keeps them in two globals; Coney keeps the bytes in the level object instead
-/// (the records are not decoded yet).
+/// (world::PathMap decodes them for the AI).
 /// @orig 0x0024e720 PathData_OnLoaded (unknown)
 [[nodiscard]] std::expected<void, Error> onPathDataLoaded(chunk::ChunkStacks& stacks, std::uint32_t type);
 

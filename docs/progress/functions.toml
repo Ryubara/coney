@@ -1144,6 +1144,12 @@ subsystem = "Human"
 size = 192
 
 [[function]]
+address = 0x0022ae40
+name = "Human_SpeedForGait"
+subsystem = "Human"
+size = 112
+
+[[function]]
 address = 0x0022aeb0
 name = "Human_GaitOfVelocity"
 subsystem = "Human"
@@ -1273,6 +1279,60 @@ size = 2704
 address = 0x0024e720
 name = "PathData_OnLoaded"
 subsystem = "Human"
+
+[[function]]
+address = 0x0024eef0
+name = "PathPolygon_Contains"
+subsystem = "Human"
+size = 928
+
+[[function]]
+address = 0x0024fbf8
+name = "PathMap_LineWalkable"
+subsystem = "Human"
+size = 1288
+
+[[function]]
+address = 0x00251150
+name = "Route_NearestNode"
+subsystem = "Human"
+size = 56
+
+[[function]]
+address = 0x002511c8
+name = "Route_Search"
+subsystem = "Human"
+size = 480
+
+[[function]]
+address = 0x002513a8
+name = "Route_Build"
+subsystem = "Human"
+size = 728
+
+[[function]]
+address = 0x00251680
+name = "Route_Free"
+subsystem = "Human"
+size = 80
+
+[[function]]
+address = 0x002517b0
+name = "Route_Heuristic"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x00251890
+name = "Route_EdgeCost"
+subsystem = "Human"
+size = 368
+
+[[function]]
+address = 0x00251a70
+name = "Route_AStar"
+subsystem = "Human"
+size = 696
 
 [[function]]
 address = 0x00254078
@@ -1691,6 +1751,30 @@ subsystem = "unattributed"
 size = 320
 
 [[function]]
+address = 0x0029a8c0
+name = "Route_Request"
+subsystem = "unattributed"
+size = 352
+
+[[function]]
+address = 0x0029aa88
+name = "Route_Follow"
+subsystem = "unattributed"
+size = 856
+
+[[function]]
+address = 0x0029b4b8
+name = "Route_CanSkip"
+subsystem = "unattributed"
+size = 544
+
+[[function]]
+address = 0x0029b6d8
+name = "Route_MoveOn"
+subsystem = "unattributed"
+size = 368
+
+[[function]]
 address = 0x0029ed58
 name = "Goal_Start"
 subsystem = "unattributed"
@@ -1763,6 +1847,42 @@ subsystem = "unattributed"
 size = 656
 
 [[function]]
+address = 0x002da2c0
+name = "Goal_MoveToFlag"
+subsystem = "unattributed"
+size = 240
+
+[[function]]
+address = 0x002da3b0
+name = "MoveToFlagGoal_Init"
+subsystem = "unattributed"
+size = 88
+
+[[function]]
+address = 0x002da408
+name = "MoveToFlagGoal_Start"
+subsystem = "unattributed"
+size = 152
+
+[[function]]
+address = 0x002da4a0
+name = "MoveToFlagGoal_End"
+subsystem = "unattributed"
+size = 176
+
+[[function]]
+address = 0x002da550
+name = "MoveToFlagGoal_Resume"
+subsystem = "unattributed"
+size = 56
+
+[[function]]
+address = 0x002da588
+name = "MoveToFlagGoal_Process"
+subsystem = "unattributed"
+size = 648
+
+[[function]]
 address = 0x002fa918
 name = "AttackAction_Init"
 subsystem = "unattributed"
@@ -1787,10 +1907,94 @@ subsystem = "unattributed"
 size = 320
 
 [[function]]
+address = 0x002fb9e8
+name = "MoveAction_Init"
+subsystem = "unattributed"
+size = 248
+
+[[function]]
+address = 0x002fbd18
+name = "MoveAction_CornerTrial"
+subsystem = "unattributed"
+size = 472
+
+[[function]]
+address = 0x002fc158
+name = "MoveAction_CornerSpeed"
+subsystem = "unattributed"
+size = 472
+
+[[function]]
+address = 0x002fc330
+name = "MoveAction_Stuck"
+subsystem = "unattributed"
+size = 184
+
+[[function]]
+address = 0x002fc420
+name = "MoveAction_Start"
+subsystem = "unattributed"
+size = 320
+
+[[function]]
+address = 0x002fc5c0
+name = "MoveAction_Update"
+subsystem = "unattributed"
+size = 2000
+
+[[function]]
 address = 0x002fcf50
 name = "MoveToHumanAction_Init"
 subsystem = "unattributed"
 size = 160
+
+[[function]]
+address = 0x002fdc28
+name = "TurnAction_Init"
+subsystem = "unattributed"
+size = 64
+
+[[function]]
+address = 0x002fdc68
+name = "TurnAction_Start"
+subsystem = "unattributed"
+size = 96
+
+[[function]]
+address = 0x002fdcc8
+name = "TurnAction_Abort"
+subsystem = "unattributed"
+size = 64
+
+[[function]]
+address = 0x002fdd08
+name = "TurnAction_Update"
+subsystem = "unattributed"
+size = 224
+
+[[function]]
+address = 0x002fe000
+name = "TurnToPointAction_Init"
+subsystem = "unattributed"
+size = 88
+
+[[function]]
+address = 0x002fe0c8
+name = "Action_LookAt"
+subsystem = "unattributed"
+size = 152
+
+[[function]]
+address = 0x002fe160
+name = "LookAtAction_Init"
+subsystem = "unattributed"
+size = 80
+
+[[function]]
+address = 0x002fe1b0
+name = "LookAtAction_Update"
+subsystem = "unattributed"
+size = 152
 
 [[function]]
 address = 0x00336a00
@@ -2020,6 +2224,18 @@ size = 480
 address = 0x0035e5d0
 name = "CfgHUDMessage"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x0035ff18
+name = "GoalMoveToFlag"
+subsystem = "Scripting"
+size = 376
+
+[[function]]
+address = 0x003647d8
+name = "ActLookAt"
+subsystem = "Scripting"
+size = 200
 
 [[function]]
 address = 0x0036b220

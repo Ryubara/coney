@@ -211,7 +211,9 @@ void Human::locomote(bool gated) {
         newSpeed = 0.0F;
         m_animator.startRunStop();
     }
-    if (target > 0.0F) {
+    // A brain's move at speed 0 still turns the human to its heading: the turn on the spot
+    // (docs/research/ai.md#moving).
+    if (target > 0.0F || m_moveSpeed.has_value()) {
         // Turn toward the stick, limited by the gait and eased.
         m_heading = turnToward(m_heading, wanted, maxTurn(gaitNow), m_turn);
     }

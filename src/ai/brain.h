@@ -10,6 +10,7 @@
 #include "ai/action.h"
 #include "ai/attack_kinds.h"
 #include "ai/goal.h"
+#include "ai/route_planner.h"
 #include "combat/stick.h"
 #include "human/human.h"
 
@@ -252,8 +253,26 @@ class Brain {
     /// `way` across the ground (world axes; its length is ignored) at `speed` m/s. A move action writes no stick
     /// (docs/research/ai.md#moving).
     void setMove(anim::Vec3 way, float speed);
+    /// The same along `heading` (radians, 0 facing +y). At speed 0 the human turns on the spot to it.
+    void setMoveHeading(float heading, float speed);
     /// Stops the move: the human stands (its speed 0).
     void stopMove();
+
+    // --- Moving over the level (docs/research/ai.md#moving).
+
+    /// The route planner of the level's path data (null when there is none: a move then goes straight).
+    [[nodiscard]] RoutePlanner* planner() const { return m_planner; }
+    void setPlanner(RoutePlanner* planner) { m_planner = planner; }
+    /// Why the last move failed (`+0x284`).
+    [[nodiscard]] MoveFailure moveFailure() const { return m_moveFailure; }
+    void setMoveFailure(MoveFailure failure) { m_moveFailure = failure; }
+    /// The point a move aims at now and its radius (`+0x90`, `+0x118`): what another human's steering would read.
+    [[nodiscard]] anim::Vec3 moveAim() const { return m_moveAim; }
+    [[nodiscard]] float moveAimRadius() const { return m_moveAimRadius; }
+    void setMoveAim(anim::Vec3 point, float radius);
+    /// The brain's slot among the scene's brains (its index, which staggers periodic work across brains).
+    [[nodiscard]] std::size_t slot() const { return m_slot; }
+    void setSlot(std::size_t slot) { m_slot = slot; }
     /// Writes the stick as an attack action does (the snap's): `way` across the ground (world axes; its length is
     /// ignored) at `magnitude`, with the world's +y as the stick's up.
     void writeStick(anim::Vec3 way, float magnitude);
@@ -317,6 +336,11 @@ class Brain {
     float m_meleeNear = kDefaultMeleeNear;                             // +0x13c
     float m_meleeFar = kDefaultMeleeFar;                               // +0x140
     int m_goalsRanOut = 0;
+    RoutePlanner* m_planner = nullptr;
+    MoveFailure m_moveFailure = MoveFailure::None; // +0x284
+    anim::Vec3 m_moveAim;                          // +0x90
+    float m_moveAimRadius = 0.0F;                  // +0x118
+    std::size_t m_slot = 0;
 };
 
 } // namespace coney::ai

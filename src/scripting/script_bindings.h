@@ -20,6 +20,8 @@
 
 namespace coney::script {
 
+class AiBindingHost;
+
 /// What the bindings ask of the game outside the script system and the game state: the menus, the level flow, the
 /// screen effects and the audio and movie stand-ins. The front end (gamemodes/start_up_flow.h) implements it.
 class BindingHost {
@@ -112,6 +114,7 @@ struct BindingContext {
     CreatedHumans* humans = nullptr;            ///< Where `HuCreate` keeps the humans it makes; null keeps none.
     world_objects::WorldFlags* flags = nullptr; ///< The level's world flags (`AddFlag`); null keeps none.
     gui::RumbleData* rumble = nullptr;          ///< The Rumble menu's lists (`CfgRumble*`); null keeps none.
+    AiBindingHost* ai = nullptr;                ///< The brains the AI bindings drive; null drives none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,
