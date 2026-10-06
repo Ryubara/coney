@@ -10,6 +10,7 @@
 
 #include "animation/anim_math.h"
 #include "animation/skeleton.h"
+#include "camera/cameras.h"
 #include "camera/follow_camera.h"
 #include "characters/anim_set.h"
 #include "characters/character_assets.h"
@@ -90,12 +91,15 @@ class PlayerCharacter {
 /// What drawing the player needs from one simulation step, and nothing else: drawing reads only these, so a renderer
 /// can draw between two steps by interpolating the previous and the current one.
 struct PlayerSnapshot {
-    anim::Vec3 feet;         ///< The human's position (game axes).
-    float heading = 0.0F;    ///< Radians, 0 facing +y.
-    float lean = 0.0F;       ///< The body's lean into a turn, radians, positive to the left (Human::lean()).
-    anim::Pose pose;         ///< The blended animation pose.
-    anim::Vec3 cameraEye;    ///< The follow camera's position.
-    anim::Vec3 cameraTarget; ///< Its look-at point.
+    anim::Vec3 feet;           ///< The human's position (game axes).
+    float heading = 0.0F;      ///< Radians, 0 facing +y.
+    float lean = 0.0F;         ///< The body's lean into a turn, radians, positive to the left (Human::lean()).
+    anim::Pose pose;           ///< The blended animation pose.
+    anim::Vec3 cameraEye;      ///< The current camera's position.
+    anim::Vec3 cameraTarget;   ///< A point ahead on its view direction (the follow camera's look-at point).
+    float fieldOfView = 65.0F; ///< The current camera's lens: horizontal degrees, near and far clip.
+    float nearClip = 0.1F;
+    float farClip = 115.0F;
 };
 
 /// The snapshot `alpha` (0 to 1) of the way from `previous` to `current`: positions lerped, the heading along the
@@ -156,6 +160,10 @@ class Player {
     void setPadControlled(bool padControlled);
     /// Whether the pad drives the human (true until setPadControlled(false)).
     [[nodiscard]] bool padControlled() const { return m_padControlled; }
+    /// Hands the player's follow camera to `cameras` (which must outlive the player, or be detached with nullptr):
+    /// from then on update() steps the cameras rather than the follow camera alone, the stick is turned by the current
+    /// camera's view, the snapshots show it, and the player's slow-motion events reach it.
+    void setCameras(camera::Cameras* cameras);
 
     [[nodiscard]] const Human& human() const { return m_human; }
     [[nodiscard]] Human& human() { return m_human; }
@@ -164,6 +172,7 @@ class Player {
     /// The last update's command.
     [[nodiscard]] combat::CommandId command() const { return m_matcher.command(); }
     [[nodiscard]] const camera::FollowCamera& camera() const { return m_camera; }
+    [[nodiscard]] camera::FollowCamera& camera() { return m_camera; }
     /// Where a human that fell out of the world is put back: the start it was made at.
     [[nodiscard]] const PlayerStart& start() const { return m_start; }
     /// How often the human has been put back at the start.
@@ -182,6 +191,7 @@ class Player {
     Human m_human;
     Humans m_humans; // holds m_human, which is why the player is neither copied nor moved
     camera::FollowCamera m_camera;
+    camera::Cameras* m_cameras = nullptr; // the manager the follow camera belongs to; null steps it alone
     std::uint32_t m_respawns = 0;
     bool m_padControlled = true;
     std::optional<float> m_nearestEnemy; // the distance to the nearest enemy, none with no enemies

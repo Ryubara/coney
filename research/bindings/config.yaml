@@ -1360,6 +1360,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 13, calls: 28, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgSetOutdoorMode
   wrapper: 0x0036ad50

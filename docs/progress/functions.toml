@@ -138,10 +138,90 @@ name = "SoundPauseSound"
 subsystem = "Audio"
 
 [[function]]
+address = 0x0011bad8
+name = "Camera_ResetByHandle"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011bfa8
+name = "Camera_SetupFollow"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011c0b8
+name = "CfgFollowCamera"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011c270
+name = "Camera_TargetList"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011c3b8
+name = "Camera_SetFollowPitch"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011c470
+name = "Camera_SetFollowZoom"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011dcf0
+name = "Camera_SetFollowSecondary"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011de58
+name = "Camera_EnableFeature"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011e878
+name = "Cameras_Update"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011ee08
+name = "Camera_MakeActive"
+subsystem = "Camera"
+
+[[function]]
+address = 0x001210f8
+name = "Cam_StartShake"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00121298
+name = "Cam_UpdateShake"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00124d00
+name = "Cam_Follow_Reset"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00124f38
+name = "Cam_Follow_PlaceBehind"
+subsystem = "Camera"
+
+[[function]]
 address = 0x001254f0
 name = "Cam_Follow_StepZoom"
 subsystem = "Camera"
 size = 152
+
+[[function]]
+address = 0x00125888
+name = "Cam_Follow_ApplyConfig"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00125cc0
+name = "Cam_Follow_Activate"
+subsystem = "Camera"
 
 [[function]]
 address = 0x00126a30
@@ -200,8 +280,38 @@ name = "Cam_Follow_Yaw"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0012d7a8
+name = "Cam_Follow_MoveBand"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0012e170
+name = "Cam_Follow_KeepInView"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0012e9a8
+name = "Cam_Follow_FrameEnemy"
+subsystem = "Camera"
+
+[[function]]
 address = 0x00130990
 name = "Cam_Follow_Collide"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00135680
+name = "Cam_Locked_Update"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00143078
+name = "Cam_Blend_Start"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00143590
+name = "Cam_Blend_Update"
 subsystem = "Camera"
 
 [[function]]
@@ -1684,6 +1794,17 @@ name = "Human_ComputeSpeeds"
 subsystem = "Human"
 
 [[function]]
+address = 0x002542e8
+name = "AnimRange_Damage"
+subsystem = "Human"
+size = 40
+
+[[function]]
+address = 0x002548f0
+name = "AnimRange_ApplyClassDamage"
+subsystem = "Human"
+
+[[function]]
 address = 0x00254e78
 name = "Human_UpdateBlockState"
 subsystem = "Human"
@@ -1698,12 +1819,6 @@ subsystem = "Human"
 address = 0x00256a60
 name = "Human_RefillMeters"
 subsystem = "Human"
-
-[[function]]
-address = 0x002542e8
-name = "AnimRange_Damage"
-subsystem = "Human"
-size = 40
 
 [[function]]
 address = 0x00259578
@@ -1742,6 +1857,30 @@ subsystem = "Human"
 size = 528
 
 [[function]]
+address = 0x002625a8
+name = "Attack_Start"
+subsystem = "Human"
+size = 792
+
+[[function]]
+address = 0x00264178
+name = "Player_ObjectAttack"
+subsystem = "Human"
+size = 744
+
+[[function]]
+address = 0x00264bd8
+name = "Human_AddPendingDamage"
+subsystem = "Human"
+size = 288
+
+[[function]]
+address = 0x00264cf8
+name = "Human_AddRage"
+subsystem = "Human"
+size = 680
+
+[[function]]
 address = 0x002653d8
 name = "Stats_AttackRage"
 subsystem = "Human"
@@ -1754,10 +1893,30 @@ subsystem = "Human"
 size = 416
 
 [[function]]
+address = 0x00265f70
+name = "Human_ApplyPendingDamage"
+subsystem = "Human"
+
+[[function]]
+address = 0x00266d00
+name = "Hit_PickReaction"
+subsystem = "Human"
+
+[[function]]
+address = 0x00269f30
+name = "Human_BlockHit"
+subsystem = "Human"
+
+[[function]]
 address = 0x0026a6d0
 name = "Human_PlayReaction"
 subsystem = "Human"
 size = 1824
+
+[[function]]
+address = 0x0026b0a0
+name = "Hit_PickReaction"
+subsystem = "Human"
 
 [[function]]
 address = 0x0026bad8
@@ -1782,6 +1941,12 @@ address = 0x0026cc18
 name = "Grab_Escape"
 subsystem = "Human"
 size = 1120
+
+[[function]]
+address = 0x0026dd08
+name = "Player_Throw"
+subsystem = "Human"
+size = 2288
 
 [[function]]
 address = 0x00276008
@@ -1812,9 +1977,44 @@ subsystem = "Human"
 size = 456
 
 [[function]]
+address = 0x0027a6c0
+name = "Player_PickTarget"
+subsystem = "Human"
+
+[[function]]
+address = 0x0027c120
+name = "Player_UpdateActions"
+subsystem = "Human"
+size = 3120
+
+[[function]]
 address = 0x0027ce90
 name = "Player_UpdateSprint"
 subsystem = "Human"
+
+[[function]]
+address = 0x0027d800
+name = "Player_Charge"
+subsystem = "Human"
+size = 256
+
+[[function]]
+address = 0x0027d900
+name = "Player_Dive"
+subsystem = "Human"
+size = 272
+
+[[function]]
+address = 0x0027e6d8
+name = "Player_UpdateTheft"
+subsystem = "Human"
+size = 560
+
+[[function]]
+address = 0x0027f3b0
+name = "Player_UpdateGrabbing"
+subsystem = "Human"
+size = 2488
 
 [[function]]
 address = 0x0027fd68
@@ -1827,6 +2027,18 @@ address = 0x002802a0
 name = "Pair_Attach"
 subsystem = "Human"
 size = 680
+
+[[function]]
+address = 0x00280630
+name = "Player_UpdateChain"
+subsystem = "Human"
+size = 216
+
+[[function]]
+address = 0x00280708
+name = "Player_UpdateChain"
+subsystem = "Human"
+size = 1560
 
 [[function]]
 address = 0x00281450
@@ -1857,78 +2069,6 @@ subsystem = "Human"
 address = 0x002829e8
 name = "Player_TryJump"
 subsystem = "Human"
-
-[[function]]
-address = 0x002625a8
-name = "Attack_Start"
-subsystem = "Human"
-size = 792
-
-[[function]]
-address = 0x00264178
-name = "Player_ObjectAttack"
-subsystem = "Human"
-size = 744
-
-[[function]]
-address = 0x00264bd8
-name = "Human_AddPendingDamage"
-subsystem = "Human"
-size = 288
-
-[[function]]
-address = 0x00264cf8
-name = "Human_AddRage"
-subsystem = "Human"
-size = 680
-
-[[function]]
-address = 0x0026dd08
-name = "Player_Throw"
-subsystem = "Human"
-size = 2288
-
-[[function]]
-address = 0x0027c120
-name = "Player_UpdateActions"
-subsystem = "Human"
-size = 3120
-
-[[function]]
-address = 0x0027d800
-name = "Player_Charge"
-subsystem = "Human"
-size = 256
-
-[[function]]
-address = 0x0027d900
-name = "Player_Dive"
-subsystem = "Human"
-size = 272
-
-[[function]]
-address = 0x0027e6d8
-name = "Player_UpdateTheft"
-subsystem = "Human"
-size = 560
-
-[[function]]
-address = 0x0027f3b0
-name = "Player_UpdateGrabbing"
-subsystem = "Human"
-size = 2488
-
-[[function]]
-address = 0x00280630
-name = "Player_UpdateChain"
-subsystem = "Human"
-size = 216
-
-[[function]]
-address = 0x00280708
-name = "Player_UpdateChain"
-subsystem = "Human"
-size = 1560
 
 [[function]]
 address = 0x002843f8
@@ -3174,6 +3314,51 @@ subsystem = "Scripting"
 size = 200
 
 [[function]]
+address = 0x003656a0
+name = "CameraMakeActive"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00365a10
+name = "CameraReset"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00365a48
+name = "CamSetupFollow"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00365ad8
+name = "CamTarget"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00365bb8
+name = "CamSetFollowAngle"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00365bf0
+name = "CamSetFollowZoom"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00365d38
+name = "CameraCreateLocked"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x003670c0
+name = "CamSetSecondary"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x003671e0
+name = "CamEnable"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00367448
 name = "ScenePreload"
 subsystem = "Scripting"
@@ -3256,6 +3441,11 @@ address = 0x00368240
 name = "SceneTerminate"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x0036ab88
+name = "CfgFollowCamera"
+subsystem = "Scripting"
 
 [[function]]
 address = 0x0036b220
@@ -3801,6 +3991,16 @@ subsystem = "Warriors"
 size = 240
 
 [[function]]
+address = 0x0041ab30
+name = "SlowMotion_On"
+subsystem = "Warriors"
+
+[[function]]
+address = 0x0041ab60
+name = "SlowMotion_Off"
+subsystem = "Warriors"
+
+[[function]]
 address = 0x0041abe8
 name = "GetCheckPoint"
 subsystem = "Warriors"
@@ -3907,36 +4107,6 @@ address = 0x004238a8
 name = "UM_IsLevelComplete"
 subsystem = "Warriors"
 size = 64
-
-[[function]]
-address = 0x002548f0
-name = "AnimRange_ApplyClassDamage"
-subsystem = "Human"
-
-[[function]]
-address = 0x00265f70
-name = "Human_ApplyPendingDamage"
-subsystem = "Human"
-
-[[function]]
-address = 0x00269f30
-name = "Human_BlockHit"
-subsystem = "Human"
-
-[[function]]
-address = 0x0026b0a0
-name = "Hit_PickReaction"
-subsystem = "Human"
-
-[[function]]
-address = 0x00266d00
-name = "Hit_PickReaction"
-subsystem = "Human"
-
-[[function]]
-address = 0x0027a6c0
-name = "Player_PickTarget"
-subsystem = "Human"
 
 [[function]]
 address = 0x0042a938

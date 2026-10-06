@@ -949,7 +949,7 @@ global.lua's CameraCreateFollow and CameraNormal.
 - **Evidence:** confirmed (code) at `0x0011c0b8`; detail: traced
 - **Wrapper** `0x0036ab88` (registered by `RegisterBindings`); **calls** `0x0011c0b8` `Cam_ConfigureFollow`
 - **Used by** 13 of 467 script chunks (28 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgGang {#cfggang}
 

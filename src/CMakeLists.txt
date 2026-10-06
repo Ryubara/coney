@@ -73,6 +73,7 @@ add_library(coney_core STATIC
     gui/widget.cpp
     scripting/ai_bindings.cpp
     scripting/anim_callbacks.cpp
+    scripting/camera_bindings.cpp
     scripting/config_strings.cpp
     scripting/gang_bindings.cpp
     scripting/level_bindings.cpp
@@ -124,8 +125,14 @@ target_sources(coney_core PRIVATE
 # (docs/research/characters.md, docs/research/camera.md).
 target_sources(coney_core PRIVATE
     animation/anim_task.cpp
+    camera/camera_blend.cpp
+    camera/camera_shake.cpp
+    camera/camera_view.cpp
+    camera/cameras.cpp
     camera/follow_camera.cpp
     camera/follow_collision.cpp
+    camera/locked_camera.cpp
+    camera/slow_motion.cpp
     characters/anim_set.cpp
     human/body.cpp
     human/climb.cpp

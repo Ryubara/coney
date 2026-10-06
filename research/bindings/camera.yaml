@@ -34,6 +34,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 193, calls: 629, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CameraGetActive
   wrapper: 0x003657a0
@@ -115,6 +116,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 167, calls: 310, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CamSetupFollow
   wrapper: 0x00365a48
@@ -131,6 +133,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: CamTarget
   wrapper: 0x00365ad8
@@ -149,6 +152,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 42, calls: 214, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CamSetFollowHeading
   wrapper: 0x00365b80
@@ -176,6 +180,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 76, calls: 94, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CamSetFollowZoom
   wrapper: 0x00365bf0
@@ -194,6 +199,7 @@
     Confirmed (runtime): level99 checkpoint 1 reads band 3.0-3.5, zoom step 4.8, limit 30; after CamSetFollowZoom(1)
     at checkpoint 2, 4.8-5.3, 6.6, 40.
   usage: {chunks: 13, calls: 17, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CamSetFollowPos
   wrapper: 0x00365c60
@@ -232,6 +238,7 @@
     Argument order checked against the callee's slots: fov through slot +0x194, the three angles stored at +0x200,
     near slot +0x1a4, far slot +0x1ac.
   usage: {chunks: 86, calls: 360, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: CameraCreateThird
   wrapper: 0x00365f28
@@ -511,6 +518,7 @@
     Stores the target at follow camera +0x320 and the range at +0x3fc (0 for NilHandle), and the target in the
     player's mugging camera (type 7) too.
   usage: {chunks: 7, calls: 26, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CamCanSee
   wrapper: 0x00367160
@@ -543,6 +551,7 @@
     Flags: 0 → 0x0050b1b8[player], 1 → 0x0050b1cc, 3 → 0x0050b1c0, 4 → 0x0050b1c8, 6 → 0x0050b1d0, 7 → 0x0050b2ac, 8 →
     0x0050b2b0, 9 → 0x0050b1d4, 10 → 0x0050b248, 11 → 0x0050b23c, 12 → 0x0050b2b4, 13 → 0x0050b1e0.
   usage: {chunks: 85, calls: 405, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CamSetSplitMode
   wrapper: 0x00367270

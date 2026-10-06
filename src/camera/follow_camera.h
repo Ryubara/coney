@@ -17,12 +17,17 @@
 namespace coney::camera {
 
 /// What `CfgFollowCamera` sets, as read in level99's street (docs/research/camera.md#level99-values,
-/// docs/research/camera.md#street).
+/// docs/research/camera.md#street). A camera made with these and no `CfgFollowCamera` call keeps the street's band;
+/// FollowCamera::configure() is the call itself, which leaves the band at the minimum.
 struct FollowSettings {
     float minDistance = 3.0F;
     float maxDistance = 6.6F;
     float defaultDistance = 4.8F;
     float pitchDegrees = 13.0F;
+    float fieldOfView = 65.0F; ///< Degrees (`+0x310`).
+    float nearClip = 0.1F;     ///< Slot `+0x1a4`.
+    float lookAtX = 0.0F;      ///< The look-at offset from the target's feet (`+0x210`), world axes.
+    float lookAtY = 0.0F;
     float lookAtHeight = 1.4F; ///< The look-at offset above the target's feet.
     /// The leash band (`+0x32c` / `+0x330`): the default distance, and the default + min(0.5, max − min).
     float leashNear = 4.8F;
@@ -92,6 +97,24 @@ struct FollowTarget {
     /// `+0x152`): a sprint zooms in only with no enemies or the nearest within 12 m
     /// (docs/research/camera.md#sprint-zoom).
     std::optional<float> nearestEnemy;
+    /// The combat camera's test (`0x00233c50`): a pad-controlled player with a fight target, L1 held at it (record
+    /// flags `0x8` and `0x4`), one player, riding nothing (docs/research/camera.md#combat-camera).
+    bool lockOn = false;
+    /// A lock-on button held: the hard band's far edge is doubled, at most 1.1 × the maximum distance.
+    bool lockHeld = false;
+    /// The point the combat camera frames: the fight target's position plus half its velocity (`+0x4e0`).
+    std::optional<anim::Vec3> enemy;
+    /// Where the human `CamSetSecondary` gave (`+0x320`) is, kept in view in place of auto-follow; none for none.
+    std::optional<anim::Vec3> secondary;
+    /// Its range (`+0x3fc`): above 0 the rule acts only within it.
+    float secondaryRange = 0.0F;
+};
+
+/// The zoom presets of `CamSetFollowZoom` (docs/research/camera.md#script-calls).
+enum class FollowZoom : std::uint8_t {
+    Close = 0,   ///< The band's near edge at the minimum distance; the zoom step the default.
+    Default = 1, ///< At the default distance; the zoom step the maximum.
+    Far = 2,     ///< The band's far edge at the maximum; the zoom step the minimum.
 };
 
 /// The follow camera.
@@ -141,6 +164,31 @@ class FollowCamera {
     static constexpr float kLookAtSlowShare = 0.2F;
     /// The height hold's ease: this share of the way per update, times the hold's scale (`+0x398`).
     static constexpr float kHeightHoldShare = 0.3F;
+    /// The height hold's scale after `CfgFollowCamera` (`0x00125888`).
+    static constexpr float kConfiguredHoldScale = 0.25F;
+    /// The leash band's depth: the far edge is the near edge + min(this, max − min).
+    static constexpr float kBandDepth = 0.5F;
+    /// The zoom step the band's near edge gives: the default at or below min + this share of (default − min), the
+    /// maximum at or below default + kZoomStepFarShare of (max − default), else the minimum (`0x001254f0`).
+    static constexpr float kZoomStepNearShare = 0.4F;
+    static constexpr float kZoomStepFarShare = 0.6F;
+    /// The field of view's ease: at most this many degrees a second.
+    static constexpr float kFovRateCap = 7.5F;
+    /// The combat camera: the band's wanted near edge, metres; the target pitch, degrees; the enemy held this many
+    /// degrees off the view's centre, with no turn while it is between kCombatFrameLow and kCombatFrameHigh; the
+    /// share of the excess turned an update, and the cap beyond kCombatFrameHigh, radians a second (640°/s).
+    static constexpr float kCombatNear = 2.4F;
+    static constexpr float kCombatPitchDegrees = 15.0F;
+    static constexpr float kCombatFrameDegrees = 27.0F;
+    static constexpr float kCombatFrameLow = 25.0F;
+    static constexpr float kCombatFrameHigh = 29.0F;
+    static constexpr float kCombatFrameShare = 0.455F;
+    static constexpr float kCombatFrameRate = 11.17F;
+    /// Keep in view (`0x0012e170`): the target may be this share of the field of view off the view's direction; the
+    /// camera turns kKeepInViewShare of the excess an update, at most kKeepInViewRate radians a second (270°/s).
+    static constexpr float kKeepInViewFactor = 0.25F;
+    static constexpr float kKeepInViewShare = 0.35F;
+    static constexpr float kKeepInViewRate = 4.712F;
 
     /// A camera on a target whose feet are at `targetFeet` facing `targetHeading` (radians, 0 facing +y): placed behind
     /// it at the leash band's near edge and the target pitch (**Coney's choice** for the reset, which is not traced).
@@ -163,6 +211,47 @@ class FollowCamera {
     /// (`+0x398`: 1, or 0.25 after `0x00125888`). What enters it in the original is not traced (inferred: the target
     /// high above the camera's ground), so Coney's player never does yet.
     void holdHeight(bool on, float scale = 1.0F);
+
+    /// `CfgFollowCamera(min, max, default, pitch, fov, near, offset, slowmo)` on this camera (the slow-motion factor is
+    /// camera::SlowMotion's): the three distances (each clamped against the others), the band at the default, the
+    /// pitch as the configured and the target pitch with the view turned to it at once, the field of view easing to
+    /// the new one over 1 s, the offset and the near plane, the height hold's scale 0.25; last, with one player camera,
+    /// the band moved to the minimum as `CamSetFollowZoom(0)` (with two, as `CamSetFollowZoom(1)`).
+    /// @orig 0x0011c0b8 CfgFollowCamera (unknown)
+    /// @orig 0x00125888 Cam_Follow_ApplyConfig (Cam_Follow.cpp)
+    void configure(const FollowSettings& settings);
+
+    /// `CamSetFollowZoom(preset)`: snaps the look-at point, moves the band's near edge to the preset's distance (kept
+    /// kBandDepth deep, within the distances), recomputes the lower pitch limit from the new far edge and sets the
+    /// zoom step to the next preset. The camera itself is not moved: the leash drags it into the new band. With two
+    /// player cameras Close acts as Default.
+    /// @orig 0x0011c470 Camera_SetFollowZoom (unknown)
+    void setZoom(FollowZoom preset);
+
+    /// `CamSetFollowAngle(degrees)`: snaps the look-at point, sets the target pitch to `degrees` (positive above the
+    /// player) clamped to the pitch limits, turns the view to it at once and clears the sprint latch.
+    /// @orig 0x0011c3b8 Camera_SetFollowPitch (unknown)
+    void setPitch(float degrees);
+
+    /// `CameraReset` on the follow camera: behind the target at the preset distance nearest the current one (clamped
+    /// to the band), with the zoom step after it, the look-at point snapped, the wanted near edge cleared, the target
+    /// pitch back to the configured one (reached at once) and the field of view easing back. The band is not moved.
+    /// @orig 0x00124d00 Cam_Follow_Reset (Cam_Follow.cpp)
+    /// @orig 0x00124f38 Cam_Follow_PlaceBehind (Cam_Follow.cpp)
+    void reset();
+
+    /// The follow camera made current directly (also at the end of a blend): the look-at point snapped, the camera
+    /// kept in its direction from it at its distance clamped to the band, the hard band set to the band and the wanted
+    /// near edge cleared.
+    /// @orig 0x00125cc0 Cam_Follow_Activate (Cam_Follow.cpp)
+    void activate();
+
+    /// Records where the target is without updating the camera, for a camera that is not current: reset() and
+    /// activate() place it on the target's latest feet and facing.
+    void observe(const FollowTarget& target);
+
+    /// `CamEnable(0, on)`: the right stick and the zoom buttons act (on, as made) or not.
+    void enableStick(bool on) { m_stickOn = on; }
 
     /// Puts the camera `distance` metres from the look-at point of a target whose feet are at `targetFeet`, at the
     /// target pitch, its view facing `viewHeading` (radians, 0 facing +y), with nothing in progress: Coney's own, for
@@ -201,6 +290,19 @@ class FollowCamera {
     [[nodiscard]] bool viewLatched() const { return m_viewLatch; }
     /// The yaw the auto-follow rule turned the camera by in the last update, radians (positive anticlockwise).
     [[nodiscard]] float lastAutoTurn() const { return m_lastAutoTurn; }
+    /// The yaw the combat camera or keep-in-view turned it by in the last update, radians (positive anticlockwise).
+    [[nodiscard]] float lastFrameTurn() const { return m_lastFrameTurn; }
+    /// The settings it was made or configured with.
+    [[nodiscard]] const FollowSettings& settings() const { return m_settings; }
+    /// The field of view now, degrees, and the near plane.
+    [[nodiscard]] float fieldOfView() const { return m_fov; }
+    [[nodiscard]] float nearClip() const { return m_settings.nearClip; }
+    /// Whether the combat camera is on (`+0x46f`).
+    [[nodiscard]] bool combatOn() const { return m_combatOn; }
+    /// The band's wanted near edge (`+0x34c`), or nothing while none is set.
+    [[nodiscard]] std::optional<float> wantedNear() const {
+        return m_wantedNear > 0.0F ? std::optional<float>(m_wantedNear) : std::nullopt;
+    }
 
   private:
     // The hard band's near edge before the first update: beyond any band, so the first update sets it at once.
@@ -236,8 +338,27 @@ class FollowCamera {
     // Eases the band's near edge toward its wanted near edge (`+0x34c`), the far edge following.
     // @orig 0x0012aae0 Cam_Follow_EaseBand (Cam_Follow.cpp)
     void easeBand(float seconds);
-    // The hard band's edges for the current leash band: they widen at once and shrink by kHardBandEase an update.
-    void stepHardBand();
+    // The hard band's edges for the current leash band: they widen at once and shrink by kHardBandEase an update; a
+    // held lock-on button doubles the far edge, at most 1.1 × the maximum distance.
+    void stepHardBand(bool lockHeld = false);
+    // The look-at point of a target whose feet are at `feet`: the feet plus the offset.
+    [[nodiscard]] anim::Vec3 lookAtOf(anim::Vec3 feet) const;
+    // The lower pitch limit for the band's far edge, at least -20°; the target pitch is raised to it.
+    // @orig 0x0012d7a8 Cam_Follow_MoveBand (Cam_Follow.cpp)
+    void updateLowerPitch();
+    // The zoom step the band's near edge `near` gives (the default, the maximum or the minimum distance).
+    [[nodiscard]] float zoomStepFor(float near) const;
+    // Turns the wanted position to the target pitch at once and puts the camera there.
+    void snapPitch();
+    // The field of view's ease toward the wanted one.
+    void easeFieldOfView(float seconds);
+    // The combat camera: on entry the band's wanted near edge to 2.4 m and the target pitch to 15°, on exit the saved
+    // edge back; while on, the enemy framed 27° off centre. Returns whether it turned the camera.
+    // @orig 0x0012e9a8 Cam_Follow_FrameEnemy (Cam_Follow.cpp)
+    bool combat(const FollowTarget& target, float seconds);
+    // Keep in view: turns toward `point` when it is more than a quarter of the field of view off the view's direction.
+    // @orig 0x0012e170 Cam_Follow_KeepInView (Cam_Follow.cpp)
+    void keepInView(anim::Vec3 point, float range, float seconds);
 
     FollowSettings m_settings;
     anim::Vec3 m_lookAt;
@@ -270,6 +391,16 @@ class FollowCamera {
     bool m_viewLatch = false;          // +0x45d
     int m_standingUpdates = 0;         // updates in a row the target has stood (gait 0, on the ground)
     float m_lastAutoTurn = 0.0F;
+    float m_lastFrameTurn = 0.0F;
+    float m_configuredPitch;    // +0x30c
+    float m_fov;                // the field of view now
+    float m_wantedFov;          // +0x394
+    float m_fovRate = 0.0F;     // degrees a second (+0x39c)
+    bool m_stickOn = true;      // CamEnable(0)
+    bool m_combatOn = false;    // +0x46f
+    float m_combatSaved = 0.0F; // the band's near edge before the combat camera (+0x3cc); 0 for none
+    anim::Vec3 m_targetFeet;    // the target's latest feet and facing
+    float m_targetHeading = 0.0F;
 };
 
 } // namespace coney::camera

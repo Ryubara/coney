@@ -14,6 +14,7 @@
 #include "scripting/ai_bindings.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/binding_args.h"
+#include "scripting/camera_bindings.h"
 #include "scripting/config_strings.h"
 #include "scripting/gang_bindings.h"
 #include "scripting/level_bindings.h"
@@ -540,6 +541,17 @@ constexpr std::array kBindings{
     real("TacticCrowd"),
     real("TacticTrigger"),
     real("TacticClear"),
+    // The cameras level99 drives (camera_bindings.h).
+    real("CamSetupFollow"),
+    real("CfgFollowCamera"),
+    real("CameraCreateLocked"),
+    real("CameraMakeActive"),
+    real("CameraReset"),
+    real("CamSetFollowZoom"),
+    real("CamSetFollowAngle"),
+    real("CamSetSecondary"),
+    real("CamEnable"),
+    real("CamTarget"),
     // The gangs (gang_bindings.h, and GangCreate above).
     real("GangCreate"),
     real("GangDelete"),
@@ -695,10 +707,7 @@ constexpr std::array kBindings{
     stub("SetWorldAmbient"),
     // The HUD.
     stub("HUDEnableClubActionText"),
-    // Cameras, scenes, objects and particles: the ones that make something return a handle.
-    stub("CameraCreateLocked", StubResult::Handle),
-    stub("CameraMakeActive"),
-    stub("CameraReset"),
+    // Scenes, objects and particles: the ones that make something return a handle.
     stub("GetPTank", StubResult::Handle),
     stub("ObjSpawn", StubResult::Handle),
     stub("ReleasePTank"),
@@ -802,6 +811,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
                      std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
                      std::ranges::find(kAiBindings, info.name) != kAiBindings.end() ||
+                     std::ranges::find(kCameraBindings, info.name) != kCameraBindings.end() ||
                      std::ranges::find(kGangBindings, info.name) != kGangBindings.end() ||
                      std::ranges::find(kTriggerBindings, info.name) != kTriggerBindings.end() ||
                      std::ranges::find(kAnimCallbackBindings, info.name) != kAnimCallbackBindings.end() ||
@@ -821,7 +831,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
             vm.registerFunction(name, makeStandInScenePlay(factory));
         }
     }
-    // The level bindings make world objects, so they take their handles from the same counter as the stubs.
+    // The level, trigger and camera bindings make world objects, so they take their handles from the same counter as
+    // the stubs.
     const auto nextHandle = [handles = factory.handles] {
         const double handle = handles->next;
         handles->next += 1;
@@ -829,6 +840,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     };
     addLevelBindings(vm, context, nextHandle);
     addTriggerBindings(vm, context, nextHandle);
+    addCameraBindings(vm, context, nextHandle);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

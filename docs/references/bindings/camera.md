@@ -197,7 +197,7 @@ Turns one of the camera system's switches on or off. The scripts use 0, 3, 4, 7 
 - **Evidence:** confirmed (code) at `0x0011de58`; detail: traced
 - **Wrapper** `0x003671e0` (registered by `RegisterBindings`); **calls** `0x0011de58` `Camera_EnableFeature`
 - **Used by** 85 of 467 script chunks (405 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraCreateFixed {#cameracreatefixed}
 
@@ -252,7 +252,7 @@ level99's tutorial cut-aways are nine more ([Camera](../../research/camera.md#lo
 - **Evidence:** confirmed (code) at `0x0011bc48`; detail: traced
 - **Wrapper** `0x00365d38` (registered by `RegisterBindings`); **calls** `0x0011bc48` `Camera_CreateLocked`
 - **Used by** 86 of 467 script chunks (360 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraCreateThird {#cameracreatethird}
 
@@ -351,7 +351,7 @@ to instead. See [Camera](../../research/camera.md#blends).
 - **Evidence:** confirmed (code) at `0x0011b770`; detail: traced
 - **Wrapper** `0x003656a0` (registered by `RegisterBindings`); **calls** `0x0011b770` `Camera_MakeActiveByHandle`
 - **Used by** 193 of 467 script chunks (629 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraReset {#camerareset}
 
@@ -373,7 +373,7 @@ moved; the other player's follow camera is reset too. level99 resets its follow 
 - **Evidence:** confirmed (code) at `0x0011bad8`; detail: traced
 - **Wrapper** `0x00365a10` (registered by `RegisterBindings`); **calls** `0x0011bad8` `Camera_ResetByHandle`
 - **Used by** 167 of 467 script chunks (310 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraSetClipping {#camerasetclipping}
 
@@ -636,7 +636,7 @@ lasts until the next CameraReset or CfgFollowCamera. level99's -10 clamps to the
 - **Evidence:** confirmed (code) at `0x0011c3b8`; detail: traced
 - **Wrapper** `0x00365bb8` (registered by `RegisterBindings`); **calls** `0x0011c3b8` `Camera_SetFollowPitch`
 - **Used by** 76 of 467 script chunks (94 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetFollowHeading {#camsetfollowheading}
 
@@ -701,7 +701,7 @@ CamSetFollowZoom(1) at checkpoint 2, 4.8-5.3, 6.6, 40.
 - **Evidence:** confirmed (code) at `0x0011c470`; detail: traced
 - **Wrapper** `0x00365bf0` (registered by `RegisterBindings`); **calls** `0x0011c470` `Camera_SetFollowZoom`
 - **Used by** 13 of 467 script chunks (17 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetGameAspect {#camsetgameaspect}
 
@@ -785,7 +785,7 @@ player's mugging camera (type 7) too.
 - **Evidence:** confirmed (code) at `0x0011dcf0`; detail: traced
 - **Wrapper** `0x003670c0` (registered by `RegisterBindings`); **calls** `0x0011dcf0` `Camera_SetFollowSecondary`
 - **Used by** 7 of 467 script chunks (26 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetSplitMode {#camsetsplitmode}
 
@@ -825,7 +825,7 @@ global.lua's CameraCreateFollow. See [Camera](../../research/camera.md#setting-u
 - **Evidence:** confirmed (code) at `0x0011bfa8`; detail: traced
 - **Wrapper** `0x00365a48` (registered by `RegisterBindings`); **calls** `0x0011bfa8` `Camera_SetupFollow`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetupHood {#camsetuphood}
 
@@ -923,7 +923,7 @@ the first two entries and keeps its last target when the list is empty, so with 
 - **Evidence:** confirmed (code) at `0x0011c270`; detail: traced
 - **Wrapper** `0x00365ad8` (registered by `RegisterBindings`); **calls** `0x0011c270` `Camera_TargetList`
 - **Used by** 42 of 467 script chunks (214 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamUseDeathCamera {#camusedeathcamera}
 

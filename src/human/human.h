@@ -230,6 +230,9 @@ class Human final : public Combatant {
     void announceAttack(anim::Vec3 attacker) override { m_announced.push_back(attacker); }
     /// Where the attacks announced since the last call started, and forgets them (its brain takes them each update).
     [[nodiscard]] std::vector<anim::Vec3> takeAttackAnnouncements() { return std::exchange(m_announced, {}); }
+    /// The slow-motion event (type `0x2e` on, `0x2f` off) the clip playing passed in the last update, if any; the
+    /// later of the two when both did (docs/research/camera.md#slow-motion).
+    [[nodiscard]] std::optional<std::uint16_t> slowMotionEvent() const { return m_slowMotionEvent; }
     /// Another human's grab catches this one (Fighter::catchInGrab()).
     void catchInGrab(const GrabCatch& grab) { m_fighter.catchInGrab(grab); }
     /// The grabber's numbers this update, while held (Fighter::updateGrabber()).
@@ -297,6 +300,10 @@ class Human final : public Combatant {
     // when it stands within twice the anim's reach.
     // @orig 0x00101dd8 Anim_FireEvents (unknown)
     void sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
+    // Notes a slow-motion event (0x2e or 0x2f) of the clip playing that this step's animation passed, as
+    // sendWarnings() finds a warning.
+    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    void noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
     void updateMeters(bool sprintHeld);
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
@@ -322,8 +329,9 @@ class Human final : public Combatant {
     const combat::AnimRangeList* m_ranges;
     FighterProfile m_profile;
     Fighter m_fighter;
-    std::vector<anim::Vec3> m_announced; // attacks announced since the brain last looked (event 0x10)
-    std::uint64_t m_updates = 0;         // updates stepped: combat's game time
+    std::vector<anim::Vec3> m_announced;            // attacks announced since the brain last looked (event 0x10)
+    std::optional<std::uint16_t> m_slowMotionEvent; // the last update's slow-motion event (0x2e / 0x2f)
+    std::uint64_t m_updates = 0;                    // updates stepped: combat's game time
     std::array<anim::Quat, anim::kPoseBones> m_bindRotations{};
     float m_scale = 1.0F;
     anim::Vec3 m_position;

@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 58 implemented, 2 partial, 155 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 68 implemented, 2 partial, 145 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -105,15 +105,15 @@ leave part of its effect open; its notes say which.
 | [`GangSetTargetable`](gang.md#gangsettargetable) | Gangs | traced | confirmed (code) | not implemented |
 | [`GangSetThreatResponse`](gang.md#gangsetthreatresponse) | Gangs | traced | confirmed (code) | implemented |
 | [`GangSuspend`](gang.md#gangsuspend) | Gangs | traced | confirmed (code) | implemented |
-| [`CamEnable`](camera.md#camenable) | Cameras | traced | confirmed (code) | not implemented |
-| [`CameraCreateLocked`](camera.md#cameracreatelocked) | Cameras | traced | confirmed (code) | not implemented |
-| [`CameraMakeActive`](camera.md#cameramakeactive) | Cameras | traced | confirmed (code) | not implemented |
-| [`CameraReset`](camera.md#camerareset) | Cameras | traced | confirmed (code) | not implemented |
-| [`CamSetFollowAngle`](camera.md#camsetfollowangle) | Cameras | traced | confirmed (code) | not implemented |
-| [`CamSetFollowZoom`](camera.md#camsetfollowzoom) | Cameras | traced | confirmed (code) | not implemented |
-| [`CamSetSecondary`](camera.md#camsetsecondary) | Cameras | traced | confirmed (code) | not implemented |
-| [`CamSetupFollow`](camera.md#camsetupfollow) | Cameras | traced | confirmed (code) | not implemented |
-| [`CamTarget`](camera.md#camtarget) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamEnable`](camera.md#camenable) | Cameras | traced | confirmed (code) | implemented |
+| [`CameraCreateLocked`](camera.md#cameracreatelocked) | Cameras | traced | confirmed (code) | implemented |
+| [`CameraMakeActive`](camera.md#cameramakeactive) | Cameras | traced | confirmed (code) | implemented |
+| [`CameraReset`](camera.md#camerareset) | Cameras | traced | confirmed (code) | implemented |
+| [`CamSetFollowAngle`](camera.md#camsetfollowangle) | Cameras | traced | confirmed (code) | implemented |
+| [`CamSetFollowZoom`](camera.md#camsetfollowzoom) | Cameras | traced | confirmed (code) | implemented |
+| [`CamSetSecondary`](camera.md#camsetsecondary) | Cameras | traced | confirmed (code) | implemented |
+| [`CamSetupFollow`](camera.md#camsetupfollow) | Cameras | traced | confirmed (code) | implemented |
+| [`CamTarget`](camera.md#camtarget) | Cameras | traced | confirmed (code) | implemented |
 | [`AddFlag`](world.md#addflag) | World and objects | traced | confirmed (code) | implemented |
 | [`AddVolumeBox`](world.md#addvolumebox) | World and objects | traced | confirmed (code) | implemented |
 | [`CarMakeGoodAsNew`](world.md#carmakegoodasnew) | World and objects | traced | confirmed (code) | not implemented |
@@ -215,7 +215,7 @@ leave part of its effect open; its notes say which.
 | [`SetStartGameCallback`](script.md#setstartgamecallback) | Script flow | traced | confirmed (code) | implemented |
 | [`PadSetHandler`](input.md#padsethandler) | Pad input | traced | confirmed (code) | not implemented |
 | [`PadSetHandlerEx`](input.md#padsethandlerex) | Pad input | traced | confirmed (code) | not implemented |
-| [`CfgFollowCamera`](config.md#cfgfollowcamera) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgFollowCamera`](config.md#cfgfollowcamera) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgInventoryCallback`](config.md#cfginventorycallback) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgMultiplayerJoin`](config.md#cfgmultiplayerjoin) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgPlayerMugging`](config.md#cfgplayermugging) | Configuration (Cfg) | traced | confirmed (code) | not implemented |

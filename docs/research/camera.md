@@ -740,6 +740,25 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   never nearer than 0.5 m. The **side probes** turn the main ray about the look-at point's vertical by 1, 2 and 3 ×
   the probe angle (7° at the band's near edge to 4° at its far edge) each way;
 - the camera's forward vector turns the player's stick before the human sees it;
+- **the script calls** ([Script calls](#script-calls)): `src/camera/cameras.*` keeps player 1's cameras (the follow
+  camera, the locked ones, which is current, the blend, the scene stack, the switches, the target list, the watched
+  human, the shake and slow motion), and `src/scripting/camera_bindings.*` makes `CamSetupFollow`, `CfgFollowCamera`
+  (`FollowCamera::configure()`: band 3.0-3.5 m, zoom step 4.8, 30°), `CamSetFollowZoom`, `CamSetFollowAngle`
+  (clamped, reached at once), `CameraReset` (behind the player at the nearest preset, pitch back to 13°),
+  `CameraCreateLocked`, `CameraMakeActive`, `CamEnable` (switches 0, 5 and 6 act), `CamTarget` and `CamSetSecondary`
+  (keep in view, 0.25 of the field of view, 35 % of the excess, at most 270°/s) real. The zoom step follows the band's
+  near edge as it eases (3.72 m and 5.88 m);
+- **blends** ([Blends](#blends)): `CameraBlend` lerps the position and look-at point and slerps the orientation from
+  the view shown when it began to the destination's live view, linear in time, the far clip never growing; at the end
+  the destination becomes current directly, which runs the follow camera's activation (`FollowCamera::activate()`).
+  A **locked camera** looks along its angles at a point 3 m ahead, its far clip at most 150;
+- the **combat camera** ([Combat camera](#combat-camera)): with L1 held while the player has a fight target (`Fighter::target()`)
+  the band's wanted near edge goes to 2.4 m (4.8, 4.44, 4.134, ... at 4.5/s) and the target pitch to 15°, the enemy's
+  point (position + half its velocity) is turned toward 27° off the view's centre (0.455 of the excess, at most
+  640°/s beyond 29°), and on release the saved band comes back while the pitch stays;
+- the **shake** ([Shake](#shake)) at the three strengths, 0.66 in combat, its time counted with the characters' step,
+  and the rumble byte it drives; **slow motion** ([Slow motion](#slow-motion)): the player's clip events `0x2e` /
+  `0x2f` set the characters' step `SlowMotion::stepSeconds()` to `CfgFollowCamera`'s factor of 1/30 s and back;
 - `--trace FILE` writes the camera's position, look-at point, wanted position, distance, angles, band and
   auto-follow turn after every step, with the player's state ([Building](../guides/building.md#tracing)).
 
@@ -751,9 +770,18 @@ The world viewer keeps its own free camera with the player camera's lens
 - **One player camera**: `0x0050b19c`, the number of player cameras (`0x00122ed0`), is 1 (the debug menu's *One
   player camera*), as Coney has no split screen. Off is the two-player case: the sprint keeps the band and only lowers
   the pitch, and the way back goes to the maximum distance less 0.5, as the page says.
-- **The zoom distance** starts at the maximum (6.6 m, upper pitch limit 40°), as read in the street. The band's own
-  zoom step in `0x0012aae0` is left out (the page has since resolved it, [Sprint zoom](#sprint-zoom) step 4: it
-  steps to the default below 3.72 m, which gives the 30° read).
+- **The zoom distance** starts at the maximum (6.6 m, upper pitch limit 40°), as read in the street, for a camera no
+  script configures (the sandbox, `--play-level` without scripts).
+- **Locked cameras' angles**: the page does not give their conventions, so the heading is read as a human's (0 facing
+  +y, anticlockwise), the pitch positive looking down and the roll positive turning the top to the right. The line of
+  sight test, the blend's sphere push and keep-in-view's ray (for a range above 0) are left out.
+- **A follow camera that is not current** is not updated; it only notes where the player is, so a reset or the
+  activation places it on him.
+- **The shake**: one shake on the manager, applied to whichever camera is current; the view offset (form not traced) is
+  a random share in [-1, 1] of the amplitude × 0.05 m on each axis; after its time the amplitude eases back to 0 at the
+  same 65 %. The hit, rage and animation-event starts are not wired yet (`Cameras::shake()` is the hook).
+- **Slow motion** is computed but the humans still step by the fixed 1/30 s (`kStepSeconds`): the characters' step does
+  not read `SlowMotion::stepSeconds()` yet.
 - **The sprint time** `+0x36c` counts only at the sprint gait and is zeroed off it, so every sprint arms the zoom (a
   run before the sprint, as in the street's runs, would otherwise keep it from arming). A sprint that starts while
   the band is still going back saves the band it was going back to, so a quick second sprint does not keep a band
@@ -830,6 +858,7 @@ The world viewer keeps its own free camera with the player camera's lens
   `0x0012f3e0` changes after the height ray, and what `+0x10a`-`+0x10c` (side angle history) feed.
 - **Slow motion**: which clips carry the events `0x2e` / `0x2f` ([Slow motion](#slow-motion)).
 - **Shake**: the view offset's form, and the anim event that starts one.
+- **Locked cameras**: the conventions of `CameraCreateLocked`'s heading, pitch and roll.
 - **The combat camera's 0.4 keep-in-view** (`0x0012e170(0.4)` in the update's one-target case): which human it keeps.
 - **Scenes**: the scene camera's own update (type 4) and the "a scene is playing" flag at `0x0051489c + 0x410` (see
   [Scenes](#scenes)).

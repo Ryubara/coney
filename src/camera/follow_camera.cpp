@@ -29,6 +29,8 @@ constexpr float kHardNearShare = 0.05F;
 constexpr float kHardNearMinimum = 0.2F;
 constexpr float kHardFarShare = 0.06F;
 constexpr float kHardFarMinimum = 0.35F;
+// A held lock-on button lets the hard band's far edge out to this share of the maximum distance.
+constexpr float kLockHeldFarShare = 1.1F;
 // The auto-centre rule's angles and rates, degrees and degrees a second (docs/research/camera.md#heading).
 constexpr float kCentreFrom = 22.5F;
 constexpr float kCentreMid = 45.0F;
@@ -142,14 +144,216 @@ FollowCamera::FollowCamera(anim::Vec3 targetFeet, float targetHeading, const Fol
       m_lowerPitch(
           std::max(kLowestPitchDegrees * kRadians, std::atan((1.0F - settings.lookAtHeight) / settings.maxDistance))),
       m_zoomDistance(settings.maxDistance), m_bandNear(settings.leashNear),
-      m_bandWidth(settings.leashFar - settings.leashNear) {
+      m_bandWidth(settings.leashFar - settings.leashNear), m_configuredPitch(settings.pitchDegrees * kRadians),
+      m_fov(settings.fieldOfView), m_wantedFov(settings.fieldOfView), m_targetHeading(targetHeading) {
     // Behind the target's facing, at the band's near edge, at the target pitch.
     place(targetFeet, settings.leashNear, targetHeading);
 }
 
+anim::Vec3 FollowCamera::lookAtOf(anim::Vec3 feet) const {
+    return anim::add(feet, anim::Vec3{m_settings.lookAtX, m_settings.lookAtY, m_settings.lookAtHeight});
+}
+
+void FollowCamera::updateLowerPitch() {
+    m_lowerPitch = std::max(kLowestPitchDegrees * kRadians,
+                            std::atan((1.0F - m_settings.lookAtHeight) / std::max(bandFar(), 1e-3F)));
+    m_targetPitch = std::max(m_targetPitch, m_lowerPitch);
+}
+
+float FollowCamera::zoomStepFor(float near) const {
+    const FollowSettings& s = m_settings;
+    if (near <= s.minDistance + kZoomStepNearShare * (s.defaultDistance - s.minDistance)) {
+        return s.defaultDistance;
+    }
+    if (near <= s.defaultDistance + kZoomStepFarShare * (s.maxDistance - s.defaultDistance)) {
+        return s.maxDistance;
+    }
+    return s.minDistance;
+}
+
+void FollowCamera::snapPitch() {
+    pitchToward(kPi);
+    m_position = m_wanted;
+}
+
+void FollowCamera::observe(const FollowTarget& target) {
+    m_targetFeet = target.feet;
+    m_targetHeading = target.heading;
+}
+
+void FollowCamera::configure(const FollowSettings& settings) {
+    // The three distances, each clamped against the others; the band at the default, min(0.5, max - min) deep.
+    m_settings = settings;
+    m_settings.minDistance = std::max(settings.minDistance, 0.0F);
+    m_settings.maxDistance = std::max(settings.maxDistance, m_settings.minDistance);
+    m_settings.defaultDistance = std::clamp(settings.defaultDistance, m_settings.minDistance, m_settings.maxDistance);
+    m_bandWidth = std::min(kBandDepth, m_settings.maxDistance - m_settings.minDistance);
+    m_bandNear = m_settings.defaultDistance;
+    m_settings.leashNear = m_bandNear;
+    m_settings.leashFar = m_bandNear + m_bandWidth;
+    // The maximum's setter recomputes the lower pitch limit from it.
+    m_lowerPitch = std::max(kLowestPitchDegrees * kRadians,
+                            std::atan((1.0F - m_settings.lookAtHeight) / std::max(m_settings.maxDistance, 1e-3F)));
+    // The pitch, configured and wanted, reached at once; the field of view eases to the new one over 1 s.
+    m_configuredPitch = m_settings.pitchDegrees * kRadians;
+    m_targetPitch = std::max(m_configuredPitch, m_lowerPitch);
+    m_lookAt = lookAtOf(m_targetFeet);
+    snapPitch();
+    m_wantedFov = m_settings.fieldOfView;
+    m_fovRate = std::abs(m_wantedFov - m_fov);
+    m_heightHoldScale = kConfiguredHoldScale;
+    // Last, the band to the minimum with one player camera (CamSetFollowZoom(0)); with two, to the default.
+    setZoom(FollowZoom::Close);
+}
+
+void FollowCamera::setZoom(FollowZoom preset) {
+    FollowZoom zoom = preset;
+    if (zoom == FollowZoom::Close && !followTuning().onePlayerCamera) {
+        zoom = FollowZoom::Default;
+    }
+    // The look-at point snapped, with no ease.
+    m_lookAt = lookAtOf(m_targetFeet);
+    // The band's near edge at the preset, kept within the distances; the zoom step the next preset.
+    const FollowSettings& s = m_settings;
+    float near = s.minDistance;
+    float step = s.defaultDistance;
+    switch (zoom) {
+    case FollowZoom::Close:
+        break;
+    case FollowZoom::Default:
+        near = s.defaultDistance;
+        step = s.maxDistance;
+        break;
+    case FollowZoom::Far:
+        near = s.maxDistance - m_bandWidth;
+        step = s.minDistance;
+        break;
+    }
+    m_bandNear = std::clamp(near, s.minDistance, std::max(s.minDistance, s.maxDistance - m_bandWidth));
+    updateLowerPitch();
+    stepZoom(step);
+}
+
+void FollowCamera::setPitch(float degrees) {
+    m_lookAt = lookAtOf(m_targetFeet);
+    m_targetPitch = std::clamp(degrees * kRadians, m_lowerPitch, std::max(m_lowerPitch, upperPitch()));
+    snapPitch();
+    m_zoomLatched = false;
+}
+
+void FollowCamera::reset() {
+    // The distance: the current one clamped to the band, then the preset it is nearest by the halfway rule.
+    const FollowSettings& s = m_settings;
+    const float current = std::clamp(anim::distance(m_position, m_lookAt), bandNear(), bandFar());
+    float distance = s.maxDistance - kBandDepth;
+    float step = s.minDistance;
+    if (current <= s.minDistance + (s.defaultDistance - s.minDistance) / 2.0F) {
+        distance = s.minDistance;
+        step = s.defaultDistance;
+    } else if (current <= s.defaultDistance + (s.maxDistance - s.defaultDistance) / 2.0F) {
+        distance = s.defaultDistance;
+        step = s.maxDistance;
+    }
+    stepZoom(step);
+    // Behind the target at that distance at the configured pitch, the look-at point snapped; the field of view back.
+    m_wantedNear = -1.0F;
+    m_targetPitch = std::max(m_configuredPitch, m_lowerPitch);
+    place(m_targetFeet, distance, m_targetHeading);
+    m_wantedFov = s.fieldOfView;
+    m_fovRate = std::abs(m_wantedFov - m_fov);
+}
+
+void FollowCamera::activate() {
+    // The look-at point snapped; the camera kept in its direction from it, at its distance clamped to the band.
+    m_lookAt = lookAtOf(m_targetFeet);
+    const anim::Vec3 offset = anim::subtract(m_position, m_lookAt);
+    const float distance = std::clamp(anim::length(offset), bandNear(), bandFar());
+    m_position = anim::add(m_lookAt, withLength(offset, distance));
+    m_wanted = m_position;
+    // The hard band set to the band, the wanted near edge cleared.
+    m_hardNear = bandNear();
+    m_hardFar = bandFar();
+    m_wantedNear = -1.0F;
+}
+
+void FollowCamera::easeFieldOfView(float seconds) {
+    if (m_fov == m_wantedFov) {
+        return;
+    }
+    // Over the timed move's time left when one runs, else at the configured rate, at most 7.5° a second.
+    const float left = m_wantedFov - m_fov;
+    const float step = m_timer > 0.0F ? std::abs(left) / m_timer * seconds : std::min(m_fovRate, kFovRateCap) * seconds;
+    m_fov = std::abs(left) <= step ? m_wantedFov : m_fov + std::copysign(step, left);
+}
+
+bool FollowCamera::combat(const FollowTarget& target, float seconds) {
+    const bool on = target.lockOn && target.enemy.has_value();
+    if (on && !m_combatOn) {
+        // Entry: save the band's wanted near edge (the sprint zoom's saved edge, else one in progress, else the near
+        // edge), ease the band to 2.4 m and set the target pitch to 15°.
+        m_combatOn = true;
+        if (m_savedNear != 0.0F) {
+            m_combatSaved = m_savedNear;
+        } else {
+            m_combatSaved = m_wantedNear > 0.0F ? m_wantedNear : m_bandNear;
+        }
+        m_wantedNear = kCombatNear;
+        m_targetPitch = kCombatPitchDegrees * kRadians;
+    } else if (!on && m_combatOn) {
+        // Exit: the saved edge back; the target pitch stays.
+        m_combatOn = false;
+        m_wantedNear = m_combatSaved;
+        m_combatSaved = 0.0F;
+    }
+    if (!m_combatOn) {
+        return false;
+    }
+    // The enemy's angle at the look-at point from the camera's view across the ground; outside 25-29°, a share of
+    // the way to 27°, capped beyond 29°.
+    const anim::Vec3 view = anim::subtract(m_lookAt, m_position);
+    const anim::Vec3 toEnemy = anim::subtract(*target.enemy, m_lookAt);
+    if (std::hypot(view.x, view.y) < 1e-6F || std::hypot(toEnemy.x, toEnemy.y) < 1e-6F) {
+        return true;
+    }
+    const float angle = wrapped(headingOfView(toEnemy) - headingOfView(view));
+    const float off = std::abs(angle);
+    if (off >= kCombatFrameLow * kRadians && off <= kCombatFrameHigh * kRadians) {
+        return true;
+    }
+    float turn = (off - kCombatFrameDegrees * kRadians) * kCombatFrameShare;
+    if (off > kCombatFrameHigh * kRadians) {
+        turn = std::min(turn, kCombatFrameRate * seconds);
+    }
+    m_lastFrameTurn = angle >= 0.0F ? turn : -turn;
+    yaw(m_lastFrameTurn);
+    return true;
+}
+
+void FollowCamera::keepInView(anim::Vec3 point, float range, float seconds) {
+    // With a range, only a target within it (**Coney's choice**: the ray the original also casts is left out).
+    if (range > 0.0F && anim::distance(point, m_lookAt) > range) {
+        return;
+    }
+    const anim::Vec3 view = anim::subtract(m_lookAt, m_position);
+    const anim::Vec3 toPoint = anim::subtract(point, m_position);
+    if (std::hypot(view.x, view.y) < 1e-6F || std::hypot(toPoint.x, toPoint.y) < 1e-6F) {
+        return;
+    }
+    // More than a quarter of the field of view off the view's direction: 35% of the excess, at most 270°/s.
+    const float angle = wrapped(headingOfView(toPoint) - headingOfView(view));
+    const float excess = std::abs(angle) - m_fov * kRadians * kKeepInViewFactor;
+    if (excess <= 0.0F) {
+        return;
+    }
+    const float turn = std::min(excess * kKeepInViewShare, kKeepInViewRate * seconds);
+    m_lastFrameTurn = angle >= 0.0F ? turn : -turn;
+    yaw(m_lastFrameTurn);
+}
+
 void FollowCamera::place(anim::Vec3 targetFeet, float distance, float viewHeading) {
     // The look-at point above the feet, and the camera behind it along the view's heading at the target pitch.
-    m_lookAt = anim::add(targetFeet, anim::Vec3{0.0F, 0.0F, m_settings.lookAtHeight});
+    m_targetFeet = targetFeet;
+    m_lookAt = lookAtOf(targetFeet);
     const float across = distance * std::cos(m_targetPitch);
     const anim::Vec3 behind{std::sin(viewHeading) * across, -std::cos(viewHeading) * across,
                             distance * std::sin(m_targetPitch)};
@@ -238,7 +442,7 @@ void FollowCamera::collide(const raycast::CollisionMesh& mesh, anim::Vec3 target
 }
 
 void FollowCamera::followLookAt(const FollowTarget& target) {
-    const anim::Vec3 wanted = anim::add(target.feet, anim::Vec3{0.0F, 0.0F, m_settings.lookAtHeight});
+    const anim::Vec3 wanted = lookAtOf(target.feet);
     // In the air the point follows the feet directly; otherwise a long move is covered a share at a time.
     if (target.airborne) {
         m_lookAt = wanted;
@@ -371,14 +575,20 @@ void FollowCamera::easeBand(float seconds) {
         m_bandNear = m_wantedNear;
         m_wantedNear = -1.0F;
     }
+    // The zoom step follows the near edge as CamSetFollowZoom sets it.
+    stepZoom(zoomStepFor(m_bandNear));
 }
 
-void FollowCamera::stepHardBand() {
-    // The leash band widened by max(5%, 0.2 m) and max(6%, 0.35 m).
+void FollowCamera::stepHardBand(bool lockHeld) {
+    // The leash band widened by max(5%, 0.2 m) and max(6%, 0.35 m); a held lock-on button doubles the far edge, at
+    // most 1.1 × the maximum distance.
     const float near = bandNear();
     const float far = bandFar();
     const float hardNear = near - std::max(kHardNearShare * near, kHardNearMinimum);
-    const float hardFar = far + std::max(kHardFarShare * far, kHardFarMinimum);
+    float hardFar = far + std::max(kHardFarShare * far, kHardFarMinimum);
+    if (lockHeld) {
+        hardFar = std::max(hardFar, std::min(2.0F * hardFar, kLockHeldFarShare * m_settings.maxDistance));
+    }
     // Widening is at once (and a new camera, whose edges start at the extremes, starts there); shrinking eases.
     m_hardNear = hardNear < m_hardNear ? hardNear : m_hardNear + (hardNear - m_hardNear) * kHardBandEase;
     m_hardFar = hardFar > m_hardFar ? hardFar : m_hardFar + (hardFar - m_hardFar) * kHardBandEase;
@@ -389,6 +599,8 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
     // The camera's view at the start of the update, which the auto-follow rules measure from.
     const anim::Vec3 viewBefore = anim::subtract(m_lookAt, m_position);
     m_lastAutoTurn = 0.0F;
+    m_lastFrameTurn = 0.0F;
+    observe(target);
 
     // The band's ease toward a wanted near edge (the sprint zoom's), early in the update.
     easeBand(seconds);
@@ -396,15 +608,29 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
     // 1. The look-at point: the target's feet plus the offset, its move limited by its length.
     followLookAt(target);
 
-    // 3. The right stick: a yaw rate and a pitch rate; any input holds the automatic rules off.
-    const float yawRate = rightStickYawRate(rawRightX);
-    const float pitchRate = rightStickPitchRate(rawRightY);
+    // 2. The field of view.
+    easeFieldOfView(seconds);
+
+    // 3. The right stick (unless CamEnable(0) turned it off): a yaw rate and a pitch rate; any input holds the
+    // automatic rules off.
+    const float yawRate = m_stickOn ? rightStickYawRate(rawRightX) : 0.0F;
+    const float pitchRate = m_stickOn ? rightStickPitchRate(rawRightY) : 0.0F;
     if (yawRate != 0.0F || pitchRate != 0.0F) {
         m_inputHold = kInputHold;
     }
 
-    // 4. Auto-follow: a moving target swings the camera round behind its facing.
-    autoFollow(viewBefore, target, seconds);
+    // The combat camera frames the enemy; that is this update's turn. Otherwise a watched human is kept in view in
+    // place of auto-follow (with no stick turn this update), or 4. auto-follow swings the camera round behind a moving
+    // target's facing.
+    if (!combat(target, seconds)) {
+        if (target.secondary) {
+            if (yawRate == 0.0F) {
+                keepInView(*target.secondary, target.secondaryRange, seconds);
+            }
+        } else {
+            autoFollow(viewBefore, target, seconds);
+        }
+    }
 
     // The sprint zoom: latched by the sprint gait; its function runs once the game time has passed its start.
     const bool sprinting = target.gait == kGaitSprint;
@@ -412,7 +638,7 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
     if (m_zoomActive && m_clock > m_zoomFrom) {
         sprintZoom(sprinting, seconds);
     }
-    stepHardBand();
+    stepHardBand(target.lockHeld);
 
     // 5. The leash: out of the band, the wanted position comes back along its line to the nearer edge.
     const anim::Vec3 offset = anim::subtract(m_wanted, m_lookAt);

@@ -74,6 +74,7 @@ add_executable(coney_tests
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
     scripting/disc_strings_test.cpp
+    scripting/camera_bindings_test.cpp
     scripting/level_bindings_test.cpp
     scripting/lua_chunk_test.cpp
     scripting/lua_libraries_test.cpp
@@ -118,8 +119,10 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE
     animation/anim_task_test.cpp
     animation/held_flags_test.cpp
+    camera/cameras_test.cpp
     camera/follow_camera_test.cpp
     camera/follow_collision_test.cpp
+    camera/follow_script_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
     human/body_test.cpp

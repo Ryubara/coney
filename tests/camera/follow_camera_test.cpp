@@ -36,8 +36,11 @@ float wantedYaw(const FollowCamera& camera) {
 
 // A target at `feet` facing `heading` at the stored gait `gait` (0 standing, 2 walk, 4 run, 5 sprint), on the ground.
 FollowTarget moving(Vec3 feet, float heading, std::uint8_t gait) {
-    return FollowTarget{
-        .feet = feet, .heading = heading, .gait = gait, .airborne = false, .stickBack = false, .nearestEnemy = {}};
+    FollowTarget target;
+    target.feet = feet;
+    target.heading = heading;
+    target.gait = gait;
+    return target;
 }
 
 // A target standing at `feet` facing +y: nothing the automatic rules follow.

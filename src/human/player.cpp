@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "human/player.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -9,6 +10,8 @@
 #include <utility>
 
 #include "animation/anim_pose.h"
+#include "camera/camera_lens.h"
+#include "camera/camera_view.h"
 #include "characters/character_list.h"
 #include "characters/character_rig.h"
 #include "combat/combat_tuning.h"
@@ -27,14 +30,28 @@ bool stickPulledBack(float x, float y) {
 
 // What the follow camera needs of the human after its update: where it is and faces, its stored gait (which the
 // auto-follow rules and the sprint zoom read, docs/research/camera.md#heading), whether it is in the air, the stick,
-// and the nearest enemy's distance (none with no enemies).
-camera::FollowTarget followTargetOf(const Human& human, const Pad& pad, std::optional<float> nearestEnemy) {
+// the nearest enemy's distance (none with no enemies), and for the combat camera whether a pad-controlled player holds
+// L1 at a fight target and where that target will be in half a second (docs/research/camera.md#combat-camera).
+camera::FollowTarget followTargetOf(const Human& human, const Pad& pad, std::optional<float> nearestEnemy,
+                                    bool padControlled) {
+    // L1 held at the fight target (record flags 0x8 and 0x4), not the stance's own lock-on, which also locks without
+    // it.
+    const Combatant* lock = padControlled && pad.held(pad::kL1) ? human.fighter().target() : nullptr;
+    std::optional<anim::Vec3> enemy;
+    if (lock != nullptr) {
+        enemy = anim::add(lock->position(), anim::scale(lock->velocity(), 0.5F));
+    }
     return camera::FollowTarget{.feet = human.position(),
                                 .heading = human.heading(),
                                 .gait = static_cast<std::uint8_t>(human.gait()),
                                 .airborne = human.airborne(),
                                 .stickBack = stickPulledBack(pad.leftX(), pad.leftY()),
-                                .nearestEnemy = nearestEnemy};
+                                .nearestEnemy = nearestEnemy,
+                                .lockOn = lock != nullptr,
+                                .lockHeld = padControlled && pad.held(pad::kL1),
+                                .enemy = enemy,
+                                .secondary = std::nullopt,
+                                .secondaryRange = 0.0F};
 }
 
 } // namespace
@@ -129,12 +146,38 @@ void Player::placeCamera(float distance, float viewHeading) {
 }
 
 PlayerSnapshot Player::capture() const {
-    return PlayerSnapshot{.feet = m_human.position(),
-                          .heading = m_human.heading(),
-                          .lean = m_human.lean(),
-                          .pose = m_human.pose(),
-                          .cameraEye = m_camera.position(),
-                          .cameraTarget = m_camera.lookAt()};
+    PlayerSnapshot snapshot{.feet = m_human.position(),
+                            .heading = m_human.heading(),
+                            .lean = m_human.lean(),
+                            .pose = m_human.pose(),
+                            .cameraEye = m_camera.position(),
+                            .cameraTarget = m_camera.lookAt(),
+                            .fieldOfView = m_camera.fieldOfView(),
+                            .nearClip = m_camera.nearClip(),
+                            .farClip = camera::kPlayerCameraLens.farClip};
+    // With the manager, its current view: the target on the view direction, so a blend's slerped orientation shows.
+    if (m_cameras != nullptr) {
+        const camera::CameraView& view = m_cameras->view();
+        const float ahead = std::max(anim::distance(view.position, view.lookAt), 1.0F);
+        snapshot.cameraEye = view.position;
+        snapshot.cameraTarget = anim::add(view.position, anim::scale(camera::viewForward(view), ahead));
+        snapshot.fieldOfView = view.fieldOfView;
+        snapshot.nearClip = view.nearClip;
+        snapshot.farClip = view.farClip;
+    }
+    return snapshot;
+}
+
+void Player::setCameras(camera::Cameras* cameras) {
+    if (m_cameras != nullptr) {
+        m_cameras->attachFollow(nullptr);
+    }
+    m_cameras = cameras;
+    if (m_cameras != nullptr) {
+        m_cameras->attachFollow(&m_camera);
+    }
+    m_current = capture();
+    m_previous = m_current;
 }
 
 PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot& current, float alpha) {
@@ -151,7 +194,10 @@ PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot&
                           .lean = previous.lean + (current.lean - previous.lean) * alpha,
                           .pose = anim::blendPoses(previous.pose, current.pose, alpha),
                           .cameraEye = anim::lerp(previous.cameraEye, current.cameraEye, alpha),
-                          .cameraTarget = anim::lerp(previous.cameraTarget, current.cameraTarget, alpha)};
+                          .cameraTarget = anim::lerp(previous.cameraTarget, current.cameraTarget, alpha),
+                          .fieldOfView = current.fieldOfView,
+                          .nearClip = current.nearClip,
+                          .farClip = current.farClip};
 }
 
 void Player::setPadControlled(bool padControlled) {
@@ -167,26 +213,38 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     // L2 held asks for a sprint; triangle pressed (command 10) climbs or jumps (docs/research/characters.md#buttons).
     // Then the characters' step, and the cameras last.
     // Without the pad the record keeps only the brain's move, which the brains write in the step.
+    const anim::Vec3 cameraForward = m_cameras != nullptr ? camera::viewForward(m_cameras->view()) : m_camera.forward();
     if (m_padControlled) {
         m_human.record() = PlayerRecord{.stickX = pad.leftX(),
                                         .stickY = pad.leftY(),
-                                        .cameraForward = m_camera.forward(),
+                                        .cameraForward = cameraForward,
                                         .sprintHeld = pad.held(pad::kL2),
                                         .actionPressed = pad.pressed(pad::kTriangle),
                                         .command = command,
                                         .buttons = pad.buttons(),
                                         .move = std::nullopt};
     } else {
-        m_human.record() = PlayerRecord{.cameraForward = m_camera.forward(), .move = m_human.record().move};
+        m_human.record() = PlayerRecord{.cameraForward = cameraForward, .move = m_human.record().move};
     }
     m_humans.update(mesh, targets);
+    // A slow-motion event on the player's clip (docs/research/camera.md#slow-motion).
+    if (const std::optional<std::uint16_t> event = m_human.slowMotionEvent(); event && m_cameras != nullptr) {
+        m_cameras->slowMotion().event(*event, 0);
+    }
     if (m_human.outOfWorld()) {
+        // Put back, the camera reset behind him with its configuration kept.
         m_human.spawn(mesh, m_start.position, m_start.headingDegrees);
-        m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
+        m_camera.observe(followTargetOf(m_human, pad, m_nearestEnemy, m_padControlled));
+        m_camera.reset();
         ++m_respawns;
     }
     const auto& raw = pad.rawSticks(); // right x, right y, left x, left y
-    m_camera.update(followTargetOf(m_human, pad, m_nearestEnemy), raw[0], raw[1], mesh, kStepSeconds);
+    const camera::FollowTarget after = followTargetOf(m_human, pad, m_nearestEnemy, m_padControlled);
+    if (m_cameras != nullptr) {
+        m_cameras->update(after, raw[0], raw[1], mesh, kStepSeconds);
+    } else {
+        m_camera.update(after, raw[0], raw[1], mesh, kStepSeconds);
+    }
     // What drawing will read: this step's state, and the last one's to interpolate from.
     m_previous = m_current;
     m_current = capture();

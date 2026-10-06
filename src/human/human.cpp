@@ -643,6 +643,33 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     m_animator.advance(kStepSeconds);
     followClimb(mesh);
     sendWarnings(before, beforeId, beforeTime);
+    noteSlowMotion(before, beforeId, beforeTime);
+}
+
+void Human::noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
+    constexpr std::uint16_t kSlowMotionOn = 0x2e;
+    constexpr std::uint16_t kSlowMotionOff = 0x2f;
+    constexpr float kEventFramesPerSecond = 30.0F; // a clip event's frame is 1/30 s of clip time
+    m_slowMotionEvent.reset();
+    const anim::AnimTask* top = m_animator.tasks().top();
+    if (top == nullptr || top->eventClip() == nullptr) {
+        return;
+    }
+    // From the clip's start when it began this step (or another clip took the top), else from where it was; the
+    // later event wins when both passed.
+    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime;
+    const float from = same ? beforeTime : -1.0F;
+    std::optional<std::uint16_t> found;
+    float foundAt = -1.0F;
+    for (const anim::ClipEvent& event : top->eventClip()->events) {
+        const float at = static_cast<float>(event.frame) / kEventFramesPerSecond;
+        if ((event.type == kSlowMotionOn || event.type == kSlowMotionOff) && at > from && at <= top->time() &&
+            at >= foundAt) {
+            found = event.type;
+            foundAt = at;
+        }
+    }
+    m_slowMotionEvent = found;
 }
 
 void Human::sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {

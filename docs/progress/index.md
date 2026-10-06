@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 675 functions) |
+| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 709 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-121 reimplemented function(s) have no size yet and add no bytes.
+155 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -54,7 +54,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `█████▌░░░░░░░░░░░░░░` | 27.2% | 21 | 54,616 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 57,368 |
-| `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 12 | 165,680 |
+| `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 34 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 17 | 62,808 |
@@ -68,13 +68,13 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 102 | 197,192 |
+| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 112 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 10 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
-| `Warriors` | `█▎░░░░░░░░░░░░░░░░░░` | 6.2% | 19 | 54,264 |
+| `Warriors` | `█▎░░░░░░░░░░░░░░░░░░` | 6.2% | 21 | 54,264 |
 | `Movie` | `██████▊░░░░░░░░░░░░░` | 33.9% | 1 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -126,7 +126,23 @@ at the top of the repository's `README.md`.
 | `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
 | `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
 | `0x0010fb20` | `SoundPauseSound` | `Audio` | not filled in |
+| `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | not filled in |
+| `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | not filled in |
+| `0x0011c0b8` | `CfgFollowCamera` | `Camera` | not filled in |
+| `0x0011c270` | `Camera_TargetList` | `Camera` | not filled in |
+| `0x0011c3b8` | `Camera_SetFollowPitch` | `Camera` | not filled in |
+| `0x0011c470` | `Camera_SetFollowZoom` | `Camera` | not filled in |
+| `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
+| `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
+| `0x0011e878` | `Cameras_Update` | `Camera` | not filled in |
+| `0x0011ee08` | `Camera_MakeActive` | `Camera` | not filled in |
+| `0x001210f8` | `Cam_StartShake` | `Camera` | not filled in |
+| `0x00121298` | `Cam_UpdateShake` | `Camera` | not filled in |
+| `0x00124d00` | `Cam_Follow_Reset` | `Camera` | not filled in |
+| `0x00124f38` | `Cam_Follow_PlaceBehind` | `Camera` | not filled in |
 | `0x001254f0` | `Cam_Follow_StepZoom` | `Camera` | 152 |
+| `0x00125888` | `Cam_Follow_ApplyConfig` | `Camera` | not filled in |
+| `0x00125cc0` | `Cam_Follow_Activate` | `Camera` | not filled in |
 | `0x00126a30` | `Cam_Follow_EnableSprintZoom` | `Camera` | 56 |
 | `0x00127d88` | `Cam_Follow_LookAt` | `Camera` | 1,296 |
 | `0x00128cf0` | `Cam_Follow_SprintZoom` | `Camera` | 864 |
@@ -137,7 +153,13 @@ at the top of the repository's `README.md`.
 | `0x0012ae58` | `Cam_Follow_Update` | `Camera` | not filled in |
 | `0x0012d4e8` | `Cam_Follow_Pitch` | `Camera` | not filled in |
 | `0x0012d688` | `Cam_Follow_Yaw` | `Camera` | not filled in |
+| `0x0012d7a8` | `Cam_Follow_MoveBand` | `Camera` | not filled in |
+| `0x0012e170` | `Cam_Follow_KeepInView` | `Camera` | not filled in |
+| `0x0012e9a8` | `Cam_Follow_FrameEnemy` | `Camera` | not filled in |
 | `0x00130990` | `Cam_Follow_Collide` | `Camera` | not filled in |
+| `0x00135680` | `Cam_Locked_Update` | `Camera` | not filled in |
+| `0x00143078` | `Cam_Blend_Start` | `Camera` | not filled in |
+| `0x00143590` | `Cam_Blend_Update` | `Camera` | not filled in |
 | `0x00143f68` | `Crc32_Hash` | `Core` | 112 |
 | `0x00143fd8` | `Crc32_Lowercase` | `Core` | 120 |
 | `0x001440a0` | `ChunkSystem_PopObject` | `Core` | 40 |
@@ -651,6 +673,15 @@ at the top of the repository's `README.md`.
 | `0x00363018` | `GoalDealer` | `Scripting` | 272 |
 | `0x00363530` | `GoalPlayDynAnimation` | `Scripting` | 160 |
 | `0x003647d8` | `ActLookAt` | `Scripting` | 200 |
+| `0x003656a0` | `CameraMakeActive` | `Scripting` | not filled in |
+| `0x00365a10` | `CameraReset` | `Scripting` | not filled in |
+| `0x00365a48` | `CamSetupFollow` | `Scripting` | not filled in |
+| `0x00365ad8` | `CamTarget` | `Scripting` | not filled in |
+| `0x00365bb8` | `CamSetFollowAngle` | `Scripting` | not filled in |
+| `0x00365bf0` | `CamSetFollowZoom` | `Scripting` | not filled in |
+| `0x00365d38` | `CameraCreateLocked` | `Scripting` | not filled in |
+| `0x003670c0` | `CamSetSecondary` | `Scripting` | not filled in |
+| `0x003671e0` | `CamEnable` | `Scripting` | not filled in |
 | `0x00367448` | `ScenePreload` | `Scripting` | 136 |
 | `0x003674d0` | `SceneIsPreloaded` | `Scripting` | 72 |
 | `0x00367518` | `SceneUnload` | `Scripting` | 56 |
@@ -665,6 +696,7 @@ at the top of the repository's `README.md`.
 | `0x00367ed0` | `SceneLength` | `Scripting` | 120 |
 | `0x00367f48` | `SceneAddObject` | `Scripting` | 160 |
 | `0x00368240` | `SceneTerminate` | `Scripting` | 56 |
+| `0x0036ab88` | `CfgFollowCamera` | `Scripting` | not filled in |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
 | `0x0036b4f0` | `CfgRumbleGame` | `Scripting` | 384 |
 | `0x0036b670` | `CfgRumbleArena` | `Scripting` | 288 |
@@ -760,6 +792,8 @@ at the top of the repository's `README.md`.
 | `0x00416258` | `Flag_Heading` | `WorldObjects` | 120 |
 | `0x00416bb8` | `Flag_GetPosition` | `WorldObjects` | 40 |
 | `0x00418428` | `RepeatTracker_Note` | `Warriors` | 240 |
+| `0x0041ab30` | `SlowMotion_On` | `Warriors` | not filled in |
+| `0x0041ab60` | `SlowMotion_Off` | `Warriors` | not filled in |
 | `0x0041abe8` | `GetCheckPoint` | `Warriors` | 16 |
 | `0x0041acd8` | `GameState_SetLuaSaveFloat` | `Warriors` | 40 |
 | `0x0041ad00` | `GameState_GetLuaSaveFloat` | `Warriors` | 40 |
