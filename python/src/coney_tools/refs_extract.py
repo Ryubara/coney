@@ -18,6 +18,7 @@ from __future__ import annotations
 import collections
 import contextlib
 import hashlib
+import math
 import re
 import struct
 import sys
@@ -1273,12 +1274,19 @@ class Sheets:
         return self._cache[record]
 
     def rect_size(self, record: int, rect: int) -> list[int] | None:
-        """A rectangle's size in texels {w, h}, or None when the sheet or rectangle is not there."""
+        """A rectangle's size in whole texels {w, h}, or None when the sheet or rectangle is not there.
+
+        The disc's rectangles are inset by a quarter texel (docs/research/gui.md#particle-page): the size counts every
+        texel a corner falls in, as Coney's reference images cut them (`graphics::rectTexels`).
+        """
         size, rects = self._read(record)
         if size is None or rect >= len(rects):
             return None
         u0, v0, u1, v1 = rects[rect]
-        return [round((u1 - u0) * size[0]), round((v1 - v0) * size[1])]
+        return [
+            math.ceil(u1 * size[0] - 1e-3) - math.floor(u0 * size[0] + 1e-3),
+            math.ceil(v1 * size[1] - 1e-3) - math.floor(v0 * size[1] + 1e-3),
+        ]
 
 
 def _uses(facts: DiscFacts, callee: str, argument: int) -> dict[Any, list[str]]:

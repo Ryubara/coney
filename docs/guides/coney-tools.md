@@ -240,7 +240,8 @@ uv run --project python coney-tools refs compress-images [FOLDER]
 Rewrites every PNG below `docs/references/images/` (or `FOLDER`) in place as a 256-colour palette image with
 transparency. `coney --render-references` writes full-colour images of about 26 KB each; with a palette they take
 under a quarter of that and look the same at 256 pixels. The quantizer is deterministic, so a re-render gives the same
-files. Run it after rendering and before `refs extract` links the images.
+files. A file the palette would not make smaller (most radar icons) is left as it is. Run it after rendering and before
+`refs extract` links the images.
 
 ## pcsx2 {#pcsx2}
 

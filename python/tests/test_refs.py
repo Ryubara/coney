@@ -419,8 +419,8 @@ def test_compress_image_keeps_size_and_alpha_and_is_deterministic(tmp_path: Path
         for y in range(8, 56):
             image.putpixel((x, y), (x * 5, y * 4, 120, 255))
     first, second = tmp_path / "a.png", tmp_path / "b.png"
-    image.save(first)
-    image.save(second)
+    image.save(first, compress_level=0)  # stored, as large as a render is for its size
+    image.save(second, compress_level=0)
     compress_image(first)
     compress_image(second)
     assert first.read_bytes() == second.read_bytes()
@@ -432,6 +432,20 @@ def test_compress_image_keeps_size_and_alpha_and_is_deterministic(tmp_path: Path
         pixel = rgba.getpixel((32, 32))
         assert isinstance(pixel, tuple)
         assert pixel[3] == 255
+
+
+def test_compress_image_leaves_a_file_the_palette_would_not_shrink(tmp_path: Path) -> None:
+    """A tiny icon stays as it was: a 256-colour palette would outweigh its few pixels."""
+    from PIL import Image
+
+    from coney_tools.refs_cli import compress_image
+
+    icon = tmp_path / "icon-69.png"
+    Image.new("RGBA", (4, 4), (200, 30, 30, 255)).save(icon, optimize=True)
+    original = icon.read_bytes()
+    before, after = compress_image(icon)
+    assert before == after == len(original)
+    assert icon.read_bytes() == original
 
 
 def test_texture_size_reads_the_first_native_texture() -> None:

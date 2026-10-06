@@ -11,6 +11,7 @@ Research: docs/guides/research-workflow.md#reference-lists
 
 from __future__ import annotations
 
+import io
 import sys
 from pathlib import Path
 from typing import Any
@@ -152,14 +153,19 @@ def compress_image(path: Path) -> tuple[int, int]:
 
     `coney --render-references` writes full-colour PNGs of about 26 KB each. The docs keep about 550 of them, so
     they are stored with a palette instead: under a quarter of the size, and indistinguishable at 256 pixels.
-    Pillow's octree quantizer is deterministic, so the same render always gives the same bytes.
+    Pillow's octree quantizer is deterministic, so the same render always gives the same bytes. A file the palette
+    would not make smaller (a radar icon of a few hundred pixels, where the palette itself outweighs the pixels) is
+    left as it is.
     """
     from PIL import Image  # only this command needs Pillow
 
     before = path.stat().st_size
     with Image.open(path) as image:
         palette = image.convert("RGBA").quantize(256, method=Image.Quantize.FASTOCTREE)
-    palette.save(path, "PNG", optimize=True)
+    packed = io.BytesIO()
+    palette.save(packed, "PNG", optimize=True)
+    if packed.tell() < before:
+        path.write_bytes(packed.getvalue())
     return before, path.stat().st_size
 
 
