@@ -199,7 +199,26 @@ at the start, then 4 in level index 43, else 5). Both are god-mode, pushable, wh
 (radius 5.5); reaching it moves the glow on and adds 1 to the score; one short of the lap the finish line
 (`tFinishLine`, `vFinishLine`) flickers, red, yellow or white by who leads, and the first player into `vFinishLine` with
 a score at least the other's wins (`RumbleOver(side, last_flag)`). Spectator crowds react and count knock-downs (shown,
-not scored).
+not scored). The players drive with L1 and R1 ([Characters: wheelchair control](characters.md#wheelchair)).
+
+The race in detail (`wchair.lua`, `SetupRaceGlows4(fRace)`; from its calls and bytecode):
+
+- `fRace`'s n flags make a **loop**: each flag's next is the following one, the last's the first. The target
+  score is n (`LAPS` = 1 is not used by this set-up).
+- Both glows start at `fRace[1]`, player 1's (`dyn_w_goto`, `Carrot1`) 0.3 m to +x and −y, player 2's
+  (`dyn_w_mission`, `Carrot2`) 0.3 m the other way. Each is a [trigger sphere](scripting.md#triggers) (radius 5.5,
+  mode 0, period 100 ms).
+- **A checkpoint**: message 3 on a glow counts only for its own player. The glow moves to the next flag (same
+  offset), a bleep plays, the side's score goes up by 1 and the radar marks the glow. At n − 1 the finish opens
+  (`FlickerFinish`) and that glow is hidden; on player 2's side this also flushes the flicker functions and stops
+  the music first.
+- **The finish**: the `tFinishLine` objects show every 200 ms (`FLICKER_RATE`), white while the scores are equal,
+  red (255, 100, 100) while player 1 leads, yellow (255, 255, 100) while player 2 leads, and `vFinishLine`'s message
+  3 runs `DeclareWinner`. Player 1 entering with a score at least player 2's wins (`RumbleOver(1, last_flag)`), and
+  player 2 likewise. Before that test `DeclareWinner` always turns both radars off and locks player 1's pad (and
+  player 2's when a player), so a side entering with the lower score ends nothing but leaves the pads locked
+  (whether `wheelchairControl`, which reads the pad itself, honours that lock is not traced).
+- Pad handlers count two buttons into `player1_L1` / `player1_R1`, which nothing reads, and one rings a bike bell.
 
 `run4life`, `hifi`, `caps`, `car`, `shoot` and `muggr` have rules or flag chunks on the disc, but no mode record offers
 them ([Rumble roster](../references/rumble.md)).

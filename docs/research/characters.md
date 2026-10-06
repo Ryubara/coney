@@ -712,6 +712,40 @@ keep turning the body: while the idle's fade holds `0x10000000`, the locomotion 
 a magnitude × 0.8 each update (`0x002411cc` onward), which is the 0.7°, 1.1°, 1.4°, 1.5° seen after `run_circle`'s
 release.
 
+### Wheelchair control {#wheelchair}
+
+[`HuSetWheelchairControl`](../references/bindings/character.md#husetwheelchaircontrol) (`0x00234188`), confirmed
+(code):
+
+- **On**: look-behind switch 11 (`0x0050b23c`) = 0 ([Camera](camera.md)); unless the human already runs it: state
+  flag `0x80000000000`, the current control saved (`0x00221038`: `+0x1bc` copied to `+0x1c4`), the control set to
+  `wheelchairControl` (`0x002427e8`, `0x00244620`), every player command off for the human, and commands 46 and 47
+  added (kind 7, pad bits `0x4` L1 and `0x8` R1).
+- **Off**: switch 11 = 1, the flag cleared; if the human runs `wheelchairControl`, the saved control comes back
+  (`0x00221080`), commands 46 and 47 are removed and all commands are on again.
+
+**`wheelchairControl`** (`0x002427e8`), each update. A human whose per-player record `+0x1b` is 0 (inferred: not
+pad-driven) or without the flag goes back to its normal control and runs that instead, so the Rumble CPU drives its
+path with its usual locomotion. Otherwise it reads only **L1** (`0x4`), **R1** (`0x8`) and **cross** (`0x40`) from
+the pad; the sticks are not read.
+
+- `speed` = the length of the velocity; `max` = the sprint speed (`0x002216c0`: human `+0x3a4` × record `+0x17c`).
+- **L1 and R1**: `speed` + 0.5, at most `max`, no turn. From a standstill (and anim state not 4) it instead sets
+  the record's state code (`+0x14`) to 5, and while the code is 5 or 6 the control asks for no velocity
+  (inferred: a start clip plays first).
+- **L1 alone**: `speed` − 0.04 (not below 0) and a turn of +(0.03 + 0.05 × (1 − speed / max)) rad; **R1 alone**:
+  the same turn negated. So one wheel turns 0.08 rad an update at a standstill and 0.03 at top speed. Positive
+  turns raise the heading (counter-clockwise from above), so L1 (the right wheel) turns left and R1 right.
+- **Neither**: `speed` − 0.04 (not below 0). **Cross** (the brake) then takes 0.5 more off, not below 0, whatever
+  the shoulders do; with neither shoulder held it replaces the 0.04 decay.
+- The new heading is the old one plus the turn (written as a rotation about z); the velocity is `speed` along it,
+  zero while any of state flags `0x110c0880` is set or the state code is 5 or 6. Above 4.5 the human's animation
+  layer gets flag 2 and event groups 3, 6, 18, 19, 24, 25, 29, 30, 32 and 33 (`0x00248170`); at or below 4.5 they
+  are cleared (`0x00248270`). The pending turn fields `+0x298` / `+0x29c` are zeroed.
+
+The constants are at `0x005104d4` (0.5 push), `0x005104d8` (0.04 decay), `0x005104dc` (0.5 brake), `0x005104e0`
+(0.03) and `0x005104e4` (0.08). Changes are per update; whether the update is 1/30 s or 1/60 s here is not traced.
+
 ### Buttons {#buttons}
 
 The pad's buttons become **command ids** through tables of 12-byte entries `{u16 mask, u32 command, u16 buttons,

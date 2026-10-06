@@ -169,10 +169,17 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the player human."}
     - {name: "on", lua: boolean, desc: "true switches the player to wheelchair control; false switches back."}
   description: >-
-    Switches a player between normal and wheelchair control: it sets or clears flag bit 0x80000000000, swaps the
-    human's locomotion and removes (on) or restores (off) the player commands 46 and 47.
-  evidence: inferred
-  depth: brief
+    Switches a player between normal and wheelchair control. On: state flag 0x80000000000, the current control
+    saved and replaced by `wheelchairControl` (0x002427e8), every other player command off and commands 46 (L1) and
+    47 (R1) added; the look-behind switch 11 goes to 0. Off undoes it. In the chair L1 and R1 together push forward
+    (+0.5 an update up to the sprint speed), one alone turns (L1 left, R1 right, 0.08 rad an update at a standstill
+    down to 0.03 at top speed) while the speed decays by 0.04, cross brakes (−0.5), and the sticks do nothing
+    ([Characters: wheelchair control](../../research/characters.md#wheelchair)).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    A human that is not pad-driven (per-player record `+0x1b` 0, inferred) runs its normal control even with the
+    flag, so the Rumble CPU follows its path as usual.
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
   coney: implemented
 

@@ -170,7 +170,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetVoiceIndex`](#husetvoiceindex) | - | 2 | no | no | confirmed (code) |
 | [`HuSetWarChief`](#husetwarchief) | boolean | 4 | no | no | confirmed (code) |
 | [`HuSetWarChiefHUD`](#husetwarchiefhud) | - | 0 | no | no | speculative |
-| [`HuSetWheelchairControl`](#husetwheelchaircontrol) | - | 1 | no | no | inferred |
+| [`HuSetWheelchairControl`](#husetwheelchaircontrol) | - | 1 | no | no | confirmed (code) |
 | [`HuSetWorkoutBlend`](#husetworkoutblend) | - | 1 | no | no | confirmed (code) |
 | [`HuSetWorkoutCallbacks`](#husetworkoutcallbacks) | - | 1 | no | no | confirmed (code) |
 | [`HuSetWorkoutParams`](#husetworkoutparams) | - | 0 | no | no | speculative |
@@ -4183,10 +4183,17 @@ HuSetWheelchairControl(human, on)
 
 **Returns** nothing.
 
-Switches a player between normal and wheelchair control: it sets or clears flag bit 0x80000000000, swaps the human's
-locomotion and removes (on) or restores (off) the player commands 46 and 47.
+Switches a player between normal and wheelchair control. On: state flag 0x80000000000, the current control saved and
+replaced by `wheelchairControl` (0x002427e8), every other player command off and commands 46 (L1) and 47 (R1) added; the
+look-behind switch 11 goes to 0. Off undoes it. In the chair L1 and R1 together push forward (+0.5 an update up to the
+sprint speed), one alone turns (L1 left, R1 right, 0.08 rad an update at a standstill down to 0.03 at top speed) while
+the speed decays by 0.04, cross brakes (−0.5), and the sticks do nothing ([Characters: wheelchair
+control](../../research/characters.md#wheelchair)).
 
-- **Evidence:** inferred; detail: brief
+**Notes.** A human that is not pad-driven (per-player record `+0x1b` 0, inferred) runs its normal control even with the
+flag, so the Rumble CPU follows its path as usual.
+
+- **Evidence:** confirmed (code) at `0x00234188`; detail: traced
 - **Wrapper** `0x003588d0` (registered by `RegisterBindings`); **calls** `0x00234188` `Human_SetWheelchairControl`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** implemented
