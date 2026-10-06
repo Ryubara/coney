@@ -177,7 +177,7 @@ class GameplayMode final : public GameMode {
     // The level's brains and the scripts' hold on them, before the level, whose humans they refer to.
     std::unique_ptr<ai::Brains> m_brains;
     std::unique_ptr<ai::ScriptedBrains> m_scripted;
-    std::unique_ptr<camera::Cameras> m_cameras; // player 1's; declared before the level, whose player holds them
+    std::unique_ptr<camera::Cameras> m_cameras;    // player 1's; declared before the level, whose player holds them
     std::unique_ptr<scenes::SceneSystem> m_scenes; // the level's scenes, which outlive the level that hosts them
     scenes::SceneSystem* m_scenesBefore = nullptr; // the context's scene system before the level's, put back after
     std::unique_ptr<GameMode> m_level;

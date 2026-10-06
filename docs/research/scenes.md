@@ -519,9 +519,11 @@ each.
 **The play mode's stage** (`repo:src/platform/scene_stage.*`, `repo:src/platform/play_level_scene.cpp`) is the
 `SceneHost` the play mode gives the scene system. It draws the scene camera's view (interpolated between steps, cut
 when it jumps more than 1 m), the letterbox (two bars 0.125 of the screen high, Coney's choice) and the fades over the
-frame; the player and the level's cast (the humans its scripts made) are posed from their roles' frames and, when
-let go, stand where the scene left them (a cast human placed as a spawn places it); other bound humans are drawn as
-puppets of their characters. Sounds go through the sound player ([Sound](sound.md#scene-sound)):
+frame. In a level the scene camera is player 1's ([Camera](camera.md#scenes)): the scene's start pushes the camera
+shown, its keys set the scene camera's view and its end pops the camera back over `BlendCam` seconds (in the sandbox,
+with no cameras, the end is a cut). The player and the level's cast (the humans its scripts made) are posed from
+their roles' frames and, when let go, stand where the scene left them (a cast human placed as a spawn places it);
+other bound humans are drawn as puppets of their characters. Sounds go through the sound player ([Sound](sound.md#scene-sound)):
 the soundtrack starts on its event on the speech bus, music is ducked to 0.75 while the cinematic plays, and the
 soundtrack stops when it ends (Coney's choice, so a skip silences it); events 14 and 71 play unplaced on the effects
 bus. **Coney stand-ins:** captions, particles and rumble are counted; a puppet's model follows its role's name

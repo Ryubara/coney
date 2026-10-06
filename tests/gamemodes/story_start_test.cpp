@@ -130,7 +130,7 @@ struct StoryRun {
     std::vector<std::string> log;
     std::map<std::string, std::vector<std::byte>, std::less<>> files;
     std::vector<coney::LevelStart> starts;
-    coney::camera::Cameras* castCameras = nullptr; // the cameras the last load was given
+    coney::camera::Cameras* castCameras = nullptr;             // the cameras the last load was given
     std::vector<const coney::scenes::SceneSystem*> castScenes; // each load's ScriptedCast::scenes
     int levelUpdates = 0;
     std::unique_ptr<coney::StartUpFlow> flow;

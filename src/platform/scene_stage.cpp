@@ -10,6 +10,7 @@
 #include <rw.h>
 
 #include "camera/camera_lens.h"
+#include "camera/camera_view.h"
 #include "core/interpolation.h"
 #include "platform/play_scenery.h"
 
@@ -19,6 +20,17 @@ namespace {
 
 // `v` turned by `q`.
 anim::Vec3 rotate(anim::Quat q, anim::Vec3 v) { return anim::transformDirection(anim::matrixFromQuat(q), v); }
+
+// The scene camera at `pose` through `lens` as player 1's cameras take it: the pose's frame is the camera's (+y the
+// view direction, +z up), and it looks at the point one metre along it.
+camera::CameraView sceneCameraView(const scenes::ScenePose& pose, const scenes::SceneLens& lens) {
+    return camera::CameraView{.position = pose.position,
+                              .orientation = pose.rotation,
+                              .lookAt = anim::add(pose.position, rotate(pose.rotation, {0.0F, 1.0F, 0.0F})),
+                              .fieldOfView = lens.fieldOfView,
+                              .nearClip = lens.nearClip,
+                              .farClip = lens.farClip};
+}
 
 // A role frame `alpha` of the way from `a` to `b`: the feet lerped, the heading the short way round, the poses blended.
 scenes::RoleFrame blend(const scenes::RoleFrame& a, const scenes::RoleFrame& b, float alpha) {
@@ -249,9 +261,15 @@ void SceneStage::suspendBrains(bool suspended) {
 
 void SceneStage::cameraBegin(const scenes::ScenePose& pose, const scenes::SceneLens& lens) {
     m_camera.emplace(CameraState{.pose = pose, .lens = lens});
+    if (m_cameras != nullptr) {
+        m_cameras->beginScene(sceneCameraView(pose, lens));
+    }
 }
 
 void SceneStage::cameraPose(const scenes::ScenePose& pose, const scenes::SceneLens& lens) {
+    if (m_cameras != nullptr) {
+        m_cameras->setSceneView(sceneCameraView(pose, lens));
+    }
     if (!m_camera) {
         m_camera.emplace(CameraState{.pose = pose, .lens = lens});
         return;
@@ -264,7 +282,13 @@ void SceneStage::cameraPose(const scenes::ScenePose& pose, const scenes::SceneLe
     }
 }
 
-void SceneStage::cameraEnd(float /*blendSeconds*/) { m_camera.reset(); }
+void SceneStage::cameraEnd(float blendSeconds) {
+    // The cameras blend back to the camera the scene pushed; the play mode draws through them again.
+    m_camera.reset();
+    if (m_cameras != nullptr) {
+        m_cameras->endScene(blendSeconds);
+    }
+}
 
 void SceneStage::screenEffect(scenes::ScreenEffect type, float seconds) {
     switch (type) {

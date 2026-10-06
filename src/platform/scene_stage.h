@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "audio/sound_player.h"
+#include "camera/cameras.h"
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "graphics/screen_fade.h"
@@ -41,8 +42,13 @@ struct StageCharacter {
 /// characters in the poses the scene gives them. A human the play mode draws (the player) is not a puppet: the play
 /// mode reads its frames (frameOf()) and gets it back at the end (takeReleases()).
 ///
-/// Coney's glue; the behaviour it shows is docs/research/scenes.md's. **Coney's choices**: the camera blend back is a
-/// cut (level99's scenes hand back with a cut); a puppet stays where its scene left it (Coney has no game human behind
+/// With player 1's cameras (setCameras()) the scene camera is theirs: a scene's start pushes the camera shown and
+/// makes the scene camera current, its keys set its view, and its end pops the camera back over the scene's blend
+/// (camera::Cameras::beginScene()). The stage still keeps the scene camera's last two views for drawing, so a cut
+/// between keys stays a cut.
+///
+/// Coney's glue; the behaviour it shows is docs/research/scenes.md's. **Coney's choices**: without the cameras (the
+/// sandbox) the camera blend back is a cut; a puppet stays where its scene left it (Coney has no game human behind
 /// it yet); captions, particles, rumble and the brains' freeze are logged and counted, not shown; the soundtrack plays
 /// on the speech bus and stops when the cinematic ends, and other scene sounds play unplaced on the effects bus.
 class SceneStage final : public scenes::SceneHost {
@@ -65,6 +71,9 @@ class SceneStage final : public scenes::SceneHost {
     void beginStep(std::uint64_t nowMs);
     /// Plays the scene's sounds through `sounds` (null: counted only); it must outlive the stage's use of it.
     void setSounds(audio::SoundPlayer* sounds) { m_soundPlayer = sounds; }
+    /// Hands the scene camera to player 1's `cameras` (null: the stage keeps it alone); they must outlive the stage's
+    /// use of them.
+    void setCameras(camera::Cameras* cameras) { m_cameras = cameras; }
     /// Tells the stage whether a cinematic is playing (the original's scene state): music ducks while one is, and the
     /// soundtrack stops when it ends.
     void setCinematic(bool playing);
@@ -162,6 +171,7 @@ class SceneStage final : public scenes::SceneHost {
     std::uint64_t m_captions = 0;
     std::uint64_t m_sounds = 0;
     audio::SoundPlayer* m_soundPlayer = nullptr;
+    camera::Cameras* m_cameras = nullptr;
     std::optional<audio::SoundId> m_soundtrack; // prepared, waiting for its start event
     audio::VoiceHandle m_soundtrackVoice;
     std::optional<float> m_musicBeforeDuck; // the music bus's volume while ducked

@@ -225,6 +225,10 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         }
     }
     makeStage();
+    // A scene's camera is player 1's scene camera, pushed over the camera shown and popped back at its end.
+    if (cast != nullptr) {
+        m_stage->setCameras(cast->cameras);
+    }
     // The level's scenes play on the stage, player 1 being the human the level's scripts made him.
     if (cast != nullptr && cast->scenes != nullptr) {
         const HumanCreation* player = cast->humans != nullptr ? cast->humans->player(1) : nullptr;

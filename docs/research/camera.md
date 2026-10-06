@@ -766,7 +766,9 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
 - **in play** (`--play-level`, the story): gameplay (`GameplayMode`) makes player 1's cameras before each level's
   script, gives them to the bindings (`BindingContext::cameras`, read at each call) and to the level (`ScriptedCast`),
   whose player steps them (`Player::setCameras()`); `CamSetSecondary` finds its human at its live position (the
-  scripts' brains). The level streams round the current camera and draws through its lens, the far clip capping the
+  scripts' brains). A scene's camera is theirs too: the play mode's scene stage pushes and pops it
+  (`Cameras::beginScene()`, `setSceneView()`, `endScene()`), so play blends back to the follow camera over the
+  scene's `BlendCam`. The level streams round the current camera and draws through its lens, the far clip capping the
   draw distance;
 - `--trace FILE` writes the camera's position, look-at point, wanted position, distance, angles, band and
   auto-follow turn after every step, with the player's state ([Building](../guides/building.md#tracing)).
