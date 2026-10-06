@@ -4,13 +4,15 @@
 
 The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`, and the same
 messages for a whole gang with `GangSetMsgHandler(gang, message, callback)`: a human's event goes to its
-own handlers, then to its gang's ([AI: gang events](../research/ai.md#gang-events)). The meaning of a
-message is read from the names of the callbacks scripts give it.
+own handlers, then to its gang's ([AI: gang events](../research/ai.md#gang-events)). The arguments
+each message's callback gets are in [Scripts: message handlers](../research/scripting.md#message-handlers).
+The meaning of a message is read from its sender where that is traced, else from the names of the
+callbacks scripts give it.
 
 !!! info "What is complete"
 
-    Every message number a script uses with either binding is listed; meanings are inferred from
-    callback names.
+    Every message number a script uses with either binding is listed; the senders of 3, 4, 5 and 8 are
+    traced, the other meanings are inferred from callback names.
 
 16 entries. Data: `research/references/script-events.yaml`.
 
@@ -21,12 +23,12 @@ message is read from the names of the callbacks scripts give it.
 | <span id="event-0"></span>0 | | 2 | `PARTY.ActionCatch`, `C5.OpenAllDoors` | | |
 | <span id="event-1"></span>1 | Damage taken (`DamageHandler`, `BossHealth`). | 131 | `C2.DamageHandler`, `C5.BossHealth`, `LCCheer`, `HotDogGuyDamage`, `BandMeleeMove` | 80 | `C1.TacticGangDamage`, `C0.Damage`, `F.RiotPedHit`, `OrphanDamaged`, `PARTY.Damage` |
 | <span id="event-2"></span>2 | A scripted object or character finished or broke (`AjaxDead`, `FortBroken`, `LaunchMissionFailed`). | 132 | `SwitchNodeStack`, `F1.AjaxDead`, `F1.SwanDead`, `C1.FortBroken`, `LaunchMissionFailed` | 214 | `MrWolf`, `df.DealerDied`, `DestroyerDied`, `P2.CheckDead01`, `P1.CheckDead01` |
-| <span id="event-3"></span>3 | Something entered a trigger box (`ObjectiveEnter`, `EnterBoxEvent`). | 567 | `ObjectiveEnter`, `GlowGoAway`, `EnterBoxEvent`, `GS.RunnerEventTriggered`, `AddSuspend` | | |
-| <span id="event-4"></span>4 | Something left a trigger box (`ObjectiveExit`, `ExitBoxEvent`). | 137 | `GlowComeBack`, `ObjectiveExit`, `ExitBoxEvent`, `ExitInteriorCam`, `C7.EndButton` | | |
-| <span id="event-5"></span>5 | | 37 | `ObjectiveEnter`, `VandalTwiggy`, `C5.CheckBox`, `VandalMarcello`, `VandalChuck` | | |
+| <span id="event-3"></span>3 | A human entered a volume box or an object's trigger sphere; `(self, human)` ([Triggers](../research/scripting.md#triggers)). | 567 | `ObjectiveEnter`, `GlowGoAway`, `EnterBoxEvent`, `GS.RunnerEventTriggered`, `AddSuspend` | | |
+| <span id="event-4"></span>4 | A human left a volume box or trigger sphere, or died inside it; `(self, human)`. | 137 | `GlowComeBack`, `ObjectiveExit`, `ExitBoxEvent`, `ExitInteriorCam`, `C7.EndButton` | | |
+| <span id="event-5"></span>5 | A human is still inside a volume box or trigger sphere (at most once per repeat period); `(self, human)`. | 37 | `ObjectiveEnter`, `VandalTwiggy`, `C5.CheckBox`, `VandalMarcello`, `VandalChuck` | | |
 | <span id="event-6"></span>6 | A store was damaged or vandalised (`StoreDamaged`, `SetStoreBars`). | 29 | `SetStoreBars`, `C1.CleonTrashStore`, `AwardDamage`, `C3.CHVandleRespond`, `StoreDamaged` | | |
 | <span id="event-7"></span>7 | An object was stolen (`ObjectStolen`). | 2 | `C2.TheftCallback`, `ObjectStolen` | | |
-| <span id="event-8"></span>8 | | 121 | `df.RestoreDealersBrains`, `P1.Walk03`, `P3.InsideGate`, `C2.BanterPassive`, `P3.AccountantDone` | | |
+| <span id="event-8"></span>8 | A human arrived at a flag (`GoalMoveToFlag`); `(flag, human)`. | 121 | `df.RestoreDealersBrains`, `P1.Walk03`, `P3.InsideGate`, `C2.BanterPassive`, `P3.AccountantDone` | | |
 | <span id="event-10"></span>10 | A character saw the player (`SeePlayer`). | 6 | `coney.SeePlayer`, `SecuritySeePlayer`, `P3.AccountantDonePlayer`, `ch4.StopPornoChat`, `freedom.CopGoesForPlayer` | 3 | `PlumbBackupTalk1`, `VoodooBackupTalk1`, `WarehouseDestroyerTalk1` |
 | <span id="event-11"></span>11 | A character spotted someone (`PlayerSpotted`, `PlayerSawStalker`). | 13 | `BopStopTag1`, `ToolSeePlayer`, `P3.AccountantDoneSpot`, `vigilante.PlayerSawStalker`, `P3.PlayerSpotted` | 5 | `P3.HunsSpotPlayer`, `P2.LootersSpotPlayer`, `P4.EngageEnemy`, `P2.CopSpotPlayer`, `C1.LiquorDestroyerTalkTriggered` |
 | <span id="event-14"></span>14 | A tag (graffiti) was finished (`GangTagComplete`). | 23 | `GangTagComplete`, `WarrTag1Complete`, `C4.BonusTagComplete`, `C1.GangTagComplete`, `WarrTag2Complete` | | |
@@ -37,9 +39,11 @@ message is read from the names of the callbacks scripts give it.
 
 ## Sources and evidence
 
-Evidence levels used: inferred.
+Evidence levels used: confirmed-code, inferred.
 
 - every script, SetMsgHandler and GangSetMsgHandler
+- the box and sphere updates, 0x00415378 and 0x004146e0
+- the flag's message handler, 0x00416038
 
 ## Fields
 

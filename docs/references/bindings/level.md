@@ -917,7 +917,9 @@ No arguments.
 **Returns** nothing.
 
 Ends the mission as completed: sets the level-end state (`W_GameState + 0x14c`) to 2 and asks for the next level record
-(current index + 1) to be loaded. No shipped script calls it.
+(current index + 1) to be loaded. No shipped script calls it: a story mission ends through its final scene and
+HUDLaunchMissionComplete instead (scripting.md#level99). With state 2, mode 1 counts down its level-end countdown, then
+pushes the mission-complete mode with kind 0.
 
 - **Evidence:** confirmed (code) at `0x00160d00`; detail: brief
 - **Wrapper** `0x0036df28` (registered by `RegisterBindings`); **calls** `0x00160d00`
@@ -1073,7 +1075,11 @@ Sets the checkpoint the level will start from (`W_GameState + 0x33a`) and record
 checkpoint copy and the world objects are told the checkpoint. Call it before MenuLoadLevel to enter a level at a
 checkpoint.
 
-**Notes.** Calls `0x0041e0b8` (inventory), `0x00422c60` (stats) and `0x00397e88` (world objects).
+**Notes.** Calls `0x0041e0b8` (copies the inventories at `W_GameState + 0x484`, 0x7e8 bytes, to `+0x7ec`), `0x00422c60`
+(copies the stats at 0x006fe490, 0x180 bytes) and `0x00397e88` (records the checkpoint and level index and moves a
+35-word object list to its checkpoint copy). During a mission scripts call it to mark a chapter done; the checkpoint
+picks the chapter when the level is next entered (scripting.md#level99). What a restart restores from the copies is not
+traced.
 
 - **Evidence:** confirmed (code) at `0x0041abc0`; detail: traced
 - **Wrapper** `0x0037b760` (registered by `RegisterBindings`); **calls** `0x0041abc0`
@@ -1930,12 +1936,12 @@ W_SetStopWatch(time, target, callback)
 
 **Returns** nothing.
 
-Sets up the mission stopwatch (the object at 0x0051504c): it stores the start time at +0x08 and the target at +0x0c,
-keeps the callback name (0x004235a8), and resets its tick state (+0x48 = 1000 ms per step, +0x40 = 0). Start it with
-W_StartStopWatch and show it with W_ShowStopWatch.
+Sets up the mission stopwatch (the object at *0x0051504c): the current time (+0x08), the target (+0x0c) and the
+callback's name (kept as text, 0x004235a8); it also clears the warning window (+0x40 = 0) and sets the last beep time
+(+0x48 = 1000). Start it with W_StartStopWatch and show it with W_ShowStopWatch.
 
-**Notes.** That the callback fires when the time reaches the target is inferred from the scripts; the stores are
-confirmed (0x004235f0).
+**Notes.** Each frame of play the time moves toward the target; on reaching it the watch stops and the callback is
+called with no arguments (0x004233f8, scripting.md#stopwatch). Confirmed (code).
 
 - **Evidence:** confirmed (code) at `0x004235f0`; detail: traced
 - **Wrapper** `0x00370d98` (registered by `RegisterBindings`); **calls** `0x004235f0`
@@ -1978,9 +1984,11 @@ W_StartStopWatch(run)
 
 **Returns** nothing.
 
-Starts or stops the mission stopwatch (`0x004233a8`).
+Starts or stops the mission stopwatch (`0x004233a8`): stores the flag as its running state (+0x14) and takes the game
+timer's reading, so a resumed watch does not count the time it was stopped.
 
-**Notes.** The run/stop reading of the flag is inferred from the scripts' pairs of calls.
+**Notes.** The update steps the watch only while +0x14 is non-zero and clears it on reaching the target (0x004233f8,
+scripting.md#stopwatch).
 
 - **Evidence:** confirmed (code) at `0x00423648`; detail: traced
 - **Wrapper** `0x00370e68` (registered by `RegisterBindings`); **calls** `0x00423648`

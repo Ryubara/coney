@@ -2364,7 +2364,7 @@ HuSetDemiGodMode(human, on, fraction)
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human (from HuCreate). |
 | 2 | `on` | boolean (nil or 0 is false) | true sets demi-god mode, false clears it. |
-| 3 | `fraction` | number (single precision) | Stored only when turning the mode on, in one global shared by every human (0x0051024c); the scripts pass 0.25. Most likely the share of health the human cannot be taken below (inferred). |
+| 3 | `fraction` | number (single precision) | Stored only when turning the mode on, in one global shared by every human (0x0051024c): the share of the maximum health a hit cannot take the human below. The scripts pass 0.25. |
 
 **Returns** nothing.
 
@@ -2372,8 +2372,9 @@ Sets or clears flag bit 0x20000000000 of the human's flag word; turning it on al
 so the last call wins for every demi-god human. The tutorial gives it to Rembrandt and Ash so they can be hurt but not
 killed.
 
-**Notes.** The in-game effect of the bit (a health floor) is inferred from the name and the 0.25 the scripts pass; its
-readers are not traced. Only an `on` of exactly 1 sets the bit.
+**Notes.** A hit that would take a demi-god's health below the fraction sets it to the fraction instead and sets god
+mode (flag 0x10), so it takes no more damage until a script clears that (0x00265f70, 0x00256f28;
+combat.md#damage-table). Only an `on` of exactly 1 sets the bit.
 
 - **Evidence:** confirmed (code) at `0x002359a0`; detail: traced
 - **Wrapper** `0x0035ba40` (registered by `RegisterBindings`); **calls** `0x002359a0` `Human_SetDemiGodMode`

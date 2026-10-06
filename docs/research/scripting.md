@@ -179,6 +179,93 @@ name, then two (flag, number) pairs for up to two arguments. `update` pops every
 name up (slot `+0x4c`) and calls it with its arguments; a name that does not resolve to a function is dropped
 silently. confirmed (code).
 
+### The mission stopwatch {#stopwatch}
+
+One countdown (or count-up) timer for the whole game, the object at `*0x0051504c`, set by
+[`W_SetStopWatch`](../references/bindings/level.md#w_setstopwatch) (`0x004235f0`) and run by
+[`W_StartStopWatch`](../references/bindings/level.md#w_startstopwatch) (`0x00423648` → `0x004233a8`). Confirmed (code):
+
+| Offset | Type | Field |
+| --- | --- | --- |
+| `+0x00` | u32 | game-timer reading at the last step |
+| `+0x08` / `+0x0c` | s32 | current time / target time, ms |
+| `+0x10` | float | rate the elapsed time is multiplied by (its writer is not traced) |
+| `+0x14` | u32 | running (`W_StartStopWatch`'s argument; the update clears it at the target) |
+| `+0x20` | char[32] | the callback's name, kept as text (empty for none) |
+| `+0x40` / `+0x48` | s32 | warning window (ms) / time of the last warning beep; `W_SetStopWatch` sets 0 / 1000 |
+
+**Each frame of play** (mode 1 step 1, `0x004233f8`), while running and the game timer has advanced by `d` ms: the
+current time moves `d × rate` toward the target (down when the target is below it). On reaching or passing the target
+it is clamped there, the watch stops, and the callback is found by name (slot `+0x4c`, dotted names work) and called
+with no arguments. While counting down within the warning window, a beep (sound `0x0058b9f0`) plays at most once a
+second. Confirmed (code) at `0x004233f8`. The HUD's display of it (`W_ShowStopWatch`) belongs to the HUD.
+
+### Message handlers {#message-handlers}
+
+Game objects (humans, flags, boxes, doors, props) talk to scripts through **messages**: a record whose `+0x20` is
+the message number and `+0x24` the object it is about, with `+0x00`, `+0x04` and `+0x11` as extra values.
+[`SetMsgHandler`](../references/bindings/script.md#setmsghandler) (`0x00386298` → `0x003860b8`) gives the object a
+handler component (vtable `0x00544b98`, made on demand by `0x003848c8`) and stores the interned callback name in its
+slot for that number: 26 slots, `+0x0c + 4 × message`. Message 0 also keeps a prompt pointer at `+0x78`
+([`SetMsgHandlerEx`](../references/bindings/script.md#setmsghandlerex)). The component's `+0x74` is the **repeat
+period** in ms (1000 by default, `0x00384a10`; set by slot `+0x44`). Confirmed (code).
+
+**Delivery** (`0x00384c38`): a message reaches Lua only when the object has a name in that slot, the component is
+attached, and **the level-end state (`W_GameState + 0x14c`) is 0**: once a mission is won, failed or left, triggers
+stop calling scripts. The marshaller (`0x00384ce0`, only while scripting runs, `0x00512b28` = 1) pushes the
+arguments by message number and calls the function; some numbers ask for one result, and a true result means the
+message was consumed. Confirmed (code); the meanings in the last column are from the
+[Script events](../references/script-events.md) list and the senders below.
+
+| Message | Callback arguments | Result asked |
+| --- | --- | --- |
+| 0 | `(self, subject)` | no |
+| 1 | `(self, other, n)`: `other` is the record's `+0x04`, `n` the byte `+0x11` | no |
+| 2 | `(self, other or NilHandle)` from `+0x00` | no |
+| 3, 4, 5 | `(self, subject)`: entered, left, still inside (below) | no |
+| 6 | `(subject, n, other or NilHandle)`, `n` from `+0x00` | no |
+| 7 | `(subject, other)`, `other` from `+0x00` | no |
+| `0xb` | `(self, other)` | no |
+| 8 | not marshalled here; a flag's own handler (`0x00416038`) calls `(flag, human)` when a human arrives at it ([AI: GoalMoveToFlag](ai.md#move-to-flag)) | no |
+| 9 | `(n)`, the short at `W_GameState + 0x412` | yes |
+| 10, `0xd` | `(self)` | no |
+| `0xc` | `(self)` | yes |
+| `0xe` | `(self, other, n)`, `n` from `+0x04` | yes |
+| `0x10` | `(subject, other, n)`, `n` from `+0x04` | yes |
+| `0xf` | `(subject, other)` | yes |
+| `0x11` | `(subject, other or NilHandle, n)`, `n` from `+0x04` | no |
+| `0x12`, `0x13` | `(subject, other or NilHandle)`: died or knocked out / revived; `other` is the attacker | no |
+| `0x19` | `(self, other or NilHandle, n, flag)`: the shorts `+0x04` and `+0x06` | no |
+
+`self` is the object the handler belongs to; `subject` is the record's `+0x24`; `other` is `+0x00` unless the row
+says otherwise. A gang's handlers
+(`GangSetMsgHandler`) use their own marshalling for 18, `0x11` and 2 ([AI: gang events](ai.md#gang-events)).
+
+### Trigger boxes and spheres {#triggers}
+
+Most of the first mission's progress is driven by message 3 on volume boxes. Confirmed (code):
+
+- **A volume box** (`AddVolumeBox`, kind 0: vtable `0x00545df8`, pools on [Tasks](tasks.md#classes)) keeps the
+  handles of up to 60 occupants (`+0x70`, cleared to `NilHandle` by `0x004151c0`) and its own handler component at
+  `+0x160`. Its update (`0x00415378`), while enabled (byte `+0x68`), collects the humans within its bounding sphere
+  (centre `+0x30`, radius `+0x40`; `0x002274a8`, at most 60), skips the dead (`0x00227eb0`), and tests each:
+    - inside and new: added to the occupants, message **3** (entered);
+    - inside and already an occupant: message **5**, at most once per repeat period (next time at `+0x1e0`);
+    - an occupant no longer inside, or dead: removed, message **4** (left).
+- **Inside** (`0x00412a18`): within the bounding sphere, between the box's lowest and highest `z` (`+0x18`, `+0x28`),
+  and inside the four corners rotated about the centre by the 2 × 2 matrix at `+0x48`-`+0x54`
+  (`x' = m00 dx + m01 dy`, `y' = m10 dx + m11 dy`, [`RotateVolumeBox`](../references/bindings/world.md#rotatevolumebox)).
+- **A trigger sphere** ([`TriggerSphereCfg`](../references/bindings/world.md#triggerspherecfg), `0x00414bc0`) is a
+  0x184-byte record from a pool of 100 (`0x006f3f50`, slots `0x006fd6e0`) attached to an object's handler component:
+  `+0x170` the object, `+0x174` the radius, `+0x17c` the mode, `+0x180` armed, `+0x164` its message-5 period (1000
+  from `0x00414480`). `TriggerSphereCfg`'s last argument goes to the object's handler component (`+0x74`); whether
+  that reaches the sphere's period is not traced.
+  The pool is updated round-robin, each sphere every fifth frame (`0x00414398`, from mode 1's step 6), with the same
+  enter / still-inside / leave rules as a box (`0x004146e0`), the messages going to the **object** (so
+  `SetMsgHandler(dealer, 3, ...)` hears a human come within the radius). Mode 0 tests distance only; mode 1 adds a
+  test between the sphere's centre and the human (`0x0024dee8`, inferred: line of sight); mode 2 the same from
+  raised points (`0x0024df40`). The first mission's one sphere is the dealer's: radius 4, mode 2, interval 500.
+
 ## Behaviour
 
 ### Life of the Lua state
@@ -386,6 +473,61 @@ calls `Main()`:
 The player therefore exists and the follow camera is active before the first frame of mode 1; the intro scene takes
 the camera over and gives it back ([Camera](camera.md#scenes)).
 
+**Chapters and checkpoints.** The three chapter scripts run one after another in the same level, without a reload:
+the last step of each calls `SetCheckPoint(n + 1)` and `preLoadFile` on the next chapter's script with its set-up
+function (`P1.Cleanup` → checkpoint 2, `level99_lesson1`, `P2.SetupLesson1`; `P2.NavigationSection` → checkpoint 3,
+`level99_lesson2`, `P3.SetupLesson2`). Inferred from the disassembly. `SetCheckPoint` (`0x0041ce98`) stores the number
+(`W_GameState + 0x33a`) and takes a **checkpoint copy** of what a restart needs, confirmed (code): the inventories
+(`W_GameState + 0x484`, 0x7e8 bytes, copied to `+0x7ec`, `0x0041e0b8`), the stats (`0x006fe490`, 0x180 bytes, copied
+after themselves, `0x00422c60`), and the object manager's 35-word list (`0x00715780` → `0x007156f0`, the source
+cleared) with the checkpoint and the level index (−1 unless the level is `level34`, `0x00397e88`). The checkpoint
+picks the chapter only when the level is entered (`Main`, above); `RunLevel` also has a branch that preloads
+`level99_scenetest` (`PlaySceneTest`), a test path with no script of that name on the disc (inferred).
+
+**Triggers in this mission** (counted from the scripts): 16 volume boxes, whose message 3 starts most steps (`vMark01`
+→ `P1.FirstGlow`, `vClimb` → `P3.MoveToClimb`, ...); message 8 on four flags (an AI teacher arrived); messages 1, 3, 4
+and 16 on the dealer, whose trigger sphere gives 3 and 4; 18 on a civilian and, through `GangSetMsgHandler`, on a gang;
+2 on two breakable fences; one 50-second stopwatch (`P1.SendWarriors` → `P1.TimesUp`); about 60 scheduled calls; the
+tutorial's text callbacks (`HUDSetTutorialCallback`) and pad handlers (`PadSetHandlerEx`). How each is delivered:
+[Message handlers](#message-handlers), [Trigger boxes and spheres](#triggers), [The mission stopwatch](#stopwatch),
+[Scheduled calls](#scheduled-calls). No script of the mission launches a failure: the players are demi-gods (below)
+and the only failure the engine raises by itself is a player falling out of the world
+([Level loading](level-loading.md#a-frame-of-play)).
+
+**Demi-god mode.** `HuSetDemiGodMode(player, true, 0.25)` sets flag `0x20000000000` and stores 0.25 in one global
+(`0x0051024c`) shared by every human. When a hit would take such a human's health below that fraction of its
+maximum, its health is set to the fraction × maximum and flag `0x10` (god mode) is set, so it takes no more damage
+until a script clears it (`Human_ApplyPendingDamage` `0x00265f70`, and `0x00256f28`, which sets `0x10` once health is
+at or below the fraction). Confirmed (code); [Combat](combat.md#damage-table) has the rest of the damage order.
+
+**How the mission ends** (the Lua side inferred from the disassembly, the C++ side confirmed (code)):
+
+1. `P3.UseFlash` (the player uses the flash on the dealer) sets the last objective and schedules `P3.MissionOver`,
+   which runs `SuperRunScene` with a scene table whose `Final` is true and `ReturnFunc` is `P3.MissionCompleted`.
+2. When that cinematic ends, its end callback, `global.lua`'s **`PreCashTheWorld(sceneId)`**, sees `Final`: it queues
+   screen effect 1, calls the `ReturnFunc` (which restores the default follow slots and re-enables command 1), clears
+   the scene's table entry and calls **`HUDLaunchMissionComplete()`** with no argument. (Without `Final` it would
+   show the scene's `HudText`, call the `ReturnFunc`, and switch spotting, the stage lighting and the fade back.) How
+   the scene system plays and ends the cinematic: [Scenes and movies](#scenes-and-movies).
+3. `MissionComplete_Launch(0)` (`0x0015d420`) finds mode 1 on top, **pushes mode 0xb** and sets the level-change flag
+   `0x0050c754` = 1 (read by mode 1's `Exit`, [Leaving gameplay](level-loading.md#unload)). Mode 1 is suspended, so
+   its level-end countdown does not run; `W_GameState + 0x14c` stays 0 until `MenuLoadLevel`.
+4. Mode 0xb's `Enter` stills every live human and calls **`UnlockAndLoad`**: `MissionCompleteUnlocks()` unlocks the
+   level (`UM_Unlock(Level, 0, 0)`) and one more record chosen from the players' scores (`StatGetScore`);
+   `LiquidizeAssets` adjusts each player's inventory (money, revives, spray-can charges, keys, item 5) and resets
+   their stats (`StatResetPlayer`); and `runNextMission(1)` finds 99 complete and loads **`level80`**
+   at checkpoint 1 (`SetCheckPoint(1)`, `SoundStopMusicTrack()`, `MenuLoadLevel("level80")`, which sets
+   `+0x14c` = 3 and mode 8's next level), then `HUDLaunchMissionComplete(4)`, which only stores kind 4 since mode 0xb
+   is on top.
+5. Mode 0xb's `Update` (`0x0015d160`) runs one world frame, sees the kind (4, none of 1-3 it acts on), pops itself,
+   calls the save system's slot `+0xb4`, **pops mode 1** (now on top: its `Exit` unloads `level99`), rebuilds the two
+   inventories and asks for the **autosave** (`0x00155308`, mode 6). Mode 8 then loads `level80`
+   ([Front end](frontend.md#story-start) describes the same modes on the new-game path).
+
+The level-end countdown (mode 1 `+0x28`, `W_GameState + 0x14c` = 1 or 2) is therefore not used by this ending; it
+serves `MissionComplete` (2, which no shipped script calls) and failures (1). Messages stop reaching Lua as soon as
+`+0x14c` is not 0 ([Message handlers](#message-handlers)).
+
 These calls reach [`HuCreate`](../references/bindings/character.md#hucreate),
 [`GangCreate`](../references/bindings/gang.md#gangcreate),
 [`CamSetupFollow`](../references/bindings/camera.md#camsetupfollow),
@@ -401,9 +543,9 @@ These calls reach [`HuCreate`](../references/bindings/character.md#hucreate),
 [`ShowHud`](../references/bindings/hud.md#showhud), [`RestoreHud`](../references/bindings/hud.md#restorehud),
 [`ReportCrime`](../references/bindings/level.md#reportcrime),
 [`MenuLoadLevel`](../references/bindings/level.md#menuloadlevel) and
-[`HUDLaunchMissionComplete`](../references/bindings/hud.md#hudlaunchmissioncomplete), among the 175 bindings the first
-mission uses; each is described in the [script bindings](../references/bindings/index.md) reference (`ShowHud`, for
-one, does nothing in this build).
+[`HUDLaunchMissionComplete`](../references/bindings/hud.md#hudlaunchmissioncomplete), among the bindings the first
+mission can call; [Mission 1 coverage](../references/bindings/mission1.md) lists them all with how far each is
+researched and whether Coney implements it (`ShowHud`, for one, does nothing in this build).
 
 ### Errors in a fresh state {#errors-in-a-fresh-state}
 
@@ -525,6 +667,10 @@ of the original).
 
 ## Open questions
 
+- **The first mission:** what a restart (failure or pause menu) restores from `SetCheckPoint`'s copies, and who
+  reads the object manager's 35-word list; whether `TriggerSphereCfg`'s interval reaches the sphere's period
+  (`+0x164`); who writes the stopwatch's rate (`+0x10`); what commands 37, 38 and 40 (d-pad down, up, right), which
+  the tutorial switches with `EnableCommand`, do ([Commands](../references/commands.md)).
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,
   `global.lua` and `level100.lua` run without errors in Coney's fresh state, and so do `level99.lua` with
@@ -556,9 +702,10 @@ of the original).
   `SetUpdateFunction`, the binding wrapper `0x0036eef8` `ShowProfileManager_Binding`, `0x0041f118`
   `W_GameState_SetLevelRecord`, `0x00160d78` `MenuLoadLevel_Choose`, `0x0015c7b0` `LevelFlow_ChooseLevel` and
   `0x0020a268` `PM_Mode::HandleCommand`, until the research database names them.
-- Binding arguments the [script bindings](../references/bindings/index.md) reference marks as not understood yet:
-  which bit of `PadSetHandler`'s mask is which PS2 button; what each message number of `SetMsgHandler` means; the
-  scene-play flags (`ScenePlay` and its relatives) beyond their `global.lua`
-  names; when animation callbacks (`AddAnimCallback`) fire and with what arguments; most fields of the large `Cfg*`
-  records (`CfgChar`, `CfgPowerClass`, `CfgWarriorClass`), which are written through computed addresses with no reader
-  found yet. Each would move up from inferred once a reader or a runtime observation is found.
+- Binding arguments the [script bindings](../references/bindings/index.md) reference marks as not understood yet: which
+  bit of `PadSetHandler`'s mask is which PS2 button; who sends messages 0, 6, 7 and 9-`0x19` and what their extra values
+  mean (the arguments are in [Message handlers](#message-handlers)); the scene-play flags (`ScenePlay` and its
+  relatives) beyond their `global.lua` names; when animation callbacks (`AddAnimCallback`) fire and with what arguments;
+  most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`, `CfgWarriorClass`), which are written through
+  computed addresses with no reader found yet. Each would move up from inferred once a reader or a runtime observation
+  is found.

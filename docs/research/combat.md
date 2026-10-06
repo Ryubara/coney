@@ -186,7 +186,7 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 | `0x4000000` | spends no power (`0x00226448`) | |
 | `0x400000000` | a block holds even against strength 3 (`0x00269f30`) | |
 | `0x2000000000` | never escapes when the grabber's power runs out | |
-| `0x20000000000` | one hit cannot take health below 25 % (`0x00265f70`); it then sets `0x10` | |
+| `0x20000000000` | one hit cannot take health below a fraction of the maximum (`0x00265f70`); it then sets `0x10` | |
 | `0x100000000000` | never picked as a target (`HuSetNoAutoLock`, `0x00279410`) | |
 
 ### The Anim Range List and damage {#damage-table}
@@ -300,7 +300,7 @@ Read at runtime in the street; the setters are on the [config bindings](../refer
 | Address | Value | Use |
 | --- | --- | --- |
 | `0x0050b708` | 7 | samples a history hold needs (circle → tackle) |
-| `0x0051024c` | 0.25 | the health floor of victim flag `0x20000000000` |
+| `0x0051024c` | 0.25 | the health floor of victim flag `0x20000000000`, as a fraction of the maximum; `HuSetDemiGodMode` overwrites it |
 | `0x00510274` | 0.6 | the power fraction a grabber loses when a third human hits it |
 | `0x00510278` | 0.25 | `CfgPowerEndurance`: the power fraction a power strike needs and a throw costs |
 | `0x00510290` / `0x00510294` | 5000 / 20000 | `CfgRageHandlers` (ms) |
@@ -861,8 +861,10 @@ every hit tested (confirmed (runtime)). Grab moves (`0x00262ac8`) apply their da
 **Applying it** (`Human_ApplyPendingDamage`, `0x00265f70`, each update), confirmed (code), in order:
 
 1. A held **block** takes the hit first ([Block](#block)).
-2. A victim with flag `0x20000000000` (the player has it) cannot drop below 25 % of its maximum in one hit: health is
-   set to 25 %, flag `0x10` is set, and the rest is lost.
+2. A victim with flag `0x20000000000` (demi-god,
+   [`HuSetDemiGodMode`](../references/bindings/character.md#husetdemigodmode)) cannot drop below a fraction of its
+   maximum in one hit: health is set to that fraction, flag `0x10` is set, and the rest is lost. The fraction is one
+   global for every human (`0x0051024c`, the last `HuSetDemiGodMode` call's; the scripts pass 0.25).
 3. Record `+0x00` `0x20000` triples the damage (`0x00223b70`); allies hurt each other only when both are players.
 4. Health drops; the flash clip 665 prevents death. A grabber hit by a third human loses 0.6 of its power.
 5. **Hit armour**: no reaction plays (the damage still lands) while the victim is a player in an attack's wind-up or

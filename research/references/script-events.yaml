@@ -5,11 +5,13 @@ title: "Script events"
 about: |
   The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`, and the same
   messages for a whole gang with `GangSetMsgHandler(gang, message, callback)`: a human's event goes to its
-  own handlers, then to its gang's ([AI: gang events](../research/ai.md#gang-events)). The meaning of a
-  message is read from the names of the callbacks scripts give it.
+  own handlers, then to its gang's ([AI: gang events](../research/ai.md#gang-events)). The arguments
+  each message's callback gets are in [Scripts: message handlers](../research/scripting.md#message-handlers).
+  The meaning of a message is read from its sender where that is traced, else from the names of the
+  callbacks scripts give it.
 complete: |
-  Every message number a script uses with either binding is listed; meanings are inferred from
-  callback names.
+  Every message number a script uses with either binding is listed; the senders of 3, 4, 5 and 8 are
+  traced, the other meanings are inferred from callback names.
 defaults: {source: "every script, SetMsgHandler and GangSetMsgHandler", evidence: inferred}
 entries:
   - id: 0
@@ -33,16 +35,23 @@ entries:
     gang_clears: 210
     gang_examples: [MrWolf, df.DealerDied, DestroyerDied, P2.CheckDead01, P1.CheckDead01]
   - id: 3
-    meaning: "Something entered a trigger box (`ObjectiveEnter`, `EnterBoxEvent`)."
+    meaning: "A human entered a volume box or an object's trigger sphere; `(self, human)` ([Triggers](../research/scripting.md#triggers))."
+    source: "the box and sphere updates, 0x00415378 and 0x004146e0"
+    evidence: confirmed-code
     handlers: 567
     clears: 486
     examples: [ObjectiveEnter, GlowGoAway, EnterBoxEvent, GS.RunnerEventTriggered, AddSuspend]
   - id: 4
-    meaning: "Something left a trigger box (`ObjectiveExit`, `ExitBoxEvent`)."
+    meaning: "A human left a volume box or trigger sphere, or died inside it; `(self, human)`."
+    source: "the box and sphere updates, 0x00415378 and 0x004146e0"
+    evidence: confirmed-code
     handlers: 137
     clears: 122
     examples: [GlowComeBack, ObjectiveExit, ExitBoxEvent, ExitInteriorCam, C7.EndButton]
   - id: 5
+    meaning: "A human is still inside a volume box or trigger sphere (at most once per repeat period); `(self, human)`."
+    source: "the box and sphere updates, 0x00415378 and 0x004146e0"
+    evidence: confirmed-code
     handlers: 37
     clears: 27
     examples: [ObjectiveEnter, VandalTwiggy, C5.CheckBox, VandalMarcello, VandalChuck]
@@ -57,6 +66,9 @@ entries:
     clears: 2
     examples: [C2.TheftCallback, ObjectStolen]
   - id: 8
+    meaning: "A human arrived at a flag (`GoalMoveToFlag`); `(flag, human)`."
+    source: "the flag's message handler, 0x00416038"
+    evidence: confirmed-code
     handlers: 121
     clears: 100
     examples: [df.RestoreDealersBrains, P1.Walk03, P3.InsideGate, C2.BanterPassive, P3.AccountantDone]

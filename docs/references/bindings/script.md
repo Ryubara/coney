@@ -300,16 +300,20 @@ SetMsgHandler(object, message, callback)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of the object or human whose messages to watch. |
-| 2 | `message` | number, truncated to an integer | Message number (for example 1 for a melee hit, 18 for a death, as the scripts use them); 0 also clears the object's interaction prompt first (see SetMsgHandlerEx). |
+| 2 | `message` | number, truncated to an integer | Message number, 0-25 (for example 3 when a human enters a volume box or trigger sphere, 4 when it leaves, 8 when an AI arrives at a flag, 18 for a death); 0 also clears the object's interaction prompt first (see SetMsgHandlerEx). |
 | 3 | `callback` | string | Name of the Lua function to call (dotted names allowed), or nil to remove the handler. |
 
 **Returns** nothing.
 
-Registers a Lua callback for a message an object receives, through the object's message-handler component
-(`0x003860b8`). The most used binding in the scripts.
+Registers a Lua callback for a message an object receives: the interned name goes in slot `message` of the object's
+message-handler component (`0x003860b8`, made on demand). When the message arrives the callback gets arguments that
+depend on the number, usually the object itself and the other object involved (the table is in
+scripting.md#message-handlers). The most used binding in the scripts.
 
-**Notes.** The message numbers' meanings are not tabulated yet; the examples are inferred from the scripts' handler
-names. What arguments the callback receives is not traced.
+**Notes.** Messages reach Lua only while the level-end state (`W_GameState + 0x14c`) is 0, so no callback runs once a
+mission is won, failed or left (0x00384c38). The arguments per number are confirmed (code) at 0x00384ce0; the senders of
+3, 4, 5 (volume boxes, trigger spheres) and 8 (flags) are confirmed, the meaning of the others is inferred from the
+scripts' handler names (references/script-events.md).
 
 - **Evidence:** confirmed (code) at `0x00386298`; detail: traced
 - **Wrapper** `0x0036d1c8` (registered by `RegisterBindings`); **calls** `0x00386298`

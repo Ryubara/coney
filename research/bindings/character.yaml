@@ -1407,7 +1407,7 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (from HuCreate)."}
     - {name: "on", lua: boolean, desc: "true sets demi-god mode, false clears it."}
-    - {name: fraction, lua: number, ctype: float, desc: "Stored only when turning the mode on, in one global shared by every human (0x0051024c); the scripts pass 0.25. Most likely the share of health the human cannot be taken below (inferred)."}
+    - {name: fraction, lua: number, ctype: float, desc: "Stored only when turning the mode on, in one global shared by every human (0x0051024c): the share of the maximum health a hit cannot take the human below. The scripts pass 0.25."}
   description: >-
     Sets or clears flag bit 0x20000000000 of the human's flag word; turning it on also stores `fraction` in a single
     global, so the last call wins for every demi-god human. The tutorial gives it to Rembrandt and Ash so they can be
@@ -1415,8 +1415,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The in-game effect of the bit (a health floor) is inferred from the name and the 0.25 the scripts pass; its
-    readers are not traced. Only an `on` of exactly 1 sets the bit.
+    A hit that would take a demi-god's health below the fraction sets it to the fraction instead and sets god mode
+    (flag 0x10), so it takes no more damage until a script clears that (0x00265f70, 0x00256f28; combat.md#damage-table).
+    Only an `on` of exactly 1 sets the bit.
   usage: {chunks: 8, calls: 21, boot: false, mission1: true, result_used: false}
 
 - name: HuSetHealth

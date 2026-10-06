@@ -334,7 +334,9 @@
     - {addr: 0x00160d00}
   description: >-
     Ends the mission as completed: sets the level-end state (`W_GameState + 0x14c`) to 2 and asks for the next level
-    record (current index + 1) to be loaded. No shipped script calls it.
+    record (current index + 1) to be loaded. No shipped script calls it: a story mission ends through its final scene
+    and HUDLaunchMissionComplete instead (scripting.md#level99). With state 2, mode 1 counts down its level-end
+    countdown, then pushes the mission-complete mode with kind 0.
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
@@ -462,14 +464,14 @@
     - {name: target, lua: number, ctype: int, desc: "Target time in milliseconds; the scripts pass 0 (a countdown to zero)."}
     - {name: callback, lua: string, desc: "Name of the Lua function (dotted names allowed) to call when the stopwatch reaches the target."}
   description: >-
-    Sets up the mission stopwatch (the object at 0x0051504c): it stores the start time at +0x08 and the target at
-    +0x0c, keeps the callback name (0x004235a8), and resets its tick state (+0x48 = 1000 ms per step, +0x40 = 0).
-    Start it with W_StartStopWatch and show it with W_ShowStopWatch.
+    Sets up the mission stopwatch (the object at *0x0051504c): the current time (+0x08), the target (+0x0c) and the
+    callback's name (kept as text, 0x004235a8); it also clears the warning window (+0x40 = 0) and sets the last
+    beep time (+0x48 = 1000). Start it with W_StartStopWatch and show it with W_ShowStopWatch.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    That the callback fires when the time reaches the target is inferred from the scripts; the stores are confirmed
-    (0x004235f0).
+    Each frame of play the time moves toward the target; on reaching it the watch stops and the callback is called
+    with no arguments (0x004233f8, scripting.md#stopwatch). Confirmed (code).
   usage: {chunks: 32, calls: 39, boot: false, mission1: true, result_used: false}
 
 - name: W_GetStopWatchTime
@@ -491,11 +493,13 @@
   args:
     - {name: run, lua: boolean, desc: "true to start (or resume) the stopwatch, false to stop it."}
   description: >-
-    Starts or stops the mission stopwatch (`0x004233a8`).
+    Starts or stops the mission stopwatch (`0x004233a8`): stores the flag as its running state (+0x14) and takes the
+    game timer's reading, so a resumed watch does not count the time it was stopped.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The run/stop reading of the flag is inferred from the scripts' pairs of calls.
+    The update steps the watch only while +0x14 is non-zero and clears it on reaching the target
+    (0x004233f8, scripting.md#stopwatch).
   usage: {chunks: 37, calls: 78, boot: false, mission1: true, result_used: false}
 
 - name: W_ShowStopWatch
@@ -912,7 +916,11 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Calls `0x0041e0b8` (inventory), `0x00422c60` (stats) and `0x00397e88` (world objects).
+    Calls `0x0041e0b8` (copies the inventories at `W_GameState + 0x484`, 0x7e8 bytes, to `+0x7ec`), `0x00422c60`
+    (copies the stats at 0x006fe490, 0x180 bytes) and `0x00397e88` (records the checkpoint and level index and moves
+    a 35-word object list to its checkpoint copy). During a mission scripts call it to mark a chapter done; the
+    checkpoint picks the chapter when the level is next entered (scripting.md#level99). What a restart restores from
+    the copies is not traced.
   usage: {chunks: 64, calls: 76, boot: true, mission1: true, result_used: false}
   coney: implemented
 

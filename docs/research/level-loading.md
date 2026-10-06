@@ -447,8 +447,8 @@ for the order; the roles of callees not named elsewhere are inferred from what t
 `W_GameState + 0x14c` is 0 (playing):
 
 1. Frame pacing (`0x00159468` with the device's value from `0x0018d020`); an empty hook (`0x001561f8`); the
-   unlockables manager (`0x004233f8` on `0x0051504c`); `0x0048d420`; the save system's sub-object at `+0x128`,
-   slot `+0x1c`.
+   mission stopwatch (`0x004233f8` on `*0x0051504c`, [Scripts](scripting.md#stopwatch)); `0x0048d420`; the save
+   system's sub-object at `+0x128`, slot `+0x1c`.
 2. The task manager's phase-0 set-up (`0x003a3148`), the **cameras** (`0x001562c8`), the **tick** (`0x00156220`,
    which stores the frame's step in seconds at `mode + 0x20`), the debug frame counter (`0x001569c0`).
 3. **The simulation**, when `0x005e536c` is 1 (during normal play; what clears it is not traced):
@@ -476,7 +476,9 @@ for the order; the roles of callees not named elsewhere are inferred from what t
   20 m below the collision mesh sets it, with `+0x152` = 2, when the game-state flags `+0x150` have bit 1
   (`Human_StateUpdate`, `0x002403e8`, [Characters](characters.md#ground)). **2 is a level completed**: `0x00160d00`
   sets it together with the next level's index (`+0x56dc` + 1) for the load mode. Confirmed (code) for the writers;
-  that 1 means "mission failed" in general is inferred from this one writer.
+  that 1 means "mission failed" in general is inferred from this one writer. A story mission's normal ending does
+  not pass through here: its final scene pushes the mission-complete mode directly
+  ([Scripts: how the mission ends](scripting.md#level99)), and messages stop reaching Lua once this state is not 0.
 - **Any other value** (3 is what `MenuLoadLevel` sets): `Update` returns 0, which pops the mode; its `Exit` then
   unloads the level ([Leaving gameplay](#unload)).
 

@@ -160,10 +160,13 @@ AddVolumeBox(name, kind, corner, size, enable, flags) -> number
 **Returns** number: Handle of the box, or NilHandle for kind 1 (and possibly when a pool is empty).
 
 Creates an axis-aligned volume box, used to test whether characters are inside an area (`IsInsideBox`), to switch
-collision (`ChangeCollision`) and to mark turf.
+collision (`ChangeCollision`) and to mark turf. A kind-0 box is also a trigger: while enabled it tracks up to 60 humans
+inside it and sends itself message 3 when one enters, 5 while one stays (at most once per period) and 4 when one leaves
+or dies, so `SetMsgHandler(box, 3, ...)` fires on entry (scripting.md#triggers).
 
 **Notes.** Kinds 0 and 2 come from two pools (0x0051483c, 0x00514814); kind 3 from the factory at 0x00514834. What
-distinguishes the kinds in play is not traced. Rotate the box about the vertical axis with `RotateVolumeBox`.
+distinguishes the kinds in play is not traced. Rotate the box about the vertical axis with `RotateVolumeBox`. The
+trigger update of a kind-0 box is confirmed (code) at 0x00415378.
 
 - **Evidence:** confirmed (code) at `0x004125b8`; detail: traced
 - **Wrapper** `0x0037ac70` (registered by `RegisterBindings`); **calls** `0x004125b8` `VolumeBox_Add`
@@ -1622,8 +1625,8 @@ RotateVolumeBox(box, m00, m01, m10, m11)
 
 Gives a volume box a rotation about the vertical axis, stored as a 2 × 2 matrix in the box (+0x48 to +0x54).
 
-**Notes.** That the four numbers form a cos/sin matrix is inferred from the scripts' values; the stores are confirmed
-(code) at 0x00412c40.
+**Notes.** The inside test (0x00412a18) rotates the box's four corners about its centre by this matrix (x' = m00 dx +
+m01 dy, y' = m10 dx + m11 dy), confirmed (code); that the values are a cos/sin pair follows from the scripts' values.
 
 - **Evidence:** confirmed (code) at `0x00412c40`; detail: traced
 - **Wrapper** `0x0037ae68` (registered by `RegisterBindings`); **calls** `0x00412c40` `VolumeBox_SetRotation`
@@ -1769,16 +1772,18 @@ TriggerSphereCfg(object, enable, radius, mode, interval)
 | 1 | `object` | number, truncated to an unsigned integer | Handle of the object that gets the sphere (a flag, human or prop). |
 | 2 | `enable` | boolean (nil or 0 is false) | True to arm the sphere at once, false to configure it disarmed. |
 | 3 | `radius` | number (single precision) | Radius in metres around the object. |
-| 4 | `mode` | number, truncated to an integer | Integer stored with the sphere (+0x17c); the scripts pass 0, 1 (true) or 2. Its meaning (who can trigger it, or once versus repeating) is not traced. |
-| 5 | `interval` | number, truncated to an unsigned integer | Number handed to the sphere's set-up method (vtable +0x44); the scripts pass 1, 100, 250, 500 or 1000, which suggests a check interval in milliseconds. |
+| 4 | `mode` | number, truncated to an integer | How a human inside the radius is accepted (+0x17c): 0 on distance alone, 1 also needs a clear test from the sphere's centre to the human, 2 the same test from raised points (the test is inferred to be line of sight); the scripts pass 0, 1 (true) or 2. |
+| 5 | `interval` | number, truncated to an unsigned integer | Stored as the repeat period (ms) of the object's message-handler component (+0x74), the period of message 5 (still inside); the scripts pass 1, 100, 250, 500 or 1000. |
 
 **Returns** nothing.
 
-Creates or reconfigures the trigger sphere of an object: its radius, whether it is armed, a mode value and a timing
-value. Scripts use it for objectives, talk-to points and pickups.
+Creates or reconfigures the trigger sphere of an object (a pool of 100): its radius, whether it is armed, the acceptance
+mode and the repeat period. Each sphere is checked every fifth frame; a human coming inside sends the object message 3,
+staying inside message 5, leaving or dying message 4, so `SetMsgHandler(object, 3, ...)` hears it. Scripts use it for
+objectives, talk-to points and pickups.
 
-**Notes.** The meaning of `mode` and `interval` is speculative; the stores (+0x174 radius, +0x180 enabled, +0x17c mode)
-are confirmed (code) at 0x00414bc0. How the sphere reports to Lua (a message handler) is not traced here.
+**Notes.** Stores and the update are confirmed (code) at 0x00414bc0 and 0x004146e0 (scripting.md#triggers). The sphere's
+own message-5 period is its +0x164 (1000 by default); that `interval` reaches it is not traced.
 
 - **Evidence:** confirmed (code) at `0x00414bc0`; detail: traced
 - **Wrapper** `0x0036d0e0` (registered by `RegisterBindings`); **calls** `0x00414bc0` `TriggerSphere_Configure`
