@@ -190,8 +190,8 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true draws the human's shadow, false hides it."}
   description: >-
-    Turns the human's shadow on or off (+0x2b4 of its character instance).
-  evidence: inferred
+    Turns the human's blob shadow on or off (+0x2b4 of its render instance; docs/research/lighting.md#humans).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 10, calls: 38, boot: false, mission1: false, result_used: false}
 
@@ -2231,8 +2231,9 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: rgba, lua: table, elem: number, count: 4, written_back: true, desc: "Table {r, g, b, a}, each 0 to 1; {1, 1, 1, 1} is the normal colour, {0.3, 0.3, 0.3, 1} darkens the model."}
   description: >-
-    Tints the human's model by the given colour.
-  evidence: inferred
+    Tints the human's model by the given colour: the render instance's colour word (+0x28), its material colour when
+    drawn (docs/research/lighting.md#humans).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 6, calls: 84, boot: false, mission1: false, result_used: false}
 

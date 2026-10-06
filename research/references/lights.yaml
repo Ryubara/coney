@@ -4,12 +4,13 @@
 title: Lights
 about: |
   Every light the scripts make with the long form of `SetLight(0, type, pos, dir, colour, radius,
-  cone, p, flickerA, flickerB, lights, priority, flicker, state)` ([Lighting](../research/world.md#lighting)).
+  cone, coronaHeight, coronaPull, coronaSize, lights, effects, corona, state)`
+  ([Lighting](../research/lighting.md#record)).
   `global.lua` builds each level's moonlight, reflected and ambient light from the level's `LightData`;
   level scripts add their lamps, most kept in a `Lights` table.
 complete: |
-  Every 14-argument `SetLight` call; arguments the script computes show none. What `p` and
-  `priority` do is not traced.
+  Every 14-argument `SetLight` call; arguments the script computes show none. The corona
+  parameters and the effects word are not listed.
 defaults: {source: "the level scripts and global.lua, SetLight", evidence: confirmed-code}
 # The entries are in research/references/lights/, one file per level.
 entries: []

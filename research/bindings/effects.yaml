@@ -488,7 +488,7 @@
   calls:
     - {addr: 0x001b4838, name: Gamma_Set}
   args:
-    - {name: level, lua: number, ctype: unsigned, desc: "Brightness 0-255 (larger values are clamped to 255); stored in the game state (+0x57a4) and applied as level/255 to the light manager."}
+    - {name: level, lua: number, ctype: unsigned, desc: "Brightness 0-255 (larger values are clamped to 255; the profile screen uses 0-100, 40 by default); stored in the game state (+0x57a4) and added as level/255 to every ambient and directional light."}
   description: >-
     Sets the display brightness from the options screen.
   evidence: confirmed-code
@@ -514,11 +514,12 @@
   args:
     - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Colour offset `{r, g, b}` (small values; `global.lua` passes the level's `LightData.goffset`). Written back unchanged."}
   description: >-
-    Sets a colour offset in the light manager (0x0017ec80), shifting the level's overall colour balance.
+    Sets the light manager's colour offset (+0xa0, through 0x0017ec80), added with the brightness to every ambient and
+    directional light's colour.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Exactly how the offset enters the lighting is not traced.
+    docs/research/lighting.md#colour.
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
 
 - name: SetMotionAlpha
@@ -584,12 +585,12 @@
       - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour `{r, g, b, a}`, components 0-1 (such as `{1, 0.75, 0, 1}`). Written back unchanged."}
       - {name: radius, lua: number, ctype: float, desc: "Radius in metres for point and spot lights (must not be negative)."}
       - {name: coneAngle, lua: number, ctype: float, desc: "Cone angle for spot lights (must not be negative); the scripts pass 1 for other types."}
-      - {name: p3, lua: number, ctype: float, desc: "Number stored with the light; scripts pass 0."}
-      - {name: flickerA, lua: number, ctype: float, desc: "Flicker parameter, checked to be non-negative when a flicker pattern is set; scripts pass 0."}
-      - {name: flickerB, lua: number, ctype: float, desc: "Second flicker parameter, same rule."}
-      - {name: group, lua: number, ctype: unsigned, desc: "Integer 0-3 (refused above 3); scripts pass 1. Likely which objects the light affects."}
-      - {name: priority, lua: number, ctype: unsigned, desc: "Integer 0-32 (refused above 32); scripts pass 0."}
-      - {name: flicker, lua: number, ctype: unsigned, desc: "Flicker pattern 0-6: 0 steady, 1-6 select a pattern (stored as 0-5)."}
+      - {name: coronaHeight, lua: number, ctype: float, desc: "Metres the corona sits above the light (record +0x0c); level99 uses 0 to -1.15."}
+      - {name: coronaPull, lua: number, ctype: float, desc: "Metres the corona is moved towards the camera (+0x10); must not be negative when a corona is set."}
+      - {name: coronaSize, lua: number, ctype: float, desc: "The corona's size in metres (+0x14), also the cull radius of a light with radius 0; same rule."}
+      - {name: lights, lua: number, ctype: unsigned, desc: "What the light lights, 0-3 (refused above 3): bit 0 objects and humans, bit 1 the world."}
+      - {name: effects, lua: number, ctype: unsigned, desc: "0-32 (refused above 32): bit 0 spawns part_light_bugs at the light; bits 1-4 a flicker mode (2 random brightness, 4 random fade)."}
+      - {name: corona, lua: number, ctype: unsigned, desc: "Corona sprite 0-6: 0 none, 1-6 rectangle 0-5 of the lighting sheet."}
       - {name: state, lua: number, ctype: unsigned, desc: "1 creates or leaves the light on, 0 off, 2 removes an existing light."}
     results:
       - {lua: number, desc: "The light's handle (new or existing), or 0 when the arguments were refused or the light was removed."}
@@ -603,8 +604,9 @@
   depth: thorough
   notes: >-
     Long form 0x0017ef20, short form 0x0017f160, both on the light manager at 0x0050cce4. The type mapping to
-    RenderWare (0 → 0x80 point, 1 → 0x81 spot, 2 → 1 directional, 3 → 2 ambient) is confirmed (code); the names of p3,
-    group and priority are inferred.
+    RenderWare (0 → 0x80 point, 1 → 0x81 spot, 2 → 1 directional, 3 → 2 ambient) is confirmed (code), and so are the
+    corona, lights and effects arguments (0x0017c508, 0x0017caa8, 0x0017d880; confirmed (runtime) in level99). See
+    docs/research/lighting.md#record.
   usage: {chunks: 61, calls: 5301, boot: true, mission1: true, result_used: true}
 
 - name: SetLightFlicker
@@ -613,22 +615,23 @@
     - {addr: 0x0017f1b8, name: Light_SetFlicker}
   args:
     - {name: light, lua: number, ctype: unsigned, desc: "Handle of a light made by `SetLight`."}
-    - {name: p1, lua: number, ctype: unsigned, desc: "Flicker parameter (the scripts pass 100)."}
-    - {name: p2, lua: number, ctype: unsigned, desc: "Flicker parameter (0)."}
-    - {name: p3, lua: number, ctype: unsigned, desc: "Flicker parameter (100)."}
-    - {name: p4, lua: number, ctype: unsigned, desc: "Flicker parameter."}
-    - {name: p5, lua: number, ctype: unsigned, desc: "Flicker parameter."}
-    - {name: p6, lua: number, ctype: unsigned, desc: "Flicker parameter."}
-    - {name: p7, lua: number, ctype: unsigned, desc: "Flicker parameter."}
-    - {name: p8, lua: number, ctype: unsigned, desc: "Flicker parameter."}
-    - {name: p9, lua: number, ctype: unsigned, desc: "Flicker parameter."}
-    - {name: p10, lua: number, ctype: unsigned, desc: "Flicker parameter."}
+    - {name: onTime, lua: number, ctype: unsigned, desc: "Blink mode: ms the light stays on (the scripts pass 100)."}
+    - {name: onRandom, lua: number, ctype: unsigned, desc: "Blink mode: up to this many ms more, at random."}
+    - {name: offTime, lua: number, ctype: unsigned, desc: "Blink mode: ms the light stays dimmed; 0 selects burst mode instead."}
+    - {name: offRandom, lua: number, ctype: unsigned, desc: "Blink mode: up to this many ms more, at random."}
+    - {name: pause, lua: number, ctype: unsigned, desc: "Burst mode: ms of steady light between bursts."}
+    - {name: pauseRandom, lua: number, ctype: unsigned, desc: "Burst mode: up to this many ms more; in blink mode, a first delay when not 0."}
+    - {name: burst, lua: number, ctype: unsigned, desc: "Burst mode: flickers in a burst."}
+    - {name: burstRandom, lua: number, ctype: unsigned, desc: "Burst mode: up to this many flickers more."}
+    - {name: flickerTime, lua: number, ctype: unsigned, desc: "Burst mode: each flicker lasts up to this many ms (random)."}
+    - {name: dim, lua: number, ctype: unsigned, desc: "Brightness in percent: blink mode's dimmed level; burst mode's upper bound of a random level."}
   description: >-
-    Sets a light's flicker timing (0x0017d0b0, 16-bit values); does nothing for light 0.
-  evidence: inferred
-  depth: brief
+    Makes a light blink (offTime not 0) or flicker in bursts (offTime 0) through 0x0017d0b0; a light with radius 0
+    becomes a sub_flashing_light particle instead. Does nothing for light 0.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Typical calls pass (light, 100, 0, 100, 0, ...), which suggests on/off durations; not traced.
+    The modes and timings are on docs/research/lighting.md#flicker.
   usage: {chunks: 9, calls: 163, boot: false, mission1: false, result_used: false}
 
 - name: SetShadowColor

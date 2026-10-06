@@ -36,7 +36,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuCanSee`](#hucansee) | boolean | 2 | no | no | inferred |
 | [`HuChangePlayerGang`](#huchangeplayergang) | boolean | 12 | no | yes | confirmed (code) |
 | [`HuClearLook`](#huclearlook) | - | 5 | no | no | confirmed (code) |
-| [`HuColor`](#hucolor) | - | 6 | no | no | inferred |
+| [`HuColor`](#hucolor) | - | 6 | no | no | confirmed (code) |
 | [`HuCreate`](#hucreate) | number | 100 | no | yes | confirmed (code) |
 | [`HuDelete`](#hudelete) | - | 80 | no | no | inferred |
 | [`HuDrop`](#hudrop) | - | 0 | no | no | speculative |
@@ -176,7 +176,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetWorkoutParams`](#husetworkoutparams) | - | 0 | no | no | speculative |
 | [`HuSetWoundable`](#husetwoundable) | - | 20 | no | no | inferred |
 | [`HuSetWounded`](#husetwounded) | - | 1 | no | no | inferred |
-| [`HuShadow`](#hushadow) | - | 10 | no | no | inferred |
+| [`HuShadow`](#hushadow) | - | 10 | no | no | confirmed (code) |
 | [`HuShutUp`](#hushutup) | - | 39 | no | yes | confirmed (code) |
 | [`HuSpeak`](#huspeak) | - | 43 | no | yes | confirmed (code) |
 | [`HuSpeakNI`](#huspeakni) | - | 101 | no | yes | confirmed (code) |
@@ -835,9 +835,10 @@ HuColor(human, rgba)
 
 **Returns** nothing.
 
-Tints the human's model by the given colour.
+Tints the human's model by the given colour: the render instance's colour word (+0x28), its material colour when drawn
+(docs/research/lighting.md#humans).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00239100`; detail: brief
 - **Wrapper** `0x0035d730` (registered by `RegisterBindings`); **calls** `0x00239100`
 - **Used by** 6 of 467 script chunks (84 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3768,9 +3769,9 @@ HuShadow(human, on)
 
 **Returns** nothing.
 
-Turns the human's shadow on or off (+0x2b4 of its character instance).
+Turns the human's blob shadow on or off (+0x2b4 of its render instance; docs/research/lighting.md#humans).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00238030`; detail: brief
 - **Wrapper** `0x00358ad8` (registered by `RegisterBindings`); **calls** `0x00238030` `Human_SetShadow`
 - **Used by** 10 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

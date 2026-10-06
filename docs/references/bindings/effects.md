@@ -35,7 +35,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SetGammaRamp`](#setgammaramp) | - | 0 | no | no | confirmed (code) |
 | [`SetLevelColour`](#setlevelcolour) | - | 2 | yes | no | confirmed (code) |
 | [`SetLight`](#setlight) | number | 61 | yes | yes | confirmed (code) |
-| [`SetLightFlicker`](#setlightflicker) | - | 9 | no | no | inferred |
+| [`SetLightFlicker`](#setlightflicker) | - | 9 | no | no | confirmed (code) |
 | [`SetMotionAlpha`](#setmotionalpha) | - | 3 | yes | no | confirmed (code) |
 | [`SetShadowColor`](#setshadowcolor) | - | 1 | yes | no | confirmed (code) |
 | [`SetShadowLightOffset`](#setshadowlightoffset) | - | 1 | yes | no | confirmed (code) |
@@ -497,7 +497,7 @@ SetGamma(level)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `level` | number, truncated to an unsigned integer | Brightness 0-255 (larger values are clamped to 255); stored in the game state (+0x57a4) and applied as level/255 to the light manager. |
+| 1 | `level` | number, truncated to an unsigned integer | Brightness 0-255 (larger values are clamped to 255; the profile screen uses 0-100, 40 by default); stored in the game state (+0x57a4) and added as level/255 to every ambient and directional light. |
 
 **Returns** nothing.
 
@@ -520,9 +520,10 @@ SetGammaOffset(offset)
 
 **Returns** nothing.
 
-Sets a colour offset in the light manager (0x0017ec80), shifting the level's overall colour balance.
+Sets the light manager's colour offset (+0xa0, through 0x0017ec80), added with the brightness to every ambient and
+directional light's colour.
 
-**Notes.** Exactly how the offset enters the lighting is not traced.
+**Notes.** docs/research/lighting.md#colour.
 
 - **Evidence:** confirmed (code) at `0x001b4908`; detail: traced
 - **Wrapper** `0x0037bd30` (registered by `RegisterBindings`); **calls** `0x001b4908` `LightManager_SetColourOffset`
@@ -586,15 +587,16 @@ Creates, changes, switches or removes a dynamic light in the light manager. `glo
 reflected light and ambient light with it.
 
 **Notes.** Long form 0x0017ef20, short form 0x0017f160, both on the light manager at 0x0050cce4. The type mapping to
-RenderWare (0 → 0x80 point, 1 → 0x81 spot, 2 → 1 directional, 3 → 2 ambient) is confirmed (code); the names of p3, group
-and priority are inferred.
+RenderWare (0 → 0x80 point, 1 → 0x81 spot, 2 → 1 directional, 3 → 2 ambient) is confirmed (code), and so are the corona,
+lights and effects arguments (0x0017c508, 0x0017caa8, 0x0017d880; confirmed (runtime) in level99). See
+docs/research/lighting.md#record.
 
 **Overload** (registered first; the wrapper above checks its argument types and calls this one when they do not match):
 The long form, which every script uses (always 14 arguments); the short form is selected only when exactly two numbers
 are passed.
 
 ```lua
-SetLight(light, type, pos, dir, colour, radius, coneAngle, p3, flickerA, flickerB, group, priority, flicker, state) -> number
+SetLight(light, type, pos, dir, colour, radius, coneAngle, coronaHeight, coronaPull, coronaSize, lights, effects, corona, state) -> number
 ```
 
 | # | Argument | Read as | Meaning |
@@ -606,12 +608,12 @@ SetLight(light, type, pos, dir, colour, radius, coneAngle, p3, flickerA, flicker
 | 5 | `colour` | table of 4 numbers (t[1]..t[4]) | Colour `{r, g, b, a}`, components 0-1 (such as `{1, 0.75, 0, 1}`). Written back unchanged. |
 | 6 | `radius` | number (single precision) | Radius in metres for point and spot lights (must not be negative). |
 | 7 | `coneAngle` | number (single precision) | Cone angle for spot lights (must not be negative); the scripts pass 1 for other types. |
-| 8 | `p3` | number (single precision) | Number stored with the light; scripts pass 0. |
-| 9 | `flickerA` | number (single precision) | Flicker parameter, checked to be non-negative when a flicker pattern is set; scripts pass 0. |
-| 10 | `flickerB` | number (single precision) | Second flicker parameter, same rule. |
-| 11 | `group` | number, truncated to an unsigned integer | Integer 0-3 (refused above 3); scripts pass 1. Likely which objects the light affects. |
-| 12 | `priority` | number, truncated to an unsigned integer | Integer 0-32 (refused above 32); scripts pass 0. |
-| 13 | `flicker` | number, truncated to an unsigned integer | Flicker pattern 0-6: 0 steady, 1-6 select a pattern (stored as 0-5). |
+| 8 | `coronaHeight` | number (single precision) | Metres the corona sits above the light (record +0x0c); level99 uses 0 to -1.15. |
+| 9 | `coronaPull` | number (single precision) | Metres the corona is moved towards the camera (+0x10); must not be negative when a corona is set. |
+| 10 | `coronaSize` | number (single precision) | The corona's size in metres (+0x14), also the cull radius of a light with radius 0; same rule. |
+| 11 | `lights` | number, truncated to an unsigned integer | What the light lights, 0-3 (refused above 3): bit 0 objects and humans, bit 1 the world. |
+| 12 | `effects` | number, truncated to an unsigned integer | 0-32 (refused above 32): bit 0 spawns part_light_bugs at the light; bits 1-4 a flicker mode (2 random brightness, 4 random fade). |
+| 13 | `corona` | number, truncated to an unsigned integer | Corona sprite 0-6: 0 none, 1-6 rectangle 0-5 of the lighting sheet. |
 | 14 | `state` | number, truncated to an unsigned integer | 1 creates or leaves the light on, 0 off, 2 removes an existing light. |
 
 **Returns** number: The light's handle (new or existing), or 0 when the arguments were refused or the light was removed.
@@ -626,30 +628,31 @@ Wrapper `0x0037bfb8`; calls `0x0017ef20`.
 ## SetLightFlicker {#setlightflicker}
 
 ```lua
-SetLightFlicker(light, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+SetLightFlicker(light, onTime, onRandom, offTime, offRandom, pause, pauseRandom, burst, burstRandom, flickerTime, dim)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `light` | number, truncated to an unsigned integer | Handle of a light made by `SetLight`. |
-| 2 | `p1` | number, truncated to an unsigned integer | Flicker parameter (the scripts pass 100). |
-| 3 | `p2` | number, truncated to an unsigned integer | Flicker parameter (0). |
-| 4 | `p3` | number, truncated to an unsigned integer | Flicker parameter (100). |
-| 5 | `p4` | number, truncated to an unsigned integer | Flicker parameter. |
-| 6 | `p5` | number, truncated to an unsigned integer | Flicker parameter. |
-| 7 | `p6` | number, truncated to an unsigned integer | Flicker parameter. |
-| 8 | `p7` | number, truncated to an unsigned integer | Flicker parameter. |
-| 9 | `p8` | number, truncated to an unsigned integer | Flicker parameter. |
-| 10 | `p9` | number, truncated to an unsigned integer | Flicker parameter. |
-| 11 | `p10` | number, truncated to an unsigned integer | Flicker parameter. |
+| 2 | `onTime` | number, truncated to an unsigned integer | Blink mode: ms the light stays on (the scripts pass 100). |
+| 3 | `onRandom` | number, truncated to an unsigned integer | Blink mode: up to this many ms more, at random. |
+| 4 | `offTime` | number, truncated to an unsigned integer | Blink mode: ms the light stays dimmed; 0 selects burst mode instead. |
+| 5 | `offRandom` | number, truncated to an unsigned integer | Blink mode: up to this many ms more, at random. |
+| 6 | `pause` | number, truncated to an unsigned integer | Burst mode: ms of steady light between bursts. |
+| 7 | `pauseRandom` | number, truncated to an unsigned integer | Burst mode: up to this many ms more; in blink mode, a first delay when not 0. |
+| 8 | `burst` | number, truncated to an unsigned integer | Burst mode: flickers in a burst. |
+| 9 | `burstRandom` | number, truncated to an unsigned integer | Burst mode: up to this many flickers more. |
+| 10 | `flickerTime` | number, truncated to an unsigned integer | Burst mode: each flicker lasts up to this many ms (random). |
+| 11 | `dim` | number, truncated to an unsigned integer | Brightness in percent: blink mode's dimmed level; burst mode's upper bound of a random level. |
 
 **Returns** nothing.
 
-Sets a light's flicker timing (0x0017d0b0, 16-bit values); does nothing for light 0.
+Makes a light blink (offTime not 0) or flicker in bursts (offTime 0) through 0x0017d0b0; a light with radius 0 becomes a
+sub_flashing_light particle instead. Does nothing for light 0.
 
-**Notes.** Typical calls pass (light, 100, 0, 100, 0, ...), which suggests on/off durations; not traced.
+**Notes.** The modes and timings are on docs/research/lighting.md#flicker.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x0017f1b8`; detail: traced
 - **Wrapper** `0x0037c438` (registered by `RegisterBindings`); **calls** `0x0017f1b8` `Light_SetFlicker`
 - **Used by** 9 of 467 script chunks (163 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

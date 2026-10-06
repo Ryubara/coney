@@ -11,7 +11,7 @@ The pure functions take the walked scripts (`lua4.ChunkFacts` by script name) so
 facts; the `topic_*` functions are the disc readers `refs extract` calls.
 
 Research: docs/research/objects.md, docs/research/ai.md#spawners, docs/research/ai.md#crimes,
-docs/research/world.md#lighting, docs/guides/research-workflow.md#reference-lists.
+docs/research/lighting.md#record, docs/guides/research-workflow.md#reference-lists.
 """
 
 from __future__ import annotations
@@ -151,11 +151,16 @@ LIGHTS = Topic(
         F("swatch", "str", "A swatch of the colour (rendered).", "Swatch"),
         F("radius", "float", "Sixth argument: radius in metres.", "Radius"),
         F("cone", "float", "Seventh argument: a spot light's cone.", "Cone"),
-        F("flicker", "int", "Thirteenth argument: flicker pattern, 0 steady, 1-6 a pattern.", "Flicker"),
+        F(
+            "flicker",
+            "int",
+            "Thirteenth argument: the corona, 0 none, 1-6 a rectangle of the `lighting` sheet.",
+            "Corona",
+        ),
         F(
             "flicker_params",
             "list",
-            "Eighth to tenth arguments: the number stored with the light and the two flicker parameters.",
+            "Eighth to tenth arguments: the corona's height, pull towards the camera and size, in metres.",
         ),
         F(
             "group",
@@ -163,7 +168,7 @@ LIGHTS = Topic(
             "Eleventh argument, 0-3: what the light lights (bit 0 objects, bit 1 the world).",
             "Lights what",
         ),
-        F("priority", "int", "Twelfth argument, 0-32."),
+        F("priority", "int", "Twelfth argument, the effects word: bit 0 light bugs, bits 1-4 a flicker mode."),
         F("state", "int", "Fourteenth argument: 1 on, 0 off, 2 removes the light.", "State"),
         F("script", "str", "The script that makes it (without `.lua`).", "Script"),
     ),
@@ -265,11 +270,12 @@ STARTERS: dict[str, dict[str, Any]] = {
         "source": "the level scripts and global.lua, SetLight",
         "evidence": "confirmed-code",
         "about": "Every light the scripts make with the long form of `SetLight(0, type, pos, dir, colour, radius,\n"
-        "cone, p, flickerA, flickerB, lights, priority, flicker, state)` ([Lighting](../research/world.md#lighting)).\n"
+        "cone, coronaHeight, coronaPull, coronaSize, lights, effects, corona, state)`\n"
+        "([Lighting](../research/lighting.md#record)).\n"
         "`global.lua` builds each level's moonlight, reflected and ambient light from the level's `LightData`;\n"
         "level scripts add their lamps, most kept in a `Lights` table.",
-        "complete": "Every 14-argument `SetLight` call; arguments the script computes show none. What `p` and\n"
-        "`priority` do is not traced.",
+        "complete": "Every 14-argument `SetLight` call; arguments the script computes show none. The corona\n"
+        "parameters and the effects word are not listed.",
     },
     "spawner-states": {
         "title": "Spawner states",

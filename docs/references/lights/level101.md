@@ -5,7 +5,7 @@
 69 of the 5,283 entries of [Lights](../lights.md),
 whose page says what is complete and what each [field](../lights.md#fields) means.
 
-| Name | Type | Position | Direction | Colour | Swatch | Radius | Cone | Flicker | Lights what | State | Script |
+| Name | Type | Position | Direction | Colour | Swatch | Radius | Cone | Corona | Lights what | State | Script |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | <span id="light-level101-1"></span> | `point` | -11.12, -14.93, 4.24 | 0, 0, 0 | 1, 0.835, 0.624, 1 | <span style="display:inline-block;width:2em;height:1em;background:#FFD59F"></span> | 8 | 0 | 0 | 1 | 1 | `level101` |
 | <span id="light-level101-2"></span> | `point` | -25.64, -40.41, 4.24 | 0, 0, 0 | 0.878, 0.992, 1, 1 | <span style="display:inline-block;width:2em;height:1em;background:#E0FDFF"></span> | 10 | 0 | 0 | 1 | 1 | `level101` |

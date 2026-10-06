@@ -654,7 +654,7 @@ constexpr std::array<NativeArg, 3> kArgs_SetGammaRamp{{{"red", A::NumberTable, "
 constexpr std::array<NativeArg, 1> kArgs_SetLevelColour{{{"colour", A::NumberTable, "", 4}}};
 constexpr std::array<NativeArg, 2> kArgs_SetLight{{{"light", A::Handle, "", 0}, {"state", A::Integer, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SetLight{R::Number};
-constexpr std::array<NativeArg, 11> kArgs_SetLightFlicker{{{"light", A::Handle, "", 0}, {"p1", A::Integer, "", 0}, {"p2", A::Integer, "", 0}, {"p3", A::Integer, "", 0}, {"p4", A::Integer, "", 0}, {"p5", A::Integer, "", 0}, {"p6", A::Integer, "", 0}, {"p7", A::Integer, "", 0}, {"p8", A::Integer, "", 0}, {"p9", A::Integer, "", 0}, {"p10", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 11> kArgs_SetLightFlicker{{{"light", A::Handle, "", 0}, {"onTime", A::Integer, "", 0}, {"onRandom", A::Integer, "", 0}, {"offTime", A::Integer, "", 0}, {"offRandom", A::Integer, "", 0}, {"pause", A::Integer, "", 0}, {"pauseRandom", A::Integer, "", 0}, {"burst", A::Integer, "", 0}, {"burstRandom", A::Integer, "", 0}, {"flickerTime", A::Integer, "", 0}, {"dim", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_SetMotionAlpha{{{"alpha", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_SetShadowColor{{{"r", A::Number, "", 0}, {"g", A::Number, "", 0}, {"b", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_SetShadowLightOffset{{{"x", A::Number, "", 0}, {"y", A::Number, "", 0}, {"z", A::Number, "", 0}}};
