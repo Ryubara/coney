@@ -53,10 +53,11 @@ class TuningScope {
 
 } // namespace
 
-TEST_CASE("a player starts with Human_MakePlayer's flags, the combo rule and the health floor", "[human][script]") {
+TEST_CASE("a player starts with Human_MakePlayer's flags and the combo rule, not demi-god", "[human][script]") {
     const FightCharacter character;
     Fight fight(character, 30.0F);
     CHECK(fight.human().flags() == flag::kPlayerFlags);
+    CHECK_FALSE(fight.human().hasFlag(flag::kDemiGod));
     Human other(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind());
     other.setFighterProfile(
         coney::human::FighterProfile{.player = false, .powerClass = combat::kPlayerPowerClass, .health = 600});
@@ -81,7 +82,7 @@ TEST_CASE("a demi-god's hit stops at the floor fraction, which makes it a god", 
     const TuningScope scope;
     const FightCharacter character;
     Fight fight(character, 30.0F);
-    REQUIRE(fight.human().hasFlag(flag::kDemiGod));
+    fight.human().setFlag(flag::kDemiGod, true);
     fight.human().setHealthPercent(30.0F);
     REQUIRE(fight.human().fighter().health().value() == 270);
     // 100 would take 270 to 170: the floor (0.25 of 900) holds it at 225, and god mode follows.
@@ -96,13 +97,13 @@ TEST_CASE("a demi-god's hit stops at the floor fraction, which makes it a god", 
 
     // Without the flag the hit takes it all; a different floor (HuSetDemiGodMode's fraction) holds elsewhere.
     Fight mortal(character, 30.0F);
-    mortal.human().setFlag(flag::kDemiGod, false);
     mortal.human().setHealthPercent(30.0F);
     mortal.human().takeHit(hitOf(12, 100, 0x0a, 0x800));
     mortal.run("", 1);
     CHECK(mortal.human().fighter().health().value() == 170);
     combat::combatTuning().healthFloor = 0.1F;
     Fight lower(character, 30.0F);
+    lower.human().setFlag(flag::kDemiGod, true);
     lower.human().setHealthPercent(30.0F);
     lower.human().takeHit(hitOf(12, 200, 0x0a, 0x800));
     lower.run("", 1);

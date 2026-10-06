@@ -48,10 +48,10 @@ inline constexpr std::uint64_t kDemiGod = 0x20000000000;
 /// Never picked as a target (`HuSetNoTarget`, `HuSetNoAutoLock`; `0x00279410`).
 inline constexpr std::uint64_t kNoTarget = 0x100000000000;
 
-/// The flags a player's human starts with: what `Human_MakePlayer` sets (kFastClimber, kMadePlayer, kRageAllowed), the
-/// combo rule kComboStrength and kDemiGod, both seen on the player at runtime (docs/research/combat.md#human-flags).
-/// **Coney choice**: kDemiGod is a player's from the start, so a scene with no level script keeps the health floor;
-/// the level scripts set it again (`HuSetDemiGodMode`).
-inline constexpr std::uint64_t kPlayerFlags = kFastClimber | kMadePlayer | kComboStrength | kRageAllowed | kDemiGod;
+/// The flags a player's human starts with: what `Human_MakePlayer` sets (kFastClimber, kMadePlayer, kRageAllowed) and
+/// the combo rule kComboStrength (docs/research/combat.md#human-flags). kDemiGod, also seen on the player at runtime,
+/// is the level scripts' (`HuSetDemiGodMode`): a mode whose scripts never set it (the Rumble arena) lets the player be
+/// knocked out.
+inline constexpr std::uint64_t kPlayerFlags = kFastClimber | kMadePlayer | kComboStrength | kRageAllowed;
 
 } // namespace coney::human::flag
