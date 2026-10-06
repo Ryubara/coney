@@ -18,7 +18,8 @@ In short: **there is no health bar.** The player panel at the top left is the ch
 the rage colour, a thin **rage meter** under it, the **score** and the **money**, with up to four **item counters**
 (flash, spray paint, handcuffs, keys) beside the money. It shows when something on it changes (or SELECT is pressed),
 stays 2 s and fades out over 1 s. Hints sit in a dark box at the bottom left; objective and announcement messages
-appear at the same place and hide the hint box while they show. The radar is a disc at the bottom right.
+appear at the same place and hide the hint box while they show. The radar is a disc of the level's map at the bottom
+right; there is no full-screen map. START opens the pause menu ([Pause menu](pause.md)).
 
 ## Original structure
 
@@ -56,7 +57,10 @@ the profile-manager screens, in a file not yet named ([Source map](source-map.md
 | `0x001c8b08` / `0x001c9028` | `ScrollIn_Queue` / `ScrollIn_Update` | queued messages at HUD `+0x8dd0` | confirmed (code) |
 | `0x001dad88` | `HUD_SetObjective` | `HUDSetObjective` | confirmed (code) |
 | `0x001b7330` | `InstArrow_Update` | the instruction arrow at HUD `+0x134a0` | confirmed (code) |
+| `0x001c3de0` | `Radar_Setup` | the radar's batches and map texture | confirmed (code) |
 | `0x001c60b0` | `Radar_Render` | the radar disc ([GUI](gui.md#radar-icons) has the blips) | confirmed (code) |
+| `0x0017bc28` / `0x0017b8a8` | `Im2D_DrawTexturedDisc` / `_Ring` | a textured disc, and a ring with a fading edge | confirmed (code) |
+| `0x0020e6f8` | `TargetPanel_Update` | the target's name and bar | confirmed (code) |
 | `0x00221108` | `Human_ReportBarsToHUD` | sends health and power fractions to the HUD, which ignores them | confirmed (code) |
 
 ## Data
@@ -148,7 +152,7 @@ flag `0x200000` (`0x00228168`, not traced). Confirmed (code) at `0x00214138`; th
 | handcuff and key counters | `(35, 83, 188, 255)` blue | `0x00212840` |
 | money and score text | white `(255, 255, 255, 255)` | `0x00212840` |
 | hint box background | `(0, 0, 0, 128)` | `0x0050eb90` |
-| radar disc | `(143, 143, 143, 255)` | `0x001c60b0` |
+| radar disc | `(191, 191, 191, 240)`, or blue `(100, 120, 200, 240)` ([below](#the-radar-on-screen)) | `0x0050e9e8` |
 
 In a level numbered 100 or more (`0x0041d160`: the level record's `+0x04` ≥ 100) player 1's two rage colours are
 swapped. Confirmed (code). The meter's red, white and grey confirmed (runtime).
@@ -314,11 +318,11 @@ with command icons, `HUDShowWarCommand`). Confirmed (code) for the structure; th
 
 `HUD_SetObjective(slot, text, mode, silent, ms)` (`0x001dad88`), confirmed (code):
 
-- The objective lines are kept in a **checklist** (the object at `0x0062e790`, `ChecklistMessageHUD.cpp`, two slots of
-  `0x360` bytes at `+0x20d0`, `0x001dd0b8`); mode 0 clears slot `slot` (`0x001dd178`) and sets the text in it
-  (`0x001a4d20`), mode 1 clears it, mode 2 marks it (`0x001a5070(item, text, 1)`, inferred: ticks it off), and mode 3
-  sets and marks it with no message. Slot 2 goes to a third list at `+0x2790`. Where the checklist is shown is not
-  traced (inferred: the pause menu).
+- The objective lines are kept in the **pause menu's checklists** (the menu at `0x0062e790`, `ChecklistMessageHUD.cpp`,
+  lists of `0x360` bytes at `+0x20d0` and `+0x2430`, `0x001dd0b8`); mode 0 clears slot `slot` (`0x001dd178`) and sets
+  the text in it (`0x001a4d20`), mode 1 clears it, mode 2 marks it (`0x001a5070(item, text, 1)`, inferred: ticks it
+  off), and mode 3 sets and marks it with no message. Slot 2 goes to a third list at `+0x2790`. The lists are the
+  pause menu's Objectives screen: current, bonus and overview ([Pause menu](pause.md#the-items-screens)).
 - **Mode 0, not silent:** a **scroll-in message** is queued: a header (an objective icon, `<YOBJ>` for slot 0 at
   `<SIZE 0.8>`, `<BOBJ>` for slot 1, the HUD colour slot 4 or 6 of `CfgHUDColor`, then the HUD string `0xe5` or `0xe6`)
   followed by the text, at **(0.025, 0.88)**, size 0.05, for **`ms`** milliseconds (default 8,000), with the
@@ -465,19 +469,109 @@ size confirmed (runtime). The enable flag is HUD `+0x134a4`.
 
 ### The radar on screen
 
-Each radar (HUD `+0x15d0`, player 1 `+0x3f10`) is drawn by `Radar_Render` (`0x001c60b0`) as two textured discs of the
-map, the second 0.825 of the first (`0x0050e9dc`), in `(143, 143, 143, 255)`, centred at its position `+0x2930` in
-**overlay-camera space at depth 1.0**. `HUD_Update` sets that position every frame: with one player **(0.51, -0.31)**
-(`0x0050d428`, `0x0050d430`), which projects to 85.2 % across and 81 % down. The map's zoom eases toward the player's
-speed (up to 12 m/s) at rate `0.0004 × ms` per frame. Confirmed (code) at `0x001af010`, `0x001c60b0`; **confirmed
-(runtime):** the disc's centre at 0.851 and 0.812 of the screen, about 0.173 of the width and 0.224 of the height
-across (110 × 100 px of 640 × 448). The disc's size formula (`0.9 × 0.19 ×` a value from the camera's slot `+0xc4`)
-is not worked out.
+Each radar (HUD `+0x15d0`, player 1 `+0x3f10`) is drawn by `Radar_Render` (`0x001c60b0`) as a textured **disc of the
+level's map** turned so that the player's view points up, centred at its position `+0x2930` in **overlay-camera space
+at depth 1.0**. `HUD_Update` sets that position every frame: with one player **(0.51, -0.31)** (`0x0050d428`,
+`0x0050d430`), which projects to 85.2 % across and 81 % down. Confirmed (code) at `0x001af010`, `0x001c60b0`;
+**confirmed (runtime):** the disc's centre at 0.851 and 0.812 of the screen. The blips over it are on
+[GUI: the radar](gui.md#radar-icons).
+
+**The map texture.** `Radar_Setup` (`0x001c3de0`) takes the current level record's world name (`+0x39`,
+[Front end](frontend.md#the-level-table)), and when the file manager knows a resource named `"%u"` of its CRC-32 it
+creates a sprite batch over the **sprite sheet named after the world** (`ResourceMgr_CreateInstance`, depth 10,000,
+[GUI](gui.md#resource-instances)) and keeps its slot at radar `+0x94`; otherwise `+0x94` is `0xff` and no disc is
+drawn. The sheet's texture is the map. Confirmed (code); **confirmed (runtime)**, `level99`: radar `+0x94` = 24, and
+resource slot 24 holds the sheet `0xe36542ae` (the CRC-32 of `level99`), resident, two rectangles. The same set-up keeps
+a `part_page0` batch at `+0x96` for the blips. Which WAD or pack file holds a world's map sheet is not traced.
+
+**Where the map is read.** The level record's three floats map world metres to the texture
+(`W_GameState + 0x14d4 + index × 0x84`, set by `CfgLevelName` arguments 13-15, [binding](../references/bindings/config.md#cfglevelname)):
+`+0x6c` an x offset, `+0x70` a y offset and `+0x74` a scale in metres per texture width. The disc's centre in the
+texture is
+
+```text
+u = (x + offsetX) / scale        v = (offsetY − y) / scale
+```
+
+for the radar's world position `(x, y)` (radar `+0x70`, `+0x74`: the player's; the world's `z` is up), and its radius in
+texture units is `zoom / scale`. Confirmed (code) at `0x001c60b0`; runtime, `level99`: offsets −1.33 and 61.55, scale
+95, the player at (75.6, 41.2), so the disc showed the texture around (0.78, 0.21).
+
+**Zoom.** Radar `+0x20` is the radius shown, in metres. Each frame it moves toward a target by `k = min(0.0004 × ms,
+1)` of the difference (`ms` the game time since the last frame): target = (`rest` + (`fast` − `rest`) × min(speed, 12)
+/ 12) × `zoomScale`, with `rest` = `+0x28`, `fast` = `+0x24`, the player's speed in m/s and `zoomScale` = `+0x2920`
+(`HUDSetRadarZoomScale`, 1.0 by default). Confirmed (code); runtime, `level99`: `rest` 50 m, `fast` 75 m, scale 1.0, so
+the disc shows 50 m around a standing player and 75 m around one running at 12 m/s.
+
+**Rotation.** The texture coordinates turn by −(the camera's heading) (`0x00335d98` of the matrix at radar `+0x80`),
+the screen positions start at π/2, so the map turns under a fixed disc with the view direction up. Confirmed (code);
+that `+0x80` holds the active camera's matrix is inferred.
+
+**Size and shape.** The disc's outer radius in overlay units is
+
+```text
+R = 0.9 × 0.19 × w / 2        (0x0050e9bc = 0.9; w = the third value the active camera's slot +0xc4 returns)
+Rx = R × fx,  Ry = R × fy
+```
+
+with the video-mode factors `fx`, `fy` below. It is drawn in two parts (`Im2D` helpers, 32 segments): a filled disc
+out to **0.825 R** (`0x0017bc28`, alpha of the colour below) and a ring from 0.825 R to R whose alpha falls from 240
+to 0 (`0x0017b8a8`), a soft edge. Confirmed (code). That `w` is the overlay view's width (1.595 in the default mode,
+[Graphics](graphics.md#2d-drawing)) is inferred from the runtime size: it gives R = 0.136, so Rx = 60 and Ry = 56
+pixels of 640 × 448 with the solid part 50 × 46; measured (runtime): the solid part about 103 px wide, the whole disc
+with its soft edge about 110 × 100 px.
+
+| Device flags ([Graphics](graphics.md#video-mode)) | fx | fy |
+| --- | --- | --- |
+| `0x01` set, `0x20` clear, 4:3 (the default) | 1.1 | 1.0 |
+| `0x01` set, `0x20` clear, 16:9 (`0x04`) | 0.8 | 1 + 1.5 × (a − 1) |
+| `0x01` and `0x20` set, 4:3 | 1.0 | 1 + 1.5 × (a − 1) |
+| `0x01` and `0x20` set, 16:9 | 0.85 | 1.0 |
+| `0x01` clear, 4:3 | 1.0 | 1.3 |
+| `0x01` clear, 16:9 | 0.85 | 1.5 |
+
+`a` is the device's slot `+0xc4` value (1.0 unless changed; not traced). Confirmed (code) at `0x001c60b0`.
+
+**Colour.** The disc is drawn in one of three RGBA colours (`0x0050e9e8`): state 0 **(191, 191, 191, 240)**, state 1
+**(100, 120, 200, 240)** (blue), state 2 (100, 50, 50, 140) (no caller sets it); a change of state blends from
+the old colour to the new over 500 ms. The state (radar `+0x38`, the previous `+0x3c`, the change's time `+0x40`) is
+set by `0x001c4500`, which only `Human_SnapToGround` (`0x0023eab8`) calls for the player, with 1 or 0 by what the player
+stands on (`0x001b26a8` / `0x001b2790`; the condition is not traced). Confirmed (code). The `(143, 143, 143, 255)`
+written at `0x001c60b0` is a stack word the drawing does not read.
 
 **On and off:** `HUDTurnOnRadar` / `HUDTurnOffRadar` set radar `+0x04` and the HUD's `+0x177b0`. During a screen fade
 (`0x005fdeb8 + 0x1d4` or `+0x1d8`) both radars are turned off; when no fade runs and HUD `+0x177ac` is set, `HUD_Update`
 turns them back on if `+0x177b0` is 0, so a radar turned off by a script stays off only while `+0x177ac` is 0. Confirmed
 (code); who sets `+0x177ac` is not traced.
+
+### The target panel
+
+While the player has a target (human `+0xc8`, the one attacks and grabs aim at) that is not an ally (`0x00222a90`) and
+not down (`0x00227dd8`), `TargetPanel_Update` (`0x0020e6f8`, called from `0x00210e48`) shows a panel for it: its name
+and a bar. Each player has two panel slots (`0x0063f240` + player × `0xd00` + slot × `0x680`); a new target takes a
+free slot or the older one, so the last two targets can show side by side. Confirmed (code); not seen at runtime.
+
+- **Layout** (per player, `0x0050f6a0` + player × `0x80`, GUI units): base (0.085, 0.14) for player 0 and (0.81,
+  0.14) for player 1; the second slot 0.22 to the right (player 0) or left (player 1, `+0x70`). The name is a markup
+  text (`"<SIZE 1.0><COLOR ..."` at `0x005596e0` with the target's name) at base + (-0.09, 0.06), aligned left (player
+  0) or right (player 1); two sprites at base + (-0.06, 0.04) with sizes 0.08 and 0.065, the first tinted
+  `(133, 74, 172, 255)`; the bar at base + (-0.13, 0.06) offset by (0.062, 0), 0.24 × 0.018, scaled by the camera's
+  distance factor (the active camera's slot `+0x1fc` × 0.75; × 1.15 when the device's slot `+0xb8` is set; × 0.7 in
+  progressive mode, `0x001c22b0`).
+- **The bar** (`0x001a1be8`): red `(255, 16, 16)` and green `(115, 183, 11)`. When `0x00223e20(target)` is false
+  its fill is the target's health / maximum (`0x00222e40` / `0x00222e60`). When it is true (what it tests is not
+  traced) the fill is a percentage (`0x00222ef0`, 0-100) in three bands, each filling over its points with the previous
+  band's colour behind it: below 40 `(37, 37, 37)`, 40-70 `(128, 100, 0)`, 70 and above `(76, 122, 27)`.
+- **Fade:** each slot keeps its last update time; 2,000 ms after it (`0x0050f9e4`) the slot fades out over 1,000 ms
+  (`0x0050f9e8`) and is freed below 10 % alpha, or at once when the target dies or its fill drops under 0.01.
+
+### The ring under the player
+
+**Confirmed (runtime):** while the player panel shows (after SELECT, and for its 2 s + 1 s fade), a flat dark ring lies
+on the ground around the player's feet, with a short orange-red arc at its front edge; with the panel hidden it is
+gone. What draws it, and what the arc measures (health, power or rage), is not traced: it is not drawn by the player
+panel's `Render` (`0x00213290`) nor by the radar, and the HUD's health and power entry points (`0x001b2430`,
+`0x001b2460`) return at once ([The player panel](#the-player-panel)).
 
 ### Showing and hiding
 
@@ -512,6 +606,10 @@ None yet.
 - Which event raises each of the game's own hints (the 19 callers of `HintBox_QueueGameHint`).
 - What the input object at HUD `+0x18e60` is, whose message 1 shows the next caption (`0x001cb340`).
 - Who sets HUD `+0x177ac` (the radar's automatic return) and `+0x177a8` (the centred announcement while hidden).
-- The radar disc's size formula (the camera slot `+0xc4` value) and the map texture it draws.
+- The radar: which file holds each world's map sheet; the active camera's slot `+0xc4` third value (inferred: the
+  overlay width); what the player stands on for the blue disc colour.
+- What draws the ring under the player (and its arc), and when it shows.
+- The target panel's two sprites and the caller `0x00210e48`'s conditions; a runtime look at the panel.
 - Human state flag `0x200000`, which turns the banner blue-grey.
-- The layouts of the other video modes (16:9, progressive, PAL) that `0x00211ef8`, `0x001af010` and `0x001cdc80` apply.
+- The layouts of the other video modes (16:9, progressive, PAL) that `0x00211ef8`, `0x001af010` and `0x001cdc80` apply
+  (the radar's are [above](#the-radar-on-screen)).
