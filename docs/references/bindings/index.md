@@ -124,9 +124,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 638 |
+| confirmed (code) | 639 |
 | confirmed (runtime) | 0 |
 | inferred | 282 |
-| speculative | 36 |
+| speculative | 35 |
 | detail: traced | 369 |
 | detail: brief | 587 |

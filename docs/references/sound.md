@@ -12,10 +12,11 @@ never the sounds. Gang music is in [Gangs](gangs.md); the lines humans say by ki
 
 !!! info "What is complete"
 
-    Every configured sound, ambient sound, emitter and literal speech line name is listed. The two
-    numbers of a music track are not traced. Speech lines whose names are built at run time are missing;
-    names marked as not in the sound list may live in a level's own sound bank, or be mistakes in the
-    scripts.
+    Every configured sound, ambient sound, emitter and literal speech line name is listed. A music
+    track's two numbers are its bar length in milliseconds and its volume
+    ([Sound](../research/sound.md#music)). Speech lines whose names are built at run time are missing;
+    names marked as not in the sound list are on no bank either, so they are not on the disc
+    ([Sound](../research/sound.md#speech-lines-by-name)).
 
 2,124 entries. Data: `research/references/sound.yaml`.
 

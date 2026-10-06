@@ -63,7 +63,7 @@
     - {addr: 0x00113438}
   args:
     - {name: track, lua: string, desc: "Music track name (such as \"music/<name>\")."}
-    - {name: time, lua: number, ctype: unsigned, desc: "A time in milliseconds stored with the track (the configuration uses about 1,890-3,780); inferred to be its fade or beat length."}
+    - {name: time, lua: number, ctype: unsigned, desc: "The track's bar length in milliseconds (1,548-3,780 in the configuration): the music player starts and cross-fades tracks on its bar boundaries and fades over whole bars (confirmed (code) at 0x0010dfe0); the values are four beats at the tempo in the track names (inferred)."}
     - {name: volume, lua: number, ctype: float, desc: "The track's volume, 0-1 (clamped)."}
     - {name: arg4, lua: number, ctype: float, desc: "A float read but not passed on by 0x00113438 (the configuration never passes it)."}
   description: >-
@@ -110,8 +110,9 @@
   args:
     - {name: level, lua: number, ctype: float, desc: "Volume factor (0-1) other sounds are lowered to; the scripts use 0.2 and 0.35."}
   description: >-
-    Sets a ducking level stored at audio manager +0x3faac (what 'NI' ducks is not traced).
-  evidence: speculative
+    Sets the factor (default 0.2) that directional sounds not owned by a player are lowered to while a non-duckable
+    sound plays (audio manager +0x3faac; inferred: the lines of HuSpeakNI).
+  evidence: inferred
   depth: brief
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
 
@@ -122,9 +123,10 @@
   args:
     - {name: bank, lua: string, desc: "Name of a sound bank (such as a level's or a boss's bank)."}
   description: >-
-    Loads an extra sound bank for the level, unless the audio manager is in a state that forbids it, in which case it
-    loads the bank "none".
-  evidence: inferred
+    Loads the named sound bank into sound RAM now (the one bank resident at a time, replacing the level's), or, while
+    the audio manager defers bank loads (+0x3fa58, inferred: during level loading), records it as the bank to load
+    once loading ends in place of the default "sound".
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false}
 

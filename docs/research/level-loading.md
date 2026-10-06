@@ -349,8 +349,8 @@ where not stated.
 9. Camera: `0x0011e878(0.17)`; set the camera's draw distance to its far clip.
 10. **Preload**: `WorldManager_Preload(500.0, worldManager, budget, 0, "<name>_<section>")` with a budget of 30,000 ms,
     or 15,000 ms when the record's `+0x04` is below 101 ([below](#preload)).
-11. Audio, game state and script-system bookkeeping; start the level's music, or the track `sound` when the level's
-    track is `none`; `0x00161378`; service the file manager.
+11. Audio, game state and script-system bookkeeping; load the level's sound bank: the one a script asked for, else
+    `sound` ([Sound](sound.md#banks)); `0x00161378`; service the file manager.
 12. Intro movie `L<n>_IN` (`n` = record `+0x04`) when step 2 reserved memory.
 13. Call the pending Lua function `0x005e6d88` if one is set.
 14. Debug only: when the auto-advance flag `0x0050c7bc` is set, ask for the next section or level at once
@@ -390,7 +390,7 @@ What happens between choosing STORY and controlling Rembrandt, in order. The fro
    behind Rembrandt (inferred), and `WorldManager_Preload` loads `level99_1.pak` and streams the world within the
    camera's draw distance for up to 15 s (record `+0x04` = 99, below 101). The preload services the file manager, so
    the checkpoint script requested in step 3 may arrive here (inferred; not traced).
-6. **Music, movie, start** (steps 11-13): the level's music; the intro movie `L99_IN`; then the start callback
+6. **Bank, movie, start** (steps 11-13): the sound bank `sound`; the intro movie `L99_IN`; then the start callback
    `StartAmbient`, which at checkpoint 1 runs `SuperRunScene(IntroScene)`, the in-engine intro (the scene is defined
    in `level99_combat.lua`, so that script must have run by now).
 7. **The first frame of play**: mode 1's `Update` ([A frame of play](#a-frame-of-play)). The intro scene holds the

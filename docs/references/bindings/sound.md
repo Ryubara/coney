@@ -30,11 +30,11 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SndCfgMusicInfo`](#sndcfgmusicinfo) | - | 1 | yes | no | confirmed (code) |
 | [`SndEnableMusicDuck`](#sndenablemusicduck) | - | 1 | no | no | inferred |
 | [`SndFadeOut`](#sndfadeout) | - | 0 | no | no | inferred |
-| [`SndLoadBank`](#sndloadbank) | - | 19 | no | no | inferred |
+| [`SndLoadBank`](#sndloadbank) | - | 19 | no | no | confirmed (code) |
 | [`SndLoadMatrix`](#sndloadmatrix) | - | 2 | yes | no | confirmed (code) |
 | [`SndSetCommandSoundPercent`](#sndsetcommandsoundpercent) | - | 1 | yes | no | confirmed (code) |
 | [`SndSetListener`](#sndsetlistener) | - | 20 | yes | yes | confirmed (code) |
-| [`SndSetNIDuck`](#sndsetniduck) | - | 2 | no | no | speculative |
+| [`SndSetNIDuck`](#sndsetniduck) | - | 2 | no | no | inferred |
 | [`SndSetPitchMod`](#sndsetpitchmod) | - | 1 | no | no | inferred |
 | [`SoundCfgInterfaceSound`](#soundcfginterfacesound) | - | 1 | yes | no | confirmed (code) |
 | [`SoundDisableCombatMusic`](#sounddisablecombatmusic) | - | 1 | no | no | confirmed (code) |
@@ -520,7 +520,7 @@ SndCfgMusicInfo(track, time, volume, arg4)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `track` | string | Music track name (such as "music/<name>"). |
-| 2 | `time` | number, truncated to an unsigned integer | A time in milliseconds stored with the track (the configuration uses about 1,890-3,780); inferred to be its fade or beat length. |
+| 2 | `time` | number, truncated to an unsigned integer | The track's bar length in milliseconds (1,548-3,780 in the configuration): the music player starts and cross-fades tracks on its bar boundaries and fades over whole bars (confirmed (code) at 0x0010dfe0); the values are four beats at the tempo in the track names (inferred). |
 | 3 | `volume` | number (single precision) | The track's volume, 0-1 (clamped). |
 | 4 | `arg4` | number (single precision) | A float read but not passed on by 0x00113438 (the configuration never passes it). |
 
@@ -589,10 +589,11 @@ SndLoadBank(bank)
 
 **Returns** nothing.
 
-Loads an extra sound bank for the level, unless the audio manager is in a state that forbids it, in which case it loads
-the bank "none".
+Loads the named sound bank into sound RAM now (the one bank resident at a time, replacing the level's), or, while the
+audio manager defers bank loads (+0x3fa58, inferred: during level loading), records it as the bank to load once loading
+ends in place of the default "sound".
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x001133d0`; detail: brief
 - **Wrapper** `0x00371130` (registered by `RegisterBindings`); **calls** `0x001133d0`
 - **Used by** 19 of 467 script chunks (19 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -676,9 +677,10 @@ SndSetNIDuck(level)
 
 **Returns** nothing.
 
-Sets a ducking level stored at audio manager +0x3faac (what 'NI' ducks is not traced).
+Sets the factor (default 0.2) that directional sounds not owned by a player are lowered to while a non-duckable sound
+plays (audio manager +0x3faac; inferred: the lines of HuSpeakNI).
 
-- **Evidence:** speculative; detail: brief
+- **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003710f8` (registered by `RegisterBindings`); **calls** `0x001133b0`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
