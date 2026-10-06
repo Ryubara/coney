@@ -95,6 +95,7 @@ add_library(coney_core STATIC
     scripting/camera_bindings.cpp
     scripting/config_strings.cpp
     scripting/gang_bindings.cpp
+    scripting/human_bindings.cpp
     scripting/level_bindings.cpp
     scripting/lighting_bindings.cpp
     scripting/lua_chunk.cpp
@@ -174,6 +175,7 @@ target_sources(coney_core PRIVATE
     human/climb.cpp
     human/human.cpp
     human/human_animator.cpp
+    human/human_script.cpp
     human/humans.cpp
     human/locomotion_gate.cpp
     human/jump.cpp
@@ -181,6 +183,7 @@ target_sources(coney_core PRIVATE
     human/pair_placement.cpp
     human/fighter.cpp
     human/fighter_grab.cpp
+    human/fighter_script.cpp
     human/fighter_victim.cpp
     human/player.cpp
     human/player_trace.cpp
@@ -212,6 +215,8 @@ target_sources(coney_core PRIVATE
     ai/route_follower.cpp
     ai/route_planner.cpp
     ai/scripted_brains.cpp
+    ai/scripted_goals.cpp
+    ai/scripted_humans.cpp
     ai/tactic.cpp
     ai/tactic_crowd.cpp
     ai/track_human_goal.cpp

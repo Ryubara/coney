@@ -34,7 +34,8 @@ constexpr int kFlagArrival = 8;
 
 ScriptedBrains::ScriptedBrains(Brains& brains, const world_objects::WorldFlags& flags,
                                world_objects::ObjectLocator locate)
-    : m_owner(&brains), m_flags(&flags), m_locate(std::move(locate)) {
+    : m_owner(&brains), m_flags(&flags), m_locate(std::move(locate)),
+      m_humans(std::make_unique<ScriptedHumans>(*this)) {
     m_owner->gangs().setScripts(this);
 }
 

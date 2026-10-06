@@ -1315,6 +1315,16 @@ line to it walkable (always without a planner) and keeps the leader's height. Th
 still (their Process is not traced). Both of a crowd reaction's clip actions are `PlayAnimAction`. The dealer rolls
 dirty at Start; his wary scan looks for members of enemy gangs.
 
+**The character bindings' goals and gangs** (`src/ai/scripted_humans.*`, `src/ai/scripted_goals.*`). `GoalBackoff`
+(`0x9b`), `GoalBumLogic` (`0x4f`) and `GoalMoveToUseFlag` (4) are built from their constructors; **stand-ins** for their
+unread Process: the back-off walks straight away from the other human while nearer than its distance, the bum stands
+still and never calls back, and the use-flag goal walks to the flag as `GoalMoveToFlag` does, facing its heading, then
+stands there (the flag reserved until the goal ends). `GangInvincible` sets god mode on the members and on later
+ones; `GangSetTargetable` sets each member's targetable byte, kept on the human. `GangAddSpawner` keeps up to four
+spawners per gang that do not spawn; `GangClearWanted` has no wanted state to clear; `GangClearResponders` deletes
+non-police gangs named `Responder<n>`. `BrSetThugWantsWeapon` and `SetInterrogateParam` are kept only.
+`CfgSetDefaultFollowSlotSet` writes its sets into every formation, those made later too.
+
 **Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired moves)
 is not built, and neither are grabs and tackles between two humans that would call for it; the pattern read at Start;
 the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; line of sight (the move's sight checks);
@@ -1328,6 +1338,9 @@ dealer's run to a flag, gestures, buy clip and icons; the other tactics; the att
 the run-stop.
 
 ## Open questions {#open-questions}
+
+- What `GoalBackoff`, `GoalBumLogic` and `GoalMoveToUseFlag` do each update (Process), and the use-flag goal's two
+  floats; what `GangInvincible` sets on a member (`0x0016a000`).
 
 - The per-kind time `0x00231590` that sets the target's `+0x1ec`, and the spacing bytes `+0x14a`, `+0x14b`.
 - The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.

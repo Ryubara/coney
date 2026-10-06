@@ -147,6 +147,7 @@
     global.lua calls it on GangWarriors. It also calls the script system's find-function slot, so a script callback
     may run (which one is not traced).
   usage: {chunks: 11, calls: 14, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: GangClearResponders
   wrapper: 0x0035f668
@@ -158,6 +159,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 17, calls: 17, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: GangCanSaveAllys
   wrapper: 0x0035f688
@@ -201,6 +203,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 4, calls: 7, boot: false, mission1: true, result_used: false, levels: [31, 83]}
+  coney: implemented
 
 - name: GangSetAttackable
   wrapper: 0x0035f790
@@ -359,6 +362,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 3, calls: 17, boot: false, mission1: true, result_used: false, levels: [31]}
+  coney: implemented
 
 - name: GangEnableAttackStrategies
   wrapper: 0x00373308
@@ -796,6 +800,7 @@
     of the numeric arguments is inferred from the stored fields and the scripts' values. Default per-spawner timers
     (10, 20, 30, 60 ...) are set at creation.
   usage: {chunks: 37, calls: 221, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GangIsASpawner
   wrapper: 0x00374108

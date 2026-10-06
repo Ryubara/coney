@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "ai/script_services.h"
+#include "human/human_flags.h"
 
 namespace coney::ai {
 
@@ -94,6 +95,7 @@ int Gangs::create(int kind, std::string_view name) {
     gang.m_enemies = 0;
     gang.m_friends = 0;
     gang.m_suspended = false;
+    gang.m_invincible = false;
     gang.m_members.clear();
     gang.m_tactic.reset();
     gang.m_handlers.clear();
@@ -144,6 +146,10 @@ void Gangs::addMember(int id, Brain& brain) {
     }
     gang->m_members.push_back(&brain);
     brain.setGang(gang);
+    // An invincible gang's new member is invincible too (0x00166308).
+    if (gang->m_invincible) {
+        brain.human().setFlag(human::flag::kGod, true);
+    }
 }
 
 void Gangs::removeMember(Brain& brain) {
@@ -220,6 +226,25 @@ void Gangs::flush(int id) {
 void Gangs::suspend(int id, bool suspended) {
     if (Gang* gang = find(id); gang != nullptr) {
         gang->m_suspended = suspended;
+    }
+}
+
+void Gangs::setInvincible(int id, bool on) {
+    Gang* gang = find(id);
+    if (gang == nullptr) {
+        return;
+    }
+    gang->m_invincible = on;
+    for (Brain* member : gang->m_members) {
+        member->human().setFlag(human::flag::kGod, on);
+    }
+}
+
+void Gangs::setTargetable(int id, bool on) {
+    if (const Gang* gang = find(id); gang != nullptr) {
+        for (Brain* member : gang->m_members) {
+            member->human().script().targetable = on;
+        }
     }
 }
 

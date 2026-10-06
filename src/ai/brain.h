@@ -126,6 +126,11 @@ class Brain {
 
     // --- The scripts' hold (docs/research/ai.md#scripted, docs/research/ai.md#handlers).
 
+    /// Whether a thug goes for the weapons lying in the level (`+0x265`, `BrSetThugWantsWeapon`). **Coney stand-in**:
+    /// Coney has no weapons lying about yet, so it is only kept. True until set (**Coney choice**: the scripts turn it
+    /// off in their set-up).
+    [[nodiscard]] bool wantsWeapon() const { return m_wantsWeapon; }
+    void setWantsWeapon(bool wants) { m_wantsWeapon = wants; }
     /// The script handle of its human (human vtable `+0x2c`): what its goals' callbacks and its gang's handlers pass;
     /// 0 (Coney's `NilHandle`) until the scripts name it.
     [[nodiscard]] double handle() const { return m_handle; }
@@ -419,6 +424,7 @@ class Brain {
     int m_characterClass = -1;        // the human's class
     bool m_dead = false;              // +0x09
     bool m_suspended = false;         // +0x0a
+    bool m_wantsWeapon = true;        // +0x265
     Gang* m_gang = nullptr;           // +0x20c
     Formation* m_following = nullptr; // +0x212
     PadControl m_padControl;

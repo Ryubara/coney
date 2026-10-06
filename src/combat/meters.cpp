@@ -28,6 +28,8 @@ Health::Health(int value, int maximum) : m_value(std::clamp(value, 0, maximum)),
 
 float Health::fraction() const { return static_cast<float>(m_value) / static_cast<float>(m_maximum); }
 
+void Health::set(int value) { m_value = std::clamp(value, 0, m_maximum); }
+
 int Health::apply(int damage) {
     const int taken = std::clamp(damage, 0, m_value);
     m_value -= taken;
@@ -74,9 +76,14 @@ void PowerMeter::setHurt(bool hurt, float factor) {
     m_value = std::min(m_value, m_maximum);
 }
 
-float PowerMeter::fraction() const { return static_cast<float>(m_value) / static_cast<float>(m_maximum); }
+float PowerMeter::fraction() const {
+    return m_unlimited ? 1.0F : static_cast<float>(m_value) / static_cast<float>(m_maximum);
+}
 
 int PowerMeter::spend(float fraction) {
+    if (m_unlimited) {
+        return 0;
+    }
     const auto cost = static_cast<int>(std::lround(fraction * static_cast<float>(m_maximum)));
     const int spent = std::clamp(cost, 0, m_value);
     m_value -= spent;
@@ -92,7 +99,7 @@ void PowerMeter::update(std::uint64_t nowMs, bool draining, float drainPerSecond
         m_carry = 0.0F;
         m_draining = draining;
     }
-    if (draining) {
+    if (draining && !m_unlimited) {
         m_value = std::max(0, m_value - wholePoints(drainPerSecond, elapsed, m_carry));
         return;
     }
@@ -110,6 +117,29 @@ RageMeter::RageMeter(int maximum, int gainPercent, std::uint64_t startMs)
 }
 
 void RageMeter::set(int value) { m_value = std::clamp(value, 0, m_maximum); }
+
+void RageMeter::fill(std::uint64_t nowMs, int holdMs) {
+    m_value = m_maximum;
+    m_carry = 0.0F;
+    m_holdUntilMs = nowMs + static_cast<std::uint64_t>(std::max(holdMs, 0));
+}
+
+void RageMeter::setFraction(float fraction, std::uint64_t nowMs) {
+    m_value = std::clamp(static_cast<int>(fraction * static_cast<float>(m_maximum)), 0, m_maximum);
+    m_carry = 0.0F;
+    m_lastMs = nowMs;
+}
+
+void RageMeter::setLocked(bool locked, std::uint64_t nowMs) {
+    if (!locked && m_locked) {
+        m_carry = 0.0F;
+        m_lastMs = nowMs;
+        if (m_raging) {
+            m_holdUntilMs = 0;
+        }
+    }
+    m_locked = locked;
+}
 
 int RageMeter::add(float points, const CombatTuning& tuning, std::uint64_t nowMs, RageGain gain) {
     if (m_raging || points <= 0.0F) {
@@ -141,6 +171,10 @@ bool RageMeter::start(std::uint64_t nowMs) {
 void RageMeter::update(std::uint64_t nowMs, const CombatTuning& tuning) {
     const std::uint64_t elapsed = nowMs > m_lastMs ? nowMs - m_lastMs : 0;
     m_lastMs = nowMs;
+    // A locked meter stays where it is.
+    if (m_locked) {
+        return;
+    }
     if (m_raging) {
         // Rage drains the meter and ends with it.
         m_value = std::max(0, m_value - wholePoints(tuning.rageDrainPerSecond, elapsed, m_carry));

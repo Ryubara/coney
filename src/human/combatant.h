@@ -63,6 +63,9 @@ class Combatant {
     /// A human standing at `attacker` started an attack (event `0x10`, sent by `Attack_Start` and the square path,
     /// docs/research/ai.md#block); a brain counts the ones its range and field of view take in. Nothing by default.
     virtual void announceAttack(anim::Vec3 /*attacker*/) {}
+    /// Whether an attacker's target search may pick it (`0x00279410`): not for a human with flag `0x100000000000`
+    /// (`HuSetNoTarget`) or whose gang was made untargetable (brain `+0x120`, `GangSetTargetable`). True by default.
+    [[nodiscard]] virtual bool targetable() const { return true; }
     /// The passive target behind this view, which a grab or a tackle can hold; null for a human that cannot be held
     /// yet (**Coney choice**: a grab between two humans is not built, so only the sandbox's targets are grabbed).
     [[nodiscard]] virtual TargetHuman* passive() { return nullptr; }

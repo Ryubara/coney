@@ -11,98 +11,98 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 102 implemented, 2 partial, 111 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 163 implemented, 2 partial, 50 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`AddAnimCallback`](character.md#addanimcallback) | Characters | traced | confirmed (code) | implemented |
 | [`DelAnimCallback`](character.md#delanimcallback) | Characters | traced | confirmed (code) | implemented |
-| [`EnableCommand`](character.md#enablecommand) | Characters | traced | confirmed (code) | not implemented |
-| [`EnableCommands`](character.md#enablecommands) | Characters | traced | confirmed (code) | not implemented |
-| [`HuAttachSpinningIcon`](character.md#huattachspinningicon) | Characters | traced | confirmed (code) | not implemented |
-| [`HuChangePlayerGang`](character.md#huchangeplayergang) | Characters | traced | confirmed (code) | not implemented |
+| [`EnableCommand`](character.md#enablecommand) | Characters | traced | confirmed (code) | implemented |
+| [`EnableCommands`](character.md#enablecommands) | Characters | traced | confirmed (code) | implemented |
+| [`HuAttachSpinningIcon`](character.md#huattachspinningicon) | Characters | traced | confirmed (code) | implemented |
+| [`HuChangePlayerGang`](character.md#huchangeplayergang) | Characters | traced | confirmed (code) | implemented |
 | [`HuCreate`](character.md#hucreate) | Characters | traced | confirmed (code) | implemented |
-| [`HuDropWeapon`](character.md#hudropweapon) | Characters | traced | confirmed (code) | not implemented |
-| [`HuGetGangType`](character.md#hugetgangtype) | Characters | traced | confirmed (code) | not implemented |
-| [`HuGetHealthPercent`](character.md#hugethealthpercent) | Characters | traced | confirmed (code) | not implemented |
-| [`HuGetHeldObject`](character.md#hugetheldobject) | Characters | traced | confirmed (code) | not implemented |
-| [`HuIsAlive`](character.md#huisalive) | Characters | traced | confirmed (code) | not implemented |
-| [`HuIsAPlayer`](character.md#huisaplayer) | Characters | traced | confirmed (code) | not implemented |
-| [`HuIsArrested`](character.md#huisarrested) | Characters | traced | confirmed (code) | not implemented |
-| [`HuLockPad`](character.md#hulockpad) | Characters | traced | confirmed (code) | not implemented |
-| [`HuPlaceItemInHand`](character.md#huplaceiteminhand) | Characters | traced | confirmed (code) | not implemented |
-| [`HuRemoveSpinningIcon`](character.md#huremovespinningicon) | Characters | traced | confirmed (code) | not implemented |
-| [`HuRevive`](character.md#hurevive) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetArrested`](character.md#husetarrested) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetCarriedItem`](character.md#husetcarrieditem) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetDemiGodMode`](character.md#husetdemigodmode) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetFastClimber`](character.md#husetfastclimber) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetFullRage`](character.md#husetfullrage) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetGodMode`](character.md#husetgodmode) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetHealthPercent`](character.md#husethealthpercent) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetIncreasedReact`](character.md#husetincreasedreact) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetKeepWeapon`](character.md#husetkeepweapon) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetLockedRage`](character.md#husetlockedrage) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetLookTarget`](character.md#husetlooktarget) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetMoney`](character.md#husetmoney) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetMugCallback`](character.md#husetmugcallback) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetNormalMode`](character.md#husetnormalmode) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetNoTarget`](character.md#husetnotarget) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetNoThrowWeapon`](character.md#husetnothrowweapon) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetPreventRage`](character.md#husetpreventrage) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetPushable`](character.md#husetpushable) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetRageFrac`](character.md#husetragefrac) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetReducedReact`](character.md#husetreducedreact) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetTireless`](character.md#husettireless) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetUngrabbable`](character.md#husetungrabbable) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetUngroundable`](character.md#husetungroundable) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetUnstunnable`](character.md#husetunstunnable) | Characters | traced | confirmed (code) | not implemented |
+| [`HuDropWeapon`](character.md#hudropweapon) | Characters | traced | confirmed (code) | implemented |
+| [`HuGetGangType`](character.md#hugetgangtype) | Characters | traced | confirmed (code) | implemented |
+| [`HuGetHealthPercent`](character.md#hugethealthpercent) | Characters | traced | confirmed (code) | implemented |
+| [`HuGetHeldObject`](character.md#hugetheldobject) | Characters | traced | confirmed (code) | implemented |
+| [`HuIsAlive`](character.md#huisalive) | Characters | traced | confirmed (code) | implemented |
+| [`HuIsAPlayer`](character.md#huisaplayer) | Characters | traced | confirmed (code) | implemented |
+| [`HuIsArrested`](character.md#huisarrested) | Characters | traced | confirmed (code) | implemented |
+| [`HuLockPad`](character.md#hulockpad) | Characters | traced | confirmed (code) | implemented |
+| [`HuPlaceItemInHand`](character.md#huplaceiteminhand) | Characters | traced | confirmed (code) | implemented |
+| [`HuRemoveSpinningIcon`](character.md#huremovespinningicon) | Characters | traced | confirmed (code) | implemented |
+| [`HuRevive`](character.md#hurevive) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetArrested`](character.md#husetarrested) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetCarriedItem`](character.md#husetcarrieditem) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetDemiGodMode`](character.md#husetdemigodmode) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetFastClimber`](character.md#husetfastclimber) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetFullRage`](character.md#husetfullrage) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetGodMode`](character.md#husetgodmode) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetHealthPercent`](character.md#husethealthpercent) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetIncreasedReact`](character.md#husetincreasedreact) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetKeepWeapon`](character.md#husetkeepweapon) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetLockedRage`](character.md#husetlockedrage) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetLookTarget`](character.md#husetlooktarget) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetMoney`](character.md#husetmoney) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetMugCallback`](character.md#husetmugcallback) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetNormalMode`](character.md#husetnormalmode) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetNoTarget`](character.md#husetnotarget) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetNoThrowWeapon`](character.md#husetnothrowweapon) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetPreventRage`](character.md#husetpreventrage) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetPushable`](character.md#husetpushable) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetRageFrac`](character.md#husetragefrac) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetReducedReact`](character.md#husetreducedreact) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetTireless`](character.md#husettireless) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetUngrabbable`](character.md#husetungrabbable) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetUngroundable`](character.md#husetungroundable) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetUnstunnable`](character.md#husetunstunnable) | Characters | traced | confirmed (code) | implemented |
 | [`HuShutUp`](character.md#hushutup) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSpeak`](character.md#huspeak) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSpeakNI`](character.md#huspeakni) | Characters | traced | confirmed (code) | not implemented |
-| [`HuTeleportNearHuman`](character.md#huteleportnearhuman) | Characters | traced | confirmed (code) | not implemented |
-| [`HuUseAnim`](character.md#huuseanim) | Characters | traced | confirmed (code) | not implemented |
-| [`SetDynamicAnimation`](character.md#setdynamicanimation) | Characters | traced | confirmed (code) | not implemented |
+| [`HuTeleportNearHuman`](character.md#huteleportnearhuman) | Characters | traced | confirmed (code) | implemented |
+| [`HuUseAnim`](character.md#huuseanim) | Characters | traced | confirmed (code) | implemented |
+| [`SetDynamicAnimation`](character.md#setdynamicanimation) | Characters | traced | confirmed (code) | implemented |
 | [`TeleportToFlag`](character.md#teleporttoflag) | Characters | traced | confirmed (code) | implemented |
-| [`WCEnableAllCommands`](character.md#wcenableallcommands) | Characters | traced | confirmed (code) | not implemented |
-| [`WCIssueCommand`](character.md#wcissuecommand) | Characters | traced | confirmed (code) | not implemented |
+| [`WCEnableAllCommands`](character.md#wcenableallcommands) | Characters | traced | confirmed (code) | implemented |
+| [`WCIssueCommand`](character.md#wcissuecommand) | Characters | traced | confirmed (code) | implemented |
 | [`ActLookAt`](ai.md#actlookat) | AI | traced | confirmed (code) | implemented |
-| [`BrClearBackoff`](ai.md#brclearbackoff) | AI | traced | confirmed (code) | not implemented |
+| [`BrClearBackoff`](ai.md#brclearbackoff) | AI | traced | confirmed (code) | implemented |
 | [`BrDead`](ai.md#brdead) | AI | traced | confirmed (code) | implemented |
 | [`BrFlush`](ai.md#brflush) | AI | traced | confirmed (code) | implemented |
 | [`BrSetFollowSlot`](ai.md#brsetfollowslot) | AI | traced | confirmed (code) | implemented |
 | [`BrSetFollowSlotSet`](ai.md#brsetfollowslotset) | AI | traced | confirmed (code) | implemented |
 | [`BrSetNumFollowSlots`](ai.md#brsetnumfollowslots) | AI | traced | confirmed (code) | implemented |
-| [`BrSetThugWantsWeapon`](ai.md#brsetthugwantsweapon) | AI | traced | confirmed (code) | not implemented |
+| [`BrSetThugWantsWeapon`](ai.md#brsetthugwantsweapon) | AI | traced | confirmed (code) | implemented |
 | [`BrSuspend`](ai.md#brsuspend) | AI | traced | confirmed (code) | implemented |
 | [`GoalAddressPerson`](ai.md#goaladdressperson) | AI | traced | confirmed (code) | implemented |
-| [`GoalBackoff`](ai.md#goalbackoff) | AI | traced | confirmed (code) | not implemented |
-| [`GoalBumLogic`](ai.md#goalbumlogic) | AI | traced | confirmed (code) | not implemented |
+| [`GoalBackoff`](ai.md#goalbackoff) | AI | traced | confirmed (code) | implemented |
+| [`GoalBumLogic`](ai.md#goalbumlogic) | AI | traced | confirmed (code) | implemented |
 | [`GoalDealer`](ai.md#goaldealer) | AI | traced | confirmed (code) | implemented |
 | [`GoalFight`](ai.md#goalfight) | AI | traced | confirmed (code) | implemented |
 | [`GoalJoinAnimation`](ai.md#goaljoinanimation) | AI | traced | confirmed (code) | implemented |
 | [`GoalJoinCinematic`](ai.md#goaljoincinematic) | AI | traced | confirmed (code) | implemented |
 | [`GoalJoinFixedScene`](ai.md#goaljoinfixedscene) | AI | traced | confirmed (code) | implemented |
 | [`GoalMoveToFlag`](ai.md#goalmovetoflag) | AI | traced | confirmed (code) | implemented |
-| [`GoalMoveToUseFlag`](ai.md#goalmovetouseflag) | AI | traced | confirmed (code) | not implemented |
+| [`GoalMoveToUseFlag`](ai.md#goalmovetouseflag) | AI | traced | confirmed (code) | implemented |
 | [`GoalPlayDynAnimation`](ai.md#goalplaydynanimation) | AI | traced | confirmed (code) | implemented |
 | [`GoalTrackHuman`](ai.md#goaltrackhuman) | AI | traced | confirmed (code) | implemented |
-| [`SetInterrogateParam`](ai.md#setinterrogateparam) | AI | traced | confirmed (code) | not implemented |
+| [`SetInterrogateParam`](ai.md#setinterrogateparam) | AI | traced | confirmed (code) | implemented |
 | [`TacticClear`](ai.md#tacticclear) | AI | traced | confirmed (code) | implemented |
 | [`TacticCrowd`](ai.md#tacticcrowd) | AI | traced | confirmed (code) | implemented |
-| [`GangAddSpawner`](gang.md#gangaddspawner) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangAddSpawner`](gang.md#gangaddspawner) | Gangs | traced | confirmed (code) | implemented |
 | [`GangBrDead`](gang.md#gangbrdead) | Gangs | traced | confirmed (code) | implemented |
 | [`GangBrFlush`](gang.md#gangbrflush) | Gangs | traced | confirmed (code) | implemented |
-| [`GangClearResponders`](gang.md#gangclearresponders) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangClearWanted`](gang.md#gangclearwanted) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangClearResponders`](gang.md#gangclearresponders) | Gangs | traced | confirmed (code) | implemented |
+| [`GangClearWanted`](gang.md#gangclearwanted) | Gangs | traced | confirmed (code) | implemented |
 | [`GangCreate`](gang.md#gangcreate) | Gangs | traced | confirmed (code) | implemented |
 | [`GangDelete`](gang.md#gangdelete) | Gangs | traced | confirmed (code) | implemented |
-| [`GangInvincible`](gang.md#ganginvincible) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangInvincible`](gang.md#ganginvincible) | Gangs | traced | confirmed (code) | implemented |
 | [`GangMakeEnemies`](gang.md#gangmakeenemies) | Gangs | traced | confirmed (code) | implemented |
 | [`GangMakeFriends`](gang.md#gangmakefriends) | Gangs | traced | confirmed (code) | implemented |
 | [`GangSetMsgHandler`](gang.md#gangsetmsghandler) | Gangs | traced | confirmed (code) | implemented |
-| [`GangSetTargetable`](gang.md#gangsettargetable) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetTargetable`](gang.md#gangsettargetable) | Gangs | traced | confirmed (code) | implemented |
 | [`GangSetThreatResponse`](gang.md#gangsetthreatresponse) | Gangs | traced | confirmed (code) | implemented |
 | [`GangSuspend`](gang.md#gangsuspend) | Gangs | traced | confirmed (code) | implemented |
 | [`CamEnable`](camera.md#camenable) | Cameras | traced | confirmed (code) | implemented |
@@ -218,15 +218,15 @@ leave part of its effect open; its notes say which.
 | [`CfgFollowCamera`](config.md#cfgfollowcamera) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgInventoryCallback`](config.md#cfginventorycallback) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgMultiplayerJoin`](config.md#cfgmultiplayerjoin) | Configuration (Cfg) | traced | confirmed (code) | implemented |
-| [`CfgPlayerMugging`](config.md#cfgplayermugging) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgRageHandlers`](config.md#cfgragehandlers) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgPlayerMugging`](config.md#cfgplayermugging) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgRageHandlers`](config.md#cfgragehandlers) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSetDatabaseSizes`](config.md#cfgsetdatabasesizes) | Configuration (Cfg) | traced | confirmed (code) | implemented |
-| [`CfgSetDefaultFollowSlotSet`](config.md#cfgsetdefaultfollowslotset) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgSetEnemySpotting`](config.md#cfgsetenemyspotting) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgSetGlobalTimeToLive`](config.md#cfgsetglobaltimetolive) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgSetDefaultFollowSlotSet`](config.md#cfgsetdefaultfollowslotset) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgSetEnemySpotting`](config.md#cfgsetenemyspotting) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgSetGlobalTimeToLive`](config.md#cfgsetglobaltimetolive) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSetStatValue`](config.md#cfgsetstatvalue) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSetSteroTheftHandler`](config.md#cfgsetsterothefthandler) | Configuration (Cfg) | traced | confirmed (code) | implemented |
-| [`CfgSetWarriorSpotting`](config.md#cfgsetwarriorspotting) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgSetWarriorSpotting`](config.md#cfgsetwarriorspotting) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSubtitles`](config.md#cfgsubtitles) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`random`](util.md#random) | Utilities | traced | confirmed (code) | implemented |
 | [`ToInt`](util.md#toint) | Utilities | traced | confirmed (code) | implemented |

@@ -72,7 +72,8 @@ CommandTables CommandTables::street() {
     return tables;
 }
 
-CommandId CommandMatcher::update(std::uint16_t buttons, const CommandTables& tables, int historyHoldSamples) {
+CommandId CommandMatcher::update(std::uint16_t buttons, const CommandTables& tables, int historyHoldSamples,
+                                 std::uint64_t disabled) {
     // Take the sample: the edges, then each button's hold count (and, for one that came up, how long it was held).
     const auto previous = m_buttons;
     m_buttons = buttons;
@@ -84,11 +85,12 @@ CommandId CommandMatcher::update(std::uint16_t buttons, const CommandTables& tab
         m_holdCounts.at(bit) = held ? m_holdCounts.at(bit) + 1 : 0;
     }
 
-    // Match the tables in order; every match overwrites the command so far.
+    // Match the tables in order; every match overwrites the command so far. A disabled command's entries are skipped.
     m_command = command::kNone;
     for (const Trigger trigger : kMatchOrder) {
         for (const CommandEntry& entry : tables.table(trigger)) {
-            if (matches(trigger, entry, historyHoldSamples)) {
+            const bool off = entry.command < 64 && ((disabled >> entry.command) & 1U) != 0;
+            if (!off && matches(trigger, entry, historyHoldSamples)) {
                 m_command = entry.command;
             }
         }

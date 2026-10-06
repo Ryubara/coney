@@ -86,6 +86,10 @@ void GameplayMode::enter() {
         m_scenesBefore = m_context.scenes;
         m_context.scenes = m_scenes.get();
     }
+    // The characters' rules the configuration set (the rage handlers, the formations' default slots).
+    if (m_context.state != nullptr) {
+        m_scripted->humanHost().applyRules(m_context.state->characters);
+    }
     // The last level's objects are gone, and their handlers and boxes with them.
     if (m_context.messages != nullptr) {
         m_context.messages->clear();
@@ -228,6 +232,7 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     m_scripts.setTime(nowMs);
     if (m_scripted) {
         m_scripted->runAnimCallbacks();
+        m_scripted->humanHost().runRageHandlers();
     }
     updateBoxes(nowMs);
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());

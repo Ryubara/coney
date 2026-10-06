@@ -112,9 +112,11 @@ class CommandTables {
 class CommandMatcher {
   public:
     /// Takes one sample's held buttons and returns its command (command::kNone when nothing matches); call it once
-    /// per update. `historyHoldSamples` is CombatTuning::historyHoldSamples.
+    /// per update. `historyHoldSamples` is CombatTuning::historyHoldSamples. A command whose bit is set in `disabled`
+    /// (bit n for id n, `EnableCommand`'s per-pad mask) is never matched.
     /// @orig 0x00147940 Commands_Match (unknown)
-    CommandId update(std::uint16_t buttons, const CommandTables& tables, int historyHoldSamples);
+    CommandId update(std::uint16_t buttons, const CommandTables& tables, int historyHoldSamples,
+                     std::uint64_t disabled = 0);
 
     /// The last update's command.
     [[nodiscard]] CommandId command() const { return m_command; }

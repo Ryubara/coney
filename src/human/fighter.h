@@ -17,6 +17,7 @@
 #include "combat/rage_awards.h"
 #include "human/combatant.h"
 #include "human/human_animator.h"
+#include "human/human_flags.h"
 #include "human/locomotion.h"
 #include "human/target_human.h"
 #include "human/turn_and_slide.h"
@@ -164,6 +165,28 @@ class Fighter {
     [[nodiscard]] const Combatant* lockTarget() const;
     /// Whether it fights as a player (FighterProfile::player).
     [[nodiscard]] bool player() const { return m_player; }
+
+    // The human flag word (human `+0xe0`, human/human_flags.h): what the scripts switch on a human and combat reads.
+
+    /// The flags; a player's start as flag::kPlayerFlags, any other human's as 0.
+    [[nodiscard]] std::uint64_t flags() const { return m_flags; }
+    [[nodiscard]] bool hasFlag(std::uint64_t bit) const { return (m_flags & bit) != 0; }
+    /// Replaces the flags.
+    void setFlags(std::uint64_t flags) { m_flags = flags; }
+    /// Sets (`on`) or clears the bits of `bits`.
+    void setFlag(std::uint64_t bits, bool on) { m_flags = on ? (m_flags | bits) : (m_flags & ~bits); }
+
+    // What the scripts do to a fighter (docs/references/bindings/character.md).
+
+    /// `HuRevive`: back on its feet with full health; a stun, the ground and a reaction end, the idle plays.
+    /// @orig 0x002377f8 Human_Revive (unknown)
+    void revive(HumanAnimator& animator);
+    /// `HuSetNormalMode`: a grab it holds or is held in ends, a stun ends, rage ends; with `full` also a human out of
+    /// health or down gets back up with at least 1 health and the idle plays. **Coney's reading** of the summary
+    /// (docs/references/bindings/character.md#husetnormalmode): fire, wounds, slow motion and held objects are not in
+    /// Coney, and the state machine's restart is the idle.
+    /// @orig 0x0023a210 Human_SetNormalMode (unknown)
+    void setNormal(HumanAnimator& animator, bool full);
     /// The grabbing player's movement: with the hold standing still (no move playing) and the stick beyond
     /// CombatTuning::grabTurnStick, turns `heading` towards the stick's heading `stickHeading` + 180° (the grabber's
     /// back to the stick) by combat::grabTurnStep() and returns the pair's backward walk (m/s, world axes); zero
@@ -243,6 +266,9 @@ class Fighter {
     static void playBlock(const FighterInput& input, HumanAnimator& animator);
     // Lands a hit of attack `animId` and `damage`, and gives the rage it earns.
     void landHit(int animId, int damage, const FighterInput& input);
+    // Gives the rage hit `animId` earns (`isThrow`: the throw bonus), only to a human that may rage (flag 0x2000000,
+    // `Human_AddRage`).
+    void earnRage(int animId, std::uint64_t nowMs, bool isThrow = false);
     // Remembers the clip playing at the end of the update and its time (the pair's moments, the duck's window).
     void noteClip(const HumanAnimator& animator);
     // Keeps the target or drops it (gone, out of health, down, or too far without L1 or a hold), and lets L1 pick one.
@@ -314,7 +340,8 @@ class Fighter {
     void escapeGrab(int clip, HumanAnimator& animator);
 
     const combat::AnimRangeList* m_ranges;
-    bool m_player = true; // FighterProfile::player
+    bool m_player = true;      // FighterProfile::player
+    std::uint64_t m_flags = 0; // the human flag word (+0xe0)
     combat::PlayerCombat m_combat;
     combat::CombatOutput m_last;
     TargetHuman* m_held = nullptr;

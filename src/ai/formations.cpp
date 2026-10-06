@@ -3,7 +3,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <limits>
+#include <span>
+#include <utility>
 
 #include "ai/brain.h"
 #include "ai/route_planner.h"
@@ -62,6 +65,13 @@ void Formation::setSlot(int slot, float x, float y, int set, std::uint64_t nowMs
     FollowSlot& entry = m_sets[static_cast<std::size_t>(set)][static_cast<std::size_t>(slot)];
     entry.offset = {toUnits(x), toUnits(y), 0};
     plan(nowMs);
+}
+
+void Formation::setDefaultSlot(int slot, float x, float y, int set) {
+    if (slot < 0 || slot >= static_cast<int>(kFormationSlots) || set < 0 || set >= static_cast<int>(kFormationSets)) {
+        return;
+    }
+    m_sets[static_cast<std::size_t>(set)][static_cast<std::size_t>(slot)].offset = {toUnits(x), toUnits(y), 0};
 }
 
 bool Formation::join(Brain& follower) {
@@ -251,7 +261,28 @@ Formation* Formations::of(Brain& leader, bool make) {
         return nullptr;
     }
     m_formations.push_back(std::make_unique<Formation>(leader));
+    // The pool's records keep the default slots the configuration wrote.
+    for (std::size_t set = 0; set < m_defaults.size(); ++set) {
+        for (std::size_t slot = 0; slot < m_defaults.at(set).size(); ++slot) {
+            const auto [x, y] = m_defaults.at(set).at(slot);
+            m_formations.back()->setDefaultSlot(static_cast<int>(slot), x, y, static_cast<int>(set));
+        }
+    }
     return m_formations.back().get();
+}
+
+void Formations::setDefaults(int set, std::span<const std::pair<float, float>> slots) {
+    if (set < 0 || set >= static_cast<int>(kFormationSets)) {
+        return;
+    }
+    const std::size_t count = std::min(slots.size(), kFormationSlots);
+    m_defaults.at(static_cast<std::size_t>(set))
+        .assign(slots.begin(), slots.begin() + static_cast<std::ptrdiff_t>(count));
+    for (const std::unique_ptr<Formation>& formation : m_formations) {
+        for (std::size_t slot = 0; slot < count; ++slot) {
+            formation->setDefaultSlot(static_cast<int>(slot), slots[slot].first, slots[slot].second, set);
+        }
+    }
 }
 
 void Formations::update(std::uint64_t nowMs) {

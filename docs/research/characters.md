@@ -1440,6 +1440,16 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   and the play mode loads it from the Character List. Disc check: `level2` checkpoint 3 is drawn as `warr_cl` (Cleon),
   `level3` checkpoint 4 as `warr_sn` (Snow), `level99` checkpoint 1 as `warr_re_cv`. Coney's choice: a type with no
   `CfgChar` call or a model the Character List lacks is drawn as Rembrandt, with a log line.
+- **The scripts' hold on a human** ([character bindings](../references/bindings/character.md)): the flag word
+  `+0xe0` is `human::flag` (`src/human/human_flags.h`), kept by the fighter and across a respawn; combat reads the
+  bits [Combat](combat.md#human-flags) lists, `0x2` gates the running climb and `0x4000000` keeps stamina full. A
+  player starts with `0x2`, `0x4`, `0x400`, `0x2000000` and (**Coney choice**, for scenes with no level script)
+  `0x20000000000`. The rest of what the scripts set (arrest, pad lock, disabled commands, money, carried item,
+  callbacks, icon, held object, head-look, animation overrides) is `human::ScriptState` (`src/human/script_state.h`);
+  the bindings are `src/scripting/human_bindings.*`, acting through `ai::ScriptedHumans`. **Stand-ins**: an arrested
+  human only stands still; the icon, the object in the hand, the head-look and `HuUseAnim`'s clip are kept, not
+  drawn or played; `HuSetPushable` is kept (bodies do not push each other); `HuDropWeapon` lets go of any object;
+  `HuChangePlayerGang` and `WCIssueCommand` only note the gang and command.
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 
@@ -1486,6 +1496,9 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   described above (counts only).
 
 ## Open questions
+
+- Where god mode (`0x10`) is tested: Coney drops the damage and still plays the reaction.
+- What the arrest (state `0x20000`) plays and allows, and which human states `HuIsAlive`'s mask `0x180050000` names.
 
 - **Clip selection** (answered): [Clip selection](#clip-selection), with the task system on
   [Animation](formats/animation.md#animation-tasks); the playback rate is never scaled with the speed. Still open:

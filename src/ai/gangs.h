@@ -56,6 +56,8 @@ class Gang {
     [[nodiscard]] std::uint32_t friendMask() const { return m_friends; }
     /// Suspended (`+0xd4`): its members' brains skip their update.
     [[nodiscard]] bool suspended() const { return m_suspended; }
+    /// Invincible (`+0xd8`, `GangInvincible`): its members, and those who join later, are gods (human flag `0x10`).
+    [[nodiscard]] bool invincible() const { return m_invincible; }
     /// The members (`+0x48`), in the order they joined.
     [[nodiscard]] const std::vector<Brain*>& members() const { return m_members; }
     /// The tactic (`+0x40`); null for none.
@@ -89,6 +91,7 @@ class Gang {
     std::uint32_t m_enemies = 0;
     std::uint32_t m_friends = 0;
     bool m_suspended = false;
+    bool m_invincible = false;
     std::vector<Brain*> m_members;
     std::unique_ptr<Tactic> m_tactic;
     std::map<int, std::string> m_handlers;
@@ -152,6 +155,15 @@ class Gangs {
     /// `GangSuspend`: the suspended flag.
     /// @orig 0x0016a220 Gang_Suspend (unknown)
     void suspend(int id, bool suspended);
+    /// `GangInvincible`: every current member made invincible or mortal, and the setting kept for those who join
+    /// later. **Coney's reading**: invincible is god mode (human flag `0x10`); what the original sets on each member
+    /// (`0x0016a000`) is not described.
+    /// @orig 0x0016a260 Gang_SetInvincible (unknown)
+    void setInvincible(int id, bool on);
+    /// `GangSetTargetable`: whether the current members can be targeted (brain `+0x120`, kept on the human:
+    /// human::ScriptState::targetable). Later members keep their own.
+    /// @orig 0x0016bac0 Gang_SetTargetable (unknown)
+    void setTargetable(int id, bool on);
     /// `GangSetMsgHandler`: the Lua function `function` handles message `message` (empty clears it).
     /// @orig 0x00164bb8 Gang_SetMessageHandler (unknown)
     void setMessageHandler(int id, int message, std::string function);

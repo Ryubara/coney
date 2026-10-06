@@ -43,6 +43,8 @@ combat::ReactionInput Victim::reactionInput(const IncomingHit& hit, const Victim
     input.side = combat::victimSide(frame.position, frame.heading, hit.attacker);
     input.attackerAbove = hit.attacker.z - frame.position.z;
     input.victimFlag400 = frame.flag400;
+    input.victimFlag200 = frame.flag200;
+    input.victimFlag80 = frame.flag80;
     input.victimHurt = frame.hurt;
     input.attackerFlag200000 = hit.attackerFlag200000;
     return input;
@@ -54,7 +56,8 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     const auto clip = static_cast<std::uint32_t>(reaction.animId);
     m_lastReaction = reaction.animId;
     ++m_reactions;
-    const bool stuns = (hit.flags & combat::kRangeFlagStun) != 0 || stunned();
+    // A victim with flag 0x100 is never stunned.
+    const bool stuns = !frame.unstunnable && ((hit.flags & combat::kRangeFlagStun) != 0 || stunned());
     // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise.
     if (knocksDown(animator, reaction.animId)) {
         animator.playCombat(one(clip), kGroundedIdle, AnimState::Hold);

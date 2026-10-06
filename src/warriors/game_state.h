@@ -8,6 +8,7 @@
 
 #include "core/game_random.h"
 #include "core/language.h"
+#include "warriors/character_rules.h"
 #include "warriors/level_table.h"
 #include "warriors/player_state.h"
 #include "warriors/profile_record.h"
@@ -80,6 +81,7 @@ struct GameState {
     GameRandom random;             ///< The random table's index (`0x006eb880`) and the table.
     std::string startGameCallback; ///< `0x005e6d88`: the Lua function `InitLevel` calls when the level is ready.
     RumbleSetup rumble;            ///< The Rumble menu's set-up.
+    CharacterRules characters; ///< The characters' rules the scripts set (`CfgPlayerMugging`, `CfgRageHandlers`...).
     /// The unlockables manager (`0x006fe998`) as the Rumble menu asks it: a fresh profile's until Coney has saves.
     Unlockables unlockables = Unlockables::freshProfile();
     /// The inventories, statistics, unlockables' records, stopwatch, crime fields and Lua pad handlers the bindings act

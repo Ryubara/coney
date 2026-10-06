@@ -19,8 +19,10 @@
 #include "human/combatant.h"
 #include "human/fighter.h"
 #include "human/human_animator.h"
+#include "human/human_flags.h"
 #include "human/locomotion.h"
 #include "human/locomotion_gate.h"
+#include "human/script_state.h"
 #include "human/stamina.h"
 #include "human/target_human.h"
 #include "human/victim.h"
@@ -203,7 +205,7 @@ class Human final : public Combatant {
     /// What the locomotion gate reads of the human now: the record's `+0x08` and state code, airborne, held.
     [[nodiscard]] GateInput gateInput() const;
     /// Whether the stick does not move the human now: combat's states hold the body (Fighter::holdsMovement()), it is
-    /// busy (stickBusy()) or the stick's velocity is gated (stickVelocityGated()).
+    /// busy (stickBusy()), the stick's velocity is gated (stickVelocityGated()) or it is arrested.
     [[nodiscard]] bool stickHeld() const;
     /// The climb in progress, if any.
     [[nodiscard]] const std::optional<ClimbProbe>& climb() const { return m_climbProbe; }
@@ -238,6 +240,50 @@ class Human final : public Combatant {
     void setStepSeconds(float seconds) { m_stepSeconds = seconds; }
     /// The characters' step its updates advance by.
     [[nodiscard]] float stepSeconds() const { return m_stepSeconds; }
+    /// Whether a target search may pick it: not with flag::kNoTarget, nor when its gang was made untargetable.
+    [[nodiscard]] bool targetable() const override {
+        return m_script.targetable && !m_fighter.hasFlag(flag::kNoTarget);
+    }
+
+    // The scripts' hold on the human (docs/references/bindings/character.md): its flags and state, and what they do to
+    // it. Each acts at once; the flags and the state keep across spawn().
+
+    /// The flag word (human `+0xe0`, human/human_flags.h), kept by its fighter.
+    [[nodiscard]] std::uint64_t flags() const { return m_fighter.flags(); }
+    [[nodiscard]] bool hasFlag(std::uint64_t bit) const { return m_fighter.hasFlag(bit); }
+    /// Sets (`on`) or clears the bits of `bits`.
+    void setFlag(std::uint64_t bits, bool on) { m_fighter.setFlag(bits, on); }
+    /// The scripts' state on it.
+    [[nodiscard]] ScriptState& script() { return m_script; }
+    [[nodiscard]] const ScriptState& script() const { return m_script; }
+    /// The game time its updates have reached, whole ms (combat's clock).
+    [[nodiscard]] std::uint64_t nowMs() const { return m_updates * 1000 / 30; }
+    /// Alive and up (`HuIsAlive`): health left and not arrested. **Coney's reading** of the down states
+    /// (`0x180050000`, not all researched): a knockdown that it gets up from still counts as alive.
+    /// @orig 0x00235628 Human_IsAlive (unknown)
+    [[nodiscard]] bool alive() const { return !m_fighter.health().depleted() && !m_script.arrested; }
+    /// Health as a percentage of its maximum, 0-100 (`HuGetHealthPercent`).
+    /// @orig 0x00237c38 Human_GetHealthPercent (unknown)
+    [[nodiscard]] float healthPercent() const { return m_fighter.health().fraction() * 100.0F; }
+    /// `HuSetHealthPercent`: health becomes `percent` of the maximum, truncated to whole points; a value outside
+    /// (0, 100] gives full health.
+    /// @orig 0x002378a8 Human_SetHealthPercent (unknown)
+    void setHealthPercent(float percent);
+    /// `HuRevive` (Fighter::revive()).
+    void revive() { m_fighter.revive(m_animator); }
+    /// `HuSetNormalMode` (Fighter::setNormal()); an arrest ends too.
+    void setNormalMode(bool full);
+    /// `HuSetArrested`: arrested, the human stops where it is and its fighting ends; released, it stands again with
+    /// the idle.
+    /// @orig 0x00237700 Human_SetArrested (unknown)
+    void setArrested(bool arrested);
+    /// `HuSetFullRage`: the rage meter full, held for `holdMs` before it decays.
+    void fillRage(int holdMs) { m_fighter.combat().rage().fill(nowMs(), holdMs); }
+    /// `HuSetRageFrac`: the rage meter at `fraction` of its maximum.
+    void setRageFraction(float fraction) { m_fighter.combat().rage().setFraction(fraction, nowMs()); }
+    /// `HuSetLockedRage`: flag::kRageLocked, and the meter locked or unlocked at once.
+    void setRageLocked(bool locked);
+
     /// Another human's grab catches this one (Fighter::catchInGrab()).
     void catchInGrab(const GrabCatch& grab) { m_fighter.catchInGrab(grab); }
     /// The grabber's numbers this update, while held (Fighter::updateGrabber()).
@@ -329,6 +375,7 @@ class Human final : public Combatant {
     void endClimb();
 
     PlayerRecord m_record;
+    ScriptState m_script;
     HumanAnimator m_animator;
     std::unique_ptr<combat::AnimRangeList> m_ownRanges; // the list with the class's damage, when it has one
     const combat::AnimRangeList* m_ranges;

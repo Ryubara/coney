@@ -91,6 +91,7 @@
   notes: >-
     Bit confirmed (code) at 0x00237468; the effect is inferred from the name.
   usage: {chunks: 1, calls: 5, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: HuSetNoTarget
   wrapper: 0x00358750
@@ -107,6 +108,7 @@
   notes: >-
     Bit confirmed (code) at 0x00234038; the effect is inferred from the name.
   usage: {chunks: 31, calls: 322, boot: false, mission1: true, result_used: false, levels: [80, 2, 3, 5, 31, 55, 84, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetNoAutoLock
   wrapper: 0x003587b0
@@ -327,6 +329,7 @@
   notes: >-
     The two option bits are passed on as 0x20 / 0x40 but what they change in the controller is not traced.
   usage: {chunks: 41, calls: 160, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 2, 3, 5, 31, 51, 52, 54, 55, 82, 92, 83, 20, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetName
   wrapper: 0x00358ef0
@@ -482,6 +485,7 @@
   notes: >-
     Bit confirmed (code) at 0x002350c8; the effect is inferred from the name.
   usage: {chunks: 50, calls: 144, boot: true, mission1: true, result_used: false, levels: [3, 51, 54, 84, 61]}
+  coney: implemented
 
 - name: HuSetManualStun
   wrapper: 0x003592c0
@@ -605,6 +609,7 @@
   notes: >-
     That the bit freezes the meter is inferred from the name; the writes are confirmed (code) at 0x00236b38.
   usage: {chunks: 3, calls: 9, boot: true, mission1: true, result_used: false, levels: [11]}
+  coney: implemented
 
 - name: HuSetPreventRage
   wrapper: 0x003595d0
@@ -621,6 +626,7 @@
   notes: >-
     The inversion is confirmed (code) at 0x00236ad0; what the bit gates is inferred from the name.
   usage: {chunks: 44, calls: 93, boot: false, mission1: true, result_used: false, levels: [84, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetRageFrac
   wrapper: 0x00359630
@@ -635,6 +641,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 2, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: HuSetFullRage
   wrapper: 0x003596a8
@@ -649,6 +656,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 2, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: HuDrop
   wrapper: 0x003596e0
@@ -700,6 +708,7 @@
   notes: >-
     Bit confirmed (code) at 0x00237328; the effect is inferred from the name.
   usage: {chunks: 12, calls: 18, boot: true, mission1: true, result_used: false, levels: [34, 93, 14, 51, 54, 83]}
+  coney: implemented
 
 - name: HuSetFastClimber
   wrapper: 0x00359840
@@ -715,6 +724,7 @@
   notes: >-
     The bit is confirmed (code) at 0x00235b68; its effect on climbing is inferred from the name.
   usage: {chunks: 12, calls: 22, boot: false, mission1: true, result_used: false, levels: [3, 5, 54, 83, 20]}
+  coney: implemented
 
 - name: HuSetUngrabbable
   wrapper: 0x003598a0
@@ -730,6 +740,7 @@
   notes: >-
     Bit confirmed (code) at 0x00235bc8; the effect is inferred from the name.
   usage: {chunks: 23, calls: 30, boot: true, mission1: true, result_used: false, levels: [95, 5, 31, 54, 20, 11, 60, 61, 62]}
+  coney: implemented
 
 - name: HuSetUngroundable
   wrapper: 0x00359900
@@ -745,6 +756,7 @@
   notes: >-
     Bit confirmed (code) at 0x00235c28; the effect is inferred from the name.
   usage: {chunks: 29, calls: 261, boot: true, mission1: true, result_used: false, levels: [95, 5, 31, 54, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetUnstunnable
   wrapper: 0x00359960
@@ -760,6 +772,7 @@
   notes: >-
     Bit confirmed (code) at 0x00235c88; the effect is inferred from the name.
   usage: {chunks: 40, calls: 113, boot: true, mission1: true, result_used: false, levels: [95, 61, 64]}
+  coney: implemented
 
 - name: HuSetIncreasedReact
   wrapper: 0x003599c0
@@ -777,6 +790,7 @@
     Bit confirmed (code) at 0x00235ce8; the effect is inferred from the name. The counterpart is HuSetReducedReact
     (bit 0x200).
   usage: {chunks: 2, calls: 4, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: HuSetReducedReact
   wrapper: 0x00359a20
@@ -793,6 +807,7 @@
   notes: >-
     Bit confirmed (code) at 0x00235d50; the effect is inferred from the name.
   usage: {chunks: 7, calls: 10, boot: true, mission1: true, result_used: false, levels: [54]}
+  coney: implemented
 
 - name: HuSetDoubleDamage
   wrapper: 0x00359a80
@@ -1002,6 +1017,7 @@
     extinguish, 0x0022fc00 unwound, 0x0022f3c8 / 0x0022f8d8 for bits 0x80000 / 0x100000, 0x002266a8 state 0) and is
     not exhaustive.
   usage: {chunks: 82, calls: 169, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 2, 3, 5, 81, 86, 93, 31, 9, 51, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HuSetStunned
   wrapper: 0x0035ac80
@@ -1041,6 +1057,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 51, calls: 60, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: HuForceEnableReticule
   wrapper: 0x0035ada0
@@ -1084,6 +1101,7 @@
   notes: >-
     Checks the held object's class byte +0x86 (0x00231a38) before calling the drop routine 0x00257f38.
   usage: {chunks: 29, calls: 66, boot: true, mission1: true, result_used: false, levels: [80, 95, 2, 5, 81, 86, 93, 31, 9, 52, 54, 84, 82, 92, 83]}
+  coney: implemented
 
 - name: HuAttachSpinningIcon
   wrapper: 0x0035aeb0
@@ -1101,6 +1119,7 @@
   notes: >-
     The icon's handle is kept at +0x360; remove it with HuRemoveSpinningIcon.
   usage: {chunks: 18, calls: 34, boot: false, mission1: true, result_used: false, levels: [95, 5, 86, 93, 92, 20]}
+  coney: implemented
 
 - name: HuRemoveSpinningIcon
   wrapper: 0x0035af48
@@ -1113,6 +1132,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 55, calls: 105, boot: false, mission1: true, result_used: false, levels: [95, 2, 5, 86, 93, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HuSetSpinningIconColor
   wrapper: 0x0035af80
@@ -1186,6 +1206,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 48, calls: 197, boot: true, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 93, 31, 14, 9, 51, 52, 55, 84, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuFind
   wrapper: 0x0035b260
@@ -1266,6 +1287,7 @@
   notes: >-
     The values come from the gang's configuration; the list of types is with the gang bindings.
   usage: {chunks: 35, calls: 75, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: HuTeleportFollowers
   wrapper: 0x0035b448
@@ -1295,6 +1317,7 @@
     The checks and the radii (0x00219860) are confirmed (code) at 0x0023b138; how the free spot is searched is not
     traced.
   usage: {chunks: 7, calls: 7, boot: false, mission1: true, result_used: false, levels: [54, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetSlowMo
   wrapper: 0x0035b4f8
@@ -1343,6 +1366,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 157, calls: 1535, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuIsDead
   wrapper: 0x0035b618
@@ -1385,6 +1409,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 13, calls: 51, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: HuIsAPlayer
   wrapper: 0x0035b708
@@ -1399,6 +1424,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 167, calls: 1132, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuIsHidden
   wrapper: 0x0035b758
@@ -1505,6 +1531,7 @@
     The bit is confirmed (code) at 0x00235a28; that it blocks damage is inferred from the name and how the scripts use
     it. Only an `on` of exactly 1 sets the bit.
   usage: {chunks: 81, calls: 496, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetDemiGodMode
   wrapper: 0x0035ba40
@@ -1525,6 +1552,7 @@
     (flag 0x10), so it takes no more damage until a script clears that (0x00265f70, 0x00256f28; combat.md#damage-table).
     Only an `on` of exactly 1 sets the bit.
   usage: {chunks: 8, calls: 21, boot: false, mission1: true, result_used: false, levels: [95, 3]}
+  coney: implemented
 
 - name: HuSetHealth
   wrapper: 0x0035bad8
@@ -1557,6 +1585,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 17, calls: 29, boot: false, mission1: true, result_used: false, levels: [95, 2, 3, 81, 93, 31, 54, 55, 83]}
+  coney: implemented
 
 - name: HuSetMaxHealth
   wrapper: 0x0035bbc8
@@ -1589,6 +1618,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 25, calls: 28, boot: false, mission1: true, result_used: true, levels: [5, 81, 93, 31, 54, 55, 84, 82, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuRevive
   wrapper: 0x0035bc98
@@ -1604,6 +1634,7 @@
   notes: >-
     Calls 0x0022eb40 with full=1: health (record +0x144) set to the maximum.
   usage: {chunks: 55, calls: 73, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63, 64]}
+  coney: implemented
 
 - name: HuSetStrong
   wrapper: 0x0035bcd0
@@ -1717,6 +1748,7 @@
   notes: >-
     NilHandle is a number, so test the result against NilHandle, not for nil.
   usage: {chunks: 23, calls: 59, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 2, 5, 81, 93, 31, 84, 92, 20, 11]}
+  coney: implemented
 
 - name: HuInCombat
   wrapper: 0x0035bfe0
@@ -1871,6 +1903,7 @@
   notes: >-
     That the amount is what the human drops or is mugged for is inferred from the name and the scripts.
   usage: {chunks: 55, calls: 109, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 93, 31, 51, 84, 82, 83, 20, 11]}
+  coney: implemented
 
 - name: HuGetMoney
   wrapper: 0x0035c418
@@ -1904,6 +1937,7 @@
   notes: >-
     Stores the name at +0x257 and sets +0x278 to 100 (likely the drop chance in percent, inferred).
   usage: {chunks: 37, calls: 72, boot: false, mission1: true, result_used: false, levels: [34, 2]}
+  coney: implemented
 
 - name: HuPutItemInPocket
   wrapper: 0x0035c4d0
@@ -2160,6 +2194,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 62, calls: 265, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuPlaceHatOnHead
   wrapper: 0x0035cff0
@@ -2251,6 +2286,7 @@
   notes: >-
     Returns at once if player 1 is already in that gang. Pad indices are kept in order.
   usage: {chunks: 12, calls: 15, boot: false, mission1: true, result_used: false, levels: [3, 81, 51, 54, 55, 84, 92, 64]}
+  coney: implemented
 
 - name: HuSwitchPlayer
   wrapper: 0x0035d218
@@ -2331,6 +2367,7 @@
     The storage is confirmed (code) at 0x00239e78; when the name is called is inferred from the scripts (`PedMugged`
     handlers set on the players).
   usage: {chunks: 6, calls: 20, boot: false, mission1: true, result_used: false, levels: [34, 82, 20]}
+  coney: implemented
 
 - name: HuSetMug
   wrapper: 0x0035d438
@@ -2776,6 +2813,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 103, calls: 625, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 86, 93, 31, 14, 9, 51, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuUseAnyAnim
   wrapper: 0x00365408
@@ -2845,6 +2883,7 @@
     Writes the player record's +0x1e; HuLockPadMovement writes the neighbouring +0x1f, which locks only the analog
     stick movement. That +0x1e locks the buttons is inferred from the pair.
   usage: {chunks: 37, calls: 52, boot: false, mission1: true, result_used: false, levels: [3, 55]}
+  coney: implemented
 
 - name: HuLockPadMovement
   wrapper: 0x003655a0
@@ -2924,6 +2963,7 @@
     Sets or clears the pad's bit in the per-binding pad mask; a disabled command is not given to the human when its
     buttons are used. Has no effect while the human is AI-controlled (player record +0x1b clear).
   usage: {chunks: 19, calls: 96, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 93, 83, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: EnableCommands
   wrapper: 0x003696d8
@@ -2938,6 +2978,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 8, calls: 19, boot: false, mission1: true, result_used: false, levels: [80, 87, 54, 84]}
+  coney: implemented
 
 - name: ForceCommand
   wrapper: 0x00369750
@@ -3109,6 +3150,7 @@
   notes: >-
     See characters.md#creation for how dynamic animations are loaded later.
   usage: {chunks: 88, calls: 381, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: SetCharacterModel
   wrapper: 0x0036e6c0
@@ -3176,6 +3218,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 20, calls: 30, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 5, 81, 93, 31, 51, 55, 84, 83, 11]}
+  coney: implemented
 
 - name: WCEnableCommand
   wrapper: 0x00374850
@@ -3217,6 +3260,7 @@
     switch and is described by name only (inferred). The third argument is passed through as the dispatcher's 'forced'
     flag; the scripts always pass true.
   usage: {chunks: 25, calls: 45, boot: false, mission1: true, result_used: false, levels: [80, 95, 3, 5, 81, 86, 93, 31, 51, 52, 54, 55, 84, 83, 11]}
+  coney: implemented
 
 - name: WCLockCommands
   wrapper: 0x00374970

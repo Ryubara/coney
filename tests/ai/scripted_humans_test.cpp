@@ -1,0 +1,338 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The character, AI and gang bindings of the first mission from Lua to the level's humans (scripting/human_bindings.h,
+// ai/scripted_humans.h): each binding called by name in a script state whose AI host is the scripted brains over a
+// synthetic scene, then the humans, brains, gangs and the game state's rules checked. Handles: 1 the player, 2 and up
+// the AI humans the tests add.
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <catch2/catch_test_macros.hpp>
+
+#include "ai/brain.h"
+#include "ai/formations.h"
+#include "ai/gangs.h"
+#include "ai/goal.h"
+#include "ai/scripted_brains.h"
+#include "ai/scripted_humans.h"
+#include "combat/combat_tuning.h"
+#include "core/error.h"
+#include "gui/global_strings.h"
+#include "human/human_flags.h"
+#include "scripting/binding_args.h"
+#include "scripting/lua_value.h"
+#include "scripting/lua_vm.h"
+#include "scripting/script_bindings.h"
+#include "scripting/script_system.h"
+#include "support/ai_fixtures.h"
+#include "warriors/game_state.h"
+#include "world_objects/flags.h"
+
+using coney::ai::Brain;
+using coney::script::LuaVm;
+using coney::script::ScriptSystem;
+using coney::script::Value;
+namespace flag = coney::human::flag;
+
+namespace {
+
+// A front-end host that ignores every request: these bindings ask nothing of it.
+class QuietHost final : public coney::script::BindingHost {
+  public:
+    void showProfileManager(std::string_view /*onRumble*/, std::string_view /*onStartGame*/) override {}
+    void showRumbleModeInterface(std::string_view /*onCancel*/, std::string_view /*onStart*/,
+                                 double /*players*/) override {}
+    void menuLoadLevel(std::string_view /*level*/) override {}
+    void playMovie(std::string_view /*name*/) override {}
+    void playMusic(std::string_view /*track*/) override {}
+    void stopMusic() override {}
+    void queueScreenEffect(int /*type*/, double /*seconds*/) override {}
+};
+
+// A synthetic scene whose brains a script state's bindings drive through the scripted brains.
+struct Level {
+    coney::test::AiScene scene;
+    coney::world_objects::WorldFlags flags;
+    std::unique_ptr<coney::ai::ScriptedBrains> scripted;
+    coney::GameState state;
+    coney::gui::GlobalStrings strings;
+    QuietHost host;
+    coney::script::BindingContext context;
+    std::unique_ptr<ScriptSystem> scripts;
+    std::vector<std::vector<double>> rageCalls; // the rage handler's arguments
+
+    Level() {
+        flags.createPool(4);
+        scripted = std::make_unique<coney::ai::ScriptedBrains>(scene.brains, flags);
+        scripted->bind(1.0, scene.player());
+        scripted->setPlayer(&scene.player());
+        context.state = &state;
+        context.strings = &strings;
+        context.host = &host;
+        context.ai = scripted.get();
+        scripts = std::make_unique<ScriptSystem>(
+            [](std::string_view) -> std::expected<std::vector<std::byte>, coney::Error> {
+                return coney::fail(coney::ErrorCode::NotFound, "no scripts in this test");
+            },
+            [this](ScriptSystem& system, LuaVm& vm) {
+                coney::script::installBindings(system, vm, context);
+                vm.registerFunction("RageFull", [this](std::span<const Value> args) {
+                    rageCalls.emplace_back();
+                    for (const Value& arg : args) {
+                        rageCalls.back().push_back(arg.number().value_or(-1.0));
+                    }
+                    return coney::script::binding::none();
+                });
+            },
+            ScriptSystem::Log{});
+        scripts->create();
+        scripted->setScripts(scripts.get());
+    }
+
+    // An AI human at `feet`, bound to the next handle.
+    Brain& add(coney::anim::Vec3 feet) {
+        Brain& brain = scene.add(feet, 0.0F);
+        scripted->bind(brain.handle(), brain);
+        return brain;
+    }
+
+    // Calls the binding `name` with `args`; REQUIREs success and returns its first result (nil for none).
+    Value call(std::string_view name, const std::vector<Value>& args) {
+        auto result = scripts->vm().call(scripts->vm().global(name), args);
+        REQUIRE(result.has_value());
+        return result->empty() ? Value() : result->front();
+    }
+};
+
+// Restores the combat tuning a test changes (the demi-god floor, the rage hold).
+class TuningScope {
+  public:
+    TuningScope() = default;
+    TuningScope(const TuningScope&) = delete;
+    TuningScope& operator=(const TuningScope&) = delete;
+    TuningScope(TuningScope&&) = delete;
+    TuningScope& operator=(TuningScope&&) = delete;
+    ~TuningScope() { coney::combat::combatTuning() = coney::combat::CombatTuning{}; }
+};
+
+} // namespace
+
+TEST_CASE("the flag setters set and clear their bits; HuSetPreventRage writes its bit inverted", "[ai][scripted]") {
+    const TuningScope scope;
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    const coney::human::Human& human = thug.human();
+    level.call("HuSetUnstunnable", {Value(2.0), Value(1.0)});
+    level.call("HuSetNoTarget", {Value(2.0), Value(1.0)});
+    level.call("HuSetTireless", {Value(2.0), Value(1.0)});
+    CHECK(human.hasFlag(flag::kUnstunnable));
+    CHECK(human.hasFlag(flag::kNoTarget));
+    CHECK(human.hasFlag(flag::kTireless));
+    level.call("HuSetNoTarget", {Value(2.0), Value()});
+    CHECK_FALSE(human.hasFlag(flag::kNoTarget));
+    level.call("HuSetPreventRage", {Value(1.0), Value(1.0)});
+    CHECK_FALSE(level.scene.player().human().hasFlag(flag::kRageAllowed));
+    level.call("HuSetPreventRage", {Value(1.0), Value()});
+    CHECK(level.scene.player().human().hasFlag(flag::kRageAllowed));
+    // God mode takes only exactly 1; demi-god mode keeps its fraction in the one global.
+    level.call("HuSetGodMode", {Value(2.0), Value(2.0)});
+    CHECK_FALSE(human.hasFlag(flag::kGod));
+    level.call("HuSetGodMode", {Value(2.0), Value(1.0)});
+    CHECK(human.hasFlag(flag::kGod));
+    level.call("HuSetDemiGodMode", {Value(2.0), Value(1.0), Value(0.4)});
+    CHECK(human.hasFlag(flag::kDemiGod));
+    CHECK(coney::combat::combatTuning().healthFloor == 0.4F);
+}
+
+TEST_CASE("the getters answer for a human and their defaults for a handle that names none", "[ai][scripted]") {
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    CHECK(level.call("HuIsAlive", {Value(2.0)}).number() == 1.0);
+    CHECK(level.call("HuIsAPlayer", {Value(1.0)}).number() == 1.0);
+    CHECK(level.call("HuIsAPlayer", {Value(2.0)}).isNil());
+    CHECK(level.call("HuGetHealthPercent", {Value(2.0)}).number() == 100.0);
+    CHECK(level.call("HuGetGangType", {Value(2.0)}).number() == 65535.0);
+    const int gang = level.scene.brains.gangs().create(19, "Thugs");
+    level.scene.brains.gangs().addMember(gang, thug);
+    CHECK(level.call("HuGetGangType", {Value(2.0)}).number() == 19.0);
+    level.call("HuSetArrested", {Value(2.0), Value(1.0)});
+    CHECK(level.call("HuIsArrested", {Value(2.0)}).number() == 1.0);
+    CHECK(level.call("HuIsAlive", {Value(2.0)}).isNil());
+    level.call("HuSetHealthPercent", {Value(2.0), Value(25.0)});
+    CHECK(level.call("HuGetHealthPercent", {Value(2.0)}).number() == 25.0);
+    // No such human.
+    CHECK(level.call("HuIsAlive", {Value(99.0)}).isNil());
+    CHECK(level.call("HuGetHealthPercent", {Value(99.0)}).number() == 0.0);
+    CHECK(level.call("HuGetGangType", {Value(99.0)}).number() == 65535.0);
+    CHECK(level.call("HuGetHeldObject", {Value(99.0)}).number() == 0.0);
+}
+
+TEST_CASE("a call on a human the level has not made yet waits for it", "[ai][scripted]") {
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    level.scripted->hold();
+    level.call("HuSetUngrabbable", {Value(2.0), Value(1.0)});
+    level.call("HuSetMoney", {Value(2.0), Value(1500.0)});
+    const double item = level.call("HuPlaceItemInHand", {Value(2.0), Value("dyn_bat")}).number().value_or(0.0);
+    CHECK(item != 0.0);
+    CHECK_FALSE(thug.human().hasFlag(flag::kUngrabbable));
+    CHECK(level.scripted->held() == 3);
+    level.scripted->release({});
+    CHECK(thug.human().hasFlag(flag::kUngrabbable));
+    CHECK(thug.human().script().money == 999);
+    CHECK(level.call("HuGetHeldObject", {Value(2.0)}).number() == item);
+    // A full hand takes nothing more until the weapon is dropped.
+    CHECK(level.call("HuPlaceItemInHand", {Value(2.0), Value("dyn_pipe_a")}).number() == 0.0);
+    level.call("HuDropWeapon", {Value(2.0)});
+    CHECK(level.call("HuGetHeldObject", {Value(2.0)}).number() == 0.0);
+}
+
+TEST_CASE("EnableCommand masks a player's commands; an AI human has no pad", "[ai][scripted]") {
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    level.call("EnableCommand", {Value(1.0), Value(38.0), Value(0.0)});
+    level.call("EnableCommand", {Value(1.0), Value(37.0), Value(0.0)});
+    level.call("EnableCommand", {Value(1.0), Value(58.0), Value(0.0)}); // out of range: ignored
+    const std::uint64_t off = level.scene.player().human().script().disabledCommands;
+    CHECK(off == ((std::uint64_t{1} << 37) | (std::uint64_t{1} << 38)));
+    level.call("EnableCommand", {Value(1.0), Value(37.0), Value(1.0)});
+    CHECK(level.scene.player().human().script().disabledCommands == (std::uint64_t{1} << 38));
+    level.call("EnableCommands", {Value(1.0), Value(1.0)});
+    CHECK(level.scene.player().human().script().disabledCommands == 0);
+    level.call("EnableCommand", {Value(2.0), Value(37.0), Value(0.0)});
+    CHECK(thug.human().script().disabledCommands == 0);
+    level.call("HuLockPad", {Value(1.0), Value(1.0)});
+    CHECK(level.scene.player().human().script().padLocked);
+}
+
+TEST_CASE("an invincible gang's members, present and later, are gods; an untargetable gang's are skipped",
+          "[ai][scripted]") {
+    Level level;
+    Brain& first = level.add({44.0F, 40.0F, 0.0F});
+    Brain& second = level.add({46.0F, 40.0F, 0.0F});
+    coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    const int gang = gangs.create(0, "Warriors2");
+    gangs.addMember(gang, first);
+    level.call("GangInvincible", {Value(static_cast<double>(gang)), Value(1.0)});
+    CHECK(first.human().hasFlag(flag::kGod));
+    gangs.addMember(gang, second);
+    CHECK(second.human().hasFlag(flag::kGod));
+    level.call("GangInvincible", {Value(static_cast<double>(gang)), Value()});
+    CHECK_FALSE(first.human().hasFlag(flag::kGod));
+    level.call("GangSetTargetable", {Value(static_cast<double>(gang)), Value()});
+    CHECK_FALSE(first.human().targetable());
+    level.call("GangSetTargetable", {Value(static_cast<double>(gang))});
+    CHECK(first.human().targetable());
+}
+
+TEST_CASE("GoalBackoff walks away from the other human; BrClearBackoff pops it", "[ai][scripted]") {
+    Level level;
+    Brain& thug = level.add({41.0F, 40.0F, 0.0F});
+    level.call("GoalBackoff", {Value(2.0), Value(1.0), Value(4.0)});
+    REQUIRE(thug.topGoal() != nullptr);
+    CHECK(thug.topGoal()->type() == coney::ai::GoalType::Backoff);
+    level.scene.run(60);
+    CHECK(thug.distanceTo(level.scene.player()) > 2.0F);
+    level.call("BrClearBackoff", {Value(2.0)});
+    CHECK(thug.goalCount() == 0);
+}
+
+TEST_CASE("GoalMoveToUseFlag reserves the flag until its goal ends; GoalBumLogic keeps a bum in place",
+          "[ai][scripted]") {
+    Level level;
+    Brain& extra = level.add({41.0F, 41.0F, 0.0F});
+    const double spot = level.flags.add(100.0, "Chair", {44.0F, 41.0F, 0.0F}, 90.0F).handle;
+    level.call("GoalMoveToUseFlag",
+               {Value(2.0), Value(spot), Value(2.0), Value(0.0), Value(0.5), Value(0.5), Value(1.0)});
+    REQUIRE(extra.topGoal() != nullptr);
+    CHECK(extra.topGoal()->type() == coney::ai::GoalType::MoveToUseFlag);
+    CHECK(level.scripted->humanHost().reservation(spot) == 2.0);
+    extra.flush();
+    CHECK(level.scripted->humanHost().reservation(spot) == 0.0);
+
+    level.call("GoalBumLogic", {Value(2.0), Value(2.0), Value(), Value(175.0)});
+    REQUIRE(extra.topGoal() != nullptr);
+    CHECK(extra.topGoal()->type() == coney::ai::GoalType::BumLogic);
+}
+
+TEST_CASE("the configuration bindings set the game state's rules, which the level takes", "[ai][scripted]") {
+    const TuningScope scope;
+    Level level;
+    level.call("CfgPlayerMugging", {Value()});
+    level.call("CfgSetEnemySpotting", {});
+    level.call("CfgSetWarriorSpotting", {Value(1.0)});
+    level.call("CfgSetGlobalTimeToLive", {Value(1000.0)});
+    const coney::CharacterRules& rules = level.state.characters;
+    CHECK_FALSE(rules.playerMugging);
+    CHECK(rules.enemySpotting);
+    CHECK_FALSE(rules.warriorSpotting); // the original always clears it
+    CHECK(rules.timeToLiveMs == 1000);
+
+    level.call("CfgRageHandlers", {Value("SetRageMode"), Value(), Value("RageFull"), Value(20000.0), Value(4000.0)});
+    CHECK(rules.rage.onEnter == "SetRageMode");
+    CHECK(rules.rage.onExit.empty());
+    CHECK(coney::combat::combatTuning().rageHoldMs == 4000);
+
+    // The default follow slots reach the formations, those made later too.
+    auto slots = std::make_shared<coney::script::Table>();
+    for (int i = 1; i <= 20; ++i) {
+        REQUIRE(slots->set(Value(static_cast<double>(i)), Value(static_cast<double>(i))).has_value());
+    }
+    level.call("CfgSetDefaultFollowSlotSet", {Value(1.0), Value(slots)});
+    REQUIRE(rules.followSlots[1].has_value());
+    CHECK((*rules.followSlots[1])[8].first == 17.0F);
+    const coney::ai::Formation* formation = level.scene.brains.formations().of(level.scene.player(), true);
+    REQUIRE(formation != nullptr);
+    CHECK(formation->slot(1, 0).offset[0] == 16); // 1 m in sixteenths
+    CHECK(formation->slot(1, 0).offset[1] == 32);
+
+    level.call("SetInterrogateParam",
+               {Value(160.0), Value(75.0), Value(255.0), Value(5000.0), Value(2500.0), Value(20000.0), Value(40.0),
+                Value(60.0), Value(20000.0), Value(0.0), Value(4.0)});
+    CHECK(rules.interrogate[1].active());
+    CHECK(rules.interrogate[1].values[0] == 160);
+    CHECK_FALSE(rules.interrogate[0].active());
+}
+
+TEST_CASE("the rage handler runs when a human's meter fills, with its handle", "[ai][scripted]") {
+    const TuningScope scope;
+    Level level;
+    level.call("CfgRageHandlers", {Value(), Value(), Value("RageFull"), Value(20000.0), Value(5000.0)});
+    level.scripted->humanHost().runRageHandlers();
+    CHECK(level.rageCalls.empty());
+    level.call("HuSetFullRage", {Value(1.0)});
+    level.scripted->humanHost().runRageHandlers();
+    level.scripted->humanHost().runRageHandlers();
+    REQUIRE(level.rageCalls.size() == 1);
+    CHECK(level.rageCalls[0] == std::vector<double>{1.0});
+}
+
+TEST_CASE("SetDynamicAnimation lists the clips HuUseAnim may use", "[ai][scripted]") {
+    Level level;
+    Brain& extra = level.add({44.0F, 40.0F, 0.0F});
+    CHECK(level.call("HuUseAnim", {Value(2.0), Value(0.0), Value("fidget_crossarms.anm")}).isNil());
+    level.call("SetDynamicAnimation", {Value("fidget_crossarms.anm")});
+    CHECK(level.call("HuUseAnim", {Value(2.0), Value(0.0), Value("fidget_crossarms.anm")}).number() == 1.0);
+    CHECK(extra.human().script().animOverrides[0] == "fidget_crossarms.anm");
+    CHECK_FALSE(extra.human().script().pushable);
+    CHECK(level.call("HuUseAnim", {Value(2.0), Value(4.0), Value("fidget_crossarms.anm")}).isNil());
+    level.call("SetDynamicAnimation", {Value("fidget_crossarms.anm"), Value(1.0)});
+    CHECK(level.state.characters.dynamicAnimations.empty());
+}
+
+TEST_CASE("WCIssueCommand reaches a player's crew only while the command is enabled", "[ai][scripted]") {
+    Level level;
+    level.call("WCIssueCommand", {Value(1.0), Value(3.0), Value(1.0)});
+    CHECK(level.state.characters.lastWarriorCommand[0] == 3);
+    level.call("WCEnableAllCommands", {Value()});
+    level.call("WCIssueCommand", {Value(1.0), Value(5.0), Value(1.0)});
+    CHECK(level.state.characters.lastWarriorCommand[0] == 3);
+    CHECK(level.scripted->humanHost().warriorCommand() == 3);
+    CHECK(level.call("HuChangePlayerGang", {Value(4.0), Value(1.0)}).number() == 1.0);
+    CHECK(level.scripted->humanHost().playerGang() == 4);
+}

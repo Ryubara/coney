@@ -33,7 +33,13 @@ constexpr float kThirdHitPower = 0.6F;
 
 VictimFrame Fighter::frame(const FighterInput& input) const {
     // A player has human flag 0x400: combo hits keep their strength on it.
-    return VictimFrame{.position = input.position, .heading = input.heading, .hurt = hurt(), .flag400 = m_player};
+    return VictimFrame{.position = input.position,
+                       .heading = input.heading,
+                       .hurt = hurt(),
+                       .flag400 = hasFlag(flag::kComboStrength),
+                       .flag200 = hasFlag(flag::kReducedReact),
+                       .flag80 = hasFlag(flag::kUngroundable),
+                       .unstunnable = hasFlag(flag::kUnstunnable)};
 }
 
 bool Fighter::helpless(const HumanAnimator& animator) const {
@@ -93,10 +99,17 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         }
         m_combat.interrupt();
     }
-    // 3. The damage, the attacker's as it is, held at a player's health floor.
-    const int damage = m_player
-                           ? combat::flooredDamage(m_health.value(), m_health.maximum(), hit.damage, tuning.healthFloor)
-                           : hit.damage;
+    // 3. The damage, the attacker's as it is: none for a god (flag 0x10); held at a demi-god's health floor (flag
+    // 0x20000000000), which, reached, makes it a god (0x00265f70). **Coney's reading**: god mode drops the damage only;
+    // the reaction still plays (where the original tests 0x10 is not traced).
+    int damage = hasFlag(flag::kGod) ? 0 : hit.damage;
+    if (damage > 0 && hasFlag(flag::kDemiGod)) {
+        const int floored = combat::flooredDamage(m_health.value(), m_health.maximum(), damage, tuning.healthFloor);
+        if (floored < damage) {
+            setFlag(flag::kGod, true);
+        }
+        damage = floored;
+    }
     m_health.apply(damage);
     ++m_hitsTaken;
     // 4. A grabber hit by a third human loses power.
@@ -194,7 +207,7 @@ void Fighter::startGrabbed(const FighterInput& input, HumanAnimator& animator) {
         m_report.grabberDamage =
             m_ranges != nullptr ? m_ranges->damage(static_cast<std::size_t>(combat::kGrabFrontCounter)) : 0;
         m_report.grabberStunned = true;
-        combat::awardHitRage(m_combat.rage(), combat::kGrabFrontCounter, false, tuning, input.nowMs, m_repeat);
+        earnRage(combat::kGrabFrontCounter, input.nowMs);
         m_repeat.note(combat::kGrabFrontCounter, input.nowMs);
         m_reacting = true;
         return;
@@ -261,7 +274,7 @@ void Fighter::updateGrabbed(const FighterInput& input, HumanAnimator& animator) 
                             clips::kPairFade);
         m_report.grabberDamage = damage;
         if (outcome.action == combat::GrabbedAction::StrikeBack) {
-            combat::awardHitRage(m_combat.rage(), outcome.animId, false, combat::combatTuning(), input.nowMs, m_repeat);
+            earnRage(outcome.animId, input.nowMs);
             m_repeat.note(outcome.animId, input.nowMs);
         }
         break;

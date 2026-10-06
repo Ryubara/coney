@@ -16,6 +16,7 @@ class Brain;
 enum class GoalType : std::uint8_t {
     Idle = 0x00,             ///< IdleGoal: stands in place.
     MoveToFlag = 0x01,       ///< MoveToFlagGoal.
+    MoveToUseFlag = 0x04,    ///< MoveToUseFlagGoal.
     Fight = 0x0f,            ///< FightGoal.
     Spectate = 0x10,         ///< SpectateGoal: stands and watches for a while.
     ReactGrabbing = 0x12,    ///< Reaction: grabbing (state `0xc0`).
@@ -28,8 +29,10 @@ enum class GoalType : std::uint8_t {
     PlayAnimation = 0x21,    ///< PlayAnimationGoal: a scene.
     PlayDynAnimation = 0x22, ///< PlayDynAnimationGoal.
     TrackHuman = 0x30,       ///< TrackHumanGoal.
+    BumLogic = 0x4f,         ///< BumLogicGoal.
     AddressPerson = 0x57,    ///< AddressPersonGoal.
     Dealer = 0x80,           ///< DealerGoal.
+    Backoff = 0x9b,          ///< BackoffGoal.
 };
 
 /// What a goal's process() returns (`Goal_Process`): stop for this update, process the stack's top again in the same

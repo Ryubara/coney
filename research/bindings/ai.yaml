@@ -30,6 +30,7 @@
     Storage and the default/override switch are confirmed (code) at 0x002854b0, 0x00284ca0 and 0x002853a8; what each
     value controls in the interrogation is inferred from the defaults and is an open question.
   usage: {chunks: 1, calls: 2, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: SetGlobalPedRules
   wrapper: 0x0035d9e0
@@ -335,6 +336,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: BrSetDamageResponse
   wrapper: 0x0035f278
@@ -397,6 +399,7 @@
   notes: >-
     Storage confirmed (code) at 0x00292848; the behaviour behind the byte is inferred from the name.
   usage: {chunks: 37, calls: 78, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 2, 3, 5, 81, 86, 93, 51, 52, 54, 55, 82, 83, 20, 11]}
+  coney: implemented
 
 - name: BrSetThugWantsHat
   wrapper: 0x0035f9f0
@@ -621,6 +624,7 @@
     Constructor 0x002db768 (reserves the flag through 0x004161b0). Mission-1 scripts use it to seat and position
     extras. The roles of the two floats and the flag are inferred.
   usage: {chunks: 28, calls: 97, boot: false, mission1: true, result_used: false, levels: [80, 87, 3, 5, 86, 93, 31, 9, 51, 52, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GoalMoveToHuman
   wrapper: 0x003602e0
@@ -1486,6 +1490,7 @@
   notes: >-
     Constructor 0x002abef8 (clamps the chance to 100, interns the callback). What each type does is inferred.
   usage: {chunks: 26, calls: 71, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 2, 5, 86, 31, 14, 51, 52, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GoalBumLogicTrigger
   wrapper: 0x003634c8
@@ -1692,6 +1697,7 @@
   notes: >-
     Constructor 0x002d92e8. The flag's meaning is inferred.
   usage: {chunks: 8, calls: 23, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: GoalLutherShooter
   wrapper: 0x00363e50

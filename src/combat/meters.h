@@ -37,6 +37,8 @@ class Health {
     int apply(int damage);
     /// Health is 0.
     [[nodiscard]] bool depleted() const { return m_value == 0; }
+    /// Sets health to `value`, clamped to 0..maximum (a script's `HuSetHealthPercent`, `HuRevive`).
+    void set(int value);
 
   private:
     int m_value;
@@ -86,6 +88,10 @@ class PowerMeter {
     int spend(float fraction);
     /// Sets the meter (clamped to 0..maximum), as a script or a test may.
     void set(int value);
+    /// Unlimited power (human flag `0x4000000`, `HuSetTireless`): nothing is spent or drained and the fraction reads
+    /// 1.0 (`0x00226448`, `0x00226510`); the refill goes on.
+    void setUnlimited(bool unlimited) { m_unlimited = unlimited; }
+    [[nodiscard]] bool unlimited() const { return m_unlimited; }
     /// The human's hurt state: while `hurt` the maximum is the class's × `factor` (`int(x + 0.5)`), the meter held
     /// to it; otherwise the class's again (the meter refills to it).
     /// @orig 0x00223068 Human_PowerMax (unknown)
@@ -104,6 +110,7 @@ class PowerMeter {
     std::uint64_t m_lastMs;
     float m_carry = 0.0F;
     bool m_draining = false;
+    bool m_unlimited = false;
 };
 
 /// What scales one rage gain besides the points: the per-player halving and the multiplier in state `0x1000`.
@@ -125,6 +132,26 @@ class RageMeter {
     [[nodiscard]] bool raging() const { return m_raging; }
     /// Sets the meter (clamped), as a script or a test may.
     void set(int value);
+    /// Fills the meter (`HuSetFullRage`): the maximum, the drain's carried fraction cleared and the hold timer
+    /// (`+0x648`) at `nowMs` + `holdMs`.
+    /// @orig 0x00236a68 Human_SetFullRage (unknown)
+    void fill(std::uint64_t nowMs, int holdMs);
+    /// Sets the meter to `fraction` of its maximum (`HuSetRageFrac`, truncated, clamped), the carried fraction cleared
+    /// and the meter's clock restarted at `nowMs`.
+    /// @orig 0x002369b8 Human_SetRageFrac (unknown)
+    void setFraction(float fraction, std::uint64_t nowMs);
+    /// Locks the meter where it is, or unlocks it (human flag `0x100000`, `HuSetLockedRage`): while locked update()
+    /// moves nothing. Unlocking clears the carried fraction, restarts the clock at `nowMs` and, while raging, clears
+    /// the hold timer. **Coney's reading**: the lock stops the drain and the decay (that the bit freezes the meter is
+    /// inferred from the name); a gain still adds.
+    /// @orig 0x00236b38 Human_SetLockedRage (unknown)
+    void setLocked(bool locked, std::uint64_t nowMs);
+    [[nodiscard]] bool locked() const { return m_locked; }
+    /// Ends rage, the meter left where it is (`HuSetNormalMode`).
+    void stop() {
+        m_raging = false;
+        m_carry = 0.0F;
+    }
 
     /// Adds `trunc(points × f × gain / 100 × h × s)` to the maximum, where `f` is the factor below the cap for an award
     /// of up to CombatTuning::ragePointsCap points and the factor above it for a larger one (the whole award), and
@@ -151,6 +178,7 @@ class RageMeter {
     std::uint64_t m_holdUntilMs = 0; // the meter does not decay before this (human `+0x648`)
     float m_carry = 0.0F;
     bool m_raging = false;
+    bool m_locked = false;
 };
 
 } // namespace coney::combat

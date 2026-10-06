@@ -427,6 +427,7 @@
     Unlike most callback setters the names are copied, not interned. That the times are the rage duration and a
     warning period is inferred.
   usage: {chunks: 2, calls: 3, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgWorkoutParams
   wrapper: 0x0035c5a0
@@ -1059,6 +1060,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 9, calls: 9, boot: false, mission1: true, result_used: false, levels: [87, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CfgRaindrops
   wrapper: 0x00368550
@@ -1264,6 +1266,7 @@
   notes: >-
     What expires after this time is inferred from the name.
   usage: {chunks: 2, calls: 3, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgSetCollisionLengths
   wrapper: 0x0036a690
@@ -1604,6 +1607,7 @@
     0x00294bf8 converts the floats with the VU0 to fixed point; nine of the ten pairs are used. Which human records
     use set 0 or 1 is not traced.
   usage: {chunks: 2, calls: 4, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgSetEnemySpotting
   wrapper: 0x0036bd90
@@ -1616,6 +1620,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 24, calls: 44, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: CfgSetWarriorSpotting
   wrapper: 0x0036bdc0
@@ -1631,6 +1636,7 @@
   notes: >-
     Bug in the original: 0x0041d748 ignores its parameter. Scripts call it with both true and false.
   usage: {chunks: 25, calls: 45, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: CfgSetWarriorVandalize
   wrapper: 0x0036bdf0

@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -76,6 +78,10 @@ class Formation {
     /// @orig 0x00295ec8 Formation_SetSlot (unknown)
     void setSlot(int slot, float x, float y, int set, std::uint64_t nowMs);
 
+    /// Writes slot `slot` of set `set` at (x, y) m without planning (`CfgSetDefaultFollowSlotSet`'s defaults); nothing
+    /// for a slot or set out of range.
+    void setDefaultSlot(int slot, float x, float y, int set);
+
     /// `follower` joins (a free follower entry, its brain's formation set). Returns false when it is full.
     /// @orig 0x00295f28 Formation_Join (unknown)
     bool join(Brain& follower);
@@ -139,6 +145,10 @@ class Formations {
     /// Every formation's step (`Formations_Update`).
     /// @orig 0x00293c68 Formations_Update (unknown)
     void update(std::uint64_t nowMs);
+    /// `CfgSetDefaultFollowSlotSet`: set `set`'s slots, (x, y) m each, written into every formation of the pool, so
+    /// those made later have them too.
+    /// @orig 0x00294788 Cfg_SetDefaultFollowSlotSet (unknown)
+    void setDefaults(int set, std::span<const std::pair<float, float>> slots);
     /// `brain` is going away: it leaves the formation it follows, and its own formation goes.
     void forget(Brain& brain);
     /// The formations in use.
@@ -146,6 +156,8 @@ class Formations {
 
   private:
     std::vector<std::unique_ptr<Formation>> m_formations;
+    // The default slots of each set, (x, y) m, kept for the formations made later; empty until set.
+    std::array<std::vector<std::pair<float, float>>, kFormationSets> m_defaults;
 };
 
 } // namespace coney::ai

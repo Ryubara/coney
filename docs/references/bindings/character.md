@@ -411,7 +411,7 @@ its buttons are used. Has no effect while the human is AI-controlled (player rec
 - **Wrapper** `0x00369638` (registered by `RegisterBindings`); **calls** `0x001467a8` `PlayerCommand_EnableForHuman`
 - **Used by** 19 of 467 script chunks (96 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EnableCommands {#enablecommands}
 
@@ -433,7 +433,7 @@ moments.
 - **Wrapper** `0x003696d8` (registered by `RegisterBindings`); **calls** `0x001463e0` `PlayerCommand_EnableAllForHuman`
 - **Used by** 8 of 467 script chunks (19 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ForceCommand {#forcecommand}
 
@@ -613,7 +613,7 @@ the human already has the same icon nothing happens; a different one is replaced
 - **Wrapper** `0x0035aeb0` (registered by `RegisterBindings`); **calls** `0x00238a88` `Human_AttachSpinningIcon`
 - **Used by** 18 of 467 script chunks (34 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuBlockClimb {#hublockclimb}
 
@@ -845,7 +845,7 @@ story switches which group of Warriors you play.
 - **Wrapper** `0x0035d1a8` (registered by `RegisterBindings`); **calls** `0x00239b80` `Players_ChangeGang`
 - **Used by** 12 of 467 script chunks (15 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuClearLook {#huclearlook}
 
@@ -989,7 +989,7 @@ the dropped object becomes a free world object again.
 - **Wrapper** `0x0035ae78` (registered by `RegisterBindings`); **calls** `0x002994b8` `Human_DropWeapon`
 - **Used by** 29 of 467 script chunks (66 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuEnableController {#huenablecontroller}
 
@@ -1325,7 +1325,7 @@ of the particular gang.
 - **Wrapper** `0x0035b3f0` (registered by `RegisterBindings`); **calls** `0x00235478` `Human_GetGangType`
 - **Used by** 35 of 467 script chunks (75 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGetHeading {#hugetheading}
 
@@ -1366,7 +1366,7 @@ training enemies to be beaten down.
 - **Wrapper** `0x0035bc40` (registered by `RegisterBindings`); **calls** `0x00237c38` `Human_GetHealthPercent`
 - **Used by** 25 of 467 script chunks (28 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 16 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGetHeldObject {#hugetheldobject}
 
@@ -1389,7 +1389,7 @@ Returns the object (weapon or item) the human is holding.
 - **Wrapper** `0x0035bf68` (registered by `RegisterBindings`); **calls** `0x00237d48` `Human_GetHeldObject`
 - **Used by** 23 of 467 script chunks (59 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 12 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGetHUD {#hugethud}
 
@@ -1638,7 +1638,7 @@ arrested and similar, flags 0x180050000).
 - **Wrapper** `0x0035b5c8` (registered by `RegisterBindings`); **calls** `0x00235628` `Human_IsAlive`
 - **Used by** 157 of 467 script chunks (1535 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsAPlayer {#huisaplayer}
 
@@ -1659,7 +1659,7 @@ Tells whether a human is controlled by a player.
 - **Wrapper** `0x0035b708` (registered by `RegisterBindings`); **calls** `0x00235758` `Human_IsPlayer`
 - **Used by** 167 of 467 script chunks (1132 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsArrested {#huisarrested}
 
@@ -1679,7 +1679,7 @@ Tells whether the police have arrested (cuffed) the human.
 - **Wrapper** `0x0035b6b8` (registered by `RegisterBindings`); **calls** `0x00235718` `Human_IsArrested`
 - **Used by** 13 of 467 script chunks (51 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsDead {#huisdead}
 
@@ -1915,7 +1915,7 @@ analog stick movement. That +0x1e locks the buttons is inferred from the pair.
 - **Wrapper** `0x00365540` (registered by `RegisterBindings`); **calls** `0x0023ae40` `Human_LockPad`
 - **Used by** 37 of 467 script chunks (52 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuLockPadMovement {#hulockpadmovement}
 
@@ -2047,7 +2047,7 @@ Spawns a weapon or item and puts it in the human's hand, which is how levels arm
 - **Wrapper** `0x0035cf60` (registered by `RegisterBindings`); **calls** `0x00238540` `Human_PlaceItemInHand`
 - **Used by** 62 of 467 script chunks (265 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 27 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuPlayDynamicAnim {#huplaydynamicanim}
 
@@ -2186,7 +2186,7 @@ Removes the marker icon attached with HuAttachSpinningIcon.
 - **Wrapper** `0x0035af48` (registered by `RegisterBindings`); **calls** `0x00238ae0` `Human_RemoveSpinningIcon`
 - **Used by** 55 of 467 script chunks (105 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuRender {#hurender}
 
@@ -2229,7 +2229,7 @@ Brings a downed human back: ends the knocked-out or beaten state, restores full 
 - **Wrapper** `0x0035bc98` (registered by `RegisterBindings`); **calls** `0x002377f8` `Human_Revive`
 - **Used by** 55 of 467 script chunks (73 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 27 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuRubberNeck {#hurubberneck}
 
@@ -2314,7 +2314,7 @@ Arrests or releases the human, as the police do; a released human gets back up.
 - **Wrapper** `0x0035ad40` (registered by `RegisterBindings`); **calls** `0x00237700` `Human_SetArrested`
 - **Used by** 51 of 467 script chunks (60 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetAutoCombat {#husetautocombat}
 
@@ -2471,7 +2471,7 @@ they drop nothing.
 - **Wrapper** `0x0035c470` (registered by `RegisterBindings`); **calls** `0x00238230` `Human_SetCarriedItemName`
 - **Used by** 37 of 467 script chunks (72 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetCombatMode {#husetcombatmode}
 
@@ -2571,7 +2571,7 @@ combat.md#damage-table). Only an `on` of exactly 1 sets the bit.
 - **Wrapper** `0x0035ba40` (registered by `RegisterBindings`); **calls** `0x002359a0` `Human_SetDemiGodMode`
 - **Used by** 8 of 467 script chunks (21 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetDoubleDamage {#husetdoubledamage}
 
@@ -2615,7 +2615,7 @@ Sets or clears flag bit 0x2 of the human's flag word; from the name, the human c
 - **Wrapper** `0x00359840` (registered by `RegisterBindings`); **calls** `0x00235b68` `Human_SetFastClimber`
 - **Used by** 12 of 467 script chunks (22 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetFireProof {#husetfireproof}
 
@@ -2658,7 +2658,7 @@ to fill both players' meters.
 - **Evidence:** confirmed (code) at `0x00236a68`; detail: traced
 - **Wrapper** `0x003596a8` (registered by `RegisterBindings`); **calls** `0x00236a68` `Human_SetFullRage`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetGodMode {#husetgodmode}
 
@@ -2683,7 +2683,7 @@ scripts use it. Only an `on` of exactly 1 sets the bit.
 - **Wrapper** `0x0035b9e0` (registered by `RegisterBindings`); **calls** `0x00235a28` `Human_SetGodMode`
 - **Used by** 81 of 467 script chunks (496 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetHardToStun {#husethardtostun}
 
@@ -2751,7 +2751,7 @@ Sets the human's current health to `percent` per cent of its maximum (truncated 
 - **Wrapper** `0x0035bb50` (registered by `RegisterBindings`); **calls** `0x002378a8` `Human_SetHealthPercent`
 - **Used by** 17 of 467 script chunks (29 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetHearRange {#husethearrange}
 
@@ -2862,7 +2862,7 @@ HuSetReducedReact (bit 0x200).
 - **Evidence:** confirmed (code) at `0x00235ce8`; detail: traced
 - **Wrapper** `0x003599c0` (registered by `RegisterBindings`); **calls** `0x00235ce8` `Human_SetIncreasedReact`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetInterrogation {#husetinterrogation}
 
@@ -2940,7 +2940,7 @@ Sets or clears flag bit 0x2000 of the human's flag word; from the name, the huma
 - **Wrapper** `0x003597e0` (registered by `RegisterBindings`); **calls** `0x00237328` `Human_SetKeepWeapon`
 - **Used by** 12 of 467 script chunks (18 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetKillerMode {#husetkillermode}
 
@@ -2986,7 +2986,7 @@ drain counter (+0x654), restarts the meter's timer (+0x64c) and, if the human is
 - **Wrapper** `0x00359570` (registered by `RegisterBindings`); **calls** `0x00236b38` `Human_SetLockedRage`
 - **Used by** 3 of 467 script chunks (9 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetLookAtTarget {#husetlookattarget}
 
@@ -3056,7 +3056,7 @@ unless both the human and the target exist.
 - **Wrapper** `0x00358de0` (registered by `RegisterBindings`); **calls** `0x0023a3b8` `Human_SetLookTarget`
 - **Used by** 41 of 467 script chunks (160 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetLOSRange {#husetlosrange}
 
@@ -3171,7 +3171,7 @@ the human; scripts often set 0 so a character drops nothing.
 - **Wrapper** `0x0035c3a0` (registered by `RegisterBindings`); **calls** `0x00238100` `Human_SetMoney`
 - **Used by** 55 of 467 script chunks (109 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetMug {#husetmug}
 
@@ -3218,7 +3218,7 @@ notice the player's first mugging.
 - **Wrapper** `0x0035d3d8` (registered by `RegisterBindings`); **calls** `0x00239e78` `Human_SetMugCallback`
 - **Used by** 6 of 467 script chunks (20 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetName {#husetname}
 
@@ -3337,7 +3337,7 @@ exhaustive.
 - **Wrapper** `0x0035ac20` (registered by `RegisterBindings`); **calls** `0x0023a210` `Human_SetNormalMode`
 - **Used by** 82 of 467 script chunks (169 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetNoTarget {#husetnotarget}
 
@@ -3361,7 +3361,7 @@ player's targeting) from picking this human as a target. The tutorial uses it on
 - **Wrapper** `0x00358750` (registered by `RegisterBindings`); **calls** `0x00234038` `Human_SetNoTarget`
 - **Used by** 31 of 467 script chunks (322 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 14 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetNoThrowWeapon {#husetnothrowweapon}
 
@@ -3384,7 +3384,7 @@ holds.
 - **Evidence:** confirmed (code) at `0x00237468`; detail: traced
 - **Wrapper** `0x003586f0` (registered by `RegisterBindings`); **calls** `0x00237468` `Human_SetNoThrowWeapon`
 - **Used by** 1 of 467 script chunks (5 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetOnFire {#husetonfire}
 
@@ -3456,7 +3456,7 @@ the bit therefore means rage is allowed, and HuSetPreventRage(h, true) stops the
 - **Wrapper** `0x003595d0` (registered by `RegisterBindings`); **calls** `0x00236ad0` `Human_SetPreventRage`
 - **Used by** 44 of 467 script chunks (93 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level84`](story.md#level84) (mission 18)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetPushable {#husetpushable}
 
@@ -3478,7 +3478,7 @@ flags (+0x40 of the body at +0x1a0) and stores the value at +0x3bf.
 - **Wrapper** `0x0035b200` (registered by `RegisterBindings`); **calls** `0x00235268` `Human_SetPushable`
 - **Used by** 48 of 467 script chunks (197 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 24 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetRageFrac {#husetragefrac}
 
@@ -3499,7 +3499,7 @@ timer. The tutorial uses 0.5.
 - **Evidence:** confirmed (code) at `0x002369b8`; detail: traced
 - **Wrapper** `0x00359630` (registered by `RegisterBindings`); **calls** `0x002369b8` `Human_SetRageFrac`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetRageMode {#husetragemode}
 
@@ -3548,7 +3548,7 @@ Sets or clears flag bit 0x200 of the human's flag word; from the name, the human
 - **Wrapper** `0x00359a20` (registered by `RegisterBindings`); **calls** `0x00235d50` `Human_SetReducedReact`
 - **Used by** 7 of 467 script chunks (10 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level54`](story.md#level54) (mission 16)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetRevivable {#husetrevivable}
 
@@ -3757,7 +3757,7 @@ Sets or clears flag bit 0x4000000 of the human's flag word; from the name, the h
 - **Wrapper** `0x00359260` (registered by `RegisterBindings`); **calls** `0x002350c8` `Human_SetTireless`
 - **Used by** 50 of 467 script chunks (144 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetUnarrestable {#husetunarrestable}
 
@@ -3808,7 +3808,7 @@ Sets or clears flag bit 0x40 of the human's flag word; from the name, nobody can
 - **Wrapper** `0x003598a0` (registered by `RegisterBindings`); **calls** `0x00235bc8` `Human_SetUngrabbable`
 - **Used by** 23 of 467 script chunks (30 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetUngroundable {#husetungroundable}
 
@@ -3831,7 +3831,7 @@ Sets or clears flag bit 0x80 of the human's flag word; from the name, the human 
 - **Wrapper** `0x00359900` (registered by `RegisterBindings`); **calls** `0x00235c28` `Human_SetUngroundable`
 - **Used by** 29 of 467 script chunks (261 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetUnstunnable {#husetunstunnable}
 
@@ -3854,7 +3854,7 @@ Sets or clears flag bit 0x100 of the human's flag word; from the name, the human
 - **Wrapper** `0x00359960` (registered by `RegisterBindings`); **calls** `0x00235c88` `Human_SetUnstunnable`
 - **Used by** 40 of 467 script chunks (113 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetVoiceIndex {#husetvoiceindex}
 
@@ -4399,7 +4399,7 @@ not traced.
 - **Wrapper** `0x0035b480` (registered by `RegisterBindings`); **calls** `0x0023b138` `Human_TeleportNear`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level54`](story.md#level54) (mission 16)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuUseAnim {#huuseanim}
 
@@ -4423,7 +4423,7 @@ For slot 0 it also makes the human unpushable while the replacement is set.
 - **Wrapper** `0x00365370` (registered by `RegisterBindings`); **calls** `0x00238690` `Human_UseAnim`
 - **Used by** 103 of 467 script chunks (625 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 24 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuUseAnyAnim {#huuseanyanim}
 
@@ -4700,7 +4700,7 @@ can only use files requested this way.
   `ResourceManager_SetDynamicAnimation`
 - **Used by** 88 of 467 script chunks (381 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 22 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SwapPlayerControl {#swapplayercontrol}
 
@@ -4844,7 +4844,7 @@ Enables or disables all seven Warrior commands for each player who is a war chie
   `GameState_EnableAllWarriorCommands`
 - **Used by** 20 of 467 script chunks (30 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 12 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## WCEnableAutomaticSwitching {#wcenableautomaticswitching}
 
@@ -4920,7 +4920,7 @@ dispatcher's switch and is described by name only (inferred). The third argument
 - **Wrapper** `0x003748e0` (registered by `RegisterBindings`); **calls** `0x0041dc80` `GameState_IssueWarriorCommandFor`
 - **Used by** 25 of 467 script chunks (45 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## WCLockCommands {#wclockcommands}
 

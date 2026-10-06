@@ -137,7 +137,7 @@ meaning of the numeric arguments is inferred from the stored fields and the scri
 - **Wrapper** `0x00373dd0` (registered by `RegisterBindings`); **calls** `0x0016aec0`
 - **Used by** 37 of 467 script chunks (221 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangAddTurfBox {#gangaddturfbox}
 
@@ -400,7 +400,7 @@ state are deleted, police responders are stood down (0x0016cc60).
 - **Wrapper** `0x0035f668` (registered by `RegisterBindings`); **calls** `0x0016b8b0`
 - **Used by** 17 of 467 script chunks (17 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangClearWanted {#gangclearwanted}
 
@@ -424,7 +424,7 @@ callback may run (which one is not traced).
 - **Wrapper** `0x0035f630` (registered by `RegisterBindings`); **calls** `0x0016b5e0`
 - **Used by** 11 of 467 script chunks (14 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangCreate {#gangcreate}
 
@@ -671,7 +671,7 @@ combat tutorial uses it to keep the player's crew alive.
 - **Wrapper** `0x003732a0` (registered by `RegisterBindings`); **calls** `0x0016a260`
 - **Used by** 3 of 467 script chunks (17 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangIsASpawner {#gangisaspawner}
 
@@ -1385,7 +1385,7 @@ Sets whether the gang's current members can be targeted (locked on to) by the pl
 - **Wrapper** `0x0035f728` (registered by `RegisterBindings`); **calls** `0x0016bac0`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetThreatResponse {#gangsetthreatresponse}
 

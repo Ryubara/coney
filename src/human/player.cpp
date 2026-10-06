@@ -15,6 +15,7 @@
 #include "characters/character_list.h"
 #include "characters/character_rig.h"
 #include "combat/combat_tuning.h"
+#include "human/script_state.h"
 
 namespace coney::human {
 
@@ -209,8 +210,11 @@ void Player::setPadControlled(bool padControlled) {
 
 void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets) {
     // The command for this sample (docs/research/combat.md#commands).
+    // A locked pad gives no buttons (HuLockPad); the commands disabled for it are not matched (EnableCommand).
+    const ScriptState& script = m_human.script();
+    const std::uint16_t buttons = script.padLocked ? std::uint16_t{0} : pad.buttons();
     const combat::CommandId command =
-        m_matcher.update(pad.buttons(), m_tables, combat::combatTuning().historyHoldSamples);
+        m_matcher.update(buttons, m_tables, combat::combatTuning().historyHoldSamples, script.disabledCommands);
     // The pad into the human's per-player record, its stick turned by the camera as it stood after the last update;
     // L2 held asks for a sprint; triangle pressed (command 10) climbs or jumps (docs/research/characters.md#buttons).
     // Then the characters' step, and the cameras last.
@@ -220,10 +224,10 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
         m_human.record() = PlayerRecord{.stickX = pad.leftX(),
                                         .stickY = pad.leftY(),
                                         .cameraForward = cameraForward,
-                                        .sprintHeld = pad.held(pad::kL2),
-                                        .actionPressed = pad.pressed(pad::kTriangle),
+                                        .sprintHeld = !script.padLocked && pad.held(pad::kL2),
+                                        .actionPressed = !script.padLocked && pad.pressed(pad::kTriangle),
                                         .command = command,
-                                        .buttons = pad.buttons(),
+                                        .buttons = buttons,
                                         .move = std::nullopt};
     } else {
         m_human.record() = PlayerRecord{.cameraForward = cameraForward, .move = m_human.record().move};

@@ -145,7 +145,7 @@ GateInput Human::gateInput() const {
 
 bool Human::stickHeld() const {
     const GateInput gate = gateInput();
-    return m_fighter.holdsMovement(m_animator) || stickBusy(gate) || stickVelocityGated(gate);
+    return m_script.arrested || m_fighter.holdsMovement(m_animator) || stickBusy(gate) || stickVelocityGated(gate);
 }
 
 Traversal Human::traversal() const {
@@ -175,7 +175,10 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_sprinting = false;
     m_jumping = false;
     m_lean = 0.0F;
+    // The fighting starts afresh; the flags the scripts set stay.
+    const std::uint64_t flags = m_fighter.flags();
     m_fighter = Fighter(m_ranges, 1, m_profile);
+    m_fighter.setFlags(flags);
     m_announced.clear();
     endClimb();
     if (m_animator.state() != AnimState::Idle) {
@@ -491,6 +494,10 @@ void Human::updateMeters(bool sprintHeld) {
         m_sprinting = false;
     }
     m_stamina.refill(RefillBlocks{.gait = gaitNow, .airborne = m_airborne, .sprintHeld = sprintHeld}, m_stepSeconds);
+    // A tireless human's stamina is full again every update.
+    if (hasFlag(flag::kTireless)) {
+        m_stamina.fill();
+    }
     m_sprinting = sprintAsked(sprintHeld, m_stamina.value());
 }
 
@@ -503,7 +510,8 @@ bool Human::tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction) {
     // The forward rays reach further for a player at the run or sprint gait, who then climbs in the running form.
     const ClimbTuning& tuning = climbTuning();
     const Gait gaitNow = gait();
-    const bool running = gaitNow == Gait::Run || gaitNow == Gait::Sprint;
+    // Only a human with flag 0x2 starts a climb from a run.
+    const bool running = (gaitNow == Gait::Run || gaitNow == Gait::Sprint) && hasFlag(flag::kFastClimber);
     const auto probe = probeClimb(mesh, m_position, direction, running ? tuning.runningReach : tuning.reach, true);
     if (!probe) {
         return false;
@@ -716,6 +724,11 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
         m_intent =
             StickIntent{.angle = m_record.move->heading + kPi / 2.0F, .magnitude = *m_moveSpeed > 0.0F ? 1.0F : 0.0F};
     }
+    // An arrested human is not moved by its stick or its brain (**Coney stand-in**, human/script_state.h).
+    if (m_script.arrested) {
+        m_intent.magnitude = 0.0F;
+        m_moveSpeed.reset();
+    }
     if (m_outOfWorld) {
         return;
     }
@@ -812,10 +825,11 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
     // as the original's dispatcher reads the block and the chain before the commands; triangle keeps its climb,
     // context action and jump while combat does not hold the body (in a grab it mugs).
     updateMeters(m_record.sprintHeld && !m_fighter.blocking());
-    if (!m_airborne && !m_climbRun) {
+    // An arrested human neither fights nor acts (**Coney stand-in**, human/script_state.h).
+    if (!m_airborne && !m_climbRun && !m_script.arrested) {
         fight(targets);
     }
-    if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator)) {
+    if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator) && !m_script.arrested) {
         tryActions(mesh, m_record.sprintHeld);
     }
     m_lean = leanStep(m_lean, m_lastTurn, speed(), gait());

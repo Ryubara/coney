@@ -36,9 +36,9 @@ float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot
 } // namespace
 
 Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const FighterProfile& profile)
-    : m_ranges(ranges), m_player(profile.player), m_combat(ranges, 0, seed),
-      m_health(profile.health > 0 ? profile.health : kPlayerHealth), m_victim(profile.powerClass, seed),
-      m_grabbedRandom(seed + 1U) {}
+    : m_ranges(ranges), m_player(profile.player), m_flags(profile.player ? flag::kPlayerFlags : 0),
+      m_combat(ranges, 0, seed), m_health(profile.health > 0 ? profile.health : kPlayerHealth),
+      m_victim(profile.powerClass, seed), m_grabbedRandom(seed + 1U) {}
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
     return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || helpless(animator);
@@ -87,7 +87,7 @@ Combatant* Fighter::pickTarget(const FighterInput& input, float range) {
         Combatant* best = nullptr;
         float bestDistance = reach;
         for (Combatant* target : input.targets) {
-            if (target->state() != TargetState::Standing || target->health().depleted() ||
+            if (target->state() != TargetState::Standing || target->health().depleted() || !target->targetable() ||
                 std::fabs(target->position().z - input.position.z) > kPickHeight) {
                 continue;
             }
@@ -120,6 +120,13 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     m_reactionShake.reset();
     m_rageStarted = false;
     m_l1Held = (input.buttons & pad::kL1) != 0;
+    // The flags the meters follow: a locked rage meter, tireless power. A demi-god at or below its health floor is a
+    // god from now on (0x00256f28).
+    m_combat.rage().setLocked(hasFlag(flag::kRageLocked), input.nowMs);
+    m_combat.power().setUnlimited(hasFlag(flag::kTireless));
+    if (hasFlag(flag::kDemiGod) && m_health.fraction() <= tuning.healthFloor) {
+        setFlag(flag::kGod, true);
+    }
     // The power meter's maximum follows the hurt state; the throw bonus lasts only while grabbing from the front or
     // throwing.
     m_combat.power().setHurt(hurt(), m_victim.powerClass().hurtPowerFactor);
@@ -440,16 +447,21 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
                             .flags = range != nullptr ? range->flags : std::uint16_t{0},
                             .attacker = input.position,
                             .react = !heldMove,
-                            .ignoresArmour = m_player,
-                            .attackerFlag200000 = false,
+                            .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact),
+                            .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
                             .attackerIsPlayer = m_player});
     ++m_hitsLanded;
     m_damageDealt += damage;
     // The hit earns its rage (**Coney choice**: never the blocked award, as a blocked hit is not reported back to the
     // attacker), then goes into the repeat tracker; a throw takes the bonus its grab strikes built.
-    combat::awardHitRage(m_combat.rage(), animId, false, combat::combatTuning(), input.nowMs, m_repeat,
-                         clips::isThrow(animId));
+    earnRage(animId, input.nowMs, clips::isThrow(animId));
     m_repeat.note(animId, input.nowMs);
+}
+
+void Fighter::earnRage(int animId, std::uint64_t nowMs, bool isThrow) {
+    if (hasFlag(flag::kRageAllowed)) {
+        combat::awardHitRage(m_combat.rage(), animId, false, combat::combatTuning(), nowMs, m_repeat, isThrow);
+    }
 }
 
 void Fighter::trackTarget(const FighterInput& input) {

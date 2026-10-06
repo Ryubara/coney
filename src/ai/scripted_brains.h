@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -15,6 +16,7 @@
 #include "ai/brains.h"
 #include "ai/move_to_flag_goal.h"
 #include "ai/script_services.h"
+#include "ai/scripted_humans.h"
 #include "animation/anim_math.h"
 #include "scripting/ai_bindings.h"
 #include "warriors/created_humans.h"
@@ -79,6 +81,13 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] bool holding() const { return m_holding; }
     /// Calls held so far.
     [[nodiscard]] std::size_t held() const { return m_held.size(); }
+    /// Keeps `call` for release() while holding and returns true; returns false (the caller runs it now) otherwise.
+    bool defer(std::function<void()> call) { return held(std::move(call)); }
+    /// The brains it drives, and the bound ones by handle.
+    [[nodiscard]] Brains& owner() const { return *m_owner; }
+    [[nodiscard]] const std::map<double, Brain*>& bound() const { return m_brains; }
+    /// The character bindings' host on the same brains (ai::ScriptedHumans).
+    [[nodiscard]] ScriptedHumans& humanHost() { return *m_humans; }
     /// Names `brain` (which must outlive the binding, or be unbound first) by `handle`, sets its handle, and puts it in
     /// gang `gang` (`HuCreate`'s seventh argument; -1 for none).
     void bind(double handle, Brain& brain, int gang = -1);
@@ -147,6 +156,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void humanTeleported(double handle, const world_objects::Placement& placement) override;
     /// Where a bound brain's human stands now, and its heading.
     [[nodiscard]] std::optional<world_objects::Placement> humanPlacement(double handle) const override;
+    /// The character bindings' host (ai::ScriptedHumans).
+    [[nodiscard]] script::HumanBindingHost* humans() override { return m_humans.get(); }
 
     // ---- FlagServices ----
 
@@ -196,6 +207,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     Spawner m_spawner;
     bool m_holding = false;
     std::vector<std::function<void()>> m_held; // the calls held, oldest first
+    std::unique_ptr<ScriptedHumans> m_humans;
 };
 
 } // namespace coney::ai

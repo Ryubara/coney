@@ -82,6 +82,8 @@ struct DealerCall {
     bool option = true;  ///< true when omitted.
 };
 
+class HumanBindingHost;
+
 /// What the AI and gang bindings ask of the game: the brains of the humans the scripts name by handle, and the gangs
 /// by id. A handle that names no brain, or an id no gang, is the host's to ignore, as the original's wrappers do with a
 /// handle that is not a human. Every hook but the first two does nothing (or answers 0) by default.
@@ -157,6 +159,9 @@ class AiBindingHost {
     virtual void humanCreated(const HumanCreation& /*human*/) {}
     /// `TeleportToFlag` put the human with `handle` at `placement`, with no ground snap.
     virtual void humanTeleported(double /*handle*/, const world_objects::Placement& /*placement*/) {}
+    /// The level's humans, brains and gangs as the character bindings drive them (scripting/human_bindings.h); null
+    /// for none.
+    [[nodiscard]] virtual HumanBindingHost* humans() { return nullptr; }
     /// Where the human with `handle` stands now; nothing when the host has no such human, and the place it was made
     /// or teleported to then stands in (CreatedHumans::placement()).
     [[nodiscard]] virtual std::optional<world_objects::Placement> humanPlacement(double /*handle*/) const {

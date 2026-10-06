@@ -570,6 +570,18 @@ name = "PlayerRecord_Update"
 subsystem = "Device/ps2"
 
 [[function]]
+address = 0x001463e0
+name = "PlayerCommand_EnableAllForHuman"
+subsystem = "Device/ps2"
+size = 968
+
+[[function]]
+address = 0x001467a8
+name = "PlayerCommand_EnableForHuman"
+subsystem = "Device/ps2"
+size = 1000
+
+[[function]]
 address = 0x00147430
 name = "AddCommand"
 subsystem = "Device/ps2"
@@ -984,6 +996,12 @@ subsystem = "GameModes"
 size = 64
 
 [[function]]
+address = 0x0016a260
+name = "Gang_SetInvincible"
+subsystem = "GameModes"
+size = 72
+
+[[function]]
 address = 0x0016aa98
 name = "Gang_SetBrainsDead"
 subsystem = "GameModes"
@@ -1006,6 +1024,12 @@ address = 0x0016b3d0
 name = "Gang_SetThreatResponse"
 subsystem = "GameModes"
 size = 144
+
+[[function]]
+address = 0x0016bac0
+name = "Gang_SetTargetable"
+subsystem = "GameModes"
+size = 152
 
 [[function]]
 address = 0x0016cdf0
@@ -2196,10 +2220,232 @@ subsystem = "Human"
 size = 400
 
 [[function]]
+address = 0x00234038
+name = "Human_SetNoTarget"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x002350c8
+name = "Human_SetTireless"
+subsystem = "Human"
+size = 104
+
+[[function]]
+address = 0x00235268
+name = "Human_SetPushable"
+subsystem = "Human"
+size = 72
+
+[[function]]
+address = 0x00235478
+name = "Human_GetGangType"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x00235628
+name = "Human_IsAlive"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00235718
+name = "Human_IsArrested"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x00235758
+name = "Human_IsPlayer"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x002359a0
+name = "Human_SetDemiGodMode"
+subsystem = "Human"
+size = 136
+
+[[function]]
+address = 0x00235a28
+name = "Human_SetGodMode"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00235b68
+name = "Human_SetFastClimber"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00235bc8
+name = "Human_SetUngrabbable"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00235c28
+name = "Human_SetUngroundable"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00235c88
+name = "Human_SetUnstunnable"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00235ce8
+name = "Human_SetIncreasedReact"
+subsystem = "Human"
+size = 104
+
+[[function]]
+address = 0x00235d50
+name = "Human_SetReducedReact"
+subsystem = "Human"
+size = 96
+
+[[function]]
 address = 0x00236508
 name = "Cfg_SetStereoTheftHandler"
 subsystem = "Human"
 size = 64
+
+[[function]]
+address = 0x002369b8
+name = "Human_SetRageFrac"
+subsystem = "Human"
+size = 176
+
+[[function]]
+address = 0x00236a68
+name = "Human_SetFullRage"
+subsystem = "Human"
+size = 104
+
+[[function]]
+address = 0x00236ad0
+name = "Human_SetPreventRage"
+subsystem = "Human"
+size = 104
+
+[[function]]
+address = 0x00236b38
+name = "Human_SetLockedRage"
+subsystem = "Human"
+size = 168
+
+[[function]]
+address = 0x00236c58
+name = "Cfg_SetRageHandlers"
+subsystem = "Human"
+size = 208
+
+[[function]]
+address = 0x00237328
+name = "Human_SetKeepWeapon"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00237468
+name = "Human_SetNoThrowWeapon"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x00237700
+name = "Human_SetArrested"
+subsystem = "Human"
+size = 120
+
+[[function]]
+address = 0x002377f8
+name = "Human_Revive"
+subsystem = "Human"
+size = 80
+
+[[function]]
+address = 0x002378a8
+name = "Human_SetHealthPercent"
+subsystem = "Human"
+size = 176
+
+[[function]]
+address = 0x00237c38
+name = "Human_GetHealthPercent"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x00237d48
+name = "Human_GetHeldObject"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x00238100
+name = "Human_SetMoney"
+subsystem = "Human"
+size = 88
+
+[[function]]
+address = 0x00238230
+name = "Human_SetCarriedItemName"
+subsystem = "Human"
+size = 88
+
+[[function]]
+address = 0x00238540
+name = "Human_PlaceItemInHand"
+subsystem = "Human"
+size = 184
+
+[[function]]
+address = 0x00238690
+name = "Human_UseAnim"
+subsystem = "Human"
+size = 184
+
+[[function]]
+address = 0x00238a88
+name = "Human_AttachSpinningIcon"
+subsystem = "Human"
+size = 88
+
+[[function]]
+address = 0x00238ae0
+name = "Human_RemoveSpinningIcon"
+subsystem = "Human"
+size = 56
+
+[[function]]
+address = 0x00239b80
+name = "Players_ChangeGang"
+subsystem = "Human"
+size = 648
+
+[[function]]
+address = 0x00239e78
+name = "Human_SetMugCallback"
+subsystem = "Human"
+size = 104
+
+[[function]]
+address = 0x0023a210
+name = "Human_SetNormalMode"
+subsystem = "Human"
+size = 72
+
+[[function]]
+address = 0x0023a3b8
+name = "Human_SetLookTarget"
+subsystem = "Human"
+size = 168
 
 [[function]]
 address = 0x0023a5f8
@@ -2240,6 +2486,18 @@ address = 0x0023ac50
 name = "AnimCallback_Dispatch"
 subsystem = "Human"
 size = 312
+
+[[function]]
+address = 0x0023ae40
+name = "Human_LockPad"
+subsystem = "Human"
+size = 80
+
+[[function]]
+address = 0x0023b138
+name = "Human_TeleportNear"
+subsystem = "Human"
+size = 1600
 
 [[function]]
 address = 0x0023cf88
@@ -2709,6 +2967,12 @@ subsystem = "Human"
 size = 896
 
 [[function]]
+address = 0x002854b0
+name = "Brain_SetInterrogateOverride"
+subsystem = "Human"
+size = 112
+
+[[function]]
 address = 0x002856b8
 name = "Player_UpdateMugging"
 subsystem = "Human"
@@ -2889,10 +3153,22 @@ subsystem = "Human"
 size = 96
 
 [[function]]
+address = 0x00292848
+name = "Brain_SetWantsWeapon"
+subsystem = "Human"
+size = 72
+
+[[function]]
 address = 0x00292ac0
 name = "Follow_SelectSlotSet"
 subsystem = "Human"
 size = 80
+
+[[function]]
+address = 0x00292cf0
+name = "Brain_ClearBackoff"
+subsystem = "Human"
+size = 144
 
 [[function]]
 address = 0x00293b28
@@ -2903,6 +3179,12 @@ size = 320
 [[function]]
 address = 0x00293c68
 name = "Formations_Update"
+subsystem = "Human"
+size = 104
+
+[[function]]
+address = 0x00294788
+name = "Cfg_SetDefaultFollowSlotSet"
 subsystem = "Human"
 size = 104
 
@@ -2953,6 +3235,12 @@ address = 0x00296028
 name = "Formation_Leave"
 subsystem = "Human"
 size = 160
+
+[[function]]
+address = 0x002994b8
+name = "Human_DropWeapon"
+subsystem = "Human"
+size = 88
 
 [[function]]
 address = 0x0029a8c0
@@ -3013,6 +3301,18 @@ address = 0x0029f098
 name = "Goal_TryBlock"
 subsystem = "Human"
 size = 408
+
+[[function]]
+address = 0x002abd38
+name = "Goal_Bum"
+subsystem = "Human"
+size = 208
+
+[[function]]
+address = 0x002abef8
+name = "BumLogicGoal_Init"
+subsystem = "Human"
+size = 264
 
 [[function]]
 address = 0x002b2b90
@@ -3153,6 +3453,18 @@ subsystem = "Human"
 size = 240
 
 [[function]]
+address = 0x002d9238
+name = "Goal_Backoff"
+subsystem = "Human"
+size = 176
+
+[[function]]
+address = 0x002d92e8
+name = "BackoffGoal_Init"
+subsystem = "Human"
+size = 144
+
+[[function]]
 address = 0x002da2c0
 name = "Goal_MoveToFlag"
 subsystem = "Human"
@@ -3187,6 +3499,18 @@ address = 0x002da588
 name = "MoveToFlagGoal_Process"
 subsystem = "Human"
 size = 648
+
+[[function]]
+address = 0x002db6b0
+name = "Goal_MoveToUseFlag"
+subsystem = "Human"
+size = 184
+
+[[function]]
+address = 0x002db768
+name = "MoveToUseFlagGoal_Init"
+subsystem = "Human"
+size = 168
 
 [[function]]
 address = 0x002df1a8
@@ -3862,10 +4186,28 @@ subsystem = "Scripting"
 size = 128
 
 [[function]]
+address = 0x0035f630
+name = "GangClearWanted"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x0035f668
+name = "GangClearResponders"
+subsystem = "Scripting"
+size = 32
+
+[[function]]
 address = 0x0035f6f0
 name = "GangBrFlush"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x0035f728
+name = "GangSetTargetable"
+subsystem = "Scripting"
+size = 104
 
 [[function]]
 address = 0x0035fc80
@@ -4200,6 +4542,12 @@ subsystem = "Scripting"
 size = 104
 
 [[function]]
+address = 0x003732a0
+name = "GangInvincible"
+subsystem = "Scripting"
+size = 104
+
+[[function]]
 address = 0x00373370
 name = "GangSetMsgHandler"
 subsystem = "Scripting"
@@ -4240,6 +4588,12 @@ address = 0x00373bf0
 name = "GangMakeFriends"
 subsystem = "Scripting"
 size = 120
+
+[[function]]
+address = 0x00373dd0
+name = "GangAddSpawner"
+subsystem = "Scripting"
+size = 824
 
 [[function]]
 address = 0x00374a80
@@ -4637,6 +4991,12 @@ subsystem = "World"
 size = 48
 
 [[function]]
+address = 0x0040cd78
+name = "ResourceManager_SetDynamicAnimation"
+subsystem = "World"
+size = 48
+
+[[function]]
 address = 0x0040cdd8
 name = "LevelObject_LinkModel"
 subsystem = "World"
@@ -4903,6 +5263,12 @@ name = "Level_OffersHangout"
 subsystem = "Warriors"
 
 [[function]]
+address = 0x0041d4f8
+name = "Cfg_SetGlobalTimeToLive"
+subsystem = "Warriors"
+size = 24
+
+[[function]]
 address = 0x0041d628
 name = "Cfg_SetDatabaseSizes"
 subsystem = "Warriors"
@@ -4917,6 +5283,18 @@ size = 40
 [[function]]
 address = 0x0041d718
 name = "GetCurrentLevelIndex"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041d738
+name = "Cfg_SetEnemySpotting"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041d748
+name = "Cfg_SetWarriorSpotting"
 subsystem = "Warriors"
 size = 16
 
@@ -4943,6 +5321,24 @@ address = 0x0041da08
 name = "Cfg_SetMultiplayerJoin"
 subsystem = "Warriors"
 size = 40
+
+[[function]]
+address = 0x0041daf8
+name = "Cfg_SetPlayerMugging"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041db08
+name = "GameState_EnableAllWarriorCommands"
+subsystem = "Warriors"
+size = 224
+
+[[function]]
+address = 0x0041dc80
+name = "GameState_IssueWarriorCommandFor"
+subsystem = "Warriors"
+size = 112
 
 [[function]]
 address = 0x0041e250

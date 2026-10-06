@@ -366,7 +366,7 @@ backing away; otherwise does nothing. `global.lua` uses it in its fight helpers.
 - **Wrapper** `0x0035f0f0` (registered by `RegisterBindings`); **calls** `0x00292cf0` `Brain_ClearBackoff`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrDead {#brdead}
 
@@ -965,7 +965,7 @@ set-up helpers; `GoalManWeaponPile` sets it too.
 - **Wrapper** `0x0035f990` (registered by `RegisterBindings`); **calls** `0x00292848` `Brain_SetWantsWeapon`
 - **Used by** 37 of 467 script chunks (78 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetType {#brsettype}
 
@@ -1153,7 +1153,7 @@ Makes a human back away from another and keep its distance, for a time or until 
 - **Wrapper** `0x00363d70` (registered by `RegisterBindings`); **calls** `0x002d9238` `Goal_Backoff`
 - **Used by** 8 of 467 script chunks (23 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalBigBrawler {#goalbigbrawler}
 
@@ -1346,7 +1346,7 @@ Gives a homeless human its ambient behaviour (begging, rummaging, sleeping by ty
 - **Wrapper** `0x003633a8` (registered by `RegisterBindings`); **calls** `0x002abd38` `Goal_Bum`
 - **Used by** 26 of 467 script chunks (71 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 14 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalBumLogicTrigger {#goalbumlogictrigger}
 
@@ -2224,7 +2224,7 @@ extras. The roles of the two floats and the flag are inferred.
 - **Wrapper** `0x003601a8` (registered by `RegisterBindings`); **calls** `0x002db6b0` `Goal_MoveToUseFlag`
 - **Used by** 28 of 467 script chunks (97 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalObjectThrower {#goalobjectthrower}
 
@@ -2871,7 +2871,7 @@ each value controls in the interrogation is inferred from the defaults and is an
 - **Evidence:** confirmed (code) at `0x002854b0`; detail: traced
 - **Wrapper** `0x0035d808` (registered by `RegisterBindings`); **calls** `0x002854b0` `Brain_SetInterrogateOverride`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticAddress {#tacticaddress}
 

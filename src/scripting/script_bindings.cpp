@@ -19,6 +19,7 @@
 #include "scripting/camera_bindings.h"
 #include "scripting/config_strings.h"
 #include "scripting/gang_bindings.h"
+#include "scripting/human_bindings.h"
 #include "scripting/level_bindings.h"
 #include "scripting/lighting_bindings.h"
 #include "scripting/object_bindings.h"
@@ -636,6 +637,68 @@ constexpr std::array kBindings{
     real("CamEnable"),
     real("CamTarget"),
     // The gangs (gang_bindings.h, and GangCreate above).
+    // The characters', brains' and gangs' bindings of the first mission (scripting/human_bindings.h).
+    real("BrClearBackoff"),
+    real("BrSetThugWantsWeapon"),
+    real("CfgPlayerMugging"),
+    real("CfgRageHandlers"),
+    real("CfgSetDefaultFollowSlotSet"),
+    real("CfgSetEnemySpotting"),
+    real("CfgSetGlobalTimeToLive"),
+    real("CfgSetWarriorSpotting"),
+    real("EnableCommand"),
+    real("EnableCommands"),
+    real("GangAddSpawner"),
+    real("GangClearResponders"),
+    real("GangClearWanted"),
+    real("GangInvincible"),
+    real("GangSetTargetable"),
+    real("GoalBackoff"),
+    real("GoalBumLogic"),
+    real("GoalMoveToUseFlag"),
+    real("HuAttachSpinningIcon"),
+    real("HuChangePlayerGang"),
+    real("HuDropWeapon"),
+    real("HuGetGangType"),
+    real("HuGetHealthPercent"),
+    real("HuGetHeldObject"),
+    real("HuIsAPlayer"),
+    real("HuIsAlive"),
+    real("HuIsArrested"),
+    real("HuLockPad"),
+    real("HuPlaceItemInHand"),
+    real("HuRemoveSpinningIcon"),
+    real("HuRevive"),
+    real("HuSetArrested"),
+    real("HuSetCarriedItem"),
+    real("HuSetDemiGodMode"),
+    real("HuSetFastClimber"),
+    real("HuSetFullRage"),
+    real("HuSetGodMode"),
+    real("HuSetHealthPercent"),
+    real("HuSetIncreasedReact"),
+    real("HuSetKeepWeapon"),
+    real("HuSetLockedRage"),
+    real("HuSetLookTarget"),
+    real("HuSetMoney"),
+    real("HuSetMugCallback"),
+    real("HuSetNoTarget"),
+    real("HuSetNoThrowWeapon"),
+    real("HuSetNormalMode"),
+    real("HuSetPreventRage"),
+    real("HuSetPushable"),
+    real("HuSetRageFrac"),
+    real("HuSetReducedReact"),
+    real("HuSetTireless"),
+    real("HuSetUngrabbable"),
+    real("HuSetUngroundable"),
+    real("HuSetUnstunnable"),
+    real("HuTeleportNearHuman"),
+    real("HuUseAnim"),
+    real("SetDynamicAnimation"),
+    real("SetInterrogateParam"),
+    real("WCEnableAllCommands"),
+    real("WCIssueCommand"),
     real("GangCreate"),
     real("GangDelete"),
     real("GangAddMember"),
@@ -737,14 +800,11 @@ constexpr std::array kBindings{
     recording("CfgPlayerRunButton"),
     recording("CfgPowerClass"),
     recording("CfgPowerEndurance"),
-    recording("CfgRageHandlers"),
     recording("CfgRagePoints"),
     recording("CfgRagePowerMode"),
     recording("CfgScrFx"),
     recording("CfgSearchCounts"),
     recording("CfgSearchTimes"),
-    recording("CfgSetDefaultFollowSlotSet"),
-    recording("CfgSetGlobalTimeToLive"),
     recording("CfgSetMeleeRange"),
     recording("CfgSetTargetingPoints"),
     recording("CfgSetTargetingPointsEx"),
@@ -927,7 +987,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kSpawnBindings, info.name) != kSpawnBindings.end() ||
                      std::ranges::find(kObjectBindings, info.name) != kObjectBindings.end() ||
                      std::ranges::find(kLightingBindings, info.name) != kLightingBindings.end() ||
-                     std::ranges::find(kPlayerBindings, info.name) != kPlayerBindings.end());
+                     std::ranges::find(kPlayerBindings, info.name) != kPlayerBindings.end() ||
+                     std::ranges::find(kHumanBindings, info.name) != kHumanBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -952,6 +1013,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addCameraBindings(vm, context, nextHandle);
     addSpawnBindings(vm, context, nextHandle);
     addObjectBindings(vm, context, nextHandle);
+    addHumanBindings(vm, context, nextHandle);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

@@ -1652,7 +1652,7 @@ mugging](../../research/crimes.md#mugging)).
 - **Wrapper** `0x0035e9c8` (registered by `RegisterBindings`); **calls** `0x0041daf8` `Cfg_SetPlayerMugging`
 - **Used by** 9 of 467 script chunks (9 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgPlayerRunButton {#cfgplayerrunbutton}
 
@@ -1821,7 +1821,7 @@ warning period is inferred.
 - **Evidence:** confirmed (code) at `0x00236c58`; detail: traced
 - **Wrapper** `0x0035a950` (registered by `RegisterBindings`); **calls** `0x00236c58` `Cfg_SetRageHandlers`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgRagePoints {#cfgragepoints}
 
@@ -2188,7 +2188,7 @@ records use set 0 or 1 is not traced.
 - **Evidence:** confirmed (code) at `0x00294788`; detail: traced
 - **Wrapper** `0x0036bcb8` (registered by `RegisterBindings`); **calls** `0x00294788` `Cfg_SetDefaultFollowSlotSet`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetEnemySpotting {#cfgsetenemyspotting}
 
@@ -2208,7 +2208,7 @@ Stores the enemy-spotting switch in the game state (+0x56f8).
 - **Wrapper** `0x0036bd90` (registered by `RegisterBindings`); **calls** `0x0041d738` `Cfg_SetEnemySpotting`
 - **Used by** 24 of 467 script chunks (44 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetGlassProperties {#cfgsetglassproperties}
 
@@ -2255,7 +2255,7 @@ Stores a global lifetime (game state +0x26c) for temporary things such as droppe
 - **Evidence:** confirmed (code) at `0x0041d4f8`; detail: traced
 - **Wrapper** `0x0036a658` (registered by `RegisterBindings`); **calls** `0x0041d4f8` `Cfg_SetGlobalTimeToLive`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetLockPickHandler {#cfgsetlockpickhandler}
 
@@ -2572,7 +2572,7 @@ can only turn the feature off.
 - **Wrapper** `0x0036bdc0` (registered by `RegisterBindings`); **calls** `0x0041d748` `Cfg_SetWarriorSpotting`
 - **Used by** 25 of 467 script chunks (45 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetWarriorVandalize {#cfgsetwarriorvandalize}
 

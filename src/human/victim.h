@@ -33,10 +33,13 @@ struct IncomingHit {
 
 /// What a human taking hits is, for its reaction (docs/research/combat.md#hit-codes).
 struct VictimFrame {
-    anim::Vec3 position;  ///< Its feet.
-    float heading = 0.0F; ///< Radians, 0 facing +y.
-    bool hurt = false;    ///< Below its class's hurt fraction.
-    bool flag400 = false; ///< Human flag `0x400` (the player has it).
+    anim::Vec3 position;      ///< Its feet.
+    float heading = 0.0F;     ///< Radians, 0 facing +y.
+    bool hurt = false;        ///< Below its class's hurt fraction.
+    bool flag400 = false;     ///< Human flag `0x400` (the player has it).
+    bool flag200 = false;     ///< Human flag `0x200` (`HuSetReducedReact`): strength - 1.
+    bool flag80 = false;      ///< Human flag `0x80` (`HuSetUngroundable`): strength at most 1.
+    bool unstunnable = false; ///< Human flag `0x100` (`HuSetUnstunnable`): never stunned.
 };
 
 /// What a reaction on its feet turned out to be.
@@ -65,8 +68,8 @@ class Victim {
     /// Plays the reaction to `hit` on its feet through `animator` at game time `nowMs`: a knockdown when the reaction's
     /// clip has an event of type 7 (the ground for the class's ground time; stunned too when the attack stuns or it
     /// already is, until the rise + the stun time), else a stun when the attack's flags stun or it already is (the
-    /// class's stun time), else a plain reaction that returns to `idle`. Returns the kind; `lastReaction()` names the
-    /// clip.
+    /// class's stun time; never for a victim with flag `0x100`), else a plain reaction that returns to `idle`. Returns
+    /// the kind; `lastReaction()` names the clip.
     /// @orig 0x0026a6d0 Human_PlayReaction (unknown)
     /// @orig 0x0022f658 Human_Stun (unknown)
     /// @orig 0x0022f100 Human_KnockDown (unknown)
@@ -82,6 +85,11 @@ class Victim {
     void stun(std::uint64_t nowMs);
     /// Forgets the stun and the ground (a hold takes it, it got up another way).
     void clear();
+    /// Forgets the stun only.
+    void endStun() {
+        m_stunUntilMs = 0;
+        m_stunExitPending = false;
+    }
 
     /// One update's timers at `nowMs`: a stun whose time has passed ends with 357 (then `idle`) once the clip playing
     /// is over (a reaction or the rise is not cut short); a grounded victim with `canRise` gets up with 199 once its
