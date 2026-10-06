@@ -596,14 +596,20 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
 - **Widgets** (`src/gui/widget.h` and beside it): `Widget` (`0x001a8e30`) with `init` once (until `shutdown`),
   `update` with the frame's game time and the player's pad, `render` into batches, and visibility. `BaseWidget`
   (`0x001a1bf8`, its sprite `0x001a2690`): one rectangle of a sheet as one sprite, after the black shadow at (0.0025,
-  0.004) with alpha × 128 / 255. `TextWidget` (`0x001ccf88`, text `0x001cd1e0`): a text through `layoutText`, with a
-  fade and its own time for `<PULSE>` and `<DISPLAYTIME>`; it draws with a shadow of 128. `OptionGrid` (`0x001d3ef0`,
-  setup `0x001d4110`, add item `0x001d4230` up to 50, focus `0x001d4d28`): items with codes, the selected one at 1.15
-  times the size; up and down move, accept returns the code. `UsageInfo` (`0x001cea70`, text `0x001cec28`): the
-  legend line. Coney's choices where the page is silent: a sprite widget's rectangle is its centre and size; the grid
-  is one column whose selection wraps, left and right do nothing, the selected item is white and the others grey
-  (160), and its layout (top, spacing, box) is the owner's; the usage line is a centred text. The screens that use them
-  are on [Front end](frontend.md#coneys-implementation).
+  0.004) with alpha × 128 / 255. The classes of [The widget classes](#widget-classes), as written there:
+  `BaseWidget` (setup `0x001a1db8`): size in overlay units with the width from the rectangle's shape (or given), the
+  aspect fix, the anchor (centre, left edge, right edge) and an optional shadow at the unshifted position with alpha ×
+  0.502. `TextWidget` (`0x001ccf88`, setup `0x001cd060`, text `0x001cd1e0`) stands for both text widgets: a text
+  through `layoutText` placed left at x, centred on it or ending at it, in the font slot given, shadow 0x80, with a
+  fade and its own time for `<PULSE>` and `<DISPLAYTIME>`. `OptionGrid` (setup `0x001d4110`, add item `0x001d4230` up to
+  50, focus `0x001d4d28`, handler `0x001d4c40`): row counts, left-packed or centred rows, the `" : "` separator,
+  `kSelectedGrey` for the focused selection, the moves, wrap only from 3 items, cue `+0x94` and `0xe`, and the d-pad's
+  plain query after a refused move. `UsageInfo` (`0x001ceb40`, text `0x001cec28`): size 1.0, `kMenuGrey`, left-aligned
+  or centred. `Bar` (`0x001a0fd0`) and the message box (`src/gui/message_box.h`, [Front end](frontend.md#message-box)).
+  The colour table is `src/gui/colour_table.h`. Coney's choices: a grid's row pitch adds 0.0036 to 6h / 7 so rows land
+  0.0505 apart at size 1.15, as measured ([Front end](frontend.md#pm-layout)); items past the row counts get a row each;
+  part_page0 is Coney's font slot 2 (the original's 3). The screens that use them are on
+  [Front end](frontend.md#coneys-implementation).
 - **The `METRICS1` file** is not read: no code uses it ([above](#the-metrics1-file)), and the fonts' metrics come from
   their sheets' rectangles.
 - `coney --disc <disc> --view-text <font> <text or @id>` lays a text out and draws it through a batch per font and
@@ -678,8 +684,7 @@ What the implementer still needs:
 
 - The other instance formats (1, a 2D rotation; 2, a full matrix), the resource manager's 255 instance slots and
   the worlds an instance can live in (3D overlay, 2D overlay), where the original's pass finds its batches.
-- The widget base's other slots (setup with a rectangle and flags, the rectangle, active, the text reveal) and the
-  message box.
+- The widget base's other slots (the rectangle, active, the text reveal) and `BaseWidget`'s timed fade.
 - Text widgets around the layout: the reveal fraction, `<SOUND>` played once, `<FREEZE>` on the game timer, and
   the open tags above (`MONEYFONT` first: the menus use it around every button glyph).
 

@@ -49,12 +49,15 @@ add_library(coney_core STATIC
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
     raycast/collision_mesh.cpp
+    gui/bar.cpp
     gui/base_widget.cpp
     gui/global_strings.cpp
     gui/markup.cpp
     gui/menu_input.cpp
+    gui/message_box.cpp
     gui/option_grid.cpp
     gui/profile_management_gui/pm_controller.cpp
+    gui/profile_management_gui/pm_extras.cpp
     gui/profile_management_gui/pm_greet.cpp
     gui/profile_management_gui/pm_list_screen.cpp
     gui/profile_management_gui/pm_look.cpp
@@ -63,6 +66,7 @@ add_library(coney_core STATIC
     gui/profile_management_gui/pm_placeholder.cpp
     gui/profile_management_gui/pm_profile_screens.cpp
     gui/profile_management_gui/pm_screen.cpp
+    gui/profile_management_gui/pm_widgets.cpp
     gui/rumble_mode_gui/rumble_data.cpp
     gui/rumble_mode_gui/rumble_gang_chooser.cpp
     gui/rumble_mode_gui/rumble_menu.cpp

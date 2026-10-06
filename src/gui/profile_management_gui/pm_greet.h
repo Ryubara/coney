@@ -3,7 +3,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <optional>
 #include <string_view>
 
 #include "gui/base_widget.h"
@@ -13,55 +12,63 @@
 
 namespace coney::gui {
 
-/// The profile manager's first screen, "press START": the game's logo and a blinking prompt. START on the HUD player's
-/// pad leads to the main menu (PM_Mode) with front-end sound cue 9; 70 s without a screen fade call the Lua function
-/// `Menu.playMovie(2)` (the attract movie), and the wait starts again.
+/// The profile manager's first screen, "press START": the game's logo and a blinking prompt.
 ///
-/// - The prompt is global string 0x76; its alpha ramps 0 → 255 and back in alternate 1,500 ms halves, counted from the
-///   screen's entry, while the profile manager is not finishing.
-/// - START is read with the auto-repeating query, as the original does; START is not a d-pad bit, so that is its plain
-///   press.
+/// - **Logo:** `menu_system` rectangle 0, tinted kMenuRed, its own batch at depth 11,000 (PmShared::frontSprites),
+///   its **left edge** at the layout's x, centred on y 0.2, 0.33 overlay units high (0.23 and 0.27 with the flag 0x02
+///   alone), its width from the rectangle's shape, no shadow.
+/// - **Prompt:** global string 0x76 at (x, the one-row grid y 0.81), size 1.15, kMenuRed, `big_font`, left-aligned.
+///   It blinks: phase 1 ramps its alpha 0 → 255 over kBlinkPeriodMs, phase 0 back to 0, then the phase flips. While
+///   the screen fade runs or is not clear the prompt is fully lit, the phase is forced to 1, its timer restarts and so
+///   does the idle clock.
+/// - **START** (the auto-repeating query) leads to PM_Mode (result 0) with cue 9, and the screen stops drawing; it is
+///   ignored while the attract flag is set and a fade runs. No back.
+/// - **Idle:** after kIdleMs without a fade the screen sets its attract flag (`+0xac`, never cleared here), restarts
+/// the
+///   clock and calls the Lua function `Menu.playMovie(2)`, the attract movie.
 ///
-/// - A screen fade in progress (the screen-effects manager's `+0x1d4` and `+0x1d8`, graphics::ScreenFade::active())
-///   keeps the prompt fully lit and restarts the idle time; the pad does not touch it.
+/// Coney's choices: the clocks are game time, not the original's real time; the original also resets the Lua pad
+/// handlers on entry, which Coney does not have yet.
 ///
-/// Coney's choices: the sprite is rectangle 0 of `menu_system` (the logo, from viewing the sheet); the layout is
-/// PmLayout's (the logo keeps its rectangle's shape); "a fade in progress" is a fade running or a screen not fully
-/// clear; the prompt is drawn in font slot 2 at scale 1.
-///
-/// Research: docs/research/frontend.md#profile-manager
+/// Research: docs/research/frontend.md#pm-screens
 class PmGreet final : public ScreenFlowState {
   public:
     /// Result: on to PM_Mode.
     static constexpr int kToMode = 0;
-    /// Result: on to PM_NoSpace (not produced by Coney: no memory card).
+    /// Result: on to PM_NoSpace (Xbox only; never produced).
     static constexpr int kToNoSpace = 1;
-    /// Result: on to PM_TooManyProfiles (not produced by Coney: no memory card).
+    /// Result: on to PM_TooManyProfiles (Xbox only; never produced).
     static constexpr int kToTooManyProfiles = 2;
     /// The prompt's global string.
     static constexpr std::uint32_t kPromptString = 0x76;
-    /// Half the prompt's blink: the time it takes to fade in, and to fade out.
-    static constexpr std::uint64_t kBlinkHalfMs = 1500;
+    /// The blink's period (`+0x98`): the time a ramp up, or down, takes.
+    static constexpr std::uint64_t kBlinkPeriodMs = 1500;
     /// Time without a screen fade before the attract movie.
     static constexpr std::uint64_t kIdleMs = 70'000;
-    /// The movie `Menu.playMovie` is asked for: entry 2 of `Menu.movies`, the intro `L1_IN`.
+    /// The Lua function the attract movie is asked from, and its argument: entry 2 of `Menu.movies`, `L1_IN`.
+    static constexpr std::string_view kPlayMovieFunction = "Menu.playMovie";
     static constexpr double kAttractMovie = 2.0;
     /// The front-end sound cue START plays.
     static constexpr int kStartCue = 9;
-    /// The `menu_system` rectangle the logo is.
+    /// The `menu_system` rectangle the logo is (sprite word `0x30000`).
     static constexpr std::size_t kLogoRect = 0;
+    /// The logo's centre y (`0x0050f628`) and height in overlay units (`0x0050f624`), default and with flag 0x02.
+    static constexpr float kLogoY = 0.2F;
+    static constexpr float kLogoHeight = 0.33F;
+    static constexpr float kLogoYFlag02 = 0.23F;
+    static constexpr float kLogoHeightFlag02 = 0.27F;
 
     /// A screen over `shared`, which must outlive it.
     explicit PmGreet(PmShared& shared);
 
     [[nodiscard]] std::string_view name() const override { return "PM_Greet"; }
 
-    /// Makes the widgets and starts the blink and the idle time.
+    /// Makes the widgets and starts the blink and the idle clock.
     /// @orig 0x00207d48 PM_Greet_Enter (PM_Greet.cpp)
     /// @orig 0x002079a0 PM_Greet::Init (PM_Greet.cpp)
     void enter(ScreenFlowController& flow) override;
 
-    /// One frame: blink, START, idle; then draws. Returns kToMode on START, kStay otherwise.
+    /// One frame: blink, idle, START; then draws (unless START was taken). Returns kToMode on START, kStay otherwise.
     /// @orig 0x00207dd0 PM_Greet_Update (PM_Greet.cpp)
     /// @orig 0x00207e28 PM_Greet::Update (PM_Greet.cpp)
     /// @orig 0x00208288 PM_Greet::Render (PM_Greet.cpp)
@@ -71,24 +78,27 @@ class PmGreet final : public ScreenFlowState {
     /// @orig 0x00207da0 PM_Greet_Exit (PM_Greet.cpp)
     void exit() override;
 
-    /// The prompt's alpha at game time `timeMs` for a screen entered at `enteredMs`: 0 → 255 over the first half,
-    /// 255 → 0 over the second, repeating.
+    /// The prompt's alpha for `elapsedMs` into a phase: phase 1 ramps 0 → 255, phase 0 255 → 0, over kBlinkPeriodMs.
+    [[nodiscard]] static std::uint8_t blinkAlpha(bool rising, std::uint64_t elapsedMs);
+    /// The same blink as one clock: the alpha at game time `timeMs` for a blink started (rising) at `enteredMs`, for
+    /// prompts that blink the same way (PM_NumPlayers' `0x77`).
     [[nodiscard]] static std::uint8_t promptAlpha(std::uint64_t enteredMs, std::uint64_t timeMs);
 
     /// The prompt widget.
     [[nodiscard]] const TextWidget& prompt() const { return m_prompt; }
     /// The logo widget.
     [[nodiscard]] const BaseWidget& logo() const { return m_logo; }
+    /// Whether the attract movie has been asked for since the screen was entered (`+0xac`).
+    [[nodiscard]] bool attracting() const { return m_attract; }
 
   private:
-    // The logo's GUI height for a GUI width of `width`, keeping its rectangle's shape; `width` without a sheet.
-    [[nodiscard]] float logoHeight(float width) const;
-
     PmShared& m_shared;
     BaseWidget m_logo;
     TextWidget m_prompt;
-    std::uint64_t m_enteredMs = 0;
-    std::uint64_t m_lastActivityMs = 0;
+    bool m_rising = true;             // the blink's phase (`+0x9c`)
+    std::uint64_t m_phaseStartMs = 0; // when the phase began
+    std::uint64_t m_idleSinceMs = 0;  // the idle clock (`+0xa8`)
+    bool m_attract = false;           // `+0xac`
 };
 
 } // namespace coney::gui

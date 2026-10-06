@@ -10,16 +10,19 @@
 #include <utility>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/pad.h"
 #include "graphics/screen_fade.h"
 #include "graphics/sprite_batch.h"
+#include "gui/colour_table.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_greet.h"
 #include "gui/profile_management_gui/pm_mode.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "gui/profile_management_gui/pm_profile_screens.h"
+#include "gui/profile_management_gui/pm_widgets.h"
 #include "support/font_fixtures.h"
 #include "support/recording_device.h"
 #include "warriors/game_state.h"
@@ -81,7 +84,8 @@ struct Harness {
         shared.secondPad = &pad2;
         shared.strings = &strings;
         shared.menuSprites = &menuBatch;
-        shared.europe = europe;
+        shared.video.flag02 = europe;
+        shared.frontSprites = &menuBatch;
         shared.canvas.fonts = [this](int /*slot*/) { return &font; };
         shared.canvas.textBatch = [this](int /*slot*/) { return &textBatch; };
         shared.playSound = [this](int cue) { cues.push_back(cue); };
@@ -140,18 +144,54 @@ TEST_CASE("profile manager: starts at PM_Greet with the logo and the prompt", "[
     CHECK(h.controller->onRumble() == "Menu.fadeToRMI");
     CHECK_FALSE(h.step());
     CHECK(h.controller->greet().prompt().text() == "PRESS START");
-    // The logo and its shadow; the prompt starts invisible but its sprites are still laid out.
-    CHECK(h.menuBatch.sprites().size() == 2);
+    // The logo alone (no shadow); the prompt starts invisible but its sprites are still laid out.
+    REQUIRE(h.menuBatch.sprites().size() == 1);
+    CHECK(h.menuBatch.sprites()[0].colour == coney::gui::kMenuRed);
     CHECK(h.textBatch.sprites().size() == 2 * std::string("PRESSSTART").size());
 }
 
-TEST_CASE("PM_Greet: the prompt fades in and out in 1,500 ms halves", "[profile_manager]") {
-    CHECK(PmGreet::promptAlpha(1000, 1000) == 0);
-    CHECK(PmGreet::promptAlpha(1000, 1750) == 127);
-    CHECK(PmGreet::promptAlpha(1000, 2500) == 255);
-    CHECK(PmGreet::promptAlpha(1000, 3250) == 127);
-    CHECK(PmGreet::promptAlpha(1000, 4000) == 0);
-    CHECK(PmGreet::promptAlpha(1000, 4750) == 127);
+TEST_CASE("PM_Greet: the logo's left edge at x 0, centred on y 0.2, 0.33 overlay units high, red; the prompt at "
+          "(0, 0.81)",
+          "[profile_manager]") {
+    Harness h;
+    h.start();
+    h.step();
+    const coney::gui::BaseWidget& logo = h.controller->greet().logo();
+    const auto [width, height] = logo.overlaySize();
+    CHECK(height == Catch::Approx(0.33F));
+    // The sheet's rectangle is 256 x 64 texels: four times as wide as high.
+    CHECK(width == Catch::Approx(4.0F * 0.33F));
+    const auto [x, y] = logo.centre();
+    CHECK(x == Catch::Approx(width * 448.0F / 640.0F / 2.0F));
+    CHECK(y == Catch::Approx(0.2F));
+    const coney::gui::TextStyle& prompt = h.controller->greet().prompt().style();
+    CHECK(prompt.x == Catch::Approx(0.0F));
+    CHECK(prompt.y == Catch::Approx(0.81F));
+    CHECK(prompt.scale == Catch::Approx(1.15F));
+    CHECK(prompt.colour == coney::gui::kMenuRed);
+    CHECK(prompt.fontSlot == coney::gui::kBigFontSlot);
+}
+
+TEST_CASE("PM_Greet: the prompt ramps up then down over 1,500 ms each, flipping phase", "[profile_manager]") {
+    CHECK(PmGreet::blinkAlpha(true, 0) == 0);
+    CHECK(PmGreet::blinkAlpha(true, 750) == 127);
+    CHECK(PmGreet::blinkAlpha(true, 1500) == 255);
+    CHECK(PmGreet::blinkAlpha(false, 0) == 255);
+    CHECK(PmGreet::blinkAlpha(false, 750) == 128);
+    CHECK(PmGreet::blinkAlpha(false, 1500) == 0);
+    // On the screen: dark at entry, lit after 1.5 s, dark again after 3 s.
+    Harness h;
+    h.start();
+    h.step();
+    CHECK(h.controller->greet().prompt().style().fade < 0.05F);
+    while (h.frame < 45) {
+        h.step();
+    }
+    CHECK(h.controller->greet().prompt().style().fade > 0.95F);
+    while (h.frame < 90) {
+        h.step();
+    }
+    CHECK(h.controller->greet().prompt().style().fade < 0.05F);
 }
 
 TEST_CASE("PM_Greet: START leads to PM_Mode with front-end sound cue 9", "[profile_manager]") {
@@ -225,26 +265,87 @@ TEST_CASE("PM_Mode: three items, the first selected; extras left out with the fl
     h.step();
     const auto& grid = h.controller->mode().grid();
     REQUIRE(grid.items() == 3);
-    CHECK(grid.item(0).text() == "STORY");
+    CHECK(grid.item(0).text == "STORY");
     CHECK(grid.code(0) == PmMode::kStory);
     CHECK(grid.code(1) == PmMode::kExtras);
     CHECK(grid.code(2) == PmMode::kQuickRumble);
     CHECK(grid.selected() == 0);
     CHECK(h.controller->mode().usage().text() == "<X> ok");
 
+    // Rows {2, 1} at (0, 0.76): "STORY : EXTRAS" over "RUMBLE", red, the selection grey.
+    CHECK(grid.rows() == 2);
+    CHECK(grid.item(0).separator);
+    CHECK_FALSE(grid.item(1).separator);
+    const auto [storyX, storyY] = grid.itemPosition(0, h.shared.canvas);
+    const auto [extrasX, extrasY] = grid.itemPosition(1, h.shared.canvas);
+    const auto [rumbleX, rumbleY] = grid.itemPosition(2, h.shared.canvas);
+    CHECK(storyX == Catch::Approx(0.0F));
+    CHECK(storyY == Catch::Approx(0.76F));
+    CHECK(extrasY == Catch::Approx(0.76F));
+    CHECK(extrasX > storyX);
+    CHECK(rumbleX == Catch::Approx(0.0F));
+    CHECK(rumbleY == Catch::Approx(0.76F + 0.0505F).margin(0.0005F));
+    CHECK(grid.itemColour(0) == coney::gui::kSelectedGrey);
+    CHECK(grid.itemColour(1) == coney::gui::kMenuRed);
+    CHECK(grid.item(0).scale == Catch::Approx(1.15F));
+    CHECK(grid.item(2).scale == Catch::Approx(1.15F));
+    // The usage line left-aligned at (0, 0.87).
+    CHECK(h.controller->mode().usage().style().x == Catch::Approx(0.0F));
+    CHECK(h.controller->mode().usage().style().y == Catch::Approx(0.87F));
+
     Harness europe(true);
     europe.start();
     europe.step(coney::pad::kStart);
     REQUIRE(europe.controller->mode().grid().items() == 2);
     CHECK(europe.controller->mode().grid().code(1) == PmMode::kQuickRumble);
+    CHECK(europe.controller->mode().grid().rows() == 1);
+    // The flag 0x02 also picks its own layout column: the one-row y is 0.734 there.
+    CHECK(europe.controller->mode().grid().itemPosition(0, europe.shared.canvas).second == Catch::Approx(0.734F));
 }
 
-TEST_CASE("PM_Mode: down and cross on extras lead to PM_Extras; back returns to PM_Mode", "[profile_manager]") {
+TEST_CASE("PM_Mode: left and right walk the three items with wrap; up and down keep the column", "[profile_manager]") {
+    Harness h;
+    h.start();
+    h.step(coney::pad::kStart);
+    const auto& grid = h.controller->mode().grid();
+    const auto press = [&h](std::uint16_t button) {
+        h.wait();
+        h.tap(button);
+    };
+    press(coney::pad::kRight);
+    CHECK(grid.selected() == 1);
+    CHECK(h.cues.back() == coney::gui::pm::kMoveCue);
+    press(coney::pad::kRight);
+    CHECK(grid.selected() == 2);
+    press(coney::pad::kRight);
+    CHECK(grid.selected() == 0);
+    press(coney::pad::kLeft);
+    CHECK(grid.selected() == 2);
+    // Up from QUICK RUMBLE: STORY; down from EXTRAS: QUICK RUMBLE (the column clamped); down wraps to the first row.
+    press(coney::pad::kUp);
+    CHECK(grid.selected() == 0);
+    press(coney::pad::kRight);
+    press(coney::pad::kDown);
+    CHECK(grid.selected() == 2);
+    press(coney::pad::kDown);
+    CHECK(grid.selected() == 0);
+
+    // With two items (the flag 0x02) nothing wraps: a refused move plays 0xe.
+    Harness europe(true);
+    europe.start();
+    europe.step(coney::pad::kStart);
+    europe.wait();
+    europe.tap(coney::pad::kLeft);
+    CHECK(europe.controller->mode().grid().selected() == 0);
+    CHECK(europe.cues.back() == coney::gui::pm::kRefusedCue);
+}
+
+TEST_CASE("PM_Mode: right and cross on extras lead to PM_Extras; back returns to PM_Mode", "[profile_manager]") {
     Harness h;
     h.start();
     h.step(coney::pad::kStart);
     h.wait();
-    h.tap(coney::pad::kDown);
+    h.tap(coney::pad::kRight);
     h.wait();
     CHECK(h.controller->mode().grid().selected() == 1);
     h.tap(coney::pad::kCross);
@@ -264,7 +365,7 @@ TEST_CASE("PM_Mode: story leads to PM_Profile, quick rumble calls the first call
     h.wait();
     h.tap(coney::pad::kCross);
     CHECK(h.controller->currentName() == "PM_Profile");
-    CHECK(h.cues == std::vector<int>{PmGreet::kStartCue, PmMode::kAcceptCue});
+    CHECK(h.cues == std::vector<int>{PmGreet::kStartCue, coney::gui::pm::kAcceptCue});
     h.wait();
     h.tap(coney::pad::kCircle);
     CHECK(h.controller->currentName() == "PM_Mode");
@@ -284,7 +385,7 @@ TEST_CASE("PM_Mode: story leads to PM_Profile, quick rumble calls the first call
     h.tap(coney::pad::kTriangle);
     CHECK(h.controller->currentName() == "PM_Greet");
     CHECK(h.controller->flow().size() == 1);
-    CHECK(h.cues.back() == PmMode::kBackCue);
+    CHECK(h.cues.back() == coney::gui::pm::kBackCue);
 }
 
 TEST_CASE("PM_Mode: input waits while the screen is faded; story with two pads asks for the players",
@@ -543,5 +644,27 @@ TEST_CASE("profile manager: every screen of the table exists; stop empties the f
     h.controller->stop();
     CHECK(h.controller->current() == nullptr);
     CHECK(h.step()); // an empty flow is done
-    CHECK(PmController::kPlaceholderNames.size() + 11 == 14);
+    CHECK(PmController::kPlaceholderNames.size() + 12 == 14);
+}
+
+TEST_CASE("PM_Extras: TRAILER at (0, 0.81); cross plays Menu.playMovie(1) and stays", "[profile_manager]") {
+    Harness g;
+    g.start();
+    g.step(coney::pad::kStart);
+    g.wait();
+    g.tap(coney::pad::kRight);
+    g.wait();
+    g.tap(coney::pad::kCross);
+    REQUIRE(g.controller->currentName() == "PM_Extras");
+    const auto& grid = g.controller->extras().grid();
+    REQUIRE(grid.items() == 1);
+    CHECK(grid.itemPosition(0, g.shared.canvas).first == Catch::Approx(0.0F));
+    CHECK(grid.itemPosition(0, g.shared.canvas).second == Catch::Approx(0.81F));
+    g.wait();
+    g.tap(coney::pad::kCross);
+    CHECK(g.controller->currentName() == "PM_Extras");
+    REQUIRE(g.scripts.size() == 1);
+    CHECK(g.scripts[0].first == "Menu.playMovie");
+    CHECK(g.scripts[0].second == std::vector<double>{1.0});
+    CHECK(g.cues.back() == coney::gui::pm::kAcceptCue);
 }

@@ -63,6 +63,9 @@ class ProfileManagerMode final : public GameMode {
     static constexpr std::string_view kMenuSheet = "menu_system";
     static constexpr std::size_t kMenuCapacity = 50;
     static constexpr float kMenuDepth = 8500.0F;
+    /// The `menu_system` sprites of widgets that make their own instance at depth 11,000 (PM_Greet's logo).
+    static constexpr std::size_t kFrontCapacity = 8;
+    static constexpr float kFrontDepth = 11000.0F;
     /// The text batches: how many sprites a frame, and their depth (big_font's text, docs/research/gui.md#draw-order).
     static constexpr std::size_t kTextCapacity = 2048;
     static constexpr float kTextDepth = 9000.0F;
@@ -132,6 +135,7 @@ class ProfileManagerMode final : public GameMode {
     gui::PmShared m_shared;
     gui::PmController m_controller; // after m_shared, which it refers to
     std::optional<graphics::SpriteBatch> m_menuBatch;
+    std::optional<graphics::SpriteBatch> m_frontBatch;
     std::optional<graphics::Font> m_textFont;
     std::optional<graphics::Font> m_bigFont;
     std::optional<graphics::SpriteBatch> m_textBatch;

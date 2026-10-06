@@ -267,10 +267,18 @@ void PmLight::open() {
         widget->init();
         widget->setBatch(batch);
     }
-    m_square.setup(WidgetRect{pm_look::kX + squareWidth / 2.0F, kSquareY, squareWidth, kSquareHeight}, graphics::kWhite,
-                   false);
-    m_barBack.setup(WidgetRect{pm_look::kX + kBarWidth / 2.0F, kBarY, kBarWidth, kBarHeight},
-                    graphics::Rgba{64, 64, 64, 255}, false);
+    // Left edges at x; the sizes are GUI units here, overlay units in the widgets (a GUI height is one overlay unit).
+    m_square.setup(BaseWidgetSetup{.x = pm_look::kX,
+                                   .y = kSquareY,
+                                   .height = kSquareHeight,
+                                   .width = graphics::OverlayCamera::guiWidthToOverlay(squareWidth),
+                                   .anchor = SpriteAnchor::Left});
+    m_barBack.setup(BaseWidgetSetup{.x = pm_look::kX,
+                                    .y = kBarY,
+                                    .height = kBarHeight,
+                                    .width = graphics::OverlayCamera::guiWidthToOverlay(kBarWidth),
+                                    .colour = graphics::Rgba{64, 64, 64, 255},
+                                    .anchor = SpriteAnchor::Left});
     placePmText(m_hint, m_shared.string(kHintString), kHintX, kHintY, pm_look::kMessageScale, pm_look::kRed,
                 kTextFontSlot);
     placePmUsage(m_usage, m_shared);
@@ -316,7 +324,12 @@ void PmLight::draw() {
     const auto v = static_cast<std::uint8_t>(m_value);
     m_square.setColour(graphics::Rgba{v, v, v, 255});
     const float fill = kBarWidth * static_cast<float>(m_value) / static_cast<float>(kMax);
-    m_barFill.setup(WidgetRect{pm_look::kX + fill / 2.0F, kBarY, fill, kBarHeight}, pm_look::kRed, false);
+    m_barFill.setup(BaseWidgetSetup{.x = pm_look::kX,
+                                    .y = kBarY,
+                                    .height = kBarHeight,
+                                    .width = graphics::OverlayCamera::guiWidthToOverlay(fill),
+                                    .colour = pm_look::kRed,
+                                    .anchor = SpriteAnchor::Left});
     m_barFill.setVisible(m_value > 0);
     for (const BaseWidget* widget : {&m_square, &m_barBack, &m_barFill}) {
         if (widget->visible()) {

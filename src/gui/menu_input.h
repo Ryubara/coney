@@ -49,6 +49,11 @@ class MenuInput {
     /// until kFocusBlockMs after `nowMs`.
     void focus(std::uint64_t nowMs);
 
+    /// Whether the d-pad auto-repeats (the default) or counts only fresh presses: an option grid turns repeat off after
+    /// a move that could not leave its item, so holding against an end does not refuse again and again, and back on
+    /// after a move (`OptionGrid` `+0xc4`).
+    void setDpadRepeat(bool repeat) { m_dpadRepeat = repeat; }
+
   private:
     // The direction the left stick is pushed past kStickThreshold, if any.
     [[nodiscard]] static std::optional<MenuCommand> stickDirection(const Pad& pad);
@@ -56,6 +61,7 @@ class MenuInput {
     std::optional<std::uint64_t> m_lastCommandMs; // when the last command was accepted; none since focus
     std::optional<MenuCommand> m_stickHeld;       // the stick direction that gave the last command, until neutral
     std::uint64_t m_dpadBlockedUntilMs = 0;       // the d-pad is ignored before this time
+    bool m_dpadRepeat = true;                     // the d-pad through the auto-repeating query
 };
 
 } // namespace coney::gui

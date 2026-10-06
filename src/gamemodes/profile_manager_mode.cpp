@@ -19,7 +19,7 @@ ProfileManagerMode::ProfileManagerMode(graphics::RenderDevice& device, SheetLoad
     m_shared.strings = &strings;
     m_shared.state = &state;
     m_shared.profiles = &profiles;
-    m_shared.europe = europe;
+    m_shared.video.flag02 = europe;
     m_shared.fade = &m_fade;
     m_shared.playSound = [this](int cue) { m_services.playCue(cue); };
     m_shared.callScript = [this](std::string_view function, std::span<const double> args) {
@@ -79,7 +79,7 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
     // The menus list their sprites for the 2D pass; the fade's level is taken where the original draws it, before
     // the scripts run.
     m_finished = m_controller.update() || m_finished;
-    for (std::optional<graphics::SpriteBatch>* batch : {&m_menuBatch, &m_textBatch, &m_bigBatch}) {
+    for (std::optional<graphics::SpriteBatch>* batch : {&m_menuBatch, &m_textBatch, &m_bigBatch, &m_frontBatch}) {
         if (*batch) {
             m_pass.queue(**batch);
         }
@@ -138,6 +138,8 @@ void ProfileManagerMode::exit() {
         m_services.callScript(m_onStartGame);
     }
     m_menuBatch.reset();
+    m_frontBatch.reset();
+    m_shared.frontSprites = nullptr;
     m_textBatch.reset();
     m_bigBatch.reset();
     m_textFont.reset();
@@ -147,6 +149,9 @@ void ProfileManagerMode::exit() {
 
 void ProfileManagerMode::loadResources() {
     if (auto sheet = m_loadSheet(kMenuSheet); sheet) {
+        // The sprite widgets that make their own instance at depth 11,000 draw over the text.
+        m_frontBatch.emplace(*sheet, kFrontCapacity, kFrontDepth);
+        m_shared.frontSprites = &*m_frontBatch;
         m_menuBatch.emplace(std::move(*sheet), kMenuCapacity, kMenuDepth);
         m_shared.menuSprites = &*m_menuBatch;
     } else {

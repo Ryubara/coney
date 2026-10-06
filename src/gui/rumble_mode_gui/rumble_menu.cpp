@@ -28,13 +28,19 @@ constexpr std::array<std::uint16_t, RumbleModeEntry::kPlayerOptions> kPlayersOfE
 // Where the screens put things, in GUI units: Coney's layout, in PM_Mode's style.
 constexpr float kTitleY = 0.2F;
 constexpr float kListTop = 0.35F;
-constexpr float kRowGap = 0.06F;
+constexpr float kRowGap = 0.015F; // added to the grid's row pitch
 constexpr float kDetailY = 0.9F;
 constexpr float kSide1Y = 0.45F;
 constexpr float kSide2Y = 0.6F;
 constexpr float kBoxWidth = 0.8F;
 constexpr float kSelectedScale = 1.15F;
 constexpr graphics::Rgba kGrey{160, 160, 160, 255};
+
+// An entry of a screen's list: one a row, grey, in the text font (Coney's layout until the Rumble screens' own look).
+OptionGridItem listItem(std::string_view text, int code) {
+    return OptionGridItem{
+        .text = std::string(text), .code = code, .colour = kGrey, .scale = 1.0F, .fontSlot = kTextFontSlot};
+}
 
 // The Game Mode confirm's copy of `mode` into `setup`: its id, its gang size, its title after a ':', its three player
 // options and, for a mode with preset fighters, all nine members of each side.
@@ -158,16 +164,7 @@ void RumbleMenu::show(RumbleScreen screen, std::size_t selected, std::uint64_t n
     // An empty list in PM_Mode's style; each screen fills it.
     m_screen = screen;
     m_grid.init();
-    m_grid.setup(OptionGridLayout{
-        .centreX = 0.5F,
-        .top = kListTop,
-        .rowGap = kRowGap,
-        .boxWidth = kBoxWidth,
-        .scale = 1.0F,
-        .selectedScale = kSelectedScale,
-        .colour = kGrey,
-        .selectedColour = graphics::kWhite,
-    });
+    m_grid.setup(OptionGridSetup{.y = kListTop, .centreX = 0.5F, .rowGap = kRowGap});
     m_side1.setText({});
     m_detail.setText({});
     m_detail.centreOn(0.5F, kDetailY, kBoxWidth);
@@ -207,7 +204,7 @@ void RumbleMenu::showModes() {
     m_services.runChunk(kRumbleModeChunk);
     const std::vector<RumbleModeEntry>& modes = m_services.data->modes;
     for (std::size_t i = 0; i < modes.size(); ++i) {
-        m_grid.addItem(modes.at(i).title, static_cast<int>(i));
+        m_grid.addItem(listItem(modes.at(i).title, static_cast<int>(i)));
     }
 }
 
@@ -217,7 +214,7 @@ void RumbleMenu::showPlayers() {
                                                                                  kVersusString};
     for (std::size_t id = 0; id < kLabels.size(); ++id) {
         if (setup().playerOptions.at(id)) {
-            m_grid.addItem(m_services.strings->get(kLabels.at(id)), static_cast<int>(id));
+            m_grid.addItem(listItem(m_services.strings->get(kLabels.at(id)), static_cast<int>(id)));
         }
     }
     m_messageShown = false;
@@ -238,7 +235,7 @@ void RumbleMenu::showAreas() {
     m_services.runChunk(kRumbleArenaChunk);
     const std::vector<RumbleArenaEntry>& arenas = m_services.data->arenas;
     for (std::size_t i = 0; i < arenas.size(); ++i) {
-        m_grid.addItem(arenaLabel(*m_services.state, arenas.at(i)), static_cast<int>(i));
+        m_grid.addItem(listItem(arenaLabel(*m_services.state, arenas.at(i)), static_cast<int>(i)));
     }
     m_launchPending.reset();
 }

@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 
+#include "gui/profile_management_gui/pm_extras.h"
 #include "gui/profile_management_gui/pm_greet.h"
 #include "gui/profile_management_gui/pm_mode.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
@@ -21,14 +22,13 @@ namespace coney::gui {
 /// docs/research/frontend.md#profile-manager, starting at PM_Greet. It is done when a screen sets the done flag
 /// (`0x0050f5b0`: PM_Subtitles, PM_Load, PM_Continue), or when the flow's stack is empty.
 ///
-/// PM_Extras, PM_NoSpace and PM_TooManyProfiles are PmPlaceholder stand-ins (Coney's): the first belongs to the
-/// front-end look's track, the two others are Xbox screens no PS2 path reaches.
+/// PM_NoSpace and PM_TooManyProfiles are PmPlaceholder stand-ins (Coney's): Xbox screens no PS2 path reaches.
 ///
 /// Research: docs/research/frontend.md#profile-manager, docs/research/gui.md#screen-flow
 class PmController {
   public:
     /// The screens that are still stand-ins.
-    static constexpr std::array<std::string_view, 3> kPlaceholderNames{"PM_NoSpace", "PM_TooManyProfiles", "PM_Extras"};
+    static constexpr std::array<std::string_view, 2> kPlaceholderNames{"PM_NoSpace", "PM_TooManyProfiles"};
 
     /// Builds the screens over `shared` (which must outlive the controller) and their transitions.
     /// @orig 0x002040f0 PM_Controller::PM_Controller (PM_Controller.cpp)
@@ -61,6 +61,8 @@ class PmController {
     [[nodiscard]] const PmGreet& greet() const { return m_greet; }
     /// PM_Mode.
     [[nodiscard]] const PmMode& mode() const { return m_mode; }
+    /// PM_Extras.
+    [[nodiscard]] const PmExtras& extras() const { return m_extras; }
     /// PM_Create.
     [[nodiscard]] const PmCreate& create() const { return m_create; }
     /// PM_Light.
@@ -74,6 +76,7 @@ class PmController {
     ScreenFlowController m_flow;
     PmGreet m_greet;
     PmMode m_mode;
+    PmExtras m_extras;
     PmNumPlayers m_numPlayers;
     PmProfile m_profile;
     PmCreate m_create;

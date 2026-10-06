@@ -145,8 +145,8 @@ TEST_CASE("the Rumble screens list what the chunks add and the fresh profile unl
     CHECK(h.menu->screen() == RumbleScreen::GameMode);
     // Of the four modes only 12 and 14 are unlocked; the list shows the chunk's titles and the selected description.
     REQUIRE(h.menu->grid().items() == 2);
-    CHECK(h.menu->grid().item(0).text() == "DUEL");
-    CHECK(h.menu->grid().item(1).text() == "SQUAD");
+    CHECK(h.menu->grid().item(0).text == "DUEL");
+    CHECK(h.menu->grid().item(1).text == "SQUAD");
     CHECK(h.menu->detail().text() == "about DUEL");
     CHECK(h.data.modes.at(1).playerOptions == std::array<bool, 3>{true, true, true});
     CHECK(!h.textBatch.sprites().empty());
@@ -165,8 +165,8 @@ TEST_CASE("accepting each Rumble screen's first entry writes the default set-up,
     CHECK(h.setup().playerOptions == std::array<bool, 3>{true, false, true});
     CHECK(!h.setup().presetGangs);
     REQUIRE(h.menu->grid().items() == 2);
-    CHECK(h.menu->grid().item(0).text() == "ALONE");
-    CHECK(h.menu->grid().item(1).text() == "AGAINST");
+    CHECK(h.menu->grid().item(0).text == "ALONE");
+    CHECK(h.menu->grid().item(1).text == "AGAINST");
     CHECK(h.menu->takeCues() == std::vector<int>{coney::gui::kRumbleConfirmCue});
 
     // Game Type: one player.
@@ -191,7 +191,7 @@ TEST_CASE("accepting each Rumble screen's first entry writes the default set-up,
     CHECK(h.setup().gangNames[1] == "BLUE SIDE");
     // One arena is unlocked and allows mode 12; its label is its level record's title.
     REQUIRE(h.menu->grid().items() == 1);
-    CHECK(h.menu->grid().item(0).text() == "ARENA 102");
+    CHECK(h.menu->grid().item(0).text == "ARENA 102");
 
     // Choose Area: the confirm marks the arena, and the next update launches it with its level number.
     CHECK(h.to(60) == RumbleMenuResult::Started);
@@ -214,7 +214,7 @@ TEST_CASE("the Game Type entries write 3 for one player, 2 for co-op and 1 for v
         CHECK(h.setup().values.at(RumbleSetup::kGameType) == 14);
         CHECK(h.setup().values.at(RumbleSetup::kGangSize) == 5);
         REQUIRE(h.menu->grid().items() == 3);
-        CHECK(h.menu->grid().item(1).text() == "TOGETHER");
+        CHECK(h.menu->grid().item(1).text == "TOGETHER");
         h.to(55);
         CHECK(h.menu->screen() == RumbleScreen::ChooseGangs);
         CHECK(h.setup().values.at(RumbleSetup::kGameMode) == players);
@@ -267,7 +267,7 @@ TEST_CASE("a mode with presets fills both sides and skips the gang screen", "[ru
     CHECK(h.setup().values.at(RumbleSetup::kGang2Pak) == 255);
     // Only arena 103 allows every mode.
     REQUIRE(h.menu->grid().items() == 1);
-    CHECK(h.menu->grid().item(0).text() == "ARENA 103");
+    CHECK(h.menu->grid().item(0).text == "ARENA 103");
 }
 
 TEST_CASE("left and right rotate the active side's roster to choose the warchief, except in co-op", "[rumble_menu]") {

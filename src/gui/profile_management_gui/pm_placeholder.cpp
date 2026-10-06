@@ -8,7 +8,7 @@ namespace coney::gui {
 void PmPlaceholder::enter(ScreenFlowController& /*flow*/) {
     m_text.init();
     m_text.setText(m_name);
-    m_text.centreOn(0.5F, 0.5F, m_shared.layout.textBoxWidth);
+    m_text.centreOn(0.5F, 0.5F, 0.8F);
     m_shared.input.focus(m_shared.frame.timeMs);
 }
 

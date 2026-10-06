@@ -10,8 +10,9 @@
 namespace coney::gui {
 
 PmController::PmController(PmShared& shared)
-    : m_shared(shared), m_greet(shared), m_mode(shared), m_numPlayers(shared), m_profile(shared), m_create(shared),
-      m_load(shared), m_continue(shared), m_delete(shared), m_difficulty(shared), m_light(shared), m_subtitles(shared) {
+    : m_shared(shared), m_greet(shared), m_mode(shared), m_extras(shared), m_numPlayers(shared), m_profile(shared),
+      m_create(shared), m_load(shared), m_continue(shared), m_delete(shared), m_difficulty(shared), m_light(shared),
+      m_subtitles(shared) {
     for (std::size_t i = 0; i < kPlaceholderNames.size(); ++i) {
         m_placeholders.at(i) = std::make_unique<PmPlaceholder>(kPlaceholderNames.at(i), shared);
     }
@@ -60,6 +61,9 @@ PmController::PmController(PmShared& shared)
                 return *written;
             }
         }
+        if (name == m_extras.name()) {
+            return m_extras;
+        }
         return placeholder(name);
     };
     for (const Transition& transition : kTransitions) {
@@ -69,6 +73,8 @@ PmController::PmController(PmShared& shared)
 
 void PmController::start(std::string onRumble) {
     m_flow.clear();
+    // The layout floats for the video mode, the globals reset, then PM_Greet.
+    m_shared.layout = PmLayout::forFlags(m_shared.video);
     m_shared.onRumble = onRumble;
     m_onRumble = std::move(onRumble);
     m_shared.finishing = false;

@@ -227,9 +227,8 @@ against `WARRIORS.WAD`, and prints how many entries it lists.
 With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes: the legal screen for five
 seconds (150 frames; no button skips it, as in the original), then the menus' first screen, the game's logo and a
 blinking "press START" (from frame 152). START leads to the main menu (story, extras, quick rumble); the d-pad or the
-left stick moves, cross chooses and triangle or circle goes back. EXTRAS is a placeholder that shows its name, and
-there is no 3D scene behind the menus, no sound and no movie yet: Coney prints a line for each movie,
-music and sound it skips, and one for each screen it reaches
+left stick moves, cross chooses and triangle or circle goes back. There is no 3D scene behind the menus, no sound and
+no movie yet: Coney prints a line for each movie, music and sound it skips, and one for each screen it reaches
 ([Front end](../research/frontend.md#coneys-implementation)). `--language CODE` picks the strings and the legal
 screen.
 

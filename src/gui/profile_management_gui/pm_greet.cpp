@@ -1,83 +1,81 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gui/profile_management_gui/pm_greet.h"
 
+#include <algorithm>
 #include <array>
 
 #include "core/pad.h"
-#include "graphics/overlay_camera.h"
+#include "gui/colour_table.h"
+#include "gui/profile_management_gui/pm_widgets.h"
 
 namespace coney::gui {
 
-float PmGreet::logoHeight(float width) const {
-    const graphics::SpriteBatch* batch = m_shared.menuSprites;
-    if (batch == nullptr || kLogoRect >= batch->sheet().page.rects.size() || batch->sheet().texture == nullptr) {
-        return width;
-    }
-    // The rectangle's shape in texels, kept on the 4:3 screen: a GUI width is W / H overlay units, a GUI height one.
-    const graphics::UvRect& uv = batch->sheet().page.rect(kLogoRect);
-    const float texelWidth = (uv.u1 - uv.u0) * static_cast<float>(batch->sheet().texture->width());
-    const float texelHeight = (uv.v1 - uv.v0) * static_cast<float>(batch->sheet().texture->height());
-    if (texelWidth <= 0.0F) {
-        return width;
-    }
-    return graphics::OverlayCamera::guiWidthToOverlay(width) * texelHeight / texelWidth;
-}
-
-PmGreet::PmGreet(PmShared& shared) : m_shared(shared), m_logo(shared.menuSprites, kLogoRect) {}
+PmGreet::PmGreet(PmShared& shared) : m_shared(shared), m_logo(shared.frontSprites, kLogoRect) {}
 
 void PmGreet::enter(ScreenFlowController& /*flow*/) {
-    // Init: the logo and the prompt, placed by the layout. The original also resets the pad handlers here, which Coney
-    // does not have yet.
+    // Init: the logo, left edge at x, and the prompt under it.
     const PmLayout& layout = m_shared.layout;
+    const bool flag02Alone = m_shared.video.flag02 && !m_shared.video.widescreen;
     m_logo.init();
-    m_logo.setBatch(m_shared.menuSprites);
-    m_logo.setup(WidgetRect{layout.logoX, layout.logoY, layout.logoWidth, logoHeight(layout.logoWidth)},
-                 graphics::kWhite, true);
+    m_logo.setBatch(m_shared.frontSprites);
+    m_logo.setup(BaseWidgetSetup{.x = layout.x,
+                                 .y = flag02Alone ? kLogoYFlag02 : kLogoY,
+                                 .height = flag02Alone ? kLogoHeightFlag02 : kLogoHeight,
+                                 .colour = kMenuRed,
+                                 .anchor = SpriteAnchor::Left});
     m_prompt.init();
     m_prompt.setText(m_shared.string(kPromptString));
-    m_prompt.centreOn(0.5F, layout.promptY, layout.textBoxWidth);
-    m_prompt.style().scale = layout.textScale;
+    m_prompt.setup(TextWidgetSetup{.x = layout.x,
+                                   .y = layout.gridFor(1),
+                                   .scale = pm::kPromptScale,
+                                   .colour = kMenuRed,
+                                   .alignment = TextAlignment::Left,
+                                   .fontSlot = kBigFontSlot});
     m_prompt.setFade(0.0F);
-    m_enteredMs = m_shared.frame.timeMs;
-    m_lastActivityMs = m_enteredMs;
+    m_rising = true;
+    m_phaseStartMs = m_shared.frame.timeMs;
+    m_idleSinceMs = m_shared.frame.timeMs;
+    m_attract = false;
 }
 
 int PmGreet::update() {
     const GuiFrame& frame = m_shared.frame;
-    int result = kStay;
+    const bool fading = m_shared.fadeActive();
 
-    // A screen fade in progress keeps the prompt fully lit and restarts the idle time; otherwise the prompt blinks
-    // while the profile manager is not finishing.
-    const bool fading = m_shared.fade != nullptr && m_shared.fade->active();
+    // The blink: fully lit while a fade runs (phase 1, its timer and the idle clock restarted), else the ramps.
     if (fading) {
         m_prompt.setFade(1.0F);
-        m_lastActivityMs = frame.timeMs;
+        m_rising = true;
+        m_phaseStartMs = frame.timeMs;
+        m_idleSinceMs = frame.timeMs;
     } else if (!m_shared.finishing) {
-        m_prompt.setFade(static_cast<float>(promptAlpha(m_enteredMs, frame.timeMs)) / 255.0F);
+        if (frame.timeMs - m_phaseStartMs >= kBlinkPeriodMs) {
+            m_rising = !m_rising;
+            m_phaseStartMs = frame.timeMs;
+        }
+        m_prompt.setFade(static_cast<float>(blinkAlpha(m_rising, frame.timeMs - m_phaseStartMs)) / 255.0F);
     }
     m_prompt.update(frame);
 
-    // START leads to the main menu.
-    if (frame.pad != nullptr && (frame.pad->pressedWithRepeat() & pad::kStart) != 0) {
-        result = kToMode;
-        if (m_shared.playSound) {
-            m_shared.playSound(kStartCue);
-        }
+    // The idle clock: the attract movie when it runs out, and the wait starts again.
+    if (!fading && frame.timeMs - m_idleSinceMs >= kIdleMs) {
+        m_attract = true;
+        m_idleSinceMs = frame.timeMs;
+        const std::array<double, 1> movie{kAttractMovie};
+        m_shared.call(kPlayMovieFunction, movie);
     }
 
-    // The idle time, restarted by a fade (above), not by the pad; the attract movie when it runs out.
-    if (frame.timeMs - m_lastActivityMs >= kIdleMs) {
-        if (m_shared.callScript) {
-            const std::array<double, 1> movie{kAttractMovie};
-            m_shared.callScript("Menu.playMovie", movie);
-        }
-        m_lastActivityMs = frame.timeMs;
+    // START leads to the main menu, and the screen draws no more; not while the attract movie's fade runs.
+    const bool startHeld = frame.pad != nullptr && (frame.pad->pressedWithRepeat() & pad::kStart) != 0;
+    if (startHeld && !(m_attract && fading)) {
+        m_shared.cue(kStartCue);
+        return kToMode;
     }
 
-    // Render: the text, then the sprite (they go to different batches, so the order within the frame is the 2D pass's).
+    // Render: the text, then the sprite (they go to different batches; the 2D pass orders them by depth).
     m_prompt.render(m_shared.canvas);
     m_logo.render(m_shared.canvas);
-    return result;
+    return kStay;
 }
 
 void PmGreet::exit() {
@@ -85,10 +83,16 @@ void PmGreet::exit() {
     m_logo.shutdown();
 }
 
+std::uint8_t PmGreet::blinkAlpha(bool rising, std::uint64_t elapsedMs) {
+    const std::uint64_t ramp = std::min(elapsedMs, kBlinkPeriodMs) * 255 / kBlinkPeriodMs;
+    return static_cast<std::uint8_t>(rising ? ramp : 255 - ramp);
+}
+
 std::uint8_t PmGreet::promptAlpha(std::uint64_t enteredMs, std::uint64_t timeMs) {
-    const std::uint64_t phase = (timeMs - enteredMs) % (2 * kBlinkHalfMs);
-    const std::uint64_t rising = phase < kBlinkHalfMs ? phase : 2 * kBlinkHalfMs - phase;
-    return static_cast<std::uint8_t>(rising * 255 / kBlinkHalfMs);
+    // Which phase of the two-phase cycle, and how far into it.
+    const std::uint64_t elapsed = timeMs > enteredMs ? timeMs - enteredMs : 0;
+    const bool rising = (elapsed / kBlinkPeriodMs) % 2 == 0;
+    return blinkAlpha(rising, elapsed % kBlinkPeriodMs);
 }
 
 } // namespace coney::gui

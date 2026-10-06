@@ -13,7 +13,7 @@ colours, cues and fades, and the 3D scene behind them, with a [checklist](#match
 
 In one paragraph: after the legal screen (mode 5) pops, the memory-card mode (6) runs its boot check and pops; the
 mode at the bottom of the stack (8, the **level flow**) then loads the front-end level, **`level100`** (the Coney
-Island Wonder Wheel scene), starts the `menu` music and calls the level script's Lua function `Menu.onStart`. That
+Island Wonder Wheel scene), loads the sound bank `menu` and calls the level script's Lua function `Menu.onStart`. That
 script calls `ShowProfileManager`, which pushes the **profile manager** mode (0x12). The profile manager is a small
 state machine of C++ screens (`GUI/ProfileManagementGUI/PM_*.cpp`); its first screen, `PM_Greet`, waits for START,
 and the next, `PM_Mode`, is the main menu. The menus themselves are not data-driven: their layout and flow are in
@@ -32,7 +32,7 @@ Names are ours unless they come from a path or class string.
 | `0x00156148` | `AnyPadHoldsL1OrR1` | `GameModes/` (base file) | latch read by mode 5 | confirmed (code) |
 | `0x0015baa0` / `0x0015be00` / `0x0015c2c0` | mode 6 `Enter` / `Update` / `Exit` | `GameModes/Gm_MemoryCard.cpp` | memory-card boot check | confirmed (code) |
 | `0x0015c6f8` | mode 8 `Resume` (also called by its `Enter`) | `GameModes/` | first entry loads the front-end level | confirmed (code) |
-| `0x0015c4b0` | `LevelFlow_StartFrontEnd` | `GameModes/` | level 0, `menu` music, `Menu.onStart` | confirmed (code) |
+| `0x0015c4b0` | `LevelFlow_StartFrontEnd` | `GameModes/` | level 0, sound bank `menu`, `Menu.onStart` | confirmed (code) |
 | `0x0015c858` | mode 8 `Update` | `GameModes/` | front-end world frame, or start the chosen level | confirmed (code) |
 | `0x0015c5f8` | `LevelFlow_FinishFrontEnd` | `GameModes/` | `Menu.onFinish`, unload the level | confirmed (code) |
 | `0x0015fe90` | `InitLevel` | `GameModes/InitLevel.cpp` | loads the current level (both the front end and a game level) | confirmed (code) |
@@ -225,7 +225,7 @@ so modes 8 and 6 have not been entered when mode 5 runs first.
    - waits, servicing the save system, until it is idle (save-system slot `+0x24` returns 1);
    - selects level index 0 (`0x0041ce88`), which is `level100` ([the level table](#the-level-table));
    - **`InitLevel`** (`0x0015fe90`), below;
-   - plays the music track **`menu`** (`0x0010fa50`);
+   - loads the sound bank **`menu`** (`0x0010fa50`, [Sound](sound.md#banks)): the interface cues, not music;
    - looks up the Lua function **`Menu.onStart`** (script slot `+0x4c`) and calls it (slot `+0x8c`, no arguments);
    - sets the background colour to black (device slot `+0x48`, `0x005fd260`) and `+0x24` = 1.
 4. **`Menu.onStart`** (in `level100.lua`, Lua 4.0 bytecode on the disc) starts the Wonder Wheel cinematic scene and
@@ -233,8 +233,8 @@ so modes 8 and 6 have not been entered when mode 5 runs first.
    constants: the names of the calls and arguments are certain, their exact order within the function is not). The
    binding (`0x0036eef8` → `0x001552b0`) stores references to the two Lua functions (`0x005e6690`, `0x005e6694`) and,
    unless mode 0x12 is already on top, pushes it.
-5. **Mode 0x12, the profile manager.** `Enter` (`0x0015e048`) takes `GameTimer`, plays `menu` if it is not already
-   playing and starts the `PM_Controller` (`0x00204a78`) at `mode + 0x20` with the first callback; the controller
+5. **Mode 0x12, the profile manager.** `Enter` (`0x0015e048`) takes `GameTimer`, loads the bank `menu` if it is not already
+   current and starts the `PM_Controller` (`0x00204a78`) at `mode + 0x20` with the first callback; the controller
    enters its first screen, `PM_Greet` ([below](#profile-manager)). `Update` (`0x0015e238`) runs one frame of the
    world (cameras, resources, world update; the simulation only when `0x005e536c` is 1), the HUD, then the
    controller (`0x00204ba0`), the overlays, the scripts and `Present`, like the [in-game frame](boot.md#one-frame).
@@ -513,7 +513,7 @@ unless marked; "measured" is confirmed (runtime), PCSX2 2.9.94, window captures 
 
 **The mode around the screens.**
 
-- `Enter` (`0x0015e8b0`) keeps the active camera (`+0xd0`), plays `menu` unless it is playing, holds every player's
+- `Enter` (`0x0015e8b0`) keeps the active camera (`+0xd0`), loads the bank `menu` unless it is current, holds every player's
   brain (`0x0028ced8(brain, 1)`), saves `0x005147cc` and calls `0x0040c938(10.0)` (role not traced), and starts the
   controller (`0x001f1748`): the [layout values](#rm-layout), `rumble_preload.lua` only in game (`0x0063ef64` = 0), the
   screens, two lights at the camera's position + (0, 8, 0) (`0x0017ef20`: kind 2 grey 0.18 at the front end, kind 3
@@ -598,8 +598,8 @@ reset the AI, path and character tables; create the task-manager objects `load` 
 the script system's level entry point (slot `+0x24` with the level name); read the object list (`%s_objs.txt`, or
 `../levels/%s/%s_objs.txt` on the host file system); add the `CrimeScene` and `GangCall` objects; load the level's
 **dependency list** (`0x00178bc8` with the CRC-32 of the level name, blocking); preload the section's pack and the
-world around the camera, for at most 30,000 ms (15,000 ms when the record's `+0x04` is below 101); start the level's
-music (or the track `sound` when the level's is `none`); flush the file manager; play the intro movie `L%d_IN` when
+world around the camera, for at most 30,000 ms (15,000 ms when the record's `+0x04` is below 101); load the level's
+sound bank (or the bank `sound` when the level's is `none`); flush the file manager; play the intro movie `L%d_IN` when
 the level record's flag `0x02` is set and this is the level's first section (`W_GameState + 0x33a` below 2, earlier
 read here as a player count); call a pending Lua function (`0x005e6d88`) if one is set. The full order, the memory it
 uses and what each step loads are on [Level loading](level-loading.md#initlevel).
@@ -889,8 +889,8 @@ The message box at `0x005e5840` (constructor `0x001c6a20`, `Init` `0x001c6c18`, 
   `big_font`; style 1 at (`0x0050ea24`, 0.9), (134, 26, 26, 255), font slot 4.
 - **Choice dialog** `0x001c7128(box, text, n, labels, default, callbacks)`: the message as above; a one-row grid at y
   `0x0050ea2c` = **0.745**, items grey (80, 80, 80) unselected, `part_page0`, a single choice gets an empty label;
-  the usage line `0x1d` (one choice) or `0x23` (two) at y `0x0050ea30` = **0.8**; it plays `menu` if it is not
-  playing. Accept plays cue **8** and runs the chosen callback once that sound has finished (inferred,
+  the usage line `0x1d` (one choice) or `0x23` (two) at y `0x0050ea30` = **0.8**; it loads the bank `menu` if it is not
+  current. Accept plays cue **8** and runs the chosen callback once that sound has finished (inferred,
   `0x001c73e8`). While it is open, the first pad to press a button or push a stick past 0.5 becomes player 1's when
   player 1 has none (`0x001c7488`).
 - Measured (the format question after a new profile, PCSX2 2.9.94): four centred lines from GUI y about 0.44 to 0.57,
@@ -940,7 +940,7 @@ disassembled (2026-10-04); the script system and `level100.lua`'s `Menu` functio
 
 | Cue | Where | Evidence |
 | --- | --- | --- |
-| music track `menu` | mode 8 `LevelFlow_StartFrontEnd` (`0x0015c4b0`); mode 0x12 `Enter` if not playing | confirmed (code) |
+| sound bank `menu` (the interface cues) | mode 8 `LevelFlow_StartFrontEnd` (`0x0015c4b0`); mode 0x12 `Enter` if not current | confirmed (code) |
 | music `music/wonderwheel_132b`, `MenuTrack` | `level100.lua` | inferred (script constants) |
 | front-end sound cue 9 | `PM_Greet` on START (`0x0010fc30`: entry 9 of the audio manager's table at `+0x1e0`, played with flags `0x12`) | confirmed (code); what the table is (probably the `Static Sounds` chunk `0x29`) is inferred |
 | front-end cues (`0x0010fc30(*0x0050aa84, id)`) | **4** list move (`ScrollingMenu`, gang screen, `OptionGrid` default); **5** PM grid move; **6** brightness step; **7** name-keyboard move; **8** Rumble accept, message-box accept; **9** PM accept, START on PM_Greet; **`0xa`** name character; **`0xb`** name OK; **`0xc`** name delete; **`0xe`** a move or entry refused (end of a list, full name); **`0xf`** back | confirmed (code) at the screens above; how they sound is [Sound](sound.md) |
@@ -959,13 +959,13 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [ ] | Start-up movies | the `MoviePlayer` hook; skipped | a player for `LOGO`, `PLOGO`, `L1_IN`, START skipping ([Movies](#movies)) |
 | [ ] | Mode 6 at boot | one black frame | the card scan, `0xb5` for 3 s, the dialogs and their layout ([message box](#message-box)) |
 | [ ] | 3D background | black | `level100` loaded, the script's objects, the `WonderWheel_100` scene and its camera, lights ([Background](#background)) |
-| [ ] | Menu music | recorded and logged | `menu`, then `wonderwheel_132b` ([Sound](sound.md)) |
+| [ ] | Menu music | recorded and logged | `music/wonderwheel_132b` looped by `Menu.startScene`, `MenuTrack` by `launchRMI`; the `menu` bank's cues ([Sound](sound.md)) |
 | [ ] | Fades | linear black quad over the given time | fade out over `t − 0.2` s, levels clamped, the one-frame start, both managers ([Fades](#fades)) |
-| [ ] | PM_Greet | logo centred, text centred under it, white | logo rect 0 **red**, left edge at x 0, centre y 0.2, 0.30 of the screen high; text `0x76` left at (0, 0.81), red, size 1.15; blink; 70 s attract ([screens](#pm-screens)) |
+| [x] | PM_Greet | as the original (`0x76`, logo, blink, 70 s attract call) | nothing (the attract movie: below) |
 | [ ] | Attract loop | `Menu.playMovie(2)` called, movie skipped | the `L1_IN` movie with the fades around it ([Movies](#movies)) |
-| [ ] | PM_Mode | one centred column, white / grey 160, wrap | rows {2, 1} "STORY : EXTRAS" / QUICK RUMBLE at (0, 0.76), red items, grey (178) selection, size 1.15 for all, the red `" : "`, cues 5 / `0xe`, left / right / up / down rules |
-| [ ] | Usage line | centred text | left at (0, 0.87), two lines ([geometry](#pm-layout)) |
-| [ ] | PM_Extras | placeholder | TRAILER at (0, 0.81); accept → `Menu.playMovie(1)` |
+| [x] | PM_Mode | rows {2, 1} at (0, 0.76), red / grey 178, size 1.15, the red `" : "`, cues 5 / `0xe` | nothing |
+| [x] | Usage line | left at (0, 0.87), two lines | nothing |
+| [x] | PM_Extras | TRAILER at (0, 0.81); accept calls `Menu.playMovie(1)` | the movie itself ([Movies](#movies)) |
 | [x] | PM_NumPlayers | rows {2}, the blinking `0x77`, pad 2's START | nothing known |
 | [x] | PM_Profile | title `0x7b`, up to four items placed by count; reload | nothing known |
 | [x] | PM_Create | the 12-12-12-11 keyboard, the 8-character name, its cues and the duplicate check | the keyboard's moves and the "name used" text's lifetime are Coney's |
@@ -1105,20 +1105,22 @@ fade replaces a running one. The 16:9 choice is not applied (no device setting y
 dialog follows a new profile: Coney has no memory card.
 
 **The profile manager's screens** (`src/gui/profile_management_gui/`): `PmController` builds all fourteen screens and
-the [transition table](#profile-manager) on the screen flow ([GUI](gui.md#coneys-implementation)) and starts at
-PM_Greet. The menus end when a screen sets the done flag (`PmSession`, the controller's globals `0x0050f584`-
-`0x0050f5c0` and the name `0x0063f1d8`, reset at start). PM_Extras and the two Xbox screens are still Coney's
-`PmPlaceholder` (it shows the screen's name and goes back on the back command).
+the [transition table](#profile-manager) on the screen flow ([GUI](gui.md#coneys-implementation)), picks the
+[layout floats](#pm-layout) for the video flags (`PmLayout::forFlags`; Coney's screen is the default 4:3, so x 0) and
+starts at PM_Greet. The menus end when a screen sets the done flag (`PmSession`, the controller's globals
+`0x0050f584`-`0x0050f5c0` and the name `0x0063f1d8`, reset at start). The two Xbox screens are still Coney's
+`PmPlaceholder` (it shows the screen's name and goes back on the back command). `pm_widgets.h` builds the
+[common widgets](#pm-layout) (title, grid, item, usage line) for every PM screen.
 
-- **PM_Greet** (`PmGreet`): the logo (`menu_system` rectangle 0, keeping its shape) and global string `0x76` centred
-  under it; the text's alpha ramps 0 → 255 → 0 in 1,500 ms halves from the screen's entry; START (the auto-repeating
-  query) returns 0, which leads to PM_Mode, and plays cue 9; a screen fade in progress keeps the text lit and restarts
-  the idle time (the pad does not); 70,000 ms without a fade call `Menu.playMovie(2)`, and the wait starts again.
-- **PM_Mode** (`PmMode`): an option grid of `0x78` (code 0), `0x8a` (code 5, left out with the flag `0x02`) and `0x79`
-  (code 1), the first selected and drawn at 1.15 times the size, and the usage line `0x1f` below. The command handler
-  is the original's: no input while the fade level is not 0; back returns 8 with cue `0xf`; accept plays cue 9, then
-  story returns 0 (6 with two or more pads connected), extras 5, code 7 calls `Menu.reloadProfiles`, and quick rumble
-  calls the first callback (`Menu.fadeToRMI`) and stays.
+- **PM_Greet** (`PmGreet`), as [the screens](#pm-screens) give it: the logo (`menu_system` rectangle 0, red, left edge
+  at x, centred on 0.2, 0.33 overlay units high, no shadow) in its own batch at depth 11,000, and `0x76` at (x, 0.81),
+  size 1.15, red, `big_font`; the blink's two phases, forced lit while a fade runs; START returns 0 with cue 9 and the
+  screen draws nothing that frame; 70,000 ms without a fade set the attract flag and call `Menu.playMovie(2)`.
+- **PM_Mode** (`PmMode`): rows {2, 1} at (x, 0.76), "STORY : EXTRAS" over QUICK RUMBLE (one row {2} at the one-row y
+  with the flag `0x02`), red items at size 1.15 with the selection grey 178, cues 5 and `0xe`, and the usage line at
+  (x, 0.87); the command handler is the original's (above).
+- **PM_Extras** (`PmExtras`): TRAILER at (x, 0.81) and the usage line; accept calls `Menu.playMovie(1)` with cue 9 and
+  stays, back pops with `0xf`, both waiting for a clear screen.
 - **The story screens** (`pm_profile_screens.h`: PM_NumPlayers, PM_Profile, PM_Load, PM_Continue, PM_Delete;
   `pm_new_game_screens.h`: PM_Create with its `NameKeyboard`, PM_Difficulty, PM_Light, PM_Subtitles), written from
   [the screens](#pm-screens) and [the geometry](#pm-layout): each screen's logic (`handle`, over `PmChoices`, the grid's
@@ -1133,11 +1135,9 @@ PM_Greet. The menus end when a screen sets the done flag (`PmSession`, the contr
   left and right stay in their row and skip blank cells, up and down keep the column (then the nearest selectable cell
   to its left), DEL is drawn after OK's word; PM_Light steps on the menu commands' left and right and plays nothing past
   either end, and its brightness is only stored; PM_Create's "name used" text shows until the screen is left.
-- Coney's choices: the layout (every position and size: `PmLayout`; the ten layout floats above are not used yet);
-  the logo is rectangle 0 (it is the game's logo, from viewing the sheet); "a fade in progress" for PM_Greet is a fade
-  running or a screen not fully clear; unselected items are grey (160), the selected one white. **Quick rumble**:
-  `Menu.fadeToRMI` fades out and
-  schedules `Menu.launchRMI`, whose `ShowRumbleModeInterface` opens the Rumble menu (below).
+- Coney's choices: the clocks are game time; "a fade in progress" for PM_Greet is a fade running or a screen not
+  fully clear. **Quick rumble**: `Menu.fadeToRMI` fades out and schedules `Menu.launchRMI`, whose
+  `ShowRumbleModeInterface` opens the Rumble menu (below).
 
 **Mode 0x11, the Rumble menu** (`src/gamemodes/rumble_menu_mode.h`, `RumbleMenuMode`), from
 [QUICK RUMBLE](#quick-rumble): `show` keeps the two callbacks and pushes the mode unless it is on top; `enter` loads

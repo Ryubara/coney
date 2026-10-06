@@ -39,7 +39,8 @@ std::optional<MenuCommand> MenuInput::dispatch(const Pad& pad, std::uint64_t now
             {pad::kLeft, MenuCommand::Left},
             {pad::kRight, MenuCommand::Right},
         }};
-        const std::uint16_t dpad = pad.pressedWithRepeat();
+        // The auto-repeating query, or the plain one after a refused move (the grid's `+0xc4`).
+        const std::uint16_t dpad = m_dpadRepeat ? pad.pressedWithRepeat() : pad.pressed();
         for (const auto& [bit, command] : kDirections) {
             if ((dpad & bit) != 0) {
                 candidate = command;
