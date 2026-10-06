@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (433,444 of 3,354,776 bytes, 1,329 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (433,860 of 3,354,776 bytes, 1,331 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 85 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 388 | 1,096,672 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.8% | 390 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -735,6 +735,7 @@ at the top of the repository's `README.md`.
 | `0x00250c00` | `NavLinks_SetKindByNumber` | `Human` | 80 |
 | `0x00250c50` | `NavLinks_OpenByNumber` | `Human` | 176 |
 | `0x00250d00` | `NavLinks_CloseByNumber` | `Human` | 176 |
+| `0x00251070` | `Route_LegKind` | `Human` | 56 |
 | `0x00251150` | `Route_NearestNode` | `Human` | 56 |
 | `0x002511c8` | `Route_Search` | `Human` | 480 |
 | `0x002513a8` | `Route_Build` | `Human` | 728 |
@@ -854,6 +855,7 @@ at the top of the repository's `README.md`.
 | `0x0029aa88` | `Route_Follow` | `Human` | 856 |
 | `0x0029b4b8` | `Route_CanSkip` | `Human` | 544 |
 | `0x0029b6d8` | `Route_MoveOn` | `Human` | 368 |
+| `0x0029b848` | `Route_ClimbLeg` | `Human` | 360 |
 | `0x0029ed58` | `Goal_Start` | `Human` | 128 |
 | `0x0029edd8` | `Goal_End` | `Human` | 88 |
 | `0x0029ee30` | `Goal_Resume` | `Human` | 112 |

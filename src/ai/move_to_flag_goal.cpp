@@ -26,7 +26,11 @@ anim::Vec3 positionOf(const world_objects::Placement& placement) {
 void MoveToFlagGoal::start(Brain& brain) {
     const std::optional<world_objects::Placement> flag = m_services->flag(m_order.flag);
     const anim::Vec3 base = flag ? positionOf(*flag) : brain.human().position();
-    m_target = anim::add(base, anim::scale(human::facing(radians(m_order.angleDegrees)), m_order.distance));
+    // The offset is `distance` along (cos, sin) of the angle in degrees on the world's x and y; a negative distance is
+    // not special.
+    const float angle = radians(m_order.angleDegrees);
+    m_target =
+        anim::add(base, anim::Vec3{m_order.distance * std::cos(angle), m_order.distance * std::sin(angle), 0.0F});
     if (m_order.intervalMs != 0) {
         m_nextTickMs = brain.nowMs() + m_order.intervalMs;
     }

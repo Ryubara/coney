@@ -34,6 +34,8 @@ inline constexpr std::uint32_t kStuckSteps = 60;
 inline constexpr float kStuckDistance = 0.2F;
 /// The corner speed looks at corners farther than this from the human.
 inline constexpr float kCornerMinDistance = 0.35F;
+/// A climb leg's climb is tried for this many updates before the move gives up (route state `+0x13`).
+inline constexpr std::uint32_t kClimbTries = 31;
 /// The corner speed's trial falls by 1 + 0.75 × human `+0x333` m/s for each failed trial (**Coney choice**: Coney
 /// has no `+0x333`, so it falls by 1).
 inline constexpr float kCornerSpeedStep = 1.0F;
@@ -95,6 +97,10 @@ class MoveAction final : public Action {
     // @orig 0x002fbd18 MoveAction_CornerTrial (unknown)
     [[nodiscard]] static float cornerTrial(const Brain& brain, anim::Vec3 corner, anim::Vec3 in, anim::Vec3 out,
                                            float top, float floor);
+    // A route leg that is not walked: a climb (kinds 8 and 0x80), or a refused one (the avoid bit, but for a charge).
+    // Returns the action's status when the leg decided this update, nothing when the move goes on as a walk.
+    // @orig 0x0029b848 Route_ClimbLeg (unknown)
+    [[nodiscard]] std::optional<ActionStatus> followLeg(Brain& brain, anim::Vec3 position, anim::Vec3 aim);
     // The stuck test, once per update of moving.
     // @orig 0x002fc330 MoveAction_Stuck (unknown)
     [[nodiscard]] bool stuck(anim::Vec3 position);
@@ -112,6 +118,10 @@ class MoveAction final : public Action {
     // The stuck test's window.
     anim::Vec3 m_stuckFrom;
     std::uint32_t m_movingSteps = 0;
+    // A climb leg: the waypoint index it is for, the failed tries there, and whether the human climbed last update.
+    std::size_t m_climbIndex = 0;
+    std::uint32_t m_climbFails = 0;
+    bool m_wasClimbing = false;
 };
 
 } // namespace coney::ai

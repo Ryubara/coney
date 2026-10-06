@@ -168,7 +168,9 @@ TEST_CASE("the search walks the edges whose flags meet the mask and gives up whe
     CHECK_FALSE(wide.search(1, 0, 1).has_value()); // searched from the hub: its 130 spokes overflow the list
 }
 
-TEST_CASE("a search that fails tries again with the choke, eight and jump edges", "[ai][routes]") {
+TEST_CASE("a search with a narrower mask that fails tries again with the choke, eight and jump edges; every kind is "
+          "in the default mask",
+          "[ai][routes]") {
     coney::test::PathBuilder builder;
     const std::uint32_t left = builder.rectangle(0.0F, 4.0F, 0.0F, 2.0F);
     const std::uint32_t up = builder.rectangle(3.0F, 4.0F, 0.0F, 6.0F);
@@ -184,8 +186,9 @@ TEST_CASE("a search that fails tries again with the choke, eight and jump edges"
     builder.link(3, 4);
     const coney::world::PathMap map = builder.build();
     RoutePlanner planner(map);
-    CHECK_FALSE(planner.search(0, 4, coney::ai::edge_flag::kDefaultMask).has_value());
-    auto plan = planner.request({0.5F, 1.0F, 0.0F}, {0.5F, 5.0F, 0.0F});
+    CHECK_FALSE(planner.search(0, 4, 0x3).has_value());
+    CHECK(planner.search(0, 4, coney::ai::edge_flag::kDefaultMask).has_value());
+    auto plan = planner.request({0.5F, 1.0F, 0.0F}, {0.5F, 5.0F, 0.0F}, 0x3);
     REQUIRE(plan.has_value());
     CHECK(nodesOf(*plan) == std::vector<std::uint32_t>{1, 2, 3});
 }
@@ -249,14 +252,45 @@ TEST_CASE("the follower moves on at each waypoint and skips the ones it reaches 
     if (!route) {
         return;
     }
-    coney::ai::RouteFollower follower(map, std::move(*route), {1.0F, 1.0F, 0.0F}, {1.0F, 9.0F, 0.0F});
-    CHECK(follower.waypoint(map, {1.0F, 1.0F, 0.0F}) == Vec3{9.0F, 1.0F, 0.0F});
+    coney::ai::RouteFollower follower(planner, std::move(*route), {1.0F, 1.0F, 0.0F}, {1.0F, 9.0F, 0.0F});
+    CHECK(follower.waypoint(planner, {1.0F, 1.0F, 0.0F}) == Vec3{9.0F, 1.0F, 0.0F});
     CHECK(follower.ahead().size() == 4);
     // At node 1: on to node 2, which it reaches, and on past it to node 3 (straight up the side).
-    CHECK(follower.waypoint(map, {8.9F, 1.0F, 0.0F}) == Vec3{9.0F, 9.0F, 0.0F});
+    CHECK(follower.waypoint(planner, {8.9F, 1.0F, 0.0F}) == Vec3{9.0F, 9.0F, 0.0F});
     CHECK(planner.routesInUse() == 1);
     // At node 3: only the destination is left, and the route is freed.
-    CHECK(follower.waypoint(map, {9.0F, 8.9F, 0.0F}) == Vec3{1.0F, 9.0F, 0.0F});
+    CHECK(follower.waypoint(planner, {9.0F, 8.9F, 0.0F}) == Vec3{1.0F, 9.0F, 0.0F});
     CHECK(follower.onLastLeg());
     CHECK(planner.routesInUse() == 0);
+}
+
+TEST_CASE("a blocked straight line takes the route; the follower names a climb leg's kind", "[ai][routes]") {
+    // One open yard cut by a fence at y = 3 that only the block test sees; nodes either side linked by a climb.
+    coney::test::PathBuilder builder;
+    const std::uint32_t yard = builder.rectangle(0.0F, 4.0F, 0.0F, 6.0F);
+    builder.node(yard, 2.0F, 2.0F);
+    builder.node(yard, 2.0F, 4.0F);
+    builder.link(0, 1, coney::ai::edge_flag::kClimb);
+    const coney::world::PathMap map = builder.build();
+    RoutePlanner planner(map);
+    planner.setBlockTest([](Vec3 from, Vec3 to) { return (from.y - 3.0F) * (to.y - 3.0F) < 0.0F; });
+    CHECK(planner.lineClear({1.0F, 1.0F, 0.0F}, {3.0F, 2.5F, 0.0F}));
+    CHECK_FALSE(planner.lineClear({2.0F, 1.0F, 0.0F}, {2.0F, 5.0F, 0.0F}));
+    auto plan = planner.request({2.0F, 1.0F, 0.0F}, {2.0F, 5.0F, 0.0F});
+    REQUIRE(plan.has_value());
+    CHECK(nodesOf(*plan) == std::vector<std::uint32_t>{0, 1});
+    std::optional<coney::ai::Route> route = std::move(plan->route);
+    REQUIRE(route.has_value());
+    if (!route) {
+        return;
+    }
+    coney::ai::RouteFollower follower(planner, std::move(*route), {2.0F, 1.0F, 0.0F}, {2.0F, 5.0F, 0.0F});
+    CHECK(follower.waypoint(planner, {2.0F, 1.0F, 0.0F}) == Vec3{2.0F, 2.0F, 0.0F});
+    CHECK(follower.legKind() == 0);
+    // At node 0 the next leg, over the fence, is the climb; once over it the follower moves on.
+    CHECK(follower.waypoint(planner, {2.0F, 1.9F, 0.0F}) == Vec3{2.0F, 4.0F, 0.0F});
+    CHECK(follower.legKind() == coney::ai::edge_flag::kClimb);
+    CHECK_FALSE(follower.legAvoided());
+    follower.passWaypoint(planner, {2.0F, 4.3F, 0.0F});
+    CHECK(follower.onLastLeg());
 }

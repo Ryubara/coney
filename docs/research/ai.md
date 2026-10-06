@@ -1368,6 +1368,9 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   moving on when reached and every 6th call, skipping what is in a straight line); the straight re-check every 30
   updates; the turn on the spot beyond 30° while standing; the corner speed; the stuck test; brain `+0x284`
   (`Brain::moveFailure`). The human's locomotion turns it to a brain's heading at speed 0 (`human::Human::locomote`).
+  Every search uses the mask `0xff`; a leg of kind 8 or `0x80` is a climb: the human runs at the waypoint (gait 4)
+  and tries the player's climb start toward it each update (`PlayerRecord::climbToward`), giving up after 31 failed
+  updates; a leg whose avoid bit is set is refused, but for a charge. `level99`'s Vermin climbs his fence this way.
 - **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
   short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
   15°, 3 s), `PlayDynAnimationGoal` with `PlayAnimAction` (slot 668), `AddressPersonGoal` with `PlayAnimationGoal`
@@ -1398,8 +1401,8 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
 - **Disc check (NTSC-U, counts only):** `coney_tests "[disc][routes]"` decodes all 64 levels' path data; 42,373 of the
   43,234 route nodes lie inside the polygon that owns them. Of 500 seeded pairs of `level99`'s 415 nodes, 101 are a
   straight line, 52 routed (200 route nodes), 34 refused (a polygon off the graph), 151 linked only over flag `0x10`
-  edges, which Coney's mask `0x3` leaves out (the original's is `0xff`, [Path planning](#path-planning)), and 162 not
-  linked at all.
+  edges, which the mask `0x3` Coney once used left out (the original's and now Coney's is `0xff`,
+  [Path planning](#path-planning)), and 162 not linked at all.
 
 **Coney choices.** A fighter is class 58 (brain type 2, 1400 health) with the sparring Warriors' runtime brain values (4
 attack slots, melee 3 / 5 m, sight 30 m, field of view 1.92 rad), drawn and animated as the player's character, in a
@@ -1416,17 +1419,19 @@ A think only counts (the types' think handlers are not traced).
 
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
 nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes
-in order (the counts add up to the C records in every file; `+0x08` does not always hold the running index). A move
-searches with the edge mask `0x3` (on the disc every edge has one flag of 1, 2, 4, 8, `0x10` or `0x80`), so `0x10`
-edges are never asked for. "Fails at 128 nodes" is the open list's size (counted as nodes closed, a third of
+in order (the counts add up to the C records in every file; `+0x08` does not always hold the running index).
+"Fails at 128 nodes" is the open list's size (counted as nodes closed, a third of
 `level99`'s reachable pairs failed). The use term is 40 × uses − 8 on the node entered; `0x0051059c` is 1 and
 `0x005105a0` 0. An end off every polygon counts on the nearest within 1 m and takes its nearest node; the shortcut
-takes any edge that links back. The walkable line cuts the segment at every crossed edge rather than walking by slab,
-with no collision test. A corner is the turn at the next two waypoints, simulated as an arc at the gait's turn rate
+takes any edge that links back. The walkable line cuts the segment at every crossed edge rather than walking by slab.
+**Stand-in** for its block test (`0x00221f80`, inferred: collision): a ray between the two points 1 m above them must
+meet none of the level's collision (`RoutePlanner::setBlockTest`), for the straight line, the end nodes and the route's
+cuts alike; without it the straight line ran through `level99`'s fence. A climb leg's climb that has ended moves the
+follower on past the leg's waypoint (the original's step there is open); the fast climber's early start within
+4.5 m, the jump legs (kind 4), the charge (`0x40`), the link's clear test and the waypoint claims are not built. A corner is the turn at the next two waypoints, simulated as an arc at the gait's turn rate
 from the waypoint, the trial falling by 1 m/s; the braking distance is 0.5 s at the first corner's speed, within which
 the slower of the two corners' speeds is used. A move clears `+0x284` at its start and waits while the human is busy
-(`Human_IsBusy`). The look-at's turn value is kept, not read; no turn is ever refused its abort. GoalMoveToFlag's
-angle is a world direction (the headings' convention).
+(`Human_IsBusy`). The look-at's turn value is kept, not read; no turn is ever refused its abort.
 
 **Coney choices for the scripted goals, gangs and tactics.** With no scene system a scene ends at once and its callback
 is scheduled with (handle, 1) after 33 ms; with no clip by id from outside the dispatcher (`ScriptServices::playClip`)
@@ -1521,6 +1526,7 @@ the run-stop.
   goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`).
 - Which climb clips Vermin's fence plays (tall or short fence, standing or running) and how the climb's end moves
   the follower to the next waypoint (route state 3 → 0).
+- What the walkable-line test's block test `0x00221f80` casts (Coney's stand-in is a ray 1 m above the points).
 - A\*'s "fails at 128 nodes": nodes closed, or the open heap's size? And the use term: (40 × uses) − 8, or
   40 × (uses − 8), and on which node of the edge?
 - Which edge sign the inside test counts +1, and what the clockwise polygons (most of them, nearly all with polygon

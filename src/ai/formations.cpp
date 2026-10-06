@@ -138,7 +138,7 @@ void Formation::plan(std::uint64_t nowMs) {
                                                                   anim::scale(forward, toMetres(entry.offset[1]))));
         entry.point = {toUnits(point.x), toUnits(point.y), toUnits(point.z)};
         const RoutePlanner* planner = m_leader->planner();
-        if (planner == nullptr || planner->map().walkable(leader.position(), point)) {
+        if (planner == nullptr || planner->lineClear(leader.position(), point)) {
             m_usable[set][static_cast<std::size_t>(slot)] = true;
             ++usable;
         }

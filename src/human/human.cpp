@@ -850,6 +850,11 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
     if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator) && !m_script.arrested) {
         tryActions(mesh, m_record.sprintHeld);
     }
+    // A brain's climb over a route's climb leg: the player's own climb start, toward the waypoint.
+    if (m_record.climbToward && mesh != nullptr && !m_airborne && !m_climbRun && !m_fighter.holdsMovement(m_animator) &&
+        !m_script.arrested) {
+        static_cast<void>(tryClimb(*mesh, *m_record.climbToward));
+    }
     m_lean = leanStep(m_lean, m_lastTurn, speed(), gait());
     m_animator.choose(AnimInputs{
         .speed = speed(),

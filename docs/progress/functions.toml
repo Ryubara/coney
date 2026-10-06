@@ -3604,6 +3604,12 @@ subsystem = "Human"
 size = 176
 
 [[function]]
+address = 0x00251070
+name = "Route_LegKind"
+subsystem = "Human"
+size = 56
+
+[[function]]
 address = 0x00251150
 name = "Route_NearestNode"
 subsystem = "Human"
@@ -4286,6 +4292,12 @@ address = 0x0029b6d8
 name = "Route_MoveOn"
 subsystem = "Human"
 size = 368
+
+[[function]]
+address = 0x0029b848
+name = "Route_ClimbLeg"
+subsystem = "Human"
+size = 360
 
 [[function]]
 address = 0x0029ed58

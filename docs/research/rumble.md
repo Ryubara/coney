@@ -367,3 +367,5 @@ or its wake-up after 14 s.
 - What brain the human left behind by `HuSwitchPlayer` runs, and whether he keeps the player's fighter profile
   (Coney: his class's brain type, the profile unchanged).
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
+- Coney bug: King of the hill's `X.OffTopTier` runs for members still on top after `X.GameOver`'s teleport and
+  indexes a nil (2 script errors in the disc test); the original's order of leave events and clean-up.

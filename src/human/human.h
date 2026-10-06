@@ -70,6 +70,9 @@ struct PlayerRecord {
     bool sprintHeld = false;    ///< L2 held.
     bool actionPressed = false; ///< Triangle pressed this update.
     combat::CommandId command = combat::command::kNone; ///< The command the human acts on (`+0x20`).
+    /// A brain's climb this update toward this direction (a route's climb leg: `Climb_TryStart` toward the waypoint,
+    /// docs/research/ai.md#route-follow); a pad never sets it.
+    std::optional<anim::Vec3> climbToward;
     /// The pad's command whether or not the human may act on it: the one matched (`+0x20`), kept under a pad lock, or
     /// else the disabled one pending (`+0x24`). What the `PadSetHandlerEx` handler is given
     /// (docs/references/bindings/input.md#padsethandlerex).

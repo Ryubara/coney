@@ -70,15 +70,23 @@ ActionStatus MoveAction::start(Brain& brain) {
         return finish(brain);
     }
     if (std::optional<Route>& route = plan->route; route.has_value()) {
-        m_follower.emplace(planner->map(), std::move(*route), position, m_request.point);
+        m_follower.emplace(*planner, std::move(*route), position, m_request.point);
     }
     return ActionStatus::Running;
 }
 
 ActionStatus MoveAction::update(Brain& brain) {
     human::Human& human = brain.human();
-    // 1. Wait while the human is busy (Human_IsBusy): the move stays as it was.
-    if (human::stickBusy(human.gateInput())) {
+    // 1. Wait while the human is busy (Human_IsBusy) or climbing: the move stays as it was. A climb over a route's
+    // leg that has just ended leaves the human beyond the leg's waypoint: the follower moves on.
+    const bool climbing = human.traversal() == human::Traversal::Climbing;
+    if (m_wasClimbing && !climbing && m_follower && brain.planner() != nullptr) {
+        m_follower->passWaypoint(*brain.planner(), human.position());
+        m_stuckFrom = human.position();
+        m_movingSteps = 0;
+    }
+    m_wasClimbing = climbing;
+    if (climbing || human::stickBusy(human.gateInput())) {
         return ActionStatus::Running;
     }
     ++m_updates;
@@ -86,7 +94,7 @@ ActionStatus MoveAction::update(Brain& brain) {
     // 2. Now and then, a route whose point has come into a straight line is dropped.
     RoutePlanner* planner = brain.planner();
     if (m_follower && planner != nullptr && (m_updates + brain.slot()) % kStraightCheckSteps == 0 &&
-        planner->map().walkable(position, m_request.point)) {
+        planner->lineClear(position, m_request.point)) {
         m_follower.reset();
     }
     // 3. Arrived; or close in plan but on another level.
@@ -99,10 +107,13 @@ ActionStatus MoveAction::update(Brain& brain) {
     anim::Vec3 aim = m_request.point;
     float aimRadius = m_request.radius;
     if (m_follower && planner != nullptr) {
-        aim = m_follower->waypoint(planner->map(), position);
+        aim = m_follower->waypoint(*planner, position);
         aimRadius = m_follower->onLastLeg() ? m_request.radius : kWaypointRadius;
     }
     brain.setMoveAim(aim, aimRadius);
+    if (const std::optional<ActionStatus> leg = followLeg(brain, position, aim)) {
+        return *leg;
+    }
     const anim::Vec3 way = anim::subtract(aim, position);
     const float heading = std::hypot(way.x, way.y) > 1e-4F ? human::headingOf(way) : human.heading();
     // 8. Standing far off the way, turn on the spot first; else go at the corner speed.
@@ -118,6 +129,37 @@ ActionStatus MoveAction::update(Brain& brain) {
         brain.setMoveFailure(MoveFailure::Stuck);
         return finish(brain);
     }
+    return ActionStatus::Running;
+}
+
+std::optional<ActionStatus> MoveAction::followLeg(Brain& brain, anim::Vec3 position, anim::Vec3 aim) {
+    if (!m_follower || m_follower->onLastLeg()) {
+        return std::nullopt;
+    }
+    const std::uint16_t kind = m_follower->legKind();
+    // A leg whose link is avoided is refused (a closed door), but for a charge, which is not built: walked.
+    if (m_follower->legAvoided() && (kind & edge_flag::kCharge) == 0) {
+        brain.setMoveFailure((kind & edge_flag::kDoor) != 0 ? MoveFailure::EdgeTen : MoveFailure::Edge);
+        return finish(brain);
+    }
+    if ((kind & (edge_flag::kClimb | edge_flag::kJump)) == 0) {
+        return std::nullopt;
+    }
+    // A climb: run at the waypoint (gait 4) and try the climb toward it each update; give up after kClimbTries.
+    if (m_follower->index() != m_climbIndex) {
+        m_climbIndex = m_follower->index();
+        m_climbFails = 0;
+    }
+    if (++m_climbFails > kClimbTries) {
+        brain.setMoveFailure(MoveFailure::Stuck);
+        return finish(brain);
+    }
+    const anim::Vec3 way = anim::subtract(aim, position);
+    const float heading = std::hypot(way.x, way.y) > 1e-4F ? human::headingOf(way) : brain.human().heading();
+    brain.setMoveHeading(heading, gaitSpeed(brain.human().speeds(), 4));
+    brain.requestClimb(anim::Vec3{way.x, way.y, 0.0F});
+    m_stuckFrom = position;
+    m_movingSteps = 0;
     return ActionStatus::Running;
 }
 

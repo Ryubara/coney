@@ -321,12 +321,19 @@ TEST_CASE("GoalMoveToFlag aims at an offset from the flag, ends when its flag go
     const double flag = flags.add(100.0, "Spot", {42.0F, 41.0F, 0.0F}, 0.0F).handle;
     coney::ai::ScriptedBrains scripted(scene.brains, flags);
     Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, 0.0F);
-    // 2 m towards -90 degrees (+x).
-    coney::ai::goalMoveToFlag(brain, flagOrder(flag, 0.3F, -90.0F, 2.0F), scripted);
+    // 2 m at 0 degrees: along (cos 0, sin 0), +x.
+    coney::ai::goalMoveToFlag(brain, flagOrder(flag, 0.3F, 0.0F, 2.0F), scripted);
     scene.run(1);
     const auto* goal = dynamic_cast<const coney::ai::MoveToFlagGoal*>(brain.topGoal());
     REQUIRE(goal != nullptr);
     CHECK(planDistance(goal->target(), {44.0F, 41.0F, 0.0F}) < 1e-4F);
+    // A negative distance is not special: -1 m at -1 degrees, as level99's Vermin is sent (docs/research/ai.md).
+    Brain& other = scene.add({41.0F, 45.0F, 0.0F}, 0.0F);
+    coney::ai::goalMoveToFlag(other, flagOrder(flag, 0.5F, -1.0F, -1.0F), scripted);
+    scene.run(1);
+    const auto* offset = dynamic_cast<const coney::ai::MoveToFlagGoal*>(other.topGoal());
+    REQUIRE(offset != nullptr);
+    CHECK(planDistance(offset->target(), {41.00015F, 41.01745F, 0.0F}) < 1e-4F);
     // Each move it queues ends short when cut, and the goal queues another.
     REQUIRE(brain.actionCount() == 1);
     brain.clearActions();

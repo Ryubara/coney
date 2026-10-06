@@ -363,6 +363,8 @@ class Brain {
     void setMove(anim::Vec3 way, float speed);
     /// The same along `heading` (radians, 0 facing +y). At speed 0 the human turns on the spot to it.
     void setMoveHeading(float heading, float speed);
+    /// Asks the human to climb this update toward `direction` (the route's climb leg).
+    void requestClimb(anim::Vec3 direction);
     /// Stops the move: the human stands (its speed 0).
     void stopMove();
 

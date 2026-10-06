@@ -29,33 +29,42 @@ inline constexpr float kSkipTurnLimit = 2.356F;
 /// A route being followed from `start` to `destination`.
 class RouteFollower {
   public:
-    /// Follows `route` (taken over, its nodes on `map`) from `start` to `destination`.
-    RouteFollower(const world::PathMap& map, Route route, anim::Vec3 start, anim::Vec3 destination);
+    /// Follows `route` (taken over, its nodes on `planner`'s map) from `start` to `destination`.
+    RouteFollower(const RoutePlanner& planner, Route route, anim::Vec3 start, anim::Vec3 destination);
 
     /// The waypoint for a human at `position`: when it is within kWaypointRadius of the current one, or on every
     /// kSkipAheadSteps-th call, the follower moves on, skipping waypoints it reaches in a straight line on `map`
     /// (onto a leg longer than kLongLeg only when it turns less than kSkipTurnLimit). The route is freed once the
     /// destination is the waypoint.
     /// @orig 0x0029aa88 Route_Follow (unknown)
-    [[nodiscard]] anim::Vec3 waypoint(const world::PathMap& map, anim::Vec3 position);
+    [[nodiscard]] anim::Vec3 waypoint(const RoutePlanner& planner, anim::Vec3 position);
     /// The waypoints still ahead, the current first (the destination last): what the corner speed looks at.
     [[nodiscard]] std::vector<anim::Vec3> ahead() const;
     /// The index of the current waypoint (the destination is the last).
     [[nodiscard]] std::size_t index() const { return m_index; }
+    /// The link kind of the leg to the current waypoint (the D record that steps from the waypoint before to it, on
+    /// the waypoint's own records) and its avoid bit; kind 0 for the first waypoint and the destination.
+    /// @orig 0x00251070 Route_LegKind (unknown)
+    [[nodiscard]] std::uint16_t legKind() const { return m_legKinds[m_index]; }
+    [[nodiscard]] bool legAvoided() const { return m_legAvoided[m_index]; }
+    /// Moves on past the current waypoint, as when it is reached (a climb over its leg has ended beyond it).
+    void passWaypoint(const RoutePlanner& planner, anim::Vec3 position) { moveOn(planner, position, true); }
     /// Whether the destination is the waypoint (the route is freed).
     [[nodiscard]] bool onLastLeg() const { return m_index + 1 >= m_points.size(); }
 
   private:
     // Moves on: past a reached waypoint, then past each one the human can skip.
     // @orig 0x0029b6d8 Route_MoveOn (unknown)
-    void moveOn(const world::PathMap& map, anim::Vec3 position, bool reached);
+    void moveOn(const RoutePlanner& planner, anim::Vec3 position, bool reached);
     // Whether the human at `position` may skip the current waypoint for the next: it walks there in a straight line,
     // and a long leg turns little.
     // @orig 0x0029b4b8 Route_CanSkip (unknown)
-    [[nodiscard]] bool canSkip(const world::PathMap& map, anim::Vec3 position) const;
+    [[nodiscard]] bool canSkip(const RoutePlanner& planner, anim::Vec3 position) const;
 
     std::optional<Route> m_route;
-    std::vector<anim::Vec3> m_points; // the nodes' positions, then the destination
+    std::vector<anim::Vec3> m_points;      // the nodes' positions, then the destination
+    std::vector<std::uint16_t> m_legKinds; // each waypoint's leg kind (0 for the first and the destination)
+    std::vector<bool> m_legAvoided;        // each waypoint's leg's avoid bit
     anim::Vec3 m_start;
     std::size_t m_index = 0;
     std::uint32_t m_calls = 0;

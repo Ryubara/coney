@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <optional>
 #include <span>
 #include <vector>
@@ -34,14 +35,17 @@ enum class MoveFailure : std::uint8_t {
 namespace edge_flag {
 inline constexpr std::uint16_t kChoke = 0x4;     ///< A choke point: +80 when its extra costs apply.
 inline constexpr std::uint16_t kEight = 0x8;     ///< +200 when its extra costs apply.
-inline constexpr std::uint16_t kJump = 0x80;     ///< A jump (inferred): +320 when its extra costs apply.
+inline constexpr std::uint16_t kJumpDown = 0x4;  ///< The leg's kind 4: a jump (or a run).
+inline constexpr std::uint16_t kClimb = 0x8;     ///< The leg's kind 8: a climb over a fence or wall.
+inline constexpr std::uint16_t kDoor = 0x10;     ///< The leg's kind `0x10`: a door, refused while its avoid bit is set.
+inline constexpr std::uint16_t kCharge = 0x40;   ///< A breakable door or pane, charged while its avoid bit is set.
+inline constexpr std::uint16_t kJump = 0x80;     ///< +320 when its extra costs apply; the leg's kind: a running climb.
 inline constexpr std::uint16_t kNoExtra = 0x100; ///< In the mask, turns the three extra costs off.
 /// What a failed search adds to the mask before it tries again (`0x002511c8`).
 inline constexpr std::uint16_t kRetry = kChoke | kEight | kJump;
-/// **Coney choice**: the mask a move searches with first. On the disc every edge has one flag of 1, 2, 4, 8, `0x10`
-/// or `0x80`; the retry adds 4, 8 and `0x80`, so the first search takes 1 and 2, and `0x10` (with the avoid bit,
-/// taken by a leg Coney does not build) is never asked for (docs/research/ai.md#coney).
-inline constexpr std::uint16_t kDefaultMask = 0x3;
+/// The mask every human searches with (`0x0029a388`, route state `+0x14`): every link kind on the disc; only `0x100`
+/// is outside it, and with it no failed search is retried (docs/research/ai.md#path-planning).
+inline constexpr std::uint16_t kDefaultMask = 0xff;
 } // namespace edge_flag
 
 /// The planner's numbers.
@@ -122,6 +126,16 @@ class RoutePlanner {
     /// The path data.
     [[nodiscard]] const world::PathMap& map() const { return *m_map; }
 
+    /// The test that refuses a blocked line before the walkable-line test (`0x00221f80`, inferred: collision): true
+    /// when something solid lies between the two points. None set: nothing is blocked.
+    using BlockTest = std::function<bool(anim::Vec3 from, anim::Vec3 to)>;
+    void setBlockTest(BlockTest test) { m_blocked = std::move(test); }
+    /// The walkable-line test with the block test first: the line is clear when nothing blocks it and it never
+    /// leaves the walkable polygons (docs/research/ai.md#path-planning).
+    [[nodiscard]] bool lineClear(anim::Vec3 from, anim::Vec3 to) const {
+        return !(m_blocked && m_blocked(from, to)) && m_map->walkable(from, to);
+    }
+
     /// A route from `from` to `to` over edges whose flags meet `mask`: none needed when the straight line is
     /// walkable; MoveFailure::NoRoute when either end lies on no polygon (or, off every polygon, none within
     /// kPolygonReach), when the ends' polygons are neither the same nor both on the graph (`+0x02`), when an end
@@ -176,6 +190,7 @@ class RoutePlanner {
 
     const world::PathMap* m_map;
     PlannerSettings m_settings;
+    BlockTest m_blocked;
     std::vector<std::uint8_t> m_uses;
     std::size_t m_routesInUse = 0;
 };

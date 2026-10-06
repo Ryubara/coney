@@ -2,6 +2,7 @@
 #include "ai/route_follower.h"
 
 #include <cmath>
+#include <span>
 #include <utility>
 
 namespace coney::ai {
@@ -24,20 +25,38 @@ float turnBetween(anim::Vec3 a, anim::Vec3 b) {
 
 } // namespace
 
-RouteFollower::RouteFollower(const world::PathMap& map, Route route, anim::Vec3 start, anim::Vec3 destination)
+RouteFollower::RouteFollower(const RoutePlanner& planner, Route route, anim::Vec3 start, anim::Vec3 destination)
     : m_start(start) {
-    for (const std::uint32_t node : route.nodes()) {
-        m_points.push_back(map.nodes()[node].position);
+    const world::PathMap& map = planner.map();
+    // Each leg's kind: the record on the waypoint's node that names the node before it.
+    const std::span<const std::uint32_t> nodes = route.nodes();
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+        m_points.push_back(map.nodes()[nodes[i]].position);
+        std::uint16_t kind = 0;
+        bool avoided = false;
+        if (i > 0) {
+            for (const world::PathEdge& edge : map.edgesOf(nodes[i])) {
+                if (edge.to == nodes[i - 1]) {
+                    kind = edge.flags;
+                    avoided = edge.avoid;
+                    break;
+                }
+            }
+        }
+        m_legKinds.push_back(kind);
+        m_legAvoided.push_back(avoided);
     }
     m_points.push_back(destination);
+    m_legKinds.push_back(0);
+    m_legAvoided.push_back(false);
     m_route.emplace(std::move(route));
 }
 
-anim::Vec3 RouteFollower::waypoint(const world::PathMap& map, anim::Vec3 position) {
+anim::Vec3 RouteFollower::waypoint(const RoutePlanner& planner, anim::Vec3 position) {
     ++m_calls;
     const bool reached = !onLastLeg() && planDistance(position, m_points[m_index]) <= kWaypointRadius;
     if (reached || m_calls % kSkipAheadSteps == 0) {
-        moveOn(map, position, reached);
+        moveOn(planner, position, reached);
     }
     return m_points[m_index];
 }
@@ -46,11 +65,11 @@ std::vector<anim::Vec3> RouteFollower::ahead() const {
     return {m_points.begin() + static_cast<std::ptrdiff_t>(m_index), m_points.end()};
 }
 
-void RouteFollower::moveOn(const world::PathMap& map, anim::Vec3 position, bool reached) {
+void RouteFollower::moveOn(const RoutePlanner& planner, anim::Vec3 position, bool reached) {
     if (reached && !onLastLeg()) {
         ++m_index;
     }
-    while (!onLastLeg() && canSkip(map, position)) {
+    while (!onLastLeg() && canSkip(planner, position)) {
         ++m_index;
     }
     // Only the destination left: the route's nodes are no longer used.
@@ -59,9 +78,9 @@ void RouteFollower::moveOn(const world::PathMap& map, anim::Vec3 position, bool 
     }
 }
 
-bool RouteFollower::canSkip(const world::PathMap& map, anim::Vec3 position) const {
+bool RouteFollower::canSkip(const RoutePlanner& planner, anim::Vec3 position) const {
     const anim::Vec3 next = m_points[m_index + 1];
-    if (!map.walkable(position, next)) {
+    if (!planner.lineClear(position, next)) {
         return false;
     }
     if (planDistance(position, next) <= kLongLeg) {

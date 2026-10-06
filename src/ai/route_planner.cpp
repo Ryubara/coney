@@ -77,7 +77,7 @@ std::expected<RoutePlan, MoveFailure> RoutePlanner::request(anim::Vec3 from, ani
         return std::unexpected(MoveFailure::NoRoute);
     }
     // 2. The straight line first.
-    if (m_map->walkable(from, to)) {
+    if (lineClear(from, to)) {
         return RoutePlan{};
     }
     // 3. Both ends in one polygon or both on the graph, and each end's node.
@@ -198,7 +198,8 @@ std::optional<RouteSearch> RoutePlanner::searchWithRetries(std::uint32_t start, 
                                                            std::uint16_t mask) const {
     std::uint16_t used = mask;
     std::optional<RouteSearch> found = search(start, goal, used);
-    if (!found) {
+    // Retried only when the mask (without 0x100) is not every kind already.
+    if (!found && (mask & 0xffU) != 0xffU) {
         used = static_cast<std::uint16_t>(mask | edge_flag::kRetry);
         found = search(start, goal, used);
     }
@@ -247,7 +248,7 @@ std::optional<std::uint32_t> RoutePlanner::endNode(std::uint32_t polygon, anim::
     const std::size_t tries = std::min(byDistance.size(), kEndNodeTries);
     for (std::size_t i = 0; i < tries; ++i) {
         const anim::Vec3 node = m_map->nodes()[byDistance[i].second].position;
-        if (toNode ? m_map->walkable(point, node) : m_map->walkable(node, point)) {
+        if (toNode ? lineClear(point, node) : lineClear(node, point)) {
             return byDistance[i].second;
         }
     }
@@ -263,7 +264,7 @@ std::optional<Route> RoutePlanner::build(std::vector<std::uint32_t> chain, std::
     const auto position = [this](std::uint32_t node) { return m_map->nodes()[node].position; };
     // Leading nodes the start reaches directly.
     if (!m_settings.keepLeadingNodes) {
-        while (chain.size() > 1 && m_map->walkable(from, position(chain[1]))) {
+        while (chain.size() > 1 && lineClear(from, position(chain[1]))) {
             chain.erase(chain.begin());
         }
     }
@@ -279,7 +280,7 @@ std::optional<Route> RoutePlanner::build(std::vector<std::uint32_t> chain, std::
         }
     }
     // Trailing nodes while the destination is in a straight line from the node before.
-    while (chain.size() > 1 && m_map->walkable(position(chain[chain.size() - 2]), to)) {
+    while (chain.size() > 1 && lineClear(position(chain[chain.size() - 2]), to)) {
         chain.pop_back();
     }
     if (m_routesInUse >= kRoutePoolSize) {

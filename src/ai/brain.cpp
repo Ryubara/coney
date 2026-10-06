@@ -425,6 +425,8 @@ void Brain::setMoveAim(anim::Vec3 point, float radius) {
 
 void Brain::stopMove() { m_human->record().move.reset(); }
 
+void Brain::requestClimb(anim::Vec3 direction) { m_human->record().climbToward = direction; }
+
 void Brain::writeStick(anim::Vec3 way, float magnitude) {
     const float length = std::hypot(way.x, way.y);
     human::PlayerRecord& record = m_human->record();
