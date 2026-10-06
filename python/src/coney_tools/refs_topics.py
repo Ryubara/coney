@@ -385,10 +385,23 @@ SOUND = Topic(
     "sound",
     (
         F("id", "str", "Our stable id (the kind and the name or number).", required=True),
-        F("kind", "str", "Music track, interface sound, sound matrix, gang music, inventory sound ...", "Kind"),
-        F("name", "str", "The sound's name as the scripts pass it.", "Name"),
+        F(
+            "kind",
+            "str",
+            "Music track, interface sound, sound matrix, inventory item, ambient sound, ambient emitter or speech "
+            "line.",
+            "Kind",
+        ),
+        F("name", "str", "The sound's name as the scripts pass it (a speech line's whole sound name).", "Name"),
         F("number", "int", "A slot or id number the binding takes.", "Number"),
-        F("values", "list", "The other numbers the binding takes.", "Values"),
+        F(
+            "values",
+            "list",
+            "The other numbers the binding takes; an ambient sound's slots in the ambient table, an emitter's first "
+            "slot and slot count (-1: one named sound).",
+            "Values",
+        ),
+        F("in_list", "bool", "Whether the name is in the game's sound list (`warriors.glr`).", "In sound list"),
         F("used_by", "list", "Where it is configured or played.", "Used by"),
     ),
     group_by="kind",
@@ -406,8 +419,133 @@ SCRIPT_EVENTS = Topic(
         F("handlers", "int", "How many `SetMsgHandler` calls name a callback for it.", "Handlers"),
         F("clears", "int", "How many calls pass nil (removing a handler)."),
         F("examples", "list", "The most common callback names (evidence for the meaning).", "Example callbacks"),
+        F("gang_handlers", "int", "How many `GangSetMsgHandler` calls name a callback for it.", "Gang handlers"),
+        F("gang_clears", "int", "How many `GangSetMsgHandler` calls pass nil."),
+        F("gang_examples", "list", "The most common gang callback names.", "Example gang callbacks"),
     ),
     nav="Script events",
+)
+
+TEXT_LABELS = Topic(
+    "text-labels",
+    "id",
+    "text",
+    (
+        F("id", "str", "The label as scripts write it: `<table>.<key>`.", "Label", required=True),
+        F(
+            "table",
+            "str",
+            "The string table: `GSTRING`, `LABEL`, `TSTRING` (every level), `RUMBLE` (Rumble arenas), `LEVEL<n>` "
+            "(one level's own).",
+            "Table",
+        ),
+        F("key", "str", "The key in that table."),
+        F(
+            "meaning",
+            "str",
+            "What the text is for, in our words, where the key does not say it.",
+            "Meaning",
+            curated=True,
+        ),
+        F(
+            "ids",
+            "str",
+            "For a table the engine or the menus read by number or name (`GSTRING.HUD`): the ids it holds.",
+            "Ids",
+        ),
+        F("size", "int", "For such a table: how many strings it holds.", "Strings"),
+        F(
+            "languages",
+            "int",
+            "In how many of the five languages a script defines it (0: used but never defined).",
+            "Languages",
+        ),
+        F("defined_in", "list", "The scripts that define it.", "Defined in"),
+        F("uses", "int", "How many places in the scripts name it.", "Uses"),
+        F(
+            "passed_to",
+            "list",
+            "What it is passed to, most often first: a binding (`HUDSetObjective`) or a script's own helper "
+            "(`ObjectiveSetup`).",
+            "Passed to",
+        ),
+        F("used_in", "list", "The scripts that name it.", "Used in"),
+    ),
+    group_by="table",
+    compact=True,
+    nav="Text labels",
+)
+
+COMMANDS = Topic(
+    "commands",
+    "id",
+    "cmd",
+    (
+        F("id", "str", "Our stable id: `trigger:<n>`, `pad:<n>` or `warrior:<n>`.", required=True),
+        F("kind", "str", "Trigger kind, pad command or Warrior command.", "Kind"),
+        F(
+            "number",
+            "int",
+            "The number scripts pass: `AddCommand`'s trigger, its command id (1-57), or the Warrior command "
+            "(`WCIssueCommand`, 0-6).",
+            "Number",
+        ),
+        F("hex", "hex", "A pad command's id in hex, as the research pages write it.", "Hex"),
+        F("name", "str", "Our short name for it.", "Name", curated=True),
+        F("bound", "list", "How the scripts bind a pad command: `trigger: buttons`.", "Bound to"),
+        F("action", "str", "What it does.", "Action", curated=True),
+        F("speech", "str", "The speech command a war chief says when giving a Warrior command.", "Says", curated=True),
+        F("bound_in", "list", "The scripts that bind it."),
+        F("toggled_in", "list", "The scripts that switch a pad command per human (`EnableCommand`).", "Switched in"),
+        F("used_in", "list", "The scripts that enable, disable or issue a Warrior command.", "Used in"),
+    ),
+    group_by="kind",
+    nav="Commands",
+)
+
+SPEECH = Topic(
+    "speech",
+    "id",
+    "speech",
+    (
+        F("id", "str", "Our stable id: `command:<n>` or `voice:<n>`.", required=True),
+        F("kind", "str", "Speech command or voice set.", "Kind"),
+        F(
+            "number",
+            "int",
+            "The number scripts pass: `SoundPlayCommand`'s command (0-206), or a voice set (`CfgChar`'s voice, "
+            "`HuSetStateRespVoiceIndex`).",
+            "Number",
+        ),
+        F("name", "str", "The command's name in the executable's table; its lines are `<name>_<nn>`.", "Name"),
+        F("meaning", "str", "When it is said, in our words, where the name does not say it.", "Meaning", curated=True),
+        F("voices", "int", "How many voice sets have lines for the command.", "Voice sets"),
+        F("commands", "int", "How many commands the voice set has lines for.", "Commands"),
+        F(
+            "lines",
+            "int",
+            "How many lines the game finds: for a command over all voice sets, for a voice set in all.",
+            "Lines",
+        ),
+        F(
+            "types",
+            "list",
+            "Character types `CfgChar` gives the voice set.",
+            "Character types",
+            link="characters.md#char",
+        ),
+        F("percent", "list", "The chance `SndSetCommandSoundPercent` gives the command to be said.", "Chance"),
+        F(
+            "used_in",
+            "list",
+            "Scripts that play the command (`SoundPlayCommand`) or give the voice set to a human for its state "
+            "responses (`HuSetStateRespVoiceIndex`).",
+            "Used in",
+        ),
+    ),
+    group_by="kind",
+    compact=True,
+    nav="Speech",
 )
 
 WAD_NAMES = Topic(
@@ -538,11 +676,14 @@ TOPICS: tuple[Topic, ...] = (
     ANIMATIONS,
     ANIM_IDS,
     CONTROLS,
+    COMMANDS,
     HUD_COLOURS,
     RADAR_ICONS,
     TEXT_FORMATTING,
+    TEXT_LABELS,
     ENUMS,
     SOUND,
+    SPEECH,
     SCRIPT_EVENTS,
     WAD_NAMES,
 )

@@ -122,9 +122,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 637 |
+| confirmed (code) | 638 |
 | confirmed (runtime) | 0 |
-| inferred | 283 |
+| inferred | 282 |
 | speculative | 36 |
 | detail: traced | 368 |
 | detail: brief | 588 |

@@ -84,6 +84,7 @@ nav:
           - AI humans: research/ai.md
           - Cars: research/cars.md
           - Camera: research/camera.md
+          - Sound: research/sound.md
           - Feel comparison: research/feel.md
           - Collision: research/collision.md
           - Physics: research/physics.md
@@ -112,11 +113,14 @@ nav:
       - Animation clips: references/animations.md
       - Anim ids: references/anim-ids.md
       - Controls: references/controls.md
+      - Commands: references/commands.md
       - HUD colours: references/hud-colours.md
       - Radar icons and blips: references/radar-icons.md
       - Text formatting: references/text-formatting.md
+      - Text labels: references/text-labels.md
       - Script enums: references/enums.md
       - Sound and music: references/sound.md
+      - Speech commands and voices: references/speech.md
       - Script events: references/script-events.md
       - WAD entry names: references/wad-names.md
       - Script bindings:

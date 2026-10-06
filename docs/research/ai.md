@@ -785,6 +785,31 @@ no time limit, `+0x28` the option.
 - **`TacticTrigger(gang, what, on)`** (`0x00316fa0`), crowd tactics only: what 0 switches the periodic reactions;
   what 1 sends every free member to move and cheer at once.
 
+#### Warrior commands {#warrior-commands}
+
+A war chief (a player human whose `+0x3ac` is 1) orders the crew, his gang, with one of seven **Warrior
+commands** ([Commands](../references/commands.md#warrior-command)). The menu (HUD `0x001a6c58`), `WCIssueCommand`
+and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command, forced, pos, arg)`, confirmed
+(code):
+
+1. Nothing while commands are locked (game state `+0x411`), the player's menu is locked (`+0x42e` + player), the
+   command is disabled for the player (`+0x41e` + player × 7 + command, `WCEnableCommand`; the player is human
+   `+0x1b0`) or the human is not a war chief.
+2. The command becomes the player's last (`+0x41c` + player). Unforced, giving the current command again only
+   repeats its line (`0x0041cc40`) and, for 0 under a tactic of type `0x12`, calls `0x003114e0` on it.
+3. Otherwise the gang's tactic is cleared and the command's started: 0 `0x00310e00` (given 9.0), 1 `0x00320530`
+   (unforced, the chief also plays clip 0x2a4 or 0x2a8, and the gang's target is set from his), 2 `Tactic_Defend`
+   around the chief (clip 0x2a3 or 0x2a7), 3 `0x00313400` (the standing tactic of type 3, [the first
+   mission](#level99)) or `0x003128a0` for a gang whose brain `+0x2d5` is set, 4 `0x00319570` (given 75.0), 5
+   `0x00320b60`; 6 starts nothing.
+4. The chief says the command's line (`0x0041cc40`, [Speech](../references/speech.md)): 0 `follow` (`follow_hide`
+   while `0x00228168` holds, hiding inferred), 1 `attack`, 2 `defend`, 3 `hold` (`holdhide`), 4 `scatter`, 5
+   `steal` when the nearest thing of kind `0xe` is closer than 64 (8 m if that is a squared distance, inferred) and
+   `0x0039a580` accepts it, else `vandal`; 6 none.
+
+The tactics' types and behaviour are not traced: the names follow, attack, hold, scatter and wreck are read from
+the lines (inferred).
+
 #### Formations and follow slots {#formations}
 
 A leader's **formation** hangs from **human** `+0x1a4` (`0x0021d428`, made on first use); brain `+0x1a4` is the

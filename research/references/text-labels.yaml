@@ -1,0 +1,739 @@
+# Text labels: a Coney game reference list. The page docs/references/text-labels.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Text labels"
+about: |
+  The keys of the string tables scripts show text by: objectives (`HUDSetObjective`), tutorial hints
+  (`HUDSetTutorialText`), mission-failed reasons (`HUDLaunchMissionFailed`), button prompts
+  (`SetMsgHandlerEx`) and HUD labels. A script names one as `<table>.<key>`. `global.lua` builds
+  `GSTRING` and `LABEL` for every level and each level script its own `LEVEL<n>`, in all five languages,
+  keeping `GetLanguage`'s; Rumble arenas build `RUMBLE`; the front end's `config_strings_<lang>.lua` hold
+  the numbered tables the engine reads ([GUI: strings](../research/gui.md#strings)). Only keys, never the
+  text.
+
+  The level tables' key prefixes, read from what the keys are passed to (inferred): `MS_C<k>_<n>` a step
+  of chapter k's objective, `MP_<n>` the mission's main objective, `MB_` a bonus objective, `MF_` and
+  `FAIL` a mission-failed reason, `TT_` a tutorial hint, `LBL_` a HUD bar's label, `CS_` an announcement.
+complete: |
+  Every key of every string table on the disc is listed, with the scripts that name it. Keys no
+  script names directly may be built at run time (`ObjectiveString`) or unused; keys with no languages are
+  named by a script but defined in no table. A table of lines (`LEVEL95.ACT`) shows the ids its
+  constructors give.
+defaults: {source: "every script: the string tables' constructors and the labels passed to bindings", evidence: inferred}
+entries:
+  - {id: GSTRING.ANNOUNCE, table: GSTRING, key: ANNOUNCE, meaning: "Announcements (`CfgAnnounceMessage`).", ids: "0-4", size: 5, languages: 5, defined_in: [config_strings_de.lua, config_strings_en.lua, config_strings_es.lua, config_strings_fr.lua, config_strings_it.lua], uses: 0, source: "config_strings_<lang>.lua, passed to the engine by config_preload2.lua", evidence: inferred}
+  - {id: GSTRING.COMMAND, table: GSTRING, key: COMMAND, meaning: "The Warrior command menu's entries (`CfgWarriorCommand`).", ids: "0-7", size: 8, languages: 5, defined_in: [config_strings_de.lua, config_strings_en.lua, config_strings_es.lua, config_strings_fr.lua, config_strings_it.lua], uses: 1, used_in: [config_preload2.lua], source: "config_strings_<lang>.lua, passed to the engine by config_preload2.lua", evidence: inferred}
+  - {id: GSTRING.CRIME, table: GSTRING, key: CRIME, meaning: "Crime names (`CfgCrimeMessage`).", ids: "0-14", size: 15, languages: 5, defined_in: [config_strings_de.lua, config_strings_en.lua, config_strings_es.lua, config_strings_fr.lua, config_strings_it.lua], uses: 0, source: "config_strings_<lang>.lua, passed to the engine by config_preload2.lua", evidence: inferred}
+  - {id: GSTRING.HUD, table: GSTRING, key: HUD, meaning: "Interface messages the engine shows by number (`CfgHUDMessage`).", ids: "0-371, 373-388", size: 388, languages: 5, defined_in: [config_strings_de.lua, config_strings_en.lua, config_strings_es.lua, config_strings_fr.lua, config_strings_it.lua, global.lua], uses: 0, source: "config_strings_<lang>.lua, passed to the engine by config_preload2.lua", evidence: confirmed-code}
+  - {id: GSTRING.LEVELNAME, table: GSTRING, key: LEVELNAME, meaning: "Each level's title, by level script name (front end).", ids: "67 names", size: 67, languages: 5, defined_in: [config_strings_de.lua, config_strings_en.lua, config_strings_es.lua, config_strings_fr.lua, config_strings_it.lua], uses: 0, source: "config_strings_<lang>.lua, passed to the engine by config_preload2.lua", evidence: inferred}
+  - {id: GSTRING.MISSIONNAME, table: GSTRING, key: MISSIONNAME, meaning: "Each level's mission title, by level script name (front end).", ids: "67 names", size: 67, languages: 5, defined_in: [config_strings_de.lua, config_strings_en.lua, config_strings_es.lua, config_strings_fr.lua, config_strings_it.lua], uses: 0, source: "config_strings_<lang>.lua, passed to the engine by config_preload2.lua", evidence: inferred}
+  - {id: GSTRING.ACTIONBUTTON, table: GSTRING, key: ACTIONBUTTON, meaning: "Markup only: the action button's glyph.", languages: 5, defined_in: [config_strings_de.lua, config_strings_en.lua, config_strings_es.lua, config_strings_fr.lua, config_strings_it.lua, global.lua], uses: 0}
+  - {id: GSTRING.ACTIONFORMAT, table: GSTRING, key: ACTIONFORMAT, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.AMBUSH, table: GSTRING, key: AMBUSH, languages: 5, defined_in: [global.lua], uses: 1, passed_to: [SetMsgHandlerEx], used_in: [level55_punkfight.lua]}
+  - {id: GSTRING.BASECRIME1, table: GSTRING, key: BASECRIME1, languages: 2, defined_in: [config_strings_de.lua, config_strings_fr.lua], uses: 0}
+  - {id: GSTRING.BICO, table: GSTRING, key: BICO, meaning: "Markup only: the blue objective icon (`<BOBJ>`).", languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.CHEAT, table: GSTRING, key: CHEAT, languages: 5, defined_in: [global.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [global.lua]}
+  - {id: GSTRING.DANCE, table: GSTRING, key: DANCE, languages: 5, defined_in: [global.lua], uses: 4, passed_to: [SetMsgHandlerEx], used_in: [level55_party.lua]}
+  - {id: GSTRING.DRINK, table: GSTRING, key: DRINK, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.ELEVATOR, table: GSTRING, key: ELEVATOR, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.GOODTOGO, table: GSTRING, key: GOODTOGO, languages: 5, defined_in: [global.lua], uses: 7, passed_to: [HUDSetTutorialText], used_in: [global.lua, level5.lua, level20_mainstreet.lua, level86_chapter4.lua, level87.lua, level95_coney.lua]}
+  - {id: GSTRING.GTGPOLICE, table: GSTRING, key: GTGPOLICE, languages: 5, defined_in: [global.lua], uses: 6, passed_to: [HUDSetTutorialText], used_in: [global.lua, level5.lua, level14_dirtycop.lua, level14_jsb.lua, level87.lua, level95_coney.lua]}
+  - {id: GSTRING.HIREBUM31, table: GSTRING, key: HIREBUM31, languages: 1, defined_in: [global.lua], uses: 6, passed_to: [SetMsgHandlerEx], used_in: [level31_sewers.lua]}
+  - {id: GSTRING.KISS, table: GSTRING, key: KISS, languages: 5, defined_in: [global.lua], uses: 1, passed_to: [SetMsgHandlerEx], used_in: [level55_party.lua]}
+  - {id: GSTRING.LOSTTAG, table: GSTRING, key: LOSTTAG, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.NULL, table: GSTRING, key: "NULL", meaning: "An empty string.", languages: 5, defined_in: [global.lua], uses: 4, passed_to: [SetMsgHandlerEx], used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: GSTRING.PRESSANDHOLDFORBASE, table: GSTRING, key: PRESSANDHOLDFORBASE, languages: 5, defined_in: [global.lua], uses: 2, passed_to: [SetMsgHandlerEx], used_in: [level87.lua, level87_chap5_club.lua]}
+  - {id: GSTRING.PRESSANDHOLDFORDETAIL, table: GSTRING, key: PRESSANDHOLDFORDETAIL, languages: 5, defined_in: [global.lua], uses: 2, passed_to: [SetMsgHandlerEx], used_in: [level87.lua]}
+  - {id: GSTRING.PRESSANDHOLDFORFILL, table: GSTRING, key: PRESSANDHOLDFORFILL, languages: 5, defined_in: [global.lua], uses: 2, passed_to: [SetMsgHandlerEx], used_in: [level87.lua]}
+  - {id: GSTRING.PRESSANDHOLDFOROUTLINE, table: GSTRING, key: PRESSANDHOLDFOROUTLINE, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.PRESSTOCLOSE, table: GSTRING, key: PRESSTOCLOSE, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.PRESSTOCUTLOCK, table: GSTRING, key: PRESSTOCUTLOCK, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.PRESSTOGETIN, table: GSTRING, key: PRESSTOGETIN, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.PRESSTOHITTHESWITCH, table: GSTRING, key: PRESSTOHITTHESWITCH, languages: 5, defined_in: [global.lua], uses: 9, passed_to: [SetMsgHandlerEx], used_in: [level51_chapter2a.lua, level81_brawl.lua, level81_horror_house.lua]}
+  - {id: GSTRING.PRESSTOOPEN, table: GSTRING, key: PRESSTOOPEN, languages: 5, defined_in: [global.lua], uses: 2, passed_to: [SetMsgHandlerEx], used_in: [level14.lua, level95_coney.lua]}
+  - {id: GSTRING.PRESSTOPICKUP, table: GSTRING, key: PRESSTOPICKUP, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.PRESSTOPLANTLOOT, table: GSTRING, key: PRESSTOPLANTLOOT, languages: 5, defined_in: [global.lua], uses: 3, passed_to: [SetMsgHandlerEx], used_in: [level14_dirtycop.lua, level14_jsb.lua]}
+  - {id: GSTRING.PRESSTOTALK, table: GSTRING, key: PRESSTOTALK, languages: 5, defined_in: [global.lua], uses: 14, passed_to: [SetMsgHandlerEx], used_in: [level11.lua, level11_chapter1.lua, level11_chapter4.lua, level11_chapter5.lua, level55_party.lua, level86_chapter1_reg.lua]}
+  - {id: GSTRING.PRESSTOUSE, table: GSTRING, key: PRESSTOUSE, languages: 5, defined_in: [global.lua], uses: 2, passed_to: [SetMsgHandlerEx], used_in: [level3_balcony.lua]}
+  - {id: GSTRING.QUIT, table: GSTRING, key: QUIT, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.RICO, table: GSTRING, key: RICO, meaning: "Markup only: the red objective icon (`<ROBJ>`).", languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.SIT, table: GSTRING, key: SIT, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.SMOKE, table: GSTRING, key: SMOKE, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.YEL_TIMER, table: GSTRING, key: YEL_TIMER, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: GSTRING.YICO, table: GSTRING, key: YICO, meaning: "Markup only: the yellow objective icon (`<YOBJ>`).", languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: LABEL.BONG, table: LABEL, key: BONG, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: LABEL.BTAG, table: LABEL, key: BTAG, languages: 5, defined_in: [global.lua], uses: 1, passed_to: [HUDGetNewPH], used_in: [global.lua]}
+  - {id: LABEL.HAT, table: LABEL, key: HAT, languages: 5, defined_in: [global.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level11_chapter1.lua]}
+  - {id: LABEL.LOOT, table: LABEL, key: LOOT, languages: 5, defined_in: [global.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level11_chapter3.lua]}
+  - {id: LABEL.MEAT, table: LABEL, key: MEAT, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: LABEL.PLUMBING, table: LABEL, key: PLUMBING, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: LABEL.STEREOS, table: LABEL, key: STEREOS, languages: 5, defined_in: [global.lua], uses: 5, passed_to: [ObjectiveSetup], used_in: [level14.lua, level14_radiosandstores.lua]}
+  - {id: LABEL.TAG, table: LABEL, key: TAG, languages: 5, defined_in: [global.lua], uses: 23, passed_to: [ObjectiveSetup], used_in: [level9_chap1_radio.lua, level9_chap2_tags.lua, level9_chap3_escape.lua, level87.lua, level87_chap2_street1.lua, level87_chap3_shanty.lua, level87_chap4_street2.lua, level95_chapter3.lua]}
+  - {id: LABEL.VOODOO, table: LABEL, key: VOODOO, languages: 5, defined_in: [global.lua], uses: 0}
+  - {id: TSTRING, table: TSTRING, key: TSTRING, meaning: "Tutorial messages (`CfgTutorialMessage`).", ids: "0-26", size: 27, languages: 5, defined_in: [config_strings_de.lua, config_strings_en.lua, config_strings_es.lua, config_strings_fr.lua, config_strings_it.lua], uses: 0, source: "config_strings_<lang>.lua, passed to the engine by config_preload2.lua", evidence: inferred}
+  - {id: RUMBLE.DRAW, table: RUMBLE, key: DRAW, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 33, used_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"]}
+  - {id: RUMBLE.G, table: RUMBLE, key: G, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 2, passed_to: [HUDGetNewPH], used_in: ["37bfa135"]}
+  - {id: RUMBLE.KILLS, table: RUMBLE, key: KILLS, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.LOSE, table: RUMBLE, key: LOSE, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.P1, table: RUMBLE, key: P1, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 2, passed_to: [HUDGetNewPH], used_in: ["37bfa135"]}
+  - {id: RUMBLE.P2, table: RUMBLE, key: P2, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 1, passed_to: [HUDGetNewPH], used_in: ["37bfa135"]}
+  - {id: RUMBLE.PB, table: RUMBLE, key: PB, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 1, passed_to: [HUDGetNewPH], used_in: ["37bfa135"]}
+  - {id: RUMBLE.REVIVESPAWN, table: RUMBLE, key: REVIVESPAWN, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.RULES, table: RUMBLE, key: RULES, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.TIME, table: RUMBLE, key: TIME, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.TURFWAR_ATTACK, table: RUMBLE, key: TURFWAR_ATTACK, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.TURFWAR_DEFEND, table: RUMBLE, key: TURFWAR_DEFEND, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.TURFWAR_STOREDAMAGE, table: RUMBLE, key: TURFWAR_STOREDAMAGE, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 4, passed_to: [HUDEnableBar], used_in: ["6ecd70b0"]}
+  - {id: RUMBLE.WHEELCHAIR_ONE, table: RUMBLE, key: WHEELCHAIR_ONE, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.WHEELCHAIR_TWO, table: RUMBLE, key: WHEELCHAIR_TWO, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: RUMBLE.WINS, table: RUMBLE, key: WINS, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 33, used_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"]}
+  - {id: RUMBLE.WINS_WHEELCHAIR, table: RUMBLE, key: WINS_WHEELCHAIR, languages: 5, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 33, used_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"]}
+  - {id: RUMBLE.WIN_STRING, table: RUMBLE, key: WIN_STRING, languages: 1, defined_in: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua, level108.lua, level109.lua, "... 25 more"], uses: 0}
+  - {id: LEVEL2.BTAG, table: LEVEL2, key: BTAG, languages: 5, defined_in: [level2.lua], uses: 0}
+  - {id: LEVEL2.COUNTER, table: LEVEL2, key: COUNTER, languages: 5, defined_in: [level2.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level2_clinic.lua]}
+  - {id: LEVEL2.LBL_1, table: LEVEL2, key: LBL_1, languages: 5, defined_in: [level2.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level2_junkyard.lua]}
+  - {id: LEVEL2.MB_1, table: LEVEL2, key: MB_1, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level2_tenement.lua]}
+  - {id: LEVEL2.MB_2, table: LEVEL2, key: MB_2, languages: 5, defined_in: [level2.lua], uses: 0}
+  - {id: LEVEL2.MB_3, table: LEVEL2, key: MB_3, languages: 5, defined_in: [level2.lua], uses: 0}
+  - {id: LEVEL2.MB_4, table: LEVEL2, key: MB_4, languages: 5, defined_in: [level2.lua], uses: 0}
+  - {id: LEVEL2.MP_1, table: LEVEL2, key: MP_1, languages: 5, defined_in: [level2.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level2.lua]}
+  - {id: LEVEL2.MS_C1_1, table: LEVEL2, key: MS_C1_1, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level2_clinic.lua]}
+  - {id: LEVEL2.MS_C1_2, table: LEVEL2, key: MS_C1_2, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level2_clinic.lua]}
+  - {id: LEVEL2.MS_C1_3, table: LEVEL2, key: MS_C1_3, languages: 5, defined_in: [level2.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level2_clinic.lua]}
+  - {id: LEVEL2.MS_C1_4, table: LEVEL2, key: MS_C1_4, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level2_clinic.lua]}
+  - {id: LEVEL2.MS_C1_5, table: LEVEL2, key: MS_C1_5, languages: 5, defined_in: [level2.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level2_clinic.lua]}
+  - {id: LEVEL2.MS_C2_1, table: LEVEL2, key: MS_C2_1, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level2_tenement.lua]}
+  - {id: LEVEL2.MS_C2_2, table: LEVEL2, key: MS_C2_2, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level2_clubhouse.lua]}
+  - {id: LEVEL2.MS_C3_1, table: LEVEL2, key: MS_C3_1, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level2_clubhouse.lua]}
+  - {id: LEVEL2.MS_C4_1, table: LEVEL2, key: MS_C4_1, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level2_junkyard.lua]}
+  - {id: LEVEL2.MS_C4_2, table: LEVEL2, key: MS_C4_2, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level2_junkyard.lua]}
+  - {id: LEVEL2.RAGETHROW, table: LEVEL2, key: RAGETHROW, languages: 5, defined_in: [level2.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level2_clubhouse.lua]}
+  - {id: LEVEL2.SPRINT, table: LEVEL2, key: SPRINT, languages: 5, defined_in: [level2.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level2_tenement.lua]}
+  - {id: LEVEL2.TT_1, table: LEVEL2, key: TT_1, languages: 5, defined_in: [level2.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level2_junkyard.lua]}
+  - {id: LEVEL2.TT_2, table: LEVEL2, key: TT_2, languages: 5, defined_in: [level2.lua], uses: 2, passed_to: [HUDSetTutorialText], used_in: [level2_tenement.lua]}
+  - {id: LEVEL3.BROKETRUCE, table: LEVEL3, key: BROKETRUCE, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level3_street.lua]}
+  - {id: LEVEL3.BTAG, table: LEVEL3, key: BTAG, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 0}
+  - {id: LEVEL3.ELEC, table: LEVEL3, key: ELEC, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level3_comp.lua]}
+  - {id: LEVEL3.ELEVATOR, table: LEVEL3, key: ELEVATOR, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 1, passed_to: [W_ShowStopWatch], used_in: [level3_balcony.lua]}
+  - {id: LEVEL3.GALLERY, table: LEVEL3, key: GALLERY, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level3_gallery.lua]}
+  - {id: LEVEL3.GALLERYSTRING, table: LEVEL3, key: GALLERYSTRING, languages: 0, uses: 1, used_in: [level3_gallery.lua]}
+  - {id: LEVEL3.LT_1, table: LEVEL3, key: LT_1, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 0}
+  - {id: LEVEL3.MB_1, table: LEVEL3, key: MB_1, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 0}
+  - {id: LEVEL3.MB_3, table: LEVEL3, key: MB_3, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 0}
+  - {id: LEVEL3.MF_1, table: LEVEL3, key: MF_1, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 1, used_in: [level3_comp.lua]}
+  - {id: LEVEL3.MF_2, table: LEVEL3, key: MF_2, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 1, used_in: [level3_comp.lua]}
+  - {id: LEVEL3.MF_3, table: LEVEL3, key: MF_3, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 1, used_in: [level3_comp.lua]}
+  - {id: LEVEL3.MF_4, table: LEVEL3, key: MF_4, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 2, passed_to: [HUDLaunchMissionFailed], used_in: [level3_chase.lua, level3_gallery.lua]}
+  - {id: LEVEL3.MIMESARRIVE, table: LEVEL3, key: MIMESARRIVE, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 1, passed_to: [W_ShowStopWatch], used_in: [level3_gallery.lua]}
+  - {id: LEVEL3.MOON, table: LEVEL3, key: MOON, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level3_comp.lua]}
+  - {id: LEVEL3.MP_1, table: LEVEL3, key: MP_1, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 5, passed_to: [HUDSetObjective], used_in: [level3.lua, level3_balcony.lua, level3_chase.lua, level3_gallery.lua]}
+  - {id: LEVEL3.MP_2, table: LEVEL3, key: MP_2, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level3_balcony.lua, level3_chase.lua, level3_gallery.lua]}
+  - {id: LEVEL3.MS_C1_1, table: LEVEL3, key: MS_C1_1, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 3, passed_to: [HUDSetObjective, ObjectiveSetup], used_in: [level3_comp.lua, level3_street.lua]}
+  - {id: LEVEL3.MS_C1_2, table: LEVEL3, key: MS_C1_2, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level3_comp.lua]}
+  - {id: LEVEL3.MS_C1_3, table: LEVEL3, key: MS_C1_3, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level3_balcony.lua]}
+  - {id: LEVEL3.MS_C1_4, table: LEVEL3, key: MS_C1_4, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level3_balcony.lua]}
+  - {id: LEVEL3.MS_C1_5, table: LEVEL3, key: MS_C1_5, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level3_comp.lua]}
+  - {id: LEVEL3.MS_C1_6, table: LEVEL3, key: MS_C1_6, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 3, passed_to: [HUDSetTutorialText, HUDCheckTutorialText], used_in: [level3_comp.lua]}
+  - {id: LEVEL3.MS_C1_7, table: LEVEL3, key: MS_C1_7, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level3_balcony.lua]}
+  - {id: LEVEL3.MS_C2_2, table: LEVEL3, key: MS_C2_2, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level3_balcony.lua]}
+  - {id: LEVEL3.MS_C3_1, table: LEVEL3, key: MS_C3_1, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level3_chase.lua]}
+  - {id: LEVEL3.MS_C3_2, table: LEVEL3, key: MS_C3_2, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 0}
+  - {id: LEVEL3.MS_C4_3, table: LEVEL3, key: MS_C4_3, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 0}
+  - {id: LEVEL3.MS_C5_1, table: LEVEL3, key: MS_C5_1, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level3_gallery.lua]}
+  - {id: LEVEL3.OUTOFTIME, table: LEVEL3, key: OUTOFTIME, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level3_gallery.lua]}
+  - {id: LEVEL3.PANZERS, table: LEVEL3, key: PANZERS, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level3_comp.lua]}
+  - {id: LEVEL3.PULLEY, table: LEVEL3, key: PULLEY, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level3_balcony.lua]}
+  - {id: LEVEL3.WARRIORS, table: LEVEL3, key: WARRIORS, languages: 5, defined_in: [level3.lua, level3_strings_en.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level3_comp.lua]}
+  - {id: LEVEL5.BTAG, table: LEVEL5, key: BTAG, languages: 5, defined_in: [level5.lua], uses: 0}
+  - {id: LEVEL5.DIE, table: LEVEL5, key: DIE, languages: 5, defined_in: [level5.lua], uses: 16, passed_to: [HUDEnableBar], used_in: [level5_chapter3.lua]}
+  - {id: LEVEL5.MBBAR_1, table: LEVEL5, key: MBBAR_1, languages: 5, defined_in: [level5.lua], uses: 8, passed_to: [HUDEnableBar], used_in: [level5_chapter1.lua]}
+  - {id: LEVEL5.MB_1, table: LEVEL5, key: MB_1, languages: 5, defined_in: [level5.lua], uses: 4, passed_to: [HUDSetObjective, ObjectiveSetup], used_in: [level5.lua, level5_chapter1.lua]}
+  - {id: LEVEL5.MB_2, table: LEVEL5, key: MB_2, languages: 5, defined_in: [level5.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level5.lua]}
+  - {id: LEVEL5.MF, table: LEVEL5, key: MF, languages: 5, defined_in: [level5.lua], uses: 10, passed_to: [StartChase], used_in: [level5_chapter2.lua]}
+  - {id: LEVEL5.MP_1, table: LEVEL5, key: MP_1, languages: 5, defined_in: [level5.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level5.lua]}
+  - {id: LEVEL5.MS_C1_1, table: LEVEL5, key: MS_C1_1, languages: 5, defined_in: [level5.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level5_chapter1.lua]}
+  - {id: LEVEL5.MS_C1_2, table: LEVEL5, key: MS_C1_2, languages: 5, defined_in: [level5.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level5_chapter1a.lua]}
+  - {id: LEVEL5.MS_C2_1, table: LEVEL5, key: MS_C2_1, languages: 5, defined_in: [level5.lua], uses: 6, passed_to: [HUDSetObjective], used_in: [level5_chapter2.lua, level5_chapter3.lua]}
+  - {id: LEVEL5.MS_C2_2, table: LEVEL5, key: MS_C2_2, languages: 5, defined_in: [level5.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level5_chapter3.lua]}
+  - {id: LEVEL5.RAGEBUILD, table: LEVEL5, key: RAGEBUILD, languages: 5, defined_in: [level5.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level5_chapter1a.lua]}
+  - {id: LEVEL5.SAN, table: LEVEL5, key: SAN, languages: 5, defined_in: [level5.lua], uses: 0}
+  - {id: LEVEL5.SS, table: LEVEL5, key: SS, languages: 5, defined_in: [level5.lua], uses: 0}
+  - {id: LEVEL5.VAR, table: LEVEL5, key: VAR, languages: 5, defined_in: [level5.lua], uses: 16, passed_to: [HUDEnableBar], used_in: [level5_chapter3.lua]}
+  - {id: LEVEL5.WALLSMASH, table: LEVEL5, key: WALLSMASH, languages: 5, defined_in: [level5.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level5_chapter1.lua]}
+  - {id: LEVEL9.BTAG, table: LEVEL9, key: BTAG, languages: 5, defined_in: [level9.lua], uses: 0}
+  - {id: LEVEL9.INFO, table: LEVEL9, key: INFO, languages: 5, defined_in: [level9.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level9_chap1_radio.lua]}
+  - {id: LEVEL9.MB_1, table: LEVEL9, key: MB_1, languages: 5, defined_in: [level9.lua], uses: 0}
+  - {id: LEVEL9.MP_1, table: LEVEL9, key: MP_1, languages: 5, defined_in: [level9.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level9.lua]}
+  - {id: LEVEL9.MS_C1_1, table: LEVEL9, key: MS_C1_1, languages: 5, defined_in: [level9.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level9_chap1_radio.lua, level9_chap3_escape.lua]}
+  - {id: LEVEL9.MS_C1_2, table: LEVEL9, key: MS_C1_2, languages: 5, defined_in: [level9.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level9_chap1_radio.lua]}
+  - {id: LEVEL9.MS_C1_3, table: LEVEL9, key: MS_C1_3, languages: 5, defined_in: [level9.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level9_chap1_radio.lua]}
+  - {id: LEVEL9.MS_C1_4, table: LEVEL9, key: MS_C1_4, languages: 5, defined_in: [level9.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level9_chap1_radio.lua]}
+  - {id: LEVEL9.MS_C1_5, table: LEVEL9, key: MS_C1_5, languages: 5, defined_in: [level9.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level9_chap1_radio.lua]}
+  - {id: LEVEL9.MS_C1_6, table: LEVEL9, key: MS_C1_6, languages: 5, defined_in: [level9.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level9_chap1_radio.lua]}
+  - {id: LEVEL9.MS_C2_1, table: LEVEL9, key: MS_C2_1, languages: 5, defined_in: [level9.lua], uses: 3, passed_to: [ObjectiveSetup, HUDSetObjective], used_in: [level9_chap2_tags.lua, level9_chap3_escape.lua]}
+  - {id: LEVEL9.MS_C3_1, table: LEVEL9, key: MS_C3_1, languages: 5, defined_in: [level9.lua], uses: 5, passed_to: [HUDSetObjective, ObjectiveSetup], used_in: [level9_chap2_tags.lua, level9_chap3_escape.lua]}
+  - {id: LEVEL9.MS_C3_2, table: LEVEL9, key: MS_C3_2, languages: 5, defined_in: [level9.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level9_chap3_escape.lua]}
+  - {id: LEVEL9.MS_C4_1, table: LEVEL9, key: MS_C4_1, languages: 5, defined_in: [level9.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level9_chap3_escape.lua]}
+  - {id: LEVEL9.REMINDER, table: LEVEL9, key: REMINDER, languages: 5, defined_in: [level9.lua], uses: 2, passed_to: [HUDSetTutorialText], used_in: [level9.lua, level9_chap2_tags.lua]}
+  - {id: LEVEL9.WAR, table: LEVEL9, key: WAR, languages: 5, defined_in: [level9.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level9_chap3_escape.lua]}
+  - {id: LEVEL11.BHAT, table: LEVEL11, key: BHAT, languages: 5, defined_in: [level11.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level11_chapter6.lua]}
+  - {id: LEVEL11.BTAG, table: LEVEL11, key: BTAG, languages: 5, defined_in: [level11.lua], uses: 0}
+  - {id: LEVEL11.MF_C1, table: LEVEL11, key: MF_C1, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [HUDLaunchMissionFailed], used_in: [level11_chapter2.lua, level11_chapter4.lua]}
+  - {id: LEVEL11.MOE, table: LEVEL11, key: MOE, languages: 5, defined_in: [level11.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level11_chapter6.lua]}
+  - {id: LEVEL11.MP_1, table: LEVEL11, key: MP_1, languages: 5, defined_in: [level11.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level11.lua]}
+  - {id: LEVEL11.MP_2, table: LEVEL11, key: MP_2, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level11.lua, level11_chapter2.lua]}
+  - {id: LEVEL11.MS_C1_1, table: LEVEL11, key: MS_C1_1, languages: 5, defined_in: [level11.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level11_chapter1.lua]}
+  - {id: LEVEL11.MS_C2_1A, table: LEVEL11, key: MS_C2_1A, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level11_chapter1.lua]}
+  - {id: LEVEL11.MS_C2_1B, table: LEVEL11, key: MS_C2_1B, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level11_chapter2.lua]}
+  - {id: LEVEL11.MS_C2_1C, table: LEVEL11, key: MS_C2_1C, languages: 5, defined_in: [level11.lua], uses: 4, passed_to: [ObjectiveSetup], used_in: [level11_chapter2.lua, level11_chapter4.lua]}
+  - {id: LEVEL11.MS_C2_1D, table: LEVEL11, key: MS_C2_1D, languages: 5, defined_in: [level11.lua], uses: 2, used_in: [level11_chapter2.lua]}
+  - {id: LEVEL11.MS_C2_1E, table: LEVEL11, key: MS_C2_1E, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level11_chapter2.lua]}
+  - {id: LEVEL11.MS_C2_2A, table: LEVEL11, key: MS_C2_2A, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level11_chapter3.lua]}
+  - {id: LEVEL11.MS_C2_2B, table: LEVEL11, key: MS_C2_2B, languages: 5, defined_in: [level11.lua], uses: 0}
+  - {id: LEVEL11.MS_C2_2C, table: LEVEL11, key: MS_C2_2C, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level11_chapter4.lua]}
+  - {id: LEVEL11.MS_C2_2D, table: LEVEL11, key: MS_C2_2D, languages: 5, defined_in: [level11.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level11_chapter3.lua]}
+  - {id: LEVEL11.MS_C3_1, table: LEVEL11, key: MS_C3_1, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level11_chapter4.lua]}
+  - {id: LEVEL11.MS_C3_1A, table: LEVEL11, key: MS_C3_1A, languages: 5, defined_in: [level11.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level11_chapter5.lua]}
+  - {id: LEVEL11.MS_C3_1B, table: LEVEL11, key: MS_C3_1B, languages: 5, defined_in: [level11.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level11_chapter5.lua]}
+  - {id: LEVEL11.MS_C3_2, table: LEVEL11, key: MS_C3_2, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level11_chapter5.lua]}
+  - {id: LEVEL11.MS_C3_3, table: LEVEL11, key: MS_C3_3, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level11_chapter4.lua]}
+  - {id: LEVEL11.MS_C4_1, table: LEVEL11, key: MS_C4_1, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level11_chapter5.lua]}
+  - {id: LEVEL11.MS_C5_1, table: LEVEL11, key: MS_C5_1, languages: 5, defined_in: [level11.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level11_chapter6.lua]}
+  - {id: LEVEL11.MS_HINT_1, table: LEVEL11, key: MS_HINT_1, languages: 5, defined_in: [level11.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level11_chapter1.lua]}
+  - {id: LEVEL11.MS_HINT_2, table: LEVEL11, key: MS_HINT_2, languages: 5, defined_in: [level11.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level11_chapter1.lua]}
+  - {id: LEVEL14.BBRN, table: LEVEL14, key: BBRN, languages: 5, defined_in: [level14.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level14_jsb.lua]}
+  - {id: LEVEL14.BCAR, table: LEVEL14, key: BCAR, languages: 5, defined_in: [level14.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level14.lua]}
+  - {id: LEVEL14.BHAT, table: LEVEL14, key: BHAT, languages: 5, defined_in: [level14.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level14.lua]}
+  - {id: LEVEL14.BTAG, table: LEVEL14, key: BTAG, languages: 5, defined_in: [level14.lua], uses: 0}
+  - {id: LEVEL14.CARDESTROYED, table: LEVEL14, key: CARDESTROYED, languages: 5, defined_in: [level14.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level14.lua]}
+  - {id: LEVEL14.COPSTAKELOOT, table: LEVEL14, key: COPSTAKELOOT, languages: 5, defined_in: [level14.lua], uses: 1, used_in: [level14_radiosandstores.lua]}
+  - {id: LEVEL14.JSBSAW, table: LEVEL14, key: JSBSAW, languages: 5, defined_in: [level14.lua], uses: 5, passed_to: [HUDLaunchMissionFailed, HUDSetTutorialText], used_in: [level14_dirtycop.lua, level14_jsb.lua]}
+  - {id: LEVEL14.LOOTGONETUT, table: LEVEL14, key: LOOTGONETUT, languages: 5, defined_in: [level14.lua], uses: 0}
+  - {id: LEVEL14.LOOTLABEL, table: LEVEL14, key: LOOTLABEL, languages: 5, defined_in: [level14.lua], uses: 6, passed_to: [ObjectiveSetup], used_in: [level14_jsb.lua, level14_radiosandstores.lua]}
+  - {id: LEVEL14.MP_0, table: LEVEL14, key: MP_0, languages: 0, uses: 1, passed_to: [HUDShowMissionSummaryText], used_in: [level14_radiosandstores.lua]}
+  - {id: LEVEL14.MP_1, table: LEVEL14, key: MP_1, languages: 5, defined_in: [level14.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level14.lua]}
+  - {id: LEVEL14.MS_C1_1, table: LEVEL14, key: MS_C1_1, languages: 5, defined_in: [level14.lua], uses: 6, passed_to: [HUDSetObjective, ObjectiveSetup], used_in: [level14_dirtycop.lua, level14_radiosandstores.lua]}
+  - {id: LEVEL14.MS_C1_2, table: LEVEL14, key: MS_C1_2, languages: 5, defined_in: [level14.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level14_dirtycop.lua]}
+  - {id: LEVEL14.MS_C1_3, table: LEVEL14, key: MS_C1_3, languages: 5, defined_in: [level14.lua], uses: 6, passed_to: [HUDSetObjective, ObjectiveSetup], used_in: [level14_dirtycop.lua, level14_radiosandstores.lua]}
+  - {id: LEVEL14.MS_C1_4, table: LEVEL14, key: MS_C1_4, languages: 5, defined_in: [level14.lua], uses: 2, passed_to: [HUDSetObjective, HUDSetTutorialText], used_in: [level14_jsb.lua, level14_radiosandstores.lua]}
+  - {id: LEVEL14.MS_C2_3, table: LEVEL14, key: MS_C2_3, languages: 5, defined_in: [level14.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level14_jsb.lua]}
+  - {id: LEVEL14.MS_C2_5, table: LEVEL14, key: MS_C2_5, languages: 5, defined_in: [level14.lua], uses: 4, passed_to: [ObjectiveSetup, HUDSetObjective], used_in: [level14_jsb.lua]}
+  - {id: LEVEL14.MS_C2_6, table: LEVEL14, key: MS_C2_6, languages: 5, defined_in: [level14.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level14_jsb.lua]}
+  - {id: LEVEL14.REARATTACK, table: LEVEL14, key: REARATTACK, languages: 5, defined_in: [level14.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level14_radiosandstores.lua]}
+  - {id: LEVEL20.ACTIONFORMAT, table: LEVEL20, key: ACTIONFORMAT, languages: 5, defined_in: [level20.lua], uses: 0}
+  - {id: LEVEL20.BTAG, table: LEVEL20, key: BTAG, languages: 5, defined_in: [level20.lua], uses: 0}
+  - {id: LEVEL20.FAILED_1, table: LEVEL20, key: FAILED_1, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level20_marketplace.lua]}
+  - {id: LEVEL20.FAILED_2, table: LEVEL20, key: FAILED_2, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level20_marketplace.lua]}
+  - {id: LEVEL20.FAILED_3, table: LEVEL20, key: FAILED_3, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level20_marketplace.lua]}
+  - {id: LEVEL20.GHOST, table: LEVEL20, key: GHOST, languages: 5, defined_in: [level20.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level20_bossfight.lua]}
+  - {id: LEVEL20.LBL_1, table: LEVEL20, key: LBL_1, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDGetNewPH], used_in: [level20_mainstreet.lua]}
+  - {id: LEVEL20.LBL_2, table: LEVEL20, key: LBL_2, languages: 5, defined_in: [level20.lua], uses: 0}
+  - {id: LEVEL20.LBL_3, table: LEVEL20, key: LBL_3, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDGetNewPH], used_in: [level20_marketplace.lua]}
+  - {id: LEVEL20.MB_4, table: LEVEL20, key: MB_4, languages: 5, defined_in: [level20.lua], uses: 0}
+  - {id: LEVEL20.MP_1, table: LEVEL20, key: MP_1, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level20.lua]}
+  - {id: LEVEL20.MS_C1_0, table: LEVEL20, key: MS_C1_0, languages: 5, defined_in: [level20.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level20_mainstreet.lua]}
+  - {id: LEVEL20.MS_C1_1, table: LEVEL20, key: MS_C1_1, languages: 5, defined_in: [level20.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level20_mainstreet.lua]}
+  - {id: LEVEL20.MS_C1_3, table: LEVEL20, key: MS_C1_3, languages: 5, defined_in: [level20.lua], uses: 0}
+  - {id: LEVEL20.MS_C1_7, table: LEVEL20, key: MS_C1_7, languages: 5, defined_in: [level20.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level20_mainstreet.lua, level20_temple.lua]}
+  - {id: LEVEL20.MS_C1_8, table: LEVEL20, key: MS_C1_8, languages: 5, defined_in: [level20.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level20_mainstreet.lua]}
+  - {id: LEVEL20.MS_C1_9, table: LEVEL20, key: MS_C1_9, languages: 5, defined_in: [level20.lua], uses: 0}
+  - {id: LEVEL20.MS_C2_1, table: LEVEL20, key: MS_C2_1, languages: 5, defined_in: [level20.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level20_temple.lua]}
+  - {id: LEVEL20.MS_C2_2, table: LEVEL20, key: MS_C2_2, languages: 5, defined_in: [level20.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level20_marketplace.lua]}
+  - {id: LEVEL20.MS_C2_3, table: LEVEL20, key: MS_C2_3, languages: 5, defined_in: [level20.lua], uses: 0}
+  - {id: LEVEL20.MS_C2_4, table: LEVEL20, key: MS_C2_4, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level20_marketplace.lua]}
+  - {id: LEVEL20.MS_C2_5, table: LEVEL20, key: MS_C2_5, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level20_marketplace.lua]}
+  - {id: LEVEL20.MS_C2_6, table: LEVEL20, key: MS_C2_6, languages: 5, defined_in: [level20.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level20_marketplace.lua]}
+  - {id: LEVEL20.MS_C3_1, table: LEVEL20, key: MS_C3_1, languages: 5, defined_in: [level20.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level20_backalley.lua]}
+  - {id: LEVEL20.MS_C3_1a, table: LEVEL20, key: MS_C3_1a, languages: 5, defined_in: [level20.lua], uses: 6, passed_to: [HUDSetObjective], used_in: [level20_bossfight.lua, level20_marketplace.lua]}
+  - {id: LEVEL20.MS_C3_2, table: LEVEL20, key: MS_C3_2, languages: 5, defined_in: [level20.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level20_bossfight.lua]}
+  - {id: LEVEL20.MS_C3_2a, table: LEVEL20, key: MS_C3_2a, languages: 5, defined_in: [level20.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level20_endtrain.lua]}
+  - {id: LEVEL20.MS_C3_3, table: LEVEL20, key: MS_C3_3, languages: 5, defined_in: [level20.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level20_endtrain.lua]}
+  - {id: LEVEL31.BIRDI, table: LEVEL31, key: BIRDI, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDEnableBar], used_in: [level31_birdie.lua]}
+  - {id: LEVEL31.BTAG, table: LEVEL31, key: BTAG, languages: 5, defined_in: [level31.lua], uses: 0}
+  - {id: LEVEL31.FAIL, table: LEVEL31, key: FAIL, languages: 5, defined_in: [level31.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level31_birdie.lua]}
+  - {id: LEVEL31.LBL_1, table: LEVEL31, key: LBL_1, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDGetNewPH], used_in: [level31_streets.lua]}
+  - {id: LEVEL31.MB_1, table: LEVEL31, key: MB_1, languages: 5, defined_in: [level31.lua], uses: 0}
+  - {id: LEVEL31.MP_1, table: LEVEL31, key: MP_1, languages: 5, defined_in: [level31.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level31_gclub.lua, level31_platform.lua, level31_streets.lua]}
+  - {id: LEVEL31.MP_2, table: LEVEL31, key: MP_2, languages: 5, defined_in: [level31.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level31_gclub.lua, level31_reddevil.lua, level31_sewers.lua]}
+  - {id: LEVEL31.MP_3, table: LEVEL31, key: MP_3, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level31_birdie.lua, level31_reddevil.lua]}
+  - {id: LEVEL31.MS_C1_1, table: LEVEL31, key: MS_C1_1, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level31_platform.lua]}
+  - {id: LEVEL31.MS_C1_2, table: LEVEL31, key: MS_C1_2, languages: 5, defined_in: [level31.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level31_streets.lua]}
+  - {id: LEVEL31.MS_C1_3, table: LEVEL31, key: MS_C1_3, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level31_streets.lua]}
+  - {id: LEVEL31.MS_C2_1, table: LEVEL31, key: MS_C2_1, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level31_streets.lua]}
+  - {id: LEVEL31.MS_C2_2, table: LEVEL31, key: MS_C2_2, languages: 5, defined_in: [level31.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level31_gclub.lua]}
+  - {id: LEVEL31.MS_C3_1, table: LEVEL31, key: MS_C3_1, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level31_gclub.lua]}
+  - {id: LEVEL31.MS_C3_1a, table: LEVEL31, key: MS_C3_1a, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level31_sewers.lua]}
+  - {id: LEVEL31.MS_C3_2, table: LEVEL31, key: MS_C3_2, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level31_sewers.lua]}
+  - {id: LEVEL31.MS_C3_3, table: LEVEL31, key: MS_C3_3, languages: 5, defined_in: [level31.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level31_reddevil.lua]}
+  - {id: LEVEL31.MS_C3_4, table: LEVEL31, key: MS_C3_4, languages: 5, defined_in: [level31.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level31_reddevil.lua]}
+  - {id: LEVEL31.MS_C3_5, table: LEVEL31, key: MS_C3_5, languages: 5, defined_in: [level31.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level31_reddevil.lua]}
+  - {id: LEVEL31.MS_C4_1, table: LEVEL31, key: MS_C4_1, languages: 5, defined_in: [level31.lua], uses: 0}
+  - {id: LEVEL31.MS_C4_2, table: LEVEL31, key: MS_C4_2, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level31_birdie.lua]}
+  - {id: LEVEL31.SCATTER, table: LEVEL31, key: SCATTER, languages: 5, defined_in: [level31.lua], uses: 4, passed_to: [HUDSetTutorialText, HUDCheckTutorialText], used_in: [level31_birdie.lua]}
+  - {id: LEVEL31.TT_1, table: LEVEL31, key: TT_1, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level31_sewers.lua]}
+  - {id: LEVEL31.TT_2, table: LEVEL31, key: TT_2, languages: 5, defined_in: [level31.lua], uses: 2, passed_to: [HUDSetTutorialText, HUDCheckTutorialText], used_in: [level31_birdie.lua]}
+  - {id: LEVEL31.TT_3, table: LEVEL31, key: TT_3, languages: 5, defined_in: [level31.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level31_birdie.lua]}
+  - {id: LEVEL31.TT_4, table: LEVEL31, key: TT_4, languages: 5, defined_in: [level31.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level31_birdie.lua]}
+  - {id: LEVEL34.BBEAT, table: LEVEL34, key: BBEAT, languages: 5, defined_in: [level34.lua], uses: 0}
+  - {id: LEVEL34.BBEAT2, table: LEVEL34, key: BBEAT2, languages: 5, defined_in: [level34.lua], uses: 0}
+  - {id: LEVEL34.BMUG, table: LEVEL34, key: BMUG, languages: 5, defined_in: [level34.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level34.lua]}
+  - {id: LEVEL34.BPIMP, table: LEVEL34, key: BPIMP, languages: 5, defined_in: [level34.lua], uses: 0}
+  - {id: LEVEL34.BRADIO, table: LEVEL34, key: BRADIO, languages: 5, defined_in: [level34.lua], uses: 0}
+  - {id: LEVEL34.BTAG, table: LEVEL34, key: BTAG, languages: 5, defined_in: [level34.lua], uses: 0}
+  - {id: LEVEL34.LBL_1, table: LEVEL34, key: LBL_1, languages: 5, defined_in: [level34.lua], uses: 3, passed_to: [HUDGetNewPH], used_in: [level34.lua, level34_gate.lua, level34_riot.lua]}
+  - {id: LEVEL34.LBL_2, table: LEVEL34, key: LBL_2, languages: 5, defined_in: [level34.lua], uses: 2, passed_to: [HUDGetNewPH], used_in: [level34_riot.lua]}
+  - {id: LEVEL34.LBL_3, table: LEVEL34, key: LBL_3, languages: 5, defined_in: [level34.lua], uses: 3, passed_to: [HUDGetNewPH], used_in: [level34_riot.lua]}
+  - {id: LEVEL34.LBL_4, table: LEVEL34, key: LBL_4, languages: 5, defined_in: [level34.lua], uses: 2, passed_to: [HUDGetNewPH], used_in: [level34_riot.lua]}
+  - {id: LEVEL34.MP_1, table: LEVEL34, key: MP_1, languages: 5, defined_in: [level34.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level34_riot.lua]}
+  - {id: LEVEL34.MP_2, table: LEVEL34, key: MP_2, languages: 5, defined_in: [level34.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level34_gate.lua]}
+  - {id: LEVEL34.MS_C1_1, table: LEVEL34, key: MS_C1_1, languages: 5, defined_in: [level34.lua], uses: 6, passed_to: [HUDSetObjective], used_in: [level34.lua, level34_riot.lua]}
+  - {id: LEVEL34.MS_C1_1a, table: LEVEL34, key: MS_C1_1a, languages: 5, defined_in: [level34.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level34_riot.lua]}
+  - {id: LEVEL34.MS_C1_3, table: LEVEL34, key: MS_C1_3, languages: 5, defined_in: [level34.lua], uses: 6, passed_to: [HUDSetObjective], used_in: [level34.lua, level34_riot.lua]}
+  - {id: LEVEL34.MS_C1_5, table: LEVEL34, key: MS_C1_5, languages: 5, defined_in: [level34.lua], uses: 9, passed_to: [HUDSetObjective], used_in: [level34.lua, level34_riot.lua]}
+  - {id: LEVEL34.MS_C1_6, table: LEVEL34, key: MS_C1_6, languages: 5, defined_in: [level34.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level34_riot.lua]}
+  - {id: LEVEL34.MS_C2_1, table: LEVEL34, key: MS_C2_1, languages: 5, defined_in: [level34.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level34_gate.lua]}
+  - {id: LEVEL34.MS_C2_2, table: LEVEL34, key: MS_C2_2, languages: 5, defined_in: [level34.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level34_gate.lua, level34_park.lua]}
+  - {id: LEVEL34.MS_C3_1, table: LEVEL34, key: MS_C3_1, languages: 5, defined_in: [level34.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level34_park.lua]}
+  - {id: LEVEL34.SCATTER, table: LEVEL34, key: SCATTER, languages: 5, defined_in: [level34.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level34_riot.lua]}
+  - {id: LEVEL34.TT_1, table: LEVEL34, key: TT_1, languages: 5, defined_in: [level34.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level34.lua]}
+  - {id: LEVEL34.WEAPONBREAK, table: LEVEL34, key: WEAPONBREAK, languages: 5, defined_in: [level34.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level34_riot.lua]}
+  - {id: LEVEL34.WEAPONTHROW, table: LEVEL34, key: WEAPONTHROW, languages: 5, defined_in: [level34.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level34_riot.lua]}
+  - {id: LEVEL51.BTAG, table: LEVEL51, key: BTAG, languages: 5, defined_in: [level51.lua], uses: 0}
+  - {id: LEVEL51.CLUB, table: LEVEL51, key: CLUB, languages: 5, defined_in: [level51.lua], uses: 12, passed_to: [HUDEnableBar], used_in: [level51_chapter3.lua]}
+  - {id: LEVEL51.KO, table: LEVEL51, key: KO, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [HUDLaunchMissionFailed], used_in: [level51_chapter8.lua, level51_chapter9.lua]}
+  - {id: LEVEL51.MB_1, table: LEVEL51, key: MB_1, languages: 5, defined_in: [level51.lua], uses: 0}
+  - {id: LEVEL51.MP_1, table: LEVEL51, key: MP_1, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level51.lua, level51_chapter1.lua]}
+  - {id: LEVEL51.MS_C1_1, table: LEVEL51, key: MS_C1_1, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level51_chapter1.lua]}
+  - {id: LEVEL51.MS_C1_2, table: LEVEL51, key: MS_C1_2, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level51_chapter2.lua]}
+  - {id: LEVEL51.MS_C1_2A, table: LEVEL51, key: MS_C1_2A, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level51_chapter2.lua]}
+  - {id: LEVEL51.MS_C1_3, table: LEVEL51, key: MS_C1_3, languages: 5, defined_in: [level51.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level51_chapter2a.lua]}
+  - {id: LEVEL51.MS_C1_3A, table: LEVEL51, key: MS_C1_3A, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level51_chapter2a.lua]}
+  - {id: LEVEL51.MS_C1_4, table: LEVEL51, key: MS_C1_4, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level51_chapter3.lua]}
+  - {id: LEVEL51.MS_C1_5, table: LEVEL51, key: MS_C1_5, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level51_chapter3.lua]}
+  - {id: LEVEL51.MS_C1_6, table: LEVEL51, key: MS_C1_6, languages: 5, defined_in: [level51.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level51_chapter5.lua]}
+  - {id: LEVEL51.MS_C1_7, table: LEVEL51, key: MS_C1_7, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level51_chapter5.lua]}
+  - {id: LEVEL51.MS_C1_8, table: LEVEL51, key: MS_C1_8, languages: 5, defined_in: [level51.lua], uses: 0}
+  - {id: LEVEL51.MS_C1_9, table: LEVEL51, key: MS_C1_9, languages: 5, defined_in: [level51.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level51_chapter8.lua]}
+  - {id: LEVEL51.MS_C1_10, table: LEVEL51, key: MS_C1_10, languages: 5, defined_in: [level51.lua], uses: 4, passed_to: [ObjectiveSetup], used_in: [level51_chapter2a.lua, level51_chapter5.lua]}
+  - {id: LEVEL51.MS_C1_11, table: LEVEL51, key: MS_C1_11, languages: 5, defined_in: [level51.lua], uses: 1, used_in: [level51_chapter9.lua]}
+  - {id: LEVEL51.MS_C1_12, table: LEVEL51, key: MS_C1_12, languages: 5, defined_in: [level51.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level51_chapter3.lua]}
+  - {id: LEVEL52.BTAG, table: LEVEL52, key: BTAG, languages: 5, defined_in: [level52.lua], uses: 0}
+  - {id: LEVEL52.MP_1, table: LEVEL52, key: MP_1, languages: 5, defined_in: [level52.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level52.lua]}
+  - {id: LEVEL52.MS_C1_0, table: LEVEL52, key: MS_C1_0, languages: 5, defined_in: [level52.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level52_chapter1.lua]}
+  - {id: LEVEL52.MS_C1_1, table: LEVEL52, key: MS_C1_1, languages: 5, defined_in: [level52.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level52_chapter1.lua]}
+  - {id: LEVEL52.MS_C1_2, table: LEVEL52, key: MS_C1_2, languages: 5, defined_in: [level52.lua], uses: 0}
+  - {id: LEVEL52.MS_C2_1A, table: LEVEL52, key: MS_C2_1A, languages: 5, defined_in: [level52.lua], uses: 6, passed_to: [HUDSetObjective], used_in: ["36763710", level52.lua]}
+  - {id: LEVEL52.MS_C2_1B, table: LEVEL52, key: MS_C2_1B, languages: 5, defined_in: [level52.lua], uses: 6, passed_to: [HUDSetObjective], used_in: ["36763710", level52.lua]}
+  - {id: LEVEL52.MS_C2_1C, table: LEVEL52, key: MS_C2_1C, languages: 5, defined_in: [level52.lua], uses: 6, passed_to: [HUDSetObjective], used_in: ["36763710", level52.lua]}
+  - {id: LEVEL52.MS_C2_1D, table: LEVEL52, key: MS_C2_1D, languages: 5, defined_in: [level52.lua], uses: 6, passed_to: [HUDSetObjective], used_in: ["36763710", level52.lua]}
+  - {id: LEVEL52.MS_C2_1E, table: LEVEL52, key: MS_C2_1E, languages: 5, defined_in: [level52.lua], uses: 6, passed_to: [HUDSetObjective], used_in: ["36763710", level52.lua]}
+  - {id: LEVEL52.MS_C2_1F, table: LEVEL52, key: MS_C2_1F, languages: 5, defined_in: [level52.lua], uses: 6, passed_to: [HUDSetObjective], used_in: ["36763710", level52.lua]}
+  - {id: LEVEL52.MS_C2_1G, table: LEVEL52, key: MS_C2_1G, languages: 5, defined_in: [level52.lua], uses: 5, passed_to: [ObjectiveSetup, HUDSetObjective], used_in: ["36763710", level52.lua, level52_chapter3.lua]}
+  - {id: LEVEL52.MS_C2_1H, table: LEVEL52, key: MS_C2_1H, languages: 5, defined_in: [level52.lua], uses: 0}
+  - {id: LEVEL52.MS_C3_1, table: LEVEL52, key: MS_C3_1, languages: 5, defined_in: [level52.lua], uses: 0}
+  - {id: LEVEL52.MS_C3_2, table: LEVEL52, key: MS_C3_2, languages: 5, defined_in: [level52.lua], uses: 0}
+  - {id: LEVEL52.MS_C3_FAILED, table: LEVEL52, key: MS_C3_FAILED, languages: 5, defined_in: [level52.lua], uses: 0}
+  - {id: LEVEL54.CLEON, table: LEVEL54, key: CLEON, languages: 5, defined_in: [level54.lua], uses: 0}
+  - {id: LEVEL54.COBB, table: LEVEL54, key: COBB, languages: 5, defined_in: [level54.lua], uses: 2, passed_to: [HUDEnableBar], used_in: [level54_boss.lua]}
+  - {id: LEVEL54.FAIL_1, table: LEVEL54, key: FAIL_1, languages: 5, defined_in: [level54.lua], uses: 0}
+  - {id: LEVEL54.FAIL_2, table: LEVEL54, key: FAIL_2, languages: 5, defined_in: [level54.lua], uses: 0}
+  - {id: LEVEL54.FAIL_3, table: LEVEL54, key: FAIL_3, languages: 5, defined_in: [level54.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level54_streets.lua]}
+  - {id: LEVEL54.LABEL, table: LEVEL54, key: LABEL, languages: 5, defined_in: [level54.lua], uses: 0}
+  - {id: LEVEL54.LP, table: LEVEL54, key: LP, languages: 5, defined_in: [level54.lua], uses: 0}
+  - {id: LEVEL54.MP_1, table: LEVEL54, key: MP_1, languages: 5, defined_in: [level54.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level54.lua]}
+  - {id: LEVEL54.MS_C1_1, table: LEVEL54, key: MS_C1_1, languages: 5, defined_in: [level54.lua], uses: 5, passed_to: [HUDSetObjective], used_in: [level54.lua, level54_alley.lua, level54_streets.lua]}
+  - {id: LEVEL54.MS_C2_0, table: LEVEL54, key: MS_C2_0, languages: 5, defined_in: [level54.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level54_alley.lua]}
+  - {id: LEVEL54.MS_C2_1, table: LEVEL54, key: MS_C2_1, languages: 5, defined_in: [level54.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level54_popsicle.lua]}
+  - {id: LEVEL54.MS_C2_2, table: LEVEL54, key: MS_C2_2, languages: 5, defined_in: [level54.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level54_popsicle.lua]}
+  - {id: LEVEL54.MS_C2_4, table: LEVEL54, key: MS_C2_4, languages: 5, defined_in: [level54.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level54_alley.lua]}
+  - {id: LEVEL54.MS_C2_5, table: LEVEL54, key: MS_C2_5, languages: 5, defined_in: [level54.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level54_park.lua]}
+  - {id: LEVEL54.MS_C3_1, table: LEVEL54, key: MS_C3_1, languages: 5, defined_in: [level54.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level54_boss.lua]}
+  - {id: LEVEL54.MS_C3_2, table: LEVEL54, key: MS_C3_2, languages: 5, defined_in: [level54.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level54_boss.lua]}
+  - {id: LEVEL54.TIMER, table: LEVEL54, key: TIMER, languages: 5, defined_in: [level54.lua], uses: 0}
+  - {id: LEVEL55.B_1, table: LEVEL55, key: B_1, languages: 0, uses: 2, passed_to: [HUDSetObjective], used_in: [level55_subway.lua]}
+  - {id: LEVEL55.LIZZIEDOOR, table: LEVEL55, key: LIZZIEDOOR, languages: 5, defined_in: [level55.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level55_lizziesattack.lua]}
+  - {id: LEVEL55.MERCYDIED, table: LEVEL55, key: MERCYDIED, languages: 5, defined_in: [level55.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level55_punkfight.lua]}
+  - {id: LEVEL55.MERCYHEALTH, table: LEVEL55, key: MERCYHEALTH, languages: 5, defined_in: [level55.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level55_punkfight.lua]}
+  - {id: LEVEL55.MP_1, table: LEVEL55, key: MP_1, languages: 5, defined_in: [level55.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level55_party.lua]}
+  - {id: LEVEL55.MP_2, table: LEVEL55, key: MP_2, languages: 5, defined_in: [level55.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level55_lizziesattack.lua]}
+  - {id: LEVEL55.MP_3, table: LEVEL55, key: MP_3, languages: 5, defined_in: [level55.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level55_punkfight.lua]}
+  - {id: LEVEL55.MP_4, table: LEVEL55, key: MP_4, languages: 5, defined_in: [level55.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level55_subway.lua]}
+  - {id: LEVEL55.MS_C1_1, table: LEVEL55, key: MS_C1_1, languages: 5, defined_in: [level55.lua], uses: 5, passed_to: [HUDSetObjective], used_in: [a1ab63b7, level55_lizziesattack.lua, level55_party.lua]}
+  - {id: LEVEL55.MS_C1_2, table: LEVEL55, key: MS_C1_2, languages: 5, defined_in: [level55.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [a1ab63b7, level55_lizziesattack.lua]}
+  - {id: LEVEL55.MS_C1_3, table: LEVEL55, key: MS_C1_3, languages: 5, defined_in: [level55.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [a1ab63b7, level55_lizziesattack.lua]}
+  - {id: LEVEL55.MS_C2_1, table: LEVEL55, key: MS_C2_1, languages: 5, defined_in: [level55.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level55_punkfight.lua]}
+  - {id: LEVEL55.MS_C2_2, table: LEVEL55, key: MS_C2_2, languages: 5, defined_in: [level55.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level55_punkfight.lua]}
+  - {id: LEVEL55.MS_C2_3, table: LEVEL55, key: MS_C2_3, languages: 5, defined_in: [level55.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level55_punkfight.lua]}
+  - {id: LEVEL55.MS_C3_1, table: LEVEL55, key: MS_C3_1, languages: 5, defined_in: [level55.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level55_subway.lua]}
+  - {id: LEVEL55.QUIT, table: LEVEL55, key: QUIT, languages: 0, uses: 1, passed_to: [SetMsgHandlerEx], used_in: [level55_party.lua]}
+  - {id: LEVEL55.TT_1, table: LEVEL55, key: TT_1, languages: 5, defined_in: [level55.lua], uses: 0}
+  - {id: LEVEL60.MS_1, table: LEVEL60, key: MS_1, languages: 5, defined_in: [level60.lua, level60_strings.lua], uses: 0}
+  - {id: LEVEL60.MS_2, table: LEVEL60, key: MS_2, languages: 5, defined_in: [level60.lua, level60_strings.lua], uses: 2, passed_to: [HUDSetAnnounceMsg], used_in: [level60_mothers.lua]}
+  - {id: LEVEL60.MS_3, table: LEVEL60, key: MS_3, languages: 5, defined_in: [level60.lua, level60_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level60_mothers.lua]}
+  - {id: LEVEL61.MS_1, table: LEVEL61, key: MS_1, languages: 5, defined_in: [level61.lua, level61_strings.lua], uses: 0}
+  - {id: LEVEL61.MS_2, table: LEVEL61, key: MS_2, languages: 5, defined_in: [level61.lua, level61_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level61_punks.lua]}
+  - {id: LEVEL61.MS_3, table: LEVEL61, key: MS_3, languages: 5, defined_in: [level61.lua, level61_strings.lua], uses: 5, passed_to: [HUDSetAnnounceMsg], used_in: [level61_hihats.lua, level61_huns.lua]}
+  - {id: LEVEL61.MS_4, table: LEVEL61, key: MS_4, languages: 5, defined_in: [level61.lua, level61_strings.lua], uses: 0}
+  - {id: LEVEL62.MS_1, table: LEVEL62, key: MS_1, languages: 5, defined_in: [level62.lua, level62_strings.lua], uses: 0}
+  - {id: LEVEL62.MS_2, table: LEVEL62, key: MS_2, languages: 5, defined_in: [level62.lua, level62_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level62_hurricanes.lua]}
+  - {id: LEVEL62.MS_3, table: LEVEL62, key: MS_3, languages: 5, defined_in: [level62.lua, level62_strings.lua], uses: 0}
+  - {id: LEVEL63.MS_1, table: LEVEL63, key: MS_1, languages: 5, defined_in: [level63.lua, level63_strings.lua], uses: 0}
+  - {id: LEVEL63.MS_2, table: LEVEL63, key: MS_2, languages: 5, defined_in: [level63.lua, level63_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level63_moonrunners.lua]}
+  - {id: LEVEL63.MS_3, table: LEVEL63, key: MS_3, languages: 5, defined_in: [level63.lua, level63_strings.lua], uses: 0}
+  - {id: LEVEL63.MS_4, table: LEVEL63, key: MS_4, languages: 5, defined_in: [level63.lua, level63_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level63_orphans.lua]}
+  - {id: LEVEL63.MS_5, table: LEVEL63, key: MS_5, languages: 5, defined_in: [level63.lua, level63_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level63_orphans.lua]}
+  - {id: LEVEL64.MS_1, table: LEVEL64, key: MS_1, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 0}
+  - {id: LEVEL64.MS_2, table: LEVEL64, key: MS_2, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level64_riffs.lua]}
+  - {id: LEVEL64.MS_3, table: LEVEL64, key: MS_3, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 3, passed_to: [HUDSetAnnounceMsg], used_in: [level64_cyrus.lua, level64_riffs.lua]}
+  - {id: LEVEL64.MS_9, table: LEVEL64, key: MS_9, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level64_riffs.lua]}
+  - {id: LEVEL64.MS_10, table: LEVEL64, key: MS_10, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 1, used_in: [level64_riffs.lua]}
+  - {id: LEVEL64.MS_11, table: LEVEL64, key: MS_11, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level64_riffs.lua]}
+  - {id: LEVEL64.MS_12, table: LEVEL64, key: MS_12, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level64_riffs.lua]}
+  - {id: LEVEL64.MS_14, table: LEVEL64, key: MS_14, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level64_riffs.lua]}
+  - {id: LEVEL64.MS_15, table: LEVEL64, key: MS_15, languages: 5, defined_in: [level64.lua, level64_strings.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level64_cyrus.lua]}
+  - {id: LEVEL80.MP_1, table: LEVEL80, key: MP_1, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level80.lua]}
+  - {id: LEVEL80.MS_C1_1, table: LEVEL80, key: MS_C1_1, languages: 5, defined_in: [level80.lua], uses: 1, used_in: [level80_chapter1.lua]}
+  - {id: LEVEL80.MS_C2_1, table: LEVEL80, key: MS_C2_1, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level80_chapter2.lua]}
+  - {id: LEVEL80.MS_C2_2, table: LEVEL80, key: MS_C2_2, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level80_chapter2.lua]}
+  - {id: LEVEL80.MS_C3_1, table: LEVEL80, key: MS_C3_1, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.MS_C3_1a, table: LEVEL80, key: MS_C3_1a, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.MS_C3_2, table: LEVEL80, key: MS_C3_2, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.MS_C3_3, table: LEVEL80, key: MS_C3_3, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.MS_C3_4, table: LEVEL80, key: MS_C3_4, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.MS_C4_1, table: LEVEL80, key: MS_C4_1, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level80_chapter4.lua]}
+  - {id: LEVEL80.MS_C4_2, table: LEVEL80, key: MS_C4_2, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level80_chapter4.lua]}
+  - {id: LEVEL80.TANDEM, table: LEVEL80, key: TANDEM, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter4.lua]}
+  - {id: LEVEL80.TT_1, table: LEVEL80, key: TT_1, languages: 4, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter1.lua]}
+  - {id: LEVEL80.TT_4, table: LEVEL80, key: TT_4, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter1.lua]}
+  - {id: LEVEL80.TT_5, table: LEVEL80, key: TT_5, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.TT_7, table: LEVEL80, key: TT_7, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.TT_8, table: LEVEL80, key: TT_8, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter4.lua]}
+  - {id: LEVEL80.TT_9, table: LEVEL80, key: TT_9, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter4.lua]}
+  - {id: LEVEL80.TT_11, table: LEVEL80, key: TT_11, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter2.lua]}
+  - {id: LEVEL80.TT_16, table: LEVEL80, key: TT_16, languages: 5, defined_in: [level80.lua], uses: 0}
+  - {id: LEVEL80.TT_20, table: LEVEL80, key: TT_20, languages: 5, defined_in: [level80.lua], uses: 0}
+  - {id: LEVEL80.TT_25, table: LEVEL80, key: TT_25, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.TT_26, table: LEVEL80, key: TT_26, languages: 5, defined_in: [level80.lua], uses: 2, passed_to: [HUDSetTutorialText], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.TT_27, table: LEVEL80, key: TT_27, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.TT_28, table: LEVEL80, key: TT_28, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL80.TT_29, table: LEVEL80, key: TT_29, languages: 5, defined_in: [level80.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level80_chapter3.lua]}
+  - {id: LEVEL81.CHAT, table: LEVEL81, key: CHAT, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level81_chatterbox.lua]}
+  - {id: LEVEL81.HINT, table: LEVEL81, key: HINT, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 0}
+  - {id: LEVEL81.MP_1, table: LEVEL81, key: MP_1, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level81.lua, level81_main.lua]}
+  - {id: LEVEL81.MS_C1_1, table: LEVEL81, key: MS_C1_1, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level81_brawl.lua]}
+  - {id: LEVEL81.MS_C3_1, table: LEVEL81, key: MS_C3_1, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level81_chase.lua, level81_cracker.lua, level81_horror_house.lua]}
+  - {id: LEVEL81.MS_C3_1a, table: LEVEL81, key: MS_C3_1a, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level81_horror_house.lua]}
+  - {id: LEVEL81.MS_C3_3, table: LEVEL81, key: MS_C3_3, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level81_chatterbox.lua]}
+  - {id: LEVEL81.MS_C3_4, table: LEVEL81, key: MS_C3_4, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level81_chase.lua]}
+  - {id: LEVEL81.MS_C3_5, table: LEVEL81, key: MS_C3_5, languages: 5, defined_in: [level81.lua, level81_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level81_cracker.lua]}
+  - {id: LEVEL82.ASSAULT, table: LEVEL82, key: ASSAULT, languages: 5, defined_in: [level82.lua], uses: 0}
+  - {id: LEVEL82.BARLABEL, table: LEVEL82, key: BARLABEL, languages: 5, defined_in: [level82.lua], uses: 1, passed_to: [HUDGetNewPH], used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.BUMRIOT, table: LEVEL82, key: BUMRIOT, languages: 5, defined_in: [level82.lua], uses: 1, passed_to: [C2.StartCrime], used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.CAR, table: LEVEL82, key: CAR, languages: 5, defined_in: [level82.lua], uses: 0}
+  - {id: LEVEL82.CRIME1, table: LEVEL82, key: CRIME1, languages: 5, defined_in: [level82.lua], uses: 7, passed_to: [HUDSetObjective], used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.CRIME2, table: LEVEL82, key: CRIME2, languages: 5, defined_in: [level82.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.CRIME3, table: LEVEL82, key: CRIME3, languages: 5, defined_in: [level82.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.CRIMEWAVEPLUS, table: LEVEL82, key: CRIMEWAVEPLUS, languages: 5, defined_in: [level82.lua], uses: 0}
+  - {id: LEVEL82.MB_1, table: LEVEL82, key: MB_1, languages: 5, defined_in: [level82.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.MP_1, table: LEVEL82, key: MP_1, languages: 5, defined_in: [level82.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level82.lua, level82_chapter4.lua]}
+  - {id: LEVEL82.MP_2, table: LEVEL82, key: MP_2, languages: 5, defined_in: [level82.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level82_chapter4.lua]}
+  - {id: LEVEL82.MS_C1_1, table: LEVEL82, key: MS_C1_1, languages: 5, defined_in: [level82.lua], uses: 6, passed_to: [HUDSetObjective, ObjectiveSetup], used_in: [level82_chapter1.lua, level82_chapter2.lua, level82_chapter4.lua, level82_chapter5.lua]}
+  - {id: LEVEL82.MS_C1_2, table: LEVEL82, key: MS_C1_2, languages: 5, defined_in: [level82.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level82_chapter2.lua, level82_chapter4.lua, level82_chapter5.lua]}
+  - {id: LEVEL82.MS_C1_4, table: LEVEL82, key: MS_C1_4, languages: 5, defined_in: [level82.lua], uses: 6, passed_to: [HUDSetObjective, ObjectiveSetup], used_in: [level82_chapter2.lua, level82_chapter4.lua, level82_chapter5.lua]}
+  - {id: LEVEL82.MS_C2_1a, table: LEVEL82, key: MS_C2_1a, languages: 5, defined_in: [level82.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level82_chapter4.lua]}
+  - {id: LEVEL82.MS_C2_1b, table: LEVEL82, key: MS_C2_1b, languages: 5, defined_in: [level82.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level82_chapter4.lua]}
+  - {id: LEVEL82.MS_C2_1c, table: LEVEL82, key: MS_C2_1c, languages: 5, defined_in: [level82.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level82_chapter4.lua]}
+  - {id: LEVEL82.MS_C2_2, table: LEVEL82, key: MS_C2_2, languages: 5, defined_in: [level82.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level82_chapter5.lua]}
+  - {id: LEVEL82.MT_1, table: LEVEL82, key: MT_1, languages: 5, defined_in: [level82.lua], uses: 2, used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.MT_2, table: LEVEL82, key: MT_2, languages: 5, defined_in: [level82.lua], uses: 2, used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.MT_3, table: LEVEL82, key: MT_3, languages: 5, defined_in: [level82.lua], uses: 2, used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.MT_4, table: LEVEL82, key: MT_4, languages: 5, defined_in: [level82.lua], uses: 2, used_in: [level82_chapter2.lua]}
+  - {id: LEVEL82.MUGGING, table: LEVEL82, key: MUGGING, languages: 5, defined_in: [level82.lua], uses: 0}
+  - {id: LEVEL82.SPIDER, table: LEVEL82, key: SPIDER, languages: 5, defined_in: [level82.lua], uses: 10, passed_to: [HUDEnableBar], used_in: [level82_chapter5.lua]}
+  - {id: LEVEL82.STAKEOUT, table: LEVEL82, key: STAKEOUT, languages: 5, defined_in: [level82.lua], uses: 0}
+  - {id: LEVEL82.TINY, table: LEVEL82, key: TINY, languages: 5, defined_in: [level82.lua], uses: 10, passed_to: [HUDEnableBar], used_in: [level82_chapter5.lua]}
+  - {id: LEVEL82.VANDALISM, table: LEVEL82, key: VANDALISM, languages: 5, defined_in: [level82.lua], uses: 1, passed_to: [C2.StartCrime], used_in: [level82_chapter2.lua]}
+  - {id: LEVEL83.CHASE_TIMER_NAME, table: LEVEL83, key: CHASE_TIMER_NAME, languages: 5, defined_in: [level83.lua], uses: 0}
+  - {id: LEVEL83.FIGHTPEN_TIMER_NAME, table: LEVEL83, key: FIGHTPEN_TIMER_NAME, languages: 5, defined_in: [level83.lua], uses: 0}
+  - {id: LEVEL83.MB_1, table: LEVEL83, key: MB_1, languages: 5, defined_in: [level83.lua], uses: 0}
+  - {id: LEVEL83.MB_2, table: LEVEL83, key: MB_2, languages: 5, defined_in: [level83.lua], uses: 0}
+  - {id: LEVEL83.MB_4, table: LEVEL83, key: MB_4, languages: 5, defined_in: [level83.lua], uses: 0}
+  - {id: LEVEL83.MB_5, table: LEVEL83, key: MB_5, languages: 5, defined_in: [level83.lua], uses: 0}
+  - {id: LEVEL83.MF_1, table: LEVEL83, key: MF_1, languages: 5, defined_in: [level83.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level83_c4_shanty.lua]}
+  - {id: LEVEL83.MF_2, table: LEVEL83, key: MF_2, languages: 5, defined_in: [level83.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level83.lua]}
+  - {id: LEVEL83.MP_1, table: LEVEL83, key: MP_1, languages: 5, defined_in: [level83.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level83.lua, level83_c2_alleys.lua]}
+  - {id: LEVEL83.MP_2, table: LEVEL83, key: MP_2, languages: 5, defined_in: [level83.lua], uses: 6, passed_to: [HUDSetObjective], used_in: [level83.lua, level83_c2_alleys.lua]}
+  - {id: LEVEL83.MS_C1_1, table: LEVEL83, key: MS_C1_1, languages: 5, defined_in: [level83.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level83_c1_fightpen.lua, level83_c3_diner.lua]}
+  - {id: LEVEL83.MS_C2_1, table: LEVEL83, key: MS_C2_1, languages: 5, defined_in: [level83.lua], uses: 4, passed_to: [ObjectiveSetup, HUDSetObjective], used_in: [level83_c2_alleys.lua, level83_c3_diner.lua]}
+  - {id: LEVEL83.MS_C2_3, table: LEVEL83, key: MS_C2_3, languages: 5, defined_in: [level83.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level83_c3_diner.lua]}
+  - {id: LEVEL83.MS_C3_1, table: LEVEL83, key: MS_C3_1, languages: 5, defined_in: [level83.lua], uses: 2, used_in: [level83_c3_diner.lua]}
+  - {id: LEVEL83.MS_C3_3, table: LEVEL83, key: MS_C3_3, languages: 5, defined_in: [level83.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level83_c4_shanty.lua]}
+  - {id: LEVEL83.MS_C3_4, table: LEVEL83, key: MS_C3_4, languages: 5, defined_in: [level83.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level83_c4_shanty.lua]}
+  - {id: LEVEL83.MS_C3_5, table: LEVEL83, key: MS_C3_5, languages: 5, defined_in: [level83.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level83.lua]}
+  - {id: LEVEL83.MS_C4_1, table: LEVEL83, key: MS_C4_1, languages: 5, defined_in: [level83.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level83_c5_apartment.lua]}
+  - {id: LEVEL83.MS_C4_2, table: LEVEL83, key: MS_C4_2, languages: 5, defined_in: [level83.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level83_c5_apartment.lua]}
+  - {id: LEVEL83.MS_C4_3, table: LEVEL83, key: MS_C4_3, languages: 5, defined_in: [level83.lua], uses: 0}
+  - {id: LEVEL83.MS_C4_4, table: LEVEL83, key: MS_C4_4, languages: 5, defined_in: [level83.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level83_c5_apartment.lua]}
+  - {id: LEVEL83.MS_C4_5, table: LEVEL83, key: MS_C4_5, languages: 5, defined_in: [level83.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level83_c5_apartment.lua]}
+  - {id: LEVEL83.MS_C4_6, table: LEVEL83, key: MS_C4_6, languages: 5, defined_in: [level83.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level83_c5_apartment.lua]}
+  - {id: LEVEL83.MS_C5_1, table: LEVEL83, key: MS_C5_1, languages: 5, defined_in: [level83.lua], uses: 0}
+  - {id: LEVEL83.MS_C5_2, table: LEVEL83, key: MS_C5_2, languages: 5, defined_in: [level83.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level83_c6_chase.lua]}
+  - {id: LEVEL83.PRESSTOPAY1FORICECREAM, table: LEVEL83, key: PRESSTOPAY1FORICECREAM, languages: 5, defined_in: [level83.lua], uses: 1, passed_to: [SetMsgHandlerEx], used_in: [level83_c2_alleys.lua]}
+  - {id: LEVEL84.KO, table: LEVEL84, key: KO, languages: 5, defined_in: [level84.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level84_chase.lua]}
+  - {id: LEVEL84.LUTHER, table: LEVEL84, key: LUTHER, languages: 5, defined_in: [level84.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level84_final.lua]}
+  - {id: LEVEL84.MP_1, table: LEVEL84, key: MP_1, languages: 5, defined_in: [level84.lua], uses: 1, used_in: [level84.lua]}
+  - {id: LEVEL84.MS_C2_1, table: LEVEL84, key: MS_C2_1, languages: 5, defined_in: [level84.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level84_chase.lua]}
+  - {id: LEVEL84.MS_C3_1, table: LEVEL84, key: MS_C3_1, languages: 5, defined_in: [level84.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level84_final.lua]}
+  - {id: LEVEL84.THROW, table: LEVEL84, key: THROW, languages: 5, defined_in: [level84.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level84_final.lua]}
+  - {id: LEVEL86.BUYHOTDOG, table: LEVEL86, key: BUYHOTDOG, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [SetMsgHandlerEx], used_in: [level86_chapter1_reg.lua]}
+  - {id: LEVEL86.CLEONTRASH, table: LEVEL86, key: CLEONTRASH, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level86_chapter1_reg.lua]}
+  - {id: LEVEL86.FORMAT_OWNER_STRING, table: LEVEL86, key: FORMAT_OWNER_STRING, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 0}
+  - {id: LEVEL86.FORMAT_SPACE, table: LEVEL86, key: FORMAT_SPACE, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 0}
+  - {id: LEVEL86.FOUR_OF_FOUR, table: LEVEL86, key: FOUR_OF_FOUR, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 0}
+  - {id: LEVEL86.LITTLE_BUDDHA, table: LEVEL86, key: LITTLE_BUDDHA, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 10, passed_to: [HUDEnableBar], used_in: [level86.lua]}
+  - {id: LEVEL86.LOCK, table: LEVEL86, key: LOCK, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 4, passed_to: [HUDEnableBar], used_in: [level86_chapter4.lua]}
+  - {id: LEVEL86.MEAT_MARKET, table: LEVEL86, key: MEAT_MARKET, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 10, passed_to: [HUDEnableBar], used_in: [level86.lua]}
+  - {id: LEVEL86.MF_BUDDHA, table: LEVEL86, key: MF_BUDDHA, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86.lua]}
+  - {id: LEVEL86.MF_C1_1, table: LEVEL86, key: MF_C1_1, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 0}
+  - {id: LEVEL86.MF_C1_CHUCK, table: LEVEL86, key: MF_C1_CHUCK, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86.lua]}
+  - {id: LEVEL86.MF_C1_MILDRED, table: LEVEL86, key: MF_C1_MILDRED, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86.lua]}
+  - {id: LEVEL86.MF_C1_PETE, table: LEVEL86, key: MF_C1_PETE, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86.lua]}
+  - {id: LEVEL86.MF_C1_PLAYERTRASH, table: LEVEL86, key: MF_C1_PLAYERTRASH, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86_chapter1_reg.lua]}
+  - {id: LEVEL86.MF_C1_STEPHANO, table: LEVEL86, key: MF_C1_STEPHANO, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86.lua]}
+  - {id: LEVEL86.MF_MEATMARKET, table: LEVEL86, key: MF_MEATMARKET, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86.lua]}
+  - {id: LEVEL86.MF_PLUMB, table: LEVEL86, key: MF_PLUMB, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86.lua]}
+  - {id: LEVEL86.MF_VOODOO, table: LEVEL86, key: MF_VOODOO, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level86.lua]}
+  - {id: LEVEL86.MP_1, table: LEVEL86, key: MP_1, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level86.lua]}
+  - {id: LEVEL86.MS_C1_1A, table: LEVEL86, key: MS_C1_1A, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level86_chapter1_reg.lua, level86_chapter2_reg.lua, level86_chapter3_reg.lua]}
+  - {id: LEVEL86.MS_C1_1B, table: LEVEL86, key: MS_C1_1B, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level86_chapter1_reg.lua, level86_chapter2_reg.lua, level86_chapter3_reg.lua]}
+  - {id: LEVEL86.MS_C2_1, table: LEVEL86, key: MS_C2_1, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level86_chapter2_reg.lua, level86_chapter3_reg.lua, level86_chapter4.lua]}
+  - {id: LEVEL86.MS_C2_2, table: LEVEL86, key: MS_C2_2, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level86_chapter3_reg.lua]}
+  - {id: LEVEL86.MS_C3_1, table: LEVEL86, key: MS_C3_1, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level86_chapter4.lua]}
+  - {id: LEVEL86.MS_PH_HUD, table: LEVEL86, key: MS_PH_HUD, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 0}
+  - {id: LEVEL86.ONE_OF_FOUR, table: LEVEL86, key: ONE_OF_FOUR, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 0}
+  - {id: LEVEL86.PLUMBING_STORE, table: LEVEL86, key: PLUMBING_STORE, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 10, passed_to: [HUDEnableBar], used_in: [level86.lua]}
+  - {id: LEVEL86.THREE_OF_FOUR, table: LEVEL86, key: THREE_OF_FOUR, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 0}
+  - {id: LEVEL86.TWO_OF_FOUR, table: LEVEL86, key: TWO_OF_FOUR, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 0}
+  - {id: LEVEL86.VOODOO_MOTORS, table: LEVEL86, key: VOODOO_MOTORS, languages: 5, defined_in: [level86.lua, level86_strings_en.lua], uses: 10, passed_to: [HUDEnableBar], used_in: [level86.lua]}
+  - {id: LEVEL87.CASH, table: LEVEL87, key: CASH, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87.lua]}
+  - {id: LEVEL87.MB_1, table: LEVEL87, key: MB_1, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.MB_2_1, table: LEVEL87, key: MB_2_1, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.MB_2_2, table: LEVEL87, key: MB_2_2, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.MF_C5_1, table: LEVEL87, key: MF_C5_1, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MF_C5_2, table: LEVEL87, key: MF_C5_2, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.MP_1, table: LEVEL87, key: MP_1, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level87.lua]}
+  - {id: LEVEL87.MS_C1_1, table: LEVEL87, key: MS_C1_1, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level87_chap1_tutorial.lua]}
+  - {id: LEVEL87.MS_C1_2, table: LEVEL87, key: MS_C1_2, languages: 5, defined_in: [level87.lua], uses: 5, passed_to: [HUDSetObjective, ObjectiveSetup], used_in: [level87_chap1_tutorial.lua, level87_chap2_street1.lua]}
+  - {id: LEVEL87.MS_C2_1, table: LEVEL87, key: MS_C2_1, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level87_chap2_street1.lua]}
+  - {id: LEVEL87.MS_C2_2, table: LEVEL87, key: MS_C2_2, languages: 5, defined_in: [level87.lua], uses: 5, passed_to: [ObjectiveSetup], used_in: [level87.lua, level87_chap2_street1.lua]}
+  - {id: LEVEL87.MS_C2_3, table: LEVEL87, key: MS_C2_3, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level87_chap2_street1.lua]}
+  - {id: LEVEL87.MS_C3_1, table: LEVEL87, key: MS_C3_1, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level87_chap3_shanty.lua]}
+  - {id: LEVEL87.MS_C3_2, table: LEVEL87, key: MS_C3_2, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level87_chap3_shanty.lua]}
+  - {id: LEVEL87.MS_C3_3, table: LEVEL87, key: MS_C3_3, languages: 5, defined_in: [level87.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level87.lua, level87_chap3_shanty.lua]}
+  - {id: LEVEL87.MS_C4_1, table: LEVEL87, key: MS_C4_1, languages: 5, defined_in: [level87.lua], uses: 4, used_in: [level87_chap4_street2.lua]}
+  - {id: LEVEL87.MS_C4_2, table: LEVEL87, key: MS_C4_2, languages: 5, defined_in: [level87.lua], uses: 2, used_in: [level87_chap4_street2.lua]}
+  - {id: LEVEL87.MS_C4_3, table: LEVEL87, key: MS_C4_3, languages: 5, defined_in: [level87.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level87.lua, level87_chap4_street2.lua]}
+  - {id: LEVEL87.MS_C5_1, table: LEVEL87, key: MS_C5_1, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.MS_C5_2, table: LEVEL87, key: MS_C5_2, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_3, table: LEVEL87, key: MS_C5_3, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level87.lua, level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_3a, table: LEVEL87, key: MS_C5_3a, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_3b, table: LEVEL87, key: MS_C5_3b, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.MS_C5_3c, table: LEVEL87, key: MS_C5_3c, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level87.lua]}
+  - {id: LEVEL87.MS_C5_4, table: LEVEL87, key: MS_C5_4, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_5, table: LEVEL87, key: MS_C5_5, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_6, table: LEVEL87, key: MS_C5_6, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_7, table: LEVEL87, key: MS_C5_7, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_8, table: LEVEL87, key: MS_C5_8, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_9, table: LEVEL87, key: MS_C5_9, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_10, table: LEVEL87, key: MS_C5_10, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_11, table: LEVEL87, key: MS_C5_11, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_12, table: LEVEL87, key: MS_C5_12, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_13, table: LEVEL87, key: MS_C5_13, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap5_club.lua]}
+  - {id: LEVEL87.MS_C5_14, table: LEVEL87, key: MS_C5_14, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.RM_1, table: LEVEL87, key: RM_1, languages: 5, defined_in: [level87.lua], uses: 3, used_in: [level87_chap1_tutorial.lua, level87_chap2_street1.lua, level87_chap3_shanty.lua]}
+  - {id: LEVEL87.RM_2, table: LEVEL87, key: RM_2, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.RUNATTACK, table: LEVEL87, key: RUNATTACK, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87_chap4_street2.lua]}
+  - {id: LEVEL87.SPRAYATTACK, table: LEVEL87, key: SPRAYATTACK, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87.lua]}
+  - {id: LEVEL87.TT_1, table: LEVEL87, key: TT_1, languages: 5, defined_in: [level87.lua], uses: 1, used_in: [level87_chap1_tutorial.lua]}
+  - {id: LEVEL87.TT_2, table: LEVEL87, key: TT_2, languages: 5, defined_in: [level87.lua], uses: 0}
+  - {id: LEVEL87.TT_3, table: LEVEL87, key: TT_3, languages: 5, defined_in: [level87.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level87.lua]}
+  - {id: LEVEL87.TT_41, table: LEVEL87, key: TT_41, languages: 5, defined_in: [level87.lua], uses: 2, passed_to: [HUDSetTutorialText], used_in: [level87_chap2_street1.lua]}
+  - {id: LEVEL92.BTAG, table: LEVEL92, key: BTAG, languages: 5, defined_in: [level92.lua], uses: 0}
+  - {id: LEVEL92.HEAD_BAR, table: LEVEL92, key: HEAD_BAR, languages: 5, defined_in: [level92.lua], uses: 34, passed_to: [HUDEnableBar], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.HIT_LAST_STORE, table: LEVEL92, key: HIT_LAST_STORE, languages: 5, defined_in: [level92.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.HIT_STORES, table: LEVEL92, key: HIT_STORES, languages: 5, defined_in: [level92.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.HUD_TEXT_STORES, table: LEVEL92, key: HUD_TEXT_STORES, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDGetNewPH], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.KING_FAILED_MSG, table: LEVEL92, key: KING_FAILED_MSG, languages: 5, defined_in: [level92.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level92_chapter1.lua]}
+  - {id: LEVEL92.KING_RULES_1, table: LEVEL92, key: KING_RULES_1, languages: 5, defined_in: [level92.lua], uses: 1, used_in: [level92_chapter1.lua]}
+  - {id: LEVEL92.KING_RULES_2, table: LEVEL92, key: KING_RULES_2, languages: 5, defined_in: [level92.lua], uses: 1, used_in: [level92_chapter1.lua]}
+  - {id: LEVEL92.KING_RULES_3, table: LEVEL92, key: KING_RULES_3, languages: 5, defined_in: [level92.lua], uses: 1, used_in: [level92_chapter1.lua]}
+  - {id: LEVEL92.MEAT_BAR, table: LEVEL92, key: MEAT_BAR, languages: 5, defined_in: [level92.lua], uses: 0}
+  - {id: LEVEL92.MP_2a, table: LEVEL92, key: MP_2a, languages: 5, defined_in: [level92.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level92_chapter1.lua]}
+  - {id: LEVEL92.MP_2b, table: LEVEL92, key: MP_2b, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level92_chapter1.lua]}
+  - {id: LEVEL92.MP_3, table: LEVEL92, key: MP_3, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level92_chapter2.lua, level92_chapter3.lua]}
+  - {id: LEVEL92.MS_C2_1, table: LEVEL92, key: MS_C2_1, languages: 5, defined_in: [level92.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.MS_C2_1A, table: LEVEL92, key: MS_C2_1A, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.MS_C2_1B, table: LEVEL92, key: MS_C2_1B, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.MS_C2_1C_1, table: LEVEL92, key: MS_C2_1C_1, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.MS_C2_1C_2, table: LEVEL92, key: MS_C2_1C_2, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.MS_C2_1D, table: LEVEL92, key: MS_C2_1D, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.MS_C2_2, table: LEVEL92, key: MS_C2_2, languages: 5, defined_in: [level92.lua], uses: 0}
+  - {id: LEVEL92.MS_C2_E, table: LEVEL92, key: MS_C2_E, languages: 5, defined_in: [level92.lua], uses: 1, used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.MS_C3_1, table: LEVEL92, key: MS_C3_1, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level92_chapter3.lua]}
+  - {id: LEVEL92.MS_C3_2, table: LEVEL92, key: MS_C3_2, languages: 5, defined_in: [level92.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level92_chapter3.lua]}
+  - {id: LEVEL92.PLUMB_BAR, table: LEVEL92, key: PLUMB_BAR, languages: 5, defined_in: [level92.lua], uses: 34, passed_to: [HUDEnableBar], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL92.VOODOO_BAR, table: LEVEL92, key: VOODOO_BAR, languages: 5, defined_in: [level92.lua], uses: 34, passed_to: [HUDEnableBar], used_in: [level92_chapter2.lua]}
+  - {id: LEVEL93.BTAG, table: LEVEL93, key: BTAG, languages: 5, defined_in: [level93.lua], uses: 0}
+  - {id: LEVEL93.DAMAGE_BAR, table: LEVEL93, key: DAMAGE_BAR, languages: 5, defined_in: [level93.lua], uses: 0}
+  - {id: LEVEL93.KEEP_MOVING, table: LEVEL93, key: KEEP_MOVING, languages: 5, defined_in: [level93.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.LIQUOR_BAR, table: LEVEL93, key: LIQUOR_BAR, languages: 5, defined_in: [level93.lua], uses: 24, passed_to: [HUDEnableBar], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.MP_1, table: LEVEL93, key: MP_1, languages: 5, defined_in: [level93.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level93.lua]}
+  - {id: LEVEL93.MS_C1_1, table: LEVEL93, key: MS_C1_1, languages: 5, defined_in: [level93.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.MS_C1_1A, table: LEVEL93, key: MS_C1_1A, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.MS_C1_1B, table: LEVEL93, key: MS_C1_1B, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.MS_C1_1C, table: LEVEL93, key: MS_C1_1C, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.MS_C2_1, table: LEVEL93, key: MS_C2_1, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter2.lua]}
+  - {id: LEVEL93.MS_C2_1B, table: LEVEL93, key: MS_C2_1B, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.MS_C2_2B_1, table: LEVEL93, key: MS_C2_2B_1, languages: 5, defined_in: [level93.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level93_chapter2.lua]}
+  - {id: LEVEL93.MS_C2_2C, table: LEVEL93, key: MS_C2_2C, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter2.lua]}
+  - {id: LEVEL93.MS_C2_2D, table: LEVEL93, key: MS_C2_2D, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter2.lua]}
+  - {id: LEVEL93.MS_C2_2E, table: LEVEL93, key: MS_C2_2E, languages: 5, defined_in: [level93.lua], uses: 3, passed_to: [HUDSetObjective], used_in: [level93_chapter2.lua]}
+  - {id: LEVEL93.MS_C2_3, table: LEVEL93, key: MS_C2_3, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [ObjectiveSetup], used_in: [level93_chapter2.lua]}
+  - {id: LEVEL93.MS_C3_1, table: LEVEL93, key: MS_C3_1, languages: 5, defined_in: [level93.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level93_chapter3.lua]}
+  - {id: LEVEL93.MS_C4_1A, table: LEVEL93, key: MS_C4_1A, languages: 5, defined_in: [level93.lua], uses: 3, passed_to: [ObjectiveSetup, HUDSetObjective], used_in: [level93_chapter3.lua]}
+  - {id: LEVEL93.MS_C4_1C, table: LEVEL93, key: MS_C4_1C, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter4.lua]}
+  - {id: LEVEL93.MS_C4_1D, table: LEVEL93, key: MS_C4_1D, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter4.lua]}
+  - {id: LEVEL93.MS_C5_1, table: LEVEL93, key: MS_C5_1, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level93_chapter5.lua]}
+  - {id: LEVEL93.MS_C5_1_FAIL_1, table: LEVEL93, key: MS_C5_1_FAIL_1, languages: 5, defined_in: [level93.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level93_chapter5.lua]}
+  - {id: LEVEL93.MS_C5_1_FAIL_2, table: LEVEL93, key: MS_C5_1_FAIL_2, languages: 5, defined_in: [level93.lua], uses: 1, passed_to: [HUDLaunchMissionFailed], used_in: [level93_chapter5.lua]}
+  - {id: LEVEL93.MS_C5_CHASEBAR, table: LEVEL93, key: MS_C5_CHASEBAR, languages: 5, defined_in: [level93.lua], uses: 0}
+  - {id: LEVEL93.MS_C6_1, table: LEVEL93, key: MS_C6_1, languages: 5, defined_in: [level93.lua], uses: 5, passed_to: [HUDSetObjective], used_in: [level93_chapter6.lua]}
+  - {id: LEVEL93.MS_C6_2, table: LEVEL93, key: MS_C6_2, languages: 5, defined_in: [level93.lua], uses: 4, passed_to: [ObjectiveSetup], used_in: [level93_chapter6.lua]}
+  - {id: LEVEL93.PHARMACY_BAR, table: LEVEL93, key: PHARMACY_BAR, languages: 5, defined_in: [level93.lua], uses: 24, passed_to: [HUDEnableBar], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.PH_FIGHTS, table: LEVEL93, key: PH_FIGHTS, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDGetNewPH], used_in: [level93_chapter3.lua]}
+  - {id: LEVEL93.PH_STORES, table: LEVEL93, key: PH_STORES, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDGetNewPH], used_in: [level93_chapter1.lua]}
+  - {id: LEVEL93.RAGEWALL, table: LEVEL93, key: RAGEWALL, languages: 5, defined_in: [level93.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level93_chapter4.lua]}
+  - {id: LEVEL93.VIRG, table: LEVEL93, key: VIRG, languages: 5, defined_in: [level93.lua], uses: 2, passed_to: [HUDEnableBar], used_in: [level93_chapter6.lua]}
+  - {id: LEVEL93.WAREHOUSE_BAR, table: LEVEL93, key: WAREHOUSE_BAR, languages: 5, defined_in: [level93.lua], uses: 6, passed_to: [HUDEnableBar], used_in: [level93_chapter2.lua]}
+  - {id: LEVEL95.ACT, table: LEVEL95, key: ACT, ids: "1-11", size: 11, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.ACTC, table: LEVEL95, key: ACTC, ids: "2-7, 10-12", size: 9, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.ACTTUT, table: LEVEL95, key: ACTTUT, ids: "2-7, 10-12", size: 9, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.FEATEXP, table: LEVEL95, key: FEATEXP, ids: "1, 15, 20", size: 3, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.INC, table: LEVEL95, key: INC, ids: "1-7", size: 7, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.INT, table: LEVEL95, key: INT, ids: "1-5", size: 5, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.NEW, table: LEVEL95, key: NEW, ids: "1-5", size: 5, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.NEWC, table: LEVEL95, key: NEWC, ids: "1-5", size: 5, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.PLAY, table: LEVEL95, key: PLAY, ids: "1-7", size: 7, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.WLABEL, table: LEVEL95, key: WLABEL, ids: "1-5", size: 5, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.WORKOUT, table: LEVEL95, key: WORKOUT, ids: "1-4", size: 4, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.CS_1, table: LEVEL95, key: CS_1, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level95_workout.lua]}
+  - {id: LEVEL95.CS_2, table: LEVEL95, key: CS_2, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level95_workout.lua]}
+  - {id: LEVEL95.CS_3, table: LEVEL95, key: CS_3, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level95_workout.lua]}
+  - {id: LEVEL95.CS_4, table: LEVEL95, key: CS_4, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level95_workout.lua]}
+  - {id: LEVEL95.CS_5, table: LEVEL95, key: CS_5, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level95_workout.lua]}
+  - {id: LEVEL95.CS_6, table: LEVEL95, key: CS_6, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 1, passed_to: [HUDSetAnnounceMsg], used_in: [level95_workout.lua]}
+  - {id: LEVEL95.LOCKPICK, table: LEVEL95, key: LOCKPICK, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.MS_C4_1, table: LEVEL95, key: MS_C4_1, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 2, used_in: [level95_chapter3.lua]}
+  - {id: LEVEL95.MS_C9_1, table: LEVEL95, key: MS_C9_1, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.MS_C9_2, table: LEVEL95, key: MS_C9_2, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.MS_C9_3, table: LEVEL95, key: MS_C9_3, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.RANK, table: LEVEL95, key: RANK, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 9, passed_to: [HUDSetObjective], used_in: [level95_workout.lua]}
+  - {id: LEVEL95.WORKFAIL, table: LEVEL95, key: WORKFAIL, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.WORKGOOD, table: LEVEL95, key: WORKGOOD, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.WORKTIRED, table: LEVEL95, key: WORKTIRED, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95.WORKTITLE, table: LEVEL95, key: WORKTITLE, languages: 5, defined_in: [level95.lua, level95_strings_de.lua, level95_strings_en.lua, level95_strings_es.lua, level95_strings_fr.lua, level95_strings_it.lua], uses: 0}
+  - {id: LEVEL95C.ACTTUT, table: LEVEL95C, key: ACTTUT, ids: "1-2, 6", size: 3, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 0}
+  - {id: LEVEL95C.CUFFTUT, table: LEVEL95C, key: CUFFTUT, ids: "1", size: 1, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 0}
+  - {id: LEVEL95C.INVGANG, table: LEVEL95C, key: INVGANG, ids: "1-6", size: 6, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 0}
+  - {id: LEVEL95C.BUSTEDLABEL, table: LEVEL95C, key: BUSTEDLABEL, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 6, passed_to: [ObjectiveSetup], used_in: [level95_busted.lua, level95_freedom.lua]}
+  - {id: LEVEL95C.DEALWITHITLABEL, table: LEVEL95C, key: DEALWITHITLABEL, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level95_dealwithit.lua]}
+  - {id: LEVEL95C.FINISHGAME, table: LEVEL95C, key: FINISHGAME, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level95_coney.lua]}
+  - {id: LEVEL95C.FLASHRAGELABEL, table: LEVEL95C, key: FLASHRAGELABEL, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level95_flashrage.lua]}
+  - {id: LEVEL95C.GIVEFINGER, table: LEVEL95C, key: GIVEFINGER, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 4, passed_to: [SetMsgHandlerEx], used_in: [level95_flashhead.lua]}
+  - {id: LEVEL95C.HOMELESSLABEL, table: LEVEL95C, key: HOMELESSLABEL, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level95_homeless.lua]}
+  - {id: LEVEL95C.JOIN, table: LEVEL95C, key: JOIN, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 2, passed_to: [SetMsgHandlerEx], used_in: [level95_coney.lua]}
+  - {id: LEVEL95C.MINI, table: LEVEL95C, key: MINI, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 0}
+  - {id: LEVEL95C.PATROL, table: LEVEL95C, key: PATROL, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 0}
+  - {id: LEVEL95C.ROBINLABEL, table: LEVEL95C, key: ROBINLABEL, languages: 5, defined_in: [level95_coney_strings_de.lua, level95_coney_strings_en.lua, level95_coney_strings_es.lua, level95_coney_strings_fr.lua, level95_coney_strings_it.lua], uses: 3, passed_to: [ObjectiveSetup], used_in: [level95_robinhood.lua]}
+  - {id: LEVEL99.LBL_1, table: LEVEL99, key: LBL_1, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDGetNewPH], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.MP_0, table: LEVEL99, key: MP_0, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level99_combat.lua, level99_lesson1.lua]}
+  - {id: LEVEL99.MP_1, table: LEVEL99, key: MP_1, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level99_lesson1.lua, level99_lesson2.lua]}
+  - {id: LEVEL99.MP_2, table: LEVEL99, key: MP_2, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetObjective], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.MS_C2_1, table: LEVEL99, key: MS_C2_1, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.MS_C2_2, table: LEVEL99, key: MS_C2_2, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.MS_C2_3, table: LEVEL99, key: MS_C2_3, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.MS_C2_5, table: LEVEL99, key: MS_C2_5, languages: 5, defined_in: [level99.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.MS_C2_6, table: LEVEL99, key: MS_C2_6, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [HUDSetObjective], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.MS_C3_1, table: LEVEL99, key: MS_C3_1, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_2, table: LEVEL99, key: MS_C3_2, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_3, table: LEVEL99, key: MS_C3_3, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_4, table: LEVEL99, key: MS_C3_4, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_5, table: LEVEL99, key: MS_C3_5, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_6, table: LEVEL99, key: MS_C3_6, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_7, table: LEVEL99, key: MS_C3_7, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_8, table: LEVEL99, key: MS_C3_8, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_9, table: LEVEL99, key: MS_C3_9, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_10, table: LEVEL99, key: MS_C3_10, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_11, table: LEVEL99, key: MS_C3_11, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.MS_C3_12, table: LEVEL99, key: MS_C3_12, languages: 0, uses: 2, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_1, table: LEVEL99, key: TT_1, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.TT_1a, table: LEVEL99, key: TT_1a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.TT_3, table: LEVEL99, key: TT_3, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.TT_3c, table: LEVEL99, key: TT_3c, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_3d, table: LEVEL99, key: TT_3d, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_4a, table: LEVEL99, key: TT_4a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_5, table: LEVEL99, key: TT_5, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.TT_6, table: LEVEL99, key: TT_6, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.TT_7, table: LEVEL99, key: TT_7, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.TT_9, table: LEVEL99, key: TT_9, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_9a, table: LEVEL99, key: TT_9a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_10, table: LEVEL99, key: TT_10, languages: 5, defined_in: [level99.lua], uses: 4, passed_to: [HUDSetObjective], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_13, table: LEVEL99, key: TT_13, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_14, table: LEVEL99, key: TT_14, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_15, table: LEVEL99, key: TT_15, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_16, table: LEVEL99, key: TT_16, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_17, table: LEVEL99, key: TT_17, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_18, table: LEVEL99, key: TT_18, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_18a, table: LEVEL99, key: TT_18a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson2.lua]}
+  - {id: LEVEL99.TT_19a, table: LEVEL99, key: TT_19a, languages: 5, defined_in: [level99.lua], uses: 5, passed_to: [UpdateStateCallbacks, SetupStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_19b, table: LEVEL99, key: TT_19b, languages: 5, defined_in: [level99.lua], uses: 34, passed_to: [UpdateStateCallbacks, SetupStateCallbacks, HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_19c, table: LEVEL99, key: TT_19c, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_19d, table: LEVEL99, key: TT_19d, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_19e, table: LEVEL99, key: TT_19e, languages: 5, defined_in: [level99.lua], uses: 6, passed_to: [UpdateStateCallbacks, SetupStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_19f, table: LEVEL99, key: TT_19f, languages: 5, defined_in: [level99.lua], uses: 4, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_19g, table: LEVEL99, key: TT_19g, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_lesson1.lua]}
+  - {id: LEVEL99.TT_20a, table: LEVEL99, key: TT_20a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_20c, table: LEVEL99, key: TT_20c, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_22a, table: LEVEL99, key: TT_22a, languages: 5, defined_in: [level99.lua], uses: 3, passed_to: [UpdateStateCallbacks, SetupStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_22b, table: LEVEL99, key: TT_22b, languages: 5, defined_in: [level99.lua], uses: 3, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_23a, table: LEVEL99, key: TT_23a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [SetupStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_23b, table: LEVEL99, key: TT_23b, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_23d, table: LEVEL99, key: TT_23d, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_23e, table: LEVEL99, key: TT_23e, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_23f, table: LEVEL99, key: TT_23f, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_24a, table: LEVEL99, key: TT_24a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [SetupStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_24b, table: LEVEL99, key: TT_24b, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_24d, table: LEVEL99, key: TT_24d, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [SetupStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_24e, table: LEVEL99, key: TT_24e, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_25a, table: LEVEL99, key: TT_25a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [DisplayMessage], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_25b, table: LEVEL99, key: TT_25b, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [HUDSetTutorialText, SetupStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_25c, table: LEVEL99, key: TT_25c, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_25d, table: LEVEL99, key: TT_25d, languages: 5, defined_in: [level99.lua], uses: 2, passed_to: [SetupStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_25e, table: LEVEL99, key: TT_25e, languages: 5, defined_in: [level99.lua], uses: 3, passed_to: [UpdateStateCallbacks], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_25h, table: LEVEL99, key: TT_25h, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99.lua]}
+  - {id: LEVEL99.TT_25i, table: LEVEL99, key: TT_25i, languages: 5, defined_in: [level99.lua], uses: 1, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_25j, table: LEVEL99, key: TT_25j, languages: 5, defined_in: [level99.lua], uses: 1, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_25k, table: LEVEL99, key: TT_25k, languages: 5, defined_in: [level99.lua], uses: 1, used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_26a, table: LEVEL99, key: TT_26a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_26b, table: LEVEL99, key: TT_26b, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_28a, table: LEVEL99, key: TT_28a, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_28b, table: LEVEL99, key: TT_28b, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_28d, table: LEVEL99, key: TT_28d, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_28e, table: LEVEL99, key: TT_28e, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_28f, table: LEVEL99, key: TT_28f, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_28h, table: LEVEL99, key: TT_28h, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_29, table: LEVEL99, key: TT_29, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_30, table: LEVEL99, key: TT_30, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_40, table: LEVEL99, key: TT_40, languages: 5, defined_in: [level99.lua], uses: 1, passed_to: [HUDSetTutorialText], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.TT_W, table: LEVEL99, key: TT_W, languages: 0, uses: 2, passed_to: [SetMsgHandlerEx], used_in: [level99_combat.lua]}
+  - {id: LEVEL99.V, table: LEVEL99, key: V, languages: 5, defined_in: [level99.lua], uses: 0}

@@ -89,9 +89,11 @@ No source file names this code: it lies in the unnamed stretch after `Human/cns/
 
 ### Commands {#commands}
 
-`AddCommand(trigger, button mask, command, ...)` (the script binding, [character bindings](../references/bindings/character.md))
+`AddCommand(command, trigger, buttons, extra)` (the script binding, [character bindings](../references/bindings/character.md#addcommand))
 fills nine tables of 12-byte entries `{u16 mask, u32 command, u16 buttons, u16 extra}`; `global.lua` fills them for
-the street. The tables as read at runtime in the street (confirmed (runtime)); the matchers are confirmed (code):
+the street, and level 84's chase adds command `0x2d` on a button of its own. Every binding is listed in
+[Commands](../references/commands.md). The tables as read at runtime in the street (confirmed (runtime)); the
+matchers are confirmed (code):
 
 | Trigger | Table | Matched when (matcher) | Button → command |
 | --- | --- | --- | --- |

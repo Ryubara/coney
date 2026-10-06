@@ -773,16 +773,18 @@
     - {addr: 0x001140d8}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who speaks."}
-    - {name: command, lua: number, ctype: unsigned, desc: "Speech command id (0-206), the kind of line (taunt, cheer and so on)."}
-    - {name: sound, lua: string, desc: "Optional explicit sound name; nil lets the game pick a line for the command."}
-    - {name: flag1, lua: boolean, default: true, desc: "A flag passed to the speech call (default true); meaning not traced."}
-    - {name: target, lua: number, ctype: unsigned, default: 4294967295, desc: "Handle the line is addressed to (default 0xffffffff, no target)."}
+    - {name: command, lua: number, ctype: unsigned, desc: "Speech command id (0-206), the kind of line ([Speech](../speech.md))."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called with the speaker's handle when the line ends, or at once when no line plays; nil for none."}
+    - {name: interrupt, lua: boolean, default: true, desc: "true (the default) cuts off a line the human is saying; false says nothing while one plays."}
+    - {name: target, lua: number, ctype: unsigned, default: 4294967295, desc: "Handle of a human the speaker looks at for the line's length plus 0.5 s (default 0xffffffff, none)."}
     - {name: flag2, lua: boolean, default: true, desc: "A second flag (default true); meaning not traced."}
   results:
     - {lua: number, desc: "The speech sound's handle, or the 'no sound' handle when the human is not found."}
   description: >-
-    Makes a human say a line of the given speech command.
-  evidence: inferred
+    Makes a human say a line of the given speech command, picked from the human's voice set as
+    [Sound](../../research/sound.md#speech) describes; nothing is said when the voice set has no line for the command
+    or speech is off.
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 60, calls: 97, boot: false, mission1: false, result_used: true}
 

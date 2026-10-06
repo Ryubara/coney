@@ -3,11 +3,14 @@
 # disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
 title: "Script events"
 about: |
-  The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`. The meaning of
-  a message is read from the names of the callbacks scripts give it.
+  The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`, and the same
+  messages for a whole gang with `GangSetMsgHandler(gang, message, callback)`: a human's event goes to its
+  own handlers, then to its gang's ([AI: gang events](../research/ai.md#gang-events)). The meaning of a
+  message is read from the names of the callbacks scripts give it.
 complete: |
-  Every message number a script uses is listed; meanings are inferred from callback names.
-defaults: {source: "every script, SetMsgHandler", evidence: inferred}
+  Every message number a script uses with either binding is listed; meanings are inferred from
+  callback names.
+defaults: {source: "every script, SetMsgHandler and GangSetMsgHandler", evidence: inferred}
 entries:
   - id: 0
     handlers: 2
@@ -18,11 +21,17 @@ entries:
     handlers: 131
     clears: 144
     examples: [C2.DamageHandler, C5.BossHealth, LCCheer, HotDogGuyDamage, BandMeleeMove]
+    gang_handlers: 80
+    gang_clears: 79
+    gang_examples: [C1.TacticGangDamage, C0.Damage, F.RiotPedHit, OrphanDamaged, PARTY.Damage]
   - id: 2
     meaning: "A scripted object or character finished or broke (`AjaxDead`, `FortBroken`, `LaunchMissionFailed`)."
     handlers: 132
     clears: 95
     examples: [SwitchNodeStack, F1.AjaxDead, F1.SwanDead, C1.FortBroken, LaunchMissionFailed]
+    gang_handlers: 214
+    gang_clears: 210
+    gang_examples: [MrWolf, df.DealerDied, DestroyerDied, P2.CheckDead01, P1.CheckDead01]
   - id: 3
     meaning: "Something entered a trigger box (`ObjectiveEnter`, `EnterBoxEvent`)."
     handlers: 567
@@ -56,11 +65,17 @@ entries:
     handlers: 6
     clears: 6
     examples: [coney.SeePlayer, SecuritySeePlayer, P3.AccountantDonePlayer, ch4.StopPornoChat, freedom.CopGoesForPlayer]
+    gang_handlers: 3
+    gang_clears: 3
+    gang_examples: [PlumbBackupTalk1, VoodooBackupTalk1, WarehouseDestroyerTalk1]
   - id: 11
     meaning: "A character spotted someone (`PlayerSpotted`, `PlayerSawStalker`)."
     handlers: 13
     clears: 22
     examples: [BopStopTag1, ToolSeePlayer, P3.AccountantDoneSpot, vigilante.PlayerSawStalker, P3.PlayerSpotted]
+    gang_handlers: 5
+    gang_clears: 3
+    gang_examples: [P3.HunsSpotPlayer, P2.LootersSpotPlayer, P4.EngageEnemy, P2.CopSpotPlayer, C1.LiquorDestroyerTalkTriggered]
   - id: 14
     meaning: "A tag (graffiti) was finished (`GangTagComplete`)."
     handlers: 23
@@ -76,11 +91,16 @@ entries:
     handlers: 19
     clears: 17
     examples: [ImArrestedAndICantGetUp, CochiseUnarrested, VerminUnarrested, C2.ArrestedWarpOut, C4.ArrestedPoolHall]
+    gang_handlers: 76
+    gang_examples: [CheckPlayerArrested, PigArrested, F.TopsideGangArrested]
   - id: 18
     meaning: "A human died or was knocked out (`StandardGang1Dead`, `AjaxDead`)."
     handlers: 162
     clears: 210
     examples: [StandardGang1Dead, StandardGang2Dead, F1.AjaxDead, F1.SwanDead, P6.NewWarrior]
+    gang_handlers: 210
+    gang_clears: 188
+    gang_examples: [CheckPlayerDead, DestroyerDied, P2.CheckDead01, P1.CheckDead01, P2.CheckDead02]
   - id: 19
     meaning: "A human came back (revived) (`StandardGang1Lives`, `FoxRevived`)."
     handlers: 73

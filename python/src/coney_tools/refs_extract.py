@@ -28,7 +28,7 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
-from coney_tools import lua4, wad
+from coney_tools import lua4, refs_scripts, wad
 from coney_tools.chunks import looks_like_container, parse_container
 from coney_tools.disc import Disc
 from coney_tools.elf import Elf, read_elf
@@ -53,6 +53,11 @@ FPS = 30
 #: Character data resource names: `<prefix>_header`; the generic one fills every slot a character leaves unset.
 GENERIC_DATA = "generic_header"
 UNSET = 0xFFFFFFFF
+#: The speech command table: 207 records `{u32 id, char *name}` (docs/research/sound.md#speech).
+SPEECH_TABLE = 0x0050AAA8
+SPEECH_COMMANDS = 207
+#: The sound list chunk of `warriors.glr` (docs/research/formats/wad-contents.md).
+CHUNK_STATIC_SOUNDS = 0x29
 
 #: Our reading of the model name prefixes (the first underscore-separated part of a model name).
 FACTIONS = {
@@ -163,7 +168,7 @@ class DiscFacts:
         self.disc = disc
         self.entries = wad.load_entries(disc)
         self._handle = disc.open(wad.WAD_FILE)
-        self._known = list(known_names)
+        self._known = [*known_names, *refs_scripts.candidate_script_names()]
 
     def read(self, entry: wad.WadEntry) -> bytes:
         """One entry's bytes."""
@@ -308,6 +313,30 @@ class DiscFacts:
             if slot != UNSET and slot < len(loaded):
                 return loaded[len(loaded) - 1 - slot]
         return None
+
+    @cached_property
+    def static_sounds(self) -> set[int]:
+        """The name hashes of the sound list in `warriors.glr` (chunk `0x29`: a count, then 16-byte records; the CRC-32
+        of a sound's name is the last word of each 16 bytes counted from the chunk's start; docs/research/sound.md)."""
+        entry = self.by_name("warriors.glr")
+        data = self.read(entry) if entry else b""
+        container = parse_container(data) if data else None
+        for resource in container.resources if container else []:
+            for chunk in resource.chunks:
+                if chunk.type == CHUNK_STATIC_SOUNDS:
+                    words = struct.unpack_from(f"<{chunk.size // 4}I", data, chunk.offset)
+                    return set(words[3::4])
+        return set()
+
+    @cached_property
+    def speech_command_names(self) -> list[str]:
+        """The 207 speech command names of the executable's table (`{u32 id, char *name}`; docs/research/sound.md)."""
+        names = []
+        for index in range(SPEECH_COMMANDS):
+            number, pointer = struct.unpack("<2I", self.elf_bytes(SPEECH_TABLE + 8 * index, 8))
+            text = self.elf_bytes(pointer, 64).split(b"\0")[0].decode("latin-1")
+            names.append(text if number == index else "")
+        return names
 
     def resource_name(self, key: int) -> str | None:
         """A resource's name, recovered by hashing candidate strings (`<x>_header`, `<model>_geo` ...)."""
@@ -925,31 +954,52 @@ def topic_sound(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
                 },
             )
     order = ("music track", "interface sound", "sound matrix", "inventory item")
-    return sorted(entries.values(), key=lambda e: (order.index(e["kind"]), e.get("number") or 0, e["name"]))
+    configured = sorted(entries.values(), key=lambda e: (order.index(e["kind"]), e.get("number") or 0, e["name"]))
+    sounds = facts.static_sounds
+    named = refs_scripts.sound_names(facts.scripts, lambda name: zlib.crc32(name.encode("latin-1")) in sounds)
+    return configured + [e for e in named if e["id"] not in entries]
 
 
 def topic_script_events(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
-    """Message numbers `SetMsgHandler` registers callbacks for, with the commonest callback names."""
-    handlers: dict[int, collections.Counter[str]] = collections.defaultdict(collections.Counter)
-    clears: collections.Counter[int] = collections.Counter()
-    for _, call in facts.calls("SetMsgHandler"):
-        if len(call.args) < 3 or not isinstance(call.args[1], float):
-            continue
-        message = int(call.args[1])
-        callback = call.args[2]
-        if callback is None:
-            clears[message] += 1
-        else:
-            handlers[message][_global(callback) or "?"] += 1
+    """Message numbers `SetMsgHandler` and `GangSetMsgHandler` register callbacks for, with the commonest names."""
+    handlers, clears = refs_scripts.message_handlers(facts.scripts, "SetMsgHandler")
+    gang, gang_clears = refs_scripts.message_handlers(facts.scripts, "GangSetMsgHandler")
     return [
         {
             "id": message,
             "handlers": sum(handlers[message].values()),
             "clears": clears[message],
             "examples": [name for name, _ in handlers[message].most_common(5) if name != "?"] or None,
+            "gang_handlers": sum(gang[message].values()) or None,
+            "gang_clears": gang_clears[message] or None,
+            "gang_examples": [name for name, _ in gang[message].most_common(5) if name != "?"] or None,
         }
-        for message in sorted(set(handlers) | set(clears))
+        for message in sorted(set(handlers) | set(clears) | set(gang) | set(gang_clears))
     ]
+
+
+def topic_text_labels(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
+    """The keys of the scripts' string tables (never their text), with where each is defined and used."""
+    return refs_scripts.text_labels(facts.scripts)
+
+
+def topic_commands(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
+    """`AddCommand`'s trigger kinds, the pad commands `global.lua` binds, and the Warrior commands."""
+    return refs_scripts.commands(facts.scripts, BUTTONS)
+
+
+def topic_speech(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
+    """The speech commands and the voice sets, with the lines each voice set has for each command."""
+    counts = [call.args[0] for _, call in facts.calls("SndAllocateCharacterVoices") if call.args]
+    voices = int(counts[0]) if counts and isinstance(counts[0], float) else 0
+    sounds = facts.static_sounds
+    names = facts.speech_command_names
+    lines = refs_scripts.voice_lines(voices, names, lambda name: zlib.crc32(name.encode("latin-1")) in sounds)
+    voice_types: dict[int, list[int]] = collections.defaultdict(list)
+    for args in _cfg_chars(facts):
+        if isinstance(args[11], float):
+            voice_types[int(args[11])].append(int(args[0]))
+    return refs_scripts.speech(facts.scripts, names, lines, voice_types)
 
 
 def topic_wad_names(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
@@ -1428,6 +1478,9 @@ EXTRACTORS: dict[str, Callable[[DiscFacts, Path | None], list[dict[str, Any]]]] 
     "text-formatting": topic_text_formatting,
     "enums": topic_enums,
     "sound": topic_sound,
+    "speech": topic_speech,
     "script-events": topic_script_events,
+    "text-labels": topic_text_labels,
+    "commands": topic_commands,
     "wad-names": topic_wad_names,
 }

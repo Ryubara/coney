@@ -321,6 +321,12 @@ to a binding: `GSTRING.HUD` to `CfgHUDMessage(id, text)` (`0x0035e5d0` → `0x00
 heap and stores the pointer at `0x00600048 + id × 4`; `GlobalString_Get(id)` (`0x0019ee70`) returns it, or an empty
 string. The other tables and the script side are inferred from the scripts' string constants.
 
+The text a level shows (objectives, hints, prompts) never reaches a `Cfg*` table: `global.lua` builds `GSTRING`'s
+other keys and `LABEL`, and each level script its own `LEVEL<n>` (some from `level<n>_strings_<lang>.lua`), once per
+language, keeping the one for `GetLanguage()`; scripts then pass the strings themselves (`LEVEL34.MS_C1_5`) to
+bindings such as `HUDSetObjective`. Inferred from the scripts' code. The keys are listed in
+[Text labels](../references/text-labels.md).
+
 The chunk types `0x0F`-`0x13` (English to German string tables) and `StringTable/StringTableCache.cpp` are used by
 other screens (credits, Rumble mode); they do not occur in the WAD ([WAD
 contents](formats/wad-contents.md#chunk-types)).

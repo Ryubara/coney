@@ -1,0 +1,482 @@
+# Speech commands and voices: a Coney game reference list. The page docs/references/speech.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Speech commands and voices"
+about: |
+  What a human can say and in which voice. A **speech command** is a kind of line (`attack`,
+  `pain`, `cheer1` ...): `SoundPlayCommand(human, command)` makes a human say one, and the game says them
+  itself in fights, chases and crowds. A **voice set** is a numbered folder of recorded lines; `CfgChar`
+  gives each character type one ([Characters](characters.md)), and `HuSetStateRespVoiceIndex` gives a
+  human another for its state responses. A voice set's lines for a command are the sounds
+  `vags/character/voices/<set>/<command>_01`, `_02` ...; a voice set without lines for a command says
+  nothing. How a line is picked: [Sound](../research/sound.md#speech).
+complete: |
+  All 207 speech commands are listed by their names in the executable, and every voice set that
+  has lines, a character type or a script user, with the lines the game finds for each. When the game
+  itself says each command is not traced.
+defaults: {source: "the speech command table (0x0050aaa8), the sound list of warriors.glr, CfgChar and the scripts", evidence: confirmed-code}
+entries:
+  - {id: "command:0", kind: "speech command", number: 0, name: nothing}
+  - {id: "command:1", kind: "speech command", number: 1, name: attack, voices: 170, lines: 206}
+  - {id: "command:2", kind: "speech command", number: 2, name: follow, voices: 172, lines: 195, used_in: [wchair.lua]}
+  - {id: "command:3", kind: "speech command", number: 3, name: defend, voices: 172, lines: 205}
+  - {id: "command:4", kind: "speech command", number: 4, name: hold, voices: 172, lines: 201}
+  - {id: "command:5", kind: "speech command", number: 5, name: steal, voices: 9, lines: 10}
+  - {id: "command:6", kind: "speech command", number: 6, name: vandal, voices: 9, lines: 12, used_in: [level86.lua]}
+  - {id: "command:7", kind: "speech command", number: 7, name: grunt_x, voices: 9, lines: 30}
+  - {id: "command:8", kind: "speech command", number: 8, name: swear, voices: 183, lines: 561}
+  - {id: "command:9", kind: "speech command", number: 9, name: scream, voices: 58, lines: 204, used_in: [level93_chapter1.lua]}
+  - {id: "command:10", kind: "speech command", number: 10, name: throw, voices: 160, lines: 624, percent: ["every voice: 100 %"]}
+  - {id: "command:11", kind: "speech command", number: 11, name: block, voices: 180, lines: 519, percent: ["every voice: 20 %", "voice 65: 100 %", "voice 66: 100 %", "voice 74: 100 %", "voice 87: 100 %"]}
+  - {id: "command:12", kind: "speech command", number: 12, name: pain, voices: 188, lines: 711, percent: ["every voice: 100 %"]}
+  - {id: "command:13", kind: "speech command", number: 13, name: near, voices: 12, lines: 13}
+  - {id: "command:14", kind: "speech command", number: 14, name: mount, voices: 174, lines: 597, percent: ["every voice: 100 %"], used_in: [mercy.lua]}
+  - {id: "command:15", kind: "speech command", number: 15, name: point, voices: 146, lines: 426, percent: ["every voice: 100 %"]}
+  - {id: "command:16", kind: "speech command", number: 16, name: cheer1, voices: 145, lines: 501, percent: ["every voice: 100 %"], used_in: [level86_chapter4.lua]}
+  - {id: "command:17", kind: "speech command", number: 17, name: cheer2, voices: 164, lines: 744, percent: ["every voice: 100 %"], used_in: [wchair.lua]}
+  - {id: "command:18", kind: "speech command", number: 18, name: range, voices: 9, lines: 10}
+  - {id: "command:19", kind: "speech command", number: 19, name: mug, voices: 9, lines: 27}
+  - {id: "command:20", kind: "speech command", number: 20, name: statement, voices: 99, lines: 564, used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: "command:21", kind: "speech command", number: 21, name: response, voices: 99, lines: 558, used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: "command:22", kind: "speech command", number: 22, name: spot, voices: 85, lines: 265}
+  - {id: "command:23", kind: "speech command", number: 23, name: search, voices: 58, lines: 148, used_in: [level87_chap5_club.lua]}
+  - {id: "command:24", kind: "speech command", number: 24, name: give_up, voices: 56, lines: 129, used_in: [level87_chap5_club.lua]}
+  - {id: "command:25", kind: "speech command", number: 25, name: arrested, voices: 175, lines: 226}
+  - {id: "command:26", kind: "speech command", number: 26, name: slag}
+  - {id: "command:27", kind: "speech command", number: 27, name: safe}
+  - {id: "command:28", kind: "speech command", number: 28, name: resist, voices: 77, lines: 172, used_in: [level95_vigilante.lua]}
+  - {id: "command:29", kind: "speech command", number: 29, name: resist2, used_in: [level95_vigilante.lua]}
+  - {id: "command:30", kind: "speech command", number: 30, name: item, voices: 77, lines: 170}
+  - {id: "command:31", kind: "speech command", number: 31, name: no_item}
+  - {id: "command:32", kind: "speech command", number: 32, name: avoid, voices: 52, lines: 271, used_in: [level95_vigilante.lua]}
+  - {id: "command:33", kind: "speech command", number: 33, name: rat, voices: 16, lines: 48}
+  - {id: "command:34", kind: "speech command", number: 34, name: agony, voices: 189, lines: 609, used_in: [level31_birdie.lua, level81_brawl.lua, wchair.lua]}
+  - {id: "command:35", kind: "speech command", number: 35, name: search2, voices: 56, lines: 127}
+  - {id: "command:36", kind: "speech command", number: 36, name: alert, voices: 57, lines: 128}
+  - {id: "command:37", kind: "speech command", number: 37, name: nopaint, voices: 9, lines: 10, used_in: [level3_comp.lua, level9.lua, level87.lua, level93.lua]}
+  - {id: "command:38", kind: "speech command", number: 38, name: throw2, voices: 160, lines: 390, percent: ["every voice: 100 %"]}
+  - {id: "command:39", kind: "speech command", number: 39, name: mugcop, voices: 9, lines: 18}
+  - {id: "command:40", kind: "speech command", number: 40, name: fall, voices: 184, lines: 300, used_in: [royal.lua]}
+  - {id: "command:41", kind: "speech command", number: 41, name: copradio, voices: 1, lines: 30}
+  - {id: "command:42", kind: "speech command", number: 42, name: cop1011, voices: 11, lines: 11}
+  - {id: "command:43", kind: "speech command", number: 43, name: cop1064v, voices: 11, lines: 11}
+  - {id: "command:44", kind: "speech command", number: 44, name: cop1034m}
+  - {id: "command:45", kind: "speech command", number: 45, name: cop1034i}
+  - {id: "command:46", kind: "speech command", number: 46, name: cop1034f, voices: 11, lines: 11}
+  - {id: "command:47", kind: "speech command", number: 47, name: cop1039, voices: 11, lines: 11}
+  - {id: "command:48", kind: "speech command", number: 48, name: cop1034p, voices: 7, lines: 7}
+  - {id: "command:49", kind: "speech command", number: 49, name: cop1034c, voices: 11, lines: 11}
+  - {id: "command:50", kind: "speech command", number: 50, name: copresist, voices: 13, lines: 25}
+  - {id: "command:51", kind: "speech command", number: 51, name: cop1034kp}
+  - {id: "command:52", kind: "speech command", number: 52, name: cop1034kc, voices: 12, lines: 12}
+  - {id: "command:53", kind: "speech command", number: 53, name: cop1082b, voices: 11, lines: 11}
+  - {id: "command:54", kind: "speech command", number: 54, name: cop1082rb, voices: 12, lines: 13}
+  - {id: "command:55", kind: "speech command", number: 55, name: cop1011co, voices: 11, lines: 11}
+  - {id: "command:56", kind: "speech command", number: 56, name: cop1034cco, voices: 10, lines: 10}
+  - {id: "command:57", kind: "speech command", number: 57, name: cop1034fco}
+  - {id: "command:58", kind: "speech command", number: 58, name: cop1034ico}
+  - {id: "command:59", kind: "speech command", number: 59, name: cop1034kpco}
+  - {id: "command:60", kind: "speech command", number: 60, name: cop1034mco}
+  - {id: "command:61", kind: "speech command", number: 61, name: cop1034pco, voices: 6, lines: 6}
+  - {id: "command:62", kind: "speech command", number: 62, name: cop1039co, voices: 11, lines: 11}
+  - {id: "command:63", kind: "speech command", number: 63, name: cop1064vco, voices: 11, lines: 11}
+  - {id: "command:64", kind: "speech command", number: 64, name: copresistco, voices: 11, lines: 11}
+  - {id: "command:65", kind: "speech command", number: 65, name: lecturer}
+  - {id: "command:66", kind: "speech command", number: 66, name: listener}
+  - {id: "command:67", kind: "speech command", number: 67, name: unarrest_thank, voices: 13, lines: 13, used_in: [level95_busted.lua, level95_freedom.lua]}
+  - {id: "command:68", kind: "speech command", number: 68, name: unarrest_reasure, voices: 14, lines: 34}
+  - {id: "command:69", kind: "speech command", number: 69, name: hide, voices: 10, lines: 29}
+  - {id: "command:70", kind: "speech command", number: 70, name: holdhide, voices: 9, lines: 10}
+  - {id: "command:71", kind: "speech command", number: 71, name: engage, voices: 159, lines: 577}
+  - {id: "command:72", kind: "speech command", number: 72, name: scared, voices: 154, lines: 178, used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: "command:73", kind: "speech command", number: 73, name: beg, voices: 154, lines: 178}
+  - {id: "command:74", kind: "speech command", number: 74, name: holdline}
+  - {id: "command:75", kind: "speech command", number: 75, name: revive_thank, voices: 13, lines: 15}
+  - {id: "command:76", kind: "speech command", number: 76, name: revive_reasure, voices: 13, lines: 32}
+  - {id: "command:77", kind: "speech command", number: 77, name: statement2, voices: 58, lines: 195}
+  - {id: "command:78", kind: "speech command", number: 78, name: response2, voices: 58, lines: 195}
+  - {id: "command:79", kind: "speech command", number: 79, name: mugcheer, voices: 10, lines: 47}
+  - {id: "command:80", kind: "speech command", number: 80, name: tagcheer, voices: 10, lines: 38}
+  - {id: "command:81", kind: "speech command", number: 81, name: garbage, voices: 7, lines: 28}
+  - {id: "command:82", kind: "speech command", number: 82, name: warm_alone, voices: 7, lines: 22}
+  - {id: "command:83", kind: "speech command", number: 83, name: tagdone, voices: 10, lines: 19, used_in: [level9.lua]}
+  - {id: "command:84", kind: "speech command", number: 84, name: phone_cop, voices: 16, lines: 32, used_in: [level14.lua]}
+  - {id: "command:85", kind: "speech command", number: 85, name: phone_ped, voices: 44, lines: 88}
+  - {id: "command:86", kind: "speech command", number: 86, name: follow_hide, voices: 9, lines: 11}
+  - {id: "command:87", kind: "speech command", number: 87, name: kingohill, voices: 162, lines: 270, used_in: [kinghill.lua]}
+  - {id: "command:88", kind: "speech command", number: 88, name: fuck_you, voices: 29, lines: 101, used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: "command:89", kind: "speech command", number: 89, name: riot, voices: 37, lines: 305, used_in: [level86.lua]}
+  - {id: "command:90", kind: "speech command", number: 90, name: cop1011t, voices: 7, lines: 7}
+  - {id: "command:91", kind: "speech command", number: 91, name: cop1011tco, voices: 7, lines: 7}
+  - {id: "command:92", kind: "speech command", number: 92, name: range2, voices: 9, lines: 10}
+  - {id: "command:93", kind: "speech command", number: 93, name: mugcopcheer, voices: 10, lines: 28}
+  - {id: "command:94", kind: "speech command", number: 94, name: greet, voices: 25, lines: 60, used_in: [level95_busted.lua]}
+  - {id: "command:95", kind: "speech command", number: 95, name: offer, voices: 24, lines: 48}
+  - {id: "command:96", kind: "speech command", number: 96, name: cash, voices: 15, lines: 31}
+  - {id: "command:97", kind: "speech command", number: 97, name: nocash, voices: 15, lines: 32}
+  - {id: "command:98", kind: "speech command", number: 98, name: leave_buy, voices: 15, lines: 30}
+  - {id: "command:99", kind: "speech command", number: 99, name: leave_nobuy, voices: 15, lines: 32}
+  - {id: "command:100", kind: "speech command", number: 100, name: fight_near, voices: 15, lines: 46}
+  - {id: "command:101", kind: "speech command", number: 101, name: limit, voices: 15, lines: 30}
+  - {id: "command:102", kind: "speech command", number: 102, name: chase, voices: 15, lines: 58}
+  - {id: "command:103", kind: "speech command", number: 103, name: dirty_resist, voices: 15, lines: 15}
+  - {id: "command:104", kind: "speech command", number: 104, name: dirty_item, voices: 15, lines: 15}
+  - {id: "command:105", kind: "speech command", number: 105, name: ripoff, voices: 15, lines: 31}
+  - {id: "command:106", kind: "speech command", number: 106, name: hide_response, voices: 9, lines: 19}
+  - {id: "command:107", kind: "speech command", number: 107, name: onfire, voices: 185, lines: 334}
+  - {id: "command:108", kind: "speech command", number: 108, name: cb_wear, voices: 9, lines: 18}
+  - {id: "command:109", kind: "speech command", number: 109, name: cb_whine, voices: 1, lines: 2}
+  - {id: "command:110", kind: "speech command", number: 110, name: hat_wear, voices: 10, lines: 19, percent: ["every voice: 50 %"]}
+  - {id: "command:111", kind: "speech command", number: 111, name: rules}
+  - {id: "command:112", kind: "speech command", number: 112, name: shoot}
+  - {id: "command:113", kind: "speech command", number: 113, name: nada}
+  - {id: "command:114", kind: "speech command", number: 114, name: pt}
+  - {id: "command:115", kind: "speech command", number: 115, name: headcrack}
+  - {id: "command:116", kind: "speech command", number: 116, name: offer2}
+  - {id: "command:117", kind: "speech command", number: 117, name: fight2}
+  - {id: "command:118", kind: "speech command", number: 118, name: narc}
+  - {id: "command:119", kind: "speech command", number: 119, name: walkaway}
+  - {id: "command:120", kind: "speech command", number: 120, name: drain, voices: 4, lines: 12}
+  - {id: "command:121", kind: "speech command", number: 121, name: roll}
+  - {id: "command:122", kind: "speech command", number: 122, name: trips}
+  - {id: "command:123", kind: "speech command", number: 123, name: letsgo}
+  - {id: "command:124", kind: "speech command", number: 124, name: fight}
+  - {id: "command:125", kind: "speech command", number: 125, name: mumble, voices: 52, lines: 388}
+  - {id: "command:126", kind: "speech command", number: 126, name: unarrest_help, voices: 13, lines: 32}
+  - {id: "command:127", kind: "speech command", number: 127, name: catch_rat, voices: 9, lines: 9}
+  - {id: "command:128", kind: "speech command", number: 128, name: stealitem, voices: 28, lines: 83, used_in: [level14_radiosandstores.lua]}
+  - {id: "command:129", kind: "speech command", number: 129, name: hurryup, voices: 38, lines: 45}
+  - {id: "command:130", kind: "speech command", number: 130, name: defend_resp, voices: 10, lines: 28}
+  - {id: "command:131", kind: "speech command", number: 131, name: follow_resp, voices: 10, lines: 28}
+  - {id: "command:132", kind: "speech command", number: 132, name: attack_resp, voices: 10, lines: 28}
+  - {id: "command:133", kind: "speech command", number: 133, name: hold_resp, voices: 10, lines: 27}
+  - {id: "command:134", kind: "speech command", number: 134, name: nosearch, voices: 11, lines: 23}
+  - {id: "command:135", kind: "speech command", number: 135, name: shadow, voices: 34, lines: 143}
+  - {id: "command:136", kind: "speech command", number: 136, name: shadow_spot, voices: 34, lines: 143}
+  - {id: "command:137", kind: "speech command", number: 137, name: mug_grunt}
+  - {id: "command:138", kind: "speech command", number: 138, name: chase_cop, voices: 10, lines: 29}
+  - {id: "command:139", kind: "speech command", number: 139, name: travel}
+  - {id: "command:140", kind: "speech command", number: 140, name: vandal_resp, voices: 10, lines: 10, used_in: [level14.lua]}
+  - {id: "command:141", kind: "speech command", number: 141, name: steal_resp, voices: 10, lines: 19}
+  - {id: "command:142", kind: "speech command", number: 142, name: vandalitem, voices: 9, lines: 18}
+  - {id: "command:143", kind: "speech command", number: 143, name: whoop, voices: 163, lines: 673, used_in: [hifi.lua, level95.lua, level95_clubhouse.lua, level95_coney.lua, level95_flashhead.lua, level95_flashrage.lua, level95_homeless.lua, level101.lua, "... 33 more"]}
+  - {id: "command:144", kind: "speech command", number: 144, name: cheer3, voices: 12, lines: 41}
+  - {id: "command:145", kind: "speech command", number: 145, name: bum_beg, voices: 7, lines: 28}
+  - {id: "command:146", kind: "speech command", number: 146, name: give_me, voices: 9, lines: 9}
+  - {id: "command:147", kind: "speech command", number: 147, name: bum_beg_resp, voices: 7, lines: 28}
+  - {id: "command:148", kind: "speech command", number: 148, name: kicked, voices: 7, lines: 14}
+  - {id: "command:149", kind: "speech command", number: 149, name: tired, voices: 2, lines: 10}
+  - {id: "command:150", kind: "speech command", number: 150, name: energy, voices: 2, lines: 11}
+  - {id: "command:151", kind: "speech command", number: 151, name: heavylift, voices: 14, lines: 47}
+  - {id: "command:152", kind: "speech command", number: 152, name: lightlift, voices: 12, lines: 44}
+  - {id: "command:153", kind: "speech command", number: 153, name: leader_charge}
+  - {id: "command:154", kind: "speech command", number: 154, name: leader_regroup}
+  - {id: "command:155", kind: "speech command", number: 155, name: leader_rush}
+  - {id: "command:156", kind: "speech command", number: 156, name: leader_objpile}
+  - {id: "command:157", kind: "speech command", number: 157, name: leader_getobj}
+  - {id: "command:158", kind: "speech command", number: 158, name: scatter, voices: 9, lines: 18}
+  - {id: "command:159", kind: "speech command", number: 159, name: scatter_resp, voices: 10, lines: 19}
+  - {id: "command:160", kind: "speech command", number: 160, name: rage, voices: 9, lines: 45}
+  - {id: "command:161", kind: "speech command", number: 161, name: clow}
+  - {id: "command:162", kind: "speech command", number: 162, name: craps_w}
+  - {id: "command:163", kind: "speech command", number: 163, name: craps_l}
+  - {id: "command:164", kind: "speech command", number: 164, name: win}
+  - {id: "command:165", kind: "speech command", number: 165, name: lose}
+  - {id: "command:166", kind: "speech command", number: 166, name: push}
+  - {id: "command:167", kind: "speech command", number: 167, name: roar, voices: 5, lines: 10}
+  - {id: "command:168", kind: "speech command", number: 168, name: hide_stealth, voices: 9, lines: 29}
+  - {id: "command:169", kind: "speech command", number: 169, name: surprise, voices: 113, lines: 293, used_in: [level93.lua]}
+  - {id: "command:170", kind: "speech command", number: 170, name: bum_beg_deal, voices: 7, lines: 14}
+  - {id: "command:171", kind: "speech command", number: 171, name: meet_male, voices: 36, lines: 36, used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: "command:172", kind: "speech command", number: 172, name: meet_female, voices: 32, lines: 32}
+  - {id: "command:173", kind: "speech command", number: 173, name: beckon, voices: 6, lines: 9}
+  - {id: "command:174", kind: "speech command", number: 174, name: beckon_player, voices: 6, lines: 16}
+  - {id: "command:175", kind: "speech command", number: 175, name: hostile, voices: 6, lines: 15}
+  - {id: "command:176", kind: "speech command", number: 176, name: kiyap, voices: 7, lines: 27}
+  - {id: "command:177", kind: "speech command", number: 177, name: boo, voices: 29, lines: 116}
+  - {id: "command:178", kind: "speech command", number: 178, name: catcall, voices: 21, lines: 42}
+  - {id: "command:179", kind: "speech command", number: 179, name: question, voices: 36, lines: 137}
+  - {id: "command:180", kind: "speech command", number: 180, name: answer, voices: 36, lines: 143}
+  - {id: "command:181", kind: "speech command", number: 181, name: bye, voices: 45, lines: 99}
+  - {id: "command:182", kind: "speech command", number: 182, name: bum_hire, voices: 7, lines: 23}
+  - {id: "command:183", kind: "speech command", number: 183, name: ex_alert, voices: 12, lines: 24}
+  - {id: "command:184", kind: "speech command", number: 184, name: give_up_ne, voices: 12, lines: 24}
+  - {id: "command:185", kind: "speech command", number: 185, name: store_greet, voices: 10, lines: 24}
+  - {id: "command:186", kind: "speech command", number: 186, name: store_chat, voices: 6, lines: 12}
+  - {id: "command:187", kind: "speech command", number: 187, name: phone_gang, voices: 2, lines: 4}
+  - {id: "command:188", kind: "speech command", number: 188, name: cower, voices: 6, lines: 24}
+  - {id: "command:189", kind: "speech command", number: 189, name: dead_meat, voices: 2, lines: 4}
+  - {id: "command:190", kind: "speech command", number: 190, name: shake_bum, voices: 7, lines: 14}
+  - {id: "command:191", kind: "speech command", number: 191, name: shake_bum_resp, voices: 7, lines: 14}
+  - {id: "command:192", kind: "speech command", number: 192, name: shake_ho, voices: 7, lines: 14}
+  - {id: "command:193", kind: "speech command", number: 193, name: shake_ho_resp, voices: 3, lines: 6}
+  - {id: "command:194", kind: "speech command", number: 194, name: ex_kill, voices: 22, lines: 43}
+  - {id: "command:195", kind: "speech command", number: 195, name: turf_defend, voices: 12, lines: 54, used_in: [level95_invasion.lua]}
+  - {id: "command:196", kind: "speech command", number: 196, name: fall_in, voices: 9, lines: 45, used_in: [level95_coney.lua]}
+  - {id: "command:197", kind: "speech command", number: 197, name: collect, voices: 9, lines: 27}
+  - {id: "command:198", kind: "speech command", number: 198, name: collect_resp, voices: 4, lines: 12}
+  - {id: "command:199", kind: "speech command", number: 199, name: busy, voices: 12, lines: 24, used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: "command:200", kind: "speech command", number: 200, name: dance, voices: 12, lines: 33}
+  - {id: "command:201", kind: "speech command", number: 201, name: workout, voices: 12, lines: 35, used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: "command:202", kind: "speech command", number: 202, name: pinball, voices: 12, lines: 33, used_in: [level95.lua, level95_clubhouse.lua]}
+  - {id: "command:203", kind: "speech command", number: 203, name: sprayface, voices: 1, lines: 8}
+  - {id: "command:204", kind: "speech command", number: 204, name: club, voices: 27, lines: 54}
+  - {id: "command:205", kind: "speech command", number: 205, name: help_girl, voices: 10, lines: 20}
+  - {id: "command:206", kind: "speech command", number: 206, name: hide_response, voices: 9, lines: 19}
+  - {id: "voice:0", kind: "voice set", number: 0, commands: 76, lines: 216, types: [1, 2, 3, 4, 189]}
+  - {id: "voice:1", kind: "voice set", number: 1, commands: 76, lines: 229, types: [5, 6, 7, 8, 9]}
+  - {id: "voice:2", kind: "voice set", number: 2, commands: 76, lines: 225, types: [11, 12, 13, 14]}
+  - {id: "voice:3", kind: "voice set", number: 3, commands: 76, lines: 213, types: [15, 16, 17]}
+  - {id: "voice:4", kind: "voice set", number: 4, commands: 77, lines: 222, types: [18, 19, 20]}
+  - {id: "voice:5", kind: "voice set", number: 5, commands: 76, lines: 227, types: [21, 22, 23, 24, 25]}
+  - {id: "voice:6", kind: "voice set", number: 6, commands: 76, lines: 222, types: [26, 27, 28, 29, 191]}
+  - {id: "voice:7", kind: "voice set", number: 7, commands: 77, lines: 227, types: [30, 31, 32]}
+  - {id: "voice:8", kind: "voice set", number: 8, commands: 76, lines: 223, types: [33, 34, 35, 36]}
+  - {id: "voice:9", kind: "voice set", number: 9, commands: 50, lines: 104, types: [38, 40]}
+  - {id: "voice:10", kind: "voice set", number: 10, commands: 34, lines: 77, types: [43, 49, 55]}
+  - {id: "voice:11", kind: "voice set", number: 11, commands: 34, lines: 78, types: [45, 52, 54, 58, 60]}
+  - {id: "voice:12", kind: "voice set", number: 12, commands: 19, lines: 50, types: [53, 59]}
+  - {id: "voice:13", kind: "voice set", number: 13, commands: 21, lines: 49, types: [41, 51, 57]}
+  - {id: "voice:14", kind: "voice set", number: 14, commands: 25, lines: 49, types: [50, 56]}
+  - {id: "voice:15", kind: "voice set", number: 15, commands: 30, lines: 113, types: [162, 172, 192, 193, 208, 218, 229, 230]}
+  - {id: "voice:16", kind: "voice set", number: 16, commands: 30, lines: 105, types: [101, 158, 163, 233]}
+  - {id: "voice:17", kind: "voice set", number: 17, commands: 31, lines: 117, types: [102, 145, 164, 209]}
+  - {id: "voice:18", kind: "voice set", number: 18, commands: 30, lines: 105, types: [147, 156, 165, 174, 234]}
+  - {id: "voice:19", kind: "voice set", number: 19, commands: 31, lines: 109, types: [105, 157, 175, 194, 195, 225]}
+  - {id: "voice:20", kind: "voice set", number: 20, commands: 32, lines: 120, types: [214, 219, 226, 244]}
+  - {id: "voice:21", kind: "voice set", number: 21, commands: 31, lines: 110, types: [159, 176, 227, 421]}
+  - {id: "voice:22", kind: "voice set", number: 22, commands: 31, lines: 110, types: [177, 228, 236]}
+  - {id: "voice:23", kind: "voice set", number: 23, commands: 30, lines: 103, types: [155, 173, 183]}
+  - {id: "voice:24", kind: "voice set", number: 24, commands: 32, lines: 110, types: [100, 161]}
+  - {id: "voice:25", kind: "voice set", number: 25, commands: 32, lines: 113, types: [143, 184, 224, 231]}
+  - {id: "voice:26", kind: "voice set", number: 26, commands: 31, lines: 117, types: [104, 130, 166]}
+  - {id: "voice:27", kind: "voice set", number: 27, commands: 26, lines: 100, types: [103, 131, 144, 148, 169]}
+  - {id: "voice:28", kind: "voice set", number: 28, commands: 27, lines: 112, types: [99, 152, 168, 216]}
+  - {id: "voice:29", kind: "voice set", number: 29, commands: 31, lines: 115, types: [146, 151, 197, 198, 210]}
+  - {id: "voice:30", kind: "voice set", number: 30, commands: 30, lines: 105, types: [132, 150]}
+  - {id: "voice:31", kind: "voice set", number: 31, commands: 31, lines: 113, types: [153, 217]}
+  - {id: "voice:32", kind: "voice set", number: 32, commands: 30, lines: 105, types: [133, 171, 235]}
+  - {id: "voice:33", kind: "voice set", number: 33, commands: 29, lines: 101, types: [170, 199, 200, 211]}
+  - {id: "voice:34", kind: "voice set", number: 34, commands: 30, lines: 104, types: [129, 134]}
+  - {id: "voice:35", kind: "voice set", number: 35, commands: 30, lines: 106, types: [180, 181, 207]}
+  - {id: "voice:36", kind: "voice set", number: 36, commands: 30, lines: 111, types: [149, 167, 182, 215]}
+  - {id: "voice:37", kind: "voice set", number: 37, commands: 23, lines: 50, types: [62, 63]}
+  - {id: "voice:38", kind: "voice set", number: 38, commands: 23, lines: 49, types: [64, 65]}
+  - {id: "voice:39", kind: "voice set", number: 39, commands: 23, lines: 53, types: [66, 67]}
+  - {id: "voice:40", kind: "voice set", number: 40, commands: 23, lines: 49, types: [68, 70, 73]}
+  - {id: "voice:41", kind: "voice set", number: 41, commands: 23, lines: 58, types: [69, 74]}
+  - {id: "voice:42", kind: "voice set", number: 42, commands: 23, lines: 48, types: [71, 75]}
+  - {id: "voice:43", kind: "voice set", number: 43, commands: 23, lines: 48, types: [72, 76]}
+  - {id: "voice:44", kind: "voice set", number: 44, commands: 28, lines: 62, types: [77, 78, 79]}
+  - {id: "voice:45", kind: "voice set", number: 45, commands: 28, lines: 68, types: [80]}
+  - {id: "voice:46", kind: "voice set", number: 46, commands: 28, lines: 57, types: [81, 85]}
+  - {id: "voice:47", kind: "voice set", number: 47, commands: 27, lines: 57, types: [82, 86]}
+  - {id: "voice:48", kind: "voice set", number: 48, commands: 27, lines: 58, types: [83, 87]}
+  - {id: "voice:49", kind: "voice set", number: 49, commands: 28, lines: 63, types: [84, 88]}
+  - {id: "voice:50", kind: "voice set", number: 50, commands: 11, lines: 32, types: [89]}
+  - {id: "voice:51", kind: "voice set", number: 51, commands: 13, lines: 48, types: [90, 95, 106, 121]}
+  - {id: "voice:52", kind: "voice set", number: 52, commands: 12, lines: 40, types: [91]}
+  - {id: "voice:53", kind: "voice set", number: 53, commands: 12, lines: 36, types: [92]}
+  - {id: "voice:54", kind: "voice set", number: 54, commands: 11, lines: 40, types: [93]}
+  - {id: "voice:55", kind: "voice set", number: 55, commands: 12, lines: 35, types: [94]}
+  - {id: "voice:56", kind: "voice set", number: 56, commands: 7, lines: 32, types: [96, 97, 98, 458, 459, 460]}
+  - {id: "voice:58", kind: "voice set", number: 58, commands: 31, lines: 59, types: [114, 116]}
+  - {id: "voice:59", kind: "voice set", number: 59, commands: 31, lines: 59, types: [115, 117]}
+  - {id: "voice:60", kind: "voice set", number: 60, commands: 34, lines: 105, types: [107, 108, 109]}
+  - {id: "voice:61", kind: "voice set", number: 61, commands: 34, lines: 99, types: [110]}
+  - {id: "voice:62", kind: "voice set", number: 62, commands: 34, lines: 99, types: [111, 414]}
+  - {id: "voice:63", kind: "voice set", number: 63, commands: 34, lines: 98, types: [112]}
+  - {id: "voice:64", kind: "voice set", number: 64, commands: 34, lines: 101, types: [113, 415]}
+  - {id: "voice:65", kind: "voice set", number: 65, commands: 28, lines: 82, types: [120]}
+  - {id: "voice:66", kind: "voice set", number: 66, commands: 28, lines: 91, types: [119]}
+  - {id: "voice:67", kind: "voice set", number: 67, commands: 22, lines: 45, types: [122]}
+  - {id: "voice:68", kind: "voice set", number: 68, commands: 34, lines: 92, types: [123]}
+  - {id: "voice:69", kind: "voice set", number: 69, commands: 34, lines: 98, types: [124]}
+  - {id: "voice:70", kind: "voice set", number: 70, commands: 35, lines: 97, types: [125]}
+  - {id: "voice:71", kind: "voice set", number: 71, commands: 34, lines: 89, types: [126]}
+  - {id: "voice:72", kind: "voice set", number: 72, commands: 35, lines: 93, types: [127]}
+  - {id: "voice:73", kind: "voice set", number: 73, commands: 23, lines: 58, types: [128]}
+  - {id: "voice:74", kind: "voice set", number: 74, commands: 26, lines: 90, types: [135]}
+  - {id: "voice:75", kind: "voice set", number: 75, commands: 23, lines: 62, types: [137]}
+  - {id: "voice:76", kind: "voice set", number: 76, commands: 6, lines: 16, types: [136]}
+  - {id: "voice:77", kind: "voice set", number: 77, commands: 6, lines: 21, types: [138]}
+  - {id: "voice:78", kind: "voice set", number: 78, commands: 6, lines: 15, types: [139]}
+  - {id: "voice:79", kind: "voice set", number: 79, commands: 5, lines: 13, types: [140]}
+  - {id: "voice:80", kind: "voice set", number: 80, commands: 6, lines: 15, types: [141]}
+  - {id: "voice:81", kind: "voice set", number: 81, commands: 23, lines: 49, types: [142]}
+  - {id: "voice:83", kind: "voice set", number: 83, commands: 23, lines: 47, types: [154]}
+  - {id: "voice:84", kind: "voice set", number: 84, commands: 24, lines: 51, types: [160]}
+  - {id: "voice:87", kind: "voice set", number: 87, commands: 22, lines: 63, types: [178, 179]}
+  - {id: "voice:88", kind: "voice set", number: 88, commands: 22, lines: 54, types: [196]}
+  - {id: "voice:89", kind: "voice set", number: 89, commands: 23, lines: 63, types: [185, 213]}
+  - {id: "voice:90", kind: "voice set", number: 90, commands: 23, lines: 50, types: [61, 186, 187, 212]}
+  - {id: "voice:92", kind: "voice set", number: 92, commands: 22, lines: 52, types: [220]}
+  - {id: "voice:93", kind: "voice set", number: 93, commands: 23, lines: 52, types: [221, 222]}
+  - {id: "voice:94", kind: "voice set", number: 94, commands: 24, lines: 73, types: [223]}
+  - {id: "voice:96", kind: "voice set", number: 96, commands: 25, lines: 55, types: [237, 350, 351, 352]}
+  - {id: "voice:97", kind: "voice set", number: 97, commands: 25, lines: 62, types: [238, 241]}
+  - {id: "voice:98", kind: "voice set", number: 98, commands: 25, lines: 58, types: [239]}
+  - {id: "voice:99", kind: "voice set", number: 99, commands: 25, lines: 57, types: [240]}
+  - {id: "voice:100", kind: "voice set", number: 100, commands: 25, lines: 59, types: [242]}
+  - {id: "voice:101", kind: "voice set", number: 101, commands: 25, lines: 58, types: [243]}
+  - {id: "voice:102", kind: "voice set", number: 102, commands: 28, lines: 72, types: [201]}
+  - {id: "voice:103", kind: "voice set", number: 103, commands: 28, lines: 71, types: [202]}
+  - {id: "voice:104", kind: "voice set", number: 104, commands: 32, lines: 75, types: [203]}
+  - {id: "voice:105", kind: "voice set", number: 105, commands: 32, lines: 75, types: [204]}
+  - {id: "voice:106", kind: "voice set", number: 106, commands: 5, lines: 13}
+  - {id: "voice:107", kind: "voice set", number: 107, commands: 5, lines: 13}
+  - {id: "voice:116", kind: "voice set", number: 116, commands: 41, lines: 70, types: [245, 249]}
+  - {id: "voice:117", kind: "voice set", number: 117, commands: 41, lines: 70, types: [246, 250]}
+  - {id: "voice:118", kind: "voice set", number: 118, commands: 39, lines: 69, types: [247, 251]}
+  - {id: "voice:119", kind: "voice set", number: 119, commands: 41, lines: 70, types: [248, 252]}
+  - {id: "voice:120", kind: "voice set", number: 120, commands: 47, lines: 107, types: [253, 265]}
+  - {id: "voice:121", kind: "voice set", number: 121, commands: 48, lines: 101, types: [254, 266]}
+  - {id: "voice:122", kind: "voice set", number: 122, commands: 48, lines: 104, types: [256, 267]}
+  - {id: "voice:123", kind: "voice set", number: 123, commands: 48, lines: 101, types: [257]}
+  - {id: "voice:124", kind: "voice set", number: 124, commands: 48, lines: 100, types: [255, 258]}
+  - {id: "voice:125", kind: "voice set", number: 125, commands: 2, lines: 32}
+  - {id: "voice:126", kind: "voice set", number: 126, commands: 26, lines: 46, types: [259]}
+  - {id: "voice:127", kind: "voice set", number: 127, commands: 22, lines: 46, types: [260]}
+  - {id: "voice:128", kind: "voice set", number: 128, commands: 22, lines: 47, types: [261]}
+  - {id: "voice:129", kind: "voice set", number: 129, commands: 22, lines: 49, types: [262]}
+  - {id: "voice:133", kind: "voice set", number: 133, commands: 48, lines: 101, types: [263]}
+  - {id: "voice:134", kind: "voice set", number: 134, commands: 48, lines: 104, types: [264]}
+  - {id: "voice:136", kind: "voice set", number: 136, commands: 15, lines: 89}
+  - {id: "voice:137", kind: "voice set", number: 137, commands: 15, lines: 76}
+  - {id: "voice:138", kind: "voice set", number: 138, commands: 14, lines: 71}
+  - {id: "voice:139", kind: "voice set", number: 139, commands: 5, lines: 27}
+  - {id: "voice:140", kind: "voice set", number: 140, commands: 12, lines: 49}
+  - {id: "voice:141", kind: "voice set", number: 141, commands: 38, lines: 107, types: [280, 281, 286]}
+  - {id: "voice:142", kind: "voice set", number: 142, commands: 36, lines: 92, types: [275, 287]}
+  - {id: "voice:143", kind: "voice set", number: 143, commands: 37, lines: 94, types: [270, 283, 285]}
+  - {id: "voice:144", kind: "voice set", number: 144, commands: 38, lines: 105, types: [273]}
+  - {id: "voice:145", kind: "voice set", number: 145, commands: 37, lines: 96, types: [276, 278, 279]}
+  - {id: "voice:146", kind: "voice set", number: 146, commands: 38, lines: 102, types: [272, 277, 284]}
+  - {id: "voice:147", kind: "voice set", number: 147, commands: 36, lines: 92, types: [271, 274, 282]}
+  - {id: "voice:148", kind: "voice set", number: 148, commands: 40, lines: 103, types: [445]}
+  - {id: "voice:149", kind: "voice set", number: 149, commands: 42, lines: 108, types: [420, 444]}
+  - {id: "voice:150", kind: "voice set", number: 150, commands: 43, lines: 115, types: [297, 300, 301, 302, 365, 372, 377, 397, 401]}
+  - {id: "voice:151", kind: "voice set", number: 151, commands: 42, lines: 109, types: [296, 309, 364, 373, 378, 393, 398]}
+  - {id: "voice:152", kind: "voice set", number: 152, commands: 46, lines: 124, types: [292, 308, 376, 418]}
+  - {id: "voice:153", kind: "voice set", number: 153, commands: 41, lines: 113, types: [389, 452]}
+  - {id: "voice:154", kind: "voice set", number: 154, commands: 42, lines: 107, types: [289, 311, 314, 367, 369, 390]}
+  - {id: "voice:155", kind: "voice set", number: 155, commands: 44, lines: 112, types: [306, 310, 313, 366, 368, 451]}
+  - {id: "voice:156", kind: "voice set", number: 156, commands: 40, lines: 102, types: [317, 327, 442]}
+  - {id: "voice:157", kind: "voice set", number: 157, commands: 40, lines: 107, types: [443]}
+  - {id: "voice:158", kind: "voice set", number: 158, commands: 43, lines: 118, types: [293, 319, 321, 323, 326, 347, 348, 349, 362, 395, 399, 417, 449]}
+  - {id: "voice:159", kind: "voice set", number: 159, commands: 45, lines: 121, types: [290, 294, 316, 324, 344, 345, 346, 450]}
+  - {id: "voice:160", kind: "voice set", number: 160, commands: 41, lines: 109, types: [295, 325, 360, 375, 386, 446]}
+  - {id: "voice:161", kind: "voice set", number: 161, commands: 41, lines: 112, types: [205, 206, 330, 337, 338, 355, 356]}
+  - {id: "voice:162", kind: "voice set", number: 162, commands: 42, lines: 109, types: [340, 357, 371]}
+  - {id: "voice:163", kind: "voice set", number: 163, commands: 39, lines: 96, types: [329, 342, 391, 453]}
+  - {id: "voice:164", kind: "voice set", number: 164, commands: 43, lines: 110, types: [404]}
+  - {id: "voice:165", kind: "voice set", number: 165, commands: 42, lines: 111, types: [402]}
+  - {id: "voice:166", kind: "voice set", number: 166, commands: 43, lines: 105, types: [406]}
+  - {id: "voice:167", kind: "voice set", number: 167, commands: 48, lines: 130, types: [407, 410, 411]}
+  - {id: "voice:168", kind: "voice set", number: 168, commands: 44, lines: 112, types: [118, 403, 405, 412]}
+  - {id: "voice:169", kind: "voice set", number: 169, commands: 43, lines: 107, types: [409, 413]}
+  - {id: "voice:170", kind: "voice set", number: 170, commands: 42, lines: 110, types: [343, 384, 385]}
+  - {id: "voice:171", kind: "voice set", number: 171, commands: 41, lines: 100, types: [315, 363, 374, 379, 383, 394]}
+  - {id: "voice:172", kind: "voice set", number: 172, commands: 38, lines: 94, types: [387]}
+  - {id: "voice:173", kind: "voice set", number: 173, commands: 38, lines: 99, types: [382]}
+  - {id: "voice:174", kind: "voice set", number: 174, commands: 40, lines: 100, types: [370, 380]}
+  - {id: "voice:175", kind: "voice set", number: 175, commands: 40, lines: 99, types: [381]}
+  - {id: "voice:176", kind: "voice set", number: 176, commands: 29, lines: 68, types: [268, 269, 312, 331, 334, 335, 336, 339]}
+  - {id: "voice:177", kind: "voice set", number: 177, commands: 34, lines: 83, types: [332, 341, 353, 354, 392]}
+  - {id: "voice:178", kind: "voice set", number: 178, commands: 34, lines: 76, types: [408]}
+  - {id: "voice:179", kind: "voice set", number: 179, commands: 34, lines: 80, types: [333]}
+  - {id: "voice:180", kind: "voice set", number: 180, commands: 29, lines: 54, types: [288, 291, 358, 388, 441, 447]}
+  - {id: "voice:181", kind: "voice set", number: 181, commands: 28, lines: 53, types: [359]}
+  - {id: "voice:182", kind: "voice set", number: 182, commands: 41, lines: 112, types: [299, 419, 448]}
+  - {id: "voice:183", kind: "voice set", number: 183, commands: 44, lines: 108, types: [298, 318, 320, 322, 328, 361, 396, 400]}
+  - {id: "voice:184", kind: "voice set", number: 184, commands: 22, lines: 44, types: [425]}
+  - {id: "voice:185", kind: "voice set", number: 185, commands: 22, lines: 47, types: [307]}
+  - {id: "voice:186", kind: "voice set", number: 186, commands: 28, lines: 63, types: [303, 455]}
+  - {id: "voice:187", kind: "voice set", number: 187, commands: 28, lines: 58, types: [304, 456]}
+  - {id: "voice:188", kind: "voice set", number: 188, commands: 28, lines: 63, types: [416, 454]}
+  - {id: "voice:189", kind: "voice set", number: 189, commands: 28, lines: 60, types: [305, 457]}
+  - {id: "voice:191", kind: "voice set", number: 191, commands: 35, lines: 77, types: [422]}
+  - {id: "voice:192", kind: "voice set", number: 192, commands: 33, lines: 70, types: [423]}
+  - {id: "voice:193", kind: "voice set", number: 193, commands: 33, lines: 72, types: [424]}
+  - {id: "voice:200", kind: "voice set", number: 200, commands: 35, lines: 66, types: [426]}
+  - {id: "voice:201", kind: "voice set", number: 201, commands: 35, lines: 63, types: [437]}
+  - {id: "voice:202", kind: "voice set", number: 202, commands: 35, lines: 64, types: [431]}
+  - {id: "voice:203", kind: "voice set", number: 203, commands: 35, lines: 64, types: [427]}
+  - {id: "voice:204", kind: "voice set", number: 204, commands: 35, lines: 70, types: [436]}
+  - {id: "voice:205", kind: "voice set", number: 205, commands: 35, lines: 64, types: [432]}
+  - {id: "voice:206", kind: "voice set", number: 206, commands: 35, lines: 64, types: [429]}
+  - {id: "voice:207", kind: "voice set", number: 207, commands: 35, lines: 81, types: [438]}
+  - {id: "voice:208", kind: "voice set", number: 208, commands: 35, lines: 65, types: [435]}
+  - {id: "voice:209", kind: "voice set", number: 209, commands: 35, lines: 64, types: [430]}
+  - {id: "voice:210", kind: "voice set", number: 210, commands: 35, lines: 59, types: [440]}
+  - {id: "voice:211", kind: "voice set", number: 211, commands: 35, lines: 65, types: [434]}
+  - {id: "voice:212", kind: "voice set", number: 212, commands: 35, lines: 63, types: [428]}
+  - {id: "voice:214", kind: "voice set", number: 214, commands: 35, lines: 64, types: [433]}
+  - {id: "voice:216", kind: "voice set", number: 216, commands: 35, lines: 65, types: [439]}
+  - {id: "voice:231", kind: "voice set", number: 231, commands: 4, lines: 18}
+  - {id: "voice:232", kind: "voice set", number: 232, commands: 4, lines: 18}
+  - {id: "voice:233", kind: "voice set", number: 233, commands: 4, lines: 18}
+  - {id: "voice:234", kind: "voice set", number: 234, commands: 4, lines: 18}
+  - {id: "voice:235", kind: "voice set", number: 235, commands: 4, lines: 18}
+  - {id: "voice:236", kind: "voice set", number: 236, commands: 4, lines: 18}
+  - {id: "voice:237", kind: "voice set", number: 237, commands: 4, lines: 18}
+  - {id: "voice:238", kind: "voice set", number: 238, commands: 4, lines: 18}
+  - {id: "voice:239", kind: "voice set", number: 239, commands: 4, lines: 18}
+  - {id: "voice:240", kind: "voice set", number: 240, commands: 4, lines: 18}
+  - {id: "voice:241", kind: "voice set", number: 241, commands: 4, lines: 18}
+  - {id: "voice:242", kind: "voice set", number: 242, commands: 4, lines: 18}
+  - {id: "voice:243", kind: "voice set", number: 243, commands: 4, lines: 18}
+  - {id: "voice:244", kind: "voice set", number: 244, commands: 4, lines: 18}
+  - {id: "voice:245", kind: "voice set", number: 245, commands: 4, lines: 18}
+  - {id: "voice:246", kind: "voice set", number: 246, commands: 4, lines: 20}
+  - {id: "voice:247", kind: "voice set", number: 247, commands: 4, lines: 20}
+  - {id: "voice:248", kind: "voice set", number: 248, commands: 4, lines: 20}
+  - {id: "voice:249", kind: "voice set", number: 249, commands: 4, lines: 20}
+  - {id: "voice:250", kind: "voice set", number: 250, commands: 4, lines: 20}
+  - {id: "voice:251", kind: "voice set", number: 251, commands: 4, lines: 18}
+  - {id: "voice:252", kind: "voice set", number: 252, commands: 4, lines: 18}
+  - {id: "voice:253", kind: "voice set", number: 253, commands: 4, lines: 18}
+  - {id: "voice:254", kind: "voice set", number: 254, commands: 4, lines: 18}
+  - {id: "voice:255", kind: "voice set", number: 255, commands: 4, lines: 18}
+  - {id: "voice:256", kind: "voice set", number: 256, commands: 2, lines: 8}
+  - {id: "voice:257", kind: "voice set", number: 257, commands: 4, lines: 20}
+  - {id: "voice:258", kind: "voice set", number: 258, commands: 2, lines: 8}
+  - {id: "voice:259", kind: "voice set", number: 259, commands: 2, lines: 8}
+  - {id: "voice:260", kind: "voice set", number: 260, commands: 4, lines: 20}
+  - {id: "voice:261", kind: "voice set", number: 261, commands: 4, lines: 18}
+  - {id: "voice:262", kind: "voice set", number: 262, commands: 4, lines: 18}
+  - {id: "voice:263", kind: "voice set", number: 263, commands: 4, lines: 18}
+  - {id: "voice:264", kind: "voice set", number: 264, commands: 4, lines: 18}
+  - {id: "voice:265", kind: "voice set", number: 265, commands: 4, lines: 18}
+  - {id: "voice:266", kind: "voice set", number: 266, commands: 4, lines: 18}
+  - {id: "voice:267", kind: "voice set", number: 267, commands: 4, lines: 18}
+  - {id: "voice:268", kind: "voice set", number: 268, commands: 4, lines: 18}
+  - {id: "voice:269", kind: "voice set", number: 269, commands: 4, lines: 18}
+  - {id: "voice:270", kind: "voice set", number: 270, commands: 4, lines: 18}
+  - {id: "voice:271", kind: "voice set", number: 271, commands: 4, lines: 18}
+  - {id: "voice:272", kind: "voice set", number: 272, commands: 4, lines: 18}
+  - {id: "voice:273", kind: "voice set", number: 273, commands: 4, lines: 18}
+  - {id: "voice:274", kind: "voice set", number: 274, commands: 4, lines: 18}
+  - {id: "voice:275", kind: "voice set", number: 275, commands: 4, lines: 18}
+  - {id: "voice:276", kind: "voice set", number: 276, commands: 4, lines: 18}
+  - {id: "voice:277", kind: "voice set", number: 277, commands: 4, lines: 18}
+  - {id: "voice:278", kind: "voice set", number: 278, commands: 4, lines: 18}
+  - {id: "voice:279", kind: "voice set", number: 279, commands: 4, lines: 18}
+  - {id: "voice:280", kind: "voice set", number: 280, commands: 4, lines: 18}
+  - {id: "voice:281", kind: "voice set", number: 281, commands: 4, lines: 18}
+  - {id: "voice:282", kind: "voice set", number: 282, commands: 4, lines: 18}
+  - {id: "voice:325", kind: "voice set", number: 325, commands: 2, lines: 7, used_in: [level83_c2_alleys.lua]}
+  - {id: "voice:326", kind: "voice set", number: 326, commands: 2, lines: 7, used_in: [level83_c2_alleys.lua]}
+  - {id: "voice:327", kind: "voice set", number: 327, commands: 2, lines: 12}
+  - {id: "voice:328", kind: "voice set", number: 328, commands: 2, lines: 12}
+  - {id: "voice:329", kind: "voice set", number: 329, commands: 2, lines: 12}
+  - {id: "voice:330", kind: "voice set", number: 330, commands: 2, lines: 5}
+  - {id: "voice:331", kind: "voice set", number: 331, commands: 2, lines: 5}
+  - {id: "voice:332", kind: "voice set", number: 332, commands: 2, lines: 9}
+  - {id: "voice:333", kind: "voice set", number: 333, commands: 2, lines: 9}
+  - {id: "voice:334", kind: "voice set", number: 334, commands: 2, lines: 6, used_in: [level93_chapter1.lua]}
+  - {id: "voice:335", kind: "voice set", number: 335, commands: 2, lines: 6, used_in: [level93_chapter1.lua, level93_chapter2.lua]}
+  - {id: "voice:336", kind: "voice set", number: 336, commands: 2, lines: 8, used_in: [level93_chapter1.lua]}
+  - {id: "voice:337", kind: "voice set", number: 337, commands: 2, lines: 8, used_in: [level93_chapter2.lua]}
+  - {id: "voice:338", kind: "voice set", number: 338, commands: 2, lines: 12, used_in: [level82_chapter4.lua]}
+  - {id: "voice:339", kind: "voice set", number: 339, commands: 2, lines: 12}

@@ -14,9 +14,9 @@ icon of at most 64 × 64 that Coney renders from the disc), **swatch** (a colour
 
 | Kind | What it is | Made with | Refer by | Limit | Lists | Bindings | Image |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| <span id="human"></span>Human | Every person, the player included (GTA's ped) | `HuCreate`, a gang's spawner (`GangAddSpawner`) | handle | 60 | [Characters](characters.md), [Character models](character-models.md), [Speed classes](speed-classes.md), [Anim ids](anim-ids.md) | [Characters](bindings/character.md) | model render (done) |
+| <span id="human"></span>Human | Every person, the player included (GTA's ped) | `HuCreate`, a gang's spawner (`GangAddSpawner`) | handle | 60 | [Characters](characters.md), [Character models](character-models.md), [Speed classes](speed-classes.md), [Anim ids](anim-ids.md), [Speech](speech.md) | [Characters](bindings/character.md) | model render (done) |
 | <span id="brain"></span>Brain | A human's AI: goal stack, action queue, target | with its human | the human's handle | 60 | | [AI](bindings/ai.md) | none |
-| <span id="gang"></span>Gang | A group of humans with relations to other gangs | `GangCreate` | gang id, the slot 0-31 | 32 | [Gangs](gangs.md) | [Gangs](bindings/gang.md) | none |
+| <span id="gang"></span>Gang | A group of humans with relations to other gangs | `GangCreate` | gang id, the slot 0-31 | 32 | [Gangs](gangs.md), [Commands](commands.md#warrior-command), [Script events](script-events.md) | [Gangs](bindings/gang.md) | none |
 | <span id="object"></span>World object | Props, weapons, hats, pick-ups, doors, icons: one class, its kind a `CfgObj` type | `ObjSpawn`, `SpawnDoor`; placed by the level | handle; its type by name or `ObjGetIndex` | 384 live | [Objects and weapons](objects.md), [Object groups](object-groups.md), [Script enums](enums.md) | [World and objects](bindings/world.md) | model render (coming) |
 | <span id="car"></span>Car | A parked car that can be damaged or wrecked | `CarSpawn` | handle | 18 | [Cars](cars.md) | [World and objects](bindings/world.md) | model render: Coney must load the `<type>_geo` clump (chunk `0x47`, no skin) and its dictionary through the Object List ([Cars](../research/cars.md#model)) |
 | <span id="glass"></span>Glass pane | A breakable window pane | `SpawnBreakableGlass` | handle | 100 | still to list | [World and objects](bindings/world.md) | none |
@@ -30,7 +30,7 @@ icon of at most 64 × 64 that Coney renders from the disc), **swatch** (a colour
 | <span id="camera"></span>Camera | Follow, locked, fixed, rail and scene cameras | `CameraCreateLocked`, `CameraCreateFixed`, `CameraCreateThird`, ... | handle | not traced | still to list (types) | [Cameras](bindings/camera.md) | none |
 | <span id="scene"></span>Scene | An in-engine cutscene or animation set | `ScenePreload` | scene id (index in the level's scene table) | 12 loaded | still to list | [Scenes and movies](bindings/scene.md) | none |
 | <span id="movie"></span>Movie | A full-motion video | `PlayMovie` | name | one at a time | still to list | [Scenes and movies](bindings/scene.md) | none |
-| <span id="sound"></span>Sound and emitter | A one-shot or looping sound; an ambient emitter | `SoundPlay`, `SoundPreLoad`, `AddAmbientSoundEmitter2` | sound handle; emitter id | not traced | [Sound and music](sound.md) | [Sound and music](bindings/sound.md) | none |
+| <span id="sound"></span>Sound and emitter | A one-shot or looping sound; an ambient emitter | `SoundPlay`, `SoundPreLoad`, `AddAmbientSoundEmitter2` | sound handle; emitter id | not traced | [Sound and music](sound.md), [Speech](speech.md) | [Sound and music](bindings/sound.md) | none |
 | <span id="blip"></span>Radar blip | A mark on the radar for a human, object or flag | `HUDAddRadarMissionObjective`, `HUDAddRadarHuman` | the marked thing's handle | 128 per radar | [Radar icons and blips](radar-icons.md) | [HUD and menus](bindings/hud.md) | icon render: rectangle *n* of `part_page0`, fitted to 64 × 64 ([GUI](../research/gui.md#radar-icons)) |
 | <span id="icon"></span>Spinning icon | The marker over a target: a world object of class `dyn_icon` | `HuAttachSpinningIcon`, `GangAttachSpinningIcon` | through its human or gang | one per human | [Objects](objects.md) (class `dyn_icon`) | [Characters](bindings/character.md), [Gangs](bindings/gang.md) | model render |
 | <span id="weather"></span>Weather and screen effects | Rain, fog, film grain, fades | `StartRain`, `StartFog`, `ScreenQueueEffect` | none (global) | | still to list | [Effects and lighting](bindings/effects.md) | none |
@@ -107,7 +107,7 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | Entity | any handle; the task object behind it ([Classes](#classes)) | | [Utilities](bindings/util.md) |
 | Ped | [human](#human) | [Characters](characters.md) | [Characters](bindings/character.md) |
 | Ped model | character type (`CfgChar` id) and its model | [Characters](characters.md), [Character models](character-models.md) | `SetCharacterModel` |
-| Player | a human with a pad (player 1 or 2) | [Controls](controls.md) | [Characters](bindings/character.md), [Pad input](bindings/input.md) |
+| Player | a human with a pad (player 1 or 2) | [Controls](controls.md), [Commands](commands.md) | [Characters](bindings/character.md), [Pad input](bindings/input.md) |
 | Ped task, scenario | the [brain](#brain)'s goals and actions; a gang's tactic; world flags the AI uses | | [AI](bindings/ai.md) |
 | Relationship group | [gang](#gang) (`GangMakeEnemies`, `GangMakeFriends`, `GangSetNeutral`) | [Gangs](gangs.md) | [Gangs](bindings/gang.md) |
 | Object | [world object](#object) | [Objects and weapons](objects.md) | [World and objects](bindings/world.md) |
@@ -123,10 +123,10 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | Interior | none: a level or one of its streamed sections | [Levels](levels.md) | [Levels and game state](bindings/level.md) |
 | Camera | [camera](#camera) | | [Cameras](bindings/camera.md) |
 | Cutscene | [scene](#scene), [movie](#movie) | still to list | [Scenes and movies](bindings/scene.md) |
-| Sound | [sound and emitter](#sound) | [Sound and music](sound.md) | [Sound and music](bindings/sound.md) |
+| Sound | [sound and emitter](#sound) | [Sound and music](sound.md), [Speech](speech.md) | [Sound and music](bindings/sound.md) |
 | Weather | [weather and screen effects](#weather) | | [Effects and lighting](bindings/effects.md) |
 | HUD colour | the `CL` colours | [HUD colours](hud-colours.md) | [HUD and menus](bindings/hud.md) |
-| Text label | a string table key | still to list | [HUD and menus](bindings/hud.md) |
+| Text label | a string table key | [Text labels](text-labels.md) | [HUD and menus](bindings/hud.md) |
 | Animation dictionary, clip | anim ids and clips | [Anim ids](anim-ids.md), [Animation clips](animations.md) | [Characters](bindings/character.md) |
 | Network, multiplayer | none: two players share one screen | | |
 

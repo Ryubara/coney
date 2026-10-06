@@ -10,12 +10,6 @@ families:
     count: "4,167 names in 7,057 calls, 94 scripts"
     image: none
     needs: "Disc extraction (name, level, position, heading); RE for the two integers `AddFlag` stores"
-  - family: Text label ids
-    what: "Keys of the string tables (`GSTRING.PRESSTOTALK`, `LEVEL34.MS_C1_5`) that objectives, hints and prompts take."
-    source: "The language string scripts; used by `HUDSetObjective` (218 keys), `HUDSetTutorialText` (110), `HUDLaunchMissionFailed` (31), `SetMsgHandlerEx` (20)"
-    count: not counted
-    image: none
-    needs: "Disc extraction of the keys only, never the text"
   - family: Object zones
     what: Groups of a level's placed objects that scripts switch on and off.
     source: "`ObjEnableZone`, `ObjSpawn`'s zone argument and the level scripts' `Zone<n>` globals (45)"
@@ -40,36 +34,12 @@ families:
     count: "23 ids"
     image: "model render of the item's object: Coney renders characters only so far"
     needs: "Disc extraction; RE for the id-to-item order"
-  - family: Commands
-    what: "The pad command ids a human acts on, the trigger kinds that bind them, and the Warrior commands."
-    source: "`AddCommand` in `global.lua` (ids 1-57, triggers 1-9); `WCEnableCommand` (0-6); the AI's 45 attack kinds ([AI](../research/ai.md#attack-kinds))"
-    count: "57 + 7"
-    image: none
-    needs: "Disc extraction; meanings partly in [Combat](../research/combat.md#commands)"
   - family: Unlockables
     what: The records scripts unlock and test (levels, items, extras).
     source: "`UM_Unlock`, `UM_IsDataUnlocked`: a record type byte (7 used) and a data id; the unlock manager `0x006fe998`"
     count: not counted
     image: none
     needs: "RE: the record table and its types"
-  - family: Speech commands and voices
-    what: The kinds of line a human can say and the voice sets.
-    source: "`SoundPlayCommand`, `SndSetCommandSoundPercent` (ids 0-206); `HuSetStateRespVoiceIndex` (sets 325-338)"
-    count: "207 command ids"
-    image: none
-    needs: "RE: the voice table"
-  - family: Speech and ambient sound names
-    what: The spoken lines and ambient sounds scripts play by name.
-    source: "`SetVag` (412 names), `HuSpeak` and `HuSpeakNI` (`vags/speeches/...`); `AddAmbientSound` (590 names, `global.lua`); `AddAmbientSoundEmitter2` (604 emitter names)"
-    count: "about 1,750 names"
-    image: none
-    needs: "Disc extraction (names only, never the lines)"
-  - family: Gang messages
-    what: The message ids of `GangSetMsgHandler`.
-    source: "`GangSetMsgHandler` (1,072 calls; ids 1, 2, 10, 11, 17, 18)"
-    count: "6 used"
-    image: none
-    needs: "Disc extraction; meanings from callback names, as for [Script events](script-events.md)"
   - family: Power and Warrior classes
     what: The combat-strength profiles character types refer to, and the playable Warriors' stats per difficulty.
     source: "`CfgPowerClass` (311 calls, 31 arguments) and `CfgWarriorClass` (55 calls) in the difficulty configs ([Characters](../research/characters.md#power-classes))"

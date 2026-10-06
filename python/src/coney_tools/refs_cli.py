@@ -334,17 +334,76 @@ STARTERS: dict[str, dict[str, Any]] = {
     },
     "sound": {
         "title": "Sound and music",
-        "source": "config_preload.lua and config_preload2.lua",
+        "source": "config_preload.lua, config_preload2.lua, global.lua and the level scripts",
         "about": "The music tracks `SndCfgMusicInfo` configures, the interface sounds of `SoundCfgInterfaceSound`,\n"
-        "the sound matrices scripts load and the sounds of inventory items. Gang music is in [Gangs](gangs.md).",
-        "complete": "Every configured sound is listed by name; the two numbers of a music track are not traced.",
+        "the sound matrices scripts load, the sounds of inventory items, the ambient sounds (`AddAmbientSound`\n"
+        "fills the ambient table that emitters pick from), the ambient emitters the levels place\n"
+        "(`AddAmbientSoundEmitter2`) and the speech lines scripts play by name (`HuSpeak`, `HuSpeakNI`; the\n"
+        '`global.lua` helper `SetVag("l11_t25_006")` stands for `vags/speeches/l11/l11_t25_006`). Names only,\n'
+        "never the sounds. Gang music is in [Gangs](gangs.md); the lines humans say by kind are in\n"
+        "[Speech](speech.md).",
+        "complete": "Every configured sound, ambient sound, emitter and literal speech line name is listed. The two\n"
+        "numbers of a music track are not traced. Speech lines whose names are built at run time are missing;\n"
+        "names marked as not in the sound list may live in a level's own sound bank, or be mistakes in the\n"
+        "scripts.",
+    },
+    "speech": {
+        "title": "Speech commands and voices",
+        "source": "the speech command table (0x0050aaa8), the sound list of warriors.glr, CfgChar and the scripts",
+        "evidence": "confirmed-code",
+        "about": "What a human can say and in which voice. A **speech command** is a kind of line (`attack`,\n"
+        "`pain`, `cheer1` ...): `SoundPlayCommand(human, command)` makes a human say one, and the game says them\n"
+        "itself in fights, chases and crowds. A **voice set** is a numbered folder of recorded lines; `CfgChar`\n"
+        "gives each character type one ([Characters](characters.md)), and `HuSetStateRespVoiceIndex` gives a\n"
+        "human another for its state responses. A voice set's lines for a command are the sounds\n"
+        "`vags/character/voices/<set>/<command>_01`, `_02` ...; a voice set without lines for a command says\n"
+        "nothing. How a line is picked: [Sound](../research/sound.md#speech).",
+        "complete": "All 207 speech commands are listed by their names in the executable, and every voice set that\n"
+        "has lines, a character type or a script user, with the lines the game finds for each. When the game\n"
+        "itself says each command is not traced.",
+    },
+    "text-labels": {
+        "title": "Text labels",
+        "source": "every script: the string tables' constructors and the labels passed to bindings",
+        "about": "The keys of the string tables scripts show text by: objectives (`HUDSetObjective`), tutorial hints\n"
+        "(`HUDSetTutorialText`), mission-failed reasons (`HUDLaunchMissionFailed`), button prompts\n"
+        "(`SetMsgHandlerEx`) and HUD labels. A script names one as `<table>.<key>`. `global.lua` builds\n"
+        "`GSTRING` and `LABEL` for every level and each level script its own `LEVEL<n>`, in all five languages,\n"
+        "keeping `GetLanguage`'s; Rumble arenas build `RUMBLE`; the front end's `config_strings_<lang>.lua` hold\n"
+        "the numbered tables the engine reads ([GUI: strings](../research/gui.md#strings)). Only keys, never the\n"
+        "text.\n"
+        "\n"
+        "The level tables' key prefixes, read from what the keys are passed to (inferred): `MS_C<k>_<n>` a step\n"
+        "of chapter k's objective, `MP_<n>` the mission's main objective, `MB_` a bonus objective, `MF_` and\n"
+        "`FAIL` a mission-failed reason, `TT_` a tutorial hint, `LBL_` a HUD bar's label, `CS_` an announcement.",
+        "complete": "Every key of every string table on the disc is listed, with the scripts that name it. Keys no\n"
+        "script names directly may be built at run time (`ObjectiveString`) or unused; keys with no languages are\n"
+        "named by a script but defined in no table. A table of lines (`LEVEL95.ACT`) shows the ids its\n"
+        "constructors give.",
+    },
+    "commands": {
+        "title": "Commands",
+        "source": "global.lua AddCommand; EnableCommand, WCEnableCommand and WCIssueCommand in the scripts",
+        "about": "The commands a human acts on. A **pad command** is a number the matcher makes from a player's\n"
+        "buttons each update, through the nine **trigger** kinds; `global.lua` binds them with\n"
+        "`AddCommand(command, trigger, buttons, extra)` and scripts switch them per human with `EnableCommand`.\n"
+        "AI humans write the same numbers. A **Warrior command** is an order the war chief gives the crew from\n"
+        "the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:\n"
+        "[Combat: commands](../research/combat.md#commands); the orders:\n"
+        "[AI: Warrior commands](../research/ai.md#warrior-commands); the buttons: [Controls](controls.md).",
+        "complete": "Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands\n"
+        "are listed. What 1, 2, 9, 11, 21, 22 and 34-44 do is not traced, nor the command menu's layout; pad\n"
+        "commands the code tests but no script binds are not listed.",
     },
     "script-events": {
         "title": "Script events",
-        "source": "every script, SetMsgHandler",
-        "about": "The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`. The meaning of\n"
-        "a message is read from the names of the callbacks scripts give it.",
-        "complete": "Every message number a script uses is listed; meanings are inferred from callback names.",
+        "source": "every script, SetMsgHandler and GangSetMsgHandler",
+        "about": "The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`, and the same\n"
+        "messages for a whole gang with `GangSetMsgHandler(gang, message, callback)`: a human's event goes to its\n"
+        "own handlers, then to its gang's ([AI: gang events](../research/ai.md#gang-events)). The meaning of a\n"
+        "message is read from the names of the callbacks scripts give it.",
+        "complete": "Every message number a script uses with either binding is listed; meanings are inferred from\n"
+        "callback names.",
     },
     "wad-names": {
         "title": "WAD entry names",

@@ -782,7 +782,7 @@ constexpr std::array<NativeResultType, 1> kResults_SoundPlay{R::Number};
 constexpr std::array<NativeArg, 1> kArgs_SoundPlay2D{{{"sound", A::String, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SoundPlay2D{R::Number};
 constexpr std::array<NativeArg, 1> kArgs_SoundPlayAmbientTrack{{{"track", A::String, "", 0}}};
-constexpr std::array<NativeArg, 6> kArgs_SoundPlayCommand{{{"human", A::Handle, "", 0}, {"command", A::Integer, "", 0}, {"sound", A::String, "", 0}, {"flag1", A::Boolean, "true", 0}, {"target", A::Handle, "4294967295", 0}, {"flag2", A::Boolean, "true", 0}}};
+constexpr std::array<NativeArg, 6> kArgs_SoundPlayCommand{{{"human", A::Handle, "", 0}, {"command", A::Integer, "", 0}, {"callback", A::String, "", 0}, {"interrupt", A::Boolean, "true", 0}, {"target", A::Handle, "4294967295", 0}, {"flag2", A::Boolean, "true", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SoundPlayCommand{R::Number};
 constexpr std::array<NativeArg, 2> kArgs_SoundPlayMusicTrack{{{"track", A::String, "", 0}, {"callback", A::String, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_SoundPreLoad{{{"sound", A::String, "", 0}, {"pos", A::NumberTable, "", 3}}};

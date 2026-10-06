@@ -1,0 +1,440 @@
+# Commands: a Coney game reference list. The page docs/references/commands.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: Commands
+about: |
+  The commands a human acts on. A **pad command** is a number the matcher makes from a player's
+  buttons each update, through the nine **trigger** kinds; `global.lua` binds them with
+  `AddCommand(command, trigger, buttons, extra)` and scripts switch them per human with `EnableCommand`.
+  AI humans write the same numbers. A **Warrior command** is an order the war chief gives the crew from
+  the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
+  [Combat: commands](../research/combat.md#commands); the orders:
+  [AI: Warrior commands](../research/ai.md#warrior-commands); the buttons: [Controls](controls.md).
+complete: |
+  Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands
+  are listed. What 1, 2, 9, 11, 21, 22 and 34-44 do is not traced, nor the command menu's layout; pad
+  commands the code tests but no script binds are not listed.
+defaults: {source: "global.lua AddCommand; EnableCommand, WCEnableCommand and WCIssueCommand in the scripts", evidence: inferred}
+entries:
+  - id: "trigger:1"
+    kind: trigger
+    number: 1
+    name: held
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "trigger:2"
+    kind: trigger
+    number: 2
+    name: pressed
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "trigger:3"
+    kind: trigger
+    number: 3
+    name: released
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "trigger:4"
+    kind: trigger
+    number: 4
+    name: "pad query"
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "trigger:5"
+    kind: trigger
+    number: 5
+    name: tapped
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "trigger:6"
+    kind: trigger
+    number: 6
+    name: "long hold"
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "trigger:7"
+    kind: trigger
+    number: 7
+    name: "history hold"
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "trigger:8"
+    kind: trigger
+    number: 8
+    name: "combination held"
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "trigger:9"
+    kind: trigger
+    number: 9
+    name: "combination press"
+    source: "AddCommand (0x00147430), matched by 0x00147940"
+    evidence: confirmed-code
+  - id: "pad:1"
+    kind: "pad command"
+    number: 1
+    hex: 0x0001
+    name: "R2 held"
+    bound: ["held: R2"]
+    bound_in: [global.lua]
+    toggled_in: [level60.lua, level61.lua, level62.lua, level63.lua, level64.lua, level64_cyrus.lua, level80.lua, level80_chapter1.lua, "... 6 more"]
+  - id: "pad:2"
+    kind: "pad command"
+    number: 2
+    hex: 0x0002
+    name: "R2 released"
+    bound: ["released: R2"]
+    bound_in: [global.lua]
+    toggled_in: [level80.lua, level80_chapter1.lua, level83_c1_fightpen.lua, level83_c2_alleys.lua, level87_chap1_tutorial.lua]
+  - id: "pad:3"
+    kind: "pad command"
+    number: 3
+    hex: 0x0003
+    name: "R1 pressed"
+    bound: ["pressed: R1"]
+    action: "Spins or reverses a grab; for an AI human, the counter to a grab or tackle."
+    bound_in: [global.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:4"
+    kind: "pad command"
+    number: 4
+    hex: 0x0004
+    name: "R1 held"
+    bound: ["held: R1"]
+    action: "Block. The dispatcher reads R1 from the pad, so an AI's command 4 does nothing."
+    bound_in: [global.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:5"
+    kind: "pad command"
+    number: 5
+    hex: 0x0005
+    name: "L2 held"
+    bound: ["held: L2"]
+    action: "Nothing by itself: the sprint reads L2 from the pad."
+    bound_in: [global.lua]
+    toggled_in: [level60.lua, level61.lua, level62.lua, level63.lua, level64.lua, level64_cyrus.lua, level80_chapter3.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:6"
+    kind: "pad command"
+    number: 6
+    hex: 0x0006
+    name: "L1 held"
+    bound: ["held: L1"]
+    action: "Fight stance: picks a target and locks on where the level allows."
+    bound_in: [global.lua]
+    toggled_in: [level87_chap5_club.lua, level99_combat.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:7"
+    kind: "pad command"
+    number: 7
+    hex: 0x0007
+    name: "L1 pressed"
+    bound: ["pressed: L1"]
+    action: "As 6."
+    bound_in: [global.lua]
+    toggled_in: [level80_chapter3.lua, level87_chap5_club.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:8"
+    kind: "pad command"
+    number: 8
+    hex: 0x0008
+    name: "L1 released"
+    bound: ["released: L1"]
+    action: "Drops the lock; a second tap within 264 ms locks again."
+    bound_in: [global.lua]
+    toggled_in: [level87_chap5_club.lua, level99_combat.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:9"
+    kind: "pad command"
+    number: 9
+    hex: 0x0009
+    name: "select + L3"
+    bound: ["combination held: L3 + SELECT"]
+    bound_in: [global.lua]
+  - id: "pad:10"
+    kind: "pad command"
+    number: 10
+    hex: 0x000a
+    name: "triangle pressed"
+    bound: ["pressed: triangle"]
+    action: "Climb, context action or jump."
+    bound_in: [global.lua]
+    toggled_in: [level80_chapter3.lua, level87_chap5_club.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:11"
+    kind: "pad command"
+    number: 11
+    hex: 0x000b
+    name: "triangle held"
+    bound: ["history hold: triangle"]
+    bound_in: [global.lua]
+  - id: "pad:13"
+    kind: "pad command"
+    number: 13
+    hex: 0x000d
+    name: "circle tapped"
+    bound: ["tapped: circle"]
+    action: Grab.
+    bound_in: [global.lua]
+    toggled_in: [level80_chapter3.lua, level99_combat.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:14"
+    kind: "pad command"
+    number: 14
+    hex: 0x000e
+    name: "circle held"
+    bound: ["history hold: circle"]
+    action: Tackle.
+    bound_in: [global.lua]
+    toggled_in: [level80_chapter3.lua, level99_combat.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:15"
+    kind: "pad command"
+    number: 15
+    hex: 0x000f
+    name: "square pressed"
+    bound: ["pressed: square"]
+    action: "Square attack."
+    bound_in: [global.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:16"
+    kind: "pad command"
+    number: 16
+    hex: 0x0010
+    name: "cross long hold"
+    bound: ["long hold: cross"]
+    action: "Cross attack (on the release of a short press)."
+    bound_in: [global.lua]
+    toggled_in: [level80_chapter3.lua, level87_chap5_club.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:18"
+    kind: "pad command"
+    number: 18
+    hex: 0x0012
+    name: "cross pressed"
+    bound: ["pressed: cross"]
+    action: "Buffered as the next attack inside a chain."
+    bound_in: [global.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:21"
+    kind: "pad command"
+    number: 21
+    hex: 0x0015
+    name: "square held"
+    bound: ["held: square"]
+    bound_in: [global.lua]
+  - id: "pad:22"
+    kind: "pad command"
+    number: 22
+    hex: 0x0016
+    name: "cross held"
+    bound: ["held: cross"]
+    bound_in: [global.lua]
+  - id: "pad:30"
+    kind: "pad command"
+    number: 30
+    hex: 0x001e
+    name: "circle pressed"
+    bound: ["pressed: circle"]
+    action: "Made on the press; a tap then gives 13 on the release."
+    bound_in: [global.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:31"
+    kind: "pad command"
+    number: 31
+    hex: 0x001f
+    name: "L1 + R1 / L1 + L2"
+    bound: ["combination held: L1 + L2", "combination held: L1 + R1"]
+    action: "Starts rage when the meter is full."
+    bound_in: [global.lua]
+    toggled_in: [level99_combat.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:32"
+    kind: "pad command"
+    number: 32
+    hex: 0x0020
+    name: "L2 + cross"
+    bound: ["combination press: L2 + cross"]
+    action: Charge.
+    bound_in: [global.lua]
+    toggled_in: [level80_chapter3.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:33"
+    kind: "pad command"
+    number: 33
+    hex: 0x0021
+    name: "L2 + square"
+    bound: ["combination press: L2 + square"]
+    action: Dive.
+    bound_in: [global.lua]
+    toggled_in: [level80_chapter3.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: confirmed-code
+  - id: "pad:34"
+    kind: "pad command"
+    number: 34
+    hex: 0x0022
+    name: "cross + square"
+    bound: ["combination press: cross + square"]
+    bound_in: [global.lua]
+    toggled_in: [level93_chapter6.lua]
+  - id: "pad:35"
+    kind: "pad command"
+    number: 35
+    hex: 0x0023
+    name: "circle + cross"
+    bound: ["combination held: circle + cross"]
+    bound_in: [global.lua]
+    toggled_in: [level80_chapter3.lua, level93_chapter6.lua]
+  - id: "pad:36"
+    kind: "pad command"
+    number: 36
+    hex: 0x0024
+    name: "circle + triangle"
+    bound: ["combination press: circle + triangle"]
+    bound_in: [global.lua]
+    toggled_in: [level93_chapter6.lua]
+  - id: "pad:37"
+    kind: "pad command"
+    number: 37
+    hex: 0x0025
+    name: "d-pad down"
+    bound: ["pressed: d-pad down"]
+    bound_in: [global.lua]
+    toggled_in: [level99.lua]
+  - id: "pad:38"
+    kind: "pad command"
+    number: 38
+    hex: 0x0026
+    name: "d-pad up"
+    bound: ["pressed: d-pad up"]
+    bound_in: [global.lua]
+    toggled_in: [level99.lua, level99_lesson1.lua, level99_lesson2.lua]
+  - id: "pad:39"
+    kind: "pad command"
+    number: 39
+    hex: 0x0027
+    name: "d-pad left"
+    bound: ["pressed: d-pad left"]
+    bound_in: [global.lua]
+  - id: "pad:40"
+    kind: "pad command"
+    number: 40
+    hex: 0x0028
+    name: "d-pad right"
+    bound: ["pressed: d-pad right"]
+    bound_in: [global.lua]
+    toggled_in: [level95_flashrage.lua, level99.lua, level99_combat.lua, level99_lesson1.lua, level99_lesson2.lua]
+  - id: "pad:41"
+    kind: "pad command"
+    number: 41
+    hex: 0x0029
+    name: "select + d-pad up"
+    bound: ["combination held: d-pad up + SELECT"]
+    bound_in: [global.lua]
+  - id: "pad:42"
+    kind: "pad command"
+    number: 42
+    hex: 0x002a
+    name: "select + d-pad right"
+    bound: ["combination held: d-pad right + SELECT"]
+    bound_in: [global.lua]
+  - id: "pad:43"
+    kind: "pad command"
+    number: 43
+    hex: 0x002b
+    name: "select + d-pad down"
+    bound: ["combination held: d-pad down + SELECT"]
+    bound_in: [global.lua]
+  - id: "pad:44"
+    kind: "pad command"
+    number: 44
+    hex: 0x002c
+    name: "select + d-pad left"
+    bound: ["combination held: d-pad left + SELECT"]
+    bound_in: [global.lua]
+  - id: "pad:45"
+    kind: "pad command"
+    number: 45
+    hex: 0x002d
+    name: "chase button"
+    bound: ["pressed: set at run time"]
+    action: "Level 84's chase: the script picks the button; each press keeps the chase speed up."
+    bound_in: [level84_chase.lua]
+    source: "global.lua AddCommand; Player_UpdateActions (0x0027c120)"
+    evidence: inferred
+  - id: "warrior:0"
+    kind: "Warrior command"
+    number: 0
+    name: follow
+    action: "The crew follows the war chief."
+    speech: "`follow` (`follow_hide` while hiding)"
+    used_in: ["36763710", brawl.lua, level3_chase.lua, level11.lua, level11_chapter1.lua, level11_chapter6.lua, level31_gclub.lua, level31_platform.lua, "... 16 more"]
+    source: "the Warrior command dispatcher (0x0041c4e0) and its lines (0x0041cc40)"
+    evidence: inferred
+  - id: "warrior:1"
+    kind: "Warrior command"
+    number: 1
+    name: attack
+    action: "The crew attacks the war chief's target."
+    speech: "`attack`"
+    used_in: [brawl.lua, level3_balcony.lua, level3_chase.lua, level5_chapter3.lua, level11_chapter6.lua, level31_birdie.lua, level80_chapter4.lua, level81_chatterbox.lua, "... 10 more"]
+    source: "the Warrior command dispatcher (0x0041c4e0) and its lines (0x0041cc40)"
+    evidence: inferred
+  - id: "warrior:2"
+    kind: "Warrior command"
+    number: 2
+    name: defend
+    action: "The crew defends the war chief (a defend tactic around him)."
+    speech: "`defend`"
+    used_in: [brawl.lua, level3_balcony.lua, level3_chase.lua, level5_chapter3.lua, level80_chapter4.lua, level81_chatterbox.lua, level84_final.lua, level87_chap5_club.lua, "... 4 more"]
+    source: "the Warrior command dispatcher (0x0041c4e0) and its lines (0x0041cc40)"
+    evidence: confirmed-code
+  - id: "warrior:3"
+    kind: "Warrior command"
+    number: 3
+    name: hold
+    action: "The crew holds its position."
+    speech: "`hold` (`holdhide` while hiding)"
+    used_in: [brawl.lua, level3_chase.lua, level31_gclub.lua, level51_chapter5.lua, level54_boss.lua, level80_chapter1.lua, level80_chapter3.lua, level80_chapter4.lua, "... 6 more"]
+    source: "the Warrior command dispatcher (0x0041c4e0) and its lines (0x0041cc40)"
+    evidence: inferred
+  - id: "warrior:4"
+    kind: "Warrior command"
+    number: 4
+    name: scatter
+    action: "The crew scatters."
+    speech: "`scatter`"
+    used_in: [brawl.lua, level2.lua, level3_balcony.lua, level3_chase.lua, level5_chapter3.lua, level11_chapter6.lua, level31_birdie.lua, level51_chapter1.lua, "... 13 more"]
+    source: "the Warrior command dispatcher (0x0041c4e0) and its lines (0x0041cc40)"
+    evidence: inferred
+  - id: "warrior:5"
+    kind: "Warrior command"
+    number: 5
+    name: wreck
+    action: "The crew wrecks or steals from what is near."
+    speech: "`steal` near a thing to steal, else `vandal`"
+    used_in: [brawl.lua, level3_chase.lua, level11_chapter6.lua, level80_chapter3.lua, level80_chapter4.lua, level84_final.lua, level87_chap5_club.lua, level93_chapter6.lua, "... 3 more"]
+    source: "the Warrior command dispatcher (0x0041c4e0) and its lines (0x0041cc40)"
+    evidence: inferred
+  - id: "warrior:6"
+    kind: "Warrior command"
+    number: 6
+    action: "Recorded as the last command; starts no tactic and says nothing."
+    source: "the Warrior command dispatcher (0x0041c4e0) and its lines (0x0041cc40)"
+    evidence: confirmed-code

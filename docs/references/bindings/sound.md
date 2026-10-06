@@ -45,7 +45,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SoundPlay`](#soundplay) | number | 17 | no | no | confirmed (code) |
 | [`SoundPlay2D`](#soundplay2d) | number | 50 | yes | no | confirmed (code) |
 | [`SoundPlayAmbientTrack`](#soundplayambienttrack) | - | 84 | no | yes | confirmed (code) |
-| [`SoundPlayCommand`](#soundplaycommand) | number | 60 | no | no | inferred |
+| [`SoundPlayCommand`](#soundplaycommand) | number | 60 | no | no | confirmed (code) |
 | [`SoundPlayMusicTrack`](#soundplaymusictrack) | - | 8 | no | no | confirmed (code) |
 | [`SoundPreLoad`](#soundpreload) | number | 3 | no | no | confirmed (code) |
 | [`SoundPreLoadScene`](#soundpreloadscene) | - | 0 | no | no | inferred |
@@ -905,23 +905,25 @@ over 2 s. In level 82 one particular track is swapped for another.
 ## SoundPlayCommand {#soundplaycommand}
 
 ```lua
-SoundPlayCommand(human, command, sound, flag1, target, flag2) -> number
+SoundPlayCommand(human, command, callback, interrupt, target, flag2) -> number
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human who speaks. |
-| 2 | `command` | number, truncated to an unsigned integer | Speech command id (0-206), the kind of line (taunt, cheer and so on). |
-| 3 | `sound` | string | Optional explicit sound name; nil lets the game pick a line for the command. |
-| 4 | `flag1` | boolean (nil or 0 is false); default true | A flag passed to the speech call (default true); meaning not traced. |
-| 5 | `target` | number, truncated to an unsigned integer; default 4294967295 | Handle the line is addressed to (default 0xffffffff, no target). |
+| 2 | `command` | number, truncated to an unsigned integer | Speech command id (0-206), the kind of line ([Speech](../speech.md)). |
+| 3 | `callback` | string | Name of a Lua function called with the speaker's handle when the line ends, or at once when no line plays; nil for none. |
+| 4 | `interrupt` | boolean (nil or 0 is false); default true | true (the default) cuts off a line the human is saying; false says nothing while one plays. |
+| 5 | `target` | number, truncated to an unsigned integer; default 4294967295 | Handle of a human the speaker looks at for the line's length plus 0.5 s (default 0xffffffff, none). |
 | 6 | `flag2` | boolean (nil or 0 is false); default true | A second flag (default true); meaning not traced. |
 
 **Returns** number: The speech sound's handle, or the 'no sound' handle when the human is not found.
 
-Makes a human say a line of the given speech command.
+Makes a human say a line of the given speech command, picked from the human's voice set as
+[Sound](../../research/sound.md#speech) describes; nothing is said when the voice set has no line for the command or
+speech is off.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x001140d8`; detail: brief
 - **Wrapper** `0x00372fe0` (registered by `RegisterBindings`); **calls** `0x001140d8`
 - **Used by** 60 of 467 script chunks (97 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** not implemented
