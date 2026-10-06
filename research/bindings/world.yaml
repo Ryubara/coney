@@ -30,6 +30,9 @@
     Returns a world object's remaining hitpoints, for scripts that wait for something to be broken.
   evidence: confirmed-code
   depth: brief
+  notes: >-
+    Doors and barriers keep their hitpoints in their data and mirror them at +0x128 after every hit (0x003a6ec8), so
+    this reads a door's too ([World objects: breaking a door](../../research/objects.md#door-break)).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
 
 - name: GetObjectName
@@ -205,9 +208,13 @@
     - {name: centre, lua: number, ctype: unsigned, desc: "Handle of a flag or object giving the centre."}
     - {name: radius, lua: number, ctype: float, desc: "Radius in metres (scripts use 0.5-10)."}
   description: >-
-    Breaks every breakable pane of glass within the radius of a flag or object, for scripted smashes.
-  evidence: inferred
-  depth: brief
+    Breaks every breakable pane of glass within the radius of a flag or object, for scripted smashes: each pane whose
+    centre is within the radius gets the hit message (kind 100), and so does every object of type `TYPE_GLASS`
+    (kind 101); cars' parts in range are hit as well (0x0038b0e8). No alarm, crime or statistic follows.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Implementation 0x003963b8; [World objects: a pane's life](../../research/objects.md#pane).
   usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false}
 
 - name: BreakObjectsInRadius
@@ -218,13 +225,15 @@
     - {name: centre, lua: number, ctype: unsigned, desc: "Handle of a flag or object giving the centre."}
     - {name: radius, lua: number, ctype: float, desc: "Radius in metres (scripts use 0.5-1)."}
   description: >-
-    Breaks every object within `radius` of the centre object, the centre included: each gets message 0x15
-    (0x003961d0). When the centre object is of kind 30, a break-in crime (type 1, severity 10) is reported at it
-    first.
+    Breaks every breakable object within `radius` of a flag or object, the centre included (a molotov's blast, a
+    scripted smash): every world object in range gets the destroy message 0x15 (0x003961d0). When the centre object is
+    of kind 30 (`TYPE_BREAKANDENTER_DOOR`), a break-in crime (type 1, severity 10) is reported at it first.
   evidence: confirmed-code
   depth: brief
   notes: >-
-    The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes).
+    The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes). What 0x15 does
+    depends on the object; a swinging door sends itself a hit two updates later
+    ([World objects](../../research/objects.md#door-states)).
   usage: {chunks: 12, calls: 22, boot: false, mission1: false, result_used: false}
 
 - name: UnloadTimedObjects
@@ -354,12 +363,13 @@
   args:
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying a navigation link near it."}
   description: >-
-    Changes the AI navigation link at a position from a jump link into a door link (0x00250bb8 with types 4 and 0x10),
-    so the AI uses it as a doorway.
-  evidence: inferred
+    Retags the navigation link of kind 4 nearest the position (within 5 m) and its reverse as kind 0x10
+    (0x00250bb8).
+  evidence: confirmed-code
   depth: brief
   notes: >-
-    Link types are inferred from the name and the constants.
+    What the kinds mean to a route follower: [World objects: navigation links](../../research/objects.md#nav-links); the "jump" and
+    "door" readings come from the name.
   usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
 
 - name: DisableDoorLink
@@ -369,9 +379,12 @@
   args:
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying the door link."}
   description: >-
-    Closes the AI navigation door link at a position, so the AI no longer routes through it.
-  evidence: inferred
+    Sets the avoid bit (bit 31) on the kind-0x10 navigation link nearest the position (within 5 m) and its reverse
+    (0x00250b68); route planning then adds 1,600 to its cost, so the AI prefers another way but is not barred.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    [World objects: navigation links](../../research/objects.md#nav-links).
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
 
 - name: EnableDoorLink
@@ -381,8 +394,8 @@
   args:
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying the door link."}
   description: >-
-    Re-opens the AI navigation door link at a position.
-  evidence: inferred
+    Clears the avoid bit on the kind-0x10 navigation link nearest the position and its reverse (0x00250b10).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
 
@@ -789,7 +802,7 @@
     - {addr: 0x003976c8, name: Obj_ChangeState}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
-    - {name: state, lua: number, ctype: int, desc: "State number for the object's state command (message 0x22); for doors 2 opens, 3 closes, 5 removes collision, 10 and 11 make it pickable or not."}
+    - {name: state, lua: number, ctype: int, desc: "State number for the object's state command (message 0x22); for swinging doors 2 or 8 open, 3 or 7 close, 5 removes collision, 6 restores it, 10 makes it pickable and 0 or 11 not ([World objects](../../research/objects.md#door-states))."}
   description: >-
     Sends a state command to a game object; the door bindings are shorthands for particular states. One script calls it
     directly.
@@ -826,9 +839,12 @@
     - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
     - {name: degrees, lua: number, ctype: int, desc: "Opening angle in degrees; the sign picks the swing direction (scripts use values such as -170, 130, 180)."}
   description: >-
-    Swings a door open to a given angle (message 0x42 with the angle).
+    Swings a door open to a given angle (message 0x42 with the angle), with its open sound; a closed door becomes
+    opening (state 3). A pickable door only keeps the angle, for the human who later opens it.
   evidence: confirmed-code
   depth: thorough
+  notes: >-
+    [World objects: states and commands](../../research/objects.md#door-states).
   usage: {chunks: 50, calls: 97, boot: false, mission1: true, result_used: false}
 
 - name: DoorOpen
@@ -839,9 +855,13 @@
     - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who opens it (the player or an AI character)."}
   description: >-
-    Has a human open a door: the door receives message 0x0b with the human, then 0x00396d78 updates the human's side.
+    Has a human open a door: the door receives message 0x0b with the human (then 0x00396d78 runs on both). A closed,
+    unpickable swinging door swings 170 degrees away from the human, with its open sound.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The direction is the sign of the door's turned axis against the human-to-door direction (0x003f9910);
+    [World objects](../../research/objects.md#door-states).
   usage: {chunks: 19, calls: 31, boot: false, mission1: false, result_used: false}
 
 - name: OpenDoor
@@ -851,7 +871,8 @@
   args:
     - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
   description: >-
-    Opens a door (state command 2).
+    Opens a door (state command 2): a swinging door that is not pickable swings to 170 degrees with its open sound,
+    and its collision goes about half a second later.
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 46, calls: 85, boot: false, mission1: false, result_used: false}
@@ -877,9 +898,12 @@
   args:
     - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
   description: >-
-    Closes a door (state command 3).
+    Closes a door (state command 3): a swinging door swings back with its close sound, its collision triangles and
+    body return and its number's navigation links get the avoid bit.
   evidence: confirmed-code
   depth: thorough
+  notes: >-
+    [World objects: states and commands](../../research/objects.md#door-states).
   usage: {chunks: 53, calls: 84, boot: false, mission1: true, result_used: false}
 
 - name: DisableDoorCollision
@@ -889,7 +913,8 @@
   args:
     - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
   description: >-
-    Turns off a door's collision (state command 5). No script calls it.
+    Turns off a door's collision (state command 5): its triangles and body, and the avoid bit on its number's
+    navigation links. No script calls it.
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
@@ -968,7 +993,9 @@
   depth: brief
   notes: >-
     Lock picking is confirmed (code): a pickable door offers kind-2 context actions, and a pick in progress on it is
-    ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)).
+    ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)). A pickable door
+    shows a `sub_triglint` glint and refuses OpenDoor, DoorOpen and DoorOpenDegree
+    ([World objects: lock picking](../../research/objects.md#lock-pick)).
   usage: {chunks: 16, calls: 24, boot: false, mission1: false, result_used: false}
 
 - name: IsDoorOpen
@@ -978,7 +1005,7 @@
   args:
     - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
   results:
-    - {lua: boolean, desc: "True when the door reports itself open (query 0x0c on the object); false (nil) otherwise or for an invalid handle."}
+    - {lua: boolean, desc: "True when the door reports itself open (query 0x0c: a swinging door's state byte is 5, fully open with its collision gone); false (nil) otherwise, while still swinging, or for an invalid handle."}
   description: >-
     Tests whether a door is open.
   evidence: confirmed-code

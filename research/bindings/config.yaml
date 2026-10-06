@@ -1201,7 +1201,7 @@
   args:
     - {name: name, lua: string, desc: "Object type name (e.g. a 'dyn_' prop or hat name); its hash also picks the model (+0x8c)."}
     - {name: className, lua: string, desc: "Object class name (e.g. 'hat_object'); converted to a class id at +0x5c."}
-    - {name: v3, lua: number, ctype: int, desc: "16-bit value at +0x58."}
+    - {name: hitpoints, lua: number, ctype: int, desc: "16-bit value at +0x58: a door's or barrier's hitpoints (0x003fb5f8, 0x003b2f40); for a held weapon, damage added to the hit (0x0021b290)."}
     - {name: v4, lua: number, ctype: int, desc: "Byte at +0x5a."}
     - {name: v5, lua: number, ctype: int, desc: "Byte at +0x5b."}
     - {name: v6, lua: number, ctype: int, desc: "16-bit value at +0x62."}
@@ -1210,9 +1210,9 @@
     - {name: shape, lua: number, ctype: unsigned, desc: "Physics shape (PHYS table: NONE, OBB, ...), byte at +0x84."}
     - {name: axis, lua: number, ctype: unsigned, desc: "Main axis (AXIS table), byte at +0x85."}
     - {name: mass, lua: number, ctype: float, desc: "Float at +0x88 (0.1 for hats; mass or weight, inferred)."}
-    - {name: material, lua: number, ctype: unsigned, desc: "Surface material (MATERIAL table), 16 bits at +0x5e."}
-    - {name: pickupAnim, lua: number, ctype: unsigned, desc: "Animation used to pick it up (ANIM table), byte at +0x64."}
-    - {name: v14, lua: number, ctype: unsigned, desc: "Byte at +0x65."}
+    - {name: v12, lua: number, ctype: unsigned, desc: "16 bits at +0x5e; meaning not traced."}
+    - {name: material, lua: number, ctype: unsigned, desc: "Surface material (MATERIAL table), byte at +0x64: a door's collision triangles and impact sounds use it (0x003a37b8 case 3)."}
+    - {name: pickupAnim, lua: number, ctype: unsigned, desc: "Animation used to pick it up (ANIM table), byte at +0x65."}
     - {name: f15, lua: number, ctype: float, desc: "Float at +0x68."}
     - {name: f16, lua: number, ctype: float, desc: "Float at +0x6c."}
     - {name: f17, lua: number, ctype: float, desc: "Float at +0x70."}
@@ -1229,7 +1229,9 @@
   depth: thorough
   notes: >-
     Layout confirmed (code) at 0x00390f18; argument meanings for the enum-typed fields come from the scripts' table
-    names (PHYS, AXIS, MATERIAL, ANIM, OBJECT). The fields at +0x58-+0x74 are not interpreted yet.
+    names (PHYS, AXIS, MATERIAL, ANIM, OBJECT); the wrapper (0x0036a1a0) passes argument 12 to +0x5e, 13 to +0x64
+    and 14 to +0x65. The getter 0x003a37b8 reads +0x58 (0), +0x5a (1), +0x62 (2), +0x64 (3), +0x65 (4) and +0x86
+    (10).
   usage: {chunks: 2, calls: 1371, boot: true, mission1: false, result_used: false}
 
 - name: CfgSetGlobalTimeToLive

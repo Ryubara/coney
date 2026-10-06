@@ -9,8 +9,9 @@ configures each in `config_preload2.lua`, and a level script places panes with
 
 !!! info "What is complete"
 
-    All 19 types are listed with every argument. The sprite words' rectangles are in the glass
-    pane's sprite batch, whose sheet is not traced.
+    All 19 types are listed with every argument. Any hit breaks a pane (no hitpoints); what breaking
+    does is on [World objects: a pane's life](../research/objects.md#pane). The sprite words' rectangles
+    are in the glass pane's sprite batch, whose sheet is not traced.
 
 19 entries. Data: `research/references/glass-types.yaml`.
 
@@ -36,7 +37,7 @@ configures each in `config_preload2.lua`, and a level script places panes with
 | <span id="glass-15"></span>15 | no | no | `0x00010014` | `0x00010015` | Invisible: colour 0, never drawn; still blocks until broken. | | |
 | <span id="glass-16"></span>16 | no | no | `0x00010016` | `0x00010017` | | 19 | `level3`, `level60`, `level61`, `level64` |
 | <span id="glass-17"></span>17 | no | no | `0x00010015` | `0x00010015` | Placed already broken: no collision. | | |
-| <span id="glass-18"></span>18 | yes | no | `0x00010015` | `0x00010015` | Placed already broken: no collision; its sector bit `0x08` is set. | | |
+| <span id="glass-18"></span>18 | yes | no | `0x00010015` | `0x00010015` | Placed already broken: no collision; its path polygon's flag `0x08` is set. | | |
 
 ## Sources and evidence
 

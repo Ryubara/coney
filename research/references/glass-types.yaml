@@ -8,8 +8,9 @@ about: |
   `SpawnBreakableGlass(type, corner, cornerU, cornerV, uv0, uv1, 0, triangle1, triangle2)`
   ([World objects: glass](../research/objects.md#glass)).
 complete: |
-  All 19 types are listed with every argument. The sprite words' rectangles are in the glass
-  pane's sprite batch, whose sheet is not traced.
+  All 19 types are listed with every argument. Any hit breaks a pane (no hitpoints); what breaking
+  does is on [World objects: a pane's life](../research/objects.md#pane). The sprite words' rectangles
+  are in the glass pane's sprite batch, whose sheet is not traced.
 defaults: {source: "config_preload2.lua, CfgSetGlassProperties; SpawnBreakableGlass in the scripts", evidence: confirmed-code}
 entries:
   - id: 0
@@ -132,4 +133,4 @@ entries:
     alarm: false
     sprite: 0x00010015
     broken_sprite: 0x00010015
-    behaviour: "Placed already broken: no collision; its sector bit `0x08` is set."
+    behaviour: "Placed already broken: no collision; its path polygon's flag `0x08` is set."

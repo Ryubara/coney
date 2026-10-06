@@ -12,7 +12,7 @@ and how to read an entry are on the [masterlist](index.md).
 | [`AddFlag`](#addflag) | number | 94 | no | yes | confirmed (code) |
 | [`AddPath`](#addpath) | usertype | 15 | no | no | confirmed (code) |
 | [`AddVolumeBox`](#addvolumebox) | number | 53 | no | yes | confirmed (code) |
-| [`BreakGlassInRadius`](#breakglassinradius) | - | 6 | no | no | inferred |
+| [`BreakGlassInRadius`](#breakglassinradius) | - | 6 | no | no | confirmed (code) |
 | [`BreakObjectsInRadius`](#breakobjectsinradius) | - | 12 | no | no | confirmed (code) |
 | [`CarCanBeDamagedBy`](#carcanbedamagedby) | - | 0 | no | no | inferred |
 | [`CarDestroy`](#cardestroy) | - | 5 | no | no | confirmed (code) |
@@ -29,12 +29,12 @@ and how to read an entry are on the [masterlist](index.md).
 | [`ChangeBlocker`](#changeblocker) | - | 2 | no | no | inferred |
 | [`ChangeCollision`](#changecollision) | - | 5 | no | no | confirmed (code) |
 | [`CloseDoor`](#closedoor) | - | 53 | no | yes | confirmed (code) |
-| [`ConvertJumpToDoor`](#convertjumptodoor) | - | 3 | no | no | inferred |
+| [`ConvertJumpToDoor`](#convertjumptodoor) | - | 3 | no | no | confirmed (code) |
 | [`DisableDoorCollision`](#disabledoorcollision) | - | 0 | no | no | confirmed (code) |
-| [`DisableDoorLink`](#disabledoorlink) | - | 2 | no | no | inferred |
+| [`DisableDoorLink`](#disabledoorlink) | - | 2 | no | no | confirmed (code) |
 | [`DoorOpen`](#dooropen) | - | 19 | no | no | confirmed (code) |
 | [`DoorOpenDegree`](#dooropendegree) | - | 50 | no | yes | confirmed (code) |
-| [`EnableDoorLink`](#enabledoorlink) | - | 2 | no | no | inferred |
+| [`EnableDoorLink`](#enabledoorlink) | - | 2 | no | no | confirmed (code) |
 | [`EnableVolumeBox`](#enablevolumebox) | - | 43 | no | no | confirmed (code) |
 | [`FindFlag`](#findflag) | number | 3 | no | no | confirmed (code) |
 | [`FlagEnable`](#flagenable) | - | 2 | no | no | confirmed (code) |
@@ -186,9 +186,13 @@ BreakGlassInRadius(centre, radius)
 
 **Returns** nothing.
 
-Breaks every breakable pane of glass within the radius of a flag or object, for scripted smashes.
+Breaks every breakable pane of glass within the radius of a flag or object, for scripted smashes: each pane whose centre
+is within the radius gets the hit message (kind 100), and so does every object of type `TYPE_GLASS` (kind 101); cars'
+parts in range are hit as well (0x0038b0e8). No alarm, crime or statistic follows.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Implementation 0x003963b8; [World objects: a pane's life](../../research/objects.md#pane).
+
+- **Evidence:** confirmed (code) at `0x003966c8`; detail: traced
 - **Wrapper** `0x0036dc18` (registered by `RegisterBindings`); **calls** `0x003966c8` `World_BreakGlassInRadius`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -206,10 +210,13 @@ BreakObjectsInRadius(centre, radius)
 
 **Returns** nothing.
 
-Breaks every object within `radius` of the centre object, the centre included: each gets message 0x15 (0x003961d0). When
-the centre object is of kind 30, a break-in crime (type 1, severity 10) is reported at it first.
+Breaks every breakable object within `radius` of a flag or object, the centre included (a molotov's blast, a scripted
+smash): every world object in range gets the destroy message 0x15 (0x003961d0). When the centre object is of kind 30
+(`TYPE_BREAKANDENTER_DOOR`), a break-in crime (type 1, severity 10) is reported at it first.
 
-**Notes.** The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes).
+**Notes.** The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes). What 0x15
+does depends on the object; a swinging door sends itself a hit two updates later ([World
+objects](../../research/objects.md#door-states)).
 
 - **Evidence:** confirmed (code) at `0x00396390`; detail: brief
 - **Wrapper** `0x0036dc90` (registered by `RegisterBindings`); **calls** `0x00396390` `World_BreakObjectsInRadius`
@@ -530,7 +537,10 @@ CloseDoor(door)
 
 **Returns** nothing.
 
-Closes a door (state command 3).
+Closes a door (state command 3): a swinging door swings back with its close sound, its collision triangles and body
+return and its number's navigation links get the avoid bit.
+
+**Notes.** [World objects: states and commands](../../research/objects.md#door-states).
 
 - **Evidence:** confirmed (code) at `0x00397010`; detail: traced
 - **Wrapper** `0x00379b78` (registered by `RegisterBindings`); **calls** `0x00397010` `Door_Close`
@@ -549,12 +559,12 @@ ConvertJumpToDoor(pos)
 
 **Returns** nothing.
 
-Changes the AI navigation link at a position from a jump link into a door link (0x00250bb8 with types 4 and 0x10), so
-the AI uses it as a doorway.
+Retags the navigation link of kind 4 nearest the position (within 5 m) and its reverse as kind 0x10 (0x00250bb8).
 
-**Notes.** Link types are inferred from the name and the constants.
+**Notes.** What the kinds mean to a route follower: [World objects: navigation
+links](../../research/objects.md#nav-links); the "jump" and "door" readings come from the name.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00250db0`; detail: brief
 - **Wrapper** `0x0036e228` (registered by `RegisterBindings`); **calls** `0x00250db0` `NavLink_ConvertJumpToDoor`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -571,7 +581,8 @@ DisableDoorCollision(door)
 
 **Returns** nothing.
 
-Turns off a door's collision (state command 5). No script calls it.
+Turns off a door's collision (state command 5): its triangles and body, and the avoid bit on its number's navigation
+links. No script calls it.
 
 - **Evidence:** confirmed (code) at `0x00397338`; detail: brief
 - **Wrapper** `0x00379bb0` (registered by `RegisterBindings`); **calls** `0x00397338` `Door_DisableCollision`
@@ -590,9 +601,12 @@ DisableDoorLink(pos)
 
 **Returns** nothing.
 
-Closes the AI navigation door link at a position, so the AI no longer routes through it.
+Sets the avoid bit (bit 31) on the kind-0x10 navigation link nearest the position (within 5 m) and its reverse
+(0x00250b68); route planning then adds 1,600 to its cost, so the AI prefers another way but is not barred.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** [World objects: navigation links](../../research/objects.md#nav-links).
+
+- **Evidence:** confirmed (code) at `0x00250e00`; detail: brief
 - **Wrapper** `0x0036e2d8` (registered by `RegisterBindings`); **calls** `0x00250e00` `NavLink_DisableDoor`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -610,9 +624,13 @@ DoorOpen(door, human)
 
 **Returns** nothing.
 
-Has a human open a door: the door receives message 0x0b with the human, then 0x00396d78 updates the human's side.
+Has a human open a door: the door receives message 0x0b with the human (then 0x00396d78 runs on both). A closed,
+unpickable swinging door swings 170 degrees away from the human, with its open sound.
 
-- **Evidence:** confirmed (code) at `0x00396f08`; detail: brief
+**Notes.** The direction is the sign of the door's turned axis against the human-to-door direction (0x003f9910); [World
+objects](../../research/objects.md#door-states).
+
+- **Evidence:** confirmed (code) at `0x00396f08`; detail: traced
 - **Wrapper** `0x00379a50` (registered by `RegisterBindings`); **calls** `0x00396f08` `Door_OpenBy`
 - **Used by** 19 of 467 script chunks (31 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -630,7 +648,10 @@ DoorOpenDegree(door, degrees)
 
 **Returns** nothing.
 
-Swings a door open to a given angle (message 0x42 with the angle).
+Swings a door open to a given angle (message 0x42 with the angle), with its open sound; a closed door becomes opening
+(state 3). A pickable door only keeps the angle, for the human who later opens it.
+
+**Notes.** [World objects: states and commands](../../research/objects.md#door-states).
 
 - **Evidence:** confirmed (code) at `0x00396e28`; detail: traced
 - **Wrapper** `0x00379900` (registered by `RegisterBindings`); **calls** `0x00396e28` `Door_OpenToAngle`
@@ -649,9 +670,9 @@ EnableDoorLink(pos)
 
 **Returns** nothing.
 
-Re-opens the AI navigation door link at a position.
+Clears the avoid bit on the kind-0x10 navigation link nearest the position and its reverse (0x00250b10).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00250e48`; detail: brief
 - **Wrapper** `0x0036e388` (registered by `RegisterBindings`); **calls** `0x00250e48` `NavLink_EnableDoor`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -899,6 +920,9 @@ GetHitpoints(object) -> number
 
 Returns a world object's remaining hitpoints, for scripts that wait for something to be broken.
 
+**Notes.** Doors and barriers keep their hitpoints in their data and mirror them at +0x128 after every hit (0x003a6ec8),
+so this reads a door's too ([World objects: breaking a door](../../research/objects.md#door-break)).
+
 - **Evidence:** confirmed (code) at `0x00385918`; detail: brief
 - **Wrapper** `0x0036c900` (registered by `RegisterBindings`); **calls** `0x00385918` `Object_GetHitpoints`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
@@ -1002,8 +1026,9 @@ IsDoorOpen(door) -> boolean
 | --- | --- | --- | --- |
 | 1 | `door` | number, truncated to an unsigned integer | Handle of the door. |
 
-**Returns** boolean (1 for true, nil for false): True when the door reports itself open (query 0x0c on the object);
-false (nil) otherwise or for an invalid handle.
+**Returns** boolean (1 for true, nil for false): True when the door reports itself open (query 0x0c: a swinging door's
+state byte is 5, fully open with its collision gone); false (nil) otherwise, while still swinging, or for an invalid
+handle.
 
 Tests whether a door is open.
 
@@ -1088,7 +1113,7 @@ ObjectChangeState(object, state)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of the game object. |
-| 2 | `state` | number, truncated to an integer | State number for the object's state command (message 0x22); for doors 2 opens, 3 closes, 5 removes collision, 10 and 11 make it pickable or not. |
+| 2 | `state` | number, truncated to an integer | State number for the object's state command (message 0x22); for swinging doors 2 or 8 open, 3 or 7 close, 5 removes collision, 6 restores it, 10 makes it pickable and 0 or 11 not ([World objects](../../research/objects.md#door-states)). |
 
 **Returns** nothing.
 
@@ -1518,7 +1543,8 @@ OpenDoor(door)
 
 **Returns** nothing.
 
-Opens a door (state command 2).
+Opens a door (state command 2): a swinging door that is not pickable swings to 170 degrees with its open sound, and its
+collision goes about half a second later.
 
 - **Evidence:** confirmed (code) at `0x00396ea0`; detail: brief
 - **Wrapper** `0x00379ac8` (registered by `RegisterBindings`); **calls** `0x00396ea0` `Door_Open`
@@ -1658,7 +1684,9 @@ SetDoorPickable(door, pickable)
 Sets whether the player can pick a door's lock.
 
 **Notes.** Lock picking is confirmed (code): a pickable door offers kind-2 context actions, and a pick in progress on it
-is ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)).
+is ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)). A pickable door shows a
+`sub_triglint` glint and refuses OpenDoor, DoorOpen and DoorOpenDegree ([World objects: lock
+picking](../../research/objects.md#lock-pick)).
 
 - **Evidence:** confirmed (code) at `0x00397078`; detail: brief
 - **Wrapper** `0x00379e40` (registered by `RegisterBindings`); **calls** `0x00397078` `Door_SetPickable`

@@ -8,8 +8,10 @@ the door's number in its level, which ties the level's navigation links to the d
 
 !!! info "What is complete"
 
-    Every `SpawnDoor` call (484 doors in 45 levels). What the navigation links' kind `0x40` does,
-    and who else reads the number, are not traced.
+    Every `SpawnDoor` call (484 doors in 45 levels). The number's links: an AI charges through a
+    kind-`0x40` link, and opening or breaking the door clears their avoid bit
+    ([Navigation links](../research/objects.md#nav-links)). Hitpoints and states per door type are on
+    [World objects](../research/objects.md#door-states).
 
 484 entries. Data: `research/references/doors.yaml`.
 

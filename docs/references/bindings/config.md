@@ -1403,14 +1403,14 @@ to reset the join state. The tutorial and most missions switch it per section.
 ## CfgObj {#cfgobj}
 
 ```lua
-CfgObj(name, className, v3, v4, v5, v6, centre, size, shape, axis, mass, material, pickupAnim, v14, f15, f16, f17, f18, objectType, animSet, holdPos, holdRot)
+CfgObj(name, className, hitpoints, v4, v5, v6, centre, size, shape, axis, mass, v12, material, pickupAnim, f15, f16, f17, f18, objectType, animSet, holdPos, holdRot)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `name` | string | Object type name (e.g. a 'dyn_' prop or hat name); its hash also picks the model (+0x8c). |
 | 2 | `className` | string | Object class name (e.g. 'hat_object'); converted to a class id at +0x5c. |
-| 3 | `v3` | number, truncated to an integer | 16-bit value at +0x58. |
+| 3 | `hitpoints` | number, truncated to an integer | 16-bit value at +0x58: a door's or barrier's hitpoints (0x003fb5f8, 0x003b2f40); for a held weapon, damage added to the hit (0x0021b290). |
 | 4 | `v4` | number, truncated to an integer | Byte at +0x5a. |
 | 5 | `v5` | number, truncated to an integer | Byte at +0x5b. |
 | 6 | `v6` | number, truncated to an integer | 16-bit value at +0x62. |
@@ -1419,9 +1419,9 @@ CfgObj(name, className, v3, v4, v5, v6, centre, size, shape, axis, mass, materia
 | 9 | `shape` | number, truncated to an unsigned integer | Physics shape (PHYS table: NONE, OBB, ...), byte at +0x84. |
 | 10 | `axis` | number, truncated to an unsigned integer | Main axis (AXIS table), byte at +0x85. |
 | 11 | `mass` | number (single precision) | Float at +0x88 (0.1 for hats; mass or weight, inferred). |
-| 12 | `material` | number, truncated to an unsigned integer | Surface material (MATERIAL table), 16 bits at +0x5e. |
-| 13 | `pickupAnim` | number, truncated to an unsigned integer | Animation used to pick it up (ANIM table), byte at +0x64. |
-| 14 | `v14` | number, truncated to an unsigned integer | Byte at +0x65. |
+| 12 | `v12` | number, truncated to an unsigned integer | 16 bits at +0x5e; meaning not traced. |
+| 13 | `material` | number, truncated to an unsigned integer | Surface material (MATERIAL table), byte at +0x64: a door's collision triangles and impact sounds use it (0x003a37b8 case 3). |
+| 14 | `pickupAnim` | number, truncated to an unsigned integer | Animation used to pick it up (ANIM table), byte at +0x65. |
 | 15 | `f15` | number (single precision) | Float at +0x68. |
 | 16 | `f16` | number (single precision) | Float at +0x6c. |
 | 17 | `f17` | number (single precision) | Float at +0x70. |
@@ -1438,7 +1438,8 @@ pickup animation, kind and the transform used when it is carried. config_preload
 CfgObjectsAtoC..TtoZ make about 1,370 calls.
 
 **Notes.** Layout confirmed (code) at 0x00390f18; argument meanings for the enum-typed fields come from the scripts'
-table names (PHYS, AXIS, MATERIAL, ANIM, OBJECT). The fields at +0x58-+0x74 are not interpreted yet.
+table names (PHYS, AXIS, MATERIAL, ANIM, OBJECT); the wrapper (0x0036a1a0) passes argument 12 to +0x5e, 13 to +0x64 and
+14 to +0x65. The getter 0x003a37b8 reads +0x58 (0), +0x5a (1), +0x62 (2), +0x64 (3), +0x65 (4) and +0x86 (10).
 
 - **Evidence:** confirmed (code) at `0x00390f18`; detail: traced
 - **Wrapper** `0x0036a1a0` (registered by `RegisterBindings`); **calls** `0x00390f18` `Cfg_AddObjectType`
