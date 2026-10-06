@@ -90,15 +90,16 @@ GetRTTI(object) -> number
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Any object handle. |
 
-**Returns** number: The object's type bits with bit 0x2 cleared, as an unsigned number; 0 for a bad handle. 0x40 marks a
-human, 0x80 a flag, 0x10 a tag, 0x08 a dynamic (prop) object.
+**Returns** number: The object's type bits with bit 0x2 cleared, as an unsigned number; 0 for a bad handle: a human
+0x60, a car 0x100000, a world object (prop, weapon, pick-up, door) 0x08, a particle system or tag 0x10, a flag 0x80, a
+glass pane 0x400, a scene 0x800, a light task 0x04, a volume box 0x100, a camera 0x200.
 
 Returns an object's run-time type bits, the word its vtable slot `+0x24` gives, which the game's own casts test (a human
 0x40 at 0x00229868, a flag 0x80 at 0x00417a60, a prop 0x08 at 0x00395f38, a tag 0x10 in ProcessTag). A script tests one
 bit to learn what kind of object a handle names.
 
-**Notes.** An object can carry several bits (a class's bits include its base classes', inferred). Why bit 0x2 is masked
-off is not traced.
+**Notes.** Each task class returns a constant ([Tasks: type bits](../../research/tasks.md#classes)); bit 0x2 is set for
+every task, so masking it leaves only the class bits. The human's 0x20 is not traced.
 
 - **Evidence:** confirmed (code) at `0x00385950`; detail: traced
 - **Wrapper** `0x0036c888` (registered by `RegisterBindings`); **calls** `0x00385950` `Object_GetTypeBits`

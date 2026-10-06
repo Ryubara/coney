@@ -168,6 +168,26 @@ the pool names are the managers' allocation tags.
 | glass pane | `0x00544ed0` | `0x0038ec30` | `GlassTaskManager`, `0x004f2dd8` | 100 × 0x100 | yes |
 | light task | `0x00545138` | `0x00390370` (interval 2) | `LightTaskManager`, `0x004f3158` | 28 × 0xb0 | no |
 
+**Type bits.** Every task class answers its vtable `+0x24` with a constant: the bits the game's casts test and
+[`GetRTTI`](../references/bindings/util.md#getrtti) returns (with bit `0x2`, common to all tasks, cleared). Confirmed
+(code), each getter read:
+
+| Class | Vtable `+0x24` | Bits | `GetRTTI` |
+| --- | --- | --- | --- |
+| human | `0x004ed800` | `0x62` | `0x60` (`0x40` human, tested by `0x00229868`; `0x20` not traced) |
+| world object | `0x004f3b08` | `0x0a` | `0x08` (tested by `0x00395f38`) |
+| particle system (and tags) | `0x004f40f0` | `0x12` | `0x10` (tested by `0x0039bba0` and `ProcessTag`) |
+| car | `0x004f2868` | `0x100002` | `0x100000` |
+| glass pane | `0x004f2c10` | `0x402` | `0x400` |
+| scene | `0x004f4488` | `0x802` | `0x800` |
+| light task | `0x004f2fb0` | `0x06` | `0x04` |
+| world flag (`0x00545e68`) | `0x004f62d0` | `0x80` | `0x80` (tested by `0x00417a60`) |
+| volume box (base `0x00545c48`) | `0x004f5b30` | `0x100` | `0x100` |
+| camera (`Cam_ICamera`, and `0x00535a90`) | `0x004db3a0` | `0x200` | `0x200` |
+
+So a script tells a car from anything else by `0x100000`, and a world object by `0x08`. The other camera classes
+and the box subclasses were not each read.
+
 Confirmed (code): each vtable is written by the allocator the manager's vtable points to (`0x005455b4`, `0x0054581c`,
 `0x00545a84`, `0x00544dc4`, `0x0054508c`, `0x005452f4`), and each initialiser calls `Task_Init`. The four classes the
 wheel was seen updating ([The wheel](#wheel)) are the world object, the particle system, the scene and the car. A
