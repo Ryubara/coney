@@ -11,6 +11,7 @@
 #include "platform/world_viewer_mode.h"
 #include "world/view_frustum.h"
 #include "world/world_streamer.h"
+#include "world_objects/object_list.h"
 
 namespace coney::platform {
 
@@ -59,7 +60,7 @@ WorldView frontEndSceneView() {
 
 std::expected<std::unique_ptr<FrontEndWorldScene>, Error>
 FrontEndWorldScene::create(RenderEngine& engine, const io::Wad& wad, std::string_view name,
-                           const std::function<void(std::string_view)>& print) {
+                           const std::function<void(std::string_view)>& print, FrontEndObjectSource objects) {
     auto scene = std::unique_ptr<FrontEndWorldScene>(new FrontEndWorldScene(engine));
     auto scenery = loadLevelScenery(engine, wad, name, scene->m_budget, print);
     if (!scenery) {
@@ -67,6 +68,16 @@ FrontEndWorldScene::create(RenderEngine& engine, const io::Wad& wad, std::string
     }
     scene->m_set = std::move(scenery->set);
     scene->m_level = std::move(scenery->level);
+    // The dynamic objects' models come by the Object List; without it the scene draws none.
+    scene->m_source = objects;
+    if (objects.records != nullptr && objects.types != nullptr) {
+        if (auto list = world_objects::loadObjectList(wad); list) {
+            scene->m_objectList = std::make_unique<world_objects::ObjectList>(std::move(*list));
+            scene->m_objects = std::make_unique<PlacedObjects>(wad, *scene->m_objectList, print, engine.drawsPixels());
+        } else {
+            print(std::format("front end: no dynamic objects: {}\n", list.error().message));
+        }
+    }
     // InitLevel's preload round the camera, before the first frame.
     const std::array<world::Vec3, 1> cameras{scene->m_view.pose.position};
     const world::PreloadResult preload =
@@ -89,11 +100,62 @@ void FrontEndWorldScene::update(std::uint64_t nowMs) {
     for (world::StreamedWorld* world : m_set->worlds()) {
         world->findVisibleSectors(frustum, true);
     }
+    syncObjects();
+}
+
+void FrontEndWorldScene::syncObjects() {
+    if (m_objects == nullptr) {
+        return;
+    }
+    // Drop the objects whose records are gone (a fresh script state) or no longer live.
+    std::erase_if(m_poses, [this](const auto& entry) {
+        const world_objects::SpawnRecord* record = m_source.records->find(entry.first);
+        return record == nullptr || !record->live || record->removed;
+    });
+    std::erase_if(m_hidden, [this](double handle) { return m_source.records->find(handle) == nullptr; });
+    m_objects->clear();
+    for (const world_objects::SpawnRecord& record : m_source.records->all()) {
+        const world_objects::ObjectType* type = m_source.types->find(record.typeName);
+        if (!record.live || record.removed || type == nullptr) {
+            continue;
+        }
+        const auto pose = m_poses.find(record.handle);
+        const anim::Vec3 position = pose != m_poses.end()
+                                        ? pose->second.position
+                                        : anim::Vec3{record.position[0], record.position[1], record.position[2]};
+        const anim::Quat rotation = pose != m_poses.end() ? pose->second.rotation
+                                                          : anim::Quat{record.rotation[0], record.rotation[1],
+                                                                       record.rotation[2], record.rotation[3]};
+        m_objects->place(record.handle, type->modelHash, position, rotation);
+        m_objects->setVisible(record.handle, !m_hidden.contains(record.handle));
+    }
+}
+
+void FrontEndWorldScene::setObjectPose(double handle, anim::Vec3 position, anim::Quat rotation) {
+    m_poses[handle] = ObjectPose{position, rotation};
+}
+
+void FrontEndWorldScene::objectMessage(double handle, int message) {
+    // simple_object's show (0x12) and hide (0x13).
+    if (message == 0x12) {
+        m_hidden.erase(handle);
+    } else if (message == 0x13) {
+        m_hidden.insert(handle);
+    }
+    if (m_objects != nullptr) {
+        m_objects->setVisible(handle, !m_hidden.contains(handle));
+    }
 }
 
 void FrontEndWorldScene::render(const RenderTime& time, const std::function<void()>& overlay) {
     const std::uint64_t nowMs = time.gameTicks / (GameTimer::kTicksPerSecond / 1000);
-    m_renderer.render(m_engine, *m_set, m_level.get(), m_view, kBackground, m_pendingDistance, nowMs, {}, overlay);
+    const std::function<void()> drawObjects = [this] {
+        if (m_objects != nullptr) {
+            m_objects->draw();
+        }
+    };
+    m_renderer.render(m_engine, *m_set, m_level.get(), m_view, kBackground, m_pendingDistance, nowMs, drawObjects,
+                      overlay);
 }
 
 } // namespace coney::platform

@@ -19,6 +19,7 @@
 #include <SDL3/SDL_stdinc.h>
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_math.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/game_timer.h"
@@ -31,10 +32,14 @@
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
+#include "platform/placed_objects.h"
 #include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 #include "scripting/config_strings.h"
+#include "world_objects/object_list.h"
+#include "world_objects/object_types.h"
+#include "world_objects/spawn_records.h"
 
 TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", "[disc][frontend]") {
     const char* discPath = SDL_getenv("CONEY_DISC");
@@ -143,6 +148,23 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
         }
     }
     CHECK(wheelParts == 29);
+    // Each of them has a model the front-end scene can draw: the Object List record of its type's model hash, one
+    // atomic over its dictionary (docs/research/objects.md#models).
+    auto objectList = coney::world_objects::loadObjectList(*wad);
+    REQUIRE(objectList.has_value());
+    if (objectList) {
+        coney::platform::PlacedObjects placed(
+            *wad, *objectList, [](std::string_view line) { UNSCOPED_INFO(line); }, false);
+        for (const coney::world_objects::SpawnRecord& record : flow.spawnRecords().all()) {
+            const coney::world_objects::ObjectType* type = flow.objectTypes().find(record.typeName);
+            if (type != nullptr &&
+                (record.typeName.starts_with("dyn_s_ww") || record.typeName.starts_with("dyn_s_neon"))) {
+                placed.place(record.handle, type->modelHash, coney::anim::Vec3{}, coney::anim::Quat{});
+            }
+        }
+        CHECK(placed.placed() == 29);
+        CHECK(placed.drawable() == 29);
+    }
     run(41);
     CHECK(menus.controller().currentName() == "PM_Mode");
     CHECK(menus.controller().mode().grid().items() == 3);

@@ -4,19 +4,33 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <map>
 #include <memory>
+#include <set>
 #include <string_view>
 
+#include "animation/anim_math.h"
 #include "core/error.h"
 #include "fileio/wad.h"
 #include "gamemodes/front_end_scene.h"
+#include "platform/placed_objects.h"
 #include "platform/render_engine.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
 #include "world/level_object.h"
 #include "world/sector_budget.h"
+#include "world_objects/object_list.h"
+#include "world_objects/object_types.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney::platform {
+
+/// Where the front-end scene finds its dynamic objects: the flow's spawn records and object types (both null: none).
+/// Both must outlive the scene.
+struct FrontEndObjectSource {
+    const world_objects::SpawnRecords* records = nullptr;
+    const world_objects::ObjectTypes* types = nullptr;
+};
 
 /// The front end's 3D background (docs/research/frontend.md#background): `level100`'s streamed worlds and level file,
 /// streamed one decision a step around the camera and drawn by the world renderer, cleared to black (the background
@@ -26,9 +40,13 @@ namespace coney::platform {
 /// `camera01` track is the real view: the track's first pose, (462.60, −122.35, −187.93) in the game's axes, with its
 /// lens (field of view 54.43° across, near 0.5, far 150), turned to the wheel's hub at (515.51, −68.89, −188.67) and
 /// then kHubYawOffsetDegrees to the left, so the hub sits right of centre where the runtime picture has the wheel (its
-/// outline across logical x 335-615 of 640). The camera does not move, as at runtime. The scene's objects (the wheel,
-/// its carts and neon signs, spawned by `level100.lua`'s `ObjSpawn`) are not drawn: Coney cannot load a dynamic
-/// object's model yet.
+/// outline across logical x 335-615 of 640). The camera does not move, as at runtime.
+///
+/// **The dynamic objects** (the wheel, its carts and neon signs, spawned by `level100.lua`'s `ObjSpawn`): every live
+/// spawn record of the objects source is drawn with its type's model (PlacedObjects), at the pose a scene last gave
+/// it (setObjectPose()) or else at its record's, and shown or hidden by messages 0x12 and 0x13 (objectMessage()). A
+/// record becomes live when its handle is resolved (`SceneAddObject`); the 70 m streaming that would also spawn one
+/// is not Coney's yet, and the wheel stands 75 m from the camera, beyond it.
 ///
 /// Lighting is the world renderer's stand-in ambient (no LightManager yet).
 class FrontEndWorldScene final : public FrontEndScene {
@@ -55,19 +73,40 @@ class FrontEndWorldScene final : public FrontEndScene {
     /// camera. `print` gets the load's summary. Fails as loadLevelScenery() does.
     [[nodiscard]] static std::expected<std::unique_ptr<FrontEndWorldScene>, Error>
     create(RenderEngine& engine, const io::Wad& wad, std::string_view name,
-           const std::function<void(std::string_view)>& print);
+           const std::function<void(std::string_view)>& print, FrontEndObjectSource objects = {});
 
-    /// One streaming decision round the camera and the visibility pass.
+    /// One streaming decision round the camera and the visibility pass, then the dynamic objects brought up to date
+    /// with the live spawn records: a new one placed, one no longer live dropped.
     void update(std::uint64_t nowMs) override;
 
-    /// The world through the camera, then `overlay`, then the present.
+    /// The world through the camera, the dynamic objects between its two streamed worlds, then `overlay`, then the
+    /// present.
     void render(const RenderTime& time, const std::function<void()>& overlay) override;
+
+    /// Puts object `handle` at `position` turned by `rotation` (the game's axes), as a scene's track does each step;
+    /// the pose holds until the next. Drawn while its record is live.
+    void setObjectPose(double handle, anim::Vec3 position, anim::Quat rotation);
+    /// A message sent to object `handle`: `simple_object`'s 0x12 shows it and 0x13 hides it
+    /// (docs/research/objects.md#simple-object); others do nothing here.
+    void objectMessage(double handle, int message);
 
     /// The view the scene is drawn through.
     [[nodiscard]] const WorldView& view() const { return m_view; }
+    /// The dynamic objects; null when the Object List did not load.
+    [[nodiscard]] const PlacedObjects* objects() const { return m_objects.get(); }
 
   private:
+    // A pose a scene gave an object.
+    struct ObjectPose {
+        anim::Vec3 position;
+        anim::Quat rotation;
+    };
+
     explicit FrontEndWorldScene(RenderEngine& engine);
+
+    // Places every live record's object (at its scene pose, or its record's) and drops the objects whose records are
+    // gone or no longer live.
+    void syncObjects();
 
     RenderEngine& m_engine;
     world::SectorBudget m_budget{world::kSectorPoolSize}; // before the worlds charged to it
@@ -76,6 +115,11 @@ class FrontEndWorldScene final : public FrontEndScene {
     WorldRenderer m_renderer;
     WorldView m_view;
     float m_pendingDistance = 0.0F;
+    FrontEndObjectSource m_source;
+    std::unique_ptr<world_objects::ObjectList> m_objectList; // before the objects that read it
+    std::unique_ptr<PlacedObjects> m_objects;
+    std::map<double, ObjectPose> m_poses;
+    std::set<double> m_hidden; // the objects a message 0x13 hid
 };
 
 /// The stand-in camera's view: kCameraX/Y/Z turned to the hub and kHubYawOffsetDegrees left, in RenderWare's axes,

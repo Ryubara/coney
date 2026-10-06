@@ -570,6 +570,14 @@ are no object tasks yet, so "live" marks a record a consumer draws; and the keys
 suppressed, as a fresh profile has neither unlockable. Disc check (NTSC-U, 2026-10-06, counts only): at the front end
 `level100.lua` leaves 29 Wonder Wheel records, each of a configured type, the wheel tinted `0x474542FF`.
 
+**Models** (`src/platform/object_models.h`, `src/platform/placed_objects.h`): an object's model is its type's Object
+List record (`ObjectList::findByHash`, the type's model hash), its `0x47` model read as the level file's and its
+dictionary's first texture on the first material, loaded once per type and shared. An object is drawn at its pose
+in the game's axes carried into RenderWare's as positions are, `(x, y, z) → (x, z, −y)`, the model's y up being the
+game's z up (inferred; with it the Wonder Wheel stands where the runtime picture has it). Not modelled: the size cull
+and fade, per-object lights, the tint and the second dictionary. The front end draws the live records' objects this
+way ([Front end](frontend.md#coneys-implementation)).
+
 ## Open questions
 
 - Which search mask admits `0x40` links, and what path polygon flag 8 does to the walkable-line test.

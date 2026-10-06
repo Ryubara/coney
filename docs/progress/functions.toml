@@ -989,6 +989,11 @@ subsystem = "Graphics"
 size = 56
 
 [[function]]
+address = 0x001811b0
+name = "ObjectList_FindByHash"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x00181b20
 name = "ChunkLoaded_ParticlePage"
 subsystem = "Graphics"

@@ -50,6 +50,11 @@ class ObjectList {
     /// nullptr when there is none. The pointer stays valid as long as this list.
     [[nodiscard]] const ObjectRecord* find(std::string_view name) const;
 
+    /// The record whose name hash is `nameHash` (an object type's model hash, CRC-32 of its name), by a linear search
+    /// as the original's; nullptr when there is none. The pointer stays valid as long as this list.
+    /// @orig 0x001811b0 ObjectList_FindByHash (unknown)
+    [[nodiscard]] const ObjectRecord* findByHash(std::uint32_t nameHash) const;
+
     /// Every record, in the chunk's order.
     [[nodiscard]] std::span<const ObjectRecord> records() const { return m_records; }
 

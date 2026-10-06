@@ -66,6 +66,7 @@ add_executable(coney_tests
     platform/texture_dictionary_test.cpp
     platform/world_atomic_test.cpp
     platform/front_end_scene_test.cpp
+    platform/placed_objects_test.cpp
     platform/world_renderer_test.cpp
     platform/world_set_test.cpp
     raycast/collision_mesh_test.cpp

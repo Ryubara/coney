@@ -50,6 +50,11 @@ const ObjectRecord* ObjectList::find(std::string_view name) const {
     return found == m_records.end() ? nullptr : &*found;
 }
 
+const ObjectRecord* ObjectList::findByHash(std::uint32_t nameHash) const {
+    const auto found = std::ranges::find(m_records, nameHash, &ObjectRecord::nameHash);
+    return found == m_records.end() ? nullptr : &*found;
+}
+
 std::expected<ObjectList, Error> loadObjectList(const io::Wad& wad) {
     auto entry = wad.lookup("warriors.glr");
     if (!entry) {

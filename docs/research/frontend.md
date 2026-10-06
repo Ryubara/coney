@@ -958,7 +958,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [x] | Legal screen | the picture, overfilled, 5 s | nothing |
 | [ ] | Start-up movies | skipped through the `MoviePlayer` hook; the music stops and the screen is left black | a player for `LOGO`, `PLOGO`, `L1_IN`, START skipping ([Movies](#movies)) |
 | [ ] | Mode 6 at boot | `0xb5` centred for 3 s in the message box, then the menus; no card, so no scan or dialog | the card dialogs once Coney has saves; which one a boot with no card shows ([message box](#message-box)) |
-| [ ] | 3D background | `level100`'s world from the scene's first camera pose; the sign, no wheel | the script's objects, the `WonderWheel_100` scene and its camera, lights ([Background](#background)) |
+| [ ] | 3D background | `level100`'s world from the scene's first camera pose; the sign; the spawned objects drawn once a scene binds them | the `WonderWheel_100` scene and its camera, lights, the tint ([Background](#background)) |
 | [ ] | Menu music | the `menu` bank and the cues go to the `FrontEndAudio` hook; recorded and logged without one | `music/wonderwheel_132b` looped by `Menu.startScene`, `MenuTrack` by `launchRMI`; the `menu` bank's cues ([Sound](sound.md)) |
 | [x] | Fades | out over `t − 0.2` s, in from black, the one-frame start, clamped (one manager: one view) | the real speed (open: [Fades](#fades)) |
 | [x] | PM_Greet | as the original (`0x76`, logo, blink, 70 s attract call) | nothing (the attract movie: below) |
@@ -1074,9 +1074,13 @@ mission-complete mode's kinds 2 and 3. Coney's stand-ins, each because the resea
   (`FrontEndScene`, `src/platform/front_end_scene.h`), then runs the scripts; the menus step it and draw it under their
   2D pass, cleared to black, and it is released when the front end finishes. **Stand-in camera** until the scene player
   plays `WonderWheel_100`: the `camera01` track's first pose and lens ([Background](#background)), turned to the hub
-  and 10.7° to the left so the world's "WONDER WHEEL" sign lands at logical (409, 227), the runtime's (410, 217). Not
-  drawn: the script's 29 objects (the wheel, its carts and neons; Coney cannot load a dynamic object's model yet), and
-  the scene's lights (the world renderer's ambient stand-in). The dependency list and packs are not loaded.
+  and 10.7° to the left so the world's "WONDER WHEEL" sign lands at logical (409, 227), the runtime's (410, 217). The
+  script's 29 objects (the wheel, its carts and neons) are drawn once their spawn records are live, each with its
+  type's model (`src/platform/placed_objects.h`, [Objects: models](objects.md#models)), at the pose a scene gives it
+  or its record's, shown and hidden by messages `0x12` and `0x13`; until `SceneAddObject` resolves them through the
+  scene player, none is live, so none is drawn. With every record made live by hand, the wheel's outline spans logical
+  x 327-617 of 640, the runtime's 335-615. Not drawn: the scene's lights (the world renderer's ambient stand-in) and
+  the objects' tint. The dependency list and packs are not loaded.
 - A flow made without a level loader (the tests without a disc) has no gameplay: after finishing the front end,
   `update` logs `level start requested: <level>` and starts the front end again, so the player is back on the menus.
 - Without a script system (no disc), or when `Menu.onStart` did not push the menus, the level flow calls

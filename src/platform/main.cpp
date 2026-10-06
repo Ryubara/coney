@@ -658,9 +658,11 @@ int main(int argc, char** argv) {
         }
         // The front-end level's world behind the menus (docs/research/frontend.md#background).
         startUp->levelFlow().setSceneLoader(
-            [&renderer,
+            [&renderer, &startUp,
              &gameWad](std::string_view level) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
-                auto scene = coney::platform::FrontEndWorldScene::create(renderer, gameWad, level, printText);
+                // The dynamic objects the flow's scripts spawn (the Wonder Wheel).
+                const coney::platform::FrontEndObjectSource objects{&startUp->spawnRecords(), &startUp->objectTypes()};
+                auto scene = coney::platform::FrontEndWorldScene::create(renderer, gameWad, level, printText, objects);
                 if (!scene) {
                     return std::unexpected(std::move(scene.error()));
                 }

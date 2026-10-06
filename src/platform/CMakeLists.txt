@@ -4,6 +4,8 @@ add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_di
                                   window.cpp world_atomic.cpp)
 # The streamed-world viewer (docs/research/world.md#coneys-implementation).
 target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp front_end_scene.cpp)
+# Dynamic objects' models, drawn where the scripts and scenes put them (docs/research/objects.md#coneys-implementation).
+target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
 # Playing a level as Rembrandt (docs/guides/building.md#playing-a-level), in a level's scenery or a sandbox's.

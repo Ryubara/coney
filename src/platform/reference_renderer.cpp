@@ -36,6 +36,7 @@
 #include "platform/character_mesh.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/level_file.h"
+#include "platform/object_models.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 #include "world/level_object.h"
@@ -233,35 +234,6 @@ std::expected<std::vector<std::string>, Error> readNameList(const std::string& p
     return characters::parseNameList(text.str());
 }
 
-// A dictionary resource's first texture, converted for drawing, with the dictionaries that own it (null when the
-// first dictionary holds none). A character's and an object's dictionary holds the texture their untextured
-// material is drawn with (characters.md#files, level-loading.md#the-object-list).
-struct FirstTexture {
-    std::vector<TextureDictionary> dictionaries;
-    rw::Texture* texture = nullptr;
-};
-
-// Loads the dictionaries of `entry` and picks their first texture (FirstTexture).
-std::expected<FirstTexture, Error> loadFirstTexture(const io::Wad& wad, const io::WadEntry& entry,
-                                                    const chunk::ChunkHandlerTable& table) {
-    auto dictionaries = loadTextureDictionaries(wad, entry, table);
-    if (!dictionaries) {
-        return std::unexpected(std::move(dictionaries.error()));
-    }
-    for (TextureDictionary& dictionary : *dictionaries) {
-        if (auto converted = dictionary.convertForDrawing(); !converted) {
-            return std::unexpected(std::move(converted.error()));
-        }
-    }
-    FirstTexture result;
-    if (!dictionaries->empty()) {
-        const std::vector<rw::Texture*> textures = dictionaries->front().textures();
-        result.texture = textures.empty() ? nullptr : textures.front();
-    }
-    result.dictionaries = std::move(*dictionaries);
-    return result;
-}
-
 // Renders one character's image into `path`: loads its resources, poses it, frames it, draws, reduces and writes.
 std::expected<void, Error> renderCharacter(const io::Wad& wad, const characters::CharacterRecord& record,
                                            const chunk::ChunkHandlerTable& table, OffscreenCamera& camera,
@@ -297,48 +269,6 @@ std::expected<void, Error> renderCharacter(const io::Wad& wad, const characters:
     mesh.update(positions, normals);
     rw::Atomic* const atomic = mesh.atomic();
     return camera.shoot(positions, {&atomic, 1}, lights, true, size, path);
-}
-
-// Why an object or car got no image: Coney cannot load its model as one yet (`noModel`), or something else went
-// wrong.
-struct ObjectFailure {
-    bool noModel = false;
-    Error error;
-};
-
-// An Object List record's model, as the level file's 0x47 reader pushes it, and its dictionary's first texture.
-// The texture is declared last so that it goes first: the model's materials must have let go of it by then.
-struct ObjectModel {
-    std::unique_ptr<chunk::LoadedObject> model;
-    FirstTexture texture;
-};
-
-// Loads the model and texture dictionary of `record`, the model read as the level file's models are.
-std::expected<ObjectModel, ObjectFailure> loadObjectModel(const io::Wad& wad, const world_objects::ObjectRecord& record,
-                                                          const chunk::ChunkHandlerTable& table) {
-    const auto failed = [](bool noModel, Error error) {
-        return std::unexpected(ObjectFailure{noModel, std::move(error)});
-    };
-    auto modelEntry = wad.lookup(characters::resourceFileName(record.modelHash));
-    auto texturesEntry = wad.lookup(characters::resourceFileName(record.texturesHash));
-    if (!modelEntry || !texturesEntry) {
-        return failed(true, !modelEntry ? modelEntry.error() : texturesEntry.error());
-    }
-    // The model: one 0x47 chunk, which pushes it as a level model (0x41).
-    auto load = loadWadEntry(wad, **modelEntry, table);
-    if (!load) {
-        return failed(
-            true, Error{load.error().code, std::format("model {:#010x}: {}", record.modelHash, load.error().message)});
-    }
-    std::vector<chunk::ChunkData> models = load->stacks.takeChunks(world::kLevelModelResult);
-    if (models.empty() || models.front().object == nullptr) {
-        return failed(true, Error{ErrorCode::Invalid, std::format("model {:#010x}: no model", record.modelHash)});
-    }
-    auto texture = loadFirstTexture(wad, **texturesEntry, table);
-    if (!texture) {
-        return failed(false, texture.error());
-    }
-    return ObjectModel{std::move(models.front().object), std::move(*texture)};
 }
 
 // One atomic of a model placed for its image: the transform into the reference pose's axes.
