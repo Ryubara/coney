@@ -56,7 +56,10 @@ which file each belongs to is inferred from the range only. Names are ours.
 | `0x003a1f40` | `Task_AdjustIntervalByGround` | | confirmed (code), purpose inferred |
 | `0x003a2310` | `Task_Integrate` | the default integrator (vtable `+0x144`) | confirmed (code) |
 | `0x003a2e00` → `0x003a4288` | `Task_SendMessage` → `Task_DeliverMessage` | synchronous message to an object | confirmed (code) |
-| `0x00390180` | `Handle_Resolve` | handle → object | confirmed (code) |
+| `0x00390180` | `Handle_Resolve` | handle → object ([Handles](#handles)) | confirmed (code) |
+| `0x0038ffd0` / `0x0038fe28` | `Handle_Assign` / `Handle_FindFree` | give an object a handle; the first free index from a start | confirmed (code) |
+| `0x003a15c0` | `Task_Init` | the task head's defaults | confirmed (code) |
+| `0x0039c698` / `0x00397fb8` | `TaskPool_Create` / `ObjectTaskManager_Create` | make a task of a named type ([Task classes](#classes)) | confirmed (code) |
 | `0x00397a48` | `ObjectTaskManager_Construct` | | confirmed (code) |
 | `0x00399d88` | `ObjectTaskManager_UpdateSpawns` | spawns and removes world objects near the players | confirmed (code) |
 | `0x00249108` | `Humans_Update` | the characters' step ([below](#humans-update)) | confirmed (code) |
@@ -77,11 +80,14 @@ One object, pointer at `0x00512c7c`. Confirmed (code) at the constructor `0x003a
 | `+0x18 + n × 0x408` | wheel *n* (0 play, 1 pause): `+0x0` unused, `+0x4` the current bucket (0-255), `+0x8` 256 bucket heads |
 | `+0x82c` | the current phase |
 | `+0x830` / `+0x834` | the current wheel / the current per-phase manager |
-| `+0x838`, `+0x83c` | two `ParticleTaskManager`s (sizes 0x578 and 100), one per phase (`0x003a2cd8` picks them) |
+| `+0x838`, `+0x83c` | two `ParticleTaskManager`s (1,400 and 100 particles), one per phase (`0x003a2cd8` picks them) |
 | `+0x840` | the `ObjectTaskManager` (0x67ec bytes) |
-| `+0x844` | the car manager |
-| `+0x848` / `+0x84c` / `+0x850` | the light, glass and scene managers |
+| `+0x844` | the `CarTaskManager` |
+| `+0x848` / `+0x84c` / `+0x850` | the `LightTaskManager`, `GlassTaskManager` and `SceneTaskManager` |
 | `+0x854`… | seven lists, flushed by `TaskManager_Reset` |
+
+The manager names are the allocation tags the constructor passes (strings `0x00581848`-`0x005818f0`); what each
+manager holds is in [Task classes and pools](#classes).
 
 ### The base task object {#task-object}
 
@@ -107,10 +113,86 @@ Vtable slots used by the engine (function word offsets): `+0x14` before the upda
 (returns 1 to stay scheduled), `+0x144` integrate. The human's vtable is `0x0053f088` (`+0x13c` = `0x0023fea8`, its
 state update, `+0x44` = `Human_OnEvent`, `+0xcc` = `Human_HandleMessage`).
 
-**Handles.** Objects refer to each other by handle: a table at `0x006ebd38` of 0xb00 entries `{ptr, u16 serial}`
-resolved by `Handle_Resolve`; a handle whose serial is 0 is looked up in the `ObjectTaskManager` instead
-(`0x00398fe0`). The nil handle is `0x006ebd30`. Transforms live in a separate table at `0x00714b00` (32 bytes each,
-indexed by the object's `+0x92`).
+Every task class's initialiser starts with `Task_Init` (`0x003a15c0`): position and velocities zero, rotation
+identity, phase 2, bucket −1, interval 255, flags 0, the values a human keeps because it is never scheduled
+([The wheel](#wheel)). Transforms live in a separate table at `0x00714b00` (32 bytes each, indexed by the object's
+`+0x92`).
+
+### Handles {#handles}
+
+Scripts and objects refer to things by **handle**, a 32-bit number: the low 16 bits a serial, the high 16 bits an
+index into the handle table at `0x006ebd38` (2,816 = 0xb00 entries of `{pointer, u16 serial}`). Confirmed (code):
+
+- **Assigning** (`Handle_Assign`, `0x0038ffd0`): store the pointer at the index, give it the next serial from the
+  counter `0x006f1538` (which skips 0 when it wraps) and return `serial | index << 16`.
+- **Resolving** (`Handle_Resolve`, `0x00390180`): −1 is nil; a serial that matches the entry's gives its pointer,
+  any other serial gives 0, so a stale handle (the slot reused since) resolves to nothing. The global `NilHandle`
+  scripts compare against is the word at `0x006ebd30`.
+- **Serial 0** names a spawn record of the `ObjectTaskManager` (`0x00398fe0`, records of 0x28 bytes): the record's
+  object is spawned first (`0x00399080`) when bit `0x20000` of record `+0x24` is clear (inferred: the "live" bit),
+  then the low 16 bits of `+0x24` index the handle table and that object's own handle (its vtable `+0x2c`) is
+  resolved; a record with `0x40000` set gives `NilHandle`. Which bindings hand out such handles is not traced.
+
+Each kind searches for a free index from its own start ([Task classes and pools](#classes) lists the kinds):
+
+| Kind | Finder | First index searched | Evidence |
+| --- | --- | --- | --- |
+| humans | `0x0038fe88` | 0, and must be below 60; when none is, `Humans_CullCorpses` (`0x00232230`) runs once and the search is retried | confirmed (code) |
+| cameras (`Cam_ICamera` base, `0x00120868`) | `0x0038fed8` | 60 | confirmed (code) |
+| world flags (`0x00415e70`) | `0x0038fef8` | 108 | confirmed (code) |
+| boxes (the base of volume, turf and player boxes, `0x004127c0`) | `0x0038ff18` | 620 | confirmed (code) |
+| cars, glass panes, world objects, particles | `0x0038ff38` | a cursor (`0x00512bec`) that runs from where it last stopped to 2,815 and wraps to 748 | confirmed (code) |
+
+The starts are only where a search begins: a kind that fills its range takes the next free entries above it
+(`0x0038fe28` scans to the end of the table). Only the humans have a hard limit here.
+
+### Task classes and pools {#classes}
+
+Each class below starts with the [task head](#task-object) and lives in a fixed pool its manager allocates at boot
+(a `FreeList`: one block of *n* records and a slot array). Making one, given a type name and the creation arguments
+(position, rotation, a parent handle) pushed into the [message](#messages) scratch: the manager's allocator (its vtable
+`+0x14`, which also writes the class's vtable), the class's initialiser (vtable `+0x134`, given the name), its
+creation handler if it has one (vtable `+0x19c`, given the arguments), then `TaskManager_Schedule` and flag
+`0x80000000`. Confirmed (code) at `0x0039c698` (particles and the other FreeList managers) and `0x00397fb8` (world
+objects, which first call `0x003998f0` when the pool is full; that it frees a slot is inferred). Class names are ours;
+the pool names are the managers' allocation tags.
+
+| Class | Vtable | Initialiser | Pool (manager, allocator) | Records | Handle |
+| --- | --- | --- | --- | --- | --- |
+| human | `0x0053f088` | `Human_Init` `0x00218008` | the static array `0x00640c80` ([Characters](characters.md#the-human-object)) | 60 × 0x6d0 | yes |
+| world object (props, weapons, pick-ups, doors) | `0x005453a0` | `0x003918b8` | `ObjectTaskManager`, `0x004f3e98` | 384 × 0x140 | yes |
+| particle system | `0x00545660` | `0x0039aef0` | `ParticleTaskManager` per phase, `0x004f42b0` | 1,400 (play) and 100 (pause) × 0xf0 | yes |
+| scene | `0x005458c8` | `0x0039ca48` | `SceneTaskManager`, `0x004f4610` | 12 × 0x100 | no: a scene id ([Scene bindings](../references/bindings/scene.md)) |
+| car | `0x00544c08` (constructor `0x00387498`) | `0x00387bc8` | `CarTaskManager`, `0x004f2a70` | 18 × 0x1310 | yes |
+| glass pane | `0x00544ed0` | `0x0038ec30` | `GlassTaskManager`, `0x004f2dd8` | 100 × 0x100 | yes |
+| light task | `0x00545138` | `0x00390370` (interval 2) | `LightTaskManager`, `0x004f3158` | 28 × 0xb0 | no |
+
+Confirmed (code): each vtable is written by the allocator the manager's vtable points to (`0x005455b4`, `0x0054581c`,
+`0x00545a84`, `0x00544dc4`, `0x0054508c`, `0x005452f4`), and each initialiser calls `Task_Init`. The four classes the
+wheel was seen updating ([The wheel](#wheel)) are the world object, the particle system, the scene and the car. A
+world object's kind is its `ObjectAttribs` entry (`+0x112`, the `CfgObj` type), not a subclass. The car initialiser
+picks the car's model index from the name in a table of six (`0x00512ba8`: `car_osedan`, `car_coupe`, `car_wagon`,
+`car_copcar`, `car_van`, `car_sullycar`) and, for `car_copcar`, makes a particle system as well. The 18 cars match
+the 18-body pool of [IPhysics](physics.md#iphysics) (inferred). The dynamic lights of `SetLight` belong to the
+graphics light manager (`0x0017ef20`), not to this pool; what makes a light task is not traced.
+
+Not on the wheel, with pools of their own:
+
+| Kind | Where | Size | Handle |
+| --- | --- | --- | --- |
+| world flag | `WorldFlag` pool ([World flags](flags.md#pool)), vtable `0x00545e68` | `CfgSetDatabaseSizes` flags + 4, 0xf0 each | yes |
+| volume, turf and player boxes | `FreeList<VolumeBox>`, `FreeListContainer<TurfBox>`, `FreeList<PlayerBox>`; base constructor `0x004127c0`, vtable `0x00545c48` | per level, `CfgSetDatabaseSizes` | yes |
+| spawn record (a placed object, live or not) | `ObjectTaskRec`, `ObjectTaskManager +0x14` | per level, `CfgSetDatabaseSizes` objects + 500, 0x28 each | serial 0 ([Handles](#handles)) |
+| camera | `Cam_ICamera` base `0x00120868`, vtable `0x00535510` ([Camera](camera.md)) | not traced | yes |
+| object zone | a bit mask in the `ObjectTaskManager`; zone 0 on, 1-254 off at start (`0x00398348` from `0x00397a48`) | 255 | the zone number |
+| brain, goal, action | [AI](ai.md#brain) | 60, 170, 100 | by human |
+| gang | `0x005e6e30` ([AI](ai.md#gang-record)) | 32 × 0xb10 | the slot 0-31 |
+| formation | `0x006ceaf0` ([AI](ai.md#formations)) | 41 × 0x280 | |
+| path | `AddPath` | 32 | a userdata |
+| physics bodies and shapes | [Physics](physics.md#iphysics) | | |
+
+`FreeList<AnimTask>`, `FreeList<WarAnimInstance>`, `FreeList<SoundTask>` and `FreeList<ScriptObject>` are pools
+too (their allocation tags); their sizes are not traced.
 
 ### Clocks and phases {#clocks}
 
@@ -199,7 +281,8 @@ interval 1 updates every tick (60 Hz), one with interval 6 ten times a second. `
 to the phase; an object whose class flags have `0x800` always goes on wheel 0.
 
 **Humans are not on the wheel.** Confirmed (runtime): a hook on the wheel's update call logged 2428 updates over 120
-ticks in the street, from four vtables only (`0x00545660`, `0x005453a0`, `0x005458c8`, `0x00544c08`), never the
+ticks in the street, from four vtables only (`0x00545660` particles, `0x005453a0` world objects, `0x005458c8` scenes,
+`0x00544c08` cars, [Task classes](#classes)), never the
 human's `0x0053f088`. A human's task head has flags `+0x54` = `0x42005001` (no `0x2000`), phase `+0x60` = 2, bucket
 `+0x62` = -1 and interval `+0x6e` = 255, and no wheel bucket of the save state lists one.
 
@@ -356,7 +439,9 @@ dispatcher](#humans-update). None is left.
 ## Open questions {#open-questions}
 
 - The file split of `0x003a1570`-`0x003a4288` between `TaskManager.cpp` and a base task file.
-- What the sub-managers at `+0x844`-`+0x850` and `0x00390e20` update, and the `SceneTask` (`WarMoveInstance`).
+- What the sub-managers' updates at `+0x844`-`+0x850` and `0x00390e20` do, and how the `SceneTask` relates to
+  `WarMoveInstance`.
+- What makes a light task, and the pool sizes of `AnimTask`, `SoundTask`, `ScriptObject` and the cameras.
 - The anim events `0x3e`, `0x3f` and the one that sets `0x2000`; what state code 6 is.
 - The event types `0`, `1`, `7` and `0x17` (`0x10` is the attack warning, [AI](ai.md#block)).
 - Does `TaskManager_TickGame` cap the pairs it runs in one frame, and do millisecond timers lag the steps below 25 fps

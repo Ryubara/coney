@@ -165,7 +165,8 @@ step yet. When world objects come, the settle is a per-object tween run on Coney
 ## Open questions
 
 - Which queries read `+0x14`, and the sort-and-sweep they do.
-- What the 416-, 255- and 18-body pools hold (world objects, cars, doors?).
+- What the 416- and 255-body pools hold (world objects, glass?); the 18-body pool matches the 18 cars
+  ([Tasks](tasks.md#classes), inferred).
 - What the human's ten bone shapes are used for, and the shape types in the dispatch tables.
 - Where the axis mask of `0x00340b38` comes from for a settle.
 - How cars move (`0x0038e590`) and whether they use this world.
