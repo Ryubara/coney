@@ -28,8 +28,9 @@ the fight.
 `Audio/` (`0x0010edd0`-`0x001167b8`, [Source map](source-map.md#audio)): `MusicList.cpp`, `SoundList.cpp`,
 `SoundListener.cpp` (the tasks: `FreeList<SoundTask>` at `0x00547128`), `SoundMatrix.cpp` (the voice table, the
 allocation tag `SoundVoice` and folder `vags/character/voices/` at `0x00548188`-`0x005481c8`); the music player sits
-just before (`0x0010b000`-`0x0010e7d0`, inferred). `Device/ps2/sound/msaudiodevice.cpp` (`0x0014b158`-`0x0014d508`) is
-the platform device over Sony's MultiStream library (`0x0014d528`-`0x00151ed0`, [Audio data](formats/audio.md)).
+just before (`0x0010d758`-`0x0010e7d0`, inferred; [Source map](source-map.md#position)).
+`Device/ps2/sound/msaudiodevice.cpp` (`0x0014b158`-`0x0014d508`) is the platform device over Sony's MultiStream library
+(`0x0014d528`-`0x00151ed0`, [Audio data](formats/audio.md)).
 Names are ours.
 
 | Address | Name | Role | Evidence |
