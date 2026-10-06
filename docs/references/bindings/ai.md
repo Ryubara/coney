@@ -17,7 +17,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`ActTurnTo`](#actturnto) | - | 1 | no | no | inferred |
 | [`ActTurnToDir`](#actturntodir) | - | 3 | no | no | inferred |
 | [`BrCanUseWorldFlags`](#brcanuseworldflags) | - | 6 | yes | no | confirmed (code) |
-| [`BrClearBackoff`](#brclearbackoff) | - | 1 | yes | no | confirmed (code) |
+| [`BrClearBackoff`](#brclearbackoff) | - | 1 | yes | yes | confirmed (code) |
 | [`BrDead`](#brdead) | - | 120 | yes | yes | confirmed (code) |
 | [`BrEnable`](#brenable) | - | 0 | no | no | inferred |
 | [`BrFlush`](#brflush) | - | 124 | yes | yes | confirmed (code) |
@@ -50,7 +50,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalAreaWalker`](#goalareawalker) | - | 13 | no | no | inferred |
 | [`GoalArrestHuman`](#goalarresthuman) | - | 1 | no | no | inferred |
 | [`GoalAvoidEnemies`](#goalavoidenemies) | - | 2 | no | no | inferred |
-| [`GoalBackoff`](#goalbackoff) | - | 8 | yes | no | confirmed (code) |
+| [`GoalBackoff`](#goalbackoff) | - | 8 | yes | yes | confirmed (code) |
 | [`GoalBigBrawler`](#goalbigbrawler) | - | 0 | no | no | speculative |
 | [`GoalBigFighter`](#goalbigfighter) | - | 0 | no | no | speculative |
 | [`GoalBigLedgeThrower`](#goalbigledgethrower) | - | 1 | no | no | inferred |
@@ -79,9 +79,9 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalGuardFlag`](#goalguardflag) | - | 4 | no | no | inferred |
 | [`GoalHoldPosition`](#goalholdposition) | - | 1 | no | no | inferred |
 | [`GoalHooker`](#goalhooker) | - | 0 | no | no | speculative |
-| [`GoalJoinAnimation`](#goaljoinanimation) | - | 2 | yes | no | confirmed (code) |
-| [`GoalJoinCinematic`](#goaljoincinematic) | - | 7 | yes | no | confirmed (code) |
-| [`GoalJoinFixedScene`](#goaljoinfixedscene) | - | 2 | yes | no | confirmed (code) |
+| [`GoalJoinAnimation`](#goaljoinanimation) | - | 2 | yes | yes | confirmed (code) |
+| [`GoalJoinCinematic`](#goaljoincinematic) | - | 7 | yes | yes | confirmed (code) |
+| [`GoalJoinFixedScene`](#goaljoinfixedscene) | - | 2 | yes | yes | confirmed (code) |
 | [`GoalJoinScene`](#goaljoinscene) | - | 0 | no | no | inferred |
 | [`GoalLeadChase`](#goalleadchase) | - | 1 | no | no | inferred |
 | [`GoalLutherShooter`](#goalluthershooter) | - | 1 | no | no | inferred |
@@ -127,7 +127,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`TacticBossScenarioF`](#tacticbossscenariof) | - | 1 | no | no | inferred |
 | [`TacticBossScenarioG`](#tacticbossscenariog) | - | 1 | no | no | inferred |
 | [`TacticBossScenarioH`](#tacticbossscenarioh) | - | 1 | no | no | inferred |
-| [`TacticClear`](#tacticclear) | - | 92 | yes | no | confirmed (code) |
+| [`TacticClear`](#tacticclear) | - | 92 | yes | yes | confirmed (code) |
 | [`TacticConfront`](#tacticconfront) | - | 26 | no | no | inferred |
 | [`TacticCrowd`](#tacticcrowd) | - | 31 | no | yes | confirmed (code) |
 | [`TacticDefend`](#tacticdefend) | - | 23 | no | no | inferred |
@@ -356,7 +356,7 @@ backing away; otherwise does nothing. `global.lua` uses it in its fight helpers.
 
 - **Evidence:** confirmed (code) at `0x00292cf0`; detail: traced
 - **Wrapper** `0x0035f0f0` (registered by `RegisterBindings`); **calls** `0x00292cf0` `Brain_ClearBackoff`
-- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## BrDead {#brdead}
@@ -1094,7 +1094,7 @@ Makes a human back away from another and keep its distance, for a time or until 
 
 - **Evidence:** confirmed (code) at `0x002d9238`; detail: traced
 - **Wrapper** `0x00363d70` (registered by `RegisterBindings`); **calls** `0x002d9238` `Goal_Backoff`
-- **Used by** 8 of 467 script chunks (23 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 8 of 467 script chunks (23 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## GoalBigBrawler {#goalbigbrawler}
@@ -1754,7 +1754,7 @@ Gives a human the goal of taking part in an animation scene in the given role, r
 
 - **Evidence:** confirmed (code) at `0x002e5650`; detail: traced
 - **Wrapper** `0x003615d8` (registered by `RegisterBindings`); **calls** `0x002e5650` `Goal_JoinAnimation`
-- **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## GoalJoinCinematic {#goaljoincinematic}
@@ -1780,7 +1780,7 @@ Gives a human the goal of taking part in a cinematic scene in the given role. If
 
 - **Evidence:** confirmed (code) at `0x002e5300`; detail: traced
 - **Wrapper** `0x003614f8` (registered by `RegisterBindings`); **calls** `0x002e5300` `Goal_JoinCinematic`
-- **Used by** 7 of 467 script chunks (22 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 7 of 467 script chunks (22 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## GoalJoinFixedScene {#goaljoinfixedscene}
@@ -1806,7 +1806,7 @@ its role at once. `global.lua`'s scene helpers call it for each human of a scene
 
 - **Evidence:** confirmed (code) at `0x002e5048`; detail: traced
 - **Wrapper** `0x00361418` (registered by `RegisterBindings`); **calls** `0x002e5048` `Goal_JoinFixedScene`
-- **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## GoalJoinScene {#goaljoinscene}
@@ -3003,7 +3003,7 @@ tactic is kept at gang `+0xdd`.
 
 - **Evidence:** confirmed (code) at `0x00315d70`; detail: traced
 - **Wrapper** `0x00374a80` (registered by `RegisterBindings`); **calls** `0x00315d70` `Gang_ClearTactic`
-- **Used by** 92 of 467 script chunks (208 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 92 of 467 script chunks (208 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** implemented
 
 ## TacticConfront {#tacticconfront}

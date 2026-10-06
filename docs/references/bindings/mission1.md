@@ -4,14 +4,14 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`).
 
-The 206 bindings the first mission can call, for the milestone "the first mission playable from the title screen to its
+The 215 bindings the first mission can call, for the milestone "the first mission playable from the title screen to its
 end": the scripts `level99.lua`, `level99_combat.lua`, `level99_lesson1.lua` and `level99_lesson2.lua`, the `global.lua`
 helpers they reach, and the helpers the engine calls when the mission ends (`UnlockAndLoad`, `runNextMission`). The set
 is an upper bound (a branch the mission never takes still counts); how it is found is under [Usage
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
-**Researched:** 206 of 206 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 22 implemented, 2 partial, 182 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
+**Coney:** 44 implemented, 2 partial, 169 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -68,34 +68,43 @@ leave part of its effect open; its notes say which.
 | [`WCEnableAllCommands`](character.md#wcenableallcommands) | Characters | traced | confirmed (code) | not implemented |
 | [`WCIssueCommand`](character.md#wcissuecommand) | Characters | traced | confirmed (code) | not implemented |
 | [`ActLookAt`](ai.md#actlookat) | AI | traced | confirmed (code) | implemented |
-| [`BrDead`](ai.md#brdead) | AI | traced | confirmed (code) | not implemented |
-| [`BrFlush`](ai.md#brflush) | AI | traced | confirmed (code) | not implemented |
-| [`BrSetFollowSlot`](ai.md#brsetfollowslot) | AI | traced | confirmed (code) | not implemented |
-| [`BrSetFollowSlotSet`](ai.md#brsetfollowslotset) | AI | traced | confirmed (code) | not implemented |
-| [`BrSetNumFollowSlots`](ai.md#brsetnumfollowslots) | AI | traced | confirmed (code) | not implemented |
+| [`BrClearBackoff`](ai.md#brclearbackoff) | AI | traced | confirmed (code) | not implemented |
+| [`BrDead`](ai.md#brdead) | AI | traced | confirmed (code) | implemented |
+| [`BrFlush`](ai.md#brflush) | AI | traced | confirmed (code) | implemented |
+| [`BrSetFollowSlot`](ai.md#brsetfollowslot) | AI | traced | confirmed (code) | implemented |
+| [`BrSetFollowSlotSet`](ai.md#brsetfollowslotset) | AI | traced | confirmed (code) | implemented |
+| [`BrSetNumFollowSlots`](ai.md#brsetnumfollowslots) | AI | traced | confirmed (code) | implemented |
 | [`BrSetThugWantsWeapon`](ai.md#brsetthugwantsweapon) | AI | traced | confirmed (code) | not implemented |
-| [`BrSuspend`](ai.md#brsuspend) | AI | traced | confirmed (code) | not implemented |
-| [`GoalAddressPerson`](ai.md#goaladdressperson) | AI | traced | confirmed (code) | not implemented |
+| [`BrSuspend`](ai.md#brsuspend) | AI | traced | confirmed (code) | implemented |
+| [`GoalAddressPerson`](ai.md#goaladdressperson) | AI | traced | confirmed (code) | implemented |
+| [`GoalBackoff`](ai.md#goalbackoff) | AI | traced | confirmed (code) | not implemented |
 | [`GoalBumLogic`](ai.md#goalbumlogic) | AI | traced | confirmed (code) | not implemented |
-| [`GoalDealer`](ai.md#goaldealer) | AI | traced | confirmed (code) | not implemented |
-| [`GoalFight`](ai.md#goalfight) | AI | traced | confirmed (code) | not implemented |
+| [`GoalDealer`](ai.md#goaldealer) | AI | traced | confirmed (code) | implemented |
+| [`GoalFight`](ai.md#goalfight) | AI | traced | confirmed (code) | implemented |
+| [`GoalJoinAnimation`](ai.md#goaljoinanimation) | AI | traced | confirmed (code) | not implemented |
+| [`GoalJoinCinematic`](ai.md#goaljoincinematic) | AI | traced | confirmed (code) | not implemented |
+| [`GoalJoinFixedScene`](ai.md#goaljoinfixedscene) | AI | traced | confirmed (code) | not implemented |
 | [`GoalMoveToFlag`](ai.md#goalmovetoflag) | AI | traced | confirmed (code) | implemented |
 | [`GoalMoveToUseFlag`](ai.md#goalmovetouseflag) | AI | traced | confirmed (code) | not implemented |
-| [`GoalPlayDynAnimation`](ai.md#goalplaydynanimation) | AI | traced | confirmed (code) | not implemented |
-| [`GoalTrackHuman`](ai.md#goaltrackhuman) | AI | traced | confirmed (code) | not implemented |
+| [`GoalPlayDynAnimation`](ai.md#goalplaydynanimation) | AI | traced | confirmed (code) | implemented |
+| [`GoalTrackHuman`](ai.md#goaltrackhuman) | AI | traced | confirmed (code) | implemented |
 | [`SetInterrogateParam`](ai.md#setinterrogateparam) | AI | traced | confirmed (code) | not implemented |
-| [`TacticCrowd`](ai.md#tacticcrowd) | AI | traced | confirmed (code) | not implemented |
+| [`TacticClear`](ai.md#tacticclear) | AI | traced | confirmed (code) | implemented |
+| [`TacticCrowd`](ai.md#tacticcrowd) | AI | traced | confirmed (code) | implemented |
 | [`GangAddSpawner`](gang.md#gangaddspawner) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangBrDead`](gang.md#gangbrdead) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangBrFlush`](gang.md#gangbrflush) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangCreate`](gang.md#gangcreate) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangBrDead`](gang.md#gangbrdead) | Gangs | traced | confirmed (code) | implemented |
+| [`GangBrFlush`](gang.md#gangbrflush) | Gangs | traced | confirmed (code) | implemented |
+| [`GangClearResponders`](gang.md#gangclearresponders) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangClearWanted`](gang.md#gangclearwanted) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangCreate`](gang.md#gangcreate) | Gangs | traced | confirmed (code) | implemented |
+| [`GangDelete`](gang.md#gangdelete) | Gangs | traced | confirmed (code) | implemented |
 | [`GangInvincible`](gang.md#ganginvincible) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangMakeEnemies`](gang.md#gangmakeenemies) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangMakeFriends`](gang.md#gangmakefriends) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSetMsgHandler`](gang.md#gangsetmsghandler) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangMakeEnemies`](gang.md#gangmakeenemies) | Gangs | traced | confirmed (code) | implemented |
+| [`GangMakeFriends`](gang.md#gangmakefriends) | Gangs | traced | confirmed (code) | implemented |
+| [`GangSetMsgHandler`](gang.md#gangsetmsghandler) | Gangs | traced | confirmed (code) | implemented |
 | [`GangSetTargetable`](gang.md#gangsettargetable) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSetThreatResponse`](gang.md#gangsetthreatresponse) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSuspend`](gang.md#gangsuspend) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetThreatResponse`](gang.md#gangsetthreatresponse) | Gangs | traced | confirmed (code) | implemented |
+| [`GangSuspend`](gang.md#gangsuspend) | Gangs | traced | confirmed (code) | implemented |
 | [`CamEnable`](camera.md#camenable) | Cameras | traced | confirmed (code) | not implemented |
 | [`CameraCreateLocked`](camera.md#cameracreatelocked) | Cameras | traced | confirmed (code) | not implemented |
 | [`CameraMakeActive`](camera.md#cameramakeactive) | Cameras | traced | confirmed (code) | not implemented |

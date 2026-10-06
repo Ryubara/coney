@@ -316,7 +316,7 @@
     stops backing away; otherwise does nothing. `global.lua` uses it in its fight helpers.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
 
 - name: BrSetDamageResponse
   wrapper: 0x0035f278
@@ -930,7 +930,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002e5128 registers (scene, human, role) with the scene through 0x003541a0.
-  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
 
 - name: GoalJoinCinematic
   wrapper: 0x003614f8
@@ -950,7 +950,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002e53e0.
-  usage: {chunks: 7, calls: 22, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 22, boot: true, mission1: true, result_used: false}
 
 - name: GoalJoinAnimation
   wrapper: 0x003615d8
@@ -969,7 +969,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002e56f0; 0x002e5650 never runs the first update.
-  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
 
 - name: GoalHooker
   wrapper: 0x003616b8
@@ -1584,7 +1584,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002d92e8. The flag's meaning is inferred.
-  usage: {chunks: 8, calls: 23, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 23, boot: true, mission1: true, result_used: false}
 
 - name: GoalLutherShooter
   wrapper: 0x00363e50
@@ -1831,7 +1831,7 @@
   notes: >-
     0x001655e0 shuts the tactic down, returns it to the pool and clears gang `+0x40`; a status byte from the tactic is
     kept at gang `+0xdd`.
-  usage: {chunks: 92, calls: 208, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 92, calls: 208, boot: true, mission1: true, result_used: false}
   coney: implemented
 
 - name: TacticHoldTheLine

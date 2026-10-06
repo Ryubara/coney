@@ -21,10 +21,10 @@ read an entry are on the [masterlist](index.md).
 | [`GangCanUseWorldFlags`](#gangcanuseworldflags) | - | 17 | yes | no | confirmed (code) |
 | [`GangClearBums`](#gangclearbums) | - | 2 | no | no | inferred |
 | [`GangClearHandlers`](#gangclearhandlers) | - | 2 | no | no | inferred |
-| [`GangClearResponders`](#gangclearresponders) | - | 17 | yes | no | confirmed (code) |
-| [`GangClearWanted`](#gangclearwanted) | - | 11 | yes | no | confirmed (code) |
+| [`GangClearResponders`](#gangclearresponders) | - | 17 | yes | yes | confirmed (code) |
+| [`GangClearWanted`](#gangclearwanted) | - | 11 | yes | yes | confirmed (code) |
 | [`GangCreate`](#gangcreate) | number | 119 | no | yes | confirmed (code) |
-| [`GangDelete`](#gangdelete) | - | 49 | yes | no | confirmed (code) |
+| [`GangDelete`](#gangdelete) | - | 49 | yes | yes | confirmed (code) |
 | [`GangEnableAttackStrategies`](#gangenableattackstrategies) | - | 4 | yes | no | confirmed (code) |
 | [`GangEngageEnemy`](#gangengageenemy) | - | 10 | no | no | inferred |
 | [`GangExitWorld`](#gangexitworld) | - | 24 | yes | no | confirmed (code) |
@@ -365,7 +365,7 @@ state are deleted, police responders are stood down (0x0016cc60).
 
 - **Evidence:** confirmed (code) at `0x0016b8b0`; detail: traced
 - **Wrapper** `0x0035f668` (registered by `RegisterBindings`); **calls** `0x0016b8b0`
-- **Used by** 17 of 467 script chunks (17 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 17 of 467 script chunks (17 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## GangClearWanted {#gangclearwanted}
@@ -388,7 +388,7 @@ callback may run (which one is not traced).
 
 - **Evidence:** confirmed (code) at `0x0016b5e0`; detail: traced
 - **Wrapper** `0x0035f630` (registered by `RegisterBindings`); **calls** `0x0016b5e0`
-- **Used by** 11 of 467 script chunks (14 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 11 of 467 script chunks (14 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## GangCreate {#gangcreate}
@@ -434,7 +434,7 @@ Deletes a gang: every other gang stops treating it as friend or enemy, and the s
 
 - **Evidence:** confirmed (code) at `0x0016a1e8`; detail: traced
 - **Wrapper** `0x00373200` (registered by `RegisterBindings`); **calls** `0x0016a1e8`
-- **Used by** 49 of 467 script chunks (146 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 49 of 467 script chunks (146 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** implemented
 
 ## GangEnableAttackStrategies {#gangenableattackstrategies}
