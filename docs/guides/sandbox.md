@@ -51,7 +51,7 @@ They live in `assets/sandbox/` with the textures; that folder's README lists the
 | Name | What it has |
 | --- | --- |
 | `default` | The general movement course: a slope gallery from 10° to 60°, stair sets with rises from 10 to 40 cm, ledges from 10 cm to 3 m, platforms with gaps from 0.5 to 4 m, a room with a doorway, corridors from 0.6 to 2 m wide, a measuring strip and a person-sized capsule for scale |
-| `combat` | The fight yard: a passive target 1.5 m in front of the `start` spawn, two side by side in front of `pair`, and one with 1200 health in front of a wall at `wall`, for combos, grabs, throws, tackles and the mugging; and an AI fighter 3 m beyond the `brawl` spawn |
+| `combat` | The fight yard: a passive target 1.5 m in front of the `start` spawn, two side by side in front of `pair`, and one with 1200 health in front of a wall at `wall`, for combos, grabs, throws, tackles and the mugging; one 1.05 m in front of `cross`, for the `combat_cross` trace scenario; and an AI fighter 3 m beyond the `brawl` spawn |
 | `parkour` | The traversal course: fences from 0.6 to 3 m, kerbs and low walls from 0.2 to 1.65 m, climb blocks from 1 to 3.5 m, a raised run of platforms with gaps from 1 to 8 m, drop towers from 2 to 14 m with stairs up, jump-up blocks from 0.5 to 2 m, and a 120 m run-up lane with a mark every metre and a post every 5 m. The fences, walls and blocks sit on both sides of each climb threshold (0.69, 1.7, 2.5 and 2.91 m); its spawns `lane`, `fences`, `walls`, `climbs`, `gaps`, `towers` and `blocks` each start in front of one |
 
 The values from the research that the courses are built round (all from

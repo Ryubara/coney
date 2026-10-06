@@ -109,6 +109,12 @@ void Player::resetCamera() {
     m_previous = m_current;
 }
 
+void Player::placeCamera(float distance, float viewHeading) {
+    m_camera.place(m_human.position(), distance, viewHeading);
+    m_current = capture();
+    m_previous = m_current;
+}
+
 PlayerSnapshot Player::capture() const {
     return PlayerSnapshot{.feet = m_human.position(),
                           .heading = m_human.heading(),

@@ -11,12 +11,14 @@ slot = 1
 patches = ["scripted-pad", "right-stick"]
 
 [coney]
+# Slot 1 is level99 at checkpoint 3 (docs/research/ai.md#level99-save), with Rembrandt walked to the end of a street:
+# Coney starts him and the camera where the slot's first trace row has them (the camera 5.3 m away, its view 2.05°
+# right of his facing).
 level = "level99"
+args = ["--checkpoint", "3", "--start", "75.155,41.1354,0.2231,91.909,5.3,89.854"]
 
 [diff]
-# The walk start's timing and speeds. Where he walks and the camera are not compared: Coney's level99 start has a wall
-# behind it that pushes the camera in (2.8 m) and swings it by 20 degrees as he walks clear, which turns the walk; the
-# original's street spot is open.
+# The walk start's timing and speeds, where he walks, and the camera that follows him.
 start_frame = true
-columns = ["speed", "vz", "gait", "clip", "stamina", "cam_pitch"]
-tolerance = { speed = 0.05, vz = 0.01, gait = 0, clip = 0, stamina = 0, cam_pitch = 1.0 }
+columns = ["x", "y", "heading", "speed", "vz", "gait", "clip", "stamina", "cam_distance", "cam_yaw", "cam_pitch"]
+tolerance = { x = 0.05, y = 0.05, heading = 0.5, speed = 0.05, vz = 0.01, gait = 0, clip = 0, stamina = 0, cam_distance = 0.05, cam_yaw = 0.5, cam_pitch = 1.0 }

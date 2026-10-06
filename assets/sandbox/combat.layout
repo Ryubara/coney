@@ -16,6 +16,7 @@ spawn start at=0,0,0 heading=0
 spawn pair at=10,0,0 heading=0
 spawn wall at=-10,0,0 heading=0
 spawn brawl at=0,-12,0 heading=180
+spawn cross at=10,-8,0 heading=0
 
 # One target 1.5 m ahead of the start, facing it: combos, the grab, the throw, the tackle and the mug.
 target front at=0,1.5,0 heading=180
@@ -24,6 +25,9 @@ target left at=9,1.6,0 heading=180
 target right at=11,1.6,0 heading=180
 # One in front of a wall, for the wall throws (155-161).
 target wall at=-10,1.5,0 heading=180 health=1200
+# One 1.05 m ahead of the cross spawn: the trace scenario combat_cross (research/traces/scenarios/), where the
+# original's civilian walked towards the player, so its X1 steered onto it as onto one standing here.
+target cross at=10,-6.95,0 heading=180
 
 # An AI fighter (docs/research/ai.md) 3 m beyond the brawl spawn, facing it, far from the other spawns: it takes the
 # player on once he comes within its far melee range (5 m), and attacks and reacts.
@@ -39,4 +43,5 @@ box at=0,0,0 size=1,1,0.02 texture=marker solid=no
 box at=10,0,0 size=1,1,0.02 texture=marker solid=no
 box at=-10,0,0 size=1,1,0.02 texture=marker solid=no
 box at=0,-12,0 size=1,1,0.02 texture=marker solid=no
+box at=10,-8,0 size=1,1,0.02 texture=marker solid=no
 box at=-10,2.6,0 size=4,0.3,2.5 texture=wall

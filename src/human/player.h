@@ -123,6 +123,9 @@ class Player {
     /// Places the camera behind the human again with the current follow settings (camera::followDefaults()), with
     /// nothing to blend from: the debug menus' camera reset.
     void resetCamera();
+    /// Places the camera `distance` metres from the human's look-at point with its view facing `viewHeading` (radians),
+    /// with nothing to blend from (camera::FollowCamera::place()): a trace's `--start`.
+    void placeCamera(float distance, float viewHeading);
     /// The enemy query the camera's sprint zoom asks the player's brain (`0x0021d408`): the distance to his nearest
     /// enemy, or none when he has none. Coney has no brains yet, so whatever owns the enemies sets it; none until then.
     void setNearestEnemy(std::optional<float> distance) { m_nearestEnemy = distance; }

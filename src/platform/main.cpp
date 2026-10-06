@@ -531,6 +531,10 @@ int main(int argc, char** argv) {
             return 1;
         }
         playLevel = std::move(*playMode);
+        // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's start.
+        if (const std::optional<coney::StartPlace> start = options->start; start) {
+            playLevel->startAt(*start);
+        }
         if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
             if (auto traced = playLevel->traceTo(*tracePath); !traced) {
                 std::fprintf(stderr, "coney: %s\n", traced.error().message.c_str());

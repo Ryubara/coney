@@ -164,6 +164,12 @@ class FollowCamera {
     /// high above the camera's ground), so Coney's player never does yet.
     void holdHeight(bool on, float scale = 1.0F);
 
+    /// Puts the camera `distance` metres from the look-at point of a target whose feet are at `targetFeet`, at the
+    /// target pitch, its view facing `viewHeading` (radians, 0 facing +y), with nothing in progress: Coney's own, for
+    /// a trace that starts where the original's save state had the camera (`--start`). The constructor's placement is
+    /// this at the leash band's near edge behind the target.
+    void place(anim::Vec3 targetFeet, float distance, float viewHeading);
+
     /// Where the camera is.
     [[nodiscard]] anim::Vec3 position() const { return m_position; }
     /// Where it wants to be (`+0x250`).

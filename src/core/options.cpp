@@ -9,6 +9,9 @@
 #include <string>
 #include <system_error>
 #include <utility>
+#include <vector>
+
+#include "core/parse_number.h"
 
 namespace coney {
 
@@ -20,7 +23,8 @@ constexpr std::string_view kUsage =
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
-    "             [--play-level NAME [--spawn NAME | --checkpoint N] [--trace FILE]] [--sandbox [NAME]]\n"
+    "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
+    "             [--trace FILE]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
@@ -48,6 +52,10 @@ constexpr std::string_view kUsage =
     "                     layout (sandbox alone: default); needs --disc\n"
     "  --spawn NAME       with --play-level sandbox:NAME: the layout's spawn point to start at\n"
     "  --checkpoint N     with --play-level levelN: the checkpoint to start at (1 to 99, default 1)\n"
+    "  --start X,Y,Z,HEADING[,DISTANCE,YAW]\n"
+    "                     with --play-level: start player 1 there (feet in metres, heading in\n"
+    "                     degrees) in place of the level's start, and the camera DISTANCE m from\n"
+    "                     him with its view facing YAW degrees; a test aid for trace scenarios\n"
     "  --trace FILE       with --play-level: write the player's and the camera's state after every\n"
     "                     step to FILE, one CSV line per step\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
@@ -166,6 +174,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.traceFile.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--trace needs --play-level: it traces the player");
+    }
+    if (options.start.has_value() && !options.playLevel.has_value()) {
+        return invalidArgument("--start needs --play-level: it places the player");
     }
     if (!options.sandbox.has_value()) {
         return {};
@@ -302,6 +313,40 @@ std::expected<int, Error> parseCheckpoint(std::string_view text) {
         std::format("--checkpoint needs a whole number from 1 to {}, got \"{}\"", kMaxCheckpoint, text));
 }
 
+// Parses the value after `--start`: four or six decimal numbers separated by commas, X,Y,Z,HEADING and optionally the
+// camera's DISTANCE (above 0) and YAW.
+std::expected<StartPlace, Error> parseStart(std::string_view text) {
+    std::vector<float> values;
+    std::size_t from = 0;
+    while (from <= text.size()) {
+        const std::size_t comma = text.find(',', from);
+        const std::string_view part = text.substr(from, comma == std::string_view::npos ? text.npos : comma - from);
+        const std::optional<double> value = parseDecimal(part);
+        if (!value) {
+            values.clear();
+            break;
+        }
+        values.push_back(static_cast<float>(*value));
+        if (comma == std::string_view::npos) {
+            break;
+        }
+        from = comma + 1;
+    }
+    if (values.size() != 4 && !(values.size() == 6 && values[4] > 0.0F)) {
+        return invalidArgument(
+            std::format("--start needs X,Y,Z,HEADING or X,Y,Z,HEADING,DISTANCE,YAW (decimal numbers, "
+                        "the distance above 0), got \"{}\"",
+                        text));
+    }
+    const bool camera = values.size() == 6;
+    return StartPlace{.x = values[0],
+                      .y = values[1],
+                      .z = values[2],
+                      .headingDegrees = values[3],
+                      .cameraDistance = camera ? std::optional<float>(values[4]) : std::nullopt,
+                      .cameraYawDegrees = camera ? std::optional<float>(values[5]) : std::nullopt};
+}
+
 } // namespace
 
 bool isTestMode(const Options& options) {
@@ -315,6 +360,7 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> fpsCapArg;     // as typed, likewise
     std::optional<std::string> vsyncArg;      // as typed, likewise
     std::optional<std::string> checkpointArg; // as typed, likewise
+    std::optional<std::string> startArg;      // as typed, likewise
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string_view arg = args[i];
         if (arg == "--help") {
@@ -485,6 +531,15 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(checkpoint.error()));
             }
             options.checkpoint = *checkpoint;
+        } else if (arg == "--start") {
+            if (auto value = takeValue(args, i, startArg, "--start", "X,Y,Z,HEADING[,DISTANCE,YAW]"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto start = parseStart(startArg.value_or(std::string{}));
+            if (!start) {
+                return std::unexpected(std::move(start.error()));
+            }
+            options.start = *start;
         } else if (arg == "--screenshot") {
 
             if (auto value = takeValue(args, i, options.screenshotPath, "--screenshot", "the path of a PNG file");

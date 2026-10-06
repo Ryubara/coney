@@ -490,10 +490,13 @@ The two games seldom start at the same spot: Coney starts a level where its scri
 the state was saved. `--start-frame` (or `start_frame = true`) moves each trace into its player's frame at the first
 compared step, so positions are metres from where he stood, forward along +y, and headings are turns from his
 heading then. The camera's points move with him, so a camera that starts at another angle shows as a heading offset.
+To start both at the same spot, give Coney the state's place with `--start X,Y,Z,HEADING,DISTANCE,YAW` in the
+scenario's `args`, taken from the original trace's first row (`x`, `y`, `z`, `heading`, `cam_distance`, `cam_yaw`).
 
 The smoke scenarios reproduce claims of the research pages: `walk60` (the walk start, level99's street, slot 1),
-`run_circle` (the run and the camera's auto-centre turning it into a circle, on the sandbox's open floor) and
-`combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6; the sandbox's fight yard on Coney).
+`run_circle` (the run and the camera's auto-centre turning it into a circle, slot 1), both started at slot 1's spot
+(level99 checkpoint 3 with `--start`), and `combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6, which
+walks in to 1.36 m; on Coney the fight yard's `cross` spawn, a still target 1.05 m away that X1 steers onto alike).
 
 ## Writing up a finding
 

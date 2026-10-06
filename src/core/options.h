@@ -19,6 +19,20 @@ struct TextView {
     std::string text; ///< Marked-up text, or `@` and a UI string id (`@31`, `@0x1f`).
 };
 
+/// What `--start` asks for: where player 1 starts in place of the level's (or the layout's) start, and optionally
+/// where the follow camera starts. Coney's own test aid, so a trace scenario can start where the original's save
+/// state stands (docs/guides/research-workflow.md#comparing-with-coney).
+struct StartPlace {
+    float x = 0.0F; ///< The feet, game axes (metres, z up); dropped onto the ground below as a start is.
+    float y = 0.0F;
+    float z = 0.0F;
+    float headingDegrees = 0.0F; ///< 0 faces +y, anticlockwise.
+    /// The camera's distance from its look-at point (metres) and the heading its view faces (degrees); unset: behind
+    /// the player at the leash band's near edge, as at any start.
+    std::optional<float> cameraDistance;
+    std::optional<float> cameraYawDegrees;
+};
+
 /// Settings taken from the command line.
 struct Options {
     /// Stop after this many frames; unset means run until the window closes. Tests and CI use it. A frame here is
@@ -61,6 +75,9 @@ struct Options {
     /// `--checkpoint`: the checkpoint a level played with `--play-level` starts at, as `SetCheckPoint` sets it before
     /// the level loads; 1 when unset. Requires playLevel to name a level, not a sandbox.
     std::optional<int> checkpoint;
+    /// `--start X,Y,Z,HEADING[,DISTANCE,YAW]`: put player 1 (and the camera) there once the level or layout has
+    /// started (StartPlace). Requires playLevel.
+    std::optional<StartPlace> start;
     /// `--trace`: write the player's and the follow camera's state after every step of `--play-level` to this file,
     /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
     /// (docs/guides/building.md#tracing). Requires playLevel.

@@ -544,6 +544,20 @@ void PlayLevelMode::teleport(const debug::Place& place) {
                                                  .headingDegrees = place.headingDegrees});
 }
 
+void PlayLevelMode::startAt(const StartPlace& place) {
+    // Dropped onto the ground below the spot, as the debug menus' teleport is; then the camera, when given.
+    const raycast::CollisionMesh& mesh = m_scenery->collision();
+    raycast::Vec3 point{place.x, place.y, place.z + kTeleportDrop};
+    if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, point)) {
+        point.z = place.z;
+    }
+    m_player->teleport(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
+                                                 .headingDegrees = place.headingDegrees});
+    if (place.cameraDistance.has_value() && place.cameraYawDegrees.has_value()) {
+        m_player->placeCamera(*place.cameraDistance, *place.cameraYawDegrees * std::numbers::pi_v<float> / 180.0F);
+    }
+}
+
 void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement) {
     // TeleportToFlag sets the transform without a ground snap: spawned without the mesh.
     const std::array<float, 3>& p = placement.position;

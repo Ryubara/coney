@@ -144,10 +144,15 @@ FollowCamera::FollowCamera(anim::Vec3 targetFeet, float targetHeading, const Fol
       m_zoomDistance(settings.maxDistance), m_bandNear(settings.leashNear),
       m_bandWidth(settings.leashFar - settings.leashNear) {
     // Behind the target's facing, at the band's near edge, at the target pitch.
-    m_lookAt = anim::add(targetFeet, anim::Vec3{0.0F, 0.0F, settings.lookAtHeight});
-    const float across = settings.leashNear * std::cos(m_targetPitch);
-    const anim::Vec3 behind{std::sin(targetHeading) * across, -std::cos(targetHeading) * across,
-                            settings.leashNear * std::sin(m_targetPitch)};
+    place(targetFeet, settings.leashNear, targetHeading);
+}
+
+void FollowCamera::place(anim::Vec3 targetFeet, float distance, float viewHeading) {
+    // The look-at point above the feet, and the camera behind it along the view's heading at the target pitch.
+    m_lookAt = anim::add(targetFeet, anim::Vec3{0.0F, 0.0F, m_settings.lookAtHeight});
+    const float across = distance * std::cos(m_targetPitch);
+    const anim::Vec3 behind{std::sin(viewHeading) * across, -std::cos(viewHeading) * across,
+                            distance * std::sin(m_targetPitch)};
     m_wanted = anim::add(m_lookAt, behind);
     m_position = m_wanted;
     stepHardBand();

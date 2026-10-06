@@ -145,7 +145,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
-      [--play-level NAME [--spawn NAME | --checkpoint N] [--trace FILE]]
+      [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE]
       [--dev-overlay N]
@@ -521,6 +521,11 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `cam_distance`, `cam_pitch`, `cam_yaw` | the camera's distance from its look-at point, its pitch above it and the heading its view faces |
 | `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
 | `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
+
+`--start X,Y,Z,HEADING[,DISTANCE,YAW]` (with `--play-level`) moves player 1, after the level's own start, to those
+feet (dropped onto the ground below) and heading in degrees, and with the last two puts the follow camera DISTANCE
+metres from him with its view facing YAW degrees. It is a test aid: a trace scenario starts Coney where the
+original's save state stands, as `walk60` and `run_circle` do from slot 1's first trace row.
 
 The original's trace, recorded in PCSX2 by `coney-tools pcsx2 record`, uses the same names and units for the columns
 both have, and `coney-tools trace coney` runs a scenario's script on Coney with `--trace`; `coney-tools trace diff`

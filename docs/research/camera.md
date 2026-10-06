@@ -576,7 +576,9 @@ The world viewer keeps its own free camera with the player camera's lens
   are not modelled.
 - **The blocked-view latch** clears on the second update the player stands (gait 0, on the ground), as at runtime;
   the condition of the clearing branch (`0x00133140`) is not traced, and `+0x45c` is not modelled apart from it.
-- **A fresh camera** (at the start, or after the player is put back) sits behind the player at 4.8 m and 13°.
+- **A fresh camera** (at the start, or after the player is put back) sits behind the player at 4.8 m and 13°. `--start`
+  with a distance and a yaw places it there instead, its wanted position with it and the hard band stepped once
+  (`FollowCamera::place()`), so a trace scenario starts with the camera of the original's save state.
 
 ## Notes for implementers
 

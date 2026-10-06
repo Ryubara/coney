@@ -17,6 +17,7 @@
 #include "animation/anim_math.h"
 #include "core/error.h"
 #include "core/interpolation.h"
+#include "core/options.h"
 #include "debug/play_controls.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
@@ -131,6 +132,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
     /// replacing it: `--trace`. Fails with ErrorCode::Io when the file cannot be opened.
     [[nodiscard]] std::expected<void, Error> traceTo(const std::string& path);
+
+    /// Starts the player at `place` instead (dropped onto the ground below it, as a start is), and the camera where it
+    /// says, if it says: `--start`, Coney's own test aid.
+    void startAt(const StartPlace& place);
 
     /// Sets the debug lines render() draws (the debug session's, which must outlive the mode); null draws none.
     void setDebugDraw(const debug::DebugDrawOptions* options) { m_debugDraw = options; }

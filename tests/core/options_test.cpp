@@ -9,10 +9,12 @@
 #include <string_view>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
 
+using Catch::Approx;
 using coney::ErrorCode;
 using coney::parseOptions;
 
@@ -383,6 +385,39 @@ TEST_CASE("the checkpoint option picks a level's checkpoint for the play option"
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--checkpoint", "1"}).has_value());
     CHECK(coney::usageText().find("--checkpoint N") != std::string_view::npos);
 }
+TEST_CASE("the start option places the player, and optionally the camera, for the play option", "[options]") {
+    auto place = parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--start",
+                                                       "75.155,41.1354,0.2231,91.909"});
+    REQUIRE(place.has_value());
+    REQUIRE(place->start.has_value());
+    const coney::StartPlace start = place->start.value_or(coney::StartPlace{});
+    CHECK(start.x == Approx(75.155F));
+    CHECK(start.y == Approx(41.1354F));
+    CHECK(start.z == Approx(0.2231F));
+    CHECK(start.headingDegrees == Approx(91.909F));
+    CHECK_FALSE(start.cameraDistance.has_value());
+    // Six numbers add the camera's distance and the heading its view faces; a sandbox takes it too.
+    auto withCamera = parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "sandbox", "--start",
+                                                            "-1,2.5,0,-90,5.3,89.854"});
+    REQUIRE(withCamera.has_value());
+    REQUIRE(withCamera->start.has_value());
+    const coney::StartPlace camera = withCamera->start.value_or(coney::StartPlace{});
+    CHECK(camera.x == -1.0F);
+    CHECK(camera.cameraDistance.value_or(0.0F) == Approx(5.3F));
+    CHECK(camera.cameraYawDegrees.value_or(0.0F) == Approx(89.854F));
+    // Four or six decimal numbers, a distance above 0, given once, and only with --play-level.
+    for (const std::string_view bad : {"", "1,2,3", "1,2,3,4,5", "1,2,3,4,0,0", "1,2,3,x", "1,2,3,4,", ",1,2,3"}) {
+        INFO(std::string(bad));
+        CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--start", bad})
+                        .has_value());
+    }
+    CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--start", "1,2,3,4",
+                                                      "--start", "1,2,3,4"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--start", "1,2,3,4"}).has_value());
+    CHECK(coney::usageText().find("--start X,Y,Z,HEADING") != std::string_view::npos);
+}
+
 TEST_CASE("the assets option takes a folder", "[options][sandbox]") {
     auto assets = parse(std::array<std::string_view, 3>{"--sandbox", "--assets", "some/folder"});
     REQUIRE(assets.has_value());

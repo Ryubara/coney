@@ -24,7 +24,7 @@ setup = [
 
 [coney]
 level = "sandbox:combat"
-args = ["--spawn", "start"]
+args = ["--spawn", "cross"]
 
 [diff]
 columns = ["clip", "command", "gait", "speed", "power"]

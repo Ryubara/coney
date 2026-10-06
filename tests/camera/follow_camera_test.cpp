@@ -131,6 +131,23 @@ TEST_CASE("the camera starts behind the player at the leash's near edge and 13 d
     CHECK(camera.bandFar() == Approx(5.3F));
 }
 
+TEST_CASE("a camera placed by a trace's start sits at the distance and view heading asked, at the target pitch",
+          "[camera]") {
+    // Slot 1's camera: 5.3 m from the look-at point, its view facing 89.854° (2.05° right of the player's 91.909°).
+    FollowCamera camera(Vec3{75.155F, 41.1354F, 0.2231F}, 91.909F * kDegree);
+    camera.place(Vec3{75.155F, 41.1354F, 0.2231F}, 5.3F, 89.854F * kDegree);
+    CHECK(coney::anim::distance(camera.position(), camera.lookAt()) == Approx(5.3F));
+    CHECK(camera.position() == camera.wanted());
+    CHECK(pitchOf(camera) == Approx(13.0F * kDegree));
+    // The view's heading (0 facing +y, anticlockwise): -sin and cos of 89.854° across the ground.
+    const Vec3 view = camera.forward();
+    CHECK(std::atan2(-view.x, view.y) == Approx(89.854F * kDegree).margin(1e-4));
+    // As the trace reads it: the camera 5.16 m along +x from the feet, 1.19 m up from the look-at point.
+    CHECK(camera.position().x == Approx(80.319F).margin(1e-3));
+    CHECK(camera.position().y == Approx(41.122F).margin(1e-3));
+    CHECK(camera.position().z == Approx(2.815F).margin(1e-3));
+}
+
 TEST_CASE("the leash drags the camera into its 4.8-5.3 m band, 22% of the way each update", "[camera]") {
     FollowCamera camera(Vec3{0.0F, 0.0F, 0.0F}, 0.0F);
     const Vec3 start = camera.position();
