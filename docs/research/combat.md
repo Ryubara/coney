@@ -976,11 +976,33 @@ triangle's pick-up search takes it ([Breakables](#breakables) has the search; a 
 1. A type other than 12 (`TYPE_SPECIAL`) or 24 is taken by a player only with empty hands (human `+0x338` Nil). With
    something in hand the search instead sets human `+0x5b8` = 1 and drops the held object (`0x00257f38`).
 2. The winner's record is pinned and it gets message 0. The weapon's handler (`0x003fead0`), while its state (data
-   `+0x10`) is 0, sets it to 3 and sends the human message `0x14`, which plays the pick-up clip (`0x0025e5a8`: the
-   type's pick-up animation and the item's height choose it, as for [loot](#breakables)).
+   `+0x10`) is 0, sets it to 3 and sends the human message `0x14`, which plays the pick-up clip (`0x0025e5a8`, below).
 3. The clip's event (message 3) applies the object's anim set (object type `+0x87`, 3 for a bat) when the human's
    differs (`0x00221ed0`); `Human_PickUpObject` has no case for type 3 and returns 0, so `0x00227010` puts the bat
    in the hand (`+0x338`).
+
+**The pick-up clip** (`0x0025e5a8`, from the human's message `0x14` at `0x00246090`; confirmed (code)). The
+handler reads three bytes of the object's type: the **pick-up animation** (`+0x65`, `CfgObj`'s `pickup_anim`, the
+`ANIM` constants of `Caps.lua`), the **anim set** (`+0x87`) and the type (`+0x86`). The clip is the pair's low one
+when the object's position is at most **0.8 m** above the human's (z difference), else the high one:
+
+| Pick-up animation | Low clip | High clip |
+| --- | --- | --- |
+| 0 `na`, 1 `OneHandPickUp`, and any value above 7 | 461 `ANIM_ONE_HANDED_OBJECT_PICK_UP` | 462 `…_HIGH` |
+| 2 `TwoHandPickUp` | 503 `ANIM_BARREL_PICK_UP` | 504 `…_HIGH` |
+| 3 `OneHandKnifePickUp` | 481 `ANIM_KNIFE_PICK_UP` | 482 `…_HIGH` |
+| 4 `OneHandBatPickUp` | 498 `ANIM_SWINGABLE_OBJECT_PICK_UP` | 499 `…_HIGH` |
+| 5 `LeftHandPickUp` | 463 `ANIM_ONE_HANDED_OBJECT_PICK_UP_LEFT` | 464 `…_LEFT_HIGH` |
+| 6 `LeftHandHatPickUp` | 465 `ANIM_ONE_HANDED_OBJECT_PICK_UP_LEFT_HAT`, at any height | |
+| 7 `GhettoPickUp` | 549 `ANIM_GHETTO_PICK_UP` | 550 `…_HIGH` |
+
+`dyn_bat_tuff` is `OneHandPickUp` (the objects list), hence 461 from the ground. Before the clip, a pick-up
+animation of 5 or 6, or an anim set of 4 or 6 on the human, drops what the human holds (`0x00257f38`) when he holds
+something. The clip plays with a 0.2 s blend and chains into the human's idle (clip slot 0) or, with state bits 3,
+his fight idle (slot `0xb`, record `+0x18` = `0xb`); while that follow-on is set up, the object's anim set is
+pushed (and popped after) when the human lacks state `0x200000` or the set is 4 (`OVERHEAD_WEAPON_SET`) or 6
+(`GHETTO_SET`). The steer (`0x00275d10`) gets the time to the clip's first event. A type 44 object (`0x2c`) is
+checked against an inventory count first (`0x0041e420`, `0x0041ded0`, not traced).
 
 At runtime (slot 1, a bat 1 m ahead): triangle started clip **461** with set 3, `Human_PickUpObject` ran 9 updates
 later and the hand held the bat the update after. Confirmed (runtime). `Human_PlaceItemInHand` (`0x00238540`,
@@ -1269,8 +1291,35 @@ runtime gains at `gain` 144 (confirmed (runtime)):
 | 19, 20 `SSS3` | 3 | 0 | 4 | 0 |
 | 21-24 | 1 | 0 | 1 | |
 
-Other ids award other events: `0x1f5`, `0xfa`, `0xc1`-`0xc7`, and the grab and escape ids `0x68`, `0x74`, `0x78`,
-`0x7a` (event 2 × 10), plus ranges such as `0x22`-`0x2c` (confirmed (code), the events' meanings not traced).
+**The other attacks** (confirmed (code) at `0x002653d8`; the rage is `trunc(points × 1.44)` at class 6, from the
+table 3 values above: event 0 = 6, event 1 = 4, event 2 = 1, event 3 = 7, event 5 = 3 points). Each row is one
+award, halved (`>> 1`) when blocked unless marked:
+
+| Anim ids | Award | Rage (blocked) |
+| --- | --- | --- |
+| 0, 1 | event 0 × 1 (6 points) | 8 (4) |
+| 25-30 (`0x19`-`0x1e`) | event 5 × 1 | 4 (1) |
+| **34** `BAT_COMBO_S1`, 39 (set 2's square) | event 2 × 2 | **2** (1) |
+| 35, **36** `BAT_COMBO_X1`, **37**, **38** (the bat's grounded and mounting strikes), 40-44 | event 1 × 2 | **11** (5) |
+| 45, 46 (set 1's square) | event 2 × 2 | 2 (1) |
+| 47-50 | event 1 × 2 | 11 (5) |
+| 51-56 | event 2 × 1 | 1 (0) |
+| `0x68`, `0x74`, `0x78`, `0x7a` (grab and escape ids) | event 2 × 10 | 14 (7) |
+| `0xc1`, `0xc2`, `0xd4`, `0x1ea`, `0x1f5` | event 1 × 1 | 5 (2) |
+| `0xdb`-`0xe0` | event 2 × 1 | 1 (0) |
+| `0xfa` | event 2 × 1, not halved | 1 (1) |
+| `0x1e4`, `0x1e6`, `0x1e8`, `0x1ec`, `0x1ee`, `0x1f0` | event 3 × 2 | 20 (10) |
+| `0x269`-`0x26c` | table 2 (`0x004ed988`) entry 0 × 1; blocked `0x004eda18` >> 1 | 75 points, over 25: 10 |
+| `0x285`-`0x28b`, `0x28d`-`0x293` | event 1 × 3 | 17 (8) |
+
+Every other id awards nothing. So **a bat's square gives 2 rage and its cross, grounded and mounting strikes 11
+each**; seven crosses leave the meter at 77 of 78 and the eighth fills it. A bat's 34, 36, 37 and 38 are kind 4 for
+the repeat tracker, so they never halve; only 35 (the bat `SS2`) counts as square-ended. The awards come only for
+an attacker whose brain is the player's (type 0, brain `+0x04`) and who is not an ally of the victim
+(`0x00290230`), and none when the victim is of class `+0x11b` 13 with flag `0x10`, or has state `0x180040000`;
+`Human_AddRage` also needs a victim that passes `0x00227eb0` and `0x00227dd8` (not traced). For player 0 the
+tutorial callback (`0x609250`) gets the attack's anim id first, before the victim tests, so it fires even for a hit
+that gives no rage.
 
 **The meter falls**: an unspent meter decays by the maximum × Warrior byte `+0x03` / 100 per 20 s (`0x00510294`;
 200 % → 7.8 per second) once the hold timer passes; while raging it drains by byte `+0x04` (240 % → **9.36 per
@@ -1805,10 +1854,8 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   ([Target selection](#targets)). Still open: what slows those 5 updates.
 - **Class 13**: which character class it is (it gets hit armour and adds 2 s to a knockdown).
 - **The rage events**: the meaning of the events beyond the chain attacks' (`0x002653d8`, `0x00264fa0`).
-- **A weapon's rage**: what a bat's 34 and 36 award (ids `0x22`-`0x2c` map to events not traced); Coney gives
-  them `S1`'s and `X1`'s.
-- **The pick-up clip**: how a type's pick-up animation other than 5 chooses its clip (a bat's 1 played 461 from
-  the ground), and whether such an item held high takes another.
+- **A weapon's rage** (answered): a bat's 34 gives 2, its 36, 37 and 38 give 11 ([Rage](#rage)).
+- **The pick-up clip** (answered): a pair per pick-up animation, high above 0.8 m ([A bat in hand](#bat)).
 - **Commands `0x30`-`0x39`**: which scripts or weapons make them; `0x36`-`0x38` and the d-pad (`0x27`).
 - **Mini-game mode 2 at runtime** (answered from the code: modes 1 and 2 are uncuffing and lock picking,
   [Crimes](crimes.md#mini-game-record)).
