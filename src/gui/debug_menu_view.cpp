@@ -190,18 +190,14 @@ void DebugMenuView::drawOverlays(debug::DebugSession& session, DebugTextPainter&
         outline(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y,
                 graphics::Rgba{230, 200, 60, 200});
     }
-    if (display.frameStats) {
-        const debug::TimeControl& time = session.time();
-        std::string text = std::format("frames {}  steps {}", time.frames(), time.steps());
-        if (time.paused()) {
-            text += "  PAUSED";
-        } else if (time.slowMotion() > 1) {
-            text += std::format("  1/{} speed", time.slowMotion());
-        }
+    // The corner lines (frame stats, FPS counter), right-aligned and stacked, each on its own backing.
+    float y = 4.0F;
+    for (const std::string& text : session.cornerLines()) {
         const float width = painter.measure(text);
         const float x = graphics::kLogicalWidth - width - 8.0F;
-        rect(x - 3.0F, 4.0F, width + 6.0F, painter.lineHeight() + 2.0F, kPanelColour);
-        painter.text(text, x, 5.0F, kTextColour);
+        rect(x - 3.0F, y, width + 6.0F, painter.lineHeight() + 2.0F, kPanelColour);
+        painter.text(text, x, y + 1.0F, kTextColour);
+        y += painter.lineHeight() + 2.0F;
     }
 }
 

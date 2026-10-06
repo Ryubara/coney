@@ -9,6 +9,11 @@ namespace coney {
 FrameClock::FrameClock(FramePacing pacing)
     : m_pacing(pacing), m_accumulated(pacing == FramePacing::Interpolated ? kStepUnits : 0) {}
 
+void FrameClock::setPacing(FramePacing pacing) {
+    m_pacing = pacing;
+    m_accumulated = 0;
+}
+
 FramePlan FrameClock::advance(std::uint64_t elapsedNanoseconds) {
     if (m_pacing == FramePacing::Lockstep) {
         return FramePlan{.steps = 1, .alpha = 1.0F};

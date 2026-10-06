@@ -138,6 +138,9 @@ std::string valueText(const MenuItem& item) {
     case ItemKind::Toggle:
         return item.getBool && item.getBool() ? "on" : "off";
     case ItemKind::Number: {
+        if (!item.minText.empty() && item.getNumber && item.getNumber() <= item.min) {
+            return item.minText;
+        }
         const std::string number = item.getNumber ? formatNumber(item.getNumber(), item.integer) : "?";
         return item.units.empty() ? number : number + " " + item.units;
     }

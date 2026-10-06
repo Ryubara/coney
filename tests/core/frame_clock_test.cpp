@@ -151,3 +151,20 @@ TEST_CASE("frames slower than the cap slow the game down instead of piling up st
     const Fed fed = feed(clock, framesAt(5, 10));
     CHECK(fed.steps == 1 + (4 * 5 * 10));
 }
+
+TEST_CASE("a change of pacing between frames starts the new pacing afresh", "[frame_clock]") {
+    // Uncapped at 60 frames a second, then the debug menus set a cap of 30: lockstep, one step a frame at alpha 1.
+    FrameClock clock(FramePacing::Interpolated);
+    (void)feed(clock, framesAt(60, 1));
+    clock.setPacing(FramePacing::Lockstep);
+    CHECK(clock.pacing() == FramePacing::Lockstep);
+    CHECK(clock.leftover() == 0);
+    const FramePlan locked = clock.advance(kSecond / 30);
+    CHECK(locked.steps == 1);
+    CHECK(locked.alpha == 1.0F);
+    // Back to uncapped: nothing banked, so half a step's time runs none, and a second runs thirty.
+    clock.setPacing(FramePacing::Interpolated);
+    CHECK(clock.advance(kSecond / 60).steps == 0);
+    const Fed fed = feed(clock, framesAt(60, 1));
+    CHECK(fed.steps == 30);
+}

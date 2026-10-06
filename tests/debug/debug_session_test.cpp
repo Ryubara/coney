@@ -5,8 +5,10 @@
 #include "debug/debug_session.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -194,4 +196,56 @@ TEST_CASE("the Time page shows and samples the frame time only when the platform
     const coney::debug::TimeSeries* series = timed.model().channel("Time/Frame ms");
     REQUIRE(series != nullptr);
     CHECK(series->latest() == 16.5F);
+}
+
+TEST_CASE("the FPS counter shows the platform's rates, and says when there is no real clock", "[debug]") {
+    TunableRegistry tunables;
+    DebugSession bare(tunables, DebugServices{}, nullptr);
+    CHECK(bare.cornerLines().empty());
+    bare.model().openPage("Display")->find("FPS counter")->setBool(true);
+    CHECK(bare.cornerLines() == std::vector<std::string>{"fps: lockstep, no real clock"});
+
+    DebugServices services;
+    std::optional<coney::FrameRateReading> rates;
+    services.frameRate = [&rates] { return rates; };
+    DebugSession timed(tunables, services, nullptr);
+    timed.display().fpsCounter = true;
+    timed.display().frameStats = true;
+    // The frame stats first, then the counter: measuring until the first half second ends.
+    REQUIRE(timed.cornerLines().size() == 2);
+    CHECK(timed.cornerLines()[0] == "frames 0  steps 0");
+    CHECK(timed.cornerLines()[1] == "fps: measuring");
+    rates = coney::FrameRateReading{.framesPerSecond = 59.94, .frameMilliseconds = 16.683, .stepsPerSecond = 30.0};
+    CHECK(timed.cornerLines()[1] == "59.9 fps  16.68 ms  30.0 steps/s");
+}
+
+TEST_CASE("the Display page changes the frame cap and vsync live where the platform paces frames", "[debug]") {
+    TunableRegistry tunables;
+    DebugSession bare(tunables, DebugServices{}, nullptr);
+    const auto lockstep = bare.model().openPage("Display");
+    REQUIRE(lockstep->find("FPS cap") != nullptr);
+    CHECK(lockstep->find("FPS cap")->kind == ItemKind::Watch);
+    CHECK(lockstep->find("Vsync") == nullptr);
+
+    DebugServices services;
+    std::uint32_t cap = 0;
+    bool vsync = true;
+    services.fpsCap = [&cap] { return cap; };
+    services.setFpsCap = [&cap](std::uint32_t fps) { cap = fps; };
+    services.vsync = [&vsync] { return vsync; };
+    services.setVsync = [&vsync](bool on) { vsync = on; };
+    DebugSession paced(tunables, services, nullptr);
+    const auto page = paced.model().openPage("Display");
+    const MenuItem* capItem = page->find("FPS cap");
+    REQUIRE(capItem != nullptr);
+    REQUIRE(capItem->kind == ItemKind::Number);
+    CHECK(coney::debug::valueText(*capItem) == "uncapped");
+    // Three steps of ten up from no cap: 30, the original's rhythm.
+    coney::debug::adjustItem(*capItem, 3, coney::debug::StepSize::Normal);
+    CHECK(cap == 30);
+    CHECK(coney::debug::valueText(*capItem) == "30 fps");
+    const MenuItem* vsyncItem = page->find("Vsync");
+    REQUIRE(vsyncItem != nullptr);
+    vsyncItem->setBool(false);
+    CHECK_FALSE(vsync);
 }

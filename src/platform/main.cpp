@@ -630,11 +630,27 @@ int main(int argc, char** argv) {
     // The debug menus (docs/guides/debug-menu.md), Coney's own tools: a session over the game's services whose input
     // gate sits between the pads and the game, drawn over every frame by the pad menu overlay.
     coney::debug::DebugServices debugServices;
-    // The real time of each frame, for the Time page: the frame pacer measures it, so only outside test mode, which
-    // keeps no real clock.
+    // The main loop's pacing (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock:
+    // one step and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it
+    // into fixed steps, rendering blended between them; a cap of 30 is the original's rhythm, one step per frame,
+    // unblended.
+    const bool testMode = coney::isTestMode(*options);
+    constexpr std::uint32_t kStepsPerSecond = 30;
+    const auto pacingFor = [](std::uint32_t cap) {
+        return cap == kStepsPerSecond ? coney::FramePacing::Lockstep : coney::FramePacing::Interpolated;
+    };
+    const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
+    coney::FrameClock clock(testMode ? coney::FramePacing::Lockstep : pacingFor(fpsCap));
+    std::optional<coney::platform::FramePacer> pacer;
+    if (!testMode) {
+        pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(printText)
+                                               : std::function<void(std::string_view)>());
+    }
+    // The real time of each frame and the rates, for the Time and Display pages, and the cap and vsync, changed live
+    // there: the frame pacer measures and paces, so only outside test mode, which keeps no real clock.
     const bool windowed = renderer.window().has_value();
     double frameMilliseconds = 0.0;
-    if (!coney::isTestMode(*options)) {
+    if (pacer) {
         debugServices.frameMilliseconds = [&frameMilliseconds] { return frameMilliseconds; };
     }
     if (startUp) {
@@ -645,6 +661,16 @@ int main(int argc, char** argv) {
         debugServices.loadLevel = [&startUp](std::string_view name) {
             startUp->menuLoadLevel(name);
             return true;
+        debugServices.frameRate = [&pacer] { return pacer->meter().reading(); };
+        debugServices.fpsCap = [&pacer] { return pacer->cap(); };
+        debugServices.setFpsCap = [&pacer, &clock, pacingFor](std::uint32_t cap) {
+            pacer->setCap(cap);
+            clock.setPacing(pacingFor(cap));
+        };
+    }
+    if (windowed) {
+        debugServices.vsync = [&renderer] { return renderer.vsync(); };
+        debugServices.setVsync = [&renderer](bool on) { renderer.setVsync(on); };
         };
     }
     // Without the level flow, a level the Levels page asks for replaces the play mode at the start of the next frame
@@ -808,14 +834,7 @@ int main(int argc, char** argv) {
         renderer.requestCapture(*frameLimit - 1, *screenshotPath);
     }
 
-    // The main loop (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock: one step
-    // and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it into fixed
-    // steps, rendering blended between them; a cap of 30 is the original's rhythm, one step per frame, unblended.
-    const bool testMode = coney::isTestMode(*options);
-    const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
-    constexpr std::uint32_t kStepsPerSecond = 30;
-    coney::FrameClock clock(testMode || fpsCap == kStepsPerSecond ? coney::FramePacing::Lockstep
-                                                                  : coney::FramePacing::Interpolated);
+    // The main loop, paced as set up above.
     std::optional<coney::platform::Window> window = renderer.window();
     // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
@@ -842,11 +861,8 @@ int main(int argc, char** argv) {
         }
         return running;
     };
-    std::optional<coney::platform::FramePacer> pacer;
-    if (!testMode) {
-        coney::platform::FramePacer& paced =
-            pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(printText)
-                                                   : std::function<void(std::string_view)>());
+    if (pacer) {
+        coney::platform::FramePacer& paced = *pacer;
         // The pacer's measure of each frame is also the debug menus' frame time.
         hooks.waitForFrame = [&paced, &frameMilliseconds] {
             const std::uint64_t nanoseconds = paced.waitForFrame();

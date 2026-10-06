@@ -6,6 +6,8 @@
 #include <string>
 #include <string_view>
 
+#include "core/frame_rate_meter.h"
+
 // No SDL type appears in this header, so code that holds a FramePacer stays platform-neutral and never includes SDL.
 
 namespace coney::platform {
@@ -27,8 +29,16 @@ class FramePacer {
     /// drift; a frame that runs more than one period late starts the count again rather than rushing to catch up.
     [[nodiscard]] std::uint64_t waitForFrame();
 
-    /// Counts a finished frame that ran `steps` fixed steps, for the report.
+    /// Counts a finished frame that ran `steps` fixed steps, with the time waitForFrame() last measured, for the rates.
     void endFrame(std::uint32_t steps);
+
+    /// The cap, frames a second (0: none).
+    [[nodiscard]] std::uint32_t cap() const { return m_cap; }
+    /// Changes the cap from the next frame on (the debug menus' Display page); the count of capped frames starts again.
+    void setCap(std::uint32_t fpsCap);
+
+    /// The rates of the last half second, for the debug menus' FPS counter; nothing before the first half second.
+    [[nodiscard]] const FrameRateMeter& meter() const { return m_display; }
 
     /// One line of totals since the pacer started: frames, steps, seconds and both rates.
     [[nodiscard]] std::string summary() const;
@@ -36,15 +46,15 @@ class FramePacer {
   private:
     std::uint32_t m_cap;
     std::function<void(std::string_view)> m_report;
-    std::uint64_t m_lastStart = 0;  // when the previous frame started, in SDL nanoseconds; 0 before the first
-    std::uint64_t m_epoch = 0;      // the start of the current run of capped frames
-    std::uint64_t m_capFrames = 0;  // frames since m_epoch
-    std::uint64_t m_firstStart = 0; // when the first frame started, for summary()
-    std::uint64_t m_frames = 0;     // totals for summary()
+    std::uint64_t m_lastStart = 0;   // when the previous frame started, in SDL nanoseconds; 0 before the first
+    std::uint64_t m_lastElapsed = 0; // what waitForFrame() last returned
+    std::uint64_t m_epoch = 0;       // the start of the current run of capped frames
+    std::uint64_t m_capFrames = 0;   // frames since m_epoch
+    std::uint64_t m_firstStart = 0;  // when the first frame started, for summary()
+    std::uint64_t m_frames = 0;      // totals for summary()
     std::uint64_t m_steps = 0;
-    std::uint64_t m_windowStart = 0; // the current report second
-    std::uint64_t m_windowFrames = 0;
-    std::uint64_t m_windowSteps = 0;
+    FrameRateMeter m_reportMeter{FrameRateMeter::kSecond}; // the report's second
+    FrameRateMeter m_display{FrameRateMeter::kHalfSecond}; // the FPS counter's half second
 };
 
 } // namespace coney::platform

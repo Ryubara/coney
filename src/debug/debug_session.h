@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "core/frame_rate_meter.h"
 #include "debug/input_gate.h"
 #include "debug/lua_console.h"
 #include "debug/menu_model.h"
@@ -25,6 +28,7 @@ namespace coney::debug {
 /// What the Display page switches: overlays a front end draws over the game's screen.
 struct DisplayOptions {
     bool frameStats = false;    ///< Frames run, steps run and the time controls, in a corner.
+    bool fpsCounter = false;    ///< The frame rate, frame time and steps a second, under the frame stats.
     bool safeArea = false;      ///< The GUI square's edges: the overlay camera's built-in safe-area margin.
     bool logicalBounds = false; ///< The 640 x 448 logical screen's edges.
 };
@@ -50,6 +54,15 @@ struct DebugServices {
     /// The real time the last frame took, in milliseconds, as the platform measures it; empty in a run with no real
     /// clock (headless, tests), which then shows no frame time. Only shown and plotted: the steps never depend on it.
     std::function<double()> frameMilliseconds;
+    /// The frame and step rates of the last half second (the frame pacer's FrameRateMeter), nothing before the first;
+    /// empty in a run with no real clock. Only shown, like the frame time.
+    std::function<std::optional<FrameRateReading>()> frameRate;
+    /// The frame cap (frames a second, 0: none) and how to change it live; empty in a run with no real clock.
+    std::function<std::uint32_t()> fpsCap;
+    std::function<void(std::uint32_t)> setFpsCap;
+    /// Whether a present waits for the vertical blank, and how to change it live; empty without a window.
+    std::function<bool()> vsync;
+    std::function<void(bool)> setVsync;
     /// The mode the player plays in, when one runs (the play mode); null otherwise. The Player, Camera and Spawner
     /// pages act on it, asking for it at each use, since the mode can change while a page is open.
     std::function<PlayControls*()> play;
@@ -111,6 +124,10 @@ class DebugSession {
 
     /// Prints `line` to the session's log and to the log callback.
     void print(std::string line);
+
+    /// The lines the Display page's corner overlays show now, top first: the frame stats and the FPS counter, each
+    /// while switched on. A front end draws them in the top-right corner, with the menu open or closed.
+    [[nodiscard]] std::vector<std::string> cornerLines() const;
 
   private:
     TunableRegistry& m_tunables;

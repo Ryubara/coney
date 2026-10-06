@@ -3,6 +3,7 @@ add_executable(coney_tests
     camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
     core/frame_clock_test.cpp
+    core/frame_rate_meter_test.cpp
     core/game_random_test.cpp
     core/game_timer_test.cpp
     core/input_script_test.cpp

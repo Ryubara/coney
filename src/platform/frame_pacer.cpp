@@ -41,31 +41,29 @@ std::uint64_t FramePacer::waitForFrame() {
     } else if (m_lastStart == 0) {
         m_epoch = now;
         m_firstStart = now;
-        m_windowStart = now;
     }
-    const std::uint64_t elapsed = m_lastStart == 0 ? 0 : now - m_lastStart;
+    m_lastElapsed = m_lastStart == 0 ? 0 : now - m_lastStart;
     m_lastStart = now;
-    return elapsed;
+    return m_lastElapsed;
 }
 
 void FramePacer::endFrame(std::uint32_t steps) {
     ++m_frames;
     m_steps += steps;
-    ++m_windowFrames;
-    m_windowSteps += steps;
-    if (!m_report) {
-        return;
+    // Both meters take the frame period that ended as this frame began: over a span the two add up the same.
+    (void)m_display.add(m_lastElapsed, steps);
+    if (m_reportMeter.add(m_lastElapsed, steps) && m_report) {
+        const FrameRateReading rates = m_reportMeter.reading().value_or(FrameRateReading{});
+        m_report(
+            std::format("frame rate: {:.1f} frames/s, {:.1f} steps/s\n", rates.framesPerSecond, rates.stepsPerSecond));
     }
-    // One line per second of real time.
-    const std::uint64_t now = SDL_GetTicksNS();
-    if (now - m_windowStart >= kNanosecondsPerSecond) {
-        const std::uint64_t span = now - m_windowStart;
-        m_report(std::format("frame rate: {:.1f} frames/s, {:.1f} steps/s\n", perSecond(m_windowFrames, span),
-                             perSecond(m_windowSteps, span)));
-        m_windowStart = now;
-        m_windowFrames = 0;
-        m_windowSteps = 0;
-    }
+}
+
+void FramePacer::setCap(std::uint32_t fpsCap) {
+    m_cap = fpsCap;
+    // Count the new cap's periods from the last frame's start, so the change neither rushes nor stalls a frame.
+    m_epoch = m_lastStart;
+    m_capFrames = 0;
 }
 
 std::string FramePacer::summary() const {

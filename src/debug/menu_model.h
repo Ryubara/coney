@@ -70,6 +70,7 @@ struct MenuItem {
     double step = 1.0;
     bool integer = false;
     std::string units;
+    std::string minText; ///< Shown in place of the value and units at the minimum ("uncapped"); empty: the number.
     std::optional<double> defaultValue;
 
     /// Choice: the options, the chosen one and how to choose.

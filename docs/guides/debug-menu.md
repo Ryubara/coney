@@ -116,7 +116,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
 | Debug draw | lines in the scene: collision near the player, the player's heading and velocity, the camera, places |
-| Display | the frame-stats line, the GUI safe area and the logical screen's edges, drawn over the game |
+| Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the GUI safe area, the logical screen |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
 
 **Time.** The game always advances by whole fixed 1/30 s steps. Paused, no step runs; *Step one* runs exactly one.
@@ -148,6 +148,13 @@ does, while the player stands still and the scenery streams round the free camer
 (Coney's own sizes) in front of the player, facing his way, and rebuilds the sandbox with its collision and lighting; a
 level cannot spawn yet. *AI fighters* spawns a fighter ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front
 of the player, facing him, in a sandbox or a level; *Engaging* off keeps idle fighters from taking him on.
+
+**Display.** *FPS counter* shows, in the top-right corner under the frame stats, the frames a second, the average
+frame time and the steps a second over each half second, as the frame pacer measures them (`coney::FrameRateMeter`,
+whose one-second readings `--show-fps` prints); it is only shown, never read by a step. *FPS cap* and *Vsync* change
+the pacing live, as `--fps-cap` and `--vsync` set it at start: a cap of 30 runs one step a frame, any other (0 shows
+as *uncapped*) blends between steps ([Update and render](conventions.md#update-and-render)). A test-mode run has no
+real clock, so the counter says so and there is no cap to change.
 
 **Debug draw** switches lines the play mode draws into the scene, tested against depth: the collision triangles within
 a radius of the player as a wireframe (at most 6,000), a cross at his feet with his heading and velocity, the ground's

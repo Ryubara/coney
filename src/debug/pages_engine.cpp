@@ -166,11 +166,33 @@ void addDisplayPage(DebugSession& session) {
     DisplayOptions& display = session.display();
     session.model().addPage(
         "Display",
-        [&display](MenuPage& page) {
+        [&display, &session](MenuPage& page) {
             page.add(toggleItem(
                          "Frame stats", [&display] { return display.frameStats; },
                          [&display](bool on) { display.frameStats = on; }))
                 .withHelp("Frames and steps run, and the time controls, in the top-right corner.");
+            page.add(toggleItem(
+                         "FPS counter", [&display] { return display.fpsCounter; },
+                         [&display](bool on) { display.fpsCounter = on; }))
+                .withHelp("Frames a second, the average frame time and steps a second, over each half second.");
+            // The real-time pacing, live; a lockstep run (tests, scripted input) has none to change.
+            const DebugServices& services = session.services();
+            if (services.fpsCap && services.setFpsCap) {
+                MenuItem cap = numberItem(
+                    "FPS cap", [get = services.fpsCap] { return static_cast<double>(get()); },
+                    [set = services.setFpsCap](double fps) { set(static_cast<std::uint32_t>(fps)); }, 0.0, 1000.0, 10.0,
+                    true);
+                cap.units = "fps";
+                cap.minText = "uncapped";
+                cap.help = "Frames a second at most; 0 for no cap, 30 for the original's one step a frame.";
+                page.add(std::move(cap));
+            } else {
+                page.add(watchItem("FPS cap", [] { return std::string("none: lockstep, no real clock"); }));
+            }
+            if (services.vsync && services.setVsync) {
+                page.add(toggleItem("Vsync", services.vsync, services.setVsync))
+                    .withHelp("Waits for the display's vertical blank on each present.");
+            }
             page.add(toggleItem(
                          "Safe area", [&display] { return display.safeArea; },
                          [&display](bool on) { display.safeArea = on; }))

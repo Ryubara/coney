@@ -59,8 +59,11 @@ class FrameClock {
     /// The plan for a frame that took `elapsedNanoseconds` of real time since the previous one (ignored in lockstep).
     [[nodiscard]] FramePlan advance(std::uint64_t elapsedNanoseconds);
 
-    /// The pacing chosen at construction.
+    /// The pacing now: the one chosen at construction, or the last setPacing().
     [[nodiscard]] FramePacing pacing() const { return m_pacing; }
+    /// Changes the pacing between two frames (the debug menus' live frame cap: a cap of 30 is lockstep, any other
+    /// interpolated). Real time not yet stepped is dropped, so the next frame starts the new pacing afresh.
+    void setPacing(FramePacing pacing);
 
     /// Real time credited but not yet run as a step, in millionths of a tick (always less than one step).
     [[nodiscard]] std::uint64_t leftover() const { return m_accumulated; }

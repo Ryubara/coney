@@ -197,6 +197,10 @@ bool ImGuiModelView::drawEntry(const MenuItem& item, const std::string& path, co
         if (!item.units.empty()) {
             format += " " + escapePercent(item.units);
         }
+        // At the minimum a word may stand for the value ("uncapped"); ImGui shows the format text as it is.
+        if (!item.minText.empty() && value <= item.min) {
+            format = escapePercent(item.minText);
+        }
         // A quarter step per pixel dragged; Ctrl+click types a value, which the range clamps.
         const auto speed = static_cast<float>(item.step * 0.25);
         if (ImGui::DragScalar(item.label.c_str(), ImGuiDataType_Double, &value, speed, &item.min, &item.max,
