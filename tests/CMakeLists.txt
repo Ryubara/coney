@@ -83,6 +83,7 @@ add_executable(coney_tests
     scripting/lua_libraries_test.cpp
     scripting/lua_vm_test.cpp
     scripting/scene_bindings_test.cpp
+    scripting/object_bindings_test.cpp
     scripting/script_bindings_test.cpp
     scripting/script_system_test.cpp
     scripting/spawn_bindings_test.cpp
@@ -99,7 +100,12 @@ add_executable(coney_tests
     world/world_streamer_test.cpp
     world/world_streams_test.cpp
     world_objects/flags_test.cpp
+    world_objects/disc_doors_test.cpp
     world_objects/disc_object_list_test.cpp
+    world_objects/doors_test.cpp
+    world_objects/glass_test.cpp
+    world_objects/lock_pick_test.cpp
+    world_objects/nav_links_test.cpp
     world_objects/object_list_test.cpp
     world_objects/volume_boxes_test.cpp)
 # Characters: the animation format and player, and the character resources.

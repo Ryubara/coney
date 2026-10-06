@@ -322,6 +322,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 7, calls: 12, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgSetLockPickStageFailHandler
   wrapper: 0x0035a760
@@ -336,6 +337,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgSetSteroTheftHandler
   wrapper: 0x0035a790
@@ -1395,6 +1397,7 @@
     The readers are the glass pane's initialiser and hit handler (0x003e29e8, 0x003e2d90) and its break
     (0x0038f378); [World objects: glass](../../research/objects.md#glass).
   usage: {chunks: 1, calls: 19, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgScrFx
   wrapper: 0x0036b020

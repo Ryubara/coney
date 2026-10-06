@@ -55,6 +55,7 @@ struct PathEdge {
     std::uint32_t to = 0;    ///< `+0x00`: the node it leads to.
     std::uint16_t flags = 0; ///< `+0x04`'s low 16 bits.
     bool avoid = false;      ///< `+0x04`'s bit 31: costs 1600 more.
+    std::uint16_t door = 0;  ///< `+0x06`'s low 13 bits: the number of the door the link passes, 0 for none.
 };
 
 /// The decoded path data of one level.
@@ -80,6 +81,11 @@ class PathMap {
     [[nodiscard]] std::span<const PathNode> nodes() const { return m_nodes; }
     [[nodiscard]] std::span<const PathEdge> edges() const { return m_edges; }
     [[nodiscard]] std::span<const std::int16_t> edgeLists() const { return m_edgeLists; }
+    /// The edges for the doors' and panes' changes to the links (world_objects::NavLinks): an edge's kind and avoid
+    /// bit. The count never changes.
+    [[nodiscard]] std::span<PathEdge> mutableEdges() { return m_edges; }
+    /// The polygons, for the same changes to a polygon's flags. The count never changes.
+    [[nodiscard]] std::span<PathPolygon> mutablePolygons() { return m_polygons; }
     /// The edges leaving node `node`.
     [[nodiscard]] std::span<const PathEdge> edgesOf(std::uint32_t node) const;
 

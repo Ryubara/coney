@@ -27,8 +27,10 @@ constexpr std::size_t kFlagsAt = 0x48;
 constexpr std::size_t kARecordAt = 0x4c;
 // An edge flatter than this in y never crosses a row (the inside test).
 constexpr float kFlatEdge = 0.0001F;
-// The avoid bit of an edge's word.
+// The avoid bit of an edge's word, and where its door number sits (the low 13 bits of its `+0x06` half).
 constexpr std::uint32_t kAvoidBit = 0x80000000U;
+constexpr std::uint32_t kDoorShift = 16;
+constexpr std::uint32_t kDoorMask = 0x1fffU;
 
 // Little-endian reads of a buffer whose size the caller has checked.
 std::int16_t loadS16(std::span<const std::byte> bytes, std::size_t at) {
@@ -151,7 +153,8 @@ std::expected<PathMap, Error> PathMap::decode(std::span<const std::byte> chunk) 
         const std::uint32_t word = loadU32(chunk, at + 4);
         map.m_edges.push_back(PathEdge{.to = loadU32(chunk, at),
                                        .flags = static_cast<std::uint16_t>(word & 0xffffU),
-                                       .avoid = (word & kAvoidBit) != 0});
+                                       .avoid = (word & kAvoidBit) != 0,
+                                       .door = static_cast<std::uint16_t>((word >> kDoorShift) & kDoorMask)});
     }
     const std::size_t listsAt = header->recordBytes;
     map.m_edgeLists.reserve(header->edgeListBytes / 2);

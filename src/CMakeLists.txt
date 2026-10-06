@@ -87,6 +87,7 @@ add_library(coney_core STATIC
     scripting/lua_value.cpp
     scripting/lua_vm.cpp
     scripting/message_handlers.cpp
+    scripting/object_bindings.cpp
     scripting/rumble_bindings.cpp
     scripting/scene_bindings.cpp
     scripting/script_bindings.cpp
@@ -108,10 +109,16 @@ add_library(coney_core STATIC
     world/world_manifest.cpp
     world/world_streamer.cpp
     world/world_streams.cpp
+    world_objects/doors.cpp
     world_objects/flags.cpp
+    world_objects/glass.cpp
+    world_objects/level_objects.cpp
+    world_objects/lock_pick.cpp
+    world_objects/nav_links.cpp
     world_objects/object_list.cpp
     world_objects/object_types.cpp
     world_objects/spawn_records.cpp
+    world_objects/object_services.cpp
     world_objects/volume_boxes.cpp)
 # Characters: the animation format and player, and the character resources (docs/research/characters.md).
 target_sources(coney_core PRIVATE

@@ -43,14 +43,14 @@ class PathBuilder {
     /// in the order added.
     void node(std::uint32_t polygon, float x, float y) { m_nodesOf.at(polygon).push_back(anim::Vec3{x, y, 0.0F}); }
 
-    /// Links the nodes `a` and `b` (indices as built) both ways with `flags` and the avoid bit.
-    void link(std::uint32_t a, std::uint32_t b, std::uint16_t flags = 1, bool avoid = false) {
-        m_links.push_back(Link{a, b, flags, avoid});
-        m_links.push_back(Link{b, a, flags, avoid});
+    /// Links the nodes `a` and `b` (indices as built) both ways with `flags`, the avoid bit and a door number.
+    void link(std::uint32_t a, std::uint32_t b, std::uint16_t flags = 1, bool avoid = false, std::uint16_t door = 0) {
+        m_links.push_back(Link{a, b, flags, avoid, door});
+        m_links.push_back(Link{b, a, flags, avoid, door});
     }
     /// Links `from` to `to` one way with `flags` and the avoid bit.
     void linkOneWay(std::uint32_t from, std::uint32_t to, std::uint16_t flags = 1, bool avoid = false) {
-        m_links.push_back(Link{from, to, flags, avoid});
+        m_links.push_back(Link{from, to, flags, avoid, 0});
     }
 
     /// The path data, REQUIRing that it checks.
@@ -70,7 +70,8 @@ class PathBuilder {
                 .position = positions[n], .firstEdge = static_cast<std::uint32_t>(edges.size()), .edgeCount = 0};
             for (const Link& link : m_links) {
                 if (link.from == n) {
-                    edges.push_back(world::PathEdge{.to = link.to, .flags = link.flags, .avoid = link.avoid});
+                    edges.push_back(
+                        world::PathEdge{.to = link.to, .flags = link.flags, .avoid = link.avoid, .door = link.door});
                 }
             }
             made.edgeCount = static_cast<std::uint32_t>(edges.size()) - made.firstEdge;
@@ -87,6 +88,7 @@ class PathBuilder {
         std::uint32_t to;
         std::uint16_t flags;
         bool avoid;
+        std::uint16_t door;
     };
     std::vector<anim::Vec3> m_vertices;
     std::vector<world::PathPolygon> m_polygons;

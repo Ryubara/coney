@@ -578,6 +578,36 @@ game's z up (inferred; with it the Wonder Wheel stands where the runtime picture
 and fade, per-object lights, the tint and the second dictionary. The front end draws the live records' objects this
 way ([Front end](frontend.md#coneys-implementation)).
 
+**Glass and doors**, written from this page and [Crimes](crimes.md#lockpick) (2026-10-06), in `repo:src/world_objects/`:
+
+- **`LevelObjects`** (`level_objects.h`) holds a level's panes and doors and the world they change (`ObjectWorld`: the
+  collision mesh's triangles, the path data's links, and `ObjectServices` for sounds, shards, crimes, flags,
+  statistics, bodies, loose objects and models). Play mode ticks it at 60 Hz and sends hits to `humanHit` /
+  `thrownHit`, finding the object by the struck triangle (`objectOfTriangle`); `humanHitKind` / `thrownHitKind` give
+  the hit's kind.
+- **Panes** (`glass.h`): the type table, the spawn (geometry, `GLASS` two-sided triangles, sprites, types 14, 15, 17,
+  18, alarm bits, window link), message 1 and 0, `Glass_Break` and `BreakGlassInRadius`; the shatter's count, sound
+  pair and shards drawn from the game's random numbers.
+- **Doors** (`doors.h`): the per-type set-up, leaves, triangle flags, the state machine and its timing in ticks, the
+  state commands, `DoorOpen` away from the human, `DoorOpenDegree`, pickable doors, message `0x15`, the breakable
+  types' hits and the barriers. **Links** (`nav_links.h`): retag, open and close by number, nearest by position. The
+  edge's door number is decoded into `world::PathEdge::door`.
+- **Bindings** (`repo:src/scripting/object_bindings.h`): the 22 glass, door, link and lock-pick bindings; `SpawnDoor`
+  reads its type from the recorded `CfgObj` calls.
+- **Disc check (NTSC-U, counts only):** `coney_tests "[disc][objects]"`: `level2` places its 26 doors (14 swinging, 12
+  barriers, 21 leaves), every type configured by a `CfgObj`, and 25 panes; 19 glass types are set.
+
+Coney's stand-ins, where this page is silent:
+
+- `w` (the type's float property 5) is half the `CfgObj` box's width; the glint stands at `(−w/2, 0, 1.3)` in the door's
+  frame; a leaf model is `dyn_dr_` and the type name after `dyn_door_`.
+- A leaf takes its target rotation on the next tick (no easing). `DoorOpen`'s "away" uses the door's turned y axis.
+  `OpenDoorAnimated` and a lock pick's success open at once (`DoorOpen`), without human state 26.
+- A large pane's shards are 0.06 like a small one's; a shard's offset is a random step of 1/1000 in ±1. A link's distance
+  is to its middle; a link's polygon is its start node's. Wreck pieces and boards spawn at the door; a cabin door keeps
+  its leaves once broken. A barrier's material pair sounds on every hit; game state bits 2 and 4 are not read. An
+  object type no `CfgObj` names is a swinging door of 100 hitpoints.
+
 ## Open questions
 
 - Which search mask admits `0x40` links, and what path polygon flag 8 does to the walkable-line test.
@@ -589,3 +619,6 @@ way ([Front end](frontend.md#coneys-implementation)).
 - How the resource manager picks the object whose model it loads next (`+0xbd4`), and whether `level100`'s packs
   hold the Wonder Wheel's models.
 - What the first camera's vtable `+0x214` returns (the streaming-out distance).
+- The shard size of a large shatter; whether `0x003353b8(rng, 2) < 2` is 2 in 3 (as read here) or always.
+- `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
+- What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.

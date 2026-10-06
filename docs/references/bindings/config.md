@@ -2176,7 +2176,7 @@ Sets one breakable-glass type's two flags and two ids in the world object's glas
 - **Evidence:** confirmed (code) at `0x0039c290`; detail: traced
 - **Wrapper** `0x0036ad80` (registered by `RegisterBindings`); **calls** `0x0039c290` `Cfg_SetGlassProperties`
 - **Used by** 1 of 467 script chunks (19 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetGlobalTimeToLive {#cfgsetglobaltimetolive}
 
@@ -2220,7 +2220,7 @@ two from LockPick_End (0x0022d908) ([Crimes: lock picking](../../research/crimes
 - **Evidence:** confirmed (code) at `0x002365f0`; detail: traced
 - **Wrapper** `0x0035a6e8` (registered by `RegisterBindings`); **calls** `0x002365f0`
 - **Used by** 7 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetLockPickStageFailHandler {#cfgsetlockpickstagefailhandler}
 
@@ -2241,7 +2241,7 @@ picking](../../research/crimes.md#lockpick)).
 - **Evidence:** confirmed (code) at `0x00236698`; detail: traced
 - **Wrapper** `0x0035a760` (registered by `RegisterBindings`); **calls** `0x00236698`
 - **Used by** no script on the disc
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetMaxThrowError {#cfgsetmaxthrowerror}
 

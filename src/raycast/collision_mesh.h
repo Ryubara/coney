@@ -124,6 +124,9 @@ class CollisionMesh final : public chunk::LoadedObject {
     [[nodiscard]] std::array<std::uint32_t, 3> cells() const { return {m_nx, m_ny, m_nz}; }
     /// The triangles, in file order.
     [[nodiscard]] std::span<const CollisionTriangle> triangles() const { return m_triangles; }
+    /// The same, for the world objects that stand for two of them (glass panes, doors) to change their flags and
+    /// material (docs/research/objects.md#doors). The count and the vertices never change.
+    [[nodiscard]] std::span<CollisionTriangle> mutableTriangles() { return m_triangles; }
     /// The vertices, in file order.
     [[nodiscard]] std::span<const Vec3> vertices() const { return m_vertices; }
     /// The header's lowest vertex z (+0x98; no reader traced in the original).

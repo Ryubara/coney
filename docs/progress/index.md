@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 8.8%](https://img.shields.io/badge/reimplemented-8.8%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 9.6%](https://img.shields.io/badge/reimplemented-9.6%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 774 functions) |
+| **Reimplemented** | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% of the game's own code (322,436 of 3,354,776 bytes, 809 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -61,8 +61,8 @@ at the top of the repository's `README.md`.
 | `FileIO` | `█░░░░░░░░░░░░░░░░░░░` | 4.9% | 3 | 7,120 |
 | `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 48 | 100,440 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 33 | 195,624 |
-| `GUI` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 109 | 497,416 |
-| `Human` | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% | 232 | 1,096,672 |
+| `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.3% | 112 | 497,416 |
+| `Human` | `██░░░░░░░░░░░░░░░░░░` | 9.9% | 239 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -70,7 +70,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
 | `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 114 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 16 | 531,312 |
+| `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 41 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
@@ -308,6 +308,9 @@ at the top of the repository's `README.md`.
 | `0x001a1db8` | `BaseWidget_Setup` | `GUI` | not filled in |
 | `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
+| `0x001b7a18` | `LockPickDial_SetDifficulty` | `GUI` | 336 |
+| `0x001b8530` | `LockPickDial_Draw` | `GUI` | 2,056 |
+| `0x001b8d38` | `LockPickDial_Judge` | `GUI` | 408 |
 | `0x001b8f98` | `MessageHUD::MessageHUD` | `GUI` | not filled in |
 | `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
 | `0x001c6a20` | `MessageBox::MessageBox` | `GUI` | not filled in |
@@ -429,6 +432,8 @@ at the top of the repository's `README.md`.
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
+| `0x0022d790` | `LockPick_Start` | `Human` | 376 |
+| `0x0022d908` | `LockPick_End` | `Human` | 824 |
 | `0x0022f100` | `Human_KnockDown` | `Human` | 712 |
 | `0x0022f658` | `Human_Stun` | `Human` | 640 |
 | `0x0022f8d8` | `Human_EndStun` | `Human` | 264 |
@@ -462,6 +467,10 @@ at the top of the repository's `README.md`.
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x0024eef0` | `PathPolygon_Contains` | `Human` | 928 |
 | `0x0024fbf8` | `PathMap_LineWalkable` | `Human` | 1,288 |
+| `0x00250960` | `NavLink_FindNearest` | `Human` | 432 |
+| `0x00250c00` | `NavLinks_SetKindByNumber` | `Human` | 80 |
+| `0x00250c50` | `NavLinks_OpenByNumber` | `Human` | 176 |
+| `0x00250d00` | `NavLinks_CloseByNumber` | `Human` | 176 |
 | `0x00251150` | `Route_NearestNode` | `Human` | 56 |
 | `0x002511c8` | `Route_Search` | `Human` | 480 |
 | `0x002513a8` | `Route_Build` | `Human` | 728 |
@@ -524,6 +533,7 @@ at the top of the repository's `README.md`.
 | `0x00284920` | `Player_GrabOrTackle` | `Human` | 896 |
 | `0x002856b8` | `Player_UpdateMugging` | `Human` | 3,736 |
 | `0x00286cc8` | `Player_Square` | `Human` | 2,664 |
+| `0x002878b8` | `LockPick_JudgePress` | `Human` | 352 |
 | `0x00287a18` | `Player_Cross` | `Human` | 1,480 |
 | `0x0028c1a8` | `Brain_InstallHandlers` | `Human` | 440 |
 | `0x0028cfe0` | `Brain_SetTarget` | `Human` | 432 |
@@ -803,12 +813,23 @@ at the top of the repository's `README.md`.
 | `0x00386410` | `ScheduleFuncArg1` | `Scripting` | 64 |
 | `0x00386450` | `FlushScheduledFuncs` | `Scripting` | 56 |
 | `0x00386488` | `random` | `Scripting` | 40 |
+| `0x0038f378` | `Glass_Break` | `TaskEngine` | 496 |
+| `0x0038f8a8` | `GlassManager_Create` | `TaskEngine` | 424 |
+| `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |
 | `0x00390f18` | `Cfg_AddObjectType` | `TaskEngine` | not filled in |
 | `0x003913d8` | `ObjectDb_FindByName` | `TaskEngine` | not filled in |
+| `0x00393538` | `Thrown_HitObject` | `TaskEngine` | 1,136 |
+| `0x003961d0` | `World_BreakObjectsInRadius` | `TaskEngine` | 448 |
+| `0x00396390` | `BreakObjectsInRadius` | `TaskEngine` | 40 |
+| `0x003963b8` | `World_BreakGlassInRadius` | `TaskEngine` | 784 |
+| `0x003966c8` | `BreakGlassInRadius` | `TaskEngine` | 72 |
 | `0x00396858` | `Obj_Spawn` | `TaskEngine` | not filled in |
+| `0x00397078` | `Door_SetPickable` | `TaskEngine` | 336 |
+| `0x00397230` | `Door_Spawn` | `TaskEngine` | 256 |
 | `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
 | `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |
+| `0x0039c0e0` | `Glass_Spawn` | `TaskEngine` | 432 |
 | `0x0039cbf0` | `SceneTask_Update` | `TaskEngine` | 1,672 |
 | `0x0039d870` | `SceneTask_Start` | `TaskEngine` | 5,104 |
 | `0x0039ec60` | `SceneTask_Abort` | `TaskEngine` | 2,032 |
@@ -819,6 +840,20 @@ at the top of the repository's `README.md`.
 | `0x003a0be8` | `SceneTask_StopLooping` | `TaskEngine` | 344 |
 | `0x003a0da8` | `SceneTask_CallEnd` | `TaskEngine` | 160 |
 | `0x003a13d0` | `SceneTask_Create` | `TaskEngine` | 280 |
+| `0x003a4768` | `Triangle_MakeTwoSided` | `TaskEngine` | 88 |
+| `0x003b2180` | `DoorFence_Hit` | `TaskEngine` | 3,520 |
+| `0x003b2f40` | `DoorFence_Init` | `TaskEngine` | 536 |
+| `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
+| `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |
+| `0x003e4cb8` | `SubGlass_Update` | `TaskEngine` | 984 |
+| `0x003f80f0` | `DoorSwing_SetUpType` | `TaskEngine` | 3,656 |
+| `0x003f9770` | `DoorSwing_StateCommand` | `TaskEngine` | 416 |
+| `0x003f9910` | `DoorSwing_OpenBy` | `TaskEngine` | 448 |
+| `0x003f9ad0` | `DoorSwing_Hit` | `TaskEngine` | 2,408 |
+| `0x003fa438` | `DoorSwing_HitBreakable` | `TaskEngine` | 3,832 |
+| `0x003fb5a0` | `SubSwingingDoor_Update` | `TaskEngine` | 88 |
+| `0x003fb5f8` | `DoorSwing_Init` | `TaskEngine` | 728 |
+| `0x003fbba0` | `DoorSwing_Update` | `TaskEngine` | 760 |
 | `0x0040cdd8` | `LevelObject_LinkModel` | `World` | not filled in |
 | `0x0040ce30` | `LevelObject_OnLoaded` | `World` | not filled in |
 | `0x0040d0a8` | `LevelObject_RenderBackground` | `World` | not filled in |

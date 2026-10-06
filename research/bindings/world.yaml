@@ -34,6 +34,7 @@
     Doors and barriers keep their hitpoints in their data and mirror them at +0x128 after every hit (0x003a6ec8), so
     this reads a door's too ([World objects: breaking a door](../../research/objects.md#door-break)).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: GetObjectName
   wrapper: 0x0036c9c8
@@ -216,6 +217,7 @@
   notes: >-
     Implementation 0x003963b8; [World objects: a pane's life](../../research/objects.md#pane).
   usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: BreakObjectsInRadius
   wrapper: 0x0036dc90
@@ -235,6 +237,7 @@
     depends on the object; a swinging door sends itself a hit two updates later
     ([World objects](../../research/objects.md#door-states)).
   usage: {chunks: 12, calls: 22, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: UnloadTimedObjects
   wrapper: 0x0036dda0
@@ -371,6 +374,7 @@
     What the kinds mean to a route follower: [World objects: navigation links](../../research/objects.md#nav-links); the "jump" and
     "door" readings come from the name.
   usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: DisableDoorLink
   wrapper: 0x0036e2d8
@@ -386,6 +390,7 @@
   notes: >-
     [World objects: navigation links](../../research/objects.md#nav-links).
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: EnableDoorLink
   wrapper: 0x0036e388
@@ -398,6 +403,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: ObjIsA
   wrapper: 0x00377ab0
@@ -800,6 +806,7 @@
     The two numbers are collision triangle indices (`0x003a4768`, `0x003a46c8`); the types and what breaking a pane
     does: [World objects](../../research/objects.md#glass).
   usage: {chunks: 32, calls: 929, boot: false, mission1: true, result_used: true}
+  coney: implemented
 
 - name: ObjectChangeState
   wrapper: 0x00379210
@@ -814,6 +821,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SpawnDoor
   wrapper: 0x003796b8
@@ -835,6 +843,7 @@
     The spawn passes position, rotation and the three integers as message arguments to 0x003a2e60; the door's
     initialiser (`0x003fb5f8` for `dyn_door_swinging`) reads them back ([World objects](../../research/objects.md#doors)).
   usage: {chunks: 46, calls: 484, boot: false, mission1: true, result_used: true}
+  coney: implemented
 
 - name: DoorOpenDegree
   wrapper: 0x00379900
@@ -851,6 +860,7 @@
   notes: >-
     [World objects: states and commands](../../research/objects.md#door-states).
   usage: {chunks: 50, calls: 97, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: DoorOpen
   wrapper: 0x00379a50
@@ -868,6 +878,7 @@
     The direction is the sign of the door's turned axis against the human-to-door direction (0x003f9910);
     [World objects](../../research/objects.md#door-states).
   usage: {chunks: 19, calls: 31, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: OpenDoor
   wrapper: 0x00379ac8
@@ -881,6 +892,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 46, calls: 85, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: OpenDoorAnimated
   wrapper: 0x00379b00
@@ -895,6 +907,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 6, calls: 7, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CloseDoor
   wrapper: 0x00379b78
@@ -910,6 +923,7 @@
   notes: >-
     [World objects: states and commands](../../research/objects.md#door-states).
   usage: {chunks: 53, calls: 84, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: DisableDoorCollision
   wrapper: 0x00379bb0
@@ -923,6 +937,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: ChangeCollision
   wrapper: 0x00379c20
@@ -970,6 +985,7 @@
     If the door does not resolve, the reply object of the previous query is read (0x003a50c0); a NilHandle result is
     not guaranteed.
   usage: {chunks: 42, calls: 74, boot: false, mission1: true, result_used: true}
+  coney: implemented
 
 - name: GetRightDoorHandle
   wrapper: 0x00379dc8
@@ -984,6 +1000,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 29, calls: 47, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: SetDoorPickable
   wrapper: 0x00379e40
@@ -1002,6 +1019,7 @@
     shows a `sub_triglint` glint and refuses OpenDoor, DoorOpen and DoorOpenDegree
     ([World objects: lock picking](../../research/objects.md#lock-pick)).
   usage: {chunks: 16, calls: 24, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: IsDoorOpen
   wrapper: 0x00379f80
@@ -1016,6 +1034,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: AddFlag
   wrapper: 0x00379fd0

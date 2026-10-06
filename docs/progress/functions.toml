@@ -1149,6 +1149,24 @@ subsystem = "GUI"
 size = 72
 
 [[function]]
+address = 0x001b7a18
+name = "LockPickDial_SetDifficulty"
+subsystem = "GUI"
+size = 336
+
+[[function]]
+address = 0x001b8530
+name = "LockPickDial_Draw"
+subsystem = "GUI"
+size = 2056
+
+[[function]]
+address = 0x001b8d38
+name = "LockPickDial_Judge"
+subsystem = "GUI"
+size = 408
+
+[[function]]
 address = 0x001b8f98
 name = "MessageHUD::MessageHUD"
 subsystem = "GUI"
@@ -1849,6 +1867,18 @@ name = "Human_GaitOfVelocity"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022d790
+name = "LockPick_Start"
+subsystem = "Human"
+size = 376
+
+[[function]]
+address = 0x0022d908
+name = "LockPick_End"
+subsystem = "Human"
+size = 824
+
+[[function]]
 address = 0x0022f100
 name = "Human_KnockDown"
 subsystem = "Human"
@@ -2030,6 +2060,30 @@ address = 0x0024fbf8
 name = "PathMap_LineWalkable"
 subsystem = "Human"
 size = 1288
+
+[[function]]
+address = 0x00250960
+name = "NavLink_FindNearest"
+subsystem = "Human"
+size = 432
+
+[[function]]
+address = 0x00250c00
+name = "NavLinks_SetKindByNumber"
+subsystem = "Human"
+size = 80
+
+[[function]]
+address = 0x00250c50
+name = "NavLinks_OpenByNumber"
+subsystem = "Human"
+size = 176
+
+[[function]]
+address = 0x00250d00
+name = "NavLinks_CloseByNumber"
+subsystem = "Human"
+size = 176
 
 [[function]]
 address = 0x00251150
@@ -2378,6 +2432,12 @@ address = 0x00286cc8
 name = "Player_Square"
 subsystem = "Human"
 size = 2664
+
+[[function]]
+address = 0x002878b8
+name = "LockPick_JudgePress"
+subsystem = "Human"
+size = 352
 
 [[function]]
 address = 0x00287a18
@@ -4021,6 +4081,24 @@ subsystem = "Scripting"
 size = 40
 
 [[function]]
+address = 0x0038f378
+name = "Glass_Break"
+subsystem = "TaskEngine"
+size = 496
+
+[[function]]
+address = 0x0038f8a8
+name = "GlassManager_Create"
+subsystem = "TaskEngine"
+size = 424
+
+[[function]]
+address = 0x0038fab8
+name = "GlassTypes_Set"
+subsystem = "TaskEngine"
+size = 40
+
+[[function]]
 address = 0x00390f18
 name = "Cfg_AddObjectType"
 subsystem = "TaskEngine"
@@ -4031,9 +4109,51 @@ name = "ObjectDb_FindByName"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x00393538
+name = "Thrown_HitObject"
+subsystem = "TaskEngine"
+size = 1136
+
+[[function]]
+address = 0x003961d0
+name = "World_BreakObjectsInRadius"
+subsystem = "TaskEngine"
+size = 448
+
+[[function]]
+address = 0x00396390
+name = "BreakObjectsInRadius"
+subsystem = "TaskEngine"
+size = 40
+
+[[function]]
+address = 0x003963b8
+name = "World_BreakGlassInRadius"
+subsystem = "TaskEngine"
+size = 784
+
+[[function]]
+address = 0x003966c8
+name = "BreakGlassInRadius"
+subsystem = "TaskEngine"
+size = 72
+
+[[function]]
 address = 0x00396858
 name = "Obj_Spawn"
 subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00397078
+name = "Door_SetPickable"
+subsystem = "TaskEngine"
+size = 336
+
+[[function]]
+address = 0x00397230
+name = "Door_Spawn"
+subsystem = "TaskEngine"
+size = 256
 
 [[function]]
 address = 0x00398940
@@ -4049,6 +4169,12 @@ subsystem = "TaskEngine"
 address = 0x00398fe0
 name = "ObjRecord_GetHandle"
 subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0039c0e0
+name = "Glass_Spawn"
+subsystem = "TaskEngine"
+size = 432
 
 [[function]]
 address = 0x0039cbf0
@@ -4109,6 +4235,90 @@ address = 0x003a13d0
 name = "SceneTask_Create"
 subsystem = "TaskEngine"
 size = 280
+
+[[function]]
+address = 0x003a4768
+name = "Triangle_MakeTwoSided"
+subsystem = "TaskEngine"
+size = 88
+
+[[function]]
+address = 0x003b2180
+name = "DoorFence_Hit"
+subsystem = "TaskEngine"
+size = 3520
+
+[[function]]
+address = 0x003b2f40
+name = "DoorFence_Init"
+subsystem = "TaskEngine"
+size = 536
+
+[[function]]
+address = 0x003e29e8
+name = "GlassScript_Init"
+subsystem = "TaskEngine"
+size = 936
+
+[[function]]
+address = 0x003e2d90
+name = "GlassScript_Message"
+subsystem = "TaskEngine"
+size = 712
+
+[[function]]
+address = 0x003e4cb8
+name = "SubGlass_Update"
+subsystem = "TaskEngine"
+size = 984
+
+[[function]]
+address = 0x003f80f0
+name = "DoorSwing_SetUpType"
+subsystem = "TaskEngine"
+size = 3656
+
+[[function]]
+address = 0x003f9770
+name = "DoorSwing_StateCommand"
+subsystem = "TaskEngine"
+size = 416
+
+[[function]]
+address = 0x003f9910
+name = "DoorSwing_OpenBy"
+subsystem = "TaskEngine"
+size = 448
+
+[[function]]
+address = 0x003f9ad0
+name = "DoorSwing_Hit"
+subsystem = "TaskEngine"
+size = 2408
+
+[[function]]
+address = 0x003fa438
+name = "DoorSwing_HitBreakable"
+subsystem = "TaskEngine"
+size = 3832
+
+[[function]]
+address = 0x003fb5a0
+name = "SubSwingingDoor_Update"
+subsystem = "TaskEngine"
+size = 88
+
+[[function]]
+address = 0x003fb5f8
+name = "DoorSwing_Init"
+subsystem = "TaskEngine"
+size = 728
+
+[[function]]
+address = 0x003fbba0
+name = "DoorSwing_Update"
+subsystem = "TaskEngine"
+size = 760
 
 [[function]]
 address = 0x0040cdd8

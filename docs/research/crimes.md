@@ -293,7 +293,13 @@ values, `0x002c0ca8`). So in the shipped game the level stays 0 (inferred) and *
 
 ## Coney's implementation
 
-None yet.
+**Lock picking** (`repo:src/world_objects/lock_pick.h`, 2026-10-06): `LockPickDial` turns the current pin 0.1 rad ×
+its speed per step in the difficulty's direction and judges a press against the difficulty's bands (a miss resets
+both counters and every pin); `LockPick` runs the start, stage-fail, success and stop callbacks, plays the click on a
+miss, unlocks and opens the door on success (a break-in unless all three presses were perfect, which score bonus event
+1-3) and counts an abandoned pick at the door (the third reports a break-in). The door side is on
+[World objects](objects.md#coneys-implementation). Not yet wired into play: the context record, the triangle press,
+the input that abandons, the animations and the HUD dial belong to play mode and the HUD.
 
 ## Open questions
 

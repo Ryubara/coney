@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <format>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -19,6 +20,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/gang_bindings.h"
 #include "scripting/level_bindings.h"
+#include "scripting/object_bindings.h"
 #include "scripting/rumble_bindings.h"
 #include "scripting/scene_bindings.h"
 #include "scripting/spawn_bindings.h"
@@ -575,6 +577,29 @@ constexpr std::array kBindings{
     real("GangSuspend"),
     real("GangGetHeadCount"),
     real("GangGetStandingCount"),
+    // The breakable glass and the doors (object_bindings.h).
+    real("SpawnBreakableGlass"),
+    real("SpawnDoor"),
+    real("CfgSetGlassProperties"),
+    real("OpenDoor"),
+    real("CloseDoor"),
+    real("DisableDoorCollision"),
+    real("ObjectChangeState"),
+    real("SetDoorPickable"),
+    real("DoorOpen"),
+    real("OpenDoorAnimated"),
+    real("DoorOpenDegree"),
+    real("IsDoorOpen"),
+    real("GetHitpoints"),
+    real("GetLeftDoorHandle"),
+    real("GetRightDoorHandle"),
+    real("BreakGlassInRadius"),
+    real("BreakObjectsInRadius"),
+    real("DisableDoorLink"),
+    real("EnableDoorLink"),
+    real("ConvertJumpToDoor"),
+    real("CfgSetLockPickHandler"),
+    real("CfgSetLockPickStageFailHandler"),
     // The Rumble menu's lists, which its chunks build (rumble_bindings.h).
     real("CfgRumbleGame"),
     real("CfgRumbleGang"),
@@ -649,7 +674,6 @@ constexpr std::array kBindings{
     recording("CfgSearchCounts"),
     recording("CfgSearchTimes"),
     recording("CfgSetDefaultFollowSlotSet"),
-    recording("CfgSetGlassProperties"),
     recording("CfgSetGlobalTimeToLive"),
     recording("CfgSetMeleeRange"),
     recording("CfgSetStatTypeMax"),
@@ -834,7 +858,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kTriggerBindings, info.name) != kTriggerBindings.end() ||
                      std::ranges::find(kAnimCallbackBindings, info.name) != kAnimCallbackBindings.end() ||
                      std::ranges::find(kSceneBindings, info.name) != kSceneBindings.end() ||
-                     std::ranges::find(kSpawnBindings, info.name) != kSpawnBindings.end());
+                     std::ranges::find(kSpawnBindings, info.name) != kSpawnBindings.end() ||
+                     std::ranges::find(kObjectBindings, info.name) != kObjectBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -845,9 +870,9 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     // scripts' scene flow moving.
     addSceneBindings(vm, context,
                      SceneStandIn{.preload = makeStandInScenePreload(factory), .play = makeStandInScenePlay(factory)});
-    // The level, trigger and camera bindings make world objects, so they take their handles from the same counter as
-    // the stubs.
-    const auto nextHandle = [handles = factory.handles] {
+    // The level, trigger, camera and object bindings make world objects, so they take their handles from the same
+    // counter as the stubs.
+    const std::function<double()> nextHandle = [handles = factory.handles] {
         const double handle = handles->next;
         handles->next += 1;
         return handle;
@@ -856,6 +881,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addTriggerBindings(vm, context, nextHandle);
     addCameraBindings(vm, context, nextHandle);
     addSpawnBindings(vm, context, nextHandle);
+    addObjectBindings(vm, context, nextHandle);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and
