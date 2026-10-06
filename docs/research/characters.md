@@ -1320,13 +1320,22 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   then the body falls on through it (0.19 m after a run jump, as at runtime). The landing is at that update's position
   across the ground, so the landing update keeps the full horizontal speed.
 - **Stamina** carries one fraction of a point between updates, started again when the meter changes direction.
-- **The run stop** (417) plays after every skid, at a run as at a sprint, after the 0.1333 s move fade, which blends
-  only the pose: the gait blend it fades from has no root velocity, so the body moves at the clip's 2.244, 4.996,
-  5.101, … m/s from its first update, as at runtime. The skid's own update still turns one step and the run stop then
-  holds the facing; "at the run speed" allows 1 mm/s for rounding. What builds it is not traced. It holds `0x80000`,
-  which the locomotion gate reads (busy and no stick velocity). The skid does not set the state code 5 the original's
-  stop step sets (`0x002419a0`, [Tasks](tasks.md#locomotion-gate)): who clears it is not traced, and the run stop's
-  own bits gate the same updates.
+- **The run stop** (417) plays after a skid, after the 0.1333 s move fade, which blends only the pose: the gait blend
+  it fades from has no root velocity, so the body moves at the clip's 2.244, 4.996, 5.101, … m/s from its first
+  update, as at runtime. The skid's own update still turns one step and the run stop then holds the facing. The skid
+  needs the run speed ≤ the speed, compared exactly ([The run stop at a run](#run-stop)): a sprint always skids, a
+  steady run only when its speed lands on or above the run speed. **Coney's reading** of the speed: the velocity's
+  length with each multiply, add and the square root rounded toward zero, as the PS2's floating-point unit rounds
+  (`core/ps2_float.h`); the velocity itself is Coney's, so a steady run reaches the run speed on about 6 % of updates
+  against the original's 10 of 93. What builds the run stop is not traced. It holds `0x80000`, which the locomotion
+  gate reads (busy and no stick velocity). The skid sets no state code (the original's 9): the run stop's own bits
+  gate the same updates.
+- **The idle's fade** (0.15 s, 5 updates) holds `0x10000000`, so after a stop, a release or a block the stick turns
+  the human but the walk start waits for the fade to end ([Tasks](tasks.md#locomotion-gate)). Over those updates the
+  last stick held turns him on, its magnitude × 0.8 each update, eased from rest at the standing turn's 20° limit;
+  **Coney's reading** of the ease (after `run_circle`'s release it turns 0.666°, 1.136°, 1.409°, 1.515°, within
+  0.004° of the original's). Coney never sets state code 5 (turning in place): nothing reads it apart from
+  the gate, and the fade holds the same updates.
 - **The landing** has no fade, so 436 moves the body at its 4.23 m/s from its first update as at runtime, and hands
   over to a gait blend at the jog (1.0).
 - **The air turn** is limited to 4° an update, what a sprint jump turned at runtime; which gait's limit the original
@@ -1473,3 +1482,11 @@ default ids are known, [Anim slots](#anim-slots)), and the
   controls is not traced.
 - **Four Rumble arenas without a known mode script**: their `level<N>_<mode>_init.lua` names are not recovered, so
   they have no entry ([Levels](../references/levels.md) lists the modes found per arena).
+- **A steady run's velocity in floats**: the original's run measures at or above the run speed on 10 of 93 updates,
+  Coney's on about 6 %; how its velocity is built (the order of the multiplies) is not traced.
+- **The run start's speed on its 7th and 11th updates** in `run_circle` (3.35 and 5.40 m/s against Coney's 3.25 and
+  5.54): which key the original samples there.
+- **The trace's clip id in the gait blend** (record `+0x20`): 410 where Coney reports the blend's leading clip (411,
+  409) in `run_circle`'s steps 54-56; which clip of the blend the original stores.
+- **The circling run's turn**: on `run_circle`'s step 75 Coney turns 16.92° against the original's 16.44°, which the
+  camera's auto-follow then grows to 6.6°; whether the stick is turned by the camera of this update or the last.

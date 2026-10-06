@@ -1201,6 +1201,16 @@ name = "Cfg_SetTurnRates"
 subsystem = "Human"
 
 [[function]]
+address = 0x0023cf88
+name = "Human_TurnToOver"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023d2b8
+name = "Human_MoveToOver"
+subsystem = "Human"
+
+[[function]]
 address = 0x0023d8c8
 name = "Human_Move"
 subsystem = "Human"
@@ -1223,6 +1233,11 @@ subsystem = "Human"
 [[function]]
 address = 0x0023f238
 name = "Human_ApplyRootMotion"
+subsystem = "Human"
+
+[[function]]
+address = 0x0023f5e0
+name = "Human_ApplyTurnAndSlide"
 subsystem = "Human"
 
 [[function]]
@@ -1438,6 +1453,16 @@ address = 0x0026cc18
 name = "Grab_Escape"
 subsystem = "Human"
 size = 1120
+
+[[function]]
+address = 0x00276008
+name = "Attack_TurnToTarget"
+subsystem = "unattributed"
+
+[[function]]
+address = 0x002761c8
+name = "Attack_SteerToTarget"
+subsystem = "unattributed"
 
 [[function]]
 address = 0x00276998

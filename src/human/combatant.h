@@ -49,6 +49,10 @@ class Combatant {
     [[nodiscard]] virtual anim::Vec3 position() const = 0;
     /// Radians, 0 facing +y.
     [[nodiscard]] virtual float heading() const = 0;
+    /// Its velocity (m/s, game axes), which an attack steering onto it leads; still by default.
+    [[nodiscard]] virtual anim::Vec3 velocity() const { return {}; }
+    /// Its body scale (`+0x65c`): an attack steering onto a target scaled above 1.1 reaches 0.07 m farther.
+    [[nodiscard]] virtual float bodyScale() const { return 1.0F; }
     /// How it lies now.
     [[nodiscard]] virtual TargetState state() const = 0;
     [[nodiscard]] virtual const combat::Health& health() const = 0;

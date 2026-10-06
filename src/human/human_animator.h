@@ -139,6 +139,12 @@ class HumanAnimator {
     void startClimb(std::uint32_t firstId, bool running);
     /// Ends whatever plays with the idle (a climb that cannot go on).
     void stopToIdle();
+    /// Leaves for the idle through its builder (the block let go): its fade holds `0x10000000` while it runs, so the
+    /// stick turns the human on the spot and the move waits for its end (idleFading()).
+    void settleToIdle();
+    /// Whether the idle's fade still runs, holding `0x10000000` on the record `+0x08` (5 updates of 0.15 s): the
+    /// stick's velocity is gated and a move waits (docs/research/tasks.md#locomotion-gate).
+    [[nodiscard]] bool idleFading() const;
     /// Combat: plays `clips` in turn, each once, then `loop` looping, after a fade of `fade`. `state` is
     /// AnimState::Attack (the controller chooses again once the clips are over, the loop standing for the idle) or
     /// AnimState::Hold (nothing changes until combat plays something else). Ids the anim set lacks are skipped; a
@@ -203,7 +209,8 @@ class HumanAnimator {
     [[nodiscard]] const characters::AnimSet& anims() const { return *m_anims; }
 
   private:
-    // The idle: slot 0 looping with no task flags, after a fade of 0.15 s (shorter or longer over a start clip).
+    // The idle: slot 0 looping with no task flags, after a fade of 0.15 s (shorter or longer over a start clip) that
+    // holds 0x10000000 while it runs.
     // @orig 0x0025f770 Human_BuildIdleTasks (unknown)
     void buildIdle();
     // The move: a start clip into a gait blend from standing, or a new gait blend carrying on the old one's value and

@@ -172,7 +172,7 @@ class Human final : public Combatant {
     [[nodiscard]] TargetState state() const override;
     /// Its health (record `+0x144`).
     [[nodiscard]] const combat::Health& health() const override { return m_fighter.health(); }
-    [[nodiscard]] anim::Vec3 velocity() const { return m_velocity; }
+    [[nodiscard]] anim::Vec3 velocity() const override { return m_velocity; }
     /// The horizontal speed.
     [[nodiscard]] float speed() const;
     /// The gait of the whole velocity's length (`+0x1a8`, written with the velocity: a jump's vertical speed counts).
@@ -205,6 +205,7 @@ class Human final : public Combatant {
     [[nodiscard]] const std::optional<ClimbProbe>& climb() const { return m_climbProbe; }
     /// The body's scale (`+0x65c`).
     [[nodiscard]] float scale() const { return m_scale; }
+    [[nodiscard]] float bodyScale() const override { return m_scale; }
     /// The fighting: combat's state, meters and what it last did.
     [[nodiscard]] const Fighter& fighter() const { return m_fighter; }
     [[nodiscard]] Fighter& fighter() { return m_fighter; }
@@ -326,6 +327,7 @@ class Human final : public Combatant {
     anim::Vec3 m_velocity; // z is the vertical speed (+0x3a0)
     StickIntent m_intent;
     float m_lastMagnitude = 0.0F;
+    StickIntent m_lastStick; // the stick's last pushed angle, its magnitude fading once let go (+0x5d8, +0x5dc)
     std::optional<float> m_moveSpeed; // a brain's move speed this update, in place of the stick's target speed
     TurnState m_turn;
     bool m_airborne = false;

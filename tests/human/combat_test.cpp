@@ -176,6 +176,50 @@ TEST_CASE("an attack turns to a target off to the side within its range", "[huma
     CHECK(fight.target().damageTaken() == 17);
 }
 
+TEST_CASE("an attack turns and slides onto its target at a constant rate up to its first event", "[human][combat]") {
+    const FightCharacter character;
+    // The target 1.1 m ahead and 0.4 m to the right (1.17 m, 20° off), within the 1.25 m far range.
+    Fight fight(character, 1.1F, 0.4F);
+    struct Sample {
+        std::uint32_t clip;
+        float heading;
+        Vec3 position;
+    };
+    std::vector<Sample> samples;
+    fight.run("5 tap cross\n", 30, [&](std::uint64_t) {
+        samples.push_back(Sample{fight.human().animator().animId(), fight.human().heading(), fight.human().position()});
+    });
+    // X1 starts on the release; the body does not turn on that update (the steer is set after the state update).
+    const auto start = std::ranges::find_if(samples, [](const Sample& s) { return s.clip == id::kAttackX1; });
+    REQUIRE(start != samples.end());
+    const auto k = static_cast<std::size_t>(start - samples.begin());
+    REQUIRE(k >= 1);
+    REQUIRE(samples.size() > k + 12);
+    CHECK(samples[k].heading == samples[k - 1].heading);
+    // The synthetic X1's first event (the window at frame 5, rate 0.75) comes 0.222 s in: the steer lasts 0.322 s, 9
+    // updates at one rate and two thirds of one more, then stops; no easing.
+    const float steerTime = (5.0F / 30.0F / 0.75F) + 0.1F;
+    const float angle = std::atan2(-0.4F, 1.1F);
+    const float perUpdate = angle * (1.0F / 30.0F) / steerTime;
+    for (std::size_t i = k + 1; i <= k + 9; ++i) {
+        INFO("update " << i - k);
+        CHECK(samples[i].heading - samples[i - 1].heading == Approx(perUpdate).margin(1e-4));
+    }
+    CHECK(samples[k + 10].heading - samples[k + 9].heading == Approx(perUpdate * 2.0F / 3.0F).margin(1e-4));
+    CHECK(samples[k + 11].heading == samples[k + 10].heading);
+    CHECK(samples[k + 10].heading == Approx(angle).margin(1e-3));
+    // The slide (the synthetic clips carry no root motion): a constant step to stand at the clip's 1 m reach.
+    const float distance = std::hypot(0.4F, 1.1F);
+    const float stepLength = (distance - 1.0F) * (1.0F / 30.0F) / steerTime;
+    for (std::size_t i = k + 1; i <= k + 9; ++i) {
+        const Vec3 a = samples[i - 1].position;
+        const Vec3 b = samples[i].position;
+        CHECK(std::hypot(b.x - a.x, b.y - a.y) == Approx(stepLength).margin(1e-4));
+    }
+    const Vec3 end = samples[k + 11].position;
+    CHECK(std::hypot(40.4F - end.x, 41.1F - end.y) == Approx(1.0F).margin(1e-3));
+}
+
 TEST_CASE("a heavy reaction knocks the target down, and it rises after 2000 ms", "[human][combat]") {
     const FightCharacter character;
     Fight fight(character);

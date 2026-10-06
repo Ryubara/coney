@@ -5,6 +5,7 @@
 #include <cmath>
 #include <string>
 
+#include "core/ps2_float.h"
 #include "fileio/reader.h"
 
 namespace coney::combat {
@@ -39,16 +40,6 @@ constexpr std::array<ClassDamageRow, 31> kClassDamageRows{{
     {.index = 39, .ids = {229, -1, -1, -1, -1, -1}},  {.index = 42, .ids = {250, -1, -1, -1, -1, -1}},
     {.index = 43, .ids = {246, -1, -1, -1, -1, -1}},
 }};
-
-// `exact` as a float rounded toward zero, as the PS2's floating-point unit rounds every result (Coney's reading of
-// the research's "30 gives 34": rounded to nearest, 30 × 115 × 0.01 + 0.5 would give 35).
-float towardZero(double exact) {
-    float rounded = static_cast<float>(exact);
-    if (std::fabs(static_cast<double>(rounded)) > std::fabs(exact)) {
-        rounded = std::nextafter(rounded, 0.0F);
-    }
-    return rounded;
-}
 
 // Reads one 16-byte record; the caller has checked the bytes are there.
 AnimRange readRecord(io::Reader& reader) {
@@ -116,9 +107,9 @@ int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, 
         // A player's value is scaled by its Warrior class percentage, in floats as the original rounds it.
         int damage = values[row.index];
         if (playerPercent != 0) {
-            const float product = towardZero(static_cast<double>(damage) * playerPercent);
-            const float percent = towardZero(static_cast<double>(product) * static_cast<double>(0.01F));
-            damage = static_cast<int>(towardZero(static_cast<double>(percent) + 0.5));
+            const float product = ps2::towardZero(static_cast<double>(damage) * playerPercent);
+            const float percent = ps2::towardZero(static_cast<double>(product) * static_cast<double>(0.01F));
+            damage = static_cast<int>(ps2::towardZero(static_cast<double>(percent) + 0.5));
         }
         for (const int id : row.ids) {
             if (id >= 0 && list.setDamage(static_cast<std::size_t>(id), static_cast<std::int16_t>(damage))) {

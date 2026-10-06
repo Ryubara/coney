@@ -56,8 +56,7 @@ inline constexpr float kPairPlaceTolerance = 0.3F;
 [[nodiscard]] anim::Vec3 pairEventPoint(const anim::AnimClip* clip, anim::Vec3 fallback);
 
 /// How long the alignment before `clip` (played at `rate`) lasts: kAlignShare × the time of its first contact event
-/// (types 9, 0xf, 0x13, 0x2c, 0x34, 0x36, 0x41) or, with none, its duration, over the rate.
-/// @orig 0x00101658 Anim_FirstContactTime (unknown)
+/// (firstContactTime()).
 [[nodiscard]] float alignSeconds(const anim::AnimClip& clip, float rate);
 
 /// The alignment of a pair before its connecting clips.

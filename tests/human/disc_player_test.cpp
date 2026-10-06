@@ -136,8 +136,11 @@ TEST_CASE("Rembrandt stands at level99's start, walks, runs, turns and stops und
     CHECK(run[151].speed - run[150].speed == Approx(0.8F).margin(1e-3));
     CHECK(run[165].speed == Approx(speeds.run).margin(1e-3));
     CHECK(run[165].animId == 410U);
-    // Let go at frame 240: the run skids into the run stop (417), which slides him on for 24 updates, then the idle.
-    CHECK(run[240].animId == 417U);
+    // Let go at frame 240 at a steady run: the speed measured there is a rounding short of the run speed, so he does
+    // not skid (as in about 9 releases in 10 at runtime, docs/research/characters.md#run-stop) and stops at once in
+    // the idle.
+    CHECK(run[240].animId == 388U);
+    CHECK(run[240].speed == 0.0F);
     CHECK(run[268].animId == 388U);
     CHECK(run[268].speed == 0.0F);
     // A 45 % stick to the left from frame 270 walks again, with the walk start first.

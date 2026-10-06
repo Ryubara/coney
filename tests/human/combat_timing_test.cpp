@@ -240,9 +240,12 @@ class Timeline {
             step.position = human.position();
             step.speed = human.speed();
             step.gait = human.gait();
-            // Held by the move: its clip's bits or combat's states, not the walk start the stick then plays.
+            // Held by the move: its clip's bits, the idle's fade after it or combat's states, not the walk start the
+            // stick then plays (both hold 0x10000000).
             coney::human::GateInput gate = human.gateInput();
-            gate.flags &= ~coney::human::kFlagStartClip;
+            if (!animator.idleFading()) {
+                gate.flags &= ~coney::human::kFlagStartClip;
+            }
             step.holds = human.fighter().holdsMovement(animator) || coney::human::stickBusy(gate) ||
                          coney::human::stickVelocityGated(gate);
             line.m_steps.push_back(step);

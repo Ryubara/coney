@@ -424,7 +424,8 @@ sets 1.
   wheel until the world's objects come). Every human has a per-player record (`human::PlayerRecord`) that a pad or a
   brain writes; the dispatcher runs from it for every human, so a human no pad drives fights from the command its
   brain writes ([Characters](characters.md#coneys-implementation)).
-- `src/animation/anim_task.*` holds the held flags and the events that move them
+- `src/animation/anim_task.*` holds the held flags and the events that move them, and a fade that holds bits until it
+  ends (the idle's fade holds `0x10000000`, which gives the 5 updates after a block or a stop)
   ([Animation](formats/animation.md#coneys-implementation)); the readers' masks are in `src/combat/` and
   `src/human/locomotion_gate.*` ([Combat](combat.md#coneys-implementation)).
 

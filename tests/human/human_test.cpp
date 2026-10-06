@@ -268,3 +268,63 @@ TEST_CASE("a fall lands on the first update that starts 0.17 m or more below the
         CHECK(-airborneEnds[airborneEnds.size() - 2] < Human::kLandingDepth);
     }
 }
+
+TEST_CASE("a walk let go fades into the idle for 5 updates: pushed again at once, the walk start waits for its end",
+          "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 10.0F, 0.0F});
+    for (int update = 0; update < 40; ++update) {
+        human.step(stick(0.0F, 0.6F), mesh.get());
+    }
+    REQUIRE(human.animator().gaitBlendPlaying());
+    // Let go: the idle at once, its fade holding 0x10000000 (docs/research/tasks.md#locomotion-gate).
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    CHECK(human.animator().state() == AnimState::Idle);
+    CHECK(human.animator().idleFading());
+    // Pushed to the side at once: 4 updates turn him on the spot and do not move him, nor start the walk.
+    const Vec3 stood = human.position();
+    for (int update = 1; update <= 4; ++update) {
+        const float before = human.heading();
+        human.step(stick(0.6F, 0.0F), mesh.get());
+        INFO("update " << update);
+        CHECK(human.animator().animId() == 388U);
+        CHECK(human.heading() < before);
+        CHECK(std::hypot(human.position().x - stood.x, human.position().y - stood.y) < 1e-4F);
+        CHECK(human.stickHeld());
+    }
+    // The 5th: the fade is over and the walk start begins (at runtime 388 for 5 updates, then 413).
+    human.step(stick(0.6F, 0.0F), mesh.get());
+    CHECK_FALSE(human.animator().idleFading());
+    CHECK(human.animator().animId() == 413U);
+}
+
+TEST_CASE("a run let go without a skid keeps turning toward the stick's last angle while the idle fades in",
+          "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 10.0F, 0.0F});
+    // A walk with the stick 60° to the right (a walk never skids): the body lags the stick by the turn limit, then
+    // the stick is let go after one update of turning.
+    for (int update = 0; update < 30; ++update) {
+        human.step(stick(0.0F, 0.6F), mesh.get());
+    }
+    human.step(stick(0.52F, 0.3F), mesh.get());
+    const float stickHeading = std::atan2(-0.52F, 0.3F);
+    REQUIRE(human.heading() > stickHeading + 0.05F);
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    const float released = human.heading();
+    REQUIRE(human.animator().idleFading());
+    // While the fade holds 0x10000000 he turns on toward the stick's last angle (eased from a fresh start), never past
+    // it; once it is over he stays put.
+    float last = released;
+    for (int update = 0; update < 4; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        CHECK(human.heading() < last);
+        CHECK(human.heading() >= stickHeading - 1e-4F);
+        last = human.heading();
+    }
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    CHECK(human.heading() == last);
+}

@@ -151,7 +151,10 @@ void HumanAnimator::buildIdle() {
         const anim::AnimTask& start = *m_tasks.top();
         fade = start.time() / start.rate() < kStartClipEarly ? kIdleFadeEarlyStart : kIdleFadeLateStart;
     }
-    m_tasks.change(idleLoop(), fade);
+    // The fade holds 0x10000000 while it runs, which gates the stick's velocity: after a walk stop or a block the
+    // stick turns the human on the spot for those updates and the move starts only once the fade is over
+    // (docs/research/tasks.md#locomotion-gate).
+    m_tasks.change(idleLoop(), fade, kFlagStartClip);
 }
 
 void HumanAnimator::buildMove(bool run) {
@@ -211,6 +214,13 @@ void HumanAnimator::startClimb(std::uint32_t firstId, bool running) {
     m_tasks.change(std::move(chain), 0.0F);
     m_state = AnimState::Climb;
 }
+
+void HumanAnimator::settleToIdle() {
+    buildIdle();
+    m_state = AnimState::Idle;
+}
+
+bool HumanAnimator::idleFading() const { return m_state == AnimState::Idle && (flags() & kFlagStartClip) != 0; }
 
 void HumanAnimator::stopToIdle() {
     m_tasks.change(idleLoop(), kIdleFade);
@@ -313,6 +323,12 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
         next = AnimState::Fall;
     } else if (inputs.wantsMove || inputs.speed >= kIdleSpeedShare * m_speeds.walk) {
         next = AnimState::Move;
+    }
+    // While the idle's fade holds 0x10000000 the move waits: the walk start begins the update the fade ends (at
+    // runtime 388 for 5 updates after a block or a walk stop, then 413). **Coney's reading** of how the original holds
+    // it back (the locomotion's state code 5 while the velocity is gated is not modelled).
+    if (next == AnimState::Move && idleFading()) {
+        return;
     }
     // A change of state calls its builder.
     if (next != m_state) {

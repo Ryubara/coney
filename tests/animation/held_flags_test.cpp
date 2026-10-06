@@ -194,3 +194,50 @@ TEST_CASE("a clip handing over to a next clip gives its bits back and the next o
     }
     CHECK(stack.flags() == 0U);
 }
+
+TEST_CASE("a fade can hold bits: the idle's 0.15 s fade holds 0x10000000 for 4 more updates, then gives it back",
+          "[anim_task][held_flags]") {
+    constexpr std::uint32_t kStartBit = 0x10000000;
+    const AnimClip still = eventClip(30.0F, {});
+    AnimTaskStack stack;
+    stack.change(std::make_unique<LoopTask>(still, 408, 1.0F, 0U), 0.0F);
+    // The idle fading in over the walk holds the bit from the update it is pushed until its 0.15 s have run: the
+    // updates of 1/30 s after it see it 4 times (0.033 to 0.133 s), the 5th (0.167 s) no more.
+    stack.change(std::make_unique<LoopTask>(still, 388, 1.0F, 0U), 0.15F, kStartBit);
+    CHECK((stack.flags() & kStartBit) != 0);
+    for (int update = 1; update <= 4; ++update) {
+        stack.advance(kStep);
+        INFO("update " << update);
+        CHECK((stack.flags() & kStartBit) != 0);
+    }
+    stack.advance(kStep);
+    CHECK(stack.flags() == 0);
+    CHECK(stack.layerCount() == 1);
+    // A fade of no length holds nothing, and a bit the human set itself outlives a fade that held it too.
+    stack.setFlags(kOwnBit);
+    stack.change(std::make_unique<LoopTask>(still, 408, 1.0F, 0U), 0.0F, kStartBit);
+    CHECK(stack.flags() == kOwnBit);
+}
+
+TEST_CASE("a fade holding a bit cut off by a task that holds it too leaves the bit with the task",
+          "[anim_task][held_flags]") {
+    constexpr std::uint32_t kStartBit = 0x10000000;
+    const AnimClip still = eventClip(30.0F, {});
+    const AnimClip start = eventClip(10.0F, {});
+    AnimTaskStack stack;
+    stack.change(std::make_unique<LoopTask>(still, 408, 1.0F, 0U), 0.0F);
+    stack.change(std::make_unique<LoopTask>(still, 388, 1.0F, 0U), 0.15F, kStartBit);
+    stack.advance(kStep);
+    // A start clip pushed at once over the fading idle: the fade is cut off, the clip's own hold keeps the bit.
+    auto walkStart =
+        std::make_unique<ClipThenNextTask>(start, 413, 1.0F, 0U, std::make_unique<LoopTask>(still, 408, 1.0F, 0U));
+    walkStart->holdFlags(kStartBit, kStartBit);
+    stack.change(std::move(walkStart), 0.0F);
+    CHECK(stack.layerCount() == 1);
+    CHECK(stack.flags() == kStartBit);
+    // When the start clip ends, the bit goes with it.
+    for (int update = 0; update < 12; ++update) {
+        stack.advance(kStep);
+    }
+    CHECK(stack.flags() == 0);
+}

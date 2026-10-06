@@ -451,7 +451,7 @@ the per-player record.
 | `XX2` (13) after `X1` | 30: `0x1` 0-16, `0x4` 17-18, `0x40000` 19-29 | all dropped (the chain ends) | not reached (the presses stopped at k = 21) | |
 | `S1` → `SS2` → `SSS3`, square every 2 updates | `S1` 6 (cut when its window opens), `SS2` 6, `SSS3` (20) **32**: `0x1` 0-23, `0x4` 24, `0x40000` 25-31 | a press in each wind-up is buffered (`+0xb8` = 2) and plays when the window opens; all dropped in `SSS3` | k = 32 of `SSS3`: a new `S1` | k = 32 of `SSS3` (413) |
 | run attack (24), stick 100 % | 21, `+0x08` `0x1000000` throughout, 7.09 m/s | all dropped | k = 22: another 24 | k = 21: the run (410) at once, at 7.80 m/s |
-| block (606), R1 released | `0x8001`, `+0x08` `0x80000` for its first 5 updates, then 0 | | the update after the release: square gave `S1` at once | **5 updates** after the release: the idle 388 (state 0, `+0x14` = 5) for 5, then 413 |
+| block (606), R1 released | `0x8001`, `+0x08` `0x80000` for its first 5 updates, then 0 | | the update after the release: square gave `S1` at once | **5 updates** after the release: the idle 388 for 5 (its fade holding `0x10000000`; `+0x14` = 5, turning in place), then 413 |
 | grab miss: 71, then 69 `GRAB_MISS` | 71 5, 69 16; state `0x1`, `+0x08` `0x10`; the lunge peaks at 4.3 m/s on 69's first updates | circle every 3 updates: all dropped, no restart and no cut | **k = 21**, the update after 69: a new 71 | k = 21 (413) |
 | tackle miss: circle held | 4 `TACKLE_PLAYER_INTRO` 7, then 2 for **59** (sliding at 6.4 m/s, to 0 over about 20); `+0x08` `0x10` | circle taps all dropped | k = 66 | k = 66 (413) |
 
@@ -478,7 +478,9 @@ So a press in `0x4` is dropped by its path, and one in `0x40000` by the dispatch
 (`0x10`) every path refuses. Nothing refuses 389. What holds the stick until the clip's end is the **locomotion gate**
 ([Tasks](tasks.md#locomotion-gate)): the recovery `0x40000` is in its velocity mask `0x110c0880`, the phases `0x1`,
 `0x2`, `0x4` and the grab's `0x10` make the human busy (`0x00223cb0`), and the clip's task clears them as it ends
-([Tasks](tasks.md#held-flags)). The block's extra 5 updates are the state code `+0x14` = 5, which the same gate tests.
+([Tasks](tasks.md#held-flags)). The block's extra 5 updates are the idle's 0.15 s fade, which holds `0x10000000` (in
+the velocity mask) while it runs; the state code `+0x14` = 5 written then only means turning in place
+([Tasks](tasks.md#locomotion-gate)).
 
 ### Block (and no dodge) {#block}
 
@@ -1308,6 +1310,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `combat/player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order; the grab breaks at 0 power |
 | `combat/combat_tuning.*`, `debug/combat_tunables.*` | the values above as tunables, category **Combat**, registered at start-up beside the game's |
 | `human/fighter.*`, `human/fighter_grab.cpp`, `human/fighter_victim.cpp`, `human/fighter_clips.h` | the player's combat inside the human (split as the attacker, the grab and the victim side): builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front and the grab search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), turns and walks the grab by the stick, lands the hits with their rage, locks onto a target and combat-walks round it; and the player hit (a duck and its counter, the block, the health floor, the hit armour, the reaction, stun, knockdown and mash) and held in a grab (the counter at the catch, the struggle, the strike back, the escape and the reversal) |
+| `human/turn_and_slide.*` | the attack's steer ([Target selection](#targets)): a turn and a slide at a constant rate over a time, the last update only for the time left; the time to a clip's first steer-ending event; and the goal, the target led by its velocity and short of it by the reach |
 | `human/victim.*` | what the player and the target share as victims: the update's largest hit, the reaction it plays, the stun (its exit waits for the clip playing to end), the knockdown, the ground time, the rise and the mash |
 | `human/pair_placement.*` | the pair's geometry: offsets in the grabber's frame from a range record's direction × reach or a clip's type-8 pair event, the alignment (`Pair_AlignStart`), its time, the gate at the connect's end and `Pair_CheckPlace` |
 | `human/target_human.*` | a passive target for the sandbox on `Victim`: health, the reaction, the stun, the knockdown, the ground time and the rise, the dying clip, the root motion of its reactions and throws |
@@ -1441,7 +1444,8 @@ so the game plays the file's damage for now.
   and the mount's strike take square's mask (`0x100101f`), so a move in a hold plays out before the next. The chain
   ends once the record holds none of the attack's phases, the recovery, the counter or the run attack's bit. Every
   attack whose hit was not measured (the snaps, the moving attacks, the throws, the grounded and mounted strikes) hits
-  2 updates in, as `S1`. The block's 5 updates are the state code 5, set on the release and cleared 5 updates later.
+  2 updates in, as `S1`. The block's release plays the idle at once, and its fade holds `0x10000000` for its 5 updates:
+  the stick turns the player but the walk start waits for the fade, as at runtime. Coney never sets state code 5.
 - **The characters' step** ([Tasks](tasks.md#humans-update)): it runs on Coney's fixed 1/30 s step, the original's
   30 Hz characters' update, without the 60 Hz tick or the timing wheel, which wait for the world's objects; the brains
   are an empty hook until the AI lands; the context actions (triangle) are refused while the dispatcher would drop a
@@ -1456,9 +1460,13 @@ so the game plays the file's damage for now.
   A tackle also ends when the power meter is empty, and any hold when the victim has no health left.
 - The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's
   target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
-  second missed); within the far range the attacker faces the target and slides so that it stands at the clip's reach,
-  spread over the updates to the hit, on top of the clip's root motion; beyond it the attacker turns at most 8°
-  (read as degrees).
+  second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
+  follows [The steer in detail](#targets): from the update after the clip starts it turns at angle / `T` and slides at
+  (goal − position) / `T`, on top of the clip's root motion, the last update only for the time left. **Coney's
+  readings**: `T` is the time to the clip's first event + 0.1 s (the code's clamp reads as the time to the event, but
+  X1 at runtime turned for 9.25 updates, 0.208 s + 0.1 s), and the lead is the target's velocity × the same `T`; the
+  turn faces the led target, not the standing point, which lies behind the attacker when the target is inside the
+  reach (the runtime `XX2` at 0.83 m, inside its 1.12 m reach, turned under 1°). A reaction cuts the steer.
 - **Posing a grab** follows [Posing a grab](#grab-posing): circle plays 71, then 72 (from the front) or 74 (from the
   rear, when the player stands on the victim's rear side), the player turning to face the victim over 71's playing
   time while the victim waits in its idle. When 72 / 74 starts, the alignment turns and slides the player over 0.1 ×
@@ -1535,8 +1543,11 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **The hits not measured**: the hit of the snaps, the moving attacks, the throws and the grounded and mounted strikes
   (the phases are the clips' events, [Tasks](tasks.md#held-flags)).
 - **Input and the stick after a move** (answered at runtime, [When input and the stick come back](#input-return)).
-  The locomotion gate (answered, [Tasks](tasks.md#locomotion-gate)). The block's 5 updates after release (partly
-  answered): the state code `+0x14` = 5 holds the stick; who sets and clears it after a block is open (Coney sets it
-  for 5 updates).
+  The locomotion gate (answered, [Tasks](tasks.md#locomotion-gate)). The block's 5 updates after release (answered):
+  the idle's fade holding `0x10000000`, not the state code.
+- **The steer's time**: the code clamps `T` to the time to the first event + 0.1 s, which reads as the time to the
+  event, while X1 at runtime turned for that time + 0.1 s; Coney uses the runtime's ([Target selection](#targets)).
+- **`XX2` against a walking target**: in `combat_cross` the original's target walks up (0.83 → 0.91 m) and the bodies
+  push apart on `XX2` (0.25 m/s against Coney's 0.81); Coney's sandbox target stands still and has no body contact.
 - **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are
   the fields the alignment writes (human `+0x2e0`-`+0x332`, victim `+0xa0` / `+0xb0`).

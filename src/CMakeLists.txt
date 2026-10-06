@@ -124,6 +124,7 @@ target_sources(coney_core PRIVATE
     human/player_trace.cpp
     human/stamina.cpp
     human/target_human.cpp
+    human/turn_and_slide.cpp
     human/victim.cpp)
 # The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai.md).
 target_sources(coney_core PRIVATE

@@ -232,12 +232,13 @@ TEST_CASE("Rembrandt sprints along the parkour lane while L2 and stamina last", 
     for (std::size_t i = emptyFrame; i < 330; ++i) {
         CHECK(run.frames[i].stamina == 0);
     }
-    // L2 let go: 40 a second at the run; the stick let go at the run: the run stop (417) for about 24 updates.
+    // L2 let go: 40 a second at the run. The stick let go at that steady run: the speed measured there is a rounding
+    // short of the run speed, so no skid and no run stop, the idle at once (docs/research/characters.md#run-stop).
     CHECK(run.frames[359].stamina >= 38);
     CHECK(run.frames[359].stamina <= 42);
-    CHECK(run.frames[361].traversal == Traversal::RunStop);
-    CHECK(framesOf(run, Traversal::RunStop) >= 23);
-    CHECK(framesOf(run, Traversal::RunStop) <= 26);
+    CHECK(run.frames[361].traversal == Traversal::None);
+    CHECK(run.frames[362].speed == 0.0F);
+    CHECK(framesOf(run, Traversal::RunStop) == 0);
 }
 
 TEST_CASE("Rembrandt jumps from a run and from a sprint on the parkour lane", "[disc][player][sandbox][traversal]") {

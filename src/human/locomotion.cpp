@@ -155,10 +155,9 @@ float approachSpeed(float current, float target, float seconds) {
 
 bool skids(Gait gait, float speed, const Speeds& speeds, float lastMagnitude, float magnitude,
            anim::Vec3 velocityDirection, anim::Vec3 stickDirection) {
-    // "At run speed": a millimetre a second of slack, as the velocity's length (facing × speed) can come out a
-    // rounding short of the run speed it was set to.
-    constexpr float kRunSpeedSlack = 1e-3F;
-    if ((gait != Gait::Run && gait != Gait::Sprint) || speed < speeds.run - kRunSpeedSlack ||
+    // "At run speed": the run speed at most the measured speed, exactly; a steady run measured a rounding short of
+    // its own speed does not skid (the original's ~1 release in 10 at a run, always after a sprint).
+    if ((gait != Gait::Run && gait != Gait::Sprint) || !(speeds.run <= speed) ||
         lastMagnitude <= locomotionTuning().runThreshold) {
         return false;
     }

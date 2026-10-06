@@ -19,6 +19,7 @@
 #include "human/human_animator.h"
 #include "human/locomotion.h"
 #include "human/target_human.h"
+#include "human/turn_and_slide.h"
 #include "human/victim.h"
 
 // The player's combat inside the human: combat::PlayerCombat decides each update from the command, the stick, the gait
@@ -58,12 +59,6 @@ inline constexpr float kPickHeight = 2.0F;
 inline constexpr float kAttackTurnCapDegrees = 8.0F;
 /// The player's health (Rembrandt's 900 at runtime, record `+0x146`).
 inline constexpr int kPlayerHealth = 900;
-/// After R1 is let go the player stands in the idle (388) this many updates with the state code `+0x14` at 5, which
-/// the locomotion gate reads, before the stick moves him; a press is taken on the first of them
-/// (docs/research/combat.md#input-return, confirmed (runtime)). **Coney choice**: the code is set on the release and
-/// cleared 5 updates later, as seen; who sets and clears it after a block is not traced
-/// (docs/research/tasks.md#locomotion-gate).
-inline constexpr int kBlockSettleUpdates = 5;
 
 /// What the fighter is given each update.
 struct FighterInput {
@@ -127,9 +122,6 @@ class Fighter {
     /// the original's busy test (`0x00223cb0`); a move's clip holds the stick through the record's `+0x08` and the
     /// locomotion gate (human/locomotion_gate.h).
     [[nodiscard]] bool holdsMovement(const HumanAnimator& animator) const;
-    /// The record's state code `+0x14` as the locomotion gate reads it: 5 for the idle after a block
-    /// (kBlockSettleUpdates), else 0.
-    [[nodiscard]] int stateCode() const { return m_blockSettle > 0 ? 5 : 0; }
     [[nodiscard]] bool blocking() const { return m_combat.blocking(); }
     [[nodiscard]] const combat::PlayerCombat& combat() const { return m_combat; }
     [[nodiscard]] combat::PlayerCombat& combat() { return m_combat; }
@@ -141,9 +133,14 @@ class Fighter {
     [[nodiscard]] bool fromRear() const { return m_rear; }
     /// How the grab's two bodies are held together now.
     [[nodiscard]] PairStage pairStage() const { return m_pair; }
-    /// The velocity (m/s, horizontal) an attack's start slides the body at this update, counting the slide down; zero
+    /// The velocity (m/s, horizontal) a grab's alignment slides the body at this update, counting the slide down; zero
     /// when none. The human calls it once per update while combat holds the movement.
     [[nodiscard]] anim::Vec3 takeSlide();
+    /// One state update's step of `dt` of an attack's steer onto its target (TurnAndSlide::step()): the turn to add to
+    /// the heading and the slide's velocity, on top of the clip's root motion. The human calls it once per update.
+    [[nodiscard]] TurnAndSlideStep takeSteer(float dt) { return m_steer.step(dt); }
+    /// The attack's steer still under way.
+    [[nodiscard]] const TurnAndSlide& steering() const { return m_steer; }
     /// The target human the search would pick for an attack of `range` metres (null for none).
     /// @orig 0x0027a6c0 Player_PickTarget (unknown)
     [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range);
@@ -224,8 +221,12 @@ class Fighter {
                        HumanAnimator& animator, float& heading);
     // Plays an attack the dispatcher started (`animId`), with what follows it, turning and sliding to its target.
     void playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading);
-    // Turns (and within the far range slides) towards the target of attack `animId`, as Attack_Start steers.
-    void steer(int animId, const FighterInput& input, float& heading);
+    // Turns (and within the far range slides) towards the target of attack `animId`, as Attack_Start steers: within
+    // the far range the turn and the slide onto the reach are spread at a constant rate over the time to the clip's
+    // first event, from the next state update (m_steer); beyond it the facing turns at once, capped.
+    // @orig 0x002761c8 Attack_SteerToTarget (unknown)
+    // @orig 0x00276008 Attack_TurnToTarget (unknown)
+    void steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading);
     // The block's clip: the shuffle with the stick pushed, the sustain otherwise.
     static void playBlock(const FighterInput& input, HumanAnimator& animator);
     // Lands a hit of attack `animId` and `damage`, and gives the rage it earns.
@@ -312,8 +313,9 @@ class Fighter {
     bool m_tacklePending = false;       // the tackle's intro plays; the victim reacts when its hit clip starts
     bool m_mugOnTarget = false;
     bool m_rear = false;    // the hold is from the victim's rear
-    anim::Vec3 m_slide;     // an attack start's (or a grab's alignment's) slide velocity, m/s
+    anim::Vec3 m_slide;     // a grab's alignment's slide velocity, m/s
     int m_slideUpdates = 0; // updates of slide left
+    TurnAndSlide m_steer;   // an attack start's turn and slide onto its target
     PairStage m_pair = PairStage::None;
     anim::Vec3 m_holdOffset;       // the attached victim's place in the grabber's frame
     float m_holdTurn = 0.0F;       // the attached victim's heading less the grabber's
@@ -322,7 +324,7 @@ class Fighter {
     float m_victimTurnStep = 0.0F; // the victim's
     int m_turnUpdates = 0;         // updates of turn left
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
-    int m_blockSettle = 0;         // updates left of the settle after the block (the stick held, presses taken)
+    int m_duckCounters = 0;        // the duck counters played
     int m_hitsLanded = 0;
     int m_damageDealt = 0;
 
@@ -339,7 +341,6 @@ class Fighter {
     anim::Vec3 m_duckAttacker;    // where the attacker that made the player duck stood
     std::uint32_t m_clipSeen = 0; // the clip playing at the end of the last update, and its time
     float m_clipTimeSeen = 0.0F;
-    int m_duckCounters = 0;
     combat::CombatRandom m_grabbedRandom;
     combat::RepeatTracker m_repeat; // halves the rage of a long run of one kind; the throw bonus
     int m_hitsTaken = 0;

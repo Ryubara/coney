@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.4% of the game's own code (214,652 of 3,342,936 bytes, 464 functions) |
+| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.4% of the game's own code (214,652 of 3,342,936 bytes, 469 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-115 reimplemented function(s) have no size yet and add no bytes.
+120 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.6% | 74 | 358,360 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.6% | 77 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -76,7 +76,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 132 | 1,524,752 |
+| Unattributed | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 134 | 1,524,752 |
 
 ## Research coverage
 
@@ -306,11 +306,14 @@ at the top of the repository's `README.md`.
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x0023a5f8` | `Cfg_SetTurnRate` | `Human` | not filled in |
 | `0x0023a7a0` | `Cfg_SetTurnRates` | `Human` | not filled in |
+| `0x0023cf88` | `Human_TurnToOver` | `Human` | not filled in |
+| `0x0023d2b8` | `Human_MoveToOver` | `Human` | not filled in |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
 | `0x0023db48` | `Human_BeginJump` | `Human` | not filled in |
 | `0x0023e090` | `Human_Land` | `Human` | not filled in |
 | `0x0023eab8` | `Human_SnapToGround` | `Human` | not filled in |
 | `0x0023f238` | `Human_ApplyRootMotion` | `Human` | not filled in |
+| `0x0023f5e0` | `Human_ApplyTurnAndSlide` | `Human` | not filled in |
 | `0x0023fea8` | `Human_StateUpdate` | `Human` | not filled in |
 | `0x00240898` | `Human_AirControl` | `Human` | not filled in |
 | `0x00240e38` | `Human_PlayerLocomotion` | `Human` | not filled in |
@@ -359,6 +362,8 @@ at the top of the repository's `README.md`.
 | `0x0026c1d8` | `Grab_IntroEnd` | `Human` | 880 |
 | `0x0026cc18` | `Grab_Escape` | `Human` | 1,120 |
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
+| `0x00276008` | `Attack_TurnToTarget` | `unattributed` | not filled in |
+| `0x002761c8` | `Attack_SteerToTarget` | `unattributed` | not filled in |
 | `0x00276998` | `Pair_AlignStart` | `unattributed` | 1,024 |
 | `0x00276d98` | `Pair_SnapAttach` | `unattributed` | 600 |
 | `0x00277958` | `Pair_CheckPlace` | `unattributed` | 456 |

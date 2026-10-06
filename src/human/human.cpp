@@ -11,6 +11,7 @@
 #include "combat/being_hit.h"
 #include "combat/combat_tuning.h"
 #include "combat/lock_on.h"
+#include "core/ps2_float.h"
 #include "human/body.h"
 #include "human/jump.h"
 
@@ -29,6 +30,8 @@ constexpr int kRunningClimbMove = 2;
 constexpr int kStandingClimbMove = 1;
 // A stick longer than this gives the climb its direction; a shorter one leaves the facing.
 constexpr float kClimbStickDirection = 0.01F;
+// The kept stick's magnitude falls by this each update once the stick is let go (`0x002411cc` onward).
+constexpr float kLastStickFadePerStep = 0.8F;
 
 // A human's own copy of `ranges` with its class's damage written over it, or null when it has no class table (then it
 // uses `ranges` as it is). Each human keeps its own list, so its class decides only its own damage.
@@ -133,10 +136,11 @@ float Human::speed() const { return std::hypot(m_velocity.x, m_velocity.y); }
 Gait Human::gait() const { return gaitOfSpeed(anim::length(m_velocity), m_animator.speeds()); }
 
 GateInput Human::gateInput() const {
-    return GateInput{.flags = m_animator.flags(),
-                     .stateCode = m_fighter.stateCode(),
-                     .airborne = m_airborne,
-                     .attached = m_fighter.grabbed()};
+    // **Coney choice**: no state code is kept. The original's 5 is the locomotion's own mark for turning in place,
+    // written while the velocity is already gated (the idle's fade, a skid), and 6 is not traced; neither gates an
+    // update the record's bits do not.
+    return GateInput{
+        .flags = m_animator.flags(), .stateCode = 0, .airborne = m_airborne, .attached = m_fighter.grabbed()};
 }
 
 bool Human::stickHeld() const {
@@ -166,6 +170,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_blockedUpdates = 0;
     m_landingPending = false;
     m_turn = TurnState{};
+    m_lastStick = StickIntent{};
     m_stamina = Stamina(staminaTuning().maximum);
     m_sprinting = false;
     m_jumping = false;
@@ -192,7 +197,12 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
 
 void Human::locomote(bool gated) {
     const Speeds& speeds = m_animator.speeds();
-    const float current = speed();
+    // The current speed is the velocity's length as the original measures it (vtable `+0x94`), in single precision
+    // rounded toward zero as the PS2's unit rounds: at a steady run it comes out a few units in the last place either
+    // side of the run speed the velocity was set to, mostly below, which decides whether a release skids.
+    // **Coney's choice**: the velocity itself (facing × speed) is IEEE's; with the length rounded the PS2's way a
+    // steady run reads at or above the run speed in about 6 % of headings, the original's ~1 release in 10.
+    const float current = ps2::length(m_velocity.x, m_velocity.y);
     const float target = m_moveSpeed.has_value()
                              ? *m_moveSpeed
                              : targetSpeed(m_intent.magnitude, speeds, m_sprinting && m_stamina.value() != 0);
@@ -200,11 +210,11 @@ void Human::locomote(bool gated) {
     const Gait gaitNow = gaitOfSpeed(current, speeds);
     float newSpeed = approachSpeed(current, target, kStepSeconds);
 
-    // A run stopped hard or turned back skids: the velocity is zeroed and the run stop plays (after a run as after a
-    // sprint, docs/research/feel.md). The run stop's 0x80000 then makes the human busy, so it holds the facing; the
-    // skid's own update still turns one step (a reversal at a run turned 18° before sliding the old way). **Coney
-    // choice**: the skid does not set the state code 5 the original's does (`0x002419a0`): who clears it is not traced,
-    // and the run stop's own bits gate the same updates.
+    // A run stopped hard or turned back at or above the run speed skids: the velocity is zeroed and the run stop plays
+    // (always after a sprint, rarely after a steady run, docs/research/characters.md#run-stop). The run stop's 0x80000
+    // then makes the human busy, so it holds the facing; the skid's own update still turns one step (a reversal at a
+    // run turned 18° before sliding the old way). The skid sets no state code: the run stop's own bits gate its
+    // updates.
     const anim::Vec3 moving =
         current > 1e-6F ? anim::scale(anim::Vec3{m_velocity.x, m_velocity.y, 0.0F}, 1.0F / current) : facing(m_heading);
     if (skids(gaitNow, current, speeds, m_lastMagnitude, m_intent.magnitude, moving, facing(wanted))) {
@@ -216,6 +226,15 @@ void Human::locomote(bool gated) {
     if (target > 0.0F || m_moveSpeed.has_value()) {
         // Turn toward the stick, limited by the gait and eased.
         m_heading = turnToward(m_heading, wanted, maxTurn(gaitNow), m_turn);
+    } else if (m_animator.idleFading() && m_lastStick.magnitude > locomotionTuning().stickDeadZone) {
+        // Let go, while the idle's fade holds 0x10000000 the body keeps turning toward the stick's last angle, its
+        // magnitude falling by 0.8 an update (`+0x5d8` / `+0x5dc`, docs/research/characters.md#run-stop): the 0.7°,
+        // 1.1°, 1.4°, 1.5° after run_circle's release, eased from a fresh start at the standing limit.
+        m_heading = turnToward(m_heading, m_lastStick.angle - kPi / 2.0F, maxTurn(gaitNow), m_turn);
+    } else {
+        // No turn this update: the next one starts without the last step's carry (at runtime the first turn after a
+        // release carried nothing of the run's).
+        m_turn = TurnState{};
     }
     // The locomotion gate: while a clip moves the body (a start, a landing, a recovery: the record's 0x110c0880) or
     // the state code is 5 or 6, the clip alone moves it. Standing (no gait blend yet), the update the start clip
@@ -403,7 +422,7 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
 }
 
 void Human::holdForCombat() {
-    // The clip moves the body (its root motion is added after this), with an attack start's slide to its target.
+    // The clip moves the body (its root motion is added after this), with a grab's alignment slide.
     const anim::Vec3 slide = m_fighter.takeSlide();
     m_velocity = anim::Vec3{slide.x, slide.y, m_velocity.z};
     // Blocking, the stick turns the player in place at the combat stance's limit (24° an update in play; the block is
@@ -656,6 +675,12 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     ++m_updates;
     m_lastMagnitude = m_intent.magnitude;
     m_intent = stickIntent(m_record.stickX, m_record.stickY, m_record.cameraForward);
+    // The stick's last angle and magnitude, kept while it is pushed and fading by 0.8 an update once it is let go.
+    if (m_intent.magnitude > locomotionTuning().stickDeadZone) {
+        m_lastStick = m_intent;
+    } else {
+        m_lastStick.magnitude *= kLastStickFadePerStep;
+    }
     // A brain's move replaces the stick: its heading as the stick's direction, pushed fully while it moves.
     m_moveSpeed.reset();
     if (m_record.move.has_value()) {
@@ -697,6 +722,14 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
         // Out of the lock the locomotion's clips come back.
         m_animator.leaveCombatWalk();
         locomote(stickVelocityGated(gate));
+    }
+    // An attack's steer onto its target (its turn and slide at a constant rate, `0x0023f5e0` from the state update)
+    // on top of what the state function set; the clip's root motion is added after it.
+    if (!m_airborne && !m_climbRun) {
+        const TurnAndSlideStep steer = m_fighter.takeSteer(kStepSeconds);
+        m_heading = wrapAngle(m_heading + steer.turn);
+        m_velocity.x += steer.velocity.x;
+        m_velocity.y += steer.velocity.y;
     }
     const float turn = wrapAngle(m_heading - headingBefore);
     // Clips move the body on the ground only (**Coney's choice**: in the air the jump keeps its launch velocity and a

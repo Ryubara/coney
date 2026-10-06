@@ -138,6 +138,7 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     // 7. The reaction; the attack playing is lost.
     m_combat.interrupt();
     m_slideUpdates = 0;
+    m_steer.clear();
     m_victim.react(hit, here, animator, kAnimFightIdle, input.nowMs);
     m_reacting = true;
 }

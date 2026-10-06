@@ -255,10 +255,12 @@ class AnimTaskStack {
     static constexpr std::size_t kMaxTasks = 12;
 
     /// A change of animation: `task` (not null) becomes the newest, fading in over the current tasks across
-    /// `fadeSeconds` (0: at once, the older tasks go now).
+    /// `fadeSeconds` (0: at once, the older tasks go now). The fade itself holds `fadeHeld` bits of the record `+0x08`
+    /// while it runs, set as it starts and given back when it ends or is cut off, as the idle's fade holds `0x10000000`
+    /// (docs/research/tasks.md#locomotion-gate); a fade of no length holds nothing.
     /// @orig 0x001754e8 CharacterInstance_InsertTask (unknown)
     /// @orig 0x00106c80 AnimTask_Fade (AnimationBlend.cpp)
-    void change(std::unique_ptr<AnimTask> task, float fadeSeconds);
+    void change(std::unique_ptr<AnimTask> task, float fadeSeconds, std::uint32_t fadeHeld = 0);
     /// Advances every task and every fade by `seconds`; a finished clip-then-next task gives way to its next one,
     /// and a fade that has run its time removes the tasks older than its own.
     void advance(float seconds);
@@ -286,16 +288,19 @@ class AnimTaskStack {
   private:
     struct Layer {
         std::unique_ptr<AnimTask> task;
-        float fade = 0.0F;    // seconds this task fades in over
-        float elapsed = 0.0F; // seconds of that fade run
+        float fade = 0.0F;          // seconds this task fades in over
+        float elapsed = 0.0F;       // seconds of that fade run
+        std::uint32_t fadeHeld = 0; // record +0x08 bits the fade holds while it runs
     };
     // Drops every layer older than layer `index`, ending its fade; the tasks dropped give back their bits.
     void dropOlderThan(std::size_t index);
     // A task starts playing: it clears the bits it holds and sets its start bits.
     void startTask(const AnimTask& task);
     // A task leaves the stack (ended or cut off): it clears the bits it holds that no task of a layer other than
-    // `except` (the layer it leaves; past the end for none) holds.
+    // `except` (the layer it leaves; past the end for none) holds, nor any fade still running.
     void releaseTask(const AnimTask& task, std::size_t except);
+    // The bits the layers hold, but `skipTask` (a task leaving) and the fade of layer `skipFade` (past the end: none).
+    [[nodiscard]] std::uint32_t heldBy(const AnimTask* skipTask, std::size_t skipTaskLayer, std::size_t skipFade) const;
     // Fires the events of the newest task's clip passed between `before` and `after` seconds (`wrapped`: the clip
     // looped in between).
     void fireEvents(AnimTask& task, const AnimClip& clip, float before, float after, bool wrapped);

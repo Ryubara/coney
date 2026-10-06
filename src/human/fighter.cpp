@@ -13,6 +13,7 @@
 #include "combat/grab.h"
 #include "combat/lock_on.h"
 #include "combat/rage_awards.h"
+#include "combat/reactions.h"
 #include "core/pad.h"
 #include "human/fighter_clips.h"
 
@@ -124,16 +125,6 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (!frontGrab && !clips::isThrow(static_cast<int>(animator.animId()))) {
         m_repeat.resetBonus();
     }
-    // The settle after the block counts down while its idle plays (a move started in it ends it); at its end the idle
-    // is the controller's again.
-    if (m_blockSettle > 0) {
-        const bool settled = animator.state() == AnimState::Hold && animator.animId() == clips::kIdle;
-        m_blockSettle = settled ? m_blockSettle - 1 : 0;
-        if (settled && m_blockSettle == 0) {
-            animator.endHold();
-        }
-    }
-
     // 1. The victim's side first, as the original applies the pending damage before the actions: a grab caught on
     // the player, a warning, the update's hit, then the reaction's timers.
     if (m_catch.has_value()) {
@@ -256,17 +247,15 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
                             HumanAnimator& animator, float& heading) {
     // The block: its clip unless a clip under it plays (an attack, a block reaction, a duck; a move's closing 389 gives
     // way). Let go, once the block's own loop plays again (a duck or a block reaction plays out first), the player
-    // stands in the idle for kBlockSettleUpdates with the stick held, taking presses
-    // (docs/research/combat.md#input-return; what holds the stick is not traced).
+    // goes to the idle through its builder, whose fade holds 0x10000000 for 5 updates: the stick turns him on the spot
+    // and he takes presses, then the walk start begins (docs/research/tasks.md#locomotion-gate).
     if (out.blocking) {
-        m_blockSettle = 0;
         if (!animator.drivingClipPlaying() || animator.settling()) {
             playBlock(input, animator);
         }
     } else if (m_combat.mode() == combat::CombatMode::Free && animator.state() == AnimState::Hold &&
                (animator.animId() == clips::kBlockSustain || animator.animId() == clips::kBlockShuffle)) {
-        animator.playCombat(clips::kNoClips, clips::kIdle, AnimState::Hold);
-        m_blockSettle = kBlockSettleUpdates;
+        animator.settleToIdle();
     }
 
     // What the dispatcher started.
@@ -357,7 +346,7 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
         animator.playCombat(clip, clips::kMountingIdle, AnimState::Hold, kCombatFade, held);
         return;
     }
-    steer(animId, input, heading);
+    steer(animId, input, animator, heading);
     // A moving attack with the stick still at a run: the run resumes after it.
     if (isMovingAttack(animId) && input.stick.magnitude() > locomotionTuning().runThreshold) {
         animator.playCombatThenRun(clip, kCombatFade, held);
@@ -374,8 +363,8 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
     animator.playCombat(settle, clips::kIdle, AnimState::Attack, kCombatFade, held);
 }
 
-void Fighter::steer(int animId, const FighterInput& input, float& heading) {
-    m_slideUpdates = 0;
+void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading) {
+    m_steer.clear();
     const float far = reachOf(animId);
     Combatant* target = pickTarget(input, far);
     if (target == nullptr) {
@@ -388,23 +377,37 @@ void Fighter::steer(int animId, const FighterInput& input, float& heading) {
     if (distance < 1e-4F) {
         return;
     }
-    const float wanted = headingOf(to);
-    // Beyond the far range it only turns, a little.
+    // Beyond the far range it only turns, a little, at once.
     if (distance > far) {
         const float cap = kAttackTurnCapDegrees * kDegrees;
-        heading = wrapAngle(heading + std::clamp(wrapAngle(wanted - heading), -cap, cap));
+        heading = wrapAngle(heading + std::clamp(wrapAngle(headingOf(to) - heading), -cap, cap));
         return;
     }
-    // Within it, it faces the target and slides so that it stands at the clip's reach when the hit lands.
-    // **Coney choice**: the slide is spread evenly over the updates to the hit (at least one), on top of the clip's
-    // own root motion; the target does not move, so its velocity term is 0.
-    heading = wanted;
-    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clips::clipOf(animId)) : nullptr;
-    const float reach = range != nullptr && range->reach > 0.0F ? range->reach : distance;
-    const int updates = std::max(1, combat::attackHitUpdate(animId, combat::combatTuning()));
-    const float perSecond = (distance - reach) / (static_cast<float>(updates) * kStepSeconds);
-    m_slide = anim::scale(anim::Vec3{to.x / distance, to.y / distance, 0.0F}, perSecond);
-    m_slideUpdates = updates;
+    // Within it, the time to the clip's first event: the target is led by it + 0.1 s, and the steer lasts as long.
+    // **Coney's reading** of the clamp: at runtime X1 (first event at frame 5, 0.208 s at rate 0.8) turned for 9.25
+    // updates, the time to the event + 0.1 s.
+    const auto clipId = static_cast<std::uint32_t>(clips::clipOf(animId));
+    const anim::AnimClip* clip = animator.anims().clip(clipId);
+    const float toEvent = clip != nullptr ? firstContactTime(*clip, animator.anims().rate(clipId)) : 0.0F;
+    const float seconds = toEvent + kSteerLeadExtraSeconds;
+    // The reach: the attack's, 0.07 m longer for a big target and 0.1 m shorter from behind it; without one, where the
+    // target stands.
+    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clipId) : nullptr;
+    float reach = range != nullptr && range->reach > 0.0F ? range->reach : distance;
+    if (target->bodyScale() > kSteerBigScale) {
+        reach += kSteerBigReach;
+    }
+    if (combat::victimSide(target->position(), target->heading(), input.position) == combat::Side::Rear) {
+        reach -= kSteerRearReach;
+    }
+    // Turn to face the led target and slide to stand at the reach from it, each at a constant rate over the steer's
+    // time, from the next state update (the dispatcher runs after it, docs/research/combat.md#targets). **Coney's
+    // reading**: the turn faces the led target, not the standing point, which lies behind the attacker when the target
+    // is nearer than the reach (the original's XX2 at a target 0.83 m away, inside its 1.12 m reach, turned under 1°).
+    const SteerGoal goal = attackSteerGoal(input.position, target->position(), target->velocity(), reach, toEvent);
+    const anim::Vec3 toAim = anim::subtract(goal.aim, input.position);
+    m_steer.turnToOver(heading, std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to), seconds);
+    m_steer.moveToOver(input.position, goal.stand, seconds);
 }
 
 void Fighter::landHit(int animId, int damage, const FighterInput& input) {

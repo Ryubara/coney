@@ -2,6 +2,7 @@
 #include "human/locomotion.h"
 
 #include <array>
+#include <bit>
 #include <cmath>
 #include <numbers>
 
@@ -180,6 +181,21 @@ TEST_CASE("a run skids to a stop when the stick lets go or turns back", "[locomo
     // Not while walking, nor when the last stick was not a run.
     CHECK_FALSE(coney::human::skids(Gait::Walk, 1.5F, speeds, 1.0F, 0.1F, forward, back));
     CHECK_FALSE(coney::human::skids(Gait::Run, 7.5F, speeds, 0.9F, 0.1F, forward, back));
+}
+
+TEST_CASE("a run's release skids only when the measured speed is at least the run speed, exactly", "[locomotion]") {
+    // The original compares the run speed with the measured speed as floats (c.le.S), with no slack: a speed one unit
+    // in the last place short does not skid (docs/research/characters.md#run-stop).
+    Speeds speeds = testSpeeds();
+    speeds.run = std::bit_cast<float>(0x40f9a3adU); // 7.8012300, Rembrandt's
+    const Vec3 forward{0.0F, 1.0F, 0.0F};
+    const float below = std::nextafter(speeds.run, 0.0F);
+    const float above = std::nextafter(speeds.run, 100.0F);
+    CHECK_FALSE(coney::human::skids(Gait::Run, below, speeds, 1.0F, 0.0F, forward, forward));
+    CHECK(coney::human::skids(Gait::Run, speeds.run, speeds, 1.0F, 0.0F, forward, forward));
+    CHECK(coney::human::skids(Gait::Run, above, speeds, 1.0F, 0.0F, forward, forward));
+    // A sprint's release is far above it.
+    CHECK(coney::human::skids(Gait::Sprint, 10.245F, speeds, 1.0F, 0.0F, forward, forward));
 }
 
 TEST_CASE("the stick above 0.95 asks for the sprint speed only while sprinting", "[locomotion]") {

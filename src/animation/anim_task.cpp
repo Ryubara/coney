@@ -223,14 +223,22 @@ float AnimTaskStack::outgoingWeight(float elapsed, float duration) {
 
 void AnimTaskStack::startTask(const AnimTask& task) { m_flags = (m_flags & ~task.heldFlags()) | task.startFlags(); }
 
-void AnimTaskStack::releaseTask(const AnimTask& task, std::size_t except) {
+std::uint32_t AnimTaskStack::heldBy(const AnimTask* skipTask, std::size_t skipTaskLayer, std::size_t skipFade) const {
     std::uint32_t kept = 0;
     for (std::size_t i = 0; i < m_layers.size(); ++i) {
-        if (i != except && m_layers[i].task != nullptr && m_layers[i].task.get() != &task) {
-            kept |= m_layers[i].task->heldFlags();
+        const Layer& layer = m_layers[i];
+        if (i != skipTaskLayer && layer.task != nullptr && layer.task.get() != skipTask) {
+            kept |= layer.task->heldFlags();
+        }
+        if (i != skipFade) {
+            kept |= layer.fadeHeld;
         }
     }
-    m_flags &= ~(task.heldFlags() & ~kept);
+    return kept;
+}
+
+void AnimTaskStack::releaseTask(const AnimTask& task, std::size_t except) {
+    m_flags &= ~(task.heldFlags() & ~heldBy(&task, except, m_layers.size()));
 }
 
 void AnimTaskStack::fireEvents(AnimTask& task, const AnimClip& clip, float before, float after, bool wrapped) {
@@ -246,31 +254,33 @@ void AnimTaskStack::fireEvents(AnimTask& task, const AnimClip& clip, float befor
 }
 
 void AnimTaskStack::dropOlderThan(std::size_t index) {
-    if (index + 1 < m_layers.size()) {
-        // The dropped tasks are cut off: each gives back what no task left in the stack holds.
-        std::vector<Layer> dropped;
-        dropped.reserve(m_layers.size() - index - 1);
-        for (std::size_t i = index + 1; i < m_layers.size(); ++i) {
-            dropped.push_back(std::move(m_layers[i]));
-        }
-        m_layers.erase(m_layers.begin() + static_cast<std::ptrdiff_t>(index) + 1, m_layers.end());
-        for (const Layer& layer : dropped) {
-            releaseTask(*layer.task, m_layers.size());
-        }
-    }
+    // The dropped tasks are cut off and their fades with them, and the fade of `index` ends: each gives back what no
+    // task or fade left in the stack holds.
+    std::uint32_t leaving = m_layers[index].fadeHeld;
     m_layers[index].fade = 0.0F;
     m_layers[index].elapsed = 0.0F;
+    m_layers[index].fadeHeld = 0;
+    if (index + 1 < m_layers.size()) {
+        for (std::size_t i = index + 1; i < m_layers.size(); ++i) {
+            leaving |= m_layers[i].task->heldFlags() | m_layers[i].fadeHeld;
+        }
+        m_layers.erase(m_layers.begin() + static_cast<std::ptrdiff_t>(index) + 1, m_layers.end());
+    }
+    m_flags &= ~(leaving & ~heldBy(nullptr, m_layers.size(), m_layers.size()));
 }
 
-void AnimTaskStack::change(std::unique_ptr<AnimTask> task, float fadeSeconds) {
+void AnimTaskStack::change(std::unique_ptr<AnimTask> task, float fadeSeconds, std::uint32_t fadeHeld) {
     CONEY_ASSERT(task != nullptr);
     // With more than six tasks held, the newest fade is finished early first.
     if (taskCount() > kEarlyFinishTasks) {
         dropOlderThan(0);
     }
     startTask(*task);
-    m_layers.insert(m_layers.begin(), Layer{.task = std::move(task), .fade = fadeSeconds, .elapsed = 0.0F});
-    // A fade of no length is over at once: the older tasks go now.
+    // A fade of no length is over at once: the older tasks go now, and it holds nothing.
+    const std::uint32_t held = fadeSeconds > 0.0F ? fadeHeld : 0U;
+    m_layers.insert(m_layers.begin(),
+                    Layer{.task = std::move(task), .fade = fadeSeconds, .elapsed = 0.0F, .fadeHeld = held});
+    m_flags |= held;
     if (fadeSeconds <= 0.0F) {
         dropOlderThan(0);
     }
@@ -296,9 +306,11 @@ void AnimTaskStack::advance(float seconds) {
         }
         layer.elapsed += seconds;
     }
-    // The newest fade that has run its time (or every fade, with more than twelve tasks) removes what it faded out.
-    for (std::size_t i = 0; i + 1 < m_layers.size(); ++i) {
-        if (m_layers[i].elapsed >= m_layers[i].fade || taskCount() > kMaxTasks) {
+    // The newest fade that has run its time (or every fade, with more than twelve tasks) removes what it faded out and
+    // gives back the bits it held; the oldest layer has nothing under it, so its fade only gives back its bits.
+    for (std::size_t i = 0; i < m_layers.size(); ++i) {
+        const bool over = m_layers[i].elapsed >= m_layers[i].fade || taskCount() > kMaxTasks;
+        if (over && (i + 1 < m_layers.size() || m_layers[i].fadeHeld != 0)) {
             dropOlderThan(i);
             break;
         }

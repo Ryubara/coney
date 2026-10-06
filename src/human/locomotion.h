@@ -150,8 +150,11 @@ void setTurnEase(float easeError, float carry);
 /// The next speed toward `target`: up by kAcceleration × `seconds` at most, down to the target at once.
 [[nodiscard]] float approachSpeed(float current, float target, float seconds);
 
-/// Whether a running human skids to a stop: in gait 4 or 5, at the run speed or above, after a stick that was over
-/// kRunThreshold, the stick now under 0.2 or more than 120° from the velocity.
+/// Whether a running human skids to a stop: in gait 4 or 5, at the run speed or above (`speed`, the velocity's
+/// measured length, compared exactly as the original's `c.le.S`: run ≤ speed, with no slack), after a stick that was
+/// over kRunThreshold, the stick now under 0.2 or more than 120° from the velocity. At a steady run the measured
+/// speed is the run speed give or take a few units in the last place, so whether a run's release skids turns on them
+/// (docs/research/characters.md#run-stop).
 [[nodiscard]] bool skids(Gait gait, float speed, const Speeds& speeds, float lastMagnitude, float magnitude,
                          anim::Vec3 velocityDirection, anim::Vec3 stickDirection);
 

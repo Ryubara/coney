@@ -2,11 +2,12 @@
 #include "human/pair_placement.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 
 #include "human/locomotion.h"
+#include "human/turn_and_slide.h"
 
 namespace coney::human {
 
@@ -14,8 +15,6 @@ namespace {
 
 // The clip event type that carries a pair's offset.
 constexpr std::uint16_t kPairEvent = 8;
-// The clip event types that count as a contact for the alignment's time (docs/research/combat.md#grab-posing).
-constexpr std::array<std::uint16_t, 7> kContactEvents{0x09, 0x0f, 0x13, 0x2c, 0x34, 0x36, 0x41};
 
 } // namespace
 
@@ -54,14 +53,8 @@ anim::Vec3 pairPoint(const combat::AnimRangeList* ranges, std::uint32_t id, anim
 }
 
 float alignSeconds(const anim::AnimClip& clip, float rate) {
-    // The first contact event's frame, or the whole clip.
-    float seconds = clip.duration;
-    for (const anim::ClipEvent& event : clip.events) {
-        if (std::ranges::find(kContactEvents, event.type) != kContactEvents.end()) {
-            seconds = std::min(seconds, static_cast<float>(event.frame) / anim::kClipFrameRate);
-        }
-    }
-    return rate > 0.0F ? kAlignShare * seconds / rate : 0.0F;
+    // A share of the time to the first contact event (docs/research/combat.md#grab-posing); none without a rate.
+    return rate > 0.0F ? kAlignShare * firstContactTime(clip, rate) : 0.0F;
 }
 
 PairAlignment alignPair(anim::Vec3 grabber, anim::Vec3 victim, float reach, float farRange, bool rear) {

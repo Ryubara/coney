@@ -9,6 +9,7 @@ add_executable(coney_tests
     core/interpolation_test.cpp
     core/name_hash_test.cpp
     core/parse_number_test.cpp
+    core/ps2_float_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
     fileio/disc_test.cpp
@@ -118,6 +119,7 @@ target_sources(coney_tests PRIVATE
     human/player_trace_test.cpp
     human/stamina_test.cpp
     human/traversal_test.cpp
+    human/turn_and_slide_test.cpp
     human/humans_test.cpp
     human/locomotion_gate_test.cpp)
 # Combat (docs/research/combat.md).
