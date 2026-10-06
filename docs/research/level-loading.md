@@ -488,7 +488,7 @@ The per-viewport part of a frame (`0x00156408`; `0x00156540` is a variant of it)
 every viewport before the next step starts:
 
 1. Device slot `+0x88`: position the viewport's cameras.
-2. Lights for the viewport (`LightManager_BeginViewport`, `0x0017ea60`, [Lighting](world.md#lighting)), then the
+2. Lights for the viewport (`LightManager_BeginViewport`, `0x0017ea60`, [Lighting](lighting.md#cull)), then the
    **background** (`LevelObject_RenderBackground`, `0x0040d0a8`, below).
 3. **The world** (`WorldManager_Render`, `0x0040e8d8`): the level world (glows), the `s` world, objects, the `d`
    world, water, translucent objects ([The streamed world](world.md#a-frame)).
@@ -636,7 +636,7 @@ drawn before the `s` world: nothing culled, Z test and write and fog on. `coney 
 file whenever the level has one.
 
 - **Coney's choices for the background:** it is lit by the viewer's one ambient light (0.157), the stand-in for the
-  world lights the original selects for a far-away sphere ([Lighting](world.md#lighting)). The PS2 driver's far-clip
+  world lights the original selects for a far-away sphere ([Lighting](lighting.md#select)). The PS2 driver's far-clip
   call (`0x0048f0f8`) has no counterpart. Switching camera planes ends and begins librw's camera update, which makes
   the camera's world current, so Coney then puts the light world back.
 

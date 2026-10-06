@@ -1321,4 +1321,5 @@ What the implementer still needs:
 - **PM_Difficulty's fourth item:** what the save-system query that unlocks it reports.
 - **The music at PM_Greet:** `menu` or `wonderwheel_132b` (mode 0x12 `Enter` replays `menu` when the names differ;
   [Sound](sound.md)).
-- **PM_Light's colour** `0x0017ec38` on `0x0050cce4`: a world light or a screen tint, and 40 of 255 as its default.
+- **PM_Light's colour** (answered): the light manager's brightness, added to every ambient and directional light
+  ([Lighting](lighting.md#brightness)); 40 is also the constructor's default.

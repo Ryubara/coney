@@ -43,7 +43,7 @@ calls them the **`s` world** and the **`d` world**.
 | `0x00411880` | `World_PendingDistance` | distance to the sector found by `0x00411eb0`; `FLT_MAX` when there is none | confirmed (code) |
 | `0x0040e100` | `WorldManager_NearestPendingDistance` | the smaller of the two worlds' `World_PendingDistance`; no new search | confirmed (code) |
 | `0x00426c78` | `Atomic_AssignGamePipelines` | the game's PS2 pipelines for an atomic and its materials ([Pipelines](#pipelines)) | confirmed (code) |
-| `0x0017d640` | `LightManager` constructor | the light manager (`0x0050cce4`, 0xc0 bytes) ([Lighting](#lighting)) | confirmed (code) |
+| `0x0017d640` | `LightManager` constructor | the light manager (`0x0050cce4`, 0xc0 bytes) ([Lighting](lighting.md#manager)) | confirmed (code) |
 | `0x0017de10` | `LightManager_SelectLights` | the lights for one atomic or sphere | confirmed (code) |
 | `0x00124778` | `Cam_Follow::Cam_Follow` | the player camera: field of view, near and far clip ([The player camera](#player-camera)) | confirmed (code) |
 | `0x00411d10` | `World_FindVisibleSectors(world, firstViewport)` | visibility pass for one camera | confirmed (code) |
@@ -451,52 +451,13 @@ front to back (inferred).
 
 ### Lighting {#lighting}
 
-The `LightManager` (constructor `0x0017d640`, 0xc0 bytes, pointer `0x0050cce4`) owns the lights of a level; the level
-script adds lights, the world uses some of them. Confirmed (code) unless stated.
-
-| Offset | What |
-| --- | --- |
-| `+0x40` | ambient light A: flags 2 (world), enabled; its colour is set each viewport from `+0x50` |
-| `+0x44` | ambient light B: flags 1 (objects), disabled by default; colour a triangle wave between `+0x60` (black) and `+0x70` (0.25 grey) with period `+0x80` = 300 ms (what enables it is not traced) |
-| `+0x50` | the world ambient colour |
-| `+0x84` | a point light, radius 0.4, white, flags 1: a character's glow, used when the character's byte `+0x647` is above 10 |
-| `+0x90` | the gamma offset (RGB) |
-| `+0xa0` | a constant offset, 40/255 = 0.157 (set by the constructor through `0x0017ec38`) |
-
-A light's flags say what it lights: bit 0 (1) objects, bit 1 (2) the world.
-
-**Colour.** `0x0017c840` adds `+0x90 + +0xa0` to the colour of every ambient and directional light, clamped below at 0
-(`0x0017ecc8`). So with no script call, the world's ambient is **0.157 grey**. The Lua bindings, confirmed (code):
-
-- `SetWorldAmbient(r, g, b)` (`0x0036e4b8` → `0x0017f218`): `+0x50 = (r, g, b) + 0.07`, so the world ambient becomes
-  `rgb + 0.07 + 0.157`. Used in 3 script files of 2 levels.
-- `SetGammaOffset({r, g, b})` (`0x0037bd30` → `0x001b4908` → `0x0017ec80`): `+0x90`. Used in 1 file.
-- `SetLight(handle, type, pos, dir, colour, radius, a7…a10, flags, a12, flicker, state)` (`0x0037bfb8`, `0x0037c348`,
-  through `0x0017ef20`): type 0 point, 1 spot, 2 directional, 3 ambient; `flags` up to 3; `flicker` up to 6
-  (`SetLightFlicker` sets it alone); state 0 off, 1 on, 2 delete. Used in 60 files of 52 levels; `SetLightFlicker`
-  in 9 levels. The light descriptor `0x0017c508` (RenderWare type at `+0x00`: 0x80 point, 0x81 spot, 1 directional,
-  2 ambient; position `+0x04`, direction `+0x10`, colour `+0x20`, radius `+0x30`, flags `+0x44`, flicker `+0x4c`,
-  enabled `+0x4e`).
-- Every light the scripts make is in [Lights](../references/lights.md): `global.lua` builds each level's moonlight,
-  reflected and ambient light from the level's `LightData`, and the level scripts add their lamps (5,283 calls, 841 of
-  them kept in `Lights` tables).
-
-(File counts from a scan of the disc's compiled Lua files for the binding names; corroboration.)
-
-**Per viewport** (`LightManager_BeginViewport`, `0x0017ea60`, and `0x0017d880`): ambient A takes its colour, and the
-lights are sorted into lists: list A (`0x00715324`) holds the enabled ambient and directional lights with flag 2; lists
-B and C those with flag 1; point and spot lights are culled by distance from the camera (`far × 0.75 + radius`) and by
-the frustum planes into the viewport's lists `+0x20` (all) and `+0x30` (flag 2).
-
-**Per atomic** (`LightManager_SelectLights`, `0x0017de10(…, sphere, flags, …)`, then the upload `0x0017e810`): for the
-world (flags bit 0 clear), list A, up to 8 lights, then the point lights of `+0x30` whose sphere meets the atomic's,
-keeping the nearest when full; objects use lists B or C, with `6 - LOD` lights. Streamed sectors are lit this way with
-their world bounding sphere (`World_RenderSectorAtomic`), and the background with a sphere far away and no point
-lights ([Level loading](level-loading.md#render-order)).
-
-So the streamed world's light is the prelighting (on the GS's 0x80 scale) modulated by the lighting the microcode
-computes from the 0.157 ambient, the script's world ambient and the script's world lights (how the microcode combines
-prelighting and lights was not read).
+The `LightManager` (`0x0050cce4`) lights the world; the whole subject is on [Lighting](lighting.md). For the streamed
+world, confirmed (code): `World_RenderSectorAtomic` selects the world's lights for the sector's bounding sphere
+(`LightManager_SelectLights`, `0x0017de10`, flags 2): the world ambient, any world directional lights and the nearest
+overlapping world point lights, up to 8, which the PS2 pipeline adds to the prelighting
+([World lighting](lighting.md#world)). With no script call the world ambient is the brightness, 40/255 = 0.157 grey;
+`SetWorldAmbient(r, g, b)` makes it `rgb + 0.07 + 0.157` (0.227 grey in `level99`). The background is lit the same
+way with a sphere far away and no point lights ([Level loading](level-loading.md#render-order)).
 
 ### The player camera {#player-camera}
 
@@ -776,7 +737,6 @@ Some pairs are byte-identical (`level91`/`level97`, `level119`/`level120`).
 - **The microcode**: how the VU1 programs at `0x005045a0`, `0x004fc870` and `0x004ff1c0` use the `0x3F0` scales,
   the prelighting and the lights, and how the dual pass draws (a PCSX2 look at VU1 memory would settle `+0x04`).
 - **MatFX effect 1** (bump map, 2,467 materials): which pipeline it ends up with, and whether it draws differently.
-- **Light B** of the `LightManager` (the 300 ms pulse on objects): what turns it on.
 - **The two atomic pipelines `0x30082` and `0x30083`:** only one atomic uses `0x30082`; how the two differ.
 - **The native data struct size** that exceeds its section ([Part file](#part-file)).
 - **`0x3F0` `+0x08`** (always 0 in the worlds) and `0x004290d8`, its only reader.

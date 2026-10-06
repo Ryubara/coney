@@ -76,6 +76,7 @@ nav:
           - Chunk system: research/chunk-system.md
           - File I/O: research/file-io.md
           - Graphics device and textures: research/graphics.md
+          - Lighting: research/lighting.md
           - Start-up and the front end: research/frontend.md
           - GUI, sprite sheets and text: research/gui.md
           - In-game HUD: research/hud.md

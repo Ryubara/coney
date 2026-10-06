@@ -67,7 +67,7 @@ The leading word of a chunk container is its chunk (or group) count, not a type.
 4. VU microcode/DVP overlays do not need decompiling — replaced by librw's PC renderer.
 5. Engine core: how the game boots and runs its frame is on [Boot and the main loop](boot.md); how it reads files,
    on [File I/O](file-io.md); how it draws (the RenderWare device, textures, 2D, the first screen), on
-   [Graphics device and textures](graphics.md).
+   [Graphics device and textures](graphics.md); how it lights the world and its characters, on [Lighting](lighting.md).
    How the game schedules its objects and steps its characters, and how a move's clip decides when control comes
    back, is on [Tasks](tasks.md); how the other humans think, fight and move, on [AI humans](ai.md); the physics
    world and its 60 Hz step, on [Physics](physics.md).
