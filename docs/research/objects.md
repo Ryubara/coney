@@ -1,12 +1,15 @@
-# World objects: tint, glass and doors
+# World objects: spawning, models, tint, glass and doors
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
-(Ghidra), and a disc check (2026-10-06) of what the scripts pass, reported as counts and values. No runtime claims.
+(Ghidra), and a disc check (2026-10-06) of what the scripts pass and of the Object List and the `WonderWheel_100`
+scene, reported as counts and values. No runtime claims.
 
 ## Purpose
 
-What level scripts set on the world they build and what the player breaks or opens in it: an object's **tint**, the
-**breakable glass** panes, the **doors** and the **breakable barriers**. The lists are
+What level scripts set on the world they build and what the player breaks or opens in it: how an object a script
+spawns finds its **model**, where it stands and what moves it ([Dynamic objects](#dynamic-objects), with the front
+end's Wonder Wheel as the worked case), an object's **tint**, the **breakable glass** panes, the **doors** and the
+**breakable barriers**. The lists are
 [Object tints](../references/tints.md), [Glass types](../references/glass-types.md) and [Doors](../references/doors.md);
 the classes and pools of world objects and glass panes are on [Tasks](tasks.md#classes), the crimes a pane can raise on
 [AI: crimes](ai.md#crimes), and what the player's attacks do to them on [Combat: breakables](combat.md#breakables).
@@ -22,9 +25,24 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
-| `0x00396bd0` | `Obj_SetColour` | `ObjColor`: packs `{r, g, b, a}` into the tint word | confirmed (code) |
-| `0x00398940` | `ObjRecord_Add` | `ObjSpawn`'s spawn record; the tint at `+0x14` | confirmed (code) |
+| `0x00390f18` | `Cfg_AddObjectType` | `CfgObj`: one 0x90-byte object type ([Object types](#object-types)) | confirmed (code) |
+| `0x003913d8` | `ObjectDb_FindByName` | a type's index by name (a hash table over the names) | confirmed (code) |
+| `0x00396858` | `Obj_Spawn` | `ObjSpawn`: the unlockable checks, then a spawn record | confirmed (code) |
+| `0x00398940` | `ObjRecord_Add` | `ObjSpawn`'s spawn record ([Spawn records](#spawn-records)); returns its handle | confirmed (code) |
+| `0x00398fe0` | `ObjRecord_GetHandle` | a record's object, spawning it first when not live | confirmed (code) |
 | `0x00399080` | `ObjRecord_Spawn` | makes the object from a record; copies the tint | confirmed (code) |
+| `0x00399428` / `0x003996a0` | `ObjRecord_Store` / `ObjRecord_Remove` | an object back into its record / gone for good | confirmed (code) |
+| `0x00398df8` | `ObjRecord_SetPinned` | record bit `0x10000` and object `+0x10f`: never stored | confirmed (code) |
+| `0x00399d88` | `ObjectTaskManager_UpdateSpawns` | streams records in and out around the cameras ([Streaming](#streaming)) | confirmed (code) |
+| `0x003918b8` | `WorldObject_Init` | the world object's initialiser: type, script type, defaults, body | confirmed (code) |
+| `0x003a44c8` | `Obj_SetModel(object, hash)` | the model by Object List hash (0: the type's) | confirmed (code) |
+| `0x001811b0` | `ObjectList_FindByHash` | an Object List record by name hash | confirmed (code) |
+| `0x001808b8` / `0x001809c0` | `ObjectModel_IsLoaded` / `ObjectModel_Request` | a record's three resources resident / requested | confirmed (code) |
+| `0x00180f58` | `ObjectModel_MakeInstance` | a model instance over the record's clump and dictionaries | confirmed (code) |
+| `0x001897a8` | `ResourceManager_LoadNearestModel` | per frame: loads one object's model that is missing | confirmed (code) |
+| `0x003eeea0` / `0x003ef840` / `0x003ef188` | `simple_object` init / update / message | the plain prop ([`simple_object`](#simple-object)) | confirmed (code) |
+| `0x0017fd78` | `ObjectRender_Draw` | draws one object instance: lights, size cull, fade | confirmed (code) |
+| `0x00396bd0` | `Obj_SetColour` | `ObjColor`: packs `{r, g, b, a}` into the tint word | confirmed (code) |
 | `0x0038fab8` | `GlassTypes_Set` | `CfgSetGlassProperties`: one entry of the glass type table | confirmed (code) |
 | `0x0039c0e0` | `Glass_Spawn` | pushes the pane's arguments, creates it by type name | confirmed (code) |
 | `0x0038f8a8` | `GlassManager_Create` | allocates the pane, runs its initialiser, the window link | confirmed (code) |
@@ -53,6 +71,42 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003a6ee8` | `Sound_PlayHashAt(hash, pos)` | a 3D sound by name hash | confirmed (code) |
 
 ## Data
+
+### Object types {#object-types}
+
+`CfgObj` fills one 0x90-byte record of the object database (`0x00512c04`, records from its start, a count at
+`+0x34bc0`; the binding's fields are on [`CfgObj`](../references/bindings/config.md#cfgobj)). Confirmed (code) at
+`0x00390f18`, `0x00391778`, `0x003917a0`, `0x00391340`:
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x28` | **name**, up to 26 characters (`dyn_s_wwheel_a`): the name scripts spawn and the task is created by |
+| `+0x43` | **class** name, up to 20 characters (`simple_object`) |
+| `+0x5c` | the class's index in the script type table ([Particles](particles.md#type-record)), or −1 |
+| `+0x60` | the record's own index |
+| `+0x8c` | **CRC-32 of the name** (the standard table at `0x005d91e0`, as typed: the names are lower case): the Object List key of its model |
+
+The other fields (`+0x58`-`+0x88`) are the binding's arguments. A name is found by `ObjectDb_FindByName`
+(`0x003913d8`): a hash table at `+0x34dfc` keyed by `h = 5h + c` over the characters.
+
+### Spawn records {#spawn-records}
+
+`ObjSpawn` does not make an object: it adds a **spawn record** (0x28 bytes) to the `ObjectTaskManager`'s array (`+0x14`,
+count `+0x18`; `CfgSetDatabaseSizes` objects + 500 of them) and returns a handle naming the record: its index `<< 16`
+with serial 0 ([Tasks: handles](tasks.md#handles)). Confirmed (code) at `0x00398940`, `0x00399080`, `0x00399428`:
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00` | rotation: four s16, the quaternion × 4,096 (`0x004f3c70` packs, `vitof12` unpacks) |
+| `+0x08` | position `x, y, z` |
+| `+0x14` | tint word ([The tint](#tint)) |
+| `+0x18` | u16 the flag (marker) named by `flagName`, `0xffff` for none |
+| `+0x1c` | parent handle (none: `NilHandle`) |
+| `+0x20` | the type's index in its low 14 bits, the **object zone** in its top 10 (`<< 22`) |
+| `+0x24` | low 16 bits: the live object's handle index (`0xffff` none); bit `0x10000` **pinned**, `0x20000` **live**, `0x40000` **removed** (never spawned again), `0x80000` `ObjSpawn` flag 2, `0x100000` stored hidden, `0x1000000` `ObjSpawn` flag 64, `0x400000` / `0x800000` a door's left / right leaf; bits 26-29 a state handed to the object on spawn (6: none, the value a new record gets) |
+
+When a record is stored ([Streaming](#streaming)) the object's current pose and tint are written back, so it comes
+back where it was left.
 
 ### The tint {#tint}
 
@@ -171,6 +225,115 @@ So an AI routed through a breakable door or a pane charges it. Confirmed (code);
 edges to a search is open ([AI](ai.md#path-planning)).
 
 ## Behaviour
+
+### Dynamic objects {#dynamic-objects}
+
+A **dynamic object** is a world object a script places with `ObjSpawn(typeName, pos, rot, -1, zone, flags, tint,
+flagName)`: props, weapons, pick-ups and the front end's Wonder Wheel (`dyn_s_wwheel_a`, its carts
+`dyn_s_wwcart_simple_*` and the signs `dyn_s_neon_*`, [Scripts](scripting.md#level100lua-the-front-end)). Its life:
+a spawn record, then an object made from the record when it is wanted, then a model attached when the model's
+resources are in memory, then whatever moves it.
+
+#### Spawning {#spawning}
+
+1. **`Obj_Spawn`** (`0x00396858`): a name starting `dyn_key` (7 characters, `0x00581010`) is skipped unless
+   unlockable 13 is set, and `dyn_powercuffs` (`0x00581018`) unless unlockable 14 is set and game state `0x0041d160`
+   is 0; then `ObjRecord_Add` with the position, rotation, zone, flags, tint and flag name, the parent `NilHandle`.
+   Confirmed (code).
+2. **`ObjRecord_Add`** (`0x00398940`) fills the [record](#spawn-records) and returns its handle. Only in level 84, a
+   `TYPE_GLASS` type is spawned at once. Confirmed (code).
+3. **The object appears** when something wants it, by either path. Confirmed (code):
+    - **resolving the record's handle** (`Handle_Resolve` → `ObjRecord_GetHandle`, `0x00398fe0`) spawns it now when
+      it is not live. Any binding taking the handle does this: `SceneAddObject` (`Scene_BindObject`, `0x00354280`),
+      `ObjColor`, `ObjDestroy` ...;
+    - **streaming** ([below](#streaming)) spawns it when a camera comes within 70 m.
+4. **`ObjRecord_Spawn`** (`0x00399080`): when the pool is full it first frees a slot (`0x003998f0`); it pushes the
+   position (w = 1), the rotation (unpacked) and the parent into the message scratch and creates a task **by the
+   type's name** (record `+0x28`) in the `ObjectTaskManager` ([Tasks: classes](tasks.md#classes)); the record gets the
+   object's handle index and the live bit; the object gets the tint (`+0xc8`, `+0xcc`) and the zone (`+0x114`);
+   record bits then send message `0x12` (`0x200000`), mark a door leaf (`+0x124` = 2 or 4), hide it (`0x100000`:
+   message `0x3c` and object flag `0x800000`); a state other than 6 goes to the object's vtable `+0x124`.
+5. **`WorldObject_Init`** (`0x003918b8`): `Task_Init`; the type found by name (object `+0x112` its index, `+0xc0`
+   the type's name); the type's **class** record of the script type table handed to vtable `+0x194`; colour words
+   `+0xc8`/`+0xcc` = `DAT_005fd268`; hitpoints `+0x128` from type `+0x58`; the collision body by shape
+   (`0x00391d48`: shape 1 a box of the type's size, 2 a sphere of radius half its x); a handle (`+0xe4`). Then the
+   class's own `init` runs with the pushed arguments (for `simple_object`, [below](#simple-object)). Confirmed (code).
+
+`ObjSpawn` therefore returns at once, and nothing is drawn until the record is resolved or streamed in. In
+`level100.lua` the 29 Wonder Wheel objects are spawned when `WonderWheelAnim:startScene` binds them to the scene
+(`SceneAddObject` resolves each handle). Inferred from the paths above.
+
+#### Streaming {#streaming}
+
+`ObjectTaskManager_UpdateSpawns` (`0x00399d88`, called from `TaskManager_TickGame`) walks up to 512 records a call,
+round-robin from where it stopped (`+0x44`), and skips everything while the task manager's `+0x82c` is set.
+Confirmed (code):
+
+- **In**: the nearest record that is not live, not removed, whose zone is enabled (the bit mask at manager `+0x20`,
+  [Tasks](tasks.md#classes)) and whose squared distance to the nearest camera (`0x00120230`) is under 4,900 (70 m) is
+  spawned, at most one a call; when the pool is full, the farthest storable live object beyond it is stored first.
+- **Out**: a live record not **pinned**, whose object can be stored (`0x00395078`: not pinned, flag `0x40000` clear,
+  among checks not traced) and which is farther than the first camera's distance (its vtable `+0x214`) + 10 m, or whose
+  zone is off, is **stored** (`0x00399428`: pose, tint and state written back, the object freed), or removed for
+  good when its own check (`0x00399718`, objects that fell out of the world) says so.
+- **Pinned** records stay: `SceneAddObject` pins its object (`0x00398df8`, record bit `0x10000`, object
+  `+0x10f` = 1), so a scene's objects are never streamed out while bound. Confirmed (code).
+
+What the first camera's vtable `+0x214` returns (the draw distance, inferred) is not traced.
+
+#### The model {#models}
+
+An object's **model** is the Object List record whose name hash is the type's (`CRC-32` of the type name,
+[WAD contents](formats/wad-contents.md#object-list)); the class's initialiser asks for it. Confirmed (code) at
+`0x003a44c8`, `0x00180f58`, `0x001897a8`:
+
+1. **`Obj_SetModel(object, hash)`** (`0x003a44c8`): releases a model the object had (`+0x104`); hash 0 means the
+   type's own (CRC-32 of type `+0x28`); `ObjectList_FindByHash` (`0x001811b0`, a linear search of resource manager
+   `+0x94`, count `+0x90`). With no record the object has no model and the call returns 0. Otherwise it returns the
+   hash, which the class stores at object `+0xc4`, and, when the record's resources are resident
+   (`ObjectModel_IsLoaded`, `0x001808b8`), makes the instance at once.
+2. **The resources** of a record: the **model** (`+0x08`, a `0x47` clump resource; sizes `+0x14` and `+0x18` are what
+   the memory pool is asked for), the **texture dictionary** (`+0x0c`, size `+0x1c`) and an optional **second
+   dictionary** (`+0x10`, size `+0x20`), each looked up by hash in the resource manager's maps (`+0x10`, `+0x30`)
+   and reference-counted. That packs, the level file and standalone WAD entries all feed those maps is inferred.
+3. **The instance** (`ObjectModel_MakeInstance`, `0x00180f58`): a 0x40-byte object (`0x0017faf8`) over the clump
+   and the one or two dictionaries; `0x00395498` puts it at object `+0x104`, sets `+0x108` = 3 and points the
+   instance back at the object (`+0x3c`).
+4. **When not resident**: the object stays without a model. `ResourceManager_LoadNearestModel` (`0x001897a8`,
+   from the world manager's service `0x0040f8a0`, which the game modes' updates call) takes one waiting human,
+   object or car (handles at resource manager `+0xbc4`, `+0xbd4`, `+0xbf4`, the nearest by `0x00189750`,
+   inferred) and, for an object with no instance, requests its record's three resources (`ObjectModel_Request`,
+   `0x001809c0`, which first checks they fit), then attaches the instance once they are in. How the
+   three handles are chosen is not traced.
+
+Disc check (counts and hashes): the eight Wonder Wheel types have records whose model is `<name>_geo`, no second
+dictionary and no variant; the three cart types share one dictionary (`0x4a9e1bf5`) and the four neon types another
+(`0xf2a65bf6`), the wheel has its own (`0xad06c88d`). 33 of the 1,406 records have a second dictionary. Whether
+`level100`'s packs hold them (resident at once) or they stream in is not checked.
+
+**Drawing** (`ObjectRender_Draw`, `0x0017fd78`, confirmed (code) for what is cited): the lights are chosen per object
+(`LightManager_SelectLights`, [Lighting](lighting.md)); an object whose `+0x124` is 0 and whose bounding radius over
+its squared camera distance is under 0.0004 is **not drawn**, and fades out between 0.0004 and 0.0005. A
+`dyn_s_wwcart_simple_*` (radius about 1.5 m) at the front end's 80 m would be culled by that rule; `simple_object`
+gives the Wonder Wheel types `+0x124` = 5, which exempts them ([`simple_object`](#simple-object)).
+
+#### `simple_object` {#simple-object}
+
+The class of most props (`dyn_s_*` and others; record `0x00583a30` of the script type table: init `0x003eeea0`,
+update `0x003ef840`, message `0x003ef188`, flags 8). Confirmed (code):
+
+- **Init**: update interval 240 ticks (4 s); pops the parent handle, the rotation and the position (`+0x20`,
+  `+0x10`); flags `+0x54` = 1, or `0x11` with a parent (attached to it, `0x003a18b8`); `Obj_SetModel(object, 0)`,
+  the hash kept at `+0xc4`. Then by model hash: 14 hashes (the eight Wonder Wheel types among them) set `+0x124` = 5;
+  others set flags `0x80`, `0x8080` or `0x20`; two (`0x14e8682c`, `0x014d30ce`) get an interval of 60 ticks and a
+  looping sound (`0x326071de`, `0x26ac304b`).
+- **Update**: nothing but the looping sound of those two: within the sound's range + 10 m it plays every 2 ticks,
+  otherwise it stops and checks every 60. A plain prop does not move itself.
+- **Messages**: `0x12` **shows** it (clears flag 4); `0x13` **hides** it (sets flag 4; three model hashes set
+  `0x14000000` instead); `0x3c` hides it; `8` puts it back at its attached pose; `0x0a` sets whether it can be hit;
+  `0x1b`, `0x1c`, `0x32` attach it to or detach it from a human; `0x20` stops its sound.
+
+That flag 4 stops the draw is inferred (it is a glass pane's hidden bit too, [Glass types](#glass)).
 
 ### How they get into a level {#placement}
 
@@ -367,3 +530,6 @@ None yet.
 - How a leaf eases to its target rotation (`+0x40`), and the type's float property 5 (half a leaf's width?).
 - Which sheet the glass sprite batch and the `glasstest` shards draw from.
 - How the renderer applies an object's tint word.
+- How the resource manager picks the object whose model it loads next (`+0xbd4`), and whether `level100`'s packs
+  hold the Wonder Wheel's models.
+- What the first camera's vtable `+0x214` returns (the streaming-out distance).

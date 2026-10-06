@@ -1476,16 +1476,21 @@ ObjSpawn(typeName, pos, rot, unused, zone, flags, extra, flagName) -> number
 | 7 | `extra` | number, truncated to an unsigned integer; default 4294967295 | The object's tint, a colour word `0xRRGGBBAA` (record `+0x14`, then object `+0xc8`); default 4294967295, white, no tint ([Object tints](../tints.md)). |
 | 8 | `flagName` | string | Optional name of a flag (marker) the object is linked to; nil for none. |
 
-**Returns** number: The new object's handle, or NilHandle when it was not spawned.
+**Returns** number: A handle to the new spawn record (record index << 16, serial 0), or NilHandle when it was
+suppressed. Resolving it spawns the object if it is not live.
 
-Spawns a game object of a configured type at a position and orientation and returns its handle. Key pickups
-(`dyn_key...`) and the power cuffs (`dyn_powercuffs`) are suppressed unless the matching unlockable is set (0x00424130
-on the unlockables manager at 0x006fe998).
+Places a game object of a configured type at a position and orientation and returns its handle. It adds a spawn record;
+the object itself is made when the handle is first resolved (any binding taking it, such as `SceneAddObject`) or when a
+camera comes within 70 m, and its model is the Object List record of the type's name. Key pickups (`dyn_key...`) and the
+power cuffs (`dyn_powercuffs`) are suppressed unless the matching unlockable is set (0x00424130 on the unlockables
+manager at 0x006fe998).
 
-**Notes.** Callee 0x00396858 builds a spawn record through 0x00398940. `extra` goes to the record (`+0x14`) and from
-there to the object's tint (`0x003992a4`, [Object tints](../tints.md)), confirmed (code); the flag bits' meaning is
-inferred from how the record is filled. The power cuffs are additionally suppressed when 0x0041d160 on the game state is
-non-zero.
+**Notes.** Callee 0x00396858 builds a spawn record through 0x00398940 (`ObjRecord_Add`); 0x00398fe0 spawns a record's
+object on resolve, 0x00399d88 streams records in and out, 0x00399080 makes the object by the type's name and 0x003a44c8
+attaches its model ([Objects: dynamic objects](../../research/objects.md#dynamic-objects)). `extra` goes to the record
+(`+0x14`) and from there to the object's tint (`0x003992a4`, [Object tints](../tints.md)), confirmed (code); the flag
+bits' meaning is inferred from how the record is filled. The power cuffs are additionally suppressed when 0x0041d160 on
+the game state is non-zero.
 
 - **Evidence:** confirmed (code) at `0x00396858`; detail: traced
 - **Wrapper** `0x00377cc8` (registered by `RegisterBindings`); **calls** `0x00396858` `Obj_Spawn`

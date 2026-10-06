@@ -199,18 +199,19 @@ sound, music and list types. The loaders at `0x00144180` and `0x00144398` index 
 
 One chunk in `warriors.glr`, kept by `0x00181170` at resource manager `+0x8c` (count `+0x90`, records `+0x94`;
 confirmed (code)): a 16-byte header whose first word is the count (1,406; the other three are 0), then 36-byte
-records of nine words. No code reading a record has been traced; the fields are inferred from the NTSC-U disc
-(2026-10-06, counts only):
+records of nine words, found by `+0x00` (`0x001811b0`) and loaded as an object's model
+([Objects: the model](../objects.md#models); confirmed (code) at `0x00180f58`, `0x001809c0`, `0x003a4d10`). Disc
+counts (2026-10-06):
 
 | Offset | Meaning | Evidence (disc) |
 | --- | --- | --- |
 | `+0x00` | CRC-32 of the object type's name, lower case (`car_osedan`, `dyn_bat`) | 1,293 of the 1,371 `CfgObj` types and the six car types have a record |
-| `+0x04` | 0, or another record's name hash (a variant of it) | 129 of the 136 non-zero values are a record's `+0x00`; none is a WAD entry |
+| `+0x04` | 0, or another record's name hash: the **next model** a damaged object swaps to (`0x003a4d10`, called by `DoorSwing_Hit` and six others) | 129 of the 136 non-zero values are a record's `+0x00`; none is a WAD entry |
 | `+0x08` | the model resource's hash: CRC-32 of `<name>_geo` | all 1,406 are WAD entries holding one `0x47` model |
 | `+0x0c` | the texture dictionary's hash (`car_osedan_tex`; shared between objects) | all 1,406 are WAD entries holding one `0x2a` chunk |
-| `+0x10` | 0, or the hash of a further resource | all 33 non-zero values are WAD entries; what they hold is not traced |
+| `+0x10` | 0, or a **second texture dictionary** (loaded and instanced as `+0x0c` is) | all 33 non-zero values are WAD entries |
 | `+0x14`, `+0x1c` | the sizes of the model and the dictionary resources, 32 bytes more than their chunks | |
-| `+0x18` | a size larger than the model's | larger on all 1,406; not traced |
+| `+0x18` | a second size of the model, passed with `+0x14` to the memory sizer (`0x00187960`) | larger on all 1,406 |
 | `+0x20` | the size of the `+0x10` resource | non-zero exactly when `+0x10` is |
 
 1,400 models are clumps of one atomic; the six cars' have 47 ([Cars](../cars.md#model)). How the models stand and

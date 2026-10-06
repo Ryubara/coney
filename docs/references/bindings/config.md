@@ -1408,8 +1408,8 @@ CfgObj(name, className, hitpoints, v4, v5, v6, centre, size, shape, axis, mass, 
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Object type name (e.g. a 'dyn_' prop or hat name); its hash also picks the model (+0x8c). |
-| 2 | `className` | string | Object class name (e.g. 'hat_object'); converted to a class id at +0x5c. |
+| 1 | `name` | string | Object type name (e.g. a 'dyn_' prop or hat name), kept at +0x28 (26 characters); its CRC-32 (+0x8c) is the Object List key of the model. |
+| 2 | `className` | string | Object class name (e.g. 'hat_object', 'simple_object'), kept at +0x43; its index in the script type table at +0x5c gives the object's init, update and message code. |
 | 3 | `hitpoints` | number, truncated to an integer | 16-bit value at +0x58: a door's or barrier's hitpoints (0x003fb5f8, 0x003b2f40); for a held weapon, damage added to the hit (0x0021b290). |
 | 4 | `v4` | number, truncated to an integer | Byte at +0x5a. |
 | 5 | `v5` | number, truncated to an integer | Byte at +0x5b. |
@@ -1437,9 +1437,11 @@ Defines one object type in the object database (0x00512c04): name, class, collis
 pickup animation, kind and the transform used when it is carried. config_preload2.lua and config_preload3.lua's
 CfgObjectsAtoC..TtoZ make about 1,370 calls.
 
-**Notes.** Layout confirmed (code) at 0x00390f18; argument meanings for the enum-typed fields come from the scripts'
-table names (PHYS, AXIS, MATERIAL, ANIM, OBJECT); the wrapper (0x0036a1a0) passes argument 12 to +0x5e, 13 to +0x64 and
-14 to +0x65. The getter 0x003a37b8 reads +0x58 (0), +0x5a (1), +0x62 (2), +0x64 (3), +0x65 (4) and +0x86 (10).
+**Notes.** Layout confirmed (code) at 0x00390f18: 0x90-byte records, +0x60 the record's index, the name hashed with the
+standard CRC-32 table at 0x005d91e0 ([Objects: object types](../../research/objects.md#object-types)); argument meanings
+for the enum-typed fields come from the scripts' table names (PHYS, AXIS, MATERIAL, ANIM, OBJECT); the wrapper
+(0x0036a1a0) passes argument 12 to +0x5e, 13 to +0x64 and 14 to +0x65. The getter 0x003a37b8 reads +0x58 (0), +0x5a (1),
++0x62 (2), +0x64 (3), +0x65 (4) and +0x86 (10).
 
 - **Evidence:** confirmed (code) at `0x00390f18`; detail: traced
 - **Wrapper** `0x0036a1a0` (registered by `RegisterBindings`); **calls** `0x00390f18` `Cfg_AddObjectType`

@@ -284,8 +284,9 @@ The **Object List** of `warriors.glr` finds an object type's model and texture d
 **The models** (all 1,406, disc check): 1,400 are clumps of one atomic and one geometry, like the level file's
 [preinstanced models](#the-level-object), drawn by the game's world pipeline `0x30083` with the atomic plugin `0x3F0`;
 the six cars' hold 47, one per part and damaged part ([Cars](cars.md#model)). Every geometry has one material,
-untextured (no texture section), and every dictionary is one `0x2a` chunk. How the game binds the dictionary's texture
-to the material is not traced; Coney's renderer gives the material the dictionary's first texture, as the level file's
+untextured (no texture section), and every dictionary is one `0x2a` chunk. How an object finds, loads and instances
+its model is on [Objects: the model](objects.md#models); how the game binds the dictionary's texture to the material
+is not traced; Coney's renderer gives the material the dictionary's first texture, as the level file's
 models are linked, and the images look right. Read in RenderWare's axes, the models stand with **y up and their front
 towards +z**: chairs, carts, amps and doors stand upright and face the camera when y is turned to z and z to y (with x
 to -x), which is the turn Coney's reference images use (`kObjectToPose`, Coney's choice checked by eye).

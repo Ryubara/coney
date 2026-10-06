@@ -131,7 +131,8 @@ index into the handle table at `0x006ebd38` (2,816 = 0xb00 entries of `{pointer,
 - **Serial 0** names a spawn record of the `ObjectTaskManager` (`0x00398fe0`, records of 0x28 bytes): the record's
   object is spawned first (`0x00399080`) when bit `0x20000` of record `+0x24` is clear (inferred: the "live" bit),
   then the low 16 bits of `+0x24` index the handle table and that object's own handle (its vtable `+0x2c`) is
-  resolved; a record with `0x40000` set gives `NilHandle`. Which bindings hand out such handles is not traced.
+  resolved; a record with `0x40000` set gives `NilHandle`. `ObjSpawn` hands out such handles
+  ([Objects: spawning](objects.md#spawning)).
 
 Each kind searches for a free index from its own start ([Task classes and pools](#classes) lists the kinds):
 
