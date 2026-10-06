@@ -132,7 +132,10 @@ void Spawners::add(const script::SpawnerCall& call) {
     if (spawners.size() >= kGangSpawners) {
         return;
     }
-    Spawner spawner{.call = call, .state = call.state, .value = call.value};
+    Spawner spawner;
+    spawner.call = call;
+    spawner.state = call.state;
+    spawner.value = call.value;
     spawner.nextSpawnMs = m_nowMs;
     spawner.deadlineMs = m_nowMs + static_cast<std::uint64_t>(std::max(call.value, 0)) * kMsPerSecond;
     spawners.push_back(std::move(spawner));

@@ -66,7 +66,8 @@ struct Rig {
                                                          .rollDegrees = 0.0F,
                                                          .fieldOfView = 50.0F,
                                                          .nearClip = 0.1F,
-                                                         .farClip = 200.0F});
+                                                         .farClip = 200.0F,
+                                                         .keptInView = {}});
         cameras.setPlacer([](double handle) -> std::optional<std::pair<Vec3, float>> {
             if (handle != kWinner) {
                 return std::nullopt;

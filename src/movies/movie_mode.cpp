@@ -88,10 +88,15 @@ void MovieMode::exit() {
 }
 
 const CaptionRecord* MovieMode::caption() const {
-    if (!m_current || !m_current->captions) {
+    if (!m_current) {
         return nullptr;
     }
-    const MovieCaptions& captions = *m_current->captions;
+    // Through a local, so the optional checked is visibly the one read.
+    const std::optional<MovieCaptions>& movieCaptions = m_current->captions;
+    if (!movieCaptions) {
+        return nullptr;
+    }
+    const MovieCaptions& captions = *movieCaptions;
     const bool subtitles = m_settings.subtitlesOn ? m_settings.subtitlesOn() : false;
     return captions.captions.visible(subtitles);
 }

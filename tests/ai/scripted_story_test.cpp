@@ -148,17 +148,21 @@ TEST_CASE("The story's human switches reach the humans", "[ai][story]") {
 TEST_CASE("Distances and paths run through the objects' places", "[ai][story]") {
     Level level;
     level.add({44.0F, 40.0F, 0.0F});
-    CHECK(*level.call("GetDistanceTweenHumans", {Value(1.0), Value(2.0)}).number() == Catch::Approx(4.0));
+    CHECK(level.call("GetDistanceTweenHumans", {Value(1.0), Value(2.0)}).number().value_or(-1.0) == Catch::Approx(4.0));
     CHECK(level.call("TestDistance", {Value(1.0), Value(2.0), Value(5.0)}).number() == 1.0);
     CHECK(level.call("TestDistance", {Value(1.0), Value(2.0), Value(4.0)}).isNil());
     // With no path data the walking distance is the straight one.
-    CHECK(*level.call("WalkingDistance", {Value(1.0), Value(2.0)}).number() == Catch::Approx(4.0));
+    CHECK(level.call("WalkingDistance", {Value(1.0), Value(2.0)}).number().value_or(-1.0) == Catch::Approx(4.0));
 
     level.flags.add(100.0, "a", {44.0F, 50.0F, 0.0F}, 0.0F);
     level.flags.add(101.0, "b", {50.0F, 50.0F, 0.0F}, 0.0F);
     const Value path = level.call("AddPath", {Value("walk"), array({100.0, 0.0, 101.0, 999.0})});
-    REQUIRE(path.number().has_value());
-    const coney::ai::WorldPath* kept = level.scripted->storyHost().path(*path.number());
+    const std::optional<double> pathHandle = path.number();
+    REQUIRE(pathHandle.has_value());
+    if (!pathHandle) {
+        return;
+    }
+    const coney::ai::WorldPath* kept = level.scripted->storyHost().path(*pathHandle);
     REQUIRE(kept != nullptr);
     CHECK(kept->points == std::vector<double>{100.0, 101.0});
     level.call("GoalTravelPath", {Value(2.0), path, Value(1.0), Value(0.0), Value(2.0), Value(0.5)});

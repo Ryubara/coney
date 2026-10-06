@@ -94,6 +94,7 @@ PlayerRecord recordOf(const HumanInput& input) {
                         .sprintHeld = input.sprintHeld,
                         .actionPressed = input.actionPressed,
                         .command = input.command,
+                        .climbToward = std::nullopt,
                         .padCommand = combat::command::kNone,
                         .buttons = input.buttons,
                         .padDriven = true,

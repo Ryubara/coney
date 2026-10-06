@@ -685,8 +685,13 @@ void GameplayMode::wireHub() {
     std::map<int, int> flee;
     for (const std::vector<script::Value>& call : m_recorded.calls("CfgGang")) {
         constexpr std::size_t kFleeArgument = 8;
-        if (call.size() > kFleeArgument && call[0].number() && call[kFleeArgument].number()) {
-            flee[static_cast<int>(*call[0].number())] = static_cast<int>(*call[kFleeArgument].number());
+        if (call.size() <= kFleeArgument) {
+            continue;
+        }
+        const std::optional<double> gang = call[0].number();
+        const std::optional<double> percent = call[kFleeArgument].number();
+        if (gang && percent) {
+            flee[static_cast<int>(*gang)] = static_cast<int>(*percent);
         }
     }
     ai::HubLookups lookups;

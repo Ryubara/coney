@@ -94,7 +94,8 @@ NativeFunction makeCameraCreateLocked(const BindingContext& context, std::functi
                                                                .rollDegrees = floatArg(args, 5),
                                                                .fieldOfView = floatArg(args, 2),
                                                                .nearClip = floatArg(args, 6),
-                                                               .farClip = floatArg(args, 7)});
+                                                               .farClip = floatArg(args, 7),
+                                                               .keptInView = {}});
         }
         return binding::number(handle);
     };

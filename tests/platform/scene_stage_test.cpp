@@ -58,7 +58,8 @@ TEST_CASE("a scene's camera is player 1's scene camera, pushed over the camera s
                                                                     .rollDegrees = 0.0F,
                                                                     .fieldOfView = 50.0F,
                                                                     .nearClip = 0.1F,
-                                                                    .farClip = 100.0F});
+                                                                    .farClip = 100.0F,
+                                                                    .keptInView = {}});
     cameras.makeActive(kLockedHandle, 0.0F);
     REQUIRE(cameras.current().kind == CameraKind::Locked);
 

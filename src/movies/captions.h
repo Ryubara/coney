@@ -20,7 +20,7 @@ struct SceneHeader;
 namespace coney::movies {
 
 /// The kind word of a Subtitles record (docs/research/movies.md#caption-text).
-enum class CaptionKind : std::uint32_t {
+enum class CaptionKind : std::uint8_t {
     Language = 0,   ///< A language section starts: the text is `ENGLISH`, `GERMAN`, ...
     Scene = 1,      ///< A scene's (or movie's) captions start: the text is its name (`l99_in_sub`).
     Emphasised = 2, ///< A caption drawn large and red in the middle of the screen, always.

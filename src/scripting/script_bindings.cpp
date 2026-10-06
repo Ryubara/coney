@@ -1317,6 +1317,9 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     vm.setGlobal("M_Quat", Value(std::make_shared<Table>()));
     vm.setGlobal("NilHandle", Value(kNilHandle));
     vm.setGlobal("NilSoundHandle", Value(0.0));
+    // The analyzer reports the scene stand-ins' NativeFunctions as leaked here, but each std::function owns its
+    // functor and addSceneBindings() copies them into the VM (the analyzer loses track inside libstdc++'s _M_manager).
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 } // namespace coney::script

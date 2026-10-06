@@ -216,6 +216,9 @@ TEST_CASE("an emitter's twelve arguments and its positions reach the sound host"
                              Value(45.5), Value(-1.0), Value(3.0), Value(9.0), Value(4.0), Value(7.0)});
     CHECK(id.number() == 4.0);
     REQUIRE(h.sound.emitter.has_value());
+    if (!h.sound.emitter) {
+        return;
+    }
     const coney::script::AmbientEmitterCall& e = *h.sound.emitter;
     CHECK(e.name == "tGulls01");
     CHECK(e.from == std::array<float, 3>{1.0F, 2.0F, 3.0F});

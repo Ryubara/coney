@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "effects/particles.h"
 
+#include "core/assert.h"
+
 #include <algorithm>
 #include <cmath>
 #include <numbers>
@@ -322,6 +324,7 @@ void ParticleSystems::stepSteam(ParticleSystem& system, float seconds) {
 }
 
 void ParticleSystems::updatePuff(Particle& puff) {
+    CONEY_ASSERT(puff.steam.has_value()); // only steam puffs are updated as puffs
     Particle::SteamPuff& steam = *puff.steam;
     ++steam.age;
     const float f = static_cast<float>(steam.age) / static_cast<float>(steam.life);

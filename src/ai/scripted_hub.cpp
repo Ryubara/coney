@@ -75,6 +75,9 @@ void ScriptedHub::wireServices() {
 }
 
 void ScriptedHub::onBrain(double handle, const std::function<void(Brain&)>& body) {
+    // The analyzer reports the copy of `body` as leaked, but the std::function made from the lambda owns it and its
+    // destructor frees it (the analyzer loses track inside libstdc++'s _M_manager).
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     if (m_scripted->defer([this, handle, body] { onBrain(handle, body); })) {
         return;
     }

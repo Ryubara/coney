@@ -26,6 +26,9 @@ struct LookOrder {
 inline constexpr std::array<std::uint32_t, 4> kUseAnimIds{0x184, 0x198, 0x19a, 0x29c};
 
 /// The scripts' state on one human.
+// The fields stay beside the bindings that set them rather than ordered by size: there is one per human, so the few
+// dozen padding bytes cost nothing worth the lost readability.
+// NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
 struct ScriptState {
     /// Arrested (state `0x20000`, `HuSetArrested`): **Coney stand-in**, the arrest's clips are not researched, so an
     /// arrested human stands still and does nothing until released.

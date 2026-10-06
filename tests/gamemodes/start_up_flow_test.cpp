@@ -331,11 +331,13 @@ struct CountingScene final : coney::FrontEndScene {
 
 TEST_CASE("start-up: the front end loads level100's scene, the menus step and draw it, and it goes with the level",
           "[frontend]") {
-    Run run("200 tap start\n");
+    // Declared before the run: the flow still owns a scene when the run is torn down, and the scene's destructor
+    // counts into these.
     int updates = 0;
     int renders = 0;
     int destroyed = 0;
     std::vector<std::string> loaded;
+    Run run("200 tap start\n");
     run.flow->levelFlow().setSceneLoader(
         [&](std::string_view level) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
             loaded.emplace_back(level);

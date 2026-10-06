@@ -55,10 +55,9 @@ constexpr int kFightPercent = 70;
 constexpr float kGiveInFraction = 0.4F;
 constexpr int kKindPhone = 1;
 constexpr int kKindFight = 2;
+// Kind 4, cowering without a plea, takes the same branch as 3. A phoning shopkeeper without an `onPhone` callback
+// reports a break-in (crime 1) through HubGoalServices::reportBreakIn.
 constexpr int kKindCower = 3;
-constexpr int kKindCowerNoPlea = 4;
-// The crime a phoning shopkeeper reports without an `onPhone` callback: a break-in.
-constexpr int kBreakInCrime = 1;
 
 // The distance across the ground between two points.
 float flatDistance(anim::Vec3 a, anim::Vec3 b) { return std::hypot(a.x - b.x, a.y - b.y); }

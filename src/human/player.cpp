@@ -248,8 +248,10 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
                                           .sprintHeld = !script.padLocked && pad.held(pad::kL2),
                                           .actionPressed = !script.padLocked && pad.pressed(pad::kTriangle),
                                           .command = command,
+                                          .climbToward = std::nullopt,
                                           .padCommand = padCommand,
                                           .buttons = buttons,
+                                          .padDriven = false,
                                           .move = std::nullopt};
     } else {
         // Only the view and the brain's move survive; the pad's fields read as released.

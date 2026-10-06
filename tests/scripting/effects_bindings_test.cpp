@@ -132,8 +132,12 @@ TEST_CASE("QueueMotionBlurEffect blends the strength, or the whole colour from a
 TEST_CASE("Start3DFog, MaxFogParticles, StartGarbage and EndGarbage reach the level's effects", "[effects_bindings]") {
     Harness h;
     h.first("Start3DFog", {Value(34734080.0), list({10, 20, 30, 40}), Value(0.4), Value(0.5), Value(7.0)});
-    REQUIRE(h.effects.fog.settings().has_value());
-    const coney::effects::FogSettings& fog = *h.effects.fog.settings();
+    const auto& fogSettings = h.effects.fog.settings();
+    REQUIRE(fogSettings.has_value());
+    if (!fogSettings) {
+        return;
+    }
+    const coney::effects::FogSettings& fog = *fogSettings;
     CHECK(fog.sprite == 34734080U);
     CHECK(fog.colour == std::array<std::uint8_t, 4>{10, 20, 30, 40});
     CHECK(fog.drift == 0.4F);
@@ -157,6 +161,9 @@ TEST_CASE("CfgSteam configures a steam vent with the colour packed r, g, b, a", 
     const coney::effects::ParticleSystem* system = h.effects.particles.find(vent);
     REQUIRE(system != nullptr);
     REQUIRE(system->steam.has_value());
+    if (!system->steam) {
+        return;
+    }
     const coney::effects::SteamSettings& steam = *system->steam;
     CHECK(steam.colour == 0x804020C8U);
     CHECK(steam.interval == 10);

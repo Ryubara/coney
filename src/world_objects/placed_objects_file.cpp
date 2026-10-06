@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "world_objects/placed_objects_file.h"
 
+#include "core/parse_number.h"
+
 #include <charconv>
+#include <cmath>
 #include <cstddef>
 #include <format>
+#include <limits>
 #include <optional>
 #include <span>
 #include <system_error>
@@ -46,9 +50,13 @@ std::vector<std::string_view> fieldsOf(std::string_view line) {
 
 // A field as a float; nothing when it does not read whole.
 std::optional<float> floatOf(std::string_view field) {
-    float value = 0.0F;
-    const auto [end, error] = std::from_chars(field.data(), field.data() + field.size(), value);
-    return error == std::errc{} && end == field.data() + field.size() ? std::optional<float>(value) : std::nullopt;
+    // Through parseDecimal: Apple's libc++ has no floating-point std::from_chars. A value beyond a float's range
+    // fails, as std::from_chars into a float would.
+    const std::optional<double> value = parseDecimal(field);
+    if (!value || std::fabs(*value) > static_cast<double>(std::numeric_limits<float>::max())) {
+        return std::nullopt;
+    }
+    return static_cast<float>(*value);
 }
 
 // A field as an unsigned number in `base` (a negative decimal wraps, as `%d` into an unsigned does); nothing when it

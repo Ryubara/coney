@@ -127,6 +127,9 @@ TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose 
     REQUIRE(p11 != humans.end());
     const std::optional<double> top = game.flow().scripts().vm().global("fTopTier").number();
     REQUIRE(top.has_value());
+    if (!top) {
+        return;
+    }
     const std::array<coney::script::Value, 2> args{coney::script::Value(p11->handle), coney::script::Value(*top)};
     REQUIRE(game.flow().scripts().call("TeleportToFlag", args));
 
@@ -164,6 +167,9 @@ TEST_CASE("the disc's Battle royal kills the fighters rung out and gives the win
     REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
     const std::optional<double> ring = game.flow().scripts().vm().global("vRing").number();
     REQUIRE(ring.has_value());
+    if (!ring) {
+        return;
+    }
     const coney::world_objects::VolumeBox* box = game.flow().context().boxes->find(*ring);
     REQUIRE(box != nullptr);
     int rungOut = 0;

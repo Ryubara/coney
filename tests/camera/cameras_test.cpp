@@ -54,7 +54,8 @@ LockedCamera cutAway() {
                         .rollDegrees = 0.0F,
                         .fieldOfView = 50.0F,
                         .nearClip = 0.1F,
-                        .farClip = 200.0F};
+                        .farClip = 200.0F,
+                        .keptInView = {}};
 }
 
 // Whether two vectors are the same within `margin` on every axis.
@@ -319,8 +320,12 @@ TEST_CASE("the active camera's handle and a camera's place are found by handle",
     Rig rig;
     rig.cameras.makeActive(kLockedHandle, 0.0F);
     CHECK(rig.cameras.activeHandle() == kLockedHandle);
-    REQUIRE(rig.cameras.positionOf(kLockedHandle).has_value());
-    CHECK(near(*rig.cameras.positionOf(kLockedHandle), cutAway().position));
+    const std::optional<Vec3> lockedAt = rig.cameras.positionOf(kLockedHandle);
+    REQUIRE(lockedAt.has_value());
+    if (!lockedAt) {
+        return;
+    }
+    CHECK(near(*lockedAt, cutAway().position));
     CHECK_FALSE(rig.cameras.positionOf(99.0).has_value());
     rig.cameras.makeActive(kFollowHandle, 0.0F);
     CHECK(rig.cameras.activeHandle() == kFollowHandle);

@@ -66,7 +66,8 @@ TEST_CASE("a tagger at a spot fades it in, and is told he is done at 1", "[tag_s
     l.spots.configure(kTag, 0x50000, 0.5F, 0.25F, 1.0F);
     l.spots.setTagger(kTag, kHuman);
     REQUIRE(l.told.size() == 1);
-    CHECK(l.told[0] == std::tuple{kHuman, TagSpots::kTaggerSpray, kTag});
+    // Parenthesised: libstdc++ 14's tuple-like operator<=> breaks on Catch2's expression decomposer.
+    CHECK((l.told[0] == std::tuple{kHuman, TagSpots::kTaggerSpray, kTag}));
     CHECK(l.flag == std::vector<bool>{true});
     for (int i = 0; i < 4; ++i) {
         l.spots.update();
@@ -76,7 +77,8 @@ TEST_CASE("a tagger at a spot fades it in, and is told he is done at 1", "[tag_s
     CHECK(std::get<1>(l.told.back()) == TagSpots::kTaggerDone);
     // A finished spot has nothing to paint: the next tagger is told he is done at once.
     l.spots.setTagger(kTag, kHuman + 1);
-    CHECK(l.told.back() == std::tuple{kHuman + 1, TagSpots::kTaggerDone, kTag});
+    // Parenthesised: libstdc++ 14's tuple-like operator<=> breaks on Catch2's expression decomposer.
+    CHECK((l.told.back() == std::tuple{kHuman + 1, TagSpots::kTaggerDone, kTag}));
 }
 
 TEST_CASE("a wipe-out spray fades a painted spot to blank", "[tag_spots]") {

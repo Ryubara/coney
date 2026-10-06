@@ -285,8 +285,13 @@ TEST_CASE("the configuration bindings set the game state's rules, which the leve
         REQUIRE(slots->set(Value(static_cast<double>(i)), Value(static_cast<double>(i))).has_value());
     }
     level.call("CfgSetDefaultFollowSlotSet", {Value(1.0), Value(slots)});
-    REQUIRE(rules.followSlots[1].has_value());
-    CHECK((*rules.followSlots[1])[8].first == 17.0F);
+    // A local: clang-tidy cannot follow a check through the array's subscript.
+    const auto& slotSet = rules.followSlots[1];
+    REQUIRE(slotSet.has_value());
+    if (!slotSet) {
+        return;
+    }
+    CHECK((*slotSet)[8].first == 17.0F);
     const coney::ai::Formation* formation = level.scene.brains.formations().of(level.scene.player(), true);
     REQUIRE(formation != nullptr);
     CHECK(formation->slot(1, 0).offset[0] == 16); // 1 m in sixteenths

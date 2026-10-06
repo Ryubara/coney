@@ -126,6 +126,9 @@ struct GrabbedReport {
 };
 
 /// The player's combat, played through its animator.
+// The fields stay grouped by the mechanic they serve (grab, hold, hits, reactions) rather than by size: there is one
+// Fighter per human, so the few dozen padding bytes cost nothing worth the lost readability.
+// NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
 class Fighter {
   public:
     /// A fighter whose damage comes from `ranges` (may be null: no damage), coin flips seeded with `seed`, of `profile`

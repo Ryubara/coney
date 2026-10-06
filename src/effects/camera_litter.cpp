@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "effects/camera_litter.h"
 
+#include "core/assert.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -69,6 +71,7 @@ void CameraLitter::end() {
 }
 
 void CameraLitter::place(std::size_t index, anim::Vec3 camera) {
+    CONEY_ASSERT(m_kind.has_value()); // step() places pieces only while a kind is set
     const KindLook& look = kKindLooks.at(*m_kind);
     LitterPiece& piece = m_pieces.at(index);
     const auto column = static_cast<float>(static_cast<int>(index) % kGrid);

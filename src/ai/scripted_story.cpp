@@ -58,6 +58,9 @@ bool isAi(const Brain& brain) { return brain.type() != BrainType::Player; }
 } // namespace
 
 void ScriptedStory::onBrain(double handle, const std::function<void(Brain&)>& body) {
+    // The analyzer reports the copy of `body` as leaked, but the std::function made from the lambda owns it and its
+    // destructor frees it (the analyzer loses track inside libstdc++'s _M_manager).
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     if (m_scripted->defer([this, handle, body] { onBrain(handle, body); })) {
         return;
     }
@@ -120,10 +123,12 @@ std::optional<float> ScriptedStory::walkingDistance(double from, double to) {
     if (!plan) {
         return std::nullopt;
     }
-    if (!plan->route) {
+    // A local: clang-tidy cannot follow a check through the outer expected.
+    const std::optional<Route>& planned = plan->route;
+    if (!planned) {
         return anim::distance(*a, *b);
     }
-    const Route& route = *plan->route;
+    const Route& route = *planned;
     // Along the route: the start, each node, the end.
     const std::span<const world::PathNode> nodes = planner->map().nodes();
     float length = 0.0F;
