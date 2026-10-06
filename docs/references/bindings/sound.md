@@ -11,7 +11,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | --- | --- | --- | --- | --- | --- |
 | [`AddAmbientEmitter`](#addambientemitter) | number | 0 | no | no | inferred |
 | [`AddAmbientSound`](#addambientsound) | - | 1 | yes | no | confirmed (code) |
-| [`AddAmbientSoundEmitter`](#addambientsoundemitter) | number | 10 | no | no | inferred |
+| [`AddAmbientSoundEmitter`](#addambientsoundemitter) | number | 10 | no | no | confirmed (code) |
 | [`AddAmbientSoundEmitter2`](#addambientsoundemitter2) | number | 58 | no | yes | confirmed (code) |
 | [`DuplicateSoundMaterials`](#duplicatesoundmaterials) | - | 3 | yes | no | confirmed (code) |
 | [`EnableAmbientEmitter`](#enableambientemitter) | - | 15 | no | no | confirmed (code) |
@@ -22,7 +22,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`PlayAmbientEmitter`](#playambientemitter) | - | 0 | no | no | inferred |
 | [`PreLoadObjectSound`](#preloadobjectsound) | - | 3 | no | no | confirmed (code) |
 | [`SetAmbientEmitterPositions`](#setambientemitterpositions) | - | 53 | no | yes | confirmed (code) |
-| [`SetAmbientEmitterVolumeMod`](#setambientemittervolumemod) | - | 3 | no | no | inferred |
+| [`SetAmbientEmitterVolumeMod`](#setambientemittervolumemod) | - | 3 | no | no | confirmed (code) |
 | [`SetAmbientTrackVolume`](#setambienttrackvolume) | - | 8 | yes | yes | confirmed (code) |
 | [`SetNumberOfMaterialSlots`](#setnumberofmaterialslots) | - | 6 | yes | no | confirmed (code) |
 | [`SetupRadio`](#setupradio) | - | 4 | no | no | confirmed (code) |
@@ -54,7 +54,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SoundSetMusicTrack`](#soundsetmusictrack) | - | 73 | no | no | confirmed (code) |
 | [`SoundSetMusicVolume`](#soundsetmusicvolume) | - | 50 | yes | no | confirmed (code) |
 | [`SoundSetSoundVolume`](#soundsetsoundvolume) | - | 2 | no | no | confirmed (code) |
-| [`SoundSetSystemMusicState`](#soundsetsystemmusicstate) | - | 8 | no | no | inferred |
+| [`SoundSetSystemMusicState`](#soundsetsystemmusicstate) | - | 8 | no | no | confirmed (code) |
 | [`SoundStart`](#soundstart) | - | 3 | no | no | confirmed (code) |
 | [`SoundStop`](#soundstop) | - | 0 | no | no | confirmed (code) |
 | [`SoundStopAmbientTrack`](#soundstopambienttrack) | - | 28 | no | yes | confirmed (code) |
@@ -113,30 +113,35 @@ Puts a sound into the ambient sound table that the ambient emitters pick their r
 ## AddAmbientSoundEmitter {#addambientsoundemitter}
 
 ```lua
-AddAmbientSoundEmitter(pos1, pos2, index, sound, count, range, arg7, minDelay, maxDelay, arg10, arg11) -> number
+AddAmbientSoundEmitter(pos1, pos2, index, sound, count, range, arg7, minDelay, maxDelay, arg10, mode) -> number
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos1` | table of 3 numbers (t[1]..t[3]) | First corner/end {x, y, z} of the emitter's area; written back. |
-| 2 | `pos2` | table of 3 numbers (t[1]..t[3]) | Second corner/end {x, y, z}; the same as pos1 for a point source. |
-| 3 | `index` | number, truncated to an integer | First ambient-table entry to pick from, or -1 to use the sound name. |
-| 4 | `sound` | string | Sound name when index is -1 (such as a music loop for a radio). |
-| 5 | `count` | number, truncated to an unsigned integer | Number of consecutive table entries to pick from. |
-| 6 | `range` | number (single precision) | Audible range in metres, -1 for the default (inferred). |
-| 7 | `arg7` | number, truncated to an integer | A number (the scripts pass 0); meaning not traced. |
-| 8 | `minDelay` | number, truncated to an unsigned integer | Shortest pause between plays (the scripts pass 1 or 500) (inferred). |
-| 9 | `maxDelay` | number, truncated to an unsigned integer | Longest pause between plays (inferred). |
-| 10 | `arg10` | number, truncated to an unsigned integer | A small number (the scripts pass 3); meaning not traced. |
-| 11 | `arg11` | number, truncated to an integer | A small number (the scripts pass 0 or 3); meaning not traced. |
+| 1 | `pos1` | table of 3 numbers (t[1]..t[3]) | First point {x, y, z} of the emitter (emitter `+0x60`); written back. |
+| 2 | `pos2` | table of 3 numbers (t[1]..t[3]) | Second point {x, y, z} (emitter `+0x10`); the same as pos1 for a point source; written back. |
+| 3 | `index` | number, truncated to an integer | First ambient-table slot to pick from (AddAmbientSound), or -1 to use the sound name. |
+| 4 | `sound` | string | Sound name when index is -1 (such as a music loop for a radio); hashed, nil for none. |
+| 5 | `count` | number, truncated to an unsigned integer | Number of consecutive table slots to pick from at random. |
+| 6 | `range` | number (single precision) | Audible range in metres (inferred); -1 takes the sound's own range plus 10. |
+| 7 | `arg7` | number, truncated to an integer | Stored as a byte at emitter `+0x8c` (AddAmbientSoundEmitter2's arg8; the scripts pass 0); meaning not traced. |
+| 8 | `minDelay` | number, truncated to an unsigned integer | Lower bound of the random pause between plays (16-bit, `+0x86`; inferred). |
+| 9 | `maxDelay` | number, truncated to an unsigned integer | Upper bound of the random pause (16-bit, `+0x88`; inferred); the first pause is drawn between the two at once. |
+| 10 | `arg10` | number, truncated to an unsigned integer | Stored as a byte at emitter `+0x8d` (the scripts pass 3); meaning not traced. |
+| 11 | `mode` | number, truncated to an integer | Mode byte 0-2 at `+0x90`; larger values become 0 (the scripts pass 0 or 3, so 3 acts as 0). |
 
 **Returns** number: The emitter's id, for EnableAmbientEmitter and SetAmbientEmitterVolumeMod.
 
-Adds an unnamed ambient sound emitter (a looping or repeating sound in an area), the older form of
-AddAmbientSoundEmitter2.
+Adds an ambient sound emitter, the older form of AddAmbientSoundEmitter2: every one gets the name `particle task`.
+Calling it again with the same sound and first point returns the existing emitter (marking it `+0x7c` = 1) instead of
+adding one. The sounds it can play are preloaded when it is added.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00371b18` (registered by `RegisterBindings`); **calls** `0x00113840`
+**Notes.** Argument-to-field mapping confirmed (code) through the register and stack passing at 0x00371ce0 (the
+decompiler hides arguments 10 and 11); the meaning of the numbers is inferred as for AddAmbientSoundEmitter2.
+
+- **Evidence:** confirmed (code) at `0x00113840`, `0x0010cf58`, `0x0010cc70`; detail: traced
+- **Wrapper** `0x00371b18` (registered by `RegisterBindings`); **calls** `0x00113840` `Sound_AddAmbientEmitter`,
+  `0x0010cf58` `AmbientManager_AddEmitter`, `0x0010cc70` `AmbientManager_FindEmitter`
 - **Used by** 10 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -421,15 +426,20 @@ SetAmbientEmitterVolumeMod(emitter, volume)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `emitter` | number, truncated to an integer | Emitter id (from AddAmbientSoundEmitter). |
-| 2 | `volume` | number (single precision) | Volume factor, 0-1. |
+| 1 | `emitter` | number, truncated to an integer | Emitter id, as AddAmbientSoundEmitter or AddAmbientSoundEmitter2 returned (not range-checked). |
+| 2 | `volume` | number (single precision) | Volume factor, 1 normal and 0 silent (not clamped). |
 
 **Returns** nothing.
 
-Scales the volume of one ambient emitter, for example a radio turned down.
+Scales the volume of one ambient emitter (its record, 0xd0 bytes at ambient manager `+0x80 + 0xd0 × id`, keeps the
+factor at `+0x88`), and applies it at once to the sound the emitter is playing (`+0x74` of its voice), for example a
+radio turned down.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003725f0` (registered by `RegisterBindings`); **calls** `0x00113c00`
+**Notes.** The ambient manager is the audio manager `+0x24280`. That later plays use `+0x88` is inferred.
+
+- **Evidence:** confirmed (code) at `0x00113c00`, `0x0010d2a0`; detail: traced
+- **Wrapper** `0x003725f0` (registered by `RegisterBindings`); **calls** `0x00113c00` `Sound_SetAmbientEmitterVolume`,
+  `0x0010d2a0` `AmbientEmitter_SetVolume`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -609,16 +619,20 @@ SndLoadBank(bank)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `bank` | string | Name of a sound bank (such as a level's or a boss's bank). |
+| 1 | `bank` | string | Name of a sound bank (such as a level's or a boss's bank), without extension. |
 
 **Returns** nothing.
 
-Loads the named sound bank into sound RAM now (the one bank resident at a time, replacing the level's), or, while the
-audio manager defers bank loads (+0x3fa58, inferred: during level loading), records it as the bank to load once loading
-ends in place of the default "sound".
+Loads the named sound bank into sound RAM now (one bank is resident at a time, so it replaces the level's) and resets
+the pending bank name to `none`; or, while the audio manager defers bank loads (`+0x3fa58`, set when gameplay is
+entered), only records it as the pending bank that level loading loads in place of `sound`.
 
-- **Evidence:** confirmed (code) at `0x001133d0`; detail: brief
-- **Wrapper** `0x00371130` (registered by `RegisterBindings`); **calls** `0x001133d0`
+**Notes.** The pending name is 15 characters at `+0x3fa48`. A bank already current is not reloaded. Banks and who loads
+them: [Sound: banks](../../research/sound.md#banks).
+
+- **Evidence:** confirmed (code) at `0x001133d0`, `0x0010fa50`, `0x00111618`; detail: traced
+- **Wrapper** `0x00371130` (registered by `RegisterBindings`); **calls** `0x001133d0` `Sound_LoadBank`, `0x0010fa50`
+  `AudioManager_LoadBank`, `0x00111618` `AudioManager_SetPendingBank`
 - **Used by** 19 of 467 script chunks (19 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** implemented
@@ -1051,15 +1065,22 @@ SoundPreLoad(sound, pos) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `sound` | string | Sound name. |
-| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | Position {x, y, z} it will play at; written back. |
+| 1 | `sound` | string | Sound name, hashed with the game's name hash (0x00143f68) as for SoundPlay. |
+| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} in metres the sound will play at; written back unchanged. |
 
-**Returns** number: The prepared sound's handle, to start with SoundStart.
+**Returns** number: Handle of the prepared sound, for SoundStart; the null sound handle (0x00598690) when it could not
+be prepared.
 
-Loads and positions a sound without starting it, so that SoundStart can play it later without delay.
+Prepares a positional sound at a point without starting it: a sound task is set up at full volume and normal pitch with
+no attached object (0x00111f78, as the scene-sound preload does), so that SoundStart can start it later with no loading
+delay.
 
-- **Evidence:** confirmed (code) at `0x00113700`; detail: brief
-- **Wrapper** `0x00371768` (registered by `RegisterBindings`); **calls** `0x00113700`
+**Notes.** A global flag (0x00512c14) is held at 1 while the task is made (inferred: tells the task code not to start
+it). Converted as unsigned. A prepared sound never started keeps its task (not traced when it is freed).
+
+- **Evidence:** confirmed (code) at `0x00113700`, `0x001101b8`, `0x00111f78`; detail: traced
+- **Wrapper** `0x00371768` (registered by `RegisterBindings`); **calls** `0x00113700` `Audio_PreloadSoundAt`,
+  `0x001101b8`, `0x00111f78`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
@@ -1211,14 +1232,21 @@ SoundSetSystemMusicState(state)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `state` | number, truncated to an integer | 3 switches the state flag (game state +0x3f4) off; any other value switches it on. |
+| 1 | `state` | number, truncated to an integer | Mood to hold: 0 idle, 1 fight, 2 hunted (16-bit); 3 hands the mood back to the game; 4 switches the system music off. The scripts use 0, 1 and 3. |
 
 **Returns** nothing.
 
-Sets the system (automatic, mood-driven) music's state and updates it (0x00419fc8); the scripts use 0, 1 and 3.
+Sets the system music's mood (game state `+0x40c`), which picks the looping track ([Sound](../../research/sound.md)). A
+state other than 3 also sets the script-hold flag (`+0x3f4`), so the game's own mood choice (SystemMusic_UpdateMood:
+fight when an enemy gang engages the player's, hunted while his gang is hunted, else idle) stops overriding it. State 3
+clears the hold and the game chooses again on its next update.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00371438` (registered by `RegisterBindings`); **calls** `0x00113e60`
+**Notes.** State 4 (0x00419fc8) calls GameState_SetSystemMusic(0), which stops the music and clears the hold, and leaves
+the mood at 3. The moods' names come from the game's choice in SystemMusic_UpdateMood (0x0041a0d0).
+
+- **Evidence:** confirmed (code) at `0x00113e60`, `0x00419fc8`; detail: traced
+- **Wrapper** `0x00371438` (registered by `RegisterBindings`); **calls** `0x00113e60` `Sound_SetSystemMusicState`,
+  `0x00419fc8` `GameState_SetMusicMood`
 - **Used by** 8 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -1231,14 +1259,18 @@ SoundStart(sound)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `sound` | number, truncated to an unsigned integer | Handle from SoundPreLoad. |
+| 1 | `sound` | number, truncated to an unsigned integer | Handle from SoundPreLoad; a handle that no longer resolves to a sound task does nothing. |
 
 **Returns** nothing.
 
-Starts a sound prepared with SoundPreLoad.
+Starts a sound prepared with SoundPreLoad: the handle is resolved to its sound task (0x0010f578) and the task is started
+(0x00111f40), playing at the position given to SoundPreLoad.
 
-- **Evidence:** confirmed (code) at `0x00113780`; detail: brief
-- **Wrapper** `0x00371868` (registered by `RegisterBindings`); **calls** `0x00113780`
+**Notes.** The same start path is used by scene event 71 on a car ([Sound](../../research/sound.md)).
+
+- **Evidence:** confirmed (code) at `0x00113780`, `0x00110258`, `0x00111f40`; detail: traced
+- **Wrapper** `0x00371868` (registered by `RegisterBindings`); **calls** `0x00113780` `Audio_StartPreloadedSound`,
+  `0x00110258`, `0x00111f40`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented

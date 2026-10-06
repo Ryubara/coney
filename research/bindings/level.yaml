@@ -650,14 +650,19 @@
 - name: ForceCrimeLevel
   wrapper: 0x0037a630
   calls:
-    - {addr: 0x0041d8d0}
+    - {addr: 0x0041d8d0, name: GameState_SetForceCrimeLevel}
   args:
-    - {name: "on", lua: boolean, default: true, desc: "true (default) to hold the crime level where it is, false to release it."}
+    - {name: "on", lua: boolean, default: true, desc: "true (default) to hold the heat where it is, false to let it fade again."}
   description: >-
-    Sets the forced flag (`W_GameState + 0x28c`): while on, a wanted gang's timer is held at 10 s from now
-    (Gang_UpdateWanted, 0x001698f0) and the crime level does not drop to 0 ([Crimes: wanted](../../research/crimes.md#wanted)).
+    Sets the forced flag (`W_GameState + 0x28c`). While on, every wanted gang's timer is held at 10 s from now, so
+    the police never lose interest (Gang_UpdateWanted, 0x001698f0), the crime level does not step down to 0
+    (Crime_UpdateLevel, 0x0041c0b8), and a police gang created meanwhile becomes hostile to the wanted gangs one-way
+    only ([Crimes: wanted](../../research/crimes.md#wanted)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The last effect is in the police gang set-up (0x0016cdf0, at 0x0016cfe0): with the flag off the wanted gang
+    also turns hostile to the police.
   usage: {chunks: 9, calls: 9, boot: false, mission1: false, result_used: false, levels: [34, 31, 52]}
 
 - name: SetCopGuardArrestedRange
@@ -847,14 +852,21 @@
 - name: TakeMoney
   wrapper: 0x0037b4c8
   calls:
-    - {addr: 0x0041ef60}
+    - {addr: 0x0041ef60, name: GameState_TakeMoney}
+    - {addr: 0x0041ef00, name: GameState_GiveMoney}
   args:
-    - {name: amount, lua: number, ctype: int, desc: "Dollars to take."}
-    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1)."}
+    - {name: amount, lua: number, ctype: int, desc: "Dollars to take (a negative amount gives)."}
+    - {name: player, lua: number, ctype: int, default: 1, desc: "Player 1 or 2 (default 1); 0 or a value above 2 does nothing."}
   description: >-
-    Takes money from a player (GiveMoney with the amount negated); the total never goes below 0.
+    Takes money from a player: the same call as GiveMoney with the amount negated (`Inventory_AddItem` on the game
+    state's inventory, item 2, money), so the total is clamped to the item's limits (never below 0) and the
+    inventory's money-changed Lua callback, when set, runs with (player index, -amount). The HUD money counter shows
+    the change.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Taking more than the player has empties the purse without error; the callback still receives the full negated
+    amount (inferred from GiveMoney's path).
   usage: {chunks: 5, calls: 17, boot: false, mission1: false, result_used: false, levels: [86, 31, 11]}
   coney: implemented
 
@@ -893,13 +905,19 @@
 - name: GameIsOver
   wrapper: 0x0037b670
   calls:
-    - {addr: 0x0041ddb8}
+    - {addr: 0x0041ddb8, name: GameState_IsLevelEnding}
   results:
-    - {lua: boolean, desc: "true when a level end is pending (the level-end state `W_GameState + 0x14c` is not 0); false also when there is no game state."}
+    - {lua: boolean, desc: "true when a level end is under way (`W_GameState + 0x14c` not 0); nil when playing or when there is no game state."}
   description: >-
-    Tells a script that the level is already ending (mission complete, failed or a level change requested).
+    Tells a script whether the level is already on its way out: the level-end state is 1 (a failure, such as a fall
+    out of the world), 2 (level completed, the next level queued) or 3 (a level load requested from a menu)
+    ([Level loading: leaving](../../research/level-loading.md)). Scripts check it before starting something that
+    should not run during the exit countdown.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    A story mission's own scripted ending does not set the state, so it reads false then. Once the state is not 0,
+    messages stop reaching Lua anyway.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [81]}
 
 - name: SSMC_StartSaveSequence

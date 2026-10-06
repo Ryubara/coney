@@ -127,14 +127,19 @@
   calls:
     - {addr: 0x00292460, name: Brain_SetPedType}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: pedType, lua: number, ctype: unsigned, desc: "Pedestrian type, kept as a 16-bit number; scripts use 1 (market shoppers), 2 and 3 (bouncers, street vendors)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: pedType, lua: number, ctype: unsigned, desc: "Pedestrian type, kept as its low 16 bits (0 when a brain is made). 3 makes a civilian stand up to attackers (bouncers, vendors); 5 marks a rich mugging victim; scripts also use 1 (market shoppers) and 2."}
   description: >-
-    Sets the pedestrian type stored in the human's brain (`+0x26c`), which `BrGetPedType` reads back.
-  evidence: inferred
-  depth: brief
+    Sets the pedestrian type of the human's brain (`+0x26c`), which changes how a civilian reacts to trouble. A
+    civilian of type 3 fights whoever attacks it instead of taking the usual ped-reaction goal (107, fleeing or
+    cowering), and turns hostile (goal 114) rather than reacting when a player comes near (CivilianBrain_OnEvent
+    0x002ffb30, 0x002ff898; CivilianBrain_Think 0x002ff148).
+    Mugging a victim of type 5 gives 1.5 times the money (Player_UpdateMugging 0x0028625c).
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Storage confirmed (code) at 0x00292460; what the types change is inferred from the scripts' calls.
+    No reader treats types 1 and 2 differently from 0 in the civilian brain (inferred: labels for the scripts); other
+    readers of brain `+0x26c` (0x002d2600, 0x002a9ec0, 0x0029bf98) are not traced. BrGetPedType reads it back.
   usage: {chunks: 12, calls: 26, boot: false, mission1: false, result_used: false, levels: [34, 5, 86, 92, 20, 11]}
 
 - name: BrGetPedType
@@ -215,12 +220,17 @@
   wrapper: 0x0035eea0
   calls:
     - {addr: 0x00292618, name: Brain_FlushGoals}
+    - {addr: 0x0028d910, name: Brain_ClearGoals}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle or one that is not a human does nothing."}
   description: >-
-    Pops every goal off a human's goal stack, ending each one, but leaves already queued actions to finish.
+    Pops every goal off the human's goal stack (top index brain `+0x2c` down to -1, then `+0x2d` = -1), ending each
+    one, so each goal's script callback fires with "completed" 0. Unlike BrFlush it leaves the queued actions to
+    finish.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    With no goal left the brain falls back to its idle behaviour ([AI](../../research/ai.md)).
   usage: {chunks: 40, calls: 84, boot: false, mission1: false, result_used: false, levels: [5, 86, 51, 52]}
 
 - name: BrPopGoal
@@ -343,14 +353,18 @@
   calls:
     - {addr: 0x00292758, name: Brain_SetDamageResponse}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: response, lua: number, ctype: int, desc: "Damage response mode (brain `+0x220`); scripts use 0, 3 and 4. 0 is inferred to mean no reaction to being hit."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: response, lua: number, ctype: int, desc: "Damage response mode, kept as a 16-bit signed value in brain `+0x220` (1 when a brain is made); scripts use 0, 3 and 4."}
   description: >-
-    Sets how a human reacts to taking damage.
+    Stores a damage-response mode in the human's brain (`+0x220`, an int, 1 by default from the brain constructor
+    0x0028a570). From the name, the mode chooses how the AI reacts to being hit; scripts set it on story characters
+    who must not react normally.
   evidence: inferred
-  depth: brief
+  depth: thorough
   notes: >-
-    Storage confirmed (code) at 0x00292758.
+    The store and default are confirmed (code); no instruction reading brain `+0x220` directly was found (it may be
+    reached through an embedded-brain offset), so what each mode does is open. GoalManWeaponPile, GoalObjectThrower,
+    the lead-chase goal (0x002e0bf0) and a boss tactic (0x00309840) also set it to 0, beside threat response 0.
   usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 86, 20]}
 
 - name: BrSetInvestigateResponse
@@ -630,18 +644,22 @@
   wrapper: 0x003602e0
   calls:
     - {addr: 0x002dc458, name: Goal_MoveToHuman}
+    - {addr: 0x002dc4f8, name: MoveToHumanGoal_Init}
+    - {addr: 0x002dc578, name: MoveToHumanGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human that moves."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to go to."}
-    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk ... 5 sprint (scripts use 5)."}
-    - {name: radius, lua: number, ctype: float, desc: "How close to get, in metres (scripts use 1-3)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human that moves; a bad handle does nothing."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to go to (goal `+0x20`)."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk ... 5 sprint (scripts use 5) (goal `+0x24`)."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival distance in metres (scripts use 1-3) (goal `+0x28`)."}
   description: >-
-    Sends a human to another human, stopping within the given distance.
-  evidence: inferred
-  depth: brief
+    Pushes a MoveToHuman goal (type 6): the human leaves its fight stance and runs move actions toward the target's
+    current position at `gait`, dropping and re-issuing them every second so it follows a moving target. The goal ends
+    once within `radius` of the target, when the target is no longer valid to it (0x0028d4b0), or when the mover is
+    itself down. A failed route is retried after 30 updates.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Argument order confirmed (code) at 0x002dc458 (the goal goes on the first human's brain); the arrival behaviour is
-    inferred.
+    Distance is full 3D. What 0x0028d4b0 accepts as a valid target (alive, not removed) is not traced in detail.
   usage: {chunks: 3, calls: 11, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: GoalAddressPerson
@@ -684,13 +702,19 @@
   wrapper: 0x00360550
   calls:
     - {addr: 0x002af528, name: Goal_EngageEnemy}
+    - {addr: 0x002af5b0, name: EngageEnemyGoal_Init}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: enemy, lua: number, ctype: unsigned, desc: "Handle of the human to fight."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who attacks; a bad handle does nothing."}
+    - {name: enemy, lua: number, ctype: unsigned, desc: "Handle of the human to fight (not checked here)."}
   description: >-
-    Makes a human start fighting a given enemy.
-  evidence: inferred
-  depth: brief
+    Pushes an `EngageEnemy` goal (type 11) on the human's brain against the enemy: it walks up to the enemy and
+    fights it with the usual fight sub-goal until the enemy is out of range or gone, or a newer goal replaces it. The
+    one-human form of GangEngageEnemy.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002af5b0 (vtable 0x00540330, Process 0x002afa48); a flag at goal `+0x34` is set only when the
+    human's `+0x1a8` is below 3 and 0x00223e20 is false, not traced. Fight behaviour: [AI](../../research/ai.md).
   usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 20]}
 
 - name: GoalFollowPlayer
@@ -737,15 +761,24 @@
   wrapper: 0x00360730
   calls:
     - {addr: 0x002df6c0, name: Goal_FollowObject}
+    - {addr: 0x002df760, name: FollowObjectGoal_Init}
+    - {addr: 0x002df908, name: FollowObjectGoal_Process}
+    - {addr: 0x002df7a0, name: FollowObjectGoal_PickSpeed}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object to follow (a moving blocker in a chase)."}
-    - {name: distance, lua: number, ctype: float, desc: "Follow distance in metres (scripts use 0-1)."}
-    - {name: mode, lua: number, ctype: unsigned, desc: "A mode number (scripts use 1 and 2)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the follower; a bad handle does nothing."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object (or human) to follow; the goal ends once it no longer resolves."}
+    - {name: distance, lua: number, ctype: float, desc: "Distance in metres the follower may lag before it speeds up (goal `+0x24`); scripts use 0-1, and 0 makes any gap give full speed."}
+    - {name: interval, lua: number, ctype: unsigned, desc: "Re-plans every this many brain updates (goal `+0x2c`); scripts use 1 and 2. 0 divides by zero."}
   description: >-
-    Makes a human follow a moving object, as in scripted chases.
-  evidence: inferred
-  depth: brief
+    Pushes a FollowObject goal (type 49) on the human: each update it reads the object's position and speed, and every
+    `interval` brain updates sets a move action to the object's position (0.25 m radius) at a matched speed: the
+    object's own speed, raised by `1 + (gap - distance) / (1.5 × distance)` when the gap is larger than `distance`
+    (more when the object is slow), never above 1.25 × the follower's sprint speed. Used for scripted chases.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The goal has no arrival end: it runs until the object is gone or another goal replaces it. While the brain already
+    runs a move action of the right kind, only its target and speed are updated.
   usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 51]}
 
 - name: GoalFollowFormation
@@ -789,94 +822,138 @@
   wrapper: 0x00360988
   calls:
     - {addr: 0x002e0670, name: Goal_TravelPath2}
+    - {addr: 0x002e0748, name: GoalTravelPath_Init}
+    - {addr: 0x002e07d0, name: GoalTravelPath_NextPoint}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: path, lua: userdata, desc: "The path object."}
-    - {name: start, lua: number, ctype: int, desc: "Starting path point index."}
-    - {name: reverse, lua: boolean, desc: "true to travel backwards (inferred)."}
-    - {name: gait, lua: number, ctype: int, desc: "Gait id."}
-    - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres."}
-    - {name: endPoint, lua: number, ctype: int, desc: "A path point index; -1 for the end of the path (inferred: where to stop)."}
+    - {name: path, lua: userdata, desc: "The path object returned by `AddPath` (read only when a second argument is given)."}
+    - {name: mode, lua: number, ctype: int, desc: "What happens at the end of the path, as in `GoalTravelPath`: 0 stop (or carry on along a linked path), 1 loop, 2 ping-pong."}
+    - {name: reverse, lua: boolean, desc: "true walks the path backwards (towards point 0); false forwards."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk, 3 jog, 4 run, 5 sprint."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius at each point in metres."}
+    - {name: fromPoint, lua: number, ctype: int, desc: "Index of the path point the human is taken to be at; the walk begins with the next point in the travel direction. -1 starts at the path's first point (last when reversed), as `GoalTravelPath` does."}
   description: >-
-    As `GoalTravelPath`, with an extra point index (inferred: the point to stop at).
-  evidence: inferred
-  depth: brief
+    Pushes the same `TravelPath` goal (type 56) as `GoalTravelPath`, but resumes part-way along the path: the goal's
+    current point is set to `fromPoint`, so the first `MoveToFlag` sub-goal is for the point after it (before it when
+    reversed), then it carries on to the end as `mode` says.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The index is stored as a 16-bit value and sign-extended; it is not range-checked, but the end-of-path test runs on
+    the stepped index, so one past the end makes mode 0 end at once and mode 1 wrap. The third and seventh arguments were listed as
+    a start index and an end point before; they are the end mode and the point to resume after.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: GoalLeadChase
   wrapper: 0x00360ac8
   calls:
     - {addr: 0x002e0a78, name: Goal_LeadChase}
+    - {addr: 0x002e0b48, name: LeadChaseGoal_Init}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human being chased."}
-    - {name: path, lua: userdata, desc: "The path the runner follows."}
-    - {name: chaser, lua: number, ctype: unsigned, desc: "Handle of the chaser (the player)."}
-    - {name: distance1, lua: number, ctype: float, desc: "First distance threshold in metres (the only call passes 30, 50, 70, 90 for the four; inferred: distances at which the runner speeds up or waits)."}
-    - {name: distance2, lua: number, ctype: float, desc: "Second distance threshold in metres."}
-    - {name: distance3, lua: number, ctype: float, desc: "Third distance threshold in metres."}
-    - {name: distance4, lua: number, ctype: float, desc: "Fourth distance threshold in metres."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the runner; a bad handle does nothing."}
+    - {name: path, lua: userdata, desc: "The path the runner follows from its first point (read only when a second argument is given)."}
+    - {name: chaser, lua: number, ctype: unsigned, desc: "Handle of the chaser; read but ignored: the goal picks its own chaser."}
+    - {name: distance1, lua: number, ctype: float, desc: "Metres: while the chaser is closer than this the runner runs on along the path; farther away it stops and waits (the only call passes 30)."}
+    - {name: distance2, lua: number, ctype: float, desc: "Metres, stored squared at goal `+0x44`; not read by the goal's process (the call passes 50)."}
+    - {name: distance3, lua: number, ctype: float, desc: "Metres, stored squared at goal `+0x48`; not read by the process (70)."}
+    - {name: distance4, lua: number, ctype: float, desc: "Metres, stored squared at goal `+0x4c`; not read by the process (90)."}
   description: >-
-    Makes a human run a path ahead of a chaser, pacing itself by how far behind the chaser is.
-  evidence: inferred
-  depth: brief
+    Pushes a lead-chase goal (type 73, a path-travel goal): every 10 updates the runner takes as its chaser the
+    nearest living enemy within 50 m. While that chaser is within `distance1` it runs along the path, sprinting
+    while its power meter is above 60% and dropping back to a run at 20% or less; otherwise it stops and turns to
+    face the chaser (when more than 15° off). The goal ends at the path's last point.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Process: 0x002e0dc8. The init passes 0 instead of the chaser to GoalTravelPath_Init (0x002e0b48 clears a3), so
+    the argument has no effect. A path linked to a next path (`+0x34`) continues onto it. The runner's threat and
+    damage responses are set to 0 (brain `+0x21c`, `+0x220`), so it does not fight back.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [2]}
 
 - name: GoalRunCarrotRun
   wrapper: 0x00360c10
   calls:
     - {addr: 0x002e1140, name: Goal_RunCarrot}
+    - {addr: 0x002e1230, name: RunCarrotGoal_Init}
+    - {addr: 0x002e13c0, name: RunCarrotGoal_UpdateSpeed}
+    - {addr: 0x002e15e8, name: RunCarrotGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the runner."}
-    - {name: path, lua: userdata, desc: "The path to run."}
-    - {name: start, lua: number, ctype: int, desc: "Starting path point index."}
-    - {name: reverse, lua: boolean, desc: "true to run it backwards (inferred)."}
-    - {name: gait, lua: number, ctype: int, desc: "Gait id (scripts use 4 or 5)."}
-    - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres."}
-    - {name: chasers, lua: number, ctype: int, desc: "The gang chasing (scripts pass the Warriors' gang)."}
-    - {name: distance, lua: number, ctype: float, desc: "A distance in metres (scripts use 4-25; inferred: the lead the runner keeps)."}
-    - {name: option, lua: boolean, desc: "A flag (scripts leave it unset)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the runner; a bad handle does nothing."}
+    - {name: path, lua: userdata, desc: "The path to run (a `Path_...` value); read only when more than one argument is passed."}
+    - {name: start, lua: number, ctype: int, desc: "Index of the path point to start from, as in GoalTravelPath."}
+    - {name: reverse, lua: boolean, desc: "true to run the path backwards (inferred, as in GoalTravelPath)."}
+    - {name: gait, lua: number, ctype: int, desc: "Base gait id (scripts use 4 run or 5 sprint); its speed is the floor of the runner's speed."}
+    - {name: radius, lua: number, ctype: float, desc: "Arrival radius at each path point in metres."}
+    - {name: chasers, lua: number, ctype: int, desc: "Gang id of the chasers (scripts pass the Warriors' gang); the nearest of its up to 16 members is measured."}
+    - {name: distance, lua: number, ctype: float, desc: "Reference distance in metres (scripts use 4-25): without `keepAhead`, the runner speeds up as the nearest chaser comes inside it."}
+    - {name: keepAhead, lua: boolean, desc: "true flips the rule: the runner speeds up the farther the nearest chaser is beyond `distance` (full boost 5 m past it). Scripts leave it unset."}
   description: >-
-    Makes a human run a path just ahead of a chasing gang, the 'carrot' in chase missions.
-  evidence: inferred
-  depth: brief
+    Pushes a run-carrot goal on the human: it runs the path point to point like GoalTravelPath (a TravelPath sub-goal
+    plus a move-to-point goal per point) and ends when the path runs out. Each update it finds the nearest member of
+    the chasing gang and sets its speed to the gait's speed plus up to 6 m/s: by default the boost is
+    `1 - d/distance` when that chaser is closer than `distance` (so a caught-up carrot sprints away), with
+    `keepAhead` it is `min((d - distance) * 0.2, 1)`. It also raises a brain byte (`+0x0b`, 0/2/3 for boosts of
+    0, up to 0.5, above 0.5) that is restored when the goal ends.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Speed is recomputed only while brain flags `+0x34 & 3` are clear. The meaning of brain `+0x0b` (set via
+    0x0028cdf8, forced 0 in some human states) is not traced; inferred: a panic/urgency level for the run animation.
+    No chaser alive: speed stays the gait's.
   usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false, levels: [5, 84, 20]}
 
 - name: GoalDevilRun
   wrapper: 0x00360d98
   calls:
     - {addr: 0x002e1760, name: Goal_DevilRun}
+    - {addr: 0x002e1850, name: DevilRunGoal_Init}
+    - {addr: 0x002e2230, name: DevilRunGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the runner."}
-    - {name: path, lua: userdata, desc: "The path to run."}
-    - {name: gang, lua: number, ctype: int, desc: "The gang it races or chases (scripts pass the Warriors' gang)."}
-    - {name: speed, lua: number, ctype: int, desc: "Base speed (a gait id or speed; scripts use constants such as 5)."}
-    - {name: attackDistance, lua: number, ctype: float, desc: "Distance in metres at which it attacks (inferred)."}
-    - {name: boostDistance, lua: number, ctype: float, desc: "Distance in metres at which it speeds up (inferred)."}
-    - {name: maxSpeed, lua: number, ctype: float, desc: "Maximum speed (scripts use 10-13)."}
-    - {name: urgency, lua: number, ctype: float, desc: "Urgency factor (scripts use 0.5-3)."}
-    - {name: hostile, lua: boolean, desc: "true for a pursuer that attacks, false for a friendly runner (inferred)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the runner; a bad handle does nothing."}
+    - {name: path, lua: userdata, desc: "The path the chase runs along (read only when a second argument is given)."}
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (16-bit) the runner paces itself against (scripts pass the Warriors' gang); its members are the chasers."}
+    - {name: gait, lua: number, ctype: int, desc: "Base gait id (16-bit): its speed (Human_SpeedForGait) is the runner's slowest speed; scripts use constants such as 5."}
+    - {name: attackDistance, lua: number, ctype: float, desc: "Hostile runner only: metres (measured along the path) at which it turns to attack a running chaser (goal `+0x1c`)."}
+    - {name: paceDistance, lua: number, ctype: float, desc: "Metres over which the speed is blended (goal `+0x20`): the distance to the chaser divided by this gives the 0-1 blend factor."}
+    - {name: maxSpeed, lua: number, ctype: float, desc: "Speed in m/s reached at a blend factor of 1 (scripts use 10-13)."}
+    - {name: urgency, lua: number, ctype: float, desc: "Multiplied by the blend factor and added to a brain byte (0x0028cdf8; scripts use 0.5-3). Meaning not traced."}
+    - {name: hostile, lua: boolean, desc: "true: a pursuer that speeds up the farther it falls behind and attacks when close; false: a runner that speeds up the closer the chaser gets."}
   description: >-
-    A rooftop and street chase runner that keeps pace with a gang along a path, speeding up when it falls behind and
-    attacking when close.
-  evidence: inferred
-  depth: brief
+    Pushes a devil-run goal (type 152), the rooftop and street chases: the runner heads for the path's last point
+    while pacing itself against the gang. Every 7 updates it measures the distance to its chosen chaser (the gang
+    member nearest the path, re-chosen every 29 updates) and sets its speed between the gait's and `maxSpeed` by
+    that distance over `paceDistance`. Every 17 updates it ends once a gang member has passed the path's last point.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Hostile attack test (0x002e1e10): a running chaser (`+0x1a8` above 2) within attackDistance, or a slower one
+    within (1.1 × runner `+0x140`)² (a squared reach against metres); it then sets threat response 2 and pushes
+    goals 0x002ade10 (2000, 2000) and, in the first case, an engage-enemy goal (0x47). Chaser choice: 0x002e1c18;
+    progress: 0x002e1b60. The objects of other runners' gangs are not checked.
   usage: {chunks: 6, calls: 33, boot: false, mission1: false, result_used: false, levels: [3, 54]}
 
 - name: GoalGuardFlag
   wrapper: 0x00360f28
   calls:
     - {addr: 0x002b79b8, name: Goal_GuardFlag}
+    - {addr: 0x002b7a90, name: GuardFlagGoal_Init}
+    - {addr: 0x002b7c18, name: GuardFlagGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the guard."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the guard; a bad handle, or a flag handle that does not resolve, does nothing."}
     - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to guard."}
-    - {name: radius, lua: number, ctype: float, desc: "Guard radius in metres (scripts use 0.5-1)."}
-    - {name: heading, lua: number, ctype: int, desc: "Heading in degrees to face while guarding; -1 to keep the flag's own (inferred)."}
-    - {name: callback, lua: string, desc: "Name of a Lua function called when the goal ends or times out, or nil."}
-    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "Time limit in milliseconds; -1 (the default) for none."}
+    - {name: radius, lua: number, ctype: float, desc: "Metres: the guard walks back to the flag whenever it is farther than this (also its arrival radius; scripts use 0.5-1)."}
+    - {name: heading, lua: number, ctype: int, desc: "World heading in degrees (16-bit) to face while on station, re-applied every 30 updates; -1 for none."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called (handle, completed) when the goal ends, or nil."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "Written to the goal's time word (`+0x08`, 16-bit value); -1 (the default) for none (inferred: a time limit)."}
   description: >-
-    Makes a human stand guard at a flag, facing a direction, optionally for a limited time with a callback.
-  evidence: inferred
-  depth: brief
+    Pushes a guard-flag goal (type 43): the human walks (gait 2) back to the flag whenever it strays more than
+    `radius` from it and, on station, turns to `heading`. It ends when the flag no longer exists. An event that
+    reaches the goal makes it push goal 63 (LeftTurf, back to the brain's home `+0x230`) on top.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Event handler 0x002b7bc0 pushes LeftTurf (0x002f8c90) for any event it gets. The callback follows the shared
+    rule of [AI: scripted goals](../../research/ai.md#scripted). How the base goal uses `+0x08` is not traced here.
   usage: {chunks: 4, calls: 14, boot: false, mission1: false, result_used: false, levels: [3, 14, 55]}
 
 - name: GoalArrestHuman
@@ -1101,41 +1178,50 @@
   wrapper: 0x00361b80
   calls:
     - {addr: 0x002a31f0, name: Goal_ManWeaponPile}
+    - {addr: 0x002a3320, name: ManWeaponPileGoal_Init}
+    - {addr: 0x002a3498, name: ManWeaponPileGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
-    - {name: pile, lua: number, ctype: int, desc: "Which weapon pile or object type to take from; scripts pass -1 (any, inferred)."}
-    - {name: minRange, lua: number, ctype: float, desc: "Distance in metres (scripts use 2; inferred: the closest target range)."}
-    - {name: maxRange, lua: number, ctype: float, desc: "Distance in metres (scripts use 40; inferred: the farthest target range)."}
-    - {name: maxThrows, lua: number, ctype: int, desc: "A count (scripts use 12-14; inferred: how many objects to throw)."}
-    - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 1 and 5)."}
-    - {name: value3, lua: number, ctype: int, desc: "A number (scripts use 1)."}
-    - {name: wantsWeapon, lua: boolean, desc: "Sets the brain's wants-weapon flag (as `BrSetThugWantsWeapon`)."}
-    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
-    - {name: callback, lua: string, desc: "Name of a Lua function called when the goal ends, or nil."}
-    - {name: delayMs, lua: number, ctype: unsigned, default: 500, desc: "A time in milliseconds (default 500; inferred: delay between throws)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower; a bad handle does nothing."}
+    - {name: maxThrows, lua: number, ctype: int, desc: "Throws before the goal may end (goal `+0x36`); -1, what the scripts pass, for no limit."}
+    - {name: pickupRadius, lua: number, ctype: float, desc: "Radius in metres around the thrower searched for a throwable to pick up (goal `+0x24`); scripts use 2."}
+    - {name: throwRange, lua: number, ctype: float, desc: "Range in metres: the target is picked within it every 10 updates, and a target farther away is only looked at, not thrown at (goal `+0x28`); scripts use 40."}
+    - {name: pauseS, lua: number, ctype: int, desc: "Seconds to wait after each throw before fetching the next object (goal `+0x30`); scripts use 12-14."}
+    - {name: style, lua: number, ctype: int, desc: "0 plain; 1-5 also give the thrower an object in hand when it has none (1 dyn_brick, 2 dyn_molotv, 3 dyn_manqheadred, 4 a porcelain object, 5 dyn_beerbottle) and make it target the player half the time; for character 135 (the Hi-Hats boss), 1 and 2 pick two sets of taunts said on a throw (goal `+0x3a`). Scripts use 1 and 5."}
+    - {name: closeRange, lua: number, ctype: int, desc: "Metres (kept squared, goal `+0x3c`): a target closer than this lets the goal end after the pause even before `maxThrows`. Scripts use 1."}
+    - {name: wantsWeapon, lua: boolean, desc: "Sets the brain's wants-weapon byte (`+0x265`, as `BrSetThugWantsWeapon`)."}
+    - {name: checkLine, lua: boolean, default: true, desc: "true: before each throw the thrower checks it can hit the target (0x00222288) and goes back to fetching if not (goal `+0x4c`)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function registered with the goal (`+0x20`), or nil; when it is called is not traced."}
+    - {name: delayMs, lua: number, ctype: unsigned, default: 500, desc: "Delay in ms from holding an object to the first throw (goal `+0x48`, default 500)."}
   overloads:
   - wrapper: 0x00361a50
     calls:
-      - {addr: 0x002a30e8}
+      - {addr: 0x002a30e8, name: Goal_ManWeaponPileSimple}
     args:
       - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
-      - {name: pile, lua: number, ctype: int, desc: "Which pile or object type; -1 for any (inferred)."}
-      - {name: minRange, lua: number, ctype: float, desc: "Distance in metres (inferred: closest target range)."}
-      - {name: maxRange, lua: number, ctype: float, desc: "Distance in metres (inferred: farthest target range)."}
-      - {name: maxThrows, lua: number, ctype: int, desc: "A count (inferred: how many to throw)."}
-      - {name: wantsWeapon, lua: boolean, desc: "Sets the brain's wants-weapon flag."}
+      - {name: maxThrows, lua: number, ctype: int, desc: "As in the long form (-1 for no limit)."}
+      - {name: pickupRadius, lua: number, ctype: float, desc: "As in the long form."}
+      - {name: throwRange, lua: number, ctype: float, desc: "As in the long form."}
+      - {name: pauseS, lua: number, ctype: int, desc: "As in the long form."}
+      - {name: wantsWeapon, lua: boolean, desc: "Sets the wants-weapon byte; it is also passed as `closeRange` (0 or 1 m)."}
       - {name: callback, lua: string, desc: "Name of a Lua function, or nil."}
     note: >-
-      The 7-argument form (0x00361a50). The 11-argument form is used when arguments 1-7 are numbers, 8 is a `bool`
-      (tolua type), 9 an optional bool, 10 an optional string, 11 an optional number and there is no 12th; any other
-      call falls back to this form.
+      The 7-argument form (0x00361a50): style 0, line check on, delay 500 ms, and `closeRange` taken from
+      `wantsWeapon`. The 11-argument form is used when arguments 1-7 are numbers, 8 is a `bool` (tolua type), 9 an
+      optional bool, 10 an optional string, 11 an optional number and there is no 12th; any other call falls back to
+      this form.
   description: >-
-    Makes a human stand by a pile of throwable objects and throw them at enemies in range. Before pushing the goal it
-    clears the human's current action, sets its threat and damage responses to 0 and its wants-weapon flag.
-  evidence: inferred
-  depth: brief
+    Pushes a ManWeaponPile goal (type 82) after clearing the human's current action and setting its threat and damage
+    responses to 0. The thrower picks up a throwable within `pickupRadius` (a GetItem goal), waits `delayMs`, turns to
+    its target (re-picked every 10 updates within `throwRange`), throws (command 0x10) when the target is in range or
+    else just looks at it, then waits `pauseS` seconds and fetches again. It ends when no throwable is found after 21
+    tries, or after the pause once `maxThrows` is reached or the target is within `closeRange`, unless the gang's
+    tactic keeps it going.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Both forms build the same goal (0x002a3320); argument roles past the ranges are inferred.
+    The end checks also look at the gang tactic's state (brain `+0x20c` → `+0x40`, ends only with none or kind 9), not
+    traced further. The taunts are speech lines, rotated through a counter shared by all throwers. TacticManWeaponPile
+    gives every member this goal.
   usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false, levels: [81, 86, 52]}
 
 - name: GoalCopperPatrol
@@ -1181,20 +1267,29 @@
   wrapper: 0x003620c0
   calls:
     - {addr: 0x002a3e50, name: Goal_ObjectThrower}
+    - {addr: 0x002a3f50, name: ObjectThrowerGoal_Init}
+    - {addr: 0x002a4230, name: ObjectThrowerGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
-    - {name: objectType, lua: number, ctype: int, desc: "Object type to throw; -1 for any (inferred)."}
-    - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 1-4)."}
-    - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 1-5)."}
-    - {name: value3, lua: number, ctype: int, desc: "A number (scripts use 0.1-1)."}
-    - {name: target1, lua: number, ctype: unsigned, desc: "Handle of a target flag or human."}
-    - {name: target2, lua: number, ctype: unsigned, desc: "Handle of a second target, or `NilHandle`."}
-    - {name: target3, lua: number, ctype: unsigned, desc: "Handle of a third target, or `NilHandle`."}
-    - {name: callback, lua: string, desc: "Name of a Lua function called when the goal ends, or nil."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower; a bad handle does nothing."}
+    - {name: maxThrows, lua: number, ctype: int, desc: "Throws after which the goal ends (goal `+0x29`, one byte); -1 or 0 for no limit."}
+    - {name: pickupRadius, lua: number, ctype: int, desc: "Radius in whole metres searched every 5 updates for a throwable to fetch (goal `+0x20`); scripts use 1-4."}
+    - {name: delayS, lua: number, ctype: int, desc: "Each throw is queued with a random delay of delayS × 0.5 to delayS seconds (goal `+0x28`); scripts use 1-5."}
+    - {name: enemyRange, lua: number, ctype: int, desc: "Read as a whole number of metres (goal `+0x24`): every 15 updates, an enemy closer than this ends the goal. The scripts' 0.1-1 truncate to 0 or 1."}
+    - {name: target1, lua: number, ctype: unsigned, desc: "Handle of a flag to throw at (resolved with 0x00417a60; an invalid one is skipped)."}
+    - {name: target2, lua: number, ctype: unsigned, desc: "Handle of a second target flag, or `NilHandle`."}
+    - {name: target3, lua: number, ctype: unsigned, desc: "Handle of a third target flag, or `NilHandle`."}
+    - {name: callback, lua: string, desc: "Name of a Lua function registered with the goal (`+0x1c`), or nil; when it is called is not traced."}
   description: >-
-    Makes a human throw objects at up to three targets, as boss throwers do.
-  evidence: inferred
-  depth: brief
+    Pushes an ObjectThrower goal (type 78) after setting the human's threat and damage responses to 0. The thrower
+    stays in its fight stance; while it holds a throwable it turns to one of the target flags at random, aims there
+    and queues a throw, and otherwise every 5 updates it fetches a throwable within `pickupRadius`. From the second
+    throw on, every third throw has an even chance of a taunt: it turns toward the camera and plays an action. The goal
+    ends after `maxThrows` throws or when an enemy comes within `enemyRange`.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Every 45 updates it also looks for 2 s at a human from the brain's list (brain `+0x164`, 0x0029a000). Targets are
+    flags only, not humans. The taunt action is 0x002fb0f0(3, 0, 0x10), not traced.
   usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [86, 84, 64]}
 
 - name: GoalPathBlocker
@@ -1296,15 +1391,23 @@
   wrapper: 0x00362960
   calls:
     - {addr: 0x002cce88, name: Goal_Tag}
+    - {addr: 0x002ccfe0, name: TagGoal_Init}
+    - {addr: 0x002cd258, name: TagGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who sprays."}
-    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to stand at."}
-    - {name: tag, lua: number, ctype: unsigned, desc: "Handle of the tag object (the wall graffiti to spray)."}
-    - {name: extra, lua: number, ctype: unsigned, desc: "A handle, usually `NilHandle`."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who sprays; a bad handle does nothing."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag to spray from; the goal claims it (its user)."}
+    - {name: tag, lua: number, ctype: unsigned, desc: "Handle of the tag object (the wall graffiti) the spray action works on."}
+    - {name: extra, lua: number, ctype: unsigned, desc: "Handle of another tag object sent message 0x19 (with 4) when spraying starts, as ProcessTag does; usually NilHandle."}
   description: >-
-    Makes a human go to a spot and spray a graffiti tag.
-  evidence: inferred
-  depth: brief
+    Pushes a tag goal (type 90): the human runs (gait 4) to the flag, and if it arrives within 1.5 m queues the spray
+    action (vtable 0x00542da0) on the tag; the goal ends when the spraying state is over. It also ends at once if the
+    flag is gone, another human holds the flag, the human is down, or it stopped more than 1.5 m short.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    States at goal `+0x24`: 0 move, 1 arrive and start, 2 spray (done when record `+0x14` is not 0x17 and state
+    flag 0x2000000 is clear). The message to `extra` goes once (goal `+0x28`). Tagging rules: [Crimes:
+    tagging](../../research/crimes.md#tagging).
   usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false, levels: [3, 86]}
 
 - name: GoalTagEx
@@ -1349,19 +1452,28 @@
   wrapper: 0x00362c00
   calls:
     - {addr: 0x002e3090, name: Goal_AvoidEnemies}
+    - {addr: 0x002e3180, name: AvoidEnemiesGoal_Init}
+    - {addr: 0x002e3630, name: AvoidEnemiesGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: useThrowables, lua: boolean, desc: "true to let it throw things while avoiding (inferred)."}
-    - {name: minRange, lua: number, ctype: float, default: 7, desc: "Distance in metres (default 7; inferred: when to start backing off)."}
-    - {name: maxRange, lua: number, ctype: float, default: 14, desc: "Distance in metres (default 14; inferred: the distance it keeps)."}
-    - {name: value1, lua: number, ctype: float, desc: "A number (scripts use 0 or 6000; inferred: a duration in ms)."}
-    - {name: value2, lua: number, ctype: float, desc: "A number."}
-    - {name: value3, lua: number, ctype: unsigned, desc: "A handle or number."}
-    - {name: value4, lua: number, ctype: unsigned, desc: "A handle or number (scripts use 3)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: useThrowables, lua: boolean, desc: "true lets it fetch a non-weapon throwable within 40 m (checked every 30 updates) and throw it at the enemy when in range (goal `+0x41`)."}
+    - {name: minRange, lua: number, ctype: float, default: 7, desc: "Flee distance in metres, multiplied by the enemy's class (`+0x1a8`, clamped 2-5): closer than that, it runs (goal `+0x28`). Default 7."}
+    - {name: maxRange, lua: number, ctype: float, default: 14, desc: "Second distance for the flee-point search (goal `+0x2c`; inferred: how far to flee). Default 14."}
+    - {name: range3, lua: number, ctype: float, desc: "Distance kept at goal `+0x34`, as TacticAvoidEnemies' minAllyRange; its reader is not traced."}
+    - {name: range4, lua: number, ctype: float, desc: "Distance kept at goal `+0x38`, as TacticAvoidEnemies' maxAllyRange; its reader is not traced."}
+    - {name: durationMs, lua: number, ctype: unsigned, desc: "The goal ends this many ms after it is pushed (goal `+0x20`); 0 for no limit."}
+    - {name: gait, lua: number, ctype: unsigned, desc: "Gait id to flee at (goal `+0x3c`); 0 lets the goal choose 5, or 4 when stamina is under 50. Scripts use 3."}
   description: >-
-    Makes a human keep its distance from enemies.
-  evidence: inferred
-  depth: brief
+    Pushes an AvoidEnemies goal (type 32) on one human, the single-human form of TacticAvoidEnemies: every 1.5 s it
+    picks the nearest enemy it can see (front-facing sight, unlike the tactic's all-round), and runs from it when the
+    enemy comes within `minRange` × the enemy's class or stares straight at it, turning to face it otherwise. It
+    shouts every 8 s while doing so and, with `useThrowables`, fights back with thrown objects. It ends after
+    `durationMs`, or never when that is 0.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Unlike the tactic it does not drop the threat response or keep near a gang leader (goal `+0x30` = 0). Flee point
+    search 0x002e3588 is not traced; the shout command depends on the character (0x20, 9 or 0x48).
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: GoalCopRespond
@@ -1456,18 +1568,26 @@
   wrapper: 0x00363268
   calls:
     - {addr: 0x002d0e98, name: Goal_Riot}
+    - {addr: 0x002d0f68, name: RiotGoal_Init}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the rioter."}
-    - {name: radius, lua: number, ctype: float, default: 15, desc: "A distance in metres (default 15)."}
-    - {name: value1, lua: number, ctype: unsigned, default: 30, desc: "A number (default 30)."}
-    - {name: value2, lua: number, ctype: unsigned, default: 1, desc: "A number (default 1)."}
-    - {name: chance1, lua: number, ctype: unsigned, default: 20, desc: "A percentage (default 20; scripts use 0 and 75)."}
-    - {name: chance2, lua: number, ctype: unsigned, default: 10, desc: "A percentage (default 10; scripts use 0 and 25)."}
-    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the rioter; a bad handle does nothing."}
+    - {name: radius, lua: number, ctype: float, default: 15, desc: "Distance in metres to the nearest player inside which the rioter starts acting out (goal `+0x2c`)."}
+    - {name: actChance, lua: number, ctype: unsigned, default: 30, desc: "Percentage chance, at each decision, to smash something or loot (goal `+0x32`, one byte)."}
+    - {name: acts, lua: number, ctype: unsigned, default: 1, desc: "How many smash-or-loot acts before the rioter leaves (goal `+0x33`, counted down)."}
+    - {name: fightChance, lua: number, ctype: unsigned, default: 20, desc: "Percentage chance, at each decision, to pick a fight with a nearby human (goal `+0x34`); scripts use 0 and 75."}
+    - {name: gangFightChance, lua: number, ctype: unsigned, default: 10, desc: "For a gang-member rioter, percentage chance that the fight may be with a gang member too, not only a civilian (goal `+0x35`); scripts use 0 and 25."}
+    - {name: shout, lua: boolean, default: true, desc: "true: the rioter shouts (speech command 0x59) every 4-4.5 s while roaming and when leaving (goal `+0x3a`)."}
   description: >-
-    Makes a human riot: smash, loot and fight in an area.
-  evidence: inferred
-  depth: brief
+    Pushes a riot goal (type 84) on the human: it roams, and when a decision comes (about half the time, every 60th
+    update) it may pick a fight with a human within 15 m for 8 s (speech 0x11), smash a nearby breakable object
+    within 20 m, or loot an item lying within 20 m. After `acts` acts, or when a fight starts, it heads for the
+    nearest flag of type 8 and leaves. A rioter starts with a 51% chance to smash or loot straight away.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    States at goal `+0x36`: 0 roam, 1 smash, 2 loot, 3 leave (RiotGoal_Process 0x002d1c38). Fight choice:
+    RiotGoal_TryPickFight 0x002d1288 (only for a gang-member brain, `+0x04` = 2). The test that gates the decision
+    (0x0028ff58 on the brain's gang) is not traced; the leave goal is 0x002da8f8.
   usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false, levels: [34, 86, 93, 31, 82]}
 
 - name: GoalBumLogic
@@ -1594,14 +1714,22 @@
   wrapper: 0x003637b8
   calls:
     - {addr: 0x002eee50, name: Goal_StationaryThrower}
+    - {addr: 0x002eeee0, name: StationaryThrowerGoal_Init}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
-    - {name: value, lua: number, ctype: unsigned, desc: "A number (scripts use 5-13; inferred: range in metres)."}
-    - {name: objects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object type ids to throw; written back."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower; a bad handle does nothing."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "Seconds to wait after each throw: the pause is a random 1000×delay to 1000×delay + 1000 ms (one byte, goal `+0x34`); scripts use 5-13."}
+    - {name: objects, lua: table, elem: number, count: 8, written_back: true, desc: "Eight object type ids (16-bit each, as ObjGetIndex returns) the thrower may throw, stored at goal `+0x24`; written back unchanged."}
   description: >-
-    Makes a human stay put and throw objects at enemies (bartenders throwing bottles).
-  evidence: inferred
-  depth: brief
+    Pushes a stationary-thrower goal (type 140): the human keeps returning to the spot where it stood when the goal
+    was given (within 0.5 m), picks the nearest enemy within three quarters of its sight range, faces it and plays
+    the throw animation (0x225), then waits `delay` to `delay` + 1 s before the next throw. Used for bartenders and
+    shopkeepers throwing bottles.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Process: StationaryThrowerGoal_Process 0x002ef2c0 (state at goal `+0x20`: 0 return to spot, 1 throw, 2 wait).
+    Where the object list is read (the thrown object's creation) is not traced. One wait in five is a different
+    idle action (0x002fb0f0).
   usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: false, levels: [34, 31, 11]}
 
 - name: GoalCallGang
@@ -1665,18 +1793,28 @@
   wrapper: 0x00363b38
   calls:
     - {addr: 0x002edf20, name: Goal_BigLedgeThrower}
+    - {addr: 0x002edff8, name: BigLedgeThrowerGoal_Init}
+    - {addr: 0x002ee7b0, name: BigLedgeThrowerGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
-    - {name: targets, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three target flag handles (`NilHandle` for unused); written back."}
-    - {name: objects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object ids (-1 for unused); written back."}
-    - {name: cycles, lua: number, ctype: unsigned, desc: "Number of throw cycles."}
-    - {name: delayMs, lua: number, ctype: unsigned, desc: "Delay between throws in milliseconds."}
-    - {name: option, lua: boolean, desc: "A flag."}
-    - {name: callback, lua: string, desc: "Name of a Lua function, or nil."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower; a bad handle does nothing."}
+    - {name: targets, lua: table, elem: number, count: 3, written_back: true, desc: "Up to three flag handles to throw at (NilHandle for unused; non-flags are skipped); written back unchanged."}
+    - {name: objects, lua: table, elem: number, count: 8, written_back: true, desc: "Eight object type ids (16-bit, -1 for unused) stored at goal `+0x10`; written back unchanged."}
+    - {name: cycles, lua: number, ctype: unsigned, desc: "Throws per round (one byte, goal `+0x46`) before the pause."}
+    - {name: delayMs, lua: number, ctype: unsigned, desc: "Wait after each throw in milliseconds (16-bit, goal `+0x44`)."}
+    - {name: taunt, lua: boolean, desc: "true starts with a taunt (speech 0x57, face the starting heading, anim 0x283); false starts throwing at once."}
+    - {name: anim, lua: string, desc: "Animation name that replaces the human's anim slot 0x256 (0x0010bc38 on `+0x3c8`) when not empty; not a Lua callback."}
   description: >-
-    A boss that throws objects from a ledge at up to three targets.
-  evidence: inferred
-  depth: brief
+    Pushes a big-ledge-thrower goal (type 138), the balcony boss: it keeps to the spot where it stood (moving back
+    when more than 0.5 m away), picks up an object (anim 0x225, or 0x29d for character type 178) and throws it, at a
+    random one of the target flags when the held object is of class 8, else at the nearest enemy, then waits
+    `delayMs`. After `cycles` throws it waits for its speech to end, turns on the nearest player with reaction 0x11
+    (0x002ee3d0) and starts a new round.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    States at goal `+0x40`: 0 taunt, 1 return, 2 pick up, 3 throw, 4 pause; throw counter `+0x47`. Character type
+    178 only walks back every other round (runs beyond 1.5 m) and runs to a random spot 3-5 m away after each throw.
+    0x002ee3d0 and where the object list is read are not traced.
   usage: {chunks: 1, calls: 7, boot: false, mission1: false, result_used: false, levels: [3]}
 
 - name: GoalBackoff
@@ -1794,13 +1932,22 @@
   wrapper: 0x003644a0
   calls:
     - {addr: 0x002d4c38, name: Goal_Cower}
+    - {addr: 0x002d4cb8, name: CowerGoal_Init}
+    - {addr: 0x002d4fe8, name: CowerGoal_Process}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: option, lua: boolean, desc: "A flag (scripts pass false)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: despawn, lua: boolean, desc: "true: every 90 updates, if the human's byte `+0x333` is set and it is more than 30 m from the camera, the human is deleted (goal `+0x14`). Scripts pass false."}
   description: >-
-    Makes a human cower in fear.
-  evidence: inferred
-  depth: brief
+    Pushes a Cower goal (type 17): every 45 updates the human picks the nearest threat and glances at it for 2 s. While
+    the threat is closer than the brain's fear distance (`+0x13c`) plus the threat's class minus 1, it runs away
+    (gait 5, or 4 when stamina is under 50) and screams half the time (speech command 9); otherwise it turns to face
+    the threat and plays the special idle clip (anim 671, ANIM_SPECIAL_IDLE) as its cowering pose. The goal never
+    ends by itself; it does nothing while the human is down or busy.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Threat choice 0x002d4f40 and the flee-point test 0x002d4fc0 are not traced. Byte `+0x333` is the same one route
+    following uses (ai.md); why the despawn needs it is open.
   usage: {chunks: 4, calls: 11, boot: false, mission1: false, result_used: false, levels: [86, 93, 92, 20]}
 
 - name: GoalGrabTarget
@@ -1848,34 +1995,45 @@
   wrapper: 0x00364640
   calls:
     - {addr: 0x002fdf70, name: Action_TurnToTarget}
+    - {addr: 0x002fe000, name: TurnToPointAction_Init}
+    - {addr: 0x002fe058, name: TurnToPointAction_Begin}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: target, lua: userdata, desc: "Something to face, passed as a Lua userdata (the one call passes a local value)."}
-    - {name: turnSpeed, lua: number, ctype: float, desc: "Largest turn per update (the call passes 0.1)."}
-    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "A time limit in milliseconds; -1 (the default) for none (inferred)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who turns; a bad handle does nothing."}
+    - {name: target, lua: userdata, desc: "The point to face, a vector userdata (its four floats are copied into the action at `+0x20`); read only when more than one argument is passed."}
+    - {name: turnSpeed, lua: number, ctype: float, desc: "A turn value stored in the action (`+0x10`), as in ActLookAt; its update does not read it. The one call passes 0.1."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "The action's start delay in ms (action `+0x04`); -1 (the default) is a random 0-500 ms, as in ActLookAt."}
   description: >-
-    Queues an action that turns the human to face a target.
-  evidence: inferred
-  depth: brief
+    Queues a turn action on the human's brain that, when it starts, takes the heading from the human to the given
+    point and then writes it to the brain's wanted heading (`+0x110`) each update until the human faces it within 15
+    degrees (or 3 s pass); then it ends. It is ActLookAt with a fixed world point instead of an object.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The heading is taken once at the start (0x002fe058), so a point is not tracked if the human is pushed. Update
+    0x002fdd08 is shared with ActLookAt; the start is refused (action ends at once) when the human rejects message
+    0x01c16a40 (0x002fdc68).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [5]}
 
 - name: ActTurnToDir
   wrapper: 0x00364708
   calls:
     - {addr: 0x002fdb90, name: Action_TurnToHeading}
+    - {addr: 0x002fdc28, name: TurnAction_Init}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: heading, lua: number, ctype: int, desc: "World heading to face, in degrees (scripts use values such as 250 and 270)."}
-    - {name: turnSpeed, lua: number, ctype: float, desc: "Largest turn per update (scripts use 0.1 and 1)."}
-    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "A time limit in milliseconds; -1 (the default) for none (inferred)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a bad handle does nothing."}
+    - {name: heading, lua: number, ctype: int, desc: "World heading to face, whole degrees (kept as 16 bits; scripts use values such as 250 and 270)."}
+    - {name: turnSpeed, lua: number, ctype: float, desc: "Stored at action `+0x10` and never read (scripts use 0.1 and 1)."}
+    - {name: delayMs, lua: number, ctype: int, default: -1, desc: "Start delay in milliseconds (action `+0x04`); -1 (the default) for a random 0-500 ms."}
   description: >-
-    Queues a turn action on the human's brain (0x002fdc28) towards a world heading in degrees, turning at most
-    `turnSpeed` per update.
+    Queues a turn action on the human's brain towards a world heading (converted to radians, action `+0x0c`). After
+    the delay the human turns, through brain `+0x110`, until it faces the heading within 15°, then the action ends;
+    it gives up after 3 s ([AI: turning](../../research/ai.md#look-at)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    0x002fdb90 allocates the action (`Brain_AllocAction`); the same turn action serves `GoalPlayDynIdle` and
-    `GoalAreaWalker` ([AI](../../research/ai.md#look-at)).
+    The base turn action (vtable 0x00543160: Start 0x002fdc68, Update 0x002fdd08). It is an action, not a goal, so
+    it runs after any actions already queued; a human busy in some states (record `+0x08` has any of 0x1c16a40)
+    skips it.
   usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [2, 54, 55]}
 
 - name: ActLookAt
@@ -2249,15 +2407,24 @@
   wrapper: 0x003757b8
   calls:
     - {addr: 0x00316590, name: Tactic_VandalizeCars}
+    - {addr: 0x0031e3b8, name: VandalizeTactic_Init}
+    - {addr: 0x0031e4f0, name: VandalizeTactic_Start}
+    - {addr: 0x0031ea00, name: VandalizeTactic_Process}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: cars, lua: table, elem: number, count: 4, written_back: true, desc: "Table of four car object handles (`NilHandle` for unused); written back."}
-    - {name: delayMs, lua: number, ctype: unsigned, default: 3000, desc: "Time in milliseconds (default 3000)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
+    - {name: gang, lua: number, ctype: int, desc: "The gang index; a gang that does not exist does nothing."}
+    - {name: cars, lua: table, elem: number, count: 4, written_back: true, desc: "Four car handles to wreck (`NilHandle` for unused slots, which count as done); written back unchanged."}
+    - {name: delayMs, lua: number, ctype: unsigned, default: 3000, desc: "Milliseconds passed to each member's `Destroy` goal, as in TacticVandalize (default 3000; inferred: the pause between attacks)."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Has a gang wreck up to four given cars.
-  evidence: inferred
-  depth: brief
+    Has a gang wreck up to four cars: the same Vandalize tactic (type 0x1c) as TacticVandalize, built with the cars in
+    place of a zone. At the start every non-player member who is not down gets a `Destroy` goal with the four cars (no
+    leader range) and brain byte `+0x28d` = 1. Every 3 s the tactic checks the cars, and once each is wrecked
+    (0x0038dae0) or is not a car, the callback gets 1 `TacFinished`.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Vtable 0x00544040, event 0x0031eaf0 (16 `TacObjectDestroyed` and the shared hit/sighting codes, as for
+    TacticVandalize). How the Destroy goal (0x002cd4f8) picks among the cars is not traced.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: TacticSteal
@@ -2537,25 +2704,39 @@
   wrapper: 0x003767f8
   calls:
     - {addr: 0x00309a40, name: Tactic_BossDiegoVargas}
+    - {addr: 0x00309b60, name: BossDiegoVargasTactic_Init}
+    - {addr: 0x0030a6c0, name: BossDiegoVargasTactic_Start}
+    - {addr: 0x0030a738, name: BossDiegoVargasTactic_Process}
+    - {addr: 0x0030a798, name: BossDiegoVargasTactic_OnEvent}
+    - {addr: 0x00309ea0, name: BossDiegoVargasTactic_AssignGoal}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "The gang index (Diego's)."}
-    - {name: stage, lua: number, ctype: unsigned, desc: "Fight stage number."}
-    - {name: flags, lua: table, elem: number, count: 2, written_back: true, desc: "Table of two flag handles; written back."}
-    - {name: vargasObjects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object type ids; written back."}
-    - {name: minionObjects, lua: table, elem: number, count: 8, written_back: true, desc: "Table of eight object type ids; written back."}
-    - {name: diegoFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three numbers (fatigue times); written back."}
-    - {name: vargasFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three numbers; written back."}
-    - {name: diegoDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three damage percentages; written back."}
-    - {name: vargasDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three damage percentages; written back."}
-    - {name: diegoProne, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three prone percentages; written back."}
-    - {name: vargasProne, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three prone percentages; written back."}
-    - {name: diegoCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three cycle counts; written back."}
-    - {name: vargasCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Table of three cycle counts; written back."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (the Hurricanes); -1 or a gang with no members does nothing."}
+    - {name: stage, lua: number, ctype: unsigned, desc: "Fight stage 1-3 (tactic `+0x68`): 1 Diego alone, 2 Vargas throws from `flags[1]`, 3 Vargas fights too."}
+    - {name: flags, lua: table, elem: number, count: 2, written_back: true, desc: "Two flag handles (tactic `+0x20`): Vargas's throwing spot in stage 2 and his spot in stage 3; a flag that stops resolving is cleared to the null handle."}
+    - {name: vargasObjects, lua: table, elem: number, count: 8, written_back: true, desc: "Eight object type ids (kept as 16 bits, `+0x30`) Vargas picks up and throws."}
+    - {name: minionObjects, lua: table, elem: number, count: 8, written_back: true, desc: "Eight object type ids (`+0x40`) the other gang members throw from a stationary-thrower goal."}
+    - {name: diegoFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Three bytes (`+0x50`) handed to Diego's boss goal, one per stage (inferred: fatigue times)."}
+    - {name: vargasFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Three bytes (`+0x53`) for Vargas's goals; stage 2 uses the second."}
+    - {name: diegoDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Three damage percentages (`+0x56`) handed to Diego's boss goal."}
+    - {name: vargasDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Three damage percentages (`+0x59`) for Vargas; stage 2 uses the second."}
+    - {name: diegoProne, lua: table, elem: number, count: 3, written_back: true, desc: "Three prone percentages (`+0x5c`) handed to Diego's boss goal."}
+    - {name: vargasProne, lua: table, elem: number, count: 3, written_back: true, desc: "Three prone percentages (`+0x5f`) for Vargas's stage-3 goal."}
+    - {name: diegoCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Three cycle counts (`+0x62`); Diego's goal gets the one of the current stage."}
+    - {name: vargasCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Three cycle counts (`+0x65`); Vargas's goal gets the one of the current stage."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    The Diego and Vargas boss fight, tuned per stage by the tables.
-  evidence: inferred
-  depth: brief
+    Sets the Hurricanes' tactic for the Diego and Vargas fight (level 5). Each member gets a goal by character:
+    Diego (character 120) a BigBrawler goal (type 132) built from his tables and the stage; Vargas (119) in stage 2
+    a BigThrower-style goal at `flags[1]` with `vargasObjects`, in stage 3 a BigBrawler goal at `flags[2]`; everyone else a
+    stationary-thrower goal with `minionObjects`. Diego's health is capped per stage (at 66 % in stage 1, 33 % in
+    stage 2): on reaching it he plays a break animation and the callback gets 18 `TacAnimStart`, or 1 `TacFinished`
+    when his goal reports the break done; in stage 3 it reports 1 once neither boss is still standing.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The wrapper writes every table back unchanged. Exact meaning of the fatigue, damage, prone and cycle bytes lives
+    in the boss goals (0x002e8288, 0x002ed0a8), not traced. Members are re-assigned goals on events 19 and 22
+    (OnEvent 0x0030a798); Vargas's stage-3 break count is tactic `+0x69`. Vtable 0x00543440.
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false, levels: [5]}
 
 - name: TacticBossScenarioB
@@ -2652,29 +2833,56 @@
   wrapper: 0x00377590
   calls:
     - {addr: 0x0030d6f8, name: Tactic_BossVirgil}
+    - {addr: 0x0030d7a0, name: BossVirgilTactic_Init}
+    - {addr: 0x0030d820, name: BossVirgilTactic_Start}
+    - {addr: 0x0030d960, name: BossVirgilTactic_AssignGoal}
+    - {addr: 0x0030dd28, name: BossVirgilTactic_Process}
+    - {addr: 0x0030daf8, name: BossVirgilTactic_CheckHealth}
+    - {addr: 0x0030dc28, name: BossVirgilTactic_IsVirgilAlive}
+    - {addr: 0x0030dd90, name: BossVirgilTactic_OnEvent}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: stage, lua: number, ctype: unsigned, desc: "Fight stage number."}
-    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of a target flag."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (the Destroyers); -1 or a gang with no members does nothing."}
+    - {name: stage, lua: number, ctype: unsigned, desc: "Fight stage, kept as a byte (tactic `+0x24`): 1 Virgil throws from his spot, 2 a HideAndSeek goal, any other value (scripts use 3) he fights up close."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of a flag Virgil throws at when the tactic starts; a handle that is not a flag skips the opening throw."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Virgil's boss fight.
-  evidence: inferred
-  depth: brief
+    Sets the Destroyers' tactic for Virgil's boss fight (character 178, level 93). Virgil is given voice set 138 (human
+    `+0x3b0`) and, by stage, a BigLedgeThrower goal (type 138) throwing dyn_molotv and dyn_beerbottle objects, a HideAndSeek
+    goal (type 156) or a BigFighter goal (type 133); if `flag` is a flag he is first handed a molotov (when empty-handed)
+    and throws it at the flag. Every other member gets a melee goal. His health is held at 83 % in stage 1 and 73 % in
+    stage 2: on reaching it the callback gets 1 `TacFinished` (the cue for the next stage); it also gets 1 once he is
+    down or dead.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Vtable 0x00543680. The opening throw is `Goal_ThrowObject` with 20.0 and mode 2, pushed over the stage goal. Events
+    1 and 16 are forwarded to the HideAndSeek or BigFighter goal; 19 re-assigns a member's goal, 22 does so for some
+    senders, 18 ends the tactic. "Down" is human state flags 0x180050000 (0x00227e60). The BigLedgeThrower count (6)
+    is not traced here, as in `TacticBossScenarioH`.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: TacticBossScenarioH
   wrapper: 0x00377648
   calls:
     - {addr: 0x0030e028, name: Tactic_BossChatterbox}
+    - {addr: 0x0030e0c0, name: BossChatterboxTactic_Init}
+    - {addr: 0x0030e548, name: BossChatterboxTactic_Process}
+    - {addr: 0x0030e1d8, name: BossChatterboxTactic_AssignGoal}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: stage, lua: number, ctype: unsigned, default: 1, desc: "Fight stage number (default 1)."}
-    - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events."}
+    - {name: gang, lua: number, ctype: int, desc: "The gang index (the Hi-Hats); -1 or a gang with no members does nothing."}
+    - {name: stage, lua: number, ctype: unsigned, default: 1, desc: "Fight stage, kept as a byte (tactic `+0x20`): 1 the boss throws from where he stands, 2 he fights up close. Default 1."}
+    - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
-    Chatterbox's boss fight.
-  evidence: inferred
-  depth: brief
+    Sets the Hi-Hats' tactic for their boss fight (level 81). The boss (character 135) is given voice set 137 (human `+0x3b0`)
+    and, in stage 1, a BigLedgeThrower goal (type 138) throwing dyn_molotv and dyn_cny_skullhead objects from his spot, in stage 2 a BigFighterA goal (type 134); every other member gets a melee goal.
+    In stage 1 the boss's health is held at 75 %: on reaching it the callback gets 1 `TacFinished` (the cue to move to
+    stage 2); in stage 2 it gets 1 once the boss is down or dead.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Vtable 0x005436e0 (Start 0x0030e508, event 0x0030e5b0: members are re-assigned goals on events 19 and 22). The
+    names of the two throwables are passed as type names (0x0056d380, 0x0056d390); the BigLedgeThrower count
+    argument (6) is not traced here. The scenario's "Chatterbox" name is ours.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [81]}
 
 - name: TacticScout
@@ -2723,15 +2931,21 @@
   wrapper: 0x00377a10
   calls:
     - {addr: 0x00316fa0, name: Tactic_TriggerCrowd}
+    - {addr: 0x0030fe58}
+    - {addr: 0x0030fc48, name: TacticCrowd_React}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "The gang index; -1 is ignored."}
-    - {name: what, lua: number, ctype: int, desc: "0 sets the crowd's first switch (tactic byte `+0x2a`); 1 sets its second switch through 0x0030fe58; other values do nothing."}
+    - {name: gang, lua: number, ctype: int, desc: "The gang index; -1, a gang not in use, or one without a tactic is ignored."}
+    - {name: what, lua: number, ctype: int, desc: "0 sets the crowd's periodic switch (tactic `+0x2a`); 1 makes the crowd react now; other values do nothing."}
     - {name: enabled, lua: number, ctype: int, desc: "Non-zero for on, 0 for off. It is read as a number; the game's scripts pass `true`, which `global.lua` defines as 1."}
   description: >-
-    Switches a reaction of a gang running a crowd tactic (`TacticCrowd`, type 0x1b); does nothing for other tactics.
+    Drives a gang running a crowd tactic (`TacticCrowd`, type 0x1b); does nothing for other tactics. With `what` 0
+    the crowd's periodic switch makes every free member react on each cheer tick (every 2 s); with `what` 1 every
+    free member reacts once at once: a gesture clip (anim 0x8f, or 0xb1 when `enabled` is 0) after 0-750 ms, then
+    one of three cheers ([AI: TacticCrowd](../../research/ai.md#tactics)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Confirmed (code) at 0x00316fa0. What the two switches do is inferred (cheering, joining in).
+    The reaction is 0x0030fc48; with `what` 0 a reaction tick picks anim 0x10 instead of 0x8f half the time. Members
+    with queued actions are skipped.
   usage: {chunks: 3, calls: 15, boot: false, mission1: false, result_used: false, levels: [2, 11]}
   coney: implemented

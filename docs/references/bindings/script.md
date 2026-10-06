@@ -20,7 +20,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SetAllClearCallBack`](#setallclearcallback) | - | 2 | no | no | inferred |
 | [`SetArmiesMultiplayerCallback`](#setarmiesmultiplayercallback) | - | 0 | no | no | inferred |
 | [`SetCheatCallback`](#setcheatcallback) | - | 1 | yes | no | confirmed (code) |
-| [`SetGeneralCarMsgHandler`](#setgeneralcarmsghandler) | - | 10 | no | no | confirmed (code) |
+| [`SetGeneralCarMsgHandler`](#setgeneralcarmsghandler) | - | 10 | no | no | inferred |
 | [`SetHatCallBack`](#sethatcallback) | - | 2 | no | no | inferred |
 | [`SetMsgHandler`](#setmsghandler) | - | 195 | yes | yes | confirmed (code) |
 | [`SetMsgHandlerEx`](#setmsghandlerex) | - | 43 | yes | yes | confirmed (code) |
@@ -267,15 +267,22 @@ SetGeneralCarMsgHandler(message, callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `message` | number, truncated to an integer | Message number; every call passes 25 (inferred: car damaged). |
-| 2 | `callback` | string | Lua function name, or nil to remove. |
+| 1 | `message` | number, truncated to an integer | Message number; every call passes 25 (0x19), the message a car sends itself when it explodes. |
+| 2 | `callback` | string | Name of the Lua function to call, or nil to remove it. |
 
 **Returns** nothing.
 
-Registers a Lua callback for a message from any car (`0x0038e538` on the world's car list).
+Registers one Lua callback for a message from any car: the car manager (`0x00512c7c + 0x844`) keeps the function's
+reference in its slot for that number (`+0x18 + 4 × message`). Scripts use it to hear every car explosion (Car_DoExplode
+sends message 0x19, with the car as self) without a SetMsgHandler on each car.
 
-- **Evidence:** confirmed (code) at `0x00386340`; detail: brief
-- **Wrapper** `0x0036d2e8` (registered by `RegisterBindings`); **calls** `0x00386340`
+**Notes.** The store is confirmed (code) at 0x0038e538; the reference comes from the script system's slot `+0xcc`. The
+code that reads the manager's slots when a car gets a message, and the callback's arguments, are not traced (message
+0x19 marshals as `(self, other, n, flag)`, [Scripts](../../research/scripting.md#message-handlers)).
+
+- **Evidence:** inferred; detail: traced
+- **Wrapper** `0x0036d2e8` (registered by `RegisterBindings`); **calls** `0x00386340` `Script_SetGeneralCarMsgHandler`,
+  `0x0038e538` `CarManager_SetMsgHandler`
 - **Used by** 10 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented

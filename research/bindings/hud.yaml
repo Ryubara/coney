@@ -496,15 +496,20 @@
 - name: HUDCheckTutorialText
   wrapper: 0x0036f3e8
   calls:
-    - {addr: 0x001b49a8}
+    - {addr: 0x001b49a8, name: Tutorial_Contains}
+    - {addr: 0x001ce550, name: HintBox_Contains}
   args:
-    - {name: text, lua: string, desc: "A hint string previously given to HUDSetTutorialText."}
+    - {name: text, lua: string, desc: "A hint string previously given to HUDSetTutorialText (the same interned string)."}
   results:
-    - {lua: boolean, desc: "true (1) when that hint is showing or queued, else nil. The test compares the string object, which works because Lua 4 interns strings."}
+    - {lua: boolean, desc: "true (1) when that hint is the one showing (hint box `+0x68`) or is in the queue, else nil; nil for a nil text."}
   description: >-
-    Reports whether a tutorial hint is still on screen or waiting.
+    Reports whether a tutorial hint is still on screen or waiting in the hint box's queue, so a script can wait for
+    the player to have seen it.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The test compares string objects, which works because Lua 4 interns strings; a hint built from a different but
+    equal-looking string still matches. Hint box at 0x00609250 ([HUD](../../research/hud.md)).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [3, 31]}
 
 - name: HUDFlushTutorialText
@@ -547,11 +552,16 @@
 - name: HUDSetChaseHUDState_DESTROY
   wrapper: 0x0036f538
   calls:
-    - {addr: 0x001b4a88}
+    - {addr: 0x001b4a88, name: ChaseHud_Destroy}
+    - {addr: 0x001a41b0, name: ChaseHud_SetState}
   description: >-
-    Puts the chase HUD into its destroy state (removes it).
+    Puts the chase HUD (the pursuit display widget at 0x00609e80) into state 6, its destroy state: the widget's own
+    removal (vtable slot `+0x6c`) runs. After it the chase HUD can be made
+    again (HUDSetChaseHUDState_CREATE makes it only while widget `+0x0c` is 0).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    State 6 does not store the state (`+0x44`); what slot `+0x6c` frees is inferred from the name. Takes no arguments.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [3, 83]}
 
 - name: HUDSetChaseHUDState_CREATE
@@ -570,19 +580,30 @@
 - name: HUDEnableBar
   wrapper: 0x0036f5b8
   calls:
-    - {addr: 0x001b53b0}
+    - {addr: 0x001b53b0, name: HUD_EnableBar}
+    - {addr: 0x001b4ba0, name: HUD_EnableRedBar}
+    - {addr: 0x001b4c98, name: HUD_EnableLabelledBar}
+    - {addr: 0x001b4f00, name: HUD_EnableGaugeBar}
+    - {addr: 0x001b5008, name: HUD_EnableBarStack}
   args:
-    - {name: kind, lua: number, ctype: unsigned, desc: "Bar kind: 0 a textured bar (sprites `texA`, `texB`), 1 a boss health bar labelled `labels[1]`, 2 a plain bar, 3 one bar per name in `labels` (Rumble and two-player damage bars)."}
-    - {name: "on", lua: boolean, desc: "true creates/shows the bar, false removes it."}
-    - {name: labels, lua: table, elem: string, count: 4, written_back: true, desc: "Table of up to 4 strings (bar labels)."}
-    - {name: count, lua: number, ctype: unsigned, default: 1, desc: "For kind 3, how many bars (default 1)."}
-    - {name: flag, lua: boolean, desc: "For kind 3, a flag passed on (scripts pass true or false)."}
-    - {name: texA, lua: number, ctype: unsigned, default: 1703940, desc: "For kind 0, a sprite id (default 1703940)."}
-    - {name: texB, lua: number, ctype: unsigned, default: 1703936, desc: "For kind 0, a sprite id (default 1703936)."}
+    - {name: kind, lua: number, ctype: unsigned, desc: "Bar kind: 0 a red bar at the top centre, 1 a green bar labelled `labels[1]` (boss health), 2 a sprite gauge drawn with `texA` and `texB`, 3 a stack of grey-framed bars, one per label (Rumble and two-player damage bars); other values do nothing."}
+    - {name: "on", lua: boolean, desc: "true creates the bar (an existing one is left as is), false removes it."}
+    - {name: labels, lua: table, elem: string, count: 4, written_back: true, desc: "Up to 4 label strings: kind 1 uses the first, kind 3 one per bar. Written back unchanged."}
+    - {name: count, lua: number, ctype: unsigned, default: 1, desc: "Kind 3: how many bars to create (at most 4); with `flag` true, the number (0-3) of the bar to show or hide."}
+    - {name: flag, lua: boolean, desc: "Kind 3 only: false creates or removes all the bars; true shows (`on`) or hides one bar, number `count`, keeping the count of shown bars."}
+    - {name: texA, lua: number, ctype: unsigned, default: 1703940, desc: "Kind 2 only: a sprite word for the gauge (default 1703940); kind 0 ignores it and uses sprite 0x020a0000."}
+    - {name: texB, lua: number, ctype: unsigned, default: 1703936, desc: "Kind 2 only: a second sprite word (default 1703936); ignored by the other kinds."}
   description: >-
-    Creates or removes a HUD bar: boss health, vehicle damage, Rumble score bars.
+    Creates or removes one of the HUD's scripted bars. Kinds 0, 1 and 3 share four generic bar slots (0x0060a1b0,
+    0x3f0 bytes each; kinds 0 and 1 use slot 0): kind 0 a red (200, 30, 30) bar 0.17 × 0.025 at the top, kind 1 a
+    green (115, 183, 11) labelled bar 0.22 × 0.025 of the screen, kind 3 up to four labelled bars 0.07 apart with a
+    (217, 158, 12) fill. Kind 2 is a separate three-sprite gauge (0x0060b180). Fill them with HUDSetBarPercentage.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Kind 2's gauge (0x001a3720) starts with values 60 (`+0x348`) and 30 (`+0x340`) and a frame sprite 0x1a0007;
+    what it looks like on screen is not traced. Positions shift down by a constant in a two-player game
+    (0x00609e8c). The bars draw in the HUD pass ([HUD: render order](../../research/hud.md)).
   usage: {chunks: 28, calls: 100, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 20, 11]}
 
 - name: HUDEnableGenBar
@@ -603,32 +624,39 @@
 - name: HUDSetBarPercentage
   wrapper: 0x0036f7f8
   calls:
-    - {addr: 0x001b5450}
+    - {addr: 0x001b5450, name: HUD_SetBarPercentage}
+    - {addr: 0x001c2530, name: HudGenericBar_SetFill}
   args:
-    - {name: kind, lua: number, ctype: unsigned, desc: "The bar kind given to HUDEnableBar (0-3)."}
-    - {name: fill, lua: number, ctype: float, desc: "Fill fraction, 0-1."}
-    - {name: fill2, lua: number, ctype: float, default: 1, desc: "Second fill fraction for kinds 1 and 2 (default 1; scripts pass 1 or the same value)."}
-    - {name: index, lua: number, ctype: unsigned, desc: "Which bar for kinds 1 and 3 (0 or 1)."}
-    - {name: f5, lua: number, ctype: float, desc: "Extra value for kinds 1 and 3 (scripts pass 0)."}
+    - {name: kind, lua: number, ctype: unsigned, desc: "The bar kind given to HUDEnableBar (0-3); other values do nothing."}
+    - {name: fill, lua: number, ctype: float, desc: "Fill fraction 0-1 (clamped) for kinds 0, 1 and 3; for kind 2 the gauge's main value (`+0x340`), not clamped."}
+    - {name: fill2, lua: number, ctype: float, default: 1, desc: "Read but ignored (scripts pass 1 or the same value)."}
+    - {name: index, lua: number, ctype: unsigned, desc: "Which generic bar for kinds 1 and 3 (0-3)."}
+    - {name: value2, lua: number, ctype: float, desc: "Kind 2's second gauge value (`+0x344`); also passed for kind 1 (scripts pass 0)."}
   description: >-
-    Sets how full a HUD bar is.
+    Sets how full a HUD bar is: kinds 0, 1 and 3 store the clamped fraction in the generic bar (`+0x78`, only when
+    that bar exists); kind 2 sets the gauge's two values. Kind 1 also writes `fill` and `value2` into the kind-2
+    gauge.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The kind-1 fall-through into the gauge is in 0x001b5450; it is harmless while no gauge is shown (inferred).
   usage: {chunks: 28, calls: 103, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 20, 11]}
 
 - name: HUDSetBarProperty
   wrapper: 0x0036f8e8
   calls:
-    - {addr: 0x001b54f0}
+    - {addr: 0x001b54f0, name: HUD_SetBarProperty}
+    - {addr: 0x001c22b0, name: HudGenericBar_SetWidth}
   args:
-    - {name: index, lua: number, ctype: unsigned, desc: "Generic bar index (0 or 1); ignored when that bar does not exist."}
-    - {name: flag, lua: boolean, desc: "Passed on with the width (scripts pass true)."}
-    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Table {r, g, b, a}, each 0-255."}
-    - {name: width, lua: number, ctype: float, desc: "Bar width as a screen fraction."}
+    - {name: index, lua: number, ctype: unsigned, desc: "Generic bar slot (0-3, as HUDEnableBar's kinds 0, 1 and 3 fill them); ignored when that bar does not exist."}
+    - {name: flag, lua: boolean, desc: "Read but ignored (scripts pass true)."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Fill colour {r, g, b, a}, each 0-255 (the low byte is kept); written back unchanged."}
+    - {name: width, lua: number, ctype: float, desc: "Bar width as a fraction of the screen width (`+0x40`; × 0.7 when the HUD's layout flag 2 is set, inferred: widescreen)."}
   description: >-
-    Sets a generic bar's colour and width.
+    Sets a generic bar's fill colour (`+0x68`) and width, then rebuilds it. Scripts use it to recolour the Rumble
+    and damage bars made by HUDEnableBar kind 3.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   usage: {chunks: 21, calls: 39, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 54, 55, 84, 82, 92, 20, 11]}
 
 - name: HUDEnableTextProgress
@@ -897,13 +925,18 @@
 - name: HUDSetRadarZoomScale
   wrapper: 0x00370728
   calls:
-    - {addr: 0x001b40e0}
+    - {addr: 0x001b40e0, name: HUD_SetRadarZoomScale}
   args:
-    - {name: scale, lua: number, ctype: float, desc: "Radar zoom factor (1 normal; scripts use 0.35 and 0.5 to show more of the map)."}
+    - {name: scale, lua: number, ctype: float, desc: "Factor on the radius in metres the radar shows (1.0 by default); below 1 zooms in (scripts use 0.35 and 0.5), above 1 shows more of the map."}
   description: >-
-    Sets both radars' zoom scale.
+    Sets the zoom scale of both radars (radar `+0x2920`, the two globals 0x00604730 and 0x00607070). The radar's shown
+    radius eases toward (rest + (fast - rest) × min(speed, 12) / 12) × scale, so with the level99 values (50 m
+    standing, 75 m at 12 m/s) a scale of 0.5 shows 25-37.5 m ([HUD: radar zoom](../../research/hud.md)). The change
+    eases in over a few frames, not at once.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Nothing resets it per level as far as traced (inferred: scripts set it back to 1 themselves).
   usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false, levels: [81, 51, 82]}
 
 - name: HUDAddRadarMissionObjective
@@ -974,15 +1007,20 @@
 - name: HUDRadarSetRange
   wrapper: 0x003709b8
   calls:
-    - {addr: 0x001b40c0}
+    - {addr: 0x001b40c0, name: HUD_SetRadarRange}
+    - {addr: 0x001b2e10, name: HudManager_SetRadarRange}
   args:
-    - {name: near, lua: number, ctype: float, desc: "A distance (level3 passes 25)."}
-    - {name: far, lua: number, ctype: float, desc: "A distance (level3 passes 35)."}
+    - {name: near, lua: number, ctype: float, desc: "Radius in metres the radar shows around a standing player (radar `+0x28`, `rest`; level99 runs with 50); the shown radius (`+0x20`) jumps to it at once."}
+    - {name: far, lua: number, ctype: float, desc: "Radius in metres shown at full running speed, 12 m/s (radar `+0x24`, `fast`; level99 runs with 75)."}
   description: >-
-    Sets the radar's range (inferred). The function it calls takes only the HUD manager, so both numbers may be
-    ignored.
-  evidence: inferred
-  depth: brief
+    Sets both players' radar zoom range (HUD radars at `+0x15d0` and `+0x3f10`): the disc shows `near` metres around a
+    standing player and widens toward `far` as the player speeds up. Level 3 passes 25 and 35, a closer view than the
+    usual 50 and 75.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The floats pass through in registers, which hides them in the decompiled wrapper. The zoom formula and
+    HUDSetRadarZoomScale are in [HUD: the radar](../../research/hud.md#the-radar-on-screen).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [3]}
 
 - name: HUDDeleteRadarObject

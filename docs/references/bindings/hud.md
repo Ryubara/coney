@@ -45,7 +45,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`HUDLaunchMissionComplete`](#hudlaunchmissioncomplete) | - | 10 | yes | yes | confirmed (code) |
 | [`HUDLaunchMissionFailed`](#hudlaunchmissionfailed) | - | 24 | no | no | confirmed (code) |
 | [`HUDLaunchRumbleWin`](#hudlaunchrumblewin) | - | 33 | no | no | confirmed (code) |
-| [`HUDRadarSetRange`](#hudradarsetrange) | - | 1 | no | no | inferred |
+| [`HUDRadarSetRange`](#hudradarsetrange) | - | 1 | no | no | confirmed (code) |
 | [`HUDReleasePH`](#hudreleaseph) | - | 16 | yes | yes | confirmed (code) |
 | [`HUDRemoveAllGoalText`](#hudremoveallgoaltext) | - | 7 | no | yes | confirmed (code) |
 | [`HUDSetANBossTexture`](#hudsetanbosstexture) | - | 15 | no | no | confirmed (code) |
@@ -495,15 +495,20 @@ HUDCheckTutorialText(text) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `text` | string | A hint string previously given to HUDSetTutorialText. |
+| 1 | `text` | string | A hint string previously given to HUDSetTutorialText (the same interned string). |
 
-**Returns** boolean (1 for true, nil for false): true (1) when that hint is showing or queued, else nil. The test
-compares the string object, which works because Lua 4 interns strings.
+**Returns** boolean (1 for true, nil for false): true (1) when that hint is the one showing (hint box `+0x68`) or is in
+the queue, else nil; nil for a nil text.
 
-Reports whether a tutorial hint is still on screen or waiting.
+Reports whether a tutorial hint is still on screen or waiting in the hint box's queue, so a script can wait for the
+player to have seen it.
 
-- **Evidence:** confirmed (code) at `0x001b49a8`; detail: brief
-- **Wrapper** `0x0036f3e8` (registered by `RegisterBindings`); **calls** `0x001b49a8`
+**Notes.** The test compares string objects, which works because Lua 4 interns strings; a hint built from a different
+but equal-looking string still matches. Hint box at 0x00609250 ([HUD](../../research/hud.md)).
+
+- **Evidence:** confirmed (code) at `0x001b49a8`, `0x001ce550`; detail: traced
+- **Wrapper** `0x0036f3e8` (registered by `RegisterBindings`); **calls** `0x001b49a8` `Tutorial_Contains`, `0x001ce550`
+  `HintBox_Contains`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -576,20 +581,29 @@ HUDEnableBar(kind, on, labels, count, flag, texA, texB)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `kind` | number, truncated to an unsigned integer | Bar kind: 0 a textured bar (sprites `texA`, `texB`), 1 a boss health bar labelled `labels[1]`, 2 a plain bar, 3 one bar per name in `labels` (Rumble and two-player damage bars). |
-| 2 | `on` | boolean (nil or 0 is false) | true creates/shows the bar, false removes it. |
-| 3 | `labels` | table of 4 strings (t[1]..t[4]) | Table of up to 4 strings (bar labels). |
-| 4 | `count` | number, truncated to an unsigned integer; default 1 | For kind 3, how many bars (default 1). |
-| 5 | `flag` | boolean (nil or 0 is false) | For kind 3, a flag passed on (scripts pass true or false). |
-| 6 | `texA` | number, truncated to an unsigned integer; default 1703940 | For kind 0, a sprite id (default 1703940). |
-| 7 | `texB` | number, truncated to an unsigned integer; default 1703936 | For kind 0, a sprite id (default 1703936). |
+| 1 | `kind` | number, truncated to an unsigned integer | Bar kind: 0 a red bar at the top centre, 1 a green bar labelled `labels[1]` (boss health), 2 a sprite gauge drawn with `texA` and `texB`, 3 a stack of grey-framed bars, one per label (Rumble and two-player damage bars); other values do nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true creates the bar (an existing one is left as is), false removes it. |
+| 3 | `labels` | table of 4 strings (t[1]..t[4]) | Up to 4 label strings: kind 1 uses the first, kind 3 one per bar. Written back unchanged. |
+| 4 | `count` | number, truncated to an unsigned integer; default 1 | Kind 3: how many bars to create (at most 4); with `flag` true, the number (0-3) of the bar to show or hide. |
+| 5 | `flag` | boolean (nil or 0 is false) | Kind 3 only: false creates or removes all the bars; true shows (`on`) or hides one bar, number `count`, keeping the count of shown bars. |
+| 6 | `texA` | number, truncated to an unsigned integer; default 1703940 | Kind 2 only: a sprite word for the gauge (default 1703940); kind 0 ignores it and uses sprite 0x020a0000. |
+| 7 | `texB` | number, truncated to an unsigned integer; default 1703936 | Kind 2 only: a second sprite word (default 1703936); ignored by the other kinds. |
 
 **Returns** nothing.
 
-Creates or removes a HUD bar: boss health, vehicle damage, Rumble score bars.
+Creates or removes one of the HUD's scripted bars. Kinds 0, 1 and 3 share four generic bar slots (0x0060a1b0, 0x3f0
+bytes each; kinds 0 and 1 use slot 0): kind 0 a red (200, 30, 30) bar 0.17 × 0.025 at the top, kind 1 a green (115, 183,
+11) labelled bar 0.22 × 0.025 of the screen, kind 3 up to four labelled bars 0.07 apart with a (217, 158, 12) fill. Kind
+2 is a separate three-sprite gauge (0x0060b180). Fill them with HUDSetBarPercentage.
 
-- **Evidence:** confirmed (code) at `0x001b53b0`; detail: brief
-- **Wrapper** `0x0036f5b8` (registered by `RegisterBindings`); **calls** `0x001b53b0`
+**Notes.** Kind 2's gauge (0x001a3720) starts with values 60 (`+0x348`) and 30 (`+0x340`) and a frame sprite 0x1a0007;
+what it looks like on screen is not traced. Positions shift down by a constant in a two-player game (0x00609e8c). The
+bars draw in the HUD pass ([HUD: render order](../../research/hud.md)).
+
+- **Evidence:** confirmed (code) at `0x001b53b0`, `0x001b4ba0`, `0x001b4c98`, `0x001b4f00`, `0x001b5008`; detail: traced
+- **Wrapper** `0x0036f5b8` (registered by `RegisterBindings`); **calls** `0x001b53b0` `HUD_EnableBar`, `0x001b4ba0`
+  `HUD_EnableRedBar`, `0x001b4c98` `HUD_EnableLabelledBar`, `0x001b4f00` `HUD_EnableGaugeBar`, `0x001b5008`
+  `HUD_EnableBarStack`
 - **Used by** 28 of 467 script chunks (100 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -879,15 +893,21 @@ HUDRadarSetRange(near, far)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `near` | number (single precision) | A distance (level3 passes 25). |
-| 2 | `far` | number (single precision) | A distance (level3 passes 35). |
+| 1 | `near` | number (single precision) | Radius in metres the radar shows around a standing player (radar `+0x28`, `rest`; level99 runs with 50); the shown radius (`+0x20`) jumps to it at once. |
+| 2 | `far` | number (single precision) | Radius in metres shown at full running speed, 12 m/s (radar `+0x24`, `fast`; level99 runs with 75). |
 
 **Returns** nothing.
 
-Sets the radar's range (inferred). The function it calls takes only the HUD manager, so both numbers may be ignored.
+Sets both players' radar zoom range (HUD radars at `+0x15d0` and `+0x3f10`): the disc shows `near` metres around a
+standing player and widens toward `far` as the player speeds up. Level 3 passes 25 and 35, a closer view than the usual
+50 and 75.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003709b8` (registered by `RegisterBindings`); **calls** `0x001b40c0`
+**Notes.** The floats pass through in registers, which hides them in the decompiled wrapper. The zoom formula and
+HUDSetRadarZoomScale are in [HUD: the radar](../../research/hud.md#the-radar-on-screen).
+
+- **Evidence:** confirmed (code) at `0x001b40c0`, `0x001b2e10`; detail: traced
+- **Wrapper** `0x003709b8` (registered by `RegisterBindings`); **calls** `0x001b40c0` `HUD_SetRadarRange`, `0x001b2e10`
+  `HudManager_SetRadarRange`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -984,23 +1004,27 @@ the action prompts are hidden. Details: [The in-game HUD](../../research/hud.md#
 ## HUDSetBarPercentage {#hudsetbarpercentage}
 
 ```lua
-HUDSetBarPercentage(kind, fill, fill2, index, f5)
+HUDSetBarPercentage(kind, fill, fill2, index, value2)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `kind` | number, truncated to an unsigned integer | The bar kind given to HUDEnableBar (0-3). |
-| 2 | `fill` | number (single precision) | Fill fraction, 0-1. |
-| 3 | `fill2` | number (single precision); default 1 | Second fill fraction for kinds 1 and 2 (default 1; scripts pass 1 or the same value). |
-| 4 | `index` | number, truncated to an unsigned integer | Which bar for kinds 1 and 3 (0 or 1). |
-| 5 | `f5` | number (single precision) | Extra value for kinds 1 and 3 (scripts pass 0). |
+| 1 | `kind` | number, truncated to an unsigned integer | The bar kind given to HUDEnableBar (0-3); other values do nothing. |
+| 2 | `fill` | number (single precision) | Fill fraction 0-1 (clamped) for kinds 0, 1 and 3; for kind 2 the gauge's main value (`+0x340`), not clamped. |
+| 3 | `fill2` | number (single precision); default 1 | Read but ignored (scripts pass 1 or the same value). |
+| 4 | `index` | number, truncated to an unsigned integer | Which generic bar for kinds 1 and 3 (0-3). |
+| 5 | `value2` | number (single precision) | Kind 2's second gauge value (`+0x344`); also passed for kind 1 (scripts pass 0). |
 
 **Returns** nothing.
 
-Sets how full a HUD bar is.
+Sets how full a HUD bar is: kinds 0, 1 and 3 store the clamped fraction in the generic bar (`+0x78`, only when that bar
+exists); kind 2 sets the gauge's two values. Kind 1 also writes `fill` and `value2` into the kind-2 gauge.
 
-- **Evidence:** confirmed (code) at `0x001b5450`; detail: brief
-- **Wrapper** `0x0036f7f8` (registered by `RegisterBindings`); **calls** `0x001b5450`
+**Notes.** The kind-1 fall-through into the gauge is in 0x001b5450; it is harmless while no gauge is shown (inferred).
+
+- **Evidence:** confirmed (code) at `0x001b5450`, `0x001c2530`; detail: traced
+- **Wrapper** `0x0036f7f8` (registered by `RegisterBindings`); **calls** `0x001b5450` `HUD_SetBarPercentage`,
+  `0x001c2530` `HudGenericBar_SetFill`
 - **Used by** 28 of 467 script chunks (103 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -1013,17 +1037,19 @@ HUDSetBarProperty(index, flag, colour, width)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `index` | number, truncated to an unsigned integer | Generic bar index (0 or 1); ignored when that bar does not exist. |
-| 2 | `flag` | boolean (nil or 0 is false) | Passed on with the width (scripts pass true). |
-| 3 | `colour` | table of 4 numbers (t[1]..t[4]) | Table {r, g, b, a}, each 0-255. |
-| 4 | `width` | number (single precision) | Bar width as a screen fraction. |
+| 1 | `index` | number, truncated to an unsigned integer | Generic bar slot (0-3, as HUDEnableBar's kinds 0, 1 and 3 fill them); ignored when that bar does not exist. |
+| 2 | `flag` | boolean (nil or 0 is false) | Read but ignored (scripts pass true). |
+| 3 | `colour` | table of 4 numbers (t[1]..t[4]) | Fill colour {r, g, b, a}, each 0-255 (the low byte is kept); written back unchanged. |
+| 4 | `width` | number (single precision) | Bar width as a fraction of the screen width (`+0x40`; × 0.7 when the HUD's layout flag 2 is set, inferred: widescreen). |
 
 **Returns** nothing.
 
-Sets a generic bar's colour and width.
+Sets a generic bar's fill colour (`+0x68`) and width, then rebuilds it. Scripts use it to recolour the Rumble and damage
+bars made by HUDEnableBar kind 3.
 
-- **Evidence:** confirmed (code) at `0x001b54f0`; detail: brief
-- **Wrapper** `0x0036f8e8` (registered by `RegisterBindings`); **calls** `0x001b54f0`
+- **Evidence:** confirmed (code) at `0x001b54f0`, `0x001c22b0`; detail: traced
+- **Wrapper** `0x0036f8e8` (registered by `RegisterBindings`); **calls** `0x001b54f0` `HUD_SetBarProperty`, `0x001c22b0`
+  `HudGenericBar_SetWidth`
 - **Used by** 21 of 467 script chunks (39 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 14 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -1058,10 +1084,16 @@ No arguments.
 
 **Returns** nothing.
 
-Puts the chase HUD into its destroy state (removes it).
+Puts the chase HUD (the pursuit display widget at 0x00609e80) into state 6, its destroy state: the widget's own removal
+(vtable slot `+0x6c`) runs. After it the chase HUD can be made again (HUDSetChaseHUDState_CREATE makes it only while
+widget `+0x0c` is 0).
 
-- **Evidence:** confirmed (code) at `0x001b4a88`; detail: brief
-- **Wrapper** `0x0036f538` (registered by `RegisterBindings`); **calls** `0x001b4a88`
+**Notes.** State 6 does not store the state (`+0x44`); what slot `+0x6c` frees is inferred from the name. Takes no
+arguments.
+
+- **Evidence:** confirmed (code) at `0x001b4a88`, `0x001a41b0`; detail: traced
+- **Wrapper** `0x0036f538` (registered by `RegisterBindings`); **calls** `0x001b4a88` `ChaseHud_Destroy`, `0x001a41b0`
+  `ChaseHud_SetState`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -1350,14 +1382,19 @@ HUDSetRadarZoomScale(scale)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `scale` | number (single precision) | Radar zoom factor (1 normal; scripts use 0.35 and 0.5 to show more of the map). |
+| 1 | `scale` | number (single precision) | Factor on the radius in metres the radar shows (1.0 by default); below 1 zooms in (scripts use 0.35 and 0.5), above 1 shows more of the map. |
 
 **Returns** nothing.
 
-Sets both radars' zoom scale.
+Sets the zoom scale of both radars (radar `+0x2920`, the two globals 0x00604730 and 0x00607070). The radar's shown
+radius eases toward (rest + (fast - rest) × min(speed, 12) / 12) × scale, so with the level99 values (50 m standing, 75
+m at 12 m/s) a scale of 0.5 shows 25-37.5 m ([HUD: radar zoom](../../research/hud.md)). The change eases in over a few
+frames, not at once.
 
-- **Evidence:** confirmed (code) at `0x001b40e0`; detail: brief
-- **Wrapper** `0x00370728` (registered by `RegisterBindings`); **calls** `0x001b40e0`
+**Notes.** Nothing resets it per level as far as traced (inferred: scripts set it back to 1 themselves).
+
+- **Evidence:** confirmed (code) at `0x001b40e0`; detail: traced
+- **Wrapper** `0x00370728` (registered by `RegisterBindings`); **calls** `0x001b40e0` `HUD_SetRadarZoomScale`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented

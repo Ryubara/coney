@@ -24,7 +24,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`GetGamma`](#getgamma) | number | 0 | no | no | confirmed (code) |
 | [`InitFallingEmbers`](#initfallingembers) | - | 1 | no | no | confirmed (code) |
 | [`KillParticle`](#killparticle) | - | 11 | no | no | confirmed (code) |
-| [`MaxFogParticles`](#maxfogparticles) | - | 7 | no | no | confirmed (code) |
+| [`MaxFogParticles`](#maxfogparticles) | - | 7 | no | no | inferred |
 | [`ParticleChangeState`](#particlechangestate) | - | 1 | no | no | confirmed (code) |
 | [`QueueMotionBlurEffect`](#queuemotionblureffect) | - | 4 | yes | yes | confirmed (code) |
 | [`ScreenQueueEffect`](#screenqueueeffect) | - | 169 | yes | yes | confirmed (code) |
@@ -369,13 +369,17 @@ MaxFogParticles(count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `count` | number, truncated to an unsigned integer | Maximum number of fog particles (10 or 15 in the scripts). |
+| 1 | `count` | number, truncated to an unsigned integer | Maximum number of live fog wisps per view (10 or 15 in the scripts; Start3DFog's emitter keeps 20 otherwise). |
 
 **Returns** nothing.
 
-Limits the particle count of the current 3D fog objects (message 0x22 with the count).
+Sends message 0x22 with the count to the 3D fog emitter of each of the two screen-effects managers (handle at `+0x218`),
+lowering how many wisps Start3DFog keeps alive. Call it after Start3DFog; with no fog running it does nothing.
 
-- **Evidence:** confirmed (code) at `0x0018e2f0`; detail: brief
+**Notes.** The send is confirmed (code) at 0x0018e2f0; the `part_fog` emitter's handling of message 0x22 (replacing the
+20-wisp top-up) is not traced.
+
+- **Evidence:** inferred; detail: traced
 - **Wrapper** `0x003692b0` (registered by `RegisterBindings`); **calls** `0x0018e2f0` `Fog3D_SetMaxParticles`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
@@ -389,15 +393,22 @@ ParticleChangeState(particle, state)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `particle` | number, truncated to an unsigned integer | Handle of the particle or effect object. |
-| 2 | `state` | number, truncated to an integer | State number for the object (message 0x19); the one script call passes a hit count. |
+| 1 | `particle` | number, truncated to an unsigned integer | Handle of the particle system or other scripted world object (a handle that does not resolve sends to nothing). |
+| 2 | `state` | number, truncated to an integer | The value put in the message; its meaning is the receiving type's (the one script call passes a hit count). |
 
 **Returns** nothing.
 
-Changes the state of a particle or effect object.
+Sends task message 25 (0x19) with `state` as its argument to the object, delivered at once to its type's message handler
+([Tasks: messages](../../research/tasks.md#messages)). Particle and script types switch on 0x19 among their messages
+([Particles](../../research/particles.md)); for doors and breakables the same message sets hitpoints ([World
+objects](../../research/objects.md)); WidgetSetColour's message form uses it too.
 
-- **Evidence:** confirmed (code) at `0x00397660`; detail: brief
-- **Wrapper** `0x00379198` (registered by `RegisterBindings`); **calls** `0x00397660` `Particle_ChangeState`
+**Notes.** What each particle type does with message 0x19 is not traced; inferred from the script's use: it sets how
+many hits or which stage an effect object shows.
+
+- **Evidence:** confirmed (code) at `0x00397660`, `0x003a2e00`; detail: traced
+- **Wrapper** `0x00379198` (registered by `RegisterBindings`); **calls** `0x00397660` `Particle_ChangeState`,
+  `0x003a2e00` `Task_SendMessage`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
@@ -1026,15 +1037,24 @@ StartRoomSmoke(colour, amount)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `colour` | table of 5 numbers (t[1]..t[5]) | Five numbers 0-255: colour `{r, g, b, a}` and a fifth value (the scripts pass `{120, 120, 140, 220, 240}`). |
-| 2 | `amount` | number (single precision) | Number such as 0.5 (strength or speed). |
+| 1 | `colour` | table of 5 numbers (t[1]..t[5]) | Five numbers 0-255: the haze tint `{r, g, b}`, then the lowest and highest alpha a drift may pick (the scripts pass `{120, 120, 140, 220, 240}`); written back unchanged. |
+| 2 | `amount` | number (single precision) | Scales how fast the haze drifts sideways (a random 0.0005-0.0015 screen widths per update times this, either way); scripts use about 0.5. |
 
 **Returns** nothing.
 
-Starts the indoor smoke haze screen effect (screen effect 3) on both views.
+Starts the room-smoke overlay (screen effect layer 3, `OE_RoomSmoke`) on both views: a full-screen smoke texture tinted
+with the colour that slowly scrolls and changes. Every 4-20 s (random) it picks a new drift: a sideways speed scaled by
+`amount`, a scale of 1.63-1.93 by 1.0-1.2, and an alpha between the fourth and fifth colour values. Calling it while the
+layer runs passes the new settings to the running effect. EndRoomSmoke stops it.
 
-- **Evidence:** confirmed (code) at `0x0018e070`; detail: brief
-- **Wrapper** `0x00368ec0` (registered by `RegisterBindings`); **calls** `0x0018e070` `ScreenFx_StartRoomSmoke`
+**Notes.** The record's own alpha byte is always 0; the visible alpha comes only from the drift range. How the drift
+blends from one target to the next (0x0019b2a8, 0x0019b070) is not traced. Layers:
+[Graphics](../../research/graphics.md).
+
+- **Evidence:** confirmed (code) at `0x0018e070`, `0x0018bae0`, `0x0019add0`, `0x0019b198`, `0x0019b4c0`; detail: traced
+- **Wrapper** `0x00368ec0` (registered by `RegisterBindings`); **calls** `0x0018e070` `ScreenFx_StartRoomSmoke`,
+  `0x0018bae0`, `0x0019add0` `OE_RoomSmoke_Construct`, `0x0019b198` `OE_RoomSmoke_PickDrift`, `0x0019b4c0`
+  `OE_RoomSmoke_Update`
 - **Used by** 8 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
@@ -1060,21 +1080,28 @@ Stops the falling embers effect (0x001790a8).
 ## WidgetSetColour {#widgetsetcolour}
 
 ```lua
-WidgetSetColour(object, colour, viaLights)
+WidgetSetColour(object, colour, viaMessage)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of a world object (scripts pass light objects). |
-| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Table {r, g, b, a}, each 0-255. |
-| 3 | `viaLights` | boolean (nil or 0 is false) | true sets the colour through the world's light manager (0x00512c7c); false sets it on the object directly. |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of a world object (scripts pass coloured-light props of the funfair level). |
+| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Table {r, g, b, a}, each 0-255 (the low byte of each is used), packed as 0xRRGGBBAA; written back unchanged. |
+| 3 | `viaMessage` | boolean (nil or 0 is false) | true sends the colour to the object as task message 25 (0x19) through the task manager; false writes it straight into the object. |
 
 **Returns** nothing.
 
-Changes the colour of a world object such as a coloured light in the funfair levels.
+Recolours a world object. Without `viaMessage` the packed colour is stored in both colour words of the object (`+0xb0`
+and `+0xb4`, 0x001e9ac0; an unresolved handle does nothing); with it the colour is put in a task message and delivered
+at once to the object's message handler (vtable `+0xcc`), which applies it in its own way.
 
-- **Evidence:** confirmed (code) at `0x0039c2e0`; detail: brief
-- **Wrapper** `0x00378b00` (registered by `RegisterBindings`); **calls** `0x0039c2e0`
+**Notes.** Which object classes read `+0xb0`/`+0xb4` and how the handler of the prop class used treats message 25 are
+not traced; for breakable objects message 25 sets hitpoints ([World objects](../../research/objects.md)), so the message
+form only suits classes that read it as a colour. The name says widget, but the handle is a world object.
+
+- **Evidence:** confirmed (code) at `0x0039c2e0`, `0x001e9ac0`, `0x003a2e00`; detail: traced
+- **Wrapper** `0x00378b00` (registered by `RegisterBindings`); **calls** `0x0039c2e0` `Obj_SetWidgetColour`,
+  `0x001e9ac0`, `0x003a2e00` `Task_SendMessage`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented

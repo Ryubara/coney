@@ -141,13 +141,23 @@
   wrapper: 0x00368ec0
   calls:
     - {addr: 0x0018e070, name: ScreenFx_StartRoomSmoke}
+    - {addr: 0x0018bae0}
+    - {addr: 0x0019add0, name: OE_RoomSmoke_Construct}
+    - {addr: 0x0019b198, name: OE_RoomSmoke_PickDrift}
+    - {addr: 0x0019b4c0, name: OE_RoomSmoke_Update}
   args:
-    - {name: colour, lua: table, elem: number, count: 5, written_back: true, desc: "Five numbers 0-255: colour `{r, g, b, a}` and a fifth value (the scripts pass `{120, 120, 140, 220, 240}`)."}
-    - {name: amount, lua: number, ctype: float, desc: "Number such as 0.5 (strength or speed)."}
+    - {name: colour, lua: table, elem: number, count: 5, written_back: true, desc: "Five numbers 0-255: the haze tint `{r, g, b}`, then the lowest and highest alpha a drift may pick (the scripts pass `{120, 120, 140, 220, 240}`); written back unchanged."}
+    - {name: amount, lua: number, ctype: float, desc: "Scales how fast the haze drifts sideways (a random 0.0005-0.0015 screen widths per update times this, either way); scripts use about 0.5."}
   description: >-
-    Starts the indoor smoke haze screen effect (screen effect 3) on both views.
+    Starts the room-smoke overlay (screen effect layer 3, `OE_RoomSmoke`) on both views: a full-screen smoke texture
+    tinted with the colour that slowly scrolls and changes. Every 4-20 s (random) it picks a new drift: a sideways
+    speed scaled by `amount`, a scale of 1.63-1.93 by 1.0-1.2, and an alpha between the fourth and fifth colour
+    values. Calling it while the layer runs passes the new settings to the running effect. EndRoomSmoke stops it.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The record's own alpha byte is always 0; the visible alpha comes only from the drift range. How the drift blends
+    from one target to the next (0x0019b2a8, 0x0019b070) is not traced. Layers: [Graphics](../../research/graphics.md).
   usage: {chunks: 8, calls: 8, boot: false, mission1: false, result_used: false, levels: [5, 81, 93, 55, 11]}
 
 - name: EndRoomSmoke
@@ -214,11 +224,16 @@
   calls:
     - {addr: 0x0018e2f0, name: Fog3D_SetMaxParticles}
   args:
-    - {name: count, lua: number, ctype: unsigned, desc: "Maximum number of fog particles (10 or 15 in the scripts)."}
+    - {name: count, lua: number, ctype: unsigned, desc: "Maximum number of live fog wisps per view (10 or 15 in the scripts; Start3DFog's emitter keeps 20 otherwise)."}
   description: >-
-    Limits the particle count of the current 3D fog objects (message 0x22 with the count).
-  evidence: confirmed-code
-  depth: brief
+    Sends message 0x22 with the count to the 3D fog emitter of each of the two screen-effects managers (handle at
+    `+0x218`), lowering how many wisps Start3DFog keeps alive. Call it after Start3DFog; with no fog running it does
+    nothing.
+  evidence: inferred
+  depth: thorough
+  notes: >-
+    The send is confirmed (code) at 0x0018e2f0; the `part_fog` emitter's handling of message 0x22 (replacing the
+    20-wisp top-up) is not traced.
   usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false, levels: [34, 81, 9]}
 
 - name: End3DFog
@@ -435,15 +450,23 @@
 - name: WidgetSetColour
   wrapper: 0x00378b00
   calls:
-    - {addr: 0x0039c2e0}
+    - {addr: 0x0039c2e0, name: Obj_SetWidgetColour}
+    - {addr: 0x001e9ac0}
+    - {addr: 0x003a2e00, name: Task_SendMessage}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (scripts pass light objects)."}
-    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Table {r, g, b, a}, each 0-255."}
-    - {name: viaLights, lua: boolean, desc: "true sets the colour through the world's light manager (0x00512c7c); false sets it on the object directly."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object (scripts pass coloured-light props of the funfair level)."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Table {r, g, b, a}, each 0-255 (the low byte of each is used), packed as 0xRRGGBBAA; written back unchanged."}
+    - {name: viaMessage, lua: boolean, desc: "true sends the colour to the object as task message 25 (0x19) through the task manager; false writes it straight into the object."}
   description: >-
-    Changes the colour of a world object such as a coloured light in the funfair levels.
+    Recolours a world object. Without `viaMessage` the packed colour is stored in both colour words of the object
+    (`+0xb0` and `+0xb4`, 0x001e9ac0; an unresolved handle does nothing); with it the colour is put in a task
+    message and delivered at once to the object's message handler (vtable `+0xcc`), which applies it in its own way.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Which object classes read `+0xb0`/`+0xb4` and how the handler of the prop class used treats message 25 are not
+    traced; for breakable objects message 25 sets hitpoints ([World objects](../../research/objects.md)), so the
+    message form only suits classes that read it as a colour. The name says widget, but the handle is a world object.
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [81]}
 
 - name: StartParticle
@@ -484,13 +507,20 @@
   wrapper: 0x00379198
   calls:
     - {addr: 0x00397660, name: Particle_ChangeState}
+    - {addr: 0x003a2e00, name: Task_SendMessage}
   args:
-    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle or effect object."}
-    - {name: state, lua: number, ctype: int, desc: "State number for the object (message 0x19); the one script call passes a hit count."}
+    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle system or other scripted world object (a handle that does not resolve sends to nothing)."}
+    - {name: state, lua: number, ctype: int, desc: "The value put in the message; its meaning is the receiving type's (the one script call passes a hit count)."}
   description: >-
-    Changes the state of a particle or effect object.
+    Sends task message 25 (0x19) with `state` as its argument to the object, delivered at once to its type's message
+    handler ([Tasks: messages](../../research/tasks.md#messages)). Particle and script types switch on 0x19 among
+    their messages ([Particles](../../research/particles.md)); for doors and breakables the same message sets
+    hitpoints ([World objects](../../research/objects.md)); WidgetSetColour's message form uses it too.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    What each particle type does with message 0x19 is not traced; inferred from the script's use: it sets how many
+    hits or which stage an effect object shows.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: KillParticle

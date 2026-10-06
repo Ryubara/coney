@@ -319,16 +319,20 @@ ForceCrimeLevel(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false); default true | true (default) to hold the crime level where it is, false to release it. |
+| 1 | `on` | boolean (nil or 0 is false); default true | true (default) to hold the heat where it is, false to let it fade again. |
 
 **Returns** nothing.
 
-Sets the forced flag (`W_GameState + 0x28c`): while on, a wanted gang's timer is held at 10 s from now
-(Gang_UpdateWanted, 0x001698f0) and the crime level does not drop to 0 ([Crimes:
+Sets the forced flag (`W_GameState + 0x28c`). While on, every wanted gang's timer is held at 10 s from now, so the
+police never lose interest (Gang_UpdateWanted, 0x001698f0), the crime level does not step down to 0 (Crime_UpdateLevel,
+0x0041c0b8), and a police gang created meanwhile becomes hostile to the wanted gangs one-way only ([Crimes:
 wanted](../../research/crimes.md#wanted)).
 
-- **Evidence:** confirmed (code) at `0x0041d8d0`; detail: brief
-- **Wrapper** `0x0037a630` (registered by `RegisterBindings`); **calls** `0x0041d8d0`
+**Notes.** The last effect is in the police gang set-up (0x0016cdf0, at 0x0016cfe0): with the flag off the wanted gang
+also turns hostile to the police.
+
+- **Evidence:** confirmed (code) at `0x0041d8d0`; detail: traced
+- **Wrapper** `0x0037a630` (registered by `RegisterBindings`); **calls** `0x0041d8d0` `GameState_SetForceCrimeLevel`
 - **Used by** 9 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
@@ -341,13 +345,19 @@ GameIsOver() -> boolean
 
 No arguments.
 
-**Returns** boolean (1 for true, nil for false): true when a level end is pending (the level-end state `W_GameState +
-0x14c` is not 0); false also when there is no game state.
+**Returns** boolean (1 for true, nil for false): true when a level end is under way (`W_GameState + 0x14c` not 0); nil
+when playing or when there is no game state.
 
-Tells a script that the level is already ending (mission complete, failed or a level change requested).
+Tells a script whether the level is already on its way out: the level-end state is 1 (a failure, such as a fall out of
+the world), 2 (level completed, the next level queued) or 3 (a level load requested from a menu) ([Level loading:
+leaving](../../research/level-loading.md)). Scripts check it before starting something that should not run during the
+exit countdown.
 
-- **Evidence:** confirmed (code) at `0x0041ddb8`; detail: brief
-- **Wrapper** `0x0037b670` (registered by `RegisterBindings`); **calls** `0x0041ddb8`
+**Notes.** A story mission's own scripted ending does not set the state, so it reads false then. Once the state is not
+0, messages stop reaching Lua anyway.
+
+- **Evidence:** confirmed (code) at `0x0041ddb8`; detail: traced
+- **Wrapper** `0x0037b670` (registered by `RegisterBindings`); **calls** `0x0041ddb8` `GameState_IsLevelEnding`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
@@ -1701,15 +1711,21 @@ TakeMoney(amount, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `amount` | number, truncated to an integer | Dollars to take. |
-| 2 | `player` | number, truncated to an integer; default 1 | Player 1 or 2 (default 1). |
+| 1 | `amount` | number, truncated to an integer | Dollars to take (a negative amount gives). |
+| 2 | `player` | number, truncated to an integer; default 1 | Player 1 or 2 (default 1); 0 or a value above 2 does nothing. |
 
 **Returns** nothing.
 
-Takes money from a player (GiveMoney with the amount negated); the total never goes below 0.
+Takes money from a player: the same call as GiveMoney with the amount negated (`Inventory_AddItem` on the game state's
+inventory, item 2, money), so the total is clamped to the item's limits (never below 0) and the inventory's
+money-changed Lua callback, when set, runs with (player index, -amount). The HUD money counter shows the change.
 
-- **Evidence:** confirmed (code) at `0x0041ef60`; detail: brief
-- **Wrapper** `0x0037b4c8` (registered by `RegisterBindings`); **calls** `0x0041ef60`
+**Notes.** Taking more than the player has empties the purse without error; the callback still receives the full negated
+amount (inferred from GiveMoney's path).
+
+- **Evidence:** confirmed (code) at `0x0041ef60`, `0x0041ef00`; detail: traced
+- **Wrapper** `0x0037b4c8` (registered by `RegisterBindings`); **calls** `0x0041ef60` `GameState_TakeMoney`,
+  `0x0041ef00` `GameState_GiveMoney`
 - **Used by** 5 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** implemented

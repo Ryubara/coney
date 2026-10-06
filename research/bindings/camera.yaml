@@ -275,43 +275,60 @@
 - name: CameraCreateThird
   wrapper: 0x00365f28
   calls:
-    - {addr: 0x0011be18}
+    - {addr: 0x0011be18, name: Camera_CreateThird}
+    - {addr: 0x001207b0, name: Cam3rdPerson_SetAngle}
+    - {addr: 0x001205e8, name: Cam3rdPerson_Update}
   args:
-    - {name: name, lua: string, desc: "Camera name."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to follow."}
-    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
-    - {name: distance, lua: number, ctype: float, desc: "Distance behind the target (inferred)."}
-    - {name: height, lua: number, ctype: float, desc: "Height (inferred)."}
-    - {name: angle, lua: number, ctype: float, desc: "Heading offset in degrees (inferred)."}
-    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} from the target."}
-    - {name: near, lua: number, ctype: float, desc: "Near clip distance."}
-    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
+    - {name: name, lua: string, desc: "Camera name (passed to the camera factory)."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human (or object) to follow, kept at camera `+0x1e0`; a bad handle makes nothing."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees (vtable slot `+0x194`)."}
+    - {name: distance, lua: number, ctype: float, desc: "Metres behind the target's facing (`+0x210`; default 5.1)."}
+    - {name: height, lua: number, ctype: float, desc: "Metres above the look-at point (`+0x214`; default 1.8)."}
+    - {name: angle, lua: number, ctype: float, desc: "Degrees the camera is swung about the vertical through the look-at point (a quaternion at `+0x1f0`); 0 is straight behind."}
+    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} in metres, in the target's frame (`+0x220`; default (0, 0, 1.5)); written back unchanged."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance in metres (slot `+0x1a4`)."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance in metres, capped at 150 (slot `+0x1ac`)."}
   results:
-    - {lua: number, desc: "The camera's handle, or NilHandle."}
+    - {lua: number, desc: "The new camera's handle, or NilHandle when the target is bad or no camera could be made."}
   description: >-
-    Creates a third-person camera that follows a target from a set distance and height.
-  evidence: inferred
-  depth: brief
+    Creates a third-person camera (type 16, `Cam_3rdPerson`) on a target: each update its look-at point is the
+    target's position plus `offset`, its orientation eases 10% toward the target's, and it sits `distance` behind
+    that orientation and `height` above, swung by `angle` round the look-at point. Used for the chase and the
+    Chatterbox shots; it is not made current here.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The camera is not added to the shared target list, and CamDelete does not delete type 16. Created by the factory
+    0x0011e1b0 with player 0; shake is applied (0x00121298) with no position offset.
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [3, 81]}
 
 - name: CameraCreateFixed
   wrapper: 0x00366140
   calls:
-    - {addr: 0x0011c6b8}
+    - {addr: 0x0011c6b8, name: Camera_CreateFixed}
+    - {addr: 0x001222b0, name: CameraTargets_Add}
+    - {addr: 0x00124690, name: CamFixed_Update}
+    - {addr: 0x00124000, name: CamFixed_ComputeLookAt}
   args:
-    - {name: name, lua: string, desc: "Camera name."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human or object to look at."}
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Camera position {x, y, z} in metres."}
-    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
-    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} from the target."}
-    - {name: near, lua: number, ctype: float, desc: "Near clip distance."}
-    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
+    - {name: name, lua: string, desc: "Camera name (passed to the camera factory)."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of a human added to the shared camera target list (as CamTarget mode 0) if it is not there and the list has room (4); a bad handle makes nothing."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Camera position {x, y, z} in metres (placed through slot `+0x1bc`); written back unchanged."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees (slot `+0x194`)."}
+    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Offset {x, y, z} in metres added to the look-at point (`+0x1e0`); written back unchanged."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance in metres (slot `+0x1a4`)."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance in metres, capped at 150 (slot `+0x1ac`)."}
   results:
-    - {lua: number, desc: "The camera's handle, or NilHandle."}
+    - {lua: number, desc: "The new camera's handle, or NilHandle when the target is bad or no camera could be made."}
   description: >-
-    Creates a fixed camera: it stays at one position and turns to keep a target in view.
+    Creates a fixed camera (type 0, `Cam_Fixed`) at `pos` that turns each update to look at the shared camera target
+    list: the average position of the listed humans that still count, plus `offset`. The target is put on that list
+    rather than stored in the camera, so the camera also frames every other listed human (normally the players). It
+    is not made current here.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    With an empty list the camera keeps its last view; when two list counters are equal (0x0050b198 == 0x0050b19c)
+    it looks at one chosen entry instead of the average. The target stays on the list after the camera is gone.
   usage: {chunks: 9, calls: 12, boot: false, mission1: false, result_used: true, levels: [3, 81, 51, 52, 54, 55, 84]}
 
 - name: CameraCreateWin
@@ -342,51 +359,73 @@
 - name: CamSetupRail
   wrapper: 0x00366518
   calls:
-    - {addr: 0x0011cce8}
+    - {addr: 0x0011cce8, name: Camera_SetupRail}
+    - {addr: 0x0011fbb0, name: Camera_GetPlayerRail}
+    - {addr: 0x0013b2b8, name: CamRail_Reset}
   args:
     - {name: name, lua: string, desc: "Camera name."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to follow."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to follow; a bad handle makes nothing and returns NilHandle."}
     - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
-    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} from the target."}
-    - {name: near, lua: number, ctype: float, desc: "Near clip distance."}
-    - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
-    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+    - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} in metres from the target (`+0x320`); its z is also the starting value of CamModifyRail setting 9. Written back unchanged."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance in metres."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance in metres, at most 150."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index (0 or 1); -1 (default) sets up player 0's rail camera with the name and target and copies the other settings to every other player's."}
   results:
-    - {lua: number, desc: "The rail camera's handle, or NilHandle."}
+    - {lua: number, desc: "The handle of the player's rail camera (player 0's for -1), or NilHandle."}
   description: >-
-    Sets up a player's rail camera: it slides along a path of points (CamAddRailPoint) while watching the target.
+    Gets (making it on first use) a player's rail camera (type 9, one per player) and sets it up: name, target,
+    field of view, offset, near and far planes. It also resets the rail: no points, mode 0, the distance, height
+    and angle settings off and the field-of-view target to the new value. Add the rail's points with
+    CamAddRailPoint, then make it current with CameraMakeActive.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The reset (0x0013b2b8) also sets the globals 0x0050b2ac and 0x0050b2b0 to 1 (0x0050b2ac lets the leading rail
+    modes push the camera off the rail by the lead; 0x0050b2b0 not traced). The lead (CamLeadRail) is not reset.
+    Cameras: [the list](../../references/cameras.md#type).
   usage: {chunks: 27, calls: 48, boot: false, mission1: false, result_used: true, levels: [2, 3, 5, 81, 86, 93, 9, 51, 54, 55, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: CamLeadRail
   wrapper: 0x003666e8
   calls:
-    - {addr: 0x0011cf70}
+    - {addr: 0x0011cf70, name: Camera_SetRailLead}
+    - {addr: 0x0013e708, name: CamRail_PlaceLeading}
   args:
-    - {name: lead, lua: number, ctype: float, desc: "How far ahead along the rail the camera leads (metres, inferred)."}
-    - {name: value, lua: number, ctype: float, desc: "A second rail value (forced to 0 in some states)."}
-    - {name: mode, lua: boolean, default: true, desc: "true (default) or false: one of two rail modes."}
-    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+    - {name: lead, lua: number, ctype: float, desc: "Metres along the rail between the target's place on it and the camera (`+0x370`, eased into `+0x35c`)."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time in seconds to ease the lead to its new value (0 at once); forced to 0 while the current lead is negative."}
+    - {name: ahead, lua: boolean, default: true, desc: "true (default): the camera runs ahead of the target along the rail (mode 1); false: it trails behind (mode 2)."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player's rail camera."}
   description: >-
-    Sets how a rail camera leads its target along the rail.
-  evidence: inferred
-  depth: brief
+    Puts a player's existing rail camera into a leading mode. Each update the camera finds the rail segment the
+    target is level with, takes the target's projection onto it and stands `lead` metres from that point along the
+    rail, forward in mode 1 or backward in mode 2, clamped to the rail's ends, then looks at the target. With
+    several targets the farthest projection counts.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Placement: CamRail_PlaceLeading 0x0013e708; it raises the camera to target z + the height (CamModifyRail 1)
+    when that is above 0 and pushes it out of world collision. Switch 7 adds the lead to the look-at point
+    ([Camera: switches](../../research/camera.md#switches)). Mode 0 (after CamSetupRail, 0x0013d6b0) is not traced.
+    No rail camera: nothing.
   usage: {chunks: 9, calls: 15, boot: false, mission1: false, result_used: false, levels: [2, 81, 9, 51, 54, 84]}
 
 - name: CamAddRailPoint
   wrapper: 0x003667a0
   calls:
-    - {addr: 0x0011d098}
+    - {addr: 0x0011d098, name: Camera_AddRailPoint}
+    - {addr: 0x0013b780, name: CamRail_AppendPoint}
   args:
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} of the next rail point."}
-    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres of the next rail point; written back unchanged."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player's rail camera."}
   results:
-    - {lua: boolean, desc: "true (1) when the point was added, nil when there is no rail camera."}
+    - {lua: boolean, desc: "true (1) when the point was added, nil when the player has no rail camera yet."}
   description: >-
-    Appends a point to a rail camera's path.
+    Appends a point to a rail camera's path (points at `+0x1e0`, 16 bytes each; count `+0x350`). The rail is the
+    line through the points in the order added; the camera moves along it after its target.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    At most 16 points: further calls overwrite the 16th. With -1, a player without a rail camera is skipped.
   usage: {chunks: 27, calls: 132, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 9, 51, 54, 55, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: CamLockRail
@@ -405,16 +444,24 @@
 - name: CamModifyRail
   wrapper: 0x003668e8
   calls:
-    - {addr: 0x0011d228}
+    - {addr: 0x0011d228, name: Camera_ModifyRail}
+    - {addr: 0x0013d010, name: CamRail_Update}
+    - {addr: 0x0013f930, name: CamRail_EaseValue}
   args:
-    - {name: param, lua: number, ctype: unsigned, desc: "Which rail setting to change (0, 1, 2, 3, 4 ... 9; 2 is the field of view in the scripts)."}
-    - {name: value, lua: number, ctype: float, desc: "The new value."}
-    - {name: seconds, lua: number, ctype: float, desc: "Time to blend to it (inferred)."}
-    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player."}
+    - {name: param, lua: number, ctype: unsigned, desc: "Which setting: 0 distance kept from the target (m, 0 off), 1 height above the target (m, negative keeps the current), 2 field of view (degrees, negative ignored), 5 and 8 angles in degrees (below -360 switches them off), 9 the look-at offset's height (m); 3, 4, 6 and 7 are eased values not traced; others do nothing."}
+    - {name: value, lua: number, ctype: float, desc: "The new value, in the setting's unit."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time in seconds to ease linearly from the current value to the new one; 0 for at once."}
+    - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (default) for every player's rail camera."}
   description: >-
-    Changes one of a rail camera's settings, optionally over time.
-  evidence: inferred
-  depth: brief
+    Changes one of a rail camera's settings, reached over `seconds`: the rail update eases each current value to
+    its target by the remaining time every frame (targets at `+0x374`-`+0x398`, times at `+0x3a0`-`+0x3c4`).
+    Scripts mostly change the field of view (2) and the height and distance to frame a chase.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Setting 5 (0x0013fac8) switches the rail to mode 3 (placement 0x0013dcc8, not traced) and back to mode 0 when
+    switched off; setting 8 (0x0013fb30) turns 0 into -0.05°. When an angle is switched on its current value starts
+    from the camera's present angle (0x0013f9b0). Setting 0 starts from the present distance.
   usage: {chunks: 26, calls: 132, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 51, 54, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: CamSetupHood
@@ -583,16 +630,24 @@
 - name: CamCanSee
   wrapper: 0x00367160
   calls:
-    - {addr: 0x0011dd78}
+    - {addr: 0x0011dd78, name: Camera_CanSeeObject}
+    - {addr: 0x001202e8, name: Camera_AnyPlayerCanSeePoint}
+    - {addr: 0x00122548, name: Camera_CanSeePoint}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of a human or object."}
-    - {name: margin, lua: number, ctype: float, desc: "A size or margin for the visibility test."}
+    - {name: range, lua: number, ctype: float, desc: "Greatest distance from the camera in metres at which the object counts as seen; capped at the camera's far distance, and 0 or less means the far distance."}
   results:
-    - {lua: boolean, desc: "true (1) when any player's current camera can see a point just above the object, else nil."}
+    - {lua: boolean, desc: "true when any player's camera can see a point just above the object, false otherwise (also when the handle does not resolve or there is no player camera)."}
   description: >-
-    Tests whether an object is in view of a player's camera (used to spawn enemies out of sight).
+    Tests whether a point 0.3 m above the object's position (1 m for an object whose class flags have 0x40) is seen by
+    any player's camera: within `range`, inside the camera's view, and with no collision-mesh hit on the ray from the
+    camera to the point. Scripts use it to spawn enemies out of sight.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Cameras are per player (table 0x005d9150, count 0x0011eae0); view test is camera vtable `+0x16c` (2 = outside);
+    other humans and objects do not block the ray, only the world collision mesh. Class flag 0x40 is inferred to mark
+    humans. The result was described as nil when false before; it is pushed as a boolean.
   usage: {chunks: 19, calls: 179, boot: false, mission1: false, result_used: true, levels: [93, 9, 54, 84, 82, 60, 61, 62, 63, 64]}
 
 - name: CamEnable

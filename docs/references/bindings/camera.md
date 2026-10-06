@@ -18,7 +18,7 @@ entry are on the [masterlist](index.md).
 | [`CamEnable`](#camenable) | - | 85 | no | yes | confirmed (code) |
 | [`CameraCreateFixed`](#cameracreatefixed) | number | 9 | no | no | confirmed (code) |
 | [`CameraCreateLocked`](#cameracreatelocked) | number | 86 | yes | yes | confirmed (code) |
-| [`CameraCreateThird`](#cameracreatethird) | number | 2 | no | no | inferred |
+| [`CameraCreateThird`](#cameracreatethird) | number | 2 | no | no | confirmed (code) |
 | [`CameraCreateWin`](#cameracreatewin) | number | 33 | no | no | confirmed (code) |
 | [`CameraGetActive`](#cameragetactive) | number | 5 | no | no | confirmed (code) |
 | [`CameraMakeActive`](#cameramakeactive) | - | 193 | yes | yes | confirmed (code) |
@@ -29,10 +29,10 @@ entry are on the [masterlist](index.md).
 | [`CamGetLastTarget`](#camgetlasttarget) | number | 0 | no | no | inferred |
 | [`CamGetPos`](#camgetpos) | usertype | 2 | no | no | confirmed (code) |
 | [`CamGhostDoor`](#camghostdoor) | - | 2 | no | no | inferred |
-| [`CamLeadRail`](#camleadrail) | - | 9 | no | no | inferred |
+| [`CamLeadRail`](#camleadrail) | - | 9 | no | no | confirmed (code) |
 | [`CamLockLocked`](#camlocklocked) | - | 1 | no | no | confirmed (code) |
 | [`CamLockRail`](#camlockrail) | - | 15 | no | no | inferred |
-| [`CamModifyRail`](#cammodifyrail) | - | 26 | no | no | inferred |
+| [`CamModifyRail`](#cammodifyrail) | - | 26 | no | no | confirmed (code) |
 | [`CamRegisterObject`](#camregisterobject) | - | 0 | no | no | inferred |
 | [`CamReversePoizo`](#camreversepoizo) | boolean | 2 | no | no | inferred |
 | [`CamSetFollowAngle`](#camsetfollowangle) | - | 76 | no | yes | confirmed (code) |
@@ -118,15 +118,20 @@ CamAddRailPoint(pos, player) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} of the next rail point. |
-| 2 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} in metres of the next rail point; written back unchanged. |
+| 2 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player's rail camera. |
 
-**Returns** boolean (1 for true, nil for false): true (1) when the point was added, nil when there is no rail camera.
+**Returns** boolean (1 for true, nil for false): true (1) when the point was added, nil when the player has no rail
+camera yet.
 
-Appends a point to a rail camera's path.
+Appends a point to a rail camera's path (points at `+0x1e0`, 16 bytes each; count `+0x350`). The rail is the line
+through the points in the order added; the camera moves along it after its target.
 
-- **Evidence:** confirmed (code) at `0x0011d098`; detail: brief
-- **Wrapper** `0x003667a0` (registered by `RegisterBindings`); **calls** `0x0011d098`
+**Notes.** At most 16 points: further calls overwrite the 16th. With -1, a player without a rail camera is skipped.
+
+- **Evidence:** confirmed (code) at `0x0011d098`, `0x0013b780`; detail: traced
+- **Wrapper** `0x003667a0` (registered by `RegisterBindings`); **calls** `0x0011d098` `Camera_AddRailPoint`,
+  `0x0013b780` `CamRail_AppendPoint`
 - **Used by** 27 of 467 script chunks (132 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 19 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -153,21 +158,28 @@ Sets which button shows the reverse camera (0x0050b230).
 ## CamCanSee {#camcansee}
 
 ```lua
-CamCanSee(object, margin) -> boolean
+CamCanSee(object, range) -> boolean
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of a human or object. |
-| 2 | `margin` | number (single precision) | A size or margin for the visibility test. |
+| 2 | `range` | number (single precision) | Greatest distance from the camera in metres at which the object counts as seen; capped at the camera's far distance, and 0 or less means the far distance. |
 
-**Returns** boolean (1 for true, nil for false): true (1) when any player's current camera can see a point just above
-the object, else nil.
+**Returns** boolean (1 for true, nil for false): true when any player's camera can see a point just above the object,
+false otherwise (also when the handle does not resolve or there is no player camera).
 
-Tests whether an object is in view of a player's camera (used to spawn enemies out of sight).
+Tests whether a point 0.3 m above the object's position (1 m for an object whose class flags have 0x40) is seen by any
+player's camera: within `range`, inside the camera's view, and with no collision-mesh hit on the ray from the camera to
+the point. Scripts use it to spawn enemies out of sight.
 
-- **Evidence:** confirmed (code) at `0x0011dd78`; detail: brief
-- **Wrapper** `0x00367160` (registered by `RegisterBindings`); **calls** `0x0011dd78`
+**Notes.** Cameras are per player (table 0x005d9150, count 0x0011eae0); view test is camera vtable `+0x16c` (2 =
+outside); other humans and objects do not block the ray, only the world collision mesh. Class flag 0x40 is inferred to
+mark humans. The result was described as nil when false before; it is pushed as a boolean.
+
+- **Evidence:** confirmed (code) at `0x0011dd78`, `0x001202e8`, `0x00122548`; detail: traced
+- **Wrapper** `0x00367160` (registered by `RegisterBindings`); **calls** `0x0011dd78` `Camera_CanSeeObject`,
+  `0x001202e8` `Camera_AnyPlayerCanSeePoint`, `0x00122548` `Camera_CanSeePoint`
 - **Used by** 19 of 467 script chunks (179 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 10 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -231,20 +243,27 @@ CameraCreateFixed(name, target, pos, fov, offset, near, far) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Camera name. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the human or object to look at. |
-| 3 | `pos` | table of 3 numbers (t[1]..t[3]) | Camera position {x, y, z} in metres. |
-| 4 | `fov` | number (single precision) | Field of view in degrees. |
-| 5 | `offset` | table of 3 numbers (t[1]..t[3]) | Look-at offset {x, y, z} from the target. |
-| 6 | `near` | number (single precision) | Near clip distance. |
-| 7 | `far` | number (single precision) | Far clip distance, at most 150. |
+| 1 | `name` | string | Camera name (passed to the camera factory). |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of a human added to the shared camera target list (as CamTarget mode 0) if it is not there and the list has room (4); a bad handle makes nothing. |
+| 3 | `pos` | table of 3 numbers (t[1]..t[3]) | Camera position {x, y, z} in metres (placed through slot `+0x1bc`); written back unchanged. |
+| 4 | `fov` | number (single precision) | Field of view in degrees (slot `+0x194`). |
+| 5 | `offset` | table of 3 numbers (t[1]..t[3]) | Offset {x, y, z} in metres added to the look-at point (`+0x1e0`); written back unchanged. |
+| 6 | `near` | number (single precision) | Near clip distance in metres (slot `+0x1a4`). |
+| 7 | `far` | number (single precision) | Far clip distance in metres, capped at 150 (slot `+0x1ac`). |
 
-**Returns** number: The camera's handle, or NilHandle.
+**Returns** number: The new camera's handle, or NilHandle when the target is bad or no camera could be made.
 
-Creates a fixed camera: it stays at one position and turns to keep a target in view.
+Creates a fixed camera (type 0, `Cam_Fixed`) at `pos` that turns each update to look at the shared camera target list:
+the average position of the listed humans that still count, plus `offset`. The target is put on that list rather than
+stored in the camera, so the camera also frames every other listed human (normally the players). It is not made current
+here.
 
-- **Evidence:** confirmed (code) at `0x0011c6b8`; detail: brief
-- **Wrapper** `0x00366140` (registered by `RegisterBindings`); **calls** `0x0011c6b8`
+**Notes.** With an empty list the camera keeps its last view; when two list counters are equal (0x0050b198 ==
+0x0050b19c) it looks at one chosen entry instead of the average. The target stays on the list after the camera is gone.
+
+- **Evidence:** confirmed (code) at `0x0011c6b8`, `0x001222b0`, `0x00124690`, `0x00124000`; detail: traced
+- **Wrapper** `0x00366140` (registered by `RegisterBindings`); **calls** `0x0011c6b8` `Camera_CreateFixed`, `0x001222b0`
+  `CameraTargets_Add`, `0x00124690` `CamFixed_Update`, `0x00124000` `CamFixed_ComputeLookAt`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -288,22 +307,29 @@ CameraCreateThird(name, target, fov, distance, height, angle, offset, near, far)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Camera name. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to follow. |
-| 3 | `fov` | number (single precision) | Field of view in degrees. |
-| 4 | `distance` | number (single precision) | Distance behind the target (inferred). |
-| 5 | `height` | number (single precision) | Height (inferred). |
-| 6 | `angle` | number (single precision) | Heading offset in degrees (inferred). |
-| 7 | `offset` | table of 3 numbers (t[1]..t[3]) | Look-at offset {x, y, z} from the target. |
-| 8 | `near` | number (single precision) | Near clip distance. |
-| 9 | `far` | number (single precision) | Far clip distance, at most 150. |
+| 1 | `name` | string | Camera name (passed to the camera factory). |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the human (or object) to follow, kept at camera `+0x1e0`; a bad handle makes nothing. |
+| 3 | `fov` | number (single precision) | Field of view in degrees (vtable slot `+0x194`). |
+| 4 | `distance` | number (single precision) | Metres behind the target's facing (`+0x210`; default 5.1). |
+| 5 | `height` | number (single precision) | Metres above the look-at point (`+0x214`; default 1.8). |
+| 6 | `angle` | number (single precision) | Degrees the camera is swung about the vertical through the look-at point (a quaternion at `+0x1f0`); 0 is straight behind. |
+| 7 | `offset` | table of 3 numbers (t[1]..t[3]) | Look-at offset {x, y, z} in metres, in the target's frame (`+0x220`; default (0, 0, 1.5)); written back unchanged. |
+| 8 | `near` | number (single precision) | Near clip distance in metres (slot `+0x1a4`). |
+| 9 | `far` | number (single precision) | Far clip distance in metres, capped at 150 (slot `+0x1ac`). |
 
-**Returns** number: The camera's handle, or NilHandle.
+**Returns** number: The new camera's handle, or NilHandle when the target is bad or no camera could be made.
 
-Creates a third-person camera that follows a target from a set distance and height.
+Creates a third-person camera (type 16, `Cam_3rdPerson`) on a target: each update its look-at point is the target's
+position plus `offset`, its orientation eases 10% toward the target's, and it sits `distance` behind that orientation
+and `height` above, swung by `angle` round the look-at point. Used for the chase and the Chatterbox shots; it is not
+made current here.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00365f28` (registered by `RegisterBindings`); **calls** `0x0011be18`
+**Notes.** The camera is not added to the shared target list, and CamDelete does not delete type 16. Created by the
+factory 0x0011e1b0 with player 0; shake is applied (0x00121298) with no position offset.
+
+- **Evidence:** confirmed (code) at `0x0011be18`, `0x001207b0`, `0x001205e8`; detail: traced
+- **Wrapper** `0x00365f28` (registered by `RegisterBindings`); **calls** `0x0011be18` `Camera_CreateThird`, `0x001207b0`
+  `Cam3rdPerson_SetAngle`, `0x001205e8` `Cam3rdPerson_Update`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -542,22 +568,31 @@ Sets render flag 0x200 on both parts of a door, inferred to let the camera see t
 ## CamLeadRail {#camleadrail}
 
 ```lua
-CamLeadRail(lead, value, mode, player)
+CamLeadRail(lead, seconds, ahead, player)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `lead` | number (single precision) | How far ahead along the rail the camera leads (metres, inferred). |
-| 2 | `value` | number (single precision) | A second rail value (forced to 0 in some states). |
-| 3 | `mode` | boolean (nil or 0 is false); default true | true (default) or false: one of two rail modes. |
-| 4 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player. |
+| 1 | `lead` | number (single precision) | Metres along the rail between the target's place on it and the camera (`+0x370`, eased into `+0x35c`). |
+| 2 | `seconds` | number (single precision) | Time in seconds to ease the lead to its new value (0 at once); forced to 0 while the current lead is negative. |
+| 3 | `ahead` | boolean (nil or 0 is false); default true | true (default): the camera runs ahead of the target along the rail (mode 1); false: it trails behind (mode 2). |
+| 4 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player's rail camera. |
 
 **Returns** nothing.
 
-Sets how a rail camera leads its target along the rail.
+Puts a player's existing rail camera into a leading mode. Each update the camera finds the rail segment the target is
+level with, takes the target's projection onto it and stands `lead` metres from that point along the rail, forward in
+mode 1 or backward in mode 2, clamped to the rail's ends, then looks at the target. With several targets the farthest
+projection counts.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003666e8` (registered by `RegisterBindings`); **calls** `0x0011cf70`
+**Notes.** Placement: CamRail_PlaceLeading 0x0013e708; it raises the camera to target z + the height (CamModifyRail 1)
+when that is above 0 and pushes it out of world collision. Switch 7 adds the lead to the look-at point ([Camera:
+switches](../../research/camera.md#switches)). Mode 0 (after CamSetupRail, 0x0013d6b0) is not traced. No rail camera:
+nothing.
+
+- **Evidence:** confirmed (code) at `0x0011cf70`, `0x0013e708`; detail: traced
+- **Wrapper** `0x003666e8` (registered by `RegisterBindings`); **calls** `0x0011cf70` `Camera_SetRailLead`, `0x0013e708`
+  `CamRail_PlaceLeading`
 - **Used by** 9 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -619,17 +654,24 @@ CamModifyRail(param, value, seconds, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `param` | number, truncated to an unsigned integer | Which rail setting to change (0, 1, 2, 3, 4 ... 9; 2 is the field of view in the scripts). |
-| 2 | `value` | number (single precision) | The new value. |
-| 3 | `seconds` | number (single precision) | Time to blend to it (inferred). |
-| 4 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player. |
+| 1 | `param` | number, truncated to an unsigned integer | Which setting: 0 distance kept from the target (m, 0 off), 1 height above the target (m, negative keeps the current), 2 field of view (degrees, negative ignored), 5 and 8 angles in degrees (below -360 switches them off), 9 the look-at offset's height (m); 3, 4, 6 and 7 are eased values not traced; others do nothing. |
+| 2 | `value` | number (single precision) | The new value, in the setting's unit. |
+| 3 | `seconds` | number (single precision) | Time in seconds to ease linearly from the current value to the new one; 0 for at once. |
+| 4 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player's rail camera. |
 
 **Returns** nothing.
 
-Changes one of a rail camera's settings, optionally over time.
+Changes one of a rail camera's settings, reached over `seconds`: the rail update eases each current value to its target
+by the remaining time every frame (targets at `+0x374`-`+0x398`, times at `+0x3a0`-`+0x3c4`). Scripts mostly change the
+field of view (2) and the height and distance to frame a chase.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003668e8` (registered by `RegisterBindings`); **calls** `0x0011d228`
+**Notes.** Setting 5 (0x0013fac8) switches the rail to mode 3 (placement 0x0013dcc8, not traced) and back to mode 0 when
+switched off; setting 8 (0x0013fb30) turns 0 into -0.05°. When an angle is switched on its current value starts from the
+camera's present angle (0x0013f9b0). Setting 0 starts from the present distance.
+
+- **Evidence:** confirmed (code) at `0x0011d228`, `0x0013d010`, `0x0013f930`; detail: traced
+- **Wrapper** `0x003668e8` (registered by `RegisterBindings`); **calls** `0x0011d228` `Camera_ModifyRail`, `0x0013d010`
+  `CamRail_Update`, `0x0013f930` `CamRail_EaseValue`
 - **Used by** 26 of 467 script chunks (132 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -972,19 +1014,27 @@ CamSetupRail(name, target, fov, offset, near, far, player) -> number
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `name` | string | Camera name. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to follow. |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to follow; a bad handle makes nothing and returns NilHandle. |
 | 3 | `fov` | number (single precision) | Field of view in degrees. |
-| 4 | `offset` | table of 3 numbers (t[1]..t[3]) | Look-at offset {x, y, z} from the target. |
-| 5 | `near` | number (single precision) | Near clip distance. |
-| 6 | `far` | number (single precision) | Far clip distance, at most 150. |
-| 7 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player. |
+| 4 | `offset` | table of 3 numbers (t[1]..t[3]) | Look-at offset {x, y, z} in metres from the target (`+0x320`); its z is also the starting value of CamModifyRail setting 9. Written back unchanged. |
+| 5 | `near` | number (single precision) | Near clip distance in metres. |
+| 6 | `far` | number (single precision) | Far clip distance in metres, at most 150. |
+| 7 | `player` | number, truncated to an integer; default -1 | Player index (0 or 1); -1 (default) sets up player 0's rail camera with the name and target and copies the other settings to every other player's. |
 
-**Returns** number: The rail camera's handle, or NilHandle.
+**Returns** number: The handle of the player's rail camera (player 0's for -1), or NilHandle.
 
-Sets up a player's rail camera: it slides along a path of points (CamAddRailPoint) while watching the target.
+Gets (making it on first use) a player's rail camera (type 9, one per player) and sets it up: name, target, field of
+view, offset, near and far planes. It also resets the rail: no points, mode 0, the distance, height and angle settings
+off and the field-of-view target to the new value. Add the rail's points with CamAddRailPoint, then make it current with
+CameraMakeActive.
 
-- **Evidence:** confirmed (code) at `0x0011cce8`; detail: brief
-- **Wrapper** `0x00366518` (registered by `RegisterBindings`); **calls** `0x0011cce8`
+**Notes.** The reset (0x0013b2b8) also sets the globals 0x0050b2ac and 0x0050b2b0 to 1 (0x0050b2ac lets the leading rail
+modes push the camera off the rail by the lead; 0x0050b2b0 not traced). The lead (CamLeadRail) is not reset. Cameras:
+[the list](../../references/cameras.md#type).
+
+- **Evidence:** confirmed (code) at `0x0011cce8`, `0x0011fbb0`, `0x0013b2b8`; detail: traced
+- **Wrapper** `0x00366518` (registered by `RegisterBindings`); **calls** `0x0011cce8` `Camera_SetupRail`, `0x0011fbb0`
+  `Camera_GetPlayerRail`, `0x0013b2b8` `CamRail_Reset`
 - **Used by** 27 of 467 script chunks (48 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 19 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented

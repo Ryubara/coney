@@ -14,7 +14,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`ActLookAt`](#actlookat) | - | 37 | no | yes | confirmed (code) |
 | [`ActMoveTo`](#actmoveto) | - | 0 | no | no | inferred |
 | [`ActTurn`](#actturn) | - | 0 | no | no | inferred |
-| [`ActTurnTo`](#actturnto) | - | 1 | no | no | inferred |
+| [`ActTurnTo`](#actturnto) | - | 1 | no | no | confirmed (code) |
 | [`ActTurnToDir`](#actturntodir) | - | 3 | no | no | confirmed (code) |
 | [`BrCanUseWorldFlags`](#brcanuseworldflags) | - | 6 | yes | no | confirmed (code) |
 | [`BrClearBackoff`](#brclearbackoff) | - | 1 | yes | yes | confirmed (code) |
@@ -38,7 +38,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`BrSetMeleeRange`](#brsetmeleerange) | - | 0 | no | no | inferred |
 | [`BrSetNumAttackSlots`](#brsetnumattackslots) | - | 0 | no | no | inferred |
 | [`BrSetNumFollowSlots`](#brsetnumfollowslots) | - | 3 | yes | yes | confirmed (code) |
-| [`BrSetPedType`](#brsetpedtype) | - | 12 | no | no | inferred |
+| [`BrSetPedType`](#brsetpedtype) | - | 12 | no | no | confirmed (code) |
 | [`BrSetPlayerResponse`](#brsetplayerresponse) | - | 2 | no | no | inferred |
 | [`BrSetReactToViolence`](#brsetreacttoviolence) | - | 33 | yes | no | confirmed (code) |
 | [`BrSetThreatResponse`](#brsetthreatresponse) | - | 43 | no | no | confirmed (code) |
@@ -49,11 +49,11 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalAddressPerson`](#goaladdressperson) | - | 9 | no | yes | confirmed (code) |
 | [`GoalAreaWalker`](#goalareawalker) | - | 13 | no | no | confirmed (code) |
 | [`GoalArrestHuman`](#goalarresthuman) | - | 1 | no | no | inferred |
-| [`GoalAvoidEnemies`](#goalavoidenemies) | - | 2 | no | no | inferred |
+| [`GoalAvoidEnemies`](#goalavoidenemies) | - | 2 | no | no | confirmed (code) |
 | [`GoalBackoff`](#goalbackoff) | - | 8 | yes | yes | confirmed (code) |
 | [`GoalBigBrawler`](#goalbigbrawler) | - | 0 | no | no | speculative |
 | [`GoalBigFighter`](#goalbigfighter) | - | 0 | no | no | speculative |
-| [`GoalBigLedgeThrower`](#goalbigledgethrower) | - | 1 | no | no | inferred |
+| [`GoalBigLedgeThrower`](#goalbigledgethrower) | - | 1 | no | no | confirmed (code) |
 | [`GoalBigThrower`](#goalbigthrower) | - | 0 | no | no | speculative |
 | [`GoalBossDiego`](#goalbossdiego) | - | 0 | no | no | speculative |
 | [`GoalBossLizzies`](#goalbosslizzies) | - | 0 | no | no | speculative |
@@ -66,33 +66,33 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalCopperPatrol`](#goalcopperpatrol) | - | 2 | no | no | inferred |
 | [`GoalCopperRespond`](#goalcopperrespond) | - | 0 | no | no | speculative |
 | [`GoalCopRespond`](#goalcoprespond) | - | 0 | no | no | inferred |
-| [`GoalCower`](#goalcower) | - | 4 | no | no | inferred |
+| [`GoalCower`](#goalcower) | - | 4 | no | no | confirmed (code) |
 | [`GoalDealer`](#goaldealer) | - | 21 | no | yes | confirmed (code) |
-| [`GoalDevilRun`](#goaldevilrun) | - | 6 | no | no | inferred |
-| [`GoalEngageEnemy`](#goalengageenemy) | - | 4 | no | no | inferred |
+| [`GoalDevilRun`](#goaldevilrun) | - | 6 | no | no | confirmed (code) |
+| [`GoalEngageEnemy`](#goalengageenemy) | - | 4 | no | no | confirmed (code) |
 | [`GoalFight`](#goalfight) | - | 15 | no | yes | confirmed (code) |
 | [`GoalFollowFormation`](#goalfollowformation) | - | 1 | no | no | inferred |
-| [`GoalFollowObject`](#goalfollowobject) | - | 2 | no | no | inferred |
+| [`GoalFollowObject`](#goalfollowobject) | - | 2 | no | no | confirmed (code) |
 | [`GoalFollowPlayer`](#goalfollowplayer) | - | 3 | yes | no | confirmed (code) |
 | [`GoalGetItem`](#goalgetitem) | - | 2 | no | no | inferred |
 | [`GoalGrabTarget`](#goalgrabtarget) | - | 2 | no | no | confirmed (code) |
-| [`GoalGuardFlag`](#goalguardflag) | - | 4 | no | no | inferred |
+| [`GoalGuardFlag`](#goalguardflag) | - | 4 | no | no | confirmed (code) |
 | [`GoalHoldPosition`](#goalholdposition) | - | 1 | no | no | inferred |
 | [`GoalHooker`](#goalhooker) | - | 0 | no | no | speculative |
 | [`GoalJoinAnimation`](#goaljoinanimation) | - | 2 | yes | yes | confirmed (code) |
 | [`GoalJoinCinematic`](#goaljoincinematic) | - | 7 | yes | yes | confirmed (code) |
 | [`GoalJoinFixedScene`](#goaljoinfixedscene) | - | 2 | yes | yes | confirmed (code) |
 | [`GoalJoinScene`](#goaljoinscene) | - | 0 | no | no | inferred |
-| [`GoalLeadChase`](#goalleadchase) | - | 1 | no | no | inferred |
+| [`GoalLeadChase`](#goalleadchase) | - | 1 | no | no | confirmed (code) |
 | [`GoalLutherShooter`](#goalluthershooter) | - | 1 | no | no | inferred |
-| [`GoalManWeaponPile`](#goalmanweaponpile) | - | 3 | no | no | inferred |
+| [`GoalManWeaponPile`](#goalmanweaponpile) | - | 3 | no | no | confirmed (code) |
 | [`GoalMark`](#goalmark) | - | 1 | no | no | inferred |
 | [`GoalMelee`](#goalmelee) | - | 1 | no | no | confirmed (code) |
 | [`GoalMoveToExitFlag`](#goalmovetoexitflag) | - | 10 | no | no | confirmed (code) |
 | [`GoalMoveToFlag`](#goalmovetoflag) | - | 84 | no | yes | confirmed (code) |
-| [`GoalMoveToHuman`](#goalmovetohuman) | - | 3 | no | no | inferred |
+| [`GoalMoveToHuman`](#goalmovetohuman) | - | 3 | no | no | confirmed (code) |
 | [`GoalMoveToUseFlag`](#goalmovetouseflag) | - | 28 | no | yes | confirmed (code) |
-| [`GoalObjectThrower`](#goalobjectthrower) | - | 4 | no | no | inferred |
+| [`GoalObjectThrower`](#goalobjectthrower) | - | 4 | no | no | confirmed (code) |
 | [`GoalPathBlocker`](#goalpathblocker) | - | 0 | no | no | inferred |
 | [`GoalPeddler`](#goalpeddler) | - | 4 | no | no | confirmed (code) |
 | [`GoalPedestrianFlag`](#goalpedestrianflag) | - | 0 | no | no | inferred |
@@ -101,32 +101,32 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalPlayDynAnimation`](#goalplaydynanimation) | - | 22 | no | yes | confirmed (code) |
 | [`GoalPlayDynIdle`](#goalplaydynidle) | - | 21 | no | no | confirmed (code) |
 | [`GoalPlayGenAnim`](#goalplaygenanim) | - | 4 | no | no | confirmed (code) |
-| [`GoalRiot`](#goalriot) | - | 8 | no | no | inferred |
-| [`GoalRunCarrotRun`](#goalruncarrotrun) | - | 4 | no | no | inferred |
+| [`GoalRiot`](#goalriot) | - | 8 | no | no | confirmed (code) |
+| [`GoalRunCarrotRun`](#goalruncarrotrun) | - | 4 | no | no | confirmed (code) |
 | [`GoalShopkeeper`](#goalshopkeeper) | - | 4 | no | no | confirmed (code) |
 | [`GoalStandIdle`](#goalstandidle) | - | 0 | no | no | inferred |
 | [`GoalStartParlay`](#goalstartparlay) | boolean | 0 | no | no | speculative |
-| [`GoalStationaryThrower`](#goalstationarythrower) | - | 5 | no | no | inferred |
-| [`GoalTag`](#goaltag) | - | 4 | no | no | inferred |
+| [`GoalStationaryThrower`](#goalstationarythrower) | - | 5 | no | no | confirmed (code) |
+| [`GoalTag`](#goaltag) | - | 4 | no | no | confirmed (code) |
 | [`GoalTagEx`](#goaltagex) | - | 0 | no | no | inferred |
 | [`GoalThrowObject`](#goalthrowobject) | - | 3 | no | no | confirmed (code) |
 | [`GoalTrackHuman`](#goaltrackhuman) | - | 1 | no | yes | confirmed (code) |
 | [`GoalTravelPath`](#goaltravelpath) | - | 6 | no | no | confirmed (code) |
-| [`GoalTravelPath2`](#goaltravelpath2) | - | 1 | no | no | inferred |
+| [`GoalTravelPath2`](#goaltravelpath2) | - | 1 | no | no | confirmed (code) |
 | [`SetGlobalPedRules`](#setglobalpedrules) | - | 1 | yes | no | confirmed (code) |
 | [`SetInterrogateParam`](#setinterrogateparam) | - | 1 | no | yes | confirmed (code) |
 | [`TacticAddress`](#tacticaddress) | - | 0 | no | no | speculative |
 | [`TacticAttack`](#tacticattack) | - | 54 | no | no | confirmed (code) |
 | [`TacticAvoidEnemies`](#tacticavoidenemies) | - | 25 | no | no | confirmed (code) |
 | [`TacticBoss`](#tacticboss) | - | 0 | no | no | speculative |
-| [`TacticBossScenarioA`](#tacticbossscenarioa) | - | 1 | no | no | inferred |
+| [`TacticBossScenarioA`](#tacticbossscenarioa) | - | 1 | no | no | confirmed (code) |
 | [`TacticBossScenarioB`](#tacticbossscenariob) | - | 2 | no | no | inferred |
 | [`TacticBossScenarioC`](#tacticbossscenarioc) | - | 1 | no | no | inferred |
 | [`TacticBossScenarioD`](#tacticbossscenariod) | - | 1 | no | no | inferred |
 | [`TacticBossScenarioE`](#tacticbossscenarioe) | - | 1 | no | no | inferred |
 | [`TacticBossScenarioF`](#tacticbossscenariof) | - | 1 | no | no | inferred |
-| [`TacticBossScenarioG`](#tacticbossscenariog) | - | 1 | no | no | inferred |
-| [`TacticBossScenarioH`](#tacticbossscenarioh) | - | 1 | no | no | inferred |
+| [`TacticBossScenarioG`](#tacticbossscenariog) | - | 1 | no | no | confirmed (code) |
+| [`TacticBossScenarioH`](#tacticbossscenarioh) | - | 1 | no | no | confirmed (code) |
 | [`TacticClear`](#tacticclear) | - | 92 | yes | yes | confirmed (code) |
 | [`TacticConfront`](#tacticconfront) | - | 26 | no | no | confirmed (code) |
 | [`TacticCrowd`](#tacticcrowd) | - | 31 | no | yes | confirmed (code) |
@@ -152,7 +152,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`TacticTrigger`](#tactictrigger) | - | 3 | no | no | confirmed (code) |
 | [`TacticUseFlag`](#tacticuseflag) | - | 21 | no | no | confirmed (code) |
 | [`TacticVandalize`](#tacticvandalize) | - | 20 | no | no | confirmed (code) |
-| [`TacticVandalizeCars`](#tacticvandalizecars) | - | 1 | no | no | inferred |
+| [`TacticVandalizeCars`](#tacticvandalizecars) | - | 1 | no | no | confirmed (code) |
 | [`TacticWalkinTall`](#tacticwalkintall) | - | 18 | no | no | confirmed (code) |
 | [`TacticWander`](#tacticwander) | - | 19 | no | no | confirmed (code) |
 
@@ -279,17 +279,24 @@ ActTurnTo(human, target, turnSpeed, timeMs)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `target` | userdata (only read when given) | Something to face, passed as a Lua userdata (the one call passes a local value). |
-| 3 | `turnSpeed` | number (single precision) | Largest turn per update (the call passes 0.1). |
-| 4 | `timeMs` | number, truncated to an integer; default -1 | A time limit in milliseconds; -1 (the default) for none (inferred). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human who turns; a bad handle does nothing. |
+| 2 | `target` | userdata (only read when given) | The point to face, a vector userdata (its four floats are copied into the action at `+0x20`); read only when more than one argument is passed. |
+| 3 | `turnSpeed` | number (single precision) | A turn value stored in the action (`+0x10`), as in ActLookAt; its update does not read it. The one call passes 0.1. |
+| 4 | `timeMs` | number, truncated to an integer; default -1 | The action's start delay in ms (action `+0x04`); -1 (the default) is a random 0-500 ms, as in ActLookAt. |
 
 **Returns** nothing.
 
-Queues an action that turns the human to face a target.
+Queues a turn action on the human's brain that, when it starts, takes the heading from the human to the given point and
+then writes it to the brain's wanted heading (`+0x110`) each update until the human faces it within 15 degrees (or 3 s
+pass); then it ends. It is ActLookAt with a fixed world point instead of an object.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00364640` (registered by `RegisterBindings`); **calls** `0x002fdf70` `Action_TurnToTarget`
+**Notes.** The heading is taken once at the start (0x002fe058), so a point is not tracked if the human is pushed. Update
+0x002fdd08 is shared with ActLookAt; the start is refused (action ends at once) when the human rejects message
+0x01c16a40 (0x002fdc68).
+
+- **Evidence:** confirmed (code) at `0x002fdf70`, `0x002fe000`, `0x002fe058`; detail: traced
+- **Wrapper** `0x00364640` (registered by `RegisterBindings`); **calls** `0x002fdf70` `Action_TurnToTarget`,
+  `0x002fe000` `TurnToPointAction_Init`, `0x002fe058` `TurnToPointAction_Begin`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
@@ -297,26 +304,28 @@ Queues an action that turns the human to face a target.
 ## ActTurnToDir {#actturntodir}
 
 ```lua
-ActTurnToDir(human, heading, turnSpeed, timeMs)
+ActTurnToDir(human, heading, turnSpeed, delayMs)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `heading` | number, truncated to an integer | World heading to face, in degrees (scripts use values such as 250 and 270). |
-| 3 | `turnSpeed` | number (single precision) | Largest turn per update (scripts use 0.1 and 1). |
-| 4 | `timeMs` | number, truncated to an integer; default -1 | A time limit in milliseconds; -1 (the default) for none (inferred). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `heading` | number, truncated to an integer | World heading to face, whole degrees (kept as 16 bits; scripts use values such as 250 and 270). |
+| 3 | `turnSpeed` | number (single precision) | Stored at action `+0x10` and never read (scripts use 0.1 and 1). |
+| 4 | `delayMs` | number, truncated to an integer; default -1 | Start delay in milliseconds (action `+0x04`); -1 (the default) for a random 0-500 ms. |
 
 **Returns** nothing.
 
-Queues a turn action on the human's brain (0x002fdc28) towards a world heading in degrees, turning at most `turnSpeed`
-per update.
+Queues a turn action on the human's brain towards a world heading (converted to radians, action `+0x0c`). After the
+delay the human turns, through brain `+0x110`, until it faces the heading within 15°, then the action ends; it gives up
+after 3 s ([AI: turning](../../research/ai.md#look-at)).
 
-**Notes.** 0x002fdb90 allocates the action (`Brain_AllocAction`); the same turn action serves `GoalPlayDynIdle` and
-`GoalAreaWalker` ([AI](../../research/ai.md#look-at)).
+**Notes.** The base turn action (vtable 0x00543160: Start 0x002fdc68, Update 0x002fdd08). It is an action, not a goal,
+so it runs after any actions already queued; a human busy in some states (record `+0x08` has any of 0x1c16a40) skips it.
 
-- **Evidence:** confirmed (code) at `0x002fdb90`; detail: brief
-- **Wrapper** `0x00364708` (registered by `RegisterBindings`); **calls** `0x002fdb90` `Action_TurnToHeading`
+- **Evidence:** confirmed (code) at `0x002fdb90`, `0x002fdc28`; detail: traced
+- **Wrapper** `0x00364708` (registered by `RegisterBindings`); **calls** `0x002fdb90` `Action_TurnToHeading`,
+  `0x002fdc28` `TurnAction_Init`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -472,14 +481,18 @@ BrFlushGoals(human)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle or one that is not a human does nothing. |
 
 **Returns** nothing.
 
-Pops every goal off a human's goal stack, ending each one, but leaves already queued actions to finish.
+Pops every goal off the human's goal stack (top index brain `+0x2c` down to -1, then `+0x2d` = -1), ending each one, so
+each goal's script callback fires with "completed" 0. Unlike BrFlush it leaves the queued actions to finish.
 
-- **Evidence:** confirmed (code) at `0x00292618`; detail: brief
-- **Wrapper** `0x0035eea0` (registered by `RegisterBindings`); **calls** `0x00292618` `Brain_FlushGoals`
+**Notes.** With no goal left the brain falls back to its idle behaviour ([AI](../../research/ai.md)).
+
+- **Evidence:** confirmed (code) at `0x00292618`, `0x0028d910`; detail: traced
+- **Wrapper** `0x0035eea0` (registered by `RegisterBindings`); **calls** `0x00292618` `Brain_FlushGoals`, `0x0028d910`
+  `Brain_ClearGoals`
 - **Used by** 40 of 467 script chunks (84 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
@@ -642,16 +655,20 @@ BrSetDamageResponse(human, response)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `response` | number, truncated to an integer | Damage response mode (brain `+0x220`); scripts use 0, 3 and 4. 0 is inferred to mean no reaction to being hit. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `response` | number, truncated to an integer | Damage response mode, kept as a 16-bit signed value in brain `+0x220` (1 when a brain is made); scripts use 0, 3 and 4. |
 
 **Returns** nothing.
 
-Sets how a human reacts to taking damage.
+Stores a damage-response mode in the human's brain (`+0x220`, an int, 1 by default from the brain constructor
+0x0028a570). From the name, the mode chooses how the AI reacts to being hit; scripts set it on story characters who must
+not react normally.
 
-**Notes.** Storage confirmed (code) at 0x00292758.
+**Notes.** The store and default are confirmed (code); no instruction reading brain `+0x220` directly was found (it may
+be reached through an embedded-brain offset), so what each mode does is open. GoalManWeaponPile, GoalObjectThrower, the
+lead-chase goal (0x002e0bf0) and a boss tactic (0x00309840) also set it to 0, beside threat response 0.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** inferred; detail: traced
 - **Wrapper** `0x0035f278` (registered by `RegisterBindings`); **calls** `0x00292758` `Brain_SetDamageResponse`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
@@ -832,16 +849,20 @@ BrSetPedType(human, pedType)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `pedType` | number, truncated to an unsigned integer | Pedestrian type, kept as a 16-bit number; scripts use 1 (market shoppers), 2 and 3 (bouncers, street vendors). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `pedType` | number, truncated to an unsigned integer | Pedestrian type, kept as its low 16 bits (0 when a brain is made). 3 makes a civilian stand up to attackers (bouncers, vendors); 5 marks a rich mugging victim; scripts also use 1 (market shoppers) and 2. |
 
 **Returns** nothing.
 
-Sets the pedestrian type stored in the human's brain (`+0x26c`), which `BrGetPedType` reads back.
+Sets the pedestrian type of the human's brain (`+0x26c`), which changes how a civilian reacts to trouble. A civilian of
+type 3 fights whoever attacks it instead of taking the usual ped-reaction goal (107, fleeing or cowering), and turns
+hostile (goal 114) rather than reacting when a player comes near (CivilianBrain_OnEvent 0x002ffb30, 0x002ff898;
+CivilianBrain_Think 0x002ff148). Mugging a victim of type 5 gives 1.5 times the money (Player_UpdateMugging 0x0028625c).
 
-**Notes.** Storage confirmed (code) at 0x00292460; what the types change is inferred from the scripts' calls.
+**Notes.** No reader treats types 1 and 2 differently from 0 in the civilian brain (inferred: labels for the scripts);
+other readers of brain `+0x26c` (0x002d2600, 0x002a9ec0, 0x0029bf98) are not traced. BrGetPedType reads it back.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00292460`; detail: traced
 - **Wrapper** `0x0035ecb0` (registered by `RegisterBindings`); **calls** `0x00292460` `Brain_SetPedType`
 - **Used by** 12 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level34`](story.md#level34) (mission 4)
@@ -1104,26 +1125,34 @@ Makes a human (a cop) go and arrest another human.
 ## GoalAvoidEnemies {#goalavoidenemies}
 
 ```lua
-GoalAvoidEnemies(human, useThrowables, minRange, maxRange, value1, value2, value3, value4)
+GoalAvoidEnemies(human, useThrowables, minRange, maxRange, range3, range4, durationMs, gait)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `useThrowables` | boolean (nil or 0 is false) | true to let it throw things while avoiding (inferred). |
-| 3 | `minRange` | number (single precision); default 7 | Distance in metres (default 7; inferred: when to start backing off). |
-| 4 | `maxRange` | number (single precision); default 14 | Distance in metres (default 14; inferred: the distance it keeps). |
-| 5 | `value1` | number (single precision) | A number (scripts use 0 or 6000; inferred: a duration in ms). |
-| 6 | `value2` | number (single precision) | A number. |
-| 7 | `value3` | number, truncated to an unsigned integer | A handle or number. |
-| 8 | `value4` | number, truncated to an unsigned integer | A handle or number (scripts use 3). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `useThrowables` | boolean (nil or 0 is false) | true lets it fetch a non-weapon throwable within 40 m (checked every 30 updates) and throw it at the enemy when in range (goal `+0x41`). |
+| 3 | `minRange` | number (single precision); default 7 | Flee distance in metres, multiplied by the enemy's class (`+0x1a8`, clamped 2-5): closer than that, it runs (goal `+0x28`). Default 7. |
+| 4 | `maxRange` | number (single precision); default 14 | Second distance for the flee-point search (goal `+0x2c`; inferred: how far to flee). Default 14. |
+| 5 | `range3` | number (single precision) | Distance kept at goal `+0x34`, as TacticAvoidEnemies' minAllyRange; its reader is not traced. |
+| 6 | `range4` | number (single precision) | Distance kept at goal `+0x38`, as TacticAvoidEnemies' maxAllyRange; its reader is not traced. |
+| 7 | `durationMs` | number, truncated to an unsigned integer | The goal ends this many ms after it is pushed (goal `+0x20`); 0 for no limit. |
+| 8 | `gait` | number, truncated to an unsigned integer | Gait id to flee at (goal `+0x3c`); 0 lets the goal choose 5, or 4 when stamina is under 50. Scripts use 3. |
 
 **Returns** nothing.
 
-Makes a human keep its distance from enemies.
+Pushes an AvoidEnemies goal (type 32) on one human, the single-human form of TacticAvoidEnemies: every 1.5 s it picks
+the nearest enemy it can see (front-facing sight, unlike the tactic's all-round), and runs from it when the enemy comes
+within `minRange` × the enemy's class or stares straight at it, turning to face it otherwise. It shouts every 8 s while
+doing so and, with `useThrowables`, fights back with thrown objects. It ends after `durationMs`, or never when that is
+0.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00362c00` (registered by `RegisterBindings`); **calls** `0x002e3090` `Goal_AvoidEnemies`
+**Notes.** Unlike the tactic it does not drop the threat response or keep near a gang leader (goal `+0x30` = 0). Flee
+point search 0x002e3588 is not traced; the shout command depends on the character (0x20, 9 or 0x48).
+
+- **Evidence:** confirmed (code) at `0x002e3090`, `0x002e3180`, `0x002e3630`; detail: traced
+- **Wrapper** `0x00362c00` (registered by `RegisterBindings`); **calls** `0x002e3090` `Goal_AvoidEnemies`, `0x002e3180`
+  `AvoidEnemiesGoal_Init`, `0x002e3630` `AvoidEnemiesGoal_Process`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
@@ -1201,25 +1230,33 @@ A big fighter behaviour. No script calls it.
 ## GoalBigLedgeThrower {#goalbigledgethrower}
 
 ```lua
-GoalBigLedgeThrower(human, targets, objects, cycles, delayMs, option, callback)
+GoalBigLedgeThrower(human, targets, objects, cycles, delayMs, taunt, anim)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower. |
-| 2 | `targets` | table of 3 numbers (t[1]..t[3]) | Table of three target flag handles (`NilHandle` for unused); written back. |
-| 3 | `objects` | table of 8 numbers (t[1]..t[8]) | Table of eight object ids (-1 for unused); written back. |
-| 4 | `cycles` | number, truncated to an unsigned integer | Number of throw cycles. |
-| 5 | `delayMs` | number, truncated to an unsigned integer | Delay between throws in milliseconds. |
-| 6 | `option` | boolean (nil or 0 is false) | A flag. |
-| 7 | `callback` | string | Name of a Lua function, or nil. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower; a bad handle does nothing. |
+| 2 | `targets` | table of 3 numbers (t[1]..t[3]) | Up to three flag handles to throw at (NilHandle for unused; non-flags are skipped); written back unchanged. |
+| 3 | `objects` | table of 8 numbers (t[1]..t[8]) | Eight object type ids (16-bit, -1 for unused) stored at goal `+0x10`; written back unchanged. |
+| 4 | `cycles` | number, truncated to an unsigned integer | Throws per round (one byte, goal `+0x46`) before the pause. |
+| 5 | `delayMs` | number, truncated to an unsigned integer | Wait after each throw in milliseconds (16-bit, goal `+0x44`). |
+| 6 | `taunt` | boolean (nil or 0 is false) | true starts with a taunt (speech 0x57, face the starting heading, anim 0x283); false starts throwing at once. |
+| 7 | `anim` | string | Animation name that replaces the human's anim slot 0x256 (0x0010bc38 on `+0x3c8`) when not empty; not a Lua callback. |
 
 **Returns** nothing.
 
-A boss that throws objects from a ledge at up to three targets.
+Pushes a big-ledge-thrower goal (type 138), the balcony boss: it keeps to the spot where it stood (moving back when more
+than 0.5 m away), picks up an object (anim 0x225, or 0x29d for character type 178) and throws it, at a random one of the
+target flags when the held object is of class 8, else at the nearest enemy, then waits `delayMs`. After `cycles` throws
+it waits for its speech to end, turns on the nearest player with reaction 0x11 (0x002ee3d0) and starts a new round.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00363b38` (registered by `RegisterBindings`); **calls** `0x002edf20` `Goal_BigLedgeThrower`
+**Notes.** States at goal `+0x40`: 0 taunt, 1 return, 2 pick up, 3 throw, 4 pause; throw counter `+0x47`. Character type
+178 only walks back every other round (runs beyond 1.5 m) and runs to a random spot 3-5 m away after each throw.
+0x002ee3d0 and where the object list is read are not traced.
+
+- **Evidence:** confirmed (code) at `0x002edf20`, `0x002edff8`, `0x002ee7b0`; detail: traced
+- **Wrapper** `0x00363b38` (registered by `RegisterBindings`); **calls** `0x002edf20` `Goal_BigLedgeThrower`,
+  `0x002edff8` `BigLedgeThrowerGoal_Init`, `0x002ee7b0` `BigLedgeThrowerGoal_Process`
 - **Used by** 1 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -1517,20 +1554,28 @@ Sends a cop to respond to a crime at a place. No script calls it.
 ## GoalCower {#goalcower}
 
 ```lua
-GoalCower(human, option)
+GoalCower(human, despawn)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `option` | boolean (nil or 0 is false) | A flag (scripts pass false). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a bad handle does nothing. |
+| 2 | `despawn` | boolean (nil or 0 is false) | true: every 90 updates, if the human's byte `+0x333` is set and it is more than 30 m from the camera, the human is deleted (goal `+0x14`). Scripts pass false. |
 
 **Returns** nothing.
 
-Makes a human cower in fear.
+Pushes a Cower goal (type 17): every 45 updates the human picks the nearest threat and glances at it for 2 s. While the
+threat is closer than the brain's fear distance (`+0x13c`) plus the threat's class minus 1, it runs away (gait 5, or 4
+when stamina is under 50) and screams half the time (speech command 9); otherwise it turns to face the threat and plays
+the special idle clip (anim 671, ANIM_SPECIAL_IDLE) as its cowering pose. The goal never ends by itself; it does nothing
+while the human is down or busy.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003644a0` (registered by `RegisterBindings`); **calls** `0x002d4c38` `Goal_Cower`
+**Notes.** Threat choice 0x002d4f40 and the flee-point test 0x002d4fc0 are not traced. Byte `+0x333` is the same one
+route following uses (ai.md); why the despawn needs it is open.
+
+- **Evidence:** confirmed (code) at `0x002d4c38`, `0x002d4cb8`, `0x002d4fe8`; detail: traced
+- **Wrapper** `0x003644a0` (registered by `RegisterBindings`); **calls** `0x002d4c38` `Goal_Cower`, `0x002d4cb8`
+  `CowerGoal_Init`, `0x002d4fe8` `CowerGoal_Process`
 - **Used by** 4 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
@@ -1567,28 +1612,36 @@ roll against `dirtyChance` when the goal is made. Levels use it for the flash de
 ## GoalDevilRun {#goaldevilrun}
 
 ```lua
-GoalDevilRun(human, path, gang, speed, attackDistance, boostDistance, maxSpeed, urgency, hostile)
+GoalDevilRun(human, path, gang, gait, attackDistance, paceDistance, maxSpeed, urgency, hostile)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the runner. |
-| 2 | `path` | userdata (only read when given) | The path to run. |
-| 3 | `gang` | number, truncated to an integer | The gang it races or chases (scripts pass the Warriors' gang). |
-| 4 | `speed` | number, truncated to an integer | Base speed (a gait id or speed; scripts use constants such as 5). |
-| 5 | `attackDistance` | number (single precision) | Distance in metres at which it attacks (inferred). |
-| 6 | `boostDistance` | number (single precision) | Distance in metres at which it speeds up (inferred). |
-| 7 | `maxSpeed` | number (single precision) | Maximum speed (scripts use 10-13). |
-| 8 | `urgency` | number (single precision) | Urgency factor (scripts use 0.5-3). |
-| 9 | `hostile` | boolean (nil or 0 is false) | true for a pursuer that attacks, false for a friendly runner (inferred). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the runner; a bad handle does nothing. |
+| 2 | `path` | userdata (only read when given) | The path the chase runs along (read only when a second argument is given). |
+| 3 | `gang` | number, truncated to an integer | Gang id (16-bit) the runner paces itself against (scripts pass the Warriors' gang); its members are the chasers. |
+| 4 | `gait` | number, truncated to an integer | Base gait id (16-bit): its speed (Human_SpeedForGait) is the runner's slowest speed; scripts use constants such as 5. |
+| 5 | `attackDistance` | number (single precision) | Hostile runner only: metres (measured along the path) at which it turns to attack a running chaser (goal `+0x1c`). |
+| 6 | `paceDistance` | number (single precision) | Metres over which the speed is blended (goal `+0x20`): the distance to the chaser divided by this gives the 0-1 blend factor. |
+| 7 | `maxSpeed` | number (single precision) | Speed in m/s reached at a blend factor of 1 (scripts use 10-13). |
+| 8 | `urgency` | number (single precision) | Multiplied by the blend factor and added to a brain byte (0x0028cdf8; scripts use 0.5-3). Meaning not traced. |
+| 9 | `hostile` | boolean (nil or 0 is false) | true: a pursuer that speeds up the farther it falls behind and attacks when close; false: a runner that speeds up the closer the chaser gets. |
 
 **Returns** nothing.
 
-A rooftop and street chase runner that keeps pace with a gang along a path, speeding up when it falls behind and
-attacking when close.
+Pushes a devil-run goal (type 152), the rooftop and street chases: the runner heads for the path's last point while
+pacing itself against the gang. Every 7 updates it measures the distance to its chosen chaser (the gang member nearest
+the path, re-chosen every 29 updates) and sets its speed between the gait's and `maxSpeed` by that distance over
+`paceDistance`. Every 17 updates it ends once a gang member has passed the path's last point.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00360d98` (registered by `RegisterBindings`); **calls** `0x002e1760` `Goal_DevilRun`
+**Notes.** Hostile attack test (0x002e1e10): a running chaser (`+0x1a8` above 2) within attackDistance, or a slower one
+within (1.1 × runner `+0x140`)² (a squared reach against metres); it then sets threat response 2 and pushes goals
+0x002ade10 (2000, 2000) and, in the first case, an engage-enemy goal (0x47). Chaser choice: 0x002e1c18; progress:
+0x002e1b60. The objects of other runners' gangs are not checked.
+
+- **Evidence:** confirmed (code) at `0x002e1760`, `0x002e1850`, `0x002e2230`; detail: traced
+- **Wrapper** `0x00360d98` (registered by `RegisterBindings`); **calls** `0x002e1760` `Goal_DevilRun`, `0x002e1850`
+  `DevilRunGoal_Init`, `0x002e2230` `DevilRunGoal_Process`
 - **Used by** 6 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -1601,15 +1654,21 @@ GoalEngageEnemy(human, enemy)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `enemy` | number, truncated to an unsigned integer | Handle of the human to fight. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human who attacks; a bad handle does nothing. |
+| 2 | `enemy` | number, truncated to an unsigned integer | Handle of the human to fight (not checked here). |
 
 **Returns** nothing.
 
-Makes a human start fighting a given enemy.
+Pushes an `EngageEnemy` goal (type 11) on the human's brain against the enemy: it walks up to the enemy and fights it
+with the usual fight sub-goal until the enemy is out of range or gone, or a newer goal replaces it. The one-human form
+of GangEngageEnemy.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00360550` (registered by `RegisterBindings`); **calls** `0x002af528` `Goal_EngageEnemy`
+**Notes.** Constructor 0x002af5b0 (vtable 0x00540330, Process 0x002afa48); a flag at goal `+0x34` is set only when the
+human's `+0x1a8` is below 3 and 0x00223e20 is false, not traced. Fight behaviour: [AI](../../research/ai.md).
+
+- **Evidence:** confirmed (code) at `0x002af528`, `0x002af5b0`; detail: traced
+- **Wrapper** `0x00360550` (registered by `RegisterBindings`); **calls** `0x002af528` `Goal_EngageEnemy`, `0x002af5b0`
+  `EngageEnemyGoal_Init`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
@@ -1664,22 +1723,29 @@ Makes a human take a place in another human's follow formation.
 ## GoalFollowObject {#goalfollowobject}
 
 ```lua
-GoalFollowObject(human, object, distance, mode)
+GoalFollowObject(human, object, distance, interval)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `object` | number, truncated to an unsigned integer | Handle of the object to follow (a moving blocker in a chase). |
-| 3 | `distance` | number (single precision) | Follow distance in metres (scripts use 0-1). |
-| 4 | `mode` | number, truncated to an unsigned integer | A mode number (scripts use 1 and 2). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the follower; a bad handle does nothing. |
+| 2 | `object` | number, truncated to an unsigned integer | Handle of the object (or human) to follow; the goal ends once it no longer resolves. |
+| 3 | `distance` | number (single precision) | Distance in metres the follower may lag before it speeds up (goal `+0x24`); scripts use 0-1, and 0 makes any gap give full speed. |
+| 4 | `interval` | number, truncated to an unsigned integer | Re-plans every this many brain updates (goal `+0x2c`); scripts use 1 and 2. 0 divides by zero. |
 
 **Returns** nothing.
 
-Makes a human follow a moving object, as in scripted chases.
+Pushes a FollowObject goal (type 49) on the human: each update it reads the object's position and speed, and every
+`interval` brain updates sets a move action to the object's position (0.25 m radius) at a matched speed: the object's
+own speed, raised by `1 + (gap - distance) / (1.5 × distance)` when the gap is larger than `distance` (more when the
+object is slow), never above 1.25 × the follower's sprint speed. Used for scripted chases.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00360730` (registered by `RegisterBindings`); **calls** `0x002df6c0` `Goal_FollowObject`
+**Notes.** The goal has no arrival end: it runs until the object is gone or another goal replaces it. While the brain
+already runs a move action of the right kind, only its target and speed are updated.
+
+- **Evidence:** confirmed (code) at `0x002df6c0`, `0x002df760`, `0x002df908`, `0x002df7a0`; detail: traced
+- **Wrapper** `0x00360730` (registered by `RegisterBindings`); **calls** `0x002df6c0` `Goal_FollowObject`, `0x002df760`
+  `FollowObjectGoal_Init`, `0x002df908` `FollowObjectGoal_Process`, `0x002df7a0` `FollowObjectGoal_PickSpeed`
 - **Used by** 2 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
@@ -1772,19 +1838,25 @@ GoalGuardFlag(human, flag, radius, heading, callback, timeMs)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the guard. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the guard; a bad handle, or a flag handle that does not resolve, does nothing. |
 | 2 | `flag` | number, truncated to an unsigned integer | Handle of the flag to guard. |
-| 3 | `radius` | number (single precision) | Guard radius in metres (scripts use 0.5-1). |
-| 4 | `heading` | number, truncated to an integer | Heading in degrees to face while guarding; -1 to keep the flag's own (inferred). |
-| 5 | `callback` | string | Name of a Lua function called when the goal ends or times out, or nil. |
-| 6 | `timeMs` | number, truncated to an integer; default -1 | Time limit in milliseconds; -1 (the default) for none. |
+| 3 | `radius` | number (single precision) | Metres: the guard walks back to the flag whenever it is farther than this (also its arrival radius; scripts use 0.5-1). |
+| 4 | `heading` | number, truncated to an integer | World heading in degrees (16-bit) to face while on station, re-applied every 30 updates; -1 for none. |
+| 5 | `callback` | string | Name of a Lua function called (handle, completed) when the goal ends, or nil. |
+| 6 | `timeMs` | number, truncated to an integer; default -1 | Written to the goal's time word (`+0x08`, 16-bit value); -1 (the default) for none (inferred: a time limit). |
 
 **Returns** nothing.
 
-Makes a human stand guard at a flag, facing a direction, optionally for a limited time with a callback.
+Pushes a guard-flag goal (type 43): the human walks (gait 2) back to the flag whenever it strays more than `radius` from
+it and, on station, turns to `heading`. It ends when the flag no longer exists. An event that reaches the goal makes it
+push goal 63 (LeftTurf, back to the brain's home `+0x230`) on top.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00360f28` (registered by `RegisterBindings`); **calls** `0x002b79b8` `Goal_GuardFlag`
+**Notes.** Event handler 0x002b7bc0 pushes LeftTurf (0x002f8c90) for any event it gets. The callback follows the shared
+rule of [AI: scripted goals](../../research/ai.md#scripted). How the base goal uses `+0x08` is not traced here.
+
+- **Evidence:** confirmed (code) at `0x002b79b8`, `0x002b7a90`, `0x002b7c18`; detail: traced
+- **Wrapper** `0x00360f28` (registered by `RegisterBindings`); **calls** `0x002b79b8` `Goal_GuardFlag`, `0x002b7a90`
+  `GuardFlagGoal_Init`, `0x002b7c18` `GuardFlagGoal_Process`
 - **Used by** 4 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -1946,20 +2018,28 @@ GoalLeadChase(human, path, chaser, distance1, distance2, distance3, distance4)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human being chased. |
-| 2 | `path` | userdata (only read when given) | The path the runner follows. |
-| 3 | `chaser` | number, truncated to an unsigned integer | Handle of the chaser (the player). |
-| 4 | `distance1` | number (single precision) | First distance threshold in metres (the only call passes 30, 50, 70, 90 for the four; inferred: distances at which the runner speeds up or waits). |
-| 5 | `distance2` | number (single precision) | Second distance threshold in metres. |
-| 6 | `distance3` | number (single precision) | Third distance threshold in metres. |
-| 7 | `distance4` | number (single precision) | Fourth distance threshold in metres. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the runner; a bad handle does nothing. |
+| 2 | `path` | userdata (only read when given) | The path the runner follows from its first point (read only when a second argument is given). |
+| 3 | `chaser` | number, truncated to an unsigned integer | Handle of the chaser; read but ignored: the goal picks its own chaser. |
+| 4 | `distance1` | number (single precision) | Metres: while the chaser is closer than this the runner runs on along the path; farther away it stops and waits (the only call passes 30). |
+| 5 | `distance2` | number (single precision) | Metres, stored squared at goal `+0x44`; not read by the goal's process (the call passes 50). |
+| 6 | `distance3` | number (single precision) | Metres, stored squared at goal `+0x48`; not read by the process (70). |
+| 7 | `distance4` | number (single precision) | Metres, stored squared at goal `+0x4c`; not read by the process (90). |
 
 **Returns** nothing.
 
-Makes a human run a path ahead of a chaser, pacing itself by how far behind the chaser is.
+Pushes a lead-chase goal (type 73, a path-travel goal): every 10 updates the runner takes as its chaser the nearest
+living enemy within 50 m. While that chaser is within `distance1` it runs along the path, sprinting while its power
+meter is above 60% and dropping back to a run at 20% or less; otherwise it stops and turns to face the chaser (when more
+than 15° off). The goal ends at the path's last point.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00360ac8` (registered by `RegisterBindings`); **calls** `0x002e0a78` `Goal_LeadChase`
+**Notes.** Process: 0x002e0dc8. The init passes 0 instead of the chaser to GoalTravelPath_Init (0x002e0b48 clears a3),
+so the argument has no effect. A path linked to a next path (`+0x34`) continues onto it. The runner's threat and damage
+responses are set to 0 (brain `+0x21c`, `+0x220`), so it does not fight back.
+
+- **Evidence:** confirmed (code) at `0x002e0a78`, `0x002e0b48`; detail: traced
+- **Wrapper** `0x00360ac8` (registered by `RegisterBindings`); **calls** `0x002e0a78` `Goal_LeadChase`, `0x002e0b48`
+  `LeadChaseGoal_Init`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -1996,55 +2076,61 @@ Luther's gunfire behaviour in the final missions.
 ## GoalManWeaponPile {#goalmanweaponpile}
 
 ```lua
-GoalManWeaponPile(human, pile, minRange, maxRange, maxThrows, value2, value3, wantsWeapon, option, callback, delayMs)
+GoalManWeaponPile(human, maxThrows, pickupRadius, throwRange, pauseS, style, closeRange, wantsWeapon, checkLine, callback, delayMs)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower. |
-| 2 | `pile` | number, truncated to an integer | Which weapon pile or object type to take from; scripts pass -1 (any, inferred). |
-| 3 | `minRange` | number (single precision) | Distance in metres (scripts use 2; inferred: the closest target range). |
-| 4 | `maxRange` | number (single precision) | Distance in metres (scripts use 40; inferred: the farthest target range). |
-| 5 | `maxThrows` | number, truncated to an integer | A count (scripts use 12-14; inferred: how many objects to throw). |
-| 6 | `value2` | number, truncated to an integer | A number (scripts use 1 and 5). |
-| 7 | `value3` | number, truncated to an integer | A number (scripts use 1). |
-| 8 | `wantsWeapon` | boolean (nil or 0 is false) | Sets the brain's wants-weapon flag (as `BrSetThugWantsWeapon`). |
-| 9 | `option` | boolean (nil or 0 is false); default true | A flag (default true). |
-| 10 | `callback` | string | Name of a Lua function called when the goal ends, or nil. |
-| 11 | `delayMs` | number, truncated to an unsigned integer; default 500 | A time in milliseconds (default 500; inferred: delay between throws). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower; a bad handle does nothing. |
+| 2 | `maxThrows` | number, truncated to an integer | Throws before the goal may end (goal `+0x36`); -1, what the scripts pass, for no limit. |
+| 3 | `pickupRadius` | number (single precision) | Radius in metres around the thrower searched for a throwable to pick up (goal `+0x24`); scripts use 2. |
+| 4 | `throwRange` | number (single precision) | Range in metres: the target is picked within it every 10 updates, and a target farther away is only looked at, not thrown at (goal `+0x28`); scripts use 40. |
+| 5 | `pauseS` | number, truncated to an integer | Seconds to wait after each throw before fetching the next object (goal `+0x30`); scripts use 12-14. |
+| 6 | `style` | number, truncated to an integer | 0 plain; 1-5 also give the thrower an object in hand when it has none (1 dyn_brick, 2 dyn_molotv, 3 dyn_manqheadred, 4 a porcelain object, 5 dyn_beerbottle) and make it target the player half the time; for character 135 (the Hi-Hats boss), 1 and 2 pick two sets of taunts said on a throw (goal `+0x3a`). Scripts use 1 and 5. |
+| 7 | `closeRange` | number, truncated to an integer | Metres (kept squared, goal `+0x3c`): a target closer than this lets the goal end after the pause even before `maxThrows`. Scripts use 1. |
+| 8 | `wantsWeapon` | boolean (nil or 0 is false) | Sets the brain's wants-weapon byte (`+0x265`, as `BrSetThugWantsWeapon`). |
+| 9 | `checkLine` | boolean (nil or 0 is false); default true | true: before each throw the thrower checks it can hit the target (0x00222288) and goes back to fetching if not (goal `+0x4c`). |
+| 10 | `callback` | string | Name of a Lua function registered with the goal (`+0x20`), or nil; when it is called is not traced. |
+| 11 | `delayMs` | number, truncated to an unsigned integer; default 500 | Delay in ms from holding an object to the first throw (goal `+0x48`, default 500). |
 
 **Returns** nothing.
 
-Makes a human stand by a pile of throwable objects and throw them at enemies in range. Before pushing the goal it clears
-the human's current action, sets its threat and damage responses to 0 and its wants-weapon flag.
+Pushes a ManWeaponPile goal (type 82) after clearing the human's current action and setting its threat and damage
+responses to 0. The thrower picks up a throwable within `pickupRadius` (a GetItem goal), waits `delayMs`, turns to its
+target (re-picked every 10 updates within `throwRange`), throws (command 0x10) when the target is in range or else just
+looks at it, then waits `pauseS` seconds and fetches again. It ends when no throwable is found after 21 tries, or after
+the pause once `maxThrows` is reached or the target is within `closeRange`, unless the gang's tactic keeps it going.
 
-**Notes.** Both forms build the same goal (0x002a3320); argument roles past the ranges are inferred.
+**Notes.** The end checks also look at the gang tactic's state (brain `+0x20c` → `+0x40`, ends only with none or kind
+9), not traced further. The taunts are speech lines, rotated through a counter shared by all throwers.
+TacticManWeaponPile gives every member this goal.
 
 **Overload** (registered first; the wrapper above checks its argument types and calls this one when they do not match):
-The 7-argument form (0x00361a50). The 11-argument form is used when arguments 1-7 are numbers, 8 is a `bool` (tolua
-type), 9 an optional bool, 10 an optional string, 11 an optional number and there is no 12th; any other call falls back
-to this form.
+The 7-argument form (0x00361a50): style 0, line check on, delay 500 ms, and `closeRange` taken from `wantsWeapon`. The
+11-argument form is used when arguments 1-7 are numbers, 8 is a `bool` (tolua type), 9 an optional bool, 10 an optional
+string, 11 an optional number and there is no 12th; any other call falls back to this form.
 
 ```lua
-GoalManWeaponPile(human, pile, minRange, maxRange, maxThrows, wantsWeapon, callback)
+GoalManWeaponPile(human, maxThrows, pickupRadius, throwRange, pauseS, wantsWeapon, callback)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower. |
-| 2 | `pile` | number, truncated to an integer | Which pile or object type; -1 for any (inferred). |
-| 3 | `minRange` | number (single precision) | Distance in metres (inferred: closest target range). |
-| 4 | `maxRange` | number (single precision) | Distance in metres (inferred: farthest target range). |
-| 5 | `maxThrows` | number, truncated to an integer | A count (inferred: how many to throw). |
-| 6 | `wantsWeapon` | boolean (nil or 0 is false) | Sets the brain's wants-weapon flag. |
+| 2 | `maxThrows` | number, truncated to an integer | As in the long form (-1 for no limit). |
+| 3 | `pickupRadius` | number (single precision) | As in the long form. |
+| 4 | `throwRange` | number (single precision) | As in the long form. |
+| 5 | `pauseS` | number, truncated to an integer | As in the long form. |
+| 6 | `wantsWeapon` | boolean (nil or 0 is false) | Sets the wants-weapon byte; it is also passed as `closeRange` (0 or 1 m). |
 | 7 | `callback` | string | Name of a Lua function, or nil. |
 
 **Returns** nothing.
 
-Wrapper `0x00361a50`; calls `0x002a30e8`.
+Wrapper `0x00361a50`; calls `0x002a30e8` `Goal_ManWeaponPileSimple`.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00361b80` (registered by `RegisterBindings`); **calls** `0x002a31f0` `Goal_ManWeaponPile`
+- **Evidence:** confirmed (code) at `0x002a31f0`, `0x002a3320`, `0x002a3498`; detail: traced
+- **Wrapper** `0x00361b80` (registered by `RegisterBindings`); **calls** `0x002a31f0` `Goal_ManWeaponPile`, `0x002a3320`
+  `ManWeaponPileGoal_Init`, `0x002a3498` `ManWeaponPileGoal_Process`
 - **Used by** 3 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
@@ -2178,20 +2264,23 @@ GoalMoveToHuman(human, target, gait, radius)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human that moves. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to go to. |
-| 3 | `gait` | number, truncated to an integer | Gait id: 2 walk ... 5 sprint (scripts use 5). |
-| 4 | `radius` | number (single precision) | How close to get, in metres (scripts use 1-3). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human that moves; a bad handle does nothing. |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to go to (goal `+0x20`). |
+| 3 | `gait` | number, truncated to an integer | Gait id: 2 walk ... 5 sprint (scripts use 5) (goal `+0x24`). |
+| 4 | `radius` | number (single precision) | Arrival distance in metres (scripts use 1-3) (goal `+0x28`). |
 
 **Returns** nothing.
 
-Sends a human to another human, stopping within the given distance.
+Pushes a MoveToHuman goal (type 6): the human leaves its fight stance and runs move actions toward the target's current
+position at `gait`, dropping and re-issuing them every second so it follows a moving target. The goal ends once within
+`radius` of the target, when the target is no longer valid to it (0x0028d4b0), or when the mover is itself down. A
+failed route is retried after 30 updates.
 
-**Notes.** Argument order confirmed (code) at 0x002dc458 (the goal goes on the first human's brain); the arrival
-behaviour is inferred.
+**Notes.** Distance is full 3D. What 0x0028d4b0 accepts as a valid target (alive, not removed) is not traced in detail.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003602e0` (registered by `RegisterBindings`); **calls** `0x002dc458` `Goal_MoveToHuman`
+- **Evidence:** confirmed (code) at `0x002dc458`, `0x002dc4f8`, `0x002dc578`; detail: traced
+- **Wrapper** `0x003602e0` (registered by `RegisterBindings`); **calls** `0x002dc458` `Goal_MoveToHuman`, `0x002dc4f8`
+  `MoveToHumanGoal_Init`, `0x002dc578` `MoveToHumanGoal_Process`
 - **Used by** 3 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
@@ -2229,27 +2318,35 @@ extras. The roles of the two floats and the flag are inferred.
 ## GoalObjectThrower {#goalobjectthrower}
 
 ```lua
-GoalObjectThrower(human, objectType, value1, value2, value3, target1, target2, target3, callback)
+GoalObjectThrower(human, maxThrows, pickupRadius, delayS, enemyRange, target1, target2, target3, callback)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower. |
-| 2 | `objectType` | number, truncated to an integer | Object type to throw; -1 for any (inferred). |
-| 3 | `value1` | number, truncated to an integer | A number (scripts use 1-4). |
-| 4 | `value2` | number, truncated to an integer | A number (scripts use 1-5). |
-| 5 | `value3` | number, truncated to an integer | A number (scripts use 0.1-1). |
-| 6 | `target1` | number, truncated to an unsigned integer | Handle of a target flag or human. |
-| 7 | `target2` | number, truncated to an unsigned integer | Handle of a second target, or `NilHandle`. |
-| 8 | `target3` | number, truncated to an unsigned integer | Handle of a third target, or `NilHandle`. |
-| 9 | `callback` | string | Name of a Lua function called when the goal ends, or nil. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower; a bad handle does nothing. |
+| 2 | `maxThrows` | number, truncated to an integer | Throws after which the goal ends (goal `+0x29`, one byte); -1 or 0 for no limit. |
+| 3 | `pickupRadius` | number, truncated to an integer | Radius in whole metres searched every 5 updates for a throwable to fetch (goal `+0x20`); scripts use 1-4. |
+| 4 | `delayS` | number, truncated to an integer | Each throw is queued with a random delay of delayS × 0.5 to delayS seconds (goal `+0x28`); scripts use 1-5. |
+| 5 | `enemyRange` | number, truncated to an integer | Read as a whole number of metres (goal `+0x24`): every 15 updates, an enemy closer than this ends the goal. The scripts' 0.1-1 truncate to 0 or 1. |
+| 6 | `target1` | number, truncated to an unsigned integer | Handle of a flag to throw at (resolved with 0x00417a60; an invalid one is skipped). |
+| 7 | `target2` | number, truncated to an unsigned integer | Handle of a second target flag, or `NilHandle`. |
+| 8 | `target3` | number, truncated to an unsigned integer | Handle of a third target flag, or `NilHandle`. |
+| 9 | `callback` | string | Name of a Lua function registered with the goal (`+0x1c`), or nil; when it is called is not traced. |
 
 **Returns** nothing.
 
-Makes a human throw objects at up to three targets, as boss throwers do.
+Pushes an ObjectThrower goal (type 78) after setting the human's threat and damage responses to 0. The thrower stays in
+its fight stance; while it holds a throwable it turns to one of the target flags at random, aims there and queues a
+throw, and otherwise every 5 updates it fetches a throwable within `pickupRadius`. From the second throw on, every third
+throw has an even chance of a taunt: it turns toward the camera and plays an action. The goal ends after `maxThrows`
+throws or when an enemy comes within `enemyRange`.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003620c0` (registered by `RegisterBindings`); **calls** `0x002a3e50` `Goal_ObjectThrower`
+**Notes.** Every 45 updates it also looks for 2 s at a human from the brain's list (brain `+0x164`, 0x0029a000). Targets
+are flags only, not humans. The taunt action is 0x002fb0f0(3, 0, 0x10), not traced.
+
+- **Evidence:** confirmed (code) at `0x002a3e50`, `0x002a3f50`, `0x002a4230`; detail: traced
+- **Wrapper** `0x003620c0` (registered by `RegisterBindings`); **calls** `0x002a3e50` `Goal_ObjectThrower`, `0x002a3f50`
+  `ObjectThrowerGoal_Init`, `0x002a4230` `ObjectThrowerGoal_Process`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
@@ -2487,25 +2584,33 @@ playing anything; the callback gets only the handle, no completed flag.
 ## GoalRiot {#goalriot}
 
 ```lua
-GoalRiot(human, radius, value1, value2, chance1, chance2, option)
+GoalRiot(human, radius, actChance, acts, fightChance, gangFightChance, shout)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the rioter. |
-| 2 | `radius` | number (single precision); default 15 | A distance in metres (default 15). |
-| 3 | `value1` | number, truncated to an unsigned integer; default 30 | A number (default 30). |
-| 4 | `value2` | number, truncated to an unsigned integer; default 1 | A number (default 1). |
-| 5 | `chance1` | number, truncated to an unsigned integer; default 20 | A percentage (default 20; scripts use 0 and 75). |
-| 6 | `chance2` | number, truncated to an unsigned integer; default 10 | A percentage (default 10; scripts use 0 and 25). |
-| 7 | `option` | boolean (nil or 0 is false); default true | A flag (default true). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the rioter; a bad handle does nothing. |
+| 2 | `radius` | number (single precision); default 15 | Distance in metres to the nearest player inside which the rioter starts acting out (goal `+0x2c`). |
+| 3 | `actChance` | number, truncated to an unsigned integer; default 30 | Percentage chance, at each decision, to smash something or loot (goal `+0x32`, one byte). |
+| 4 | `acts` | number, truncated to an unsigned integer; default 1 | How many smash-or-loot acts before the rioter leaves (goal `+0x33`, counted down). |
+| 5 | `fightChance` | number, truncated to an unsigned integer; default 20 | Percentage chance, at each decision, to pick a fight with a nearby human (goal `+0x34`); scripts use 0 and 75. |
+| 6 | `gangFightChance` | number, truncated to an unsigned integer; default 10 | For a gang-member rioter, percentage chance that the fight may be with a gang member too, not only a civilian (goal `+0x35`); scripts use 0 and 25. |
+| 7 | `shout` | boolean (nil or 0 is false); default true | true: the rioter shouts (speech command 0x59) every 4-4.5 s while roaming and when leaving (goal `+0x3a`). |
 
 **Returns** nothing.
 
-Makes a human riot: smash, loot and fight in an area.
+Pushes a riot goal (type 84) on the human: it roams, and when a decision comes (about half the time, every 60th update)
+it may pick a fight with a human within 15 m for 8 s (speech 0x11), smash a nearby breakable object within 20 m, or loot
+an item lying within 20 m. After `acts` acts, or when a fight starts, it heads for the nearest flag of type 8 and
+leaves. A rioter starts with a 51% chance to smash or loot straight away.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00363268` (registered by `RegisterBindings`); **calls** `0x002d0e98` `Goal_Riot`
+**Notes.** States at goal `+0x36`: 0 roam, 1 smash, 2 loot, 3 leave (RiotGoal_Process 0x002d1c38). Fight choice:
+RiotGoal_TryPickFight 0x002d1288 (only for a gang-member brain, `+0x04` = 2). The test that gates the decision
+(0x0028ff58 on the brain's gang) is not traced; the leave goal is 0x002da8f8.
+
+- **Evidence:** confirmed (code) at `0x002d0e98`, `0x002d0f68`; detail: traced
+- **Wrapper** `0x00363268` (registered by `RegisterBindings`); **calls** `0x002d0e98` `Goal_Riot`, `0x002d0f68`
+  `RiotGoal_Init`
 - **Used by** 8 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
@@ -2513,27 +2618,36 @@ Makes a human riot: smash, loot and fight in an area.
 ## GoalRunCarrotRun {#goalruncarrotrun}
 
 ```lua
-GoalRunCarrotRun(human, path, start, reverse, gait, radius, chasers, distance, option)
+GoalRunCarrotRun(human, path, start, reverse, gait, radius, chasers, distance, keepAhead)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the runner. |
-| 2 | `path` | userdata (only read when given) | The path to run. |
-| 3 | `start` | number, truncated to an integer | Starting path point index. |
-| 4 | `reverse` | boolean (nil or 0 is false) | true to run it backwards (inferred). |
-| 5 | `gait` | number, truncated to an integer | Gait id (scripts use 4 or 5). |
-| 6 | `radius` | number (single precision) | Arrival radius in metres. |
-| 7 | `chasers` | number, truncated to an integer | The gang chasing (scripts pass the Warriors' gang). |
-| 8 | `distance` | number (single precision) | A distance in metres (scripts use 4-25; inferred: the lead the runner keeps). |
-| 9 | `option` | boolean (nil or 0 is false) | A flag (scripts leave it unset). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the runner; a bad handle does nothing. |
+| 2 | `path` | userdata (only read when given) | The path to run (a `Path_...` value); read only when more than one argument is passed. |
+| 3 | `start` | number, truncated to an integer | Index of the path point to start from, as in GoalTravelPath. |
+| 4 | `reverse` | boolean (nil or 0 is false) | true to run the path backwards (inferred, as in GoalTravelPath). |
+| 5 | `gait` | number, truncated to an integer | Base gait id (scripts use 4 run or 5 sprint); its speed is the floor of the runner's speed. |
+| 6 | `radius` | number (single precision) | Arrival radius at each path point in metres. |
+| 7 | `chasers` | number, truncated to an integer | Gang id of the chasers (scripts pass the Warriors' gang); the nearest of its up to 16 members is measured. |
+| 8 | `distance` | number (single precision) | Reference distance in metres (scripts use 4-25): without `keepAhead`, the runner speeds up as the nearest chaser comes inside it. |
+| 9 | `keepAhead` | boolean (nil or 0 is false) | true flips the rule: the runner speeds up the farther the nearest chaser is beyond `distance` (full boost 5 m past it). Scripts leave it unset. |
 
 **Returns** nothing.
 
-Makes a human run a path just ahead of a chasing gang, the 'carrot' in chase missions.
+Pushes a run-carrot goal on the human: it runs the path point to point like GoalTravelPath (a TravelPath sub-goal plus a
+move-to-point goal per point) and ends when the path runs out. Each update it finds the nearest member of the chasing
+gang and sets its speed to the gait's speed plus up to 6 m/s: by default the boost is `1 - d/distance` when that chaser
+is closer than `distance` (so a caught-up carrot sprints away), with `keepAhead` it is `min((d - distance) * 0.2, 1)`.
+It also raises a brain byte (`+0x0b`, 0/2/3 for boosts of 0, up to 0.5, above 0.5) that is restored when the goal ends.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00360c10` (registered by `RegisterBindings`); **calls** `0x002e1140` `Goal_RunCarrot`
+**Notes.** Speed is recomputed only while brain flags `+0x34 & 3` are clear. The meaning of brain `+0x0b` (set via
+0x0028cdf8, forced 0 in some human states) is not traced; inferred: a panic/urgency level for the run animation. No
+chaser alive: speed stays the gait's.
+
+- **Evidence:** confirmed (code) at `0x002e1140`, `0x002e1230`, `0x002e13c0`, `0x002e15e8`; detail: traced
+- **Wrapper** `0x00360c10` (registered by `RegisterBindings`); **calls** `0x002e1140` `Goal_RunCarrot`, `0x002e1230`
+  `RunCarrotGoal_Init`, `0x002e13c0` `RunCarrotGoal_UpdateSpeed`, `0x002e15e8` `RunCarrotGoal_Process`
 - **Used by** 4 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
@@ -2624,21 +2738,29 @@ Starts a parley (a stand-off talk) between two humans. No script calls it.
 ## GoalStationaryThrower {#goalstationarythrower}
 
 ```lua
-GoalStationaryThrower(human, value, objects)
+GoalStationaryThrower(human, delay, objects)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower. |
-| 2 | `value` | number, truncated to an unsigned integer | A number (scripts use 5-13; inferred: range in metres). |
-| 3 | `objects` | table of 8 numbers (t[1]..t[8]) | Table of eight object type ids to throw; written back. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower; a bad handle does nothing. |
+| 2 | `delay` | number, truncated to an unsigned integer | Seconds to wait after each throw: the pause is a random 1000×delay to 1000×delay + 1000 ms (one byte, goal `+0x34`); scripts use 5-13. |
+| 3 | `objects` | table of 8 numbers (t[1]..t[8]) | Eight object type ids (16-bit each, as ObjGetIndex returns) the thrower may throw, stored at goal `+0x24`; written back unchanged. |
 
 **Returns** nothing.
 
-Makes a human stay put and throw objects at enemies (bartenders throwing bottles).
+Pushes a stationary-thrower goal (type 140): the human keeps returning to the spot where it stood when the goal was
+given (within 0.5 m), picks the nearest enemy within three quarters of its sight range, faces it and plays the throw
+animation (0x225), then waits `delay` to `delay` + 1 s before the next throw. Used for bartenders and shopkeepers
+throwing bottles.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003637b8` (registered by `RegisterBindings`); **calls** `0x002eee50` `Goal_StationaryThrower`
+**Notes.** Process: StationaryThrowerGoal_Process 0x002ef2c0 (state at goal `+0x20`: 0 return to spot, 1 throw, 2 wait).
+Where the object list is read (the thrown object's creation) is not traced. One wait in five is a different idle action
+(0x002fb0f0).
+
+- **Evidence:** confirmed (code) at `0x002eee50`, `0x002eeee0`; detail: traced
+- **Wrapper** `0x003637b8` (registered by `RegisterBindings`); **calls** `0x002eee50` `Goal_StationaryThrower`,
+  `0x002eeee0` `StationaryThrowerGoal_Init`
 - **Used by** 5 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
@@ -2651,17 +2773,24 @@ GoalTag(human, flag, tag, extra)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human who sprays. |
-| 2 | `flag` | number, truncated to an unsigned integer | Handle of the flag to stand at. |
-| 3 | `tag` | number, truncated to an unsigned integer | Handle of the tag object (the wall graffiti to spray). |
-| 4 | `extra` | number, truncated to an unsigned integer | A handle, usually `NilHandle`. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human who sprays; a bad handle does nothing. |
+| 2 | `flag` | number, truncated to an unsigned integer | Handle of the flag to spray from; the goal claims it (its user). |
+| 3 | `tag` | number, truncated to an unsigned integer | Handle of the tag object (the wall graffiti) the spray action works on. |
+| 4 | `extra` | number, truncated to an unsigned integer | Handle of another tag object sent message 0x19 (with 4) when spraying starts, as ProcessTag does; usually NilHandle. |
 
 **Returns** nothing.
 
-Makes a human go to a spot and spray a graffiti tag.
+Pushes a tag goal (type 90): the human runs (gait 4) to the flag, and if it arrives within 1.5 m queues the spray action
+(vtable 0x00542da0) on the tag; the goal ends when the spraying state is over. It also ends at once if the flag is gone,
+another human holds the flag, the human is down, or it stopped more than 1.5 m short.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00362960` (registered by `RegisterBindings`); **calls** `0x002cce88` `Goal_Tag`
+**Notes.** States at goal `+0x24`: 0 move, 1 arrive and start, 2 spray (done when record `+0x14` is not 0x17 and state
+flag 0x2000000 is clear). The message to `extra` goes once (goal `+0x28`). Tagging rules: [Crimes:
+tagging](../../research/crimes.md#tagging).
+
+- **Evidence:** confirmed (code) at `0x002cce88`, `0x002ccfe0`, `0x002cd258`; detail: traced
+- **Wrapper** `0x00362960` (registered by `RegisterBindings`); **calls** `0x002cce88` `Goal_Tag`, `0x002ccfe0`
+  `TagGoal_Init`, `0x002cd258` `TagGoal_Process`
 - **Used by** 4 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -2780,25 +2909,32 @@ is the end mode, as `TacticTravelPath`'s `loop` sets it. A nil path is not check
 ## GoalTravelPath2 {#goaltravelpath2}
 
 ```lua
-GoalTravelPath2(human, path, start, reverse, gait, radius, endPoint)
+GoalTravelPath2(human, path, mode, reverse, gait, radius, fromPoint)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `path` | userdata (only read when given) | The path object. |
-| 3 | `start` | number, truncated to an integer | Starting path point index. |
-| 4 | `reverse` | boolean (nil or 0 is false) | true to travel backwards (inferred). |
-| 5 | `gait` | number, truncated to an integer | Gait id. |
-| 6 | `radius` | number (single precision) | Arrival radius in metres. |
-| 7 | `endPoint` | number, truncated to an integer | A path point index; -1 for the end of the path (inferred: where to stop). |
+| 2 | `path` | userdata (only read when given) | The path object returned by `AddPath` (read only when a second argument is given). |
+| 3 | `mode` | number, truncated to an integer | What happens at the end of the path, as in `GoalTravelPath`: 0 stop (or carry on along a linked path), 1 loop, 2 ping-pong. |
+| 4 | `reverse` | boolean (nil or 0 is false) | true walks the path backwards (towards point 0); false forwards. |
+| 5 | `gait` | number, truncated to an integer | Gait id: 2 walk, 3 jog, 4 run, 5 sprint. |
+| 6 | `radius` | number (single precision) | Arrival radius at each point in metres. |
+| 7 | `fromPoint` | number, truncated to an integer | Index of the path point the human is taken to be at; the walk begins with the next point in the travel direction. -1 starts at the path's first point (last when reversed), as `GoalTravelPath` does. |
 
 **Returns** nothing.
 
-As `GoalTravelPath`, with an extra point index (inferred: the point to stop at).
+Pushes the same `TravelPath` goal (type 56) as `GoalTravelPath`, but resumes part-way along the path: the goal's current
+point is set to `fromPoint`, so the first `MoveToFlag` sub-goal is for the point after it (before it when reversed),
+then it carries on to the end as `mode` says.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00360988` (registered by `RegisterBindings`); **calls** `0x002e0670` `Goal_TravelPath2`
+**Notes.** The index is stored as a 16-bit value and sign-extended; it is not range-checked, but the end-of-path test
+runs on the stepped index, so one past the end makes mode 0 end at once and mode 1 wrap. The third and seventh arguments
+were listed as a start index and an end point before; they are the end mode and the point to resume after.
+
+- **Evidence:** confirmed (code) at `0x002e0670`, `0x002e0748`, `0x002e07d0`; detail: traced
+- **Wrapper** `0x00360988` (registered by `RegisterBindings`); **calls** `0x002e0670` `Goal_TravelPath2`, `0x002e0748`
+  `GoalTravelPath_Init`, `0x002e07d0` `GoalTravelPath_NextPoint`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -2990,27 +3126,40 @@ TacticBossScenarioA(gang, stage, flags, vargasObjects, minionObjects, diegoFatig
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | The gang index (Diego's). |
-| 2 | `stage` | number, truncated to an unsigned integer | Fight stage number. |
-| 3 | `flags` | table of 2 numbers (t[1]..t[2]) | Table of two flag handles; written back. |
-| 4 | `vargasObjects` | table of 8 numbers (t[1]..t[8]) | Table of eight object type ids; written back. |
-| 5 | `minionObjects` | table of 8 numbers (t[1]..t[8]) | Table of eight object type ids; written back. |
-| 6 | `diegoFatigue` | table of 3 numbers (t[1]..t[3]) | Table of three numbers (fatigue times); written back. |
-| 7 | `vargasFatigue` | table of 3 numbers (t[1]..t[3]) | Table of three numbers; written back. |
-| 8 | `diegoDamage` | table of 3 numbers (t[1]..t[3]) | Table of three damage percentages; written back. |
-| 9 | `vargasDamage` | table of 3 numbers (t[1]..t[3]) | Table of three damage percentages; written back. |
-| 10 | `diegoProne` | table of 3 numbers (t[1]..t[3]) | Table of three prone percentages; written back. |
-| 11 | `vargasProne` | table of 3 numbers (t[1]..t[3]) | Table of three prone percentages; written back. |
-| 12 | `diegoCycles` | table of 3 numbers (t[1]..t[3]) | Table of three cycle counts; written back. |
-| 13 | `vargasCycles` | table of 3 numbers (t[1]..t[3]) | Table of three cycle counts; written back. |
-| 14 | `callback` | string | Name of the Lua function that receives the tactic's events. |
+| 1 | `gang` | number, truncated to an integer | The gang index (the Hurricanes); -1 or a gang with no members does nothing. |
+| 2 | `stage` | number, truncated to an unsigned integer | Fight stage 1-3 (tactic `+0x68`): 1 Diego alone, 2 Vargas throws from `flags[1]`, 3 Vargas fights too. |
+| 3 | `flags` | table of 2 numbers (t[1]..t[2]) | Two flag handles (tactic `+0x20`): Vargas's throwing spot in stage 2 and his spot in stage 3; a flag that stops resolving is cleared to the null handle. |
+| 4 | `vargasObjects` | table of 8 numbers (t[1]..t[8]) | Eight object type ids (kept as 16 bits, `+0x30`) Vargas picks up and throws. |
+| 5 | `minionObjects` | table of 8 numbers (t[1]..t[8]) | Eight object type ids (`+0x40`) the other gang members throw from a stationary-thrower goal. |
+| 6 | `diegoFatigue` | table of 3 numbers (t[1]..t[3]) | Three bytes (`+0x50`) handed to Diego's boss goal, one per stage (inferred: fatigue times). |
+| 7 | `vargasFatigue` | table of 3 numbers (t[1]..t[3]) | Three bytes (`+0x53`) for Vargas's goals; stage 2 uses the second. |
+| 8 | `diegoDamage` | table of 3 numbers (t[1]..t[3]) | Three damage percentages (`+0x56`) handed to Diego's boss goal. |
+| 9 | `vargasDamage` | table of 3 numbers (t[1]..t[3]) | Three damage percentages (`+0x59`) for Vargas; stage 2 uses the second. |
+| 10 | `diegoProne` | table of 3 numbers (t[1]..t[3]) | Three prone percentages (`+0x5c`) handed to Diego's boss goal. |
+| 11 | `vargasProne` | table of 3 numbers (t[1]..t[3]) | Three prone percentages (`+0x5f`) for Vargas's stage-3 goal. |
+| 12 | `diegoCycles` | table of 3 numbers (t[1]..t[3]) | Three cycle counts (`+0x62`); Diego's goal gets the one of the current stage. |
+| 13 | `vargasCycles` | table of 3 numbers (t[1]..t[3]) | Three cycle counts (`+0x65`); Vargas's goal gets the one of the current stage. |
+| 14 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-The Diego and Vargas boss fight, tuned per stage by the tables.
+Sets the Hurricanes' tactic for the Diego and Vargas fight (level 5). Each member gets a goal by character: Diego
+(character 120) a BigBrawler goal (type 132) built from his tables and the stage; Vargas (119) in stage 2 a
+BigThrower-style goal at `flags[1]` with `vargasObjects`, in stage 3 a BigBrawler goal at `flags[2]`; everyone else a
+stationary-thrower goal with `minionObjects`. Diego's health is capped per stage (at 66 % in stage 1, 33 % in stage 2):
+on reaching it he plays a break animation and the callback gets 18 `TacAnimStart`, or 1 `TacFinished` when his goal
+reports the break done; in stage 3 it reports 1 once neither boss is still standing.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003767f8` (registered by `RegisterBindings`); **calls** `0x00309a40` `Tactic_BossDiegoVargas`
+**Notes.** The wrapper writes every table back unchanged. Exact meaning of the fatigue, damage, prone and cycle bytes
+lives in the boss goals (0x002e8288, 0x002ed0a8), not traced. Members are re-assigned goals on events 19 and 22 (OnEvent
+0x0030a798); Vargas's stage-3 break count is tactic `+0x69`. Vtable 0x00543440.
+
+- **Evidence:** confirmed (code) at `0x00309a40`, `0x00309b60`, `0x0030a6c0`, `0x0030a738`, `0x0030a798`, `0x00309ea0`;
+  detail: traced
+- **Wrapper** `0x003767f8` (registered by `RegisterBindings`); **calls** `0x00309a40` `Tactic_BossDiegoVargas`,
+  `0x00309b60` `BossDiegoVargasTactic_Init`, `0x0030a6c0` `BossDiegoVargasTactic_Start`, `0x0030a738`
+  `BossDiegoVargasTactic_Process`, `0x0030a798` `BossDiegoVargasTactic_OnEvent`, `0x00309ea0`
+  `BossDiegoVargasTactic_AssignGoal`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
@@ -3153,17 +3302,31 @@ TacticBossScenarioG(gang, stage, flag, callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `stage` | number, truncated to an unsigned integer | Fight stage number. |
-| 3 | `flag` | number, truncated to an unsigned integer | Handle of a target flag. |
-| 4 | `callback` | string | Name of the Lua function that receives the tactic's events. |
+| 1 | `gang` | number, truncated to an integer | The gang index (the Destroyers); -1 or a gang with no members does nothing. |
+| 2 | `stage` | number, truncated to an unsigned integer | Fight stage, kept as a byte (tactic `+0x24`): 1 Virgil throws from his spot, 2 a HideAndSeek goal, any other value (scripts use 3) he fights up close. |
+| 3 | `flag` | number, truncated to an unsigned integer | Handle of a flag Virgil throws at when the tactic starts; a handle that is not a flag skips the opening throw. |
+| 4 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Virgil's boss fight.
+Sets the Destroyers' tactic for Virgil's boss fight (character 178, level 93). Virgil is given voice set 138 (human
+`+0x3b0`) and, by stage, a BigLedgeThrower goal (type 138) throwing dyn_molotv and dyn_beerbottle objects, a HideAndSeek
+goal (type 156) or a BigFighter goal (type 133); if `flag` is a flag he is first handed a molotov (when empty-handed)
+and throws it at the flag. Every other member gets a melee goal. His health is held at 83 % in stage 1 and 73 % in stage
+2: on reaching it the callback gets 1 `TacFinished` (the cue for the next stage); it also gets 1 once he is down or
+dead.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00377590` (registered by `RegisterBindings`); **calls** `0x0030d6f8` `Tactic_BossVirgil`
+**Notes.** Vtable 0x00543680. The opening throw is `Goal_ThrowObject` with 20.0 and mode 2, pushed over the stage goal.
+Events 1 and 16 are forwarded to the HideAndSeek or BigFighter goal; 19 re-assigns a member's goal, 22 does so for some
+senders, 18 ends the tactic. "Down" is human state flags 0x180050000 (0x00227e60). The BigLedgeThrower count (6) is not
+traced here, as in `TacticBossScenarioH`.
+
+- **Evidence:** confirmed (code) at `0x0030d6f8`, `0x0030d7a0`, `0x0030d820`, `0x0030d960`, `0x0030dd28`, `0x0030daf8`,
+  `0x0030dc28`, `0x0030dd90`; detail: traced
+- **Wrapper** `0x00377590` (registered by `RegisterBindings`); **calls** `0x0030d6f8` `Tactic_BossVirgil`, `0x0030d7a0`
+  `BossVirgilTactic_Init`, `0x0030d820` `BossVirgilTactic_Start`, `0x0030d960` `BossVirgilTactic_AssignGoal`,
+  `0x0030dd28` `BossVirgilTactic_Process`, `0x0030daf8` `BossVirgilTactic_CheckHealth`, `0x0030dc28`
+  `BossVirgilTactic_IsVirgilAlive`, `0x0030dd90` `BossVirgilTactic_OnEvent`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
@@ -3176,16 +3339,26 @@ TacticBossScenarioH(gang, stage, callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `stage` | number, truncated to an unsigned integer; default 1 | Fight stage number (default 1). |
-| 3 | `callback` | string | Name of the Lua function that receives the tactic's events. |
+| 1 | `gang` | number, truncated to an integer | The gang index (the Hi-Hats); -1 or a gang with no members does nothing. |
+| 2 | `stage` | number, truncated to an unsigned integer; default 1 | Fight stage, kept as a byte (tactic `+0x20`): 1 the boss throws from where he stands, 2 he fights up close. Default 1. |
+| 3 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Chatterbox's boss fight.
+Sets the Hi-Hats' tactic for their boss fight (level 81). The boss (character 135) is given voice set 137 (human
+`+0x3b0`) and, in stage 1, a BigLedgeThrower goal (type 138) throwing dyn_molotv and dyn_cny_skullhead objects from his
+spot, in stage 2 a BigFighterA goal (type 134); every other member gets a melee goal. In stage 1 the boss's health is
+held at 75 %: on reaching it the callback gets 1 `TacFinished` (the cue to move to stage 2); in stage 2 it gets 1 once
+the boss is down or dead.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00377648` (registered by `RegisterBindings`); **calls** `0x0030e028` `Tactic_BossChatterbox`
+**Notes.** Vtable 0x005436e0 (Start 0x0030e508, event 0x0030e5b0: members are re-assigned goals on events 19 and 22).
+The names of the two throwables are passed as type names (0x0056d380, 0x0056d390); the BigLedgeThrower count argument
+(6) is not traced here. The scenario's "Chatterbox" name is ours.
+
+- **Evidence:** confirmed (code) at `0x0030e028`, `0x0030e0c0`, `0x0030e548`, `0x0030e1d8`; detail: traced
+- **Wrapper** `0x00377648` (registered by `RegisterBindings`); **calls** `0x0030e028` `Tactic_BossChatterbox`,
+  `0x0030e0c0` `BossChatterboxTactic_Init`, `0x0030e548` `BossChatterboxTactic_Process`, `0x0030e1d8`
+  `BossChatterboxTactic_AssignGoal`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
@@ -3808,18 +3981,23 @@ TacticTrigger(gang, what, enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | The gang index; -1 is ignored. |
-| 2 | `what` | number, truncated to an integer | 0 sets the crowd's first switch (tactic byte `+0x2a`); 1 sets its second switch through 0x0030fe58; other values do nothing. |
+| 1 | `gang` | number, truncated to an integer | The gang index; -1, a gang not in use, or one without a tactic is ignored. |
+| 2 | `what` | number, truncated to an integer | 0 sets the crowd's periodic switch (tactic `+0x2a`); 1 makes the crowd react now; other values do nothing. |
 | 3 | `enabled` | number, truncated to an integer | Non-zero for on, 0 for off. It is read as a number; the game's scripts pass `true`, which `global.lua` defines as 1. |
 
 **Returns** nothing.
 
-Switches a reaction of a gang running a crowd tactic (`TacticCrowd`, type 0x1b); does nothing for other tactics.
+Drives a gang running a crowd tactic (`TacticCrowd`, type 0x1b); does nothing for other tactics. With `what` 0 the
+crowd's periodic switch makes every free member react on each cheer tick (every 2 s); with `what` 1 every free member
+reacts once at once: a gesture clip (anim 0x8f, or 0xb1 when `enabled` is 0) after 0-750 ms, then one of three cheers
+([AI: TacticCrowd](../../research/ai.md#tactics)).
 
-**Notes.** Confirmed (code) at 0x00316fa0. What the two switches do is inferred (cheering, joining in).
+**Notes.** The reaction is 0x0030fc48; with `what` 0 a reaction tick picks anim 0x10 instead of 0x8f half the time.
+Members with queued actions are skipped.
 
-- **Evidence:** confirmed (code) at `0x00316fa0`; detail: brief
-- **Wrapper** `0x00377a10` (registered by `RegisterBindings`); **calls** `0x00316fa0` `Tactic_TriggerCrowd`
+- **Evidence:** confirmed (code) at `0x00316fa0`, `0x0030fe58`, `0x0030fc48`; detail: traced
+- **Wrapper** `0x00377a10` (registered by `RegisterBindings`); **calls** `0x00316fa0` `Tactic_TriggerCrowd`,
+  `0x0030fe58`, `0x0030fc48` `TacticCrowd_React`
 - **Used by** 3 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** implemented
@@ -3892,17 +4070,24 @@ TacticVandalizeCars(gang, cars, delayMs, callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `cars` | table of 4 numbers (t[1]..t[4]) | Table of four car object handles (`NilHandle` for unused); written back. |
-| 3 | `delayMs` | number, truncated to an unsigned integer; default 3000 | Time in milliseconds (default 3000). |
-| 4 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
+| 1 | `gang` | number, truncated to an integer | The gang index; a gang that does not exist does nothing. |
+| 2 | `cars` | table of 4 numbers (t[1]..t[4]) | Four car handles to wreck (`NilHandle` for unused slots, which count as done); written back unchanged. |
+| 3 | `delayMs` | number, truncated to an unsigned integer; default 3000 | Milliseconds passed to each member's `Destroy` goal, as in TacticVandalize (default 3000; inferred: the pause between attacks). |
+| 4 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
 
-Has a gang wreck up to four given cars.
+Has a gang wreck up to four cars: the same Vandalize tactic (type 0x1c) as TacticVandalize, built with the cars in place
+of a zone. At the start every non-player member who is not down gets a `Destroy` goal with the four cars (no leader
+range) and brain byte `+0x28d` = 1. Every 3 s the tactic checks the cars, and once each is wrecked (0x0038dae0) or is
+not a car, the callback gets 1 `TacFinished`.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003757b8` (registered by `RegisterBindings`); **calls** `0x00316590` `Tactic_VandalizeCars`
+**Notes.** Vtable 0x00544040, event 0x0031eaf0 (16 `TacObjectDestroyed` and the shared hit/sighting codes, as for
+TacticVandalize). How the Destroy goal (0x002cd4f8) picks among the cars is not traced.
+
+- **Evidence:** confirmed (code) at `0x00316590`, `0x0031e3b8`, `0x0031e4f0`, `0x0031ea00`; detail: traced
+- **Wrapper** `0x003757b8` (registered by `RegisterBindings`); **calls** `0x00316590` `Tactic_VandalizeCars`,
+  `0x0031e3b8` `VandalizeTactic_Init`, `0x0031e4f0` `VandalizeTactic_Start`, `0x0031ea00` `VandalizeTactic_Process`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented

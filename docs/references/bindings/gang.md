@@ -44,7 +44,7 @@ read an entry are on the [masterlist](index.md).
 | [`GangRemoveSpinningIcon`](#gangremovespinningicon) | - | 1 | no | no | confirmed (code) |
 | [`GangRemoveTurfBox`](#gangremoveturfbox) | - | 5 | no | no | confirmed (code) |
 | [`GangRespond`](#gangrespond) | - | 2 | no | no | confirmed (code) |
-| [`GangSetAlwaysSeen`](#gangsetalwaysseen) | - | 8 | no | no | speculative |
+| [`GangSetAlwaysSeen`](#gangsetalwaysseen) | - | 8 | no | no | confirmed (code) |
 | [`GangSetAttackable`](#gangsetattackable) | - | 4 | no | no | inferred |
 | [`GangSetCustomSpotDialog`](#gangsetcustomspotdialog) | - | 0 | no | no | confirmed (code) |
 | [`GangSetDamageResponse`](#gangsetdamageresponse) | - | 2 | no | no | inferred |
@@ -61,7 +61,7 @@ read an entry are on the [masterlist](index.md).
 | [`GangSetReactToViolence`](#gangsetreacttoviolence) | - | 1 | no | no | inferred |
 | [`GangSetRespondPercentage`](#gangsetrespondpercentage) | - | 10 | no | no | confirmed (code) |
 | [`GangSetSpawnerModel`](#gangsetspawnermodel) | - | 0 | no | no | confirmed (code) |
-| [`GangSetSpawnerMustBeOffScreen`](#gangsetspawnermustbeoffscreen) | - | 12 | no | no | inferred |
+| [`GangSetSpawnerMustBeOffScreen`](#gangsetspawnermustbeoffscreen) | - | 12 | no | no | confirmed (code) |
 | [`GangSetTargetable`](#gangsettargetable) | - | 4 | no | yes | confirmed (code) |
 | [`GangSetThreatResponse`](#gangsetthreatresponse) | - | 20 | yes | yes | confirmed (code) |
 | [`GangStartSpawner`](#gangstartspawner) | - | 45 | no | no | confirmed (code) |
@@ -782,15 +782,21 @@ GangMakeEnemiesOfType(gang, type)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `type` | number, truncated to an integer | Gang type id (as given to GangCreate); every gang in use with this type is affected. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31, 16-bit); -1 or an unused slot does nothing. |
+| 2 | `type` | number, truncated to an integer | Gang kind (gang `+0x2c`, the type given to GangCreate); every gang in use of this kind is affected. |
 
 **Returns** nothing.
 
-Makes the gang an enemy of every existing gang of the given type, in both directions (0x0016c3a8 with both-ways set).
+Makes the gang and every gang in use of the given kind enemies of each other: in both gangs' masks the other's friend
+bit (`+0x3c`) is cleared and its enemy bit (`+0x38`) set, as GangMakeEnemies does for one pair. Gangs of that kind made
+later are not affected.
 
-- **Evidence:** confirmed (code) at `0x0016ae60`; detail: brief
-- **Wrapper** `0x00373c68` (registered by `RegisterBindings`); **calls** `0x0016ae60`
+**Notes.** If the gang is itself of that kind its own enemy bit is set too, but a gang always counts its own members as
+friends ([AI: gangs](../../research/ai.md)). The crime report uses the same routine one way for police gangs.
+
+- **Evidence:** confirmed (code) at `0x0016ae60`, `0x0016c3a8`, `0x001690c8`; detail: traced
+- **Wrapper** `0x00373c68` (registered by `RegisterBindings`); **calls** `0x0016ae60` `Gang_MakeEnemiesOfType`,
+  `0x0016c3a8` `Gang_SetHostileToKind`, `0x001690c8` `Gang_SetEnemyBit`
 - **Used by** 8 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -949,17 +955,20 @@ GangSetAlwaysSeen(gang, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 or an unused slot does nothing. |
-| 2 | `on` | boolean (nil or 0 is false) | true: the gang is always treated as seen; false: normal visibility. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31, 16-bit); -1 or an unused slot does nothing. |
+| 2 | `on` | boolean (nil or 0 is false) | true sets the flag, false (or nil) clears it. |
 
 **Returns** nothing.
 
-Sets the byte at gang `+0xdc` for a gang in use; from the name, the gang counts as always seen.
+Sets the gang's byte `+0xdc`. While it is set, an enemy brain scanning for foes (0x0028b358) notices the gang's members
+anywhere within its sight range, skipping the view-cone, close-range and line-of-sight tests; and the gang's own members
+in the EngageEnemy (11) and Spectate (16) goals skip their line-of-sight test (0x00222288).
 
-**Notes.** The store is confirmed (code) at 0x0016bde8; its readers are not traced.
+**Notes.** The sight range itself (0x0028bf00) still applies. Readers: 0x0028b47c, 0x002affd8, 0x002b45c8.
 
-- **Evidence:** speculative; detail: brief
-- **Wrapper** `0x00374620` (registered by `RegisterBindings`); **calls** `0x0016bde8` `Gang_SetAlwaysSeen`
+- **Evidence:** confirmed (code) at `0x0016bde8`, `0x0028b358`; detail: traced
+- **Wrapper** `0x00374620` (registered by `RegisterBindings`); **calls** `0x0016bde8` `Gang_SetAlwaysSeen`, `0x0028b358`
+  `Brain_ScanEnemies`
 - **Used by** 8 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -1184,15 +1193,21 @@ GangSetMaxConcurrent(gang, spawner, count)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `spawner` | string | Spawner name. |
-| 3 | `count` | number, truncated to an integer | How many of its characters may be alive at once. |
+| 2 | `spawner` | string | Name of one of the gang's spawners; an unknown name does nothing. |
+| 3 | `count` | number, truncated to an integer | How many of the spawner's humans may be alive at once (16-bit). A negative value -n spawns in waves: up to n, then nothing until all of them are dead. |
 
 **Returns** nothing.
 
-Changes how many characters a spawner keeps alive at the same time.
+Changes how many humans a spawner keeps alive at the same time (spawner `+0x5a`). The spawner spawns another human only
+while its living count (`+0x5c`) is below this; with a negative count it fills up to the magnitude and then waits for
+the whole wave to die before starting the next.
 
-- **Evidence:** confirmed (code) at `0x0016b0b0`; detail: brief
-- **Wrapper** `0x00374350` (registered by `RegisterBindings`); **calls** `0x0016b0b0`
+**Notes.** Reader: GangSpawner_Update (0x001681a0, at 0x0016855c; the wave flag is spawner `+0x51`). The spawner's total
+(`+0x58`) still ends it. Spawners: [AI](../../research/ai.md#spawners).
+
+- **Evidence:** confirmed (code) at `0x0016b0b0`, `0x00168eb8`; detail: traced
+- **Wrapper** `0x00374350` (registered by `RegisterBindings`); **calls** `0x0016b0b0` `Gang_SetSpawnerMaxConcurrent`,
+  `0x00168eb8` `GangSpawner_SetMaxConcurrent`
 - **Used by** 8 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
@@ -1348,19 +1363,22 @@ GangSetSpawnerMustBeOffScreen(gang, spawner, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `spawner` | string | Spawner name. |
-| 3 | `on` | boolean (nil or 0 is false) | true: only spawn while the spawn point is off screen; false: spawn anywhere. |
+| 2 | `spawner` | string | Name of one of the gang's spawners (as given to GangAddSpawner); an unknown name does nothing. |
+| 3 | `on` | boolean (nil or 0 is false) | true: the spawner only spawns while no camera can see its spot; false (or nil): it spawns regardless. |
 
 **Returns** nothing.
 
-Sets a gang spawner's off-screen flag (spawner `+0x8c`, found by name with 0x00168aa0); from the name, the spawner then
-only places its humans where the player cannot see them appear.
+Sets a gang spawner's off-screen flag (spawner `+0x8c`). While it is set, each update the spawner first checks whether a
+camera can see a 0.3 m sphere 1.6 m above the spawner's position, and skips spawning that update if it can, so the
+player never sees its humans appear.
 
-**Notes.** The store is confirmed (code) at 0x00168e68; the reader of spawner `+0x8c` is not traced. Spawners:
-[AI](../../research/ai.md#spawners).
+**Notes.** Reader: GangSpawner_Update (0x001681a0, at 0x001685e8, the visibility test 0x001202e8). The test uses the
+spawner's own position, so it matters for spawners that place humans there, not for the states that place them away from
+the player. Spawners: [AI](../../research/ai.md#spawners).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00374200` (registered by `RegisterBindings`); **calls** `0x0016b070` `Gang_SetSpawnerMustBeOffScreen`
+- **Evidence:** confirmed (code) at `0x0016b070`, `0x00168e68`; detail: traced
+- **Wrapper** `0x00374200` (registered by `RegisterBindings`); **calls** `0x0016b070` `Gang_SetSpawnerMustBeOffScreen`,
+  `0x00168e68` `GangSpawner_SetMustBeOffScreen`
 - **Used by** 12 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented

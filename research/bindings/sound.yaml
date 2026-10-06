@@ -134,15 +134,20 @@
 - name: SndLoadBank
   wrapper: 0x00371130
   calls:
-    - {addr: 0x001133d0}
+    - {addr: 0x001133d0, name: Sound_LoadBank}
+    - {addr: 0x0010fa50, name: AudioManager_LoadBank}
+    - {addr: 0x00111618, name: AudioManager_SetPendingBank}
   args:
-    - {name: bank, lua: string, desc: "Name of a sound bank (such as a level's or a boss's bank)."}
+    - {name: bank, lua: string, desc: "Name of a sound bank (such as a level's or a boss's bank), without extension."}
   description: >-
-    Loads the named sound bank into sound RAM now (the one bank resident at a time, replacing the level's), or, while
-    the audio manager defers bank loads (+0x3fa58, inferred: during level loading), records it as the bank to load
-    once loading ends in place of the default "sound".
+    Loads the named sound bank into sound RAM now (one bank is resident at a time, so it replaces the level's) and
+    resets the pending bank name to `none`; or, while the audio manager defers bank loads (`+0x3fa58`, set when
+    gameplay is entered), only records it as the pending bank that level loading loads in place of `sound`.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The pending name is 15 characters at `+0x3fa48`. A bank already current is not reloaded. Banks and who loads
+    them: [Sound: banks](../../research/sound.md#banks).
   usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false, levels: [3, 5, 81, 31, 55, 84, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -251,13 +256,20 @@
 - name: SoundSetSystemMusicState
   wrapper: 0x00371438
   calls:
-    - {addr: 0x00113e60}
+    - {addr: 0x00113e60, name: Sound_SetSystemMusicState}
+    - {addr: 0x00419fc8, name: GameState_SetMusicMood}
   args:
-    - {name: state, lua: number, ctype: int, desc: "3 switches the state flag (game state +0x3f4) off; any other value switches it on."}
+    - {name: state, lua: number, ctype: int, desc: "Mood to hold: 0 idle, 1 fight, 2 hunted (16-bit); 3 hands the mood back to the game; 4 switches the system music off. The scripts use 0, 1 and 3."}
   description: >-
-    Sets the system (automatic, mood-driven) music's state and updates it (0x00419fc8); the scripts use 0, 1 and 3.
-  evidence: inferred
-  depth: brief
+    Sets the system music's mood (game state `+0x40c`), which picks the looping track ([Sound](../../research/sound.md)).
+    A state other than 3 also sets the script-hold flag (`+0x3f4`), so the game's own mood choice
+    (SystemMusic_UpdateMood: fight when an enemy gang engages the player's, hunted while his gang is hunted, else
+    idle) stops overriding it. State 3 clears the hold and the game chooses again on its next update.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    State 4 (0x00419fc8) calls GameState_SetSystemMusic(0), which stops the music and clears the hold, and leaves
+    the mood at 3. The moods' names come from the game's choice in SystemMusic_UpdateMood (0x0041a0d0).
   usage: {chunks: 8, calls: 16, boot: false, mission1: false, result_used: false, levels: [2, 3, 86, 14, 55]}
 
 - name: SoundEnableSystemMusic
@@ -391,28 +403,40 @@
 - name: SoundPreLoad
   wrapper: 0x00371768
   calls:
-    - {addr: 0x00113700}
+    - {addr: 0x00113700, name: Audio_PreloadSoundAt}
+    - {addr: 0x001101b8}
+    - {addr: 0x00111f78}
   args:
-    - {name: sound, lua: string, desc: "Sound name."}
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} it will play at; written back."}
+    - {name: sound, lua: string, desc: "Sound name, hashed with the game's name hash (0x00143f68) as for SoundPlay."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres the sound will play at; written back unchanged."}
   results:
-    - {lua: number, desc: "The prepared sound's handle, to start with SoundStart."}
+    - {lua: number, desc: "Handle of the prepared sound, for SoundStart; the null sound handle (0x00598690) when it could not be prepared."}
   description: >-
-    Loads and positions a sound without starting it, so that SoundStart can play it later without delay.
+    Prepares a positional sound at a point without starting it: a sound task is set up at full volume and normal
+    pitch with no attached object (0x00111f78, as the scene-sound preload does), so that SoundStart can start it later
+    with no loading delay.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    A global flag (0x00512c14) is held at 1 while the task is made (inferred: tells the task code not to start it).
+    Converted as unsigned. A prepared sound never started keeps its task (not traced when it is freed).
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true, levels: [5, 93, 14]}
 
 - name: SoundStart
   wrapper: 0x00371868
   calls:
-    - {addr: 0x00113780}
+    - {addr: 0x00113780, name: Audio_StartPreloadedSound}
+    - {addr: 0x00110258}
+    - {addr: 0x00111f40}
   args:
-    - {name: sound, lua: number, ctype: unsigned, desc: "Handle from SoundPreLoad."}
+    - {name: sound, lua: number, ctype: unsigned, desc: "Handle from SoundPreLoad; a handle that no longer resolves to a sound task does nothing."}
   description: >-
-    Starts a sound prepared with SoundPreLoad.
+    Starts a sound prepared with SoundPreLoad: the handle is resolved to its sound task (0x0010f578) and the task is
+    started (0x00111f40), playing at the position given to SoundPreLoad.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The same start path is used by scene event 71 on a car ([Sound](../../research/sound.md)).
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [5, 93, 14]}
 
 - name: SoundStop
@@ -449,26 +473,32 @@
 - name: AddAmbientSoundEmitter
   wrapper: 0x00371b18
   calls:
-    - {addr: 0x00113840}
+    - {addr: 0x00113840, name: Sound_AddAmbientEmitter}
+    - {addr: 0x0010cf58, name: AmbientManager_AddEmitter}
+    - {addr: 0x0010cc70, name: AmbientManager_FindEmitter}
   args:
-    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "First corner/end {x, y, z} of the emitter's area; written back."}
-    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Second corner/end {x, y, z}; the same as pos1 for a point source."}
-    - {name: index, lua: number, ctype: int, desc: "First ambient-table entry to pick from, or -1 to use the sound name."}
-    - {name: sound, lua: string, desc: "Sound name when index is -1 (such as a music loop for a radio)."}
-    - {name: count, lua: number, ctype: unsigned, desc: "Number of consecutive table entries to pick from."}
-    - {name: range, lua: number, ctype: float, desc: "Audible range in metres, -1 for the default (inferred)."}
-    - {name: arg7, lua: number, ctype: int, desc: "A number (the scripts pass 0); meaning not traced."}
-    - {name: minDelay, lua: number, ctype: unsigned, desc: "Shortest pause between plays (the scripts pass 1 or 500) (inferred)."}
-    - {name: maxDelay, lua: number, ctype: unsigned, desc: "Longest pause between plays (inferred)."}
-    - {name: arg10, lua: number, ctype: unsigned, desc: "A small number (the scripts pass 3); meaning not traced."}
-    - {name: arg11, lua: number, ctype: int, desc: "A small number (the scripts pass 0 or 3); meaning not traced."}
+    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "First point {x, y, z} of the emitter (emitter `+0x60`); written back."}
+    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Second point {x, y, z} (emitter `+0x10`); the same as pos1 for a point source; written back."}
+    - {name: index, lua: number, ctype: int, desc: "First ambient-table slot to pick from (AddAmbientSound), or -1 to use the sound name."}
+    - {name: sound, lua: string, desc: "Sound name when index is -1 (such as a music loop for a radio); hashed, nil for none."}
+    - {name: count, lua: number, ctype: unsigned, desc: "Number of consecutive table slots to pick from at random."}
+    - {name: range, lua: number, ctype: float, desc: "Audible range in metres (inferred); -1 takes the sound's own range plus 10."}
+    - {name: arg7, lua: number, ctype: int, desc: "Stored as a byte at emitter `+0x8c` (AddAmbientSoundEmitter2's arg8; the scripts pass 0); meaning not traced."}
+    - {name: minDelay, lua: number, ctype: unsigned, desc: "Lower bound of the random pause between plays (16-bit, `+0x86`; inferred)."}
+    - {name: maxDelay, lua: number, ctype: unsigned, desc: "Upper bound of the random pause (16-bit, `+0x88`; inferred); the first pause is drawn between the two at once."}
+    - {name: arg10, lua: number, ctype: unsigned, desc: "Stored as a byte at emitter `+0x8d` (the scripts pass 3); meaning not traced."}
+    - {name: mode, lua: number, ctype: int, desc: "Mode byte 0-2 at `+0x90`; larger values become 0 (the scripts pass 0 or 3, so 3 acts as 0)."}
   results:
     - {lua: number, desc: "The emitter's id, for EnableAmbientEmitter and SetAmbientEmitterVolumeMod."}
   description: >-
-    Adds an unnamed ambient sound emitter (a looping or repeating sound in an area), the older form of
-    AddAmbientSoundEmitter2.
-  evidence: inferred
-  depth: brief
+    Adds an ambient sound emitter, the older form of AddAmbientSoundEmitter2: every one gets the name
+    `particle task`. Calling it again with the same sound and first point returns the existing emitter (marking it
+    `+0x7c` = 1) instead of adding one. The sounds it can play are preloaded when it is added.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Argument-to-field mapping confirmed (code) through the register and stack passing at 0x00371ce0 (the decompiler
+    hides arguments 10 and 11); the meaning of the numbers is inferred as for AddAmbientSoundEmitter2.
   usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: true, levels: [3, 5, 93, 14, 52, 82, 11]}
 
 - name: AddAmbientSoundEmitter2
@@ -547,14 +577,19 @@
 - name: SetAmbientEmitterVolumeMod
   wrapper: 0x003725f0
   calls:
-    - {addr: 0x00113c00}
+    - {addr: 0x00113c00, name: Sound_SetAmbientEmitterVolume}
+    - {addr: 0x0010d2a0, name: AmbientEmitter_SetVolume}
   args:
-    - {name: emitter, lua: number, ctype: int, desc: "Emitter id (from AddAmbientSoundEmitter)."}
-    - {name: volume, lua: number, ctype: float, desc: "Volume factor, 0-1."}
+    - {name: emitter, lua: number, ctype: int, desc: "Emitter id, as AddAmbientSoundEmitter or AddAmbientSoundEmitter2 returned (not range-checked)."}
+    - {name: volume, lua: number, ctype: float, desc: "Volume factor, 1 normal and 0 silent (not clamped)."}
   description: >-
-    Scales the volume of one ambient emitter, for example a radio turned down.
-  evidence: inferred
-  depth: brief
+    Scales the volume of one ambient emitter (its record, 0xd0 bytes at ambient manager `+0x80 + 0xd0 × id`, keeps
+    the factor at `+0x88`), and applies it at once to the sound the emitter is playing (`+0x74` of its voice), for
+    example a radio turned down.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The ambient manager is the audio manager `+0x24280`. That later plays use `+0x88` is inferred.
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [2, 54, 82]}
 
 - name: PlayAmbientEmitter

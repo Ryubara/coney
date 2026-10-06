@@ -43,14 +43,21 @@
 - name: SetGeneralCarMsgHandler
   wrapper: 0x0036d2e8
   calls:
-    - {addr: 0x00386340}
+    - {addr: 0x00386340, name: Script_SetGeneralCarMsgHandler}
+    - {addr: 0x0038e538, name: CarManager_SetMsgHandler}
   args:
-    - {name: message, lua: number, ctype: int, desc: "Message number; every call passes 25 (inferred: car damaged)."}
-    - {name: callback, lua: string, desc: "Lua function name, or nil to remove."}
+    - {name: message, lua: number, ctype: int, desc: "Message number; every call passes 25 (0x19), the message a car sends itself when it explodes."}
+    - {name: callback, lua: string, desc: "Name of the Lua function to call, or nil to remove it."}
   description: >-
-    Registers a Lua callback for a message from any car (`0x0038e538` on the world's car list).
-  evidence: confirmed-code
-  depth: brief
+    Registers one Lua callback for a message from any car: the car manager (`0x00512c7c + 0x844`) keeps the
+    function's reference in its slot for that number (`+0x18 + 4 × message`). Scripts use it to hear every car
+    explosion (Car_DoExplode sends message 0x19, with the car as self) without a SetMsgHandler on each car.
+  evidence: inferred
+  depth: thorough
+  notes: >-
+    The store is confirmed (code) at 0x0038e538; the reference comes from the script system's slot `+0xcc`. The
+    code that reads the manager's slots when a car gets a message, and the callback's arguments, are not traced
+    (message 0x19 marshals as `(self, other, n, flag)`, [Scripts](../../research/scripting.md#message-handlers)).
   usage: {chunks: 10, calls: 20, boot: false, mission1: false, result_used: false, levels: [34, 2, 3, 5, 93, 14, 82, 92]}
 
 - name: SetMsgHandlerEx

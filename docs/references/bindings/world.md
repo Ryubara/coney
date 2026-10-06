@@ -16,17 +16,17 @@ and how to read an entry are on the [masterlist](index.md).
 | [`BreakObjectsInRadius`](#breakobjectsinradius) | - | 12 | no | no | confirmed (code) |
 | [`CarCanBeDamagedBy`](#carcanbedamagedby) | - | 0 | no | no | inferred |
 | [`CarDestroy`](#cardestroy) | - | 5 | no | no | confirmed (code) |
-| [`CarExplode`](#carexplode) | - | 2 | no | no | inferred |
+| [`CarExplode`](#carexplode) | - | 2 | no | no | confirmed (code) |
 | [`CarMakeGoodAsNew`](#carmakegoodasnew) | - | 2 | no | yes | confirmed (code) |
 | [`CarPlaceInTrunk`](#carplaceintrunk) | - | 0 | no | no | inferred |
 | [`CarPlaceInTrunkOnDetach`](#carplaceintrunkondetach) | - | 12 | no | no | confirmed (code) |
-| [`CarRemovePart`](#carremovepart) | - | 3 | no | no | inferred |
+| [`CarRemovePart`](#carremovepart) | - | 3 | no | no | confirmed (code) |
 | [`CarSetColor`](#carsetcolor) | - | 15 | no | yes | confirmed (code) |
 | [`CarSetPartDamage`](#carsetpartdamage) | - | 0 | no | no | inferred |
 | [`CarSetPartOpen`](#carsetpartopen) | - | 1 | no | no | confirmed (code) |
 | [`CarSpawn`](#carspawn) | number | 26 | no | yes | confirmed (code) |
 | [`CarSpawnRadio`](#carspawnradio) | - | 15 | no | yes | confirmed (code) |
-| [`ChangeBlocker`](#changeblocker) | - | 2 | no | no | inferred |
+| [`ChangeBlocker`](#changeblocker) | - | 2 | no | no | confirmed (code) |
 | [`ChangeCollision`](#changecollision) | - | 5 | no | no | confirmed (code) |
 | [`CloseDoor`](#closedoor) | - | 53 | no | yes | confirmed (code) |
 | [`ConvertJumpToDoor`](#convertjumptodoor) | - | 3 | no | no | confirmed (code) |
@@ -69,10 +69,10 @@ and how to read an entry are on the [masterlist](index.md).
 | [`ObjScriptPushInt`](#objscriptpushint) | - | 0 | no | no | confirmed (code) |
 | [`ObjScriptPushObject`](#objscriptpushobject) | - | 0 | no | no | confirmed (code) |
 | [`ObjScriptSignal`](#objscriptsignal) | - | 0 | no | no | confirmed (code) |
-| [`ObjSetTrainPoint`](#objsettrainpoint) | - | 7 | no | no | inferred |
+| [`ObjSetTrainPoint`](#objsettrainpoint) | - | 7 | no | no | confirmed (code) |
 | [`ObjShow`](#objshow) | - | 70 | yes | yes | confirmed (code) |
 | [`ObjSpawn`](#objspawn) | number | 123 | yes | yes | confirmed (code) |
-| [`ObjStartTrain`](#objstarttrain) | - | 7 | no | no | inferred |
+| [`ObjStartTrain`](#objstarttrain) | - | 7 | no | no | confirmed (code) |
 | [`ObjStopTrain`](#objstoptrain) | - | 3 | no | no | confirmed (code) |
 | [`OpenDoor`](#opendoor) | - | 46 | no | no | confirmed (code) |
 | [`OpenDoorAnimated`](#opendooranimated) | - | 6 | no | no | confirmed (code) |
@@ -280,20 +280,27 @@ that class's own slot +0x4c (Task_Unschedule in the base), so pass only cars. Ni
 ## CarExplode {#carexplode}
 
 ```lua
-CarExplode(car, flag)
+CarExplode(car, quiet)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `car` | number, truncated to an unsigned integer | Handle of the car. |
-| 2 | `flag` | boolean (nil or 0 is false) | Passed through to the explosion routine (0x0038ab18); scripts pass true or nothing. Meaning not traced. |
+| 1 | `car` | number, truncated to an unsigned integer | Handle of the car; a bad handle does nothing. |
+| 2 | `quiet` | boolean (nil or 0 is false) | true wrecks the car without the blast; false or nil (most calls) gives the full explosion. |
 
 **Returns** nothing.
 
-Blows up a car.
+Blows up a car that has not yet exploded: every part not already off is knocked off and the car is marked exploded
+(`+0x12d5`). Without `quiet` it also plays the explosion effects and sound, deals 300 damage to every human within 5 m
+with a clear line to it, sends the car message 0x19 (heard by SetGeneralCarMsgHandler and SetMsgHandler), scores a
+statistic for whoever caused it (stat 0xb, up to 10 for the parts) and alerts the AI nearby.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003786a0` (registered by `RegisterBindings`); **calls** `0x0038dfa0` `Car_Explode`
+**Notes.** A car with `+0x1200` set is ignored (meaning not traced). Blast: Explosion_DamageHumansInRadius 0x00392638 (5
+m, 300). The calls 0x002936a8 (30 m) and 0x003963b8 (10 m) are inferred to alert humans and push objects.
+
+- **Evidence:** confirmed (code) at `0x0038dfa0`, `0x0038ab18`, `0x0038ab50`; detail: traced
+- **Wrapper** `0x003786a0` (registered by `RegisterBindings`); **calls** `0x0038dfa0` `Car_Explode`, `0x0038ab18`
+  `Car_TryExplode`, `0x0038ab50` `Car_DoExplode`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
@@ -371,21 +378,28 @@ What kind 5 is (a pickup of the inventory list) is not traced.
 ## CarRemovePart {#carremovepart}
 
 ```lua
-CarRemovePart(car, part, flag)
+CarRemovePart(car, part, removed)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `car` | number, truncated to an unsigned integer | Handle of the car. |
-| 2 | `part` | number, truncated to an unsigned integer | Car part id; the scripts use 5, 17, 18 and 19 (internal part ids, as in `CarSetPartOpen`'s table). |
-| 3 | `flag` | boolean (nil or 0 is false) | Passed to 0x0038c7d8; scripts pass true (likely: detach the part as debris). |
+| 1 | `car` | number, truncated to an unsigned integer | Handle of the car; a handle that is not a car does nothing. |
+| 2 | `part` | number, truncated to an unsigned integer | Car part id 0-25 ([Cars](../../research/cars.md), e.g. 5 the boot, 17/19/21 door windows, 18 a door); the scripts use 5, 17, 18 and 19. |
+| 3 | `removed` | boolean (nil or 0 is false) | true removes the part (and the part linked to it, such as a door's window); false puts the part back. |
 
 **Returns** nothing.
 
-Removes a part (a door, bonnet or similar) from a car.
+Marks a part of a car as removed: with `removed` its bit is set in the car's removed-parts word (`+0x11f0`) and in the
+kept copy (`+0x11f8`), and the linked part from the car type's part record is removed with it; without, only the part's
+bit in `+0x11f0` is cleared. A removed part can no longer be opened (CarSetPartOpen) or picked as a hit point on the car
+(0x0038c990), and the car's renderer reads the same word (inferred: it is no longer drawn).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00378700` (registered by `RegisterBindings`); **calls** `0x0038dfe0` `Car_RemovePart`
+**Notes.** Putting a part back leaves its bit in `+0x11f8`, which still excludes it as a hit point, and does not restore
+the linked part. Car explosions and contacts also write `+0x11f0` (0x0038ac78, 0x0039442c).
+
+- **Evidence:** confirmed (code) at `0x0038dfe0`, `0x0038c7d8`; detail: traced
+- **Wrapper** `0x00378700` (registered by `RegisterBindings`); **calls** `0x0038dfe0` `Car_RemovePart`, `0x0038c7d8`
+  `Car_RemovePartBits`
 - **Used by** 3 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
@@ -515,18 +529,21 @@ ChangeBlocker(pos, open)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` identifying the navigation link or node nearest to it. |
-| 2 | `open` | boolean (nil or 0 is false) | False sets the blocked bit (0x08) on it, true clears it. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` inside the walkable area to change (only x and y are tested); written back unchanged. |
+| 2 | `open` | boolean (nil or 0 is false) | false (or nil) blocks the area, true opens it again. |
 
 **Returns** nothing.
 
-Blocks or unblocks an AI navigation link at a position.
+Blocks or unblocks the AI walkable area (a path polygon of the level's path data) containing a point, by setting or
+clearing its flag 0x08 (`+0x48`). A blocked polygon no longer counts for the walkable-line test, so AI humans stop
+steering straight through it ([AI: path planning](../../research/ai.md#path-planning)).
 
-**Notes.** The bit operation is confirmed (code) at 0x00252c28; that the record is a navigation link is inferred from
-the neighbouring door-link bindings.
+**Notes.** When several polygons contain the point, the one whose centre is nearest wins; none does nothing. Whether A*
+routes also avoid it (through the nodes) is not traced.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00379c80` (registered by `RegisterBindings`); **calls** `0x00252c28` `NavLink_SetBlocked`
+- **Evidence:** confirmed (code) at `0x00252c28`, `0x00250100`; detail: traced
+- **Wrapper** `0x00379c80` (registered by `RegisterBindings`); **calls** `0x00252c28` `NavLink_SetBlocked`, `0x00250100`
+  `PathPolygon_FindAtPoint`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
@@ -539,16 +556,21 @@ ChangeCollision(box, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `box` | number, truncated to an unsigned integer | Handle of a volume box (from `AddVolumeBox`). |
-| 2 | `enable` | boolean (nil or 0 is false) | True enables, false (or nil) disables the world collision triangles inside the box. |
+| 1 | `box` | number, truncated to an unsigned integer | Handle of a volume box (from AddVolumeBox) or any object whose box is at `+0x10` (min) and `+0x20` (max); a bad handle does nothing. |
+| 2 | `enable` | boolean (nil or 0 is false) | true enables, false (or nil) disables the world collision triangles inside the box. |
 
 **Returns** nothing.
 
-Switches the level's static collision on or off inside a volume box: every collision triangle whose three vertices lie
-in the box gets its enabled bit set or cleared ([Collision](../../research/collision.md)).
+Switches the level's static collision on or off inside a box: every collision triangle of the level's mesh whose three
+vertices lie in the box gets flag bit 0 set or cleared, so scripts can open a gap (or close one) where a door or barrier
+was.
 
-- **Evidence:** confirmed (code) at `0x0034fba0`; detail: brief
-- **Wrapper** `0x00379c20` (registered by `RegisterBindings`); **calls** `0x0034fba0` `CollisionMesh_SetEnabledInVolume`
+**Notes.** A triangle only partly inside the box is left alone. The camera's main ray still tests disabled triangles
+([Collision: switching](../../research/collision.md#enable)).
+
+- **Evidence:** confirmed (code) at `0x0034fba0`, `0x00351160`; detail: traced
+- **Wrapper** `0x00379c20` (registered by `RegisterBindings`); **calls** `0x0034fba0`
+  `CollisionMesh_SetEnabledInVolume`, `0x00351160` `CollisionMesh_SetEnabledInBox`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -584,17 +606,21 @@ ConvertJumpToDoor(pos)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` identifying a navigation link near it. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` in metres near the navigation link to change; written back unchanged. |
 
 **Returns** nothing.
 
-Retags the navigation link of kind 4 nearest the position (within 5 m) and its reverse as kind 0x10 (0x00250bb8).
+Finds the navigation link of kind 4 (a choke point) nearest the position, within 5 m, and sets its kind word, and that
+of its reverse link, to `0x10`, the kind DisableDoorLink and EnableDoorLink act on and that an AI follower takes by
+facing the waypoint and then walking or jumping (0x0029baa8). Scripts call it once a doorway has been opened up so later
+door-link switches find it. Nothing happens when no kind-4 link is that close.
 
-**Notes.** What the kinds mean to a route follower: [World objects: navigation
-links](../../research/objects.md#nav-links); the "jump" and "door" readings come from the name.
+**Notes.** The change lasts until the level's path data is reloaded. The doorway reading is inferred from the name and
+the door-link bindings; link kinds: [World objects: navigation links](../../research/objects.md#nav-links).
 
-- **Evidence:** confirmed (code) at `0x00250db0`; detail: brief
-- **Wrapper** `0x0036e228` (registered by `RegisterBindings`); **calls** `0x00250db0` `NavLink_ConvertJumpToDoor`
+- **Evidence:** confirmed (code) at `0x00250db0`, `0x00250bb8`, `0x00250960`; detail: traced
+- **Wrapper** `0x0036e228` (registered by `RegisterBindings`); **calls** `0x00250db0` `NavLink_ConvertJumpToDoor`,
+  `0x00250bb8`, `0x00250960`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** implemented
@@ -627,17 +653,21 @@ DisableDoorLink(pos)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` identifying the door link. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` in metres near the door link; written back unchanged. |
 
 **Returns** nothing.
 
-Sets the avoid bit (bit 31) on the kind-0x10 navigation link nearest the position (within 5 m) and its reverse
-(0x00250b68); route planning then adds 1,600 to its cost, so the AI prefers another way but is not barred.
+Finds the navigation link of kind 0x10 (a doorway, as made by ConvertJumpToDoor) nearest the position within 5 m and
+sets its avoid bit (bit 31 of its second word), and its reverse link's: route planning then adds 1,600 to the edge's
+cost, so the AI goes another way when one exists but can still use the doorway. Nothing happens when no such link is
+that close.
 
-**Notes.** [World objects: navigation links](../../research/objects.md#nav-links).
+**Notes.** The same bit that breakable doors set while closed ([World objects: navigation
+links](../../research/objects.md#nav-links)); EnableDoorLink clears it.
 
-- **Evidence:** confirmed (code) at `0x00250e00`; detail: brief
-- **Wrapper** `0x0036e2d8` (registered by `RegisterBindings`); **calls** `0x00250e00` `NavLink_DisableDoor`
+- **Evidence:** confirmed (code) at `0x00250e00`, `0x00250b68`, `0x00250960`; detail: traced
+- **Wrapper** `0x0036e2d8` (registered by `RegisterBindings`); **calls** `0x00250e00` `NavLink_DisableDoor`,
+  `0x00250b68` `NavLink_SetAvoidByKind`, `0x00250960`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** implemented
@@ -699,14 +729,18 @@ EnableDoorLink(pos)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` identifying the door link. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position `{x, y, z}` in metres near the door link; written back unchanged. |
 
 **Returns** nothing.
 
-Clears the avoid bit on the kind-0x10 navigation link nearest the position and its reverse (0x00250b10).
+Finds the kind-0x10 navigation link nearest the position within 5 m and clears its avoid bit and its reverse link's, so
+route planning costs the doorway normally again (undoing DisableDoorLink).
 
-- **Evidence:** confirmed (code) at `0x00250e48`; detail: brief
-- **Wrapper** `0x0036e388` (registered by `RegisterBindings`); **calls** `0x00250e48` `NavLink_EnableDoor`
+**Notes.** [World objects: navigation links](../../research/objects.md#nav-links).
+
+- **Evidence:** confirmed (code) at `0x00250e48`, `0x00250b10`, `0x00250960`; detail: traced
+- **Wrapper** `0x0036e388` (registered by `RegisterBindings`); **calls** `0x00250e48` `NavLink_EnableDoor`, `0x00250b10`
+  `NavLink_ClearAvoidByKind`, `0x00250960`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** implemented
@@ -769,15 +803,21 @@ FlagEnable(flag, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `flag` | number, truncated to an unsigned integer | Handle of the flag (or of an object carrying flag data). |
-| 2 | `enable` | boolean (nil or 0 is false) | True to enable the flag for use, false to disable it. |
+| 1 | `flag` | number, truncated to an unsigned integer | Handle of the flag; any other object (type bit 0x80 clear) is ignored. |
+| 2 | `enable` | boolean (nil or 0 is false) | true to enable the flag, false (or nil) to disable it. |
 
 **Returns** nothing.
 
-Enables or disables a flag, so AI and interactions stop or resume using it.
+Writes the flag's enabled word (`+0xd4`, 1 from AddFlag). A disabled flag is refused by the may-use test (0x00416718)
+and skipped by the nearest-flag search (0x00416f08), so AI humans stop picking it for their activities; a human already
+using it is not moved ([Flags](../../research/flags.md)).
 
-- **Evidence:** confirmed (code) at `0x00415ce8`; detail: brief
-- **Wrapper** `0x0037a228` (registered by `RegisterBindings`); **calls** `0x00415ce8` `Flag_Enable`
+**Notes.** Goals given the flag directly by a script (GoalMoveToFlag and the like) do not check it (inferred). Store
+groups switch their flags off through 0x00417540, the same writer.
+
+- **Evidence:** confirmed (code) at `0x00415ce8`, `0x00415dc8`; detail: traced
+- **Wrapper** `0x0037a228` (registered by `RegisterBindings`); **calls** `0x00415ce8` `Flag_Enable`, `0x00415dc8`
+  `Flag_SetEnabled`
 - **Used by** 2 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -1099,16 +1139,20 @@ IsDoorOpen(door) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `door` | number, truncated to an unsigned integer | Handle of the door. |
+| 1 | `door` | number, truncated to an unsigned integer | Handle of the door object. |
 
-**Returns** boolean (1 for true, nil for false): True when the door reports itself open (query 0x0c: a swinging door's
-state byte is 5, fully open with its collision gone); false (nil) otherwise, while still swinging, or for an invalid
-handle.
+**Returns** boolean (1 for true, nil for false): true when the door answers open; nil while it is closed, still
+swinging, broken, for a non-door object or for a bad handle.
 
-Tests whether a door is open.
+Asks a door whether it is open: a query message 0x0c is delivered at once to the object's message handler, and a
+swinging door answers yes only in state 5, fully open with its collision removed (about 29 ticks after the swing starts)
+([World objects: swinging doors](../../research/objects.md#door-states)). Scripts poll it to wait until a door they
+opened can be walked through.
 
-- **Evidence:** confirmed (code) at `0x00397508`; detail: brief
-- **Wrapper** `0x00379f80` (registered by `RegisterBindings`); **calls** `0x00397508` `Door_IsOpen`
+**Notes.** The answer is read from the message's reply (0x003a8518); objects that do not handle 0x0c leave it 0.
+
+- **Evidence:** confirmed (code) at `0x00397508`, `0x003fb8d0`; detail: traced
+- **Wrapper** `0x00379f80` (registered by `RegisterBindings`); **calls** `0x00397508` `Door_IsOpen`, `0x003fb8d0`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** implemented
@@ -1195,11 +1239,16 @@ ObjectChangeState(object, state)
 
 **Returns** nothing.
 
-Sends a state command to a game object; the door bindings are shorthands for particular states. One script calls it
-directly.
+Sends message 0x22 (state command) carrying `state` to the object through the task manager; what happens depends on the
+object's type, and for doors it is the command the door bindings (`OpenDoor`, `CloseDoor` and the rest) send. One script
+calls it directly.
 
-- **Evidence:** confirmed (code) at `0x003976c8`; detail: brief
-- **Wrapper** `0x00379210` (registered by `RegisterBindings`); **calls** `0x003976c8` `Obj_ChangeState`
+**Notes.** The handle is resolved at send time; an unresolved handle sends to nothing; object types other than doors
+that handle 0x22 were not surveyed.
+
+- **Evidence:** confirmed (code) at `0x003976c8`, `0x003a2e00`; detail: traced
+- **Wrapper** `0x00379210` (registered by `RegisterBindings`); **calls** `0x003976c8` `Obj_ChangeState`, `0x003a2e00`
+  `Task_SendMessage`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** implemented
@@ -1212,19 +1261,25 @@ ObjEnablePhysics(object, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of the game object. |
-| 2 | `enable` | boolean (nil or 0 is false) | True makes the object physically simulated (it can fall, be pushed or knocked over); false freezes it in place. |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of the game object; a handle that does not resolve to a live object does nothing. |
+| 2 | `enable` | boolean (nil or 0 is false) | true gives the object a physics (collision) body; false removes it. |
 
 **Returns** nothing.
 
-Turns a game object's physics on or off: on (0x00391d48) also sets bit 0x80000000 of its physics body's `+0x40` and
-hands the object to the body's owner (body +0x74 slot +0x14), waking it; off calls 0x003924d8.
+Gives a game object a body in the physics system or takes it away (object `+0x118`). On: if it has none, a body is made
+with the shape its object type asks for (type `+0x84`: 1 a box of the type's sizes `+0x78`/`+0x7c`/`+0x80`, 2 a sphere
+of half `+0x78`, otherwise a default shape of radius 0.75 unless the model forbids it), the object's static flag (0x200
+in `+0x54`) is cleared, body flags are set from the type's class and flags, and the body is marked moved and made to
+follow the object; an existing body is re-enabled. Off: the body is freed, so humans and objects no longer collide with
+it.
 
-**Notes.** That on means simulated and off frozen is inferred from the name; the two callees are not traced. Physics:
-[Physics](../../research/physics.md).
+**Notes.** The physics system is collision bodies, not free rigid-body motion ([Physics](../../research/physics.md));
+"on" does not by itself make the object fall. Off does not set the static flag back. Class 0x30 also gets a state
+command 2 (vtable `+0x124`), not traced.
 
-- **Evidence:** confirmed (code) at `0x00396a90`; detail: brief
-- **Wrapper** `0x00377f78` (registered by `RegisterBindings`); **calls** `0x00396a90` `Obj_EnablePhysics`
+- **Evidence:** confirmed (code) at `0x00396a90`, `0x00391d48`, `0x003924d8`; detail: traced
+- **Wrapper** `0x00377f78` (registered by `RegisterBindings`); **calls** `0x00396a90` `Obj_EnablePhysics`, `0x00391d48`
+  `Obj_CreatePhysicsBody`, `0x003924d8` `Obj_FreePhysicsBody`
 - **Used by** 12 of 467 script chunks (73 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
@@ -1262,16 +1317,17 @@ ObjGetIndex(typeName) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `typeName` | string | Object type name, such as a `dyn_...` name from the object configuration. |
+| 1 | `typeName` | string | Object type name, such as a `dyn_...` name from the object configuration; case-sensitive. |
 
-**Returns** number: The type's index in the object type table (0x003913d8 on the table at 0x00512c04).
+**Returns** number: The type's index (record `+0x60`) in the object type database (0x00512c04), or -1 for an unknown or
+nil name.
 
-Looks up an object type by name and returns its index.
+Looks up an object type by name in the object database's hash table and returns its index, the id other bindings take
+for a kind of object (such as the throwables of GoalStationaryThrower and GoalBigLedgeThrower).
 
-**Notes.** The value returned for an unknown name is not traced.
-
-- **Evidence:** confirmed (code) at `0x00397780`; detail: brief
-- **Wrapper** `0x0036ded8` (registered by `RegisterBindings`); **calls** `0x00397780` `ObjType_FindIndex`
+- **Evidence:** confirmed (code) at `0x00397780`, `0x003913d8`; detail: traced
+- **Wrapper** `0x0036ded8` (registered by `RegisterBindings`); **calls** `0x00397780` `ObjType_FindIndex`, `0x003913d8`
+  `ObjectDb_FindByName`
 - **Used by** 7 of 467 script chunks (51 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
@@ -1284,14 +1340,21 @@ ObjGetZone(object) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of a game object. |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of a game object (a dynamic object from `ObjSpawn` or a placed one). |
 
-**Returns** number: The zone number the object was spawned in, or -1 when it has no spawn record.
+**Returns** number: The object zone (0-1023) stored in the object's spawn record, or -1 when the handle does not resolve
+to an object or no spawn record carries its id.
 
-Returns the object zone a game object belongs to.
+Returns the object zone a game object was spawned into: the top 10 bits of its spawn record's type-and-zone word
+(`+0x20`, shifted right by 22), the same zone `ObjSpawn` takes and `ObjEnableZone` switches on and off ([World
+objects](../../research/objects.md#spawn-records)).
 
-- **Evidence:** confirmed (code) at `0x00396810`; detail: brief
-- **Wrapper** `0x00377c70` (registered by `RegisterBindings`); **calls** `0x00396810` `Obj_GetZone`
+**Notes.** The lookup scans the ObjectTaskManager's spawn records (`+0x14`, count `+0x18`, 0x28 bytes each) for the one
+whose u16 `+0x24` matches the object's id (vtable `+0x2c`); linear in the record count.
+
+- **Evidence:** confirmed (code) at `0x00396810`, `0x00398f60`; detail: traced
+- **Wrapper** `0x00377c70` (registered by `RegisterBindings`); **calls** `0x00396810` `Obj_GetZone`, `0x00398f60`
+  `ObjectManager_GetSpawnZone`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
@@ -1511,26 +1574,30 @@ Sends a message with the arguments built so far to a game object, which handles 
 ## ObjSetTrainPoint {#objsettrainpoint}
 
 ```lua
-ObjSetTrainPoint(train, object, index, flag)
+ObjSetTrainPoint(train, object, index, gap)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `train` | number, truncated to an unsigned integer | Train slot index (0 or 1 in the scripts); each slot is a 0x150-byte record at 0x006f3a10. |
-| 2 | `object` | number, truncated to an unsigned integer | Handle of the object placed on the route (scripts pass particle or prop objects). |
-| 3 | `index` | number, truncated to an unsigned integer | Position of this point in the route, from 0. |
-| 4 | `flag` | number, truncated to an integer | Integer stored with the point; the scripts set 1 on the last point. Meaning not traced. |
+| 1 | `train` | number, truncated to an unsigned integer | Train slot 0-3 (scripts use 0 and 1); each is a 0x150-byte record at 0x006f3a10. Not range-checked. |
+| 2 | `object` | number, truncated to an unsigned integer | Handle of an object riding the train (a prop or particle object moved with it); its position is read every update. |
+| 3 | `index` | number, truncated to an unsigned integer | Point index 0-11 along the train (record `+0xe0 + 4 × index`); the point count becomes at least index + 1. |
+| 4 | `gap` | number, truncated to an integer | 0: the segment from this point to the next is part of the train; non-zero: no segment starts here (scripts set 1 on the last point). Record `+0x110 + 4 × index`. |
 
 **Returns** nothing.
 
-Adds or sets one point of a scripted 'train': a sequence of objects that are triggered one after another along a route
-(used for moving light or effect chains).
+Sets one point of a train hazard: a moving line of objects (a subway train's cars) that AI humans must keep clear of.
+While the train runs (ObjStartTrain), every update re-reads the points' positions, and any AI human (not down or out)
+within the train's width of a segment is marked unreachable for that frame and, unless it already has one, gets a
+RunFromTrain goal (type 7) to get off the line; route following (0x00414188) also stops and waits 1 s at a blocked
+segment.
 
-**Notes.** The per-slot storage is confirmed (code) at 0x00413770; the 'chain of objects' reading is inferred from the
-scripts' use.
+**Notes.** Update 0x00413d90 (all four slots via 0x00413728); the highest index with gap 0 is kept at `+0x149`. Moving
+the objects is the scripts' job (inferred). Index above 11 overruns into the gap table.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036e0b0` (registered by `RegisterBindings`); **calls** `0x00413770` `Train_SetPoint`
+- **Evidence:** confirmed (code) at `0x00413770`, `0x004138a8`; detail: traced
+- **Wrapper** `0x0036e0b0` (registered by `RegisterBindings`); **calls** `0x00413770` `Train_SetPoint`, `0x004138a8`
+  `TrainRecord_SetPoint`
 - **Used by** 7 of 467 script chunks (68 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
@@ -1600,20 +1667,26 @@ the game state is non-zero.
 ## ObjStartTrain {#objstarttrain}
 
 ```lua
-ObjStartTrain(train, speed)
+ObjStartTrain(train, width)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `train` | number, truncated to an unsigned integer | Train slot index set up with `ObjSetTrainPoint`. |
-| 2 | `speed` | number (single precision) | Rate or interval stored in the slot (+0x144); the scripts pass 1.4 or 2.5. Likely seconds per step or points per second. |
+| 1 | `train` | number, truncated to an unsigned integer | Train slot 0-3 to start. |
+| 2 | `width` | number (single precision) | Half-width of the danger zone in metres (record `+0x144`): humans within this distance of a train segment run from it. Scripts pass 1.4 and 2.5. |
 
 **Returns** nothing.
 
-Resets and starts a scripted train set up with `ObjSetTrainPoint`.
+Starts a train hazard: it clears the slot's point count and highest-point byte, stores `width` and sets the running flag
+(`+0x148`), so from the next update AI humans near its segments run from it (see ObjSetTrainPoint). ObjStopTrain stops
+it.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0036e178` (registered by `RegisterBindings`); **calls** `0x004137d8` `Train_Start`
+**Notes.** The reset zeroes the point count, so points must be set (again) after this call; the point handles themselves
+stay. Avoidance itself: RunFromTrain goal (Process 0x002f9c88), not traced here.
+
+- **Evidence:** confirmed (code) at `0x004137d8`, `0x00413890`; detail: traced
+- **Wrapper** `0x0036e178` (registered by `RegisterBindings`); **calls** `0x004137d8` `Train_Start`, `0x00413890`
+  `TrainRecord_Reset`
 - **Used by** 7 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
@@ -1991,15 +2064,20 @@ TriggerSphereSetRadius(object, radius)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of the object carrying the trigger sphere. |
-| 2 | `radius` | number (single precision) | New radius in metres. |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of the object carrying the trigger sphere; it must already have a message-handler component (a SetMsgHandler or TriggerSphereCfg), else nothing happens. |
+| 2 | `radius` | number (single precision) | New radius in metres (sphere `+0x174`). |
 
 **Returns** nothing.
 
-Changes the radius of an object's trigger sphere (component +0x174), creating the component if needed.
+Changes the radius of an object's trigger sphere, the range within which humans make the object get messages 3, 4 and 5
+([Scripts: triggers](../../research/scripting.md#triggers)). When the object's handler component has no sphere yet, one
+is taken from the pool of 100 and attached first, with the defaults of 0x00414480.
 
-- **Evidence:** confirmed (code) at `0x00414a28`; detail: brief
-- **Wrapper** `0x0036d068` (registered by `RegisterBindings`); **calls** `0x00414a28` `TriggerSphere_SetRadius`
+**Notes.** With the pool full the allocation returns null and the store would write through it (no check in 0x00414a28).
+
+- **Evidence:** confirmed (code) at `0x00414a28`, `0x004142d0`; detail: traced
+- **Wrapper** `0x0036d068` (registered by `RegisterBindings`); **calls** `0x00414a28` `TriggerSphere_SetRadius`,
+  `0x004142d0` `TriggerSphere_Alloc`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented

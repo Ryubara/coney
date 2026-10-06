@@ -26,7 +26,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgButtonHeldFrames`](#cfgbuttonheldframes) | - | 1 | yes | no | confirmed (code) |
 | [`CfgButtonMash`](#cfgbuttonmash) | - | 1 | yes | no | confirmed (code) |
 | [`CfgCanBeAttackedModifier`](#cfgcanbeattackedmodifier) | - | 1 | yes | no | confirmed (code) |
-| [`CfgChanceToGetHelp`](#cfgchancetogethelp) | - | 7 | no | no | inferred |
+| [`CfgChanceToGetHelp`](#cfgchancetogethelp) | - | 7 | no | no | confirmed (code) |
 | [`CfgChar`](#cfgchar) | - | 6 | yes | no | confirmed (code) |
 | [`CfgCharClassAttribs`](#cfgcharclassattribs) | - | 1 | yes | no | confirmed (code) |
 | [`CfgCivilianAggression`](#cfgcivilianaggression) | - | 6 | yes | no | confirmed (code) |
@@ -97,7 +97,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgSetGlobalTimeToLive`](#cfgsetglobaltimetolive) | - | 2 | yes | yes | confirmed (code) |
 | [`CfgSetLockPickHandler`](#cfgsetlockpickhandler) | - | 7 | no | no | confirmed (code) |
 | [`CfgSetLockPickStageFailHandler`](#cfgsetlockpickstagefailhandler) | - | 0 | no | no | confirmed (code) |
-| [`CfgSetMaxThrowError`](#cfgsetmaxthrowerror) | - | 1 | no | no | inferred |
+| [`CfgSetMaxThrowError`](#cfgsetmaxthrowerror) | - | 1 | no | no | confirmed (code) |
 | [`CfgSetMeleeRange`](#cfgsetmeleerange) | - | 1 | yes | no | confirmed (code) |
 | [`CfgSetOutdoorMode`](#cfgsetoutdoormode) | - | 15 | yes | no | confirmed (code) |
 | [`CfgSetStatTypeMax`](#cfgsetstattypemax) | - | 2 | yes | no | confirmed (code) |
@@ -521,16 +521,21 @@ CfgChanceToGetHelp(percent)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `percent` | number, truncated to an unsigned integer | Chance 0-100 that a civilian victim calls for help; values above 100 become 100. |
+| 1 | `percent` | number, truncated to an unsigned integer | Chance 0-100 that a civilian who sees an attack calls for help; values above 100 become 100. |
 
 **Returns** nothing.
 
-Stores the call-for-help chance (byte at 0x00510adf).
+Sets the global call-for-help chance (byte 0x00510adf). When a civilian within 15 m of an attacker sees a civilian, gang
+member or dealer being attacked, it rolls this chance; on success it goes to report the crime (goal 0x002a7d58), or
+calls a gang (Goal_CallGang) when no police gang exists. An attack on a cop is always reported (100%); an attack on a
+Warrior or the player never is, and a civilian that does not report reacts with the ped-reaction goal (107) instead.
 
-**Notes.** Storage and clamp confirmed (code) at 0x00294888.
+**Notes.** Reader: CivilianBrain_OnEvent event 0x14 (0x002ffb30). No report while the attacker's gang noted a crime in
+the last 40 s (gang `+0x5f4`) or while the crime kind is switched off (`W_GameState + 0x294 + kind`); the report kinds
+0, 2 and 8 are not traced further.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035e958` (registered by `RegisterBindings`); **calls** `0x00294888`
+- **Evidence:** confirmed (code) at `0x00294888`; detail: traced
+- **Wrapper** `0x0035e958` (registered by `RegisterBindings`); **calls** `0x00294888` `Cfg_SetChanceToGetHelp`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
@@ -1193,14 +1198,20 @@ CfgHuInventoryCallback(fn)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `fn` | string | Lua function name called when a human (not only the player) picks up an item, or nil. |
+| 1 | `fn` | string | Name of a Lua function (up to 32 characters, copied) called when an item is given to a player with notification, or nil to clear it. |
 
 **Returns** nothing.
 
-Stores the per-human inventory callback name in the inventory block (0x0041e490).
+Stores a second inventory callback name in the inventory block (game state `+0x480 + 0xff4`). When Inventory_AddItem
+runs with its notify flag, it calls this function, if it exists, with the player index (0 or 1) and the item id (0-22),
+after the CfgInventoryCallback one (which gets only the item id).
 
-- **Evidence:** confirmed (code) at `0x0041ed10`; detail: brief
-- **Wrapper** `0x0036c068` (registered by `RegisterBindings`); **calls** `0x0041ed10`
+**Notes.** Despite the name it is per player, not per human: other humans' pickups do not call it. Called for any change
+with the notify flag, whatever its sign. Which pickups set the flag is not traced here.
+
+- **Evidence:** confirmed (code) at `0x0041ed10`, `0x0041e490`, `0x0041e5b0`; detail: traced
+- **Wrapper** `0x0036c068` (registered by `RegisterBindings`); **calls** `0x0041ed10` `Cfg_SetHuInventoryCallback`,
+  `0x0041e490` `Inventory_SetHuCallback`, `0x0041e5b0` `Inventory_AddItem`
 - **Used by** 12 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
@@ -2305,22 +2316,26 @@ picking](../../research/crimes.md#lockpick)).
 ## CfgSetMaxThrowError {#cfgsetmaxthrowerror}
 
 ```lua
-CfgSetMaxThrowError(horizontalDeg, verticalDeg)
+CfgSetMaxThrowError(verticalDeg, horizontalDeg)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `horizontalDeg` | number (single precision) | Maximum aiming error in degrees for thrown objects, one axis (stored in radians at 0x005148b0). |
-| 2 | `verticalDeg` | number (single precision) | Maximum aiming error in degrees on the other axis (radians at 0x005148b4). |
+| 1 | `verticalDeg` | number (single precision) | Largest up-or-down aiming error in degrees of an AI throw at a target (stored in radians at 0x005148b0). |
+| 2 | `horizontalDeg` | number (single precision) | Largest sideways aiming error in degrees (radians at 0x005148b4). |
 
 **Returns** nothing.
 
-Sets how far (in degrees) a thrown object may deviate from its aim; one level sets 5 and 5.
+Sets how far a thrown object may stray from its aim. When a human throws at a target, Human_ComputeThrowVelocity
+(0x002570e8) turns the throw sideways about the vertical axis and then up or down, each by a random part of the maximum
+scaled by the distance to the target over 30 m (between 0.1 and 1). An allied Warrior (brain type 3) gets 60% of the
+error. One level sets 5 and 5.
 
-**Notes.** Storage and the degree-to-radian conversion confirmed (code) at 0x0041d940; which axis is which is inferred.
+**Notes.** No error for a human with flag 0x40000 at `+0xe0` (inferred: the player). The globals' default values are not
+traced. Readers: 0x00257a08, 0x00257a14.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035e480` (registered by `RegisterBindings`); **calls** `0x0041d940`
+- **Evidence:** confirmed (code) at `0x0041d940`; detail: traced
+- **Wrapper** `0x0035e480` (registered by `RegisterBindings`); **calls** `0x0041d940` `Cfg_SetMaxThrowError`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
@@ -2975,14 +2990,19 @@ CfgWarriorWeapons(enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `enabled` | boolean (nil or 0 is false) | true allows the Warriors to use weapons; false forbids them. |
+| 1 | `enabled` | boolean (nil or 0 is false) | true lets the AI Warriors pick up weapons; false stops them. |
 
 **Returns** nothing.
 
-Stores the warrior-weapons switch in the game state (+0x5704).
+Stores the warrior-weapons switch in the game state (`+0x5704`, 1 by default). While it is off, the AI-controlled
+Warriors' item search (0x002bbfa0, 0x002bcf88) skips any pickup whose object type is a weapon (type class 4), so they
+fight bare-handed but still pick up other items. Level 5 turns it off and back on.
 
-- **Evidence:** confirmed (code) at `0x0041d770`; detail: brief
-- **Wrapper** `0x0036be20` (registered by `RegisterBindings`); **calls** `0x0041d770`
+**Notes.** The game state constructor (0x00418588) and another reset (0x00418c68) set it to 1. WarriorBrain_Think
+(0x003055e0) also reads it, not traced. The player's own pickups are not affected (inferred: only brain code reads it).
+
+- **Evidence:** confirmed (code) at `0x0041d770`; detail: traced
+- **Wrapper** `0x0036be20` (registered by `RegisterBindings`); **calls** `0x0041d770` `GameState_SetWarriorWeapons`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented

@@ -114,13 +114,18 @@
   wrapper: 0x0036d068
   calls:
     - {addr: 0x00414a28, name: TriggerSphere_SetRadius}
+    - {addr: 0x004142d0, name: TriggerSphere_Alloc}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object carrying the trigger sphere."}
-    - {name: radius, lua: number, ctype: float, desc: "New radius in metres."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object carrying the trigger sphere; it must already have a message-handler component (a SetMsgHandler or TriggerSphereCfg), else nothing happens."}
+    - {name: radius, lua: number, ctype: float, desc: "New radius in metres (sphere `+0x174`)."}
   description: >-
-    Changes the radius of an object's trigger sphere (component +0x174), creating the component if needed.
+    Changes the radius of an object's trigger sphere, the range within which humans make the object get messages
+    3, 4 and 5 ([Scripts: triggers](../../research/scripting.md#triggers)). When the object's handler component has
+    no sphere yet, one is taken from the pool of 100 and attached first, with the defaults of 0x00414480.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    With the pool full the allocation returns null and the store would write through it (no check in 0x00414a28).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [2, 31]}
 
 - name: TriggerSphereCfg
@@ -313,48 +318,58 @@
   wrapper: 0x0036ded8
   calls:
     - {addr: 0x00397780, name: ObjType_FindIndex}
+    - {addr: 0x003913d8, name: ObjectDb_FindByName}
   args:
-    - {name: typeName, lua: string, desc: "Object type name, such as a `dyn_...` name from the object configuration."}
+    - {name: typeName, lua: string, desc: "Object type name, such as a `dyn_...` name from the object configuration; case-sensitive."}
   results:
-    - {lua: number, desc: "The type's index in the object type table (0x003913d8 on the table at 0x00512c04)."}
+    - {lua: number, desc: "The type's index (record `+0x60`) in the object type database (0x00512c04), or -1 for an unknown or nil name."}
   description: >-
-    Looks up an object type by name and returns its index.
+    Looks up an object type by name in the object database's hash table and returns its index, the id other
+    bindings take for a kind of object (such as the throwables of GoalStationaryThrower and GoalBigLedgeThrower).
   evidence: confirmed-code
-  depth: brief
-  notes: >-
-    The value returned for an unknown name is not traced.
+  depth: thorough
   usage: {chunks: 7, calls: 51, boot: false, mission1: false, result_used: true, levels: [34, 3, 5, 31, 11]}
 
 - name: ObjSetTrainPoint
   wrapper: 0x0036e0b0
   calls:
     - {addr: 0x00413770, name: Train_SetPoint}
+    - {addr: 0x004138a8, name: TrainRecord_SetPoint}
   args:
-    - {name: train, lua: number, ctype: unsigned, desc: "Train slot index (0 or 1 in the scripts); each slot is a 0x150-byte record at 0x006f3a10."}
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object placed on the route (scripts pass particle or prop objects)."}
-    - {name: index, lua: number, ctype: unsigned, desc: "Position of this point in the route, from 0."}
-    - {name: flag, lua: number, ctype: int, desc: "Integer stored with the point; the scripts set 1 on the last point. Meaning not traced."}
+    - {name: train, lua: number, ctype: unsigned, desc: "Train slot 0-3 (scripts use 0 and 1); each is a 0x150-byte record at 0x006f3a10. Not range-checked."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of an object riding the train (a prop or particle object moved with it); its position is read every update."}
+    - {name: index, lua: number, ctype: unsigned, desc: "Point index 0-11 along the train (record `+0xe0 + 4 × index`); the point count becomes at least index + 1."}
+    - {name: gap, lua: number, ctype: int, desc: "0: the segment from this point to the next is part of the train; non-zero: no segment starts here (scripts set 1 on the last point). Record `+0x110 + 4 × index`."}
   description: >-
-    Adds or sets one point of a scripted 'train': a sequence of objects that are triggered one after another along a
-    route (used for moving light or effect chains).
-  evidence: inferred
-  depth: brief
+    Sets one point of a train hazard: a moving line of objects (a subway train's cars) that AI humans must keep clear
+    of. While the train runs (ObjStartTrain), every update re-reads the points' positions, and any AI human (not
+    down or out) within the train's width of a segment is marked unreachable for that frame and, unless it already
+    has one, gets a RunFromTrain goal (type 7) to get off the line; route following (0x00414188) also stops and waits
+    1 s at a blocked segment.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    The per-slot storage is confirmed (code) at 0x00413770; the 'chain of objects' reading is inferred from the
-    scripts' use.
+    Update 0x00413d90 (all four slots via 0x00413728); the highest index with gap 0 is kept at `+0x149`. Moving the
+    objects is the scripts' job (inferred). Index above 11 overruns into the gap table.
   usage: {chunks: 7, calls: 68, boot: false, mission1: false, result_used: false, levels: [81, 31, 61, 63]}
 
 - name: ObjStartTrain
   wrapper: 0x0036e178
   calls:
     - {addr: 0x004137d8, name: Train_Start}
+    - {addr: 0x00413890, name: TrainRecord_Reset}
   args:
-    - {name: train, lua: number, ctype: unsigned, desc: "Train slot index set up with `ObjSetTrainPoint`."}
-    - {name: speed, lua: number, ctype: float, desc: "Rate or interval stored in the slot (+0x144); the scripts pass 1.4 or 2.5. Likely seconds per step or points per second."}
+    - {name: train, lua: number, ctype: unsigned, desc: "Train slot 0-3 to start."}
+    - {name: width, lua: number, ctype: float, desc: "Half-width of the danger zone in metres (record `+0x144`): humans within this distance of a train segment run from it. Scripts pass 1.4 and 2.5."}
   description: >-
-    Resets and starts a scripted train set up with `ObjSetTrainPoint`.
-  evidence: inferred
-  depth: brief
+    Starts a train hazard: it clears the slot's point count and highest-point byte, stores `width` and sets the
+    running flag (`+0x148`), so from the next update AI humans near its segments run from it (see ObjSetTrainPoint).
+    ObjStopTrain stops it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The reset zeroes the point count, so points must be set (again) after this call; the point handles themselves
+    stay. Avoidance itself: RunFromTrain goal (Process 0x002f9c88), not traced here.
   usage: {chunks: 7, calls: 8, boot: false, mission1: false, result_used: false, levels: [81, 31, 61, 63]}
 
 - name: ObjStopTrain
@@ -373,16 +388,20 @@
   wrapper: 0x0036e228
   calls:
     - {addr: 0x00250db0, name: NavLink_ConvertJumpToDoor}
+    - {addr: 0x00250bb8}
+    - {addr: 0x00250960}
   args:
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying a navigation link near it."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` in metres near the navigation link to change; written back unchanged."}
   description: >-
-    Retags the navigation link of kind 4 nearest the position (within 5 m) and its reverse as kind 0x10
-    (0x00250bb8).
+    Finds the navigation link of kind 4 (a choke point) nearest the position, within 5 m, and sets its kind word, and
+    that of its reverse link, to `0x10`, the kind DisableDoorLink and EnableDoorLink act on and that an AI follower
+    takes by facing the waypoint and then walking or jumping (0x0029baa8). Scripts call it once a doorway has been
+    opened up so later door-link switches find it. Nothing happens when no kind-4 link is that close.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    What the kinds mean to a route follower: [World objects: navigation links](../../research/objects.md#nav-links); the "jump" and
-    "door" readings come from the name.
+    The change lasts until the level's path data is reloaded. The doorway reading is inferred from the name and the
+    door-link bindings; link kinds: [World objects: navigation links](../../research/objects.md#nav-links).
   usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [5, 81, 54]}
   coney: implemented
 
@@ -390,15 +409,20 @@
   wrapper: 0x0036e2d8
   calls:
     - {addr: 0x00250e00, name: NavLink_DisableDoor}
+    - {addr: 0x00250b68, name: NavLink_SetAvoidByKind}
+    - {addr: 0x00250960}
   args:
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying the door link."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` in metres near the door link; written back unchanged."}
   description: >-
-    Sets the avoid bit (bit 31) on the kind-0x10 navigation link nearest the position (within 5 m) and its reverse
-    (0x00250b68); route planning then adds 1,600 to its cost, so the AI prefers another way but is not barred.
+    Finds the navigation link of kind 0x10 (a doorway, as made by ConvertJumpToDoor) nearest the position within 5 m
+    and sets its avoid bit (bit 31 of its second word), and its reverse link's: route planning then adds 1,600 to the
+    edge's cost, so the AI goes another way when one exists but can still use the doorway. Nothing happens when no
+    such link is that close.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    [World objects: navigation links](../../research/objects.md#nav-links).
+    The same bit that breakable doors set while closed ([World objects: navigation links](../../research/objects.md#nav-links));
+    EnableDoorLink clears it.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [81, 54]}
   coney: implemented
 
@@ -406,12 +430,17 @@
   wrapper: 0x0036e388
   calls:
     - {addr: 0x00250e48, name: NavLink_EnableDoor}
+    - {addr: 0x00250b10, name: NavLink_ClearAvoidByKind}
+    - {addr: 0x00250960}
   args:
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying the door link."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` in metres near the door link; written back unchanged."}
   description: >-
-    Clears the avoid bit on the kind-0x10 navigation link nearest the position and its reverse (0x00250b10).
+    Finds the kind-0x10 navigation link nearest the position within 5 m and clears its avoid bit and its reverse
+    link's, so route planning costs the doorway normally again (undoing DisableDoorLink).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    [World objects: navigation links](../../research/objects.md#nav-links).
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [81, 54]}
   coney: implemented
 
@@ -487,14 +516,20 @@
   wrapper: 0x00377c70
   calls:
     - {addr: 0x00396810, name: Obj_GetZone}
+    - {addr: 0x00398f60, name: ObjectManager_GetSpawnZone}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a game object (a dynamic object from `ObjSpawn` or a placed one)."}
   results:
-    - {lua: number, desc: "The zone number the object was spawned in, or -1 when it has no spawn record."}
+    - {lua: number, desc: "The object zone (0-1023) stored in the object's spawn record, or -1 when the handle does not resolve to an object or no spawn record carries its id."}
   description: >-
-    Returns the object zone a game object belongs to.
+    Returns the object zone a game object was spawned into: the top 10 bits of its spawn record's type-and-zone word
+    (`+0x20`, shifted right by 22), the same zone `ObjSpawn` takes and `ObjEnableZone` switches on and off
+    ([World objects](../../research/objects.md#spawn-records)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The lookup scans the ObjectTaskManager's spawn records (`+0x14`, count `+0x18`, 0x28 bytes each) for the one whose
+    u16 `+0x24` matches the object's id (vtable `+0x2c`); linear in the record count.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [86, 14]}
 
 - name: ObjSpawn
@@ -550,17 +585,24 @@
   wrapper: 0x00377f78
   calls:
     - {addr: 0x00396a90, name: Obj_EnablePhysics}
+    - {addr: 0x00391d48, name: Obj_CreatePhysicsBody}
+    - {addr: 0x003924d8, name: Obj_FreePhysicsBody}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
-    - {name: enable, lua: boolean, desc: "True makes the object physically simulated (it can fall, be pushed or knocked over); false freezes it in place."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object; a handle that does not resolve to a live object does nothing."}
+    - {name: enable, lua: boolean, desc: "true gives the object a physics (collision) body; false removes it."}
   description: >-
-    Turns a game object's physics on or off: on (0x00391d48) also sets bit 0x80000000 of its physics body's `+0x40`
-    and hands the object to the body's owner (body +0x74 slot +0x14), waking it; off calls 0x003924d8.
+    Gives a game object a body in the physics system or takes it away (object `+0x118`). On: if it has none, a body
+    is made with the shape its object type asks for (type `+0x84`: 1 a box of the type's sizes `+0x78`/`+0x7c`/`+0x80`,
+    2 a sphere of half `+0x78`, otherwise a default shape of radius 0.75 unless the model forbids it), the object's
+    static flag (0x200 in `+0x54`) is cleared, body flags are set from the type's class and flags, and the body is
+    marked moved and made to follow the object; an existing body is re-enabled. Off: the body is freed, so humans and
+    objects no longer collide with it.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    That on means simulated and off frozen is inferred from the name; the two callees are not traced. Physics:
-    [Physics](../../research/physics.md).
+    The physics system is collision bodies, not free rigid-body motion ([Physics](../../research/physics.md)); "on"
+    does not by itself make the object fall. Off does not set the static flag back. Class 0x30 also gets a state
+    command 2 (vtable `+0x124`), not traced.
   usage: {chunks: 12, calls: 73, boot: false, mission1: false, result_used: false, levels: [5, 81, 51, 84, 61, 62, 63]}
 
 - name: ObjShow
@@ -694,27 +736,43 @@
   wrapper: 0x003786a0
   calls:
     - {addr: 0x0038dfa0, name: Car_Explode}
+    - {addr: 0x0038ab18, name: Car_TryExplode}
+    - {addr: 0x0038ab50, name: Car_DoExplode}
   args:
-    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
-    - {name: flag, lua: boolean, desc: "Passed through to the explosion routine (0x0038ab18); scripts pass true or nothing. Meaning not traced."}
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car; a bad handle does nothing."}
+    - {name: quiet, lua: boolean, desc: "true wrecks the car without the blast; false or nil (most calls) gives the full explosion."}
   description: >-
-    Blows up a car.
-  evidence: inferred
-  depth: brief
+    Blows up a car that has not yet exploded: every part not already off is knocked off and the car is marked
+    exploded (`+0x12d5`). Without `quiet` it also plays the explosion effects and sound, deals 300 damage to every
+    human within 5 m with a clear line to it, sends the car message 0x19 (heard by SetGeneralCarMsgHandler and
+    SetMsgHandler), scores a statistic for whoever caused it (stat 0xb, up to 10 for the parts) and alerts the AI
+    nearby.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    A car with `+0x1200` set is ignored (meaning not traced). Blast: Explosion_DamageHumansInRadius 0x00392638
+    (5 m, 300). The calls 0x002936a8 (30 m) and 0x003963b8 (10 m) are inferred to alert humans and push objects.
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [34, 52]}
 
 - name: CarRemovePart
   wrapper: 0x00378700
   calls:
     - {addr: 0x0038dfe0, name: Car_RemovePart}
+    - {addr: 0x0038c7d8, name: Car_RemovePartBits}
   args:
-    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
-    - {name: part, lua: number, ctype: unsigned, desc: "Car part id; the scripts use 5, 17, 18 and 19 (internal part ids, as in `CarSetPartOpen`'s table)."}
-    - {name: flag, lua: boolean, desc: "Passed to 0x0038c7d8; scripts pass true (likely: detach the part as debris)."}
+    - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car; a handle that is not a car does nothing."}
+    - {name: part, lua: number, ctype: unsigned, desc: "Car part id 0-25 ([Cars](../../research/cars.md), e.g. 5 the boot, 17/19/21 door windows, 18 a door); the scripts use 5, 17, 18 and 19."}
+    - {name: removed, lua: boolean, desc: "true removes the part (and the part linked to it, such as a door's window); false puts the part back."}
   description: >-
-    Removes a part (a door, bonnet or similar) from a car.
-  evidence: inferred
-  depth: brief
+    Marks a part of a car as removed: with `removed` its bit is set in the car's removed-parts word (`+0x11f0`) and in
+    the kept copy (`+0x11f8`), and the linked part from the car type's part record is removed with it; without, only
+    the part's bit in `+0x11f0` is cleared. A removed part can no longer be opened (CarSetPartOpen) or picked as a hit
+    point on the car (0x0038c990), and the car's renderer reads the same word (inferred: it is no longer drawn).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Putting a part back leaves its bit in `+0x11f8`, which still excludes it as a hit point, and does not restore
+    the linked part. Car explosions and contacts also write `+0x11f0` (0x0038ac78, 0x0039442c).
   usage: {chunks: 3, calls: 7, boot: false, mission1: false, result_used: false, levels: [5, 14]}
 
 - name: CarCanBeDamagedBy
@@ -844,14 +902,19 @@
   wrapper: 0x00379210
   calls:
     - {addr: 0x003976c8, name: Obj_ChangeState}
+    - {addr: 0x003a2e00, name: Task_SendMessage}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
     - {name: state, lua: number, ctype: int, desc: "State number for the object's state command (message 0x22); for swinging doors 2 or 8 open, 3 or 7 close, 5 removes collision, 6 restores it, 10 makes it pickable and 0 or 11 not ([World objects](../../research/objects.md#door-states))."}
   description: >-
-    Sends a state command to a game object; the door bindings are shorthands for particular states. One script calls it
-    directly.
+    Sends message 0x22 (state command) carrying `state` to the object through the task manager; what happens depends on
+    the object's type, and for doors it is the command the door bindings (`OpenDoor`, `CloseDoor` and the rest) send. One
+    script calls it directly.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The handle is resolved at send time; an unresolved handle sends to nothing; object types other than doors that
+    handle 0x22 were not surveyed.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [86]}
   coney: implemented
 
@@ -983,30 +1046,38 @@
   wrapper: 0x00379c20
   calls:
     - {addr: 0x0034fba0, name: CollisionMesh_SetEnabledInVolume}
+    - {addr: 0x00351160, name: CollisionMesh_SetEnabledInBox}
   args:
-    - {name: box, lua: number, ctype: unsigned, desc: "Handle of a volume box (from `AddVolumeBox`)."}
-    - {name: enable, lua: boolean, desc: "True enables, false (or nil) disables the world collision triangles inside the box."}
+    - {name: box, lua: number, ctype: unsigned, desc: "Handle of a volume box (from AddVolumeBox) or any object whose box is at `+0x10` (min) and `+0x20` (max); a bad handle does nothing."}
+    - {name: enable, lua: boolean, desc: "true enables, false (or nil) disables the world collision triangles inside the box."}
   description: >-
-    Switches the level's static collision on or off inside a volume box: every collision triangle whose three vertices
-    lie in the box gets its enabled bit set or cleared ([Collision](../../research/collision.md)).
+    Switches the level's static collision on or off inside a box: every collision triangle of the level's mesh whose
+    three vertices lie in the box gets flag bit 0 set or cleared, so scripts can open a gap (or close one) where a
+    door or barrier was.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    A triangle only partly inside the box is left alone. The camera's main ray still tests disabled triangles
+    ([Collision: switching](../../research/collision.md#enable)).
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [3, 93, 31, 54, 82]}
 
 - name: ChangeBlocker
   wrapper: 0x00379c80
   calls:
     - {addr: 0x00252c28, name: NavLink_SetBlocked}
+    - {addr: 0x00250100, name: PathPolygon_FindAtPoint}
   args:
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` identifying the navigation link or node nearest to it."}
-    - {name: open, lua: boolean, desc: "False sets the blocked bit (0x08) on it, true clears it."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position `{x, y, z}` inside the walkable area to change (only x and y are tested); written back unchanged."}
+    - {name: open, lua: boolean, desc: "false (or nil) blocks the area, true opens it again."}
   description: >-
-    Blocks or unblocks an AI navigation link at a position.
-  evidence: inferred
-  depth: brief
+    Blocks or unblocks the AI walkable area (a path polygon of the level's path data) containing a point, by
+    setting or clearing its flag 0x08 (`+0x48`). A blocked polygon no longer counts for the walkable-line test, so
+    AI humans stop steering straight through it ([AI: path planning](../../research/ai.md#path-planning)).
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    The bit operation is confirmed (code) at 0x00252c28; that the record is a navigation link is inferred from the
-    neighbouring door-link bindings.
+    When several polygons contain the point, the one whose centre is nearest wins; none does nothing. Whether A*
+    routes also avoid it (through the nodes) is not traced.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [34, 3]}
 
 - name: GetLeftDoorHandle
@@ -1071,14 +1142,20 @@
   wrapper: 0x00379f80
   calls:
     - {addr: 0x00397508, name: Door_IsOpen}
+    - {addr: 0x003fb8d0}
   args:
-    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door object."}
   results:
-    - {lua: boolean, desc: "True when the door reports itself open (query 0x0c: a swinging door's state byte is 5, fully open with its collision gone); false (nil) otherwise, while still swinging, or for an invalid handle."}
+    - {lua: boolean, desc: "true when the door answers open; nil while it is closed, still swinging, broken, for a non-door object or for a bad handle."}
   description: >-
-    Tests whether a door is open.
+    Asks a door whether it is open: a query message 0x0c is delivered at once to the object's message handler, and a
+    swinging door answers yes only in state 5, fully open with its collision removed (about 29 ticks after the swing
+    starts) ([World objects: swinging doors](../../research/objects.md#door-states)). Scripts poll it to wait until a
+    door they opened can be walked through.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The answer is read from the message's reply (0x003a8518); objects that do not handle 0x0c leave it 0.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [81, 83]}
   coney: implemented
 
@@ -1127,13 +1204,19 @@
   wrapper: 0x0037a228
   calls:
     - {addr: 0x00415ce8, name: Flag_Enable}
+    - {addr: 0x00415dc8, name: Flag_SetEnabled}
   args:
-    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag (or of an object carrying flag data)."}
-    - {name: enable, lua: boolean, desc: "True to enable the flag for use, false to disable it."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag; any other object (type bit 0x80 clear) is ignored."}
+    - {name: enable, lua: boolean, desc: "true to enable the flag, false (or nil) to disable it."}
   description: >-
-    Enables or disables a flag, so AI and interactions stop or resume using it.
+    Writes the flag's enabled word (`+0xd4`, 1 from AddFlag). A disabled flag is refused by the may-use test
+    (0x00416718) and skipped by the nearest-flag search (0x00416f08), so AI humans stop picking it for their
+    activities; a human already using it is not moved ([Flags](../../research/flags.md)).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Goals given the flag directly by a script (GoalMoveToFlag and the like) do not check it (inferred). Store
+    groups switch their flags off through 0x00417540, the same writer.
   usage: {chunks: 2, calls: 15, boot: false, mission1: false, result_used: false, levels: [2, 20]}
 
 - name: GetFlagPos

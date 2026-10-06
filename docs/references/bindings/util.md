@@ -90,13 +90,18 @@ GetRTTI(object) -> number
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Any object handle. |
 
-**Returns** number: The object's type bits (vtable `+0x24`) with bit 1 cleared; 0 for a bad handle. Bit 0x10 marks a tag
-object (see ProcessTag).
+**Returns** number: The object's type bits with bit 0x2 cleared, as an unsigned number; 0 for a bad handle. 0x40 marks a
+human, 0x80 a flag, 0x10 a tag, 0x08 a dynamic (prop) object.
 
-Returns an object's run-time type flags.
+Returns an object's run-time type bits, the word its vtable slot `+0x24` gives, which the game's own casts test (a human
+0x40 at 0x00229868, a flag 0x80 at 0x00417a60, a prop 0x08 at 0x00395f38, a tag 0x10 in ProcessTag). A script tests one
+bit to learn what kind of object a handle names.
 
-- **Evidence:** confirmed (code) at `0x00385950`; detail: brief
-- **Wrapper** `0x0036c888` (registered by `RegisterBindings`); **calls** `0x00385950`
+**Notes.** An object can carry several bits (a class's bits include its base classes', inferred). Why bit 0x2 is masked
+off is not traced.
+
+- **Evidence:** confirmed (code) at `0x00385950`; detail: traced
+- **Wrapper** `0x0036c888` (registered by `RegisterBindings`); **calls** `0x00385950` `Object_GetTypeBits`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented

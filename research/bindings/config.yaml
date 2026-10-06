@@ -772,16 +772,20 @@
 - name: CfgSetMaxThrowError
   wrapper: 0x0035e480
   calls:
-    - {addr: 0x0041d940}
+    - {addr: 0x0041d940, name: Cfg_SetMaxThrowError}
   args:
-    - {name: horizontalDeg, lua: number, ctype: float, desc: "Maximum aiming error in degrees for thrown objects, one axis (stored in radians at 0x005148b0)."}
-    - {name: verticalDeg, lua: number, ctype: float, desc: "Maximum aiming error in degrees on the other axis (radians at 0x005148b4)."}
+    - {name: verticalDeg, lua: number, ctype: float, desc: "Largest up-or-down aiming error in degrees of an AI throw at a target (stored in radians at 0x005148b0)."}
+    - {name: horizontalDeg, lua: number, ctype: float, desc: "Largest sideways aiming error in degrees (radians at 0x005148b4)."}
   description: >-
-    Sets how far (in degrees) a thrown object may deviate from its aim; one level sets 5 and 5.
-  evidence: inferred
-  depth: brief
+    Sets how far a thrown object may stray from its aim. When a human throws at a target, Human_ComputeThrowVelocity
+    (0x002570e8) turns the throw sideways about the vertical axis and then up or down, each by a random part of the
+    maximum scaled by the distance to the target over 30 m (between 0.1 and 1). An allied Warrior (brain type 3) gets
+    60% of the error. One level sets 5 and 5.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Storage and the degree-to-radian conversion confirmed (code) at 0x0041d940; which axis is which is inferred.
+    No error for a human with flag 0x40000 at `+0xe0` (inferred: the player). The globals' default values are not
+    traced. Readers: 0x00257a08, 0x00257a14.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [2]}
 
 - name: CfgGangSizeForCombatMusic
@@ -1020,15 +1024,21 @@
 - name: CfgChanceToGetHelp
   wrapper: 0x0035e958
   calls:
-    - {addr: 0x00294888}
+    - {addr: 0x00294888, name: Cfg_SetChanceToGetHelp}
   args:
-    - {name: percent, lua: number, ctype: unsigned, desc: "Chance 0-100 that a civilian victim calls for help; values above 100 become 100."}
+    - {name: percent, lua: number, ctype: unsigned, desc: "Chance 0-100 that a civilian who sees an attack calls for help; values above 100 become 100."}
   description: >-
-    Stores the call-for-help chance (byte at 0x00510adf).
-  evidence: inferred
-  depth: brief
+    Sets the global call-for-help chance (byte 0x00510adf). When a civilian within 15 m of an attacker sees a
+    civilian, gang member or dealer being attacked, it rolls this chance; on success it goes to report the crime
+    (goal 0x002a7d58), or calls a gang (Goal_CallGang) when no police gang exists. An attack on a cop is always
+    reported (100%); an attack on a Warrior or the player never is, and a civilian that does not report reacts with
+    the ped-reaction goal (107) instead.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Storage and clamp confirmed (code) at 0x00294888.
+    Reader: CivilianBrain_OnEvent event 0x14 (0x002ffb30). No report while the attacker's gang noted a crime in the
+    last 40 s (gang `+0x5f4`) or while the crime kind is switched off (`W_GameState + 0x294 + kind`); the report
+    kinds 0, 2 and 8 are not traced further.
   usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false, levels: [34, 31, 82, 20, 11]}
 
 - name: CfgPedInteractDelay
@@ -1653,13 +1663,19 @@
 - name: CfgWarriorWeapons
   wrapper: 0x0036be20
   calls:
-    - {addr: 0x0041d770}
+    - {addr: 0x0041d770, name: GameState_SetWarriorWeapons}
   args:
-    - {name: enabled, lua: boolean, desc: "true allows the Warriors to use weapons; false forbids them."}
+    - {name: enabled, lua: boolean, desc: "true lets the AI Warriors pick up weapons; false stops them."}
   description: >-
-    Stores the warrior-weapons switch in the game state (+0x5704).
+    Stores the warrior-weapons switch in the game state (`+0x5704`, 1 by default). While it is off, the AI-controlled
+    Warriors' item search (0x002bbfa0, 0x002bcf88) skips any pickup whose object type is a weapon (type class 4),
+    so they fight bare-handed but still pick up other items. Level 5 turns it off and back on.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The game state constructor (0x00418588) and another reset (0x00418c68) set it to 1. WarriorBrain_Think
+    (0x003055e0) also reads it, not traced. The player's own pickups are not affected (inferred: only brain code reads
+    it).
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [5]}
 
 - name: CfgCrimeResponders
@@ -1749,13 +1765,20 @@
 - name: CfgHuInventoryCallback
   wrapper: 0x0036c068
   calls:
-    - {addr: 0x0041ed10}
+    - {addr: 0x0041ed10, name: Cfg_SetHuInventoryCallback}
+    - {addr: 0x0041e490, name: Inventory_SetHuCallback}
+    - {addr: 0x0041e5b0, name: Inventory_AddItem}
   args:
-    - {name: fn, lua: string, desc: "Lua function name called when a human (not only the player) picks up an item, or nil."}
+    - {name: fn, lua: string, desc: "Name of a Lua function (up to 32 characters, copied) called when an item is given to a player with notification, or nil to clear it."}
   description: >-
-    Stores the per-human inventory callback name in the inventory block (0x0041e490).
+    Stores a second inventory callback name in the inventory block (game state `+0x480 + 0xff4`). When
+    Inventory_AddItem runs with its notify flag, it calls this function, if it exists, with the player index (0 or 1)
+    and the item id (0-22), after the CfgInventoryCallback one (which gets only the item id).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Despite the name it is per player, not per human: other humans' pickups do not call it. Called for any change
+    with the notify flag, whatever its sign. Which pickups set the flag is not traced here.
   usage: {chunks: 12, calls: 30, boot: false, mission1: false, result_used: false, levels: [3, 14, 82, 83, 60, 61, 62, 63, 64]}
 
 - name: CfgHuInventoryCallback2

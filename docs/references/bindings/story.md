@@ -18,13 +18,13 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 10 |
 | [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 12 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 14 |
-| [`level34`](#level34) | mission 4 | 204 | 17 | 3 | 1 |
-| [`level2`](#level2) | mission 5 | 243 | 19 | 1 | 1 |
-| [`level3`](#level3) | mission 6 | 259 | 22 | 0 | 1 |
-| [`level5`](#level5) | mission 7 | 274 | 16 | 2 | 1 |
-| [`level81`](#level81) | mission 8 | 236 | 20 | 1 | 3 |
-| [`level86`](#level86) | mission 9 | 245 | 17 | 2 | 2 |
-| [`level93`](#level93) | mission 10 | 295 | 24 | 3 | 2 |
+| [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 1 |
+| [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 1 |
+| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 1 |
+| [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 1 |
+| [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 3 |
+| [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 2 |
+| [`level93`](#level93) | mission 10 | 295 | 24 | 11 | 2 |
 | [`level31`](#level31) | mission 11 | 266 | 9 | 0 | 1 |
 | [`level14`](#level14) | mission 12 | 226 | 6 | 0 | 1 |
 | [`level9`](#level9) | mission 13 | 225 | 6 | 0 | 0 |
@@ -295,176 +295,176 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level34: mission 4 {#level34}
 
-204 bindings, 17 new: 3 traced, 1 implemented in Coney (116 of all 204).
+204 bindings, 17 new: 17 traced, 1 implemented in Coney (116 of all 204).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuSetWounded`](character.md#husetwounded) | Characters | brief | inferred | not implemented |
-| [`BrSetPedType`](ai.md#brsetpedtype) | AI | brief | inferred | not implemented |
-| [`GoalRiot`](ai.md#goalriot) | AI | brief | inferred | not implemented |
-| [`GoalStationaryThrower`](ai.md#goalstationarythrower) | AI | brief | inferred | not implemented |
-| [`GangSetMaxConcurrent`](gang.md#gangsetmaxconcurrent) | Gangs | brief | confirmed (code) | not implemented |
-| [`GangSetSpawnerMustBeOffScreen`](gang.md#gangsetspawnermustbeoffscreen) | Gangs | brief | inferred | not implemented |
-| [`CarExplode`](world.md#carexplode) | World and objects | brief | inferred | not implemented |
-| [`ChangeBlocker`](world.md#changeblocker) | World and objects | brief | inferred | not implemented |
+| [`HuSetWounded`](character.md#husetwounded) | Characters | traced | confirmed (code) | not implemented |
+| [`BrSetPedType`](ai.md#brsetpedtype) | AI | traced | confirmed (code) | not implemented |
+| [`GoalRiot`](ai.md#goalriot) | AI | traced | confirmed (code) | not implemented |
+| [`GoalStationaryThrower`](ai.md#goalstationarythrower) | AI | traced | confirmed (code) | not implemented |
+| [`GangSetMaxConcurrent`](gang.md#gangsetmaxconcurrent) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetSpawnerMustBeOffScreen`](gang.md#gangsetspawnermustbeoffscreen) | Gangs | traced | confirmed (code) | not implemented |
+| [`CarExplode`](world.md#carexplode) | World and objects | traced | confirmed (code) | not implemented |
+| [`ChangeBlocker`](world.md#changeblocker) | World and objects | traced | confirmed (code) | not implemented |
 | [`DoorOpen`](world.md#dooropen) | World and objects | traced | confirmed (code) | implemented |
-| [`ObjGetIndex`](world.md#objgetindex) | World and objects | brief | confirmed (code) | not implemented |
+| [`ObjGetIndex`](world.md#objgetindex) | World and objects | traced | confirmed (code) | not implemented |
 | [`End3DFog`](effects.md#end3dfog) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`MaxFogParticles`](effects.md#maxfogparticles) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`ForceCrimeLevel`](level.md#forcecrimelevel) | Levels and game state | brief | confirmed (code) | not implemented |
+| [`MaxFogParticles`](effects.md#maxfogparticles) | Effects and lighting | traced | inferred | not implemented |
+| [`ForceCrimeLevel`](level.md#forcecrimelevel) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`GetLUASaveDataBool`](level.md#getluasavedatabool) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`SetGeneralCarMsgHandler`](script.md#setgeneralcarmsghandler) | Script flow | brief | confirmed (code) | not implemented |
-| [`CfgChanceToGetHelp`](config.md#cfgchancetogethelp) | Configuration (Cfg) | brief | inferred | not implemented |
-| [`GetRTTI`](util.md#getrtti) | Utilities | brief | confirmed (code) | not implemented |
+| [`SetGeneralCarMsgHandler`](script.md#setgeneralcarmsghandler) | Script flow | traced | inferred | not implemented |
+| [`CfgChanceToGetHelp`](config.md#cfgchancetogethelp) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`GetRTTI`](util.md#getrtti) | Utilities | traced | confirmed (code) | not implemented |
 
 ## level2: mission 5 {#level2}
 
-243 bindings, 19 new: 1 traced, 1 implemented in Coney (135 of all 243).
+243 bindings, 19 new: 19 traced, 1 implemented in Coney (135 of all 243).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuBlockJump`](character.md#hublockjump) | Characters | brief | confirmed (code) | not implemented |
-| [`HuClearLook`](character.md#huclearlook) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetInterrogation`](character.md#husetinterrogation) | Characters | brief | inferred | not implemented |
+| [`HuBlockJump`](character.md#hublockjump) | Characters | traced | confirmed (code) | not implemented |
+| [`HuClearLook`](character.md#huclearlook) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetInterrogation`](character.md#husetinterrogation) | Characters | traced | confirmed (code) | not implemented |
 | [`KillHumans`](character.md#killhumans) | Characters | traced | confirmed (code) | not implemented |
-| [`ActTurnToDir`](ai.md#actturntodir) | AI | brief | confirmed (code) | not implemented |
-| [`GoalLeadChase`](ai.md#goalleadchase) | AI | brief | inferred | not implemented |
-| [`TacticTrigger`](ai.md#tactictrigger) | AI | brief | confirmed (code) | implemented |
-| [`CamAddRailPoint`](camera.md#camaddrailpoint) | Cameras | brief | confirmed (code) | not implemented |
-| [`CamLeadRail`](camera.md#camleadrail) | Cameras | brief | inferred | not implemented |
-| [`CamModifyRail`](camera.md#cammodifyrail) | Cameras | brief | inferred | not implemented |
-| [`CamSetupRail`](camera.md#camsetuprail) | Cameras | brief | confirmed (code) | not implemented |
-| [`FlagEnable`](world.md#flagenable) | World and objects | brief | confirmed (code) | not implemented |
-| [`TriggerSphereSetRadius`](world.md#triggerspheresetradius) | World and objects | brief | confirmed (code) | not implemented |
-| [`HUDEnableBar`](hud.md#hudenablebar) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDSetBarPercentage`](hud.md#hudsetbarpercentage) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDSetBarProperty`](hud.md#hudsetbarproperty) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`SetAmbientEmitterVolumeMod`](sound.md#setambientemittervolumemod) | Sound and music | brief | inferred | not implemented |
-| [`SoundSetSystemMusicState`](sound.md#soundsetsystemmusicstate) | Sound and music | brief | inferred | not implemented |
-| [`CfgSetMaxThrowError`](config.md#cfgsetmaxthrowerror) | Configuration (Cfg) | brief | inferred | not implemented |
+| [`ActTurnToDir`](ai.md#actturntodir) | AI | traced | confirmed (code) | not implemented |
+| [`GoalLeadChase`](ai.md#goalleadchase) | AI | traced | confirmed (code) | not implemented |
+| [`TacticTrigger`](ai.md#tactictrigger) | AI | traced | confirmed (code) | implemented |
+| [`CamAddRailPoint`](camera.md#camaddrailpoint) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamLeadRail`](camera.md#camleadrail) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamModifyRail`](camera.md#cammodifyrail) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamSetupRail`](camera.md#camsetuprail) | Cameras | traced | confirmed (code) | not implemented |
+| [`FlagEnable`](world.md#flagenable) | World and objects | traced | confirmed (code) | not implemented |
+| [`TriggerSphereSetRadius`](world.md#triggerspheresetradius) | World and objects | traced | confirmed (code) | not implemented |
+| [`HUDEnableBar`](hud.md#hudenablebar) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDSetBarPercentage`](hud.md#hudsetbarpercentage) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDSetBarProperty`](hud.md#hudsetbarproperty) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`SetAmbientEmitterVolumeMod`](sound.md#setambientemittervolumemod) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SoundSetSystemMusicState`](sound.md#soundsetsystemmusicstate) | Sound and music | traced | confirmed (code) | not implemented |
+| [`CfgSetMaxThrowError`](config.md#cfgsetmaxthrowerror) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 0 traced, 1 implemented in Coney (131 of all 259).
+259 bindings, 22 new: 22 traced, 1 implemented in Coney (131 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuApplyDamageModifier`](character.md#huapplydamagemodifier) | Characters | brief | inferred | not implemented |
-| [`HuEnableTagCheer`](character.md#huenabletagcheer) | Characters | brief | confirmed (code) | not implemented |
-| [`HuHasHat`](character.md#huhashat) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetAutoCombat`](character.md#husetautocombat) | Characters | brief | inferred | not implemented |
-| [`HuSetNoReact`](character.md#husetnoreact) | Characters | brief | inferred | not implemented |
-| [`HuSetSlowMo`](character.md#husetslowmo) | Characters | brief | confirmed (code) | not implemented |
-| [`HuUseAnyAnim`](character.md#huuseanyanim) | Characters | brief | confirmed (code) | not implemented |
-| [`GoalBigLedgeThrower`](ai.md#goalbigledgethrower) | AI | brief | inferred | not implemented |
-| [`GoalDevilRun`](ai.md#goaldevilrun) | AI | brief | inferred | not implemented |
-| [`GoalGuardFlag`](ai.md#goalguardflag) | AI | brief | inferred | not implemented |
-| [`GoalTag`](ai.md#goaltag) | AI | brief | inferred | not implemented |
-| [`GangMakeEnemiesOfType`](gang.md#gangmakeenemiesoftype) | Gangs | brief | confirmed (code) | not implemented |
-| [`GangSetAlwaysSeen`](gang.md#gangsetalwaysseen) | Gangs | brief | speculative | not implemented |
-| [`CameraCreateFixed`](camera.md#cameracreatefixed) | Cameras | brief | confirmed (code) | not implemented |
-| [`CameraCreateThird`](camera.md#cameracreatethird) | Cameras | brief | inferred | not implemented |
-| [`ChangeCollision`](world.md#changecollision) | World and objects | brief | confirmed (code) | not implemented |
-| [`HUDCheckTutorialText`](hud.md#hudchecktutorialtext) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDRadarSetRange`](hud.md#hudradarsetrange) | HUD and menus | brief | inferred | not implemented |
-| [`HUDSetChaseHUDState_DESTROY`](hud.md#hudsetchasehudstate_destroy) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`AddAmbientSoundEmitter`](sound.md#addambientsoundemitter) | Sound and music | brief | inferred | not implemented |
-| [`SndLoadBank`](sound.md#sndloadbank) | Sound and music | brief | confirmed (code) | implemented |
-| [`CfgHuInventoryCallback`](config.md#cfghuinventorycallback) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
+| [`HuApplyDamageModifier`](character.md#huapplydamagemodifier) | Characters | traced | confirmed (code) | not implemented |
+| [`HuEnableTagCheer`](character.md#huenabletagcheer) | Characters | traced | confirmed (code) | not implemented |
+| [`HuHasHat`](character.md#huhashat) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetAutoCombat`](character.md#husetautocombat) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetNoReact`](character.md#husetnoreact) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetSlowMo`](character.md#husetslowmo) | Characters | traced | confirmed (code) | not implemented |
+| [`HuUseAnyAnim`](character.md#huuseanyanim) | Characters | traced | confirmed (code) | not implemented |
+| [`GoalBigLedgeThrower`](ai.md#goalbigledgethrower) | AI | traced | confirmed (code) | not implemented |
+| [`GoalDevilRun`](ai.md#goaldevilrun) | AI | traced | confirmed (code) | not implemented |
+| [`GoalGuardFlag`](ai.md#goalguardflag) | AI | traced | confirmed (code) | not implemented |
+| [`GoalTag`](ai.md#goaltag) | AI | traced | confirmed (code) | not implemented |
+| [`GangMakeEnemiesOfType`](gang.md#gangmakeenemiesoftype) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangSetAlwaysSeen`](gang.md#gangsetalwaysseen) | Gangs | traced | confirmed (code) | not implemented |
+| [`CameraCreateFixed`](camera.md#cameracreatefixed) | Cameras | traced | confirmed (code) | not implemented |
+| [`CameraCreateThird`](camera.md#cameracreatethird) | Cameras | traced | confirmed (code) | not implemented |
+| [`ChangeCollision`](world.md#changecollision) | World and objects | traced | confirmed (code) | not implemented |
+| [`HUDCheckTutorialText`](hud.md#hudchecktutorialtext) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDRadarSetRange`](hud.md#hudradarsetrange) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDSetChaseHUDState_DESTROY`](hud.md#hudsetchasehudstate_destroy) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`AddAmbientSoundEmitter`](sound.md#addambientsoundemitter) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SndLoadBank`](sound.md#sndloadbank) | Sound and music | traced | confirmed (code) | implemented |
+| [`CfgHuInventoryCallback`](config.md#cfghuinventorycallback) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level5: mission 7 {#level5}
 
-274 bindings, 16 new: 2 traced, 1 implemented in Coney (146 of all 274).
+274 bindings, 16 new: 16 traced, 1 implemented in Coney (146 of all 274).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuActionDialog`](character.md#huactiondialog) | Characters | brief | inferred | not implemented |
-| [`HuIsTagging`](character.md#huistagging) | Characters | brief | confirmed (code) | not implemented |
-| [`HuMarkReachable`](character.md#humarkreachable) | Characters | brief | speculative | not implemented |
+| [`HuActionDialog`](character.md#huactiondialog) | Characters | traced | confirmed (code) | not implemented |
+| [`HuIsTagging`](character.md#huistagging) | Characters | traced | confirmed (code) | not implemented |
+| [`HuMarkReachable`](character.md#humarkreachable) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetRageMode`](character.md#husetragemode) | Characters | traced | confirmed (code) | not implemented |
-| [`ActTurnTo`](ai.md#actturnto) | AI | brief | inferred | not implemented |
-| [`BrFlushGoals`](ai.md#brflushgoals) | AI | brief | confirmed (code) | not implemented |
-| [`GoalRunCarrotRun`](ai.md#goalruncarrotrun) | AI | brief | inferred | not implemented |
-| [`TacticBossScenarioA`](ai.md#tacticbossscenarioa) | AI | brief | inferred | not implemented |
-| [`CarRemovePart`](world.md#carremovepart) | World and objects | brief | inferred | not implemented |
-| [`ConvertJumpToDoor`](world.md#convertjumptodoor) | World and objects | brief | confirmed (code) | implemented |
-| [`ObjEnablePhysics`](world.md#objenablephysics) | World and objects | brief | confirmed (code) | not implemented |
+| [`ActTurnTo`](ai.md#actturnto) | AI | traced | confirmed (code) | not implemented |
+| [`BrFlushGoals`](ai.md#brflushgoals) | AI | traced | confirmed (code) | not implemented |
+| [`GoalRunCarrotRun`](ai.md#goalruncarrotrun) | AI | traced | confirmed (code) | not implemented |
+| [`TacticBossScenarioA`](ai.md#tacticbossscenarioa) | AI | traced | confirmed (code) | not implemented |
+| [`CarRemovePart`](world.md#carremovepart) | World and objects | traced | confirmed (code) | not implemented |
+| [`ConvertJumpToDoor`](world.md#convertjumptodoor) | World and objects | traced | confirmed (code) | implemented |
+| [`ObjEnablePhysics`](world.md#objenablephysics) | World and objects | traced | confirmed (code) | not implemented |
 | [`EndRoomSmoke`](effects.md#endroomsmoke) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`StartRoomSmoke`](effects.md#startroomsmoke) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`SoundPreLoad`](sound.md#soundpreload) | Sound and music | brief | confirmed (code) | not implemented |
-| [`SoundStart`](sound.md#soundstart) | Sound and music | brief | confirmed (code) | not implemented |
-| [`CfgWarriorWeapons`](config.md#cfgwarriorweapons) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
+| [`StartRoomSmoke`](effects.md#startroomsmoke) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`SoundPreLoad`](sound.md#soundpreload) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SoundStart`](sound.md#soundstart) | Sound and music | traced | confirmed (code) | not implemented |
+| [`CfgWarriorWeapons`](config.md#cfgwarriorweapons) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level81: mission 8 {#level81}
 
-236 bindings, 20 new: 1 traced, 3 implemented in Coney (130 of all 236).
+236 bindings, 20 new: 20 traced, 3 implemented in Coney (130 of all 236).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`CullCorpses`](character.md#cullcorpses) | Characters | brief | inferred | not implemented |
-| [`HuSetBlurMode`](character.md#husetblurmode) | Characters | brief | inferred | not implemented |
-| [`HuSetButtonTapControl`](character.md#husetbuttontapcontrol) | Characters | brief | inferred | not implemented |
-| [`HuSetDamage`](character.md#husetdamage) | Characters | brief | inferred | not implemented |
-| [`HuSetKillerMode`](character.md#husetkillermode) | Characters | brief | inferred | not implemented |
-| [`HuSetWarChief`](character.md#husetwarchief) | Characters | brief | inferred | not implemented |
-| [`BrSetDamageResponse`](ai.md#brsetdamageresponse) | AI | brief | inferred | not implemented |
-| [`GoalEngageEnemy`](ai.md#goalengageenemy) | AI | brief | inferred | not implemented |
-| [`GoalFollowObject`](ai.md#goalfollowobject) | AI | brief | inferred | not implemented |
-| [`GoalManWeaponPile`](ai.md#goalmanweaponpile) | AI | brief | inferred | not implemented |
-| [`TacticBossScenarioH`](ai.md#tacticbossscenarioh) | AI | brief | inferred | not implemented |
-| [`DisableDoorLink`](world.md#disabledoorlink) | World and objects | brief | confirmed (code) | implemented |
-| [`EnableDoorLink`](world.md#enabledoorlink) | World and objects | brief | confirmed (code) | implemented |
-| [`IsDoorOpen`](world.md#isdooropen) | World and objects | brief | confirmed (code) | implemented |
-| [`ObjSetTrainPoint`](world.md#objsettrainpoint) | World and objects | brief | inferred | not implemented |
-| [`ObjStartTrain`](world.md#objstarttrain) | World and objects | brief | inferred | not implemented |
-| [`WidgetSetColour`](effects.md#widgetsetcolour) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`HUDSetRadarZoomScale`](hud.md#hudsetradarzoomscale) | HUD and menus | brief | confirmed (code) | not implemented |
+| [`CullCorpses`](character.md#cullcorpses) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetBlurMode`](character.md#husetblurmode) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetButtonTapControl`](character.md#husetbuttontapcontrol) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetDamage`](character.md#husetdamage) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetKillerMode`](character.md#husetkillermode) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetWarChief`](character.md#husetwarchief) | Characters | traced | confirmed (code) | not implemented |
+| [`BrSetDamageResponse`](ai.md#brsetdamageresponse) | AI | traced | inferred | not implemented |
+| [`GoalEngageEnemy`](ai.md#goalengageenemy) | AI | traced | confirmed (code) | not implemented |
+| [`GoalFollowObject`](ai.md#goalfollowobject) | AI | traced | confirmed (code) | not implemented |
+| [`GoalManWeaponPile`](ai.md#goalmanweaponpile) | AI | traced | confirmed (code) | not implemented |
+| [`TacticBossScenarioH`](ai.md#tacticbossscenarioh) | AI | traced | confirmed (code) | not implemented |
+| [`DisableDoorLink`](world.md#disabledoorlink) | World and objects | traced | confirmed (code) | implemented |
+| [`EnableDoorLink`](world.md#enabledoorlink) | World and objects | traced | confirmed (code) | implemented |
+| [`IsDoorOpen`](world.md#isdooropen) | World and objects | traced | confirmed (code) | implemented |
+| [`ObjSetTrainPoint`](world.md#objsettrainpoint) | World and objects | traced | confirmed (code) | not implemented |
+| [`ObjStartTrain`](world.md#objstarttrain) | World and objects | traced | confirmed (code) | not implemented |
+| [`WidgetSetColour`](effects.md#widgetsetcolour) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`HUDSetRadarZoomScale`](hud.md#hudsetradarzoomscale) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`SetNumberOfMaterialSlots`](sound.md#setnumberofmaterialslots) | Sound and music | traced | confirmed (code) | not implemented |
-| [`GameIsOver`](level.md#gameisover) | Levels and game state | brief | confirmed (code) | not implemented |
+| [`GameIsOver`](level.md#gameisover) | Levels and game state | traced | confirmed (code) | not implemented |
 
 ## level86: mission 9 {#level86}
 
-245 bindings, 17 new: 2 traced, 2 implemented in Coney (132 of all 245).
+245 bindings, 17 new: 17 traced, 2 implemented in Coney (132 of all 245).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuCanSee`](character.md#hucansee) | Characters | brief | inferred | not implemented |
-| [`HuForceEnableReticule`](character.md#huforceenablereticule) | Characters | brief | confirmed (code) | not implemented |
-| [`HuPlayDynPair`](character.md#huplaydynpair) | Characters | brief | inferred | not implemented |
-| [`HuSetFireProof`](character.md#husetfireproof) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetHearRange`](character.md#husethearrange) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetWoundable`](character.md#husetwoundable) | Characters | brief | inferred | not implemented |
-| [`GoalAvoidEnemies`](ai.md#goalavoidenemies) | AI | brief | inferred | not implemented |
-| [`GoalCower`](ai.md#goalcower) | AI | brief | inferred | not implemented |
+| [`HuCanSee`](character.md#hucansee) | Characters | traced | confirmed (code) | not implemented |
+| [`HuForceEnableReticule`](character.md#huforceenablereticule) | Characters | traced | confirmed (code) | not implemented |
+| [`HuPlayDynPair`](character.md#huplaydynpair) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetFireProof`](character.md#husetfireproof) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetHearRange`](character.md#husethearrange) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetWoundable`](character.md#husetwoundable) | Characters | traced | inferred | not implemented |
+| [`GoalAvoidEnemies`](ai.md#goalavoidenemies) | AI | traced | confirmed (code) | not implemented |
+| [`GoalCower`](ai.md#goalcower) | AI | traced | confirmed (code) | not implemented |
 | [`GoalFollowPlayer`](ai.md#goalfollowplayer) | AI | traced | confirmed (code) | not implemented |
-| [`GoalMoveToHuman`](ai.md#goalmovetohuman) | AI | brief | inferred | not implemented |
-| [`GoalObjectThrower`](ai.md#goalobjectthrower) | AI | brief | inferred | not implemented |
-| [`TacticVandalizeCars`](ai.md#tacticvandalizecars) | AI | brief | inferred | not implemented |
-| [`ObjectChangeState`](world.md#objectchangestate) | World and objects | brief | confirmed (code) | implemented |
-| [`ObjGetZone`](world.md#objgetzone) | World and objects | brief | confirmed (code) | not implemented |
-| [`ParticleChangeState`](effects.md#particlechangestate) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`TakeMoney`](level.md#takemoney) | Levels and game state | brief | confirmed (code) | implemented |
+| [`GoalMoveToHuman`](ai.md#goalmovetohuman) | AI | traced | confirmed (code) | not implemented |
+| [`GoalObjectThrower`](ai.md#goalobjectthrower) | AI | traced | confirmed (code) | not implemented |
+| [`TacticVandalizeCars`](ai.md#tacticvandalizecars) | AI | traced | confirmed (code) | not implemented |
+| [`ObjectChangeState`](world.md#objectchangestate) | World and objects | traced | confirmed (code) | implemented |
+| [`ObjGetZone`](world.md#objgetzone) | World and objects | traced | confirmed (code) | not implemented |
+| [`ParticleChangeState`](effects.md#particlechangestate) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`TakeMoney`](level.md#takemoney) | Levels and game state | traced | confirmed (code) | implemented |
 | [`CfgBurnTime`](config.md#cfgburntime) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level93: mission 10 {#level93}
 
-295 bindings, 24 new: 3 traced, 2 implemented in Coney (145 of all 295).
+295 bindings, 24 new: 11 traced, 2 implemented in Coney (145 of all 295).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuBlockGrab`](character.md#hublockgrab) | Characters | brief | confirmed (code) | not implemented |
+| [`HuBlockGrab`](character.md#hublockgrab) | Characters | traced | confirmed (code) | not implemented |
 | [`HuEnableOnFire`](character.md#huenableonfire) | Characters | brief | inferred | not implemented |
-| [`HuIsOnFire`](character.md#huisonfire) | Characters | brief | inferred | not implemented |
-| [`HuSetOnFire`](character.md#husetonfire) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetStateRespVoiceIndex`](character.md#husetstaterespvoiceindex) | Characters | brief | inferred | not implemented |
-| [`HuSetVoiceIndex`](character.md#husetvoiceindex) | Characters | brief | inferred | not implemented |
-| [`GoalTravelPath2`](ai.md#goaltravelpath2) | AI | brief | inferred | not implemented |
-| [`TacticBossScenarioG`](ai.md#tacticbossscenariog) | AI | brief | inferred | not implemented |
+| [`HuIsOnFire`](character.md#huisonfire) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetOnFire`](character.md#husetonfire) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetStateRespVoiceIndex`](character.md#husetstaterespvoiceindex) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetVoiceIndex`](character.md#husetvoiceindex) | Characters | traced | confirmed (code) | not implemented |
+| [`GoalTravelPath2`](ai.md#goaltravelpath2) | AI | traced | confirmed (code) | not implemented |
+| [`TacticBossScenarioG`](ai.md#tacticbossscenariog) | AI | traced | confirmed (code) | not implemented |
 | [`GangQueueResponders`](gang.md#gangqueueresponders) | Gangs | brief | inferred | not implemented |
 | [`GangSetAttackable`](gang.md#gangsetattackable) | Gangs | brief | inferred | not implemented |
 | [`GangSetLOS`](gang.md#gangsetlos) | Gangs | brief | confirmed (code) | not implemented |
 | [`GangSetNeutral`](gang.md#gangsetneutral) | Gangs | brief | confirmed (code) | not implemented |
-| [`CamCanSee`](camera.md#camcansee) | Cameras | brief | confirmed (code) | not implemented |
+| [`CamCanSee`](camera.md#camcansee) | Cameras | traced | confirmed (code) | not implemented |
 | [`EnableHeat`](effects.md#enableheat) | Effects and lighting | brief | confirmed (code) | not implemented |
 | [`EndRain`](effects.md#endrain) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`InitFallingEmbers`](effects.md#initfallingembers) | Effects and lighting | brief | confirmed (code) | not implemented |
