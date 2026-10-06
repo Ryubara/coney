@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <numbers>
 #include <optional>
 #include <span>
 #include <string>
@@ -17,6 +18,7 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney::script {
 
@@ -122,15 +124,14 @@ NativeFunction makeGetGameMode(const BindingContext& context) {
 }
 
 // `Teleport(object, {x, y, z}, heading)`: moves a human the scripts made, as `TeleportToFlag` does (a running level
-// moves it, the player too); heading -1 (the default) keeps its facing. **Coney stand-in**: only humans are kept, so
-// another object's handle does nothing, and the human is placed at the point as given (the original lowers it onto
-// what a short ray down finds).
+// moves it, the player too), or a spawned object (its spawn record, which the trigger spheres and the drawing read);
+// heading -1 (the default) keeps its facing. **Coney stand-in**: the human is placed at the point as given (the
+// original lowers it onto what a short ray down finds).
 // @orig 0x00385bb8 Object_Teleport (unknown)
 NativeFunction makeTeleport(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         const double handle = handleArg(args, 0);
-        HumanCreation* human = context->humans != nullptr ? context->humans->find(handle) : nullptr;
-        if (human == nullptr || args.size() < 2 || args[1].table() == nullptr) {
+        if (args.size() < 2 || args[1].table() == nullptr) {
             return binding::none();
         }
         const Table& table = *args[1].table();
@@ -139,8 +140,23 @@ NativeFunction makeTeleport(const BindingContext& context) {
             placement.position.at(k) =
                 static_cast<float>(table.get(Value(static_cast<double>(k + 1))).number().value_or(0.0));
         }
-        // The facing it has now: where the level has it, else where it was made or last teleported.
         const int heading = intArg(args, 2, kKeepHeading);
+        HumanCreation* human = context->humans != nullptr ? context->humans->find(handle) : nullptr;
+        if (human == nullptr) {
+            // Another object (a prop, an effect) takes the transform as given: its spawn record's position, and a
+            // rotation about z unless the heading is -1.
+            world_objects::SpawnRecord* record =
+                context->spawnRecords != nullptr ? context->spawnRecords->find(handle) : nullptr;
+            if (record != nullptr && !record->removed) {
+                record->position = placement.position;
+                if (heading != kKeepHeading) {
+                    const float half = static_cast<float>(heading) * std::numbers::pi_v<float> / 360.0F;
+                    record->rotation = {0.0F, 0.0F, std::sin(half), std::cos(half)};
+                }
+            }
+            return binding::none();
+        }
+        // The facing it has now: where the level has it, else where it was made or last teleported.
         if (heading == kKeepHeading) {
             std::optional<world_objects::Placement> now =
                 context->ai != nullptr ? context->ai->humanPlacement(handle) : std::nullopt;
@@ -315,6 +331,56 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
         const HumanCreation* human = context->humans != nullptr ? context->humans->find(handleArg(args, 0)) : nullptr;
         return binding::number(human != nullptr ? characters::characterClassOf(human->type).id : 0);
     });
+    // `HuSetNoAutoLock(human, on)`: the flag only (no reader is on the page).
+    // @orig 0x002340a8 Human_SetNoAutoLock (unknown)
+    vm.registerFunction("HuSetNoAutoLock", humanCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
+                            host.setFlags(handleArg(args, 0), human::flag::kNoAutoLock, boolArg(args, 1));
+                        }));
+    // `HuSetWheelchairControl(human, on)`: the wheelchair flag, the player commands 46 and 47 removed (on) or restored,
+    // and the cameras' look-behind switch (11) cleared. **Coney stand-in**: the locomotion it swaps in is not on the
+    // page, so the human moves on its own.
+    // @orig 0x00234188 Human_SetWheelchairControl (unknown)
+    vm.registerFunction("HuSetWheelchairControl", [context = &context](std::span<const Value> args) {
+        constexpr int kFirstCommand = 46;
+        constexpr int kSecondCommand = 47;
+        const double human = handleArg(args, 0);
+        const bool on = boolArg(args, 1);
+        if (HumanBindingHost* host = humansOf(*context); host != nullptr) {
+            host->setFlags(human, human::flag::kWheelchair, on);
+            host->enableCommand(human, kFirstCommand, !on);
+            host->enableCommand(human, kSecondCommand, !on);
+        }
+        if (context->cameras != nullptr) {
+            context->cameras->enable(camera::Cameras::kSwitchLookBehind, false);
+        }
+        return binding::none();
+    });
+    // `ObjColor(object, {r, g, b, a})`: a spawned object's tint word `0xRRGGBBAA`, each component kept to its low 8
+    // bits as a whole number (so 0-255 components come out as themselves, and 1.0 as 1).
+    // @orig 0x00378088 ObjColor (unknown)
+    // @orig 0x00396bd0 Obj_SetColour (unknown)
+    vm.registerFunction("ObjColor", [context = &context](std::span<const Value> args) {
+        constexpr std::uint32_t kByte = 0xffU;
+        constexpr std::uint32_t kBitsPerComponent = 8;
+        world_objects::SpawnRecord* record =
+            context->spawnRecords != nullptr ? context->spawnRecords->find(handleArg(args, 0)) : nullptr;
+        if (record == nullptr || args.size() < 2 || args[1].table() == nullptr) {
+            return binding::none();
+        }
+        std::uint32_t word = 0;
+        constexpr int kComponents = 4;
+        for (int k = 1; k <= kComponents; ++k) {
+            const double component = args[1].table()->get(Value(static_cast<double>(k))).number().value_or(0.0);
+            word = (word << kBitsPerComponent) |
+                   (static_cast<std::uint32_t>(static_cast<std::int64_t>(std::trunc(component))) & kByte);
+        }
+        record->tint = word;
+        return binding::none();
+    });
+    // `ActGiveWay(human, other)`. **Coney stand-in**: the give-way action (`0x002fe4b0`) is not on the page, so the
+    // human stays where it is.
+    // @orig 0x003648a0 ActGiveWay (unknown)
+    vm.registerFunction("ActGiveWay", [](std::span<const Value> /*args*/) { return binding::none(); });
     // `TacticDomination(gang, flag, range, callback)`: range defaults to 3 m; a nil callback is none.
     // @orig 0x00316b30 Tactic_Domination (unknown)
     vm.registerFunction("TacticDomination", [context = &context](std::span<const Value> args) {

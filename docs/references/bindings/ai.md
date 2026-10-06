@@ -196,7 +196,7 @@ Queues an action that makes a human step out of another's way.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003648a0` (registered by `RegisterBindings`); **calls** `0x002fe4b0` `Action_GiveWay`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ActLookAt {#actlookat}
 

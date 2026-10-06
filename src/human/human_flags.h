@@ -56,6 +56,12 @@ inline constexpr std::uint64_t kTireless = 0x4000000;
 inline constexpr std::uint64_t kMovementLocked = 0x200000000;
 /// Never throws the weapon it holds (`HuSetNoThrowWeapon`; inferred from the name).
 inline constexpr std::uint64_t kNoThrowWeapon = 0x4000000000;
+/// Skipped by the player's automatic target lock (`HuSetNoAutoLock`, `0x002340a8`; inferred from the name: no reader
+/// is on the page, so Coney only keeps it).
+inline constexpr std::uint64_t kNoAutoLock = 0x8000000000;
+/// Driving a wheelchair (`HuSetWheelchairControl`, `0x00234188`). **Coney stand-in**: the wheelchair's locomotion is
+/// not on the page, so the human keeps its own.
+inline constexpr std::uint64_t kWheelchair = 0x80000000000;
 /// Demi-god (`HuSetDemiGodMode`): one hit cannot take health below the floor fraction of the maximum, and reaching it
 /// sets kGod (`0x00265f70`, `0x00256f28`).
 inline constexpr std::uint64_t kDemiGod = 0x20000000000;

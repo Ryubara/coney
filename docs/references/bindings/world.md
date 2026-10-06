@@ -1224,7 +1224,7 @@ Sets a tint colour on a game object (stored twice in the object, +0xc8 and +0xcc
 - **Evidence:** confirmed (code) at `0x00396bd0`; detail: brief
 - **Wrapper** `0x00378088` (registered by `RegisterBindings`); **calls** `0x00396bd0` `Obj_SetColour`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjDestroy {#objdestroy}
 

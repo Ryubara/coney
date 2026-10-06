@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 13.1%](https://img.shields.io/badge/reimplemented-13.1%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 13.2%](https://img.shields.io/badge/reimplemented-13.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.1% of the game's own code (441,148 of 3,354,776 bytes, 1,345 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.2% of the game's own code (442,212 of 3,354,776 bytes, 1,352 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -54,7 +54,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
 | `Audio` | `█▍░░░░░░░░░░░░░░░░░░` | 6.7% | 54 | 57,368 |
-| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 50 | 165,680 |
+| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 51 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
@@ -62,15 +62,15 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▉░░░░░░░░░░░░░░` | 29.5% | 88 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 12.1% | 401 | 1,096,672 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 12.2% | 403 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 29.8% | 191 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.0% | 194 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 57 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 58 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% | 31 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 23 | 22,008 |
@@ -202,6 +202,7 @@ at the top of the repository's `README.md`.
 | `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
 | `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
 | `0x0011e0a8` | `Camera_SetSplitMode` | `Camera` | 56 |
+| `0x0011e198` | `Camera_AssignReverseButton` | `Camera` | 24 |
 | `0x0011e878` | `Cameras_Update` | `Camera` | not filled in |
 | `0x0011ee08` | `Camera_MakeActive` | `Camera` | not filled in |
 | `0x001210f8` | `Cam_StartShake` | `Camera` | not filled in |
@@ -636,6 +637,8 @@ at the top of the repository's `README.md`.
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x00233ef0` | `Human_Delete` | `Human` | 112 |
 | `0x00234038` | `Human_SetNoTarget` | `Human` | 112 |
+| `0x002340a8` | `Human_SetNoAutoLock` | `Human` | 112 |
+| `0x00234188` | `Human_SetWheelchairControl` | `Human` | 400 |
 | `0x00234ef8` | `Human_LockMovement` | `Human` | 112 |
 | `0x002350c8` | `Human_SetTireless` | `Human` | 104 |
 | `0x00235200` | `Human_SetAutoEscape` | `Human` | not filled in |
@@ -1099,6 +1102,7 @@ at the top of the repository's `README.md`.
 | `0x00363018` | `GoalDealer` | `Scripting` | 272 |
 | `0x00363530` | `GoalPlayDynAnimation` | `Scripting` | 160 |
 | `0x003647d8` | `ActLookAt` | `Scripting` | 200 |
+| `0x003648a0` | `ActGiveWay` | `Scripting` | 120 |
 | `0x00364ba8` | `HuShutUp` | `Scripting` | 96 |
 | `0x00364e48` | `HuSpeak` | `Scripting` | 264 |
 | `0x00364f50` | `HuSpeakNI` | `Scripting` | 264 |
@@ -1115,6 +1119,7 @@ at the top of the repository's `README.md`.
 | `0x003670c0` | `CamSetSecondary` | `Scripting` | not filled in |
 | `0x003671e0` | `CamEnable` | `Scripting` | not filled in |
 | `0x00367270` | `CamSetSplitMode` | `Scripting` | 56 |
+| `0x003672a8` | `CamAssignRevCamButton` | `Scripting` | 56 |
 | `0x00367448` | `ScenePreload` | `Scripting` | 136 |
 | `0x003674d0` | `SceneIsPreloaded` | `Scripting` | 72 |
 | `0x00367518` | `SceneUnload` | `Scripting` | 56 |
@@ -1208,6 +1213,7 @@ at the top of the repository's `README.md`.
 | `0x00375648` | `TacticCrowd` | `Scripting` | 128 |
 | `0x00377a10` | `TacticTrigger` | `Scripting` | 160 |
 | `0x00377cc8` | `ObjSpawn` | `Scripting` | not filled in |
+| `0x00378088` | `ObjColor` | `Scripting` | 216 |
 | `0x00378320` | `CarSpawn` | `Scripting` | not filled in |
 | `0x003785c8` | `CarSetColor` | `Scripting` | not filled in |
 | `0x00378808` | `CarMakeGoodAsNew` | `Scripting` | not filled in |
@@ -1260,6 +1266,7 @@ at the top of the repository's `README.md`.
 | `0x00396858` | `Obj_Spawn` | `TaskEngine` | not filled in |
 | `0x00396a08` | `Obj_Show` | `TaskEngine` | 136 |
 | `0x00396b68` | `Obj_Hide` | `TaskEngine` | 104 |
+| `0x00396bd0` | `Obj_SetColour` | `TaskEngine` | 136 |
 | `0x00396c58` | `Obj_Destroy` | `TaskEngine` | 288 |
 | `0x00397078` | `Door_SetPickable` | `TaskEngine` | 336 |
 | `0x00397230` | `Door_Spawn` | `TaskEngine` | 256 |

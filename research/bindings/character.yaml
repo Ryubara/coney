@@ -129,6 +129,7 @@
     this binding with `0x100000000000` (tested by 0x00227d78 in the target filter 0x00279410); that is a different bit
     and the pairing looks wrong.
   usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [54]}
+  coney: implemented
 
 - name: HuSetAutoCombat
   wrapper: 0x00358810
@@ -173,6 +174,7 @@
   evidence: inferred
   depth: brief
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: HuSetButtonTapControl
   wrapper: 0x00358930

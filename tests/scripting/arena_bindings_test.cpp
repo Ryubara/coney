@@ -5,7 +5,9 @@
 #include "scripting/arena_bindings.h"
 
 #include <array>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <memory>
 #include <optional>
@@ -20,6 +22,7 @@
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/scripted_brains.h"
+#include "camera/cameras.h"
 #include "core/error.h"
 #include "gui/global_strings.h"
 #include "hud/hud.h"
@@ -32,6 +35,7 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
+#include "world_objects/spawn_records.h"
 
 using coney::ai::Brain;
 using coney::script::LuaVm;
@@ -345,4 +349,48 @@ TEST_CASE("Survival's police: brain type, attack weight, class, position and the
     }
     CHECK(thug.topGoal()->type() == coney::ai::GoalType::Fight);
     CHECK(thug.target() == &level.scene.player());
+}
+
+TEST_CASE("Wheelchair's control, auto-lock flag, reverse button, colour and a teleported object",
+          "[scripting][rumble]") {
+    Level level;
+    coney::camera::Cameras cameras;
+    coney::world_objects::SpawnRecords records;
+    records.createPool(4);
+    level.context.cameras = &cameras;
+    level.context.spawnRecords = &records;
+    // Player 1, handle 1: the commands are a pad's.
+    Brain& racer = level.scene.player();
+    const double handle = 1.0;
+
+    cameras.enable(coney::camera::Cameras::kSwitchLookBehind, true);
+    level.call("HuSetWheelchairControl", {Value(handle), Value(1.0)});
+    CHECK(racer.human().hasFlag(coney::human::flag::kWheelchair));
+    constexpr std::uint64_t kCommands46And47 = (std::uint64_t{1} << 46U) | (std::uint64_t{1} << 47U);
+    CHECK((racer.human().script().disabledCommands & kCommands46And47) == kCommands46And47);
+    CHECK_FALSE(cameras.enabled(coney::camera::Cameras::kSwitchLookBehind));
+    level.call("HuSetWheelchairControl", {Value(handle), Value(0.0)});
+    CHECK_FALSE(racer.human().hasFlag(coney::human::flag::kWheelchair));
+    CHECK((racer.human().script().disabledCommands & kCommands46And47) == 0);
+
+    level.call("HuSetNoAutoLock", {Value(handle), Value(1.0)});
+    CHECK(racer.human().hasFlag(coney::human::flag::kNoAutoLock));
+    level.call("CamAssignRevCamButton", {Value(512.0)});
+    CHECK(cameras.reverseButton() == 512);
+    level.call("ActGiveWay", {Value(handle), Value(1.0)});
+
+    // A glow: ObjColor tints it, Teleport moves it and turns it about z.
+    coney::world_objects::SpawnRecord glow;
+    glow.handle = 300.0;
+    glow.typeName = "dyn_w_mission";
+    REQUIRE(records.add(glow) != nullptr);
+    auto colour = std::make_shared<coney::script::Table>();
+    for (const double k : {1.0, 2.0, 3.0, 4.0}) {
+        REQUIRE(colour->set(Value(k), Value(k == 1.0 ? 255.0 : (k == 4.0 ? 1.0 : 16.0))).has_value());
+    }
+    level.call("ObjColor", {Value(300.0), Value(std::move(colour))});
+    CHECK(records.find(300.0)->tint == 0xFF101001U);
+    level.call("Teleport", {Value(300.0), position(5.0, 6.0, 7.0), Value(180.0)});
+    CHECK(records.find(300.0)->position == std::array<float, 3>{5.0F, 6.0F, 7.0F});
+    CHECK(std::abs(records.find(300.0)->rotation[2] - 1.0F) < 1e-5F);
 }

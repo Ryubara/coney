@@ -287,7 +287,7 @@ flight may have some). Each links to its reference entry by name.
 - **Tag battle**: `CfgHuInventoryCallback`, `CfgTagSettings`, `GoalTag`, `HUDEnableBar`, `HUDEnableGenBar`,
   `HUDSetBarPercentage`, `HUDSetRadarZoomScale`, `HuSetMug`, `HuTag`.
 - **Mercy**: `GoalGrabTarget`.
-- **Wheelchair**: `ActGiveWay`, `CamAssignRevCamButton`, `HuSetNoAutoLock`, `HuSetWheelchairControl`, `ObjColor`.
+- **Wheelchair**: none.
 - **Other arenas' set dressing**: `CfgSteam`, `GetPTank`, `ObjSetTrainPoint`, `ObjStartTrain`, `ObjStopTrain`,
   `ReleasePTank`, `SoundPlay`, `StartRain`; partial `PlayMovie`.
 
@@ -296,8 +296,9 @@ flight may have some). Each links to its reference entry by name.
 A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the
 set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's
 revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. King of the hill
-plays to its result screen when the player holds the top, Battle royal when one side is rung out, and Survival when
-the spawned enemies have beaten the player. The other game types are not built yet.
+plays to its result screen when the player holds the top, Battle royal when one side is rung out, Survival when
+the spawned enemies have beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Mercy are not
+built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
@@ -332,6 +333,11 @@ the spawned enemies have beaten the player. The other game types are not built y
   `CreateENEMY` sends each at him with `GoalEngageEnemy` and `GoalMoveToHuman` (`repo:src/ai/engage_goals.h`) after
   `BrSetType`, `HuGetCharType`, `BrSetAttackWeight` and `HuGetPosition`. Once he is down `SavePlayerStats` ends the
   match with his time.
+- **Wheelchair**: the scripts' own race runs: the CPU racer drives `WheelChairRace`, its checkpoint glow moved on by
+  `Teleport` (which moves a spawned object's record as well as a human, so the glow's trigger sphere follows), the
+  finish line tinted with `ObjColor`. `HuSetWheelchairControl` sets the wheelchair flag, takes away commands 46 and 47
+  and clears the look-behind switch, but the wheelchair's locomotion is not on the page, so the racers move on their
+  own (a stand-in); `HuSetNoAutoLock` and `CamAssignRevCamButton` are kept, and `ActGiveWay` does nothing.
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
@@ -341,7 +347,8 @@ lengths; the result lines' look and the grids' rows; the melee and confront goal
 test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
 brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
 scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight; a knock-out without its clips
-or its wake-up after 14 s; the spawners' type pick and out-of-sight placement; the engage goal's range.
+or its wake-up after 14 s; the spawners' type pick and out-of-sight placement; the engage goal's range; the
+wheelchair's locomotion and the give-way action.
 
 ## Open questions {#open-questions}
 
@@ -375,5 +382,8 @@ or its wake-up after 14 s; the spawners' type pick and out-of-sight placement; t
 - How a spawner picks from its ten types, and where `0x001673b8` puts a human out of the camera's sight (Coney: the
   types in turn; a level flag out of the view whose distance from the player is nearest the value).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
+- The wheelchair control's locomotion (`0x00234188`): its speeds, turning and the L1 / R1 wheel pushes the arena's
+  prompt describes, and commands 46 and 47 (Coney: the human's own locomotion).
+- What `ActGiveWay`'s action (`0x002fe4b0`) does (Coney: nothing).
 - Mercy is versus only, and Coney has no second player yet; its one-player path (`GoalGrabTarget` on `P21` against
   Mercy) is not reachable from the menus.

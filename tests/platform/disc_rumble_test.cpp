@@ -4,7 +4,8 @@
 // (docs/research/rumble.md): a QUICK RUMBLE Brawl the player loses ends on the result screen with the other gang's
 // win, the winner cheering and the player revived on the way; in a WAR PARTY the pad passes to a team-mate when the
 // player goes down; in King of the hill the player held on the top wins for his gang; in Battle royal the side left in
-// the ring wins; in Survival the spawned enemies beat the player and his time is the result. They run only when
+// the ring wins; in Survival the spawned enemies beat the player and his time is the result; in Wheelchair the CPU
+// racer wins. They run only when
 // CONEY_DISC names the disc and skip otherwise; they print counts only (LEGAL.md).
 
 #include <algorithm>
@@ -23,6 +24,7 @@
 #include "fileio/wad.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/rumble_result_mode.h"
+#include "human/human_flags.h"
 #include "platform/play_level_mode.h"
 #include "scripting/lua_value.h"
 #include "support/disc_play_fixtures.h"
@@ -221,4 +223,31 @@ TEST_CASE("the disc's Survival sends spawned enemies at the player until he fall
     CHECK(game.flow().scripts().errors() == 0);
     std::printf("  survival: %lld enemies spawned, result screen at frame %llu\n", static_cast<long long>(spawned()),
                 static_cast<unsigned long long>(game.frames()));
+}
+
+TEST_CASE("the disc's Wheelchair race is won by the CPU racer that drives the course while the player waits",
+          "[disc][rumble]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // One player in arena 104, the pad left alone: player 2 is the CPU, on the WheelChairRace path.
+    coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript);
+    game.chooseRumble(24, 104, 1);
+    game.run(1000 - game.frames());
+    REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
+    const coney::platform::PlayLevelMode* play = game.play();
+    REQUIRE(play != nullptr);
+    CHECK(play->player().human().hasFlag(coney::human::flag::kWheelchair));
+
+    // Its glow moves on at each checkpoint it reaches (the trigger sphere on the teleported glow); a lap and the
+    // finish line give it the race.
+    const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 9000);
+    for (const std::string& line : game.log()) {
+        UNSCOPED_INFO(line);
+    }
+    REQUIRE(ended);
+    CHECK(game.flow().rumbleResult().reason().find("WINS") != std::string::npos);
+    CHECK(game.flow().scripts().errors() == 0);
+    std::printf("  wheelchair: result screen at frame %llu\n", static_cast<unsigned long long>(game.frames()));
 }

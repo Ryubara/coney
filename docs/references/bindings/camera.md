@@ -153,7 +153,7 @@ Sets which button shows the reverse camera (0x0050b230).
 - **Evidence:** confirmed (code) at `0x0011e198`; detail: brief
 - **Wrapper** `0x003672a8` (registered by `RegisterBindings`); **calls** `0x0011e198`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamCanSee {#camcansee}
 

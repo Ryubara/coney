@@ -552,6 +552,12 @@ subsystem = "Camera"
 size = 56
 
 [[function]]
+address = 0x0011e198
+name = "Camera_AssignReverseButton"
+subsystem = "Camera"
+size = 24
+
+[[function]]
 address = 0x0011e878
 name = "Cameras_Update"
 subsystem = "Camera"
@@ -3045,6 +3051,18 @@ address = 0x00234038
 name = "Human_SetNoTarget"
 subsystem = "Human"
 size = 112
+
+[[function]]
+address = 0x002340a8
+name = "Human_SetNoAutoLock"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x00234188
+name = "Human_SetWheelchairControl"
+subsystem = "Human"
+size = 400
 
 [[function]]
 address = 0x00234ef8
@@ -5709,6 +5727,12 @@ subsystem = "Scripting"
 size = 200
 
 [[function]]
+address = 0x003648a0
+name = "ActGiveWay"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
 address = 0x00364ba8
 name = "HuShutUp"
 subsystem = "Scripting"
@@ -5792,6 +5816,12 @@ subsystem = "Scripting"
 [[function]]
 address = 0x00367270
 name = "CamSetSplitMode"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x003672a8
+name = "CamAssignRevCamButton"
 subsystem = "Scripting"
 size = 56
 
@@ -6345,6 +6375,12 @@ name = "ObjSpawn"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00378088
+name = "ObjColor"
+subsystem = "Scripting"
+size = 216
+
+[[function]]
 address = 0x00378320
 name = "CarSpawn"
 subsystem = "Scripting"
@@ -6637,6 +6673,12 @@ address = 0x00396b68
 name = "Obj_Hide"
 subsystem = "TaskEngine"
 size = 104
+
+[[function]]
+address = 0x00396bd0
+name = "Obj_SetColour"
+subsystem = "TaskEngine"
+size = 136
 
 [[function]]
 address = 0x00396c58

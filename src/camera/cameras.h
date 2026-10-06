@@ -54,9 +54,10 @@ class Cameras {
     /// `CamEnable`'s fourteen switches (docs/references/cameras.md#switch).
     static constexpr std::size_t kSwitches = 14;
     /// The switches Coney acts on.
-    static constexpr std::size_t kSwitchStick = 0;      ///< The right stick and zoom buttons.
-    static constexpr std::size_t kSwitchSprintZoom = 5; ///< The follow camera's sprint zoom.
-    static constexpr std::size_t kSwitchShakeView = 6;  ///< The shake's view offset.
+    static constexpr std::size_t kSwitchStick = 0;       ///< The right stick and zoom buttons.
+    static constexpr std::size_t kSwitchSprintZoom = 5;  ///< The follow camera's sprint zoom.
+    static constexpr std::size_t kSwitchShakeView = 6;   ///< The shake's view offset.
+    static constexpr std::size_t kSwitchLookBehind = 11; ///< The look-behind button.
     /// The shared target list holds at most this many humans (`0x005d91a8`).
     static constexpr std::size_t kTargetListSize = 4;
     /// The cameras' update a scene's end runs once, seconds, so the follow camera settles before the next frame.
@@ -195,6 +196,12 @@ class Cameras {
     }
     /// The split-screen layout.
     [[nodiscard]] std::uint32_t splitMode() const { return m_splitMode; }
+    /// `CamAssignRevCamButton(button)`: the button that shows the reverse (look-behind) camera (`0x0050b230`).
+    /// **Coney stand-in**: Coney has no reverse camera yet, so the button is kept.
+    /// @orig 0x0011e198 Camera_AssignReverseButton (unknown)
+    void setReverseButton(std::uint32_t button) { m_reverseButton = button; }
+    /// The reverse camera's button.
+    [[nodiscard]] std::uint32_t reverseButton() const { return m_reverseButton; }
 
     /// A scene with a camera starts: the current camera (a blend's destination) is pushed on the stack and the scene
     /// camera, showing `view`, made current at once.
@@ -265,6 +272,7 @@ class Cameras {
     double m_secondary = 0.0;
     float m_secondaryRange = 0.0F;
     std::uint32_t m_splitMode = 0;
+    std::uint32_t m_reverseButton = 0;
     Locator m_locate;
     CameraShake m_shake;
     SlowMotion m_slowMotion;

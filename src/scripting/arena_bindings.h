@@ -11,13 +11,18 @@
 // (scripting/rumble_match_bindings.h): the game mode, the precache queue, the mission-info switch, the automatic
 // switch, the humans' movement lock, speech switch, pocket and damage response, the teleport to a point, and King of
 // the hill's gang icons, reticules and domination tactic, and Battle royal's knock-out, slow motion and Warrior
-// commands switch, and Survival's police: their brain type, attack weights, class and goals at the players.
+// commands switch, Survival's police (their brain type, attack weights, class and goals at the players), and
+// Wheelchair's control, auto-lock flag, give-way and the objects' colour.
 // Research: docs/research/rumble.md#bindings, docs/references/bindings/level.md, docs/references/bindings/character.md
 
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addArenaBindings().
-inline constexpr std::array<std::string_view, 25> kArenaBindings{"BrSetAttackWeight",
+inline constexpr std::array<std::string_view, 29> kArenaBindings{"ActGiveWay",
+                                                                 "HuSetNoAutoLock",
+                                                                 "HuSetWheelchairControl",
+                                                                 "ObjColor",
+                                                                 "BrSetAttackWeight",
                                                                  "BrSetDamageResponse",
                                                                  "BrSetType",
                                                                  "CNSEnableMissionInfo",

@@ -3484,7 +3484,7 @@ and the pairing looks wrong.
 - **Wrapper** `0x003587b0` (registered by `RegisterBindings`); **calls** `0x002340a8` `Human_SetNoAutoLock`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level54`](story.md#level54) (mission 16)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetNoEscape {#husetnoescape}
 
@@ -4189,7 +4189,7 @@ locomotion and removes (on) or restores (off) the player commands 46 and 47.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003588d0` (registered by `RegisterBindings`); **calls** `0x00234188` `Human_SetWheelchairControl`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetWorkoutBlend {#husetworkoutblend}
 

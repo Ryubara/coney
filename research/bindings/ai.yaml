@@ -2201,6 +2201,7 @@
   evidence: inferred
   depth: brief
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: ActMoveTo
   wrapper: 0x00364918

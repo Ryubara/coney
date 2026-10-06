@@ -30,7 +30,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level9`](#level9) | mission 13 | 225 | 6 | 6 | 1 |
 | [`level51`](#level51) | mission 14 | 256 | 6 | 6 | 1 |
 | [`level52`](#level52) | mission 15 | 235 | 4 | 4 | 0 |
-| [`level54`](#level54) | mission 16 | 241 | 7 | 7 | 0 |
+| [`level54`](#level54) | mission 16 | 241 | 7 | 7 | 1 |
 | [`level55`](#level55) | mission 17 | 226 | 8 | 8 | 1 |
 | [`level84`](#level84) | mission 18 | 219 | 8 | 8 | 0 |
 | [`level82`](#level82) | flashback 1 | 250 | 4 | 4 | 0 |
@@ -545,14 +545,14 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level54: mission 16 {#level54}
 
-241 bindings, 7 new: 7 traced, 0 implemented in Coney (208 of all 241).
+241 bindings, 7 new: 7 traced, 1 implemented in Coney (209 of all 241).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`HuEnableSpeaking`](character.md#huenablespeaking) | Characters | traced | confirmed (code) | not implemented |
 | [`HuMakeGrounded`](character.md#humakegrounded) | Characters | traced | confirmed (code) | not implemented |
 | [`HuRubberNeck`](character.md#hurubberneck) | Characters | traced | inferred | not implemented |
-| [`HuSetNoAutoLock`](character.md#husetnoautolock) | Characters | traced | inferred | not implemented |
+| [`HuSetNoAutoLock`](character.md#husetnoautolock) | Characters | traced | inferred | implemented |
 | [`BrHasAttackers`](ai.md#brhasattackers) | AI | traced | confirmed (code) | not implemented |
 | [`BrProcessGoal`](ai.md#brprocessgoal) | AI | traced | confirmed (code) | not implemented |
 | [`SndEnableMusicDuck`](sound.md#sndenablemusicduck) | Sound and music | traced | confirmed (code) | not implemented |

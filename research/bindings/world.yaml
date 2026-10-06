@@ -683,6 +683,7 @@
     The components are passed to the colour packer 0x0017aca8 in reverse order (a, b, g, r), giving the word
     `0xRRGGBBAA` that `ObjSpawn`'s tint also sets ([Object tints](../tints.md)).
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: FlagGetOwner
   wrapper: 0x00378160
