@@ -830,6 +830,32 @@ the constructor), `+0x42` dealing.
     - state 1 with the player within 1.5 m: state 3, dealing, human `+0x1b2` = 1 (inferred: the player may now buy).
 - The run and dirty chances are not read by Process (open question).
 
+**Buying** (confirmed (code) at `0x002c8708`, `0x00303178`, `0x002c74d8`). On entering state 3 the dealer sets human
+`+0x1b2` = 1 and registers, through his `+0x124`, a **kind-4 context record** ([Crimes](crimes.md#context-records),
+reach 1.75 m) whose prompt is `GSTRING.HUD` text `n` of his type. Triangle at it hands the press to the dealer, whose
+brain (`DealerBrain_OnEvent`) passes event 0 to the deal (`0x002c74d8`) while `GoalDealer` is on top. The table at
+`0x005110f8`, 8 bytes per dealer type `{u32 prompt text, u8 item, u8 price, u8 most carried, u8 amount}`:
+
+| Type | Prompt | Item | Price | Most carried | Amount |
+| --- | --- | --- | --- | --- | --- |
+| 0 (flash) | 6 | 1 (flash) | $20 | 3 (4 with upgrade (6, 7)) | 1 |
+| 1 (weapons) | 7 | 4 | $50 | 8 | 1: a `dyn_swhbld_super` through a member of his gang within 10 m (`0x00165f80`, not traced further); the count is the goal's `+0x38` |
+| 2 | 5 | 3 (spray paint) | $5 | 9 | 1 |
+
+The deal, for a player buyer: the dealer turns to him, state 3, then:
+
+1. Money below the price: speech 97 `nocash` and a gesture; the prompt is withdrawn (`+0x1b2` = 0).
+2. Already carrying the most: speech 101 `limit`, a gesture, `+0x40` = 1; the prompt is withdrawn.
+3. A **dirty** dealer (`+0x41`): speech 105 `ripoff`, the price is taken and added to the dealer's money, when the buyer
+   is in reach he queues an action (`0x002fa5a0` with `0x15`; inferred: a shove), and he runs (state 4). Nothing is given.
+4. Otherwise the pair `money_take.anm` / `money_give.anm` plays on the dealer and the buyer
+   (`Human_PlayDynPair`); the deal completes once the pair is playing or cannot load: **the item's amount is
+   added** (with its pickup sound), **the price taken** and added to the dealer's money (at most 999), `+0x3f` = 1
+   and the count `+0x38` + 1. Speech 96 `cash` comes at most every 5 s.
+
+With two players, a refusal first offers the deal to the other one (`0x002c73b8`). Inferred: a second event 0
+completes the pair-anim path, since the first one returns once the pair starts.
+
 #### GoalRiot {#riot}
 
 Type 84 (`Goal_Riot` `0x002d0e98`, `RiotGoal_Init` `0x002d0f68`, vtable `0x005414d0`, Process `RiotGoal_Process`

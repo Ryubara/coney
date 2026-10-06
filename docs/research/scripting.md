@@ -721,6 +721,40 @@ Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Points an implementer n
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
 
+#### Checkpoints 2 and 3 {#level99-checkpoints}
+
+`level99_lesson1` (`P2`, checkpoint 2, the street) and `level99_lesson2` (`P3`, checkpoint 3, the run to the
+dealer), in order. Each step is started by the trigger in its row; the mechanics are on the linked pages. Inferred from
+the disassembly of the scripts (names, ids and values only).
+
+| Step | Started by | What the script sets up | Waits for | Mechanics |
+| --- | --- | --- | --- | --- |
+| 2.1 set-up | `P2.SetupLesson1` | the Warriors remade for the checkpoint, flash command 40 off, both players at 35 % health and demi-god 0.25, scene `l99_c2` | the scene's end | [Scenes](scenes.md) |
+| 2.2 store | `P2.EndStreetScn` | Vermin's talk prompt (message 0), `CfgInventoryCallback(P2.UpdateLootCount)`, `vInsideStore` message 3 | three items of item 10 | [Breakables](combat.md#breakables), [inventory callback](player-state.md#pickup-callback) |
+| 2.3 car | `P2.SetupCars`, 3 s after the third item | `CarMakeGoodAsNew` and `CarSpawnRadio` on the three cars, the locked camera `VerminCar`, Vermin's line; then `CfgSetSteroTheftHandler(P2.CarRadioStolen)` | the first stereo a player steals (`radioNeeded` 2 is never read) | [Cars: windows](cars.md#windows), [the theft](combat.md#stereo-theft), [context kind 3](crimes.md#context-records) |
+| 2.4 mugging | `P2.SetupPeds`, 3 s later | `PoizoCiv` sent to the phone flag `wPhone01` (dead brain, `GoalMoveToUseFlag`), the bums (`GoalBumLogic`, `GoalMoveToUseFlag`), `HuSetMugCallback(P2.PedMugged)` on both players, `SetInterrogateParam` (below), message 18 on `PoizoCiv` (`P2.MugPedDied`: a hint only); after 3 s `FlagNetTraverse(PoizoCiv, 1, 0)` walks him off | the callback with success true; then all-zero `SetInterrogateParam` | [Mugging](combat.md#mugging), [who and the callback](crimes.md#mugging), [AI](ai.md#scripted) |
+| 2.5 Vermin | `P2.SeeVermin`, 5 s later | the camera `VerminWait`, `ObjShow(dyn_objective_w)`, Vermin a radar objective (texture 27), command 38 on after 2.5 s | `vFenceSection` message 3 → `SetCheckPoint(3)`, `level99_lesson2` | [HUD](hud.md) |
+| 3.1 set-up | `P3.SetupLesson2` | the dealer `FlashDealer` with `GoalDealer(dealer, 0, 17, 0, 0, false)` and messages 1 and 16 (`P3.DealerHit`), Vermin (god mode, unpushable, ungrabbable, fast climber), scene `l99_c3` | the scene's end | [GoalDealer](ai.md#dealer) |
+| 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters.md), [AI fence climb](ai.md#path-planning) |
+| 3.3 climb | `vClimb` 3 (`P3.MoveToClimb`) | Vermin to `fStop2`; `P3.GetBack(1)` 10 s later flashes his radar icon while the player is lost | `fStop2` 8 → the camera `ClimbPoizo`, the players put at `fClimbWarp`; `vFirstClimb` / `vDoneClimb` 3 | [Characters](characters.md) |
+| 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters.md) |
+| 3.5 wooden fences | `vAlmostDone` 3 (`P3.WoodenFences`) | the players put at `fBreakFencePoizo` (a held object destroyed), two locked cameras, message 2 on `dyn_door_fence02` and `03` | either fence's message 2 (`P3.FenceBroken`) | [Barriers](objects.md#barriers) |
+| 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai.md#dealer), [trigger spheres](#triggers) |
+| 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat.md#rage), [How the mission ends](#level99) |
+
+Points an implementer needs:
+
+- **2.4**: `SetInterrogateParam(160, 75, 255, 5000, 2500, 20000, 40, 60, 20000, 0, 0)` makes the mugging 5 s on
+  target with 20 s off target allowed ([Mugging](combat.md#mugging)). The mug callback runs for every end of a
+  mugging; the lesson ignores a false one.
+- **3.6**: a player hitting the dealer (message 1 or 16) fades out, removes his gang and makes him again after 2 s,
+  the players put back at `fHitDealer`. Triangle in the dealer's 1.75 m buys ([Buying](ai.md#dealer)): $20 for one
+  flash, refused at 3 carried; a dirty dealer would take the money and give nothing.
+- **3.7**: the last step waits only for the command; the flash itself heals the player when he is hurt (he is at 35 %
+  from 2.1) and does nothing at full health without upgrade (6, 8).
+- **3.5**: who sends a barrier's script message 2 is not traced; its class update (`0x003b3220`) reports done once the
+  barrier has broken (data `+0x00`), which is inferred to make the object system send it.
+
 ### `level2.lua` (mission 5) {#level2}
 
 Story mission 5, loaded from the hub's checkpoint 2: the Warriors (six, Cleon player 1 and Fox player 2) against the

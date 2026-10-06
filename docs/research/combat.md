@@ -1051,6 +1051,24 @@ gate, and each new target angle (`0x002855f8`) is re-rolled, up to 64 times, unt
 (about 68°) from the old one. A victim whose brain `+0x26c` is 5 gives 1.5 times the money (at most 999). Confirmed
 (code); the angle's frame (world or camera) is not traced.
 
+**The stick game's states** (record `+0x128`, confirmed (code) at `0x002856b8`): 0 starts it (the first target angle,
+the speech, the hint) and goes to 4, waiting; in 4, the stick on target goes to 2, and every update off target adds
+to the **off-target time** (record `+0x138`), which is never reset, so `+0x0c` is the total time the player may spend
+off target before the mugging fails (5); in 2, each update on target adds to the progress (`+0x12c`), a new target
+angle comes each time the progress passes a multiple of `+0x08`, the victim's lines come at half of `+0x04`, and
+reaching `+0x04` succeeds; leaving the target goes through 3 back to 4. "On target" is the stick above 0.5 and within
+`+0x10` of the angle; the pad's rumble gets byte `+0x02` on target and byte `+0x1c` otherwise (player record `+0x1c`,
+inferred: the motor). A mugger no player controls fails when game time passes record `+0x134` instead.
+
+**`SetInterrogateParam`** (`0x002854b0`) overrides the record for every mugging while its `timeA` is non-zero (set
+0-2 at `0x00510a18`, read by `0x00284ca0`; sets 3-5 at `0x00510a38` serve a player victim, `0x002853a8`). Its
+arguments fill, in order: bytes `+0x00`, `+0x01`, `+0x02` (the on-target rumble), `+0x04` required, `+0x08` period,
+`+0x0c` off-target allowance, `+0x10` tolerance (degrees, stored in radians), `+0x14` the re-roll gap (degrees),
+`+0x18` (not read by the update), `+0x1c` the off-target rumble. `level99_lesson1`'s mugging lesson passes
+(160, 75, 255, 5000, 2500, 20000, 40, 60, 20000, 0, set 0): **5 s on target, a new angle every 2.5 s of it, 20 s off
+target allowed, 40° of tolerance, each new angle at least 80° from the last**; it passes all zeros after the lesson,
+which gives the per-class defaults back. Confirmed (code); bytes `+0x00` and `+0x01` have no reader found here.
+
 ### Damage, health and reactions {#damage}
 
 `Strike_Contact` (`0x0021b290`) takes the [damage table](#damage-table)'s value, adds a held weapon's bonus, and for
@@ -1343,9 +1361,20 @@ ending it (`0x00236fb8`) the **exit** function the same way, the flag being whet
 `*(0x0051489c) + 0x268` is below 1. `HuSetLockedRage` (bit `0x100000`) does not stop `Human_AddRage`, so a locked
 meter still fills from hits (inferred: the lock holds only the decay).
 
-The command handled
-at `0x0027bbd0` uses a flash (665 `SPECIAL_FLASH`, inventory slot 1) when health is below its maximum, or fills rage
-when health is full and an upgrade allows it (confirmed (code)).
+**The flash** is command `0x28` (d-pad right, [Commands](#commands)), handled with L1 + R1 by `0x002843f8`
+(`0x0027bbd0` tests for `0x28`), confirmed (code). It needs a player human holding at least one flash (item 1) who
+is not down, dead or in a few blocking states (`0x00227f90`, `0x00223c10`):
+
+- **Health below the maximum**: a grab the player holds or is held in is let go first (`0x00258a88`); when nothing
+  blocks a move the player plays **665 `SPECIAL_FLASH`** (`0x0025ade8`, flags `0x2000`) and the clip's event uses
+  the flash; otherwise (or with 665 not playing) it is used at once (`0x00284280`). **Using** it: item 1 − 1, sound
+  `0x17`, and `0x0022eb40` revives the human (ends wounded, wakes him, clears `0x4000000000`) and sets health to
+  the **maximum**, or, for a player while `*(0x0051489c) + 0x154` is above 2, adds half the maximum.
+- **Health full**: with upgrade (6, 8) unlocked ([Unlockables](player-state.md#unlockables)), and the player able to
+  gain rage, a flash is spent to fill the meter and start rage (`0x00284340`); without it nothing happens.
+
+`level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
+`EnableCommand` has turned it off, [Commands](#commands)).
 
 ### Target selection {#targets}
 

@@ -55,7 +55,7 @@ Confirmed (code) at `0x00417ca0`:
 | 1 | an object or flag with its own text: `SetMsgHandlerEx` with message 0 on a world object ([Scripts](scripting.md#message-handlers)) | the caller's text, and a second value at `+0x14` | 1.1 m | confirmed (code), runtime |
 | 2 | a pickable lock (a door) | 15 (pick lock) | 2 m | confirmed (code) |
 | 3 | a car stereo | 16 (steal) | 2 m | confirmed (code) |
-| 4, 5 | objects with their own text | the caller's text | 1.75 m, 1.5 m | confirmed (code); who registers them is not traced |
+| 4, 5 | objects with their own text: kind 4 a dealer's offer ([AI: GoalDealer](ai.md#dealer)) | the caller's text | 1.75 m, 1.5 m | confirmed (code); kind 5's registrar is not traced |
 
 The reaches are stored squared at `0x00514878 + kind × 4` (`CfgActionDistance`); the executable's defaults are
 2, 1.1, 2, 1.5, 1.5, 1.5 m. The prompt texts are `GSTRING.HUD` strings ([Text labels](../references/text-labels.md#gstring)),
@@ -209,6 +209,11 @@ with no move playing, and either the human has an **interrogation** set (`+0x5a0
   (`0x002334d0`: a flash or spray can is added to the inventory, a switchblade is equipped). A player victim hands
   over all of items 0-6 (`0x00285520`). An interrogation instead plays the fourth line and calls its callback.
 - Any command outside the game's own ends it; so does, for a mugger no player controls, its time limit.
+- **The mug callback** (`HuSetMugCallback`, human `+0x5a4`): every end of a mugging goes through `0x0022ceb8(mugger,
+  victim, success)` (the success and failure clips' ends `0x00273090` / `0x00273038`, a let-go `0x00258a88`, a hit
+  and the other aborts), which calls the **mugger's** callback with **(mugger, success)** when the victim has no
+  interrogation set and is not a player (`0x002262f0`). So the callback also runs, with false, for a failed or broken
+  off mugging. Confirmed (code).
 
 The scores (crime events 4-5 to 4-7) are on [Statistics](../references/statistics.md). The mugging itself reports
 no crime; type 8 (`Mugging`) comes from scripts or from the witnesses' goals, which report a type from their own

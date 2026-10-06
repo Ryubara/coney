@@ -286,10 +286,10 @@ The handler:
 added to the world objects (`+0x840`) at the **car's position + its rotation × (−0.75, 0.25, 0.1)**: the vec4 at
 `0x0057e4a0 + 0x5f0 × type`, the same for all six types. Its object flag `0x8000` (pickable) is **cleared**, so it
 cannot be taken yet. When part **15** reaches damage 1 (`0x0038a4d8`), the stereo gets `0x8000` back and its
-virtual at `+0x124` with (3, 0, 0), the world object's context registration (`0x00391c98`, the only vtable holding
-it), which registers it as a **kind-3 context record** ([Crimes](crimes.md#context-records)): triangle within 2 m now
-offers the theft. Only window 15 frees it, the window beside the stereo. Confirmed (code); that the slot is
-`0x00391c98` for the stereo's class is inferred (one vtable holds it). The car's transform update (`0x0038bb48`)
+virtual at `+0x124` with (3, 0, 0), the world object's context registration (`0x00391c98` in the shared world-object
+vtable `0x005453a0`, [Scripts](scripting.md#message-handlers)), which registers it as a **kind-3 context record**
+([Crimes](crimes.md#context-records)): triangle within 2 m now offers the theft. Only window 15 frees it, the window
+beside the stereo. Confirmed (code). The car's transform update (`0x0038bb48`)
 moves the stereo to the same offset, and the boot item to the vec4 at `0x0057e4b0 + 0x5f0 × type` (sedan and Sully's
 car (0.00, −2.34, −0.01), police car (0.00, −2.26, −0.02), wagon and van 0, the coupe (0.00, −2.34, −0.05)) while
 the boot is shut. Both vectors are 0x20 and 0x10 bytes before the type record as this page counts it. The cars of
