@@ -15,6 +15,7 @@ nothing serves its PINE port) and it either names pids (all dead) or is older th
 from __future__ import annotations
 
 import configparser
+import errno
 import json
 import os
 import re
@@ -361,10 +362,12 @@ class Registry:
             (staging / OWNER_FILE).write_text(json.dumps(asdict(claim), indent=1), encoding="utf-8")
             staging.rename(folder)
             return True
-        except (FileExistsError, PermissionError):
-            # The name is taken (Windows may say PermissionError too), or is being moved away for a takeover; the
-            # caller looks again.
-            return False
+        except OSError as error:
+            # The name is taken (Windows says FileExistsError or PermissionError, Linux and macOS ENOTEMPTY since a
+            # claim always holds its owner file), or is being moved away for a takeover; the caller looks again.
+            if isinstance(error, (FileExistsError, PermissionError)) or error.errno == errno.ENOTEMPTY:
+                return False
+            raise
         finally:
             shutil.rmtree(staging, ignore_errors=True)
 
