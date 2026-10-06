@@ -974,13 +974,13 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [x] | PM_Subtitles | ON : OFF, default by language; sets done | nothing known |
 | [ ] | PM_Load / PM_Continue / PM_Delete | over Coney's saved profiles ([save](save.md#coneys-implementation)) | Menu.reloadProfiles re-reading the folder |
 | [ ] | Leaving the menus | done flag, 1.0 s fade out, the profile created, `Menu.startGame` | the 16:9 apply, the card dialogs, the fade's arithmetic |
-| [ ] | Rumble menu frame | PM_Mode's style on black, lines of text | the cycling background, centred titles (size 2.23, y 0.08), usage at 0.91, `RM_Camera`, fades 0.7 / 1.5 s ([Rumble screens](#rumble-screens)) |
-| [ ] | Game Mode | a list of titles | three-row `ScrollingMenu` of title and description, arrows, no wrap |
-| [ ] | Game Type | text entries | centred one-row grid, the P1 / P2 / CPU badges by language, the blinking `0x77` |
-| [ ] | Choose Gangs | text, wrapping cursors | name boxes, badges, arrows, the 3D fighters, no wrap, no shared gang, back → Game Type |
-| [ ] | Choose Area | the arena's label | framed preview pictures (level record `+0x80`) in rows of 3, label `+0x49` |
+| [ ] | Rumble menu frame | the cycling background, centred titles (2.23 at 0.08), usage at 0.91, fades 0.7 in and 1.5 / 0.7 out, the bank and cues | `RM_Camera` and the world behind, once the 3D fighters need them ([Rumble screens](#rumble-screens)) |
+| [ ] | Game Mode | three-row `ScrollingMenu` of title over description, no wrap, cues 4 / `0xe`, 100 ms | the backdrops and scroll arrows (record 28), the animated scroll, the measured entry spacing |
+| [ ] | Game Type | centred one-row grid at 0.84, dim grey, message `0x77` at 0.78 | the P1 / P2 / CPU badges by language (record 28), the blinking `0x77` |
+| [ ] | Choose Gangs | the names at 0.2505 / 0.7495 with "vs.", wrapping cursors | name boxes, badges, arrows, bars, the 3D fighters, no wrap, no shared gang |
+| [ ] | Choose Area | the labels in a `ScrollingMenu` | framed preview pictures (level record `+0x80`) in rows of 3, label `+0x49` |
 | [ ] | No 2nd Controller | not made | text `0x3d`, waits for a second pad |
-| [x] | Input timing | repeat, 110 ms gap, release-to-accept | nothing for the PM screens; the `ScrollingMenu`'s 100 ms gap and end-stop |
+| [x] | Input timing | repeat, 110 ms gap, release-to-accept; the `ScrollingMenu`'s 100 ms gap and end-stop | nothing |
 
 ## Coney's implementation
 
@@ -1149,10 +1149,16 @@ starts at PM_Greet. The menus end when a screen sets the done flag (`PmSession`,
   `ShowRumbleModeInterface` opens the Rumble menu (below).
 
 **Mode 0x11, the Rumble menu** (`src/gamemodes/rumble_menu_mode.h`, `RumbleMenuMode`), from
-[QUICK RUMBLE](#quick-rumble): `show` keeps the two callbacks and pushes the mode unless it is on top; `enter` loads
-the fonts and starts the screens; `exit` calls `Menu.cancelRumbleMode` when cancelled, or
-`Menu.startRumbleMode(level)` when started, whose level request (mode 8) loads the arena and pushes gameplay. On
-start the profile manager under it is popped too, so mode 8 is on top for the level request (inferred from the chain).
+[QUICK RUMBLE](#quick-rumble) and [The mode around the screens](#rumble-screens): `show` keeps the two callbacks and
+pushes the mode unless it is on top; `enter` loads the bank `menu` unless it is current, the background picture and the
+fonts, and starts the screens, queueing the 0.7 s fade in on its first frame; once the screens end they freeze, a start
+stops the music and fades out over 1.5 s, a cancel from the front end over 0.7 s, and the mode pops when the fade has
+run; `exit` calls `Menu.cancelRumbleMode` when cancelled, or `Menu.startRumbleMode(level)` when started, whose level
+request (mode 8) loads the arena and pushes gameplay. On start the profile manager under it is popped too, so mode 8
+is on top for the level request (inferred from the chain). The cues go to the front end's audio. **Coney's choices:**
+the background picture's sheet (record 12) is found by its WAD file name, the decimal of the CRC-32 `0x349348bd`
+(`882067645`), its resource name not being known; no `RM_Camera` or world behind the opaque picture yet (only the
+gang screen's 3D fighters would show it).
 
 **The screens** (`src/gui/rumble_mode_gui/rumble_menu.h`, `RumbleMenu`), from [The Rumble set-up](#rumble-setup) and
 [Where the Rumble data lives](#rumble-data): each screen with a list builds it when it opens by running its chunk
@@ -1166,12 +1172,28 @@ with 255 in both packs for a preset mode, which skips the gang screen; Choose Ga
 packs (3, 4), the nine types of each side (5-13, 14-22) and the names (`src/gui/rumble_mode_gui/rumble_gang_chooser.h`:
 up and down move the active side's cursor, left and right rotate its roster except in co-op, accept locks the side,
 back unlocks); Choose Area marks the arena on confirm and launches it on the next update, writing the level number
-from the arena's level record. Sounds 8 and `0xf` are logged as cues. Backing out of the first screen leaves
-"cancelled" only when the menu was opened from the front end. `GetRumbleModeGangName`
-(`src/scripting/level_bindings.h`) returns the names, empty until the gangs are confirmed. Accepting every first entry
+from the arena's level record. Backing out of the first screen leaves "cancelled" only when the menu was opened from
+the front end. `GetRumbleModeGangName` (`src/scripting/level_bindings.h`) returns the names, empty until the gangs
+are confirmed. Accepting every first entry
 gives the default set-up read at run time (checked by a test over synthetic chunks with the disc's ids and rosters,
 and by the disc test); `--play-level` of an arena computes the same set-up by running the chunks
 (`rumbleMenuDefaults`), with that arena's level number (`rumbleArenaOf`).
+
+**The look** (the same file, from [The Rumble menu's screens](#rumble-screens)): the background picture (rectangle 5,
+centred, the layout's height, its width from the picture's shape with the aspect fix) cycling red, green and blue over
+5,000 ms legs (`rumbleBackgroundColour`); the layout values by video flag (`RumbleLayout`); every title centred at y
+0.08, size 2.23, `big_font`, grey; the usage line centred at 0.91 with each screen's string; Game Mode a
+`ScrollingMenu` (`src/gui/scrolling_menu.h`: no wrap, cue 4 and `0xe` at the ends with the d-pad's plain query, 100
+ms between moves, the window keeping the cursor in its middle row) of three entries, each the title at size 1.6 over
+its description wrapped at 0.66, from x 0.20, the selected entry grey and the others dim; Game Type a centred one-row
+grid at 0.84, size 1.15, dim grey, with message `0x77` at (0.5, 0.78); Choose Gangs the two gang names at x 0.2505 and
+0.7495 with "vs." between, size 1.2, mid-way between the title and the usage line. Cues: 4 for moves, 8 for confirms,
+`0xf` for back. **Coney's choices:** Game Mode's entries are stacked 0.03 apart without backdrops or scroll arrows
+(sheet-table record 28 is not named); the Game Type entries are joined by `" : "`, as the message box's choices are;
+Choose Area lists its arenas' labels in a centred `ScrollingMenu` instead of the framed previews in rows of three;
+Choose Gangs has no name boxes, badges, arrows, bars or 3D fighters, and its cursors still wrap; a title string the
+strings do not hold falls back to the screen's name. Screenshots on the disc match the measured title and usage
+positions.
 
 **The unlocks** (`src/warriors/unlockables.h`, `Unlockables`, kept in the game state): Coney has no unlockables manager
 or saves yet, so the check answers from a set that a fresh profile fills with what a fresh boot shows: modes 12 and 14,
@@ -1179,16 +1201,15 @@ arena 102, gangs 5 and 3, and no character type (so every type in the stand-in t
 defaults show). Which records the story unlocks: [Unlockables](../references/unlockables.md); every mode, arena, gang
 and character: [Rumble roster](../references/rumble.md).
 
-Coney's choices: the screens' titles are their names on this page; an arena's label is its level record's fifth
-`CfgLevelName` argument (`level102`'s is "Fight Pen"), since the page does not say where the Choose Area screen's text
-comes from; side 2's cursor starts on the gang list's second entry and side 1's on its first (the fresh boot's
-pairing), and the cursors wrap; rotating left makes the second member the warchief; a two-player confirm with fewer
-than two pads shows message `0x77` again instead of screen 4 (not researched); the HUD player's pad drives both sides;
-back from a later screen goes to the one before with its first entry selected (the Game Mode screen keeps the mode
-chosen); the layout is PM_Mode's style on black (no front-end world yet), with the selected mode's description, or
-the gang screen's two sides, as lines under the list. The "vs" title is not a menu screen in Coney: it is read as the
-arena's intro, `ShowRumbleModeIntro`, which `DoRules` calls after the menu has popped (inferred from the chain); Coney
-does not have that binding yet. Each change of screen is logged (`rumble menu: Game Mode`).
+Coney's choices: an arena's label is its level record's fifth `CfgLevelName` argument (`level102`'s is "Fight Pen"),
+since the page does not say where the Choose Area screen's text comes from; side 2's cursor starts on the gang list's
+second entry and side 1's on its first (the fresh boot's pairing), and the cursors wrap; rotating left makes the
+second member the warchief; a two-player confirm with fewer than two pads shows message `0x77` again instead of
+screen 4 (not researched); the HUD player's pad drives both sides; back from a later screen goes to the one before
+with its first entry selected (the Game Mode screen keeps the mode chosen). The "vs" title is not a menu screen in
+Coney: it is read as the arena's intro, `ShowRumbleModeIntro`, which `DoRules` calls after the menu has popped
+(inferred from the chain); Coney does not have that binding yet. Each change of screen is logged
+(`rumble menu: Game Mode`).
 
 **Menu commands** (`src/gui/menu_input.h`, `MenuInput`, `MenuInput_Dispatch` `0x001e95c0`), from [Input](#input): up,
 down, left and right from the auto-repeating d-pad query or the left stick past ±0.5; accept on the release of cross;

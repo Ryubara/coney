@@ -22,6 +22,7 @@
 #include "gui/menu_input.h"
 #include "gui/message_box.h"
 #include "gui/option_grid.h"
+#include "gui/scrolling_menu.h"
 #include "gui/text_widget.h"
 #include "gui/usage_info.h"
 #include "gui/widget.h"
@@ -248,7 +249,7 @@ TEST_CASE("option grid: rows packed left from x, each row one pitch down; separa
     CHECK(grid.itemPosition(2, canvas.canvas).second == Approx(0.76F + grid.rowPitch(1.15F)));
     // Drawn: 2 + 1 (the colon; spaces draw nothing) + 2 + 3 glyphs, each after its shadow.
     grid.render(canvas.canvas);
-    CHECK(canvas.batch.sprites().size() == std::size_t{2 * 8});
+    CHECK(canvas.batch.sprites().size() == 16U); // 8 glyphs, each after its shadow
 }
 
 TEST_CASE("option grid: a centred row is centred on its x", "[widgets]") {
@@ -431,7 +432,7 @@ TEST_CASE("message box: a timed message closes after its time", "[widgets]") {
     box.update(GuiFrame{.timeMs = 3999, .pad = nullptr});
     CHECK(box.open());
     box.render(canvas.canvas);
-    CHECK(canvas.batch.sprites().size() == std::size_t{2 * 8});
+    CHECK(canvas.batch.sprites().size() == 16U); // 8 glyphs, each after its shadow
     box.update(GuiFrame{.timeMs = 4000, .pad = nullptr});
     CHECK_FALSE(box.open());
     CHECK_FALSE(box.chosen().has_value());
@@ -494,4 +495,50 @@ TEST_CASE("text wrap: a word that would pass the wrap width starts the next line
     // A word wider than the wrap width still gets a line of its own.
     style.wrapWidth = oneWord / 2.0F;
     CHECK(coney::gui::layoutText("AAA AAA", style, fonts).lines == 2);
+}
+
+TEST_CASE("scrolling menu: no wrap, the refused cue at the ends, a 100 ms gap and a centred window", "[gui]") {
+    coney::gui::MenuInput input;
+    coney::gui::ScrollingMenu menu;
+    std::vector<int> cues;
+    menu.setup(coney::gui::ScrollingMenuSetup{.visible = 3, .playCue = [&cues](int cue) { cues.push_back(cue); }}, 5);
+    menu.takeFocus(input, 0);
+    using coney::gui::MenuCommand;
+    // Up at the top stays, with the refused cue.
+    CHECK(!menu.handle(MenuCommand::Up, 1000).has_value());
+    CHECK(menu.selected() == 0);
+    // Down moves with cue 4; another move 50 ms later is ignored; one 100 ms later moves.
+    (void)menu.handle(MenuCommand::Down, 1200);
+    (void)menu.handle(MenuCommand::Down, 1250);
+    CHECK(menu.selected() == 1);
+    (void)menu.handle(MenuCommand::Down, 1300);
+    CHECK(menu.selected() == 2);
+    CHECK(cues == std::vector<int>{coney::gui::ScrollingMenu::kRefusedCue, 4, 4});
+    // The window keeps the cursor in its middle row, clamped to the ends.
+    CHECK(menu.firstVisible() == 1);
+    (void)menu.handle(MenuCommand::Down, 1400);
+    (void)menu.handle(MenuCommand::Down, 1500);
+    CHECK(menu.selected() == 4);
+    CHECK(menu.firstVisible() == 2);
+    // Down at the bottom stays; accept returns the entry; left, right and back do nothing.
+    cues.clear();
+    (void)menu.handle(MenuCommand::Down, 1600);
+    CHECK(menu.selected() == 4);
+    CHECK(cues == std::vector<int>{coney::gui::ScrollingMenu::kRefusedCue});
+    CHECK(menu.handle(MenuCommand::Accept, 1700) == std::optional<std::size_t>{4});
+    CHECK(!menu.handle(MenuCommand::Left, 1800).has_value());
+    CHECK(menu.visibleCount() == 3);
+}
+
+TEST_CASE("option grid: the fade multiplies every item's alpha", "[gui]") {
+    TextCanvas canvas;
+    coney::gui::OptionGrid grid;
+    grid.setup(coney::gui::OptionGridSetup{.y = 0.5F});
+    (void)grid.addItem(coney::gui::OptionGridItem{.text = "AB", .separator = true});
+    grid.setFade(0.5F);
+    grid.render(canvas.canvas);
+    REQUIRE(!canvas.batch.sprites().empty());
+    for (const coney::graphics::Sprite& sprite : canvas.batch.sprites()) {
+        CHECK(sprite.colour.a <= 128);
+    }
 }

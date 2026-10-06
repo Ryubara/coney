@@ -16,6 +16,7 @@
 #include <string_view>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
@@ -23,6 +24,7 @@
 #include "core/pads.h"
 #include "graphics/font.h"
 #include "graphics/sprite_batch.h"
+#include "gui/colour_table.h"
 #include "gui/global_strings.h"
 #include "gui/widget.h"
 #include "scripting/script_bindings.h"
@@ -144,10 +146,10 @@ TEST_CASE("the Rumble screens list what the chunks add and the fresh profile unl
     CHECK(h.chunksRun == std::vector<std::string>{"rumble_data.lua"});
     CHECK(h.menu->screen() == RumbleScreen::GameMode);
     // Of the four modes only 12 and 14 are unlocked; the list shows the chunk's titles and the selected description.
-    REQUIRE(h.menu->grid().items() == 2);
-    CHECK(h.menu->grid().item(0).text == "DUEL");
-    CHECK(h.menu->grid().item(1).text == "SQUAD");
-    CHECK(h.menu->detail().text() == "about DUEL");
+    REQUIRE(h.menu->entries().size() == 2);
+    CHECK(h.menu->entries().at(0) == "DUEL");
+    CHECK(h.menu->entries().at(1) == "SQUAD");
+    CHECK(h.menu->entryText(0).text().find("about DUEL") != std::string::npos);
     CHECK(h.data.modes.at(1).playerOptions == std::array<bool, 3>{true, true, true});
     CHECK(!h.textBatch.sprites().empty());
 }
@@ -190,8 +192,8 @@ TEST_CASE("accepting each Rumble screen's first entry writes the default set-up,
     CHECK(h.setup().gangNames[0] == "RED SIDE");
     CHECK(h.setup().gangNames[1] == "BLUE SIDE");
     // One arena is unlocked and allows mode 12; its label is its level record's title.
-    REQUIRE(h.menu->grid().items() == 1);
-    CHECK(h.menu->grid().item(0).text == "ARENA 102");
+    REQUIRE(h.menu->entries().size() == 1);
+    CHECK(h.menu->entries().at(0) == "ARENA 102");
 
     // Choose Area: the confirm marks the arena, and the next update launches it with its level number.
     CHECK(h.to(60) == RumbleMenuResult::Started);
@@ -201,12 +203,12 @@ TEST_CASE("accepting each Rumble screen's first entry writes the default set-up,
 }
 
 TEST_CASE("the Game Type entries write 3 for one player, 2 for co-op and 1 for versus", "[rumble_menu]") {
-    // SQUAD (the stick most of the way down), then co-op or versus with a second pad: the first confirm shows the
-    // message, the second accepts.
+    // SQUAD (the stick most of the way down), then co-op or versus (right along the row) with a second pad: the first
+    // confirm shows the message, the second accepts.
     for (const auto& [moves, players] :
          {std::pair{std::string(""), coney::gui::kRumbleOnePlayer},
-          std::pair{std::string("26 tap down\n"), coney::gui::kRumbleCoop},
-          std::pair{std::string("26 tap down\n32 tap down\n"), coney::gui::kRumbleVersus}}) {
+          std::pair{std::string("26 tap right\n"), coney::gui::kRumbleCoop},
+          std::pair{std::string("26 tap right\n32 tap right\n"), coney::gui::kRumbleVersus}}) {
         INFO(moves);
         Harness h("1 p2 connect\n10 stick left 0 -70\n12 stick left 0 0\n20 tap cross\n" + moves +
                   "40 tap cross\n50 tap cross\n");
@@ -222,16 +224,16 @@ TEST_CASE("the Game Type entries write 3 for one player, 2 for co-op and 1 for v
 }
 
 TEST_CASE("co-op shows the second player's message and needs a second pad", "[rumble_menu]") {
-    Harness h("10 stick left 0 -60\n12 stick left 0 0\n20 tap cross\n30 tap down\n40 tap cross\n"
+    Harness h("10 stick left 0 -60\n12 stick left 0 0\n20 tap cross\n30 tap right\n40 tap cross\n"
               "50 tap cross\n120 p2 connect\n125 tap cross\n");
     h.to(45);
     CHECK(h.menu->screen() == RumbleScreen::GameType);
-    CHECK(h.menu->detail().text() == "SECOND PAD");
+    CHECK(h.menu->message().text() == "SECOND PAD");
     // Still one pad: the second confirm stays and shows the message again; it goes after 1.5 s.
     h.to(55);
     CHECK(h.menu->screen() == RumbleScreen::GameType);
     h.to(110);
-    CHECK(h.menu->detail().text().empty());
+    CHECK(h.menu->message().text().empty());
     h.to(130);
     CHECK(h.menu->screen() == RumbleScreen::ChooseGangs);
     CHECK(h.setup().values.at(RumbleSetup::kGameMode) == coney::gui::kRumbleCoop);
@@ -266,8 +268,8 @@ TEST_CASE("a mode with presets fills both sides and skips the gang screen", "[ru
     CHECK(h.setup().values.at(RumbleSetup::kGang1Pak) == 255);
     CHECK(h.setup().values.at(RumbleSetup::kGang2Pak) == 255);
     // Only arena 103 allows every mode.
-    REQUIRE(h.menu->grid().items() == 1);
-    CHECK(h.menu->grid().item(0).text == "ARENA 103");
+    REQUIRE(h.menu->entries().size() == 1);
+    CHECK(h.menu->entries().at(0) == "ARENA 103");
 }
 
 TEST_CASE("left and right rotate the active side's roster to choose the warchief, except in co-op", "[rumble_menu]") {
@@ -287,7 +289,7 @@ TEST_CASE("left and right rotate the active side's roster to choose the warchief
     CHECK(h.setup().values.at(RumbleSetup::kGang2Types + 1) == 225);
 
     // Co-op: left does nothing.
-    Harness coop("1 p2 connect\n10 tap down\n20 tap cross\n30 tap down\n40 tap cross\n50 tap cross\n60 tap left\n");
+    Harness coop("1 p2 connect\n10 tap down\n20 tap cross\n30 tap right\n40 tap cross\n50 tap cross\n60 tap left\n");
     coop.to(65);
     CHECK(coop.setup().values.at(RumbleSetup::kGameMode) == coney::gui::kRumbleCoop);
     REQUIRE(coop.menu->gangs().roster(0) != nullptr);
@@ -318,7 +320,7 @@ TEST_CASE("back returns to the Rumble screen before, and cancels from the first"
     h.to(55);
     CHECK(h.menu->screen() == RumbleScreen::GameMode);
     // The mode chosen before is still selected.
-    CHECK(h.menu->grid().selected() == 1);
+    CHECK(h.menu->selectedEntry() == 1);
     (void)h.menu->takeCues();
     CHECK(h.to(65) == RumbleMenuResult::Cancelled);
     CHECK(h.menu->takeCues() == std::vector<int>{coney::gui::kRumbleBackCue});
@@ -341,4 +343,46 @@ TEST_CASE("the Rumble defaults run the chunks and take each screen's first entry
     // Without the chunks there is nothing to choose.
     h.files.clear();
     CHECK(!coney::gui::rumbleMenuDefaults(services, 102).has_value());
+}
+
+TEST_CASE("the Rumble background cycles red, green and blue over 5 s legs, and the layout follows the video flags",
+          "[rumble_menu]") {
+    using coney::gui::rumbleBackgroundColour;
+    CHECK(rumbleBackgroundColour(0) == coney::graphics::Rgba{150, 50, 50, 255});
+    CHECK(rumbleBackgroundColour(2500) == coney::graphics::Rgba{100, 100, 50, 255});
+    CHECK(rumbleBackgroundColour(5000) == coney::graphics::Rgba{50, 150, 50, 255});
+    CHECK(rumbleBackgroundColour(10000) == coney::graphics::Rgba{50, 50, 150, 255});
+    CHECK(rumbleBackgroundColour(15000) == coney::graphics::Rgba{150, 50, 50, 255});
+
+    const coney::gui::RumbleLayout normal = coney::gui::RumbleLayout::forFlags(false, false, false);
+    CHECK(normal.titleY == 0.08F);
+    CHECK(normal.gridY == 0.84F);
+    CHECK(normal.usageY == 0.91F);
+    CHECK(coney::gui::RumbleLayout::forFlags(true, false, false).titleY == 0.18F);
+    CHECK(coney::gui::RumbleLayout::forFlags(false, true, false).usageY == 0.96F);
+    CHECK(coney::gui::RumbleLayout::forFlags(true, true, false).gridY == 0.805F);
+}
+
+TEST_CASE("the Rumble screens' frame: centred titles and usage lines, Game Type in one centred row", "[rumble_menu]") {
+    Harness h("10 tap cross\n");
+    h.strings.set(RumbleMenu::kGameModeTitle, "MODE TITLE");
+    h.strings.set(RumbleMenu::kUsageSelectBack, "SELECT BACK");
+    h.strings.set(RumbleMenu::kUsageOneRow, "ONE ROW");
+    h.menu->start(0);
+    h.to(5);
+    CHECK(h.menu->title().text() == "MODE TITLE");
+    CHECK(h.menu->title().style().y == 0.08F);
+    CHECK(h.menu->title().style().scale == RumbleMenu::kTitleScale);
+    CHECK(h.menu->usage().text() == "SELECT BACK");
+    CHECK(h.menu->usage().style().y == 0.91F);
+    // The selected mode grey, the other dim.
+    CHECK(h.menu->entryText(0).style().colour == coney::gui::kMenuGrey);
+    CHECK(h.menu->entryText(1).style().colour == coney::gui::kDimGrey);
+    // Game Type: both entries on one row at y 0.84, joined by the separator; left and right move.
+    h.to(15);
+    REQUIRE(h.menu->screen() == RumbleScreen::GameType);
+    CHECK(h.menu->grid().rows() == 1);
+    CHECK(h.menu->grid().item(0).separator);
+    CHECK(h.menu->grid().itemPosition(0, h.canvas).second == Catch::Approx(0.84F));
+    CHECK(h.menu->usage().text() == "ONE ROW");
 }

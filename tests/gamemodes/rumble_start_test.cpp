@@ -176,8 +176,8 @@ TEST_CASE("quick rumble: the Rumble menu starts the arena and the start callback
 
     // The screens write the default set-up; the area's cross leaves calling Menu.startRumbleMode(102), the profile
     // manager goes too, and the level flow starts level102, whose start callback places P11 on the flag with the
-    // flag's heading.
-    run.frames(60);
+    // flag's heading, once the 1.5 s fade out has run.
+    run.frames(110);
     for (const std::string& line : run.log) {
         UNSCOPED_INFO(line);
     }
@@ -206,7 +206,7 @@ TEST_CASE("quick rumble: the Rumble menu starts the arena and the start callback
 TEST_CASE("quick rumble: backing out of the Rumble menu calls the cancel callback and keeps the menus",
           "[rumble_start]") {
     RumbleRun run(std::string(kQuickRumble) + "240 tap triangle\n");
-    run.frames(250);
+    run.frames(270);
     CHECK(run.flow->rumbleMenu().cancelled());
     CHECK(run.stack.topId() == coney::ProfileManagerMode::kId);
     CHECK(run.starts.empty());

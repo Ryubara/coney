@@ -71,6 +71,7 @@ add_library(coney_core STATIC
     gui/rumble_mode_gui/rumble_gang_chooser.cpp
     gui/rumble_mode_gui/rumble_menu.cpp
     gui/screen_flow_controller.cpp
+    gui/scrolling_menu.cpp
     gui/text_layout.cpp
     gui/text_widget.cpp
     gui/usage_info.cpp

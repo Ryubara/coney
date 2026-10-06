@@ -421,8 +421,8 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
                                           "300 tap cross\n"
                                           "305 tap cross\n"
                                           "310 tap cross\n"
-                                          "360 stick left 40 70\n"
-                                          "420 stick left 0 0\n");
+                                          "390 stick left 40 70\n"
+                                          "450 stick left 0 0\n");
     REQUIRE(script.has_value());
     coney::ScriptedInput input(std::move(*script));
     coney::GameModeStack stack;
@@ -439,8 +439,9 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
     coney::GameTimer timer;
     timer.setFixedStep(true);
 
-    // Through the menus and the Rumble menu into the arena: by frame 350 gameplay is on top with level102 loaded.
-    stack.runUntilEmpty(timer, {}, 350);
+    // Through the menus and the Rumble menu (its 1.5 s fade out after the arena's cross) into the arena: by frame 380
+    // gameplay is on top with level102 loaded.
+    stack.runUntilEmpty(timer, {}, 380);
     for (const std::string& line : log) {
         UNSCOPED_INFO(line);
     }

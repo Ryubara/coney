@@ -255,15 +255,16 @@ void OptionGrid::render(const GuiCanvas& canvas) const {
         const auto [x, y] = itemPosition(i, canvas);
         TextStyle style = itemStyle(x, y, item.scale, itemColour(i), item.fontSlot);
         style.timeMs = m_texts[i]->style().timeMs;
+        style.fade = m_fade;
         const TextLayout text = layoutText(item.text, style, canvas.fonts);
         addTextSprites(text, canvas.textBatch);
         if (item.separator) {
             // The separator in the item's own colour, whatever the selection.
             graphics::Rgba colour = item.colour;
             colour.a = kMenuGrey.a;
-            addTextSprites(
-                layoutText(kSeparator, itemStyle(x + text.width, y, item.scale, colour, kTextFontSlot), canvas.fonts),
-                canvas.textBatch);
+            TextStyle separatorStyle = itemStyle(x + text.width, y, item.scale, colour, kTextFontSlot);
+            separatorStyle.fade = m_fade;
+            addTextSprites(layoutText(kSeparator, separatorStyle, canvas.fonts), canvas.textBatch);
         }
     }
 }

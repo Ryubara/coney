@@ -141,8 +141,8 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
         return std::ranges::any_of(log, [text](const std::string& line) { return line.contains(text); });
     };
     // Quick rumble: Menu.fadeToRMI fades out, Menu.launchRMI opens the Rumble menu (mode 0x11), triangle backs out and
-    // Menu.cancelRumbleMode fades back in.
-    run(100);
+    // Menu.cancelRumbleMode fades back in (the Rumble menu fades in over 0.7 s and out over 0.7 s around it).
+    run(115);
     CHECK(logged("script: Menu.fadeToRMI"));
     CHECK(logged("rumble menu: Game Mode"));
     CHECK(logged("rumble menu: cancelled"));

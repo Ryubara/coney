@@ -39,7 +39,8 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
       m_levelFlow(device, stack, m_profileManager, m_services, m_scripts, m_state, log,
                   m_gameplay.loads() ? &m_gameplay : nullptr),
       m_missionComplete(device, stack, m_levelFlow, m_scripts, m_state, log),
-      m_rumbleMenu(device, loadSheet, stack, m_scripts, m_state, strings, m_rumbleData, log),
+      m_rumbleMenu(device, loadSheet, stack, m_scripts, m_state, strings, m_rumbleData, m_services, m_fade,
+                   legal.europe, log),
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
       m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;

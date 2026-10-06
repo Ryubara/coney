@@ -98,6 +98,12 @@ class OptionGrid : public Widget {
     /// Gives the focus up: no item is drawn selected.
     /// @orig 0x001d4db8 OptionGrid_LoseFocus (unknown)
     void loseFocus() { m_focused = false; }
+
+    /// Fades the whole grid: `fade` (clamped to 0-1 by the layout) multiplies every item's and separator's alpha, as
+    /// TextWidget::setFade does; 1 by default.
+    void setFade(float fade) { m_fade = fade; }
+    /// The fade.
+    [[nodiscard]] float fade() const { return m_fade; }
     /// Whether the grid has the focus.
     [[nodiscard]] bool focused() const { return m_focused; }
 
@@ -154,6 +160,7 @@ class OptionGrid : public Widget {
     std::vector<std::size_t> m_rowStarts;             // the first item of each row
     std::size_t m_selected = 0;
     bool m_focused = false;
+    float m_fade = 1.0F;          // multiplies every alpha
     MenuInput* m_input = nullptr; // the focus's input, whose d-pad repeat a refused move turns off
 };
 

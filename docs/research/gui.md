@@ -605,8 +605,10 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   fade and its own time for `<PULSE>` and `<DISPLAYTIME>`. `OptionGrid` (setup `0x001d4110`, add item `0x001d4230` up to
   50, focus `0x001d4d28`, handler `0x001d4c40`): row counts, left-packed or centred rows, the `" : "` separator,
   `kSelectedGrey` for the focused selection, the moves, wrap only from 3 items, cue `+0x94` and `0xe`, and the d-pad's
-  plain query after a refused move. `UsageInfo` (`0x001ceb40`, text `0x001cec28`): size 1.0, `kMenuGrey`, left-aligned
-  or centred. `Bar` (`0x001a0fd0`) and the message box (`src/gui/message_box.h`, [Front end](frontend.md#message-box)).
+  plain query after a refused move, and a fade over every item (Coney's, for the pause menu's fade out). `ScrollingMenu`
+  (`0x001e1338`, `src/gui/scrolling_menu.h`): no wrap, cue 4 and `0xe`, 100 ms between moves, a window around the
+  cursor ([Front end](frontend.md#rm-layout)). `UsageInfo` (`0x001ceb40`, text `0x001cec28`): size 1.0, `kMenuGrey`,
+  left-aligned or centred. `Bar` (`0x001a0fd0`) and the message box (`src/gui/message_box.h`, [Front end](frontend.md#message-box)).
   The colour table is `src/gui/colour_table.h`. Coney's choices: a grid's row pitch adds 0.0036 to 6h / 7 so rows land
   0.0505 apart at size 1.15, as measured ([Front end](frontend.md#pm-layout)); items past the row counts get a row each;
   part_page0 is Coney's font slot 2 (the original's 3). The screens that use them are on
@@ -695,7 +697,8 @@ What the implementer still needs:
 - **What icons 22 and 355 show**, and the dealer type 2's role.
 - **The 2D sort key** (answered): the creation depth; see [Draw order](#draw-order).
 - **The sheet `0x349348bd`** behind the Quick Rumble menus (sheet-table record 12, inferred;
-  [Front end](frontend.md#rm-layout)): its resource name (not one of the names tried).
+  [Front end](frontend.md#rm-layout)): its resource name (not one of the names tried). Coney loads it by its WAD file
+  name, `882067645`; on the NTSC-U disc it has 7 rectangles over a 512 × 512 texture, rectangle 5 the gang collage.
 - **`firstGlyph` of `part_page0` (94) and `part_page1` (20)**: which text uses them, and the two explicit-base call
   sites in `Font_Measure`/`Font_Draw`.
 - **`<MONEYFONT>`**: the glyph base it sets (`0xd0100` for font 6, `0xb` for font 3) looks like a packed value; how

@@ -439,7 +439,14 @@ int main(int argc, char** argv) {
         if (!wad) {
             return coney::fail(coney::ErrorCode::NotFound, "no disc to load from");
         }
-        return coney::platform::loadSpriteSheetResource(*wad, chunkHandlers, name, renderer.drawsPixels());
+        auto sheet = coney::platform::loadSpriteSheetResource(*wad, chunkHandlers, name, renderer.drawsPixels());
+        // A sheet whose resource name is not known is asked for by its WAD file name (the Rumble menu's background).
+        if (!sheet && sheet.error().code == coney::ErrorCode::NotFound) {
+            if (auto entry = wad->lookup(name); entry) {
+                return coney::platform::loadSpriteSheet(*wad, **entry, chunkHandlers, renderer.drawsPixels());
+            }
+        }
+        return sheet;
     };
     coney::gui::GlobalStrings strings;
     std::optional<coney::StartUpFlow> startUp;
