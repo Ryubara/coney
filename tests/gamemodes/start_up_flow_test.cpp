@@ -68,13 +68,16 @@ struct Run {
     std::unique_ptr<coney::ScriptedInput> input;
     GameTimer timer;
 
-    explicit Run(std::string_view script) {
+    explicit Run(std::string_view script, std::uint64_t cardCheckingMs = 0) {
         strings.set(0x76, "PRESS START");
+        strings.set(MemoryCardMode::kCheckingString, "CHECKING");
         input = std::make_unique<coney::ScriptedInput>(coney::parseInputScript(script).value());
         stack.setInput(input.get());
         timer.setFixedStep(true);
-        flow = std::make_unique<StartUpFlow>(device, stack, sheets.loader(), strings, coney::LegalScreenSettings{},
-                                             [this](std::string_view line) { log.emplace_back(line); });
+        flow = std::make_unique<StartUpFlow>(
+            device, stack, sheets.loader(), strings, coney::LegalScreenSettings{},
+            [this](std::string_view line) { log.emplace_back(line); }, coney::script::ScriptSource{},
+            coney::GameplayMode::LevelLoader{}, std::nullopt, cardCheckingMs);
         flow->start();
     }
 
@@ -117,10 +120,12 @@ TEST_CASE("start-up: legal screen, memory card, level flow, then the profile man
     CHECK(run.flow->profileManager().onRumble() == "Menu.fadeToRMI");
     CHECK(run.flow->profileManager().onStartGame() == "Menu.startGame");
 
-    // Frame 152: the profile manager enters at PM_Greet, loading the menu sheet and the two fonts.
+    // Frame 152: the profile manager enters at PM_Greet, loading the menu sheet and the two fonts (the memory-card
+    // check loaded big_font for its message).
     run.frames(1);
     CHECK(run.flow->profileManager().controller().currentName() == "PM_Greet");
-    CHECK(run.sheets.requested == std::vector<std::string>{"legal_screen", "menu_system", "part_page0", "big_font"});
+    CHECK(run.sheets.requested ==
+          std::vector<std::string>{"legal_screen", "big_font", "menu_system", "part_page0", "big_font"});
     CHECK(run.stack.size() == 2);
     // Many more frames: PM_Greet waits for START.
     run.frames(300);
@@ -254,9 +259,9 @@ TEST_CASE("start-up with scripts: preloads at the legal screen, Menu.onStart sho
 
 TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level request, and back to the menus",
           "[start_up]") {
-    // STORY with a new profile (tests/support/story_new_profile.txt): the menus are done on frame 329, then fade out.
+    // STORY with a new profile (tests/support/story_new_profile.txt): the menus are done on frame 419, then fade out.
     ScriptedRun run(coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value());
-    run.frames(330);
+    run.frames(420);
     CHECK(run.flow->profileManager().session().done);
     CHECK(run.flow->levelFlow().levelRequests().empty());
     run.frames(31);
@@ -354,4 +359,24 @@ TEST_CASE("start-up: a scene that fails to load leaves a black background and th
     CHECK(run.stack.topId() == ProfileManagerMode::kId);
     CHECK(std::ranges::any_of(run.log,
                               [](const std::string& line) { return line.find("no scene") != std::string::npos; }));
+}
+
+TEST_CASE("start-up: the memory-card check shows its message for the original's 3 s in the game", "[start_up]") {
+    Run run("", MemoryCardMode::kCheckingMessageMs);
+    // Frame 150 (5,000 ms): the check shows "checking memory card", centred, until 8,000 ms.
+    run.frames(151);
+    REQUIRE(run.stack.topId() == MemoryCardMode::kId);
+    const coney::gui::MessageBox& box = run.flow->memoryCard().messageBox();
+    CHECK(box.open());
+    CHECK_FALSE(box.dialog());
+    CHECK(box.message().text() == "CHECKING");
+    CHECK(run.flow->memoryCard().bootCheck() == MemoryCardMode::BootCheck::Pending);
+
+    // Frames 151-239 still show it; frame 240 (8,000 ms) ends it and the mode leaves (frames 150-240 in all).
+    run.frames(89);
+    CHECK(run.stack.topId() == MemoryCardMode::kId);
+    run.frames(1);
+    CHECK(run.stack.topId() == LevelFlowMode::kId);
+    CHECK(run.flow->memoryCard().bootCheck() == MemoryCardMode::BootCheck::Done);
+    CHECK_FALSE(run.flow->levelFlow().loadFrontEndOnResume());
 }

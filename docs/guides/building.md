@@ -225,16 +225,17 @@ takes, see [The coney-tools command line](coney-tools.md#naming-the-disc)). Cone
 against `WARRIORS.WAD`, and prints how many entries it lists.
 
 With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes: the legal screen for five
-seconds (150 frames; no button skips it, as in the original), then the menus' first screen, the game's logo and a
-blinking "press START" (from frame 152). START leads to the main menu (story, extras, quick rumble); the d-pad or the
-left stick moves, cross chooses and triangle or circle goes back. There is no 3D scene behind the menus, no sound and
-no movie yet: Coney prints a line for each movie, music and sound it skips, and one for each screen it reaches
+seconds (150 frames; no button skips it, as in the original), the memory-card check's "checking" message for three
+seconds (90 frames), then the menus' first screen over `level100`'s world, the game's logo and a blinking "press
+START" (from frame 242). START leads to the main menu (story, extras, quick rumble); the d-pad or the left stick moves,
+cross chooses and triangle or circle goes back. There is no sound and no movie yet: Coney prints a line for each movie,
+music and sound it skips, and one for each screen it reaches
 ([Front end](../research/frontend.md#coneys-implementation)). `--language CODE` picks the strings and the legal
 screen.
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --frames 3 --screenshot ../../scratch/legal.png
-build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 220 --input-script tests/support/start_menu.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 310 --input-script tests/support/start_menu.txt
 ```
 
 The second line runs to the main menu without a window: its last line is `profile manager: PM_Mode`.
@@ -252,10 +253,10 @@ level99`, `gameplay: level99 checkpoint 1: player 1 Rembrandt ...`, then `movie:
 (`tests/support/story_new_profile.txt`: a one-letter name, the defaults, the cursor moved with the left stick at 70 %):
 
 ```sh
-build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 380 --input-script tests/support/story_new_profile.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 470 --input-script tests/support/story_new_profile.txt
 ```
 
-Level99 is up by frame 370.
+Level99 is up by frame 460.
 
 **QUICK RUMBLE** follows the original's path too: the menu's scripts call `ShowRumbleModeInterface`, which opens the
 Rumble menu (mode 0x11) and its four screens, as a fresh boot offers them: **Game Mode** (1 ON 1 or WAR PARTY),

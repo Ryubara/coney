@@ -478,3 +478,20 @@ TEST_CASE("message box: a several-line message is centred as a block on y 0.5", 
     // The middle line's glyph (after its shadow) sits on y 0.5.
     CHECK(canvas.batch.sprites()[3].position.y == Approx(OverlayCamera::guiToOverlay(0.5F, 0.5F).y));
 }
+
+TEST_CASE("text wrap: a word that would pass the wrap width starts the next line", "[gui][text]") {
+    const coney::graphics::Font font = coney::test::testFont();
+    const coney::gui::FontLookup fonts = [&font](int /*slot*/) { return &font; };
+    coney::gui::TextStyle style;
+    const float oneWord = coney::gui::layoutText("AAA", style, fonts).width;
+    // Without a wrap width the three words stay on one line.
+    CHECK(coney::gui::layoutText("AAA AAA AAA", style, fonts).lines == 1);
+    // Room for a little more than one word: each word on its own line, no line wider than a word.
+    style.wrapWidth = oneWord * 1.5F;
+    const coney::gui::TextLayout wrapped = coney::gui::layoutText("AAA AAA AAA", style, fonts);
+    CHECK(wrapped.lines == 3);
+    CHECK(wrapped.width == Catch::Approx(oneWord));
+    // A word wider than the wrap width still gets a line of its own.
+    style.wrapWidth = oneWord / 2.0F;
+    CHECK(coney::gui::layoutText("AAA AAA", style, fonts).lines == 2);
+}

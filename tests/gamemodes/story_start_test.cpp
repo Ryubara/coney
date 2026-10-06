@@ -185,7 +185,7 @@ struct StoryRun {
 };
 
 // STORY with a new profile (tests/support/story_new_profile.txt, which `coney --input-script` plays too): the menus
-// are done on frame 329 and fade out for a second.
+// are done on frame 419 and fade out for a second.
 std::vector<coney::InputEvent> storyScript() {
     return coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value();
 }
@@ -194,7 +194,7 @@ std::vector<coney::InputEvent> storyScript() {
 
 TEST_CASE("story: the profile manager's exit launches the mission-complete mode over the level flow", "[story_start]") {
     StoryRun run(storyScript(), true);
-    run.frames(330);
+    run.frames(420);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     // Menu.startGame ran in the profile manager's exit: checkpoint 2, level1 chosen, mode 0xb pushed over mode 8.
     CHECK(run.logged("script: Menu.startGame"));
@@ -217,7 +217,7 @@ TEST_CASE("story: the profile manager's exit launches the mission-complete mode 
 TEST_CASE("story: the level flow pushes gameplay, whose level script places player 1 for the checkpoint",
           "[story_start]") {
     StoryRun run(storyScript(), true);
-    run.frames(330);
+    run.frames(420);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     run.frames(2);
     // The level flow finished the front end (a fresh Lua state) and pushed gameplay with level1 selected.
@@ -257,7 +257,7 @@ TEST_CASE("story: the level flow pushes gameplay, whose level script places play
 TEST_CASE("mission complete: kind 1 puts the checkpoint back and ends gameplay below it", "[story_start]") {
     // Without UnlockAndLoad, the launch's own kind stands.
     StoryRun run(storyScript(), false);
-    run.frames(330);
+    run.frames(420);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     run.frames(3);
     REQUIRE(run.stack.topId() == GameplayMode::kId);
@@ -300,7 +300,7 @@ TEST_CASE("mission complete: the autosave after a mission writes the game state 
 
 TEST_CASE("mission complete: kind 2 reloads the current level", "[story_start]") {
     StoryRun run(storyScript(), false);
-    run.frames(330);
+    run.frames(420);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     run.frames(3);
     REQUIRE(run.starts.size() == 1);

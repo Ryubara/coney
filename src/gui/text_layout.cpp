@@ -124,8 +124,40 @@ class LayoutBuilder {
     // The alpha factor of a text with `<DISPLAYTIME ms>`, applied to every colour.
     void setDisplayFactor(float factor) { m_displayFactor = factor; }
 
-    // Adds characters with the current font, size and colour to the current line.
+    // Adds characters with the current font, size and colour, word by word when the style wraps: a word (with the
+    // spaces before it) that would take a line past the wrap width starts the next line, without those spaces.
     void addText(std::string_view text) {
+        if (m_style.wrapWidth <= 0.0F) {
+            addRun(text);
+            return;
+        }
+        std::size_t pos = 0;
+        while (pos < text.size()) {
+            const std::size_t wordStart = text.find_first_not_of(' ', pos);
+            const std::size_t wordEnd = wordStart == std::string_view::npos ? text.size() : text.find(' ', wordStart);
+            const std::size_t end = wordEnd == std::string_view::npos ? text.size() : wordEnd;
+            std::string_view piece = text.substr(pos, end - pos);
+            if (m_lines.back().width > 0.0F && m_lines.back().width + measure(piece) > m_style.wrapWidth &&
+                wordStart != std::string_view::npos) {
+                newLine(0.0F);
+                piece = text.substr(wordStart, end - wordStart);
+            }
+            addRun(piece);
+            pos = end;
+        }
+    }
+
+  private:
+    // The width of `text` in the current font and size.
+    [[nodiscard]] float measure(std::string_view text) const {
+        const graphics::FontMetrics metrics = graphics::fontMetrics(m_style.scale * m_size.current());
+        const graphics::Font* font = m_fonts ? m_fonts(m_slot.current()) : nullptr;
+        const std::uint32_t flags = m_style.proportional ? graphics::kFontProportional : 0;
+        return font != nullptr ? font->measure(text, metrics, flags) : 0.0F;
+    }
+
+    // Adds characters with the current font, size and colour to the current line.
+    void addRun(std::string_view text) {
         if (text.empty()) {
             return;
         }
@@ -142,6 +174,7 @@ class LayoutBuilder {
         line.width += width;
     }
 
+  public:
     // Applies one tag.
     void apply(MarkupTag tag, std::string_view argument) {
         if (const std::optional<std::uint8_t> character = markupCharacter(tag)) {

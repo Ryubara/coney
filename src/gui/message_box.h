@@ -33,9 +33,11 @@ enum class MessageStyle : std::uint8_t {
 ///   at once (it has no sound to wait for).
 ///
 /// Coney's choices where the page is silent: the message's lines are centred as a block on y 0.5 (the measured format
-/// question's four lines span 0.44 to 0.57); the choices are drawn at font scale 1.0 in part_page0 with kMoveCue for a
-/// move; back does nothing; Corner's x (`0x0050ea24`, not read) is 0.5, centred; font slot 4 is Coney's text font;
-/// the pad is the HUD player's (the original gives player 1 the first pad pressed while the box is open).
+/// question's four lines span 0.44 to 0.57) and the centred message wraps at kMessageWrap (the wrap of the Rumble
+/// menu's centred multi-line text, `RM_No2ndController`; the box's own is not read); the choices are drawn at font
+/// scale 1.0 in part_page0 with kMoveCue for a move; back does nothing; Corner's x (`0x0050ea24`, not read) is 0.5,
+/// centred; font slot 4 is Coney's text font; the pad is the HUD player's (the original gives player 1 the first pad
+/// pressed while the box is open).
 ///
 /// Research: docs/research/frontend.md#message-box
 /// @orig 0x001c6a20 MessageBox::MessageBox (unknown)
@@ -53,6 +55,8 @@ class MessageBox : public Widget {
     static constexpr int kMoveCue = 4;
     /// The colour of a Corner message.
     static constexpr graphics::Rgba kCornerColour{134, 26, 26, 255};
+    /// The wrap width of a centred message: Coney's choice (above).
+    static constexpr float kMessageWrap = 0.6F;
 
     /// Shows `text` in `style` for `durationMs` of game time from `nowMs`; the box is done after it.
     /// @orig 0x001c6fc8 MessageBox_ShowTimed (unknown)

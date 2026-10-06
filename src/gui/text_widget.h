@@ -21,6 +21,7 @@ struct TextWidgetSetup {
     graphics::Rgba colour = graphics::kWhite; ///< The text's colour; its alpha fades it.
     TextAlignment alignment = TextAlignment::Left;
     int fontSlot = kTextFontSlot; ///< The font until a `<BIGFONT>`; kBigFontSlot for `big_font`.
+    float wrapWidth = 0.0F;       ///< The multi-line widget's wrap width; 0: lines break only at `<CR>` tags.
 };
 
 /// A text widget: a marked-up text (docs/research/gui.md#markup) laid out and drawn each frame, one sprite per

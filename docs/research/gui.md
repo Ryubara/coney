@@ -579,10 +579,11 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   the widget's fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
   `MONEYPLUS`/`MINUS`, the alignments, `CR`, `CR2`, `CR3 f`, `CRM`, every glyph tag and the closing tags; `SOUND`
   names and the largest `FREEZE` are reported for the audio layer and the timer; `BOLD`, `MONEYFONT`, `BGFONT`,
-  `AUTOINDENT` and the animated stick tags have no effect yet. Lines break only at the `CR` tags: the page documents no
-  automatic wrapping. Coney's choices: a closing tag restores the value before its opening tag; a line takes the
-  alignment in effect at its first character, centring and right-aligning inside the box (`CCENTER` and `RRIGHT` act
-  as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales the colour by 1 + 0.5 × sin(2π t / ms);
+  `AUTOINDENT` and the animated stick tags have no effect yet. Lines break at the `CR` tags and, for a multi-line widget
+  given a wrap width (the message box, `RM_No2ndController`'s 0.6), before a word that would pass it; how the original
+  breaks is not researched, so Coney breaks only at spaces. Coney's choices: a closing tag restores the value before
+  its opening tag; a line takes the alignment in effect at its first character, centring and right-aligning inside the
+  box (`CCENTER` and `RRIGHT` act as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales the colour by 1 + 0.5 × sin(2π t / ms);
   the style's y is the first line's centre line. **The text font:** a text starts in slot 2, a `part_page0` instance,
   and `<BIGFONT>` switches to slot 6, `big_font` (Coney's choice, from the data: in `part_page0`, first glyph 94,
   characters `0x91`-`0xa0` are exactly the button pictures of the tag table, while in `big_font` they are empty but for

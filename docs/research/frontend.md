@@ -957,7 +957,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | --- | --- | --- | --- |
 | [x] | Legal screen | the picture, overfilled, 5 s | nothing |
 | [ ] | Start-up movies | skipped through the `MoviePlayer` hook; the music stops and the screen is left black | a player for `LOGO`, `PLOGO`, `L1_IN`, START skipping ([Movies](#movies)) |
-| [ ] | Mode 6 at boot | one black frame | the card scan, `0xb5` for 3 s, the dialogs and their layout ([message box](#message-box)) |
+| [ ] | Mode 6 at boot | `0xb5` centred for 3 s in the message box, then the menus; no card, so no scan or dialog | the card dialogs once Coney has saves; which one a boot with no card shows ([message box](#message-box)) |
 | [ ] | 3D background | `level100`'s world from the scene's first camera pose; the sign, no wheel | the script's objects, the `WonderWheel_100` scene and its camera, lights ([Background](#background)) |
 | [ ] | Menu music | the `menu` bank and the cues go to the `FrontEndAudio` hook; recorded and logged without one | `music/wonderwheel_132b` looped by `Menu.startScene`, `MenuTrack` by `launchRMI`; the `menu` bank's cues ([Sound](sound.md)) |
 | [x] | Fades | out over `t − 0.2` s, in from black, the one-frame start, clamped (one manager: one view) | the real speed (open: [Fades](#fades)) |
@@ -988,8 +988,9 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 [Boot](boot.md#main): `coney --disc <disc>` with no tool option makes the script system (the Lua state), then does what
 `main` does from the movies on: the three start-up movies (skipped, below), push mode 8, ask for the memory-card boot
 check, push mode 6, push mode 5. Mode 5 runs first; on the NTSC-U disc the main menu is reached as follows (frames of
-the 1/30 s step): legal screen frames 0-149, mode 6 frame 150, mode 8 frame 151 (it pushes 0x12), PM_Greet from frame
-152, PM_Mode on the frame START is pressed.
+the 1/30 s step): legal screen frames 0-149, mode 6 frames 150-240 (the 3 s message), mode 8 frame 241 (it pushes
+0x12), PM_Greet from frame 242, PM_Mode on the frame START is pressed (in the frame-scripted tests, without the
+message: mode 6 frame 150, mode 8 frame 151, PM_Greet from frame 152).
 
 **Mode 5, the legal screen** (`src/gamemodes/legal_screen_mode.h`, `LegalScreenMode`), written from
 [the flow](#mode-flow) and [Graphics](graphics.md#first-screen):
@@ -1052,9 +1053,12 @@ Coney's choices for the pads, where the original does something else or the page
 **Mode 6, the memory-card check** (`src/gamemodes/memory_card_mode.h`, `MemoryCardMode`): `setBootCheck` is
 `0x0015a270(1)`; `exit` is the original's (`0x0015c2c0`): the boot flag becomes 2 and, because the mode below is the
 level flow, its "load the front end on resume" (`+0x28`) is cleared. **Coney's choice:** Coney has no memory card (its
-saves will be files, and none exist yet), so `enter` and `update` are a pass-through on the "no saved profile" path:
-one black frame, then the mode leaves. No message box, no "checking" message (string `0xb5`) and no card dialogs; what
-the original shows with no card is an [open question](#open-questions).
+saves will be files, and none exist yet), so its scan finds nothing to ask about: the mode shows the "checking"
+message (string `0xb5`) centred in the [message box](#message-box) for 3,000 ms on black, then leaves, as the original
+does with an unformatted card. No card dialog is shown; what the original shows with no card is an
+[open question](#open-questions). **Test mode:** the message's time is an argument of the start-up flow; `coney`
+passes 3,000 ms and the frame-scripted tests 0, so their scripts keep the menus at frame 152 (one test covers the
+3 s message).
 
 **Mode 8, the level flow** (`src/gamemodes/level_flow_mode.h`, `LevelFlowMode`): the three fields of
 [Mode 8 fields](#mode-8-fields); `enter` sets `+0x28` and calls `resume`, which starts the front end when `+0x28` is set
@@ -1219,7 +1223,7 @@ runs `coney --disc` the same way.
 
 **Disc check (NTSC-U, 2026-10-05, states only):** `coney_tests "[disc][story]"` runs STORY with the play mode as the
 level loader, through the new-profile screens (`tests/support/story_new_profile.txt`, since 2026-10-06): gameplay is
-on top by frame 370 with `level99` loaded, one profile, `L99_IN` asked for once, the checkpoint is 1, Rembrandt stands at
+on top by frame 460 with `level99` loaded, one profile, `L99_IN` asked for once, the checkpoint is 1, Rembrandt stands at
 (-284.4, 120.4) on the ground (z 0.25, the height seen at run time) and not airborne; the stick then moves him
 (6.12 m in 200 frames at 35 % and a 30/65 diagonal) and he stands again on release. No script error; the level's
 scripts call 29 bindings Coney lacks (177 calls skipped). `coney --disc` with STORY chosen does the same in a window.

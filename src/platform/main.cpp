@@ -645,7 +645,7 @@ int main(int argc, char** argv) {
         // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
         const std::optional<std::filesystem::path> profiles = coney::platform::profileFolder(*options);
         startUp.emplace(renderer, modes, loadSheet, strings, legal, printText, coney::script::wadScriptSource(*wad),
-                        std::move(loadLevel), profiles);
+                        std::move(loadLevel), profiles, coney::MemoryCardMode::kCheckingMessageMs);
         if (profiles) {
             printText(std::format("profiles: {} in {}\n", startUp->profiles().count(), profiles->string()));
         }

@@ -17,7 +17,8 @@ void MessageBox::setMessage(std::string_view text, MessageStyle style) {
                                         .scale = 1.0F,
                                         .colour = kMenuGrey,
                                         .alignment = TextAlignment::Centre,
-                                        .fontSlot = kBigFontSlot});
+                                        .fontSlot = kBigFontSlot,
+                                        .wrapWidth = kMessageWrap});
     } else {
         m_message.setup(TextWidgetSetup{.x = 0.5F,
                                         .y = 0.9F,

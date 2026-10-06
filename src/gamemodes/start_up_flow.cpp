@@ -24,7 +24,7 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
                          const ProfileManagerMode::SheetLoader& loadSheet, gui::GlobalStrings& strings,
                          LegalScreenSettings legal, const std::function<void(std::string_view)>& log,
                          script::ScriptSource scripts, GameplayMode::LevelLoader loadLevel,
-                         const std::optional<std::filesystem::path>& profileFolder)
+                         const std::optional<std::filesystem::path>& profileFolder, std::uint64_t cardCheckingMs)
     : m_stack(stack), m_log(log), m_services(log), m_profiles(makeProfileStore(profileFolder, m_state)),
       m_context{&m_state,      &strings, this,        &m_recorded, &m_humans,       &m_flags,
                 &m_rumbleData, nullptr,  &m_messages, &m_boxes,    &m_animCallbacks},
@@ -40,7 +40,8 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
                   m_gameplay.loads() ? &m_gameplay : nullptr),
       m_missionComplete(device, stack, m_levelFlow, m_scripts, m_state, log),
       m_rumbleMenu(device, loadSheet, stack, m_scripts, m_state, strings, m_rumbleData, log),
-      m_memoryCard(device, stack, m_levelFlow), m_legal(device, loadSheet, legal, log, &m_scripts) {
+      m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
+      m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;
     m_services.attachScripts(&m_scripts);
     m_gameplay.setMoviePlayer(&m_services);

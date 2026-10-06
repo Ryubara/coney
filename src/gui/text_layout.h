@@ -36,10 +36,11 @@ enum class TextAlignment : std::uint8_t {
 
 /// Where and how a text is laid out: what a text widget gives the layout.
 struct TextStyle {
-    float x = 0.0F;        ///< GUI x of the box's left edge.
-    float y = 0.0F;        ///< GUI y of the first line's centre (the glyphs' centre line, as Font_Draw takes it).
-    float boxWidth = 0.0F; ///< The box's width; grown to the widest line.
-    float scale = 1.0F;    ///< The font scale (graphics::fontMetrics()); `<SIZE f>` multiplies it.
+    float x = 0.0F;         ///< GUI x of the box's left edge.
+    float y = 0.0F;         ///< GUI y of the first line's centre (the glyphs' centre line, as Font_Draw takes it).
+    float boxWidth = 0.0F;  ///< The box's width; grown to the widest line.
+    float wrapWidth = 0.0F; ///< When above 0, a word that would take a line past this width starts the next line.
+    float scale = 1.0F;     ///< The font scale (graphics::fontMetrics()); `<SIZE f>` multiplies it.
     graphics::Rgba colour = graphics::kWhite;
     float fade = 1.0F;            ///< Multiplies every alpha (the widget's fade), 0 to 1.
     std::uint8_t shadowAlpha = 0; ///< A drop shadow under each glyph when not 0.
@@ -72,15 +73,16 @@ using FontLookup = std::function<const graphics::Font*(int slot)>;
 
 /// Lays out marked-up `text` (docs/research/gui.md#markup) in `style`: splits it at tags, measures each line's runs
 /// with their font, size and colour, grows the box to the widest line, places each line by its alignment and draws
-/// every run with Font_Draw's rules (graphics::Font::draw()). Lines break only at `<CR>`, `<CR2>`, `<CR3 f>` and
-/// `<CRM>`, moving down by h + lineGap of the size in effect (plus f for `<CR3>`): the page documents no automatic
-/// wrapping.
+/// every run with Font_Draw's rules (graphics::Font::draw()). Lines break at `<CR>`, `<CR2>`, `<CR3 f>` and
+/// `<CRM>`, moving down by h + lineGap of the size in effect (plus f for `<CR3>`), and, with a wrap width (the
+/// multi-line widgets'), before a word that would take its line past it.
 ///
 /// Coney's choices where the page is silent: a closing tag restores the value before its opening tag (a stack); a
 /// line takes the alignment in effect at its first character; `<CCENTER>` and `<RRIGHT>` act as `<CENTER>` and
 /// `<RIGHT>`; `<CR2>` and `<CRM>` always break (Coney is single-player); `<PULSE ms>` scales the colour by
 /// 1 + 0.5 × sin(2π t / ms); `<BOLD>`, `<MONEYFONT>`, `<BGFONT>`, `<AUTOINDENT>` and the animated stick glyphs have no
-/// effect yet and are counted in skippedTags.
+/// effect yet and are counted in skippedTags; a wrap breaks only at spaces, dropping the spaces at the break (how the
+/// multi-line widgets break is not researched).
 ///
 /// Research: docs/research/gui.md#text
 /// @orig 0x001b9600 TextWidget_Layout (unknown)

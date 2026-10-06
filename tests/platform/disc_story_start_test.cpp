@@ -190,9 +190,9 @@ TEST_CASE("the disc's STORY reaches Rembrandt standing in level99 under the pad'
     // plays it); then, in level99, the left stick at 35 % forward for two seconds and at a 30/65 diagonal for two more,
     // then let go.
     auto script = coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt");
-    auto walk = coney::parseInputScript("400 stick left 0 35\n"
-                                        "460 stick left 30 65\n"
-                                        "520 stick left 0 0\n");
+    auto walk = coney::parseInputScript("490 stick left 0 35\n"
+                                        "550 stick left 30 65\n"
+                                        "610 stick left 0 0\n");
     REQUIRE(script.has_value());
     REQUIRE(walk.has_value());
     std::vector<coney::InputEvent> events = script.value_or(std::vector<coney::InputEvent>{});
@@ -229,9 +229,9 @@ TEST_CASE("the disc's STORY reaches Rembrandt standing in level99 under the pad'
     coney::GameTimer timer;
     timer.setFixedStep(true);
 
-    // Through the menus into the level: the profile screens, a new profile, and by frame 370 gameplay is on top with
+    // Through the menus into the level: the profile screens, a new profile, and by frame 460 gameplay is on top with
     // level99 loaded and its intro movie asked for (skipped: no movie player yet).
-    stack.runUntilEmpty(timer, {}, 370);
+    stack.runUntilEmpty(timer, {}, 460);
     for (const std::string& line : log) {
         UNSCOPED_INFO(line);
     }

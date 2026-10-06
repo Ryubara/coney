@@ -15,6 +15,7 @@ void TextWidget::setup(const TextWidgetSetup& setup) {
     m_style.colour = setup.colour;
     m_style.alignment = setup.alignment;
     m_style.fontSlot = setup.fontSlot;
+    m_style.wrapWidth = setup.wrapWidth;
     m_anchored = true;
 }
 

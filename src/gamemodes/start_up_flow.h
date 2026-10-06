@@ -51,11 +51,15 @@ class StartUpFlow final : public script::BindingHost {
     /// outlive the flow; `log` gets the modes', the services' and the scripts' lines. `loadLevel` loads a chosen level
     /// for gameplay (mode 1); empty: no gameplay, and the level flow brings the menus back instead. `profileFolder`
     /// holds the saved profiles (DiskProfileStore); nothing: they last the run (SessionProfileStore), as in test mode.
+    /// `cardCheckingMs` is how long the memory-card mode shows its "checking" message:
+    /// MemoryCardMode::kCheckingMessageMs in the game, 0 (the default) in the frame-scripted tests (MemoryCardMode
+    /// gives why).
     StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack, const ProfileManagerMode::SheetLoader& loadSheet,
                 gui::GlobalStrings& strings, LegalScreenSettings legal,
                 const std::function<void(std::string_view)>& log, script::ScriptSource scripts = {},
                 GameplayMode::LevelLoader loadLevel = {},
-                const std::optional<std::filesystem::path>& profileFolder = std::nullopt);
+                const std::optional<std::filesystem::path>& profileFolder = std::nullopt,
+                std::uint64_t cardCheckingMs = 0);
 
     /// What `main` does from the subsystems' start on: makes the Lua state (`Game_InitializeSubsystems`), plays the
     /// start-up movies (skipped: FrontEndServices), pushes the level flow, asks for the memory-card boot check, pushes
