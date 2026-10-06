@@ -364,18 +364,26 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
 
 ## Coney's implementation
 
-The output and a mixer, none of the engine above yet. `src/audio/`: 48 voices of 16-bit PCM (any rate, mono or
-stereo) with volume, pan, pitch, loop points, priorities and stealing, effects, music and speech buses under a master
-volume, at 48 kHz stereo, and `SoundPlayer`, which plays a sound by the CRC-32 of its name. Its volume and pan laws
-and stealing policy are still Coney's, not the rules above. The device is SDL3's (`src/platform/sdl_audio_device.cpp`),
-or offline in test mode ([Building](../guides/building.md#sound)). `coney-tools audio` reads and decodes the data
-([Audio data](formats/audio.md#coneys-implementation)).
+`src/audio/`, from this page and [Audio data](formats/audio.md):
 
-What an implementer can build from this page: an SDL3 audio stream in `src/platform` fed by a platform-neutral mixer
-(48 voices: 35 sample voices and 13 streams, each with left/right volume and a pitch as a resampling ratio), an
-ADPCM decoder, the task manager with the admission, voice and stealing rules above, the 3D volume and pan formula,
-the music player's state machine with bar-synchronised cross-fades, and bank loading. Keep it deterministic for test
-mode: the random pitch and volume factors come from the game's seeded random.
+- `SoundEngine` (`sound_engine.cpp`): the audio manager: 256 tasks, the admission, voice and stealing rules, virtual
+  plays and their lengths, `Task_Update`'s fades, distance attenuation, two-ear pan, ducking and rate; banks (decoded
+  to PCM at load), the load screen's banks and halves, the ambient bed, interface cues and scene soundtracks
+  (prepared, then started by scene event 13, ducking the music).
+- `MusicPlayer` (`music_player.cpp`): the three channels and their states, bar-synchronised starts and cross-fades,
+  the volumes and the system music's moods.
+- `StreamFeeder` (`sound_stream.cpp`): decodes `BFW.SND` and `MUSIC.SND` streams a little each step, mono or
+  block-interleaved stereo.
+- `Mixer`: the game's voices as the device takes them: a 15-bit level per side and the SPU2 pitch word, mixed at
+  48 kHz; SDL3's device or, in test mode, offline ([Building](../guides/building.md#sound)).
+- `SoundPlayer`: what game code calls (play by name hash, 2D or at a position, stop, pause); `engine()` for banks,
+  music, the load screen and scenes. Main gives it the engine when a disc is given.
+
+Coney's stand-ins where this page is open, each marked in the code: the directional table is 1 (as loud behind as in
+front); the `+0x268` state factors, the `+0x5b7` owner duck and level 82's ambient swap are not applied; a stereo
+sound effect takes channels 5+6 or 7+8; the random factors come from the engine's own seeded source (the game's shared
+one would shift the scripts' draws); `SoundStopMusicTrack` fades a playing track over one bar. Not built yet: the voice
+table and speech commands, the ambient emitters, reverb.
 
 ## Open questions
 
@@ -386,5 +394,8 @@ mode: the random pitch and volume factors come from the game's seeded random.
 - What human `+0x16c` does for the command lines of step 3.
 - When the game itself says each speech command (fights, crowds, the police).
 - What `a8` (the play call's third volume factor, `+0xa8`) is used for by each caller.
+- Which stream channels a stereo sound effect claims (`0x0011b450`, its fallback `0x00112d60`).
+- How fast `SoundStopMusicTrack` (`0x0010d9a0`) fades a playing track, and which random the pitch and volume factors
+  draw from.
 - Whether a scene soundtrack holds the dialogue alone or a full mix, and what the 20 unused stereo sounds are.
 - The IOP side (`IOP.IRX`): the exact SPU2 voice assignment of streams and its mixing.

@@ -178,6 +178,10 @@ Sound banks, streamed music, speech and the Bink movies.
 
 - Done: the sound output: a deterministic mixer (voices, buses, streams) through SDL3's device, mixed offline in test
   mode, with `--audio-test` and the debug menus' Audio page ([Sound](research/sound.md#coneys-implementation)).
+- Done: the sound engine: tasks, voices and stealing, 3D volume and pan, banks, streamed sounds, the load screen, the
+  ambient bed, scene soundtracks and the music player with its bar-synchronised cross-fades and system music
+  ([Sound](research/sound.md#coneys-implementation)). Not yet: speech commands, ambient emitters, and the modes calling
+  it.
 
 ## Enhancements
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Coney's software mixer (no @orig): the original mixes on the PS2's sound processor, whose use by the game is not
-// traced yet (docs/research/sound.md). The volume and pan laws below are Coney's choices until it is.
+// Coney's software mixer: the original mixes on the PS2's sound processor. Volumes reach a voice as the game sends them
+// to its device, a 15-bit level per side, and rates as the SPU2 pitch word (docs/research/sound.md); the game's own
+// voice allocation and stealing are in the sound engine above (sound_engine.cpp).
 #include "audio/mixer.h"
 
 #include <algorithm>
@@ -21,6 +22,12 @@ constexpr std::int32_t kUnity = 1 << 15;
 constexpr auto kChannels = static_cast<std::size_t>(kOutputChannels);
 // 1.0 in the resampler's Q32 phase.
 constexpr std::uint64_t kPhaseOne = std::uint64_t{1} << 32;
+// The device's full volume level, and the SPU2 pitch word's unity (a rate of 48 kHz) and maximum.
+constexpr std::int32_t kDeviceFullLevel = 16383;
+constexpr double kPitchUnity = 4096.0;
+constexpr std::uint32_t kMaxPitchWord = 0x3fff;
+constexpr double kSpuRate = 48000.0;
+static_assert(kOutputRate == 48000, "the pitch word is relative to 48 kHz, the mixer's output rate");
 
 // `value` limited to [low, high]; NaN becomes `low`, so a bad float can never reach the integer mix path.
 float clampFinite(float value, float low, float high) {
@@ -35,7 +42,18 @@ std::int32_t toQ15(float gain) {
     return static_cast<std::int32_t>(std::lround(static_cast<double>(clampFinite(gain, 0.0F, 1.0F)) * kUnity));
 }
 
+// The level the game sends its device for a volume of 0 to 1: `int(v × 16383) & 0x7fff` (docs/research/sound.md, at
+// 0x0014d188), so a volume moves in steps of 1/16383.
+std::int32_t deviceLevel(float volume) {
+    return static_cast<std::int32_t>(static_cast<double>(clampFinite(volume, 0.0F, 1.0F)) * kDeviceFullLevel) & 0x7fff;
+}
+
 } // namespace
+
+std::uint32_t rateToPitch(float rate) {
+    const double word = std::floor(static_cast<double>(clampFinite(rate, 0.0F, 1.0e6F)) * kPitchUnity / kSpuRate);
+    return std::clamp<std::uint32_t>(static_cast<std::uint32_t>(word), 1, kMaxPitchWord);
+}
 
 Mixer::Mixer() {
     m_busVolume.fill(1.0F);
@@ -108,6 +126,15 @@ void Mixer::setVolume(VoiceHandle voice, float volume) { sendVoice(CommandKind::
 void Mixer::setPan(VoiceHandle voice, float pan) { sendVoice(CommandKind::Pan, voice, pan); }
 
 void Mixer::setPitch(VoiceHandle voice, float pitch) { sendVoice(CommandKind::Pitch, voice, pitch); }
+
+void Mixer::setStereoVolume(VoiceHandle voice, float left, float right) {
+    if (!voice.valid()) {
+        return;
+    }
+    send(Command{.kind = CommandKind::StereoVolume, .voice = voice.id, .value = left, .value2 = right});
+}
+
+void Mixer::setRate(VoiceHandle voice, float rate) { sendVoice(CommandKind::Rate, voice, rate); }
 
 void Mixer::setPaused(VoiceHandle voice, bool paused) { sendVoice(CommandKind::Pause, voice, 0.0F, paused); }
 
@@ -231,11 +258,20 @@ void Mixer::apply(const Command& command) {
         break;
     case CommandKind::Volume:
         voice->volume = clampFinite(command.value, 0.0F, 1.0F);
-        updateGains(*voice);
+        setSidesFromPan(*voice);
         break;
     case CommandKind::Pan:
         voice->pan = clampFinite(command.value, -1.0F, 1.0F);
+        setSidesFromPan(*voice);
+        break;
+    case CommandKind::StereoVolume:
+        voice->left = clampFinite(command.value, 0.0F, 1.0F);
+        voice->right = clampFinite(command.value2, 0.0F, 1.0F);
         updateGains(*voice);
+        break;
+    case CommandKind::Rate:
+        voice->pitchWord = command.value > 0.0F ? rateToPitch(command.value) : 0;
+        updateStep(*voice);
         break;
     case CommandKind::Pitch:
         voice->pitch = clampFinite(command.value, kMinPitch, kMaxPitch);
@@ -250,7 +286,9 @@ void Mixer::apply(const Command& command) {
 }
 
 // Starts a play in a free slot, or steals the lowest-priority voice (the oldest among equals) when the new play's
-// priority is at least as high; otherwise the play is dropped. **Coney's choice** of policy until the game's is traced.
+// priority is at least as high; otherwise the play is dropped. **Coney's** policy: the game's voice allocation and
+// stealing are the sound engine's (SoundEngine, docs/research/sound.md#voice-stealing), which never plays more than
+// kVoiceCount voices at once, so this acts only on plays made outside it.
 void Mixer::startVoice(const Command& command) {
     auto slot = std::ranges::find(m_voices, false, &Voice::active);
     if (slot == m_voices.end()) {
@@ -277,7 +315,7 @@ void Mixer::startVoice(const Command& command) {
     voice.volume = clampFinite(command.params.volume, 0.0F, 1.0F);
     voice.pan = clampFinite(command.params.pan, -1.0F, 1.0F);
     voice.pitch = clampFinite(command.params.pitch, kMinPitch, kMaxPitch);
-    updateGains(voice);
+    setSidesFromPan(voice);
     updateStep(voice);
     // The first two frames: the play position starts exactly on frame 0. A stream with nothing yet starts silent.
     if (!fetch(voice, voice.a)) {
@@ -299,19 +337,33 @@ void Mixer::endVoice(std::size_t slot) {
     m_slotIds.at(slot).store(0, std::memory_order_release);
 }
 
-// The voice's Q15 gains from its volume and pan, its bus's volume and the master volume. The pan law is a balance,
-// **Coney's choice**: centred, both sides play at full volume (no -3 dB dip), and moving towards one side only
-// lowers the other.
-void Mixer::updateGains(Voice& voice) const {
-    const float level = voice.volume * m_mixBusVolume.at(static_cast<std::size_t>(voice.bus)) * m_mixMasterVolume;
-    const float left = voice.pan > 0.0F ? 1.0F - voice.pan : 1.0F;
-    const float right = voice.pan < 0.0F ? 1.0F + voice.pan : 1.0F;
-    voice.gainLeft = toQ15(level * left);
-    voice.gainRight = toQ15(level * right);
+// The side volumes from the voice's volume and pan. The pan law is a balance, **Coney's choice** for callers that
+// give a pan rather than two volumes: centred, both sides play at full volume, and moving towards one side only lowers
+// the other (the game's engine sends both volumes itself, setStereoVolume()).
+void Mixer::setSidesFromPan(Voice& voice) const {
+    voice.left = voice.volume * (voice.pan > 0.0F ? 1.0F - voice.pan : 1.0F);
+    voice.right = voice.volume * (voice.pan < 0.0F ? 1.0F + voice.pan : 1.0F);
+    updateGains(voice);
 }
 
-// The resampler's step: source frames per output frame, from the source's rate and the pitch, in Q32.32.
+// The voice's Q15 gains: each side's level as the device takes it (deviceLevel(); 16383 is the SPU2's full volume,
+// public hardware knowledge), then its bus's volume and the master volume, Coney's own on top of the game's.
+void Mixer::updateGains(Voice& voice) const {
+    const float over = m_mixBusVolume.at(static_cast<std::size_t>(voice.bus)) * m_mixMasterVolume;
+    const auto gain = [over](float side) {
+        return toQ15(static_cast<float>(deviceLevel(side)) / static_cast<float>(kDeviceFullLevel) * over);
+    };
+    voice.gainLeft = gain(voice.left);
+    voice.gainRight = gain(voice.right);
+}
+
+// The resampler's step: source frames per output frame, in Q32.32: the pitch word over its unity (the word is relative
+// to 48 kHz, the output rate), or else the source's rate times the pitch over the output rate.
 void Mixer::updateStep(Voice& voice) const {
+    if (voice.pitchWord != 0) {
+        voice.step = std::uint64_t{voice.pitchWord} << 20U; // word / 4096 in Q32.32
+        return;
+    }
     const int rate = voice.sound != nullptr ? voice.sound->sampleRate() : voice.stream->sampleRate();
     const double step = static_cast<double>(rate) * static_cast<double>(voice.pitch) / kOutputRate;
     voice.step = static_cast<std::uint64_t>(std::llround(step * static_cast<double>(kPhaseOne)));

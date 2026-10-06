@@ -101,16 +101,18 @@ TEST_CASE("voices sum, and a loud sum clips at 16 bits instead of wrapping", "[a
     CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{-32768, -32768});
 }
 
-TEST_CASE("volume scales linearly and pan is a balance with full volume at the centre", "[audio]") {
+TEST_CASE("volume scales linearly in the device's steps and pan is a balance with full volume at the centre",
+          "[audio]") {
     Mixer mixer;
+    // A volume reaches a voice as the game sends it to its device, int(v x 16383) of 16383: 0.5 is 8191, a hair under.
     mixer.play(constant(10000), VoiceParams{.volume = 0.5F});
-    CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{5000, 5000});
+    CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{4999, 4999});
     mixer.stopAll();
     mixer.play(constant(10000), VoiceParams{.pan = -1.0F});
     CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{10000, 0});
     mixer.stopAll();
     mixer.play(constant(10000), VoiceParams{.pan = 0.5F});
-    CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{5000, 10000});
+    CHECK(mixFrames(mixer, 1) == std::vector<std::int16_t>{4999, 10000});
     mixer.stopAll();
     // Out-of-range and NaN values are clamped, never passed to the integer path.
     const auto loud = mixer.play(constant(10000), VoiceParams{.volume = 4.0F, .pan = 7.0F});
@@ -122,7 +124,7 @@ TEST_CASE("volume scales linearly and pan is a balance with full volume at the c
 TEST_CASE("a stereo sound keeps its sides, each scaled by the pan", "[audio]") {
     Mixer mixer;
     mixer.play(soundOf({1000, -2000, 1000, -2000}, 2), VoiceParams{.pan = 0.5F});
-    CHECK(mixFrames(mixer, 2) == std::vector<std::int16_t>{500, -2000, 500, -2000});
+    CHECK(mixFrames(mixer, 2) == std::vector<std::int16_t>{499, -2000, 499, -2000});
 }
 
 TEST_CASE("bus volumes and the master volume scale the voices under them", "[audio]") {
@@ -379,4 +381,28 @@ TEST_CASE("the tone sweep loops over its whole length without a jump", "[audio]"
     }
     CHECK(std::abs(samples.front() - samples.back()) <= largest);
     CHECK(samples.front() == 0);
+}
+
+TEST_CASE("a voice takes two side volumes and a rate as the game's device does", "[audio]") {
+    Mixer mixer;
+    const auto voice = mixer.play(constant(16383));
+    mixer.setStereoVolume(voice, 1.0F, 0.25F);
+    const auto sides = mixFrames(mixer, 1);
+    CHECK(sides[0] == 16383);
+    CHECK(std::abs(sides[1] - 4095) <= 1); // int(0.25 x 16383) = 4095 of 16383
+
+    // The rate goes through the SPU2 pitch word: 24,000 Hz is 2048 of 4096, half the output rate.
+    CHECK(coney::audio::rateToPitch(48000.0F) == 4096);
+    CHECK(coney::audio::rateToPitch(22050.0F) == 1881);
+    CHECK(coney::audio::rateToPitch(1.0e6F) == 0x3fff);
+    CHECK(coney::audio::rateToPitch(0.0F) == 1);
+    Mixer slow;
+    std::vector<std::int16_t> ramp(64);
+    for (std::size_t i = 0; i < ramp.size(); ++i) {
+        ramp[i] = static_cast<std::int16_t>(i * 100);
+    }
+    const auto half = slow.play(soundOf(ramp));
+    slow.setRate(half, 24000.0F);
+    const auto out = mixFrames(slow, 4);
+    CHECK(out == std::vector<std::int16_t>{0, 0, 50, 50, 100, 100, 150, 150});
 }

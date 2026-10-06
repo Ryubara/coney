@@ -149,10 +149,13 @@ channel) or stream 3 (with 4), at the record's rate. The track names are listed 
 
 `coney-tools audio` ([repo:python/src/coney_tools/audio.py](repo:python/src/coney_tools/audio.py)) reads the
 tables, lists the banks, streams and music with counts and hashes, and decodes one sound or track to a WAV file in
-your scratch folder for listening ([coney-tools](../../guides/coney-tools.md#audio)). The engine has no audio yet.
+your scratch folder for listening ([coney-tools](../../guides/coney-tools.md#audio)). The engine reads the same data in
+`src/audio/` (`sound_data.cpp`, `sound_bank.cpp`, `adpcm.cpp`, `sound_stream.cpp`; [Sound](../sound.md#coneys-implementation)).
 
 ## Open questions
 
 - The bank `0xf83ec65e` (`.msd`, WAD entry 9,804): its name (205 sounds, mostly breakables and pick-ups).
 - Music records' `+0x08` (64) and `+0x0c` (32): MultiStream header fields?
 - Class flag `0x40`.
+- The sound list holds records with equal hashes (the first pair at records 115 and 116): which one the game's binary
+  search finds.

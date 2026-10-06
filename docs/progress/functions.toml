@@ -133,8 +133,123 @@ name = "GaitBlend_Sample"
 subsystem = "Animation"
 
 [[function]]
+address = 0x0010d8e8
+name = "Music_Play"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010d9a0
+name = "Music_Stop"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010dfe0
+name = "MusicChannel_Update"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010e7d0
+name = "SystemMusic_Update"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010f3a0
+name = "SoundClasses_Load"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010f618
+name = "AudioManager_Reset"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010f810
+name = "AudioManager_Update"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010f900
+name = "SoundList_Load"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010f988
+name = "StereoTable_Load"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010f9d8
+name = "MusicList_Load"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010fa50
+name = "AudioManager_LoadBank"
+subsystem = "Audio"
+
+[[function]]
 address = 0x0010fb20
 name = "SoundPauseSound"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0010ff68
+name = "SceneSound_Preload"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00110018
+name = "SceneSound_Start"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00110b60
+name = "AmbientTrack_Play"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00110c70
+name = "AmbientTrack_Stop"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00111178
+name = "AudioManager_StartLoadScreen"
+subsystem = "Audio"
+
+[[function]]
+address = 0x001119d0
+name = "SoundList_Find"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00111de8
+name = "AudioManager_Play"
+subsystem = "Audio"
+
+[[function]]
+address = 0x001120c8
+name = "AudioManager_NewTask"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00112560
+name = "Task_GetVoice"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00112700
+name = "Task_FindVictim"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00112b10
+name = "Tasks_Update"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0011a170
+name = "Task_Update"
 subsystem = "Audio"
 
 [[function]]
@@ -471,6 +586,26 @@ address = 0x00149160
 name = "DVDWadIndex::DVDWadIndex"
 subsystem = "Device/ps2"
 size = 232
+
+[[function]]
+address = 0x0014c620
+name = "AudioDevice_LoadBank"
+subsystem = "Device/ps2"
+
+[[function]]
+address = 0x0014caf8
+name = "AudioDevice_Start"
+subsystem = "Device/ps2"
+
+[[function]]
+address = 0x0014d2d8
+name = "AudioDevice_Duration"
+subsystem = "Device/ps2"
+
+[[function]]
+address = 0x00150078
+name = "RateToPitch"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00154440

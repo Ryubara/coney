@@ -17,6 +17,10 @@
 #include "debug/audio_controls.h"
 #include "platform/sdl_audio_device.h"
 
+namespace coney::io {
+class Wad;
+}
+
 namespace coney::platform {
 
 /// Where an AudioOutput's sound goes.
@@ -45,9 +49,14 @@ class AudioOutput final : public debug::AudioControls {
     /// The mixer underneath.
     [[nodiscard]] audio::Mixer& mixer() { return *m_mixer; }
 
-    /// Call once at the end of every frame, on the game thread: offline, mixes one fixed step's frames (each frame of
-    /// test mode is one step); either way lets go of the sounds of voices that ended.
-    void endFrame();
+    /// Loads the game's sound data from `wad` (the sound tables of `warriors.glr`, the disc's IOP/BFW.SND and
+    /// IOP/MUSIC.SND) and gives sounds() a SoundEngine over it, which loads banks from `wad`. `wad` must outlive the
+    /// output. Fails as the reads do; the output then plays only Coney's own sounds.
+    [[nodiscard]] std::expected<void, Error> startEngine(const io::Wad& wad);
+    /// Call once at the end of every frame, on the game thread, with the fixed steps the frame ran: runs the sound
+    /// engine for their game time; offline, mixes one fixed step's frames (each frame of test mode is one step);
+    /// either way lets go of the sounds of voices that ended.
+    void endFrame(std::uint32_t steps);
     /// One line on where the sound goes, for the log at start-up.
     [[nodiscard]] std::string startLine() const;
     /// One line on what was mixed (offline: frames, peak and hash), for the log at the end. Counts only.

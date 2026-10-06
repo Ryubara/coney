@@ -21,6 +21,12 @@ namespace coney::audio {
 inline constexpr float kMinPitch = 1.0F / 64.0F;
 inline constexpr float kMaxPitch = 8.0F;
 
+/// The SPU2 pitch word for playing at `rate` frames a second: `rate × 4096 / 48000` rounded down, from 1 to 0x3fff
+/// (the SPU2's fastest, four times its 48 kHz: public hardware knowledge, Coney's limit here).
+/// @orig 0x00150078 RateToPitch (unknown)
+/// Research: docs/research/sound.md#play
+[[nodiscard]] std::uint32_t rateToPitch(float rate);
+
 /// How a voice starts playing. Volumes are linear amplitude; every value is clamped to its range.
 struct VoiceParams {
     Bus bus = Bus::Sfx;        ///< The bus whose volume (under the master volume) scales the voice.
@@ -49,10 +55,11 @@ struct MixerStats {
 };
 
 /// Coney's software mixer: up to kVoiceCount voices of PCM (whole sounds or streams, any rate, mono or stereo) mixed
-/// into signed 16-bit stereo at kOutputRate, with a volume, pan and pitch per voice, looping by the sound's loop
-/// points, priorities and voice stealing, and a volume per Bus under a master volume. It knows nothing of the game's
-/// sound formats or of any device: the game's sound engine sits on top of it, and a device (SDL's, or the offline one
-/// of test mode) pulls from it.
+/// into signed 16-bit stereo at kOutputRate, with a left and right volume and a rate per voice, looping by the sound's
+/// loop points, and a volume per Bus under a master volume. Volumes and rates are taken as the game's device takes them
+/// (a 15-bit level per side, the SPU2 pitch word). It knows nothing of the game's sound formats or of any device: the
+/// game's sound engine (SoundEngine) sits on top of it, and a device (SDL's, or the offline one of test mode) pulls
+/// from it.
 ///
 /// **Two threads.** The game thread calls everything but mix(): each call becomes a command in a lock-free queue
 /// (SpscQueue: the device's callback must never wait on the game). mix() runs on the device's thread (or the game's,
@@ -66,7 +73,7 @@ struct MixerStats {
 /// stay alive through the shared pointers the game side keeps until collect() sees the voice has ended, so the mix
 /// thread never releases memory either.
 ///
-/// Research: docs/research/sound.md#coneys-implementation (the game's own engine is not traced yet).
+/// Research: docs/research/sound.md#volumes-and-the-options, docs/research/sound.md#coneys-implementation
 class Mixer {
   public:
     Mixer();
@@ -93,6 +100,14 @@ class Mixer {
     void setPan(VoiceHandle voice, float pan);
     /// Sets a playing voice's pitch (kMinPitch to kMaxPitch).
     void setPitch(VoiceHandle voice, float pitch);
+    /// Sets a voice's left and right volumes (0 to 1 each) directly, as the game's sound engine sends them, in place
+    /// of its volume and pan (a later setVolume() or setPan() works from those again).
+    /// Research: docs/research/sound.md#volumes-and-the-options
+    void setStereoVolume(VoiceHandle voice, float left, float right);
+    /// Plays a voice at `rate` frames a second, as the game sets a voice's rate: through the SPU2 pitch word
+    /// rateToPitch(), so the rate is rounded down to a step of 48000 / 4096 Hz; 0 goes back to the sound's own rate
+    /// times the pitch.
+    void setRate(VoiceHandle voice, float rate);
     /// Pauses a voice where it is, or resumes it.
     void setPaused(VoiceHandle voice, bool paused);
     /// Pauses every voice playing now where it is, remembering which, as the pause mode does on entry; voices started
@@ -139,6 +154,8 @@ class Mixer {
         Volume,
         Pan,
         Pitch,
+        StereoVolume,
+        Rate,
         Pause,
         PauseAll,
         ResumeAll,
@@ -152,6 +169,7 @@ class Mixer {
         std::uint32_t voice = 0;
         std::uint64_t sequence = 0;
         float value = 0.0F;
+        float value2 = 0.0F;
         bool flag = false;
         Bus bus = Bus::Sfx;
         VoiceParams params{};
@@ -180,6 +198,9 @@ class Mixer {
         bool pausedByAll = false; // by pauseAll(), apart from paused so resumeAll() leaves setPaused() alone
         float volume = 1.0F;
         float pan = 0.0F;
+        float left = 1.0F; // the side volumes, from volume and pan or set by setStereoVolume()
+        float right = 1.0F;
+        std::uint32_t pitchWord = 0; // the SPU2 pitch word setRate() gave, 0 for none
         float pitch = 1.0F;
         std::int32_t gainLeft = 0;       // Q15, with the bus and master volumes
         std::int32_t gainRight = 0;      // Q15
@@ -204,6 +225,7 @@ class Mixer {
     void apply(const Command& command);
     void startVoice(const Command& command);
     void endVoice(std::size_t slot);
+    void setSidesFromPan(Voice& voice) const;
     void updateGains(Voice& voice) const;
     void updateStep(Voice& voice) const;
     [[nodiscard]] Voice* find(std::uint32_t id);

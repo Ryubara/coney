@@ -734,6 +734,13 @@ int main(int argc, char** argv) {
             if (options->audioTest) {
                 audio->setTestTone(true);
             }
+            // The game's sound (docs/research/sound.md): the tables, banks and streams from the disc.
+            if (wad) {
+                if (auto soundData = audio->startEngine(*wad); !soundData) {
+                    std::fprintf(stderr, "coney: %s; the game's sounds stay silent\n",
+                                 soundData.error().message.c_str());
+                }
+            }
             debugServices.audio = [&audio]() -> coney::debug::AudioControls* { return audio.get(); };
         } else {
             std::fprintf(stderr, "coney: %s; running without sound\n", started.error().message.c_str());
@@ -956,11 +963,11 @@ int main(int argc, char** argv) {
         hooks.endFrame = [&paced, &audio](std::uint32_t steps) {
             paced.endFrame(steps);
             if (audio) {
-                audio->endFrame();
+                audio->endFrame(steps);
             }
         };
     } else if (audio) {
-        hooks.endFrame = [&audio](std::uint32_t /*steps*/) { audio->endFrame(); };
+        hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);
     if (pacer && options->showFps) {

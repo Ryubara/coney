@@ -5,7 +5,12 @@
 #include <format>
 #include <utility>
 
+#include "audio/sound_bank.h"
+#include "audio/sound_data.h"
+#include "audio/sound_engine.h"
+#include "audio/sound_stream.h"
 #include "audio/test_tone.h"
+#include "fileio/wad.h"
 
 namespace coney::platform {
 
@@ -13,6 +18,8 @@ namespace {
 
 // The name of the master volume, AudioControls' index 0; the buses follow.
 constexpr std::string_view kMasterName = "Master";
+// The game time of one fixed step, ms.
+constexpr float kStepMilliseconds = 1000.0F / 30.0F;
 
 } // namespace
 
@@ -37,11 +44,31 @@ std::expected<std::unique_ptr<AudioOutput>, Error> AudioOutput::start(AudioSink 
     return output;
 }
 
-void AudioOutput::endFrame() {
+void AudioOutput::endFrame(std::uint32_t steps) {
+    m_sounds.update(static_cast<float>(steps) * kStepMilliseconds);
     if (m_offline) {
         m_offline->pullStep();
     }
     m_mixer->collect();
+}
+
+std::expected<void, Error> AudioOutput::startEngine(const io::Wad& wad) {
+    auto tables = audio::loadSoundTables(wad);
+    if (!tables) {
+        return std::unexpected(std::move(tables.error()));
+    }
+    auto files = audio::DiscSoundFiles::open(wad.disc());
+    if (!files) {
+        return std::unexpected(std::move(files.error()));
+    }
+    // Banks come from the WAD; the random factors from the engine's own deterministic source (Coney's choice: the
+    // game's shared random would shift the scripts' draws).
+    auto loadBank = [&wad](std::string_view name, const audio::SoundTables& soundTables) {
+        return audio::loadSoundBank(wad, name, soundTables);
+    };
+    m_sounds.attach(std::make_unique<audio::SoundEngine>(*m_mixer, std::move(*tables), std::move(*files),
+                                                         std::move(loadBank), audio::SoundEngine::RandomRange{}));
+    return {};
 }
 
 std::string AudioOutput::startLine() const {

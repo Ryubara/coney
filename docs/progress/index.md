@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 709 functions) |
+| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 736 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-155 reimplemented function(s) have no size yet and add no bytes.
+182 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -53,11 +53,11 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `█████▌░░░░░░░░░░░░░░` | 27.2% | 21 | 54,616 |
-| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 57,368 |
+| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 24 | 57,368 |
 | `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 34 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 17 | 62,808 |
+| `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 21 | 62,808 |
 | `FileIO` | `█░░░░░░░░░░░░░░░░░░░` | 4.9% | 3 | 7,120 |
 | `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 45 | 100,440 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 195,624 |
@@ -125,7 +125,30 @@ at the top of the repository's `README.md`.
 | `0x0010a558` | `GaitBlend_SetValue` | `Animation` | not filled in |
 | `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
 | `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
+| `0x0010d8e8` | `Music_Play` | `Audio` | not filled in |
+| `0x0010d9a0` | `Music_Stop` | `Audio` | not filled in |
+| `0x0010dfe0` | `MusicChannel_Update` | `Audio` | not filled in |
+| `0x0010e7d0` | `SystemMusic_Update` | `Audio` | not filled in |
+| `0x0010f3a0` | `SoundClasses_Load` | `Audio` | not filled in |
+| `0x0010f618` | `AudioManager_Reset` | `Audio` | not filled in |
+| `0x0010f810` | `AudioManager_Update` | `Audio` | not filled in |
+| `0x0010f900` | `SoundList_Load` | `Audio` | not filled in |
+| `0x0010f988` | `StereoTable_Load` | `Audio` | not filled in |
+| `0x0010f9d8` | `MusicList_Load` | `Audio` | not filled in |
+| `0x0010fa50` | `AudioManager_LoadBank` | `Audio` | not filled in |
 | `0x0010fb20` | `SoundPauseSound` | `Audio` | not filled in |
+| `0x0010ff68` | `SceneSound_Preload` | `Audio` | not filled in |
+| `0x00110018` | `SceneSound_Start` | `Audio` | not filled in |
+| `0x00110b60` | `AmbientTrack_Play` | `Audio` | not filled in |
+| `0x00110c70` | `AmbientTrack_Stop` | `Audio` | not filled in |
+| `0x00111178` | `AudioManager_StartLoadScreen` | `Audio` | not filled in |
+| `0x001119d0` | `SoundList_Find` | `Audio` | not filled in |
+| `0x00111de8` | `AudioManager_Play` | `Audio` | not filled in |
+| `0x001120c8` | `AudioManager_NewTask` | `Audio` | not filled in |
+| `0x00112560` | `Task_GetVoice` | `Audio` | not filled in |
+| `0x00112700` | `Task_FindVictim` | `Audio` | not filled in |
+| `0x00112b10` | `Tasks_Update` | `Audio` | not filled in |
+| `0x0011a170` | `Task_Update` | `Audio` | not filled in |
 | `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | not filled in |
 | `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | not filled in |
 | `0x0011c0b8` | `CfgFollowCamera` | `Camera` | not filled in |
@@ -188,6 +211,10 @@ at the top of the repository's `README.md`.
 | `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
+| `0x0014c620` | `AudioDevice_LoadBank` | `Device/ps2` | not filled in |
+| `0x0014caf8` | `AudioDevice_Start` | `Device/ps2` | not filled in |
+| `0x0014d2d8` | `AudioDevice_Duration` | `Device/ps2` | not filled in |
+| `0x00150078` | `RateToPitch` | `Device/ps2` | not filled in |
 | `0x00154440` | `Stream_SkipBytes` | `FileIO` | 128 |
 | `0x00155228` | `RumbleMenu_Show` | `FileIO` | 136 |
 | `0x001552b0` | `ShowProfileManager` | `FileIO` | 88 |
