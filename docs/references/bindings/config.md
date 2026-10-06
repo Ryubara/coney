@@ -1242,7 +1242,7 @@ Stores the inventory pickup callback name (inventory +0xfd4). The tutorial uses 
 - **Wrapper** `0x0036c038` (registered by `RegisterBindings`); **calls** `0x0041ece8` `Cfg_SetInventoryCallback`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgInventoryItem {#cfginventoryitem}
 
@@ -1269,7 +1269,7 @@ count, pickup sound and duration.
 - **Wrapper** `0x0036bf58` (registered by `RegisterBindings`); **calls** `0x0041eca0` `Cfg_SetInventoryItem`
 - **Used by** 2 of 467 script chunks (18 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgJumpIsAction {#cfgjumpisaction}
 
@@ -1445,7 +1445,7 @@ function with (human, joined).
 - **Wrapper** `0x0035e818` (registered by `RegisterBindings`); **calls** `0x0041da08` `Cfg_SetMultiplayerJoin`
 - **Used by** 52 of 467 script chunks (69 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgObj {#cfgobj}
 
@@ -2234,7 +2234,7 @@ Sets one breakable-glass type's two flags and two ids in the world object's glas
 - **Evidence:** confirmed (code) at `0x0039c290`; detail: traced
 - **Wrapper** `0x0036ad80` (registered by `RegisterBindings`); **calls** `0x0039c290` `Cfg_SetGlassProperties`
 - **Used by** 1 of 467 script chunks (19 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetGlobalTimeToLive {#cfgsetglobaltimetolive}
 
@@ -2279,7 +2279,7 @@ two from LockPick_End (0x0022d908) ([Crimes: lock picking](../../research/crimes
 - **Wrapper** `0x0035a6e8` (registered by `RegisterBindings`); **calls** `0x002365f0`
 - **Used by** 7 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetLockPickStageFailHandler {#cfgsetlockpickstagefailhandler}
 
@@ -2300,7 +2300,7 @@ picking](../../research/crimes.md#lockpick)).
 - **Evidence:** confirmed (code) at `0x00236698`; detail: traced
 - **Wrapper** `0x0035a760` (registered by `RegisterBindings`); **calls** `0x00236698`
 - **Used by** no script on the disc
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetMaxThrowError {#cfgsetmaxthrowerror}
 
@@ -2395,7 +2395,7 @@ points matrix fields.
 - **Evidence:** confirmed (code) at `0x004223e8`; detail: traced
 - **Wrapper** `0x0037c7a8` (registered by `RegisterBindings`); **calls** `0x004223e8` `Cfg_SetStatTypeMax`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetStatValue {#cfgsetstatvalue}
 
@@ -2420,7 +2420,7 @@ No index check.
 - **Evidence:** confirmed (code) at `0x00422430`; detail: traced
 - **Wrapper** `0x0037c8c0` (registered by `RegisterBindings`); **calls** `0x00422430` `Cfg_SetStatValue`
 - **Used by** 2 of 467 script chunks (46 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetSteroTheftHandler {#cfgsetsterothefthandler}
 
@@ -2443,7 +2443,7 @@ stored at 0x0051027c. The tutorial (level99_lesson1) uses it to count the stolen
 - **Wrapper** `0x0035a790` (registered by `RegisterBindings`); **calls** `0x00236508` `Cfg_SetStereoTheftHandler`
 - **Used by** 6 of 467 script chunks (11 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetTargetingPoints {#cfgsettargetingpoints}
 

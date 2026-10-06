@@ -126,9 +126,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 741 |
+| confirmed (code) | 743 |
 | confirmed (runtime) | 0 |
-| inferred | 185 |
+| inferred | 183 |
 | speculative | 30 |
 | detail: traced | 544 |
 | detail: brief | 412 |

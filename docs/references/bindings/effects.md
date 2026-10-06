@@ -491,7 +491,7 @@ Sets the colour of the world's distance fog (packed to bytes with alpha 255 and 
 - **Wrapper** `0x0036e558` (registered by `RegisterBindings`); **calls** `0x0040c868` `Level_SetFogColour`
 - **Used by** 66 of 467 script chunks (67 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetFogDistance {#setfogdistance}
 
@@ -516,7 +516,7 @@ object list), and the fog fades to the colour set with `SetFogColor`.
 - **Wrapper** `0x0036e5f8` (registered by `RegisterBindings`); **calls** `0x0040c908` `Level_SetFogDistance`
 - **Used by** 14 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 14 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetGamma {#setgamma}
 
@@ -559,7 +559,7 @@ directional light's colour.
 - **Evidence:** confirmed (code) at `0x001b4908`; detail: traced
 - **Wrapper** `0x0037bd30` (registered by `RegisterBindings`); **calls** `0x001b4908` `LightManager_SetColourOffset`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetGammaRamp {#setgammaramp}
 
@@ -656,7 +656,7 @@ Wrapper `0x0037bfb8`; calls `0x0017ef20`.
 - **Wrapper** `0x0037c348` (registered by `RegisterBindings`); **calls** `0x0017f160` `Light_SetState`
 - **Used by** 61 of 467 script chunks (5301 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetLightFlicker {#setlightflicker}
 
@@ -689,7 +689,7 @@ sub_flashing_light particle instead. Does nothing for light 0.
 - **Wrapper** `0x0037c438` (registered by `RegisterBindings`); **calls** `0x0017f1b8` `Light_SetFlicker`
 - **Used by** 9 of 467 script chunks (163 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetMotionAlpha {#setmotionalpha}
 
@@ -778,7 +778,7 @@ Sets the world's ambient light colour; the game adds 0.07 to each component, so 
 - **Wrapper** `0x0036e4b8` (registered by `RegisterBindings`); **calls** `0x0017f218` `LightManager_SetWorldAmbient`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level51`](story.md#level51) (mission 14)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SpawnAreaEffect {#spawnareaeffect}
 

@@ -183,7 +183,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSpecial`](#huspecial) | - | 0 | no | no | inferred |
 | [`HuStopSpecial`](#hustopspecial) | - | 0 | no | no | inferred |
 | [`HuStopWorkout`](#hustopworkout) | - | 1 | no | no | confirmed (code) |
-| [`HuSwitchPlayer`](#huswitchplayer) | number | 34 | no | no | inferred |
+| [`HuSwitchPlayer`](#huswitchplayer) | number | 34 | no | no | confirmed (code) |
 | [`HuTag`](#hutag) | - | 10 | yes | no | confirmed (code) |
 | [`HuTagColor`](#hutagcolor) | - | 9 | no | no | confirmed (code) |
 | [`HuTagDifficulty`](#hutagdifficulty) | - | 0 | no | no | confirmed (code) |
@@ -4245,10 +4245,14 @@ HuSwitchPlayer(human) -> number
 **Returns** number: Handle of the gang member who now has the player's pad, or NilHandle when there is no one to switch
 to.
 
-Hands the player's control from `human` to another member of its gang (the first free one, by gang order), moving the
-pad and the camera target. Used in Rumble mode and when a player character is out.
+Hands the player's control from `human` to another member of its gang (a standing, non-player member, preferring the
+lowest non-zero priority byte +0x1b1), moving the pad and the camera target. Used in Rumble mode and when a player
+character is out.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** 0x0041a8c0; the member is chosen by 0x0022a770 (also used by other player hand-overs). Behaviour:
+[Rumble](../../research/rumble.md#switch-player).
+
+- **Evidence:** confirmed (code) at `0x00239e08`; detail: brief
 - **Wrapper** `0x0035d218` (registered by `RegisterBindings`); **calls** `0x00239e08` `GameState_SwitchPlayer`
 - **Used by** 34 of 467 script chunks (266 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** not implemented

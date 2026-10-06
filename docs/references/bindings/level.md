@@ -288,7 +288,7 @@ inferred from the 0.25 s colour blend and their being indexed per player.
 - **Wrapper** `0x00368480` (registered by `RegisterBindings`); **calls** `0x0018e6b8`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ExitStore {#exitstore}
 
@@ -309,7 +309,7 @@ a 0.25 s blend, undoing `EnterStore`.
 - **Wrapper** `0x00368530` (registered by `RegisterBindings`); **calls** `0x0018e780`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ForceCrimeLevel {#forcecrimelevel}
 
@@ -665,7 +665,7 @@ index, amount) when one is set.
 - **Wrapper** `0x0037b458` (registered by `RegisterBindings`); **calls** `0x0041ef00`
 - **Used by** 3 of 467 script chunks (7 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGetMoney {#invgetmoney}
 
@@ -685,7 +685,7 @@ Returns how much money a player carries.
 - **Wrapper** `0x0037b358` (registered by `RegisterBindings`); **calls** `0x0041ee88`
 - **Used by** 12 of 467 script chunks (48 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGetSpraycanCharges {#invgetspraycancharges}
 
@@ -708,7 +708,7 @@ returns 0.
 - **Wrapper** `0x0037b038` (registered by `RegisterBindings`); **calls** `0x0041f000`
 - **Used by** 9 of 467 script chunks (18 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGiveItem {#invgiveitem}
 
@@ -731,7 +731,7 @@ bindings.
 - **Wrapper** `0x0037b5d8` (registered by `RegisterBindings`); **calls** `0x0041ef98`
 - **Used by** 6 of 467 script chunks (46 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGiveRevive {#invgiverevive}
 
@@ -753,7 +753,7 @@ the cap is 4. Runs the inventory's item-added Lua callbacks when they are set.
 - **Wrapper** `0x0037b178` (registered by `RegisterBindings`); **calls** `0x0041edb8`
 - **Used by** 12 of 467 script chunks (43 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGiveSkeletonKey {#invgiveskeletonkey}
 
@@ -774,7 +774,7 @@ Adds handcuff (skeleton) keys, item 6, to a player's inventory, clamped to the i
 - **Wrapper** `0x0037b268` (registered by `RegisterBindings`); **calls** `0x0041ee20`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvNumberOf {#invnumberof}
 
@@ -795,7 +795,7 @@ Returns a player's count of any inventory item.
 - **Wrapper** `0x0037b538` (registered by `RegisterBindings`); **calls** `0x0041efd0`
 - **Used by** 7 of 467 script chunks (32 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvNumberRevives {#invnumberrevives}
 
@@ -815,7 +815,7 @@ Returns a player's revive count.
 - **Wrapper** `0x0037b1e8` (registered by `RegisterBindings`); **calls** `0x0041edf0`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvNumberSkeletonKeys {#invnumberskeletonkeys}
 
@@ -835,7 +835,7 @@ Returns a player's handcuff-key count.
 - **Wrapper** `0x0037b2d8` (registered by `RegisterBindings`); **calls** `0x0041ee58`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvPlayerHasItem {#invplayerhasitem}
 
@@ -856,7 +856,7 @@ Tests whether a player holds an inventory item.
 - **Wrapper** `0x0037b090` (registered by `RegisterBindings`); **calls** `0x0041ed88`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvSetMoney {#invsetmoney}
 
@@ -878,7 +878,7 @@ HUD's money-change display).
 - **Wrapper** `0x0037b3b0` (registered by `RegisterBindings`); **calls** `0x0041eeb8`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvSetSpraycanCharges {#invsetspraycancharges}
 
@@ -900,7 +900,7 @@ first time sets a game-state flag that later triggers a one-off HUD hint.
 - **Wrapper** `0x0037b108` (registered by `RegisterBindings`); **calls** `0x0041f030`
 - **Used by** 10 of 467 script chunks (19 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## IsDongleValid {#isdonglevalid}
 
@@ -1086,7 +1086,7 @@ Turns crime reporting on or off (`W_GameState + 0x288`). `level99.lua` turns it 
 - **Wrapper** `0x0037a600` (registered by `RegisterBindings`); **calls** `0x0041b6a8`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ResetStore {#resetstore}
 
@@ -1481,7 +1481,7 @@ they are already up: the profiles marked deleted are written out. Called from th
 - **Evidence:** confirmed (code) at `0x001553c0`; detail: traced
 - **Wrapper** `0x0037b6e8` (registered by `RegisterBindings`); **calls** `0x001553c0`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SSMC_StartLoadSequence {#ssmc_startloadsequence}
 
@@ -1500,7 +1500,7 @@ the reload confirmation flag `0x0050c6fc` set) unless they are already up. The f
 - **Evidence:** confirmed (code) at `0x00155378`; detail: traced
 - **Wrapper** `0x0037b6c8` (registered by `RegisterBindings`); **calls** `0x00155378`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SSMC_StartSaveSequence {#ssmc_startsavesequence}
 
@@ -1548,7 +1548,7 @@ Adds to one of a player's statistics (the stats object at `0x006fe490`), for the
 - **Wrapper** `0x0037c960` (registered by `RegisterBindings`); **calls** `0x004224d8`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StatGetHighScore {#statgethighscore}
 
@@ -1627,7 +1627,7 @@ Returns a player's score from the stats object; `global.lua` reads it for the en
 - **Wrapper** `0x0037cb20` (registered by `RegisterBindings`); **calls** `0x00422630`
 - **Used by** 6 of 467 script chunks (12 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StatGetTotal {#statgettotal}
 
@@ -1671,7 +1671,7 @@ statistics](../../research/player-state.md#statistics).
   `Stats_ResetPlayers`, `0x00420a70` `PlayerStats_Reset`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StatResetPlayer {#statresetplayer}
 
@@ -1691,7 +1691,7 @@ Clears one player's statistics.
 - **Wrapper** `0x0037cc30` (registered by `RegisterBindings`); **calls** `0x00422718`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TakeMoney {#takemoney}
 
@@ -1712,7 +1712,7 @@ Takes money from a player (GiveMoney with the amount negated); the total never g
 - **Wrapper** `0x0037b4c8` (registered by `RegisterBindings`); **calls** `0x0041ef60`
 - **Used by** 5 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level86`](story.md#level86) (mission 9)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_GetRecordData {#um_getrecorddata}
 
@@ -1738,7 +1738,7 @@ cannot tell from a real 0.
   `Unlockables_GetRecord`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_GetUnlockables {#um_getunlockables}
 
@@ -1815,7 +1815,7 @@ separate from the locked set.
   `Unlockables_TestDirtyByData`
 - **Used by** 2 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_IsDataUnlocked {#um_isdataunlocked}
 
@@ -1838,7 +1838,7 @@ available.
 - **Wrapper** `0x0037d140` (registered by `RegisterBindings`); **calls** `0x00423868`
 - **Used by** 22 of 467 script chunks (83 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_IsLevelComplete {#um_islevelcomplete}
 
@@ -1881,7 +1881,7 @@ Asks whether anything of a type was unlocked since last asked, optionally cleari
 - **Wrapper** `0x0037d210` (registered by `RegisterBindings`); **calls** `0x00423988`
 - **Used by** 2 of 467 script chunks (16 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_IsUnlocked {#um_isunlocked}
 
@@ -1920,7 +1920,7 @@ Resets the unlockables manager (`0x006fe998`), dropping its records. `global.lua
 - **Evidence:** confirmed (code) at `0x004236d0`; detail: traced
 - **Wrapper** `0x0037cce0` (registered by `RegisterBindings`); **calls** `0x004236d0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_SetNumUnlockables {#um_setnumunlockables}
 
@@ -1939,7 +1939,7 @@ Sets how many unlockable records the manager will hold; ignored once the records
 - **Evidence:** confirmed (code) at `0x004236f0`; detail: traced
 - **Wrapper** `0x0037cd00` (registered by `RegisterBindings`); **calls** `0x004236f0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_SetUnlockable {#um_setunlockable}
 
@@ -1969,7 +1969,7 @@ The record fields are matched by the other UM_ bindings.
 - **Evidence:** confirmed (code) at `0x00423718`; detail: traced
 - **Wrapper** `0x0037cd38` (registered by `RegisterBindings`); **calls** `0x00423718`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_Unlock {#um_unlock}
 
@@ -1993,7 +1993,7 @@ highlight them. `global.lua` uses it when a level is completed. Both bit sets ar
 - **Wrapper** `0x0037d050` (registered by `RegisterBindings`); **calls** `0x004237e8`
 - **Used by** 28 of 467 script chunks (71 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_UnlockAll {#um_unlockall}
 
@@ -2036,7 +2036,7 @@ stopwatch](../../research/scripting.md#stopwatch)).
 - **Wrapper** `0x00370e28` (registered by `RegisterBindings`); **calls** `0x00423638` `StopWatch_GetTime`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## W_SetStopWatch {#w_setstopwatch}
 
@@ -2063,7 +2063,7 @@ called with no arguments (0x004233f8, scripting.md#stopwatch). Confirmed (code).
 - **Wrapper** `0x00370d98` (registered by `RegisterBindings`); **calls** `0x004235f0`
 - **Used by** 32 of 467 script chunks (39 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## W_ShowStopWatch {#w_showstopwatch}
 
@@ -2117,4 +2117,4 @@ scripting.md#stopwatch).
 - **Wrapper** `0x00370e68` (registered by `RegisterBindings`); **calls** `0x00423648`
 - **Used by** 37 of 467 script chunks (78 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented

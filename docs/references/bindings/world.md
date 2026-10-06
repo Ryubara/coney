@@ -201,7 +201,7 @@ parts in range are hit as well (0x0038b0e8). No alarm, crime or statistic follow
 - **Wrapper** `0x0036dc18` (registered by `RegisterBindings`); **calls** `0x003966c8` `World_BreakGlassInRadius`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BreakObjectsInRadius {#breakobjectsinradius}
 
@@ -229,7 +229,7 @@ reports: [Crimes](../../research/crimes.md).
 - **Wrapper** `0x0036dc90` (registered by `RegisterBindings`); **calls** `0x00396390` `World_BreakObjectsInRadius`
 - **Used by** 12 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarCanBeDamagedBy {#carcanbedamagedby}
 
@@ -574,7 +574,7 @@ return and its number's navigation links get the avoid bit.
 - **Wrapper** `0x00379b78` (registered by `RegisterBindings`); **calls** `0x00397010` `Door_Close`
 - **Used by** 53 of 467 script chunks (84 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ConvertJumpToDoor {#convertjumptodoor}
 
@@ -597,7 +597,7 @@ links](../../research/objects.md#nav-links); the "jump" and "door" readings come
 - **Wrapper** `0x0036e228` (registered by `RegisterBindings`); **calls** `0x00250db0` `NavLink_ConvertJumpToDoor`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## DisableDoorCollision {#disabledoorcollision}
 
@@ -617,7 +617,7 @@ links. No script calls it.
 - **Evidence:** confirmed (code) at `0x00397338`; detail: brief
 - **Wrapper** `0x00379bb0` (registered by `RegisterBindings`); **calls** `0x00397338` `Door_DisableCollision`
 - **Used by** no script on the disc
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## DisableDoorLink {#disabledoorlink}
 
@@ -640,7 +640,7 @@ Sets the avoid bit (bit 31) on the kind-0x10 navigation link nearest the positio
 - **Wrapper** `0x0036e2d8` (registered by `RegisterBindings`); **calls** `0x00250e00` `NavLink_DisableDoor`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## DoorOpen {#dooropen}
 
@@ -665,7 +665,7 @@ objects](../../research/objects.md#door-states).
 - **Wrapper** `0x00379a50` (registered by `RegisterBindings`); **calls** `0x00396f08` `Door_OpenBy`
 - **Used by** 19 of 467 script chunks (31 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## DoorOpenDegree {#dooropendegree}
 
@@ -689,7 +689,7 @@ Swings a door open to a given angle (message 0x42 with the angle), with its open
 - **Wrapper** `0x00379900` (registered by `RegisterBindings`); **calls** `0x00396e28` `Door_OpenToAngle`
 - **Used by** 50 of 467 script chunks (97 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 19 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EnableDoorLink {#enabledoorlink}
 
@@ -709,7 +709,7 @@ Clears the avoid bit on the kind-0x10 navigation link nearest the position and i
 - **Wrapper** `0x0036e388` (registered by `RegisterBindings`); **calls** `0x00250e48` `NavLink_EnableDoor`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EnableVolumeBox {#enablevolumebox}
 
@@ -988,7 +988,7 @@ so this reads a door's too ([World objects: breaking a door](../../research/obje
 - **Wrapper** `0x0036c900` (registered by `RegisterBindings`); **calls** `0x00385918` `Object_GetHitpoints`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetLeftDoorHandle {#getleftdoorhandle}
 
@@ -1011,7 +1011,7 @@ is not guaranteed.
 - **Wrapper** `0x00379d50` (registered by `RegisterBindings`); **calls** `0x00397400` `Door_GetLeftLeaf`
 - **Used by** 42 of 467 script chunks (74 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetObjectName {#getobjectname}
 
@@ -1089,7 +1089,7 @@ has only a left leaf (`GetLeftDoorHandle`).
 - **Wrapper** `0x00379dc8` (registered by `RegisterBindings`); **calls** `0x00397478` `Door_GetRightLeaf`
 - **Used by** 29 of 467 script chunks (47 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 12 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## IsDoorOpen {#isdooropen}
 
@@ -1111,7 +1111,7 @@ Tests whether a door is open.
 - **Wrapper** `0x00379f80` (registered by `RegisterBindings`); **calls** `0x00397508` `Door_IsOpen`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## IsInsideBox {#isinsidebox}
 
@@ -1202,7 +1202,7 @@ directly.
 - **Wrapper** `0x00379210` (registered by `RegisterBindings`); **calls** `0x003976c8` `Obj_ChangeState`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjEnablePhysics {#objenablephysics}
 
@@ -1661,7 +1661,7 @@ message 0x22 receives command 2; NilHandle does nothing.
 - **Wrapper** `0x00379ac8` (registered by `RegisterBindings`); **calls** `0x00396ea0` `Door_Open`
 - **Used by** 46 of 467 script chunks (85 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 23 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## OpenDoorAnimated {#opendooranimated}
 
@@ -1687,7 +1687,7 @@ the door (anim 666, inferred) is not traced ([Objects: opening](../../research/o
 - **Wrapper** `0x00379b00` (registered by `RegisterBindings`); **calls** `0x00396fa8` `Door_OpenAnimated`
 - **Used by** 6 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## OrientObject {#orientobject}
 
@@ -1813,7 +1813,7 @@ picking](../../research/objects.md#lock-pick); the game: [Crimes: lock picking](
 - **Wrapper** `0x00379e40` (registered by `RegisterBindings`); **calls** `0x00397078` `Door_SetPickable`
 - **Used by** 16 of 467 script chunks (24 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetFlagPos {#setflagpos}
 
@@ -1899,7 +1899,7 @@ pane does: [World objects](../../research/objects.md#glass).
 - **Wrapper** `0x00378db0` (registered by `RegisterBindings`); **calls** `0x0039c0e0` `Glass_Spawn`
 - **Used by** 32 of 467 script chunks (929 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SpawnDoor {#spawndoor}
 
@@ -1926,7 +1926,7 @@ initialiser (`0x003fb5f8` for `dyn_door_swinging`) reads them back ([World objec
 - **Wrapper** `0x003796b8` (registered by `RegisterBindings`); **calls** `0x00397230` `Door_Spawn`
 - **Used by** 46 of 467 script chunks (484 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 27 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TriggerSphereCfg {#triggerspherecfg}
 

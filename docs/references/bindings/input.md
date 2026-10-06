@@ -35,7 +35,7 @@ Lua.
 - **Wrapper** `0x0036d878` (registered by `RegisterBindings`); **calls** `0x00145698`
 - **Used by** 16 of 467 script chunks (135 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## PadSetHandlerEx {#padsethandlerex}
 
@@ -59,4 +59,4 @@ names.
 - **Wrapper** `0x0036d908` (registered by `RegisterBindings`); **calls** `0x00148210`
 - **Used by** 4 of 467 script chunks (12 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
