@@ -59,6 +59,7 @@
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
+#include "platform/front_end_scene.h"
 #include "platform/imgui_overlay.h"
 #include "platform/play_level_mode.h"
 #include "platform/profile_folder.h"
@@ -648,6 +649,16 @@ int main(int argc, char** argv) {
         if (profiles) {
             printText(std::format("profiles: {} in {}\n", startUp->profiles().count(), profiles->string()));
         }
+        // The front-end level's world behind the menus (docs/research/frontend.md#background).
+        startUp->levelFlow().setSceneLoader(
+            [&renderer,
+             &gameWad](std::string_view level) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
+                auto scene = coney::platform::FrontEndWorldScene::create(renderer, gameWad, level, printText);
+                if (!scene) {
+                    return std::unexpected(std::move(scene.error()));
+                }
+                return std::unique_ptr<coney::FrontEndScene>(std::move(*scene));
+            });
         // The game's random table, from the disc's own executable (docs/research/flags.md#player-starts).
         std::vector<std::uint32_t> table;
         if (levelScriptOptions(*wad, {}, table).randomTable.size() == coney::GameRandom::kTableSize) {

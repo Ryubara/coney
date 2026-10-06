@@ -65,6 +65,10 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
     m_shared.secondPad = &stack.pads().port(1);
     m_scripts.setTime(nowMs);
     m_fade.update(nowMs);
+    // The world frame under the menus: the scene's step.
+    if (m_scene != nullptr) {
+        m_scene->update(nowMs);
+    }
     m_fadeLevel.commit();
     // The sprites of the step before are drawn; this step lists its own.
     m_pass.empty();
@@ -108,10 +112,18 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
 }
 
 void ProfileManagerMode::render(const RenderTime& time) {
-    // No front-end world yet: black where the scene would be. Then the menus, the 2D pass, the fade and the present.
+    // The menus' 2D pass, then the fade over everything.
+    const auto overlay = [this, &time] {
+        m_pass.draw(m_device, m_camera);
+        graphics::ScreenFade::draw(m_device, lerp(m_fadeLevel.previous(), m_fadeLevel.current(), time.alpha));
+    };
+    // The front-end world behind them, or black without one.
+    if (m_scene != nullptr) {
+        m_scene->render(time, overlay);
+        return;
+    }
     m_device.beginFrame(graphics::kBlack);
-    m_pass.draw(m_device, m_camera);
-    graphics::ScreenFade::draw(m_device, lerp(m_fadeLevel.previous(), m_fadeLevel.current(), time.alpha));
+    overlay();
     m_device.present();
 }
 

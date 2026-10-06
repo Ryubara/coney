@@ -11,6 +11,7 @@
 
 #include "core/error.h"
 #include "core/interpolation.h"
+#include "gamemodes/front_end_scene.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/font.h"
@@ -47,12 +48,11 @@ class GameModeStack;
 ///   controller, calls the second Lua callback (`Menu.startGame`) when the menus finished, and applies the 16:9
 ///   choice.
 ///
-/// Coney's choices: there is no front-end world yet (`level100`'s world is not loaded), so the screen is cleared to
-/// black where the original draws the Wonder Wheel scene; the fonts are loaded here (`part_page0` for font slot 2,
-/// `big_font` for slot 6; the original makes them once at start-up) and drawn at depth 9,000; the Rumble-mode flag the
-/// original's `Exit` reads is always clear; the fade is drawn over the menus as a black quad; the 16:9 choice has no
-/// device to go to yet; Coney has no memory card, so no "format the card?" dialog follows a new profile (the save
-/// system is ProfileStore's stand-in).
+/// The front-end world (setScene(), loaded by the level flow) is drawn under the menus; without one the screen is
+/// black. Coney's choices: the fonts are loaded here (`part_page0` for font slot 2, `big_font` for slot 6; the original
+/// makes them once at start-up) and drawn at depth 9,000; the Rumble-mode flag the original's `Exit` reads is always
+/// clear; the fade is drawn over the menus as a black quad; the 16:9 choice has no device to go to yet; Coney has no
+/// memory card, so no "format the card?" dialog follows a new profile (the save system is ProfileStore's stand-in).
 ///
 /// Research: docs/research/frontend.md#mode-flow, docs/research/frontend.md#profile-manager
 class ProfileManagerMode final : public GameMode {
@@ -92,6 +92,10 @@ class ProfileManagerMode final : public GameMode {
     /// it is already on top.
     /// @orig 0x001552b0 ShowProfileManager (unknown)
     void show(GameModeStack& stack, std::string onRumble, std::string onStartGame);
+
+    /// Draws the menus over `scene` (not owned; null: black) and runs its step with theirs: the front-end world the
+    /// level flow loaded.
+    void setScene(FrontEndScene* scene) { m_scene = scene; }
 
     /// Plays the music and loads the sheets; the controller starts at PM_Greet on the next update.
     /// @orig 0x0015e048 Mode12::Enter (unknown)
@@ -144,6 +148,7 @@ class ProfileManagerMode final : public GameMode {
     graphics::OverlayPass m_pass;
     Interpolated<float> m_fadeLevel{0.0F}; // the fade's level at the last two steps, for render()
 
+    FrontEndScene* m_scene = nullptr; // the front-end world, not owned
     std::string m_onRumble;
     std::string m_onStartGame;
     std::string m_lastScreen;    // the screen logged last, so each change is logged once

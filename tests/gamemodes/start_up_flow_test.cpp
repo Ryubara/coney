@@ -22,6 +22,7 @@
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "gamemodes/front_end_scene.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_flow_mode.h"
@@ -285,4 +286,70 @@ TEST_CASE("start-up with scripts: a new story profile is saved to the profile fo
     REQUIRE(again.flow->profiles().profile(0) != nullptr);
     CHECK(again.flow->profiles().profile(0)->name == "A");
     CHECK(again.flow->profiles().load(0));
+}
+
+namespace {
+
+// A front-end scene that counts its steps and frames and draws the menus' overlay through itself.
+struct CountingScene final : coney::FrontEndScene {
+    int* updates;
+    int* renders;
+    int* destroyed;
+    CountingScene(int* u, int* r, int* d) : updates(u), renders(r), destroyed(d) {}
+    ~CountingScene() override { ++*destroyed; }
+    CountingScene(const CountingScene&) = delete;
+    CountingScene& operator=(const CountingScene&) = delete;
+    CountingScene(CountingScene&&) = delete;
+    CountingScene& operator=(CountingScene&&) = delete;
+    void update(std::uint64_t /*nowMs*/) override { ++*updates; }
+    void render(const coney::RenderTime& /*time*/, const std::function<void()>& overlay) override {
+        ++*renders;
+        if (overlay) {
+            overlay();
+        }
+    }
+};
+
+} // namespace
+
+TEST_CASE("start-up: the front end loads level100's scene, the menus step and draw it, and it goes with the level",
+          "[frontend]") {
+    Run run("200 tap start\n");
+    int updates = 0;
+    int renders = 0;
+    int destroyed = 0;
+    std::vector<std::string> loaded;
+    run.flow->levelFlow().setSceneLoader(
+        [&](std::string_view level) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
+            loaded.emplace_back(level);
+            return std::make_unique<CountingScene>(&updates, &renders, &destroyed);
+        });
+    run.frames(160);
+    REQUIRE(loaded == std::vector<std::string>{"level100"});
+    CHECK(run.flow->levelFlow().scene() != nullptr);
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    // From the frame the menus are on top, the scene steps and draws once a frame under them.
+    const int before = updates;
+    run.frames(10);
+    CHECK(updates == before + 10);
+    CHECK(renders >= 10);
+    CHECK(destroyed == 0);
+    // A level chosen and the menus gone: the level flow finishes the front end and its scene is released.
+    run.flow->menuLoadLevel("level100");
+    run.stack.pop();
+    run.frames(2);
+    CHECK(destroyed >= 1);
+}
+
+TEST_CASE("start-up: a scene that fails to load leaves a black background and the menus", "[frontend]") {
+    Run run("");
+    run.flow->levelFlow().setSceneLoader(
+        [](std::string_view /*level*/) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
+            return std::unexpected(coney::Error{coney::ErrorCode::NotFound, "no world"});
+        });
+    run.frames(160);
+    CHECK(run.flow->levelFlow().scene() == nullptr);
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    CHECK(std::ranges::any_of(run.log,
+                              [](const std::string& line) { return line.find("no scene") != std::string::npos; }));
 }

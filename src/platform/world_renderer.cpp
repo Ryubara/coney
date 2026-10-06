@@ -132,14 +132,18 @@ void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEnd
 
 void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level,
                            const WorldView& view, graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs,
-                           const std::function<void()>& drawObjects) {
+                           const std::function<void()>& drawObjects, const std::function<void()>& overlay) {
     m_drawn = 0;
     // 1-4. The camera, with the draw distance as its far clip and the fog from half of it. The frame is begun first:
     // a resized window gets a new camera there, which is then set up and begun again.
     engine.beginWindowFrame(fogColour);
     rw::Camera* camera = engine.camera();
     if (camera == nullptr) {
-        engine.present(); // NULL backend: nothing to draw
+        // NULL backend: nothing to draw but the overlay's calls, which draw nothing either.
+        if (overlay) {
+            overlay();
+        }
+        engine.present();
         return;
     }
     placeCamera(camera, view);
@@ -201,6 +205,13 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         drawObjects();
     }
     rw::SetRenderState(rw::FOGENABLE, 0);
+    // The 2D pass over the world (the menus or the HUD): no depth test, nothing culled.
+    if (overlay) {
+        rw::SetRenderState(rw::ZTESTENABLE, 0);
+        rw::SetRenderState(rw::ZWRITEENABLE, 0);
+        rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+        overlay();
+    }
     engine.present();
 }
 

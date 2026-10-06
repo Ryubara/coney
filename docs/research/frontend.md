@@ -958,7 +958,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [x] | Legal screen | the picture, overfilled, 5 s | nothing |
 | [ ] | Start-up movies | the `MoviePlayer` hook; skipped | a player for `LOGO`, `PLOGO`, `L1_IN`, START skipping ([Movies](#movies)) |
 | [ ] | Mode 6 at boot | one black frame | the card scan, `0xb5` for 3 s, the dialogs and their layout ([message box](#message-box)) |
-| [ ] | 3D background | black | `level100` loaded, the script's objects, the `WonderWheel_100` scene and its camera, lights ([Background](#background)) |
+| [ ] | 3D background | `level100`'s world from the scene's first camera pose; the sign, no wheel | the script's objects, the `WonderWheel_100` scene and its camera, lights ([Background](#background)) |
 | [ ] | Menu music | recorded and logged | `music/wonderwheel_132b` looped by `Menu.startScene`, `MenuTrack` by `launchRMI`; the `menu` bank's cues ([Sound](sound.md)) |
 | [x] | Fades | out over `t − 0.2` s, in from black, the one-frame start, clamped (one manager: one view) | the real speed (open: [Fades](#fades)) |
 | [x] | PM_Greet | as the original (`0x76`, logo, blink, 70 s attract call) | nothing (the attract movie: below) |
@@ -1066,8 +1066,13 @@ fresh Lua state), selects the level (`W_GameState + 0x56dc`) and pushes gameplay
 ([Level loading](level-loading.md#coneys-implementation)). `chooseLevelIndex` chooses by index, for the
 mission-complete mode's kinds 2 and 3. Coney's stand-ins, each because the research or the subsystem is not there yet:
 
-- The front end's `InitLevel` is only its script step: nothing else of `level100` is loaded, and the background is
-  black where the Wonder Wheel scene would be.
+- The front end's `InitLevel` loads `level100`'s streamed worlds and level file and preloads round the camera
+  (`FrontEndScene`, `src/platform/front_end_scene.h`), then runs the scripts; the menus step it and draw it under their
+  2D pass, cleared to black, and it is released when the front end finishes. **Stand-in camera** until the scene player
+  plays `WonderWheel_100`: the `camera01` track's first pose and lens ([Background](#background)), turned to the hub
+  and 10.7° to the left so the world's "WONDER WHEEL" sign lands at logical (409, 227), the runtime's (410, 217). Not
+  drawn: the script's 29 objects (the wheel, its carts and neons; Coney cannot load a dynamic object's model yet), and
+  the scene's lights (the world renderer's ambient stand-in). The dependency list and packs are not loaded.
 - A flow made without a level loader (the tests without a disc) has no gameplay: after finishing the front end,
   `update` logs `level start requested: <level>` and starts the front end again, so the player is back on the menus.
 - Without a script system (no disc), or when `Menu.onStart` did not push the menus, the level flow calls
@@ -1286,7 +1291,8 @@ What the implementer still needs:
   usage lines and sounds, and `ShowRumbleModeIntro`.
 - The bindings that are stubs today (cameras, scenes, particles, sound, `PadSetHandler`), each with its subsystem;
   the list is the binding table in `src/scripting/script_bindings.cpp` ([Scripts](scripting.md#coneys-implementation)).
-- `InitLevel` far enough to load `level100.lev`, its world and its dependency list.
+- For the background: the dynamic objects' models (`ObjSpawn`'s `dyn_s_wwheel_a`, carts, neons), the scene player, the
+  level's lights, its dependency list.
 
 ## Open questions
 
@@ -1340,6 +1346,8 @@ What the implementer still needs:
 - **Sheet-table records 12 and 28** (the Rumble background and sprites): their resource names and rectangles.
 - **The `WonderWheel_100` tracks** (answered): a fixed camera, a 20 s loop turning the wheel 45° (2.25° a
   second), the neons shown and hidden by events ([Objects: the Wonder Wheel](objects.md#wonder-wheel)).
+- **Dynamic objects' models** (answered): `<name>_geo` and its dictionaries from the Object List record
+  ([Objects](objects.md#models)).
 - **`0x005147cc`**, set to 10.0 while the Rumble menu is open, and `0x0040c938`.
 - **PM_Difficulty's fourth item:** what the save-system query that unlocks it reports.
 - **The profile record:** its fields and how `+0xcc(slot)` (load) applies them to the game state (Coney's `Profile`

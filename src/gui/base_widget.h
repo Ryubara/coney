@@ -24,7 +24,7 @@ struct BaseWidgetSetup {
     float x = 0.5F;                           ///< GUI x of the anchor point.
     float y = 0.5F;                           ///< GUI y of the sprite's centre.
     float height = 0.1F;                      ///< Height in overlay units (1.1 is the screen's height).
-    std::optional<float> width;               ///< Width in overlay units; unset: the height × the rectangle's shape.
+    std::optional<float> width{};             ///< Width in overlay units; unset: the height × the rectangle's shape.
     graphics::Rgba colour = graphics::kWhite; ///< Multiplies the sprite; its alpha fades it.
     SpriteAnchor anchor = SpriteAnchor::Centre;
     bool aspectFix = false; ///< `+0xe0`: the width × the view aspect (1.45) × 0.80357 more.

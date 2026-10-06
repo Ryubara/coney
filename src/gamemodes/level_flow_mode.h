@@ -4,10 +4,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "gamemodes/front_end_scene.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/profile_manager_mode.h"
@@ -29,8 +31,9 @@ class GameplayMode;
 /// when this mode is below it).
 ///
 /// Coney's stand-ins (docs/research/frontend.md#coneys-implementation):
-/// - **`InitLevel`** does only its script step: the script system's level entry (`global.lua`, then `level100.lua`).
-///   Nothing else of the level is loaded, so the background is black where the Wonder Wheel scene would be.
+/// - **`InitLevel`** loads the level's world as the scene behind the menus (FrontEndScene, through the loader given),
+///   then its script step: the level entry (`global.lua`, then `level100.lua`). Without a loader the background is
+///   black.
 /// - **Without scripts** (no script system, or a `Menu.onStart` that does not show the menus) Coney shows the profile
 ///   manager itself with the two callbacks `Menu.onStart` passes, so the menus always come up.
 /// - **Starting a chosen level**: the update finishes the front end as the original does (`Menu.onFinish`, then the
@@ -87,6 +90,11 @@ class LevelFlowMode final : public GameMode {
     /// "reload" and "next level"). An index with no record is logged and ignored.
     void chooseLevelIndex(std::size_t index);
 
+    /// Loads the front-end world through `loadScene` when the front end starts (empty: none, a black background).
+    void setSceneLoader(FrontEndSceneLoader loadScene) { m_loadScene = std::move(loadScene); }
+    /// The front-end world while the front end is loaded; null otherwise or without a loader.
+    [[nodiscard]] FrontEndScene* scene() const { return m_scene.get(); }
+
     /// What the memory-card mode's exit does to this mode when it is below: no front end on the next resume.
     void cancelFrontEndLoad() { m_loadFrontEndOnResume = false; }
 
@@ -110,6 +118,10 @@ class LevelFlowMode final : public GameMode {
     /// @orig 0x0015c5f8 LevelFlow_FinishFrontEnd (unknown)
     void finishFrontEnd();
 
+    /// InitLevel's world step for the front end: loads the scene of the current level, logs a failure, and hands it
+    /// to the menus.
+    void loadScene();
+
     graphics::RenderDevice& m_device;
     GameModeStack& m_stack;
     ProfileManagerMode& m_profileManager;
@@ -123,6 +135,8 @@ class LevelFlowMode final : public GameMode {
     bool m_loadFrontEndOnResume = false;
     std::string m_currentLevel;
     std::vector<std::string> m_levelRequests;
+    FrontEndSceneLoader m_loadScene;
+    std::unique_ptr<FrontEndScene> m_scene; // the front-end world while the front end is loaded
 };
 
 } // namespace coney

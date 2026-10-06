@@ -63,7 +63,12 @@ ModeResult LevelFlowMode::update(GameModeStack& /*stack*/, const FrameTime& fram
     return ModeResult::Stay;
 }
 
-void LevelFlowMode::render(const RenderTime& /*time*/) {
+void LevelFlowMode::render(const RenderTime& time) {
+    // The front-end world when it is loaded, else the black background the front end sets.
+    if (m_scene) {
+        m_scene->render(time, {});
+        return;
+    }
     m_device.beginFrame(graphics::kBlack);
     m_device.present();
 }
@@ -94,8 +99,9 @@ void LevelFlowMode::startFrontEnd() {
     const LevelRecord* record = m_state.levels.at(0);
     m_currentLevel = record != nullptr ? record->name : std::string(kFrontEndLevel);
 
-    // InitLevel's script step: global.lua, then the level's own script. Nothing else of the level loads yet.
-    m_log(std::format("level flow: front end {} (scripts only: no level loader yet)\n", m_currentLevel));
+    // InitLevel: the level's world (the scene behind the menus), then its script step: global.lua, then the level's own
+    // script.
+    loadScene();
     m_scripts.enterLevel(m_currentLevel);
     m_services.playMusic(ProfileManagerMode::kMusic);
 
@@ -111,11 +117,35 @@ void LevelFlowMode::startFrontEnd() {
 
 void LevelFlowMode::finishFrontEnd() {
     m_scripts.call("Menu.onFinish");
+    // UnloadLevel(0): the front-end world goes with the level.
+    m_profileManager.setScene(nullptr);
+    m_scene.reset();
     // UnloadLevel destroys the script system and makes it again: the next level starts from the bindings alone.
     if (m_scripts.exists()) {
         m_scripts.create();
     }
     m_frontEndLoaded = false;
+}
+
+} // namespace coney
+
+namespace coney {
+
+void LevelFlowMode::loadScene() {
+    m_scene.reset();
+    if (!m_loadScene) {
+        m_log(std::format("level flow: front end {} (scripts only: no scene loader)\n", m_currentLevel));
+        m_profileManager.setScene(nullptr);
+        return;
+    }
+    auto scene = m_loadScene(m_currentLevel);
+    if (!scene) {
+        m_log(std::format("level flow: front end {}: no scene: {}\n", m_currentLevel, scene.error().message));
+    } else {
+        m_scene = std::move(*scene);
+        m_log(std::format("level flow: front end {} with its scene\n", m_currentLevel));
+    }
+    m_profileManager.setScene(m_scene.get());
 }
 
 } // namespace coney

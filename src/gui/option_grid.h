@@ -22,20 +22,20 @@ namespace coney::gui {
 /// How an OptionGrid is set up: the original's setup (`0x001d4110(y, grid, rows, a2, owner)`) and the fields its owners
 /// set after it (`+0x8c` left x with `+0x88` left-packing, the move cue `+0x94`).
 struct OptionGridSetup {
-    float y = 0.5F;                ///< GUI y the first row's items are centred on (`+0x28`).
-    std::vector<std::size_t> rows; ///< Items per row, in order (at most 5); items past them get a row each.
-    float centreX = 0.5F;          ///< Each row is centred on this GUI x (`+0x90`) unless leftX is set.
-    std::optional<float> leftX;    ///< Rows packed left to right from this GUI x (`+0x8c` with `+0x88` = 1).
-    int moveCue = 4;               ///< The front-end sound cue of a move (`+0x94`).
-    bool stayInRow = false;        ///< Left and right stay in the row (`+0x9c` set) instead of walking all items.
-    float rowGap = 0.0F;           ///< Added between rows (`+0xa0`).
-    std::function<void(int cue)> playCue; ///< Plays a front-end sound cue; may be empty.
+    float y = 0.5F;                  ///< GUI y the first row's items are centred on (`+0x28`).
+    std::vector<std::size_t> rows{}; ///< Items per row, in order (at most 5); items past them get a row each.
+    float centreX = 0.5F;            ///< Each row is centred on this GUI x (`+0x90`) unless leftX is set.
+    std::optional<float> leftX{};    ///< Rows packed left to right from this GUI x (`+0x8c` with `+0x88` = 1).
+    int moveCue = 4;                 ///< The front-end sound cue of a move (`+0x94`).
+    bool stayInRow = false;          ///< Left and right stay in the row (`+0x9c` set) instead of walking all items.
+    float rowGap = 0.0F;             ///< Added between rows (`+0xa0`).
+    std::function<void(int cue)> playCue{}; ///< Plays a front-end sound cue; may be empty.
 };
 
 /// One item of an OptionGrid: the original's add item (`0x001d4230(fontScale, grid, text, hasSeparator, code, flags,
 /// enabled, colour, fontSlot, separatorAlphaMode)`).
 struct OptionGridItem {
-    std::string text;
+    std::string text{};
     int code = 0;                     ///< What the owner reads when it is chosen (`OptionGridItem` `+0x54`).
     bool separator = false;           ///< Followed by `" : "` in part_page0 and the item's colour.
     bool enabled = true;              ///< Can be selected; moves skip a disabled item.
