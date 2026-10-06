@@ -10,7 +10,7 @@ target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp ch
 target_sources(coney_platform PRIVATE play_level_mode.cpp play_scenery.cpp)
 # The sandbox: Coney's own test worlds, drawn and flown round (docs/guides/sandbox.md).
 target_sources(coney_platform PRIVATE sandbox_renderer.cpp sandbox_viewer_mode.cpp)
-# The character reference images (docs/guides/building.md#character-reference-images).
+# The reference images of characters and objects (docs/guides/building.md#reference-images).
 target_sources(coney_platform PRIVATE reference_renderer.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)

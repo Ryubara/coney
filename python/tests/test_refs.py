@@ -391,6 +391,18 @@ def test_image_cells_point_below_the_images_folder() -> None:
     assert cell == '![characters/warr_re_cv.png](images/characters/warr_re_cv.png){ width="96" }'
 
 
+def test_an_object_gets_its_thumbnail_only_when_the_file_exists(tmp_path: Path) -> None:
+    from coney_tools.refs_extract import _image
+
+    (tmp_path / "objects").mkdir()
+    (tmp_path / "objects" / "dyn_bat.png").write_bytes(b"png")
+    assert _image(tmp_path, "objects", "dyn_bat") == "objects/dyn_bat.png"
+    assert _image(tmp_path, "objects", "dyn_door") is None
+    assert _image(None, "objects", "dyn_bat") is None
+    objects = next(item for item in TOPICS if item.key == "objects")
+    assert "image" in objects.field_map()
+
+
 def test_compress_image_keeps_size_and_alpha_and_is_deterministic(tmp_path: Path) -> None:
     """A thumbnail becomes a palette PNG of the same size, keeps its transparency and compresses the same twice."""
     from PIL import Image

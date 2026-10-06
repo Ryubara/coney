@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.4% of the game's own code (214,652 of 3,342,936 bytes, 469 functions) |
+| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.4% of the game's own code (214,708 of 3,342,936 bytes, 470 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -60,7 +60,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 8 | 32,152 |
 | `FileIO` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 3 | 6,480 |
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
-| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
+| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 30 | 189,024 |
 | `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
 | `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.6% | 77 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
@@ -208,6 +208,7 @@ at the top of the repository's `README.md`.
 | `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
 | `0x0017a560` | `Occluders_Load` | `Graphics` | not filled in |
 | `0x0017f2c0` | `ChunkReader_PreinstanceObject` | `Graphics` | not filled in |
+| `0x00181170` | `ObjectList_OnLoaded` | `Graphics` | 56 |
 | `0x00181b20` | `ChunkLoaded_ParticlePage` | `Graphics` | 72 |
 | `0x00181e38` | `Page_Rect` | `Graphics` | 24 |
 | `0x00181e50` | `ResourceMgr_SheetSize` | `Graphics` | 240 |

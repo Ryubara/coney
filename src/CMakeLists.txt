@@ -85,7 +85,8 @@ add_library(coney_core STATIC
     world/world_manifest.cpp
     world/world_streamer.cpp
     world/world_streams.cpp
-    world_objects/flags.cpp)
+    world_objects/flags.cpp
+    world_objects/object_list.cpp)
 # Characters: the animation format and player, and the character resources (docs/research/characters.md).
 target_sources(coney_core PRIVATE
     animation/anim_clip.cpp

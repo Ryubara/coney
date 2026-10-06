@@ -2,11 +2,14 @@
 #include "characters/reference_render.h"
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <format>
 #include <limits>
+#include <system_error>
 
+#include "characters/character_list.h"
 #include "characters/character_rig.h"
 #include "core/assert.h"
 
@@ -109,6 +112,43 @@ std::vector<std::uint8_t> downsampleRgba(std::span<const std::uint8_t> rgba, int
         }
     }
     return result;
+}
+
+anim::Mat34 objectReferenceTransform(const anim::Mat34& modelFrame) {
+    return anim::multiply(kObjectToPose, modelFrame);
+}
+
+std::string_view referenceFolder(ReferenceList list) {
+    return list == ReferenceList::Characters ? "characters" : "objects";
+}
+
+std::uint32_t referenceRequestHash(std::string_view request) {
+    if (request.starts_with("0x") || request.starts_with("0X")) {
+        std::uint32_t value = 0;
+        const std::string_view digits = request.substr(2);
+        const auto parsed = std::from_chars(digits.data(), digits.data() + digits.size(), value, 16);
+        if (parsed.ec == std::errc{} && parsed.ptr == digits.data() + digits.size() && !digits.empty()) {
+            return value;
+        }
+    }
+    return characterNameHash(request);
+}
+
+std::vector<std::string> parseNameList(std::string_view text) {
+    std::vector<std::string> names;
+    while (!text.empty()) {
+        // One line at a time; the last may lack its newline.
+        const auto end = text.find('\n');
+        const std::string_view line = text.substr(0, end);
+        text = end == std::string_view::npos ? std::string_view{} : text.substr(end + 1);
+        const auto first = line.find_first_not_of(" \t\r");
+        if (first == std::string_view::npos || line[first] == '#') {
+            continue;
+        }
+        const auto last = line.find_last_not_of(" \t\r");
+        names.emplace_back(line.substr(first, last - first + 1));
+    }
+    return names;
 }
 
 std::string referenceFileName(std::uint32_t nameHash, std::string_view name) {

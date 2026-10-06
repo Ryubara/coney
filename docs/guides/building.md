@@ -106,7 +106,7 @@ file that is not one. With `CONEY_DISC` set when CMake configures, three more ru
 `tests/support/character_orbit.txt`), and level99 played headless under a scripted pad (`coney.plays_level`,
 `tests/support/play_walk.txt`). The unit tests build their disc images, archives, RenderWare texture dictionaries,
 streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or a GPU (the librw tests run librw
-on its NULL device). Thirteen tests check your own disc: every texture dictionary; every sprite sheet, font and the
+on its NULL device). Fourteen tests check your own disc: every texture dictionary; every sprite sheet, font and the
 sheet table; every streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds
 streamed under a scripted camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about
 30 seconds); the UI strings of all five languages, run through the game's own Lua scripts (`[strings]`); the two text
@@ -119,6 +119,7 @@ under the pad, the level scripts' player starts and models for a few checkpoints
 the hub's chat events run for 20 seconds without a script error, and the game's random table read from the executable
 (`[story]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7
 seconds); every Character List record with its model, textures, character data and clips, skinned (`[characters]`);
+every Object List record with its model and texture dictionary, the models of one atomic read (`[object_list]`);
 Rembrandt's Anim Range List with a damage for every attack and the grab and tackle ranges, and Rembrandt in the
 sandbox's fight yard doing a combo, a grab with a strike, spins and a throw, a tackle and a mugging on a passive target
 (`[combat]`); and Rembrandt at level99's start, walked, run, turned, stopped and run into the scenery by scripted
@@ -146,7 +147,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
       [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]]
-      [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--only NAME]... [--names FILE]]
+      [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE]
       [--dev-overlay N]
 ```
@@ -551,31 +552,43 @@ build/dev/src/platform/coney --headless --frames 30 --input-script tests/support
 build/dev/src/platform/coney --frames 60 --dev-overlay 30 --screenshot ../../scratch/overlay-hidden.png
 ```
 
-### Character reference images {#character-reference-images}
+### Reference images {#reference-images}
 
-`--render-references DIR` writes one 256x256 PNG per character into `DIR` (made if missing) and exits: the small
-reference screenshots of models that `LEGAL.md` allows for the docs. Every Character List record is rendered once,
-standing as the character viewer's first frame shows it (its default clip, id 408 or else its first clip, at time 0),
-textured, under the viewer's fixed lights, from a fixed three-quarter front camera framed on the model, on a
-transparent background ([Characters](../research/characters.md#coneys-implementation)). It draws offscreen with
-OpenGL, so it needs a display and a GPU, but the window stays hidden; `--headless` is refused.
+`--render-references DIR` writes one 256x256 PNG per character into `DIR/characters` and one per object into
+`DIR/objects` (made if missing) and exits: the small reference screenshots of models that `LEGAL.md` allows for the
+docs, laid out as [the references' images](../references/index.md#images) are. Every Character List record is
+rendered once, standing as the character viewer's first frame shows it (its default clip, id 408 or else its first
+clip, at time 0), textured ([Characters](../research/characters.md#coneys-implementation)); every Object List record
+once, its model read as the level file's models are, stood up and turned to face the camera
+([The Object List](../research/level-loading.md#the-object-list)). Both are drawn under the character viewer's fixed
+lights, from the same fixed three-quarter front camera framed on the model, on a transparent background. It draws
+offscreen with OpenGL, so it needs a display and a GPU, but the window stays hidden; `--headless` is refused.
 
-- `--only NAME` renders just that character: a model name, or a `0x` name hash; repeatable.
-- `--names FILE` names the images: a text file of model names, one per line (`#` starts a comment). An image is named
-  after its model name when that name is in the file or given to `--only`, otherwise after its name hash
+- `--kind KIND` renders only `characters` or only `objects`; `all`, the default, renders both.
+- `--only NAME` renders just that character or object: a model or object type name, or a `0x` name hash; repeatable.
+- `--names FILE` names the images: a text file of model and object type names, one per line (`#` starts a comment).
+  An image is named after its name when that name is in the file or given to `--only`, otherwise after its name hash
   (`cbe1bfc3.png`).
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs
-build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs --only warr_re_cv --only warr_ty_cv
+build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs --only warr_re_cv --only dyn_bat
+build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs --kind objects --names ../../scratch/names.txt
 ```
+
+To refresh the docs' thumbnails, render with a names file holding the `name` of every entry of
+`research/references/character-models.yaml` and `objects.yaml`, copy the named images (and the characters' hash-named
+ones, which the character models list uses) into `docs/references/images/`, run `coney-tools refs compress-images`
+and then `coney-tools refs extract` ([coney-tools](coney-tools.md#refs)), which links every image that exists.
 
 The images are deterministic: no clock or randomness, a fixed camera and 4x4 supersampling averaged with integer
 arithmetic, so a re-render on the same machine and driver gives byte-identical files (a different GPU driver may
 differ by a few pixel values). Coney prints one line per image (hashes and file names only). On the US disc it
-renders 541 images in about 35 seconds: the list has 543 records, and one name hash appears three times, so its
-first record's image is kept and the repeats are reported. A record that fails to load is reported and counted, the
-batch goes on, and the exit status is 1.
+renders 541 character images and 1,399 object images in one to two minutes. The Character List has 543 records, and
+one name hash appears three times; the Object List has 1,406, and one name hash appears twice; the first record's
+image is kept and the repeats are reported. Six objects, whose models hold several atomics, get no image: Coney's model
+reader takes one atomic only, so they are reported and counted, and the batch goes on. Any other record that fails is
+reported and counted, the batch goes on, and the exit status is 1.
 
 ### Controls {#controls}
 

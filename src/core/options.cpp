@@ -27,7 +27,7 @@ constexpr std::string_view kUsage =
     "             [--trace FILE]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
     "             [--dev-overlay N]\n"
-    "             [--render-references DIR [--only NAME]... [--names FILE]]\n"
+    "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--show-fps]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
@@ -63,11 +63,14 @@ constexpr std::string_view kUsage =
     "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
     "                     of the assets folder beside the executable\n"
     "  --render-references DIR\n"
-    "                     write a 256x256 PNG of every character, standing, into DIR and exit;\n"
-    "                     needs --disc and a display (the window stays hidden)\n"
-    "  --only NAME        with --render-references: render only this character (a model name or a\n"
-    "                     0x name hash); repeatable\n"
-    "  --names FILE       with --render-references: model names, one per line, to name the images by\n"
+    "                     write a 256x256 PNG of every character (standing) and object into\n"
+    "                     DIR/characters and DIR/objects and exit; needs --disc and a display (the\n"
+    "                     window stays hidden)\n"
+    "  --kind KIND        with --render-references: characters, objects or all (the default)\n"
+    "  --only NAME        with --render-references: render only this character or object (a model\n"
+    "                     or object type name, or a 0x name hash); repeatable\n"
+    "  --names FILE       with --render-references: model and object type names, one per line, to\n"
+    "                     name the images by\n"
     "  --fps-cap N        draw at most N frames a second (0, the default: no cap); the game runs at\n"
     "                     its fixed 30 steps a second whatever the rate; 30 draws one frame per step\n"
     "  --vsync on|off     wait for the display's vertical blank when presenting (default on)\n"
@@ -193,8 +196,8 @@ std::expected<void, Error> checkSandbox(const Options& options) {
 // Refuses the reference renderer's options in combinations that cannot work: part of checkCombinations().
 std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     if (!options.renderReferences.has_value()) {
-        if (!options.only.empty() || options.namesFile.has_value()) {
-            return invalidArgument("--only and --names need --render-references");
+        if (!options.only.empty() || options.namesFile.has_value() || options.referenceKind.has_value()) {
+            return invalidArgument("--kind, --only and --names need --render-references");
         }
         return {};
     }
@@ -358,6 +361,7 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     Options options;
     std::optional<std::string> languageArg;   // as typed, so a repeat is refused like any other option
     std::optional<std::string> fpsCapArg;     // as typed, likewise
+    std::optional<std::string> kindArg;       // as typed, likewise
     std::optional<std::string> vsyncArg;      // as typed, likewise
     std::optional<std::string> checkpointArg; // as typed, likewise
     std::optional<std::string> startArg;      // as typed, likewise
@@ -461,9 +465,24 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--kind") {
+            if (auto value = takeValue(args, i, kindArg, "--kind", "characters, objects or all"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            // takeValue filled kindArg; value_or keeps the access checked.
+            const std::string kind = kindArg.value_or(std::string{});
+            if (kind == "all") {
+                options.referenceKind = ReferenceKind::All;
+            } else if (kind == "characters") {
+                options.referenceKind = ReferenceKind::Characters;
+            } else if (kind == "objects") {
+                options.referenceKind = ReferenceKind::Objects;
+            } else {
+                return invalidArgument(std::format("--kind needs characters, objects or all, got \"{}\"", kind));
+            }
         } else if (arg == "--only") {
             if (i + 1 == args.size() || args[i + 1].empty()) {
-                return invalidArgument("--only needs a model name or a 0x name hash");
+                return invalidArgument("--only needs a model or object type name or a 0x name hash");
             }
             options.only.emplace_back(args[++i]);
         } else if (arg == "--names") {

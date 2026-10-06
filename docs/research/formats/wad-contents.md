@@ -198,17 +198,23 @@ sound, music and list types. The loaders at `0x00144180` and `0x00144398` index 
 ### Object List (chunk `0x46`) {#object-list}
 
 One chunk in `warriors.glr`, kept by `0x00181170` at resource manager `+0x8c` (count `+0x90`, records `+0x94`;
-confirmed (code)): a 16-byte header whose first word is the count (1,406), then 36-byte records of nine words. The
-fields are inferred from the data (2026-10-06): the six car types and `dyn_bat` match by name.
+confirmed (code)): a 16-byte header whose first word is the count (1,406; the other three are 0), then 36-byte
+records of nine words. No code reading a record has been traced; the fields are inferred from the NTSC-U disc
+(2026-10-06, counts only):
 
-| Offset | Meaning |
-| --- | --- |
-| `+0x00` | CRC-32 of the object's name (`car_osedan`, `dyn_bat`) |
-| `+0x04` | 0, or another record's name hash (a variant of it) |
-| `+0x08` | the model resource's hash: CRC-32 of `<name>_geo` |
-| `+0x0c` | the texture dictionary's hash (`car_osedan_tex`; shared between objects) |
-| `+0x14`, `+0x1c` | the sizes of the model and the dictionary resources, 32 bytes more than their chunks |
-| `+0x18` | a size larger than the model's (not traced) |
+| Offset | Meaning | Evidence (disc) |
+| --- | --- | --- |
+| `+0x00` | CRC-32 of the object type's name, lower case (`car_osedan`, `dyn_bat`) | 1,293 of the 1,371 `CfgObj` types and the six car types have a record |
+| `+0x04` | 0, or another record's name hash (a variant of it) | 129 of the 136 non-zero values are a record's `+0x00`; none is a WAD entry |
+| `+0x08` | the model resource's hash: CRC-32 of `<name>_geo` | all 1,406 are WAD entries holding one `0x47` model |
+| `+0x0c` | the texture dictionary's hash (`car_osedan_tex`; shared between objects) | all 1,406 are WAD entries holding one `0x2a` chunk |
+| `+0x10` | 0, or the hash of a further resource | all 33 non-zero values are WAD entries; what they hold is not traced |
+| `+0x14`, `+0x1c` | the sizes of the model and the dictionary resources, 32 bytes more than their chunks | |
+| `+0x18` | a size larger than the model's | larger on all 1,406; not traced |
+| `+0x20` | the size of the `+0x10` resource | non-zero exactly when `+0x10` is |
+
+1,400 models are clumps of one atomic; the six cars' have 47 ([Cars](../cars.md#model)). How the models stand and
+take their textures: [Level loading](../level-loading.md#the-object-list).
 
 ### Packs
 

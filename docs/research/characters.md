@@ -1191,8 +1191,9 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   · the inverse bind matrix) and skins on the CPU.
 - `--view-character [NAME] [--anim CLIP]` ([Building](../guides/building.md#the-character-viewer)) shows a skinned
   character playing a clip in place on the fixed 30 Hz step, with a pad-driven orbit camera.
-- `--render-references DIR` ([Building](../guides/building.md#character-reference-images)) writes a 256x256
-  transparent PNG of every character, posed at its default clip's first frame, from a fixed three-quarter camera
+- `--render-references DIR` ([Building](../guides/building.md#reference-images)) writes a 256x256
+  transparent PNG of every character, posed at its default clip's first frame (and of every object,
+  [Level loading](level-loading.md#the-object-list)), from a fixed three-quarter camera
   (`src/characters/reference_render.*` frames and reduces; `src/platform/reference_renderer.*` draws offscreen).
 - `src/characters/anim_set.*` answers an anim id from the character's own data, then from the generic character data
   `0x9da2e531` (594 `gen_*` clips) in place of the default table, with the clip's rate from the Anim Range List flags

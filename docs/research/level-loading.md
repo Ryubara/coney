@@ -275,6 +275,21 @@ and a one-off count):
 - **Edges:** each has exactly one flag: 1 (238,422), 2 (2,126), 4 (5,890), 8 (982), `0x10` (746, every one with bit
   31 set) and `0x80` (4,730); 250,963 have an edge back. Path `+0x02` is not 0 on 1,263 paths.
 
+### The Object List's models {#the-object-list}
+
+The **Object List** of `warriors.glr` finds an object type's model and texture dictionary by its name, as the
+[Character List](characters.md#files) does for characters; its record layout is on
+[WAD contents](formats/wad-contents.md#object-list).
+
+**The models** (all 1,406, disc check): 1,400 are clumps of one atomic and one geometry, like the level
+file's [preinstanced models](#the-level-object), drawn by the game's world pipeline `0x30083` with the atomic plugin
+`0x3F0`; the six cars' hold 47 ([Cars](cars.md#model)). Every geometry has one material, untextured (no texture
+section), and every dictionary is one `0x2a` chunk. How the game binds the dictionary's texture to the material is not
+traced; Coney's renderer gives the material the dictionary's first texture, as the level file's models are linked, and
+the images look right. Read in RenderWare's axes, the models stand with **y up and their front towards +z**: chairs,
+carts, amps and doors stand upright and face the camera when y is turned to z and z to y (with x to -x), which is the
+turn Coney's reference images use (`kObjectToPose`, Coney's choice checked by eye).
+
 ### The world manager (0x60 bytes) {#world-manager}
 
 `0x005147c4`, built by `0x0040d900`. Confirmed (code) for the offsets used on these pages:
@@ -650,7 +665,19 @@ to be `align16(end of the furthest list + 4)` bytes ([Path data](#path-data)). T
 77,678 bytes of edge lists and 770 bytes of tails over the 64 files. `world::PathMap` (`src/world/path_map.h`) decodes
 the records for the AI's route planner, with the inside and walkable-line tests ([AI](ai.md#coney)).
 
+**The Object List** (2026-10-06): `world_objects::ObjectList` (`src/world_objects/object_list.h`) parses the chunk
+and finds a record by name ([The Object List](#the-object-list)); Coney's reference renderer
+(`coney --render-references`, [Building](../guides/building.md#reference-images)) loads every record's model with the
+level file's `0x47` reader and draws the thumbnails of [Objects](../references/objects.md). Disc check (NTSC-U,
+2026-10-06, counts only; `coney_tests "[disc][object_list]"` and the renderer): every record's model and dictionary
+is a WAD entry, 1,400 of the 1,406 models load and 1,399 images are drawn (one name hash is listed twice); the six
+with several atomics are refused by the one-atomic reader.
+
 ## Open questions
+
+- **The Object List's models**: how the game gives an object's untextured material its dictionary's texture
+  ([The Object List's models](#the-object-list)); the record's untraced fields are on
+  [WAD contents](formats/wad-contents.md#object-list).
 
 - **Levels without a `.lev`**: `level70`-`74`, `90`, `91`, `94`, `96`-`98`, `106`, `117`, `125`, `135` have worlds but
   no level file of their name. Do their records give another name at `+0x14`? Decoding `config_preload3.lua`'s

@@ -400,21 +400,27 @@ int main(int argc, char** argv) {
         return loader.failures() == 0 ? 0 : 1;
     }
 
-    // --render-references: one image per character, then exit (docs/guides/building.md#character-reference-images).
+    // --render-references: one image per character and object, then exit
+    // (docs/guides/building.md#reference-images).
     if (const std::optional<std::string> outDir = options->renderReferences; outDir) {
         if (!wad) {
             return 2; // parseOptions refuses --render-references without --disc, so this is never reached
         }
+        const coney::ReferenceKind kind = options->referenceKind.value_or(coney::ReferenceKind::All);
         coney::platform::ReferenceRenderSettings settings;
         settings.outDir = *outDir;
+        settings.characters = kind != coney::ReferenceKind::Objects;
+        settings.objects = kind != coney::ReferenceKind::Characters;
         settings.only = options->only;
         settings.namesFile = options->namesFile.value_or(std::string{});
-        auto report = coney::platform::renderCharacterReferences(renderer, *wad, settings, printText);
+        auto report = coney::platform::renderReferences(renderer, *wad, settings, printText);
         if (!report) {
             std::fprintf(stderr, "coney: %s\n", report.error().message.c_str());
             return 1;
         }
-        std::printf("reference images: %zu rendered, %zu failed\n", report->rendered, report->failed);
+        std::printf("reference images: %zu characters and %zu objects rendered, %zu objects without a model Coney "
+                    "can load, %zu failed\n",
+                    report->characters, report->objects, report->noModel, report->failed);
         return report->failed == 0 ? 0 : 1;
     }
 

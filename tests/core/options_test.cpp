@@ -7,6 +7,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -275,6 +276,28 @@ TEST_CASE("the reference renderer takes a folder, characters to render and a nam
     CHECK(!parse(std::array<std::string_view, 5>{"--disc", "x", "--render-references", "out", "--view-character"})
                .has_value());
     CHECK(coney::usageText().find("--render-references DIR") != std::string_view::npos);
+}
+
+TEST_CASE("the reference renderer's --kind picks characters, objects or both, once", "[options]") {
+    auto unset = parse(std::array<std::string_view, 4>{"--disc", "x", "--render-references", "out"});
+    REQUIRE(unset.has_value());
+    CHECK_FALSE(unset->referenceKind.has_value());
+    for (const auto& [text, kind] :
+         {std::pair{"all", coney::ReferenceKind::All}, std::pair{"characters", coney::ReferenceKind::Characters},
+          std::pair{"objects", coney::ReferenceKind::Objects}}) {
+        auto picked =
+            parse(std::array<std::string_view, 6>{"--disc", "x", "--render-references", "out", "--kind", text});
+        REQUIRE(picked.has_value());
+        CHECK(picked->referenceKind == kind);
+    }
+    CHECK(!parse(std::array<std::string_view, 6>{"--disc", "x", "--render-references", "out", "--kind", "props"})
+               .has_value());
+    CHECK(!parse(std::array<std::string_view, 5>{"--disc", "x", "--render-references", "out", "--kind"}).has_value());
+    CHECK(!parse(std::array<std::string_view, 8>{"--disc", "x", "--render-references", "out", "--kind", "objects",
+                                                 "--kind", "objects"})
+               .has_value());
+    CHECK(!parse(std::array<std::string_view, 4>{"--disc", "x", "--kind", "objects"}).has_value());
+    CHECK(coney::usageText().find("--kind KIND") != std::string_view::npos);
 }
 
 TEST_CASE("the frame pacing options default to no cap with vsync on, outside test mode", "[options]") {

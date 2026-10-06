@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
 #include <expected>
 #include <optional>
 #include <span>
@@ -31,6 +32,13 @@ struct StartPlace {
     /// the player at the leash band's near edge, as at any start.
     std::optional<float> cameraDistance;
     std::optional<float> cameraYawDegrees;
+};
+
+/// Which lists `--render-references` renders (`--kind`).
+enum class ReferenceKind : std::uint8_t {
+    All,        ///< Characters and objects (the default).
+    Characters, ///< Only the Character List's records.
+    Objects,    ///< Only the Object List's records.
 };
 
 /// Settings taken from the command line.
@@ -103,15 +111,15 @@ struct Options {
     std::optional<int> devOverlayFrames;
     /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
     Language language = Language::English;
-    /// `--render-references`: the folder to write a reference image of every character into, then exit. Requires
-    /// discPath and a window (not headless); cannot be combined with `--load`, the viewers, `--frames`,
-    /// `--screenshot` or `--input-script`.
+    /// `--render-references`: the folder to write a reference image of every character and object into (in its
+    /// `characters` and `objects` folders), then exit. Requires discPath and a window (not headless); cannot be
+    /// combined with `--load`, the viewers, `--frames`, `--screenshot` or `--input-script`.
     std::optional<std::string> renderReferences;
-    /// `--only`, in the order given: the characters `--render-references` renders, each a model name or a `0x` name
-    /// hash; empty renders every one. Requires renderReferences.
+    /// `--only`, in the order given: the characters and objects `--render-references` renders, each a model or
+    /// object type name or a `0x` name hash; empty renders every one. Requires renderReferences.
     std::vector<std::string> only;
-    /// `--names`: a text file of model names, one per line, that `--render-references` files images under. Requires
-    /// renderReferences.
+    /// `--names`: a text file of model and object type names, one per line, that `--render-references` files images
+    /// under. Requires renderReferences.
     std::optional<std::string> namesFile;
     /// `--fps-cap N`: draw at most N frames a second, 0 for no cap (the default; vsync still limits the rate while
     /// it is on). 30 is the original's rhythm: one step and one render per frame, nothing blended
@@ -121,6 +129,8 @@ struct Options {
     bool vsync = true;
     /// `--show-fps`: print the frame and step rates once a second, and their totals at the end. Not in test mode.
     bool showFps = false;
+    /// `--kind`: the lists `--render-references` renders; unset renders both. Requires renderReferences.
+    std::optional<ReferenceKind> referenceKind;
 };
 
 /// The largest `--fps-cap`.
