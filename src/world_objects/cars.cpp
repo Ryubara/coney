@@ -16,8 +16,6 @@ namespace {
 
 // The highest part id: parts are 0-25.
 constexpr std::uint32_t kLastPart = kCarParts - 1;
-// Where Coney puts a car's stereo, above its origin (metres): **Coney's stand-in**, dashboard height.
-constexpr float kStereoHeight = 0.8F;
 
 // One component 0-1 as a byte: × 255, kept to 0-255. **Coney's choice**: truncated, as the page does not say whether
 // `0x0017aca8` rounds.
@@ -159,7 +157,7 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
         return false;
     }
     float& damage = car->damage.at(part);
-    damage = instant ? 1.0F : damage + amount;
+    damage = instant || (kCarWindowParts & bit) != 0 ? 1.0F : damage + amount;
     if (damage < 1.0F) {
         return false;
     }
@@ -168,6 +166,10 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
     if (part == kBootPart && !instant && car->trunkLoaded) {
         car->trunkLoaded = false;
         releaseTrunk(*car);
+    }
+    // The window beside the stereo frees it for a theft (a kind-3 context record).
+    if (part == kStereoWindowPart && car->stereo == StereoState::InCar) {
+        car->stereo = StereoState::Freed;
     }
     return true;
 }
@@ -184,11 +186,21 @@ bool Cars::explode(double handle) {
     return true;
 }
 
-anim::Vec3 Cars::bootPosition(const Car& car) {
-    constexpr anim::Vec3 kBootOffset{0.0F, -2.5F, 0.8F};
-    return anim::add(car.position,
-                     anim::transformDirection(anim::matrixFromQuat(anim::normalise(car.rotation)), kBootOffset));
+CarPartMask Cars::humanHit(double handle, anim::Vec3 standing) {
+    const Car* car = find(handle);
+    if (car == nullptr) {
+        return 0;
+    }
+    const CarPartMask struck = carHumanHitParts(*car, standing);
+    for (std::uint32_t part = 0; part <= kLastPart; ++part) {
+        if ((struck & (1U << part)) != 0) {
+            static_cast<void>(damagePart(handle, part, kHumanCarHitDamage, false));
+        }
+    }
+    return struck;
 }
+
+anim::Vec3 Cars::bootPosition(const Car& car) { return carBootPosition(car); }
 
 void Cars::releaseTrunk(Car& car) {
     if (m_records == nullptr) {
@@ -234,8 +246,6 @@ bool Cars::takeStereo(double handle) {
     return true;
 }
 
-anim::Vec3 Cars::stereoPosition(const Car& car) {
-    return anim::Vec3{car.position.x, car.position.y, car.position.z + kStereoHeight};
-}
+anim::Vec3 Cars::stereoPosition(const Car& car) { return carStereoPosition(car); }
 
 } // namespace coney::world_objects

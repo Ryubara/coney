@@ -594,6 +594,15 @@ bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
     return true;
 }
 
+void Human::startStereoTheft(anim::Vec3 point, float stageTurns) {
+    const anim::Vec3 to = anim::subtract(point, m_position);
+    if (std::hypot(to.x, to.y) > 1e-4F) {
+        m_heading = headingOf(to);
+    }
+    m_velocity = anim::Vec3{};
+    m_fighter.startStereoTheft(m_animator, nowMs(), stageTurns);
+}
+
 void Human::followPickUp() {
     if (!m_pickUp) {
         return;

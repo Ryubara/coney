@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/level_pickups.h"
 
+#include <array>
 #include <cmath>
 #include <vector>
 
@@ -152,6 +153,15 @@ std::optional<anim::Vec3> LevelPickups::promptPosition(double object) const {
         return positionOf(*record);
     }
     return m_locate ? m_locate(object) : std::nullopt;
+}
+
+void LevelPickups::stereoStolen(int player, double human, double car) {
+    script::addInventoryItem(m_scripts, m_state, player, item::kMoney, kStereoMoney, true);
+    script::addInventoryItem(m_scripts, m_state, player, item::kCarStereo, 1, true);
+    if (!m_state.player.stereoTheftHandler.empty()) {
+        const std::array<script::Value, 2> args{script::Value(human), script::Value(car)};
+        static_cast<void>(m_scripts.call(m_state.player.stereoTheftHandler, args));
+    }
 }
 
 bool LevelPickups::interact(double object, double human) {

@@ -68,6 +68,8 @@ class LevelPickups {
     static constexpr float kPromptHeight = 1.5F;
     /// The kinds a player takes whatever he holds: `TYPE_SPECIAL` (12) and 24.
     static constexpr int kKindAnyHands = 24;
+    /// What a stolen stereo pays, in dollars.
+    static constexpr int kStereoMoney = 15;
 
     /// Where an object with an interaction prompt but no spawn record is (a tag spot's particle system, a flag);
     /// nothing when it is gone.
@@ -122,6 +124,12 @@ class LevelPickups {
     [[nodiscard]] std::string typeOf(double handle) const;
     /// Whether `handle` is an object in a hand.
     [[nodiscard]] bool inHand(double handle) const { return m_inHand.contains(handle); }
+
+    /// Player `player` (0 or 1), human `human`, stole the stereo of car `car`: $15 and a car stereo (item 11), then
+    /// `CfgSetSteroTheftHandler`'s callback with the human and the car. **Coney's reading**: both gifts notify (the
+    /// research does not say).
+    /// @orig 0x0022e020 StereoTheft_End (unknown)
+    void stereoStolen(int player, double human, double car);
 
     /// A scene moved object `handle` to `position`, turned by `rotation`: its record keeps the pose. **Coney's
     /// reading**: with no object tasks, the record's pose stands for the object's (the original writes it when the

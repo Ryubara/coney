@@ -227,6 +227,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     }
     if (cast != nullptr) {
         bindObjects(cast->objects, cast->recorded);
+        m_cars = cast->cars;
         bindPickups(cast->pickups);
         makeWorldObjects(*cast);
     }

@@ -195,6 +195,10 @@ class Fighter {
     [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
     /// The object an object attack's hit struck this update (its handle); nothing otherwise.
     [[nodiscard]] std::optional<double> objectHit() const { return m_objectHit; }
+    /// Starts the stereo theft (mode 3) at game time `nowMs`, a stage `stageTurns` turns of the stick: 683
+    /// `STEREO_STEAL_INTRO`, then the loop 684 while the game runs (docs/research/combat.md#stereo-theft).
+    /// @orig 0x0022dd98 StereoTheft_Start (unknown)
+    void startStereoTheft(HumanAnimator& animator, std::uint64_t nowMs, float stageTurns);
     /// The held object's anim set from now on (0 for none), which square and cross branch on (combat::armedAttack()).
     void setAnimSet(int set) { m_animSet = set; }
     [[nodiscard]] int animSet() const { return m_animSet; }

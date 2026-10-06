@@ -227,3 +227,22 @@ TEST_CASE("a prompt on an object with no spawn record (a tag spot's flag) is the
     CHECK_FALSE(pickups.actionObject(Vec3{10.5F, 10.0F, -1.4F}).has_value());
     CHECK(pickups.actionObject(Vec3{10.5F, 10.0F, -1.2F}).has_value());
 }
+
+TEST_CASE("a stolen stereo pays $15 and a car stereo, then calls the theft handler with the human and car",
+          "[level_pickups]") {
+    Harness h;
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    std::vector<double> heard;
+    h.scripts.vm().registerFunction("Stolen", [&heard](std::span<const Value> args) -> coney::script::binding::Results {
+        for (const Value& arg : args) {
+            heard.push_back(arg.number().value_or(-1.0));
+        }
+        return std::vector<Value>{};
+    });
+    h.state.player.stereoTheftHandler = "Stolen";
+    pickups.stereoStolen(0, 181, 142);
+    CHECK(h.state.player.inventory.count(0, item::kMoney) == coney::LevelPickups::kStereoMoney);
+    CHECK(h.state.player.inventory.count(0, item::kCarStereo) == 1);
+    CHECK(h.items == std::vector<double>{item::kMoney, item::kCarStereo});
+    CHECK(heard == std::vector<double>{181, 142});
+}

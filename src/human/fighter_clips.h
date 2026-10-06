@@ -50,6 +50,8 @@ inline constexpr std::uint32_t kMugStruggleReact = 343;
 inline constexpr std::uint32_t kMugEnd = 344;
 inline constexpr std::uint32_t kMugEndReact = 345;
 inline constexpr std::uint32_t kBlockSustain = 606;
+inline constexpr std::uint32_t kStereoStealIntro = 683; ///< `STEREO_STEAL_INTRO`.
+inline constexpr std::uint32_t kStereoStealLoop = 684;  ///< The stereo theft's loop while the stick turns.
 inline constexpr std::uint32_t kBlockShuffle = 607;
 
 /// What the player's moves hold on the record `+0x08` while their clips play (docs/research/tasks.md#held-flags).

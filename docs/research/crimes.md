@@ -516,9 +516,15 @@ member says `tagdone`, an AI human given `HuTag` becomes the spot's tagger at on
 flag. Not yet: the slip's rumble and speech 80, the bonus event on a clean finish, the spray particles and the tag's
 drawing, the HUD grid, hint `0x10`, and buttons other than the stick ending a session.
 
-**Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car, a broken
-pane frees it (`ObjectServices::freeCarStereos`, within 2 m of the pane) and `Cars::takeStereo` takes it once; the
-theft itself, the kind-3 record and the stick game are not in Coney yet ([Cars](cars.md#coneys-implementation)).
+**Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car;
+breaking window 15 ([Cars](cars.md#windows)), or a type-12 pane within 2 m (`ObjectServices::freeCarStereos`), frees
+it, and `Cars::takeStereo` takes it once. **The theft** (`PlayLevelMode`'s context action,
+`repo:src/platform/play_level_objects.cpp`): with no kind-1 prompt in reach, triangle within 2 m in plan of a freed
+stereo not below the feet starts it (`Human::startStereoTheft`: the player turns to the stereo, 683 then the loop
+684, mode 3 with 3 turns a stage, the player's class byte 2); success calls `LevelPickups::stereoStolen` ($15 and
+item 11, then the `CfgSetSteroTheftHandler` callback with the human and the car). **Coney's readings**: the turn to
+the stereo is at once, not spread over the intro; both gifts notify the inventory callback; the success and failure
+clips (685, 686), the HUD widget, the hint and the owned byte are not played or set yet.
 
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.

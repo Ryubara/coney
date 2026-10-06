@@ -361,6 +361,10 @@ class Human final : public Holdable {
     /// holds.
     /// @orig 0x0025e5a8 Human_PickUpMessage (unknown)
     bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip);
+    /// Starts the stereo theft at the stereo at `point`: the human turns to it at once and the mini-game runs (mode 3)
+    /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney's reading**: the turn is not
+    /// spread over the intro.
+    void startStereoTheft(anim::Vec3 point, float stageTurns);
     /// Whether a pick-up is under way.
     [[nodiscard]] bool pickingUp() const { return m_pickUp.has_value(); }
     /// The object whose pick-up reached its clip's event since the last call, once; nothing otherwise.

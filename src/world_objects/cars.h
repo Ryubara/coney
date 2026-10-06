@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "world_objects/car_hits.h"
 #include "world_objects/car_types.h"
 #include "world_objects/spawn_records.h"
 
@@ -141,9 +142,10 @@ class Cars {
     /// @orig 0x0038d538 Car_SetTrunkObject (unknown)
     /// @orig 0x0038d528 Car_SetTrunkItemKind (unknown)
     void placeInTrunk(double handle, double object, std::uint32_t itemKind);
-    /// A part takes `amount` of damage (`instant`: set to 1 at once); at 1 it comes off (its bit in the kept removed
-    /// parts, `+0x11f8`). The boot (part 5) coming off a non-instant call releases a loaded boot's item; an instant
-    /// one (the car exploding) loses it. A part already off takes nothing. Returns whether the part came off now.
+    /// A part takes `amount` of damage (`instant`, or a window: set to 1 at once); at 1 it comes off (its bit in the
+    /// kept removed parts, `+0x11f8`). The boot (part 5) coming off a non-instant call releases a loaded boot's item;
+    /// an instant one (the car exploding) loses it; window 15 coming off frees the stereo. A part already off takes
+    /// nothing. Returns whether the part came off now.
     /// @orig 0x0038a4d8 Car_DamagePart (unknown)
     bool damagePart(double handle, std::uint32_t part, float amount, bool instant);
     /// `CarExplode`'s wreck: a car not yet exploded has every part not already off knocked off (instant damage, so a
@@ -152,8 +154,12 @@ class Cars {
     /// @orig 0x0038ab18 Car_TryExplode (unknown)
     /// @orig 0x0038ab50 Car_DoExplode (unknown)
     bool explode(double handle);
-    /// Where a car's boot item is released (game axes). **Coney's stand-in**: the boot's offset in the type record
-    /// (`0x0057e4b0`) is not on the page, so 2.5 m behind the car's middle at 0.8 m, turned with the car.
+    /// A plain human's strike from `standing` reached the car: each part carHumanHitParts() names takes
+    /// kHumanCarHitDamage (a window breaks at once). Returns the parts struck. **Coney's reading**: the gang lock
+    /// (`+0x12d8`), the exploding car, message `0x19`, the effects and the statistic are not modelled yet.
+    /// @orig 0x0038bea0 Car_OnHit (unknown)
+    CarPartMask humanHit(double handle, anim::Vec3 standing);
+    /// Where a car's boot item is released (game axes): carBootPosition().
     [[nodiscard]] static anim::Vec3 bootPosition(const Car& car);
 
     /// `CarSpawnRadio`: puts a stereo in the car. An unknown handle is ignored.
@@ -163,8 +169,7 @@ class Cars {
     bool freeStereo(double handle);
     /// A theft took the car's freed stereo. Returns whether there was one to take.
     bool takeStereo(double handle);
-    /// Where a car's stereo sits (game axes): **Coney's stand-in** of the car's middle at dashboard height, since
-    /// which part `0x00389848` finds is not on the page.
+    /// Where a car's stereo sits (game axes): carStereoPosition().
     [[nodiscard]] static anim::Vec3 stereoPosition(const Car& car);
 
     /// Every car, oldest first.

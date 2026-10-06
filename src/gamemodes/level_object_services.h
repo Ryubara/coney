@@ -71,7 +71,7 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     /// A `glasstest` shard (effects::ParticleSystems::spawnShard()).
     void spawnShard(anim::Vec3 at, float size, std::uint32_t colour) override;
     /// Frees the stereo of every car within `radius` of `at` whose stereo sits there (a car window broken).
-    /// **Coney's stand-in** for where a stereo sits: world_objects::Cars::stereoPosition().
+    /// Where a stereo sits: world_objects::Cars::stereoPosition().
     void freeCarStereos(anim::Vec3 at, float radius) override;
     /// Dust: a `sub_shack_puff`. **Coney's stand-in**: which types `0x003c57d8` makes is not traced; `radius` is not
     /// used.

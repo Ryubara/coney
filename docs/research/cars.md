@@ -317,14 +317,20 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   index of its name and its CRC-32, `car_copcar` spawns `part_copcar_lights` ([Particles](particles.md)),
   `CarSetColor` packs its four numbers as [Colour](#colour) says and marks the car dirty, `CarMakeGoodAsNew` clears
   the removed and open parts, and removing door or window part 14, 16, 18 or 20 also removes the next.
-  `CarSpawnRadio` puts a stereo in the car; a broken pane frees it and a theft takes it once.
+  `CarSpawnRadio` puts a stereo in the car; a broken window 15 frees it and a theft takes it once.
 - The bindings (`repo:src/scripting/car_bindings.h`) are `CarSpawn`, `CarSetColor`, `CarMakeGoodAsNew`,
   `CarSpawnRadio` and `CarPlaceInTrunkOnDetach`; `CarSpawn` returns `NilHandle` when the pool is full.
 - **Part damage and the boot item** (`Cars::damagePart()`, `Cars::placeInTrunk()`): a part's damage adds up (an
   instant call sets it to 1) and at 1 the part comes off (its kept removed bit); the boot coming off a non-instant
   call moves the pinned boot object there, or adds a `dyn_money` spawn record holding the boot's dollars; an instant
-  call loses the item, and `CarRemovePart` releases nothing. Nothing in Coney hits cars yet (the hit handler's zones,
-  `0x0038bea0`, are not built), so in play the item stays in the boot.
+  call loses the item, and `CarRemovePart` releases nothing. A window's damage is 1 at once, and window 15 coming
+  off frees the stereo.
+- **Windows and hits** (`repo:src/world_objects/car_hits.h`, from [Windows, hits and the stereo](#windows)): the
+  body and cabin zone tables by where the hitter stands, the facing test, the car pass's reach (1 m outside the box,
+  the 3 × 54° cone, 2 m in height), the aim point (1 m ahead at feet + 1.5 m for a window, so square plays 662), and
+  `Cars::humanHit()`: an intact window shields its door, each part takes 0.115. `PlayLevelMode` offers each car the
+  player can target among the object targets and passes the strike to `Cars::humanHit()`. The stereo and the boot
+  item sit at the documented offsets.
 - **Explosion** (`CarExplode`, `repo:src/scripting/mission4_bindings.h`, `Cars::explode()`): a car not yet exploded
   takes instant damage on every part (so a boot item is lost) and is marked exploded; without `quiet` its message
   `0x19` goes to its own handler and then to the cars' general one (`SetGeneralCarMsgHandler`,
@@ -338,9 +344,11 @@ Coney's stand-ins, where this page is silent:
 - Cars are lit as the level lights its humans.
 - A car's obstacle is one box around its undamaged atomics, not the type record's boxes; the rebuilt collision mesh
   uses a 4 m grid.
-- The stereo sits 0.8 m above the car's origin; a pane frees it within 2 m.
-- A boot item is released 2.5 m behind the car's middle at 0.8 m (the type record's boot offset is not on the page);
-  the money pickup's 15 s life is not applied.
+- Every type uses the sedan's zone tables and box (the others' are not on the page yet); the car pass's candidate
+  joins the object targets, nearest first, rather than coming before them.
+- Not yet in a car hit: the gang lock (`+0x12d8`), the exploding car, a player above the car skipping the cabin
+  table, the charge's and thrown objects' contact-point zones, message `0x19`, the first-hit effect and the statistic.
+- The money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
 - The explosion's look (the car is drawn as before, its parts' kept bits set), effects, sound, 300 damage within 5 m,
   statistic and alert to the AI are not built; its message carries 0 as the other object and the number, and both
@@ -356,3 +364,5 @@ Coney's stand-ins, where this page is silent:
 - Which atomics the paint tints, how cars are lit, and how the type record's boxes make a car's collision.
 - Where a car's stereo sits (answered: [Windows, hits and the stereo](#windows)). Still open: the effect kinds of
   message `0x3f` (`0x0038a830`) and what `0x002936a8` and `0x00413018` report for a car hit.
+- The zone thresholds, masks and boxes of the coupe, wagon, police car, van and Sully's car (Coney uses the
+  sedan's).

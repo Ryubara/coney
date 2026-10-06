@@ -36,7 +36,7 @@ missions:
       default: in-progress
       each:
         1: {status: pending-approval, note: "Plays from the intro through all twelve lessons (bats picked up with triangle, rage, the second wave, the Warriors' 50-second stopwatch) to scene l99_c6, driven by the pad; then player 1 is handed to the new Rembrandt on the street beside Vermin for checkpoint 2 and the course's humans are deleted with their gangs. In the last lesson the three sparring Warriors run in at the player and fight him (Melee, EngageEnemy and FindEnemy as the original pushes them)."}
-        2: {status: in-progress, note: "The store's door is hit open, the watch cabinet broken and its watches taken with triangle, which schedules the car lesson; the car lesson and the rest of the checkpoint are being built."}
+        2: {status: in-progress, note: "The store's door is hit open, the watch cabinet broken and its watches taken with triangle, which schedules the car lesson; square at the parked car breaks its window and triangle starts the stereo theft, whose stick turns call P2.CarRadioStolen. The rest of the checkpoint is being built."}
         3: {status: not-started, note: "Not yet played in Coney: the fence climbs and the mission's end (the cinematic, the hand-over to level80)."}
     research:
       - {title: "The first mission's script", path: "research/scripting.md#level99"}

@@ -9,6 +9,7 @@
 #include "characters/character_class.h"
 #include "combat/anim_ids.h"
 #include "combat/anim_ranges.h"
+#include "combat/stick_games.h"
 #include "human/fighter.h"
 #include "human/locomotion.h"
 #include "platform/play_level_mode.h"
@@ -25,6 +26,10 @@ namespace {
 constexpr float kStrikeHeight = 1.0F;
 // A dropped object lands this far ahead of the feet (Coney's stand-in for its fall from the hand).
 constexpr float kDropAhead = 0.3F;
+// A car stereo's context record (kind 3) reaches this far in the ground plane (`CfgActionDistance`'s default).
+constexpr float kStereoReach = 2.0F;
+// The player's Warrior class byte `+0x0b`, which makes a theft's stage 3 turns (docs/research/combat.md#stereo-theft).
+constexpr std::uint8_t kPlayerTheftByte = 2;
 // **Coney's stand-in** for the reach of the pickable door's kind-2 record (not traced): triangle within this many
 // metres of the door's position starts a pick.
 constexpr float kLockPickReach = 1.5F;
@@ -74,6 +79,16 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
         };
         human::ScriptState& script = human.script();
         const anim::Vec3 feet = human.position();
+        // A car's freed stereo (a kind-3 record) comes after an object's prompt (kind 1).
+        if (!m_pickups->actionObject(feet).has_value()) {
+            if (const world_objects::Car* car = stereoInReach(feet)) {
+                human.startStereoTheft(world_objects::Cars::stereoPosition(*car),
+                                       combat::stereoStageTurns(kPlayerTheftByte));
+                m_theftCar = car->handle;
+                m_print(std::format("theft: the stereo of car {:.0f}\n", car->handle));
+                return true;
+            }
+        }
         const TriangleOutcome outcome = m_pickups->triangle(playerHandle(), feet, human::facing(human.heading()),
                                                             script.heldObject != world_objects::kNoObject, blocked);
         switch (outcome.result) {
@@ -103,6 +118,27 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
     });
 }
 
+const world_objects::Car* PlayLevelMode::stereoInReach(anim::Vec3 feet) const {
+    if (m_cars == nullptr) {
+        return nullptr;
+    }
+    const world_objects::Car* best = nullptr;
+    float bestDistance = kStereoReach;
+    for (const world_objects::Car& car : m_cars->all()) {
+        if (car.stereo != world_objects::StereoState::Freed) {
+            continue;
+        }
+        const anim::Vec3 at = world_objects::Cars::stereoPosition(car);
+        const float distance = std::hypot(at.x - feet.x, at.y - feet.y);
+        if (distance <= bestDistance && at.z >= feet.z &&
+            std::fabs(at.z - (feet.z + 1.0F)) <= LevelPickups::kPromptHeight) {
+            best = &car;
+            bestDistance = distance;
+        }
+    }
+    return best;
+}
+
 void PlayLevelMode::giveObjectTargets() {
     if (m_objects == nullptr) {
         return;
@@ -111,6 +147,21 @@ void PlayLevelMode::giveObjectTargets() {
     for (const world_objects::GlassPane& pane : m_objects->glass.panes()) {
         if (!pane.broken && !pane.hidden) {
             objects.push_back(human::ObjectTarget{.handle = pane.handle, .point = pane.centre});
+        }
+    }
+    // The car pass (before the objects in the original): a car the player is close to and faces offers its aim point,
+    // named by the car's handle (docs/research/cars.md#windows).
+    if (m_cars != nullptr) {
+        const human::Human& human = m_player->human();
+        const anim::Vec3 feet = human.position();
+        const anim::Vec3 forward = human::facing(human.heading());
+        for (const world_objects::Car& car : m_cars->all()) {
+            if (!world_objects::carTargetable(car, feet, human.heading())) {
+                continue;
+            }
+            if (const std::optional<anim::Vec3> aim = world_objects::carAimPoint(car, feet, forward)) {
+                objects.push_back(human::ObjectTarget{.handle = car.handle, .point = *aim});
+            }
         }
     }
     m_player->human().setObjectTargets(std::move(objects));
@@ -122,6 +173,17 @@ void PlayLevelMode::stepPickups() {
     }
     human::Human& human = m_player->human();
     human::ScriptState& script = human.script();
+    // The stereo theft's outcome: the car's stereo is taken and paid for, or the theft is over.
+    if (m_theftCar && human.fighter().last().game != combat::GameResult::Running) {
+        if (human.fighter().last().game == combat::GameResult::Succeeded && m_cars != nullptr &&
+            m_cars->takeStereo(*m_theftCar)) {
+            m_pickups->stereoStolen(0, playerHandle(), *m_theftCar);
+            m_print(std::format("theft: stole the stereo of car {:.0f}\n", *m_theftCar));
+        } else {
+            m_print("theft: failed\n");
+        }
+        m_theftCar.reset();
+    }
     if (const std::optional<double> taken = human.takePickedUp()) {
         const TakeResult result = m_pickups->take(*taken, 0);
         if (result == TakeResult::InHand) {
@@ -201,14 +263,20 @@ void PlayLevelMode::stepObjects() {
     if (const std::optional<double> attacked = human.fighter().objectHit()) {
         const anim::Vec3 feet = human.position();
         const anim::Vec3 ahead = human::facing(human.heading());
-        const world_objects::GlassPane* pane = m_objects->glass.find(*attacked);
-        const bool took =
-            m_objects->humanHit(*attacked, world_objects::ObjectHit{.attacker = playerHandle(),
-                                                                    .kind = world_objects::humanHitKind(false, false),
-                                                                    .point = pane != nullptr ? pane->centre : feet,
-                                                                    .direction = ahead,
-                                                                    .attackerAt = feet});
-        m_print(std::format("objects: object attack on {:.0f}{}\n", *attacked, took ? "" : " (no effect)"));
+        // A car takes the hit itself (Strike_Contact calls its hit handler; no message 1), by where the player stands.
+        if (m_cars != nullptr && m_cars->find(*attacked) != nullptr) {
+            const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet);
+            m_print(std::format("objects: car {:.0f} hit, parts {:#x}\n", *attacked, struck));
+        } else {
+            const world_objects::GlassPane* pane = m_objects->glass.find(*attacked);
+            const bool took = m_objects->humanHit(
+                *attacked, world_objects::ObjectHit{.attacker = playerHandle(),
+                                                    .kind = world_objects::humanHitKind(false, false),
+                                                    .point = pane != nullptr ? pane->centre : feet,
+                                                    .direction = ahead,
+                                                    .attackerAt = feet});
+            m_print(std::format("objects: object attack on {:.0f}{}\n", *attacked, took ? "" : " (no effect)"));
+        }
     } else if (const int animId = human.fighter().last().hitAnim;
                animId != combat::anim_id::kNone && m_objects->world.collision != nullptr) {
         // The attack's reach as the fighter measures it: its far range, else the default reach.

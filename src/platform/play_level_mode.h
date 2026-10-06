@@ -44,6 +44,7 @@
 #include "warriors/created_humans.h"
 #include "world/debug_camera.h"
 #include "world/sector_budget.h"
+#include "world_objects/cars.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/lock_pick.h"
 #include "world_objects/object_list.h"
@@ -329,6 +330,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
     // level's collision, starts the pick-up on him.
     void bindPickups(LevelPickups* pickups);
+    // The car whose freed stereo is in reach of feet at `feet` (a kind-3 context record), nearest first; null for none.
+    [[nodiscard]] const world_objects::Car* stereoInReach(anim::Vec3 feet) const;
     // Player 1's square may strike the level's whole glass panes, aiming at their centres.
     void giveObjectTargets();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.
@@ -429,8 +432,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     double m_playerHandle = 0.0;
     // The level's glass panes and doors (gameplay's; null without them), the lock pick under way, and its difficulty.
     world_objects::LevelObjects* m_objects = nullptr;
-    double m_heldObject = 0.0;         // what player 1 held at the last step (world_objects::kNoObject for nothing)
-    LevelPickups* m_pickups = nullptr; // the level's loose objects for the pick-up; not owned
+    double m_heldObject = 0.0;             // what player 1 held at the last step (world_objects::kNoObject for nothing)
+    world_objects::Cars* m_cars = nullptr; // the level's parked cars, for their stereos; not owned
+    std::optional<double> m_theftCar;      // the car whose stereo player 1 is stealing
+    LevelPickups* m_pickups = nullptr;     // the level's loose objects for the pick-up; not owned
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;
     // The --trace file (closed when unset) and the steps traced.

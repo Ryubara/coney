@@ -3306,6 +3306,16 @@ subsystem = "Human"
 size = 824
 
 [[function]]
+address = 0x0022dd98
+name = "StereoTheft_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x0022e020
+name = "StereoTheft_End"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022e848
 name = "Tag_End"
 subsystem = "Human"
@@ -4449,6 +4459,11 @@ address = 0x00277958
 name = "Pair_CheckPlace"
 subsystem = "Human"
 size = 456
+
+[[function]]
+address = 0x00279f50
+name = "Player_CarTargetFilter"
+subsystem = "Human"
 
 [[function]]
 address = 0x0027a6c0
@@ -7465,8 +7480,38 @@ subsystem = "TaskEngine"
 size = 1432
 
 [[function]]
+address = 0x0038b520
+name = "Car_FacingParts"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038b8d0
+name = "Car_HitZoneParts"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038bb48
+name = "Car_UpdateTransform"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038bea0
+name = "Car_OnHit"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x0038c7d8
 name = "Car_RemovePartBits"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038c868
+name = "Car_SpawnStereo"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038c990
+name = "Car_AimPoint"
 subsystem = "TaskEngine"
 
 [[function]]
@@ -7526,6 +7571,11 @@ address = 0x0038e538
 name = "CarManager_SetMsgHandler"
 subsystem = "TaskEngine"
 size = 88
+
+[[function]]
+address = 0x0038e860
+name = "Cars_FindNear"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x0038f378

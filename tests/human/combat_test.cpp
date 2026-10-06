@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <map>
 #include <memory>
 #include <numbers>
@@ -23,6 +24,7 @@
 #include "combat/combat_script.h"
 #include "combat/commands.h"
 #include "combat/player_combat.h"
+#include "combat/stick_games.h"
 #include "core/pad.h"
 #include "human/fighter.h"
 #include "human/human.h"
@@ -484,4 +486,32 @@ TEST_CASE("square with no object in reach plays the chain's first attack", "[hum
     });
     CHECK(std::ranges::find(played, static_cast<std::uint32_t>(id::kAttackS1)) != played.end());
     CHECK_FALSE(struck);
+}
+
+TEST_CASE("the stereo theft turns the player to the stereo, plays 683 then 684, and the stick's turns win it",
+          "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, 6.0F);
+    fight.human().startStereoTheft(Vec3{42.0F, 40.0F, 1.0F}, coney::combat::stereoStageTurns(2));
+    CHECK(fight.human().heading() == Approx(-std::numbers::pi_v<float> / 2.0F).margin(1e-4));
+    // The stick anticlockwise, 30 degrees an update at full deflection.
+    std::string script;
+    for (int frame = 0; frame < 300; ++frame) {
+        const float radians = static_cast<float>(frame) * 30.0F * std::numbers::pi_v<float> / 180.0F;
+        script += std::format("{} stick left {} {}\n", frame, std::lround(100.0F * std::cos(radians)),
+                              std::lround(100.0F * std::sin(radians)));
+    }
+    std::vector<std::uint32_t> played;
+    bool won = false;
+    fight.run(script, 300, [&](std::uint64_t) {
+        const std::uint32_t now = fight.human().animator().animId();
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+        }
+        won = won || fight.human().fighter().last().game == coney::combat::GameResult::Succeeded;
+    });
+    REQUIRE(played.size() >= 2);
+    CHECK(played[0] == 683);
+    CHECK(played[1] == 684);
+    CHECK(won);
 }

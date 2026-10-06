@@ -467,6 +467,11 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
     }
 }
 
+void Fighter::startStereoTheft(HumanAnimator& animator, std::uint64_t nowMs, float stageTurns) {
+    m_combat.startTheft(combat::TheftKind::Rotate, nowMs, stageTurns);
+    animator.playCombat(clips::one(clips::kStereoStealIntro), clips::kStereoStealLoop, AnimState::Hold, kCombatFade);
+}
+
 void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
     const std::uint32_t wanted =
         input.stick.magnitude() > locomotionTuning().stickDeadZone ? clips::kBlockShuffle : clips::kBlockSustain;
