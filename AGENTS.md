@@ -47,7 +47,8 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
 
 Document as you work: a change that alters behaviour, a command or what we know updates its living doc in the same
 commit. One document per subject, updated in place: findings in `docs/research/`, how-tos in `docs/guides/`, the
-why in code comments. `HANDOFF.md` holds only the current state of the work (local, never committed).
+why in code comments. Mission work updates `research/missions.yaml` (status, checkpoints) in the same commit and
+reruns `coney-tools missions render`. `HANDOFF.md` holds only the current state of the work (local, never committed).
 
 ## Commits and GitHub
 

@@ -41,3 +41,5 @@ jobs:
       - run: uv run --project python coney-tools natives cpp --check
       # The game reference pages must match their lists (research/references/).
       - run: uv run --project python coney-tools refs render --check
+      # The mission status pages (docs/missions/) must match research/missions.yaml.
+      - run: uv run --project python coney-tools missions render --check

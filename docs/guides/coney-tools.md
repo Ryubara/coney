@@ -1,13 +1,14 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers nine groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers ten groups:
 `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`audio`](#audio),
 which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which
 reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
 current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the
-game reference lists, and [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update traces in
-PCSX2 and compare them with Coney's. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into
-memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+game reference lists, [`missions`](#missions), which builds the mission status pages, and [`pcsx2`](#pcsx2) and
+[`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's.
+Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
+[WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -314,6 +315,21 @@ transparency. `coney --render-references` writes full-colour images of about 26 
 under a quarter of that and look the same at 256 pixels. The quantizer is deterministic, so a re-render gives the same
 files. A file the palette would not make smaller (most radar icons) is left as it is. Run it after rendering and before
 `refs extract` links the images.
+
+## missions {#missions}
+
+The [Missions](../missions/index.md) pages are generated from `research/missions.yaml`
+([Research workflow](research-workflow.md#missions) has its schema and who updates it).
+
+```sh
+uv run --project python coney-tools missions render [--check]
+```
+
+Checks the list (every story level present, each mission's checkpoint count equal to the Sections column of the
+levels list, each status consistent with its checkpoints) and writes `docs/missions/index.md` and one page per level,
+with the script-binding numbers of [Story coverage](../references/bindings/story.md) read from
+`research/bindings/`. With `--check` it writes nothing and exits with 1 when a page is out of date; CI runs it that
+way. Run `natives render` first when bindings changed.
 
 ## pcsx2 {#pcsx2}
 

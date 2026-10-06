@@ -1,0 +1,363 @@
+# Missions: the status list. The pages docs/missions/ are generated from this file by
+# `coney-tools missions render`; everything here is hand-kept. An implementer updates it in the same commit as
+# mission work (docs/guides/research-workflow.md#missions). Our own words only: no mission names, text or dialogue
+# from the game.
+#
+# Per mission: level, group (story|hub|flashback|armies), slot, title, summary, status, checkpoints
+#   {count (= the levels list's Sections), default (status of every checkpoint not in `each`),
+#    each: {N: {status, note}}}, research [{title, path under docs/}], optional issues, questions, test, notes.
+# Statuses (missions and checkpoints): not-started, in-progress, pending-approval, needs-fixes, approved.
+about: |
+  Which missions of the story Coney can play, and how far the owner's play-testing has signed each off. A mission
+  here is a level: the 18 story missions, the hub between them, the five flashbacks and the five stages of the
+  Armies of the Night bonus game. Each page lists the mission's checkpoints, what it needs from the script bindings,
+  its known issues and how to run it.
+lifecycle: |
+  A mission starts Not Started and becomes In Progress when its first checkpoint is being built. The implementer
+  moves it to Pending Gameplay Approval once every checkpoint plays to its end in Coney. Only the owner, after
+  play-testing it against the original, moves it to Needs Fixes (the play-test found something; the known issues are
+  listed on its page) or to Approved. A merged fix moves a Needs Fixes mission back to Pending Gameplay Approval for
+  another play-test. Each checkpoint carries the same states, and a mission's state never claims more than its
+  checkpoints show: Pending, Needs Fixes and Approved need every checkpoint built, and Approved needs every
+  checkpoint approved.
+missions:
+  - level: 99
+    group: story
+    slot: story mission 1
+    title: "Mission 1 (level99)"
+    summary: "The first mission, a tutorial: a combat course taught lesson by lesson, a section on getting around the streets, and a finale that hands over to the second mission. Coney starts it from a new game at checkpoint 1."
+    status: in-progress
+    checkpoints:
+      count: 3
+      default: in-progress
+      each:
+        1: {status: in-progress, note: "The intro and the combat lessons; the later lessons are still being built."}
+        2: {status: in-progress, note: "The store's loot and the pick-up are in; the rest of the checkpoint is being built."}
+        3: {status: in-progress, note: "The fence climbs and the mission's end (the cinematic, the hand-over to level80) are being built."}
+    research:
+      - {title: "The first mission's script", path: "research/scripting.md#level99"}
+      - {title: "The combat tutorial's lessons", path: "research/scripting.md#level99-lessons"}
+      - {title: "The first mission's cast", path: "research/ai.md#level99"}
+      - {title: "Combat", path: "research/combat.md"}
+    test: "coney_tests \"[disc][story]\""
+    notes: "The goal for this mission: STORY from the main menu through the profile screens and loading, to the mission playing from start to end."
+  - level: 80
+    group: story
+    slot: story mission 2
+    title: "Mission 2 (level80)"
+    summary: "The second story mission, entered after the tutorial."
+    status: pending-approval
+    checkpoints:
+      count: 4
+      default: pending-approval
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "AI: scripted goals and actions", path: "research/ai.md#scripted"}
+    test: "coney_tests \"[disc][story]\""
+    notes: "All four checkpoints play headless on the disc with no script error and player 1 moving under the pad (`tests/platform/disc_story_missions_test.cpp`); nobody has compared them with the original yet."
+  - level: 87
+    group: story
+    slot: story mission 3
+    title: "Mission 3 (level87)"
+    summary: "The third story mission; its scripts use tagging at tag spots, radios, fog and steam effects and door-opening goals."
+    status: pending-approval
+    checkpoints:
+      count: 5
+      default: pending-approval
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "World objects: doors", path: "research/objects.md"}
+      - {title: "AI: scripted goals and actions", path: "research/ai.md#scripted"}
+    questions:
+      - "Chapter 3 names a callback its script never defines (`ch3.BoozerChallenge`); Coney logs and skips it, and what the original does is not traced (Scripts, errors in a fresh state)."
+    test: "coney_tests \"[disc][story]\""
+    notes: "All five checkpoints play headless on the disc with no script error and player 1 moving under the pad; nobody has compared them with the original yet."
+  - level: 95
+    group: hub
+    slot: the hub
+    title: "The hub (level95)"
+    summary: "The Warriors' clubhouse and the streets of Coney around it, where the story returns between missions. Its checkpoint picks the chapter and which mission the clubhouse offers next; it also starts the flashbacks and the bonus game."
+    status: pending-approval
+    checkpoints:
+      count: 12
+      default: pending-approval
+    research:
+      - {title: "The hub", path: "research/scripting.md#the-hub"}
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+    test: "coney_tests \"[disc][hub]\""
+    notes: "All twelve checkpoints play headless on the disc with no script error and player 1 walking (`tests/platform/disc_hub_test.cpp`); nobody has compared them with the original yet."
+  - level: 34
+    group: story
+    slot: story mission 4
+    title: "Mission 4 (level34)"
+    summary: "The story's mission 4, reached from the hub."
+    status: in-progress
+    checkpoints:
+      count: 5
+      default: in-progress
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 2
+    group: story
+    slot: story mission 5
+    title: "Mission 5 (level2)"
+    summary: "The story's mission 5, reached from the hub."
+    status: in-progress
+    checkpoints:
+      count: 4
+      default: in-progress
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 3
+    group: story
+    slot: story mission 6
+    title: "Mission 6 (level3)"
+    summary: "The story's mission 6, reached from the hub."
+    status: in-progress
+    checkpoints:
+      count: 5
+      default: in-progress
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 5
+    group: story
+    slot: story mission 7
+    title: "Mission 7 (level5)"
+    summary: "The story's mission 7, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 4
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 81
+    group: story
+    slot: story mission 8
+    title: "Mission 8 (level81)"
+    summary: "The story's mission 8, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 5
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 86
+    group: story
+    slot: story mission 9
+    title: "Mission 9 (level86)"
+    summary: "The story's mission 9, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 4
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 93
+    group: story
+    slot: story mission 10
+    title: "Mission 10 (level93)"
+    summary: "The story's mission 10, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 6
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 31
+    group: story
+    slot: story mission 11
+    title: "Mission 11 (level31)"
+    summary: "The story's mission 11, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 6
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 14
+    group: story
+    slot: story mission 12
+    title: "Mission 12 (level14)"
+    summary: "The story's mission 12, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 9
+    group: story
+    slot: story mission 13
+    title: "Mission 13 (level9)"
+    summary: "The story's mission 13, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 51
+    group: story
+    slot: story mission 14
+    title: "Mission 14 (level51)"
+    summary: "The story's mission 14, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 7
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 52
+    group: story
+    slot: story mission 15
+    title: "Mission 15 (level52)"
+    summary: "The story's mission 15, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 4
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 54
+    group: story
+    slot: story mission 16
+    title: "Mission 16 (level54)"
+    summary: "The story's mission 16, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 5
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 55
+    group: story
+    slot: story mission 17
+    title: "Mission 17 (level55)"
+    summary: "The story's mission 17, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 84
+    group: story
+    slot: story mission 18
+    title: "Mission 18 (level84)"
+    summary: "The story's mission 18, reached from the hub."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 82
+    group: flashback
+    slot: flashback 1
+    title: "Flashback 1 (level82)"
+    summary: "Flashback mission 1, started from a trophy in the hub's clubhouse."
+    status: not-started
+    checkpoints:
+      count: 4
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 92
+    group: flashback
+    slot: flashback 2
+    title: "Flashback 2 (level92)"
+    summary: "Flashback mission 2, started from a trophy in the hub's clubhouse."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 83
+    group: flashback
+    slot: flashback 3
+    title: "Flashback 3 (level83)"
+    summary: "Flashback mission 3, started from a trophy in the hub's clubhouse."
+    status: not-started
+    checkpoints:
+      count: 6
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 20
+    group: flashback
+    slot: flashback 4
+    title: "Flashback 4 (level20)"
+    summary: "Flashback mission 4, started from a trophy in the hub's clubhouse."
+    status: not-started
+    checkpoints:
+      count: 6
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 11
+    group: flashback
+    slot: flashback 5
+    title: "Flashback 5 (level11)"
+    summary: "Flashback mission 5, started from a trophy in the hub's clubhouse."
+    status: not-started
+    checkpoints:
+      count: 6
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 60
+    group: armies
+    slot: Armies of the Night 1
+    title: "Armies of the Night, stage 1 (level60)"
+    summary: "Stage 1 of the Armies of the Night bonus game, which the hub offers once the five flashbacks are complete."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 61
+    group: armies
+    slot: Armies of the Night 2
+    title: "Armies of the Night, stage 2 (level61)"
+    summary: "Stage 2 of the Armies of the Night bonus game, loaded by the end of stage 1."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 62
+    group: armies
+    slot: Armies of the Night 3
+    title: "Armies of the Night, stage 3 (level62)"
+    summary: "Stage 3 of the Armies of the Night bonus game, loaded by the end of stage 2."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 63
+    group: armies
+    slot: Armies of the Night 4
+    title: "Armies of the Night, stage 4 (level63)"
+    summary: "Stage 4 of the Armies of the Night bonus game, loaded by the end of stage 3."
+    status: not-started
+    checkpoints:
+      count: 3
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+  - level: 64
+    group: armies
+    slot: Armies of the Night 5
+    title: "Armies of the Night, stage 5 (level64)"
+    summary: "Stage 5 of the Armies of the Night bonus game, loaded by the end of stage 4. Its last checkpoint returns to the hub."
+    status: not-started
+    checkpoints:
+      count: 4
+      default: not-started
+    research:
+      - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}

@@ -13,6 +13,7 @@ from typing import Any
 
 from coney_tools import (
     audio_cli,
+    missions_render,
     movies_cli,
     natives_cli,
     pcsx2_claims_cli,
@@ -91,6 +92,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_progress_commands(groups)
     _add_natives_commands(groups)
     _add_refs_commands(groups)
+    _add_missions_commands(groups)
     _add_pcsx2_commands(groups)
     _add_trace_commands(groups)
     return parser
@@ -234,6 +236,14 @@ def _add_refs_commands(groups: Any) -> None:
     extract.add_argument("--names", type=Path, help="extra WAD names, one per line (the last word of each line)")
     compress = commands.add_parser("compress-images", help="rewrite the thumbnails as 256-colour PNGs, in place")
     compress.add_argument("folder", nargs="?", type=Path, help="default: docs/references/images/")
+
+
+def _add_missions_commands(groups: Any) -> None:
+    """Register `coney-tools missions ...`."""
+    group = groups.add_parser("missions", help="the mission status list (research/missions.yaml, docs/missions/)")
+    commands = group.add_subparsers(dest="command", required=True)
+    render = commands.add_parser("render", help="check the list and write the pages of docs/missions/")
+    render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a page is stale")
 
 
 def _add_pcsx2_flags(command: Any) -> None:
@@ -421,6 +431,8 @@ def _run(args: argparse.Namespace) -> int:
         if args.command == "compress-images":
             return refs_cli.run_compress_images(args.folder)
         return refs_cli.run_extract(args.disc, args.only, args.names)
+    if args.group == "missions":
+        return missions_render.run_render(args.check)
     if args.group == "pcsx2":
         return _run_pcsx2(args)
     if args.group == "trace":

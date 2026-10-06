@@ -10,6 +10,8 @@ How far Coney has come, measured three ways:
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
+- **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
+  Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
 
 The tables between the markers below are generated; the rest of this page is written by hand. The same summary is
 at the top of the repository's `README.md`.

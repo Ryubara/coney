@@ -222,7 +222,9 @@ runs the same with or without the Xbox disc.
 
 ## The whole game
 
-Every mission and mode, checked against the original running in PCSX2, then a first release.
+Every mission and mode, checked against the original running in PCSX2, then a first release. The [mission
+checklist](missions/index.md) tracks each story level, the hub, the flashbacks and the Armies of the Night stages
+from Not Started to Approved (the owner's play-test).
 
 ## Online multiplayer {#online-multiplayer}
 

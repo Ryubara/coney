@@ -66,6 +66,40 @@ nav:
   - Roadmap: roadmap.md
   - Changelog: changelog.md
   - Progress: progress/index.md
+  - Missions:
+      - Overview: missions/index.md
+      - Story missions:
+          - "Mission 1 (level99)": missions/level99.md
+          - "Mission 2 (level80)": missions/level80.md
+          - "Mission 3 (level87)": missions/level87.md
+          - "Mission 4 (level34)": missions/level34.md
+          - "Mission 5 (level2)": missions/level2.md
+          - "Mission 6 (level3)": missions/level3.md
+          - "Mission 7 (level5)": missions/level5.md
+          - "Mission 8 (level81)": missions/level81.md
+          - "Mission 9 (level86)": missions/level86.md
+          - "Mission 10 (level93)": missions/level93.md
+          - "Mission 11 (level31)": missions/level31.md
+          - "Mission 12 (level14)": missions/level14.md
+          - "Mission 13 (level9)": missions/level9.md
+          - "Mission 14 (level51)": missions/level51.md
+          - "Mission 15 (level52)": missions/level52.md
+          - "Mission 16 (level54)": missions/level54.md
+          - "Mission 17 (level55)": missions/level55.md
+          - "Mission 18 (level84)": missions/level84.md
+      - "The hub (level95)": missions/level95.md
+      - Flashbacks:
+          - "Flashback 1 (level82)": missions/level82.md
+          - "Flashback 2 (level92)": missions/level92.md
+          - "Flashback 3 (level83)": missions/level83.md
+          - "Flashback 4 (level20)": missions/level20.md
+          - "Flashback 5 (level11)": missions/level11.md
+      - Armies of the Night:
+          - "Armies of the Night, stage 1 (level60)": missions/level60.md
+          - "Armies of the Night, stage 2 (level61)": missions/level61.md
+          - "Armies of the Night, stage 3 (level62)": missions/level62.md
+          - "Armies of the Night, stage 4 (level63)": missions/level63.md
+          - "Armies of the Night, stage 5 (level64)": missions/level64.md
   - Research:
       - Overview: research/overview.md
       - Source map: research/source-map.md
