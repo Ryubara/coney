@@ -80,5 +80,5 @@ entries:
     evidence: inferred
   - id: 11
     name: "keep up the numbers"
-    behaviour: "Tops the gang up while its living members are fewer than the gang's limit, never where a camera sees the spot; stops (0) once the gang has spawned its total."
+    behaviour: "Tops the gang up while its living members are fewer than the gang's limit, ignoring the spawner's own alive limit; stops (0) once the gang has spawned its total. Added in this state, the spawner is also made off screen (never spawns while a camera sees its spot); switched to it, it keeps its flag."
     settable: true

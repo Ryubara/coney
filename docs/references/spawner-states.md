@@ -27,7 +27,7 @@ A gang's spawners (four per gang, `GangAddSpawner`) make humans according to the
 | <span id="spawner-8"></span>8 | out of sight | Spawns out of the camera's sight around the player, `value` metres off. | yes | 27 | 14 | `level3_chase`, `level9`, `level11`, `level11_chapter1`, `level11_chapter3`, `level20` |
 | <span id="spawner-9"></span>9 | gang dispatch | Like 4, without the police limit, and the new gang takes the spawner's gang type and relations; goes to 10. | yes | 15 | | `level5`, `level9`, `level11`, `level14`, `level20`, `level51` |
 | <span id="spawner-10"></span>10 | dispatching gang | Like 6 for the gang made in 9; back to 9. | no | | | |
-| <span id="spawner-11"></span>11 | keep up the numbers | Tops the gang up while its living members are fewer than the gang's limit, never where a camera sees the spot; stops (0) once the gang has spawned its total. | yes | | | |
+| <span id="spawner-11"></span>11 | keep up the numbers | Tops the gang up while its living members are fewer than the gang's limit, ignoring the spawner's own alive limit; stops (0) once the gang has spawned its total. Added in this state, the spawner is also made off screen (never spawns while a camera sees its spot); switched to it, it keeps its flag. | yes | | | |
 
 ## Sources and evidence
 

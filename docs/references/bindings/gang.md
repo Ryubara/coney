@@ -115,7 +115,7 @@ GangAddSpawner(gang, name, arg3, types, model, pos, heading, total, delay, maxCo
 | 7 | `heading` | number, truncated to an integer | Heading of the spawned characters, in degrees. |
 | 8 | `total` | number, truncated to an integer | How many characters the spawner makes in all; the scripts use -1 for no limit (inferred). |
 | 9 | `delay` | number, truncated to an unsigned integer | Delay between spawns, in milliseconds (the scripts pass 1, 500 or 1000) (inferred). |
-| 10 | `maxConcurrent` | number, truncated to an integer | How many of its characters may be alive at once (spawner +0x5a; GangSetMaxConcurrent changes it). |
+| 10 | `maxConcurrent` | number, truncated to an integer | How many of its characters may be alive at once (spawner +0x5a; GangSetMaxConcurrent changes it); a negative -n spawns waves of n, each once the last wave is all dead. |
 | 11 | `kind` | number, truncated to an integer | The [spawner state](../spawner-states.md) it starts in (spawner `+0x52`): 0 off, 1 on, 2 after `value` seconds, 3 or 5 by distance from player 1, 4 and 9 dispatch squads, 7 and 8 out of sight, 11 keeps the gang topped up. |
 | 12 | `target` | number, truncated to an unsigned integer | A handle stored with the spawner (the scripts pass NilHandle); meaning not traced. |
 | 13 | `arg13` | number, truncated to an integer | A number stored with the spawner (the scripts pass 0); meaning not traced. |
@@ -1426,8 +1426,9 @@ GangSetSpawnerMustBeOffScreen(gang, spawner, on)
 
 **Returns** nothing.
 
-Sets a gang spawner's off-screen flag (spawner `+0x8c`). While it is set, each update the spawner first checks whether a
-camera can see a 0.3 m sphere 1.6 m above the spawner's position, and skips spawning that update if it can, so the
+Sets a gang spawner's off-screen flag (spawner `+0x8c`). While it is set, each update the spawner first checks whether
+any player's camera can see a 0.3 m sphere 1.6 m above the spawner's position (in range, in the view frustum and not
+hidden behind the level's collision mesh along one ray to its centre), and skips spawning that update if it can, so the
 player never sees its humans appear.
 
 **Notes.** Reader: GangSpawner_Update (0x001681a0, at 0x001685e8, the visibility test 0x001202e8). The test uses the

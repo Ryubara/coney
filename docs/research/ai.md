@@ -1041,24 +1041,36 @@ uses are in [Spawner states](../references/spawner-states.md). Confirmed (code):
 | `+0x00` / `+0x14` | position / name |
 | `+0x50` | in use; cleared once the spawner has made its total (`+0x56` against `+0x58`) |
 | `+0x52` | state; `GangAddSpawner`'s kind, `GangStartSpawner`'s mode (`0x00168cd0` accepts 0-5, 7, 8, 9, 11) |
-| `+0x5a` | how many of its humans may be alive at once |
-| `+0x60` / `+0x64` | delay between spawns / the next spawn time |
+| `+0x51` | a wave is running (a negative `+0x5a`, step 2) |
+| `+0x5a` | how many of its humans may be alive at once (`GangAddSpawner`'s `maxConcurrent`, `GangSetMaxConcurrent`) |
+| `+0x5c` | its humans alive: +1 per spawn, −1 when one's brain is torn down (`0x0028c4f8` → `0x001672a8`) |
+| `+0x60` / `+0x64` | delay between spawns in ms / the next spawn time: now + delay after each spawn (100 ms in state 6, `0x00168158`) |
 | `+0x68` | the state's **value**: seconds for 2, metres for 3, 5, 6 and 8 (`GangStartSpawner`'s last argument) |
 | `+0x70` / `+0x74` | a door it opens to let each human out, and how long it stays open |
-| `+0x7c` | state 2's deadline: the value in seconds after the state was set |
+| `+0x7c` | state 2's deadline: the value in seconds after `GangAddSpawner` (only it sets this; `GangStartSpawner` to 2 does not) |
+| `+0x88` | a distance from player 1 inside which it waits: 25 m in a gang of kind `0x17`, otherwise 0 (none) |
+| `+0x8c` | **must be off screen** (`GangSetSpawnerMustBeOffScreen`; `GangAddSpawner` sets it for kind 11 only) |
 | `+0xac` / `+0xb4` | the dispatch queue: the entry being served, then 4 entries of 0x1c (a time, a count at `+0x14`, bytes) |
 
 1. **Ready?** 0 never; 1, 6, 7, 8 and 10 always; 2 once past its deadline; 3 while player 1 is within the value
    (`0x00336d88`), 5 while he is farther; 11 while the gang's living members (`0x00166158`) are fewer than gang
-   `+0xb04`, and back to 0 once the gang has spawned (`+0xb02`) its total (`+0xb00`).
-2. **Dispatch** (4 and 9): when a queued entry is due (`0x0016dda8`) and a gang slot is free (`0x0016d458`), a new gang
+   `+0xb04`, and back to 0 once the gang has spawned (`+0xb02`) its total (`+0xb00`). A running wave (`+0x51`)
+   counts as ready in any state, even 0.
+2. **Waves**: a **negative** `+0x5a` (from `GangAddSpawner` or `GangSetMaxConcurrent`) of −*n* means waves of *n*.
+   With no wave running, a ready spawner waits until `+0x5c` is 0 (every human of the last wave gone), then sets
+   `+0x51`; it then spawns while `+0x5c` < *n* and clears `+0x51` on the spawn that makes `+0x5c` reach *n*. A
+   positive *n* never sets `+0x51` and simply spawns while `+0x5c` < *n*. State 11 ignores the limit.
+3. **Gates**, in order; any one failing skips the spawner this update: player 1 at least `+0x88` away (when non-zero);
+   when `+0x8c` is set, [no camera sees the spot](#spawner-unseen); `+0x5c` under the limit (or state 11); the next
+   spawn time reached.
+4. **Dispatch** (4 and 9, decided in step 1; neither is ready itself): when a queued entry is due (`0x0016dda8`) and a gang slot is free (`0x0016d458`), a new gang
    `Responder<n>` is made: of type 1 for 4, only while the game's count `+0x324` is under `+0x326`, of the spawner's own
    type for 9, which also takes its owner's friend and enemy masks. The state becomes 6 (from 4) or 10 (from 9), and
    returns once the entry's squad is complete; an entry whose byte `+0x17` is 3 may also start `Tactic_RiotCop`.
-3. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 out of
+5. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 out of
    view and sent to the gang's first live member (`0x001679e8`, the second part inferred); the others at the
-   spawner. State 11 skips a spot a camera can see (`0x001202e8`).
-4. **Spawn** (`0x00167ea8`, named `<spawner><count>`), open the spawner's door, count it.
+   spawner.
+6. **Spawn** (`0x00167ea8`, named `<spawner><count>`), open the spawner's door, count it.
 
 **The type** (`0x0016d810`): the spawner keeps an index at `+0x4c` into its ten types (`+0x24`). Each spawn first
 adds 1; at 10, or at a slot holding 0, it goes back to 0; the type at the index is used. So the types are taken **in
@@ -1078,6 +1090,27 @@ writes no table or global first. The callback runs before the caller opens the d
 states 6 and 10, adds the human to its responder gang and gives its dispatch goal. Confirmed (code). `level87`'s
 `StoopCallBack(human, gang, name)` appends the human to `tblStoop[gang].humans`, a table its own `SetUpStoop` made
 for that gang id before the spawner started; called with the handle alone it indexes `tblStoop[nil]` and fails.
+
+##### Off screen {#spawner-unseen}
+
+With `+0x8c` set the spawner asks `Camera_AnyPlayerCanSeePoint(radius 0.3, distance 0, point)` (`0x001202e8`) about
+a **sphere of radius 0.3 m centred 1.6 m above the spawner's position** (z + 1.6), and skips the update when the
+answer is yes. It asks every player's camera (`0x005d9150[i]` for i below the player count `0x0050b198`) and is yes
+when any of them sees it. One camera's test, `Camera_CanSeePoint(radius, distance, camera, point)` (`0x00122548`):
+
+1. **Range**: the limit is the smaller of the distance and the camera's view distance (camera `+0x58`, vtable
+   `+0x20c`); a distance of 0, as here, means the view distance. Unseen when |point − camera position| − radius
+   exceeds it.
+2. **Frustum**: unseen when the sphere lies wholly outside any of the camera's six planes
+   (`Camera_FrustumTestSphere`, `0x00121fd8`, vtable `+0x16c`: plane *i* at camera `+0x70 + 0x10i` as a normal and
+   distance; outside when n · p − d ≤ −radius).
+3. **Occlusion**: a ray from the camera's position toward the point, as long as the distance less the radius
+   (less 1e-5), through the level's collision mesh (`CollisionMesh_RayCast`, mask 0), skipping the materials
+   30 `LOW_FENCE`, 2 `GLASS`, 122 `RAILING` and 107 `CHAINLINK_NOCLIMB`. Any hit: unseen. No hit: seen.
+
+So the sphere **is** occlusion-tested, by one ray to its centre (the radius only shortens the ray and widens the
+range and frustum tests). Confirmed (code) at `0x001685e8`-`0x00168624` and `0x00122548`. The test uses the
+spawner's own position whatever the state, also for the states that place their humans elsewhere.
 
 ##### Out of sight {#spawner-placement}
 
