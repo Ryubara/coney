@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 165 implemented, 2 partial, 48 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 176 implemented, 0 partial, 39 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -58,9 +58,9 @@ leave part of its effect open; its notes say which.
 | [`HuSetUngrabbable`](character.md#husetungrabbable) | Characters | traced | confirmed (code) | implemented |
 | [`HuSetUngroundable`](character.md#husetungroundable) | Characters | traced | confirmed (code) | implemented |
 | [`HuSetUnstunnable`](character.md#husetunstunnable) | Characters | traced | confirmed (code) | implemented |
-| [`HuShutUp`](character.md#hushutup) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSpeak`](character.md#huspeak) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSpeakNI`](character.md#huspeakni) | Characters | traced | confirmed (code) | not implemented |
+| [`HuShutUp`](character.md#hushutup) | Characters | traced | confirmed (code) | implemented |
+| [`HuSpeak`](character.md#huspeak) | Characters | traced | confirmed (code) | implemented |
+| [`HuSpeakNI`](character.md#huspeakni) | Characters | traced | confirmed (code) | implemented |
 | [`HuTeleportNearHuman`](character.md#huteleportnearhuman) | Characters | traced | confirmed (code) | implemented |
 | [`HuUseAnim`](character.md#huuseanim) | Characters | traced | confirmed (code) | implemented |
 | [`SetDynamicAnimation`](character.md#setdynamicanimation) | Characters | traced | confirmed (code) | implemented |
@@ -166,14 +166,14 @@ leave part of its effect open; its notes say which.
 | [`HUDTurnOnRadar`](hud.md#hudturnonradar) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`RestoreHud`](hud.md#restorehud) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`ShowHud`](hud.md#showhud) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`AddAmbientSoundEmitter2`](sound.md#addambientsoundemitter2) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SetAmbientEmitterPositions`](sound.md#setambientemitterpositions) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SetAmbientTrackVolume`](sound.md#setambienttrackvolume) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SndSetListener`](sound.md#sndsetlistener) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SoundLoopMusicTrack`](sound.md#soundloopmusictrack) | Sound and music | traced | confirmed (code) | partial |
-| [`SoundPlayAmbientTrack`](sound.md#soundplayambienttrack) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SoundStopAmbientTrack`](sound.md#soundstopambienttrack) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SoundStopMusicTrack`](sound.md#soundstopmusictrack) | Sound and music | traced | confirmed (code) | partial |
+| [`AddAmbientSoundEmitter2`](sound.md#addambientsoundemitter2) | Sound and music | traced | confirmed (code) | implemented |
+| [`SetAmbientEmitterPositions`](sound.md#setambientemitterpositions) | Sound and music | traced | confirmed (code) | implemented |
+| [`SetAmbientTrackVolume`](sound.md#setambienttrackvolume) | Sound and music | traced | confirmed (code) | implemented |
+| [`SndSetListener`](sound.md#sndsetlistener) | Sound and music | traced | confirmed (code) | implemented |
+| [`SoundLoopMusicTrack`](sound.md#soundloopmusictrack) | Sound and music | traced | confirmed (code) | implemented |
+| [`SoundPlayAmbientTrack`](sound.md#soundplayambienttrack) | Sound and music | traced | confirmed (code) | implemented |
+| [`SoundStopAmbientTrack`](sound.md#soundstopambienttrack) | Sound and music | traced | confirmed (code) | implemented |
+| [`SoundStopMusicTrack`](sound.md#soundstopmusictrack) | Sound and music | traced | confirmed (code) | implemented |
 | [`SceneAddObject`](scene.md#sceneaddobject) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`ScenePlayAnimation`](scene.md#sceneplayanimation) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`ScenePlayCinematic`](scene.md#sceneplaycinematic) | Scenes and movies | traced | confirmed (code) | implemented |

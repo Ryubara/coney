@@ -222,8 +222,9 @@ target_sources(coney_tests PRIVATE
     ai/scripted_humans_test.cpp
     ai/tactics_test.cpp)
 # The sound engine, its data and streams, the mixer and the game-facing sound calls (docs/research/sound.md).
-target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cpp audio/mixer_test.cpp audio/object_sounds_test.cpp
-                                   audio/music_player_test.cpp audio/sound_data_test.cpp audio/sound_engine_test.cpp)
+target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cpp audio/game_sound_test.cpp
+                                   audio/mixer_test.cpp audio/music_player_test.cpp audio/object_sounds_test.cpp
+                                   audio/sound_data_test.cpp audio/sound_engine_test.cpp scripting/sound_bindings_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)

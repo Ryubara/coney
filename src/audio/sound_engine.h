@@ -204,6 +204,9 @@ class SoundEngine {
     void resume();
     [[nodiscard]] bool paused() const { return m_paused; }
 
+    /// Draws a whole number in [low, high] from the engine's random source (the emitters' and the voice table's draws).
+    std::int32_t random(std::int32_t low, std::int32_t high) { return m_random(low, high); }
+
     /// The music.
     [[nodiscard]] MusicPlayer& music() { return m_music; }
     /// The sound tables.

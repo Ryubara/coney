@@ -74,6 +74,7 @@
   notes: >-
     0x0010d870 finds the track by name hash and stores the volume and the time.
   usage: {chunks: 1, calls: 303, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SndLoadMatrix
   wrapper: 0x00371090
@@ -109,6 +110,7 @@
     level ends), and saves and restores it around one other state (0x00158bd4, not traced). Its readers are
     SoundTask_Update (0x0011b048), 0x0011daa8 and the device 0x0014caf8.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: SndSetNIDuck
   wrapper: 0x003710f8
@@ -127,6 +129,7 @@
     every level load (0x001582e0). Which lines are non-duckable (task +0xa4 = 0; HuSpeakNI's, inferred) is not traced
     here.
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: SndLoadBank
   wrapper: 0x00371130
@@ -141,6 +144,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false, levels: [3, 5, 81, 31, 55, 84, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: SoundSetSoundVolume
   wrapper: 0x00371160
@@ -167,6 +171,7 @@
   notes: >-
     0x0010e710 stores it at music player +0x5c and sets a changed flag.
   usage: {chunks: 50, calls: 67, boot: true, mission1: false, result_used: false, levels: [95, 81, 86, 54, 84, 83, 11, 64]}
+  coney: implemented
 
 - name: SoundPlayMusicTrack
   wrapper: 0x00371230
@@ -193,7 +198,7 @@
   notes: >-
     0x00113510 → 0x0010d8e8 with loop off. The string form is the one the scripts use.
   usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false, levels: [31, 51, 55, 84, 64]}
-  coney: partial
+  coney: implemented
 
 - name: SoundLoopMusicTrack
   wrapper: 0x00371348
@@ -219,7 +224,7 @@
   notes: >-
     0x00113590 → 0x00112de0 → 0x0010d8e8 (loop on); 0x0041cf30 is the game-state check.
   usage: {chunks: 87, calls: 183, boot: true, mission1: true, result_used: false, levels: [95, 5, 81, 86, 93, 31, 51, 52, 54, 55, 84, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
-  coney: partial
+  coney: implemented
 
 - name: SoundStopMusicTrack
   wrapper: 0x003713f8
@@ -231,7 +236,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 90, calls: 189, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
-  coney: partial
+  coney: implemented
 
 - name: SoundDisableCombatMusic
   wrapper: 0x00371418
@@ -321,6 +326,7 @@
   notes: >-
     0x00110b18 → 0x00110b60; the ambient track's sound handle is kept at audio manager +0x24274.
   usage: {chunks: 84, calls: 139, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 61, 64]}
+  coney: implemented
 
 - name: SoundStopAmbientTrack
   wrapper: 0x003715a0
@@ -331,6 +337,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 28, calls: 50, boot: false, mission1: true, result_used: false, levels: [87, 95, 3, 5, 86, 93, 31, 14, 9, 52, 84, 82, 92, 83, 20, 11, 61, 64]}
+  coney: implemented
 
 - name: SetAmbientTrackVolume
   wrapper: 0x003715c0
@@ -343,6 +350,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 8, calls: 15, boot: true, mission1: true, result_used: false, levels: [87, 34, 93, 31, 52]}
+  coney: implemented
 
 - name: SoundPlay
   wrapper: 0x003715f8
@@ -436,6 +444,7 @@
   notes: >-
     0x0010d3c8 stores the name hash at ambient manager +0x1a014 + 4 × index; the index is not range-checked.
   usage: {chunks: 1, calls: 1077, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: AddAmbientSoundEmitter
   wrapper: 0x00371b18
@@ -491,6 +500,7 @@
     numbers is inferred from the scripts' values. Names containing certain substrings get a special type (0x0010cf58
     compares against 0x00546ce0, 0x00546ce8, 0x00546cf0).
   usage: {chunks: 58, calls: 2230, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: SetAmbientEmitterPositions
   wrapper: 0x00372058
@@ -511,6 +521,7 @@
   notes: >-
     0x00113a58 → 0x0010d590.
   usage: {chunks: 53, calls: 421, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: AddAmbientEmitter
   wrapper: 0x00372350
@@ -713,6 +724,7 @@
   notes: >-
     0x001164a8; each character's record is 0x26d bytes (3 bytes per command: count, ..., percent defaulting to 100).
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SndSetCommandSoundPercent
   wrapper: 0x00372d80
@@ -729,6 +741,7 @@
   notes: >-
     0x00115bb0 writes byte 2 of the command's 3-byte record.
   usage: {chunks: 1, calls: 13, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SndSetListener
   wrapper: 0x00372e20
@@ -743,6 +756,7 @@
   notes: >-
     Only the store is confirmed (code); the reader of +0x60 is not traced.
   usage: {chunks: 20, calls: 53, boot: true, mission1: true, result_used: false, levels: [87, 95, 3, 5, 14, 51, 54, 84, 82, 20, 11]}
+  coney: implemented
 
 - name: SoundSetEffect
   wrapper: 0x00372e58
@@ -777,6 +791,7 @@
   notes: >-
     0x001167b8 stores the hash at sound table +0x23cc4 + 4 × id.
   usage: {chunks: 1, calls: 39, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SoundEnableEffects
   wrapper: 0x00372f80
@@ -837,6 +852,7 @@
     false). The callback is not called when the human is invalid, cannot speak, or is already speaking with
     `interrupt` false.
   usage: {chunks: 60, calls: 97, boot: false, mission1: false, result_used: true, levels: [87, 95, 3, 81, 86, 93, 31, 14, 9]}
+  coney: implemented
 
 - name: SoundPreLoadScene
   wrapper: 0x00373118

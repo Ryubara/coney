@@ -147,7 +147,8 @@ A table of 207 records `{u32 id, char *name}` at `0x0050aaa8` (id equal to the i
 
 The line count is found at start-up: for each set `s` and command `c`, the names `vags/character/voices/<s>/<c>_01`,
 `_02` ... (format at `0x005481e0`) are hashed and looked up in the sound list until one is missing or 54 are
-found.
+found. The set is written in decimal and the line in two digits, inferred from the sound list: it holds
+`voices/0/attack_01` and `voices/100/attack_01`, not `voices/00/attack_01`.
 
 A human's voice set is `CfgChar`'s voice (character type `+0x118`, [Characters](characters.md)); the human keeps it
 at `+0x3b0`. `HuSetStateRespVoiceIndex` stores a second set at `+0x3b4` for its state responses (inferred).
@@ -380,12 +381,31 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
   music, the load screen and scenes. Main gives it the engine when a disc is given.
 - `ObjectSounds` (`repo:src/audio/object_sounds.h`): the glass panes' and doors' name-hash sounds, played through
   `SoundPlayer` ([World objects](objects.md#coneys-implementation)).
+- `GameSound` (`game_sound.cpp`): the game's sound as the rest of the game drives it. The sound bindings
+  (`repo:src/scripting/sound_bindings.cpp`: the preloads' configuration, the ambience, the music, `SndSetListener`,
+  `HuSpeak`, `HuSpeakNI`, `HuShutUp`, `SoundPlayCommand`) reach it through the binding context; the front end's
+  bank, music and cues through `FrontEndAudio`; gameplay (mode 1) tells it of its enter (the defaults of
+  [Entering gameplay](level-loading.md#mode-1)), the load screen's start and end, and its exit (every sound and the
+  music stopped, the level's emitters and lines forgotten). Each frame it puts the listener at player 1's camera
+  (`SndSetListener(1)`: at player 1, 1.8 m above his feet), runs the ambient emitters and moves each line to its
+  speaker; when a line ends it calls the line's script callback.
+- `VoiceTable` (`voice_table.cpp`, [The voice table](#voice-table)), `AmbientEmitters` (`ambient_emitters.cpp`,
+  [Ambience](#ambience)) and `Speech` (`speech.cpp`, [Saying a speech command](#speech)): one line per human at a
+  time, positional and directional at him, cut off by an interrupting one.
 
 Coney's stand-ins where this page is open, each marked in the code: the directional table is 1 (as loud behind as in
 front); the `+0x268` state factors, the `+0x5b7` owner duck and level 82's ambient swap are not applied; a stereo
 sound effect takes channels 5+6 or 7+8; the random factors come from the engine's own seeded source (the game's shared
-one would shift the scripts' draws); `SoundStopMusicTrack` fades a playing track over one bar. Not built yet: the voice
-table and speech commands, the ambient emitters, reverb.
+one would shift the scripts' draws); `SoundStopMusicTrack` fades a playing track over one bar. The speech and
+ambience stand-ins: an emitter plays one sound at a time, waiting a random whole number of seconds in its two delays
+before the first and after each one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its
+line or a random one of its positions; its range, `arg8`, `arg11`, mode and the name-based types are not read; a
+line follows its speaker; a line stopped by `HuShutUp` or cut off drops its callback; `HuShutUp` always stops (the
+human's `+0x194` is not modelled); `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at
+target; a human's voice set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of
+blocked lines is not applied; `SndSetListener` 0 is the camera and 1 the player (inferred); the bank deferral of mode
+1's enter ends with the load screen. Not built yet: reverb, the other ambient bindings
+(`AddAmbientSoundEmitter`, `EnableAmbientEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands.
 
 ## Open questions
 
@@ -401,3 +421,9 @@ table and speech commands, the ambient emitters, reverb.
   draw from.
 - Whether a scene soundtrack holds the dialogue alone or a full mix, and what the 20 unused stereo sounds are.
 - The IOP side (`IOP.IRX`): the exact SPU2 voice assignment of streams and its mixing.
+- The emitters' timing (`0x0010c100`): the delays' unit, whether one sound waits for the last, where along the line or
+  positions a sound comes from, and what range, `arg8`, `arg11`, mode and the special name types (`0x0010cf58`) do.
+- What `HuSpeak`'s fifth argument changes, and whether a line stopped by `HuShutUp` or cut off runs its callback.
+- What mode 1's enter means by the volume 0.1 and the three channels it clears (`0x001110c8`, `0x001104c8`), and who
+  ends the bank deferral (`+0x3fa58`).
+- The blocked lines of `0x00114c98` (level, set, command and line values).

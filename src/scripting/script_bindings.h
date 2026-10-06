@@ -44,6 +44,7 @@ namespace coney::script {
 
 class AiBindingHost;
 class AnimCallbacks;
+class SoundHost;
 class MessageHandlers;
 
 /// What the bindings ask of the game outside the script system and the game state: the menus, the level flow, the
@@ -159,6 +160,7 @@ struct BindingContext {
     camera::Cameras* cameras = nullptr;          ///< Player 1's cameras, which the camera bindings drive; null: none.
     graphics::LevelLighting* lighting = nullptr; ///< The lights and fog the lighting bindings set; null keeps none.
     effects::LevelEffects* effects = nullptr;    ///< The level's particles and motion blur; null: none drawn.
+    SoundHost* sound = nullptr;                  ///< The game's sound (sound_bindings.h); null plays nothing.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

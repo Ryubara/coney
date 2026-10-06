@@ -2585,6 +2585,7 @@
   notes: >-
     What +0x194 means exactly is not traced; the stop itself is confirmed (code) at 0x0021ec38.
   usage: {chunks: 39, calls: 126, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 81, 86, 93, 31, 14, 51, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HuSay
   wrapper: 0x00364c08
@@ -2692,6 +2693,7 @@
   notes: >-
     HuSpeakNI is the same but cuts off the current line instead of giving up.
   usage: {chunks: 43, calls: 142, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 54, 55, 82, 83, 20, 11]}
+  coney: implemented
 
 - name: HuSpeakNI
   wrapper: 0x00364f50
@@ -2714,6 +2716,7 @@
     NI is read as 'interrupt' from the behaviour (0x0021e698 stops the current line first); the expansion of the
     letters is not known.
   usage: {chunks: 101, calls: 627, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HuSetIdleDialogMaxIter
   wrapper: 0x00365058

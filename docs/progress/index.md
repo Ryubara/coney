@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 10.8%](https://img.shields.io/badge/reimplemented-10.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 11.2%](https://img.shields.io/badge/reimplemented-11.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▏░░░░░░░░░░░░░░░░░` | 10.8% of the game's own code (363,356 of 3,354,776 bytes, 992 functions) |
+| **Reimplemented** | `██▎░░░░░░░░░░░░░░░░░` | 11.2% of the game's own code (375,388 of 3,354,776 bytes, 1,033 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -52,8 +52,8 @@ at the top of the repository's `README.md`.
 
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
-| `Animation` | `█████▌░░░░░░░░░░░░░░` | 27.2% | 21 | 54,616 |
-| `Audio` | `▍░░░░░░░░░░░░░░░░░░░` | 1.7% | 26 | 57,368 |
+| `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
+| `Audio` | `█▎░░░░░░░░░░░░░░░░░░` | 6.5% | 48 | 57,368 |
 | `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 34 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -62,13 +62,13 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████░░░░░░░░░░░░░░░` | 25.0% | 63 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 54 | 195,624 |
 | `GUI` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 128 | 497,416 |
-| `Human` | `██▏░░░░░░░░░░░░░░░░░` | 10.6% | 290 | 1,096,672 |
+| `Human` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 296 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████▏░░░░░░░░░░░░░░` | 25.4% | 125 | 197,192 |
+| `Scripting` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 134 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 43 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -125,6 +125,10 @@ at the top of the repository's `README.md`.
 | `0x0010a558` | `GaitBlend_SetValue` | `Animation` | not filled in |
 | `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
 | `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
+| `0x0010c100` | `Ambient_Update` | `Animation` | 2,928 |
+| `0x0010cf58` | `Ambient_AddEmitter` | `Animation` | 792 |
+| `0x0010d3c8` | `Ambient_SetSound` | `Animation` | 88 |
+| `0x0010d590` | `Ambient_SetEmitterPositions` | `Animation` | 216 |
 | `0x0010d8e8` | `Music_Play` | `Audio` | not filled in |
 | `0x0010d9a0` | `Music_Stop` | `Audio` | not filled in |
 | `0x0010dfe0` | `MusicChannel_Update` | `Audio` | not filled in |
@@ -150,6 +154,28 @@ at the top of the repository's `README.md`.
 | `0x00112560` | `Task_GetVoice` | `Audio` | not filled in |
 | `0x00112700` | `Task_FindVictim` | `Audio` | not filled in |
 | `0x00112b10` | `Tasks_Update` | `Audio` | not filled in |
+| `0x00113370` | `Sound_SetPitchMod` | `Audio` | 32 |
+| `0x001133b0` | `Sound_SetNIDuck` | `Audio` | 32 |
+| `0x001133d0` | `Sound_LoadBank` | `Audio` | 104 |
+| `0x00113438` | `Sound_CfgMusicInfo` | `Audio` | 88 |
+| `0x001134b8` | `Sound_SetMusicVolume` | `Audio` | 40 |
+| `0x00113510` | `Sound_PlayMusicTrack` | `Audio` | 80 |
+| `0x00113590` | `Sound_LoopMusicTrack` | `Audio` | 80 |
+| `0x001135e0` | `Sound_StopMusicTrack` | `Audio` | 40 |
+| `0x00113608` | `Sound_PlayAmbientTrack` | `Audio` | 40 |
+| `0x00113630` | `Sound_StopAmbientTrack` | `Audio` | 40 |
+| `0x00113658` | `Sound_SetAmbientTrackVolume` | `Audio` | 40 |
+| `0x00113810` | `Ambient_AddSound` | `Audio` | 48 |
+| `0x00113920` | `Ambient_AddEmitter2` | `Audio` | 232 |
+| `0x00113a58` | `Ambient_SetEmitterPositions` | `Audio` | 208 |
+| `0x00113dd0` | `Sound_AllocateCharacterVoices` | `Audio` | 40 |
+| `0x00113df8` | `Sound_SetCommandSoundPercent` | `Audio` | 56 |
+| `0x00114018` | `Sound_SetListener` | `Audio` | 16 |
+| `0x001140d8` | `Sound_PlayCommand` | `Audio` | 160 |
+| `0x001141b0` | `Sound_CfgInterfaceSound` | `Audio` | 48 |
+| `0x00114b20` | `VoiceTable_NextLine` | `Audio` | 376 |
+| `0x00115bb0` | `VoiceTable_SetPercent` | `Audio` | 128 |
+| `0x001164a8` | `VoiceTable_Build` | `Audio` | 784 |
 | `0x0011a170` | `Task_Update` | `Audio` | not filled in |
 | `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | not filled in |
 | `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | not filled in |
@@ -477,6 +503,9 @@ at the top of the repository's `README.md`.
 | `0x0021b290` | `Strike_Contact` | `Human` | 3,488 |
 | `0x0021d428` | `Human_GetFormation` | `Human` | 80 |
 | `0x0021d4e8` | `Human_OnEvent` | `Human` | 72 |
+| `0x0021e400` | `Human_PlaySpeech` | `Human` | 664 |
+| `0x0021e698` | `Human_PlaySpeechInterrupt` | `Human` | 680 |
+| `0x0021ec38` | `Human_StopSpeech` | `Human` | 152 |
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
@@ -534,6 +563,9 @@ at the top of the repository's `README.md`.
 | `0x00238690` | `Human_UseAnim` | `Human` | 184 |
 | `0x00238a88` | `Human_AttachSpinningIcon` | `Human` | 88 |
 | `0x00238ae0` | `Human_RemoveSpinningIcon` | `Human` | 56 |
+| `0x00239370` | `Human_Speak` | `Human` | 488 |
+| `0x00239558` | `Human_ShutUp` | `Human` | 72 |
+| `0x002395a0` | `Human_SpeakInterrupt` | `Human` | 488 |
 | `0x00239b80` | `Players_ChangeGang` | `Human` | 648 |
 | `0x00239e78` | `Human_SetMugCallback` | `Human` | 104 |
 | `0x0023a210` | `Human_SetNormalMode` | `Human` | 72 |
@@ -854,6 +886,9 @@ at the top of the repository's `README.md`.
 | `0x00363018` | `GoalDealer` | `Scripting` | 272 |
 | `0x00363530` | `GoalPlayDynAnimation` | `Scripting` | 160 |
 | `0x003647d8` | `ActLookAt` | `Scripting` | 200 |
+| `0x00364ba8` | `HuShutUp` | `Scripting` | 96 |
+| `0x00364e48` | `HuSpeak` | `Scripting` | 264 |
+| `0x00364f50` | `HuSpeakNI` | `Scripting` | 264 |
 | `0x003656a0` | `CameraMakeActive` | `Scripting` | not filled in |
 | `0x00365a10` | `CameraReset` | `Scripting` | not filled in |
 | `0x00365a48` | `CamSetupFollow` | `Scripting` | not filled in |
@@ -896,6 +931,12 @@ at the top of the repository's `README.md`.
 | `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
 | `0x0036f130` | `HUDLaunchMissionFailed` | `Scripting` | not filled in |
 | `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | 56 |
+| `0x00371230` | `SoundPlayMusicTrack` | `Scripting` | 168 |
+| `0x00371348` | `SoundLoopMusicTrack` | `Scripting` | 176 |
+| `0x003713f8` | `SoundStopMusicTrack` | `Scripting` | 32 |
+| `0x00371db0` | `AddAmbientSoundEmitter2` | `Scripting` | 680 |
+| `0x00372058` | `SetAmbientEmitterPositions` | `Scripting` | 760 |
+| `0x00372fe0` | `SoundPlayCommand` | `Scripting` | 312 |
 | `0x00373148` | `GangCreate` | `Scripting` | 184 |
 | `0x00373200` | `GangDelete` | `Scripting` | 56 |
 | `0x00373238` | `GangSuspend` | `Scripting` | 104 |

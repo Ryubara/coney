@@ -108,7 +108,7 @@ Puts a sound into the ambient sound table that the ambient emitters pick their r
 - **Evidence:** confirmed (code) at `0x00113810`; detail: traced
 - **Wrapper** `0x003718d8` (registered by `RegisterBindings`); **calls** `0x00113810`
 - **Used by** 1 of 467 script chunks (1077 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## AddAmbientSoundEmitter {#addambientsoundemitter}
 
@@ -175,7 +175,7 @@ compares against 0x00546ce0, 0x00546ce8, 0x00546cf0).
 - **Wrapper** `0x00371db0` (registered by `RegisterBindings`); **calls** `0x00113920`
 - **Used by** 58 of 467 script chunks (2230 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## DuplicateSoundMaterials {#duplicatesoundmaterials}
 
@@ -411,7 +411,7 @@ Gives a named ambient emitter up to five positions it plays its sounds from, ins
 - **Wrapper** `0x00372058` (registered by `RegisterBindings`); **calls** `0x00113a58`
 - **Used by** 53 of 467 script chunks (421 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetAmbientEmitterVolumeMod {#setambientemittervolumemod}
 
@@ -452,7 +452,7 @@ Sets the volume of the background ambience loop that is playing; does nothing wh
 - **Wrapper** `0x003715c0` (registered by `RegisterBindings`); **calls** `0x00113658`
 - **Used by** 8 of 467 script chunks (15 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetNumberOfMaterialSlots {#setnumberofmaterialslots}
 
@@ -532,7 +532,7 @@ exist in the sound data by probing names of the form vags/character/voices/<char
 - **Evidence:** confirmed (code) at `0x00113dd0`; detail: traced
 - **Wrapper** `0x00372d48` (registered by `RegisterBindings`); **calls** `0x00113dd0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SndCfgMusicInfo {#sndcfgmusicinfo}
 
@@ -557,7 +557,7 @@ config_preload.lua at the legal screen. Tracks not in the list cannot play.
 - **Evidence:** confirmed (code) at `0x00113438`; detail: traced
 - **Wrapper** `0x00370fd0` (registered by `RegisterBindings`); **calls** `0x00113438`
 - **Used by** 1 of 467 script chunks (303 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SndEnableMusicDuck {#sndenablemusicduck}
 
@@ -621,7 +621,7 @@ ends in place of the default "sound".
 - **Wrapper** `0x00371130` (registered by `RegisterBindings`); **calls** `0x001133d0`
 - **Used by** 19 of 467 script chunks (19 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SndLoadMatrix {#sndloadmatrix}
 
@@ -668,7 +668,7 @@ Sets how often characters speak for a speech command.
 - **Evidence:** confirmed (code) at `0x00113df8`; detail: traced
 - **Wrapper** `0x00372d80` (registered by `RegisterBindings`); **calls** `0x00113df8`
 - **Used by** 1 of 467 script chunks (13 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SndSetListener {#sndsetlistener}
 
@@ -690,7 +690,7 @@ Chooses the listener position for 3D sound.
 - **Wrapper** `0x00372e20` (registered by `RegisterBindings`); **calls** `0x00114018`
 - **Used by** 20 of 467 script chunks (53 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SndSetNIDuck {#sndsetniduck}
 
@@ -716,7 +716,7 @@ here.
 - **Wrapper** `0x003710f8` (registered by `RegisterBindings`); **calls** `0x001133b0` `Audio_SetNIDuck`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SndSetPitchMod {#sndsetpitchmod}
 
@@ -743,7 +743,7 @@ level ends), and saves and restores it around one other state (0x00158bd4, not t
 - **Wrapper** `0x003710c0` (registered by `RegisterBindings`); **calls** `0x00113370` `Audio_SetPitchMod`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundCfgInterfaceSound {#soundcfginterfacesound}
 
@@ -765,7 +765,7 @@ Assigns a sound to one of the interface sound cues the HUD and menus play, and r
 - **Evidence:** confirmed (code) at `0x001141b0`; detail: traced
 - **Wrapper** `0x00372f20` (registered by `RegisterBindings`); **calls** `0x001141b0`
 - **Used by** 1 of 467 script chunks (39 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundDisableCombatMusic {#sounddisablecombatmusic}
 
@@ -871,7 +871,7 @@ Wrapper `0x003712d8`; calls `0x00113560`.
 - **Wrapper** `0x00371348` (registered by `RegisterBindings`); **calls** `0x00113590`
 - **Used by** 87 of 467 script chunks (183 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** partial
+- **Coney:** implemented
 
 ## SoundPauseSound {#soundpausesound}
 
@@ -968,7 +968,7 @@ over 2 s. In level 82 one particular track is swapped for another.
 - **Wrapper** `0x00371570` (registered by `RegisterBindings`); **calls** `0x00113608`
 - **Used by** 84 of 467 script chunks (139 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 25 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundPlayCommand {#soundplaycommand}
 
@@ -1000,7 +1000,7 @@ false.
   `0x002205e0` `Human_SayCommand`, `0x0021e400` `Human_PlaySpeech`
 - **Used by** 60 of 467 script chunks (97 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 9 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundPlayMusicTrack {#soundplaymusictrack}
 
@@ -1041,7 +1041,7 @@ Wrapper `0x003711d0`; calls `0x001134e0`.
 - **Wrapper** `0x00371230` (registered by `RegisterBindings`); **calls** `0x00113510`
 - **Used by** 8 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level31`](story.md#level31) (mission 11)
-- **Coney:** partial
+- **Coney:** implemented
 
 ## SoundPreLoad {#soundpreload}
 
@@ -1181,7 +1181,7 @@ Sets the music player's volume; the change is applied by the music player's upda
 - **Wrapper** `0x00371198` (registered by `RegisterBindings`); **calls** `0x001134b8`
 - **Used by** 50 of 467 script chunks (67 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundSetSoundVolume {#soundsetsoundvolume}
 
@@ -1280,7 +1280,7 @@ Stops the background ambience loop (0x00110c70).
 - **Wrapper** `0x003715a0` (registered by `RegisterBindings`); **calls** `0x00113630`
 - **Used by** 28 of 467 script chunks (50 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundStopMusicTrack {#soundstopmusictrack}
 
@@ -1299,7 +1299,7 @@ to its state (0x0010d9a0).
 - **Wrapper** `0x003713f8` (registered by `RegisterBindings`); **calls** `0x001135e0`
 - **Used by** 90 of 467 script chunks (189 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** partial
+- **Coney:** implemented
 
 ## StartObjectSound {#startobjectsound}
 

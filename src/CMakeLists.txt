@@ -109,6 +109,7 @@ add_library(coney_core STATIC
     scripting/scene_bindings.cpp
     scripting/script_bindings.cpp
     scripting/script_system.cpp
+    scripting/sound_bindings.cpp
     scripting/spawn_bindings.cpp
     scripting/trigger_bindings.cpp
     warriors/created_humans.cpp
@@ -284,6 +285,8 @@ target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_library(
     coney_audio STATIC
     audio/adpcm.cpp
+    audio/ambient_emitters.cpp
+    audio/game_sound.cpp
     audio/mixer.cpp
     audio/music_player.cpp
     audio/object_sounds.cpp
@@ -295,7 +298,9 @@ add_library(
     audio/sound_engine.cpp
     audio/sound_player.cpp
     audio/sound_stream.cpp
-    audio/test_tone.cpp)
+    audio/speech.cpp
+    audio/test_tone.cpp
+    audio/voice_table.cpp)
 coney_target_defaults(coney_audio)
 target_link_libraries(coney_audio PUBLIC coney_core)
 # The movie player: the Bink movies through a decoder the platform supplies, their sound on the mixer and their

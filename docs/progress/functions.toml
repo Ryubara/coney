@@ -133,6 +133,30 @@ name = "GaitBlend_Sample"
 subsystem = "Animation"
 
 [[function]]
+address = 0x0010c100
+name = "Ambient_Update"
+subsystem = "Animation"
+size = 2928
+
+[[function]]
+address = 0x0010cf58
+name = "Ambient_AddEmitter"
+subsystem = "Animation"
+size = 792
+
+[[function]]
+address = 0x0010d3c8
+name = "Ambient_SetSound"
+subsystem = "Animation"
+size = 88
+
+[[function]]
+address = 0x0010d590
+name = "Ambient_SetEmitterPositions"
+subsystem = "Animation"
+size = 216
+
+[[function]]
 address = 0x0010d8e8
 name = "Music_Play"
 subsystem = "Audio"
@@ -258,6 +282,138 @@ subsystem = "Audio"
 address = 0x00112b10
 name = "Tasks_Update"
 subsystem = "Audio"
+
+[[function]]
+address = 0x00113370
+name = "Sound_SetPitchMod"
+subsystem = "Audio"
+size = 32
+
+[[function]]
+address = 0x001133b0
+name = "Sound_SetNIDuck"
+subsystem = "Audio"
+size = 32
+
+[[function]]
+address = 0x001133d0
+name = "Sound_LoadBank"
+subsystem = "Audio"
+size = 104
+
+[[function]]
+address = 0x00113438
+name = "Sound_CfgMusicInfo"
+subsystem = "Audio"
+size = 88
+
+[[function]]
+address = 0x001134b8
+name = "Sound_SetMusicVolume"
+subsystem = "Audio"
+size = 40
+
+[[function]]
+address = 0x00113510
+name = "Sound_PlayMusicTrack"
+subsystem = "Audio"
+size = 80
+
+[[function]]
+address = 0x00113590
+name = "Sound_LoopMusicTrack"
+subsystem = "Audio"
+size = 80
+
+[[function]]
+address = 0x001135e0
+name = "Sound_StopMusicTrack"
+subsystem = "Audio"
+size = 40
+
+[[function]]
+address = 0x00113608
+name = "Sound_PlayAmbientTrack"
+subsystem = "Audio"
+size = 40
+
+[[function]]
+address = 0x00113630
+name = "Sound_StopAmbientTrack"
+subsystem = "Audio"
+size = 40
+
+[[function]]
+address = 0x00113658
+name = "Sound_SetAmbientTrackVolume"
+subsystem = "Audio"
+size = 40
+
+[[function]]
+address = 0x00113810
+name = "Ambient_AddSound"
+subsystem = "Audio"
+size = 48
+
+[[function]]
+address = 0x00113920
+name = "Ambient_AddEmitter2"
+subsystem = "Audio"
+size = 232
+
+[[function]]
+address = 0x00113a58
+name = "Ambient_SetEmitterPositions"
+subsystem = "Audio"
+size = 208
+
+[[function]]
+address = 0x00113dd0
+name = "Sound_AllocateCharacterVoices"
+subsystem = "Audio"
+size = 40
+
+[[function]]
+address = 0x00113df8
+name = "Sound_SetCommandSoundPercent"
+subsystem = "Audio"
+size = 56
+
+[[function]]
+address = 0x00114018
+name = "Sound_SetListener"
+subsystem = "Audio"
+size = 16
+
+[[function]]
+address = 0x001140d8
+name = "Sound_PlayCommand"
+subsystem = "Audio"
+size = 160
+
+[[function]]
+address = 0x001141b0
+name = "Sound_CfgInterfaceSound"
+subsystem = "Audio"
+size = 48
+
+[[function]]
+address = 0x00114b20
+name = "VoiceTable_NextLine"
+subsystem = "Audio"
+size = 376
+
+[[function]]
+address = 0x00115bb0
+name = "VoiceTable_SetPercent"
+subsystem = "Audio"
+size = 128
+
+[[function]]
+address = 0x001164a8
+name = "VoiceTable_Build"
+subsystem = "Audio"
+size = 784
 
 [[function]]
 address = 0x0011a170
@@ -2127,6 +2283,24 @@ subsystem = "Human"
 size = 72
 
 [[function]]
+address = 0x0021e400
+name = "Human_PlaySpeech"
+subsystem = "Human"
+size = 664
+
+[[function]]
+address = 0x0021e698
+name = "Human_PlaySpeechInterrupt"
+subsystem = "Human"
+size = 680
+
+[[function]]
+address = 0x0021ec38
+name = "Human_StopSpeech"
+subsystem = "Human"
+size = 152
+
+[[function]]
 address = 0x002213d8
 name = "Human_MaxTurn"
 subsystem = "Human"
@@ -2463,6 +2637,24 @@ address = 0x00238ae0
 name = "Human_RemoveSpinningIcon"
 subsystem = "Human"
 size = 56
+
+[[function]]
+address = 0x00239370
+name = "Human_Speak"
+subsystem = "Human"
+size = 488
+
+[[function]]
+address = 0x00239558
+name = "Human_ShutUp"
+subsystem = "Human"
+size = 72
+
+[[function]]
+address = 0x002395a0
+name = "Human_SpeakInterrupt"
+subsystem = "Human"
+size = 488
 
 [[function]]
 address = 0x00239b80
@@ -4329,6 +4521,24 @@ subsystem = "Scripting"
 size = 200
 
 [[function]]
+address = 0x00364ba8
+name = "HuShutUp"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x00364e48
+name = "HuSpeak"
+subsystem = "Scripting"
+size = 264
+
+[[function]]
+address = 0x00364f50
+name = "HuSpeakNI"
+subsystem = "Scripting"
+size = 264
+
+[[function]]
 address = 0x003656a0
 name = "CameraMakeActive"
 subsystem = "Scripting"
@@ -4563,6 +4773,42 @@ address = 0x0036f218
 name = "HUDLaunchMissionComplete"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x00371230
+name = "SoundPlayMusicTrack"
+subsystem = "Scripting"
+size = 168
+
+[[function]]
+address = 0x00371348
+name = "SoundLoopMusicTrack"
+subsystem = "Scripting"
+size = 176
+
+[[function]]
+address = 0x003713f8
+name = "SoundStopMusicTrack"
+subsystem = "Scripting"
+size = 32
+
+[[function]]
+address = 0x00371db0
+name = "AddAmbientSoundEmitter2"
+subsystem = "Scripting"
+size = 680
+
+[[function]]
+address = 0x00372058
+name = "SetAmbientEmitterPositions"
+subsystem = "Scripting"
+size = 760
+
+[[function]]
+address = 0x00372fe0
+name = "SoundPlayCommand"
+subsystem = "Scripting"
+size = 312
 
 [[function]]
 address = 0x00373148

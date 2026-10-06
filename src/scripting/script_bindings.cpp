@@ -27,6 +27,7 @@
 #include "scripting/player_bindings.h"
 #include "scripting/rumble_bindings.h"
 #include "scripting/scene_bindings.h"
+#include "scripting/sound_bindings.h"
 #include "scripting/spawn_bindings.h"
 #include "scripting/trigger_bindings.h"
 #include "world_objects/object_types.h"
@@ -423,22 +424,6 @@ NativeFunction makePlayMovie(const Factory& factory) {
     };
 }
 
-// `SoundPlayMusicTrack(track)` and `SoundLoopMusicTrack(track)`.
-NativeFunction makePlayMusic(const Factory& factory) {
-    return [host = factory.context->host](std::span<const Value> args) {
-        host->playMusic(binding::string(args, 0));
-        return binding::none();
-    };
-}
-
-// `SoundStopMusicTrack()`.
-NativeFunction makeStopMusic(const Factory& factory) {
-    return [host = factory.context->host](std::span<const Value>) {
-        host->stopMusic();
-        return binding::none();
-    };
-}
-
 // `ShowRumbleModeInterface(onCancel, onStart, n)`.
 NativeFunction makeShowRumbleModeInterface(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
@@ -477,9 +462,6 @@ constexpr std::array kMakers{
     Maker{"SetCheckPoint", makeSetCheckPoint},
     Maker{"ShowProfileManager", makeShowProfileManager},
     Maker{"ShowRumbleModeInterface", makeShowRumbleModeInterface},
-    Maker{"SoundLoopMusicTrack", makePlayMusic},
-    Maker{"SoundPlayMusicTrack", makePlayMusic},
-    Maker{"SoundStopMusicTrack", makeStopMusic},
     Maker{"ToInt", makeToInt},
     Maker{"doFile", makeDoFile},
     Maker{"gc", makeGc},
@@ -759,11 +741,31 @@ constexpr std::array kBindings{
     // The particle systems and the motion blur (effects_bindings.h).
     real("SpawnParticle"),
     real("QueueMotionBlurEffect"),
+    // The sound: configuration, ambience, music, the listener and speech (sound_bindings.h).
+    real("SndCfgMusicInfo"),
+    real("SoundCfgInterfaceSound"),
+    real("SndAllocateCharacterVoices"),
+    real("SndSetCommandSoundPercent"),
+    real("SndLoadBank"),
+    real("SndSetNIDuck"),
+    real("SndSetPitchMod"),
+    real("AddAmbientSound"),
+    real("AddAmbientSoundEmitter2"),
+    real("SetAmbientEmitterPositions"),
+    real("SoundPlayAmbientTrack"),
+    real("SoundStopAmbientTrack"),
+    real("SetAmbientTrackVolume"),
+    real("SoundPlayMusicTrack"),
+    real("SoundLoopMusicTrack"),
+    real("SoundStopMusicTrack"),
+    real("SoundSetMusicVolume"),
+    real("SndSetListener"),
+    real("HuSpeak"),
+    real("HuSpeakNI"),
+    real("HuShutUp"),
+    real("SoundPlayCommand"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
-    routed("SoundPlayMusicTrack"),
-    routed("SoundLoopMusicTrack"),
-    routed("SoundStopMusicTrack"),
     // The four the script system's constructor registers itself: configuration kept for later.
     recording("CfgChar"),
     recording("CfgObjectGroup"),
@@ -824,25 +826,18 @@ constexpr std::array kBindings{
     // World objects (config_preload3.lua: 1,279 calls).
     real("CfgObj"),
     // Sound configuration (config_preload.lua, config_preload2.lua, global.lua).
-    recording("AddAmbientSound"),
     recording("DuplicateSoundMaterials"),
     recording("NewAnimSlots"),
     recording("NewAnimSound"),
     recording("NewMaterialSlots"),
     recording("NewMaterialSound"),
     recording("SetNumberOfMaterialSlots"),
-    recording("SndAllocateCharacterVoices"),
-    recording("SndCfgMusicInfo"),
-    recording("SndSetCommandSoundPercent"),
-    recording("SoundCfgInterfaceSound"),
     // Unlockables and commands (global.lua).
     recording("AddCommand"),
     // Sound and music state.
     stub("SndLoadMatrix"),
-    stub("SndSetListener"),
     stub("SoundEnableEffects"),
     stub("SoundSetEffect"),
-    stub("SoundSetMusicVolume"),
     // Unlockables and saves: Coney has none.
     stub("ResetCommands"),
     stub("SetLUASaveDataBool"),
@@ -988,6 +983,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kTriggerBindings, info.name) != kTriggerBindings.end() ||
                      std::ranges::find(kAnimCallbackBindings, info.name) != kAnimCallbackBindings.end() ||
                      std::ranges::find(kSceneBindings, info.name) != kSceneBindings.end() ||
+                     std::ranges::find(kSoundBindings, info.name) != kSoundBindings.end() ||
                      std::ranges::find(kSpawnBindings, info.name) != kSpawnBindings.end() ||
                      std::ranges::find(kObjectBindings, info.name) != kObjectBindings.end() ||
                      std::ranges::find(kLightingBindings, info.name) != kLightingBindings.end() ||
@@ -1002,6 +998,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addAnimCallbackBindings(vm, context);
     addLightingBindings(vm, context);
     addPlayerBindings(scripts, vm, context);
+    addSoundBindings(scripts, vm, context);
     // With no scene system at the call (a test, the menus, a mode that plays no scenes), the stand-in keeps the
     // scripts' scene flow moving.
     addSceneBindings(vm, context,

@@ -4104,7 +4104,7 @@ scene or a new line.
 - **Wrapper** `0x00364ba8` (registered by `RegisterBindings`); **calls** `0x00239558` `Human_ShutUp`
 - **Used by** 39 of 467 script chunks (126 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSpeak {#huspeak}
 
@@ -4133,7 +4133,7 @@ the callback runs at once instead.
 - **Wrapper** `0x00364e48` (registered by `RegisterBindings`); **calls** `0x00239370` `Human_Speak`
 - **Used by** 43 of 467 script chunks (142 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 19 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSpeakNI {#huspeakni}
 
@@ -4163,7 +4163,7 @@ letters is not known.
 - **Wrapper** `0x00364f50` (registered by `RegisterBindings`); **calls** `0x002395a0` `Human_SpeakInterrupt`
 - **Used by** 101 of 467 script chunks (627 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSpecial {#huspecial}
 
