@@ -39,6 +39,7 @@ class ScriptSystem;
 namespace coney::ai {
 
 class ScriptedStory;
+class ScriptedHub;
 
 /// The brains the scripts drive by handle, and the gangs they make.
 class ScriptedBrains final : public script::AiBindingHost, public FlagServices, public ScriptServices {
@@ -115,6 +116,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] ScriptedHumans& humanHost() { return *m_humans; }
     /// The story bindings' host on the same brains (ai::ScriptedStory).
     [[nodiscard]] ScriptedStory& storyHost() { return *m_story; }
+    /// The hub bindings' host on the same brains (ai::ScriptedHub).
+    [[nodiscard]] ScriptedHub& hubHost() { return *m_hub; }
     /// The level's world flags.
     [[nodiscard]] const world_objects::WorldFlags& flags() const { return *m_flags; }
     /// Names `brain` (which must outlive the binding, or be unbound first) by `handle`, sets its handle, and puts it in
@@ -226,6 +229,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] script::HumanBindingHost* humans() override { return m_humans.get(); }
     /// The story bindings' host (ai::ScriptedStory).
     [[nodiscard]] script::StoryBindingHost* story() override;
+    /// The hub bindings' host (ai::ScriptedHub).
+    [[nodiscard]] script::HubBindingHost* hub() override;
 
     // ---- FlagServices ----
 
@@ -288,6 +293,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     std::vector<std::function<void()>> m_held; // the calls held, oldest first
     std::unique_ptr<ScriptedHumans> m_humans;
     std::unique_ptr<ScriptedStory> m_story;
+    std::unique_ptr<ScriptedHub> m_hub;
     std::map<double, HeldHuman> m_heldHumans; // the humans created while holding, by handle
     std::map<double, int> m_deletedGangs;     // the gang of each human deleted from one, by handle
 };

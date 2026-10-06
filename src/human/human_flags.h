@@ -54,6 +54,10 @@ inline constexpr std::uint64_t kTireless = 0x4000000;
 /// Its movement locked (`HuLockMovement`, `0x00234ef8`). **Coney stand-in**: what reads the bit is not on the page, so
 /// a locked human is moved neither by its stick nor by its brain, as an arrested one is; it still fights and acts.
 inline constexpr std::uint64_t kMovementLocked = 0x200000000;
+/// Cannot be tackled (`HuBlockTackle`; inferred from the name: the tackle code that reads it is not on the page).
+inline constexpr std::uint64_t kBlockTackle = 0x100000000;
+/// A handcuffed human a player may free (`HuSetUnarrestable`); what else reads it is not on the page.
+inline constexpr std::uint64_t kUnarrestable = 0x8000;
 /// Never throws the weapon it holds (`HuSetNoThrowWeapon`; inferred from the name).
 inline constexpr std::uint64_t kNoThrowWeapon = 0x4000000000;
 /// Skipped by the player's automatic target lock (`HuSetNoAutoLock`, `0x002340a8`; inferred from the name: no reader

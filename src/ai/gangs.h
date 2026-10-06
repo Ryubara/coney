@@ -167,6 +167,13 @@ class Gangs {
     /// (`0x0050cb7c`) is not built.
     /// @orig 0x00168f58 Gang_AreFriends (unknown)
     [[nodiscard]] static bool friends(const Gang* a, const Gang* b);
+    /// `GangMakeNeutralOfType(id, kind)`: gang `id` and every other gang in use of kind `kind` lose each other's
+    /// enemy and friend bits, both ways, unless the two are friends already (friends()). Nothing for a gang not in use.
+    /// **Coney's**: the members' brain byte `+0x290` the original clears for kind 0 is not modelled (its meaning is not
+    /// traced).
+    /// @orig 0x0016ae90 Gang_MakeNeutralOfTypeById (unknown)
+    /// @orig 0x0016c470 Gang_MakeNeutralWithType (unknown)
+    void makeNeutralOfType(int id, int kind);
     /// Whether gang `a` has `b` as an enemy (the enemy bit).
     [[nodiscard]] static bool enemies(const Gang* a, const Gang* b);
 

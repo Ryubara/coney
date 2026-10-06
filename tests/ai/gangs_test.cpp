@@ -222,3 +222,18 @@ TEST_CASE("a fall in a human's health is event 1 about the nearest human that ca
     scene.run(3);
     CHECK(scene.services.humanEvents.size() == 1); // once per fall
 }
+
+TEST_CASE("GangMakeNeutralOfType ends the enmity with every unfriendly gang of a kind, both ways", "[ai][gangs]") {
+    Gangs gangs;
+    const int warriors = gangs.create(coney::ai::kWarriorsKind, "Warriors");
+    const int punks = gangs.create(19, "Punks");
+    const int others = gangs.create(21, "Others");
+    gangs.makeEnemies(warriors, punks);
+    gangs.makeEnemies(warriors, others);
+    gangs.makeNeutralOfType(warriors, 19);
+    CHECK_FALSE(Gangs::enemies(gangs.find(warriors), gangs.find(punks)));
+    CHECK_FALSE(Gangs::enemies(gangs.find(punks), gangs.find(warriors)));
+    CHECK(Gangs::enemies(gangs.find(warriors), gangs.find(others)));
+    gangs.makeNeutralOfType(-1, 21); // no such gang: ignored
+    CHECK(Gangs::enemies(gangs.find(warriors), gangs.find(others)));
+}

@@ -270,6 +270,9 @@ class GameplayMode final : public GameMode {
     // carry a pad command, as Coney's brains write their commands straight to the record.
     // @orig 0x001480e0 Pad_CallLuaHandlerEx (unknown)
     void callPadHandler();
+    // Gives the hub's host (ai::ScriptedHub) what it reads beyond the brains: the configuration's categories and flee
+    // percentages, the workout's tuning, the volume boxes and the flags inside them, the crimes and the crime scene.
+    void wireHub();
     // Where a trigger sphere's object is: a human the scripts made, a flag or a spawn record; nothing when gone.
     [[nodiscard]] std::optional<std::array<float, 3>> objectPosition(double handle) const;
 

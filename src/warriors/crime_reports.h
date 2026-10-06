@@ -138,6 +138,11 @@ class CrimeReports {
     /// The game time of a gang's last assault-like report (gang `+0x5f4`); nothing when none.
     [[nodiscard]] std::optional<std::uint64_t> lastAssault(int gang) const;
 
+    /// How many reports have been taken (past the reporting and police checks), and where the last was: what the
+    /// hub's shopkeepers watch for a crime in their store (ai/hub_goals.h).
+    [[nodiscard]] std::uint64_t reports() const { return m_reports; }
+    [[nodiscard]] const std::optional<CrimePosition>& lastPosition() const { return m_lastPosition; }
+
     /// A new level: no wanted gangs, no scene, no victims scored, player 1's last crime cleared.
     void clearLevel();
 
@@ -150,6 +155,8 @@ class CrimeReports {
     double m_breakInDelay = 0.0;
     int m_lastCrime = crime::kNoCrime;
     std::optional<CrimePosition> m_scene;
+    std::uint64_t m_reports = 0;
+    std::optional<CrimePosition> m_lastPosition;
     std::map<int, std::uint64_t> m_wantedUntil;
     std::map<int, std::uint64_t> m_lastAssault;
     std::set<double> m_scoredVictims;

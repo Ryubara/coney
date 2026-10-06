@@ -195,6 +195,24 @@ bool Gangs::friends(const Gang* a, const Gang* b) {
     return (a->m_friends & bitOf(b->m_id)) != 0;
 }
 
+void Gangs::makeNeutralOfType(int id, int kind) {
+    Gang* gang = find(id);
+    if (gang == nullptr) {
+        return;
+    }
+    for (int other = 0; other < static_cast<int>(kGangSlots); ++other) {
+        Gang* second = find(other);
+        if (second == nullptr || second == gang || second->m_kind != kind || friends(gang, second) ||
+            friends(second, gang)) {
+            continue;
+        }
+        gang->m_enemies &= ~bitOf(other);
+        gang->m_friends &= ~bitOf(other);
+        second->m_enemies &= ~bitOf(id);
+        second->m_friends &= ~bitOf(id);
+    }
+}
+
 bool Gangs::enemies(const Gang* a, const Gang* b) {
     return a != nullptr && b != nullptr && (a->m_enemies & bitOf(b->m_id)) != 0;
 }

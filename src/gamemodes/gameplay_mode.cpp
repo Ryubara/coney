@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <format>
+#include <map>
 #include <memory>
 #include <numbers>
 #include <optional>
@@ -13,10 +14,12 @@
 #include <vector>
 
 #include "ai/scripted_brains.h"
+#include "ai/scripted_hub.h"
 #include "ai/scripted_story.h"
 #include "ai/spawners.h"
 #include "animation/anim_math.h"
 #include "camera/cameras.h"
+#include "characters/character_types.h"
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/pause_mode.h"
@@ -30,7 +33,9 @@
 #include "scripting/lua_vm.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
+#include "warriors/crime_reports.h"
 #include "world_objects/spawn_records.h"
+#include "world_objects/volume_boxes.h"
 
 namespace coney {
 
@@ -227,6 +232,9 @@ void GameplayMode::enter() {
         m_context.boxes->setResolves([this](double handle) { return m_humans.find(handle) != nullptr; });
     }
     m_context.ai = m_scripted.get();
+    // What the hub's bindings read beyond the brains: the configuration's categories and flee percentages, the
+    // workout's tuning, the store boxes and their flags, and the crimes.
+    wireHub();
     // The crimes the scripts report reach the level's gangs and police; the story's per-level switches start clear.
     m_context.crimes = &m_objectServices.crimeServices();
     if (m_context.state != nullptr) {
@@ -464,6 +472,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_scripted->storyHost().update();
         ScriptSpawnerWorld spawnerWorld(*m_scripted, m_scripts, m_flags, m_cameras.get());
         m_scripted->humanHost().spawners().update(nowMs, spawnerWorld);
+        m_scripted->hubHost().update(nowMs);
         stepSystemMusic(m_state.story, m_context.sound, m_state.random, m_scripted->storyHost().musicMood());
     }
     updateBoxes(nowMs);
@@ -536,6 +545,61 @@ void GameplayMode::callPadHandler() {
                                                 script::Value(1.0)};
         m_scripts.call(handler, args);
     }
+}
+
+void GameplayMode::wireHub() {
+    // The categories (`CfgChar` `+0x11b`) and the gang kinds' flee percentages (`CfgGang`'s ninth argument).
+    auto types = std::make_shared<characters::CharacterTypes>(characters::CharacterTypes::fromRecorded(m_recorded));
+    std::map<int, int> flee;
+    for (const std::vector<script::Value>& call : m_recorded.calls("CfgGang")) {
+        constexpr std::size_t kFleeArgument = 8;
+        if (call.size() > kFleeArgument && call[0].number() && call[kFleeArgument].number()) {
+            flee[static_cast<int>(*call[0].number())] = static_cast<int>(*call[kFleeArgument].number());
+        }
+    }
+    ai::HubLookups lookups;
+    lookups.category = [types](int type) -> std::optional<int> {
+        const characters::CharacterType* found = types->find(type);
+        return found != nullptr ? found->category : std::nullopt;
+    };
+    // NOLINTNEXTLINE(bugprone-exception-escape): moving the map in can only fail on allocation
+    lookups.fleePercent = [flee = std::move(flee)](int kind) {
+        const auto found = flee.find(kind);
+        return found != flee.end() ? found->second : 0;
+    };
+    lookups.workout = &m_state.hub.workout;
+    lookups.inBox = [this](double box, anim::Vec3 point) {
+        const world_objects::VolumeBox* found = m_context.boxes != nullptr ? m_context.boxes->find(box) : nullptr;
+        return found != nullptr && world_objects::VolumeBoxes::inside(*found, {point.x, point.y, point.z});
+    };
+    lookups.flagsInBox = [this](double box) {
+        std::vector<anim::Vec3> inside;
+        const world_objects::VolumeBox* found = m_context.boxes != nullptr ? m_context.boxes->find(box) : nullptr;
+        if (found == nullptr) {
+            return inside;
+        }
+        for (const world_objects::WorldFlag& flag : m_flags.all()) {
+            if (world_objects::VolumeBoxes::inside(*found, flag.position)) {
+                inside.push_back(anim::Vec3{flag.position[0], flag.position[1], flag.position[2]});
+            }
+        }
+        return inside;
+    };
+    lookups.crimeCount = [this] { return m_state.player.crimes.reports(); };
+    lookups.lastCrime = [this]() -> std::optional<anim::Vec3> {
+        const std::optional<CrimePosition>& at = m_state.player.crimes.lastPosition();
+        return at ? std::optional<anim::Vec3>(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]}) : std::nullopt;
+    };
+    lookups.reportBreakIn = [this](anim::Vec3 at) {
+        m_state.player.crimes.report(m_objectServices.crimeServices(), crime::kBreakAndEnter, {at.x, at.y, at.z}, 0.0,
+                                     0.0, true, 0, m_scripts.now());
+    };
+    lookups.crimeScene = [this]() -> std::optional<anim::Vec3> {
+        const std::optional<double> scene = m_flags.findByName("CrimeScene");
+        const std::optional<std::array<float, 3>> at = scene ? objectPosition(*scene) : std::nullopt;
+        return at ? std::optional<anim::Vec3>(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]}) : std::nullopt;
+    };
+    m_scripted->hubHost().setLookups(std::move(lookups));
 }
 
 std::optional<std::array<float, 3>> GameplayMode::objectPosition(double handle) const {

@@ -94,6 +94,7 @@ struct FlagNetTraverseCall {
 
 class HumanBindingHost;
 class StoryBindingHost;
+class HubBindingHost;
 
 /// `TacticConfront(gang, targetGang, approachRange, criticalRange, confrontation, slotSet, callback, anim1-5,
 /// spotLine)` as the binding reads it (docs/references/bindings/ai.md#tacticconfront); the anims and the spot line are
@@ -219,6 +220,8 @@ class AiBindingHost {
     /// The level's humans, brains, gangs and paths as the story missions' bindings drive them
     /// (scripting/story_bindings.h); null for none.
     [[nodiscard]] virtual StoryBindingHost* story() { return nullptr; }
+    /// The level's humans, brains and gangs as the hub's bindings drive them (scripting/hub_bindings.h); null for none.
+    [[nodiscard]] virtual HubBindingHost* hub() { return nullptr; }
     /// Where the human with `handle` stands now; nothing when the host has no such human, and the place it was made
     /// or teleported to then stands in (CreatedHumans::placement()).
     [[nodiscard]] virtual std::optional<world_objects::Placement> humanPlacement(double /*handle*/) const {

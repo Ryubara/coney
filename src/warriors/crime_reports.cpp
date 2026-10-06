@@ -79,6 +79,9 @@ void CrimeReports::report(CrimeServices& services, int type, const CrimePosition
         return;
     }
 
+    ++m_reports;
+    m_lastPosition = at;
+
     // 2. With an offender's gang: the police turn on it, it is wanted for 10 s, the callback runs.
     if (gang.has_value()) {
         services.makePoliceHostile(gang->id, !oneWayHostility(type));

@@ -10,6 +10,7 @@
 #include "core/game_random.h"
 #include "core/language.h"
 #include "warriors/character_rules.h"
+#include "warriors/hub_state.h"
 #include "warriors/level_table.h"
 #include "warriors/player_state.h"
 #include "warriors/profile_record.h"
@@ -102,6 +103,8 @@ struct GameState {
     /// What the story missions' scripts set beyond the characters' rules (the Warrior commands' callback, the music
     /// switches, the tagging set-up...).
     StoryState story;
+    /// What the hub's scripts set (the workouts, the context actions' reach, the loot's value...).
+    HubState hub;
     /// `SetGameMode`'s mode and parameters.
     GameModeSetting gameMode;
     /// `+0x431` (`WCEnableAutomaticSwitching`): the game may move the player to another gang member by itself

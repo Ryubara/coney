@@ -232,6 +232,10 @@ class Human final : public Holdable {
     /// The body's scale (`+0x65c`).
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] float bodyScale() const override { return m_scale; }
+    /// `HuSetScale`: the body's scale, not range-checked. Coney's body (its capsule, its walls' radius, its root
+    /// motion) is sized from the scale at each use, so the body follows at once.
+    /// @orig 0x0023b0e0 Human_SetScale (unknown)
+    void setScale(float scale) { m_scale = scale; }
     /// The fighting: combat's state, meters and what it last did.
     [[nodiscard]] const Fighter& fighter() const { return m_fighter; }
     [[nodiscard]] Fighter& fighter() { return m_fighter; }

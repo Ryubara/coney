@@ -1573,6 +1573,14 @@ substitutions; the crowd's cheer idles; the formation's ground ray, line of sigh
 dealer's run to a flag, gestures, buy clip and icons; the other tactics; the attack's steer, the post-block pause and
 the run-stop.
 
+**The hub's goals and gangs** (`level95`; `repo:src/ai/hub_goals.h`, `repo:src/ai/scripted_hub.h`): `GoalAreaWalker`
+(`0x47`), `GoalBoxer` (`0x9e`), `GoalGrabTarget` (`0x1f`), `GoalPeddler` (`0x50`), `GoalPlayGenAnim` (`0x26`) and
+`GoalShopkeeper` (`0x82`) follow their binding pages; a fleeing gang (`GangCanFlee`) sends its class-11 members off
+with the pedestrian reaction goal (`0x6b`) in mode 9. **Stand-ins**: the boxer fights with his own attack weights; the
+grab target is held by standing at it, facing it, with no damage; the goals' lines (`beckon`, `phone_gang`...) are
+kept, not played; the flight runs 10 s at gait 4, 10 m legs away from the enemy; a gang's starting count is noted
+when `GangCanFlee` turns it on.
+
 ## Open questions {#open-questions}
 
 - `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
@@ -1602,6 +1610,10 @@ the run-stop.
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
 - What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
 - The perception struct (`+0xf8`).
+- The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of
+  `GoalBoxer`.
+- Which sound each hub goal line plays (`beckon`, `store_greet`, `phone_gang`, `dead_meat`, `cower`, `mug_grunt`).
+- The pedestrian reaction goal's (`0x6b`) Process and end in mode 9 (the flight): its length and route.
 - The Warrior commands' tactics (`0x00310e00`, `0x00320530`, `0x00313400`, `0x00319570`, `0x00320b60`), the exit
   goal's on-screen test, the finding goal's search values (90, 30, 10) and the throw's Process (`0x002cf690`).
 - The think handlers of types 2, 3 and 5 in detail; what goals the Warriors' think pushes for an ally.

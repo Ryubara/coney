@@ -157,7 +157,8 @@ GateInput Human::gateInput() const {
 
 bool Human::stickHeld() const {
     const GateInput gate = gateInput();
-    return m_script.arrested || m_fighter.holdsMovement(m_animator) || stickBusy(gate) || stickVelocityGated(gate);
+    return m_script.arrested || m_script.workingOut || m_fighter.holdsMovement(m_animator) || stickBusy(gate) ||
+           stickVelocityGated(gate);
 }
 
 Traversal Human::traversal() const {
@@ -771,7 +772,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
             StickIntent{.angle = m_record.move->heading + kPi / 2.0F, .magnitude = *m_moveSpeed > 0.0F ? 1.0F : 0.0F};
     }
     // An arrested human is not moved by its stick or its brain (**Coney stand-in**, human/script_state.h), nor is one
-    // a grab holds, nor one whose movement a script locked (human/human_flags.h).
+    // a grab holds, nor one whose movement a script locked (human/human_flags.h), nor one working out.
     // In a wheelchair a pad-driven human's sticks are not read (wheelchairControl()). **Coney stand-in**: so the
     // locomotion's clips, which would move the body, do not start; the wheelchair's clips are not played.
     const bool wheelchair = hasFlag(flag::kWheelchair) && m_record.padDriven;
@@ -779,8 +780,8 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
         m_intent.magnitude = 0.0F;
         m_lastStick.magnitude = 0.0F;
     }
-    const bool movementHeld =
-        m_script.arrested || m_script.knockedOut || m_fighter.holdState().has_value() || hasFlag(flag::kMovementLocked);
+    const bool movementHeld = m_script.arrested || m_script.knockedOut || m_script.workingOut ||
+                              m_fighter.holdState().has_value() || hasFlag(flag::kMovementLocked);
     if (movementHeld) {
         m_intent.magnitude = 0.0F;
         m_moveSpeed.reset();
@@ -890,11 +891,12 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
     // as the original's dispatcher reads the block and the chain before the commands; triangle keeps its climb,
     // context action and jump while combat does not hold the body (in a grab it mugs).
     updateMeters(m_record.sprintHeld && !m_fighter.blocking());
-    // An arrested human neither fights nor acts (**Coney stand-in**, human/script_state.h).
-    if (!m_airborne && !m_climbRun && !m_script.arrested) {
+    // An arrested human neither fights nor acts (**Coney stand-in**, human/script_state.h), nor does one working out:
+    // its pad pumps and quits the workout instead.
+    if (!m_airborne && !m_climbRun && !m_script.arrested && !m_script.workingOut) {
         fight(targets);
     }
-    if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator) && !m_script.arrested) {
+    if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator) && !m_script.arrested && !m_script.workingOut) {
         tryActions(mesh, m_record.sprintHeld);
     }
     // A brain's climb over a route's climb leg: the player's own climb start, toward the waypoint.

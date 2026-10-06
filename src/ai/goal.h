@@ -14,33 +14,40 @@ class Brain;
 
 /// The goal types Coney builds, by the original's type ids (the vtable's `+0x0c`, docs/research/ai.md#goals).
 enum class GoalType : std::uint8_t {
-    Idle = 0x00,             ///< IdleGoal: stands in place.
-    MoveToFlag = 0x01,       ///< MoveToFlagGoal.
-    MoveToExitFlag = 0x02,   ///< MoveToExitFlagGoal: leaves the scene through an exit flag.
-    MoveToUseFlag = 0x04,    ///< MoveToUseFlagGoal.
-    MoveToHuman = 0x06,      ///< MoveToHumanGoal.
-    EngageEnemy = 0x0b,      ///< EngageEnemyGoal.
-    Fight = 0x0f,            ///< FightGoal.
-    Spectate = 0x10,         ///< SpectateGoal: stands and watches for a while.
-    ReactGrabbing = 0x12,    ///< Reaction: grabbing (state `0xc0`).
-    ReactTackling = 0x13,    ///< Reaction: tackling (`0x400`).
-    ReactGrabbed = 0x14,     ///< Reaction: grabbed (`0x30`) or mugged (`0x200`).
-    ReactTackled = 0x15,     ///< Reaction: tackled (`0x800`).
-    ReactKnockedDown = 0x17, ///< Reaction: knocked down (`0x80000`).
-    ReactStunned = 0x18,     ///< Reaction: stunned (`0x100000`) and not down.
-    Block = 0x1b,            ///< BlockGoal.
-    PlayAnimation = 0x21,    ///< PlayAnimationGoal: a scene.
-    PlayDynAnimation = 0x22, ///< PlayDynAnimationGoal.
-    PlayDynIdle = 0x23,      ///< PlayDynIdleGoal.
-    TrackHuman = 0x30,       ///< TrackHumanGoal.
-    TravelPath = 0x38,       ///< TravelPathGoal.
-    FindEnemy = 0x41,        ///< FindEnemyGoal: looks for an enemy to fight.
-    BumLogic = 0x4f,         ///< BumLogicGoal.
-    AddressPerson = 0x57,    ///< AddressPersonGoal.
-    ThrowObject = 0x5d,      ///< ThrowObjectGoal.
-    Pedestrian = 0x69,       ///< PedestrianGoal: wanders the flag network (`FlagNetTraverse`).
-    Dealer = 0x80,           ///< DealerGoal.
-    Backoff = 0x9b,          ///< BackoffGoal.
+    Idle = 0x00,               ///< IdleGoal: stands in place.
+    MoveToFlag = 0x01,         ///< MoveToFlagGoal.
+    MoveToExitFlag = 0x02,     ///< MoveToExitFlagGoal: leaves the scene through an exit flag.
+    MoveToUseFlag = 0x04,      ///< MoveToUseFlagGoal.
+    MoveToHuman = 0x06,        ///< MoveToHumanGoal.
+    EngageEnemy = 0x0b,        ///< EngageEnemyGoal.
+    Fight = 0x0f,              ///< FightGoal.
+    Spectate = 0x10,           ///< SpectateGoal: stands and watches for a while.
+    ReactGrabbing = 0x12,      ///< Reaction: grabbing (state `0xc0`).
+    ReactTackling = 0x13,      ///< Reaction: tackling (`0x400`).
+    ReactGrabbed = 0x14,       ///< Reaction: grabbed (`0x30`) or mugged (`0x200`).
+    ReactTackled = 0x15,       ///< Reaction: tackled (`0x800`).
+    ReactKnockedDown = 0x17,   ///< Reaction: knocked down (`0x80000`).
+    ReactStunned = 0x18,       ///< Reaction: stunned (`0x100000`) and not down.
+    Block = 0x1b,              ///< BlockGoal.
+    GrabTarget = 0x1f,         ///< GrabTargetGoal: walks up to a human and holds it.
+    PlayAnimation = 0x21,      ///< PlayAnimationGoal: a scene.
+    PlayDynAnimation = 0x22,   ///< PlayDynAnimationGoal.
+    PlayDynIdle = 0x23,        ///< PlayDynIdleGoal.
+    PlayGenAnim = 0x26,        ///< PlayGenAnimGoal: one generic clip.
+    TrackHuman = 0x30,         ///< TrackHumanGoal.
+    TravelPath = 0x38,         ///< TravelPathGoal.
+    FindEnemy = 0x41,          ///< FindEnemyGoal: looks for an enemy to fight.
+    AreaWalker = 0x47,         ///< AreaWalkerGoal: strolls round a centre.
+    BumLogic = 0x4f,           ///< BumLogicGoal.
+    Peddler = 0x50,            ///< PeddlerGoal: a vendor beckoning passers-by.
+    AddressPerson = 0x57,      ///< AddressPersonGoal.
+    ThrowObject = 0x5d,        ///< ThrowObjectGoal.
+    Pedestrian = 0x69,         ///< PedestrianGoal: wanders the flag network (`FlagNetTraverse`).
+    PedestrianReaction = 0x6b, ///< PedestrianReactionGoal: a pedestrian reacting to trouble (mode 9: flight).
+    Dealer = 0x80,             ///< DealerGoal.
+    Shopkeeper = 0x82,         ///< ShopkeeperGoal.
+    Backoff = 0x9b,            ///< BackoffGoal.
+    Boxer = 0x9e,              ///< BoxerGoal: boxes a target for ever.
 };
 
 /// What a goal's process() returns (`Goal_Process`): stop for this update, process the stack's top again in the same

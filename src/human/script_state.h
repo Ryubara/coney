@@ -79,6 +79,26 @@ struct ScriptState {
     /// count (`+0x254`, a byte). **Coney stand-in**: no mugging or knock-down drop reads it yet, so it is only kept.
     int pocketItem = 0;
     int pocketCount = 0;
+    /// May be mugged (`+0x5b0`, `HuSetMug`); the mugging asks it unless the human is set up for interrogation.
+    /// **Coney choice** until set (the default is not on the page): true.
+    bool muggable = true;
+    /// The pedestrian's reaction style (brain `+0x270`, `HuSetPedReaction`); no reader is on the page, so it is only
+    /// kept.
+    int pedReaction = 0;
+    /// An AI human's handcuffs (`+0x378`, 0-9, `HuGiveCuffs`).
+    int cuffs = 0;
+    /// The unlockable gear a player wears (`HuAttachGear`): brass knuckles on both hands (`dyn_brassknkl`) and
+    /// steel-toe boots on both feet (`dyn_steeltoe`). **Coney stand-in**: the gear objects are not drawn yet.
+    bool knuckles = false;
+    bool boots = false;
+    /// Offers the uncuff action on the human (`HuSetUnarrestable`, with flag::kUnarrestable). **Coney stand-in**:
+    /// Coney has no context actions yet, so no prompt shows.
+    bool uncuffOffered = false;
+    /// In the fight stance by a script (`HuSetCombatMode`, state flags `0x3`). **Coney stand-in**: Coney's fight
+    /// stance is not a state of its own, so it is only kept.
+    bool combatMode = false;
+    /// Working out (state flag `0x20000000000`, `HuWorkout`): the human neither moves nor acts by its stick or pad.
+    bool workingOut = false;
 };
 
 } // namespace coney::human
