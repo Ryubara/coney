@@ -697,6 +697,7 @@
     The last effect is in the police gang set-up (0x0016cdf0, at 0x0016cfe0): with the flag off the wanted gang
     also turns hostile to the police.
   usage: {chunks: 9, calls: 9, boot: false, mission1: false, result_used: false, levels: [34, 31, 52]}
+  coney: implemented
 
 - name: SetCopGuardArrestedRange
   wrapper: 0x0037a660

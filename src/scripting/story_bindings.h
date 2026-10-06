@@ -264,6 +264,10 @@ class StoryBindingHost {
     virtual void setInvestigateResponse(double /*human*/, int /*response*/) {}
     /// `BrSetReactToViolence`.
     virtual void setReactToViolence(double /*human*/, bool /*reacts*/) {}
+    /// `BrSetPedType(human, type)`: the low 16 bits kept.
+    virtual void setPedType(double /*human*/, std::uint16_t /*type*/) {}
+    /// `HuSetWounded(human, on)`: wounding also flushes the brain's goals and actions.
+    virtual void setWounded(double /*human*/, bool /*wounded*/) {}
     /// `HuTagColor`: the colour word.
     virtual void setTagColour(double /*human*/, std::uint32_t /*rgba*/) {}
     /// `HuTag(human, tag, flag)`: the human sprays `tag` from `flag`.

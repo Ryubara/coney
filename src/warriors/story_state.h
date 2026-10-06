@@ -80,6 +80,10 @@ struct StoryState {
     /// `StartGarbage` / `EndGarbage`: the litter kind blowing round the camera, -1 for none. **Coney stand-in**: the
     /// litter is not drawn yet.
     int garbage = -1;
+    /// `CfgChanceToGetHelp` (`0x00510adf`): the chance, 0-100, that a civilian who sees an attack calls for help.
+    /// **Coney stand-in**: civilians do not call for help yet, so it is only kept; **Coney choice** until set (the
+    /// default is not on the page): 0.
+    int chanceToGetHelp = 0;
 
     /// The level reset's part (`0x00418c68`): the retaliation switches, the menu locks, the callback and the detail
     /// bytes cleared. The Warrior commands' enables are CharacterRules' (enabled again by the caller).

@@ -565,7 +565,7 @@ routes also avoid it (through the nodes) is not traced.
   `PathPolygon_FindAtPoint`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ChangeCollision {#changecollision}
 
@@ -1359,7 +1359,7 @@ for a kind of object (such as the throwables of GoalStationaryThrower and GoalBi
   `ObjectDb_FindByName`
 - **Used by** 7 of 467 script chunks (51 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjGetZone {#objgetzone}
 

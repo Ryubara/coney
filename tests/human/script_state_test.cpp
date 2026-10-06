@@ -185,6 +185,24 @@ TEST_CASE("an arrested human stays where it is and is not alive until released",
     CHECK(std::fabs(fight.human().position().y - 40.0F) > 0.5F);
 }
 
+TEST_CASE("wounding cuts a human's health to a quarter once and stamps 14 s; healing clears the mark",
+          "[human][script]") {
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    const int maximum = fight.human().fighter().health().maximum();
+    fight.human().setWounded(true);
+    CHECK(fight.human().script().wounded);
+    CHECK(fight.human().fighter().health().value() == maximum / 4);
+    CHECK(fight.human().script().woundedUntilMs == fight.human().nowMs() + 14000);
+    // Wounded again: no further cut.
+    fight.human().fighter().health().set(maximum);
+    fight.human().setWounded(true);
+    CHECK(fight.human().fighter().health().value() == maximum);
+    fight.human().setWounded(false);
+    CHECK_FALSE(fight.human().script().wounded);
+    CHECK(fight.human().fighter().health().value() == maximum);
+}
+
 TEST_CASE("a human whose movement is locked is not moved by the stick until unlocked", "[human][script]") {
     const FightCharacter character;
     Fight fight(character, 30.0F);

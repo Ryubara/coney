@@ -98,6 +98,7 @@ add_executable(coney_tests
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
     scripting/hub_bindings_test.cpp
+    scripting/mission4_bindings_test.cpp
     scripting/hud_bindings_test.cpp
     scripting/disc_strings_test.cpp
     scripting/camera_bindings_test.cpp

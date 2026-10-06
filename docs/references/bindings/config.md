@@ -538,7 +538,7 @@ the last 40 s (gang `+0x5f4`) or while the crime kind is switched off (`W_GameSt
 - **Wrapper** `0x0035e958` (registered by `RegisterBindings`); **calls** `0x00294888` `Cfg_SetChanceToGetHelp`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgChar {#cfgchar}
 

@@ -319,6 +319,12 @@ class Human final : public Holdable {
     /// the idle.
     /// @orig 0x00237700 Human_SetArrested (unknown)
     void setArrested(bool arrested);
+    /// `HuSetWounded`: wounding (when not wounded already) ends its fighting, grab or throw, cuts its health to a
+    /// quarter of the maximum and stamps the time 14 s on; healing only clears the mark. The caller flushes the brain.
+    /// @orig 0x00237628 Human_SetWounded (unknown)
+    /// @orig 0x0022fa78 Human_StartWounded (unknown)
+    /// @orig 0x0022fc00 Human_EndWounded (unknown)
+    void setWounded(bool wounded);
     /// `HuSetFullRage`: the rage meter full, held for `holdMs` before it decays.
     void fillRage(int holdMs) { m_fighter.combat().rage().fill(nowMs(), holdMs); }
     /// `HuSetRageFrac`: the rage meter at `fraction` of its maximum.

@@ -114,6 +114,9 @@ struct BrainSenses {
     float helpHearRange = kDefaultHelpHearRange; ///< `+0x138`, `GangSetHearRange(gang, true, range)`.
     bool worldFlags = false;                     ///< `+0x2d1`, `GangCanUseWorldFlags`.
     int worldFlagPercent = 0;                    ///< `+0x2d2`.
+    /// `BrSetPedType` (`+0x26c`, low 16 bits; 0 when made): 3 a civilian who stands up to attackers, 5 a rich mugging
+    /// victim. **Coney stand-in**: the civilian brain's reactions and the mugging's money do not read it yet.
+    std::uint16_t pedType = 0;
 };
 
 /// The configuration a brain fights by: what the configuration scripts set (docs/research/ai.md#fight).

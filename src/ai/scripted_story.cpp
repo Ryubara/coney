@@ -249,6 +249,22 @@ void ScriptedStory::setReactToViolence(double human, bool reacts) {
     onBrain(human, [reacts](Brain& brain) { brain.senses().reactsToViolence = reacts; });
 }
 
+// @orig 0x00292460 Brain_SetPedType (unknown)
+void ScriptedStory::setPedType(double human, std::uint16_t type) {
+    onBrain(human, [type](Brain& brain) { brain.senses().pedType = type; });
+}
+
+void ScriptedStory::setWounded(double human, bool wounded) {
+    onBrain(human, [wounded](Brain& brain) {
+        // Only a change wounds: a human wounded already keeps its health and its goals.
+        const bool wounding = wounded && !brain.human().script().wounded;
+        brain.human().setWounded(wounded);
+        if (wounding) {
+            brain.flush();
+        }
+    });
+}
+
 void ScriptedStory::setTagColour(double human, std::uint32_t rgba) {
     onBrain(human, [rgba](Brain& brain) { brain.human().script().tagColour = rgba; });
 }

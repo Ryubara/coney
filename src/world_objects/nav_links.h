@@ -81,6 +81,12 @@ class NavLinks {
     void enableNear(anim::Vec3 at);
     /// `ConvertJumpToDoor(pos)`: the nearest kChoke link within 5 m and its reverse become kDoor links.
     void convertJumpToDoor(anim::Vec3 at);
+    /// `ChangeBlocker(pos, open)`: of the polygons that take in `at` in plan, the one whose centre is nearest gets flag
+    /// 8 (blocked) unless `open`, which clears it; none does nothing. Returns the polygon changed. **Coney choice**: a
+    /// polygon's centre is the middle of its bounding box (the page does not say which centre).
+    /// @orig 0x00252c28 NavLink_SetBlocked (unknown)
+    /// @orig 0x00250100 PathPolygon_FindAtPoint (unknown)
+    std::optional<std::uint32_t> changeBlocker(anim::Vec3 at, bool open);
 
   private:
     // Sets the avoid bit of every link of `number` to the opposite of `open`, and its hole's flag 8 to `open`.

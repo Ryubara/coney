@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // What the level scripts do to a human (docs/references/bindings/character.md): its health, its normal state, the
-// arrest and the rage meter's lock. The flags and the rest of the scripts' state are set directly (human/human.h).
+// arrest, the wound and the rage meter's lock. The flags and the rest of the scripts' state are set directly
+// (human/human.h).
 
 #include "human/human.h"
+
+#include <cstdint>
 
 namespace coney::human {
 
@@ -32,6 +35,24 @@ void Human::setArrested(bool arrested) {
     if (!arrested) {
         m_animator.stopToIdle();
     }
+}
+
+void Human::setWounded(bool wounded) {
+    // How long the wound stamp reaches past now (`0x00510794`).
+    constexpr std::uint64_t kWoundMs = 14000;
+    if (!wounded) {
+        m_script.wounded = false;
+        return;
+    }
+    if (m_script.wounded) {
+        return;
+    }
+    m_script.wounded = true;
+    m_script.woundedUntilMs = nowMs() + kWoundMs;
+    // Its stance, grab or throw ends (state bits `0x14800f`), and its health drops to a quarter.
+    m_fighter.setNormal(m_animator, false);
+    combat::Health& health = m_fighter.health();
+    health.set(health.maximum() / 4);
 }
 
 void Human::setRageLocked(bool locked) {

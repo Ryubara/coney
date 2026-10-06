@@ -878,7 +878,7 @@ other readers of brain `+0x26c` (0x002d2600, 0x002a9ec0, 0x0029bf98) are not tra
 - **Wrapper** `0x0035ecb0` (registered by `RegisterBindings`); **calls** `0x00292460` `Brain_SetPedType`
 - **Used by** 12 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetPlayerResponse {#brsetplayerresponse}
 

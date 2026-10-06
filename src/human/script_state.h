@@ -37,6 +37,10 @@ struct ScriptState {
     /// **Coney stand-in**: the knocked-out and get-up clips are not played, and it does not wake by itself after the
     /// original's 14 s (whose reader is not on the page), so it lies as it is until a script wakes it.
     bool knockedOut = false;
+    /// Wounded (state `0x10000`, `HuSetWounded`), and (woundedUntilMs) the game time it was wounded at plus 14 s
+    /// (record `+0xf0`). **Coney stand-in**: the wounded clips (layer `0xd`) are not played and nothing reads the time
+    /// yet (its reader is not on the page), so a wounded human only has its health cut.
+    bool wounded = false;
     /// The pad's buttons locked (per-player `+0x1e`, `HuLockPad`): its commands, sprint and actions are not taken.
     bool padLocked = false;
     /// The pad's left stick locked (per-player `+0x1f`, `HuLockPadMovement`): it reads as centred, the buttons still
@@ -49,6 +53,8 @@ struct ScriptState {
     std::uint32_t tagColour = 0;
     /// The commands disabled for the pad that drives the human (`EnableCommand`), a bit per command id 1-63.
     std::uint64_t disabledCommands = 0;
+    /// When the wound's 14 s run out (see `wounded`).
+    std::uint64_t woundedUntilMs = 0;
     /// Can be pushed aside by others (`+0x3bf`, `HuSetPushable`). **Coney stand-in**: Coney's bodies do not push
     /// each other yet, so it is only kept.
     bool pushable = true;

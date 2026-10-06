@@ -28,6 +28,7 @@
 #include "scripting/human_bindings.h"
 #include "scripting/level_bindings.h"
 #include "scripting/lighting_bindings.h"
+#include "scripting/mission4_bindings.h"
 #include "scripting/object_bindings.h"
 #include "scripting/player_bindings.h"
 #include "scripting/rumble_bindings.h"
@@ -801,6 +802,14 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("SndLoadMatrix"),
     real("SoundPlay"),
     real("UM_GetUnlockablesByType"),
+    // The story's fourth mission, level34 (mission4_bindings.h).
+    real("BrSetPedType"),
+    real("CfgChanceToGetHelp"),
+    real("ChangeBlocker"),
+    real("ForceCrimeLevel"),
+    real("GetRTTI"),
+    real("HuSetWounded"),
+    real("ObjGetIndex"),
     // The story's second and third missions (story_bindings.h).
     real("TacticAvoidEnemies"),
     real("TacticDefend"),
@@ -1270,7 +1279,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kArenaBindings, info.name) != kArenaBindings.end() ||
                      std::ranges::find(kStoryEffectsBindings, info.name) != kStoryEffectsBindings.end() ||
                      std::ranges::find(kHubBindings, info.name) != kHubBindings.end() ||
-                     std::ranges::find(kHubWorldBindings, info.name) != kHubWorldBindings.end());
+                     std::ranges::find(kHubWorldBindings, info.name) != kHubWorldBindings.end() ||
+                     std::ranges::find(kMission4Bindings, info.name) != kMission4Bindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1308,6 +1318,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addWorldBindings(vm, context);
     addHubBindings(scripts, vm, context);
     addHubWorldBindings(scripts, vm, context);
+    addMission4Bindings(vm, context);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

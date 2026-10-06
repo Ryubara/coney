@@ -118,6 +118,8 @@ class CrimeReports {
     void setBreakInDelay(double seconds) { m_breakInDelay = seconds; }
     /// `ForceCrimeLevel(on)` (`+0x28c`): while on, a wanted gang stays wanted.
     void setForced(bool on) { m_forced = on; }
+    /// Whether `ForceCrimeLevel` holds the wanted gangs.
+    [[nodiscard]] bool forced() const { return m_forced; }
 
     /// A crime report: `type` at `at` by `offender` (0: none) against `victim` (0: none) at game time `nowMs`.
     /// `sendResponders` is the report's mode 1; `count` the responders a custom crime (type 4) asks for.

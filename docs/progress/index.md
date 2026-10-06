@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (468,380 of 3,354,776 bytes, 1,508 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (470,164 of 3,354,776 bytes, 1,517 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-427 reimplemented function(s) have no size yet and add no bytes.
+425 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,19 +64,19 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.3% | 99 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 60 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
-| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 14.0% | 471 | 1,096,672 |
+| `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.1% | 477 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 200 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 201 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 89 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 90 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
-| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 107 | 54,264 |
+| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 108 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -670,6 +670,8 @@ at the top of the repository's `README.md`.
 | `0x0022f100` | `Human_KnockDown` | `Human` | 712 |
 | `0x0022f658` | `Human_Stun` | `Human` | 640 |
 | `0x0022f8d8` | `Human_EndStun` | `Human` | 264 |
+| `0x0022fa78` | `Human_StartWounded` | `Human` | 392 |
+| `0x0022fc00` | `Human_EndWounded` | `Human` | 232 |
 | `0x00231090` | `AttackKind_ToCommand` | `Human` | 264 |
 | `0x00231198` | `AttackKind_ChainDelay` | `Human` | 1,016 |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
@@ -715,6 +717,7 @@ at the top of the repository's `README.md`.
 | `0x00237328` | `Human_SetKeepWeapon` | `Human` | 96 |
 | `0x00237388` | `Human_SetKeepHat` | `Human` | not filled in |
 | `0x00237468` | `Human_SetNoThrowWeapon` | `Human` | 112 |
+| `0x00237628` | `Human_SetWounded` | `Human` | 120 |
 | `0x00237700` | `Human_SetArrested` | `Human` | 120 |
 | `0x00237778` | `Human_SetConscious` | `Human` | 128 |
 | `0x002377f8` | `Human_Revive` | `Human` | 80 |
@@ -801,7 +804,7 @@ at the top of the repository's `README.md`.
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x0024eef0` | `PathPolygon_Contains` | `Human` | 928 |
 | `0x0024fbf8` | `PathMap_LineWalkable` | `Human` | 1,288 |
-| `0x00250100` | `PathPolygon_FindAtPoint` | `Human` | not filled in |
+| `0x00250100` | `PathPolygon_FindAtPoint` | `Human` | 664 |
 | `0x00250708` | `PathArea_FindAtPoint` | `Human` | not filled in |
 | `0x002508b8` | `NavLink_DoorPolygon` | `Human` | not filled in |
 | `0x00250960` | `NavLink_FindNearest` | `Human` | 432 |
@@ -817,6 +820,7 @@ at the top of the repository's `README.md`.
 | `0x00251890` | `Route_EdgeCost` | `Human` | 368 |
 | `0x00251a70` | `Route_AStar` | `Human` | 696 |
 | `0x00251d28` | `Route_SearchOutward` | `Human` | 992 |
+| `0x00252c28` | `NavLink_SetBlocked` | `Human` | 104 |
 | `0x00253688` | `Human_ApplyAnimSet` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
@@ -913,6 +917,7 @@ at the top of the repository's `README.md`.
 | `0x002911f8` | `Brain_GetAttackWeight` | `Human` | 32 |
 | `0x00292330` | `Brain_SetDead` | `Human` | 112 |
 | `0x00292410` | `Brain_SetType` | `Human` | 80 |
+| `0x00292460` | `Brain_SetPedType` | `Human` | 72 |
 | `0x00292530` | `Brain_FlushAll` | `Human` | 96 |
 | `0x00292758` | `Brain_SetDamageResponse` | `Human` | 80 |
 | `0x002927a8` | `Brain_SetInvestigateResponse` | `Human` | not filled in |
@@ -928,6 +933,7 @@ at the top of the repository's `README.md`.
 | `0x00294788` | `Cfg_SetDefaultFollowSlotSet` | `Human` | 104 |
 | `0x00294808` | `Cfg_SetVerticalSightModifier` | `Human` | not filled in |
 | `0x00294828` | `Cfg_SetCivilianAggression` | `Human` | not filled in |
+| `0x00294888` | `Cfg_SetChanceToGetHelp` | `Human` | 24 |
 | `0x00294ad8` | `Formation_Init` | `Human` | 136 |
 | `0x00294f38` | `Formation_PlaceSlots` | `Human` | 792 |
 | `0x002953c8` | `Formation_AssignSlots` | `Human` | 368 |
@@ -1340,6 +1346,7 @@ at the top of the repository's `README.md`.
 | `0x00384c38` | `MessageHandler_Deliver` | `Scripting` | 168 |
 | `0x00384ce0` | `MessageHandler_Marshal` | `Scripting` | 3,032 |
 | `0x003858b8` | `ScriptHandlers_ClearAll` | `Scripting` | 96 |
+| `0x00385950` | `Object_GetTypeBits` | `Scripting` | 80 |
 | `0x003859f0` | `Obj_GetTypeName` | `Scripting` | 96 |
 | `0x00385a50` | `Object_GetPosition` | `Scripting` | 184 |
 | `0x00385bb8` | `Object_Teleport` | `Scripting` | 216 |
@@ -1393,6 +1400,7 @@ at the top of the repository's `README.md`.
 | `0x003975c0` | `Particle_Start` | `TaskEngine` | not filled in |
 | `0x00397610` | `Particle_End` | `TaskEngine` | not filled in |
 | `0x00397730` | `Particle_Kill` | `TaskEngine` | 80 |
+| `0x00397780` | `ObjType_FindIndex` | `TaskEngine` | 40 |
 | `0x003977a8` | `Garbage_Start` | `TaskEngine` | not filled in |
 | `0x003977d0` | `Garbage_End` | `TaskEngine` | not filled in |
 | `0x00398348` | `ObjZoneMask_Set` | `TaskEngine` | 104 |
@@ -1513,7 +1521,7 @@ at the top of the repository's `README.md`.
 | `0x0041ad00` | `GameState_GetLuaSaveFloat` | `Warriors` | 40 |
 | `0x0041ad28` | `GameState_SetLuaSaveBool` | `Warriors` | 56 |
 | `0x0041ad60` | `GameState_GetLuaSaveBool` | `Warriors` | 48 |
-| `0x0041b0f0` | `GameState_SetMultiplayerCallback` | `Warriors` | not filled in |
+| `0x0041b0f0` | `GameState_SetMultiplayerCallback` | `Warriors` | 40 |
 | `0x0041b6a8` | `ReportCrime` | `Warriors` | 16 |
 | `0x0041b6e0` | `Crime_IsHappening` | `Warriors` | not filled in |
 | `0x0041b8b0` | `Crime_Report` | `Warriors` | 1,560 |
@@ -1540,6 +1548,7 @@ at the top of the repository's `README.md`.
 | `0x0041d830` | `GameState_SetDetailFlag` | `Warriors` | not filled in |
 | `0x0041d860` | `GameState_ClearDetailFlag` | `Warriors` | not filled in |
 | `0x0041d8a0` | `Cfg_SetCrimeResponders` | `Warriors` | not filled in |
+| `0x0041d8d0` | `GameState_SetForceCrimeLevel` | `Warriors` | 16 |
 | `0x0041d920` | `Cfg_SetGangSizeForCombatMusic` | `Warriors` | not filled in |
 | `0x0041d930` | `Cfg_SetDisableMusicForScenes` | `Warriors` | not filled in |
 | `0x0041da08` | `Cfg_SetMultiplayerJoin` | `Warriors` | 40 |

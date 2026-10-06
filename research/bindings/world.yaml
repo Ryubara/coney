@@ -354,6 +354,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 7, calls: 51, boot: false, mission1: false, result_used: true, levels: [34, 3, 5, 31, 11]}
+  coney: implemented
 
 - name: ObjSetTrainPoint
   wrapper: 0x0036e0b0
@@ -1142,6 +1143,7 @@
     When several polygons contain the point, the one whose centre is nearest wins; none does nothing. Whether A*
     routes also avoid it (through the nodes) is not traced.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [34, 3]}
+  coney: implemented
 
 - name: GetLeftDoorHandle
   wrapper: 0x00379d50

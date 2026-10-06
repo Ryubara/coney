@@ -123,6 +123,7 @@ add_library(coney_core STATIC
     scripting/spawn_bindings.cpp
     scripting/hub_bindings.cpp
     scripting/hub_world_bindings.cpp
+    scripting/mission4_bindings.cpp
     scripting/story_bindings.cpp
     scripting/story_effects_bindings.cpp
     scripting/trigger_bindings.cpp

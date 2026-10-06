@@ -135,6 +135,32 @@ void NavLinks::setPolygonExcluded(std::uint32_t polygon, bool excluded) {
     flags = excluded ? (flags | world::kPathPolygonExcluded) : (flags & ~world::kPathPolygonExcluded);
 }
 
+std::optional<std::uint32_t> NavLinks::changeBlocker(anim::Vec3 at, bool open) {
+    if (m_map == nullptr) {
+        return std::nullopt;
+    }
+    std::optional<std::uint32_t> nearest;
+    float best = 0.0F;
+    const auto polygons = m_map->polygons();
+    for (std::uint32_t i = 0; i < polygons.size(); ++i) {
+        const world::PathPolygon& polygon = polygons[i];
+        if (!m_map->inside(polygon, at.x, at.y)) {
+            continue;
+        }
+        const float dx = ((polygon.xMin + polygon.xMax) * 0.5F) - at.x;
+        const float dy = ((polygon.yMin + polygon.yMax) * 0.5F) - at.y;
+        const float distance = (dx * dx) + (dy * dy);
+        if (!nearest || distance < best) {
+            nearest = i;
+            best = distance;
+        }
+    }
+    if (nearest) {
+        setPolygonExcluded(*nearest, !open);
+    }
+    return nearest;
+}
+
 std::optional<std::uint32_t> NavLinks::polygonAt(anim::Vec3 at) const {
     if (m_map == nullptr) {
         return std::nullopt;

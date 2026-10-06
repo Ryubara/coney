@@ -83,6 +83,9 @@ class ScriptedStory final : public script::StoryBindingHost {
     void setFieldOfView(double human, float degrees) override;
     void setInvestigateResponse(double human, int response) override;
     void setReactToViolence(double human, bool reacts) override;
+    void setPedType(double human, std::uint16_t type) override;
+    /// Human::setWounded(), and on wounding the brain flushed (Brain::flush()).
+    void setWounded(double human, bool wounded) override;
     void setTagColour(double human, std::uint32_t rgba) override;
     /// What `HuTag` starts: the human, the tag spot and the flag he sprays from.
     using TagHandler = std::function<void(double human, double tag, double flag)>;

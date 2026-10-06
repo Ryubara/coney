@@ -20,6 +20,7 @@
     Each task class returns a constant ([Tasks: type bits](../../research/tasks.md#classes)); bit 0x2 is set for
     every task, so masking it leaves only the class bits. The human's 0x20 is not traced.
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [34, 81]}
+  coney: implemented
 
 - name: GetName
   wrapper: 0x0036c978

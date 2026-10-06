@@ -1065,6 +1065,7 @@
     The 14 s (0x00510794 = 14000 ms) stamp's reader is not traced (inferred: the wounded human's recovery time). The
     two calls to the human's vtable slot `+0xe4` (1e9 on wounding, 1.0 on healing, channel 7) are not traced.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [34]}
+  coney: implemented
 
 - name: HuSetWoundable
   wrapper: 0x0035ab00

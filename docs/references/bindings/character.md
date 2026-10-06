@@ -4324,7 +4324,7 @@ The two calls to the human's vtable slot `+0xe4` (1e9 on wounding, 1.0 on healin
   `Human_StartWounded`, `0x0022fc00` `Human_EndWounded`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuShadow {#hushadow}
 

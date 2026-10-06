@@ -340,7 +340,7 @@ also turns hostile to the police.
 - **Wrapper** `0x0037a630` (registered by `RegisterBindings`); **calls** `0x0041d8d0` `GameState_SetForceCrimeLevel`
 - **Used by** 9 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GameIsOver {#gameisover}
 

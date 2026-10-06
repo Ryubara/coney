@@ -105,7 +105,7 @@ every task, so masking it leaves only the class bits. The human's 0x20 is not tr
 - **Wrapper** `0x0036c888` (registered by `RegisterBindings`); **calls** `0x00385950` `Object_GetTypeBits`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## isRelease {#isrelease}
 

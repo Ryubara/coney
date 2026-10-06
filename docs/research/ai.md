@@ -1816,7 +1816,14 @@ played. `GangExitWorld` sends each AI member out; once none is alive the callbac
 deleted unless kept. Turf boxes, leader, respond percentage, hear ranges, investigate response, world-flag use and
 attack strategies are kept for readers not built. **Warrior commands, stand-in** for the untraced tactics: the crew's
 tactic is cleared and its AI members flushed, then 0 follow and 2 defend track the chief (2 m), 1 attack finds
-enemies, 3 hold stands; 4, 5 and 6 start nothing; the lines are not said. `GangStartSpawner` is kept only.
+enemies, 3 hold stands; 4, 5 and 6 start nothing; the lines are not said. `GangStartSpawner` switches a spawner
+([above](#spawners)).
+
+**The fourth mission's brain and human calls** (`src/scripting/mission4_bindings.*`, for `level34`). `BrSetPedType`
+keeps the low 16 bits at the brain (**stand-in**: neither the civilian brain nor the mugging reads it yet).
+`HuSetWounded` wounds once: the fight, grab or throw ends, health drops to a quarter and the brain is flushed; healing
+clears the mark (**stand-in**: no wounded clips, and nothing reads the 14 s stamp). `ChangeBlocker` sets or clears flag
+8 on the path polygon holding the point whose bounding box's middle is nearest (**Coney choice** for the centre).
 
 **The story's tactics** (`src/ai/story_tactics.*`; Attack and Confront are the Rumble's above). Group moves give the
 leader the moving goal and have the others track him (3, 1, 0.75 and 4 m; **stand-in** for `Goal_FollowPlayer` in

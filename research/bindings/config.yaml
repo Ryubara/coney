@@ -1058,6 +1058,7 @@
     last 40 s (gang `+0x5f4`) or while the crime kind is switched off (`W_GameState + 0x294 + kind`); the report
     kinds 0, 2 and 8 are not traced further.
   usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false, levels: [34, 31, 82, 20, 11]}
+  coney: implemented
 
 - name: CfgPedInteractDelay
   wrapper: 0x0035e990

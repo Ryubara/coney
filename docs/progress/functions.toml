@@ -3229,6 +3229,18 @@ subsystem = "Human"
 size = 264
 
 [[function]]
+address = 0x0022fa78
+name = "Human_StartWounded"
+subsystem = "Human"
+size = 392
+
+[[function]]
+address = 0x0022fc00
+name = "Human_EndWounded"
+subsystem = "Human"
+size = 232
+
+[[function]]
 address = 0x00231090
 name = "AttackKind_ToCommand"
 subsystem = "Human"
@@ -3493,6 +3505,12 @@ address = 0x00237468
 name = "Human_SetNoThrowWeapon"
 subsystem = "Human"
 size = 112
+
+[[function]]
+address = 0x00237628
+name = "Human_SetWounded"
+subsystem = "Human"
+size = 120
 
 [[function]]
 address = 0x00237700
@@ -3980,6 +3998,7 @@ size = 1288
 address = 0x00250100
 name = "PathPolygon_FindAtPoint"
 subsystem = "Human"
+size = 664
 
 [[function]]
 address = 0x00250708
@@ -4068,6 +4087,12 @@ address = 0x00251d28
 name = "Route_SearchOutward"
 subsystem = "Human"
 size = 992
+
+[[function]]
+address = 0x00252c28
+name = "NavLink_SetBlocked"
+subsystem = "Human"
+size = 104
 
 [[function]]
 address = 0x00253688
@@ -4613,6 +4638,12 @@ subsystem = "Human"
 size = 80
 
 [[function]]
+address = 0x00292460
+name = "Brain_SetPedType"
+subsystem = "Human"
+size = 72
+
+[[function]]
 address = 0x00292530
 name = "Brain_FlushAll"
 subsystem = "Human"
@@ -4696,6 +4727,12 @@ subsystem = "Human"
 address = 0x00294828
 name = "Cfg_SetCivilianAggression"
 subsystem = "Human"
+
+[[function]]
+address = 0x00294888
+name = "Cfg_SetChanceToGetHelp"
+subsystem = "Human"
+size = 24
 
 [[function]]
 address = 0x00294ad8
@@ -7092,6 +7129,12 @@ subsystem = "Scripting"
 size = 96
 
 [[function]]
+address = 0x00385950
+name = "Object_GetTypeBits"
+subsystem = "Scripting"
+size = 80
+
+[[function]]
 address = 0x003859f0
 name = "Obj_GetTypeName"
 subsystem = "Scripting"
@@ -7388,6 +7431,12 @@ address = 0x00397730
 name = "Particle_Kill"
 subsystem = "TaskEngine"
 size = 80
+
+[[function]]
+address = 0x00397780
+name = "ObjType_FindIndex"
+subsystem = "TaskEngine"
+size = 40
 
 [[function]]
 address = 0x003977a8
@@ -8054,6 +8103,7 @@ size = 48
 address = 0x0041b0f0
 name = "GameState_SetMultiplayerCallback"
 subsystem = "Warriors"
+size = 40
 
 [[function]]
 address = 0x0041b6a8
@@ -8200,6 +8250,12 @@ subsystem = "Warriors"
 address = 0x0041d8a0
 name = "Cfg_SetCrimeResponders"
 subsystem = "Warriors"
+
+[[function]]
+address = 0x0041d8d0
+name = "GameState_SetForceCrimeLevel"
+subsystem = "Warriors"
+size = 16
 
 [[function]]
 address = 0x0041d920

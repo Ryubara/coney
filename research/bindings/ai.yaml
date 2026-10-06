@@ -142,6 +142,7 @@
     No reader treats types 1 and 2 differently from 0 in the civilian brain (inferred: labels for the scripts); other
     readers of brain `+0x26c` (0x002d2600, 0x002a9ec0, 0x0029bf98) are not traced. BrGetPedType reads it back.
   usage: {chunks: 12, calls: 26, boot: false, mission1: false, result_used: false, levels: [34, 5, 86, 92, 20, 11]}
+  coney: implemented
 
 - name: BrGetPedType
   wrapper: 0x0035ed28
