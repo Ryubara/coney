@@ -244,6 +244,14 @@ recovered name are named by hash.
   its own Ghidra project (never the main one), and use it only to read the logic: offsets, sizes and vtable slots
   differ, and evidence is cited at `SLUS_212.15` addresses only. Measurements and the loader used:
   [Xbox executable](../research/xbox-executable.md).
+- **Save states in Ghidra (evaluated 2026-10-05, not used).** The EE extension's `PCSX2SaveStateImporter.java`
+  script pours a state's RAM into a program's writable blocks and the heap above `.bss` (a `.other` block); run on a
+  scratch copy of our project with `pcsx2 repack-state` first, it took 10 s, and a script labelling level99's 19 live
+  brains, their goals and the 7 gangs ran in 2 s. The same walk over PINE gave the same facts in 0.03 s after a
+  19 s PCSX2 launch, with names from the static project either way, and reading `eeMemory.bin` straight from the state
+  file gives the same frozen moment without either. Ghidra adds nothing PINE lacks but a frozen, searchable heap; it
+  costs a 170 MB project copy per state, its labels never reach the main project, and code patches and the hook cave
+  below `0x00100000` do not show, so we read live data over PINE or from the state file.
 - **Capture analysis.** Recording what the game sends to the graphics hardware or the sound processor and studying
   the capture. It is a later fallback, for questions that the code and the debugger answer badly (exact rendering
   state, timing). Captures contain game data: they stay in your scratch folder and never enter the repository.
@@ -367,6 +375,13 @@ the tick count is seen many times per update; no update was missed in the smoke 
 counts from the tick that follows the update's own (the count turning odd), so a sample never sees an update half
 done; the frame that catches up a tick (one in about 1000, [Tasks](../research/tasks.md#tick)) runs two updates and
 shows as one missed step.
+
+**Where a run's time goes** (`walk60`, 2026-10-05, two runs alike): the patched copy 0.15 s, PCSX2 from start to PINE
+answering 12.1 s, the state running 0.5 s later, the 170 updates 5.7 s (real time), closing 0.2 s: 19.1 s, two thirds
+of it PCSX2 starting. Started without a state it took as long (11.6-16.4 s to PINE over three launches), so the
+state load itself is under a second. Loading each next state into a PCSX2 left running would save about 12 s a run;
+PINE loads only numbered slots, so that needs a slot above 10 that the tool fills and empties, which is worth adding
+once runs come in batches.
 
 **The scenario file:**
 
