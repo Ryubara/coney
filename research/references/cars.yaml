@@ -1,0 +1,309 @@
+# Cars: a Coney game reference list. The page docs/references/cars.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: Cars
+about: |
+  The six car types `CarSpawn` makes, the 26 part ids of the car bindings and the colours scripts
+  give cars ([Cars](../research/cars.md)).
+complete: |
+  Every type and part id is listed. What each part is, is our reading of its record (box size, side
+  bits, linked part) and is inferred. Colours are the literal tables the scripts pass; 13 more calls pass computed
+  values.
+defaults: {source: "SLUS_212.15, car tables 0x00512ba8 and 0x0057e4c0; warriors.glr, Object List", evidence: confirmed-code}
+entries:
+  - id: car_osedan
+    kind: type
+    number: 0
+    model: car_osedan_geo
+    model_hash: 0x21beb40a
+    textures: car_osedan_tex
+    atomics: 47
+    size: [2.399, 6.05, 1.084]
+    calls: 64
+    scripts: [level11.lua, level111.lua, level14.lua, level14_jsb.lua, level34.lua, level34_gate.lua]
+    meaning: "Sedan, the commonest parked car"
+  - id: car_coupe
+    kind: type
+    number: 1
+    model: car_coupe_geo
+    model_hash: 0x721fc2fe
+    textures: car_osedan_tex
+    atomics: 47
+    size: [2.14, 5.27, 1.05]
+    calls: 22
+    scripts: [level111.lua, level2.lua, level31.lua, level34.lua, level5.lua, level87.lua]
+    meaning: Coupe
+  - id: car_wagon
+    kind: type
+    number: 2
+    model: car_wagon_geo
+    model_hash: 0xe3a8cf09
+    textures: car_osedan_tex
+    atomics: 47
+    size: [2.27, 6.08, 1.08]
+    calls: 3
+    scripts: [level111.lua, level51.lua]
+    meaning: "Estate car"
+  - id: car_copcar
+    kind: type
+    number: 3
+    model: car_copcar_geo
+    model_hash: 0x259a9ea3
+    textures: car_copcar_tex
+    atomics: 47
+    size: [2.48, 5.98, 1.11]
+    calls: 18
+    scripts: [level14.lua, level14_jsb.lua, level3.lua, level31.lua, level34.lua, level52.lua]
+    meaning: "Police car; makes a `part_copcar_lights` particle system"
+  - id: car_van
+    kind: type
+    number: 4
+    model: car_van_geo
+    model_hash: 0xbfa4f51a
+    textures: "5230bc4b"
+    atomics: 47
+    size: [2.48, 5.43, 1.52]
+    calls: 9
+    scripts: [level107.lua, level111.lua, level20.lua, level3.lua, level34.lua, level80.lua]
+    meaning: Van
+  - id: car_sullycar
+    kind: type
+    number: 5
+    model: car_sullycar_geo
+    model_hash: 0xddabd095
+    textures: "3827d44a"
+    atomics: 47
+    size: [2.0, 5.224, 1.101]
+    calls: 2
+    scripts: [level2_junkyard.lua, level60.lua]
+    meaning: "A story car (two levels)"
+  - id: part-0
+    kind: part
+    number: 0
+    size: [0.0, 0.0, 0.0]
+    sides: 0x0000
+    meaning: Body
+  - id: part-1
+    kind: part
+    number: 1
+    size: [0.0, 0.0, 0.0]
+    sides: 0x0004
+    meaning: Roof
+  - id: part-2
+    kind: part
+    number: 2
+    size: [2.36, 0.52, 0.61]
+    sides: 0x0002
+    meaning: "Front bumper"
+  - id: part-3
+    kind: part
+    number: 3
+    size: [1.93, 0.39, 0.35]
+    sides: 0x0020
+    meaning: "Rear bumper"
+  - id: part-4
+    kind: part
+    number: 4
+    size: [2.03, 1.87, 0.51]
+    open_number: 1
+    sides: 0x0006
+    meaning: Bonnet
+  - id: part-5
+    kind: part
+    number: 5
+    size: [1.75, 1.26, 0.51]
+    open_number: 0
+    sides: 0x0024
+    calls: 3
+    scripts: [level14_dirtycop.lua, level14_jsb.lua]
+    meaning: Boot
+  - id: part-6
+    kind: part
+    number: 6
+    size: [1.91, 0.68, 0.41]
+    sides: 0x0002
+    meaning: "Front panel"
+  - id: part-7
+    kind: part
+    number: 7
+    size: [1.41, 0.2, 0.22]
+    sides: 0x0020
+    meaning: "Rear panel"
+  - id: part-8
+    kind: part
+    number: 8
+    size: [1.02, 0.14, 0.42]
+    sides: 0x0002
+    meaning: Headlight
+  - id: part-9
+    kind: part
+    number: 9
+    size: [1.02, 0.14, 0.42]
+    sides: 0x0002
+    meaning: Headlight
+  - id: part-10
+    kind: part
+    number: 10
+    size: [1.84, 0.8, 0.35]
+    sides: 0x0010
+    meaning: "Side panel"
+  - id: part-11
+    kind: part
+    number: 11
+    size: [1.87, 0.8, 0.57]
+    sides: 0x0001
+    meaning: "Side panel"
+  - id: part-12
+    kind: part
+    number: 12
+    size: [1.91, 0.72, 0.3]
+    sides: 0x0010
+    meaning: "Side panel"
+  - id: part-13
+    kind: part
+    number: 13
+    size: [1.91, 0.72, 0.3]
+    sides: 0x0001
+    meaning: "Side panel"
+  - id: part-14
+    kind: part
+    number: 14
+    size: [1.27, 1.14, 0.64]
+    open_number: 2
+    linked: 15
+    sides: 0x0010
+    meaning: "Door (removes its window, 15)"
+  - id: part-15
+    kind: part
+    number: 15
+    size: [0.44, 0.96, 0.25]
+    sides: 0x0010
+    meaning: "Window of door 14"
+  - id: part-16
+    kind: part
+    number: 16
+    size: [1.27, 1.14, 0.64]
+    open_number: 3
+    linked: 17
+    sides: 0x0001
+    meaning: "Door (removes its window, 17)"
+  - id: part-17
+    kind: part
+    number: 17
+    size: [0.44, 0.96, 0.25]
+    sides: 0x0001
+    calls: 1
+    scripts: [level5_chapter1.lua]
+    meaning: "Window of door 16"
+  - id: part-18
+    kind: part
+    number: 18
+    size: [1.31, 1.14, 0.75]
+    open_number: 4
+    linked: 19
+    sides: 0x0010
+    calls: 1
+    scripts: [level14_jsb.lua]
+    meaning: "Door (removes its window, 19)"
+  - id: part-19
+    kind: part
+    number: 19
+    size: [0.44, 0.89, 0.32]
+    sides: 0x0010
+    calls: 1
+    scripts: [level14_jsb.lua]
+    meaning: "Window of door 18"
+  - id: part-20
+    kind: part
+    number: 20
+    size: [1.31, 1.14, 0.75]
+    open_number: 5
+    linked: 21
+    sides: 0x0001
+    meaning: "Door (removes its window, 21)"
+  - id: part-21
+    kind: part
+    number: 21
+    size: [0.44, 0.89, 0.32]
+    sides: 0x0001
+    calls: 1
+    scripts: [level5_chapter1.lua]
+    meaning: "Window of door 20"
+  - id: part-22
+    kind: part
+    number: 22
+    size: [0.76, 0.76, 0.27]
+    sides: 0x0014
+    meaning: Wheel
+  - id: part-23
+    kind: part
+    number: 23
+    size: [0.76, 0.76, 0.27]
+    sides: 0x0005
+    meaning: Wheel
+  - id: part-24
+    kind: part
+    number: 24
+    size: [0.76, 0.76, 0.27]
+    sides: 0x0014
+    meaning: Wheel
+  - id: part-25
+    kind: part
+    number: 25
+    size: [0.76, 0.76, 0.27]
+    sides: 0x0005
+    meaning: Wheel
+  - id: colour-1
+    kind: colour
+    number: 1
+    rgba: [1, 0, 0, 0.3]
+    calls: 1
+    scripts: [level2.lua]
+  - id: colour-2
+    kind: colour
+    number: 2
+    rgba: [1, 0, 0.3, 0.3]
+    calls: 1
+    scripts: [level2.lua]
+  - id: colour-3
+    kind: colour
+    number: 3
+    rgba: [1, 0, 0.3, 0.4]
+    calls: 1
+    scripts: [level2.lua]
+  - id: colour-4
+    kind: colour
+    number: 4
+    rgba: [1, 0, 0.3, 0.5]
+    calls: 1
+    scripts: [level2.lua]
+  - id: colour-5
+    kind: colour
+    number: 5
+    rgba: [1, 0.3, 0.8, 0.8]
+    calls: 1
+    scripts: [level2.lua]
+  - id: colour-6
+    kind: colour
+    number: 6
+    rgba: [1, 0.55, 0.65, 0.65]
+    calls: 1
+    scripts: [level99.lua]
+  - id: colour-7
+    kind: colour
+    number: 7
+    rgba: [1, 0.6, 0.8, 0.9]
+    calls: 1
+    scripts: [level99.lua]
+  - id: colour-8
+    kind: colour
+    number: 8
+    rgba: [1, 0.7, 0.9, 1]
+    calls: 1
+    scripts: [level99.lua]
+  - id: colour-9
+    kind: colour
+    number: 9
+    rgba: [1, 1, 0, 1]
+    calls: 1
+    scripts: [level93.lua]

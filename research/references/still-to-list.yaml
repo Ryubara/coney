@@ -16,24 +16,6 @@ families:
     count: not counted
     image: none
     needs: "Disc extraction of the keys only, never the text"
-  - family: Radar icons and blip types
-    what: The icon a radar blip shows and the kind of blip (objective, human, object).
-    source: "`HUDSetRadarItemTexture` icon ids (14 used: 22, 27, 28, 30, 34, 351, 359-361, ...); blip type 10 from `HUDAddRadarMissionObjective`"
-    count: "14 icon ids used; blip types not counted"
-    image: "icon render: Coney decodes the particle pages, but which sheet entry an id draws is not traced"
-    needs: "RE: the radar's icon table and the blip types"
-  - family: Car types and parts
-    what: The cars `CarSpawn` makes and the part ids of the car bindings.
-    source: "Table `0x00512ba8` (`car_osedan`, `car_coupe`, `car_wagon`, `car_copcar`, `car_van`, `car_sullycar`); part ids from `CarRemovePart` and `CarSetPartOpen`"
-    count: "6 types; 5 part ids used"
-    image: "model render: Coney cannot load car models yet"
-    needs: "Disc extraction for the types; RE for the parts and colours"
-  - family: Particle effects
-    what: The effect types `SpawnParticle` makes (`part_spray_tag`, flames, smoke).
-    source: "`SpawnParticle` (33 names in 594 calls, 36 scripts); where the types are defined is not traced (the initialiser `0x0039aef0` passes the name to the script system object)"
-    count: "33 used"
-    image: "icon render of the effect's sprite: Coney decodes the particle pages; the effect-to-sprite link is not traced"
-    needs: "RE: where effect types are defined"
   - family: Object zones
     what: Groups of a level's placed objects that scripts switch on and off.
     source: "`ObjEnableZone`, `ObjSpawn`'s zone argument and the level scripts' `Zone<n>` globals (45)"
@@ -144,7 +126,7 @@ families:
     needs: "RE for types 2-5"
   - family: Object and car tints
     what: Colours scripts give cars, spinning icons and spawned objects.
-    source: "`CarSetColor`, `ObjColor`, `HuSetSpinningIconColor`; `ObjSpawn`'s extra value (34 values that look like packed colours, inferred)"
+    source: "`ObjColor`, `HuSetSpinningIconColor`; `ObjSpawn`'s extra value (34 values that look like packed colours, inferred)"
     count: not counted
     image: swatch
     needs: "RE: which values are colours, and their layout"

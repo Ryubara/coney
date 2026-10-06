@@ -415,3 +415,17 @@ def test_compress_image_keeps_size_and_alpha_and_is_deterministic(tmp_path: Path
         pixel = rgba.getpixel((32, 32))
         assert isinstance(pixel, tuple)
         assert pixel[3] == 255
+
+
+def test_texture_size_reads_the_first_native_texture() -> None:
+    """A made-up PS2 native texture: platform, name and mask strings, then the raster's struct with its size."""
+    from coney_tools.refs_extract import _texture_size
+
+    # One RenderWare section: type, size, version stamp, body.
+    def section(kind: int, body: bytes) -> bytes:
+        return struct.pack("<3I", kind, len(body), 0x1C02000A) + body
+
+    raster = section(1, section(1, struct.pack("<3I", 512, 256, 8)))
+    data = b"junk" + b"PS2\0" + struct.pack("<I", 0x1106) + section(2, b"sheet\0\0\0") + section(2, b"\0" * 4) + raster
+    assert _texture_size(data, 0, len(data)) == (512, 256)
+    assert _texture_size(b"no texture here", 0, 15) is None

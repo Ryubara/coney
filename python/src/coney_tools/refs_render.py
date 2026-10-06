@@ -261,6 +261,10 @@ def index(
         "| Characters, Character models | `characters/<model name>.png`, or `<name hash>.png` for a model with no "
         "recovered name | `characters/warr_re_cv.png` |",
         "| Objects | `objects/<name>.png`, the object type name | `objects/dyn_bat.png` |",
+        "| Cars (types; not rendered yet) | `cars/<type name>.png` | `cars/car_osedan.png` |",
+        "| Radar icons (2D, at most 64 x 64; not rendered yet) | `radar/icon-<n>.png` | `radar/icon-28.png` |",
+        "| Particle effects (2D sprite, at most 64 x 64; not rendered yet) | `particles/<name>.png` | "
+        "`particles/part_fire.png` |",
         "",
         "`coney-tools refs extract` fills an entry's `image` field when its file exists; a missing image is simply",
         "left out of the table.",

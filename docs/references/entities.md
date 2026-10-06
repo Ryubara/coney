@@ -18,9 +18,9 @@ icon of at most 64 × 64 that Coney renders from the disc), **swatch** (a colour
 | <span id="brain"></span>Brain | A human's AI: goal stack, action queue, target | with its human | the human's handle | 60 | | [AI](bindings/ai.md) | none |
 | <span id="gang"></span>Gang | A group of humans with relations to other gangs | `GangCreate` | gang id, the slot 0-31 | 32 | [Gangs](gangs.md) | [Gangs](bindings/gang.md) | none |
 | <span id="object"></span>World object | Props, weapons, hats, pick-ups, doors, icons: one class, its kind a `CfgObj` type | `ObjSpawn`, `SpawnDoor`; placed by the level | handle; its type by name or `ObjGetIndex` | 384 live | [Objects and weapons](objects.md), [Object groups](object-groups.md), [Script enums](enums.md) | [World and objects](bindings/world.md) | model render (coming) |
-| <span id="car"></span>Car | A parked car that can be damaged or wrecked | `CarSpawn` | handle | 18 | still to list (6 types) | [World and objects](bindings/world.md) | model render (Coney cannot load cars yet) |
+| <span id="car"></span>Car | A parked car that can be damaged or wrecked | `CarSpawn` | handle | 18 | [Cars](cars.md) | [World and objects](bindings/world.md) | model render: Coney must load the `<type>_geo` clump (chunk `0x47`, no skin) and its dictionary through the Object List ([Cars](../research/cars.md#model)) |
 | <span id="glass"></span>Glass pane | A breakable window pane | `SpawnBreakableGlass` | handle | 100 | still to list | [World and objects](bindings/world.md) | none |
-| <span id="particle"></span>Particle system | Fire, smoke, sparks, strobes | `SpawnParticle` | handle | 1,400 | still to list | [Effects and lighting](bindings/effects.md) | icon render |
+| <span id="particle"></span>Particle system | Fire, smoke, sparks, strobes | `SpawnParticle` | handle | 1,400 | [Particle effects](particles.md) | [Effects and lighting](bindings/effects.md) | icon render: cut the type's rectangle from its sheet record and fit it to 64 × 64 (sprite traced for 58 types; [Particles](../research/particles.md#sprite-words)) |
 | <span id="light"></span>Dynamic light | A point, spot, directional or ambient light | `SetLight` | its own light handle | not traced | still to list | [Effects and lighting](bindings/effects.md) | swatch |
 | <span id="flag"></span>World flag | A named point with a heading: spawn point, waypoint, objective | `AddFlag` | handle; `FindFlag` by name | per level | still to list | [World and objects](bindings/world.md) | none |
 | <span id="path"></span>Path | A route of points AI humans follow | `AddPath` | a userdata | 32 | | [World and objects](bindings/world.md), [AI](bindings/ai.md) | none |
@@ -31,7 +31,7 @@ icon of at most 64 × 64 that Coney renders from the disc), **swatch** (a colour
 | <span id="scene"></span>Scene | An in-engine cutscene or animation set | `ScenePreload` | scene id (index in the level's scene table) | 12 loaded | still to list | [Scenes and movies](bindings/scene.md) | none |
 | <span id="movie"></span>Movie | A full-motion video | `PlayMovie` | name | one at a time | still to list | [Scenes and movies](bindings/scene.md) | none |
 | <span id="sound"></span>Sound and emitter | A one-shot or looping sound; an ambient emitter | `SoundPlay`, `SoundPreLoad`, `AddAmbientSoundEmitter2` | sound handle; emitter id | not traced | [Sound and music](sound.md) | [Sound and music](bindings/sound.md) | none |
-| <span id="blip"></span>Radar blip | A mark on the radar for a human, object or flag | `HUDAddRadarMissionObjective`, `HUDAddRadarHuman` | the marked thing's handle | not traced | still to list (icons) | [HUD and menus](bindings/hud.md) | icon render |
+| <span id="blip"></span>Radar blip | A mark on the radar for a human, object or flag | `HUDAddRadarMissionObjective`, `HUDAddRadarHuman` | the marked thing's handle | 128 per radar | [Radar icons and blips](radar-icons.md) | [HUD and menus](bindings/hud.md) | icon render: rectangle *n* of `part_page0`, fitted to 64 × 64 ([GUI](../research/gui.md#radar-icons)) |
 | <span id="icon"></span>Spinning icon | The marker over a target: a world object of class `dyn_icon` | `HuAttachSpinningIcon`, `GangAttachSpinningIcon` | through its human or gang | one per human | [Objects](objects.md) (class `dyn_icon`) | [Characters](bindings/character.md), [Gangs](bindings/gang.md) | model render |
 | <span id="weather"></span>Weather and screen effects | Rain, fog, film grain, fades | `StartRain`, `StartFog`, `ScreenQueueEffect` | none (global) | | still to list | [Effects and lighting](bindings/effects.md) | none |
 
@@ -111,14 +111,14 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | Ped task, scenario | the [brain](#brain)'s goals and actions; a gang's tactic; world flags the AI uses | | [AI](bindings/ai.md) |
 | Relationship group | [gang](#gang) (`GangMakeEnemies`, `GangMakeFriends`, `GangSetNeutral`) | [Gangs](gangs.md) | [Gangs](bindings/gang.md) |
 | Object | [world object](#object) | [Objects and weapons](objects.md) | [World and objects](bindings/world.md) |
-| Vehicle | [car](#car), parked; trains and moving vehicles are world objects (`ObjStartTrain`) | still to list | [World and objects](bindings/world.md) |
+| Vehicle | [car](#car), parked; trains and moving vehicles are world objects (`ObjStartTrain`) | [Cars](cars.md) | [World and objects](bindings/world.md) |
 | Weapon | a world object of a weapon class, held (`HuPlaceItemInHand`, `HuGiveWeapon`) | [Objects and weapons](objects.md) | [Characters](bindings/character.md) |
 | Pickup | a world object of class `pickup_item` or `powerup_item`; inventory items | [Objects and weapons](objects.md); inventory still to list | [Levels and game state](bindings/level.md) |
 | Door | a world object (`SpawnDoor`, `DoorOpen`) | [Objects and weapons](objects.md) | [World and objects](bindings/world.md) |
-| Blip | [radar blip](#blip) | still to list | [HUD and menus](bindings/hud.md) |
+| Blip | [radar blip](#blip) | [Radar icons and blips](radar-icons.md) | [HUD and menus](bindings/hud.md) |
 | Marker | [spinning icon](#icon); the HUD's tutorial arrow (`HUDEnableInstArrow`) | [Objects and weapons](objects.md) | [Characters](bindings/character.md), [HUD and menus](bindings/hud.md) |
 | Checkpoint (race) | none; a [trigger sphere](#trigger) or [volume box](#box) does the job. A Warriors checkpoint is a restart point (`SetCheckPoint`) | [Level starts](level-starts.md) | [Levels and game state](bindings/level.md) |
-| Ptfx | [particle system](#particle) | still to list | [Effects and lighting](bindings/effects.md) |
+| Ptfx | [particle system](#particle) | [Particle effects](particles.md) | [Effects and lighting](bindings/effects.md) |
 | Zone | [object zone](#zone), [turf box](#box) | still to list | [World and objects](bindings/world.md) |
 | Interior | none: a level or one of its streamed sections | [Levels](levels.md) | [Levels and game state](bindings/level.md) |
 | Camera | [camera](#camera) | | [Cameras](bindings/camera.md) |

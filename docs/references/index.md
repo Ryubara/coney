@@ -31,12 +31,15 @@ copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").
 | [Speed classes](speed-classes.md) | 5 | All five classes are listed. |
 | [Objects and weapons](objects.md) | 1,371 | Every object type (1,371) is listed with its class, type, physics shape, size and animations. |
 | [Object groups](object-groups.md) | 5 | Every group named by a character type is listed. |
+| [Cars](cars.md) | 41 | Every type and part id is listed. |
+| [Particle effects](particles.md) | 270 | All 270 types are listed. |
 | [Levels](levels.md) | 111 | Every record is listed with every field. |
 | [Level starts](level-starts.md) | 188 | Every story level whose script creates player 1 at a literal position, and every Rumble flag script whose name is known. |
 | [Animation clips](animations.md) | 1,875 | Every clip (1,875) is listed. |
 | [Anim ids](anim-ids.md) | 722 | All 722 ids are listed with the generic clip and Rembrandt's own clip where he has one. |
 | [Controls](controls.md) | 18 | Every button bit and both sticks are listed. |
 | [HUD colours](hud-colours.md) | 14 | Every key of `CL` is listed. |
+| [Radar icons and blips](radar-icons.md) | 31 | Every icon a script or the code uses and every blip type the code adds are listed. |
 | [Text formatting](text-formatting.md) | 66 | All 66 tags are listed; the effects are written from the layout code. |
 | [Script enums](enums.md) | 485 | Every numeric constant of those scripts is listed. |
 | [Sound and music](sound.md) | 357 | Every configured sound is listed by name; the two numbers of a music track are not traced. |
@@ -60,9 +63,6 @@ it.
 | --- | --- | --- | --- | --- | --- |
 | World flags | Named points with a heading that scripts spawn humans at, send them to and test against. | `AddFlag` in each level's `AddFlagsBoxesPaths`; `FindFlag` looks them up by name | 4,167 names in 7,057 calls, 94 scripts | none | Disc extraction (name, level, position, heading); RE for the two integers `AddFlag` stores |
 | Text label ids | Keys of the string tables (`GSTRING.PRESSTOTALK`, `LEVEL34.MS_C1_5`) that objectives, hints and prompts take. | The language string scripts; used by `HUDSetObjective` (218 keys), `HUDSetTutorialText` (110), `HUDLaunchMissionFailed` (31), `SetMsgHandlerEx` (20) | not counted | none | Disc extraction of the keys only, never the text |
-| Radar icons and blip types | The icon a radar blip shows and the kind of blip (objective, human, object). | `HUDSetRadarItemTexture` icon ids (14 used: 22, 27, 28, 30, 34, 351, 359-361, ...); blip type 10 from `HUDAddRadarMissionObjective` | 14 icon ids used; blip types not counted | icon render: Coney decodes the particle pages, but which sheet entry an id draws is not traced | RE: the radar's icon table and the blip types |
-| Car types and parts | The cars `CarSpawn` makes and the part ids of the car bindings. | Table `0x00512ba8` (`car_osedan`, `car_coupe`, `car_wagon`, `car_copcar`, `car_van`, `car_sullycar`); part ids from `CarRemovePart` and `CarSetPartOpen` | 6 types; 5 part ids used | model render: Coney cannot load car models yet | Disc extraction for the types; RE for the parts and colours |
-| Particle effects | The effect types `SpawnParticle` makes (`part_spray_tag`, flames, smoke). | `SpawnParticle` (33 names in 594 calls, 36 scripts); where the types are defined is not traced (the initialiser `0x0039aef0` passes the name to the script system object) | 33 used | icon render of the effect's sprite: Coney decodes the particle pages; the effect-to-sprite link is not traced | RE: where effect types are defined |
 | Object zones | Groups of a level's placed objects that scripts switch on and off. | `ObjEnableZone`, `ObjSpawn`'s zone argument and the level scripts' `Zone<n>` globals (45) | 255 zone bits; 69 numbers used | none | Disc extraction (zone names and numbers per level) |
 | Volume boxes | Named trigger boxes scripts test humans against. | `AddVolumeBox` (867 names in 974 calls, 53 scripts); kinds 0, 2 and 3 | 867 names | none | Disc extraction; RE for the box kinds |
 | Scenes and movies | The in-engine cutscenes and the full-motion movies scripts play. | `ScenePreload` (187 names in 247 calls, 108 scripts), `PlayMovie` | 187 scene names; movies not counted | none | Disc extraction |
@@ -81,7 +81,7 @@ it.
 | Crime types | The crimes the police respond to. | `CfgCrimeResponders`, `CfgEnableCrimeType`, `CrimeIsHappening` (kinds 1, 5, 7, 12 used); bytes at game state `+0x294` | not counted | none | RE |
 | Camera types and switches | The camera classes the factory makes and the switches of `CamEnable`. | Factory `0x0011e1b0` (types 0-5, 7, 8, 0xc, 0xd, 0x10; [Boot](../research/boot.md)); `CamEnable` switches 0-13 | 11 types, 14 switches | none | RE for the untagged types and the switches |
 | Screen effects | The full-screen effects `ScreenQueueEffect` queues and `CfgScrFx` configures. | `ScreenQueueEffect` types 0-5 (653 calls); `CfgScrFx` (11 entries, `config_preload2.lua`) | 6 types | none | RE for types 2-5 |
-| Object and car tints | Colours scripts give cars, spinning icons and spawned objects. | `CarSetColor`, `ObjColor`, `HuSetSpinningIconColor`; `ObjSpawn`'s extra value (34 values that look like packed colours, inferred) | not counted | swatch | RE: which values are colours, and their layout |
+| Object and car tints | Colours scripts give cars, spinning icons and spawned objects. | `ObjColor`, `HuSetSpinningIconColor`; `ObjSpawn`'s extra value (34 values that look like packed colours, inferred) | not counted | swatch | RE: which values are colours, and their layout |
 | Statistics | The stat tables the end-of-level screens score. | `CfgSetStatValue` (tables 0-5, 46 calls), `CfgSetStatTypeMax` | 6 tables | none | RE |
 | Door lock kinds | The number `SpawnDoor` takes after the door's ids. | `SpawnDoor` (484 calls; 27 values used) | 27 used | none | RE |
 | Light presets | The named lights each level's script builds with `SetLight`. | The level scripts' `Lights` and `LightData` tables (`SetLight`, 5,299 calls) | not counted | swatch | Disc extraction |
@@ -101,6 +101,9 @@ these lists agree without a lookup table:
 | --- | --- | --- |
 | Characters, Character models | `characters/<model name>.png`, or `<name hash>.png` for a model with no recovered name | `characters/warr_re_cv.png` |
 | Objects | `objects/<name>.png`, the object type name | `objects/dyn_bat.png` |
+| Cars (types; not rendered yet) | `cars/<type name>.png` | `cars/car_osedan.png` |
+| Radar icons (2D, at most 64 x 64; not rendered yet) | `radar/icon-<n>.png` | `radar/icon-28.png` |
+| Particle effects (2D sprite, at most 64 x 64; not rendered yet) | `particles/<name>.png` | `particles/part_fire.png` |
 
 `coney-tools refs extract` fills an entry's `image` field when its file exists; a missing image is simply
 left out of the table.

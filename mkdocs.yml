@@ -74,6 +74,7 @@ nav:
           - Graphics device and textures: research/graphics.md
           - Start-up and the front end: research/frontend.md
           - GUI, sprite sheets and text: research/gui.md
+          - Particles and script types: research/particles.md
           - Level loading: research/level-loading.md
           - Scripts (Lua): research/scripting.md
           - World flags: research/flags.md
@@ -81,6 +82,7 @@ nav:
           - Combat: research/combat.md
           - Tasks (the TaskEngine): research/tasks.md
           - AI humans: research/ai.md
+          - Cars: research/cars.md
           - Camera: research/camera.md
           - Feel comparison: research/feel.md
           - Collision: research/collision.md
@@ -103,12 +105,15 @@ nav:
       - Speed classes: references/speed-classes.md
       - Objects and weapons: references/objects.md
       - Object groups: references/object-groups.md
+      - Cars: references/cars.md
+      - Particle effects: references/particles.md
       - Levels: references/levels.md
       - Level starts: references/level-starts.md
       - Animation clips: references/animations.md
       - Anim ids: references/anim-ids.md
       - Controls: references/controls.md
       - HUD colours: references/hud-colours.md
+      - Radar icons and blips: references/radar-icons.md
       - Text formatting: references/text-formatting.md
       - Script enums: references/enums.md
       - Sound and music: references/sound.md

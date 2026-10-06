@@ -229,6 +229,34 @@ STARTERS: dict[str, dict[str, Any]] = {
         "complete": "Every group named by a character type is listed. No script on the disc calls `CfgObjectGroup`,\n"
         "so where the groups are defined is not known.",
     },
+    "cars": {
+        "title": "Cars",
+        "source": "SLUS_212.15, car tables 0x00512ba8 and 0x0057e4c0; warriors.glr, Object List",
+        "evidence": "confirmed-code",
+        "about": "The six car types `CarSpawn` makes, the 26 part ids of the car bindings and the colours scripts\n"
+        "give cars ([Cars](../research/cars.md)).",
+        "complete": "Every type and part id is listed. What each part is, is our reading of its record (box size,\n"
+        "side bits, linked part) and is inferred. Colours are the literal tables the scripts pass; 13 more calls\n"
+        "pass computed values.",
+    },
+    "particles": {
+        "title": "Particle effects",
+        "source": "SLUS_212.15, script type table 0x00512f28",
+        "evidence": "confirmed-code",
+        "about": "Every type of the script type table: the particle systems `SpawnParticle` makes, and the object\n"
+        "behaviours, lights and glass that share the table ([Particles](../research/particles.md)).",
+        "complete": "All 270 types are listed. The sprite is traced for 58 of them.",
+    },
+    "radar-icons": {
+        "title": "Radar icons and blips",
+        "source": "SLUS_212.15, radar code; the scripts, HUDSetRadarItemTexture",
+        "evidence": "confirmed-code",
+        "about": "The icon ids `HUDSetRadarItemTexture` takes and the code sets, and the radar's blip types\n"
+        "([GUI: radar](../research/gui.md#radar-icons)).",
+        "complete": "Every icon a script or the code uses and every blip type the code adds are listed. The numbers\n"
+        "are read from the code and the scripts; what each icon marks is inferred from who uses it. Classes are the\n"
+        "character class byte `CfgChar` sets (`+0x11a`, [AI](../research/ai.md#types)).",
+    },
     "levels": {
         "title": "Levels",
         "source": "config_preload3.lua, levelNames",

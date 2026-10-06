@@ -964,6 +964,450 @@ def topic_wad_names(facts: DiscFacts, images: Path | None) -> list[dict[str, Any
     return sorted(entries, key=lambda e: (e["kind"], e["name"]))
 
 
+# --- sprite sheets, radar icons, particle types and cars ----------------------------------------------------------
+
+#: Sprite-sheet names whose CRC-32 names a record of the sheet table (chunk 0x4D); the others show as a hash.
+SHEET_NAMES = (
+    "part_page0",
+    "part_page1",
+    "menu_system",
+    "part_tv",
+    "part_fire",
+    "lighting",
+    "hud_minigames",
+    "big_font",
+    "glass",
+    "legal_screen",
+)
+#: The radar draws its blips from sheet record 0 (docs/research/gui.md#radar-icons).
+RADAR_SHEET = 0
+#: Icons the code itself sets (docs/research/gui.md#radar-icons): icon -> (where, forced scale, forced tint).
+RADAR_CODE_ICONS: dict[int, tuple[str, float | None, str | None]] = {
+    22: ("`HUD_RadarSetIcon` draws it at 0.7", 0.7, None),
+    29: ("dealer type 0's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it", 0.8, "63DB4BFF"),
+    30: ("dealer type 2's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it", 0.8, "63DB4BFF"),
+    31: ("dealer type 1's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it", 0.8, "63DB4BFF"),
+    32: ("blip mode 3's ring, layer 1 (`0x001b32e0`)", 0.75, None),
+    33: ("blip mode 4's ring, layer 1 (`0x001b32e0`)", 0.75, None),
+    69: ("every particle blip's first icon (`hud_radar_dot`, `0x003e5bf8`)", None, None),
+    352: ("blip type 6, layer 0; blip modes 1 and 2 (`0x001b2990`, `0x001b32e0`)", None, None),
+    353: ("blip modes 3 and 4, layer 0 (`0x001b32e0`)", 0.8, None),
+    356: ("blip type 8, both layers (`HUD_RadarAddHuman`)", None, None),
+    359: ("blip type 6, layer 1 (`0x001b2990`)", None, None),
+    362: ("blip type 9, a sprite widget (`0x001b2ee8`, `0x001c4d00`)", None, None),
+    365: ("blip type 7 (`0x001b2ee8`)", None, None),
+}
+#: The blip types of the radar's add function `0x001c4d00` (docs/research/gui.md#radar-icons):
+#: type -> (sprite batch, first icon, colour or None, who adds it).
+RADAR_BLIP_TYPES: dict[int, tuple[str, int, str | None, str]] = {
+    1: (
+        "`+0x50` (32 sprites)",
+        69,
+        None,
+        "`HUDAddSecondaryRadarMissionObjective`; `HUDAddRadarObject` with its colour",
+    ),
+    2: ("`+0x58` (32 sprites)", 69, None, "a dealer of type 0 (`0x002c7ee0`)"),
+    3: ("`+0x54` (32 sprites)", 69, None, "a dealer of type 2 (`0x002c7ee0`)"),
+    4: ("`+0x50` (32 sprites)", 69, None, "a dealer of type 1 (`0x002c7ee0`)"),
+    5: ("none: `0x001b2990` adds nothing", 69, None, "`Human_Init`; `HUD_RadarAddHuman` for class 4 (civilians)"),
+    6: (
+        "`+0x5c` / `+0x60` by layer (96 sprites)",
+        352,
+        None,
+        "`HUD_RadarAddHuman` for classes 2, 5, 6; the AI when a human turns on the player",
+    ),
+    7: ("`+0x5c` / `+0x60` by layer (96 sprites)", 365, None, "`HUD_RadarAddHuman`: class 0 or 3, not the player"),
+    8: ("`+0x5c` / `+0x60` by layer (96 sprites)", 356, None, "`HUD_RadarAddHuman` for class 1 (police)"),
+    9: ("a sprite widget, not a particle", 362, "787878FF", "`HUD_RadarAddHuman`: class 0 or 3, the player"),
+    10: ("`+0x4c` (16 sprites)", 69, None, "`HUDAddRadarMissionObjective`"),
+}
+#: The script type table: 270 records of {name, init, update, message handler, flags} (docs/research/particles.md).
+SCRIPT_TYPES = 0x00512F28
+SCRIPT_TYPE_COUNT = 270
+SCRIPT_TYPE_KINDS = ((0x400, "glass"), (0x10, "particle system"), (0x08, "object behaviour"), (0x04, "light"))
+#: The sprite each traced particle type draws first: name -> (sheet record, rectangle) (docs/research/particles.md).
+PARTICLE_SPRITES: dict[str, tuple[int, int]] = {
+    "blo_splat": (1, 5),
+    "blood_drop": (1, 52),
+    "blood_spray": (1, 52),
+    "bloosh": (1, 46),
+    "coplights_glow": (8, 2),
+    "coplights_lens_flare": (8, 2),
+    "hud_radar_dot": (0, 69),
+    "part_copcar_lights": (8, 2),
+    "part_explosion": (1, 6),
+    "part_fire": (7, 0),
+    "part_fire_large": (7, 0),
+    "part_fire_large_ns": (7, 0),
+    "part_fire_ns": (7, 0),
+    "part_fire_plume": (9, 0),
+    "part_fire_tiki": (7, 0),
+    "part_firebarrel": (7, 0),
+    "part_firebarrel_ns": (7, 0),
+    "part_firetruck_lights": (8, 2),
+    "part_gun_flash": (8, 2),
+    "part_narrowflame": (27, 0),
+    "part_s_fire": (7, 0),
+    "part_s_subway_sparks": (1, 54),
+    "part_squareflame_lrg": (27, 0),
+    "part_squareflame_med": (27, 0),
+    "part_squareflame_sml": (27, 0),
+    "part_torch_flame": (7, 0),
+    "part_torch_flame_ns": (7, 0),
+    "part_train_splat": (1, 6),
+    "part_tv": (4, 0),
+    "part_urine_stain2": (1, 6),
+    "spark": (1, 41),
+    "sub_anim_spark": (1, 50),
+    "sub_barlamp_glow": (8, 3),
+    "sub_blight_glow": (8, 3),
+    "sub_blood_gout": (1, 2),
+    "sub_blood_spray": (1, 6),
+    "sub_car_rubble": (1, 24),
+    "sub_car_sparks": (1, 45),
+    "sub_embers": (1, 20),
+    "sub_explode": (1, 17),
+    "sub_fade_flame": (7, 0),
+    "sub_fire_smoke": (1, 42),
+    "sub_flame_reflect": (7, 0),
+    "sub_flaming_debris": (7, 0),
+    "sub_glint": (1, 41),
+    "sub_muzzle_flash": (1, 35),
+    "sub_objective_glow": (8, 3),
+    "sub_polar_bugs": (1, 19),
+    "sub_powerup_glow": (1, 29),
+    "sub_shack_puff": (1, 42),
+    "sub_shack_puff_aligned": (1, 42),
+    "sub_splash": (1, 51),
+    "sub_thrown_dust_puff": (1, 42),
+    "sub_train_splat": (1, 2),
+    "sub_train_splat_mist": (1, 6),
+    "subway_lensflare": (409, 0),
+    "subway_spark": (1, 54),
+    "urine_spray": (1, 54),
+}
+#: Types each type's code spawns by name (inferred from its calls; docs/research/particles.md#spawning).
+PARTICLE_SPAWNS: dict[str, tuple[str, ...]] = {
+    "dyn_blaster": ("sub_debris", "sub_rubble", "sub_shack_puff", "sub_spark_effect", "sub_wood_splinter"),
+    "dyn_breakable_light": ("sub_rubble", "sub_shack_puff", "sub_spark_effect"),
+    "dyn_cbradio": ("sub_rubble", "sub_shack_puff", "sub_spark_effect"),
+    "dyn_chicken": ("sub_debris", "sub_wood_splinter"),
+    "dyn_ctrl_box": ("sub_rubble", "sub_shack_puff", "sub_spark_effect"),
+    "dyn_door_bar_bani": ("sub_shack_puff", "sub_wood_splinter"),
+    "dyn_door_bnstr": ("sub_shack_puff", "sub_wood_splinter"),
+    "dyn_door_fence": ("sub_shack_puff", "sub_wood_splinter"),
+    "dyn_door_fence_o": ("sub_shack_puff", "sub_wood_splinter"),
+    "dyn_door_parapet": ("sub_shack_puff", "sub_wood_splinter"),
+    "dyn_door_swinging": ("sub_glass", "sub_shack_puff", "sub_wood_splinter"),
+    "dyn_lizzies": ("sub_shack_puff", "sub_wood_splinter"),
+    "dyn_masks": ("sub_detergent", "sub_rubble", "sub_shack_puff", "sub_wood_splinter"),
+    "dyn_table": ("sub_shack_puff", "sub_wood_splinter"),
+    "dyn_walktalk": ("sub_shack_puff",),
+    "dyn_woodbridge": ("sub_shack_puff",),
+    "fade_object": ("sub_debris",),
+    "fir_group": ("fir",),
+    "melee_weapon": (
+        "sub_coloured_glass",
+        "sub_debris",
+        "sub_rubble",
+        "sub_shack_puff",
+        "sub_wood_splinter",
+        "wood_splinter_bit",
+    ),
+    "overhead_weapon": (
+        "sub_debris",
+        "sub_detergent",
+        "sub_paint_splat",
+        "sub_rubble",
+        "sub_shack_puff",
+        "sub_spark_effect",
+        "sub_wood_splinter",
+    ),
+    "part_gun_flash": ("sub_shack_puff",),
+    "part_raindrops": ("sub_ripple", "sub_splash"),
+    "part_s_shack_dust_puff": ("sub_shack_puff",),
+    "powerup_item": ("sub_glint", "sub_powerup_glow"),
+    "rubble": ("sub_shack_puff",),
+    "simple_object": ("sub_rubble",),
+    "sub_anim_notes": ("glasstest", "sub_wood_splinter"),
+    "sub_car_damage": ("sub_shack_puff",),
+    "sub_detergent": ("sub_debris", "sub_paint_splat", "sub_shack_puff"),
+    "sub_dus": ("sub_shack_puff",),
+    "sub_rubble": ("rubble",),
+    "sub_wood_splinter": ("wood_splinter_bit",),
+    "thrown_weapon": (
+        "sub_coloured_glass",
+        "sub_debris",
+        "sub_detergent",
+        "sub_rubble",
+        "sub_shack_puff",
+        "sub_wood_splinter",
+    ),
+}
+#: The car type names (`0x00512ba8`) and each type's 0x5f0-byte record (`0x0057e4c0`; docs/research/cars.md).
+CAR_TYPES = 0x00512BA8
+CAR_TYPE_COUNT = 6
+CAR_RECORDS = 0x0057E4C0
+CAR_RECORD_SIZE = 0x5F0
+CAR_PARTS = 26
+CAR_PART_TABLE = 0xF0  # part p's 0x30-byte record is at +0xf0 + 0x30 * p
+#: `CarSetPartOpen`'s number for each part it can open (`0x0038d5b8`).
+CAR_OPEN_NUMBERS = {5: 0, 4: 1, 14: 2, 16: 3, 18: 4, 20: 5}
+#: Chunk types: the Object List in warriors.glr, and the sprite-sheet table, sheet and texture dictionary.
+CHUNK_OBJECT_LIST, CHUNK_SHEET_TABLE, CHUNK_SHEET, CHUNK_TEXTURES = 0x46, 0x4D, 0x4C, 0x2A
+
+
+def _glr_chunk(facts: DiscFacts, kind: int) -> tuple[bytes, int]:
+    """warriors.glr's bytes and the offset of its first chunk of `kind`."""
+    entry = facts.by_name("warriors.glr")
+    if entry is None:
+        raise ValueError("warriors.glr is not on the disc")
+    data = facts.read(entry)
+    container = parse_container(data)
+    for resource in container.resources if container else ():
+        for chunk in resource.chunks:
+            if chunk.type == kind:
+                return data, chunk.offset
+    raise ValueError(f"warriors.glr has no chunk 0x{kind:02x}")
+
+
+def _cstring(facts: DiscFacts, address: int) -> str:
+    """A NUL-terminated string of the executable."""
+    return facts.elf_bytes(address, 64).split(b"\0")[0].decode("latin-1")
+
+
+def _texture_size(data: bytes, start: int, end: int) -> tuple[int, int] | None:
+    """Width and height of the first PS2 native texture in a texture dictionary chunk (RenderWare sections)."""
+    at = data.find(b"PS2\0", start, end)
+    if at < 0:
+        return None
+    at += 8  # the platform and the filter word
+    for _ in range(2):  # the texture's name and mask strings
+        at += 12 + struct.unpack_from("<I", data, at + 4)[0]
+    width, height = struct.unpack_from("<2I", data, at + 24)  # inside the raster struct's own struct
+    return width, height
+
+
+class Sheets:
+    """The sprite-sheet table of warriors.glr and, on demand, each sheet's texture size and rectangles."""
+
+    def __init__(self, facts: DiscFacts) -> None:
+        self._facts = facts
+        data, at = _glr_chunk(facts, CHUNK_SHEET_TABLE)
+        count = struct.unpack_from("<I", data, at)[0]
+        self.hashes = [struct.unpack_from("<2I", data, at + 4 + 8 * i)[1] for i in range(count)]
+        self._names = {_crc(name): name for name in SHEET_NAMES}
+        self._cache: dict[int, tuple[tuple[int, int] | None, list[tuple[float, ...]]]] = {}
+
+    def name(self, record: int) -> str:
+        """A record's sheet name, or its hash in hex."""
+        key = self.hashes[record]
+        return self._names.get(key, f"{key:08x}")
+
+    def _read(self, record: int) -> tuple[tuple[int, int] | None, list[tuple[float, ...]]]:
+        """A sheet's texture size and rectangles, from the WAD file named by its hash in decimal."""
+        if record not in self._cache:
+            size: tuple[int, int] | None = None
+            rects: list[tuple[float, ...]] = []
+            entry = self._facts.by_name(str(self.hashes[record]))
+            data = self._facts.read(entry) if entry else b""
+            container = parse_container(data) if data else None
+            for resource in container.resources if container else ():
+                for chunk in resource.chunks:
+                    if chunk.type == CHUNK_TEXTURES and size is None:
+                        size = _texture_size(data, chunk.offset, chunk.offset + chunk.size)
+                    elif chunk.type == CHUNK_SHEET and not rects:
+                        count = struct.unpack_from("<I", data, chunk.offset + 4)[0]
+                        rects = [struct.unpack_from("<4f", data, chunk.offset + 0x14 + 16 * i) for i in range(count)]
+            self._cache[record] = (size, rects)
+        return self._cache[record]
+
+    def rect_size(self, record: int, rect: int) -> list[int] | None:
+        """A rectangle's size in texels {w, h}, or None when the sheet or rectangle is not there."""
+        size, rects = self._read(record)
+        if size is None or rect >= len(rects):
+            return None
+        u0, v0, u1, v1 = rects[rect]
+        return [round((u1 - u0) * size[0]), round((v1 - v0) * size[1])]
+
+
+def _uses(facts: DiscFacts, callee: str, argument: int) -> dict[Any, list[str]]:
+    """Per literal value of one argument of `callee`: the scripts of each call (one item per call)."""
+    found: dict[Any, list[str]] = collections.defaultdict(list)
+    for script, call in facts.calls(callee):
+        if len(call.args) > argument:
+            value = call.args[argument]
+            if isinstance(value, lua4.Global):  # a constant such as level5's HUD_WAR: its value in that script
+                value = next((a.value for a in facts.scripts[script].assignments if a.name == value.name), None)
+            if isinstance(value, (float, str)):
+                found[_int(value)].append(script)
+    return found
+
+
+def _scripts(calls: list[str]) -> list[str] | None:
+    """At most six distinct scripts, in name order."""
+    return sorted(set(calls))[:6] or None
+
+
+def topic_radar_icons(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
+    """The radar icons the scripts and the code use, and the radar's blip types."""
+    sheets = Sheets(facts)
+    used = _uses(facts, "HUDSetRadarItemTexture", 1)
+    numbers = sorted({n for n in used if isinstance(n, int)} | set(RADAR_CODE_ICONS))
+    entries: list[dict[str, Any]] = []
+    for number in numbers:
+        where, scale, tint = RADAR_CODE_ICONS.get(number, (None, None, None))
+        entries.append(
+            {
+                "id": f"icon-{number}",
+                "kind": "icon",
+                "number": number,
+                "sheet": sheets.name(RADAR_SHEET),
+                "rect": number,
+                "size": sheets.rect_size(RADAR_SHEET, number),
+                "set_by": where,
+                "scale": scale,
+                "tint": tint,
+                "swatch": tint,
+                "calls": len(used.get(number, [])) or None,
+                "scripts": _scripts(used.get(number, [])),
+                "image": _image(images, "radar", f"icon-{number}"),
+            }
+        )
+    for number, (batch, icon, colour, who) in RADAR_BLIP_TYPES.items():
+        entries.append(
+            {
+                "id": f"blip-{number}",
+                "kind": "blip type",
+                "number": number,
+                "icon": icon,
+                "batch": batch,
+                "set_by": who,
+                "tint": colour,
+                "swatch": colour,
+            }
+        )
+    return entries
+
+
+def topic_particles(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
+    """The script type table: every particle system, object behaviour, light and glass type, with its sprite."""
+    sheets = Sheets(facts)
+    used = _uses(facts, "SpawnParticle", 0)
+    entries = []
+    for index in range(SCRIPT_TYPE_COUNT):
+        name_at, init, _update, _message, flags = struct.unpack("<5I", facts.elf_bytes(SCRIPT_TYPES + 20 * index, 20))
+        name = _cstring(facts, name_at)
+        kind = next((label for bit, label in SCRIPT_TYPE_KINDS if flags & bit), "other")
+        sheet, rect = PARTICLE_SPRITES.get(name, (None, None))
+        entries.append(
+            {
+                "name": name,
+                "index": index,
+                "kind": kind,
+                "flags": flags,
+                "init": init,
+                "sheet": sheets.name(sheet) if sheet is not None else None,
+                "rect": rect,
+                "size": sheets.rect_size(sheet, rect) if sheet is not None and rect is not None else None,
+                "spawns": list(PARTICLE_SPAWNS.get(name, ())) or None,
+                "calls": len(used.get(name, [])) or None,
+                "scripts": _scripts(used.get(name, [])),
+                "image": _image(images, "particles", name),
+            }
+        )
+    order = [label for _, label in SCRIPT_TYPE_KINDS] + ["other"]
+    return sorted(entries, key=lambda e: (order.index(e["kind"]), e["index"]))
+
+
+def _object_list(facts: DiscFacts) -> dict[int, tuple[int, ...]]:
+    """The Object List of warriors.glr (chunk 0x46): 36-byte records of nine words, by name hash."""
+    data, at = _glr_chunk(facts, CHUNK_OBJECT_LIST)
+    count = struct.unpack_from("<I", data, at)[0]
+    records = (struct.unpack_from("<9I", data, at + 16 + 36 * i) for i in range(count))
+    return {record[0]: record for record in records}
+
+
+def _clump_atomics(facts: DiscFacts, model_hash: int) -> int | None:
+    """The atomic count of a model's clump, from the first standalone resource with that hash."""
+    entry = facts.by_name(str(model_hash))
+    data = facts.read(entry) if entry else b""
+    container = parse_container(data) if data else None
+    for resource in container.resources if container else ():
+        for chunk in resource.chunks:
+            if resource.hash == model_hash and chunk.type == 0x47:
+                return int(struct.unpack_from("<I", data, chunk.offset + 24)[0])  # the clump struct's first word
+    return None
+
+
+def topic_cars(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
+    """Car types (`0x00512ba8`, their records and Object List entries), car parts and the colours scripts give."""
+    objects = _object_list(facts)
+    spawns = _uses(facts, "CarSpawn", 0)
+    removed = _uses(facts, "CarRemovePart", 1)
+    entries: list[dict[str, Any]] = []
+    for number in range(CAR_TYPE_COUNT):
+        name = _cstring(facts, struct.unpack("<I", facts.elf_bytes(CAR_TYPES + 4 * number, 4))[0])
+        record = objects.get(_crc(name))
+        model = textures = None
+        if record is not None:
+            model = f"{name}_geo" if record[2] == _crc(f"{name}_geo") else f"{record[2]:08x}"
+            textures = next(
+                (f"{other}_tex" for other in (name, "car_osedan") if record[3] == _crc(f"{other}_tex")),
+                f"{record[3]:08x}",
+            )
+        body = struct.unpack("<3f", facts.elf_bytes(CAR_RECORDS + CAR_RECORD_SIZE * number, 12))
+        entries.append(
+            {
+                "id": name,
+                "kind": "type",
+                "number": number,
+                "model": model,
+                "model_hash": record[2] if record else None,
+                "textures": textures,
+                "atomics": _clump_atomics(facts, record[2]) if record else None,
+                "size": [round(v, 3) for v in body],
+                "calls": len(spawns.get(name, [])) or None,
+                "scripts": _scripts(spawns.get(name, [])),
+                "image": _image(images, "cars", name),
+            }
+        )
+    for part in range(CAR_PARTS):
+        raw = facts.elf_bytes(CAR_RECORDS + CAR_PART_TABLE + 0x30 * part, 0x30)
+        linked = raw[2]
+        entries.append(
+            {
+                "id": f"part-{part}",
+                "kind": "part",
+                "number": part,
+                "size": [round(v, 3) for v in struct.unpack_from("<3f", raw, 0x10)],
+                "open_number": CAR_OPEN_NUMBERS.get(part),
+                "linked": None if linked == 0xFF else linked,
+                "sides": raw[0],
+                "calls": len(removed.get(part, [])) or None,
+                "scripts": _scripts(removed.get(part, [])),
+            }
+        )
+    colours: dict[tuple[Any, ...], list[str]] = collections.defaultdict(list)
+    for script, call in facts.calls("CarSetColor"):
+        table = call.args[1] if len(call.args) > 1 else None
+        values = tuple(_number(v) for v in table.as_list()) if isinstance(table, lua4.Table) else ()
+        if len(values) == 4 and None not in values:
+            colours[values].append(script)
+    for number, (values, scripts) in enumerate(sorted(colours.items()), 1):
+        entries.append(
+            {
+                "id": f"colour-{number}",
+                "kind": "colour",
+                "number": number,
+                "rgba": list(values),
+                "calls": len(scripts),
+                "scripts": _scripts(scripts),
+            }
+        )
+    return entries
+
+
 #: The extractor of each topic, by file stem.
 EXTRACTORS: dict[str, Callable[[DiscFacts, Path | None], list[dict[str, Any]]]] = {
     "characters": topic_characters,
@@ -972,12 +1416,15 @@ EXTRACTORS: dict[str, Callable[[DiscFacts, Path | None], list[dict[str, Any]]]] 
     "speed-classes": topic_speed_classes,
     "objects": topic_objects,
     "object-groups": topic_object_groups,
+    "cars": topic_cars,
+    "particles": topic_particles,
     "levels": topic_levels,
     "level-starts": topic_level_starts,
     "animations": topic_animations,
     "anim-ids": topic_anim_ids,
     "controls": topic_controls,
     "hud-colours": topic_hud_colours,
+    "radar-icons": topic_radar_icons,
     "text-formatting": topic_text_formatting,
     "enums": topic_enums,
     "sound": topic_sound,

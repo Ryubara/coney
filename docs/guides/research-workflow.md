@@ -184,11 +184,11 @@ An entry of `level.yaml`:
 ## Reference lists {#reference-lists}
 
 The [Game references](../references/index.md) are lists of the things scripts, mods and Coney's code name:
-characters, gangs, objects, levels and their player starts, clips, anim ids, controls, colours, text tags, script
-constants, sounds, script events and WAD entry names. Each is a YAML file in `research/references/<list>.yaml`, and its
-page in
-`docs/references/` is generated from it. They hold only names, ids, numbers and our own short descriptions
-(`LEGAL.md`, "Reference lists"): never game text, script source or a file from the disc.
+characters, gangs, objects, cars, particle effects, levels and their player starts, clips, anim ids, controls, colours,
+radar icons, text tags, script constants, sounds, script events and WAD entry names. Each is a YAML file in
+`research/references/<list>.yaml`, and its page in `docs/references/` is generated from it. They hold only names,
+ids, numbers and our own short descriptions (`LEGAL.md`, "Reference lists"): never game text, script source or a file
+from the disc.
 
 A list file has a fixed shape; the fields of its entries are defined per list in
 `python/src/coney_tools/refs_topics.py`, and each page ends with its list's fields:
@@ -231,10 +231,11 @@ refer to, is written by hand; the index links it.
 
 To add a field or a list, add it in `refs_topics.py` (and its reader in `refs_extract.py` when it comes from the
 disc), then run `refs extract`. **Thumbnails** go in `docs/references/images/` (`characters/<model>.png`,
-`objects/<name>.png`; 256 × 256, transparent, rendered by `coney --render-references` from the player's disc,
-then shrunk with `coney-tools refs compress-images`); `refs extract` links each one that exists. The character
-images are rendered with `--names` given every model name in `character-models.yaml`, so only the models with no
-recovered name are named by hash.
+`objects/<name>.png`, `cars/<type>.png`; 256 × 256, transparent, rendered by `coney --render-references` from the
+player's disc, then shrunk with `coney-tools refs compress-images`); `refs extract` links each one that exists. The
+character images are rendered with `--names` given every model name in `character-models.yaml`, so only the models
+with no recovered name are named by hash. 2D icons (`radar/icon-<n>.png`, `particles/<name>.png`) are one sheet
+rectangle each, at most 64 × 64 (`LEGAL.md`); no renderer makes them yet.
 
 ## Tools
 
