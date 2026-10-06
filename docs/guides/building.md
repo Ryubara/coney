@@ -16,7 +16,8 @@ before you have a disc image at all.
 | Git | yes | yes | yes |
 | [uv](https://docs.astral.sh/uv/) | for the Python tools and pre-commit | same | same |
 
-The C++ dependencies (SDL3, librw, Dear ImGui, Catch2) are not installed by hand: CMake downloads them on the first configure,
+The C++ dependencies (SDL3, librw, Dear ImGui, Catch2, FFmpeg) are not installed by hand: CMake downloads them on the
+first configure,
 at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access and takes a few
 minutes; later builds reuse the copies under `build/<preset>/_deps/`.
 
@@ -28,6 +29,34 @@ asserts are off, is explained in `cmake/deps.cmake`.
 Clang 17 and 18 are supported by the language rules but not on Linux with libstdc++: libstdc++ only declares
 `std::expected` when the compiler reports full C++20 concepts support, which Clang first does in version 19. Use
 Clang 19 or newer there.
+
+### FFmpeg {#ffmpeg}
+
+The game's movies are Bink 1 files ([Movies](../research/movies.md)); Coney decodes them with FFmpeg's Bink demuxer,
+Bink video decoder and Bink audio (DCT) decoder. `cmake/deps.cmake` fetches the FFmpeg 9.0.2 release tarball and
+checks its SHA-256, and `cmake/ffmpeg/CMakeLists.txt` compiles only what those three components need (about 90 of
+FFmpeg's C files) into one static library, `ffmpeg_bink`, linked by `src/platform/` alone. The build is
+LGPL-2.1-or-later:
+no GPL, version-3 or nonfree part, no network, no programs, no assembly ([Licences](repo:LEGAL.md)).
+
+**Why not FFmpeg's own build.** FFmpeg builds with a `configure` script and `make`, which need a POSIX shell (MSYS2 on
+Windows, with MSVC as the compiler) and refuse a source or build folder whose path has a space in it, as many Windows
+checkouts do. Prebuilt LGPL archives are full builds of everything, and the usual ones are not kept at fixed versions.
+So CMake builds the trimmed library itself, the same way on Windows (MSVC), Linux (GCC, Clang) and macOS (Apple
+Clang), with nothing to install. It writes the files `configure` would generate (`config.h` and the component lists),
+setting every `CONFIG_`, `HAVE_` and `ARCH_` name the sources use to 0 except the few the file lists; FFmpeg's plain
+C code runs (no assembly), which decodes a 640 × 448 movie many times faster than it plays. FFmpeg is always built
+optimised, whatever the preset, because its code relies on the compiler removing disabled branches. It adds about a
+minute to a clean build; its sources are cached with the other dependencies under `build/<preset>/_deps/`.
+
+**To update FFmpeg**, change the version, URL and SHA-256 in `cmake/deps.cmake`. If the new release links with
+missing symbols, the source list in `cmake/ffmpeg/CMakeLists.txt` needs the files that define them: on Linux, configure
+the release with the options in that file's header, build its three libraries, link a small program that opens and
+decodes a Bink file with `-Wl,-Map`, and take the objects the map lists.
+
+**To use a different or modified FFmpeg** (the LGPL's relinking right), point CMake at its sources and rebuild:
+`cmake --preset dev -DFETCHCONTENT_SOURCE_DIR_FFMPEG=/path/to/ffmpeg`. Coney's own code sees FFmpeg only through
+`src/platform/`, so any FFmpeg with the Bink components works.
 
 ### Windows
 

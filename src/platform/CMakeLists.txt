@@ -22,6 +22,8 @@ target_sources(coney_platform PRIVATE sdl_input.cpp)
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
 target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
+# The trimmed FFmpeg that decodes the Bink movies (docs/guides/building.md#ffmpeg); only src/platform/ sees it.
+target_sources(coney_platform PRIVATE ffmpeg_info.cpp)
 # Failures end the process on stderr, never in a dialog waiting for a click (test runs, CI, agents).
 target_sources(coney_platform PRIVATE error_dialogs.cpp)
 # The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
@@ -32,6 +34,7 @@ target_sources(coney_platform PRIVATE profile_folder.cpp)
 target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp)
 coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core coney_audio SDL3::SDL3-static librw::librw imgui)
+target_link_libraries(coney_platform PRIVATE ffmpeg_bink)
 
 add_executable(coney main.cpp)
 coney_target_defaults(coney)

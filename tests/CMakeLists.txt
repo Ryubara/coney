@@ -66,6 +66,7 @@ add_executable(coney_tests
     platform/disc_level_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
+    platform/ffmpeg_info_test.cpp
     platform/imgui_model_view_test.cpp
     platform/profile_folder_test.cpp
     platform/scene_stage_test.cpp

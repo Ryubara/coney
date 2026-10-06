@@ -79,3 +79,15 @@ target_compile_definitions(librw PRIVATE NDEBUG)
 # Catch2's CMake helpers (catch_discover_tests) live in its extras folder, which FetchContent does not put on the
 # module path by itself; tests/CMakeLists.txt needs it for include(Catch).
 list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/extras")
+
+# FFmpeg 9.0.2, LGPL-2.1-or-later: the Bink demuxer and the Bink video and Bink audio (DCT) decoders for the game's
+# movies (docs/research/movies.md), used only in src/platform/. The release tarball, checked against its SHA-256; it
+# has no CMake build of its own, so cmake/ffmpeg/CMakeLists.txt compiles the trimmed library from it (why, and how to
+# swap in another FFmpeg: docs/guides/building.md#ffmpeg). The library target is ffmpeg_bink.
+set(FFMPEG_VERSION "9.0.2")
+FetchContent_Declare(ffmpeg URL https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+                            URL_HASH SHA256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+                            DOWNLOAD_EXTRACT_TIMESTAMP ON)
+FetchContent_MakeAvailable(ffmpeg)
+set(FFMPEG_SOURCE_DIR "${ffmpeg_SOURCE_DIR}")
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/ffmpeg" "${CMAKE_BINARY_DIR}/_deps/ffmpeg-coney")

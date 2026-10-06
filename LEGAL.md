@@ -53,7 +53,14 @@ whole function.
 - Documentation in `docs/` is CC-BY-SA-4.0 (see `docs/LICENSE`).
 - Dependencies keep their own licences. They are fetched at build time at the commits pinned in `cmake/deps.cmake`,
   never copied into the repository: SDL3 (zlib), librw (MIT), Dear ImGui (MIT, the debug menus' developer overlay)
-  and Catch2 (Boost Software Licence 1.0, tests only). A build that is passed on carries their licence notices.
+  and Catch2 (Boost Software Licence 1.0, tests only), and FFmpeg (below). A build that is passed on carries their
+  licence notices.
+- FFmpeg (`ffmpeg.org`) decodes the game's Bink movies: a trimmed build of release 9.0.2 with only the Bink demuxer,
+  the Bink video decoder and the Bink audio (DCT) decoder, under the **GNU Lesser General Public License 2.1 or
+  later** (no GPL, version-3 or nonfree part is enabled; `avcodec_license()` reports it). Coney links it statically;
+  because Coney's complete source and build are public, anyone can relink Coney with a modified or different FFmpeg
+  by rebuilding it, as `docs/guides/building.md` (FFmpeg) explains. The LGPL's text is in the FFmpeg sources the
+  build fetches (`COPYING.LGPLv2.1`).
 - Third-party assets in `assets/` keep theirs, with the licence file beside them. The sandbox's textures in
   `assets/sandbox/` are from Kenney's Prototype Textures (`www.kenney.nl`), released under CC0 1.0
   (`assets/sandbox/License.txt`); one is re-encoded, which CC0 allows. Only assets under CC0 or a licence compatible
