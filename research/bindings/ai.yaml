@@ -121,6 +121,7 @@
     lifted); a value above 6 indexes past the tables; type 0 is only meaningful for a human that has a player slot;
     the goals already on the stack are kept.
   usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false, levels: [95, 3, 82, 83]}
+  coney: implemented
 
 - name: BrSetPedType
   wrapper: 0x0035ecb0
@@ -522,6 +523,7 @@
   evidence: inferred
   depth: brief
   usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: BrSetNumFollowSlots
   wrapper: 0x0035fc80
@@ -695,6 +697,7 @@
   notes: >-
     Distance is full 3D. What 0x0028d4b0 accepts as a valid target (alive, not removed) is not traced in detail.
   usage: {chunks: 3, calls: 11, boot: false, mission1: false, result_used: false, levels: [86]}
+  coney: implemented
 
 - name: GoalAddressPerson
   wrapper: 0x003603a8
@@ -763,6 +766,7 @@
     Constructor 0x002af5b0 (vtable 0x00540330, Process 0x002afa48); a flag at goal `+0x34` is set only when the
     human's `+0x1a8` is below 3 and 0x00223e20 is false, not traced. Fight behaviour: [AI](../../research/ai.md).
   usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 20]}
+  coney: implemented
 
 - name: GoalFollowPlayer
   wrapper: 0x003605c8

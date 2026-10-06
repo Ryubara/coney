@@ -15,7 +15,7 @@ namespace coney::script {
 /// saved script numbers
 /// (`GetLUASaveDataFloat`, `SetLUASaveDataFloat`), the start callback `InitLevel` calls (`SetStartGameCallback`) and
 /// the Rumble menu's set-up (`GetRumbleModeData`, `GetRumbleModeGangName`). All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 11> kLevelBindings{"AddFlag",
+inline constexpr std::array<std::string_view, 12> kLevelBindings{"AddFlag",
                                                                  "CfgSetDatabaseSizes",
                                                                  "FindFlag",
                                                                  "GetFlagPos",
@@ -23,6 +23,7 @@ inline constexpr std::array<std::string_view, 11> kLevelBindings{"AddFlag",
                                                                  "GetPosition",
                                                                  "GetRumbleModeData",
                                                                  "GetRumbleModeGangName",
+                                                                 "HuGetPosition",
                                                                  "SetLUASaveDataFloat",
                                                                  "SetStartGameCallback",
                                                                  "TeleportToFlag"};

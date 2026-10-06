@@ -141,6 +141,14 @@ class AiBindingHost {
     virtual void goalAddressPerson(const AddressPersonCall& /*call*/) {}
     /// `GoalTrackHuman(human, target, distance)`.
     virtual void goalTrackHuman(double /*human*/, double /*target*/, float /*distance*/) {}
+    /// `GoalMoveToHuman(human, target, gait, radius)`.
+    virtual void goalMoveToHuman(double /*human*/, double /*target*/, int /*gait*/, float /*radius*/) {}
+    /// `GoalEngageEnemy(human, enemy)`.
+    virtual void goalEngageEnemy(double /*human*/, double /*enemy*/) {}
+    /// `BrSetType(human, type)`.
+    virtual void brSetType(double /*human*/, int /*type*/) {}
+    /// `BrSetAttackWeight(human, attack, weight)`.
+    virtual void brSetAttackWeight(double /*human*/, int /*attack*/, int /*weight*/) {}
     /// `GoalDealer`.
     virtual void goalDealer(const DealerCall& /*call*/) {}
     /// `BrSetNumFollowSlots(leader, count, allowed)`; `allowed` -1 takes `count`.

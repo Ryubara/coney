@@ -657,7 +657,7 @@ Sets how often an AI fighter picks a given attack, used by the Rumble modes to b
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035fbe0` (registered by `RegisterBindings`); **calls** `0x002929f8` `Brain_SetAttackWeight`
 - **Used by** 2 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetDamageResponse {#brsetdamageresponse}
 
@@ -1042,7 +1042,7 @@ goals already on the stack are kept.
   `Brain_StoreType`, `0x0028c1a8` `Brain_InstallHandlers`
 - **Used by** 8 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSuspend {#brsuspend}
 
@@ -1725,7 +1725,7 @@ human's `+0x1a8` is below 3 and 0x00223e20 is false, not traced. Fight behaviour
   `EngageEnemyGoal_Init`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalFight {#goalfight}
 
@@ -2384,7 +2384,7 @@ failed route is retried after 30 updates.
   `MoveToHumanGoal_Init`, `0x002dc578` `MoveToHumanGoal_Process`
 - **Used by** 3 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalMoveToUseFlag {#goalmovetouseflag}
 

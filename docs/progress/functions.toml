@@ -1288,6 +1288,24 @@ subsystem = "GameModes"
 size = 464
 
 [[function]]
+address = 0x00166ff8
+name = "Gang_AddSpawner"
+subsystem = "GameModes"
+size = 688
+
+[[function]]
+address = 0x001681a0
+name = "Gang_UpdateSpawners"
+subsystem = "GameModes"
+size = 2304
+
+[[function]]
+address = 0x00168cd0
+name = "Gang_SetSpawnerState"
+subsystem = "GameModes"
+size = 304
+
+[[function]]
 address = 0x00168f58
 name = "Gang_AreFriends"
 subsystem = "GameModes"
@@ -2835,6 +2853,12 @@ subsystem = "Human"
 size = 3488
 
 [[function]]
+address = 0x0021d080
+name = "Human_GetPosition"
+subsystem = "Human"
+size = 96
+
+[[function]]
 address = 0x0021d428
 name = "Human_GetFormation"
 subsystem = "Human"
@@ -3046,6 +3070,12 @@ subsystem = "Human"
 size = 72
 
 [[function]]
+address = 0x002352b0
+name = "HuGetPosition"
+subsystem = "Human"
+size = 72
+
+[[function]]
 address = 0x00235478
 name = "Human_GetGangType"
 subsystem = "Human"
@@ -3073,6 +3103,12 @@ address = 0x00235758
 name = "Human_IsPlayer"
 subsystem = "Human"
 size = 64
+
+[[function]]
+address = 0x00235890
+name = "Human_GetCharType"
+subsystem = "Human"
+size = 56
 
 [[function]]
 address = 0x002359a0
@@ -4143,6 +4179,12 @@ subsystem = "Human"
 size = 112
 
 [[function]]
+address = 0x00292410
+name = "Brain_SetType"
+subsystem = "Human"
+size = 80
+
+[[function]]
 address = 0x00292530
 name = "Brain_FlushAll"
 subsystem = "Human"
@@ -4379,6 +4421,24 @@ size = 264
 address = 0x002add08
 name = "Goal_Melee"
 subsystem = "Human"
+
+[[function]]
+address = 0x002af528
+name = "Goal_EngageEnemy"
+subsystem = "Human"
+size = 136
+
+[[function]]
+address = 0x002af5b0
+name = "EngageEnemyGoal_Init"
+subsystem = "Human"
+size = 192
+
+[[function]]
+address = 0x002afa48
+name = "EngageEnemyGoal_Process"
+subsystem = "Human"
+size = 2728
 
 [[function]]
 address = 0x002b2b90
@@ -4652,6 +4712,24 @@ address = 0x002db768
 name = "MoveToUseFlagGoal_Init"
 subsystem = "Human"
 size = 168
+
+[[function]]
+address = 0x002dc458
+name = "Goal_MoveToHuman"
+subsystem = "Human"
+size = 160
+
+[[function]]
+address = 0x002dc4f8
+name = "MoveToHumanGoal_Init"
+subsystem = "Human"
+size = 72
+
+[[function]]
+address = 0x002dc578
+name = "MoveToHumanGoal_Process"
+subsystem = "Human"
+size = 400
 
 [[function]]
 address = 0x002df1a8

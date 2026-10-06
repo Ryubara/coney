@@ -36,13 +36,6 @@ struct WorldPath {
     std::vector<double> points;
 };
 
-/// A spawner `GangStartSpawner` started, as kept (**Coney stand-in**: spawners do not spawn yet).
-struct SpawnerStart {
-    std::string name;
-    int mode = 0;
-    int value = -1; ///< -1 keeps the spawner's own.
-};
-
 /// The story bindings' host on the brains a level's scripts drive.
 class ScriptedStory final : public script::StoryBindingHost {
   public:
@@ -117,7 +110,7 @@ class ScriptedStory final : public script::StoryBindingHost {
     /// Each AI member walks to the exit (0: the nearest exit flag to it) and leaves; update() lets the gang go once it
     /// is empty. An empty gang calls back and goes at once.
     void gangExitWorld(int gang, double exit, std::string_view callback, bool deleteGang) override;
-    /// **Coney stand-in**: spawners do not spawn yet, so only the state and the value are kept.
+    /// Switches the gang's spawner (ScriptedHumans::spawners(), Spawners::start()).
     void startSpawner(int gang, std::string_view name, int mode, int value) override;
     void canUseWorldFlags(int gang, bool on, int percent) override;
     /// The gang takes the story tactic of the call's kind (ai/story_tactics.h); a TravelPath walks the path the call
@@ -130,8 +123,6 @@ class ScriptedStory final : public script::StoryBindingHost {
     bool startWarriorCommand(double chief, int command, bool forced) override;
     [[nodiscard]] double playerOne() const override;
 
-    /// The spawner start kept for gang `gang`; null for none.
-    [[nodiscard]] const SpawnerStart* spawnerStart(int gang) const;
     /// The system music's mood round player 1: 1 (fight) while an AI human with health left targets him and has a fight
     /// or melee goal, else 0 (calm). **Coney stand-in**: the hunted mood (2, a gang member chasing him, goals `0xc`,
     /// `0x75`, `0x76`) is not built, as those goals are not.
@@ -153,7 +144,6 @@ class ScriptedStory final : public script::StoryBindingHost {
 
     ScriptedBrains* m_scripted;
     std::map<double, WorldPath> m_paths;
-    std::map<int, SpawnerStart> m_spawners;
     int m_warriorCommand = -1;
 };
 

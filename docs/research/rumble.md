@@ -280,26 +280,24 @@ flight may have some). Each links to its reference entry by name.
 
 - **Every arena** (`level1xx.lua`, 62): `CamUseDeathCamera`, `End3DFog`, `EndFog`, `EndRain`, `EndRoomSmoke`; partial
   `ShowRumbleModeInterface`.
-- **Brawl** (with the Fight Pen's flag chunk): `EndGarbage`, `SoundEnableSystemMusic`.
-- **King of the hill**: `CameraSetClipping`.
-- **Battle royal**: `CameraSetClipping`.
-- **Survival**: `BrSetAttackWeight`, `BrSetType`, `GoalEngageEnemy`, `GoalMoveToHuman`, `HuGetCharType`,
-  `HuGetPosition`, `TacticHanginOut`.
+- **Brawl** (with the Fight Pen's flag chunk): `EndGarbage`.
+- **King of the hill**: none.
+- **Battle royal**: none.
+- **Survival**: none.
 - **Tag battle**: `CfgHuInventoryCallback`, `CfgTagSettings`, `GoalTag`, `HUDEnableBar`, `HUDEnableGenBar`,
-  `HUDSetBarPercentage`, `HUDSetRadarZoomScale`, `HuSetMug`, `HuTag`, `TacticDefend`, `TacticMoveToFlag`.
+  `HUDSetBarPercentage`, `HUDSetRadarZoomScale`, `HuSetMug`, `HuTag`.
 - **Mercy**: `GoalGrabTarget`.
-- **Wheelchair**: `ActGiveWay`, `CamAssignRevCamButton`, `CameraSetClipping`, `HuSetNoAutoLock`,
-  `HuSetWheelchairControl`, `ObjColor`.
-- **Other arenas' set dressing**: `CfgSteam`, `EndParticle`, `GetPTank`, `ObjSetTrainPoint`, `ObjStartTrain`,
-  `ObjStopTrain`, `ReleasePTank`, `SoundPlay`, `StartParticle`, `StartRain`; partial `PlayMovie`.
+- **Wheelchair**: `ActGiveWay`, `CamAssignRevCamButton`, `HuSetNoAutoLock`, `HuSetWheelchairControl`, `ObjColor`.
+- **Other arenas' set dressing**: `CfgSteam`, `GetPTank`, `ObjSetTrainPoint`, `ObjStartTrain`, `ObjStopTrain`,
+  `ReleasePTank`, `SoundPlay`, `StartRain`; partial `PlayMovie`.
 
 ## Coney's implementation {#coney}
 
 A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the
 set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's
 revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. King of the hill
-plays to its result screen when the player holds the top, and Battle royal when one side is rung out. The other game
-types are not built yet.
+plays to its result screen when the player holds the top, Battle royal when one side is rung out, and Survival when
+the spawned enemies have beaten the player. The other game types are not built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
@@ -329,6 +327,11 @@ types are not built yet.
 - **Battle royal**: the scripts' own ring-out rules run on `TacticDomination`, `HuSetSlowMo` (the characters' step,
   `repo:src/camera/slow_motion.h`), `HuSetConscious` (a knocked-out mark that stops the human and its brain) and
   `TurnWarriorCommands`.
+- **Survival**: the gangs' spawners spawn ([AI: spawners](ai.md#spawners), `repo:src/ai/spawners.h`): the arena's two,
+  in state 8, make their humans on a level flag out of the camera's sight about 15 m from the player, and
+  `CreateENEMY` sends each at him with `GoalEngageEnemy` and `GoalMoveToHuman` (`repo:src/ai/engage_goals.h`) after
+  `BrSetType`, `HuGetCharType`, `BrSetAttackWeight` and `HuGetPosition`. Once he is down `SavePlayerStats` ends the
+  match with his time.
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
@@ -338,7 +341,7 @@ lengths; the result lines' look and the grids' rows; the melee and confront goal
 test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
 brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
 scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight; a knock-out without its clips
-or its wake-up after 14 s.
+or its wake-up after 14 s; the spawners' type pick and out-of-sight placement; the engage goal's range.
 
 ## Open questions {#open-questions}
 
@@ -369,3 +372,8 @@ or its wake-up after 14 s.
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
 - Coney bug: King of the hill's `X.OffTopTier` runs for members still on top after `X.GameOver`'s teleport and
   indexes a nil (2 script errors in the disc test); the original's order of leave events and clean-up.
+- How a spawner picks from its ten types, and where `0x001673b8` puts a human out of the camera's sight (Coney: the
+  types in turn; a level flag out of the view whose distance from the player is nearest the value).
+- The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
+- Mercy is versus only, and Coney has no second player yet; its one-player path (`GoalGrabTarget` on `P21` against
+  Mercy) is not reachable from the menus.

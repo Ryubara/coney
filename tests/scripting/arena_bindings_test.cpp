@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -203,14 +204,15 @@ TEST_CASE("Teleport moves a human the scripts made, keeping its facing for -1", 
     CHECK(thug.human().position().y == 12.0F);
     const coney::HumanCreation* made = level.humans.find(thug.handle());
     REQUIRE(made != nullptr);
-    REQUIRE(made->teleported.has_value());
-    CHECK(made->teleported->headingDegrees == 90.0F);
+    CHECK(made->teleported.value_or(coney::world_objects::Placement{}).headingDegrees == 90.0F);
     CHECK(made->teleports == 1);
     // The default heading keeps the facing it has now.
-    const float facing = level.scripted->humanPlacement(thug.handle())->headingDegrees;
+    const std::optional<coney::world_objects::Placement> before = level.scripted->humanPlacement(thug.handle());
+    REQUIRE(before.has_value());
+    const float facing = before.value_or(coney::world_objects::Placement{}).headingDegrees;
     level.call("Teleport", {Value(thug.handle()), position(20.0, 22.0, 0.0)});
     CHECK(thug.human().position().x == 20.0F);
-    CHECK(made->teleported->headingDegrees == facing);
+    CHECK(made->teleported.value_or(coney::world_objects::Placement{}).headingDegrees == facing);
     CHECK(made->teleports == 2);
     // A handle no human has does nothing.
     level.call("Teleport", {Value(99.0), position(0.0, 0.0, 0.0)});
@@ -293,4 +295,54 @@ TEST_CASE("Battle royal's knock-out and Warrior commands switch", "[scripting][r
     CHECK_FALSE(level.state.characters.warriorCommands[0][1]);
     level.call("TurnWarriorCommands", {Value(2.0)});
     CHECK(level.state.characters.warriorCommands[1][3]);
+}
+
+TEST_CASE("Survival's police: brain type, attack weight, class, position and the goals at the player",
+          "[scripting][rumble]") {
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    const double handle = thug.handle();
+    level.call("BrSetType", {Value(handle), Value(4.0)});
+    CHECK(thug.type() == coney::ai::BrainType::Civilian);
+    // 0 (the player's) and past 6 are not taken.
+    level.call("BrSetType", {Value(handle), Value(0.0)});
+    level.call("BrSetType", {Value(handle), Value(7.0)});
+    CHECK(thug.type() == coney::ai::BrainType::Civilian);
+    level.call("BrSetAttackWeight", {Value(handle), Value(41.0), Value(0.0)});
+    level.call("BrSetAttackWeight", {Value(handle), Value(39.0), Value(50.0)});
+    CHECK(thug.attackWeights()[41] == 0);
+    CHECK(thug.attackWeights()[39] == 50);
+
+    // The class of the type it was made as: Rembrandt's 32 answers 30; no human answers 0.
+    level.humans.find(handle)->type = 32;
+    CHECK(level.call("HuGetCharType", {Value(handle)}).number() == 30.0);
+    CHECK(level.call("HuGetCharType", {Value(999.0)}).number() == 0.0);
+
+    const Value at = level.call("HuGetPosition", {Value(handle)});
+    REQUIRE(at.table() != nullptr);
+    CHECK(at.table()->field("x").number() == 44.0);
+    CHECK(at.table()->field("y").number() == 40.0);
+    const Value none = level.call("HuGetPosition", {Value(999.0)});
+    REQUIRE(none.table() != nullptr);
+    CHECK(none.table()->field("x").number() == 0.0);
+
+    // The move goal on top of the engage goal: it runs to the player, then the engage goal fights him.
+    level.scene.player().human().spawn(nullptr, {50.0F, 40.0F, 0.0F}, 0.0F);
+    level.call("GoalEngageEnemy", {Value(handle), Value(1.0)});
+    level.call("GoalMoveToHuman", {Value(handle), Value(1.0), Value(5.0), Value(1.0)});
+    REQUIRE(thug.topGoal() != nullptr);
+    CHECK(thug.topGoal()->type() == coney::ai::GoalType::MoveToHuman);
+    for (int k = 0;
+         k < 10 * 30 && thug.topGoal() != nullptr && thug.topGoal()->type() == coney::ai::GoalType::MoveToHuman; ++k) {
+        level.scene.run(1);
+    }
+    CHECK(thug.distanceTo(level.scene.player()) <= 1.5F);
+    CHECK(thug.findGoal(coney::ai::GoalType::MoveToHuman) == nullptr);
+    CHECK(thug.findGoal(coney::ai::GoalType::EngageEnemy) != nullptr);
+    REQUIRE(thug.topGoal() != nullptr);
+    for (int k = 0; k < 60 && thug.topGoal()->type() != coney::ai::GoalType::Fight; ++k) {
+        level.scene.run(1);
+    }
+    CHECK(thug.topGoal()->type() == coney::ai::GoalType::Fight);
+    CHECK(thug.target() == &level.scene.player());
 }

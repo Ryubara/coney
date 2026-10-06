@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 12.9%](https://img.shields.io/badge/reimplemented-12.9%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 13.1%](https://img.shields.io/badge/reimplemented-13.1%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (433,860 of 3,354,776 bytes, 1,332 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.1% of the game's own code (441,148 of 3,354,776 bytes, 1,345 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -59,10 +59,10 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `██▋░░░░░░░░░░░░░░░░░` | 13.0% | 7 | 7,120 |
-| `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 85 | 100,440 |
+| `GameModes` | `█████▉░░░░░░░░░░░░░░` | 29.5% | 88 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.8% | 391 | 1,096,672 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 12.1% | 401 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -332,6 +332,9 @@ at the top of the repository's `README.md`.
 | `0x00165678` | `Gang_GetLeader` | `GameModes` | not filled in |
 | `0x00166220` | `Gang_StandingCount` | `GameModes` | 232 |
 | `0x00166308` | `Gang_AddMember` | `GameModes` | 464 |
+| `0x00166ff8` | `Gang_AddSpawner` | `GameModes` | 688 |
+| `0x001681a0` | `Gang_UpdateSpawners` | `GameModes` | 2,304 |
+| `0x00168cd0` | `Gang_SetSpawnerState` | `GameModes` | 304 |
 | `0x00168f58` | `Gang_AreFriends` | `GameModes` | 136 |
 | `0x001696e0` | `Gangs_MusicMood` | `GameModes` | not filled in |
 | `0x001698f0` | `Gang_UpdateWanted` | `GameModes` | 304 |
@@ -600,6 +603,7 @@ at the top of the repository's `README.md`.
 | `0x00218008` | `Human_Init` | `Human` | not filled in |
 | `0x0021a490` | `Human_PushOutInAir` | `Human` | not filled in |
 | `0x0021b290` | `Strike_Contact` | `Human` | 3,488 |
+| `0x0021d080` | `Human_GetPosition` | `Human` | 96 |
 | `0x0021d428` | `Human_GetFormation` | `Human` | 80 |
 | `0x0021d4e8` | `Human_OnEvent` | `Human` | 72 |
 | `0x0021e400` | `Human_PlaySpeech` | `Human` | 664 |
@@ -636,11 +640,13 @@ at the top of the repository's `README.md`.
 | `0x002350c8` | `Human_SetTireless` | `Human` | 104 |
 | `0x00235200` | `Human_SetAutoEscape` | `Human` | not filled in |
 | `0x00235268` | `Human_SetPushable` | `Human` | 72 |
+| `0x002352b0` | `HuGetPosition` | `Human` | 72 |
 | `0x00235478` | `Human_GetGangType` | `Human` | 64 |
 | `0x002355e0` | `Human_IsGrabbed` | `Human` | not filled in |
 | `0x00235628` | `Human_IsAlive` | `Human` | 96 |
 | `0x00235718` | `Human_IsArrested` | `Human` | 64 |
 | `0x00235758` | `Human_IsPlayer` | `Human` | 64 |
+| `0x00235890` | `Human_GetCharType` | `Human` | 56 |
 | `0x002359a0` | `Human_SetDemiGodMode` | `Human` | 136 |
 | `0x00235a28` | `Human_SetGodMode` | `Human` | 96 |
 | `0x00235b68` | `Human_SetFastClimber` | `Human` | 96 |
@@ -829,6 +835,7 @@ at the top of the repository's `README.md`.
 | `0x0028fe28` | `Brain_RunActions` | `Human` | 104 |
 | `0x002911f8` | `Brain_GetAttackWeight` | `Human` | 32 |
 | `0x00292330` | `Brain_SetDead` | `Human` | 112 |
+| `0x00292410` | `Brain_SetType` | `Human` | 80 |
 | `0x00292530` | `Brain_FlushAll` | `Human` | 96 |
 | `0x00292758` | `Brain_SetDamageResponse` | `Human` | 80 |
 | `0x002927a8` | `Brain_SetInvestigateResponse` | `Human` | not filled in |
@@ -870,6 +877,9 @@ at the top of the repository's `README.md`.
 | `0x002abe08` | `Goal_BumTrigger` | `Human` | not filled in |
 | `0x002abef8` | `BumLogicGoal_Init` | `Human` | 264 |
 | `0x002add08` | `Goal_Melee` | `Human` | not filled in |
+| `0x002af528` | `Goal_EngageEnemy` | `Human` | 136 |
+| `0x002af5b0` | `EngageEnemyGoal_Init` | `Human` | 192 |
+| `0x002afa48` | `EngageEnemyGoal_Process` | `Human` | 2,728 |
 | `0x002b2b90` | `Brain_StartFight` | `Human` | 144 |
 | `0x002b2c20` | `FightGoal_Init` | `Human` | 184 |
 | `0x002b3ab0` | `FightGoal_Process` | `Human` | 1,512 |
@@ -917,6 +927,9 @@ at the top of the repository's `README.md`.
 | `0x002dacf8` | `MoveToExitFlagGoal_Process` | `Human` | not filled in |
 | `0x002db6b0` | `Goal_MoveToUseFlag` | `Human` | 184 |
 | `0x002db768` | `MoveToUseFlagGoal_Init` | `Human` | 168 |
+| `0x002dc458` | `Goal_MoveToHuman` | `Human` | 160 |
+| `0x002dc4f8` | `MoveToHumanGoal_Init` | `Human` | 72 |
+| `0x002dc578` | `MoveToHumanGoal_Process` | `Human` | 400 |
 | `0x002df1a8` | `Goal_TrackHuman` | `Human` | 168 |
 | `0x002df250` | `TrackHumanGoal_Init` | `Human` | 56 |
 | `0x002df288` | `TrackHumanGoal_Start` | `Human` | 152 |

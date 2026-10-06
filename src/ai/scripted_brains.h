@@ -151,6 +151,15 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void goalAddressPerson(const script::AddressPersonCall& call) override;
     /// goalTrackHuman().
     void goalTrackHuman(double human, double target, float distance) override;
+    /// Pushes the move-to-human goal (ai/engage_goals.h) on the human's brain.
+    void goalMoveToHuman(double human, double target, int gait, float radius) override;
+    /// Pushes the engage-enemy goal (ai/engage_goals.h) on the human's brain.
+    void goalEngageEnemy(double human, double enemy) override;
+    /// The brain's type for 1-6 (Brain::setType()). **Coney stand-in**: 0, the player's type, which hands the human's
+    /// player record the pad, is not built, and a value above 6 (past the original's tables) is ignored.
+    void brSetType(double human, int type) override;
+    /// The brain's weight for one attack kind (Brain::setAttackWeight()), kept to a byte.
+    void brSetAttackWeight(double human, int attack, int weight) override;
     /// Pushes a DealerGoal of dealerTypeFor() the brain's class and the call's type.
     void goalDealer(const script::DealerCall& call) override;
     /// The leader's formation (made on first use): its slot count, a slot, the set in use.

@@ -4,7 +4,8 @@
 // (docs/research/rumble.md): a QUICK RUMBLE Brawl the player loses ends on the result screen with the other gang's
 // win, the winner cheering and the player revived on the way; in a WAR PARTY the pad passes to a team-mate when the
 // player goes down; in King of the hill the player held on the top wins for his gang; in Battle royal the side left in
-// the ring wins. They run only when CONEY_DISC names the disc and skip otherwise; they print counts only (LEGAL.md).
+// the ring wins; in Survival the spawned enemies beat the player and his time is the result. They run only when
+// CONEY_DISC names the disc and skip otherwise; they print counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -187,5 +188,37 @@ TEST_CASE("the disc's Battle royal kills the fighters rung out and gives the win
     CHECK(game.flow().rumbleResult().winner().find("FURIES") != std::string::npos);
     CHECK(game.flow().scripts().errors() == 0);
     std::printf("  battle royal: %d rung out, result screen at frame %llu\n", rungOut,
+                static_cast<unsigned long long>(game.frames()));
+}
+
+TEST_CASE("the disc's Survival sends spawned enemies at the player until he falls, the time his result",
+          "[disc][rumble]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // One player in arena 134, the pad left alone: the two spawners make the enemies out of his sight, 15 m off.
+    coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript);
+    game.chooseRumble(9, 134, 1);
+    game.run(1000 - game.frames());
+    REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
+    const auto spawned = [&game] {
+        return std::ranges::count_if(game.flow().humans().all(), [](const coney::HumanCreation& human) {
+            return human.name.starts_with("ENEMYspawner");
+        });
+    };
+    // Both spawners, ten and six alive at most.
+    CHECK(spawned() >= 10);
+    CHECK(spawned() <= 16);
+
+    // They beat him: SavePlayerStats ends the match with side 1's "win" and the time he lasted.
+    const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 9000);
+    for (const std::string& line : game.log()) {
+        UNSCOPED_INFO(line);
+    }
+    REQUIRE(ended);
+    CHECK(game.flow().rumbleResult().reason().find("Time:") != std::string::npos);
+    CHECK(game.flow().scripts().errors() == 0);
+    std::printf("  survival: %lld enemies spawned, result screen at frame %llu\n", static_cast<long long>(spawned()),
                 static_cast<unsigned long long>(game.frames()));
 }

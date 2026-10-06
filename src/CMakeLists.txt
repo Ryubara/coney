@@ -228,6 +228,7 @@ target_sources(coney_core PRIVATE
     ai/brain.cpp
     ai/brains.cpp
     ai/dealer_goal.cpp
+    ai/engage_goals.cpp
     ai/pedestrian_goal.cpp
     ai/fight_goal.cpp
     ai/formations.cpp
@@ -245,6 +246,7 @@ target_sources(coney_core PRIVATE
     ai/scripted_goals.cpp
     ai/scripted_humans.cpp
     ai/scripted_story.cpp
+    ai/spawners.cpp
     ai/story_goals.cpp
     ai/story_tactics.cpp
     ai/tactic.cpp

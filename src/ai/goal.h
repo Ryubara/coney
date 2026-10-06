@@ -18,6 +18,8 @@ enum class GoalType : std::uint8_t {
     MoveToFlag = 0x01,       ///< MoveToFlagGoal.
     MoveToExitFlag = 0x02,   ///< MoveToExitFlagGoal: leaves the scene through an exit flag.
     MoveToUseFlag = 0x04,    ///< MoveToUseFlagGoal.
+    MoveToHuman = 0x06,      ///< MoveToHumanGoal.
+    EngageEnemy = 0x0b,      ///< EngageEnemyGoal.
     Fight = 0x0f,            ///< FightGoal.
     Spectate = 0x10,         ///< SpectateGoal: stands and watches for a while.
     ReactGrabbing = 0x12,    ///< Reaction: grabbing (state `0xc0`).

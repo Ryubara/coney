@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 
+#include "ai/spawners.h"
 #include "scripting/human_bindings.h"
 #include "warriors/character_rules.h"
 
@@ -83,7 +84,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void goalBumLogic(const script::BumLogicCall& call) override;
     /// Reserves the flag for the human and pushes the goal, which frees it at its end.
     void goalMoveToUseFlag(const script::MoveToUseFlagCall& call) override;
-    /// Keeps the spawner on its gang (at most 4). **Coney stand-in**: spawners do not spawn yet.
+    /// Adds the spawner to its gang's (at most 4), which spawners() runs.
     void addSpawner(const script::SpawnerCall& call) override;
     /// The gangs made to respond (named `Responder<n>`) that are not the police's are deleted; the police's are left.
     /// Coney's crimes send none yet, so a level has none unless its scripts made them.
@@ -102,8 +103,9 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// of the arguments and of when: after the characters' step, as the animation callbacks run).
     void runRageHandlers();
 
-    /// The spawners kept on gang `gang`.
-    [[nodiscard]] const std::vector<script::SpawnerCall>& spawners(int gang) const;
+    /// The gangs' spawners (`GangAddSpawner`, `GangStartSpawner`); the play mode updates them.
+    [[nodiscard]] Spawners& spawners() { return m_spawners; }
+    [[nodiscard]] const Spawners& spawners() const { return m_spawners; }
     /// Who holds the flag with `handle` (0 for no one).
     [[nodiscard]] double reservation(double flag) const;
     /// reservation(), for `FlagGetOwner`.
@@ -125,7 +127,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     ScriptedBrains* m_scripted;
     RageHandlers m_rage;
     std::map<double, RageSeen> m_rageSeen;
-    std::map<int, std::vector<script::SpawnerCall>> m_spawners;
+    Spawners m_spawners;
     std::map<double, double> m_reservations; // flag -> the human using it
     int m_playerGang = -1;
     std::uint64_t m_gangChangeMs = 0;

@@ -5,25 +5,113 @@
 #include <array>
 #include <cmath>
 #include <format>
+#include <memory>
+#include <numbers>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <vector>
 
+#include "ai/scripted_brains.h"
 #include "ai/scripted_story.h"
+#include "ai/spawners.h"
 #include "animation/anim_math.h"
+#include "camera/cameras.h"
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/player_frame.h"
 #include "gamemodes/system_music.h"
 #include "hud/hud.h"
+#include "human/human.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/anim_callbacks.h"
+#include "scripting/lua_value.h"
+#include "scripting/lua_vm.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "world_objects/spawn_records.h"
 
 namespace coney {
+
+namespace {
+
+// The level as the gangs' spawners see it: player 1 and the bound humans from the scripts' hold, the level's flags
+// as the spots out of the camera's sight, and a new human made by the scripts' own `HuCreate`, so it is kept, numbered
+// and made in the world as a script's would be.
+class ScriptSpawnerWorld final : public ai::SpawnerWorld {
+  public:
+    ScriptSpawnerWorld(ai::ScriptedBrains& scripted, script::ScriptSystem& scripts,
+                       const world_objects::WorldFlags& flags, const camera::Cameras* cameras)
+        : m_scripted(&scripted), m_scripts(&scripts), m_flags(&flags), m_cameras(cameras) {}
+
+    [[nodiscard]] std::optional<anim::Vec3> outOfSight(float metres, std::size_t turn) const override {
+        const std::optional<anim::Vec3> player = playerPosition();
+        if (!player) {
+            return std::nullopt;
+        }
+        std::vector<anim::Vec3> spots;
+        spots.reserve(m_flags->all().size());
+        for (const world_objects::WorldFlag& flag : m_flags->all()) {
+            spots.push_back(anim::Vec3{flag.position[0], flag.position[1], flag.position[2]});
+        }
+        // No camera sees nothing.
+        ai::SightCone view;
+        if (m_cameras != nullptr) {
+            const camera::CameraView& camera = m_cameras->view();
+            view = ai::SightCone{.eye = camera.position,
+                                 .forward = anim::normalise(anim::subtract(camera.lookAt, camera.position)),
+                                 .halfAngleRadians = camera.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F,
+                                 .range = camera.farClip};
+        }
+        return ai::outOfSightSpot(spots, *player, view, metres, turn);
+    }
+
+    [[nodiscard]] std::optional<anim::Vec3> playerPosition() const override {
+        const ai::Brain* player = m_scripted->player();
+        return player != nullptr ? std::optional(player->human().position()) : std::nullopt;
+    }
+
+    [[nodiscard]] bool alive(double handle) const override {
+        const auto found = m_scripted->bound().find(handle);
+        return found != m_scripted->bound().end() && found->second->human().alive();
+    }
+
+    double spawn(const ai::SpawnRequest& request) override {
+        auto position = std::make_shared<script::Table>();
+        for (std::size_t i = 0; i < request.position.size(); ++i) {
+            if (!position->set(script::Value(static_cast<double>(i + 1)), script::Value(request.position.at(i)))) {
+                return 0.0;
+            }
+        }
+        const std::array<script::Value, 7> args{script::Value(request.name),
+                                                script::Value(static_cast<double>(request.type)),
+                                                script::Value(std::move(position)),
+                                                script::Value(static_cast<double>(request.heading)),
+                                                script::Value(request.model),
+                                                script::Value(0.0),
+                                                script::Value(static_cast<double>(request.gang))};
+        script::LuaVm& vm = m_scripts->vm();
+        const auto made = vm.call(vm.global("HuCreate"), args);
+        if (!made || made->empty()) {
+            return 0.0;
+        }
+        return made->front().number().value_or(0.0);
+    }
+
+    void spawned(std::string_view callback, double handle) override {
+        const std::array<script::Value, 1> args{script::Value(handle)};
+        m_scripts->call(callback, args);
+    }
+
+  private:
+    ai::ScriptedBrains* m_scripted;
+    script::ScriptSystem* m_scripts;
+    const world_objects::WorldFlags* m_flags;
+    const camera::Cameras* m_cameras;
+};
+
+} // namespace
 
 GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem& scripts,
                            script::BindingContext& context, GameState& state, CreatedHumans& humans,
@@ -367,6 +455,8 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();
         m_scripted->storyHost().update();
+        ScriptSpawnerWorld spawnerWorld(*m_scripted, m_scripts, m_flags, m_cameras.get());
+        m_scripted->humanHost().spawners().update(nowMs, spawnerWorld);
         stepSystemMusic(m_state.story, m_context.sound, m_state.random, m_scripted->storyHost().musicMood());
     }
     updateBoxes(nowMs);

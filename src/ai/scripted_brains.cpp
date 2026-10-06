@@ -12,6 +12,7 @@
 
 #include "ai/address_person_goal.h"
 #include "ai/dealer_goal.h"
+#include "ai/engage_goals.h"
 #include "ai/pedestrian_goal.h"
 #include "ai/play_dyn_animation_goal.h"
 #include "ai/scripted_story.h"
@@ -215,6 +216,44 @@ void ScriptedBrains::goalTrackHuman(double human, double target, float distance)
     }
     if (Brain* found = named(human); found != nullptr) {
         ai::goalTrackHuman(*found, *this, m_owner->formations(), target, distance);
+    }
+}
+
+void ScriptedBrains::goalMoveToHuman(double human, double target, int gait, float radius) {
+    if (held([this, human, target, gait, radius] { goalMoveToHuman(human, target, gait, radius); })) {
+        return;
+    }
+    if (Brain* found = named(human); found != nullptr) {
+        found->pushGoal(std::make_unique<MoveToHumanGoal>(*this, target, gait, radius));
+    }
+}
+
+void ScriptedBrains::goalEngageEnemy(double human, double enemy) {
+    if (held([this, human, enemy] { goalEngageEnemy(human, enemy); })) {
+        return;
+    }
+    if (Brain* found = named(human); found != nullptr) {
+        found->pushGoal(std::make_unique<EngageEnemyGoal>(*this, enemy));
+    }
+}
+
+void ScriptedBrains::brSetType(double human, int type) {
+    if (held([this, human, type] { brSetType(human, type); })) {
+        return;
+    }
+    constexpr int kFirstAiType = static_cast<int>(BrainType::Cop);
+    constexpr int kLastType = static_cast<int>(BrainType::CivilianDi);
+    if (Brain* found = named(human); found != nullptr && type >= kFirstAiType && type <= kLastType) {
+        found->setType(static_cast<BrainType>(type));
+    }
+}
+
+void ScriptedBrains::brSetAttackWeight(double human, int attack, int weight) {
+    if (held([this, human, attack, weight] { brSetAttackWeight(human, attack, weight); })) {
+        return;
+    }
+    if (Brain* found = named(human); found != nullptr) {
+        found->setAttackWeight(attack, static_cast<std::uint8_t>(weight));
     }
 }
 

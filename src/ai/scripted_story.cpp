@@ -433,12 +433,7 @@ void ScriptedStory::gangExitWorld(int gang, double exit, std::string_view callba
 }
 
 void ScriptedStory::startSpawner(int gang, std::string_view name, int mode, int value) {
-    m_spawners[gang] = SpawnerStart{.name = std::string(name), .mode = mode, .value = value};
-}
-
-const SpawnerStart* ScriptedStory::spawnerStart(int gang) const {
-    const auto found = m_spawners.find(gang);
-    return found == m_spawners.end() ? nullptr : &found->second;
+    m_scripted->humanHost().spawners().start(gang, name, mode, value);
 }
 
 void ScriptedStory::canUseWorldFlags(int gang, bool on, int percent) {

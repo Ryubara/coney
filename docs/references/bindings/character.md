@@ -1336,7 +1336,7 @@ created as type 32, answers 30), which selects its class record (speeds, brain t
 - **Wrapper** `0x0035b848` (registered by `RegisterBindings`); **calls** `0x00235890` `Human_GetCharType`
 - **Used by** 7 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGetControlName {#hugetcontrolname}
 
@@ -1558,7 +1558,7 @@ writing its fields would move the stored vector; copy x, y, z out to keep a snap
   `0x0021d080` `Human_GetPosition`
 - **Used by** 5 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGetVoiceIndex {#hugetvoiceindex}
 

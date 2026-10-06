@@ -27,7 +27,6 @@ constexpr double kNilHandle = 0.0;
 // `HuSetCarriedItem` sets the drop chance to this (`+0x278`).
 constexpr int kCarriedChance = 100;
 // A gang keeps at most this many spawners (`+0x640`).
-constexpr std::size_t kGangSpawners = 4;
 // The gangs a spawner makes to respond to a crime are named this and a number.
 constexpr std::string_view kResponderName = "Responder";
 
@@ -352,10 +351,7 @@ void ScriptedHumans::addSpawner(const script::SpawnerCall& call) {
     if (m_scripted->owner().gangs().find(call.gang) == nullptr) {
         return;
     }
-    std::vector<script::SpawnerCall>& spawners = m_spawners[call.gang];
-    if (spawners.size() < kGangSpawners) {
-        spawners.push_back(call);
-    }
+    m_spawners.add(call);
 }
 
 void ScriptedHumans::clearResponders() {
@@ -417,12 +413,6 @@ void ScriptedHumans::runRageHandlers() {
         }
         seen = RageSeen{.full = rage.full(), .raging = rage.raging()};
     }
-}
-
-const std::vector<script::SpawnerCall>& ScriptedHumans::spawners(int gang) const {
-    static const std::vector<script::SpawnerCall> kNone;
-    const auto found = m_spawners.find(gang);
-    return found == m_spawners.end() ? kNone : found->second;
 }
 
 double ScriptedHumans::reservation(double flag) const {

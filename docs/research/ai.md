@@ -1464,8 +1464,28 @@ unread Process: the back-off walks straight away from the other human while near
 still and never calls back, and the use-flag goal walks to the flag as `GoalMoveToFlag` does, facing its heading, then
 stands there (the flag reserved until the goal ends). `GangInvincible` sets god mode on the members and on later
 ones; `GangSetTargetable` sets each member's targetable byte, kept on the human. `GangAddSpawner` keeps up to four
-spawners per gang that do not spawn; `GangClearWanted` has no wanted state to clear; `GangClearResponders` deletes
+spawners per gang, which spawn (below); `GangClearWanted` has no wanted state to clear; `GangClearResponders` deletes
 non-police gangs named `Responder<n>`. `BrSetThugWantsWeapon` and `SetInterrogateParam` are kept only.
+
+**The spawners** (`src/ai/spawners.*`, [Spawners](#spawners)): after each characters' step every spawner in use whose
+state is ready (1, 6, 7, 8 and 10 always; 2 past its deadline; 3 and 5 by player 1's distance, taken in 3D) makes a
+human once its delay has passed, while fewer of its humans are alive than its limit and it has not made its total
+(-1 none). The human is made through the scripts' own `HuCreate` (named `<spawner><count>`, the spawner's model string
+as the fifth argument, in its gang), then the callback is called with its handle. **Stand-ins**: the types are taken in
+turn from the list (the pick is not traced); 6, 7, 8 and 10 place the human on a level flag out of the camera's view
+(its cone and far clip) whose distance from the player is nearest the value (7: nearest the player), the best four in
+turn, since `0x001673b8` is not on the page; the others at the spawner; no door opens; 7 does not send its human to the
+gang's first live member; the dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept)
+never spawn; `SetSpawnMax` is not read.
+
+**The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
+(`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and
+ends within its radius in 3D, when the target is no longer alive in the world, or when its human is down.
+`GoalEngageEnemy` (11) runs at the enemy (`MoveToHumanAction`, 1 s at a time) beyond an attack's reach and pushes the
+fight goal within it, ending when the enemy is gone or down. **Stand-ins**: the engage goal follows the enemy at any
+range (the original's limit is not on the page) and leaves out its `+0x34` flag; the valid-target test `0x0028d4b0` is
+taken as alive and in the world. `BrSetType` sets types 1-6 (0 and past 6 are ignored, **stand-in**: 0's pad hand-over
+is not built), `BrSetAttackWeight` one kind's weight.
 `CfgSetDefaultFollowSlotSet` writes its sets into every formation, those made later too.
 `FlagNetAddLink` builds the level's flag network (`src/world_objects/flag_net.h`, 128 nodes) and `FlagNetTraverse`
 pushes `PedestrianGoal` (`0x69`) on a human that is not a player's; **stand-in** for its untraced Process: walk
@@ -1509,7 +1529,7 @@ queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to face; the turn clip
 (398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off and the gang's notice; the scene
 system, the dynamic clip slot and clips by id; the head look-ats; the sender of message 1 and its attacker; the gang's
-alert state, bounds, return to calm, neutral rule and spawners; the anim
+alert state, bounds, return to calm and neutral rule; the anim
 substitutions; the crowd's cheer idles; the formation's ground ray, line of sight and assignment mode `+0x275`; the
 dealer's run to a flag, gestures, buy clip and icons; the other tactics; the attack's steer, the post-block pause and
 the run-stop.

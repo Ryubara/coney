@@ -123,6 +123,24 @@ NativeFunction makeGetPosition(const BindingContext& context) {
     };
 }
 
+// `HuGetPosition(human)`: where a human the scripts made stands, as an M_Vector4; the zero vector for a handle that
+// names none. **Coney stand-ins**: a copy, where the original hands out its live vector (which follows the human), and
+// where the human stands while jumping, falling or climbing, the original giving where the fall ends or the climb
+// starts.
+// @orig 0x002352b0 HuGetPosition (unknown)
+// @orig 0x0021d080 Human_GetPosition (unknown)
+NativeFunction makeHuGetPosition(const BindingContext& context) {
+    return [humans = context.humans, locate = locatorOf(context)](std::span<const Value> args) -> binding::Results {
+        const double handle = binding::number(args, 0);
+        if (humans != nullptr && humans->find(handle) != nullptr) {
+            if (const std::optional<world_objects::Placement> human = locate(handle)) {
+                return vectorResult(human->position);
+            }
+        }
+        return vectorResult({});
+    };
+}
+
 // `TeleportToFlag(object, flag, heading)`: puts the object on the flag's position, facing the flag's heading for -1
 // (the default) or `heading` whole degrees, with no ground snap. Coney keeps the humans only, so it moves a human the
 // scripts made and ignores any other handle (and a handle that names no flag).
@@ -256,6 +274,7 @@ void addLevelBindings(LuaVm& vm, const BindingContext& context, std::function<do
     vm.registerFunction("FindFlag", makeFindFlag(context));
     vm.registerFunction("GetFlagPos", makeGetFlagPos(context));
     vm.registerFunction("GetPosition", makeGetPosition(context));
+    vm.registerFunction("HuGetPosition", makeHuGetPosition(context));
     vm.registerFunction("TeleportToFlag", makeTeleportToFlag(context));
     vm.registerFunction("CfgSetDatabaseSizes", makeCfgSetDatabaseSizes(context));
     vm.registerFunction("GetLUASaveDataFloat", makeGetLuaSaveDataFloat(context));

@@ -9,6 +9,7 @@
 #include <string>
 
 #include "camera/cameras.h"
+#include "characters/character_class.h"
 #include "human/human_flags.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
@@ -66,6 +67,16 @@ bool boolArg(std::span<const Value> args, std::size_t i, bool fallback = false) 
 // The character host of the level, if there is a level with an AI host.
 HumanBindingHost* humansOf(const BindingContext& context) {
     return context.ai != nullptr ? context.ai->humans() : nullptr;
+}
+
+// A binding that hands its arguments to the AI host when there is one and returns nothing.
+template <typename Body> NativeFunction aiCall(const BindingContext& context, Body body) {
+    return [context = &context, body](std::span<const Value> args) {
+        if (AiBindingHost* host = context->ai; host != nullptr) {
+            body(*host, args);
+        }
+        return binding::none();
+    };
 }
 
 // A binding that hands its arguments to the character host when there is one and returns nothing. The host is read
@@ -275,6 +286,34 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
             context->state->forceReticules = boolArg(args, 1);
         }
         return binding::none();
+    });
+    // `GoalMoveToHuman(human, target, gait, radius)`.
+    // @orig 0x002dc458 Goal_MoveToHuman (unknown)
+    vm.registerFunction("GoalMoveToHuman", aiCall(context, [](AiBindingHost& host, std::span<const Value> args) {
+                            host.goalMoveToHuman(handleArg(args, 0), handleArg(args, 1), intArg(args, 2),
+                                                 static_cast<float>(binding::number(args, 3)));
+                        }));
+    // `GoalEngageEnemy(human, enemy)`.
+    // @orig 0x002af528 Goal_EngageEnemy (unknown)
+    vm.registerFunction("GoalEngageEnemy", aiCall(context, [](AiBindingHost& host, std::span<const Value> args) {
+                            host.goalEngageEnemy(handleArg(args, 0), handleArg(args, 1));
+                        }));
+    // `BrSetType(human, type)`.
+    // @orig 0x00292410 Brain_SetType (unknown)
+    vm.registerFunction("BrSetType", aiCall(context, [](AiBindingHost& host, std::span<const Value> args) {
+                            host.brSetType(handleArg(args, 0), intArg(args, 1));
+                        }));
+    // `BrSetAttackWeight(human, attack, weight)`: the weight read as an unsigned integer, kept to a byte.
+    vm.registerFunction("BrSetAttackWeight", aiCall(context, [](AiBindingHost& host, std::span<const Value> args) {
+                            host.brSetAttackWeight(handleArg(args, 0), intArg(args, 1),
+                                                   static_cast<int>(unsignedArg(args, 2) & 0xffU));
+                        }));
+    // `HuGetCharType(human)`: the behaviour class of the type the human was made as (characters::characterClassOf());
+    // 0 for a handle that names no human.
+    // @orig 0x00235890 Human_GetCharType (unknown)
+    vm.registerFunction("HuGetCharType", [context = &context](std::span<const Value> args) {
+        const HumanCreation* human = context->humans != nullptr ? context->humans->find(handleArg(args, 0)) : nullptr;
+        return binding::number(human != nullptr ? characters::characterClassOf(human->type).id : 0);
     });
     // `TacticDomination(gang, flag, range, callback)`: range defaults to 3 m; a nil callback is none.
     // @orig 0x00316b30 Tactic_Domination (unknown)

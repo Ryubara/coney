@@ -1376,6 +1376,7 @@
     The usertype is pushed as a pointer into game memory, not a copy, so it follows the human as it moves and writing
     its fields would move the stored vector; copy x, y, z out to keep a snapshot.
   usage: {chunks: 5, calls: 11, boot: false, mission1: false, result_used: true, levels: [95, 61]}
+  coney: implemented
 
 - name: HuGetHeading
   wrapper: 0x0035b340
@@ -1634,6 +1635,7 @@
   notes: >-
     The type the human was created as is at `+0xd0` and is not returned; 0 is also a valid class number.
   usage: {chunks: 7, calls: 14, boot: false, mission1: false, result_used: true, levels: [95, 31, 20]}
+  coney: implemented
 
 - name: HuSetDamage
   wrapper: 0x0035b8a0
