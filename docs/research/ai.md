@@ -517,8 +517,9 @@ and for the formation in four levels (`FollowFormationGoal_Start`, `0x002dfe30`)
 
 1. Find the human's polygon (`0x00247958`, cached at human `+0x1b4`; fallbacks `0x002505b0`, `0x0024e218`). None →
    `+0x284` = 1, fail.
-2. **Straight line first**: when the segment to the point stays inside the polygons (`0x0024fbf8`, below), no route
-   is made and the action steers straight.
+2. **Straight line first**: when the walkable-line test (`0x0024fbf8`, below) passes from the human's position
+   (`+0x2b0`, at its own height) to the point with the mask 0, no route is made and the action steers straight
+   (`0x0029a8c0`, the route request). Confirmed (code).
 3. Otherwise both ends must be in one polygon, or both polygons must be on the graph (polygon `s16 +0x02` ≠ 0;
    inferred meaning). Each end's node is the nearest of its polygon's nodes (the A record's count and first index)
    that it reaches in a straight line (`0x00251150` → `0x00250e98`, `0x0024f290`), trying up to 30 by distance.
@@ -545,13 +546,44 @@ The polygons come in **areas**, an outline and its holes ([Path data](level-load
 polygon and a node's polygon are an area's first path. **Path flag 8** (`u16` at polygon `+0x48`, bit 3) takes a
 polygon out of every test below, so an opened door's hole stops cutting the area. Confirmed (code) at the addresses.
 
-- **The walkable-line test** (`0x0024fbf8`): refused when blocked (`0x00221f80`, inferred: collision). It then
-  crosses the segment with the edges (by slab, `0x0024e938`) of the start area's polygons that have neither flag 8
-  nor the caller's mask, keeping the nearest crossing. None: it passes when the end point's area (`0x00250708`) is the
-  start's. Otherwise the end point needs an area, whose polygons' farthest crossing must lie within 0.02 m of the
-  first (dist² < 0.0004): the segment leaves one area where it enters the next.
-- **A node in a straight line** (`0x0024f290`, the end-node search's test): refused when blocked or when the segment
-  crosses an edge of any of the area's polygons without flag 8 or the mask (0 there).
+- **The walkable-line test** (`0x0024fbf8`, arguments: the start's polygon, the two points, a polygon-flag mask). It
+  reads no collision geometry: only the hazard spheres below and the path polygons. Confirmed (code):
+    1. Refused when a **hazard sphere** blocks the segment (`0x00221f80`, below).
+    2. It crosses the segment with every edge of the start area's polygons (the outline and its holes, the list from
+       polygon `+0x20`) whose `u16` flags at `+0x48` have neither 8 nor any bit of the mask and whose box meets the
+       segment's. The crossing is in plan (`0x0024e938`: x and y only, z is interpolated), at segment parameter t in
+       [0, 1], and a crossing at exactly t = 1 is ignored. Edges come from the slab lists when the polygon has them,
+       else all. It keeps the **nearest** crossing. No such polygon at all → refused.
+    3. No crossing: it passes when the end point's area (`0x00250708`) is the start's.
+    4. A crossing: the end point needs an area. Its polygons are crossed the same way, keeping the **farthest**
+       crossing, and the line passes only when the two crossing points are within 0.02 m (dist² < 0.0004): the
+       segment leaves one area where it enters the next. Any edge in between, a hole's included, refuses the line.
+- **What blocks a line at a fence** is the fence's **hole** in the path polygons, not its collision. Confirmed
+  (runtime), from the path data of a `level99` state at checkpoint 3 (PCSX2 2.9.94, over the straight line Vermin's
+  `GoalMoveToFlag` asks for, (47.49, 42.97) to (46.30, 20.22); both ends lie in the street's area, whose outline is
+  polygon 0): the segment crosses two holes of that area, a 4-vertex hole of flags 7 spanning x 44.14 to 50.61 and
+  y 24.38 to 25.19 (the climbable fence, 6.5 × 0.8 m) at t = 0.78 and 0.82, and the hole of fence door 2 (x 44.93 to
+  49.50, y 30.79 to 31.56, flags 7) at t = 0.50 and 0.54. The nearest and farthest crossings are metres apart, so the
+  line is refused and a route is made ([Vermin's fence](#route-follow)). An opened door's hole gets flag 8
+  ([Objects](objects.md#nav-links)) and drops out; the fence's never does. A test that treats the area as the union
+  of its polygons (a hole counted as walkable) lets the line through.
+- **The hazard spheres** (`0x00221f80`, confirmed (code)): 64 records of `0x40` bytes at `0x0065ff50`, `+0x00` the
+  centre, `+0x10` / `+0x20` its box (min / max), `+0x30` (r + 0.3)², `+0x34` (r + 0.8)², `+0x38` a word (0 from the
+  only adder), `+0x3c` in use; their count is `0x00510170`, cleared at level start (`0x00217f68`). The test runs only
+  when the count is non-zero and `0x0051057c` is non-zero (1 in the ELF's data; no code writes it). A sphere blocks
+  the segment P → Q when its box meets the segment's box (x, y and z), the segment passes within r + 0.8 m of the
+  centre in 3D (`0x00336d28`, squared distance to the nearest point of the segment), and the segment heads at it:
+  (Q − P)/|Q − P| · (P − C)/|P − C| < −0.707 (within 45°). The points are tested at their own heights; there is no
+  lift above the ground. `0x002198b8(r, word, centre)` adds one (and marks the route links within r of it to be
+  avoided, `0x00253078` → `0x00252c90`: bit 31 of every D record whose edge passes within r + 0.3, counted so overlapping
+  spheres release it only once), and `0x002199c0` removes one. The only adder is `0x003a5a90`, called by the fire
+  particle types (`0x003c40a0`, and `0x003c8b28` from `0x003ca050`, [Particles](particles.md)) with r random in 0.5 to
+  0.75 m: an AI's straight line refuses to run into a fire. In the checkpoint 3 state the count was 0, so
+  `0x00221f80` returned 0 at once. Confirmed (runtime) for the count; that fires are the only source is confirmed
+  (code) from the single call site.
+- **A node in a straight line** (`0x0024f290`, the end-node search's test): refused when a hazard sphere blocks it
+  (`0x00221f80`) or when the segment crosses an edge of any of the area's polygons without flag 8 or the mask (0
+  there).
 - **A point's area** (`0x00250708`): `0x00250760` takes the first area, by the area list (`+0x24`), whose first path
   lacks flag 8, whose `+0x4a` equals the byte of the ground found by a ray down from 0.4 m above the point, and whose
   box (+0.35 m) holds it; then the inside test `0x0024ea60` over its polygons, skipping flags 8 and `0x10`.
@@ -565,6 +597,23 @@ directions, skipping bit-31 edges (inferred: for fleeing).
 skips waypoints already reachable in a straight line (`0x0029b4b8`), for legs over 5 m only when the turn against the
 previous leg is under about 135°, and sets the waypoint radius to 0.25 m; at the end it frees the route. Confirmed
 (code).
+
+**When the straight line is tested** (confirmed (code); each call is the walkable-line test of
+[Path planning](#path-planning) with the mask 0):
+
+- **Asking for a route** (`0x0029a8c0`): from the human's position to the point; passing means no route at all.
+- **Skipping a waypoint** (`0x0029b4b8`, every 6th update and when `0x0029b6d8` moves on): waypoint *i* + 1 is tried
+  from where the human stands (`0x002221e0`), and only when the links into waypoint *i* and out of it are both of
+  kind 1 or 2 (word & 3); the first waypoint counts as reached by a kind-1 link. So a waypoint at either end of a
+  climb, jump, door or charge link is never skipped, and the human walks to it whatever the line test says.
+- **Dropping the route** (the move action's update, every 30 updates, [The move action](#move-action)): when the
+  final point passes `0x002221e0`, the route is freed and the human goes straight.
+- **Building the route** (`0x002513a8`, calls at `0x00251494` and `0x002515e8`): leading nodes the start reaches,
+  and trailing nodes from which the destination is reached, are dropped.
+
+`0x002221e0` first asks the trains: unless brain `+0x2e0` equals the current game time (`*(0x0050b734) + 0x48`),
+`Trains_IsPathClear` must pass ([ObjStartTrain](../references/bindings/world.md#objstarttrain)); then the
+walkable-line test from the human's polygon (`0x00247958`) and its position in the position table (`0x00714b00`).
 
 **Link kinds.** A leg's kind is the D record that steps from the waypoint before to the current one (`0x00251070`);
 the follower reads it on the update after `0x0029b6d8` moves on (route state `+0x12` = 1), at waypoint index > 0.
