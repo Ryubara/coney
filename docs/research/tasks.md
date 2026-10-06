@@ -172,8 +172,9 @@ Confirmed (code): each vtable is written by the allocator the manager's vtable p
 wheel was seen updating ([The wheel](#wheel)) are the world object, the particle system, the scene and the car. A
 world object's kind is its `ObjectAttribs` entry (`+0x112`, the `CfgObj` type), not a subclass. The car initialiser
 picks the car's model index from the name in a table of six (`0x00512ba8`: `car_osedan`, `car_coupe`, `car_wagon`,
-`car_copcar`, `car_van`, `car_sullycar`) and, for `car_copcar`, makes a particle system as well. The 18 cars match
-the 18-body pool of [IPhysics](physics.md#iphysics) (inferred). The dynamic lights of `SetLight` belong to the
+`car_copcar`, `car_van`, `car_sullycar`) and, for `car_copcar`, makes a particle system as well ([Cars](cars.md)).
+A particle system's behaviour is the code of its record in the script type table ([Particles](particles.md)). The 18
+cars match the 18-body pool of [IPhysics](physics.md#iphysics) (inferred). The dynamic lights of `SetLight` belong to the
 graphics light manager (`0x0017ef20`), not to this pool; what makes a light task is not traced.
 
 Not on the wheel, with pools of their own:

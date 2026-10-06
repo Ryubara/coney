@@ -145,7 +145,7 @@ the push/pop behaviour; the description of what the object *is* is inferred from
 | `0x43` | Scene List | `0x00353460` | | pops `0x43`; copies `count` 24-byte records (count is the first word) into a new allocation and frees the chunk |
 | `0x44` | Character List | `0x00178098` | | pops `0x44`; resource manager `+0x80` = chunk, `+0x84` = count (word 0), `+0x88` = records at chunk `+0x10` |
 | `0x45` | Anim Range List | | | raw; popped by `Character Data`, which keeps word 0 and a pointer to `+4` |
-| `0x46` | Object List | `0x00181170` | | as `0x44`, into resource manager `+0x8c`, `+0x90`, `+0x94` |
+| `0x46` | Object List | `0x00181170` | | as `0x44`, into resource manager `+0x8c`, `+0x90`, `+0x94`. Layout: [WAD contents](formats/wad-contents.md#object-list) |
 | `0x47` | Preinstance Object | | `0x0017f2c0` | as `0x09` |
 | `0x48` | Sound Command Data | `0x0010f3a0` | | pops `0x48`; stored at `0x00598684`, handed to the audio manager |
 | `0x49` | Sound Material Data | `0x0010f3d8` | | pops `0x49`; stored at `0x00598688`; audio manager gets word 0 (count) and the records at `+0x10` |

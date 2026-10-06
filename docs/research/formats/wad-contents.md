@@ -123,7 +123,7 @@ lowercased** and carry no `./ee_files/` prefix:
 - A resource's `nameHash` is the CRC-32 of its name as the tools spelled it: animation resources hash
   `<anim>.anm` (442 of 564 match the lowercase WAD name exactly; the rest differ only in letter case), level
   resources hash `level<N>` (30 matched), texture dictionaries a bare name with no extension (about 580 matched).
-  No model (`0x47`) resource name has been matched yet.
+  Models hash `<name>_geo` (`car_osedan_geo`, `dyn_bat_geo`), named by the [Object List](#object-list).
 - Chunk type `0x00` (animation keyframes) hashes `<anim>.anm.b.cnk` (1,132 matched), the name of the tool's
   intermediate file. The descriptor (`0x02`) still holds a truncated copy of that file name after its own name.
 - In models and texture dictionaries the chunk hash usually equals the resource hash (`0x47`: 18,894 of 21,456;
@@ -194,6 +194,21 @@ sound, music and list types. The loaders at `0x00144180` and `0x00144398` index 
 | `0x2a` + `0x4c` | 759 in packs, 576 standalone | Texture dictionaries with a particle page; includes the loading screens and screenshots |
 | `0x00`, `0x02` ... `0x08`, `0x45` (character) | 1,156 in packs, 53 standalone | A character: its animations, data and anim ranges |
 | 18 chunks, `0x53`, `0x2a`, `0x47` ... | 64 | Levels (`.lev`) |
+
+### Object List (chunk `0x46`) {#object-list}
+
+One chunk in `warriors.glr`, kept by `0x00181170` at resource manager `+0x8c` (count `+0x90`, records `+0x94`;
+confirmed (code)): a 16-byte header whose first word is the count (1,406), then 36-byte records of nine words. The
+fields are inferred from the data (2026-10-06): the six car types and `dyn_bat` match by name.
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00` | CRC-32 of the object's name (`car_osedan`, `dyn_bat`) |
+| `+0x04` | 0, or another record's name hash (a variant of it) |
+| `+0x08` | the model resource's hash: CRC-32 of `<name>_geo` |
+| `+0x0c` | the texture dictionary's hash (`car_osedan_tex`; shared between objects) |
+| `+0x14`, `+0x1c` | the sizes of the model and the dictionary resources, 32 bytes more than their chunks |
+| `+0x18` | a size larger than the model's (not traced) |
 
 ### Packs
 

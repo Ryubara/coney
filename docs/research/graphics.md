@@ -232,7 +232,9 @@ dictionary's texture, each `{u0, v0, u1, v1}` as floats (inferred from `0x00181e
 16 bytes, and from the data). The legal screen's page has one rectangle, `(1/2048, 1/2048)` to
 `(1 - 1/2048, 0.75 - 1/2048)`: the top 512 × 384 of its 512 × 512 texture, inset half a texel (data, inferred). The
 front end and the HUD draw sprites from these pages ([2D drawing](#2d-drawing)). The full layout, now confirmed
-(code) and checked on all 1,335 pages, the sprite batches and fonts are on [GUI](gui.md#particle-page).
+(code) and checked on all 1,335 pages, the sprite batches and fonts are on [GUI](gui.md#particle-page); how particle
+systems and radar blips name a sprite (a sheet and a rectangle in one word) is on
+[Particles](particles.md#sprite-words).
 
 ## Behaviour
 

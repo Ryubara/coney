@@ -46,6 +46,8 @@ sheets belong to `Graphics/ParticlePage.cpp` (`0x00181b68`-`0x00182820`) and the
 | `0x00182de0` | `Instance_AddSprite(inst, sprite)` | appends one sprite to the batch | confirmed (code) |
 | `0x00197168` | `Instance_Render(inst, viewport)` | draws the batch's PTank | confirmed (code) |
 | `0x00185d20` | `ResourceMgr_RenderOverlay` | the 2D pass ([Draw order](#draw-order)) | confirmed (code) |
+| `0x001c3de0`, `0x001c4d00`, `0x001c4768` | radar: set up, add a blip, set a blip's icon | [The radar](#radar-icons) | confirmed (code) |
+| `0x001b4168` | `HUD_RadarAddHuman` | the blip a human gets from its class | confirmed (code) |
 | `0x00179808`, `0x00179958`, `0x00179c30` | `Font_Size(scale)`, `Font_Measure`, `Font_Draw` | text as sprites | confirmed (code); file inferred (`Graphics/`, before the stub `0x0017b1c0`) |
 
 ## Data
@@ -323,6 +325,63 @@ The chunk types `0x0F`-`0x13` (English to German string tables) and `StringTable
 other screens (credits, Rumble mode); they do not occur in the WAD ([WAD
 contents](formats/wad-contents.md#chunk-types)).
 
+### The radar {#radar-icons}
+
+`GUI/RadarHUD.cpp` (`0x001c41a0`-`0x001c6878`). The HUD object `0x00600840` holds two radars, one per player, at
+`+0x15d0` and `+0x3f10`; every radar binding calls the same function on both. A radar keeps 128 blip slots of
+`0x40` bytes from `+0x920` (`0x001c3de0`). The list of every icon and blip type is
+[Radar icons and blips](../references/radar-icons.md). Confirmed (code) unless marked.
+
+**A blip is a particle system** of type `hud_radar_dot` ([Particles](particles.md)), made by `0x001e99f8` with two
+words: a colour and a sprite word. Blip type 9 alone is a sprite widget (`BaseWidget`, `0x001a1bf8`) instead. The
+radar's add function `0x001c4d00(radar, handle, colour, type, layer)` frees the slot the handle already has on that
+layer, takes a free one and records, at slot `+0x10` onwards, the handle, the colour, the type (`+0x2c`) and the
+particle's handle (`+0x24`). An object may have two layers (0 and 1), each its own slot (found by
+`0x001c5188(radar, handle, layer)`).
+
+**Icons are rectangles of `part_page0`.** The radar makes its own sprite batches at start (`0x001c3de0`) with
+`PTank_Create(depth, 0x45, ...)`: the sprite word's high half (0) is the record of the sprite-sheet table
+([chunk `0x4D`](#sprite-sheet-table-chunk-0x4d-particle-page-header)) the batch draws, record 0 being `part_page0`.
+A blip's sprite word is `batch << 16 | rect`; `hud_radar_dot`'s initialiser (`0x003e5bf8`) keeps the batch and sets
+the rectangle to `0x45` (69, the plain dot). `HUDSetRadarItemTexture` sends message `0x11` with the icon id, and the
+dot's handler (`0x003e5f20` → `0x0039bb18`) replaces the low half:
+
+```c
+// 0x0039bb18
+*(uint *)(dot + 0xc4) = *(uint *)(dot + 0xc4) & 0xffff0000 | icon & 0xffff;
+```
+
+So an **icon id is a rectangle index of `part_page0`** (371 rectangles, a 512 × 256 texture); the icons scripts and
+code use are 6-34 texels a side (disc check). `HUD_RadarSetIcon` (`0x001b2ca0`) draws icon 22 at 0.7 and tints icons
+29-31 `0x63db4bff` (green; colours here are `0xRRGGBBAA`, as `HUDAddRadarObject` packs them at `0x001b40f8`).
+
+| Radar field | Batch | Blip types |
+| --- | --- | --- |
+| `+0x4c` | 16 sprites, depth 9,000 | 10 (mission objective) |
+| `+0x50`, `+0x54`, `+0x58` | 32 sprites each, depths 5,000-7,000 | `+0x58` type 2, `+0x54` type 3, `+0x50` every other |
+| `+0x5c`, `+0x60` | 96 sprites each, depths 1,000, 2,000 | 6, 7, 8, by layer |
+| `+0x48` | 16 sprites, depth 10,000 | not traced |
+
+A new blip of type 7, 9, 10 or 12 stays visible while the radar's `+0x08` is set and `+0x0c` clear; any other is
+sent message `0x2a`, which sets flag `0x04` of the dot (`+0x54`; hidden, inferred) until message `0x29` clears it.
+`0x001b2990` adds nothing for type 5, and for type 6 adds two layers with icons 352 and 359.
+
+**Humans.** `HUD_RadarAddHuman` (`0x001b4168`) picks the blip from the character class byte (`CfgChar` `+0x11a`,
+[AI](ai.md#types)): class 1 (police) type 8 with icon 356 on both layers; class 0 or 3 type 9 (icon 362, grey
+`0x787878ff`) for the player (brain type 0) and type 7 (icon 365) for any other; class 4 none; any other type 6. A
+human with byte `+0x19d` set counts as class 2 unless a Warrior. `Human_Init` adds type 5 (nothing) for everyone. The
+AI re-marks humans that turn on the player as type 6 (`0x002b0608`, `0x002c2e80`, `0x002d6e10`, `0x002d79a8`), and a
+dealer greeting the player adds type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 (`0x002c7ee0`, dealer types 0, 1, 2).
+
+**Blip modes** (`0x001b32e0(hud, handle, mode)`), sent with message `0x19` to the dot (`0x003e5d00`): mode 0 plain;
+1 and 2 icon 352; 3 and 4 icon 353 at 0.8 on layer 0 with a ring (icon 32 or 33 at 0.75) on layer 1, flashing. The
+dot's own states: 0 dim (alpha `0x80`), 1 full, 2 pulsing size (× 1.3), 10 growing, 13 blinking, 14 cycling size
+0, 0.6, 1.2, 99 opaque white. `HUDSetRadarObjectFlash` sets these states (inferred from the handler).
+
+**To render an icon** as a reference thumbnail: load `part_page0` (WAD file named by the decimal CRC-32 of
+`part_page0`; its `0x2A` dictionary and `0x4C` rectangles), cut rectangle *n* and scale it to fit 64 × 64. Coney's
+sheet reader ([Coney's implementation](#coneys-implementation)) already does the first two steps.
+
 ### The `METRICS1` file
 
 The one "font metrics" WAD entry is **`cn12.met`** (entry 3,743), next to **`cn12.bmp`** (entry 3,742, the 256 × 128
@@ -513,6 +572,8 @@ What the implementer still needs:
 
 ## Open questions
 
+- **Radar batch `+0x48`** and **blip type 12**: who uses them.
+- **What icons 22 and 355 show**, and the dealer type 2's role.
 - **The 2D sort key** (answered): the creation depth; see [Draw order](#draw-order).
 - **The sheet `0x349348bd`** behind the Quick Rumble menus: its resource name (not one of the names tried).
 - **`firstGlyph` of `part_page0` (94) and `part_page1` (20)**: which text uses them, and the two explicit-base call
