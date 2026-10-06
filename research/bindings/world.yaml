@@ -103,15 +103,22 @@
     - {addr: 0x00414ae0, name: TriggerSphere_Enable}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object (a flag, human or prop) that carries the trigger sphere."}
-    - {name: enable, lua: boolean, desc: "True switches the sphere on (creating it with default settings if the object has none); false switches it off and removes it."}
+    - {name: enable, lua: boolean, desc: "True arms the sphere (creating one with the defaults of 0x00414480 if the object's handler component has none); false disarms it and forgets who is inside, keeping the sphere attached."}
   description: >-
     Switches an object's trigger sphere on or off. A trigger sphere is a radius around an object that reports to the
     scripts when something enters it; `TriggerSphereCfg` sets it up.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    On: the sphere component's enabled word (+0x180) becomes 1; off: 0x004144d0 releases the component. Does nothing
-    for an object without a component container.
+    On: armed word `+0x180` = 1. With no sphere yet, one is taken from the pool of 100 (0x004142d0) and set up by
+    0x00414480: object `+0x170`, radius `+0x174` = 0, next message-5 time `+0x178` = 0, mode `+0x17c` = 1 (the
+    line-of-sight test), message-5 period `+0x164` = 1000 ms, inside list empty. A radius of 0 accepts no human
+    (the test is distance squared <= radius squared), so such a sphere fires only after TriggerSphereSetRadius or
+    TriggerSphereCfg. Off (0x004144d0): fills the 60-handle inside list (`+0x00`-`+0xef`) with 0xff bytes (no handle)
+    and clears `+0x180`; no message 4 is sent, and the sphere, its radius and mode, its pool slot, the object's
+    handler component and its SetMsgHandler handlers all stay, so a later `true` re-arms the same sphere and a human
+    still inside gets a fresh message 3. The sphere's pool slot is freed only when the handler component is cleared
+    (0x00384a50). Does nothing for an object without a handler component. All confirmed (code).
   usage: {chunks: 30, calls: 58, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 3, 5, 81, 86, 93, 31, 9, 51, 54, 55, 84, 82, 83, 20, 11]}
 
 - name: TriggerSphereSetRadius
@@ -857,7 +864,7 @@
   args:
     - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car; an invalid handle does nothing."}
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object (a weapon such as `dyn_pipe_a`) to put in the boot; ignored when `itemKind` is not 0."}
-    - {name: itemKind, lua: number, ctype: unsigned, desc: "When non-zero, an item kind (low 8 bits) for which a new pickup object (template 0x0057e3d8, kind at `+0x124`) is made when the boot comes off; the scripts pass 5 with NilHandle."}
+    - {name: itemKind, lua: number, ctype: unsigned, desc: "When non-zero, a sum of money (low 8 bits, so 1-255) dropped as a `dyn_money` pickup (template 0x0057e3d8) when the boot comes off; the pickup's `+0x124` holds the amount. The scripts pass 5 (five dollars) with NilHandle."}
   description: >-
     Hides an item in a car's boot, released when the boot is knocked off the car (part 5 detached, 0x0038a4d8): the
     object is pinned and its handle stored (car `+0x120c`), or the item kind stored (`+0x12e5`); `+0x12e4` marks the
@@ -866,8 +873,20 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    A later call replaces the earlier item. The new pickup gets 15000 ms at 0x00395d20 (inferred: a lifetime). What
-    kind 5 is (a pickup of the inventory list) is not traced.
+    A later call replaces the earlier item. **Release** happens only in the part-damage step 0x0038a4d8 (amount,
+    car, part record, part, instant, flag): a hit adds damage to the part (car `+0x230 + part × 0xa0`) and at 1.0
+    the part comes off (bit in `+0x11f8`); for part 5 on a non-instant call with `+0x12e4` set, `+0x12e4` is cleared
+    and Car_ReleaseTrunkItem (0x0038d188) runs. Non-instant callers: the car's hit handler 0x0038bea0 (each hit on
+    the boot's zone adds 0.34, so a held weapon knocks the boot off on the third hit; a human with flag 0x400000 adds
+    0.51, other humans 0.115), CarSetPartDamage (0x0038a7e8), and 0x0038b0e8 (parts in mask 0x2a80c0 only, not the
+    boot). The car exploding (Car_DoExplode 0x0038ab50) detaches every part with instant = 1, which skips the
+    release: the item is lost. **CarRemovePart(car, 5, true)** only sets the bits (0x0038c7d8) and never reaches
+    0x0038a4d8, so it releases nothing; it also marks the boot gone in `+0x11f8`, so later hits skip it and the item
+    can no longer be released. The `dyn_money` pickup is a type-0x1c object: Human_PickUpObject (0x0023bf00) gives
+    a player (not an AI) inventory item 2 (money) × `+0x124` with the notify flag, so kind 5 is five dollars. It is
+    placed at the boot's offset from the car type record (`0x0057e4b0`, rotated by the car), updates every 30
+    frames, and 0x00395d20 sets `+0x120` = now + 15000 ms (inferred: it vanishes after 15 s). All confirmed (code)
+    unless marked.
   usage: {chunks: 12, calls: 34, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 5, 86, 93, 31, 14, 52, 82, 92, 11]}
 
 - name: GetPTank

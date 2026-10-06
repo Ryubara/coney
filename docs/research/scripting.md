@@ -270,6 +270,12 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
   `SetMsgHandler(dealer, 3, ...)` hears a human come within the radius). Mode 0 tests distance only; mode 1 adds a
   test between the sphere's centre and the human (`0x0024dee8`, inferred: line of sight); mode 2 the same from
   raised points (`0x0024df40`). The first mission's one sphere is the dealer's: radius 4, mode 2, interval 500.
+- **Arming and disarming a sphere** ([`TriggerSphereEnable`](../references/bindings/world.md#triggersphereenable),
+  `0x00414ae0`). Arming an object with no sphere creates one with the defaults of `0x00414480`: radius 0 (so it
+  accepts nobody until a radius is set), mode 1, period 1000 ms, empty inside list. Disarming (`0x004144d0`) only
+  empties the 60-handle inside list (`+0x00`, filled with 0xff) and clears `+0x180`, without message 4; the sphere,
+  its settings and the object's handlers stay. The pool slot is freed when the handler component is cleared
+  (`0x00384a50`). confirmed (code).
 
 ## Behaviour
 

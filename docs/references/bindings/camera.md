@@ -623,8 +623,20 @@ Adds a human to (or removes it from) the humans a locked camera keeps in shot. E
 comes within 0.3 m of an edge is pushed back inside (its position is set, with a height probe), so the player cannot
 walk out of a fixed shot.
 
-**Notes.** The edge test is 0x00135960 against the camera's side planes (vtable `+0x174`); the 1.4 m offset and the
-exact push are not traced further. Nothing happens if the camera handle is not a camera or the human handle is gone.
+**Notes.** Per listed human, each locked-camera update (0x00135ca8): p = the physics body's position (0x00714b00 table)
+plus 1.4 m up, q = the human's placed position (object `+0x10`, last frame's) plus 1.4 m up, so the test is at about
+head height. 0x00135960(0.3, camera, p, q) takes the camera's planes 0 and 1 (vtable `+0x174`, 0x004db0c8: camera
+`+0x70+i×16`, normal xyz pointing into the view, offset w; that they are the left and right sides is inferred from the
+push direction). Plane 0 first: if dot(p, n) − w < 0.3, p moves along n by (0.3 − that) + 0.00001, so it ends exactly
+0.3 m inside; only if plane 0 did not fire is plane 1 tested the same way. The part of the step q→p along the plane is
+then ray-cast from q against the world (mask 0x200, length |step| + 0.3) and shortened to stop 0.3 m short of a hit.
+When pushed, p drops back 1.4 m and is snapped to the ground: a ray from 2.4 m above it straight down, 3.4 m long; on a
+hit the feet go 0.01 m above it. A human in the airborne state (flag 0x1c00000000) is landed at once (0x0023e090, which
+can apply fall damage) and its height moves only 30 % of the way to the snapped value. The position is set with vtable
+`+0x6c`, keeping the body's orientation. The "pushed" flag is not reset between humans, so after one push every later
+human in the list is re-placed (ground snap) that update even when inside. A forward plane 1 m ahead is computed at the
+start but never used. Nothing happens if the camera handle is not a camera or the human handle is gone. All confirmed
+(code) unless marked.
 
 - **Evidence:** confirmed (code) at `0x0011bdc0`, `0x001358d0`; detail: traced
 - **Wrapper** `0x00367030` (registered by `RegisterBindings`); **calls** `0x0011bdc0` `Camera_LockLocked`, `0x001358d0`

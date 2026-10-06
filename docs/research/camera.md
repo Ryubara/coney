@@ -641,7 +641,11 @@ A locked camera (type 1, `CameraCreateLocked`) stays where it was put, looking a
 (`0x00135680`) places it, aims it at a point 3 m ahead along its forward, keeps it out of walls with a line-of-sight
 test from its position, runs `0x00135ca8` and applies the [shake](#shake). Confirmed (code). `0x00135ca8` does not
 track: each human `CamLockLocked` lists (none in `level99`) that comes within 0.3 m of the view's left or right edge
-is pushed back inside, an invisible wall at the frame's sides (confirmed (code)).
+is pushed back inside, an invisible wall at the frame's sides (confirmed (code)). The test point is 1.4 m above the
+physics body; the camera's planes 0 and 1 (camera `+0x70`, inward normals; left and right inferred) are tried in
+turn, and the first one the point is within 0.3 m of pushes it to exactly 0.3 m inside; the sideways part of the
+step is clipped by a world ray, and the feet are snapped to the ground (ray from 2.4 m up, 3.4 m long). Details in
+[`CamLockLocked`](../references/bindings/camera.md#camlocklocked). Confirmed (code).
 
 ### Path cameras {#path-cameras}
 

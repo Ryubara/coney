@@ -116,6 +116,16 @@ The body (part 0) and the wheels have no damaged form; `Car_OpenPart` only acts 
   `Car_OpenPart` does nothing for any other part, for a removed one or one marked in `+0x11f4`; it sets bit 2 of the
   part state and, once the model is loaded, calls `0x0038cb70` (a hinge turn, [the atomics](#model)) for atomic `p`
   and, when `p` ≤ 21, `p + 25`. Confirmed (code).
+- **Damage** (`0x0038a4d8(amount, car, part record, part, instant, flag)`): adds `amount` to the part's damage
+  (`+0x230 + part × 0xa0`; `instant` sets it to 1); at 1.0 the part comes off (bit in `+0x11f8`). Callers: the hit
+  handler `0x0038bea0` (0.34 per hit from a weapon or thrown object, 0.51 from a human with flag `0x400000`, 0.115
+  from other humans, on the parts the hit's zone selects), `CarSetPartDamage`, `0x0038b0e8` (mask `0x2a80c0`), and
+  `Car_DoExplode` (`0x0038ab50`, every part, instant). Confirmed (code).
+- **Boot item** ([`CarPlaceInTrunkOnDetach`](../references/bindings/world.md#carplaceintrunkondetach)): when part 5
+  comes off through a non-instant damage call and `+0x12e4` is set, `Car_ReleaseTrunkItem` (`0x0038d188`) moves the
+  stored object to the boot, or makes a `dyn_money` pickup (type 0x1c) holding the stored amount there. An explosion
+  (instant) or `CarRemovePart` (bits only) never releases it. A player picking up `dyn_money` gets that much money
+  (`0x0023bf00`, item 2). Confirmed (code).
 
 ### Colour {#colour}
 
