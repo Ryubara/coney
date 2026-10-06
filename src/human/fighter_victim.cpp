@@ -15,7 +15,8 @@
 
 // The fighter's victim side: the player hit (a duck, a block, the health floor, the hit armour, the reaction, the stun,
 // the ground and the mash), warned by an attacker's clip, and held in another human's grab (the counter at the
-// catch, the struggle, the strike back, the escape and the reversal). Another human's strikes and warnings reach it
+// catch, the struggle, the strike back, the escape and the reversal), or held by a grab that drives it (enterHold(), a
+// human with a brain the player grabs or tackles). Another human's strikes and warnings reach it
 // through Human (a Combatant); the tests use the same entry points (Fighter::takeHit(), warn(), catchInGrab()).
 // Research: docs/research/combat.md#damage, docs/research/combat.md#block, docs/research/combat.md#grabbed,
 // docs/research/combat.md#being-hit-runtime
@@ -125,13 +126,15 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         m_combat.interrupt();
         m_combat.release();
         m_grabbed.reset();
+        m_holdState.reset();
+        m_holdAttached = false;
         m_victim.die(hit, here, animator);
         m_reacting = true;
         return;
     }
     // 5. **Coney's choice**: held or holding someone, the hit only takes health (the reactions by those states,
     // `0x002688d0` and `0x00268ea8`, are not traced).
-    if (!hit.react || grabbed() || mode != combat::CombatMode::Free) {
+    if (!hit.react || grabbed() || m_holdState.has_value() || mode != combat::CombatMode::Free) {
         return;
     }
     // With reactions off (an AI's block goal, docs/research/ai.md#block) the hit only takes health.
@@ -360,6 +363,37 @@ bool Fighter::duckCounter(const FighterInput& input, HumanAnimator& animator) {
         return true;
     }
     return false;
+}
+
+void Fighter::enterHold(TargetState targetState, HumanAnimator& animator, std::uint64_t nowMs) {
+    // Going down starts the ground time; anything else ends a stun and the ground (as a passive target's does).
+    if (targetState != TargetState::Grounded) {
+        m_victim.clear();
+    } else if (!m_victim.grounded()) {
+        m_victim.knockDown(nowMs, false);
+    }
+    if (targetState == TargetState::Held || targetState == TargetState::Mounted) {
+        // Taken into the hold: a grab it held, a catch on it, the attack and the steer it was making all end.
+        if (!m_holdState.has_value()) {
+            if (m_held != nullptr) {
+                releaseHold(animator, false);
+            }
+            m_catch.reset();
+            m_grabbed.reset();
+            m_tacklePending = false;
+            m_combat.interrupt();
+            m_combat.release();
+            m_notice.reset();
+            m_slideUpdates = 0;
+            m_steer.clear();
+        }
+        m_holdState = targetState;
+        return;
+    }
+    // Let go: the clip the grabber gave plays out before it acts again.
+    m_holdState.reset();
+    m_holdAttached = false;
+    m_reacting = true;
 }
 
 } // namespace coney::human

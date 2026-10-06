@@ -125,7 +125,14 @@ void Human::setFighterProfile(const FighterProfile& profile) {
 
 TargetState Human::state() const {
     const Victim& victim = m_fighter.victim();
-    if (m_fighter.health().depleted() || victim.grounded()) {
+    if (m_fighter.health().depleted()) {
+        return TargetState::Grounded;
+    }
+    // Held or mounted by a grabber that drives it (Fighter::enterHold()).
+    if (const auto held = m_fighter.holdState(); held.has_value()) {
+        return *held;
+    }
+    if (victim.grounded()) {
         return TargetState::Grounded;
     }
     return m_fighter.grabbed() ? TargetState::Held : TargetState::Standing;
@@ -139,8 +146,10 @@ GateInput Human::gateInput() const {
     // **Coney choice**: no state code is kept. The original's 5 is the locomotion's own mark for turning in place,
     // written while the velocity is already gated (the idle's fade, a skid), and 6 is not traced; neither gates an
     // update the record's bits do not.
-    return GateInput{
-        .flags = m_animator.flags(), .stateCode = 0, .airborne = m_airborne, .attached = m_fighter.grabbed()};
+    return GateInput{.flags = m_animator.flags(),
+                     .stateCode = 0,
+                     .airborne = m_airborne,
+                     .attached = m_fighter.grabbed() || m_fighter.holdAttached()};
 }
 
 bool Human::stickHeld() const {
@@ -724,12 +733,19 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
         m_intent =
             StickIntent{.angle = m_record.move->heading + kPi / 2.0F, .magnitude = *m_moveSpeed > 0.0F ? 1.0F : 0.0F};
     }
-    // An arrested human is not moved by its stick or its brain (**Coney stand-in**, human/script_state.h).
-    if (m_script.arrested) {
+    // An arrested human is not moved by its stick or its brain (**Coney stand-in**, human/script_state.h), nor is one
+    // a grab holds.
+    if (m_script.arrested || m_fighter.holdState().has_value()) {
         m_intent.magnitude = 0.0F;
         m_moveSpeed.reset();
     }
     if (m_outOfWorld) {
+        return;
+    }
+    // Attached to its grabber, it stays where the grabber placed it (Holdable::place()); its clips do not move it.
+    if (m_fighter.holdAttached()) {
+        m_velocity = anim::Vec3{};
+        m_lastTurn = 0.0F;
         return;
     }
     // 2. The root motion the animation's pose carries.

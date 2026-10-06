@@ -18,6 +18,7 @@
 #include "human/climb.h"
 #include "human/combatant.h"
 #include "human/fighter.h"
+#include "human/holdable.h"
 #include "human/human_animator.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
@@ -90,8 +91,8 @@ enum class Traversal : std::uint8_t {
 [[nodiscard]] const char* traversalName(Traversal traversal);
 
 /// A human: position (the feet), heading, velocity, ground and air state, stamina, its fighting and its animation,
-/// driven by its record. Another human fights it as a Combatant.
-class Human final : public Combatant {
+/// driven by its record. Another human fights it as a Combatant, and grabs or tackles it as a Holdable.
+class Human final : public Holdable {
   public:
     /// Gravity while airborne, m/s² (1.6 g), and the fastest fall, m/s.
     static constexpr float kGravity = 15.68F;
@@ -244,6 +245,22 @@ class Human final : public Combatant {
     [[nodiscard]] bool targetable() const override {
         return m_script.targetable && !m_fighter.hasFlag(flag::kNoTarget);
     }
+
+    // Held in another human's grab or tackle (Holdable, human_held.cpp): the grabber plays its clips and, attached,
+    // places it each update; meanwhile its own update neither moves it by the stick or its brain nor lets it act.
+
+    /// The human itself, unless nobody may grab it (flag::kUngrabbable, `HuSetUngrabbable`).
+    [[nodiscard]] Holdable* holdable() override { return hasFlag(flag::kUngrabbable) ? nullptr : this; }
+    void play(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
+              TargetState targetState) override;
+    void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
+                    AnimState state, TargetState targetState) override;
+    void setAttached(bool attached) override { m_fighter.setHoldAttached(attached); }
+    [[nodiscard]] bool attached() const override { return m_fighter.holdAttached(); }
+    /// Moves it there and stops it (its velocity goes).
+    void place(anim::Vec3 position, float headingRadians) override;
+    void face(anim::Vec3 point) override;
+    [[nodiscard]] const characters::AnimSet& anims() const override { return m_animator.anims(); }
 
     // The scripts' hold on the human (docs/references/bindings/character.md): its flags and state, and what they do to
     // it. Each acts at once; the flags and the state keep across spawn().

@@ -27,12 +27,13 @@ class ReactionGoal final : public Goal {
 };
 
 /// Whether `human`'s state calls for a reaction goal of `type`: grabbing (Coney's grab or mugging mode), tackling,
-/// grabbed, knocked down (on the ground, or out of health), stunned and not down (its stun or the stun's exit).
+/// grabbed (in a player's grab, or held by a grabber), tackled (mounted by a tackler), knocked down (on the ground, or
+/// out of health), stunned and not down (its stun or the stun's exit).
 [[nodiscard]] bool reactionHolds(GoalType type, const human::Human& human);
 
 /// The reaction goal `human`'s state calls for, by the original's order (grabbing `0x12`, tackling `0x13`, grabbed
-/// `0x14`, knocked down `0x17`, stunned `0x18`); null when none. **Coney choice**: the types for states Coney's humans
-/// do not have (`0x15` tackled, `0x16`, `0x19`, `0x1a`) are not made.
+/// `0x14`, tackled `0x15`, knocked down `0x17`, stunned `0x18`); null when none. **Coney choice**: the types for states
+/// Coney's humans do not have (`0x16`, `0x19`, `0x1a`) are not made.
 [[nodiscard]] std::unique_ptr<Goal> reactionGoalFor(const human::Human& human);
 
 } // namespace coney::ai

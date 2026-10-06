@@ -36,7 +36,38 @@ constexpr int kEscapeRear = 112;
 
 } // namespace
 
-void Fighter::startHold(TargetHuman& victim, const FighterInput& input, float& heading, bool tackle,
+void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
+    // Compared as pointers only: a victim gone from the targets may no longer exist.
+    const auto listed = [&input](const Holdable* victim) {
+        return std::ranges::find(input.targets, static_cast<const Combatant*>(victim)) != input.targets.end();
+    };
+    if (m_thrown != nullptr && !listed(m_thrown)) {
+        m_thrown = nullptr;
+    }
+    if (m_held == nullptr) {
+        return;
+    }
+    // Still held, not stopped yet (the intro), or out of health (which step 5 of the update lets go of as it does any
+    // hold): nothing to drop.
+    if (listed(m_held)) {
+        const TargetState state = m_held->state();
+        if (m_pair == PairStage::Intro || state == TargetState::Held || state == TargetState::Mounted ||
+            m_held->health().depleted()) {
+            return;
+        }
+    }
+    // The grabber stands in its fight idle; the victim, if it is still there, is left as it is.
+    m_held = nullptr;
+    m_pair = PairStage::None;
+    m_turnUpdates = 0;
+    m_grabTurn = 0.0F;
+    m_rear = false;
+    m_tacklePending = false;
+    m_combat.release();
+    animator.playCombat(clips::kNoClips, kAnimFightIdle, AnimState::Attack);
+}
+
+void Fighter::startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle,
                         HumanAnimator& animator) {
     const anim::Vec3 to = anim::subtract(victim.position(), input.position);
     const float toVictim = std::hypot(to.x, to.y) > 1e-4F ? headingOf(to) : heading;
@@ -61,14 +92,15 @@ void Fighter::startHold(TargetHuman& victim, const FighterInput& input, float& h
                                                  m_rear ? clips::kGrabRearEnd : clips::kGrabFrontEnd};
     animator.playCombat(grabClips, m_rear ? clips::kGrabRearHold : clips::kGrabHold, AnimState::Hold, kCombatFade,
                         clips::kGrabHolds);
-    // The intro turns the grabber to face the victim over its playing time; the victim's own movement stops.
+    // The intro turns the grabber to face the victim over its playing time.
     const auto intro = static_cast<std::uint32_t>(id::kGrabPlayerIntro);
     const anim::AnimClip* introClip = animator.anims().clip(intro);
     const float introSeconds = introClip != nullptr ? introClip->duration / animator.anims().rate(intro) : 0.0F;
     m_turnUpdates = std::max(1, static_cast<int>(std::lround(introSeconds / input.stepSeconds)));
     m_turnStep = wrapAngle(toVictim - heading) / static_cast<float>(m_turnUpdates);
     m_victimTurnStep = 0.0F;
-    victim.play(clips::kNoClips, clips::kIdle, AnimState::Hold, TargetState::Held);
+    // The victim is left alone until the connect stops it (`Grab_Connect`): a human may still act (an AI's R1 in
+    // these updates is its counter, docs/research/ai.md#block).
     m_pair = PairStage::Intro;
 }
 
@@ -126,12 +158,12 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
     const float listed = m_ranges != nullptr ? m_ranges->farRange(clip) : 0.0F;
     const float far = (listed > 0.0F ? listed : kConnectFarRange) * kPlayerFarScale;
     const PairAlignment align = alignPair(input.position, m_held->position(), reach, far, m_rear);
-    if (!align.inRange) {
-        // Too far: the grab fails, the miss plays on and the victim is free.
+    if (!align.inRange || m_held->state() != TargetState::Standing) {
+        // Too far, or no longer on its feet (a human the intro left free may have gone down): the grab fails, the
+        // miss plays on; the victim was never stopped.
         const std::array<std::uint32_t, 2> miss{clips::kGrabMiss, clips::kNormalFromFight};
         animator.playCombat(miss, clips::kIdle, AnimState::Attack, clips::kPairFade, clips::kGrabHolds);
         m_combat.release();
-        m_held->play(clips::kNoClips, clips::kIdle, AnimState::Attack, TargetState::Standing);
         m_held = nullptr;
         m_pair = PairStage::None;
         return;
@@ -315,15 +347,14 @@ void Fighter::victimEscapes(const FighterInput& input, HumanAnimator& animator) 
     // The victim breaks free with its escape and takes the clip's damage; the player plays the grabber's side from
     // the victim's set and goes down stunned.
     const int escape = m_rear ? kEscapeRear : kEscapeFront;
-    TargetHuman& victim = *m_held;
+    Holdable& victim = *m_held;
     const int damage = m_ranges != nullptr ? m_ranges->damage(static_cast<std::size_t>(escape)) : 0;
     releaseHold(animator, false);
     victim.play(clips::one(clips::clipOf(escape)), clips::kIdle, AnimState::Attack, TargetState::Standing);
     if (damage > 0) {
         victim.hit(IncomingHit{.damage = damage, .attackAnim = escape, .attacker = victim.position(), .react = false});
     }
-    animator.playPaired(clips::one(clips::clipOf(escape) + 1), victim.animator().anims(), clips::kGroundedIdle,
-                        AnimState::Hold);
+    animator.playPaired(clips::one(clips::clipOf(escape) + 1), victim.anims(), clips::kGroundedIdle, AnimState::Hold);
     m_victim.knockDown(input.nowMs, true);
     m_reacting = true;
 }

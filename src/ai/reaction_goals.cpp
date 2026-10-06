@@ -22,7 +22,9 @@ bool reactionHolds(GoalType type, const human::Human& human) {
     case GoalType::ReactTackling:
         return mode == combat::CombatMode::Tackling;
     case GoalType::ReactGrabbed:
-        return fighter.grabbed();
+        return fighter.grabbed() || fighter.holdState() == human::TargetState::Held;
+    case GoalType::ReactTackled:
+        return fighter.holdState() == human::TargetState::Mounted;
     case GoalType::ReactKnockedDown:
         return victim.grounded() || fighter.health().depleted();
     case GoalType::ReactStunned:
@@ -34,7 +36,8 @@ bool reactionHolds(GoalType type, const human::Human& human) {
 
 std::unique_ptr<Goal> reactionGoalFor(const human::Human& human) {
     // Brain_UpdateReactionGoal's order: the first state that holds makes its goal.
-    constexpr std::array<GoalType, 5> kOrder{GoalType::ReactGrabbing, GoalType::ReactTackling, GoalType::ReactGrabbed,
+    constexpr std::array<GoalType, 6> kOrder{GoalType::ReactGrabbing,    GoalType::ReactTackling,
+                                             GoalType::ReactGrabbed,     GoalType::ReactTackled,
                                              GoalType::ReactKnockedDown, GoalType::ReactStunned};
     for (const GoalType type : kOrder) {
         if (reactionHolds(type, human)) {

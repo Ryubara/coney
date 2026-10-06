@@ -1326,9 +1326,10 @@ non-police gangs named `Responder<n>`. `BrSetThugWantsWeapon` and `SetInterrogat
 `CfgSetDefaultFollowSlotSet` writes its sets into every formation, those made later too.
 
 **Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired moves)
-is not built, and neither are grabs and tackles between two humans that would call for it; the pattern read at Start;
-the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; line of sight (the move's sight checks);
-the steering round humans, choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,
+is not built, nor are an AI's own grabs and tackles (the player grabs and tackles an AI's human,
+[Combat](combat.md#grab)); the pattern read at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's
+adjustments; line of sight (the move's sight checks); the steering round humans, choke points and the waypoint
+queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to face; the turn clip
 (398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off and the gang's notice; the scene
 system, the dynamic clip slot and clips by id; the head look-ats; the sender of message 1 and its attacker; the gang's

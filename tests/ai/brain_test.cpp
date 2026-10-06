@@ -461,24 +461,38 @@ TEST_CASE("the counter is rolled on every update of the block time and writes R1
     scene.playerBrain().setTarget(&gang);
     scene.run(2);
     REQUIRE(gang.pushGoal(std::make_unique<coney::ai::BlockGoal>()));
-    // Whether the player was in a grab's intro before the brains ran, and what the AI's record holds after them.
-    std::vector<std::pair<bool, coney::combat::CommandId>> seen;
+    // Whether the player was in a grab's intro and whether the grab held the AI before the brains ran, and what the
+    // AI's record holds after them.
+    struct Seen {
+        bool intro = false;
+        bool held = false;
+        coney::combat::CommandId written = command::kNone;
+    };
+    std::vector<Seen> seen;
     scene.step.setBrains([&scene, &seen, &gang](std::span<Human* const> /*humans*/) {
         const bool intro = inGrabIntro(scene.player());
+        const bool held = gang.human().fighter().holdState().has_value();
         scene.brains.update();
-        seen.emplace_back(intro, gang.human().record().command);
+        seen.push_back(Seen{.intro = intro, .held = held, .written = gang.human().record().command});
     });
     scene.run(3);
     scene.player().record().command = command::kCircleTapped;
     scene.step.update(scene.mesh.get());
     scene.player().record().command = command::kNone;
     scene.run(15);
+    // Once the grab holds the AI its reaction goal holds the block off and it writes nothing (the counter 76 that its
+    // R1 pressed in the intro asks for is not built, so the grab goes on).
     bool countered = false;
-    for (const auto& [intro, written] : seen) {
-        CHECK(written == (intro ? command::kR1Pressed : command::kR1Held));
-        countered = countered || written == command::kR1Pressed;
+    bool held = false;
+    for (const Seen& update : seen) {
+        const coney::combat::CommandId wanted =
+            update.held ? command::kNone : (update.intro ? command::kR1Pressed : command::kR1Held);
+        CHECK(update.written == wanted);
+        countered = countered || update.written == command::kR1Pressed;
+        held = held || update.held;
     }
     CHECK(countered);
+    CHECK(held);
 }
 
 TEST_CASE("a block extended while the target attacks punishes in its last second", "[ai]") {

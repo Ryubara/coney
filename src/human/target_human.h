@@ -12,6 +12,7 @@
 #include "combat/power_class.h"
 #include "combat/stick.h"
 #include "human/combatant.h"
+#include "human/holdable.h"
 #include "human/human_animator.h"
 #include "human/victim.h"
 
@@ -39,7 +40,7 @@ struct TargetSnapshot {
 using TargetHit = IncomingHit;
 
 /// A passive target human.
-class TargetHuman final : public Combatant {
+class TargetHuman final : public Holdable {
   public:
     /// A target playing `anims` (which must outlive it) through `slots`, bones its clips leave out taking
     /// `defaultRotations` (the game's reference pose, anim::referenceRotations()), with `health` of `health` (at least
@@ -60,30 +61,32 @@ class TargetHuman final : public Combatant {
     /// A warning does nothing: the target never blocks.
     void warn(const AttackNotice& /*notice*/) override {}
     /// The target itself: it can be grabbed and tackled.
-    [[nodiscard]] TargetHuman* passive() override { return this; }
+    [[nodiscard]] Holdable* holdable() override { return this; }
     /// Plays the victim's `clips`, then `loop`, in `state` (AnimState::Attack returns to the idle afterwards,
     /// AnimState::Hold keeps the loop), and takes `targetState`; a stun ends.
-    void play(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, TargetState targetState);
+    void play(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
+              TargetState targetState) override;
     /// The victim's side of a paired move: plays `clips` from `attacker`'s anim set at its rates (the grabber's
     /// reaction clips, docs/research/formats/animation.md#paired-tasks), then its own `loop`, switching at once (no
     /// fade), as play() does otherwise.
     void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
-                    AnimState state, TargetState targetState);
+                    AnimState state, TargetState targetState) override;
     /// Attaches it to its grabber (Coney's stand-in for `Human_MoveAttached`, `0x00244e78`): while attached the
     /// grabber places it each update and its own root motion does not move it; detached, a held target moves by its
     /// clip's root motion.
-    void setAttached(bool attached) { m_attached = attached; }
-    [[nodiscard]] bool attached() const { return m_attached; }
+    void setAttached(bool attached) override { m_attached = attached; }
+    [[nodiscard]] bool attached() const override { return m_attached; }
     /// Moves it to `position` facing `headingRadians` (a grab or a tackle puts it in front of the player).
-    void place(anim::Vec3 position, float headingRadians);
+    void place(anim::Vec3 position, float headingRadians) override;
     /// Turns it to face `point`.
-    void face(anim::Vec3 point);
+    void face(anim::Vec3 point) override;
 
     [[nodiscard]] anim::Vec3 position() const override { return m_position; }
     [[nodiscard]] float heading() const override { return m_heading; }
     [[nodiscard]] const combat::Health& health() const override { return m_health; }
     [[nodiscard]] TargetState state() const override { return m_state; }
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
+    [[nodiscard]] const characters::AnimSet& anims() const override { return m_animator.anims(); }
     /// Its power class: the street civilian's (combat::kCivilianPowerClass).
     [[nodiscard]] const combat::PowerClass& powerClass() const { return m_victim.powerClass(); }
     /// Stunned: a stun hit's reaction, until its time runs out.

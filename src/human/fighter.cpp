@@ -41,7 +41,8 @@ Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const 
       m_victim(profile.powerClass, seed), m_grabbedRandom(seed + 1U) {}
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
-    return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || helpless(animator);
+    return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || m_holdState.has_value() ||
+           helpless(animator);
 }
 
 anim::Vec3 Fighter::takeSlide() {
@@ -136,12 +137,13 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     }
     // 1. The victim's side first, as the original applies the pending damage before the actions: a grab caught on
     // the player, a warning, the update's hit, then the reaction's timers.
+    dropLostHold(input, animator);
     if (m_catch.has_value()) {
         startGrabbed(input, animator);
     }
     takeNotice(input, animator);
     takePending(input, animator);
-    const bool cannotAct = stepVictim(input, animator) || grabbed();
+    const bool cannotAct = stepVictim(input, animator) || grabbed() || m_holdState.has_value();
     if (cannotAct) {
         // Only the meters run; a held player struggles.
         m_last = m_combat.update(combatInput(input, animator, true), tuning);
@@ -233,16 +235,17 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
             input.command == combat::command::kCircleHeld ? combat::GrabKind::Tackle : combat::GrabKind::Grab;
         const float range = m_ranges != nullptr ? combat::grabSearchRange(*m_ranges, kind, tuning.grabSearchScale)
                                                 : (kind == combat::GrabKind::Tackle ? 3.75F : 3.12F);
-        // Only a passive target can be held (Combatant::passive()); a human is not a candidate.
+        // Any human that can be held (Combatant::holdable(): a passive target, or a human without flag 0x40) standing
+        // with health left.
         std::vector<combat::TargetCandidate> candidates;
         candidates.reserve(input.targets.size());
         for (Combatant* target : input.targets) {
             candidates.push_back(combat::TargetCandidate{
-                target->position(), target->passive() != nullptr && target->state() == TargetState::Standing &&
+                target->position(), target->holdable() != nullptr && target->state() == TargetState::Standing &&
                                         !target->health().depleted()});
         }
         const std::size_t found = combat::nearestTarget(input.position, candidates, range);
-        m_candidate = found != combat::kNoTarget ? input.targets[found]->passive() : nullptr;
+        m_candidate = found != combat::kNoTarget ? input.targets[found]->holdable() : nullptr;
     }
     in.grabTargetInReach = m_candidate != nullptr;
     // The record's +0x08: the bits the clips playing hold (an attack's phases, the grab bit, the duck's).

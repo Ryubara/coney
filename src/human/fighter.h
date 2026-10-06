@@ -16,10 +16,10 @@
 #include "combat/power_class.h"
 #include "combat/rage_awards.h"
 #include "human/combatant.h"
+#include "human/holdable.h"
 #include "human/human_animator.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
-#include "human/target_human.h"
 #include "human/turn_and_slide.h"
 #include "human/victim.h"
 
@@ -137,7 +137,7 @@ class Fighter {
     /// The output of the last update.
     [[nodiscard]] const combat::CombatOutput& last() const { return m_last; }
     /// The victim held in a grab, a tackle or a mugging; null when none.
-    [[nodiscard]] const TargetHuman* held() const { return m_held; }
+    [[nodiscard]] const Holdable* held() const { return m_held; }
     /// The hold is from the victim's rear (a grab from behind, after a spin or in the mugging).
     [[nodiscard]] bool fromRear() const { return m_rear; }
     /// How the grab's two bodies are held together now.
@@ -209,6 +209,15 @@ class Fighter {
     void updateGrabber(const combat::GrabberState& grabber);
     /// The grabber lets go of the player (its let-go 95, or a break): the player plays 94 and is free.
     void releaseFromGrab(HumanAnimator& animator);
+    /// Another human's grab or tackle that drives this one (the player holding an AI's human, Holdable) puts it in
+    /// `targetState`: Held or Mounted holds it (what it was doing ends; it neither moves itself nor acts until let go),
+    /// Standing frees it, Grounded knocks it down to rise later; a stun ends. The clips are the caller's.
+    void enterHold(TargetState targetState, HumanAnimator& animator, std::uint64_t nowMs);
+    /// Placed by its grabber each update (Holdable::setAttached()); only while held.
+    void setHoldAttached(bool attached) { m_holdAttached = attached && m_holdState.has_value(); }
+    [[nodiscard]] bool holdAttached() const { return m_holdAttached; }
+    /// Held or Mounted while a grab or a tackle another human drives holds it (enterHold()); none otherwise.
+    [[nodiscard]] std::optional<TargetState> holdState() const { return m_holdState; }
     /// What the player did to its grabber in the last update.
     [[nodiscard]] const GrabbedReport& grabbedReport() const { return m_report; }
     /// The shake the reaction played in the last update asks for; none when it played none.
@@ -276,9 +285,11 @@ class Fighter {
 
     // --- fighter_grab.cpp: a grab the player holds.
 
+    // The victim held is gone from the targets (removed from the level), or something other than this grab freed it
+    // (a script's normal mode, a hit that knocked it down): the hold ends without touching a victim that is gone.
+    void dropLostHold(const FighterInput& input, HumanAnimator& animator);
     // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits.
-    void startHold(TargetHuman& victim, const FighterInput& input, float& heading, bool tackle,
-                   HumanAnimator& animator);
+    void startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle, HumanAnimator& animator);
     // The pair's moments, read from the grabber's clip at the start of an update: the connecting clip starting (the
     // alignment and the victim's paired clip), a connecting clip or a spin ending (the gate and the snap), and a spin
     // starting (detachForSpin()).
@@ -344,12 +355,12 @@ class Fighter {
     std::uint64_t m_flags = 0; // the human flag word (+0xe0)
     combat::PlayerCombat m_combat;
     combat::CombatOutput m_last;
-    TargetHuman* m_held = nullptr;
-    TargetHuman* m_thrown = nullptr;    // the victim of the throw whose hit has not landed yet
-    TargetHuman* m_candidate = nullptr; // what the grab or tackle search found this update
-    Combatant* m_target = nullptr;      // the target kept (human +0xc8)
-    bool m_l1Held = false;              // L1 held this update (record +0x00 0x8)
-    bool m_tacklePending = false;       // the tackle's intro plays; the victim reacts when its hit clip starts
+    Holdable* m_held = nullptr;
+    Holdable* m_thrown = nullptr;    // the victim of the throw whose hit has not landed yet
+    Holdable* m_candidate = nullptr; // what the grab or tackle search found this update
+    Combatant* m_target = nullptr;   // the target kept (human +0xc8)
+    bool m_l1Held = false;           // L1 held this update (record +0x00 0x8)
+    bool m_tacklePending = false;    // the tackle's intro plays; the victim reacts when its hit clip starts
     bool m_mugOnTarget = false;
     bool m_rear = false;    // the hold is from the victim's rear
     anim::Vec3 m_slide;     // a grab's alignment's slide velocity, m/s
@@ -374,7 +385,9 @@ class Fighter {
     bool m_justCaught = false; // the grab caught the player this update
     std::optional<AttackNotice> m_notice;
     std::optional<GrabCatch> m_catch;
-    std::optional<GrabCatch> m_grabbed; // the grab holding the player, its grabber's numbers kept up to date
+    std::optional<GrabCatch> m_grabbed;     // the grab holding the player, its grabber's numbers kept up to date
+    std::optional<TargetState> m_holdState; // held or mounted by a grabber that drives it (enterHold())
+    bool m_holdAttached = false;            // placed by that grabber each update
     GrabbedReport m_report;
     std::optional<ReactionShake> m_reactionShake; // the last update's reaction's shake
     bool m_rageStarted = false;                   // rage started in the last update

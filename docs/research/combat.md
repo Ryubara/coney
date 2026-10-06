@@ -1318,6 +1318,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `human/turn_and_slide.*` | the attack's steer ([Target selection](#targets)): a turn and a slide at a constant rate over a time, the last update only for the time left; the time to a clip's first steer-ending event; and the goal, the target led by its velocity and short of it by the reach |
 | `human/victim.*` | what the player and the target share as victims: the update's largest hit, the reaction it plays, the stun (its exit waits for the clip playing to end), the knockdown, the ground time, the rise and the mash |
 | `human/pair_placement.*` | the pair's geometry: offsets in the grabber's frame from a range record's direction × reach or a clip's type-8 pair event, the alignment (`Pair_AlignStart`), its time, the gate at the connect's end and `Pair_CheckPlace` |
+| `human/holdable.h`, `human/human_held.cpp` | what a grab or a tackle holds (`Holdable`): the passive target or a human; a held human's clips are the grabber's, its place the grabber's while attached, and its fighter keeps the hold's state (`Fighter::enterHold`) |
 | `human/target_human.*` | a passive target for the sandbox on `Victim`: health, the reaction, the stun, the knockdown, the ground time and the rise, the dying clip, the root motion of its reactions and throws |
 
 **In the player.** `human::Player` runs the street's `CommandMatcher` on the pad's buttons and writes the command,
@@ -1503,13 +1504,21 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   open.
 - The player hit: the stun's exit (357) waits for the clip playing to end; a mash also cuts the time of a stun taken
   with the knockdown; held in a grab or holding someone, a hit only takes health (the reactions by those states,
-  `0x002688d0` and `0x00268ea8`, are not traced); the health floor stops a hit that starts above 25 %, a player
-  already at or below it takes the whole hit; the escapee takes its escape clip's own damage, as at runtime.
+  `0x002688d0` and `0x00268ea8`, are not traced); for a demi-god (flag `0x20000000000`, which only the level scripts
+  set, `HuSetDemiGodMode`) the health floor stops a hit that starts above 25 %, and one already at or below it takes
+  the whole hit; the escapee takes its escape clip's own damage, as at runtime.
 - The duck's counter is asked for once per duck and the command that asks is spent (no attack starts from it); it
   plays on the next update with no steering, against the attacker that made the player duck, else the nearest target
   within 1.25 × 617's reach, and hits once.
-- Held: the counter at the catch costs the grabber a quarter of its maximum; a reversed hold has no passive target
-  behind it (the grabber is an entry point, not a `TargetHuman`).
+- Held: the counter at the catch costs the grabber a quarter of its maximum; a reversed hold has no victim behind it
+  (the grabber is an entry point, not a `Holdable`).
+- The player's grab or tackle holds any `Holdable`: the sandbox's passive target or another human without flag `0x40`.
+  A held human's fighter keeps the hold's state (held or mounted), which holds its movement, keeps it from acting and
+  gives its brain the grabbed (`0x14`) or tackled (`0x15`) reaction goal; attached, its own update does not move it.
+  The grab's intro leaves the victim alone (it is stopped at the connect, as `Grab_Connect` does), so an AI may still
+  answer it; the tackle's intro stops it at once (**Coney choice**, as before). The answer itself (the AI's counter
+  76 or 9) and the AI's own struggle in the hold are not built, and no AI grabs or tackles yet. A held human gone from
+  the targets, or freed by a script, ends the hold.
 - The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full
   speed (the 5 slower first updates backward are not known).
 
