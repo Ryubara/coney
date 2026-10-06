@@ -101,6 +101,10 @@ void VolumeBoxes::update(std::span<const BoxSubject> subjects, std::uint64_t now
             if (found != subjects.end() && found->alive && inside(box, found->position)) {
                 return false;
             }
+            // A handle that no longer names anything is skipped: no message, and its entry stays.
+            if (found == subjects.end() && m_resolves && !m_resolves(kept)) {
+                return false;
+            }
             messages.push_back({kLeft, kept});
             return true;
         });

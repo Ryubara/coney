@@ -384,6 +384,9 @@ void ScriptedBrains::humanDelete(double human) {
     if (brain == nullptr || brain == m_player || brain->type() == BrainType::Player) {
         return;
     }
+    if (brain->gang() != nullptr) {
+        m_deletedGangs[human] = brain->gang()->id();
+    }
     unbind(human);
     if (m_remover) {
         m_remover(*brain);
@@ -441,6 +444,9 @@ std::optional<int> ScriptedBrains::gangOf(double human) const {
     const Brain* brain = named(human);
     if (brain == nullptr) {
         // A human created while holding answers with the gang it will join.
+        if (const auto deleted = m_deletedGangs.find(human); deleted != m_deletedGangs.end()) {
+            return deleted->second;
+        }
         const std::optional<HeldHuman> held = heldHuman(human);
         return held && held->gang >= 0 ? std::optional<int>(held->gang) : std::nullopt;
     }

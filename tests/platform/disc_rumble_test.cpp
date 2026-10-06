@@ -144,8 +144,9 @@ TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose 
     const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 9000);
     REQUIRE(ended);
     CHECK(game.flow().rumbleResult().winner().find("FURIES") != std::string::npos);
-    // Known bug (rumble.md open item): X.OffTopTier runs after X.GameOver's teleport and indexes a nil.
-    CHECK(game.flow().scripts().errors() <= 2);
+    // X.OffTopTier still runs for the fighters X.GameOver teleports off the top and those the win camera deletes;
+    // each still has its gang (HuGetGang), so no script fails.
+    CHECK(game.flow().scripts().errors() == 0);
     std::printf("  king of the hill: result screen at frame %llu\n", static_cast<unsigned long long>(game.frames()));
 }
 

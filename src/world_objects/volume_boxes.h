@@ -8,6 +8,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace coney::world_objects {
@@ -52,6 +53,11 @@ class VolumeBoxes {
 
     /// What a box's message goes to: (the box, the message, the human).
     using Send = std::function<void(double box, int message, double human)>;
+    /// Whether a handle still names an object (`0x00390268`); none set: every handle does.
+    using Resolves = std::function<bool(double handle)>;
+
+    /// Sets the test update() asks of an occupant missing from its subjects.
+    void setResolves(Resolves resolves) { m_resolves = std::move(resolves); }
 
     /// `AddVolumeBox(name, kind, corner, size, enable)`: a box with `handle` from `corner` to `corner + size`.
     /// @orig 0x004125b8 VolumeBox_Add (unknown)
@@ -75,13 +81,15 @@ class VolumeBoxes {
 
     /// One trigger update of every enabled kind-0 box at game time `nowMs` over `subjects`: a living human inside and
     /// new is kept (while there is room) and gets 3; one inside and kept gets 5 when the period is due (the box's next
-    /// 5 then a period later); a kept one no longer inside, dead or gone gets 4 and is dropped. The messages go to
-    /// `send` after the box's update.
+    /// 5 then a period later); a kept one no longer inside, dead or gone gets 4 and is dropped, except one whose handle
+    /// no longer resolves (setResolves()), which is skipped with no message and kept. The messages go to `send` after
+    /// the box's update.
     /// @orig 0x00415378 VolumeBox_Update (unknown)
     void update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send);
 
   private:
     std::vector<VolumeBox> m_boxes;
+    Resolves m_resolves;
 };
 
 } // namespace coney::world_objects

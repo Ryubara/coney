@@ -184,10 +184,13 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void brFlushGoals(double human) override;
     /// The human's health and its maximum set to `health` (at least 1).
     void setMaxHealth(double human, int health) override;
-    /// An AI human: unbound and handed to the remover (setRemover()), which takes it out of the world. **Coney
-    /// choice**: a player's human is not deleted.
+    /// An AI human: unbound and handed to the remover (setRemover()), which takes it out of the world; its gang is
+    /// kept for gangOf(). **Coney choice**: a player's human is not deleted.
     void humanDelete(double human) override;
-    /// The id of the gang of the brain named by `human`, or of the gang a human created while holding will join.
+    /// The id of the gang of the brain named by `human`, of the gang a human created while holding will join, or of
+    /// the gang a deleted human was in: the original's handle still resolves after `HuDelete`, so `HuGetGang` still
+    /// answers (docs/research/rumble.md, King of the hill after `GameOver`). **Coney stand-in**: when a deleted
+    /// human's handle stops resolving is not traced, so its gang is kept for the rest of the level.
     [[nodiscard]] std::optional<int> gangOf(double human) const override;
     /// The player's team-mate (switchTarget()) takes the pad through the switcher and becomes player 1 (setPlayer());
     /// its handle, or NilHandle when `human` is not the player's or no one can take over.
@@ -286,6 +289,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     std::unique_ptr<ScriptedHumans> m_humans;
     std::unique_ptr<ScriptedStory> m_story;
     std::map<double, HeldHuman> m_heldHumans; // the humans created while holding, by handle
+    std::map<double, int> m_deletedGangs;     // the gang of each human deleted from one, by handle
 };
 
 } // namespace coney::ai

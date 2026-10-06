@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The volume boxes (docs/research/scripting.md#triggers): the inside test with and without a turn, and the trigger
-// update's messages 3 (entered), 5 (still inside, once a period) and 4 (left or died). Synthetic boxes and humans.
+// update's messages 3 (entered), 5 (still inside, once a period) and 4 (left or died), and an occupant whose handle
+// no longer resolves skipped. Synthetic boxes and humans.
 #include "world_objects/volume_boxes.h"
 
 #include <array>
@@ -87,4 +88,24 @@ TEST_CASE("a disabled box or one of another kind sends nothing", "[volume_boxes]
     CHECK(step(boxes, humans, 0).empty());
     boxes.clear();
     CHECK(boxes.all().empty());
+}
+
+TEST_CASE("an occupant gone from the subjects leaves while its handle resolves, and is skipped and kept once not",
+          "[volume_boxes]") {
+    VolumeBoxes boxes;
+    boxes.add(40, "vTopTier", 0, {0, 0, 0}, {2, 2, 3}, true);
+    bool resolves = true;
+    boxes.setResolves([&resolves](double /*handle*/) { return resolves; });
+    const std::vector<BoxSubject> inside{{.handle = 101, .position = {1, 1, 1}, .alive = true}};
+    CHECK(step(boxes, inside, 0) == Sent{{40, VolumeBoxes::kEntered, 101}});
+
+    // Deleted but still resolving: it leaves as anyone does.
+    CHECK(step(boxes, {}, 100) == Sent{{40, VolumeBoxes::kLeft, 101}});
+    CHECK(boxes.find(40)->occupants.empty());
+
+    // No longer resolving: no message, and its entry stays.
+    CHECK(step(boxes, inside, 200) == Sent{{40, VolumeBoxes::kEntered, 101}});
+    resolves = false;
+    CHECK(step(boxes, {}, 300).empty());
+    CHECK(boxes.find(40)->occupants.size() == 1);
 }

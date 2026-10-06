@@ -183,16 +183,22 @@ TEST_CASE("HuSetMaxHealth fills a human to a new maximum; BrFlushGoals and BrFlu
     CHECK(thug.actionCount() == 0);
 }
 
-TEST_CASE("HuDelete takes an AI human out through the remover and never a player", "[scripting][rumble]") {
+TEST_CASE("HuDelete takes an AI human out through the remover and never a player; its gang still answers",
+          "[scripting][rumble]") {
     Level level;
     Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scene.brains.gangs().create(3, "Gang1");
+    level.scene.brains.gangs().addMember(gang, thug);
+    const double handle = thug.handle();
     std::vector<const Brain*> removed;
     level.scripted->setRemover([&removed](Brain& brain) { removed.push_back(&brain); });
     level.call("HuDelete", {Value(1.0)});
     CHECK(removed.empty());
     level.call("HuDelete", {Value(thug.handle())});
     CHECK(removed == std::vector<const Brain*>{&thug});
-    CHECK(level.call("HuIsAlive", {Value(thug.handle())}).isNil());
+    CHECK(level.call("HuIsAlive", {Value(handle)}).isNil());
+    // Its handle still resolves in the original, so the King of the hill's leave handler still finds its gang.
+    CHECK(level.call("HuGetGang", {Value(handle)}).number() == static_cast<double>(gang));
 }
 
 TEST_CASE("humans created while the level is held count in their gangs and answer as alive until deleted",

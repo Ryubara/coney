@@ -218,6 +218,8 @@ void GameplayMode::enter() {
     }
     if (m_context.boxes != nullptr) {
         m_context.boxes->clear();
+        // A human the scripts made still resolves after `HuDelete` (Coney keeps every one for the level).
+        m_context.boxes->setResolves([this](double handle) { return m_humans.find(handle) != nullptr; });
     }
     m_context.ai = m_scripted.get();
     // The crimes the scripts report reach the level's gangs and police; the story's per-level switches start clear.

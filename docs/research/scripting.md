@@ -773,8 +773,11 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
 - **Message handlers and triggers** (`src/scripting/message_handlers.h`, `src/world_objects/volume_boxes.h`): an
   object's callback per message number (26 slots), delivered with the arguments of the
   [table above](#message-handlers); the volume boxes with their turn and the kind-0 trigger update (3, 5 once per
-  1000 ms, 4) over the scripts' humans, run by gameplay every frame before the scripts' frame. A human's events reach
-  its own handlers through its brain, a flag arrival is message 8 ([AI](ai.md#coney)).
+  1000 ms, 4) over the scripts' humans, run by gameplay every frame before the scripts' frame. An occupant whose handle
+  no longer resolves is skipped with no 4 and kept; **Coney stand-in**: a human the scripts made resolves for the whole
+  level, `HuDelete`d or not (when the original's stops is not traced), so a deleted occupant leaves with 4 and
+  `HuGetGang` still gives its gang. A human's events reach its own handlers through its brain, a flag arrival is
+  message 8 ([AI](ai.md#coney)).
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
   a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per
   the sphere's 1000 ms and 4 going to the object's handler; gameplay finds the object among the scripts' humans, the

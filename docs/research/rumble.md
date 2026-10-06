@@ -408,9 +408,6 @@ wheelchair's locomotion and the give-way action.
 - What brain the human left behind by `HuSwitchPlayer` runs, and whether he keeps the player's fighter profile
   (Coney: his class's brain type, the profile unchanged).
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
-- Coney bug: King of the hill's `X.OffTopTier` indexes a nil after `X.GameOver` (2 script errors in the disc test);
-  the original raises none (King of the hill, "After GameOver"): Coney must keep `HuGetGang` giving a deleted but
-  still-resolving human's gang, and skip box occupants whose handles no longer resolve.
 - How a spawner picks from its ten types, and where `0x001673b8` puts a human out of the camera's sight (Coney: the
   types in turn; a level flag out of the view whose distance from the player is nearest the value).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
