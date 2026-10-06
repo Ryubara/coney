@@ -380,3 +380,27 @@ TEST_CASE("start-up: the memory-card check shows its message for the original's 
     CHECK(run.flow->memoryCard().bootCheck() == MemoryCardMode::BootCheck::Done);
     CHECK_FALSE(run.flow->levelFlow().loadFrontEndOnResume());
 }
+
+TEST_CASE("start-up: an input script goes PM_Greet, PM_Mode, EXTRAS and back, with the original's cues",
+          "[start_up][frontend]") {
+    // START once the 1.5 s fade in is over; right to EXTRAS; cross opens PM_Extras; triangle backs out to PM_Mode.
+    Run run("200 tap start\n210 tap right\n220 tap cross\n235 tap triangle\n");
+    run.frames(205);
+    const coney::gui::PmController& menus = run.flow->profileManager().controller();
+    CHECK(menus.currentName() == "PM_Mode");
+    run.frames(20);
+    CHECK(menus.currentName() == "PM_Extras");
+    run.frames(20);
+    CHECK(menus.currentName() == "PM_Mode");
+    // Accept 9 on START, move 5, accept 9 on EXTRAS, back 0xf.
+    CHECK(run.flow->services().cues() == std::vector<int>{9, 5, 9, 0xf});
+    // Each screen is logged once, in order.
+    std::vector<std::string> screens;
+    for (const std::string& line : run.log) {
+        if (line.starts_with("profile manager: PM_")) {
+            screens.push_back(line);
+        }
+    }
+    CHECK(screens == std::vector<std::string>{"profile manager: PM_Greet\n", "profile manager: PM_Mode\n",
+                                              "profile manager: PM_Extras\n", "profile manager: PM_Mode\n"});
+}
