@@ -248,7 +248,7 @@ TEST_CASE("option grid: rows packed left from x, each row one pitch down; separa
     CHECK(grid.itemPosition(2, canvas.canvas).second == Approx(0.76F + grid.rowPitch(1.15F)));
     // Drawn: 2 + 1 (the colon; spaces draw nothing) + 2 + 3 glyphs, each after its shadow.
     grid.render(canvas.canvas);
-    CHECK(canvas.batch.sprites().size() == 2 * 8);
+    CHECK(canvas.batch.sprites().size() == std::size_t{2 * 8});
 }
 
 TEST_CASE("option grid: a centred row is centred on its x", "[widgets]") {
@@ -431,7 +431,7 @@ TEST_CASE("message box: a timed message closes after its time", "[widgets]") {
     box.update(GuiFrame{.timeMs = 3999, .pad = nullptr});
     CHECK(box.open());
     box.render(canvas.canvas);
-    CHECK(canvas.batch.sprites().size() == 2 * 8);
+    CHECK(canvas.batch.sprites().size() == std::size_t{2 * 8});
     box.update(GuiFrame{.timeMs = 4000, .pad = nullptr});
     CHECK_FALSE(box.open());
     CHECK_FALSE(box.chosen().has_value());

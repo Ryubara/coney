@@ -66,6 +66,7 @@ std::map<std::string, std::vector<std::byte>, std::less<>> rumbleScripts() {
 
     LuaAsm onStart;
     onStart.getGlobal("ShowProfileManager").pushString("Menu.fadeToRMI").pushString("Menu.startGame").call(2);
+    onStart.getGlobal("ScreenQueueEffect").pushInt(0).pushInt(1).call(2);
     LuaAsm fadeToRmi;
     fadeToRmi.getGlobal("ShowRumbleModeInterface").pushString("Menu.cancelRumbleMode");
     fadeToRmi.pushString("Menu.startRumbleMode").pushInt(1).call(3);

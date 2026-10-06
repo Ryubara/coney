@@ -50,10 +50,10 @@ void BaseWidget::render(const GuiCanvas& /*canvas*/) const {
         return;
     }
     const graphics::UvRect& uv = m_batch->sheet().page.rect(m_rect);
-    const auto [width, height] = overlaySize();
+    const std::pair<float, float> size = overlaySize();
     // The sprite centred at a GUI point, with the widget's size and rectangle.
-    const auto sprite = [&](float x, float y, graphics::Rgba colour) {
-        return graphics::Sprite{graphics::OverlayCamera::guiToOverlay(x, y), width, height, uv, colour};
+    const auto sprite = [&uv, size](float x, float y, graphics::Rgba colour) {
+        return graphics::Sprite{graphics::OverlayCamera::guiToOverlay(x, y), size.first, size.second, uv, colour};
     };
     if (m_setup.shadow) {
         // The shadow record sits at the position itself, not shifted by the anchor.

@@ -77,9 +77,11 @@ std::map<std::string, std::vector<std::byte>, std::less<>> storyScripts(bool unl
     }
     files["global.lua"] = coney::test::luaChunk(global.end());
 
-    // level100.lua: Menu.onStart shows the menus; Menu.startGame starts the story.
+    // level100.lua: Menu.onStart shows the menus and fades in (the movies left the screen black); Menu.startGame
+    // starts the story.
     LuaAsm onStart;
     onStart.getGlobal("ShowProfileManager").pushString("Menu.fadeToRMI").pushString("Menu.startGame").call(2);
+    onStart.getGlobal("ScreenQueueEffect").pushInt(0).pushInt(1).call(2);
     LuaAsm startGame;
     startGame.getGlobal("SetCheckPoint").pushInt(2).call(1);
     startGame.getGlobal("MenuLoadLevel").pushString("level1").call(1);

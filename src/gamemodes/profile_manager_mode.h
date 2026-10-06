@@ -35,7 +35,7 @@ class GameModeStack;
 /// profile manager's screen flow (gui::PmController) from PM_Greet, drawing it over the front-end scene, until the flow
 /// is done.
 ///
-/// - `Enter` plays the music `menu` unless it is already playing, loads the `menu_system` sprite sheet (a batch of 50
+/// - `Enter` loads the sound bank `menu` unless it is current, loads the `menu_system` sprite sheet (a batch of 50
 ///   sprites at depth 8,500) and starts the controller with the first Lua callback. (Coney starts the controller at
 ///   the top of the first update, in the same step, so the first screen knows the frame's time.)
 /// - `Update` runs one frame: the controller (the screen on top reads the HUD player's pad, port 1, and adds its
@@ -69,8 +69,8 @@ class ProfileManagerMode final : public GameMode {
     /// The text batches: how many sprites a frame, and their depth (big_font's text, docs/research/gui.md#draw-order).
     static constexpr std::size_t kTextCapacity = 2048;
     static constexpr float kTextDepth = 9000.0F;
-    /// The music the front end plays.
-    static constexpr std::string_view kMusic = "menu";
+    /// The sound bank the front end loads (the interface cues; docs/research/sound.md#banks).
+    static constexpr std::string_view kSoundBank = "menu";
     /// The fade out when the menus are done, seconds.
     static constexpr double kDoneFadeSeconds = 1.0;
 
@@ -97,7 +97,10 @@ class ProfileManagerMode final : public GameMode {
     /// level flow loaded.
     void setScene(FrontEndScene* scene) { m_scene = scene; }
 
-    /// Plays the music and loads the sheets; the controller starts at PM_Greet on the next update.
+    /// Starts a screen fade of `type` lasting `seconds` now, as `ScreenQueueEffect` does from a script.
+    void queueFade(int type, double seconds) { m_fade.queue(type, seconds, m_scripts.now()); }
+
+    /// Loads the sound bank and the sheets; the controller starts at PM_Greet on the next update.
     /// @orig 0x0015e048 Mode12::Enter (unknown)
     void enter() override;
 

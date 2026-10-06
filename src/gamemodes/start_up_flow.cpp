@@ -53,7 +53,7 @@ void StartUpFlow::start() {
         m_scripts.create();
     }
     for (const std::string_view movie : kStartUpMovies) {
-        m_services.playMovie(movie);
+        playMovie(movie);
     }
     m_stack.push(m_levelFlow);
     m_memoryCard.setBootCheck();
@@ -71,7 +71,11 @@ void StartUpFlow::showRumbleModeInterface(std::string_view onCancel, std::string
 
 void StartUpFlow::menuLoadLevel(std::string_view level) { m_levelFlow.chooseLevel(level); }
 
-void StartUpFlow::playMovie(std::string_view name) { m_services.playMovie(name); }
+void StartUpFlow::playMovie(std::string_view name) {
+    m_services.playMovie(name);
+    // Movie_Play leaves both screen-effects managers fully black on return: the screen stays black until a fade in.
+    m_fade.queue(graphics::ScreenFade::kFadeOut, 0.0, m_scripts.now());
+}
 
 void StartUpFlow::playMusic(std::string_view track) { m_services.playMusic(track); }
 

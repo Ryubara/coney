@@ -54,6 +54,8 @@ class LevelFlowMode final : public GameMode {
     /// The Lua callbacks `Menu.onStart` hands to `ShowProfileManager`, for the stand-in without scripts.
     static constexpr std::string_view kOnRumble = "Menu.fadeToRMI";
     static constexpr std::string_view kOnStartGame = "Menu.startGame";
+    /// The fade in `Menu.onStart` starts, for the stand-in without scripts.
+    static constexpr double kOnStartFadeSeconds = 1.5;
 
     /// Draws through `device`, pushes `profileManager` on `stack`, sends music to `services`, runs `scripts` and
     /// selects levels in `state`; each must outlive the mode. `log` gets a line when the front end starts or a level
@@ -110,7 +112,8 @@ class LevelFlowMode final : public GameMode {
     [[nodiscard]] const std::vector<std::string>& levelRequests() const { return m_levelRequests; }
 
   private:
-    /// Selects level 0, runs its scripts, starts the music `menu`, calls `Menu.onStart` and marks the front end loaded.
+    /// Selects level 0, runs its scripts, loads the sound bank `menu`, calls `Menu.onStart` and marks the front end
+    /// loaded.
     /// @orig 0x0015c4b0 LevelFlow_StartFrontEnd (unknown)
     void startFrontEnd();
 

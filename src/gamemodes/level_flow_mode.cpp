@@ -103,7 +103,7 @@ void LevelFlowMode::startFrontEnd() {
     // script.
     loadScene();
     m_scripts.enterLevel(m_currentLevel);
-    m_services.playMusic(ProfileManagerMode::kMusic);
+    m_services.loadBank(ProfileManagerMode::kSoundBank);
 
     // Menu.onStart shows the menus. Without scripts, or when it did not, Coney shows them itself with the callbacks the
     // script passes.
@@ -111,6 +111,8 @@ void LevelFlowMode::startFrontEnd() {
     if (m_stack.topId() != ProfileManagerMode::kId) {
         m_log("level flow: Menu.onStart did not show the menus; showing them with its callbacks\n");
         m_profileManager.show(m_stack, std::string(kOnRumble), std::string(kOnStartGame));
+        // ... and fades in over 1.5 s as `Menu.onStart` does, after the movies left the screen black.
+        m_profileManager.queueFade(graphics::ScreenFade::kFadeIn, kOnStartFadeSeconds);
     }
     m_frontEndLoaded = true;
 }

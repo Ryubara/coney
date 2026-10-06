@@ -43,8 +43,8 @@ void ProfileManagerMode::show(GameModeStack& stack, std::string onRumble, std::s
 }
 
 void ProfileManagerMode::enter() {
-    if (!m_services.musicPlaying(kMusic)) {
-        m_services.playMusic(kMusic);
+    if (!m_services.bankLoaded(kSoundBank)) {
+        m_services.loadBank(kSoundBank);
     }
     loadResources();
     // Nothing to blend from a time the menus were not up.

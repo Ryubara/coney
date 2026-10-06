@@ -112,7 +112,7 @@ TEST_CASE("start-up: legal screen, memory card, level flow, then the profile man
     CHECK(levelFlow.frontEndLoaded());
     CHECK(levelFlow.currentLevel() == "level100");
     CHECK(levelFlow.chosenLevel() == LevelFlowMode::kNoLevel);
-    CHECK(run.flow->services().music() == "menu");
+    CHECK(run.flow->services().bank() == "menu");
     CHECK(run.stack.topId() == ProfileManagerMode::kId);
     CHECK(run.flow->profileManager().onRumble() == "Menu.fadeToRMI");
     CHECK(run.flow->profileManager().onStartGame() == "Menu.startGame");
@@ -171,10 +171,12 @@ std::map<std::string, std::vector<std::byte>, std::less<>> frontEndScripts() {
     for (const char* empty : {"config_preload.lua", "config_preload2.lua", "global.lua"}) {
         files[empty] = coney::test::luaChunk(LuaAsm().end());
     }
-    // level100.lua: Menu = {}; Menu.onStart = function() ShowProfileManager("Menu.fadeToRMI", "Menu.startGame") end;
+    // level100.lua: Menu = {}; Menu.onStart = function() ShowProfileManager("Menu.fadeToRMI", "Menu.startGame");
+    // ScreenQueueEffect(0, 1) end;
     // Menu.startGame = function() MenuLoadLevel("level1") end
     LuaAsm onStart;
     onStart.getGlobal("ShowProfileManager").pushString("Menu.fadeToRMI").pushString("Menu.startGame").call(2);
+    onStart.getGlobal("ScreenQueueEffect").pushInt(0).pushInt(1).call(2);
     LuaAsm startGame;
     startGame.getGlobal("MenuLoadLevel").pushString("level1").call(1);
     LuaAsm level;
