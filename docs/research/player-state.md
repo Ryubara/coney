@@ -67,6 +67,38 @@ handlers (3 and 4) and the announcement, sets `objectives.Stolen` and schedules 
 teleports the player to `fStoreFront` for the car lesson. Confirmed (runtime): the teleport came 91 updates after the
 third pick-up.
 
+### Walking over a power-up {#walk-over}
+
+Objects of class `powerup_item` (spray cans `dyn_spraycan`, flashes, keys, money) are taken by **touching** them, not
+with triangle: the triangle search skips the class ([Combat: breakables](combat.md#breakables)). Confirmed (code) at
+`0x00219d50`, `0x0023bf00`:
+
+1. **Contact.** When a human's body touches an object (`Human_OnContact`, `0x00219d50`), a class other than
+   `powerup_item` (the name at `0x0055a908`) is a solid contact. A power-up is passed through and picked up, unless it
+   is `TYPE_REVIVAL` (14) and the human is a player at full health while game state `+0x56e5` is 0, or it is out of
+   sight (`0x0021c570`, the same ray test as the search). Types 29 and 34 have their own cases there (not traced).
+2. **The take** (`Human_PickUpObject`, `0x0023bf00`) needs flag `0x8000` ([pickable](objects.md#pickable)) and a
+   brain of kind 0, 2, 3 or 4, then goes by the object's type:
+
+   | Type | Who | Gives |
+   | --- | --- | --- |
+   | 13 `TYPE_KEY` | a player below the item's limit | item 6 ×1 |
+   | 14 `TYPE_REVIVAL` | a player below the limit | item 1 ×1 (a flash) |
+   | 16 `TYPE_SPRAYCAN` | a player below the limit (`0x0041ded0(3)`) | item **3** ×1 (one charge; never past 9) |
+   | 28 `TYPE_MONEY` | a player | item 2 × the object's value (`+0x124`) |
+   | 12 `TYPE_SPECIAL` | | the named mission items and loot ([Combat: breakables](combat.md#breakables)) |
+
+   Each gift passes `notify` = 1 ([above](#pickup-callback)), plays the item's pick-up sound and removes the object
+   (`0x0023be98`); the first spray can, key or flash also queues that item's hint once (game state flags `0x2000`,
+   `0x40`, `0x4000`) when hints are on. Any other type, or a refused one, returns 0 and the object stays.
+3. Back in the contact, a taken object's physics body is freed.
+
+At runtime (slot 1, a `dyn_spraycan` spawned with `Obj_Spawn` 2.5 m ahead of the player, who walked at it with the
+stick at 60%): `Human_PickUpObject` was called from `Human_OnContact` when the player's centre was about 1.1 m from
+the can's (the two bodies touching), and `Inventory_AddItem(player 0, 3, 1, 1)` followed in the same update.
+Confirmed (runtime). A spray can that is never touched stays; its update (`0x003f2870`) only spins it and shows it
+within 40 m (30 m for its icon; inferred).
+
 ### Unlockables {#unlockables}
 
 The manager (`0x006fe998`) holds up to 640 records of 12 bytes: `+0` level, `+1` group, `+2` item, `+3` type, `+4`

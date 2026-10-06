@@ -127,7 +127,8 @@ is chosen every frame by `HUD_Update` (`0x001af010`), confirmed (code): nothing 
 tagging, in a mini-game of mode 2 or 3, in a hold (`0x18000000000`), uncuffing (action `0x15`) or a few other
 states, or when command `0xa` is not available (`0x00147738`). Otherwise, in order: holding a human who can be
 mugged → `GSTRING.HUD` 1 (mug), or 0 (interrogate) when the human has an interrogation set; a partner who can be
-revived while either holds a flash → 4 (revive); a context record → its text (`+0x10`; whether the second text is ever shown is not traced); else a nearby human's own talk prompt
+revived while either holds a flash → 4 (revive); a context record → its text (`+0x10`; whether the second text is ever
+shown is not traced); else a nearby human's own talk prompt
 (`0x001acd60`). The panel's activity test then matches the prompt's text against the dealer prompts
 ([HUD](hud.md#the-player-panel)). The prompt sits 0.04 above its place in the default video mode (0.02 in the others) and
 rises with a scroll-in message (`0x0019f430`).

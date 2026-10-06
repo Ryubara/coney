@@ -416,7 +416,7 @@ Triangle's pick-up search ([Breakables](combat.md#breakables)) and `Human_PickUp
 | `thrown_weapon` (`0x00403090`) | `0x228081` | yes | |
 | `overhead_weapon` (`0x003ff6c8`) | `0x228001` | yes | not for model hash `0x8fc6ac30` |
 | `pickup_item` (`0x003f17e0`) | `0x208081` | yes | not for model hash `0x2fd690d6` (also cleared in `0x003f23f8`) |
-| `powerup_item` (`0x003f2700`) | `0x808081` | yes, but the search skips the class: it is walked over instead | |
+| `powerup_item` (`0x003f2700`) | `0x808081` | yes, but the search skips the class: it is [walked over](player-state.md#walk-over) | |
 | `simple_object` | 1 (or `0x11`) | no | `0x8080` added for model hash `0xfcbe9fbb` |
 
 The search also refuses bit `0x10`, bit `0x4000000`, an object whose type value (`CfgObj` field `+0x62`, read through
