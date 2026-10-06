@@ -992,6 +992,13 @@ entries:
   - {crc: 0x447f281f, name: level3.msb, kind: msb, index: 7856}
   - {crc: 0xb845370d, name: level81.msb, kind: msb, index: 8780}
   - {crc: 0x83ec89bb, name: lizzie.msb, kind: msb, index: 9725}
+  - {crc: 0xe3d49cf0, name: load_00.msb, kind: msb, index: 9728}
+  - {crc: 0xdeb4b540, name: load_01.msb, kind: msb, index: 9730}
+  - {crc: 0x9914cf90, name: load_02.msb, kind: msb, index: 9732}
+  - {crc: 0xa474e620, name: load_03.msb, kind: msb, index: 9734}
+  - {crc: 0x16543a30, name: load_04.msb, kind: msb, index: 9736}
+  - {crc: 0x2b341380, name: load_05.msb, kind: msb, index: 9738}
+  - {crc: 0x6c946950, name: load_06.msb, kind: msb, index: 9740}
   - {crc: 0x89d12ce2, name: luther.msb, kind: msb, index: 9794}
   - {crc: 0x5afe78b8, name: menu.msb, kind: msb, index: 9799}
   - {crc: 0x3df8992b, name: pause.msb, kind: msb, index: 9823}
@@ -1005,6 +1012,13 @@ entries:
   - {crc: 0xad1c8d2a, name: level3.msd, kind: msd, index: 7857}
   - {crc: 0x51269238, name: level81.msd, kind: msd, index: 8781}
   - {crc: 0x6a8f2c8e, name: lizzie.msd, kind: msd, index: 9726}
+  - {crc: 0x0ab739c5, name: load_00.msd, kind: msd, index: 9729}
+  - {crc: 0x37d71075, name: load_01.msd, kind: msd, index: 9731}
+  - {crc: 0x70776aa5, name: load_02.msd, kind: msd, index: 9733}
+  - {crc: 0x4d174315, name: load_03.msd, kind: msd, index: 9735}
+  - {crc: 0xff379f05, name: load_04.msd, kind: msd, index: 9737}
+  - {crc: 0xc257b6b5, name: load_05.msd, kind: msd, index: 9739}
+  - {crc: 0x85f7cc65, name: load_06.msd, kind: msd, index: 9741}
   - {crc: 0x60b289d7, name: luther.msd, kind: msd, index: 9795}
   - {crc: 0xb39ddd8d, name: menu.msd, kind: msd, index: 9800}
   - {crc: 0xd49b3c1e, name: pause.msd, kind: msd, index: 9824}

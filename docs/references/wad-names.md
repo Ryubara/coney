@@ -10,7 +10,7 @@ string hashes to an entry. Each name here was checked against its hash.
 
     4,059 of 10,701 names are known; the streamed world and most early entries are still unnamed.
 
-4,059 entries. Data: `research/references/wad-names.yaml`.
+4,073 entries. Data: `research/references/wad-names.yaml`.
 
 ## anm {#anm}
 
@@ -1037,7 +1037,7 @@ string hashes to an entry. Each name here was checked against its hash.
 
 ## msb {#msb}
 
-13 entries.
+20 entries.
 
 | CRC | Name | Entry |
 | --- | --- | --- |
@@ -1049,6 +1049,13 @@ string hashes to an entry. Each name here was checked against its hash.
 | <span id="wad-447f281f"></span>`0x447f281f` | `level3.msb` | 7856 |
 | <span id="wad-b845370d"></span>`0xb845370d` | `level81.msb` | 8780 |
 | <span id="wad-83ec89bb"></span>`0x83ec89bb` | `lizzie.msb` | 9725 |
+| <span id="wad-e3d49cf0"></span>`0xe3d49cf0` | `load_00.msb` | 9728 |
+| <span id="wad-deb4b540"></span>`0xdeb4b540` | `load_01.msb` | 9730 |
+| <span id="wad-9914cf90"></span>`0x9914cf90` | `load_02.msb` | 9732 |
+| <span id="wad-a474e620"></span>`0xa474e620` | `load_03.msb` | 9734 |
+| <span id="wad-16543a30"></span>`0x16543a30` | `load_04.msb` | 9736 |
+| <span id="wad-2b341380"></span>`0x2b341380` | `load_05.msb` | 9738 |
+| <span id="wad-6c946950"></span>`0x6c946950` | `load_06.msb` | 9740 |
 | <span id="wad-89d12ce2"></span>`0x89d12ce2` | `luther.msb` | 9794 |
 | <span id="wad-5afe78b8"></span>`0x5afe78b8` | `menu.msb` | 9799 |
 | <span id="wad-3df8992b"></span>`0x3df8992b` | `pause.msb` | 9823 |
@@ -1057,7 +1064,7 @@ string hashes to an entry. Each name here was checked against its hash.
 
 ## msd {#msd}
 
-13 entries.
+20 entries.
 
 | CRC | Name | Entry |
 | --- | --- | --- |
@@ -1069,6 +1076,13 @@ string hashes to an entry. Each name here was checked against its hash.
 | <span id="wad-ad1c8d2a"></span>`0xad1c8d2a` | `level3.msd` | 7857 |
 | <span id="wad-51269238"></span>`0x51269238` | `level81.msd` | 8781 |
 | <span id="wad-6a8f2c8e"></span>`0x6a8f2c8e` | `lizzie.msd` | 9726 |
+| <span id="wad-0ab739c5"></span>`0x0ab739c5` | `load_00.msd` | 9729 |
+| <span id="wad-37d71075"></span>`0x37d71075` | `load_01.msd` | 9731 |
+| <span id="wad-70776aa5"></span>`0x70776aa5` | `load_02.msd` | 9733 |
+| <span id="wad-4d174315"></span>`0x4d174315` | `load_03.msd` | 9735 |
+| <span id="wad-ff379f05"></span>`0xff379f05` | `load_04.msd` | 9737 |
+| <span id="wad-c257b6b5"></span>`0xc257b6b5` | `load_05.msd` | 9739 |
+| <span id="wad-85f7cc65"></span>`0x85f7cc65` | `load_06.msd` | 9741 |
 | <span id="wad-60b289d7"></span>`0x60b289d7` | `luther.msd` | 9795 |
 | <span id="wad-b39ddd8d"></span>`0xb39ddd8d` | `menu.msd` | 9800 |
 | <span id="wad-d49b3c1e"></span>`0xd49b3c1e` | `pause.msd` | 9824 |

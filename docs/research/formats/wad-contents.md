@@ -48,13 +48,13 @@ Every entry falls into exactly one of these kinds. "Named" counts entries whose 
 | Stream manifest (`_sec.mem`) | 159 | 14,420 | 159 | Sizes of one world stream and its parts |
 | Lua 4.0 bytecode (`.lua`) | 467 | 10,379,282 | 280 | Game scripts, see [Lua](#lua) |
 | Object list (`_objs.txt`) | 63 | 1,111,944 | 63 | Text: a count, then one `{name {x, y, z ...}}` line per dynamic object or particle emitter; 26 hold only a zero count |
-| Sound bank (`.msb`) | 21 | 27,360,592 | 13 | PS2 ADPCM (VAG) data, no header |
-| Sound bank index (`.msd`) | 21 | 21,568 | 13 | `{u32 hash, u32 offset}` pairs into the matching `.msb`, ended by a zero pair |
+| Sound bank (`.msb`) | 21 | 27,360,592 | 20 | PS2 ADPCM (VAG) data, no header ([Audio data](audio.md#banks)) |
+| Sound bank index (`.msd`) | 21 | 21,568 | 20 | `{u32 hash, u32 offset}` pairs into the matching `.msb`, ended by a zero pair |
 | Older RenderWare streams | 5 | 1,395,507 | 0 | RenderWare streams stamped `0x1803FFFF` (3.6.0.3) instead of the usual `0x1C02000A` |
 | Font metrics (`.met`) | 1 | 2,625 | 1 | `cn12.met`: text beginning `METRICS1`, pixel rectangles of the characters 32-126 in `cn12.bmp`; unused by the PS2 code ([GUI](../gui.md#the-metrics1-file)) |
 | Memory card icon (`.ico`) | 1 | 79,128 | 1 | PS2 icon, magic `00 00 01 00` |
 | Bitmap (`.bmp`) | 1 | 98,358 | 1 | `cn12.bmp`: a 256 × 128, 24-bit Windows bitmap (`BM`), the glyphs of `cn12.met`; first counted as a sound bank |
-| **Total** | **10,701** | **1,484,729,244** | **6,226** | The rest of the 1,495,371,776-byte WAD is padding |
+| **Total** | **10,701** | **1,484,729,244** | **6,240** | The rest of the 1,495,371,776-byte WAD is padding |
 
 **Evidence:** inferred. Every entry is assigned by a structural test that must consume the whole entry (the
 container parse below, an exact RenderWare section walk, the Lua header, the `.msd` pair layout); none falls through.
@@ -71,7 +71,7 @@ The entries form two blocks:
   header's `nameHash`; the other 16 are texture dictionaries whose name hash differs. Digits sort before letters, so
   this block is just the start of the one name order below: the 3,599 decimal names are in ascending ASCII order.
 - **Entries 3,615–10,700**: everything else, **sorted by name** in ASCII order of the upper-cased name (so `_`
-  sorts after letters). All 6,226 recovered names in this block are in that order with no exception, which makes
+  sorts after letters). All 6,240 recovered names in this block are in that order with no exception, which makes
   the order a strong filter against false matches when recovering names.
 
 **Evidence:** inferred.
@@ -263,7 +263,7 @@ dictionary (PS2 native textures, platform `6`), `0x10` clump, `0x0B` world, `0x1
 
 ## Names {#names}
 
-6,226 of the 10,701 entry names are recovered (2026-10-04), up from 412. The recovered names themselves stay out
+6,240 of the 10,701 entry names are recovered (2026-10-06), up from 412. The recovered names themselves stay out
 of the repository until it is decided whether a names list may be committed.
 
 | Extension | Names | Kind |
@@ -275,7 +275,7 @@ of the repository until it is decided whether a names list may be committed.
 | `.lev` | 64 | Level resources |
 | `_ms<i>.sec`, `_sec.wld`, `_sec.mem` | 1,911 + 159 + 159 | Streamed worlds: parts, world streams, manifests |
 | `_objs.txt` | 63 | Object lists |
-| `.msb`, `.msd` | 13 + 13 | Sound banks and their indexes |
+| `.msb`, `.msd` | 20 + 20 | Sound banks and their indexes (`load_00`-`load_06` from the load screen's `%s_%2.2d`) |
 | `.cnk`, `.glr`, `.ico`, `.met`, `.bmp` | 1 each | Scene list, global resource, memory card icon, font metrics and its bitmap |
 
 How:
@@ -302,7 +302,7 @@ How:
 Entries 0–3,614 are named by number ([above](#layout-of-the-wad)), which the table does not count: 3,599 of them
 have their WAD name, and a readable resource name wherever the resource hash is matched (about 1,170 resource hashes
 in the archive are). What stays unnamed: 16 texture dictionaries of entries 0–3,614, 645 packs, 187 Lua scripts,
-and the sound banks without an index name.
+and one sound bank (`.msb` and `.msd`, entries 9,803 and 9,804).
 
 Brute force over short suffixes runs into CRC-32's linearity: for names of equal length, the XOR of two hashes
 depends only on the XOR of the names, so a wrong guess that happens to match one entry produces matching variants
@@ -337,4 +337,5 @@ These need the code (Ghidra); the data alone cannot settle them.
    dictionaries whose header hash does not give their WAD name.
 7. **Scene records.** The full layout of headers and segments, and which code streams them (the chunk types
    `0x38`–`0x3d` named "Scene ..." do not occur in the WAD, so scene data may use its own reader).
-8. **Sound banks.** How `.msd` hashes are formed and which code (or the IOP driver) plays `.msb` data.
+8. **Sound banks** (answered): the `.msd` hashes are the sound list's name hashes and the IOP plays the `.msb` from
+   sound RAM; see [Audio data](audio.md#banks).

@@ -11,7 +11,17 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from coney_tools import natives_cli, pcsx2_claims_cli, pcsx2_cli, progress_cli, refs_cli, trace_cli, wad_cli, xbox_cli
+from coney_tools import (
+    audio_cli,
+    natives_cli,
+    pcsx2_claims_cli,
+    pcsx2_cli,
+    progress_cli,
+    refs_cli,
+    trace_cli,
+    wad_cli,
+    xbox_cli,
+)
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.repo_checks import check_pointer_files, check_title, first_line, load_title_rules
 
@@ -74,6 +84,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     check_title_parser.add_argument("file", help="a file whose first line (not blank, not #) is the title; - for stdin")
     _add_wad_commands(groups)
+    _add_audio_commands(groups)
     _add_xbox_commands(groups)
     _add_progress_commands(groups)
     _add_natives_commands(groups)
@@ -103,6 +114,28 @@ def _add_wad_commands(groups: Any) -> None:
     names.add_argument("paths", nargs="+", metavar="[DISC] OUT_FILE", help=f"[DISC] ({disc_help}) and OUT_FILE")
     scene_check = commands.add_parser("scenes", help="parse every scene record of scene_list.cnk; counts and hashes")
     scene_check.add_argument("disc", nargs="?", help=disc_help)
+
+
+def _add_audio_commands(groups: Any) -> None:
+    """Register `coney-tools audio ...`."""
+    disc_help = "a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
+    group = groups.add_parser(
+        "audio", help="the game's sound data: the sound and music lists, banks, BFW.SND, MUSIC.SND"
+    )
+    commands = group.add_subparsers(dest="command", required=True)
+    info = commands.add_parser("info", help="counts of sounds, banks and music tracks, with hashes of the tables")
+    info.add_argument("disc", nargs="?", help=disc_help)
+    listing = commands.add_parser("list", help="one line per sound, music track or bank sound")
+    listing.add_argument("what", choices=["sounds", "music", "banks"], help="which list")
+    listing.add_argument("disc", nargs="?", help=disc_help)
+    decode = commands.add_parser("decode", help="decode one sound or music track to a WAV file outside the repository")
+    decode.add_argument(
+        "paths",
+        nargs="+",
+        metavar="[DISC] NAME OUT",
+        help=f"[DISC] ({disc_help}), a sound or track name or 0x hash, and the WAV file",
+    )
+    decode.add_argument("--bank", help="decode from this bank instead of where the sound list says")
 
 
 def _add_xbox_commands(groups: Any) -> None:
@@ -309,6 +342,18 @@ def _run_xbox(args: argparse.Namespace) -> int:
     return xbox_cli.run_textures(args.disc, args.ps2)
 
 
+def _run_audio(args: argparse.Namespace) -> int:
+    """Dispatch an `audio` command."""
+    if args.command == "info":
+        return audio_cli.run_info(args.disc)
+    if args.command == "list":
+        return audio_cli.run_list(args.disc, args.what)
+    if len(args.paths) not in (2, 3):
+        raise ConfigError("expected [DISC] NAME OUT")
+    disc = args.paths[0] if len(args.paths) == 3 else None
+    return audio_cli.run_decode(disc, args.paths[-2], Path(args.paths[-1]), args.bank)
+
+
 def _run_pcsx2(args: argparse.Namespace) -> int:
     """Dispatch a `pcsx2` command."""
     if args.command == "prepare-state":
@@ -337,6 +382,8 @@ def _run(args: argparse.Namespace) -> int:
         return _run_wad(args)
     if args.group == "xbox":
         return _run_xbox(args)
+    if args.group == "audio":
+        return _run_audio(args)
     if args.group == "progress":
         return _run_progress(args)
     if args.group == "natives":

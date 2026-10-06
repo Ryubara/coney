@@ -1,7 +1,8 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers seven groups:
-`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`xbox`](#xbox), which
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers eight groups:
+`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`audio`](#audio),
+which reads its sound data, [`xbox`](#xbox), which
 reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
 current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the
 game reference lists, and [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update traces in
@@ -79,6 +80,26 @@ Parses every record `scene_list.cnk` lists (scene headers and the segments of lo
 cameras and lights, total frames, broken segment chains, how many headers' frame counts differ from their parts, the
 event types seen, and SHA-256 digests of the list and of the records. Records whose list names are cut to 16
 characters are found by content. Exits 1 when a record fails to parse.
+
+## audio {#audio}
+
+The game's sound data, read from your own disc (`DISC` as for `wad`): the sound, music and class tables of
+`warriors.glr`, the sound banks in the WAD and the streamed files `IOP/BFW.SND` and `IOP/MUSIC.SND`. The formats are
+on [Audio data](../research/formats/audio.md).
+
+```sh
+uv run --project python coney-tools audio info [DISC]
+uv run --project python coney-tools audio list {sounds,music,banks} [DISC]
+uv run --project python coney-tools audio decode [DISC] NAME OUT.wav [--bank BANK]
+```
+
+`info` prints how many sounds stream from `BFW.SND` (mono and stereo) and how many play from a bank, the sample
+rates, the music tracks and every bank with its sound count, with short SHA-1s of the tables to tell discs apart.
+`list` prints one line per sound (hash, where its bytes are, offset, size, rate, class, flags, priority, distances,
+volume, pitch variation), per music track or per bank sound. `decode` writes one sound or music track as a 16-bit
+WAV file and prints its length, peak and RMS: `NAME` is a sound's name as the game writes it
+(`vags/character/voices/5/attack_01`), a track's (`music/warriors_theme`) or a `0x` hash; `--bank` takes a bank
+sound from that bank. Like `wad extract`, it refuses a path inside the repository.
 
 ## xbox {#xbox}
 
