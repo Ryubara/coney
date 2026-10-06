@@ -282,6 +282,8 @@ def test_launch_runs_under_a_claim_and_records_the_pid(
         def close(self) -> None:
             pass
 
+    # A real PCSX2 copy may be running on this port while the tests run; the launch must not see it.
+    monkeypatch.setattr(pcsx2_cli, "_port_open", lambda port: False)
     monkeypatch.setattr(pcsx2_cli.subprocess, "Popen", lambda *a, **k: FakeProcess())
     monkeypatch.setattr(pcsx2_cli, "_wait_for_game", lambda *a, **k: FakeClient())
     monkeypatch.setattr(pcsx2_cli, "disc_link", lambda iso, scratch: iso)
