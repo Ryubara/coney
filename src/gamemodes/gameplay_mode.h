@@ -99,7 +99,7 @@ class PauseMode;
 /// - The rest of `InitLevel` (the object list, the dependency list, the music) and of mode 1's enter (audio, the
 ///   level-end countdown) is not there yet: the player has control on the first frame. The start callback runs before
 ///   the level loads (runLevelScript()). The intro movie (`L99_IN`) goes to the movie player after the level loaded
-///   (setMoviePlayer(); FrontEndServices skips it until Coney plays movies).
+///   (setMoviePlayer(): the movie player pushes itself over gameplay, which waits beneath it until it ends).
 /// - With a loading screen (setLoadingScreen(), the story flow), enter only begins it; the updates then fade it in
 ///   over 200 ms of game time, load the level in one step (the window keeps the faded-in picture meanwhile, as the
 ///   original keeps its last frame between reads), hold it until kLoadScreenHoldMilliseconds after its start (Coney's

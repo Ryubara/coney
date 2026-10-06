@@ -42,7 +42,7 @@ TEST_CASE("front-end services: movies go to the attached player, or are skipped"
     std::vector<std::string> log;
     coney::FrontEndServices services([&log](std::string_view line) { log.emplace_back(line); });
     services.playMovie("LOGO");
-    CHECK(log.back() == "movie: LOGO skipped (no movie player yet)\n");
+    CHECK(log.back() == "movie: LOGO skipped (no movie player)\n");
 
     RecordingPlayer player;
     services.attachMoviePlayer(&player);

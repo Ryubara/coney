@@ -278,8 +278,21 @@ more, not the movie's frame count. Confirmed (code).
 
 ## Coney's implementation
 
-None yet: Coney skips every movie as if it had ended at once ([Front end](frontend.md#coneys-implementation)). A
-faithful player needs a Bink 1 (revision `i`) video decoder and the Bink audio DCT decoder; the rest is this page.
+`movies::MovieMode` (`src/movies/movie_mode.h`) is the player, a game mode that each `Movie_Play` request pushes over
+its caller, which waits beneath it until the movie ends: the start-up movies, the attract movie, a level's intro.
+FFmpeg's Bink demuxer and its Bink video and audio (DCT) decoders read `PSS/<NAME>.BIK` from the disc
+(`src/platform/ffmpeg_movie_decoder.h`, the build: [Building](../guides/building.md#ffmpeg)). As this page says: the
+frames unscaled and centred over black, the last frame never shown, every other sound stopped first and the movie's
+at 80 % volume, any button but the sticks skipping every movie but `LOGO`, the captions from the level's Subtitles
+chunk and `<movie>_sub.scn` in steps of 0.166 s, drawn only with the subtitle option for ordinary ones. Unit tests
+over a fake decoder (`tests/movies/`) and the disc check `coney_tests "[disc][movies]"` (`LOGO`: 115 frames, 368,640
+16-bit samples).
+
+**Coney stand-ins:** the movie's clock is the game's fixed step, not Bink's real-time pacing, so test mode runs the
+same every time (a 29.97 movie shows no new frame on about one step in a thousand); YUV to RGB uses the BT.601 studio
+matrix; the captions are read from `level<n>.lev` for `L<n>_IN` and `L<n>_OUT` whatever level is loaded, and drawn in
+`big_font`; the movie sound plays on the mixer's music bus; the screen-effects fade-out after a movie is not set
+(the front end's own fades follow). `--skip-movies` skips every movie, as before Coney played them.
 
 ## Open questions {#open-questions}
 
@@ -290,3 +303,4 @@ faithful player needs a Bink 1 (revision `i`) video decoder and the Bink audio D
 - The caption font sheet, and what `Font_Draw`'s flags 4 and 3 select.
 - Who calls the callback list `0x005e4448`, and what `0x00145670` does on a skip.
 - Runtime check of the 80 % movie volume, the caption placement and the skip rule.
+- Which YUV to RGB matrix Bink's EE conversion uses (Coney uses BT.601 studio range).

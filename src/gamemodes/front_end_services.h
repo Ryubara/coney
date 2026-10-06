@@ -50,8 +50,8 @@ class FrontEndAudio {
 /// - **Banks, music and cues** go to the FrontEndAudio attached with attachAudio(); without one they are only recorded.
 ///   The current bank and track are remembered, so "load `menu` unless it is current" behaves as in the original.
 /// - **Movies** go to the movie player attached with attachMoviePlayer(); without one each is skipped, as if it had
-///   ended at once: Coney has no video decoder yet (Coney's choice; the original blocks until the movie ends). The
-///   music stops first either way, as `Movie_Play` stops it.
+///   ended at once (the unit tests' runs; the original blocks until the movie ends). The music stops first either way,
+///   as `Movie_Play` stops it; with a movie playing, movies::MovieMode stops every other sound.
 /// - **Lua calls** go to the script system attached with attachScripts(); without one (or before its state exists)
 ///   they are skipped.
 ///

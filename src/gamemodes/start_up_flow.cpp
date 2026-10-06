@@ -66,13 +66,15 @@ void StartUpFlow::start() {
     if (m_hasScripts) {
         m_scripts.create();
     }
-    for (const std::string_view movie : kStartUpMovies) {
-        playMovie(movie);
-    }
     m_stack.push(m_levelFlow);
     m_memoryCard.setBootCheck();
     m_stack.push(m_memoryCard);
     m_stack.push(m_legal);
+    // The original's main plays the start-up movies before it pushes the modes; Coney's movie player is a mode that
+    // goes over the top of the stack, so the movies are asked for after the pushes and still play first.
+    for (const std::string_view movie : kStartUpMovies) {
+        playMovie(movie);
+    }
 }
 
 void StartUpFlow::showProfileManager(std::string_view onRumble, std::string_view onStartGame) {

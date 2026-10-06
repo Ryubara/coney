@@ -147,6 +147,9 @@ struct Options {
     /// was mixed at the end; a check of the sound output. Cannot be combined with `--no-audio`, `--load` or
     /// `--render-references`.
     bool audioTest = false;
+    /// `--skip-movies`: every movie is skipped at once, as if it had ended
+    /// (docs/research/movies.md#coneys-implementation).
+    bool skipMovies = false;
 };
 
 /// The largest `--fps-cap`.

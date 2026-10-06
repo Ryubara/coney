@@ -10,10 +10,9 @@
 namespace coney {
 
 /// The movie player as the game modes ask it (`Movie_Play`, `0x0042a938`): play the movie `name` (`LOGO`, `L1_IN`,
-/// `L99_IN`) to its end or until it is skipped, then return. The original blocks until the movie ends, stops the music
-/// first and leaves the screen black after it (docs/research/frontend.md#movies). The platform layer implements it
-/// once Coney decodes the disc's movies (movies.md is being researched); until then FrontEndServices skips each movie
-/// as if it had ended at once.
+/// `L99_IN`) to its end or until it is skipped. The original blocks until the movie ends, stops the music
+/// first and leaves the screen black after it (docs/research/frontend.md#movies). movies::MovieMode implements it
+/// (src/movies/movie_mode.h); without one attached, FrontEndServices skips each movie as if it had ended at once.
 ///
 /// Research: docs/research/frontend.md#movies, docs/research/boot.md#main
 class MoviePlayer {

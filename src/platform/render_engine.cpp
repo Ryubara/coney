@@ -15,6 +15,7 @@
 #include <rw.h>
 
 #include "core/assert.h"
+#include "platform/movie_screen.h"
 #include "platform/sprite_sheets.h"
 #include "platform/world_atomic.h"
 
@@ -212,9 +213,14 @@ void RenderEngine::drawQuads(const graphics::Texture* texture, std::span<const g
     }
     rw::Raster* raster = nullptr;
     if (texture != nullptr) {
-        const auto* sheetTexture = dynamic_cast<const SheetTexture*>(texture);
-        CONEY_ASSERT(sheetTexture != nullptr);
-        rw::Texture* rwTexture = sheetTexture->rwTexture();
+        // A sprite sheet's texture, or a movie's frame (platform/movie_screen.h).
+        rw::Texture* rwTexture = nullptr;
+        if (const auto* sheetTexture = dynamic_cast<const SheetTexture*>(texture); sheetTexture != nullptr) {
+            rwTexture = sheetTexture->rwTexture();
+        } else if (const auto* movieTexture = dynamic_cast<const MovieTexture*>(texture); movieTexture != nullptr) {
+            rwTexture = movieTexture->rwTexture();
+        }
+        CONEY_ASSERT(rwTexture != nullptr);
         raster = rwTexture->raster;
         // The texture's own filtering (most of the game's textures ask for linear), clamped at the edges so a
         // rectangle that reaches the texture's border does not pick up texels from the opposite side.

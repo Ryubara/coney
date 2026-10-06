@@ -190,5 +190,5 @@ ranges = [[0x0044e060, 0x004aa000]]
 [[middleware]]
 name = "SCE libraries, C/C++ runtimes, Bink, crt0"
 bytes = 340560
-replaced_by = "SDL3 and the C++ standard library; Bink movies not decided yet"
+replaced_by = "SDL3, the C++ standard library, and FFmpeg's Bink decoders for the movies"
 ranges = [[0x00100000, 0x00100200], [0x0042b040, 0x0044e060], [0x004aa000, 0x004da118]]

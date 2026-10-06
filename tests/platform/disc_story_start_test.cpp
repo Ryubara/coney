@@ -233,7 +233,7 @@ TEST_CASE("the disc's STORY reaches Rembrandt standing in level99 under the pad'
     timer.setFixedStep(true);
 
     // Through the menus into the level: the profile screens, a new profile, and by frame 460 gameplay is on top with
-    // level99 loaded and its intro movie asked for (skipped: no movie player yet).
+    // level99 loaded and its intro movie asked for (skipped: the test attaches no movie player).
     stack.runUntilEmpty(timer, {}, 460);
     for (const std::string& line : log) {
         UNSCOPED_INFO(line);

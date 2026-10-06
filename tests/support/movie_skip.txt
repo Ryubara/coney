@@ -1,0 +1,4 @@
+# Skips the start-up movies with the pad: LOGO cannot be skipped and ends at step 115; a tap skips PLOGO, then
+# another L1_IN. Format: docs/guides/building.md#input-scripts
+130 tap cross
+140 tap cross

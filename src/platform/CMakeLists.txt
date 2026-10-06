@@ -25,7 +25,7 @@ target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
 target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
 # The trimmed FFmpeg that decodes the Bink movies (docs/guides/building.md#ffmpeg); only src/platform/ sees it.
-target_sources(coney_platform PRIVATE ffmpeg_info.cpp)
+target_sources(coney_platform PRIVATE ffmpeg_info.cpp ffmpeg_movie_decoder.cpp movie_screen.cpp)
 # Failures end the process on stderr, never in a dialog waiting for a click (test runs, CI, agents).
 target_sources(coney_platform PRIVATE error_dialogs.cpp)
 # The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
@@ -35,7 +35,7 @@ target_sources(coney_platform PRIVATE profile_folder.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
 target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp)
 coney_target_defaults(coney_platform)
-target_link_libraries(coney_platform PUBLIC coney_core coney_audio SDL3::SDL3-static librw::librw imgui)
+target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies SDL3::SDL3-static librw::librw imgui)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink)
 
 add_executable(coney main.cpp)
@@ -89,16 +89,23 @@ set_tests_properties(coney.rejects_bad_tunables PROPERTIES WILL_FAIL TRUE)
 # must reach PM_Mode (docs/research/frontend.md#coneys-implementation). It prints states only, never game data.
 if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
     add_test(NAME coney.reaches_main_menu
-             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 310
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 310 --skip-movies
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/start_menu.txt")
     set_tests_properties(coney.reaches_main_menu PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "profile manager: PM_Mode")
     # STORY with a new profile through the profile screens into level99 at checkpoint 1, headless
     # (docs/guides/building.md#input-scripts). States only.
     add_test(NAME coney.story_reaches_level99
-             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 570
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 570 --skip-movies
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/story_new_profile.txt")
     set_tests_properties(coney.story_reaches_level99 PROPERTIES TIMEOUT 120
                          PASS_REGULAR_EXPRESSION "movie: L99_IN")
+    # The start-up movies headless (docs/research/movies.md#coneys-implementation): LOGO plays to its end, a tap skips
+    # PLOGO and another L1_IN; then the legal screen. Counts only.
+    add_test(NAME coney.plays_movies
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 160
+                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/movie_skip.txt")
+    set_tests_properties(coney.plays_movies PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION
+                         "LOGO ended after 114 frames.*PLOGO skipped.*L1_IN skipped.*movies: 3 played \\(2 skipped")
     # The character viewer headless: Rembrandt loaded through the Character List, the orbit camera driven by partial
     # stick deflections and a clip change, 90 frames (docs/guides/building.md#the-character-viewer). Counts only.
     add_test(NAME coney.views_character

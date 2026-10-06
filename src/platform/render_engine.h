@@ -94,9 +94,9 @@ class RenderEngine final : public graphics::RenderDevice {
     [[nodiscard]] graphics::ScreenRect logicalViewport() const { return m_viewport; }
 
     /// Draws `quads`, given in logical pixels, mapped onto the logical screen's place in the window. `texture` must
-    /// be a SheetTexture (src/platform/sprite_sheets.h) converted for drawing, or null for flat colour. The texture's
-    /// own filter mode is used, with clamped addressing. Only between beginFrame() and present() (checked by
-    /// CONEY_ASSERT); draws nothing with the NULL backend.
+    /// be a SheetTexture (src/platform/sprite_sheets.h) converted for drawing, a MovieTexture (movie_screen.h), or null
+    /// for flat colour. The texture's own filter mode is used, with clamped addressing. Only between beginFrame() and
+    /// present() (checked by CONEY_ASSERT); draws nothing with the NULL backend.
     void drawQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) override;
 
     /// Draws flat-coloured `quads` given in window pixels (from the top left), blended by their alpha, in the 2D

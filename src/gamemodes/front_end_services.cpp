@@ -50,7 +50,7 @@ void FrontEndServices::playMovie(std::string_view name) {
     // Movie_Play stops the music before it plays.
     stopMusic();
     if (m_moviePlayer == nullptr) {
-        write(std::format("movie: {} skipped (no movie player yet)\n", name));
+        write(std::format("movie: {} skipped (no movie player)\n", name));
         return;
     }
     write(std::format("movie: {}\n", name));

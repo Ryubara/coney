@@ -30,6 +30,7 @@ constexpr std::string_view kUsage =
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--show-fps] [--no-audio | --audio-test]\n"
+    "             [--skip-movies]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -81,6 +82,8 @@ constexpr std::string_view kUsage =
     "  --vsync on|off     wait for the display's vertical blank when presenting (default on)\n"
     "  --show-fps         print the frame and step rates once a second\n"
     "  --no-audio         run with no sound output (no audio device is opened)\n"
+    "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
+    "                     test mode too; any pad button skips one, as in the game)\n"
     "  --audio-test       play a synthesised tone sweep, looping, and print what was mixed at the end;\n"
     "                     in test mode no device opens and the sound is mixed offline\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI. Test mode: with\n"
@@ -575,6 +578,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.vsync = setting == "on";
         } else if (arg == "--no-audio") {
             options.noAudio = true;
+        } else if (arg == "--skip-movies") {
+            options.skipMovies = true;
         } else if (arg == "--audio-test") {
             options.audioTest = true;
         } else if (arg == "--show-fps") {

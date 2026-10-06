@@ -32,6 +32,8 @@ add_executable(coney_tests
     gamemodes/pause_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
     gamemodes/movie_player_test.cpp
+    movies/captions_test.cpp
+    movies/movie_mode_test.cpp
     gamemodes/sheet_viewer_mode_test.cpp
     gamemodes/start_up_flow_test.cpp
     gamemodes/rumble_start_test.cpp
@@ -66,6 +68,7 @@ add_executable(coney_tests
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
+    platform/disc_movies_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/ffmpeg_info_test.cpp

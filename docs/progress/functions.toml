@@ -1504,6 +1504,42 @@ subsystem = "GUI"
 size = 456
 
 [[function]]
+address = 0x001ca950
+name = "Captions_Draw"
+subsystem = "GUI"
+size = 576
+
+[[function]]
+address = 0x001cab90
+name = "Subtitles_ChunkHandler"
+subsystem = "GUI"
+size = 48
+
+[[function]]
+address = 0x001cabc0
+name = "Captions_Init"
+subsystem = "GUI"
+size = 184
+
+[[function]]
+address = 0x001cad38
+name = "Captions_SelectScene"
+subsystem = "GUI"
+size = 288
+
+[[function]]
+address = 0x001cb010
+name = "Captions_SetKind"
+subsystem = "GUI"
+size = 384
+
+[[function]]
+address = 0x001cb190
+name = "Captions_Next"
+subsystem = "GUI"
+size = 208
+
+[[function]]
 address = 0x001cc1a0
 name = "NameKeyboard::NameKeyboard"
 subsystem = "GUI"
@@ -5655,6 +5691,30 @@ address = 0x00424130
 name = "Unlocks_IsDataUnlocked"
 subsystem = "Warriors"
 size = 168
+
+[[function]]
+address = 0x00429b18
+name = "Movie_BuildUploadPacket"
+subsystem = "Movie"
+size = 776
+
+[[function]]
+address = 0x00429fe8
+name = "BinkMovie_Play"
+subsystem = "Movie"
+size = 1752
+
+[[function]]
+address = 0x0042a718
+name = "Movie_AdvanceCaptions"
+subsystem = "Movie"
+size = 216
+
+[[function]]
+address = 0x0042a820
+name = "Movie_CheckSkip"
+subsystem = "Movie"
+size = 272
 
 [[function]]
 address = 0x0042a938

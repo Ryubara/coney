@@ -957,16 +957,16 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | Done | Screen or feature | Coney today | Needed to match |
 | --- | --- | --- | --- |
 | [x] | Legal screen | the picture, overfilled, 5 s | nothing |
-| [ ] | Start-up movies | skipped through the `MoviePlayer` hook; the music stops and the screen is left black | a player for `LOGO`, `PLOGO`, `L1_IN`, START skipping ([Movies](#movies)) |
+| [x] | Start-up movies | `LOGO`, `PLOGO`, `L1_IN` played with sound; any button skips all but `LOGO` ([Movies](movies.md#coneys-implementation)) | nothing |
 | [ ] | Mode 6 | reads the profile folder (boot, RELOAD PROFILES); `0xb5` centred for 3 s in the message box, then the menus; no card, so no scan or dialog | the card dialogs; which one a boot with no card shows ([message box](#message-box)) |
 | [ ] | 3D background | `level100`'s world from the scene's first camera pose; the sign; the spawned objects drawn once a scene binds them | the `WonderWheel_100` scene and its camera, lights, the tint ([Background](#background)) |
 | [ ] | Menu music | the `menu` bank and the cues go to the `FrontEndAudio` hook; recorded and logged without one | `music/wonderwheel_132b` looped by `Menu.startScene`, `MenuTrack` by `launchRMI`; the `menu` bank's cues ([Sound](sound.md)) |
 | [x] | Fades | out over `t − 0.2` s, in from black, the one-frame start, clamped (one manager: one view) | the real speed (open: [Fades](#fades)) |
 | [x] | PM_Greet | as the original (`0x76`, logo, blink, 70 s attract call) | nothing (the attract movie: below) |
-| [ ] | Attract loop | `Menu.playMovie(2)` called, movie skipped | the `L1_IN` movie with the fades around it ([Movies](#movies)) |
+| [ ] | Attract loop | `Menu.playMovie(2)` called, `L1_IN` played | the fades around it ([Movies](#movies)) |
 | [x] | PM_Mode | rows {2, 1} at (0, 0.76), red / grey 178, size 1.15, the red `" : "`, cues 5 / `0xe` | nothing |
 | [x] | Usage line | left at (0, 0.87), two lines | nothing |
-| [x] | PM_Extras | TRAILER at (0, 0.81); accept calls `Menu.playMovie(1)` | the movie itself ([Movies](#movies)) |
+| [x] | PM_Extras | TRAILER at (0, 0.81); accept calls `Menu.playMovie(1)`, which plays the trailer | nothing |
 | [x] | PM_NumPlayers | rows {2}, the blinking `0x77`, pad 2's START | nothing known |
 | [x] | PM_Profile | title `0x7b`, up to four items placed by count; reload | nothing known |
 | [x] | PM_Create | the 12-12-12-11 keyboard, the 8-character name, its cues and the duplicate check | the keyboard's moves and the "name used" text's lifetime are Coney's |
@@ -987,11 +987,12 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 
 **The start-up path** (`src/gamemodes/start_up_flow.h`, `StartUpFlow`), written from [the flow](#mode-flow) and
 [Boot](boot.md#main): `coney --disc <disc>` with no tool option makes the script system (the Lua state), then does what
-`main` does from the movies on: the three start-up movies (skipped, below), push mode 8, ask for the memory-card boot
-check, push mode 6, push mode 5. Mode 5 runs first; on the NTSC-U disc the main menu is reached as follows (frames of
-the 1/30 s step): legal screen frames 0-149, mode 6 frames 150-240 (the 3 s message), mode 8 frame 241 (it pushes
-0x12), PM_Greet from frame 242, PM_Mode on the frame START is pressed (in the frame-scripted tests, without the
-message: mode 6 frame 150, mode 8 frame 151, PM_Greet from frame 152).
+`main` does from the movies on: push mode 8, ask for the memory-card boot check, push mode 6, push mode 5, then the
+three start-up movies (below), which play first, over mode 5. With `--skip-movies`, mode 5 runs first and on the
+NTSC-U disc the main menu is reached as follows (frames of the 1/30 s step): legal screen frames 0-149, mode 6 frames
+150-240 (the 3 s message), mode 8 frame 241 (it pushes 0x12), PM_Greet from frame 242, PM_Mode on the frame START is
+pressed (in the frame-scripted tests, without the message: mode 6 frame 150, mode 8 frame 151, PM_Greet from frame
+152).
 
 **Mode 5, the legal screen** (`src/gamemodes/legal_screen_mode.h`, `LegalScreenMode`), written from
 [the flow](#mode-flow) and [Graphics](graphics.md#first-screen):
@@ -1237,12 +1238,11 @@ or right.
 sound cues are recorded, logged and passed to the `FrontEndAudio` attached to it (the audio backend's player, when it
 is wired); without one they are only recorded. The bank in sound RAM is remembered, so mode 0x12 loads `menu` only when
 it is not current, as the original does. Movies (`LOGO`, `PLOGO`, `L1_IN` at start-up, the attract movie, a level's
-intro such as `L99_IN`) go to the `MoviePlayer` attached to it (`src/gamemodes/movie_player.h`, `Movie_Play`); a movie
-stops the music first and leaves the screen black (a 0-second fade out), so the menus' own fade in brings the picture
-back, as after `Movie_Play`. Lua calls are logged and handed to the script system. Without scripts, the level flow
-shows the menus itself and fades in over 1.5 s as `Menu.onStart` does. **Coney's choice for movies:** no player is
-attached yet (Coney has no video decoder), so each movie is skipped as if it had ended at once; the original blocks
-until it ends.
+intro such as `L99_IN`) go to the `MoviePlayer` attached to it (`src/gamemodes/movie_player.h`, `Movie_Play`): Coney's
+movie player ([Movies](movies.md#coneys-implementation)). A movie stops the music first and leaves the screen black (a
+0-second fade out), so the menus' own fade in brings the picture back, as after `Movie_Play`. Lua calls are logged and
+handed to the script system. Without scripts, the level flow shows the menus itself and fades in over 1.5 s as
+`Menu.onStart` does. Without a movie player (the unit tests), each movie is skipped as if it had ended at once.
 
 **Disc check (NTSC-U, 2026-10-04, states only):** `coney_tests "[disc][frontend]"` with `CONEY_DISC` set runs the
 start-up path headless with the disc's sheets and the game's own scripts: PM_Greet is on top by frame 160 with every

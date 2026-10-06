@@ -298,4 +298,9 @@ add_library(
     audio/test_tone.cpp)
 coney_target_defaults(coney_audio)
 target_link_libraries(coney_audio PUBLIC coney_core)
+# The movie player: the Bink movies through a decoder the platform supplies, their sound on the mixer and their
+# captions (docs/research/movies.md#coneys-implementation).
+add_library(coney_movies STATIC movies/captions.cpp movies/disc_captions.cpp movies/movie_mode.cpp)
+coney_target_defaults(coney_movies)
+target_link_libraries(coney_movies PUBLIC coney_core coney_audio)
 add_subdirectory(platform)

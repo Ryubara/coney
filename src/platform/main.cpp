@@ -57,13 +57,17 @@
 #include "gui/text_layout.h"
 #include "human/locomotion.h"
 #include "human/player.h"
+#include "movies/disc_captions.h"
+#include "movies/movie_mode.h"
 #include "platform/audio_output.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
+#include "platform/ffmpeg_movie_decoder.h"
 #include "platform/frame_pacer.h"
 #include "platform/front_end_scene.h"
 #include "platform/imgui_overlay.h"
+#include "platform/movie_screen.h"
 #include "platform/play_level_mode.h"
 #include "platform/profile_folder.h"
 #include "platform/reference_renderer.h"
@@ -455,6 +459,10 @@ int main(int argc, char** argv) {
     };
     coney::gui::GlobalStrings strings;
     std::optional<coney::StartUpFlow> startUp;
+    // The movie player over the start-up flow, its screen and the font of its captions.
+    std::optional<coney::platform::RasterMovieScreen> movieScreen;
+    std::optional<coney::graphics::Font> captionFont;
+    std::optional<coney::movies::MovieMode> movieMode;
     std::optional<coney::platform::TextureViewerMode> viewer;
     std::optional<coney::SheetViewerMode> sheetViewer;
     std::optional<coney::TextViewerMode> textViewer;
@@ -705,6 +713,24 @@ int main(int argc, char** argv) {
             startUp->state().random.setTable(table);
         }
         startUp->gameplay().setSceneMaker(sceneMaker);
+        // The movie player (docs/research/movies.md#coneys-implementation): every movie the flow asks for, its sound on
+        // the mixer once the sound output starts (below), drawn when the renderer draws pixels.
+        if (renderer.drawsPixels()) {
+            movieScreen.emplace();
+        }
+        coney::movies::MovieSettings movieSettings;
+        movieSettings.present = renderer.drawsPixels();
+        movieSettings.skipAll = options->skipMovies;
+        movieSettings.subtitlesOn = [&startUp] { return startUp->state().subtitles; };
+        movieMode.emplace(modes, renderer, coney::platform::discMovieOpener(wad->disc()),
+                          movieScreen ? &*movieScreen : nullptr, nullptr, std::move(movieSettings), printText);
+        movieMode->setCaptionSource(
+            coney::movies::wadCaptionSource(*wad, [&startUp] { return startUp->state().language; }));
+        if (auto font = loadSheet(coney::gui::kBigFontSheet).and_then(coney::graphics::Font::fromSheet); font) {
+            captionFont.emplace(std::move(*font));
+            movieMode->setCaptionFont(&*captionFont);
+        }
+        startUp->services().attachMoviePlayer(&*movieMode);
         startUp->start();
     } else {
         // No disc: no game to run, only the idle screen.
@@ -781,6 +807,9 @@ int main(int argc, char** argv) {
             audio = std::move(*started);
             playSounds = &audio->sounds();
             objectSounds.setPlayer(&audio->sounds());
+            if (movieMode) {
+                movieMode->setMixer(&audio->sounds().mixer());
+            }
             if (!testMode) {
                 printText(audio->startLine());
             }
@@ -1063,6 +1092,13 @@ int main(int argc, char** argv) {
             storyLevel != nullptr) {
             printText(storyLevel->summary());
         }
+    }
+    if (movieMode && movieMode->counts().movies > 0) {
+        const coney::movies::MovieMode::Counts& counts = movieMode->counts();
+        printText(std::format("movies: {} played ({} skipped, {} failed), {} frames decoded, {} shown, {} sound "
+                              "samples, {} captions\n",
+                              counts.movies, counts.skipped, counts.failed, counts.framesDecoded, counts.framesShown,
+                              counts.samples, counts.captionsShown));
     }
     if (sandboxViewer) {
         printText(sandboxViewer->summary());

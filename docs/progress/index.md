@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 10.7%](https://img.shields.io/badge/reimplemented-10.7%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 10.8%](https://img.shields.io/badge/reimplemented-10.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▏░░░░░░░░░░░░░░░░░` | 10.7% of the game's own code (358,652 of 3,354,776 bytes, 982 functions) |
+| **Reimplemented** | `██▏░░░░░░░░░░░░░░░░░` | 10.8% of the game's own code (363,356 of 3,354,776 bytes, 992 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 6 | 7,120 |
 | `GameModes` | `█████░░░░░░░░░░░░░░░` | 25.0% | 63 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 54 | 195,624 |
-| `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.4% | 122 | 497,416 |
+| `GUI` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 128 | 497,416 |
 | `Human` | `██▏░░░░░░░░░░░░░░░░░` | 10.6% | 290 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
@@ -75,7 +75,7 @@ at the top of the repository's `README.md`.
 | `World` | `▎░░░░░░░░░░░░░░░░░░░` | 1.1% | 28 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
 | `Warriors` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 71 | 54,264 |
-| `Movie` | `██████▊░░░░░░░░░░░░░` | 33.9% | 1 | 5,208 |
+| `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
 
@@ -98,7 +98,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- |
 | Lua 4.0.1 and tolua | 2.0% | 82,440 | a Lua 4.0 interpreter (roadmap: Scripts) |
 | RenderWare Graphics | 9.1% | 376,960 | librw |
-| SCE libraries, C/C++ runtimes, Bink, crt0 | 8.2% | 340,560 | SDL3 and the C++ standard library; Bink movies not decided yet |
+| SCE libraries, C/C++ runtimes, Bink, crt0 | 8.2% | 340,560 | SDL3, the C++ standard library, and FFmpeg's Bink decoders for the movies |
 
 ## Reimplemented functions
 
@@ -369,6 +369,12 @@ at the top of the repository's `README.md`.
 | `0x001c81e8` | `ScreenFlowController_Unwind` | `GUI` | 256 |
 | `0x001c82e8` | `ScreenFlowController_Pop` | `GUI` | 224 |
 | `0x001c83c8` | `ScreenFlowController_Update` | `GUI` | 456 |
+| `0x001ca950` | `Captions_Draw` | `GUI` | 576 |
+| `0x001cab90` | `Subtitles_ChunkHandler` | `GUI` | 48 |
+| `0x001cabc0` | `Captions_Init` | `GUI` | 184 |
+| `0x001cad38` | `Captions_SelectScene` | `GUI` | 288 |
+| `0x001cb010` | `Captions_SetKind` | `GUI` | 384 |
+| `0x001cb190` | `Captions_Next` | `GUI` | 208 |
 | `0x001cc1a0` | `NameKeyboard::NameKeyboard` | `GUI` | 112 |
 | `0x001cca80` | `NameKeyboard::HandleCommand` | `GUI` | 648 |
 | `0x001ccf88` | `TextWidget::TextWidget` | `GUI` | 56 |
@@ -1085,6 +1091,10 @@ at the top of the repository's `README.md`.
 | `0x00423988` | `UM_IsTypeDirty` | `Warriors` | 40 |
 | `0x004239b0` | `UM_IsDataDirty` | `Warriors` | 48 |
 | `0x00424130` | `Unlocks_IsDataUnlocked` | `Warriors` | 168 |
+| `0x00429b18` | `Movie_BuildUploadPacket` | `Movie` | 776 |
+| `0x00429fe8` | `BinkMovie_Play` | `Movie` | 1,752 |
+| `0x0042a718` | `Movie_AdvanceCaptions` | `Movie` | 216 |
+| `0x0042a820` | `Movie_CheckSkip` | `Movie` | 272 |
 | `0x0042a938` | `Movie_Play` | `Movie` | 1,768 |
 <!-- progress:end -->
 

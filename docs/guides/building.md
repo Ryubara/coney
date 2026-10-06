@@ -132,12 +132,13 @@ and stops headless, prints its help, refuses a bad argument, refuses `--load`, `
 disc that does not exist, refuses `--fps-cap` in test mode, plays a synthetic input script
 (`tests/support/menu_input.txt`) and refuses one that does not exist, opens [the debug menu](debug-menu.md) with the pad
 chord and walks it to a native call (`coney.debug_menu_by_pad`, `tests/support/debug_menu.txt`), and refuses a tunables
-file that is not one. With `CONEY_DISC` set when CMake configures, three more run `coney --disc`: to the main menu
-(`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a scripted orbit (`coney.views_character`,
+file that is not one. With `CONEY_DISC` set when CMake configures, more run `coney --disc`: the start-up movies, `LOGO`
+played out and the others skipped by a scripted pad (`coney.plays_movies`, `tests/support/movie_skip.txt`), to the
+main menu (`coney.reaches_main_menu`), Rembrandt's clips in the character viewer under a scripted orbit (`coney.views_character`,
 `tests/support/character_orbit.txt`), and level99 played headless under a scripted pad (`coney.plays_level`,
 `tests/support/play_walk.txt`). The unit tests build their disc images, archives, RenderWare texture dictionaries,
 streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the game or a GPU (the librw tests run librw
-on its NULL device). Fourteen tests check your own disc: every texture dictionary; every sprite sheet, font and the
+on its NULL device). Fifteen tests check your own disc: every texture dictionary; every sprite sheet, font and the
 sheet table; every streamed world with the atomics of its parts (`[world]`, about a second); every level's worlds
 streamed under a scripted camera path, with the streaming's invariants checked every frame (`[world_streaming]`, about
 30 seconds); the UI strings of all five languages, run through the game's own Lua scripts (`[strings]`); the two text
@@ -155,7 +156,8 @@ Rembrandt's Anim Range List with a damage for every attack and the grab and tack
 sandbox's fight yard doing a combo, a grab with a strike, spins and a throw, a tackle and a mugging on a passive target
 (`[combat]`); and Rembrandt at level99's start, walked, run, turned, stopped and run into the scenery by scripted
 partial stick deflections, with his speeds and clips checked against the research (`[player]`), and played again through
-the main loop at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`). They
+the main loop at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`); and
+`LOGO` decoded through FFmpeg to its 115 frames and its sound, and `L99_IN`'s six captions found (`[movies]`). They
 run only when the environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts
 only:
 
@@ -181,6 +183,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
                    [--scene NAME]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE] [--no-audio | --audio-test]
+      [--skip-movies]
       [--profiles DIR] [--dev-overlay N]
 ```
 
@@ -253,18 +256,21 @@ holding `WARRIORS.DIR` and `WARRIORS.WAD`, or an ISO 9660 image of the disc (the
 takes, see [The coney-tools command line](coney-tools.md#naming-the-disc)). Coney reads `WARRIORS.DIR`, checks it
 against `WARRIORS.WAD`, and prints how many entries it lists.
 
-With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes: the legal screen for five
-seconds (150 frames; no button skips it, as in the original), the memory-card check's "checking" message for three
-seconds (90 frames), then the menus' first screen over `level100`'s world, the game's logo and a blinking "press
-START" (from frame 242). START leads to the main menu (story, extras, quick rumble); the d-pad or the left stick moves,
-cross chooses and triangle or circle goes back. There is no sound and no movie yet: Coney prints a line for each movie,
-music and sound it skips, and one for each screen it reaches
+With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes. First the start-up movies
+play with their sound (`LOGO`, `PLOGO`, then the intro `L1_IN`; [Movies](../research/movies.md#coneys-implementation)):
+any pad button skips one, except `LOGO`, which always plays its 3.8 s. `--skip-movies` skips every movie at once; the
+frame numbers below count from the legal screen, as they do with it. Then the legal screen for five seconds (150
+frames; no button skips it, as in the original), the memory-card check's "checking" message for three seconds (90
+frames), then the menus' first screen over `level100`'s world, the game's logo and a blinking "press START" (from frame
+242). START leads to the main menu (story, extras, quick rumble); the d-pad or the left stick moves, cross chooses and
+triangle or circle goes back. Coney prints a line for each movie, music and sound it plays or skips, and one for each
+screen it reaches
 ([Front end](../research/frontend.md#coneys-implementation)). `--language CODE` picks the strings and the legal
 screen.
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --frames 3 --screenshot ../../scratch/legal.png
-build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 310 --input-script tests/support/start_menu.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 310 --skip-movies --input-script tests/support/start_menu.txt
 ```
 
 The second line runs to the main menu without a window: its last line is `profile manager: PM_Mode`.
@@ -276,15 +282,15 @@ has no saves yet). The menus fade out and the game's own scripts take it from th
 `runNextMission(1)`, the mission-complete mode, `UnlockAndLoad`), to `level99` at checkpoint 1. Its level script
 creates Rembrandt, and Coney loads the level with him where the script put him, under your control
 ([Playing a level](#playing-a-level)), after the level's loading screen (its pictures, the timed bar and the fades, for
-about 3.2 s: [Level loading](../research/level-loading.md#coneys-implementation)). There is no intro movie (it is
-skipped), intro scene, tutorial or other character yet. The log shows the way: `profile manager: PM_Create` and the
-other screens, `profile manager: profile "A" created in slot 0`, `script: Menu.startGame()`, `mission complete: kind
-4`, `level flow: starting level99`, `loading screen: level99 (3 pictures: ...)`, `gameplay: level99 checkpoint 1:
-player 1 Rembrandt ...`, then `movie: L99_IN skipped`. The scripted way
+about 3.2 s: [Level loading](../research/level-loading.md#coneys-implementation)), and its intro movie `L99_IN` plays
+over it (skipped with `--skip-movies`). There is no intro scene, tutorial or other character yet. The log shows the
+way: `profile manager: PM_Create` and the other screens, `profile manager: profile "A" created in slot 0`, `script:
+Menu.startGame()`, `mission complete: kind 4`, `level flow: starting level99`, `loading screen: level99 (3 pictures:
+...)`, `gameplay: level99 checkpoint 1: player 1 Rembrandt ...`, then `movie: L99_IN`. The scripted way
 (`tests/support/story_new_profile.txt`: a one-letter name, the defaults, the cursor moved with the left stick at 70 %):
 
 ```sh
-build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 570 --input-script tests/support/story_new_profile.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 570 --skip-movies --input-script tests/support/story_new_profile.txt
 ```
 
 The loading screen shows from about frame 452 and level99 plays from frame 548.

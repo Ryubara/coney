@@ -66,10 +66,10 @@ class StartUpFlow final : public script::BindingHost {
                 const std::optional<std::filesystem::path>& profileFolder = std::nullopt,
                 std::uint64_t cardCheckingMs = 0);
 
-    /// What `main` does from the subsystems' start on: makes the Lua state (`Game_InitializeSubsystems`), plays the
-    /// start-up movies (skipped: FrontEndServices), pushes the level flow, asks for the memory-card boot check, pushes
-    /// the memory-card mode, then the legal screen, which runs first. Coney leaves out the controller check and its
-    /// error mode (the pads are always read).
+    /// What `main` does from the subsystems' start on: makes the Lua state (`Game_InitializeSubsystems`), pushes the
+    /// level flow, asks for the memory-card boot check, pushes the memory-card mode, then the legal screen, and asks
+    /// for the start-up movies, which the movie player pushes over them all so they play first (the original plays them
+    /// before the pushes). Coney leaves out the controller check and its error mode (the pads are always read).
     void start();
 
     /// The services the modes share.
