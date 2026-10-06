@@ -111,7 +111,8 @@ class PauseMode;
 ///   the human `CamSetSecondary` names through the scripts' hold on the brains (its live position).
 /// - Each frame after the level's step: the animation callbacks of the anims the scripts' humans started, then the
 ///   volume boxes' trigger update over those humans (their messages to the objects' handlers in `context`), then the
-///   scripts' frame (scheduled calls and the stopwatch).
+///   players' frame (runPlayerFrame(): the Lua pad handlers, the stopwatch, the wanted timers), then the scripts'
+///   frame (scheduled calls).
 /// - The level's scenes (setSceneMaker()) are made before its script, as `context`'s scene system, and handed to the
 ///   level in its ScriptedCast, which hosts and steps them; their callbacks call the scripts. Without a maker the
 ///   scene bindings run Coney's stand-in (docs/research/scenes.md#coneys-implementation).
@@ -120,7 +121,8 @@ class PauseMode;
 /// - The level's glass panes and doors (world_objects::LevelObjects, docs/research/objects.md) are gameplay's: the
 ///   bindings in `context` spawn them while the level script runs, with the glass types the boot scripts recorded
 ///   applied first; the level gives them its collision mesh and path data and steps them (ScriptedCast::objects).
-///   Their script callbacks, the `CrimeScene` flag and their sounds go through LevelObjectServices.
+///   Their script callbacks, the `CrimeScene` flag, their sounds, their crime reports and statistics (to the players'
+///   state, GameState::player) go through LevelObjectServices.
 /// - A level that fails to load leaves the frame black, with the error logged.
 /// - Leaving (exit) is `UnloadLevel`'s script part only: a fresh Lua state.
 ///

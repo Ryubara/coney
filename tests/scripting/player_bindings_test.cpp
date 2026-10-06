@@ -15,9 +15,12 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_math.h"
 #include "core/error.h"
 #include "core/pad.h"
 #include "core/pads.h"
+#include "gamemodes/level_object_services.h"
+#include "gamemodes/level_start.h"
 #include "gamemodes/player_frame.h"
 #include "gui/global_strings.h"
 #include "scripting/binding_args.h"
@@ -27,6 +30,7 @@
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "world_objects/flags.h"
 
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
@@ -249,4 +253,29 @@ TEST_CASE("SetCheckPoint takes the checkpoint copy a restart puts back", "[playe
     h.first("GiveMoney", {Value(70.0)});
     h.state.player.restoreCheckpoint();
     CHECK(h.number("InvGetMoney") == 30);
+}
+
+TEST_CASE("the level's objects report crimes and score statistics through the players' state", "[player_bindings]") {
+    Harness h;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    const double scene = flags.add(50.0, coney::kCrimeSceneFlag, {0.0F, 0.0F, 0.0F}, 0.0F).handle;
+    coney::LevelObjectServices services(h.scripts, flags, nullptr);
+    // Without the players, nothing is reported.
+    services.reportCrime(1, coney::anim::Vec3{1.0F, 2.0F, 3.0F}, 10.0);
+    CHECK(flags.find(scene)->position[0] == 0.0F);
+
+    services.setPlayers(&h.state, &h.humans);
+    h.state.player.crimes.setCallback("Record");
+    services.reportCrime(1, coney::anim::Vec3{1.0F, 2.0F, 3.0F}, 10.0);
+    CHECK(flags.find(scene)->position[2] == 3.0F); // the CrimeScene flag follows the crime
+    CHECK(h.recordedArgs.empty());                 // no gang in Coney's levels yet: no callback
+
+    h.state.player.stats.setPoints(4, 10, 50);
+    services.countPaneBroken(10.0);
+    services.countPaneBroken(11.0); // an AI human scores nothing
+    services.scoreEvent(10.0, 1, 3);
+    CHECK(h.state.player.stats.count(0, 4, 10) == 1);
+    CHECK(h.state.player.stats.count(0, 1, 3) == 1);
+    CHECK(h.state.player.stats.score(0) == 50);
 }

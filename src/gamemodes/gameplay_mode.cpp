@@ -23,7 +23,9 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
                            std::function<void(std::string_view)> log)
     : m_device(device), m_scripts(scripts), m_context(context), m_state(state), m_humans(humans), m_flags(flags),
       m_recorded(recorded), m_loader(std::move(loader)), m_log(std::move(log)),
-      m_objectServices(scripts, flags, nullptr) {}
+      m_objectServices(scripts, flags, nullptr) {
+    m_objectServices.setPlayers(&state, &humans);
+}
 
 GameplayMode::~GameplayMode() {
     endLevel();
@@ -228,7 +230,7 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_scripted->runAnimCallbacks();
     }
     updateBoxes(nowMs);
-    runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs);
+    runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
 
     // A script that teleported player 1 during the frame (the hub's door walk) moves him in the level.
