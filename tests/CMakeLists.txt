@@ -77,6 +77,7 @@ add_executable(coney_tests
     scripting/lua_chunk_test.cpp
     scripting/lua_libraries_test.cpp
     scripting/lua_vm_test.cpp
+    scripting/scene_bindings_test.cpp
     scripting/script_bindings_test.cpp
     scripting/script_system_test.cpp
     scripting/trigger_bindings_test.cpp
@@ -148,6 +149,11 @@ target_sources(coney_tests PRIVATE
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
     debug/combat_tunables_test.cpp)
+# Scenes: the records, the slots and the player (docs/research/scenes.md).
+target_sources(coney_tests PRIVATE
+    scenes/disc_scenes_test.cpp
+    scenes/scene_player_test.cpp
+    scenes/scene_record_test.cpp)
 # The sandbox and the collision writer it uses (docs/guides/sandbox.md).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp

@@ -158,7 +158,9 @@ Then **position keys** (16 bytes: `u16 frame`, 2 unused, `f32 x, y, z`), **rotat
 `s16 x, y, z` × 2⁻¹⁵, `w` rebuilt as in clips) filling the rest less the events, and the **events** (24 bytes: `u16
 frame`, `u16 type`, arguments) at the end. Frames are absolute (frame × 1/30 s is compared with the time), and
 between keys the runner interpolates positions linearly and rotations as quaternions (`0x00355ab8`). Confirmed (code)
-at `0x00355e98`, `0x00355ab8`.
+at `0x00355e98`, `0x00355ab8`. Like the role clips, **the header's camera track carries the whole scene's events**,
+counted from the scene's start: `l99_c1`'s (506 frames of keys) has events up to frame 1990, and its fades and caption
+controls fall where the scene needs them only when read that way. Inferred from the data.
 
 ### Events {#events}
 
@@ -479,7 +481,35 @@ caption is current for 8 to 546 frames, median 89 (3 s).
 
 ## Coney's implementation
 
-None yet. The reader for the disc check is `repo:python/src/coney_tools/scenes.py`.
+`repo:src/scenes/` is the format and the player, pure and deterministic: `scene_record.*` decodes header and segment
+records (role clips through the animation decoder, keyed tracks, events kept as stored), `scene_list.*` the scene list,
+`scene_cache.*` the 12 slots (requests, eviction, the callback on arrival, the two segment buffers), `scene_player.*`
+the scene task and the system the bindings work on, and `scene_host.h` what a scene asks of the game (humans, objects,
+camera, lights, screen effects, captions, sounds, rumble, brains), which the play mode implements. `scene_disc.*` reads
+`scene_list.cnk` and `<name>.scn` from the WAD. The bindings are `repo:src/scripting/scene_bindings.cpp` (the scene
+bindings above and the three `GoalJoin*` bindings that bind a role); global.lua's `SuperRunScene` path runs on them
+unchanged. The Python reader for the disc check is `repo:python/src/coney_tools/scenes.py`.
+
+**Disc test** (`[disc][scenes]`, counts only): `l99_c1` and `l99_c5` load with their 5 and 1 segments and play headless
+with the roles `level99_combat.lua` binds: 2,026 and 500 updates playing, every bound human on its start mark (to
+0.1 mm) at frame 0 and within 2 cm of its end mark at the end (on it, after a skip), one soundtrack prepared and started
+each.
+
+**Coney choices** where the page is silent:
+
+- A record arrives on the update after `ScenePreload` (Coney's reads are synchronous); a play binding reads it at once.
+- With no scene system (a test, or a mode that plays no scenes) `ScenePreload` and the three play bindings are a
+  stand-in that keeps the scripts' scene flow moving: a scene loads and ends at once, its load and end functions
+  called with its id at the scripts' next update.
+- A role is driven from its clip alone: root motion (section A turned by the heading, all three axes; the host may
+  settle the feet on the ground) and the 21/22 marks, which the data shows hold `f32` positions and headings. Clip
+  events other than 13, 21 and 22 are not acted on.
+- Keyed rotations are slerped; the camera looks along its rotation's +y with +z up (inferred: `l99_c5`'s first camera
+  key aims +y at the roles).
+- Event 30's colour is read as bytes r, g, b at `+8` (the cone's float is at `+0x10`); 69 and 73 do nothing.
+- A scene with roles but none bound ends when its tracks do; an aborted scene's end function is not called.
+- A track's events fire against the scene's frame (the part's start frame plus its time), the header's and the
+  current part's alike.
 
 ## Open questions
 
@@ -492,3 +522,4 @@ None yet. The reader for the disc check is `repo:python/src/coney_tools/scenes.p
 - Track events 24/25 (messages `0x12`/`0x13`), and most clip event types besides 9, 11, 21, 22.
 - Where a scene's captions come from (answered): the level's Subtitles chunk, by the scene's name
   ([Movies](movies.md#caption-text)).
+- Event 30's argument layout (colour at `+8` and cone at `+0x10` overlap as three floats).

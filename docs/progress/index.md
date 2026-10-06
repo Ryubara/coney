@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 7.8%](https://img.shields.io/badge/reimplemented-7.8%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 8.7%](https://img.shields.io/badge/reimplemented-8.7%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▋░░░░░░░░░░░░░░░░░░` | 7.8% of the game's own code (262,156 of 3,354,776 bytes, 614 functions) |
+| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.7% of the game's own code (291,252 of 3,354,776 bytes, 668 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -52,7 +52,7 @@ at the top of the repository's `README.md`.
 
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
-| `Animation` | `█████▍░░░░░░░░░░░░░░` | 26.9% | 20 | 54,616 |
+| `Animation` | `█████▌░░░░░░░░░░░░░░` | 27.2% | 21 | 54,616 |
 | `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 1 | 57,368 |
 | `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 12 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
@@ -62,15 +62,15 @@ at the top of the repository's `README.md`.
 | `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 45 | 100,440 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 195,624 |
 | `GUI` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 86 | 497,416 |
-| `Human` | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% | 231 | 1,096,672 |
+| `Human` | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% | 232 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
-| `Scene` | `▋░░░░░░░░░░░░░░░░░░░` | 3.4% | 4 | 17,904 |
-| `Scripting` | `████▋░░░░░░░░░░░░░░░` | 22.9% | 85 | 197,192 |
+| `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
+| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 102 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 531,312 |
+| `TaskEngine` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 10 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
@@ -107,6 +107,7 @@ at the top of the repository's `README.md`.
 | `0x00100200` | `Pose_InitReference` | `Animation` | 2,172 |
 | `0x00101120` | `Skeleton_InitParents` | `Animation` | 304 |
 | `0x00101658` | `Anim_FirstContactTime` | `Animation` | 328 |
+| `0x00101c58` | `Scene_FindClipSoundtrack` | `Animation` | 136 |
 | `0x00101dd8` | `Anim_FireEvents` | `Animation` | 8,376 |
 | `0x001041f8` | `AnimCursor_Init` | `Animation` | 536 |
 | `0x001044a0` | `AnimCursor_Advance` | `Animation` | 208 |
@@ -529,6 +530,7 @@ at the top of the repository's `README.md`.
 | `0x002e49f8` | `PlayAnimationGoal_Start` | `Human` | 88 |
 | `0x002e4a50` | `PlayAnimationGoal_End` | `Human` | 32 |
 | `0x002e4a70` | `PlayAnimationGoal_Process` | `Human` | 72 |
+| `0x002e5300` | `Goal_JoinCinematic` | `Human` | 224 |
 | `0x002fa5a0` | `PlayAnimAction_Init` | `Human` | 64 |
 | `0x002fa918` | `AttackAction_Init` | `Human` | 144 |
 | `0x002fa9a8` | `AttackAction_Start` | `Human` | 904 |
@@ -579,10 +581,35 @@ at the top of the repository's `README.md`.
 | `0x00351160` | `CollisionMesh_SetEnabledInBox` | `RayCast` | not filled in |
 | `0x00351468` | `CollisionMesh_SphereTestCell` | `RayCast` | not filled in |
 | `0x003519f8` | `CollisionMesh_SpherePush` | `RayCast` | not filled in |
+| `0x00351da0` | `SceneSlot_Unload` | `Scene` | 760 |
+| `0x00352098` | `SceneRecord_Fixup` | `Scene` | 920 |
+| `0x00352430` | `Scene_Loaded` | `Scene` | 120 |
+| `0x00352788` | `SceneSegment_Fixup` | `Scene` | 704 |
+| `0x00352c08` | `Scene_RequestSegment` | `Scene` | 920 |
+| `0x00353020` | `Scene_WaitLoaded` | `Scene` | 312 |
+| `0x003531c8` | `Scene_CallLoaded` | `Scene` | 208 |
+| `0x00353298` | `SceneSlot_Get` | `Scene` | 448 |
+| `0x00353460` | `SceneList_Load` | `Scene` | 320 |
+| `0x003535e8` | `Boot_LoadSceneList` | `Scene` | 176 |
+| `0x00353698` | `SceneList_FindContaining` | `Scene` | 152 |
+| `0x00353730` | `SceneList_FindId` | `Scene` | 72 |
+| `0x00353778` | `SceneList_FindExact` | `Scene` | 160 |
+| `0x00353818` | `Scene_Play` | `Scene` | 504 |
+| `0x00353a10` | `Scene_Stop` | `Scene` | 224 |
+| `0x00353af0` | `Scene_Request` | `Scene` | 136 |
+| `0x00353bf0` | `Scene_FreeTask` | `Scene` | 120 |
 | `0x00353c68` | `Scene_PlayCinematic` | `Scene` | 248 |
 | `0x00353d60` | `Scene_PlayFixed` | `Scene` | 216 |
 | `0x00353f40` | `Scene_PlayAnimation` | `Scene` | 72 |
 | `0x00353f88` | `Scene_Preload` | `Scene` | 64 |
+| `0x003540b8` | `Scene_Length` | `Scene` | 192 |
+| `0x003541a0` | `Scene_BindHuman` | `Scene` | 224 |
+| `0x00354280` | `Scene_BindObject` | `Scene` | 248 |
+| `0x00354d28` | `Scene_FindTrackSoundtrack` | `Scene` | 112 |
+| `0x00354d98` | `SceneTrack_Events` | `Scene` | 2,104 |
+| `0x00355ab8` | `SceneTrack_StepKeys` | `Scene` | 992 |
+| `0x003560a8` | `SceneTrack_Advance` | `Scene` | 224 |
+| `0x00356188` | `SceneTrack_Apply` | `Scene` | 264 |
 | `0x00356390` | `ScriptSystem_Create` | `Scripting` | 192 |
 | `0x00356450` | `ScriptSystem_Destroy` | `Scripting` | 136 |
 | `0x003564d8` | `ScriptSystem::ScriptSystem` | `Scripting` | 312 |
@@ -618,9 +645,26 @@ at the top of the repository's `README.md`.
 | `0x003603a8` | `GoalAddressPerson` | `Scripting` | 264 |
 | `0x00360690` | `GoalTrackHuman` | `Scripting` | 160 |
 | `0x003610a8` | `GoalFight` | `Scripting` | 168 |
+| `0x00361418` | `GoalJoinFixedScene` | `Scripting` | 224 |
+| `0x003614f8` | `GoalJoinCinematic` | `Scripting` | 224 |
+| `0x003615d8` | `GoalJoinAnimation` | `Scripting` | 224 |
 | `0x00363018` | `GoalDealer` | `Scripting` | 272 |
 | `0x00363530` | `GoalPlayDynAnimation` | `Scripting` | 160 |
 | `0x003647d8` | `ActLookAt` | `Scripting` | 200 |
+| `0x00367448` | `ScenePreload` | `Scripting` | 136 |
+| `0x003674d0` | `SceneIsPreloaded` | `Scripting` | 72 |
+| `0x00367518` | `SceneUnload` | `Scripting` | 56 |
+| `0x00367550` | `SceneSetCallback` | `Scripting` | 48 |
+| `0x00367580` | `ScenePlayCinematic` | `Scripting` | 392 |
+| `0x00367708` | `ScenePlayFixedScene` | `Scripting` | 264 |
+| `0x00367810` | `ScenePlay` | `Scripting` | 528 |
+| `0x00367a20` | `ScenePlay` | `Scripting` | 696 |
+| `0x00367cd8` | `ScenePlayAnimation` | `Scripting` | 328 |
+| `0x00367e20` | `SceneStop` | `Scripting` | 96 |
+| `0x00367e80` | `SceneDone` | `Scripting` | 80 |
+| `0x00367ed0` | `SceneLength` | `Scripting` | 120 |
+| `0x00367f48` | `SceneAddObject` | `Scripting` | 160 |
+| `0x00368240` | `SceneTerminate` | `Scripting` | 56 |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
 | `0x0036b4f0` | `CfgRumbleGame` | `Scripting` | 384 |
 | `0x0036b670` | `CfgRumbleArena` | `Scripting` | 288 |
@@ -668,6 +712,16 @@ at the top of the repository's `README.md`.
 | `0x00386410` | `ScheduleFuncArg1` | `Scripting` | 64 |
 | `0x00386450` | `FlushScheduledFuncs` | `Scripting` | 56 |
 | `0x00386488` | `random` | `Scripting` | 40 |
+| `0x0039cbf0` | `SceneTask_Update` | `TaskEngine` | 1,672 |
+| `0x0039d870` | `SceneTask_Start` | `TaskEngine` | 5,104 |
+| `0x0039ec60` | `SceneTask_Abort` | `TaskEngine` | 2,032 |
+| `0x0039f450` | `SceneTask_End` | `TaskEngine` | 3,176 |
+| `0x003a00b8` | `SceneTask_ClipDone` | `TaskEngine` | 840 |
+| `0x003a0400` | `SceneTask_CameraPartDone` | `TaskEngine` | 424 |
+| `0x003a0a68` | `SceneTask_EndClips` | `TaskEngine` | 384 |
+| `0x003a0be8` | `SceneTask_StopLooping` | `TaskEngine` | 344 |
+| `0x003a0da8` | `SceneTask_CallEnd` | `TaskEngine` | 160 |
+| `0x003a13d0` | `SceneTask_Create` | `TaskEngine` | 280 |
 | `0x0040cdd8` | `LevelObject_LinkModel` | `World` | not filled in |
 | `0x0040ce30` | `LevelObject_OnLoaded` | `World` | not filled in |
 | `0x0040d0a8` | `LevelObject_RenderBackground` | `World` | not filled in |

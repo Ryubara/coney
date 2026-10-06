@@ -18,6 +18,7 @@
 #include "scripting/gang_bindings.h"
 #include "scripting/level_bindings.h"
 #include "scripting/rumble_bindings.h"
+#include "scripting/scene_bindings.h"
 #include "scripting/trigger_bindings.h"
 
 namespace coney::script {
@@ -338,7 +339,7 @@ NativeFunction makeHudLaunchMissionComplete(const Factory& factory) {
     };
 }
 
-// ---- Coney's scene stand-in (docs/research/scenes.md): no scene player yet, so a scene loads and ends at once ----
+// ---- Coney's scene stand-in (docs/research/scenes.md): with no scene system, a scene loads and ends at once ----
 
 // Schedules the Lua function named by string argument `i` (none for nil or a number) with the scene id, to run at the
 // scripts' next update: the original calls it later too (on the file's arrival, at the scene's end), never inside the
@@ -353,8 +354,7 @@ void scheduleSceneCallback(ScriptSystem& scripts, std::span<const Value> args, s
 
 // `ScenePreload(name, onLoaded)`: a new handle as the scene's id, and **Coney's stand-in** for the load: `onLoaded` is
 // called with the id at the next script update (docs/research/scenes.md#loading).
-// @orig 0x00353f88 Scene_Preload (unknown)
-NativeFunction makeScenePreload(const Factory& factory) {
+NativeFunction makeStandInScenePreload(const Factory& factory) {
     return [scripts = factory.scripts, handles = factory.handles](std::span<const Value> args) {
         const double scene = handles->next;
         handles->next += 1;
@@ -366,10 +366,7 @@ NativeFunction makeScenePreload(const Factory& factory) {
 // `ScenePlayCinematic(scene, delay, onEnd, ...)`, `ScenePlayAnimation` and `ScenePlayFixedScene` (`onEnd` third in
 // each): true, and **Coney's stand-in** for the scene: it ends at once, its end function called with the scene id at
 // the next script update (docs/research/scenes.md#ending). A looping scene ends too.
-// @orig 0x00353c68 Scene_PlayCinematic (unknown)
-// @orig 0x00353d60 Scene_PlayFixed (unknown)
-// @orig 0x00353f40 Scene_PlayAnimation (unknown)
-NativeFunction makeScenePlay(const Factory& factory) {
+NativeFunction makeStandInScenePlay(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
         scheduleSceneCallback(*scripts, args, 2, binding::number(args, 0));
         return binding::boolean(true);
@@ -431,10 +428,6 @@ constexpr std::array kMakers{
     Maker{"HuCreate", makeHuCreate},
     Maker{"MenuLoadLevel", makeMenuLoadLevel},
     Maker{"PlayMovie", makePlayMovie},
-    Maker{"ScenePlayAnimation", makeScenePlay},
-    Maker{"ScenePlayCinematic", makeScenePlay},
-    Maker{"ScenePlayFixedScene", makeScenePlay},
-    Maker{"ScenePreload", makeScenePreload},
     Maker{"ScheduleFunc", makeScheduleFunc},
     Maker{"ScheduleFuncArg1", makeScheduleFuncArg1},
     Maker{"ScreenQueueEffect", makeScreenQueueEffect},
@@ -565,12 +558,22 @@ constexpr std::array kBindings{
     real("CfgRumbleGang"),
     real("CfgRumbleArena"),
     real("CfgRumbleChar"),
-    // Coney's scene stand-in: a scene loads and ends at once.
-    routed("ScenePreload"),
-    routed("ScenePlayCinematic"),
-    routed("ScenePlayAnimation"),
-    routed("ScenePlayFixedScene"),
-    stub("SceneAddObject"), // a loaded scene's cast, which the stand-in does not play
+    real("ScenePreload"),
+    real("SceneIsPreloaded"),
+    real("SceneUnload"),
+    real("SceneSetCallback"),
+    real("ScenePlayCinematic"),
+    real("ScenePlayFixedScene"),
+    real("ScenePlay"),
+    real("ScenePlayAnimation"),
+    real("SceneStop"),
+    real("SceneTerminate"),
+    real("SceneDone"),
+    real("SceneLength"),
+    real("SceneAddObject"),
+    real("GoalJoinCinematic"),
+    real("GoalJoinFixedScene"),
+    real("GoalJoinAnimation"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     routed("SoundPlayMusicTrack"),
@@ -699,8 +702,6 @@ constexpr std::array kBindings{
     stub("GetPTank", StubResult::Handle),
     stub("ObjSpawn", StubResult::Handle),
     stub("ReleasePTank"),
-    stub("SceneIsPreloaded", StubResult::False),
-    stub("SceneStop"),
 };
 
 // A stub's function: keeps the arguments when it records, then returns its default.
@@ -796,20 +797,30 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
             vm.registerFunction(info.name, maker->make(factory));
             continue;
         }
-        // Every real binding has a maker or is a string, level, Rumble, AI or gang binding (CONEY_ASSERT).
+        // Every real binding has a maker or is a string, level, Rumble, AI, gang or scene binding (CONEY_ASSERT).
         CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end() ||
                      std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
                      std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
                      std::ranges::find(kAiBindings, info.name) != kAiBindings.end() ||
                      std::ranges::find(kGangBindings, info.name) != kGangBindings.end() ||
                      std::ranges::find(kTriggerBindings, info.name) != kTriggerBindings.end() ||
-                     std::ranges::find(kAnimCallbackBindings, info.name) != kAnimCallbackBindings.end());
+                     std::ranges::find(kAnimCallbackBindings, info.name) != kAnimCallbackBindings.end() ||
+
+                     std::ranges::find(kSceneBindings, info.name) != kSceneBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
     addAiBindings(vm, context);
     addGangBindings(vm, context);
     addAnimCallbackBindings(vm, context);
+    addSceneBindings(vm, context);
+    if (context.scenes == nullptr) {
+        // No scene system (a test, or a mode that plays no scenes): the stand-in keeps the scripts' scene flow moving.
+        vm.registerFunction("ScenePreload", makeStandInScenePreload(factory));
+        for (const std::string_view name : {"ScenePlayCinematic", "ScenePlayAnimation", "ScenePlayFixedScene"}) {
+            vm.registerFunction(name, makeStandInScenePlay(factory));
+        }
+    }
     // The level bindings make world objects, so they take their handles from the same counter as the stubs.
     const auto nextHandle = [handles = factory.handles] {
         const double handle = handles->next;

@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 50 implemented, 6 partial, 159 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 58 implemented, 2 partial, 155 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -81,9 +81,9 @@ leave part of its effect open; its notes say which.
 | [`GoalBumLogic`](ai.md#goalbumlogic) | AI | traced | confirmed (code) | not implemented |
 | [`GoalDealer`](ai.md#goaldealer) | AI | traced | confirmed (code) | implemented |
 | [`GoalFight`](ai.md#goalfight) | AI | traced | confirmed (code) | implemented |
-| [`GoalJoinAnimation`](ai.md#goaljoinanimation) | AI | traced | confirmed (code) | not implemented |
-| [`GoalJoinCinematic`](ai.md#goaljoincinematic) | AI | traced | confirmed (code) | not implemented |
-| [`GoalJoinFixedScene`](ai.md#goaljoinfixedscene) | AI | traced | confirmed (code) | not implemented |
+| [`GoalJoinAnimation`](ai.md#goaljoinanimation) | AI | traced | confirmed (code) | implemented |
+| [`GoalJoinCinematic`](ai.md#goaljoincinematic) | AI | traced | confirmed (code) | implemented |
+| [`GoalJoinFixedScene`](ai.md#goaljoinfixedscene) | AI | traced | confirmed (code) | implemented |
 | [`GoalMoveToFlag`](ai.md#goalmovetoflag) | AI | traced | confirmed (code) | implemented |
 | [`GoalMoveToUseFlag`](ai.md#goalmovetouseflag) | AI | traced | confirmed (code) | not implemented |
 | [`GoalPlayDynAnimation`](ai.md#goalplaydynanimation) | AI | traced | confirmed (code) | implemented |
@@ -174,11 +174,11 @@ leave part of its effect open; its notes say which.
 | [`SoundPlayAmbientTrack`](sound.md#soundplayambienttrack) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SoundStopAmbientTrack`](sound.md#soundstopambienttrack) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SoundStopMusicTrack`](sound.md#soundstopmusictrack) | Sound and music | traced | confirmed (code) | partial |
-| [`SceneAddObject`](scene.md#sceneaddobject) | Scenes and movies | traced | confirmed (code) | not implemented |
-| [`ScenePlayAnimation`](scene.md#sceneplayanimation) | Scenes and movies | traced | confirmed (code) | partial |
-| [`ScenePlayCinematic`](scene.md#sceneplaycinematic) | Scenes and movies | traced | confirmed (code) | partial |
-| [`ScenePlayFixedScene`](scene.md#sceneplayfixedscene) | Scenes and movies | traced | confirmed (code) | partial |
-| [`ScenePreload`](scene.md#scenepreload) | Scenes and movies | traced | confirmed (code) | partial |
+| [`SceneAddObject`](scene.md#sceneaddobject) | Scenes and movies | traced | confirmed (code) | implemented |
+| [`ScenePlayAnimation`](scene.md#sceneplayanimation) | Scenes and movies | traced | confirmed (code) | implemented |
+| [`ScenePlayCinematic`](scene.md#sceneplaycinematic) | Scenes and movies | traced | confirmed (code) | implemented |
+| [`ScenePlayFixedScene`](scene.md#sceneplayfixedscene) | Scenes and movies | traced | confirmed (code) | implemented |
+| [`ScenePreload`](scene.md#scenepreload) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`EnterStore`](level.md#enterstore) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`ExitStore`](level.md#exitstore) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`GetCheckPoint`](level.md#getcheckpoint) | Levels and game state | traced | confirmed (code) | implemented |

@@ -1766,7 +1766,7 @@ Gives a human the goal of taking part in an animation scene in the given role, r
 - **Evidence:** confirmed (code) at `0x002e5650`; detail: traced
 - **Wrapper** `0x003615d8` (registered by `RegisterBindings`); **calls** `0x002e5650` `Goal_JoinAnimation`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalJoinCinematic {#goaljoincinematic}
 
@@ -1792,7 +1792,7 @@ Gives a human the goal of taking part in a cinematic scene in the given role. If
 - **Evidence:** confirmed (code) at `0x002e5300`; detail: traced
 - **Wrapper** `0x003614f8` (registered by `RegisterBindings`); **calls** `0x002e5300` `Goal_JoinCinematic`
 - **Used by** 7 of 467 script chunks (22 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalJoinFixedScene {#goaljoinfixedscene}
 
@@ -1818,7 +1818,7 @@ its role at once. `global.lua`'s scene helpers call it for each human of a scene
 - **Evidence:** confirmed (code) at `0x002e5048`; detail: traced
 - **Wrapper** `0x00361418` (registered by `RegisterBindings`); **calls** `0x002e5048` `Goal_JoinFixedScene`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalJoinScene {#goaljoinscene}
 

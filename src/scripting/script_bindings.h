@@ -21,6 +21,9 @@
 namespace coney::world_objects {
 class VolumeBoxes;
 } // namespace coney::world_objects
+namespace coney::scenes {
+class SceneSystem;
+} // namespace coney::scenes
 
 namespace coney::script {
 
@@ -124,6 +127,7 @@ struct BindingContext {
     MessageHandlers* messages = nullptr;         ///< The objects' handlers (`SetMsgHandler`); null keeps none.
     world_objects::VolumeBoxes* boxes = nullptr; ///< The level's volume boxes (`AddVolumeBox`); null keeps none.
     AnimCallbacks* animCallbacks = nullptr;      ///< The animation callbacks (`AddAnimCallback`); null keeps none.
+    scenes::SceneSystem* scenes = nullptr;       ///< The scenes the bindings play; null: Coney's stand-in.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

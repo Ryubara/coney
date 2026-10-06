@@ -82,6 +82,7 @@ add_library(coney_core STATIC
     scripting/lua_vm.cpp
     scripting/message_handlers.cpp
     scripting/rumble_bindings.cpp
+    scripting/scene_bindings.cpp
     scripting/script_bindings.cpp
     scripting/script_system.cpp
     scripting/trigger_bindings.cpp
@@ -186,6 +187,14 @@ target_sources(coney_core PRIVATE
     combat/reactions.cpp
     combat/stick_games.cpp
     debug/combat_tunables.cpp)
+# Scenes: the in-engine cutscenes' records, slots and player (docs/research/scenes.md).
+target_sources(coney_core PRIVATE
+    scenes/letterbox.cpp
+    scenes/scene_cache.cpp
+    scenes/scene_disc.cpp
+    scenes/scene_list.cpp
+    scenes/scene_player.cpp
+    scenes/scene_record.cpp)
 # The sandbox: Coney's own test worlds of primitives (docs/guides/sandbox.md), and the collision writer they use.
 target_sources(coney_core PRIVATE
     raycast/collision_builder.cpp

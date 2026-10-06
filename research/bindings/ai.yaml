@@ -938,6 +938,7 @@
   notes: >-
     Constructor 0x002e5128 registers (scene, human, role) with the scene through 0x003541a0.
   usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalJoinCinematic
   wrapper: 0x003614f8
@@ -958,6 +959,7 @@
   notes: >-
     Constructor 0x002e53e0.
   usage: {chunks: 7, calls: 22, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalJoinAnimation
   wrapper: 0x003615d8
@@ -977,6 +979,7 @@
   notes: >-
     Constructor 0x002e56f0; 0x002e5650 never runs the first update.
   usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalHooker
   wrapper: 0x003616b8

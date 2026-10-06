@@ -34,6 +34,12 @@ subsystem = "Animation"
 size = 328
 
 [[function]]
+address = 0x00101c58
+name = "Scene_FindClipSoundtrack"
+subsystem = "Animation"
+size = 136
+
+[[function]]
 address = 0x00101dd8
 name = "Anim_FireEvents"
 subsystem = "Animation"
@@ -2459,6 +2465,12 @@ subsystem = "Human"
 size = 72
 
 [[function]]
+address = 0x002e5300
+name = "Goal_JoinCinematic"
+subsystem = "Human"
+size = 224
+
+[[function]]
 address = 0x002fa5a0
 name = "PlayAnimAction_Init"
 subsystem = "Human"
@@ -2743,6 +2755,108 @@ name = "CollisionMesh_SpherePush"
 subsystem = "RayCast"
 
 [[function]]
+address = 0x00351da0
+name = "SceneSlot_Unload"
+subsystem = "Scene"
+size = 760
+
+[[function]]
+address = 0x00352098
+name = "SceneRecord_Fixup"
+subsystem = "Scene"
+size = 920
+
+[[function]]
+address = 0x00352430
+name = "Scene_Loaded"
+subsystem = "Scene"
+size = 120
+
+[[function]]
+address = 0x00352788
+name = "SceneSegment_Fixup"
+subsystem = "Scene"
+size = 704
+
+[[function]]
+address = 0x00352c08
+name = "Scene_RequestSegment"
+subsystem = "Scene"
+size = 920
+
+[[function]]
+address = 0x00353020
+name = "Scene_WaitLoaded"
+subsystem = "Scene"
+size = 312
+
+[[function]]
+address = 0x003531c8
+name = "Scene_CallLoaded"
+subsystem = "Scene"
+size = 208
+
+[[function]]
+address = 0x00353298
+name = "SceneSlot_Get"
+subsystem = "Scene"
+size = 448
+
+[[function]]
+address = 0x00353460
+name = "SceneList_Load"
+subsystem = "Scene"
+size = 320
+
+[[function]]
+address = 0x003535e8
+name = "Boot_LoadSceneList"
+subsystem = "Scene"
+size = 176
+
+[[function]]
+address = 0x00353698
+name = "SceneList_FindContaining"
+subsystem = "Scene"
+size = 152
+
+[[function]]
+address = 0x00353730
+name = "SceneList_FindId"
+subsystem = "Scene"
+size = 72
+
+[[function]]
+address = 0x00353778
+name = "SceneList_FindExact"
+subsystem = "Scene"
+size = 160
+
+[[function]]
+address = 0x00353818
+name = "Scene_Play"
+subsystem = "Scene"
+size = 504
+
+[[function]]
+address = 0x00353a10
+name = "Scene_Stop"
+subsystem = "Scene"
+size = 224
+
+[[function]]
+address = 0x00353af0
+name = "Scene_Request"
+subsystem = "Scene"
+size = 136
+
+[[function]]
+address = 0x00353bf0
+name = "Scene_FreeTask"
+subsystem = "Scene"
+size = 120
+
+[[function]]
 address = 0x00353c68
 name = "Scene_PlayCinematic"
 subsystem = "Scene"
@@ -2765,6 +2879,54 @@ address = 0x00353f88
 name = "Scene_Preload"
 subsystem = "Scene"
 size = 64
+
+[[function]]
+address = 0x003540b8
+name = "Scene_Length"
+subsystem = "Scene"
+size = 192
+
+[[function]]
+address = 0x003541a0
+name = "Scene_BindHuman"
+subsystem = "Scene"
+size = 224
+
+[[function]]
+address = 0x00354280
+name = "Scene_BindObject"
+subsystem = "Scene"
+size = 248
+
+[[function]]
+address = 0x00354d28
+name = "Scene_FindTrackSoundtrack"
+subsystem = "Scene"
+size = 112
+
+[[function]]
+address = 0x00354d98
+name = "SceneTrack_Events"
+subsystem = "Scene"
+size = 2104
+
+[[function]]
+address = 0x00355ab8
+name = "SceneTrack_StepKeys"
+subsystem = "Scene"
+size = 992
+
+[[function]]
+address = 0x003560a8
+name = "SceneTrack_Advance"
+subsystem = "Scene"
+size = 224
+
+[[function]]
+address = 0x00356188
+name = "SceneTrack_Apply"
+subsystem = "Scene"
+size = 264
 
 [[function]]
 address = 0x00356390
@@ -2976,6 +3138,24 @@ subsystem = "Scripting"
 size = 168
 
 [[function]]
+address = 0x00361418
+name = "GoalJoinFixedScene"
+subsystem = "Scripting"
+size = 224
+
+[[function]]
+address = 0x003614f8
+name = "GoalJoinCinematic"
+subsystem = "Scripting"
+size = 224
+
+[[function]]
+address = 0x003615d8
+name = "GoalJoinAnimation"
+subsystem = "Scripting"
+size = 224
+
+[[function]]
 address = 0x00363018
 name = "GoalDealer"
 subsystem = "Scripting"
@@ -2992,6 +3172,90 @@ address = 0x003647d8
 name = "ActLookAt"
 subsystem = "Scripting"
 size = 200
+
+[[function]]
+address = 0x00367448
+name = "ScenePreload"
+subsystem = "Scripting"
+size = 136
+
+[[function]]
+address = 0x003674d0
+name = "SceneIsPreloaded"
+subsystem = "Scripting"
+size = 72
+
+[[function]]
+address = 0x00367518
+name = "SceneUnload"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00367550
+name = "SceneSetCallback"
+subsystem = "Scripting"
+size = 48
+
+[[function]]
+address = 0x00367580
+name = "ScenePlayCinematic"
+subsystem = "Scripting"
+size = 392
+
+[[function]]
+address = 0x00367708
+name = "ScenePlayFixedScene"
+subsystem = "Scripting"
+size = 264
+
+[[function]]
+address = 0x00367810
+name = "ScenePlay"
+subsystem = "Scripting"
+size = 528
+
+[[function]]
+address = 0x00367a20
+name = "ScenePlay"
+subsystem = "Scripting"
+size = 696
+
+[[function]]
+address = 0x00367cd8
+name = "ScenePlayAnimation"
+subsystem = "Scripting"
+size = 328
+
+[[function]]
+address = 0x00367e20
+name = "SceneStop"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x00367e80
+name = "SceneDone"
+subsystem = "Scripting"
+size = 80
+
+[[function]]
+address = 0x00367ed0
+name = "SceneLength"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
+address = 0x00367f48
+name = "SceneAddObject"
+subsystem = "Scripting"
+size = 160
+
+[[function]]
+address = 0x00368240
+name = "SceneTerminate"
+subsystem = "Scripting"
+size = 56
 
 [[function]]
 address = 0x0036b220
@@ -3270,6 +3534,66 @@ address = 0x00386488
 name = "random"
 subsystem = "Scripting"
 size = 40
+
+[[function]]
+address = 0x0039cbf0
+name = "SceneTask_Update"
+subsystem = "TaskEngine"
+size = 1672
+
+[[function]]
+address = 0x0039d870
+name = "SceneTask_Start"
+subsystem = "TaskEngine"
+size = 5104
+
+[[function]]
+address = 0x0039ec60
+name = "SceneTask_Abort"
+subsystem = "TaskEngine"
+size = 2032
+
+[[function]]
+address = 0x0039f450
+name = "SceneTask_End"
+subsystem = "TaskEngine"
+size = 3176
+
+[[function]]
+address = 0x003a00b8
+name = "SceneTask_ClipDone"
+subsystem = "TaskEngine"
+size = 840
+
+[[function]]
+address = 0x003a0400
+name = "SceneTask_CameraPartDone"
+subsystem = "TaskEngine"
+size = 424
+
+[[function]]
+address = 0x003a0a68
+name = "SceneTask_EndClips"
+subsystem = "TaskEngine"
+size = 384
+
+[[function]]
+address = 0x003a0be8
+name = "SceneTask_StopLooping"
+subsystem = "TaskEngine"
+size = 344
+
+[[function]]
+address = 0x003a0da8
+name = "SceneTask_CallEnd"
+subsystem = "TaskEngine"
+size = 160
+
+[[function]]
+address = 0x003a13d0
+name = "SceneTask_Create"
+subsystem = "TaskEngine"
+size = 280
 
 [[function]]
 address = 0x0040cdd8

@@ -21,7 +21,7 @@
     is unloaded when its scene has played (0x00353bf0), so a scene is preloaded again before its next play. Research:
     docs/research/scenes.md#loading.
   usage: {chunks: 110, calls: 256, boot: true, mission1: true, result_used: true}
-  coney: partial
+  coney: implemented
 
 - name: SceneIsPreloaded
   wrapper: 0x003674d0
@@ -36,6 +36,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 3, calls: 6, boot: true, mission1: false, result_used: true}
+  coney: implemented
 
 - name: SceneUnload
   wrapper: 0x00367518
@@ -48,6 +49,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 8, calls: 9, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SceneSetCallback
   wrapper: 0x00367550
@@ -63,6 +65,7 @@
   notes: >-
     Called from the scene start 0x0039d870 once everything is loaded, before the camera and tracks start.
   usage: {chunks: 6, calls: 14, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: ScenePlayCinematic
   wrapper: 0x00367580
@@ -91,7 +94,7 @@
     bars, +0xe5 skippable, +0xeb looping, +0xef freeze, +0xe7 final, +0xe8 chain, BlendCam at +0x94 (0x003a13d0,
     0x00353818). Research: docs/research/scenes.md#playing.
   usage: {chunks: 9, calls: 14, boot: true, mission1: true, result_used: false}
-  coney: partial
+  coney: implemented
 
 - name: ScenePlayFixedScene
   wrapper: 0x00367708
@@ -113,7 +116,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: false}
-  coney: partial
+  coney: implemented
 
 - name: ScenePlay
   wrapper: 0x00367a20
@@ -153,6 +156,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: ScenePlayAnimation
   wrapper: 0x00367cd8
@@ -174,7 +178,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
-  coney: partial
+  coney: implemented
 
 - name: SceneStop
   wrapper: 0x00367e20
@@ -191,6 +195,7 @@
     A starting scene goes to its end at once; a playing one has its roles' clips ended (0x003a0a68) and then ends as
     usual (docs/research/scenes.md#ending). The non-forced path on a looping scene is 0x003a0be8.
   usage: {chunks: 53, calls: 62, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SceneDone
   wrapper: 0x00367e80
@@ -205,6 +210,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SceneLength
   wrapper: 0x00367ed0
@@ -219,6 +225,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SceneAddObject
   wrapper: 0x00367f48
@@ -233,6 +240,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 9, calls: 12, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: SceneInvokeInPlace
   wrapper: 0x00367fe8
@@ -280,6 +288,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: PlayMovie
   wrapper: 0x0036c258
