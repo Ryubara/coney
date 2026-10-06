@@ -285,19 +285,27 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   scratch folder (`New-Item -ItemType HardLink`) boots fine and copies nothing. Pass the path with backslashes (start
   it from PowerShell): the same link given as `C:/Users/...` from Git Bash was refused with the same error.
 - **Several at once.** A portable PCSX2 keeps its settings, states and memory cards in its own folder, so each copy of
-  the folder is an independent instance. Give each copy its own `PINESlot` (28011, 28012, ...) and point a run at it
-  with `--pcsx2-dir`; `coney-tools pcsx2` reads the port from that copy's `PCSX2.ini`. One person or agent per copy.
-  Keyboard events go to whichever window has focus, so with several instances running, drive the game over PINE
-  only (scripted pad input and the stick table, below) and capture screenshots of your own window by its
-  handle, not with F8. When a key is unavoidable (Space to pause), hold a lock for the whole focus-and-keys
-  sequence: create the directory `pcsx2-input.lock` in the shared scratch folder (`mkdir` fails while someone else
-  holds it: wait and retry), send the keys, then remove it.
+  the folder (`pcsx2`, `pcsx2-b`, ..., each with its own `PINESlot` 28011, 28012, ...) is an independent instance, and
+  `coney-tools pcsx2` reads the port from that copy's `PCSX2.ini`. Every PCSX2 use starts with
+  `coney-tools pcsx2 claim --agent <your id>` (it prints the copy's folder and port; `--json` for scripts) and ends
+  with `pcsx2 release --agent <your id>`, which also closes your PCSX2. `pcsx2 status` shows who holds what, built
+  from the live claims and processes; a claim whose process is gone is stale and the next `claim` takes it over.
+  `pcsx2 launch` and `pcsx2 record` take `--agent` and run under your claim (making one if you hold none). Starting
+  `pcsx2-qt` by hand (the bullet above) is only for your claimed copy. Input to the game is over PINE only (scripted
+  pad input, the stick table below); no tool takes the keyboard focus. When a hotkey is unavoidable (Space to
+  pause), `pcsx2 keys --agent <id> --copy <name> space` posts the key to that copy's window by handle, and
+  `pcsx2 screenshot --copy <name> --out <png>` reads the window by handle (not F8); both are Windows-only and leave
+  the focus alone. PCSX2 starts without activating its window, and every copy has `[InputSources] SDL = false` so the
+  owner's gamepad cannot drive it; the owner turns SDL on in a copy only to test by hand, and `claim` and `status`
+  warn when it is on. Claims live in `pcsx2-claims/` of the shared scratch folder (`pcsx2_root` and `pcsx2_claims_dir`
+  in `coney.local.toml` move the copies and the claims).
 - **What PINE gives.** Memory reads and writes, game info and save/load state slots. No breakpoints, registers,
   pause or frame capture. PCSX2 serves one PINE client at a time, so a second client (a script of your own) blocks
   while the MCP server is connected.
-- **Input and hotkeys.** Keyboard events sent to the PCSX2 window (Win32 `keybd_event` after `SetForegroundWindow`)
-  reach both the pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick) and the
-  hotkeys in `[Hotkeys]`: **Space pauses**, F8 saves a screenshot to `snaps/` (aspect-corrected, 1240 × 930 for the
+- **Input and hotkeys.** Keyboard messages posted to the PCSX2 window by handle (`pcsx2 keys`, `WM_KEYDOWN`) reach
+  the hotkeys in `[Hotkeys]` (verified: a posted Space paused and resumed the game with the window unfocused) and the
+  pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick; not yet checked with posted
+  keys). The hotkeys: **Space pauses**, F8 saves a screenshot to `snaps/` (aspect-corrected, 1240 × 930 for the
   game's 640 × 448), F4 toggles the frame limiter. Hold a pad key for about 300 ms so that a 30 Hz game sees it.
   Leave the frame limiter on: with it off, real-time waits (the legal screen's 5 s) pass in a blink.
 - **A chosen analog stick value.** Keyboard keys bound to a stick only give full deflection (raw byte 0

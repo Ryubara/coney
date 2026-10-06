@@ -5,5 +5,7 @@ ghidra_install  = "../../tools/ghidra_12.1.4_PUBLIC"    # Ghidra 12.1.4 with the
 ghidra_projects = "../../ghidra"                        # local Ghidra projects (rebuildable)
 pcsx2_dir       = "../../emulators/pcsx2"               # portable PCSX2 with PINE enabled
 scratch_dir     = "../../scratch"                       # captures and tool output, never committed
+pcsx2_root       = ""                                   # folder with the pcsx2, pcsx2-b, ... copies; default: the main checkout
+pcsx2_claims_dir = ""                                   # where `pcsx2 claim` keeps its claims; default: <scratch>/pcsx2-claims
 jdk_home        = ""                                    # JDK 21 home; required for Ghidra
 ghidra_mcp_repo = ""                                    # a built ghidra-mcp checkout (target/GhidraMCPHeadless.jar); read-only

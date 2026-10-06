@@ -13,6 +13,8 @@ PATH_KEYS: tuple[str, ...] = (
     "ghidra_install",
     "ghidra_projects",
     "pcsx2_dir",
+    "pcsx2_root",
+    "pcsx2_claims_dir",
     "scratch_dir",
     "jdk_home",
     "ghidra_mcp_repo",

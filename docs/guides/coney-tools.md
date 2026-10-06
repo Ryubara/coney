@@ -276,6 +276,34 @@ why, the scenario format and the address expressions are in [Recording a trace](
 The folders come from `coney.local.toml` (`pcsx2_dir`, `game_dir`, `scratch_dir`) unless `--pcsx2-dir`, `--iso` and
 `--scratch` give them; PINE must be enabled in PCSX2's `inis/PCSX2.ini`. Problems print one line and exit with code 2.
 
+Several agents share the portable copies of PCSX2 (`pcsx2`, `pcsx2-b`, ...) through claims
+([Several at once](research-workflow.md#driving-pcsx2)); any command that starts PCSX2 needs one.
+
+```sh
+uv run --project python coney-tools pcsx2 claim --agent ID [--copy NAME] [--json]
+uv run --project python coney-tools pcsx2 release --agent ID [--copy NAME] [--force]
+uv run --project python coney-tools pcsx2 status [--json]
+```
+
+`claim` takes a free copy (or the named one) atomically and prints its folder and PINE port; it hands back your own
+claim when you hold one, and takes over a stale one (its processes gone, or older than `--max-age-hours`, default 4,
+with no process) saying so. A copy running PCSX2 without a claim is never handed out. `release` closes the PCSX2 it
+recorded (only while that process is still a PCSX2) and drops the claim; another agent's claim needs `--force`.
+`status` lists every copy with its holder, the time, the port, whether PCSX2 runs (by pid or port) and stale claims;
+it warns about copies whose ini has `[InputSources] SDL = true`. The copies are the `pcsx2*` folders with an
+`inis/PCSX2.ini` under `pcsx2_root` (default: the main checkout), the claims are under `pcsx2_claims_dir` (default:
+`pcsx2-claims/` in the scratch folder, beside the main checkout's `../../scratch`).
+
+```sh
+uv run --project python coney-tools pcsx2 keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]
+uv run --project python coney-tools pcsx2 screenshot --copy NAME --out PNG
+```
+
+Both are Windows-only and never focus a window. `keys` posts key down and up messages (`WM_KEYDOWN`) to the copy's
+window by handle, one key after another (`W+K` presses two together; names: letters, digits, `space`, `return`,
+arrows, `f1`..`f12`), each held `--hold-ms` (default 300). `screenshot` writes the game widget's picture, read by
+handle, so it works while other windows cover it (not while it is minimised); it is refused inside the repository.
+
 ```sh
 uv run --project python coney-tools pcsx2 prepare-state SOURCE OUT [--patch NAME ...]
 ```
@@ -296,22 +324,24 @@ by all three, so PCSX2's own compression setting stays as it is. The same refusa
 do not usually load states into Ghidra: [Tools](research-workflow.md#tools).
 
 ```sh
-uv run --project python coney-tools pcsx2 launch STATE
+uv run --project python coney-tools pcsx2 launch STATE --agent ID
 ```
 
 Starts PCSX2 on a state file (`-fastboot -statefile`, the disc through a hard link in the scratch folder when its path
 holds commas or parentheses), waits until the game runs, and leaves it running. It refuses to start when something
-already serves PINE.
+already serves PINE. It runs under `--agent`'s claim (made, and kept, if you hold none) and records PCSX2's pid in it;
+`--pcsx2-dir` must be that claim's copy.
 
 ```sh
-uv run --project python coney-tools pcsx2 record SCENARIO --out CSV [--state SOURCE] [--attach] [--keep-open]
+uv run --project python coney-tools pcsx2 record SCENARIO --out CSV --agent ID [--state SOURCE] [--attach] [--keep-open]
 ```
 
 Makes the scenario's patched state copy, starts PCSX2 on it, plays the scenario's input script and writes one CSV row
 per character update, then closes PCSX2. It prints the updates recorded, the reads per poll, the time per poll and the
 updates missed. The scenario names a quick-save slot (`slot`) or a state file under the scratch folder (`state`);
 `--state` copies another state, `--attach` records a PCSX2 already running a patched state, and `--keep-open` leaves
-PCSX2 running. The CSV is a measurement of the game: it is refused inside the repository. With
+PCSX2 running; the claim is released at the end when `record` made it. The CSV is a measurement of the game: it is
+refused inside the repository. With
 hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
 makes the scenario's `calls` ([Hooks](research-workflow.md#hooks)).
 

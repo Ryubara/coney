@@ -11,7 +11,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from coney_tools import natives_cli, pcsx2_cli, progress_cli, refs_cli, trace_cli, wad_cli, xbox_cli
+from coney_tools import natives_cli, pcsx2_claims_cli, pcsx2_cli, progress_cli, refs_cli, trace_cli, wad_cli, xbox_cli
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.repo_checks import check_pointer_files, check_title, first_line, load_title_rules
 
@@ -193,6 +193,31 @@ def _add_pcsx2_flags(command: Any) -> None:
     command.add_argument("--scratch", type=Path, help="where state copies and the disc link go; default: scratch_dir")
 
 
+def _add_claim_commands(commands: Any) -> None:
+    """Register the claim commands of `coney-tools pcsx2`: claim, release, status, keys, screenshot."""
+    claim = commands.add_parser("claim", help="claim a free PCSX2 copy for an agent (every PCSX2 use starts here)")
+    claim.add_argument("--agent", required=True, help="your id: letters, digits, '.', '_' and '-'")
+    claim.add_argument("--copy", help="a copy by name (pcsx2, pcsx2-b, ...); default: the first free one")
+    claim.add_argument("--json", action="store_true", help="print the claim as one JSON line")
+    claim.add_argument("--max-age-hours", type=float, help="a claim with no process is stale after this (default 4)")
+    release = commands.add_parser("release", help="close the copy's PCSX2 and drop the claim")
+    release.add_argument("--agent", required=True, help="your id")
+    release.add_argument("--copy", help="one copy; default: all of the agent's")
+    release.add_argument("--force", action="store_true", help="release another agent's claim")
+    status = commands.add_parser("status", help="who holds each PCSX2 copy and whether its PCSX2 runs")
+    status.add_argument("--json", action="store_true", help="print JSON instead of a table")
+    status.add_argument("--max-age-hours", type=float, help="a claim with no process is stale after this (default 4)")
+    keys = commands.add_parser("keys", help="post keys to a claimed copy's window by handle (never takes focus)")
+    keys.add_argument("--agent", required=True, help="your id (must hold the claim)")
+    keys.add_argument("--copy", required=True, help="the copy")
+    keys.add_argument("keys", nargs="+", metavar="KEY", help="a key (space, return, up, f4, w, ...); W+K presses both")
+    keys.add_argument("--hold-ms", type=int, default=300, help="how long each key stays down (default 300)")
+    keys.add_argument("--gap-ms", type=int, default=100, help="pause after each key (default 100)")
+    shot = commands.add_parser("screenshot", help="write a copy's window as a PNG, read by handle (no focus change)")
+    shot.add_argument("--copy", required=True, help="the copy")
+    shot.add_argument("--out", type=Path, required=True, help="the PNG (outside the repository)")
+
+
 def _add_pcsx2_commands(groups: Any) -> None:
     """Register `coney-tools pcsx2 ...`."""
     group = groups.add_parser("pcsx2", help="drive the original in PCSX2 over PINE: patched states, recording")
@@ -210,6 +235,7 @@ def _add_pcsx2_commands(groups: Any) -> None:
     repack.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
     launch = commands.add_parser("launch", help="start PCSX2 on a state file and wait until its game runs")
     launch.add_argument("state", type=Path, help="a .p2s file (a patched copy)")
+    launch.add_argument("--agent", help="your id; PCSX2 starts under your claim (made if you hold none)")
     _add_pcsx2_flags(launch)
     record = commands.add_parser("record", help="play a scenario on the original and write its per-update trace")
     record.add_argument("scenario", type=Path, help="a scenario TOML (research/traces/scenarios/)")
@@ -217,6 +243,8 @@ def _add_pcsx2_commands(groups: Any) -> None:
     record.add_argument("--state", help="the state to copy instead of the scenario's slot: a .p2s file or slot:N")
     record.add_argument("--attach", action="store_true", help="record a PCSX2 already running a patched state")
     record.add_argument("--keep-open", action="store_true", help="leave PCSX2 running afterwards")
+    record.add_argument("--agent", help="your id; runs under your claim (made, and released at the end, if none)")
+    _add_claim_commands(commands)
     _add_pcsx2_flags(record)
 
 
@@ -288,9 +316,19 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
     if args.command == "repack-state":
         return pcsx2_cli.run_repack_state(args.source, args.out, args.pcsx2_dir)
     if args.command == "launch":
-        return pcsx2_cli.run_launch(args.state, args.pcsx2_dir, args.iso, args.scratch)
+        return pcsx2_cli.run_launch(args.state, args.pcsx2_dir, args.iso, args.scratch, args.agent)
+    if args.command == "claim":
+        return pcsx2_claims_cli.run_claim(args.agent, args.copy, args.json, args.max_age_hours)
+    if args.command == "release":
+        return pcsx2_claims_cli.run_release(args.agent, args.copy, args.force)
+    if args.command == "status":
+        return pcsx2_claims_cli.run_status(args.json, args.max_age_hours)
+    if args.command == "keys":
+        return pcsx2_claims_cli.run_keys(args.agent, args.copy, args.keys, args.hold_ms, args.gap_ms)
+    if args.command == "screenshot":
+        return pcsx2_claims_cli.run_screenshot(args.copy, args.out)
     flags = (args.pcsx2_dir, args.iso, args.scratch)
-    return pcsx2_cli.run_record(args.scenario, args.out, args.state, args.attach, args.keep_open, flags)
+    return pcsx2_cli.run_record(args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent)
 
 
 def _run(args: argparse.Namespace) -> int:

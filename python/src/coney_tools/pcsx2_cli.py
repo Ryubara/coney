@@ -9,23 +9,22 @@ from it, so it goes to the scratch folder or a path the user gives outside the r
 
 from __future__ import annotations
 
-import configparser
 import os
 import re
-import socket
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 from coney_tools import hooks as hook_tools
-from coney_tools import pcsx2_state
+from coney_tools import pcsx2_claims, pcsx2_proc, pcsx2_state
 from coney_tools.config import ConfigError, find_repo_root, load_config
 from coney_tools.game_memory import GAME_TIME_OFFSET, GAME_TIMER_POINTER, GameMemory
 from coney_tools.hooks import Hook, HookError
 from coney_tools.pcsx2_state import Patch, StateError
-from coney_tools.pine import DEFAULT_PORT, PineClient, PineError, Read
+from coney_tools.pine import PineClient, PineError, Read
 from coney_tools.recorder import Recorder, RecordError
 from coney_tools.scenario import PATCHES_FILE, Scenario, ScenarioError, load_scenario
 from coney_tools.wad import refuse_inside_repo
@@ -83,15 +82,11 @@ def resolve_paths(pcsx2_dir: Path | None, iso: Path | None, scratch: Path | None
 
 def pine_port(pcsx2_dir: Path) -> int:
     """The PINE port of PCSX2's ini (`[EmuCore]` `PINESlot`). Raises ConfigError when PINE is not enabled."""
-    ini = pcsx2_dir / "inis" / "PCSX2.ini"
-    parser = configparser.ConfigParser(interpolation=None, strict=False)
-    try:
-        parser.read(ini, encoding="utf-8")
-    except configparser.Error as error:
-        raise ConfigError(f"{ini}: {error}") from error
-    if not parser.getboolean("EmuCore", "EnablePINE", fallback=False):
+    port = pcsx2_claims.read_pine_port(pcsx2_dir)
+    if port is None:
+        ini = pcsx2_dir / "inis" / "PCSX2.ini"
         raise ConfigError(f"{ini}: PINE is off; set EnablePINE = true under [EmuCore] (and PINESlot) first")
-    return parser.getint("EmuCore", "PINESlot", fallback=DEFAULT_PORT)
+    return port
 
 
 def disc_link(iso: Path, scratch: Path) -> Path:
@@ -121,13 +116,7 @@ def _executable(pcsx2_dir: Path) -> Path:
     raise ConfigError(f"{pcsx2_dir}: no pcsx2-qt executable in it")
 
 
-def _port_open(port: int) -> bool:
-    """Whether something listens on localhost:`port`."""
-    try:
-        with socket.create_connection(("127.0.0.1", port), timeout=0.5):
-            return True
-    except OSError:
-        return False
+_port_open = pcsx2_claims.port_open
 
 
 def _slot_states(pcsx2_dir: Path) -> set[Path]:
@@ -171,9 +160,12 @@ def _wait_for_game(port: int, patches: list[Patch], deadline: float) -> PineClie
 class Emulator:
     """PCSX2 started on a state file; close() ends it and warns about new files in its sstates/ folder."""
 
-    def __init__(self, paths: Paths, state: Path, patches: list[Patch]) -> None:
-        """Start PCSX2 on `state` and wait until its game runs. Raises ConfigError when PCSX2 already runs (one
-        PINE client at a time, and a run needs a fresh start for its patches) or PineError when it never answers."""
+    def __init__(
+        self, paths: Paths, state: Path, patches: list[Patch], on_start: Callable[[int], None] | None = None
+    ) -> None:
+        """Start PCSX2 on `state` and wait until its game runs; `on_start` gets the process id as soon as it exists
+        (the claim records it). Raises ConfigError when PCSX2 already runs (one PINE client at a time, and a run needs
+        a fresh start for its patches) or PineError when it never answers."""
         self.paths = paths
         self.port = pine_port(paths.pcsx2_dir)
         if _port_open(self.port):
@@ -181,7 +173,11 @@ class Emulator:
         self.before = _slot_states(paths.pcsx2_dir)
         disc = disc_link(paths.iso, paths.scratch)
         command = [str(_executable(paths.pcsx2_dir)), "-fastboot", "-statefile", str(state), "--", str(disc)]
-        self.process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self.process = subprocess.Popen(
+            command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **pcsx2_proc.quiet_start()
+        )
+        if on_start is not None:
+            on_start(self.process.pid)
         try:
             self.client = _wait_for_game(self.port, patches, time.monotonic() + LAUNCH_TIMEOUT)
         except PineError:
@@ -279,15 +275,23 @@ def run_repack_state(source: str, out: Path, pcsx2_dir: Path | None) -> int:
     return 0
 
 
-def run_launch(state: Path, pcsx2_dir: Path | None, iso: Path | None, scratch: Path | None) -> int:
-    """`pcsx2 launch`: start PCSX2 on a state file, wait for its game, and leave it running."""
-    paths = resolve_paths(pcsx2_dir, iso, scratch)
+def run_launch(
+    state: Path, pcsx2_dir: Path | None, iso: Path | None, scratch: Path | None, agent: str | None = None
+) -> int:
+    """`pcsx2 launch`: start PCSX2 on a state file under `agent`'s claim, wait for its game, and leave it running.
+    Without a claim of the agent's on that copy it makes one (kept: `pcsx2 release` ends it)."""
+    registry = pcsx2_claims.default_registry()
+    claim, created = registry.claim_for_run(agent, pcsx2_dir, None)
     try:
-        emulator = Emulator(paths, state, [])
-    except PineError as error:
+        paths = resolve_paths(Path(claim.path), iso, scratch)
+        emulator = Emulator(paths, state, [], on_start=lambda pid: registry.record_pid(claim, pid))
+    except (PineError, ConfigError) as error:
+        if created:
+            registry.release(claim.agent, claim.copy)
         raise ConfigError(str(error)) from error
     emulator.client.close()
-    print(f"PCSX2 runs {state} (pid {emulator.process.pid}); PINE on port {emulator.port}")
+    print(f"PCSX2 runs {state} (pid {emulator.process.pid}) on {claim.copy}; PINE on port {emulator.port}")
+    print(f"{claim.agent} keeps the claim on {claim.copy}; `coney-tools pcsx2 release --agent {claim.agent}` ends it")
     return 0
 
 
@@ -298,9 +302,32 @@ def run_record(
     attach: bool,
     keep_open: bool,
     flags: tuple[Path | None, Path | None, Path | None],
+    agent: str | None = None,
 ) -> int:
-    """`pcsx2 record`: play a scenario on the original and write its trace."""
+    """`pcsx2 record`: play a scenario on the original and write its trace, under `agent`'s claim: the one it holds
+    (kept for it afterwards), else one made here and released at the end, also on an error or Ctrl-C (unless
+    `keep_open`)."""
     refuse_inside_repo(out)
+    registry = pcsx2_claims.default_registry()
+    claim, created = registry.claim_for_run(agent, flags[0], os.getpid())
+    try:
+        return _record(scenario_path, out, state, attach, keep_open, flags, registry, claim)
+    finally:
+        if created and not keep_open:
+            registry.release(claim.agent, claim.copy)
+
+
+def _record(
+    scenario_path: Path,
+    out: Path,
+    state: str | None,
+    attach: bool,
+    keep_open: bool,
+    flags: tuple[Path | None, Path | None, Path | None],
+    registry: pcsx2_claims.Registry,
+    claim: pcsx2_claims.Claim,
+) -> int:
+    """The recording of `run_record`, on the copy of `claim`."""
     try:
         scenario = load_scenario(scenario_path, find_repo_root(Path.cwd()))
     except ScenarioError as error:
@@ -310,14 +337,13 @@ def run_record(
     try:
         patches, hooks = _patches(list(scenario.patches))
         if attach:
-            pcsx2 = flags[0] or _config_paths().get("pcsx2_dir")
-            client = PineClient(pine_port(pcsx2) if pcsx2 else DEFAULT_PORT)
+            client = PineClient(claim.port)
         else:
-            paths = resolve_paths(*flags)
+            paths = resolve_paths(Path(claim.path), flags[1], flags[2])
             source = _source_state(_scenario_state(scenario, state, paths.scratch), paths.pcsx2_dir)
             copy = paths.scratch / f"{scenario_path.stem}.p2s"
             _make_copy(source, copy, patches, paths.pcsx2_dir)
-            emulator = Emulator(paths, copy, patches)
+            emulator = Emulator(paths, copy, patches, on_start=lambda pid: registry.record_pid(claim, pid))
             client = emulator.client
         recording = Recorder(GameMemory(client), scenario, hooks=hooks).record()
     except (PineError, RecordError, StateError) as error:
