@@ -116,13 +116,13 @@ FlashRageBar(player, n)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `player` | number, truncated to an unsigned integer | Player HUD index (0 or 1). |
-| 2 | `n` | number, truncated to an unsigned integer | Flash value stored in the player HUD (+0x4114); the tutorial passes 5 to start the flashing and 0 to stop it. |
+| 2 | `n` | number, truncated to an unsigned integer | Blink length in frames (player HUD +0x4114): the meter is drawn n frames and hidden n frames; 0 stops the blinking. The tutorial passes 5. |
 
 **Returns** nothing.
 
-Makes a player's rage bar flash to draw attention to it (used by the first mission's rage tutorial).
+Makes a player's rage meter blink to draw attention to it (used by the first mission's rage tutorial).
 
-**Notes.** Whether n is a count or a mode is not traced.
+**Notes.** The counter is +0x4118 (0x00213290). Behaviour: [The in-game HUD](../../research/hud.md#the-rage-meter).
 
 - **Evidence:** confirmed (code) at `0x001b3f58`; detail: traced
 - **Wrapper** `0x00370d20` (registered by `RegisterBindings`); **calls** `0x001b3f58` `HUD_FlashRageBar`
@@ -138,14 +138,15 @@ ForceShowPlayerHud(player, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `player` | number, truncated to an unsigned integer | Player HUD index, 0 or 1. |
-| 2 | `on` | boolean (nil or 0 is false) | true keeps that player's HUD (health and rage bars) on screen permanently, false lets it fade out when idle again. |
+| 2 | `on` | boolean (nil or 0 is false) | true keeps that player's panel (name banner, rage meter, score, money) on screen, false lets it fade out when idle again. |
 
 **Returns** nothing.
 
-Forces one player's status HUD to stay visible (sets player HUD +0x4104). global.lua turns it on for fights and off
+Forces one player's panel to stay visible (sets player HUD +0x4104). global.lua turns it on for fights and off
 afterwards.
 
-**Notes.** That the flag means `do not auto-hide` is inferred from its use; the write is confirmed.
+**Notes.** While the flag is set the panel's render restarts its 2 s show and 1 s fade every frame (0x00213290).
+Behaviour: [The in-game HUD](../../research/hud.md#the-player-panel).
 
 - **Evidence:** confirmed (code) at `0x001b3f30`; detail: traced
 - **Wrapper** `0x0036ebe0` (registered by `RegisterBindings`); **calls** `0x001b3f30` `HUD_ForceShowPlayer`
@@ -205,7 +206,7 @@ Hides the whole HUD (player panels, radars, goal text, counters and bars), unles
 shows it again.
 
 **Notes.** Skipped when 0x0041d110 is true and `W_GameState + 0x14c` is 1; clears the HUD manager's visible flag
-+0x177a0.
++0x177a0. Behaviour: [The in-game HUD](../../research/hud.md#showing-and-hiding).
 
 - **Evidence:** confirmed (code) at `0x001b3ed0`; detail: traced
 - **Wrapper** `0x00370ca0` (registered by `RegisterBindings`); **calls** `0x001b3ed0` `HUD_HideAll`
@@ -222,7 +223,7 @@ No arguments.
 
 **Returns** nothing.
 
-Hides both players' status panels (health and rage) only.
+Hides both players' panels (name banner, rage meter, score, money) only.
 
 - **Evidence:** confirmed (code) at `0x001b3ef0`; detail: brief
 - **Wrapper** `0x00370ce0` (registered by `RegisterBindings`); **calls** `0x001b3ef0`
@@ -669,6 +670,9 @@ HUDEnableInstArrow(on, x, y, angle)
 
 Shows or hides the tutorial's on-screen arrow pointing at a HUD element; position and rotation apply only when turning
 it on.
+
+**Notes.** The arrow is rectangle 10 of hud_minigames, size 0.06, grey (191, 191, 191), and bobs along its direction
+(0x001b7330). Behaviour: [The in-game HUD](../../research/hud.md#the-instruction-arrow-hudenableinstarrow).
 
 - **Evidence:** confirmed (code) at `0x001b5c30`; detail: traced
 - **Wrapper** `0x0036fdd0` (registered by `RegisterBindings`); **calls** `0x001b5c30` `HUD_EnableInstructionArrow`
@@ -1171,17 +1175,20 @@ HUDSetObjective(slot, text, mode, silent, ms)
 | --- | --- | --- | --- |
 | 1 | `slot` | number, truncated to an integer | Objective line: 0 or 1 (two objective slots; each has its own heading string). |
 | 2 | `text` | string | The objective text. |
-| 3 | `mode` | number, truncated to an integer | 0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it complete (announce `<heading> complete: text`), 3 replace the text and flash it. |
-| 4 | `silent` | boolean (nil or 0 is false) | With mode 0, true sets the text without the centre-screen announcement. |
-| 5 | `ms` | number, truncated to an unsigned integer; default 8000 | How long it stays on screen, in milliseconds (default 8000). |
+| 3 | `mode` | number, truncated to an integer | 0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it (announce the heading and the text), 3 set and mark it without a message. |
+| 4 | `silent` | boolean (nil or 0 is false) | With mode 0, true sets the text without the message. |
+| 5 | `ms` | number, truncated to an unsigned integer; default 8000 | How long the message stays on screen, in milliseconds (default 8000). |
 
 **Returns** nothing.
 
-Sets, completes or clears one of the two objective lines in the HUD's goal text, with an optional centre-screen
-announcement. It is the most-used HUD binding (global.lua's Objective helpers and most level scripts).
+Sets, marks or clears one of the two objective lines in the HUD's checklist, with an optional message at the bottom left
+(GUI (0.025, 0.88), size 0.05, interface sound cue 0x11). It is the most-used HUD binding (global.lua's Objective
+helpers and most level scripts).
 
-**Notes.** The mode meanings are inferred from the code paths (mode 2 builds a string from global strings 0xe5 / 0xe6);
-the goal text lives in the object at 0x0050eddc.
+**Notes.** The message is the objective icon markup, HUD colour slot 4 or 6, global string 0xe5 or 0xe6, then the text;
+mode 0 for slot 1 also queues tutorial hint 0x15 once while game tutorial text is on. That mode 2 ticks the line off is
+inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour: [The in-game
+HUD](../../research/hud.md#objectives-hudsetobjective).
 
 - **Evidence:** confirmed (code) at `0x001dad88`; detail: traced
 - **Wrapper** `0x0036f280` (registered by `RegisterBindings`); **calls** `0x001dad88` `HUD_SetObjective`
@@ -1355,7 +1362,9 @@ HUDSetTutorialText(text, priority)
 
 Queues a tutorial hint in the hint box (the text panel used by the tutorial and for gameplay tips).
 
-**Notes.** The hint box is the object at 0x00609250.
+**Notes.** The hint box is the object at 0x00609250: black at alpha 128 at the bottom left, text at GUI x 0.016,
+interface sound cue 0x15 for each new hint; hidden while an objective message or an announcement shows. Layout: [The
+in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
 
 - **Evidence:** confirmed (code) at `0x001b4980`; detail: traced
 - **Wrapper** `0x0036f380` (registered by `RegisterBindings`); **calls** `0x001b4980` `Tutorial_QueueText`
@@ -1456,6 +1465,9 @@ HUDTurnOffRadar(player)
 **Returns** nothing.
 
 Hides the radar for one or both players.
+
+**Notes.** HUD_Update turns both radars back on when no screen fade runs, HUD +0x177ac is set and +0x177b0 is 0; who
+sets +0x177ac is not traced. Behaviour: [The in-game HUD](../../research/hud.md#the-radar-on-screen).
 
 - **Evidence:** confirmed (code) at `0x001b43a8`; detail: traced
 - **Wrapper** `0x00370100` (registered by `RegisterBindings`); **calls** `0x001b43a8` `HUD_RadarOff`

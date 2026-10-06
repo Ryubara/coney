@@ -169,14 +169,15 @@
     - {addr: 0x001b3f30, name: HUD_ForceShowPlayer}
   args:
     - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index, 0 or 1."}
-    - {name: "on", lua: boolean, desc: "true keeps that player's HUD (health and rage bars) on screen permanently, false lets it fade out when idle again."}
+    - {name: "on", lua: boolean, desc: "true keeps that player's panel (name banner, rage meter, score, money) on screen, false lets it fade out when idle again."}
   description: >-
-    Forces one player's status HUD to stay visible (sets player HUD +0x4104). global.lua turns it on for fights and
+    Forces one player's panel to stay visible (sets player HUD +0x4104). global.lua turns it on for fights and
     off afterwards.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    That the flag means `do not auto-hide` is inferred from its use; the write is confirmed.
+    While the flag is set the panel's render restarts its 2 s show and 1 s fade every frame (0x00213290). Behaviour:
+    [The in-game HUD](../../research/hud.md#the-player-panel).
   usage: {chunks: 43, calls: 131, boot: true, mission1: true, result_used: false}
 
 - name: HUDShowMissionSelect
@@ -404,17 +405,20 @@
   args:
     - {name: slot, lua: number, ctype: int, desc: "Objective line: 0 or 1 (two objective slots; each has its own heading string)."}
     - {name: text, lua: string, desc: "The objective text."}
-    - {name: mode, lua: number, ctype: int, desc: "0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it complete (announce `<heading> complete: text`), 3 replace the text and flash it."}
-    - {name: silent, lua: boolean, desc: "With mode 0, true sets the text without the centre-screen announcement."}
-    - {name: ms, lua: number, ctype: unsigned, default: 8000, desc: "How long it stays on screen, in milliseconds (default 8000)."}
+    - {name: mode, lua: number, ctype: int, desc: "0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it (announce the heading and the text), 3 set and mark it without a message."}
+    - {name: silent, lua: boolean, desc: "With mode 0, true sets the text without the message."}
+    - {name: ms, lua: number, ctype: unsigned, default: 8000, desc: "How long the message stays on screen, in milliseconds (default 8000)."}
   description: >-
-    Sets, completes or clears one of the two objective lines in the HUD's goal text, with an optional centre-screen
-    announcement. It is the most-used HUD binding (global.lua's Objective helpers and most level scripts).
+    Sets, marks or clears one of the two objective lines in the HUD's checklist, with an optional message at the
+    bottom left (GUI (0.025, 0.88), size 0.05, interface sound cue 0x11). It is the most-used HUD binding
+    (global.lua's Objective helpers and most level scripts).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The mode meanings are inferred from the code paths (mode 2 builds a string from global strings 0xe5 / 0xe6); the
-    goal text lives in the object at 0x0050eddc.
+    The message is the objective icon markup, HUD colour slot 4 or 6, global string 0xe5 or 0xe6, then the text; mode
+    0 for slot 1 also queues tutorial hint 0x15 once while game tutorial text is on. That mode 2 ticks the line off is
+    inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour:
+    [The in-game HUD](../../research/hud.md#objectives-hudsetobjective).
   usage: {chunks: 149, calls: 675, boot: true, mission1: true, result_used: false}
 
 - name: HUDRemoveAllGoalText
@@ -439,7 +443,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The hint box is the object at 0x00609250.
+    The hint box is the object at 0x00609250: black at alpha 128 at the bottom left, text at GUI x 0.016, interface
+    sound cue 0x15 for each new hint; hidden while an objective message or an announcement shows. Layout:
+    [The in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
   usage: {chunks: 53, calls: 244, boot: true, mission1: true, result_used: false}
 
 - name: HUDCheckTutorialText
@@ -654,6 +660,9 @@
     turning it on.
   evidence: confirmed-code
   depth: thorough
+  notes: >-
+    The arrow is rectangle 10 of hud_minigames, size 0.06, grey (191, 191, 191), and bobs along its direction
+    (0x001b7330). Behaviour: [The in-game HUD](../../research/hud.md#the-instruction-arrow-hudenableinstarrow).
   usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
 
 - name: HUDSetInstArrowAnimSpeed
@@ -742,6 +751,9 @@
     Hides the radar for one or both players.
   evidence: confirmed-code
   depth: thorough
+  notes: >-
+    HUD_Update turns both radars back on when no screen fade runs, HUD +0x177ac is set and +0x177b0 is 0; who sets
+    +0x177ac is not traced. Behaviour: [The in-game HUD](../../research/hud.md#the-radar-on-screen).
   usage: {chunks: 67, calls: 121, boot: false, mission1: true, result_used: false}
 
 - name: HUDSetNumIndicator
@@ -1015,6 +1027,7 @@
   depth: thorough
   notes: >-
     Skipped when 0x0041d110 is true and `W_GameState + 0x14c` is 1; clears the HUD manager's visible flag +0x177a0.
+    Behaviour: [The in-game HUD](../../research/hud.md#showing-and-hiding).
   usage: {chunks: 56, calls: 97, boot: true, mission1: true, result_used: false}
 
 - name: RestoreHud
@@ -1032,7 +1045,7 @@
   calls:
     - {addr: 0x001b3ef0}
   description: >-
-    Hides both players' status panels (health and rage) only.
+    Hides both players' panels (name banner, rage meter, score, money) only.
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 44, calls: 50, boot: false, mission1: false, result_used: false}
@@ -1053,13 +1066,13 @@
     - {addr: 0x001b3f58, name: HUD_FlashRageBar}
   args:
     - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index (0 or 1)."}
-    - {name: "n", lua: number, ctype: unsigned, desc: "Flash value stored in the player HUD (+0x4114); the tutorial passes 5 to start the flashing and 0 to stop it."}
+    - {name: "n", lua: number, ctype: unsigned, desc: "Blink length in frames (player HUD +0x4114): the meter is drawn n frames and hidden n frames; 0 stops the blinking. The tutorial passes 5."}
   description: >-
-    Makes a player's rage bar flash to draw attention to it (used by the first mission's rage tutorial).
+    Makes a player's rage meter blink to draw attention to it (used by the first mission's rage tutorial).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Whether n is a count or a mode is not traced.
+    The counter is +0x4118 (0x00213290). Behaviour: [The in-game HUD](../../research/hud.md#the-rage-meter).
   usage: {chunks: 1, calls: 2, boot: false, mission1: true, result_used: false}
 
 - name: CNSEnableMissionInfo

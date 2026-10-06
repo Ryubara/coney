@@ -10,7 +10,8 @@ How the front end and the HUD put 2D things on the screen: the widget classes, t
 screens, the **sprite sheets** (chunk `0x4C`, "Particle Page") every 2D image comes from, how a sprite reaches a
 RenderWare PTank, how text is laid out and drawn as one sprite per character, where the UI strings come from, and the
 order in which it is all drawn. [Start-up and the front end](frontend.md) says which screens run when; the screen
-geometry (GUI coordinates, the overlay camera) is on [Graphics](graphics.md#2d-drawing).
+geometry (GUI coordinates, the overlay camera) is on [Graphics](graphics.md#2d-drawing); what the in-game HUD shows
+and where is on [The in-game HUD](hud.md).
 
 In short: **menus are C++ widgets, not data.** A screen's layout, items and transitions are in its constructor and
 `Init`; the data it uses is a sprite sheet resource (named by a hash), global UI strings set from Lua, and markup tags

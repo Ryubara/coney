@@ -78,6 +78,7 @@ nav:
           - Graphics device and textures: research/graphics.md
           - Start-up and the front end: research/frontend.md
           - GUI, sprite sheets and text: research/gui.md
+          - In-game HUD: research/hud.md
           - Particles and script types: research/particles.md
           - Level loading: research/level-loading.md
           - Scripts (Lua): research/scripting.md
