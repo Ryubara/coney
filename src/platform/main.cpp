@@ -24,6 +24,7 @@
 #include <SDL3/SDL_main.h>
 
 #include "ai/ai_config.h"
+#include "characters/character_types.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/frame_clock.h"
@@ -256,6 +257,7 @@ coney::platform::PlayerSetup playerSetupOf(const coney::LevelStart& start) {
         if (!start.player->model.empty()) {
             setup.model = start.player->model;
         }
+        setup.type = start.player->type;
         setup.snapToGround = !start.player->teleported;
     }
     return setup;
@@ -300,23 +302,29 @@ coney::LevelScriptRun scriptRunFor(const coney::io::Wad& wad, std::string_view n
     return run;
 }
 
-// Player 1's setup for a level run alone: his model and snap, and the AI fighters' configuration from the run.
+// Player 1's setup for a level run alone: his model and snap, and the AI fighters' configuration and the character
+// types from the run.
 coney::platform::PlayerSetup playerSetupOf(const coney::LevelScriptRun& run) {
     coney::platform::PlayerSetup setup = playerSetupOf(run.start);
     setup.ai = coney::ai::aiConfigFrom(run.recorded);
+    setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
     return setup;
 }
 
-// The AI fighters' configuration for a sandbox: **Coney's choice**, level99's (the combat training level whose
-// fighters the sandbox's stand in for, docs/research/ai.md#level99), from its scripts run alone and quietly.
-coney::ai::AiConfig sandboxAiConfig(const coney::io::Wad& wad) {
+// The setup of a sandbox's player: **Coney's choice**, level99's configuration (the combat training level whose
+// fighters the sandbox's stand in for, docs/research/ai.md#level99) for the AI fighters and the character types, from
+// its scripts run alone and quietly; the player is Rembrandt.
+coney::platform::PlayerSetup sandboxSetup(const coney::io::Wad& wad) {
     std::vector<std::uint32_t> table;
     const coney::LevelScriptRun run = coney::runLevelScriptAlone(
         coney::script::wadScriptSource(wad), "level99", 1, [](std::string_view /*line*/) {},
         levelScriptOptions(wad, "level99", table));
-    coney::ai::AiConfig config = coney::ai::aiConfigFrom(run.recorded);
-    printText(std::format("fighters: level99's configuration ({} calls read)\n", config.callsRead));
-    return config;
+    coney::platform::PlayerSetup setup;
+    setup.ai = coney::ai::aiConfigFrom(run.recorded);
+    setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
+    printText(std::format("fighters: level99's configuration ({} calls read); {} character types\n", setup.ai.callsRead,
+                          setup.types.all().size()));
+    return setup;
 }
 
 } // namespace
@@ -531,7 +539,7 @@ int main(int argc, char** argv) {
         if (const std::optional<std::string> layout = coney::sandboxOfPlayLevel(*playName); layout) {
             auto world = loadSandbox(*options, *layout);
             playMode = world ? coney::platform::PlayLevelMode::createInSandbox(
-                                   renderer, *wad, std::move(*world), options->spawn, printText, sandboxAiConfig(*wad))
+                                   renderer, *wad, std::move(*world), options->spawn, printText, sandboxSetup(*wad))
                              : std::unexpected(std::move(world.error()));
         } else {
             // The level's script says where player 1 starts at the checkpoint, as when the story reaches it.
@@ -582,6 +590,7 @@ int main(int argc, char** argv) {
             coney::platform::PlayerSetup setup = playerSetupOf(start);
             if (startUp) {
                 setup.ai = coney::ai::aiConfigFrom(startUp->recorded());
+                setup.types = coney::characters::CharacterTypes::fromRecorded(startUp->recorded());
             }
             auto mode = coney::platform::PlayLevelMode::create(renderer, gameWad, start.level, sectorBudget, printText,
                                                                playerStartOf(start), setup);
@@ -652,15 +661,6 @@ int main(int argc, char** argv) {
     double frameMilliseconds = 0.0;
     if (pacer) {
         debugServices.frameMilliseconds = [&frameMilliseconds] { return frameMilliseconds; };
-    }
-    if (startUp) {
-        debugServices.scripts = [&startUp] { return &startUp->scripts(); };
-        debugServices.recorded = [&startUp] { return &startUp->recorded(); };
-        debugServices.gameState = [&startUp] { return &startUp->state(); };
-        // The level flow starts the chosen level next (MenuLoadLevel); a level in play waits for player-movement.
-        debugServices.loadLevel = [&startUp](std::string_view name) {
-            startUp->menuLoadLevel(name);
-            return true;
         debugServices.frameRate = [&pacer] { return pacer->meter().reading(); };
         debugServices.fpsCap = [&pacer] { return pacer->cap(); };
         debugServices.setFpsCap = [&pacer, &clock, pacingFor](std::uint32_t cap) {
@@ -671,6 +671,15 @@ int main(int argc, char** argv) {
     if (windowed) {
         debugServices.vsync = [&renderer] { return renderer.vsync(); };
         debugServices.setVsync = [&renderer](bool on) { renderer.setVsync(on); };
+    }
+    if (startUp) {
+        debugServices.scripts = [&startUp] { return &startUp->scripts(); };
+        debugServices.recorded = [&startUp] { return &startUp->recorded(); };
+        debugServices.gameState = [&startUp] { return &startUp->state(); };
+        // The level flow starts the chosen level next (MenuLoadLevel); a level in play waits for player-movement.
+        debugServices.loadLevel = [&startUp](std::string_view name) {
+            startUp->menuLoadLevel(name);
+            return true;
         };
     }
     // Without the level flow, a level the Levels page asks for replaces the play mode at the start of the next frame
@@ -746,7 +755,7 @@ int main(int argc, char** argv) {
         }
         if (wad) {
             auto mode = coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world), std::nullopt,
-                                                                        printText, sandboxAiConfig(*wad));
+                                                                        printText, sandboxSetup(*wad));
             if (!mode) {
                 debugSession.print("levels: " + mode.error().message);
                 return;

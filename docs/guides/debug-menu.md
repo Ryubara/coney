@@ -111,7 +111,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Lua console | a Lua line to run in the script state, a file to run, and the output |
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
 | Levels | the levels to play (or the level table's, in the front end), a name to type, and the sandbox layouts |
-| Player | where the player is and how it moves (plotted), freezing it, teleports to places, a typed or saved spot |
+| Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
@@ -148,6 +148,26 @@ does, while the player stands still and the scenery streams round the free camer
 (Coney's own sizes) in front of the player, facing his way, and rebuilds the sandbox with its collision and lighting; a
 level cannot spawn yet. *AI fighters* spawns a fighter ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front
 of the player, facing him, in a sandbox or a level; *Engaging* off keeps idle fighters from taking him on.
+
+**Change character.** *Character type* lists every type the scripts' `CfgChar` calls configure (449 on the disc) when
+the scripts set up the scene (a level's own, the story's, or level99's for a sandbox), each with the model a player
+of it is drawn as: a plain alias takes its class's model, and levels 60-64 the `_a` one
+([From a type to a model](../research/characters.md#type-to-model)). *Change character* rebuilds the player where he
+stands, at full health, with the camera behind him, through the play mode's own player creation: the model, its
+animation set and moves (their Anim Range List), the speeds its clips give, and his class, taken as the level's
+starting player takes his. That is the class's damage table scaled by his Warrior class's percentage
+([Damage](../research/combat.md#damage-table)), and his power class: his Warrior's (58-66) for a Warriors type, else the
+type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, hurt threshold,
+stun and down times. The Player page's *Character* line shows both classes. The AI fighters are made again where they
+stand, at full health, since their brains hold the player they fought; they and the targets keep the scene's
+character. The new character loads from the disc, so that frame stalls briefly.
+
+Not taken from the configuration yet, because Coney does not model them for a player: the health (he keeps 900, the
+player's maximum read at runtime, which the class's 1800 does not explain), the power class's stamina, the Warrior
+class's rage, mashing, theft and mugging stats, the body scale (Rembrandt's 0.97), the speed class (a fallback the
+original does not use in play, [Speed classes](../research/characters.md#speed-classes)), the attack table, attack
+delays and brain type (an AI's, not a pad's), the voice, hat and weapon, and the movement styles that change the anim
+slots.
 
 **Display.** *FPS counter* shows, in the top-right corner under the frame stats, the frames a second, the average
 frame time and the steps a second over each half second, as the frame pacer measures them (`coney::FrameRateMeter`,
@@ -296,6 +316,6 @@ The overlay is checked the same way: its renderer runs over a bare Dear ImGui co
 
 ## Still to come {#still-to-come}
 
-- Spawning characters, once other characters move in a level; god mode, once the player has health; a model swap.
+- Spawning characters, once other characters move in a level; god mode, once the player has health.
 - Spawning objects in a level, and path overlays from the level's path data.
 - The retail cheat checker itself, after which the Cheats page gains on/off states.

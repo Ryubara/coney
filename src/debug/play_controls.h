@@ -43,6 +43,13 @@ struct Spawnable {
 /// (docs/guides/sandbox.md).
 [[nodiscard]] const std::vector<Spawnable>& spawnables();
 
+/// One character type the Player page can rebuild the player as: its `CfgChar` type and the model a player of it is
+/// drawn as (characters::CharacterTypes::modelFor()).
+struct CharacterChoice {
+    int type = 0;
+    std::string model;
+};
+
 /// What the debug menus can reach in a mode where the player plays (the play mode, `--play-level`): the player, the
 /// follow camera and the scenery. The mode implements it; the Player, Camera and Spawner pages
 /// (src/debug/pages_play.cpp) are defined over it, so they are the same in every front end and need no platform code
@@ -115,6 +122,24 @@ class PlayControls {
     virtual void setFightersEngage(bool /*on*/) {}
     /// One line on the fighters: each one's health, top goal and front action, and the player's health.
     [[nodiscard]] virtual std::string fightersState() const { return "-"; }
+
+    // The player's character type (the Player page's Change character). A mode without the configuration's types
+    // keeps the defaults.
+
+    /// The types the player can be rebuilt as, in rising order; empty when the configuration is not known here.
+    [[nodiscard]] virtual std::vector<CharacterChoice> characterChoices() const { return {}; }
+    /// The type the player is now; 0 when not known.
+    [[nodiscard]] virtual int playerType() const { return 0; }
+    /// One line on what the player is: the type, the model and the health.
+    [[nodiscard]] virtual std::string characterState() const { return "-"; }
+    /// Rebuilds the player in place as character type `type`, through the mode's own player creation: the model, its
+    /// animation set and moves, and what the mode takes from the type's configuration, at full health, keeping the
+    /// feet and the heading, with the camera placed behind him again. Fails, leaving the player as he was, with
+    /// ErrorCode::InvalidArgument where it cannot be done, ErrorCode::NotFound for a type without a model, and as
+    /// loading the character does.
+    virtual std::expected<void, Error> changeCharacter(int /*type*/) {
+        return std::unexpected(Error{ErrorCode::InvalidArgument, "no character types here"});
+    }
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from

@@ -97,6 +97,7 @@ target_sources(coney_core PRIVATE
     animation/skeleton.cpp
     characters/character_assets.cpp
     characters/character_class.cpp
+    characters/character_types.cpp
     characters/character_data.cpp
     characters/character_list.cpp
     characters/character_model.cpp

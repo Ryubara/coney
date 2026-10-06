@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
 #include <expected>
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include "animation/anim_math.h"
 #include "animation/skeleton.h"
@@ -12,8 +14,10 @@
 #include "characters/anim_set.h"
 #include "characters/character_assets.h"
 #include "characters/character_data.h"
+#include "characters/character_types.h"
 #include "combat/anim_ranges.h"
 #include "combat/commands.h"
+#include "combat/power_class.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/pad.h"
@@ -32,6 +36,8 @@ namespace coney::human {
 
 /// The player's model: Rembrandt, as `level99.lua` creates him (docs/research/characters.md#creation).
 inline constexpr std::string_view kPlayerModel = "warr_re_cv";
+/// The character type of kPlayerModel: Rembrandt as `level99.lua` creates him (`HuCreate` type 32).
+inline constexpr int kPlayerType = 32;
 
 /// Rembrandt's body scale (`+0x65c`) as read at runtime: his walking sphere is 0.35 × 0.97 = 0.34 m
 /// (docs/research/characters.md#walls). How the game derives it is open, so Coney uses the value read.
@@ -98,12 +104,28 @@ struct PlayerSnapshot {
 /// exactly the newest step (docs/guides/conventions.md#update-and-render).
 [[nodiscard]] PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot& current, float alpha);
 
+/// What a player takes from his character type's configuration beyond the model and its files
+/// (characters::PlayerTraits): the class's damage table (`CfgChar` `+0xb8`), scaled by his Warrior class's percentage
+/// and written over his own copy of the Anim Range List (combat::applyClassDamage()), and his power class. Empty, the
+/// list's own damage plays unscaled with class 64's runtime values (a level without a configuration).
+struct PlayerClass {
+    std::vector<std::int16_t> damage;
+    int damagePercent = 0;                        ///< The Warrior class byte `+0x06`; 0 leaves the damage unscaled.
+    std::optional<combat::PowerClass> powerClass; ///< Nothing keeps combat::kPlayerPowerClass.
+};
+
+/// The class a player made as `type` plays with, from `types` (characters::CharacterTypes::playerTraitsOf()); empty
+/// when `types` has no such type. The one path for every player, the one a level starts with and a changed one alike,
+/// as the original writes the class's damage when any human is made (docs/research/combat.md#damage-table).
+[[nodiscard]] PlayerClass playerClassOf(const characters::CharacterTypes& types, int type);
+
 /// Player 1: the human and its follow camera.
 class Player {
   public:
     /// A player playing `character` (which must outlive it), spawned at `start` on `mesh` (may be null), the camera
-    /// set up behind it.
-    Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start);
+    /// set up behind it, with `playerClass`'s damage and power class (docs/research/combat.md#damage-table).
+    Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start,
+           const PlayerClass& playerClass = {});
     Player(const Player&) = delete;
     Player& operator=(const Player&) = delete;
     Player(Player&&) = delete;
@@ -137,6 +159,8 @@ class Player {
     /// The last update's command.
     [[nodiscard]] combat::CommandId command() const { return m_matcher.command(); }
     [[nodiscard]] const camera::FollowCamera& camera() const { return m_camera; }
+    /// Where a human that fell out of the world is put back: the start it was made at.
+    [[nodiscard]] const PlayerStart& start() const { return m_start; }
     /// How often the human has been put back at the start.
     [[nodiscard]] std::uint32_t respawns() const { return m_respawns; }
     /// The state after the last update and the one before it (the same until the first update).

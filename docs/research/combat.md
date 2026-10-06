@@ -1426,9 +1426,10 @@ starts has one; the grab and tackle ranges come out at 3.12 m and 3.75 m as at r
 the target play is there (120 ids), 41 of the reactions with a knockdown event. **The file's damage is not the
 runtime damage** (confirmed (Coney's disc check)): Rembrandt's file says `S1` 40, `SS2` 40, `X1` 45 where play gives
 17, 36, 26, because the character class's table is written over the list ([Damage](#damage-table)).
-`applyClassDamage()` does that write into each human's own copy of the list (`Human`'s `classDamage`), but Coney
-does not yet read `CfgChar`'s damage table from the config script (the script runner keeps table arguments as nil),
-so the game plays the file's damage for now.
+`applyClassDamage()` does that write into each human's own copy of the list (`Human`'s `classDamage`). The player
+takes his class's table and his Warrior class's percentage from the recorded configuration (`human::playerClassOf()`),
+at a level's start and at the debug menus' change of character alike; the disc check gives Rembrandt's `S1` 17 as at
+runtime. When the scripts recorded no `CfgChar` call of his type he plays the file's damage.
 
 **Coney choices**, where the research is silent or inferred:
 

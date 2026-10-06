@@ -15,6 +15,7 @@
 #include "ai/ai_config.h"
 #include "ai/ai_humans.h"
 #include "animation/anim_math.h"
+#include "characters/character_types.h"
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
@@ -47,6 +48,12 @@ struct PlayerSetup {
     /// characters::modelNameFor()). **Coney's choice:** when it is empty or fails to load, Rembrandt's, with a line in
     /// the log.
     std::string model{human::kPlayerModel};
+    /// The character type the player was made as (`HuCreate`'s type): his class (`types`) and the Player page.
+    int type = human::kPlayerType;
+    /// The character types the scripts configured (`CfgChar`, with the power and Warrior classes): the player takes
+    /// his class from them (human::playerClassOf()), and the debug menus can rebuild him as any of them
+    /// (debug::PlayControls::changeCharacter()); empty: none, and the player plays his files' own damage.
+    characters::CharacterTypes types;
     /// Whether the start is snapped to the ground as `HuCreate` does; false for a start a `TeleportToFlag` gave, which
     /// does not snap (docs/research/flags.md#position).
     bool snapToGround = true;
@@ -100,11 +107,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
            const PlayerSetup& setup = {});
 
     /// The player in the sandbox `world` (SandboxPlayScenery::create()), at spawn point `spawn` (the layout's first
-    /// when unset), with the character loaded from `wad`. Fails as the scenery and the character loader do.
+    /// when unset), with the character loaded from `wad`, as `setup` says (its start is always snapped). Fails as the
+    /// scenery and the character loader do.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
     createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox::SandboxWorld world,
                     const std::optional<std::string>& spawn, std::function<void(std::string_view)> print,
-                    const ai::AiConfig& ai = {});
+                    const PlayerSetup& setup = {});
 
     ~PlayLevelMode() override;
     PlayLevelMode(const PlayLevelMode&) = delete;
@@ -166,6 +174,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] bool fightersEngage() const override { return m_ai->engaging(); }
     void setFightersEngage(bool on) override { m_ai->setEngaging(on); }
     [[nodiscard]] std::string fightersState() const override;
+    [[nodiscard]] std::vector<debug::CharacterChoice> characterChoices() const override;
+    [[nodiscard]] int playerType() const override { return m_type; }
+    [[nodiscard]] std::string characterState() const override;
+    /// Rebuilds the player as `type` (debug::PlayControls::changeCharacter()): the model a player of the type is drawn
+    /// as and its files (the anim set, the moves' Anim Range List, the speeds its clips give), loaded as the mode's
+    /// start loads them, and his class as the start's player takes it (human::playerClassOf(): the class's damage
+    /// scaled by his Warrior class, his power class), at full health where he stands. The AI
+    /// fighters are made again where they stand, at full health, since their brains hold the player they fought.
+    std::expected<void, Error> changeCharacter(int type) override;
 
     /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play; no ground snap.
     void teleportPlayer(const world_objects::Placement& placement) override;
@@ -173,22 +190,37 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const std::string& model() const { return m_model; }
 
   private:
-    PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> scenery,
-                  std::unique_ptr<human::PlayerCharacter> character, std::vector<TextureDictionary> dictionaries,
-                  std::function<void(std::string_view)> print, std::string model, bool snapStart,
-                  const ai::AiConfig& ai);
+    // A character's resources and its texture dictionaries, ready to draw.
+    struct LoadedCharacter {
+        std::unique_ptr<human::PlayerCharacter> character;
+        std::vector<TextureDictionary> dictionaries;
+    };
+
+    PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
+                  LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
+                  const PlayerSetup& setup);
 
     // The character and its texture from `wad`, then the mode round `scenery`: what both create functions share.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
     createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                std::function<void(std::string_view)> print, const PlayerSetup& setup = {});
+    // Loads the character `model` names from `wad` and its textures, converted for drawing when `engine` draws: the
+    // player's creation, at the start and at a change of character (src/platform/play_level_character.cpp).
+    [[nodiscard]] static std::expected<LoadedCharacter, Error> loadCharacter(RenderEngine& engine, const io::Wad& wad,
+                                                                             std::string_view model);
+    // The texture a character's dictionaries hold, which every material uses; null when none.
+    [[nodiscard]] static rw::Texture* textureOf(const std::vector<TextureDictionary>& dictionaries);
+    // The character the player plays: his own after a change of character, else the scene's.
+    [[nodiscard]] const human::PlayerCharacter& playerCharacter() const {
+        return m_playerCharacter ? *m_playerCharacter : *m_character;
+    }
 
     // The camera of `snapshot` as the scenery draws it, in RenderWare's axes, with `drawDistance` as its far clip.
     [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot, float drawDistance) const;
-    // Skins the character in `pose`, leaned by `lean` and turned to `heading` at `feet`, into `positions` and `normals`
+    // Skins `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, into `positions` and `normals`
     // in the world (RenderWare's axes) for drawing.
-    void skin(const anim::Pose& pose, anim::Vec3 feet, float heading, float lean, std::vector<anim::Vec3>& positions,
-              std::vector<anim::Vec3>& normals) const;
+    static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
+                     float lean, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals);
     // Makes the layout's targets, dropped onto the ground, with a mesh each.
     void makeTargets(rw::Texture* texture);
     // Spawns a fighter dropped onto the ground below `spot`, with its mesh.
@@ -204,9 +236,18 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void drawDebugLines(const human::PlayerSnapshot& snapshot) const;
 
     RenderEngine& m_engine;
+    const io::Wad& m_wad;
     std::unique_ptr<PlayScenery> m_scenery;
-    std::unique_ptr<human::PlayerCharacter> m_character;
-    std::vector<TextureDictionary> m_dictionaries; // before the mesh, which holds a reference to their texture
+    std::unique_ptr<human::PlayerCharacter> m_character; // the scene's: the targets and fighters play it
+    std::vector<TextureDictionary> m_dictionaries;       // before the mesh, which holds a reference to their texture
+    // After a change of character, the player's own character and textures; and the characters he played before,
+    // kept while the mode lasts because a target may still be playing a paired clip from one of their anim sets.
+    std::unique_ptr<human::PlayerCharacter> m_playerCharacter;
+    std::vector<TextureDictionary> m_playerDictionaries;
+    std::vector<std::unique_ptr<human::PlayerCharacter>> m_retired;
+    characters::CharacterTypes m_types; // the configuration's types
+    int m_type = 0;                     // the type the player is
+    int m_levelNumber = 0;              // the scene's level number (its models), 0 for a sandbox
     std::unique_ptr<human::Player> m_player;
     std::function<void(std::string_view)> m_print;
     std::vector<anim::Vec3> m_positions;

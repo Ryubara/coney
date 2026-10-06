@@ -6,6 +6,7 @@
 #include <cmath>
 #include <format>
 #include <numbers>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -105,6 +106,23 @@ const char* gaitName(human::Gait gait) {
     return "?";
 }
 
+// The level number of a scene called `name` (99 for `level99`), which picks the Armies of the Night models; 0 for a
+// sandbox or any other name.
+int levelNumberOf(std::string_view name) {
+    constexpr std::string_view kPrefix = "level";
+    if (!name.starts_with(kPrefix) || name.size() == kPrefix.size()) {
+        return 0;
+    }
+    int number = 0;
+    for (const char c : name.substr(kPrefix.size())) {
+        if (c < '0' || c > '9' || number > 9999) {
+            return 0;
+        }
+        number = (number * 10) + (c - '0');
+    }
+    return number;
+}
+
 } // namespace
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
@@ -124,83 +142,69 @@ PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox::SandboxWorld world,
                                const std::optional<std::string>& spawn, std::function<void(std::string_view)> print,
-                               const ai::AiConfig& ai) {
+                               const PlayerSetup& setup) {
     auto scenery = SandboxPlayScenery::create(engine, std::move(world), spawn);
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
     }
-    PlayerSetup setup;
-    setup.ai = ai;
-    return createWith(engine, wad, std::move(*scenery), std::move(print), setup);
+    PlayerSetup used = setup;
+    used.snapToGround = true;
+    return createWith(engine, wad, std::move(*scenery), std::move(print), used);
 }
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                           std::function<void(std::string_view)> print, const PlayerSetup& setup) {
     // The player's character and its texture: the model the level script's type names, else Rembrandt's.
-    chunk::ChunkHandlerTable table = chunk::ChunkHandlerTable::withDefaults();
-    characters::addCharacterDataHandlers(table);
-    addTextureDictionaryHandlers(table);
     std::string model = setup.model.empty() ? std::string(human::kPlayerModel) : setup.model;
-    auto character = human::PlayerCharacter::load(wad, table, model);
-    if (!character && model != human::kPlayerModel) {
+    bool fellBack = false;
+    auto loaded = loadCharacter(engine, wad, model);
+    if (!loaded && model != human::kPlayerModel) {
         print(std::format("player: model {} could not be loaded ({}); playing {} instead\n", model,
-                          character.error().message, human::kPlayerModel));
+                          loaded.error().message, human::kPlayerModel));
         model = human::kPlayerModel;
-        character = human::PlayerCharacter::load(wad, table, model);
+        loaded = loadCharacter(engine, wad, model);
+        fellBack = true;
     }
-    if (!character) {
-        return std::unexpected(std::move(character.error()));
+    if (!loaded) {
+        return std::unexpected(std::move(loaded.error()));
     }
-    auto dictionaries = loadTextureDictionaries(wad, *(*character)->assets().textures, table);
-    if (!dictionaries) {
-        return std::unexpected(std::move(dictionaries.error()));
-    }
-    if (engine.drawsPixels()) {
-        for (TextureDictionary& dictionary : *dictionaries) {
-            if (auto converted = dictionary.convertForDrawing(); !converted) {
-                return std::unexpected(std::move(converted.error()));
-            }
-        }
+    // Rembrandt in place of a model that failed is type 32.
+    PlayerSetup used = setup;
+    if (fellBack) {
+        used.type = human::kPlayerType;
     }
     // Where the player starts, which the scenery decides.
     const human::PlayerStart start = scenery->start();
-    const human::Speeds speeds = human::speedsOf((*character)->anims(), human::AnimSlots::player());
+    const human::Speeds speeds = human::speedsOf(loaded->character->anims(), human::AnimSlots::player());
     print(std::format("player: {} at ({:.2f}, {:.2f}, {:.2f}) heading {:.0f} ({}{}); speeds walk {:.3f}, jog {:.3f}, "
                       "run {:.3f}, sprint {:.3f} m/s\n",
                       model, start.position.x, start.position.y, start.position.z, start.headingDegrees,
                       scenery->startSource(), setup.snapToGround ? "" : ", not snapped", speeds.walk, speeds.jog,
                       speeds.run, speeds.sprint));
-    return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, std::move(scenery), std::move(*character),
-                                                            std::move(*dictionaries), std::move(print),
-                                                            std::move(model), setup.snapToGround, setup.ai));
+    return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, wad, std::move(scenery), std::move(*loaded),
+                                                            std::move(print), std::move(model), used));
 }
 
-PlayLevelMode::PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> scenery,
-                             std::unique_ptr<human::PlayerCharacter> character,
-                             std::vector<TextureDictionary> dictionaries, std::function<void(std::string_view)> print,
-                             std::string model, bool snapStart, const ai::AiConfig& ai)
-    : m_engine(engine), m_scenery(std::move(scenery)), m_character(std::move(character)),
-      m_dictionaries(std::move(dictionaries)),
+PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
+                             LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
+                             const PlayerSetup& setup)
+    : m_engine(engine), m_wad(wad), m_scenery(std::move(scenery)), m_character(std::move(loaded.character)),
+      m_dictionaries(std::move(loaded.dictionaries)), m_types(setup.types), m_type(setup.type),
+      m_levelNumber(levelNumberOf(m_scenery->name())),
       // A start with no snap is spawned without the mesh; the first update's ground snap then settles the feet.
-      m_player(std::make_unique<human::Player>(*m_character, snapStart ? &m_scenery->collision() : nullptr,
-                                               m_scenery->start())),
+      m_player(std::make_unique<human::Player>(*m_character, setup.snapToGround ? &m_scenery->collision() : nullptr,
+                                               m_scenery->start(), human::playerClassOf(setup.types, setup.type))),
       m_print(std::move(print)), m_positions(m_character->assets().model.vertices.size()),
       m_normals(m_character->assets().model.vertices.size()), m_drawDistance(m_scenery->drawDistance()),
       m_model(std::move(model)) {
-    // The texture: the character's dictionary holds one, which every material uses.
-    rw::Texture* texture = nullptr;
-    if (!m_dictionaries.empty()) {
-        const std::vector<rw::Texture*> textures = m_dictionaries.front().textures();
-        texture = textures.empty() ? nullptr : textures.front();
-    }
-    m_texture = texture;
-    m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture);
+    m_texture = textureOf(m_dictionaries);
+    m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture);
     m_lights = std::make_unique<CharacterLights>(kCharacterAmbient, kCharacterDirectional,
                                                  directionToRenderWare(m_scenery->lightDirection()));
-    makeTargets(texture);
+    makeTargets(m_texture);
     // The AI fighters, in the player's step, and the layout's.
-    m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, ai);
+    m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, setup.ai);
     for (const sandbox::FighterPoint& point : m_scenery->fighters()) {
         addFighter(point.position, point.headingDegrees);
     }
@@ -331,11 +335,12 @@ std::expected<void, Error> PlayLevelMode::traceTo(const std::string& path) {
 
 void PlayLevelMode::enter() { m_scenery->preload(toRenderWare(m_player->camera().position())); }
 
-void PlayLevelMode::skin(const anim::Pose& pose, anim::Vec3 feet, float heading, float lean,
-                         std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals) const {
+void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
+                         float heading, float lean, std::vector<anim::Vec3>& positions,
+                         std::vector<anim::Vec3>& normals) {
     // The pose, skinned in the character's space (game axes, the feet at the origin, facing +y).
-    const characters::CharacterModel& model = m_character->assets().model;
-    const auto bones = anim::boneTransforms(m_character->skeleton(), pose);
+    const characters::CharacterModel& model = character.assets().model;
+    const auto bones = anim::boneTransforms(character.skeleton(), pose);
     const std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
     characters::skinVertices(model, matrices, positions, normals);
     // Then leaned into the turn about the forward axis at the feet (**Coney's choice** of axis and pivot: the
@@ -421,12 +426,12 @@ void PlayLevelMode::render(const RenderTime& time) {
     const WorldView blended = m_freeCamera ? viewFrom(blendedFreeCamera(*m_freeCamera, time.alpha).pose(), drawDistance)
                                            : view(snapshot, drawDistance);
     if (m_engine.drawsPixels()) {
-        skin(snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
+        skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
         m_mesh->update(m_positions, m_normals);
         for (Target& target : m_targets) {
             const human::TargetSnapshot pose =
                 human::interpolate(target.human->previous(), target.human->current(), time.alpha);
-            skin(pose.pose, pose.feet, pose.heading, 0.0F, target.positions, target.normals);
+            skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, target.positions, target.normals);
             target.mesh->update(target.positions, target.normals);
         }
         const std::vector<ai::AiHuman>& fighters = m_ai->humans();
@@ -434,7 +439,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             const human::TargetSnapshot pose =
                 human::interpolate(fighters[i].previous, fighters[i].current, time.alpha);
             FighterMesh& mesh = m_fighterMeshes[i];
-            skin(pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
+            skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
             mesh.mesh->update(mesh.positions, mesh.normals);
         }
     }

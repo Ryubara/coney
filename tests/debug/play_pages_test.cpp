@@ -58,6 +58,18 @@ class FakePlay final : public coney::debug::PlayControls {
         spawned.clear();
         return {};
     }
+    [[nodiscard]] std::vector<coney::debug::CharacterChoice> characterChoices() const override { return choices; }
+    [[nodiscard]] int playerType() const override { return type; }
+    [[nodiscard]] std::string characterState() const override { return "type " + std::to_string(type); }
+    // Becomes `wanted`, except type 99, which fails as a type without a model would.
+    std::expected<void, coney::Error> changeCharacter(int wanted) override {
+        if (wanted == 99) {
+            return std::unexpected(coney::Error{coney::ErrorCode::NotFound, "no model"});
+        }
+        type = wanted;
+        ++changes;
+        return {};
+    }
 
     coney::anim::Vec3 feet{0.0F, 0.0F, 0.0F};
     float heading = 0.0F;
@@ -67,6 +79,9 @@ class FakePlay final : public coney::debug::PlayControls {
     bool free = false;
     bool spawnable = true;
     std::vector<coney::sandbox::Primitive> spawned;
+    std::vector<coney::debug::CharacterChoice> choices;
+    int type = 32;
+    int changes = 0;
 };
 
 // The services of a session over `play` (null: no player).
@@ -256,4 +271,36 @@ TEST_CASE("the Levels page lists the play mode's levels and asks for the one cho
     CHECK(levels->find("level2") != nullptr);
     itemOn(*levels, "level99").run();
     CHECK(asked == std::vector<std::string>{"level99"});
+}
+
+TEST_CASE("the Player page changes the player's character type through a choice and an action", "[debug]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    // Without the configuration's types there is nothing to choose.
+    auto page = session.model().openPage("Player");
+    CHECK(itemOn(*page, "Character").watch() == "type 32");
+    CHECK(itemOn(*page, "Character type").kind == coney::debug::ItemKind::Watch);
+    CHECK(page->find("Change character") == nullptr);
+
+    play.choices = {{30, "warr_re"}, {32, "warr_re_cv"}, {40, "warr_ty_cv"}, {99, "broken"}};
+    page = session.model().openPage("Player");
+    const MenuItem& type = itemOn(*page, "Character type");
+    REQUIRE(type.kind == coney::debug::ItemKind::Choice);
+    CHECK(type.choices.size() == 4);
+    // It starts at the player's own type.
+    CHECK(coney::debug::valueText(type) == "32 warr_re_cv");
+    coney::debug::adjustItem(type, 1, coney::debug::StepSize::Normal);
+    CHECK(coney::debug::valueText(type) == "40 warr_ty_cv");
+    itemOn(*page, "Change character").run();
+    CHECK(play.type == 40);
+    CHECK(play.changes == 1);
+    CHECK(session.log().last(1).back() == "player: now type 40");
+    // The pick is kept across builds of the page; a failure leaves the player as he was and says why.
+    page = session.model().openPage("Player");
+    CHECK(coney::debug::valueText(itemOn(*page, "Character type")) == "40 warr_ty_cv");
+    coney::debug::adjustItem(itemOn(*page, "Character type"), 1, coney::debug::StepSize::Normal);
+    itemOn(*page, "Change character").run();
+    CHECK(play.type == 40);
+    CHECK(session.log().last(1).back() == "player: type 99: no model");
 }

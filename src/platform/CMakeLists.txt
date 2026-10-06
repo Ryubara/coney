@@ -7,7 +7,7 @@ target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_re
 # The character viewer (docs/research/characters.md#coneys-implementation).
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
 # Playing a level as Rembrandt (docs/guides/building.md#playing-a-level), in a level's scenery or a sandbox's.
-target_sources(coney_platform PRIVATE play_level_mode.cpp play_scenery.cpp)
+target_sources(coney_platform PRIVATE play_level_character.cpp play_level_mode.cpp play_scenery.cpp)
 # The sandbox: Coney's own test worlds, drawn and flown round (docs/guides/sandbox.md).
 target_sources(coney_platform PRIVATE sandbox_renderer.cpp sandbox_viewer_mode.cpp)
 # The reference images of characters and objects (docs/guides/building.md#reference-images).

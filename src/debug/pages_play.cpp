@@ -110,6 +110,56 @@ void fillTeleport(MenuPage& page, DebugSession& session) {
              }).withHelp("Puts the player at the spot above, dropped onto the ground below it."));
 }
 
+// The Change character items: the type to become (a choice over the configuration's types, starting at the player's
+// own) and the action that rebuilds the player as it. `chosen` keeps the type picked, shared by every build of the
+// page and by pinned copies.
+void addCharacterItems(MenuPage& page, DebugSession& session, PlayControls& play,
+                       const std::shared_ptr<std::optional<int>>& chosen) {
+    page.add(playWatch(session, "Character", [](const PlayControls& p) { return p.characterState(); }));
+    auto choices = std::make_shared<const std::vector<CharacterChoice>>(play.characterChoices());
+    if (choices->empty()) {
+        page.add(watchItem("Character type", [] { return std::string("none: no CfgChar configuration here"); }));
+        return;
+    }
+    // The index of type `type` among the choices; the first when it is not one of them.
+    const auto indexOf = [choices](int type) {
+        for (std::size_t i = 0; i < choices->size(); ++i) {
+            if ((*choices)[i].type == type) {
+                return i;
+            }
+        }
+        return std::size_t{0};
+    };
+    std::vector<std::string> labels;
+    labels.reserve(choices->size());
+    for (const CharacterChoice& choice : *choices) {
+        labels.push_back(std::format("{} {}", choice.type, choice.model));
+    }
+    MenuItem type = choiceItem(
+        "Character type", std::move(labels),
+        [&session, chosen, indexOf] {
+            const PlayControls* p = session.play();
+            return indexOf(chosen->value_or(p != nullptr ? p->playerType() : 0));
+        },
+        [chosen, choices](std::size_t index) {
+            if (index < choices->size()) {
+                *chosen = (*choices)[index].type;
+            }
+        });
+    type.keepAlive = choices;
+    page.add(std::move(type))
+        .withHelp("A character type of the game's configuration (CfgChar), with the model a player of it is drawn as.");
+    page.add(playAction(session, "Change character",
+                        [&session, chosen](PlayControls& p) {
+                            const int wanted = chosen->value_or(p.playerType());
+                            auto changed = p.changeCharacter(wanted);
+                            session.print(changed
+                                              ? std::format("player: now {}", p.characterState())
+                                              : std::format("player: type {}: {}", wanted, changed.error().message));
+                        }))
+        .withHelp("Rebuilds the player as the type above where he stands, at full health, the camera behind him.");
+}
+
 } // namespace
 
 void addPlayerPage(DebugSession& session) {
@@ -123,9 +173,11 @@ void addPlayerPage(DebugSession& session) {
     });
     // The spot Save remembers, shared by every build of the page.
     auto saved = std::make_shared<std::optional<Place>>();
+    // The character type Change character makes him: none picked yet means his own.
+    auto chosenType = std::make_shared<std::optional<int>>();
     session.model().addPage(
         "Player",
-        [&session, saved](MenuPage& page) {
+        [&session, saved, chosenType](MenuPage& page) {
             if (session.play() == nullptr) {
                 page.add(watchItem("No player", [] { return std::string(kNoPlayer); }));
                 return;
@@ -140,6 +192,7 @@ void addPlayerPage(DebugSession& session) {
                 session, "Speed", [](const PlayControls& p) { return std::format("{:.2f} m/s", p.playerSpeed()); },
                 "Player/Speed"));
             page.add(playWatch(session, "Movement", [](const PlayControls& p) { return p.playerState(); }));
+            addCharacterItems(page, session, *session.play(), chosenType);
             page.add(playToggle(
                          session, "Frozen", [](const PlayControls& p) { return p.playerFrozen(); },
                          [](PlayControls& p, bool on) { p.setPlayerFrozen(on); }))
@@ -164,7 +217,7 @@ void addPlayerPage(DebugSession& session) {
             }));
             page.add(logItem("Log", [&session] { return session.log().last(3); }));
         },
-        "The player: where, how fast, frozen, teleports.");
+        "The player: where, how fast, his character type, frozen, teleports.");
 }
 
 void addCameraPage(DebugSession& session) {

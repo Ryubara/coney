@@ -50,6 +50,7 @@ add_executable(coney_tests
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
+    platform/disc_change_character_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
@@ -97,6 +98,7 @@ target_sources(coney_tests PRIVATE
     animation/skeleton_test.cpp
     characters/character_data_test.cpp
     characters/character_class_test.cpp
+    characters/character_types_test.cpp
     characters/character_list_test.cpp
     characters/character_model_test.cpp
     characters/character_rig_test.cpp

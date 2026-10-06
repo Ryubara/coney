@@ -1102,6 +1102,18 @@ name = "Human_LaunchJump"
 subsystem = "Human"
 
 [[function]]
+address = 0x00222ba8
+name = "Human_WarriorPowerClassOfType"
+subsystem = "Human"
+size = 120
+
+[[function]]
+address = 0x00222c20
+name = "Human_WarriorClassOfType"
+subsystem = "Human"
+size = 120
+
+[[function]]
 address = 0x00222ef0
 name = "Human_HealthPercent"
 subsystem = "Human"

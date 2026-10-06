@@ -86,10 +86,23 @@ PlayerCharacter::PlayerCharacter(characters::CharacterAssets assets, characters:
     : m_assets(std::move(assets)), m_generic(std::move(generic)), m_anims(m_assets.data, &m_generic),
       m_skeleton(characters::characterSkeleton(m_assets.model)), m_ranges(std::move(ranges)) {}
 
-Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start)
+PlayerClass playerClassOf(const characters::CharacterTypes& types, int type) {
+    std::optional<characters::PlayerTraits> traits = types.playerTraitsOf(type);
+    if (!traits) {
+        return {};
+    }
+    return PlayerClass{
+        .damage = std::move(traits->damage), .damagePercent = traits->damagePercent, .powerClass = traits->powerClass};
+}
+
+Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start,
+               const PlayerClass& playerClass)
     : m_start(start), m_human(character.anims(), AnimSlots::player(), anim::referenceRotations(), kPlayerBodyScale,
-                              &character.ranges()),
+                              &character.ranges(), playerClass.damage, playerClass.damagePercent),
       m_camera(start.position, 0.0F) {
+    if (playerClass.powerClass) {
+        m_human.setFighterProfile(FighterProfile{.player = true, .powerClass = *playerClass.powerClass});
+    }
     m_humans.add(m_human, true);
     m_human.spawn(mesh, start.position, start.headingDegrees);
     m_camera = camera::FollowCamera(m_human.position(), m_human.heading());

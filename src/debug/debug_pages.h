@@ -25,8 +25,9 @@ void addConsolePage(DebugSession& session);
 void addCheatsPage(DebugSession& session);
 /// The Levels page: the level table's levels, loaded by name.
 void addLevelsPage(DebugSession& session);
-/// The Player page: where the player is and how it moves (plotted), freezing it, and teleports to the scene's places,
-/// a typed spot or a saved one. Over PlayControls; says so when no player plays.
+/// The Player page: where the player is and how it moves (plotted), his character type and a change of it, freezing
+/// it, and teleports to the scene's places, a typed spot or a saved one. Over PlayControls; says so when no player
+/// plays.
 void addPlayerPage(DebugSession& session);
 /// The Camera page: the follow camera's eye and target, a reset behind the player, the free camera, and the Follow
 /// camera tunables.

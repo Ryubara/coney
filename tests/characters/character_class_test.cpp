@@ -61,3 +61,32 @@ TEST_CASE("levels 60 to 64 draw the `_a` model, and a type with no CfgChar call 
     CHECK(!modelNameFor(500, 1, 2, modelOf).has_value());
     CHECK(!modelNameFor(1, 1, 2, {}).has_value());
 }
+
+TEST_CASE("a Warriors type plays with his Warrior's class; anyone else with his own", "[character_class]") {
+    using coney::characters::powerClassOf;
+    using coney::characters::warriorClassOf;
+    using coney::characters::warriorPowerClassOf;
+    // One type of each group, in Warrior class order, then the extras and Ash.
+    CHECK(warriorClassOf(11) == 0);
+    CHECK(warriorClassOf(4) == 1);
+    CHECK(warriorClassOf(189) == 1);
+    CHECK(warriorClassOf(17) == 2);
+    CHECK(warriorClassOf(188) == 3);
+    CHECK(warriorClassOf(25) == 4);
+    CHECK(warriorClassOf(191) == 5);
+    CHECK(warriorClassOf(32) == 6);
+    CHECK(warriorClassOf(39) == 6);
+    CHECK(warriorClassOf(190) == 7);
+    CHECK(warriorClassOf(5) == 8);
+    CHECK(warriorClassOf(41) == coney::characters::kOtherWarriorClass);
+    CHECK(warriorClassOf(417) == coney::characters::kOtherWarriorClass);
+    CHECK(warriorPowerClassOf(11) == 58);
+    CHECK(warriorPowerClassOf(32) == 64);
+    CHECK(warriorPowerClassOf(10) == 66);
+    CHECK(warriorPowerClassOf(41) == 7);
+    // Only a player of category 14 takes it; an AI human, or another category, keeps the type's own class.
+    CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40, true) == 64);
+    CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40, false) == 40);
+    CHECK(powerClassOf(417, 3, 2, true) == 2);
+    CHECK(powerClassOf(41, coney::characters::kWarriorsCategory, 40, true) == 7);
+}

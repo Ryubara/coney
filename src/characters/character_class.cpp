@@ -2,6 +2,7 @@
 #include "characters/character_class.h"
 
 #include <array>
+#include <cstddef>
 
 namespace coney::characters {
 
@@ -31,6 +32,32 @@ constexpr std::array<ClassRow, 14> kClasses{{
     {45, {}, {46, 47, 48}},
     {221, {}, {222}},
 }};
+
+// The Warriors' type groups, in Warrior class order (0 Ajax ... 8 Swan): a first and last type and one more (0: none).
+struct WarriorGroup {
+    int first;
+    int last;
+    int extra;
+};
+constexpr std::array<WarriorGroup, 9> kWarriorGroups{{
+    {11, 14, 0},
+    {1, 4, 189},
+    {15, 17, 0},
+    {18, 20, 188},
+    {21, 25, 0},
+    {26, 29, 191},
+    {30, 32, 0},
+    {33, 37, 190},
+    {5, 10, 0},
+}};
+// Rembrandt's class also takes Ash (38-40), the one Warrior with two ranges.
+constexpr int kAshFirst = 38;
+constexpr int kAshLast = 40;
+constexpr int kRembrandtWarriorClass = 6;
+// The power class of the first Warrior (Ajax); the others follow in order.
+constexpr int kFirstWarriorPowerClass = 58;
+// The power class a Warriors type outside the groups plays with.
+constexpr int kOtherWarriorPowerClass = 7;
 
 // The Armies of the Night levels.
 constexpr int kFirstArmiesLevel = 60;
@@ -73,6 +100,28 @@ std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumb
         *model += "_a";
     }
     return model;
+}
+
+int warriorClassOf(int type) {
+    if (type >= kAshFirst && type <= kAshLast) {
+        return kRembrandtWarriorClass;
+    }
+    for (std::size_t index = 0; index < kWarriorGroups.size(); ++index) {
+        const WarriorGroup& group = kWarriorGroups.at(index);
+        if ((type >= group.first && type <= group.last) || (group.extra != 0 && type == group.extra)) {
+            return static_cast<int>(index);
+        }
+    }
+    return kOtherWarriorClass;
+}
+
+int warriorPowerClassOf(int type) {
+    const int warrior = warriorClassOf(type);
+    return warrior == kOtherWarriorClass ? kOtherWarriorPowerClass : kFirstWarriorPowerClass + warrior;
+}
+
+int powerClassOf(int type, int category, int ownClass, bool player) {
+    return player && category == kWarriorsCategory ? warriorPowerClassOf(type) : ownClass;
 }
 
 } // namespace coney::characters

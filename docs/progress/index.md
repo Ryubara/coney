@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.4% of the game's own code (214,708 of 3,342,936 bytes, 470 functions) |
+| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.4% of the game's own code (214,948 of 3,342,936 bytes, 472 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 30 | 189,024 |
 | `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.6% | 77 | 358,360 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 79 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -289,6 +289,8 @@ at the top of the repository's `README.md`.
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
+| `0x00222ba8` | `Human_WarriorPowerClassOfType` | `Human` | 120 |
+| `0x00222c20` | `Human_WarriorClassOfType` | `Human` | 120 |
 | `0x00222ef0` | `Human_HealthPercent` | `Human` | 88 |
 | `0x00223068` | `Human_PowerMax` | `Human` | 288 |
 | `0x002235f8` | `Human_CounterChance` | `Human` | 48 |

@@ -40,6 +40,28 @@ using CfgCharModel = std::function<std::optional<std::string>(int type)>;
 [[nodiscard]] std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumber,
                                                       const CfgCharModel& modelOf);
 
+/// The `CfgChar` category (`+0x11b`) of the Warriors, whose players take their Warrior's power class.
+inline constexpr int kWarriorsCategory = 14;
+/// The Warrior class of every type that is not one of the nine Warriors.
+inline constexpr int kOtherWarriorClass = 9;
+
+/// The Warrior class (human `+0x1ba`, the `CfgWarriorClass` record) of character type `type`: 0 Ajax (types 11-14),
+/// 1 Cleon (1-4, 189), 2 Cochise (15-17), 3 Cowboy (18-20, 188), 4 Fox (21-25), 5 Vermin (26-29, 191), 6 Rembrandt
+/// and Ash (30-32, 38-40), 7 Snow (33-37, 190), 8 Swan (5-10), kOtherWarriorClass for any other
+/// (docs/research/characters.md#power-classes). **Coney's name**: the research gives the function no name.
+/// @orig 0x00222c20 Human_WarriorClassOfType (unknown)
+[[nodiscard]] int warriorClassOf(int type);
+
+/// The power class a player of a Warriors type plays with (`+0x1b9`): 58-66 by Warrior in warriorClassOf()'s order
+/// (58 Ajax ... 64 Rembrandt and Ash ... 66 Swan), 7 for a type that is none of them. **Coney's name**, as above.
+/// @orig 0x00222ba8 Human_WarriorPowerClassOfType (unknown)
+[[nodiscard]] int warriorPowerClassOf(int type);
+
+/// The power class a human of `type` plays with, as `Human_Init` sets `+0x1b8` and `+0x1b9`: the type's own `CfgChar`
+/// byte `+0x11d` (`ownClass`), except that a player (`player`) of category kWarriorsCategory takes
+/// warriorPowerClassOf().
+[[nodiscard]] int powerClassOf(int type, int category, int ownClass, bool player);
+
 /// The index of `CfgChar`'s model-name argument (0-based): the tenth argument, after the type, four bytes, the health,
 /// the damage and attack tables and the damage scale (docs/references/characters.md#fields).
 inline constexpr std::size_t kCfgCharModelArgument = 9;
