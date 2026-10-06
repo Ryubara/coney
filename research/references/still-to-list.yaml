@@ -1,0 +1,177 @@
+# Still to list: the families of ids, names and values that scripts or the Cfg* tables use and that have no
+# reference list yet. `coney-tools refs render` turns this file into the "Still to list" section of
+# docs/references/index.md, in this order (most useful to a script author first). Counts come from a survey of the
+# NTSC-U disc's 467 compiled scripts (names and counts only). When a family gets its own list, remove its entry.
+# Schema and rules: docs/guides/research-workflow.md#reference-lists.
+families:
+  - family: World flags
+    what: Named points with a heading that scripts spawn humans at, send them to and test against.
+    source: "`AddFlag` in each level's `AddFlagsBoxesPaths`; `FindFlag` looks them up by name"
+    count: "4,167 names in 7,057 calls, 94 scripts"
+    image: none
+    needs: "Disc extraction (name, level, position, heading); RE for the two integers `AddFlag` stores"
+  - family: Text label ids
+    what: "Keys of the string tables (`GSTRING.PRESSTOTALK`, `LEVEL34.MS_C1_5`) that objectives, hints and prompts take."
+    source: "The language string scripts; used by `HUDSetObjective` (218 keys), `HUDSetTutorialText` (110), `HUDLaunchMissionFailed` (31), `SetMsgHandlerEx` (20)"
+    count: not counted
+    image: none
+    needs: "Disc extraction of the keys only, never the text"
+  - family: Radar icons and blip types
+    what: The icon a radar blip shows and the kind of blip (objective, human, object).
+    source: "`HUDSetRadarItemTexture` icon ids (14 used: 22, 27, 28, 30, 34, 351, 359-361, ...); blip type 10 from `HUDAddRadarMissionObjective`"
+    count: "14 icon ids used; blip types not counted"
+    image: "icon render: Coney decodes the particle pages, but which sheet entry an id draws is not traced"
+    needs: "RE: the radar's icon table and the blip types"
+  - family: Car types and parts
+    what: The cars `CarSpawn` makes and the part ids of the car bindings.
+    source: "Table `0x00512ba8` (`car_osedan`, `car_coupe`, `car_wagon`, `car_copcar`, `car_van`, `car_sullycar`); part ids from `CarRemovePart` and `CarSetPartOpen`"
+    count: "6 types; 5 part ids used"
+    image: "model render: Coney cannot load car models yet"
+    needs: "Disc extraction for the types; RE for the parts and colours"
+  - family: Particle effects
+    what: The effect types `SpawnParticle` makes (`part_spray_tag`, flames, smoke).
+    source: "`SpawnParticle` (33 names in 594 calls, 36 scripts); where the types are defined is not traced (the initialiser `0x0039aef0` passes the name to the script system object)"
+    count: "33 used"
+    image: "icon render of the effect's sprite: Coney decodes the particle pages; the effect-to-sprite link is not traced"
+    needs: "RE: where effect types are defined"
+  - family: Object zones
+    what: Groups of a level's placed objects that scripts switch on and off.
+    source: "`ObjEnableZone`, `ObjSpawn`'s zone argument and the level scripts' `Zone<n>` globals (45)"
+    count: "255 zone bits; 69 numbers used"
+    image: none
+    needs: "Disc extraction (zone names and numbers per level)"
+  - family: Volume boxes
+    what: Named trigger boxes scripts test humans against.
+    source: "`AddVolumeBox` (867 names in 974 calls, 53 scripts); kinds 0, 2 and 3"
+    count: "867 names"
+    image: none
+    needs: "Disc extraction; RE for the box kinds"
+  - family: Scenes and movies
+    what: The in-engine cutscenes and the full-motion movies scripts play.
+    source: "`ScenePreload` (187 names in 247 calls, 108 scripts), `PlayMovie`"
+    count: "187 scene names; movies not counted"
+    image: none
+    needs: Disc extraction
+  - family: Inventory and pocket items
+    what: The item ids of the inventory bindings (`InvGiveItem`, `InvNumberOf`) and of a human's pocket.
+    source: "`CfgInventoryItem` (18 calls, `config_preload2.lua`); ids 0-22; `HuPutItemInPocket`"
+    count: "23 ids"
+    image: "model render of the item's object: Coney renders characters only so far"
+    needs: "Disc extraction; RE for the id-to-item order"
+  - family: Commands
+    what: "The pad command ids a human acts on, the trigger kinds that bind them, and the Warrior commands."
+    source: "`AddCommand` in `global.lua` (ids 1-57, triggers 1-9); `WCEnableCommand` (0-6); the AI's 45 attack kinds ([AI](../research/ai.md#attack-kinds))"
+    count: "57 + 7"
+    image: none
+    needs: "Disc extraction; meanings partly in [Combat](../research/combat.md#commands)"
+  - family: Unlockables
+    what: The records scripts unlock and test (levels, items, extras).
+    source: "`UM_Unlock`, `UM_IsDataUnlocked`: a record type byte (7 used) and a data id; the unlock manager `0x006fe998`"
+    count: not counted
+    image: none
+    needs: "RE: the record table and its types"
+  - family: Speech commands and voices
+    what: The kinds of line a human can say and the voice sets.
+    source: "`SoundPlayCommand`, `SndSetCommandSoundPercent` (ids 0-206); `HuSetStateRespVoiceIndex` (sets 325-338)"
+    count: "207 command ids"
+    image: none
+    needs: "RE: the voice table"
+  - family: Speech and ambient sound names
+    what: The spoken lines and ambient sounds scripts play by name.
+    source: "`SetVag` (412 names), `HuSpeak` and `HuSpeakNI` (`vags/speeches/...`); `AddAmbientSound` (590 names, `global.lua`); `AddAmbientSoundEmitter2` (604 emitter names)"
+    count: "about 1,750 names"
+    image: none
+    needs: "Disc extraction (names only, never the lines)"
+  - family: Gang messages
+    what: The message ids of `GangSetMsgHandler`.
+    source: "`GangSetMsgHandler` (1,072 calls; ids 1, 2, 10, 11, 17, 18)"
+    count: "6 used"
+    image: none
+    needs: "Disc extraction; meanings from callback names, as for [Script events](script-events.md)"
+  - family: Power and Warrior classes
+    what: The combat-strength profiles character types refer to, and the playable Warriors' stats per difficulty.
+    source: "`CfgPowerClass` (311 calls, 31 arguments) and `CfgWarriorClass` (55 calls) in the difficulty configs ([Characters](../research/characters.md#power-classes))"
+    count: "51 power class ids; 9 Warriors"
+    image: none
+    needs: "Disc extraction; argument meanings partly traced"
+  - family: Attack delays and weights
+    what: Each attack kind's delay and the per-class weights the AI picks attacks by.
+    source: "`CfgAttackDelay` (44 indices), the `Att_*` tables and `BrSetAttackWeight` (`config_preload2.lua`)"
+    count: "45 attack kinds"
+    image: none
+    needs: Disc extraction
+  - family: Hat fittings
+    what: Where each hat sits on each head shape.
+    source: "`CfgHat` (908 calls, `config_preload2.lua`; 41 hats per set)"
+    count: "908 fittings"
+    image: "model render: the hats are objects (Coney renders characters only so far)"
+    needs: Disc extraction
+  - family: Rumble roster
+    what: The characters, gangs, arenas and rules of Rumble mode.
+    source: "`CfgRumbleChar` (732 calls), `CfgRumbleGang` (46), `CfgRumbleArena` (29), `CfgRumbleGame` (9), the `rumble_*.lua` scripts"
+    count: "366 character ids, 46 gangs, 29 arenas"
+    image: none
+    needs: Disc extraction
+  - family: Glass types
+    what: The breakable-glass kinds of `SpawnBreakableGlass`.
+    source: "`CfgSetGlassProperties` (19 types, `config_preload2.lua`); `SpawnBreakableGlass` (10 used)"
+    count: "19"
+    image: none
+    needs: "Disc extraction; RE for the two flags"
+  - family: Spawner behaviours and states
+    what: How a gang spawner produces humans, and the states `GangStartSpawner` sets.
+    source: "`GangAddSpawner` behaviour ids (7 used), `GangStartSpawner` states (0-11)"
+    count: "about 12"
+    image: none
+    needs: RE
+  - family: Crime types
+    what: The crimes the police respond to.
+    source: "`CfgCrimeResponders`, `CfgEnableCrimeType`, `CrimeIsHappening` (kinds 1, 5, 7, 12 used); bytes at game state `+0x294`"
+    count: not counted
+    image: none
+    needs: RE
+  - family: Camera types and switches
+    what: The camera classes the factory makes and the switches of `CamEnable`.
+    source: "Factory `0x0011e1b0` (types 0-5, 7, 8, 0xc, 0xd, 0x10; [Boot](../research/boot.md)); `CamEnable` switches 0-13"
+    count: "11 types, 14 switches"
+    image: none
+    needs: "RE for the untagged types and the switches"
+  - family: Screen effects
+    what: The full-screen effects `ScreenQueueEffect` queues and `CfgScrFx` configures.
+    source: "`ScreenQueueEffect` types 0-5 (653 calls); `CfgScrFx` (11 entries, `config_preload2.lua`)"
+    count: "6 types"
+    image: none
+    needs: "RE for types 2-5"
+  - family: Object and car tints
+    what: Colours scripts give cars, spinning icons and spawned objects.
+    source: "`CarSetColor`, `ObjColor`, `HuSetSpinningIconColor`; `ObjSpawn`'s extra value (34 values that look like packed colours, inferred)"
+    count: not counted
+    image: swatch
+    needs: "RE: which values are colours, and their layout"
+  - family: Statistics
+    what: The stat tables the end-of-level screens score.
+    source: "`CfgSetStatValue` (tables 0-5, 46 calls), `CfgSetStatTypeMax`"
+    count: "6 tables"
+    image: none
+    needs: RE
+  - family: Door lock kinds
+    what: The number `SpawnDoor` takes after the door's ids.
+    source: "`SpawnDoor` (484 calls; 27 values used)"
+    count: "27 used"
+    image: none
+    needs: RE
+  - family: Light presets
+    what: The named lights each level's script builds with `SetLight`.
+    source: "The level scripts' `Lights` and `LightData` tables (`SetLight`, 5,299 calls)"
+    count: not counted
+    image: swatch
+    needs: Disc extraction
+  - family: AI goal types
+    what: The goal classes behind the `Goal*` bindings.
+    source: "148 goal classes, type id at vtable `+0x0c` ([AI](../research/ai.md#goals) names 22)"
+    count: "148"
+    image: none
+    needs: RE
+excluded: >-
+  Not to be listed: the credits (`CfgCredits`) and the text of any string table, which are game text; boss
+  portraits (`HUDSetANBossTexture`), loading screens and other artwork.

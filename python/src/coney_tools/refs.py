@@ -198,6 +198,51 @@ def load(path: Path, topic: Topic) -> RefList:
     return reflist
 
 
+# --- the families still to list ----------------------------------------------------------------------------------
+
+#: The fields of each family in research/references/still-to-list.yaml, in the order the index's table shows them.
+GAP_FIELDS = ("family", "what", "source", "count", "image", "needs")
+
+
+@dataclass(frozen=True)
+class Gaps:
+    """The families of ids and names that scripts use and no reference list covers yet, most useful first.
+
+    Each family maps every name of GAP_FIELDS to Markdown text; `excluded` says what is never to be listed.
+    """
+
+    families: tuple[dict[str, str], ...]
+    excluded: str = ""
+
+
+def load_gaps(path: Path) -> Gaps:
+    """Read and check the still-to-list file. Raises RefsError naming each problem."""
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as error:
+        raise RefsError(f"{path}: cannot be read ({error})") from error
+    if not isinstance(data, dict) or not isinstance(data.get("families"), list):
+        raise RefsError(f"{path}: not a mapping with a list of families (and optionally excluded)")
+    unknown = sorted(set(data) - {"families", "excluded"})
+    problems = [f"{path}: unknown top-level keys {', '.join(unknown)}"] if unknown else []
+    families = []
+    for number, family in enumerate(data["families"], 1):
+        if not isinstance(family, dict):
+            problems.append(f"{path}: family {number} is not a mapping")
+            continue
+        missing = [name for name in GAP_FIELDS if not str(family.get(name) or "").strip()]
+        extra = sorted(set(family) - set(GAP_FIELDS))
+        label = family.get("family") or number
+        if missing:
+            problems.append(f"{path}: family {label}: missing {', '.join(missing)}")
+        if extra:
+            problems.append(f"{path}: family {label}: unknown fields {', '.join(extra)}")
+        families.append({name: str(family.get(name) or "").strip() for name in GAP_FIELDS})
+    if problems:
+        raise RefsError("\n".join(problems))
+    return Gaps(tuple(families), str(data.get("excluded") or "").strip())
+
+
 # --- writing -----------------------------------------------------------------------------------------------------
 
 

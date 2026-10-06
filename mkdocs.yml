@@ -96,6 +96,7 @@ nav:
       - Xbox executable (evaluation): research/xbox-executable.md
   - Game references:
       - references/index.md
+      - Entities: references/entities.md
       - Characters: references/characters.md
       - Character models: references/character-models.md
       - Gangs: references/gangs.md

@@ -222,6 +222,13 @@ uv run --project python coney-tools refs render [--check]                       
 ```
 
 To change a list by hand, edit its YAML and run `refs render`; CI fails when a page is out of date with its YAML.
+
+The families of ids and names that scripts use but no list covers yet are in
+`research/references/still-to-list.yaml`, most useful first, each with `family`, `what`, `source`, `count`, `image`
+and `needs`; `refs render` shows them on the index as [Still to list](../references/index.md#still-to-list). A family
+that gets its own list leaves that file. [Entities](../references/entities.md), the map of what scripts can make and
+refer to, is written by hand; the index links it.
+
 To add a field or a list, add it in `refs_topics.py` (and its reader in `refs_extract.py` when it comes from the
 disc), then run `refs extract`. **Thumbnails** go in `docs/references/images/` (`characters/<model>.png`,
 `objects/<name>.png`; 256 × 256, transparent, rendered by `coney --render-references` from the player's disc,

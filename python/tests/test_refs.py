@@ -270,6 +270,35 @@ def test_load_refuses_bad_files(tmp_path: Path) -> None:
         refs.load(path, THINGS)
 
 
+_GAP = "  - {family: Cars, what: Parked cars., source: CarSpawn, count: '6', image: none, needs: RE}\n"
+
+
+def test_load_gaps_reads_families_in_order_and_names_each_problem(tmp_path: Path) -> None:
+    path = tmp_path / "still-to-list.yaml"
+    path.write_text("families:\n" + _GAP + _GAP.replace("Cars", "Flags") + "excluded: Credits.\n", encoding="utf-8")
+    gaps = refs.load_gaps(path)
+    assert [family["family"] for family in gaps.families] == ["Cars", "Flags"]
+    assert gaps.families[0]["count"] == "6" and gaps.excluded == "Credits."
+    path.write_text("families:\n  - {family: Cars, colour: red}\nmore: 1\n", encoding="utf-8")
+    with pytest.raises(RefsError) as error:
+        refs.load_gaps(path)
+    assert "unknown top-level keys more" in str(error.value)
+    assert "family Cars: missing what, source, count, image, needs" in str(error.value)
+    assert "unknown fields colour" in str(error.value)
+    path.write_text("- not a mapping\n", encoding="utf-8")
+    with pytest.raises(RefsError, match="list of families"):
+        refs.load_gaps(path)
+
+
+def test_index_links_entities_and_lists_the_gaps() -> None:
+    gaps = refs.Gaps(({name: f"{name} | x" for name in refs.GAP_FIELDS},), "Not these.")
+    text = refs_render.index([], bindings_page=True, entities_page=True, gaps=gaps)
+    assert "[Entities](entities.md)" in text and "## Still to list {#still-to-list}" in text
+    assert "| family \\| x | what \\| x |" in text and "Not these." in text
+    plain = refs_render.index([], bindings_page=True)
+    assert "entities.md" not in plain and "Still to list" not in plain
+
+
 def test_merge_keeps_hand_written_fields_and_entries() -> None:
     old = _things(
         [
@@ -335,6 +364,11 @@ def test_render_writes_then_check_passes(tmp_path: Path, monkeypatch: pytest.Mon
     assert main(["refs", "render", "--check"]) == 0
     index = (tmp_path / "docs" / "references" / "index.md").read_text(encoding="utf-8")
     assert "[Characters](characters.md)" in index and "Script bindings" in index
+    assert "Still to list" not in index  # this checkout has no still-to-list file
+    (tmp_path / refs_cli.GAPS_FILE).write_text("families:\n" + _GAP, encoding="utf-8")
+    assert main(["refs", "render", "--check"]) == 1  # the index now lacks the family
+    assert main(["refs", "render"]) == 0
+    assert "| Cars |" in (tmp_path / "docs" / "references" / "index.md").read_text(encoding="utf-8")
     page = tmp_path / "docs" / "references" / "levels.md"
     page.write_text(page.read_text(encoding="utf-8") + "edited\n", encoding="utf-8")
     assert main(["refs", "render", "--check"]) == 1

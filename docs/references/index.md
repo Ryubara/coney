@@ -13,6 +13,10 @@ name to pass, an implementer the value to expect.
 with `HuCreate`, the engine updates them all in `Humans_Update`, and most character bindings start with `Hu`.
 A human is the game's equivalent of GTA's ped; see [Characters (research)](../research/characters.md).
 
+**Start with [Entities](entities.md)**: every kind of thing the game has at run time (humans, objects,
+cars, flags, cameras, gangs ...), how scripts refer to each, how many there can be, and which lists and
+bindings cover it, with the FiveM equivalent of each.
+
 Everything here is a name, an id, a number or our own short description, read from the player's own disc by
 `coney-tools refs extract` and checked by hand. No game text, script source, model or image from the disc is
 copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").
@@ -42,6 +46,49 @@ copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").
 ## Script bindings
 
 The functions the scripts call are listed in [Script bindings](bindings/index.md).
+
+## Still to list {#still-to-list}
+
+Families of ids, names and values that scripts or the `Cfg*` tables use and that have no list yet, the most
+useful to a script author first. Counts are from the disc's 467 compiled scripts. *Image* says how an entry
+could be illustrated: **model render** (Coney renders the model, as for characters), **icon render** (one
+2D icon or sprite of at most 64 x 64 that Coney renders from the disc), **swatch** (a colour the docs draw)
+or **none**. The list is `research/references/still-to-list.yaml`; a family that gets its own list leaves
+it.
+
+| Family | What it is | Where the ids come from | Count | Image | What a list needs |
+| --- | --- | --- | --- | --- | --- |
+| World flags | Named points with a heading that scripts spawn humans at, send them to and test against. | `AddFlag` in each level's `AddFlagsBoxesPaths`; `FindFlag` looks them up by name | 4,167 names in 7,057 calls, 94 scripts | none | Disc extraction (name, level, position, heading); RE for the two integers `AddFlag` stores |
+| Text label ids | Keys of the string tables (`GSTRING.PRESSTOTALK`, `LEVEL34.MS_C1_5`) that objectives, hints and prompts take. | The language string scripts; used by `HUDSetObjective` (218 keys), `HUDSetTutorialText` (110), `HUDLaunchMissionFailed` (31), `SetMsgHandlerEx` (20) | not counted | none | Disc extraction of the keys only, never the text |
+| Radar icons and blip types | The icon a radar blip shows and the kind of blip (objective, human, object). | `HUDSetRadarItemTexture` icon ids (14 used: 22, 27, 28, 30, 34, 351, 359-361, ...); blip type 10 from `HUDAddRadarMissionObjective` | 14 icon ids used; blip types not counted | icon render: Coney decodes the particle pages, but which sheet entry an id draws is not traced | RE: the radar's icon table and the blip types |
+| Car types and parts | The cars `CarSpawn` makes and the part ids of the car bindings. | Table `0x00512ba8` (`car_osedan`, `car_coupe`, `car_wagon`, `car_copcar`, `car_van`, `car_sullycar`); part ids from `CarRemovePart` and `CarSetPartOpen` | 6 types; 5 part ids used | model render: Coney cannot load car models yet | Disc extraction for the types; RE for the parts and colours |
+| Particle effects | The effect types `SpawnParticle` makes (`part_spray_tag`, flames, smoke). | `SpawnParticle` (33 names in 594 calls, 36 scripts); where the types are defined is not traced (the initialiser `0x0039aef0` passes the name to the script system object) | 33 used | icon render of the effect's sprite: Coney decodes the particle pages; the effect-to-sprite link is not traced | RE: where effect types are defined |
+| Object zones | Groups of a level's placed objects that scripts switch on and off. | `ObjEnableZone`, `ObjSpawn`'s zone argument and the level scripts' `Zone<n>` globals (45) | 255 zone bits; 69 numbers used | none | Disc extraction (zone names and numbers per level) |
+| Volume boxes | Named trigger boxes scripts test humans against. | `AddVolumeBox` (867 names in 974 calls, 53 scripts); kinds 0, 2 and 3 | 867 names | none | Disc extraction; RE for the box kinds |
+| Scenes and movies | The in-engine cutscenes and the full-motion movies scripts play. | `ScenePreload` (187 names in 247 calls, 108 scripts), `PlayMovie` | 187 scene names; movies not counted | none | Disc extraction |
+| Inventory and pocket items | The item ids of the inventory bindings (`InvGiveItem`, `InvNumberOf`) and of a human's pocket. | `CfgInventoryItem` (18 calls, `config_preload2.lua`); ids 0-22; `HuPutItemInPocket` | 23 ids | model render of the item's object: Coney renders characters only so far | Disc extraction; RE for the id-to-item order |
+| Commands | The pad command ids a human acts on, the trigger kinds that bind them, and the Warrior commands. | `AddCommand` in `global.lua` (ids 1-57, triggers 1-9); `WCEnableCommand` (0-6); the AI's 45 attack kinds ([AI](../research/ai.md#attack-kinds)) | 57 + 7 | none | Disc extraction; meanings partly in [Combat](../research/combat.md#commands) |
+| Unlockables | The records scripts unlock and test (levels, items, extras). | `UM_Unlock`, `UM_IsDataUnlocked`: a record type byte (7 used) and a data id; the unlock manager `0x006fe998` | not counted | none | RE: the record table and its types |
+| Speech commands and voices | The kinds of line a human can say and the voice sets. | `SoundPlayCommand`, `SndSetCommandSoundPercent` (ids 0-206); `HuSetStateRespVoiceIndex` (sets 325-338) | 207 command ids | none | RE: the voice table |
+| Speech and ambient sound names | The spoken lines and ambient sounds scripts play by name. | `SetVag` (412 names), `HuSpeak` and `HuSpeakNI` (`vags/speeches/...`); `AddAmbientSound` (590 names, `global.lua`); `AddAmbientSoundEmitter2` (604 emitter names) | about 1,750 names | none | Disc extraction (names only, never the lines) |
+| Gang messages | The message ids of `GangSetMsgHandler`. | `GangSetMsgHandler` (1,072 calls; ids 1, 2, 10, 11, 17, 18) | 6 used | none | Disc extraction; meanings from callback names, as for [Script events](script-events.md) |
+| Power and Warrior classes | The combat-strength profiles character types refer to, and the playable Warriors' stats per difficulty. | `CfgPowerClass` (311 calls, 31 arguments) and `CfgWarriorClass` (55 calls) in the difficulty configs ([Characters](../research/characters.md#power-classes)) | 51 power class ids; 9 Warriors | none | Disc extraction; argument meanings partly traced |
+| Attack delays and weights | Each attack kind's delay and the per-class weights the AI picks attacks by. | `CfgAttackDelay` (44 indices), the `Att_*` tables and `BrSetAttackWeight` (`config_preload2.lua`) | 45 attack kinds | none | Disc extraction |
+| Hat fittings | Where each hat sits on each head shape. | `CfgHat` (908 calls, `config_preload2.lua`; 41 hats per set) | 908 fittings | model render: the hats are objects (Coney renders characters only so far) | Disc extraction |
+| Rumble roster | The characters, gangs, arenas and rules of Rumble mode. | `CfgRumbleChar` (732 calls), `CfgRumbleGang` (46), `CfgRumbleArena` (29), `CfgRumbleGame` (9), the `rumble_*.lua` scripts | 366 character ids, 46 gangs, 29 arenas | none | Disc extraction |
+| Glass types | The breakable-glass kinds of `SpawnBreakableGlass`. | `CfgSetGlassProperties` (19 types, `config_preload2.lua`); `SpawnBreakableGlass` (10 used) | 19 | none | Disc extraction; RE for the two flags |
+| Spawner behaviours and states | How a gang spawner produces humans, and the states `GangStartSpawner` sets. | `GangAddSpawner` behaviour ids (7 used), `GangStartSpawner` states (0-11) | about 12 | none | RE |
+| Crime types | The crimes the police respond to. | `CfgCrimeResponders`, `CfgEnableCrimeType`, `CrimeIsHappening` (kinds 1, 5, 7, 12 used); bytes at game state `+0x294` | not counted | none | RE |
+| Camera types and switches | The camera classes the factory makes and the switches of `CamEnable`. | Factory `0x0011e1b0` (types 0-5, 7, 8, 0xc, 0xd, 0x10; [Boot](../research/boot.md)); `CamEnable` switches 0-13 | 11 types, 14 switches | none | RE for the untagged types and the switches |
+| Screen effects | The full-screen effects `ScreenQueueEffect` queues and `CfgScrFx` configures. | `ScreenQueueEffect` types 0-5 (653 calls); `CfgScrFx` (11 entries, `config_preload2.lua`) | 6 types | none | RE for types 2-5 |
+| Object and car tints | Colours scripts give cars, spinning icons and spawned objects. | `CarSetColor`, `ObjColor`, `HuSetSpinningIconColor`; `ObjSpawn`'s extra value (34 values that look like packed colours, inferred) | not counted | swatch | RE: which values are colours, and their layout |
+| Statistics | The stat tables the end-of-level screens score. | `CfgSetStatValue` (tables 0-5, 46 calls), `CfgSetStatTypeMax` | 6 tables | none | RE |
+| Door lock kinds | The number `SpawnDoor` takes after the door's ids. | `SpawnDoor` (484 calls; 27 values used) | 27 used | none | RE |
+| Light presets | The named lights each level's script builds with `SetLight`. | The level scripts' `Lights` and `LightData` tables (`SetLight`, 5,299 calls) | not counted | swatch | Disc extraction |
+| AI goal types | The goal classes behind the `Goal*` bindings. | 148 goal classes, type id at vtable `+0x0c` ([AI](../research/ai.md#goals) names 22) | 148 | none | RE |
+
+Not to be listed: the credits (`CfgCredits`) and the text of any string table, which are game text; boss portraits
+(`HUDSetANBossTexture`), loading screens and other artwork.
 
 ## Images
 

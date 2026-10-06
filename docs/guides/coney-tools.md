@@ -227,7 +227,8 @@ minute and keeps only names, ids and numbers.
 uv run --project python coney-tools refs render [--check]
 ```
 
-Checks every list against its schema and writes `docs/references/index.md` and one page per list. With `--check` it
+Checks every list against its schema and writes `docs/references/index.md` (with the families of
+`still-to-list.yaml`) and one page per list. With `--check` it
 writes nothing and exits with 1 when a page is out of date; CI runs it that way. A list that fails its schema stops
 both, with each problem named (exit code 2).
 

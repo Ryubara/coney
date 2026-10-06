@@ -27,6 +27,8 @@ REFS_DIR = Path("research/references")
 DOCS_DIR = Path("docs/references")
 IMAGES_DIR = DOCS_DIR / "images"
 BINDINGS_INDEX = DOCS_DIR / "bindings/index.md"
+ENTITIES_PAGE = DOCS_DIR / "entities.md"  # hand-written; the index links it when it exists
+GAPS_FILE = REFS_DIR / "still-to-list.yaml"  # the families with no list yet, shown on the index
 
 
 def _yaml_path(root: Path, item: Topic) -> Path:
@@ -51,9 +53,21 @@ def load_all(root: Path) -> list[refs.RefList]:
     return lists
 
 
+def load_gaps(root: Path) -> refs.Gaps | None:
+    """The families still to list, or None when the checkout has no still-to-list file."""
+    path = root / GAPS_FILE
+    return refs.load_gaps(path) if path.is_file() else None
+
+
 def pages(root: Path, lists: list[refs.RefList]) -> dict[Path, str]:
     """Every generated page by path: the index and one page per topic."""
-    out = {root / DOCS_DIR / "index.md": refs_render.index(lists, (root / BINDINGS_INDEX).is_file())}
+    index = refs_render.index(
+        lists,
+        (root / BINDINGS_INDEX).is_file(),
+        entities_page=(root / ENTITIES_PAGE).is_file(),
+        gaps=load_gaps(root),
+    )
+    out = {root / DOCS_DIR / "index.md": index}
     out.update({root / DOCS_DIR / f"{reflist.topic.key}.md": refs_render.page(reflist) for reflist in lists})
     return out
 
