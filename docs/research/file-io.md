@@ -269,7 +269,8 @@ if discErrorState == 3: push the error mode           # 0x005e5580, see below
 
 `Wait` (`0x00148c90`) loops until `IsDone`: each pass it calls the stream file system's `Update`, yields
 (`0x004aa9f0(0)`), and every 67 ms (`0x0050b720`) reads the pads (`0x001454a8`) and, if a callback is installed at
-`0x0050b728`, calls it (for a "controller removed" screen during loading; inferred).
+`0x0050b728`, calls it: the [loading screen](level-loading.md#loading-screen)'s tick during a level load, or the
+preload indicator. Confirmed (code).
 
 So a synchronous load of a file of size S costs `ceil(S / 384 KB)` blocking IOP transfers, each into the shared
 `File Stream Buffer`, plus a copy into the chunk's own allocation.

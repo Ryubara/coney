@@ -1,9 +1,9 @@
 # Level loading
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Its one runtime figure (the
-`Sector Pool`'s size) comes from [Memory](memory.md#sizes-at-runtime), PCSX2 2.9.94. The disc-side checks (2026-10-04)
-read the NTSC-U disc's WAD with throwaway scripts outside the repository and are reported as names, counts and sizes
-only.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Its runtime figures (the
+`Sector Pool`'s size, from [Memory](memory.md#sizes-at-runtime), and the loading screen) come from PCSX2 2.9.94. The
+disc-side checks (2026-10-04; the loading-screen names 2026-10-06) read the NTSC-U disc's WAD with throwaway scripts
+outside the repository and are reported as names, counts and sizes only.
 
 ## Purpose
 
@@ -32,6 +32,7 @@ Names are ours unless they come from a path or tag string.
 | `0x00158580` / `0x00158660` | mode 1 `Resume` / `Suspend` | `GameModes/` | play time bookkeeping, HUD | confirmed (code) |
 | `0x0015fe90` | `InitLevel` | `GameModes/InitLevel.cpp` | the whole level start, below | confirmed (code) |
 | `0x001607b8` | `UnloadLevel(keepLevelFile)` | `GameModes/` | the reverse | confirmed (code) |
+| `0x001612b0` / `0x00161378` | `LoadScreen_Begin` / `LoadScreen_End` | `GameModes/` | the [loading screen](#loading-screen) around the load | confirmed (code) |
 | `0x0040d688` | `WorldManager_CreatePools` | `World/ps2/WorldManagerPS2.cpp` | `Sector Pool`, `Sector Pool 2` | confirmed (code) |
 | `0x0040d900` | `WorldManager::WorldManager` | same | `Global Data Pool` clump, `warriors.glr` | confirmed (code) |
 | `0x0040dbb8` | `WorldManager::LoadLevel(name, headerOnly)` | same | the `World Level Pool` clump, the worlds, the `.lev` | confirmed (code) |
@@ -336,9 +337,11 @@ where not stated.
    state, the scene system, the cameras, the screen effects, the actionables, the falling embers; set up the save
    buffers (one set for section 1, another for later sections); device slot `+0x10`.
 2. If the record asks for an intro movie and this is section 1: reserve 3,200,000 bytes in the resource manager's
-   heap for it (freed again just before the movie plays, step 12).
-3. HUD reset; if the resource manager has no generic header yet, load it (`0x00184eb0`); copy the level's names into
-   `W_GameState + 0x124` and `+0x134`.
+   heap for it (freed again just before the movie plays, step 12). Then **the loading screen starts**
+   (`LoadScreen_Begin`, `0x001612b0`, [below](#loading-screen)).
+3. HUD reset; if the resource manager has no generic header yet, load it (`0x00184eb0`); start the load-screen sounds
+   (`AudioManager_StartLoadScreen`, [Sound](sound.md#banks)); copy the level's names into `W_GameState + 0x124` and
+   `+0x134`.
 4. **`WorldManager::LoadLevel(name, 0)`** ([below](#worldmanager-loadlevel)).
 5. Reset the AI, path and character tables; create the task-manager objects `load` and `Wind_Manager`; HUD and
    audio set-up.
@@ -350,13 +353,166 @@ where not stated.
 9. Camera: `0x0011e878(0.17)`; set the camera's draw distance to its far clip.
 10. **Preload**: `WorldManager_Preload(500.0, worldManager, budget, 0, "<name>_<section>")` with a budget of 30,000 ms,
     or 15,000 ms when the record's `+0x04` is below 101 ([below](#preload)).
-11. Audio, game state and script-system bookkeeping; load the level's sound bank: the one a script asked for, else
-    `sound` ([Sound](sound.md#banks)); `0x00161378`; service the file manager.
+11. Stop the load-screen sounds (`0x00111428`); audio, game state and script-system bookkeeping; load the level's
+    sound bank: the one a script asked for, else `sound` ([Sound](sound.md#banks)); **the loading screen ends**
+    (`LoadScreen_End`, `0x00161378`); service the file manager.
 12. Intro movie `L<n>_IN` (`n` = record `+0x04`) when step 2 reserved memory.
 13. Call the pending Lua function `0x005e6d88` if one is set.
 14. Debug only: when the auto-advance flag `0x0050c7bc` is set, ask for the next section or level at once
     (`W_GameState + 0x14c` = 3, `0x00160d78`).
 15. Remember the level and section (`0x0050c7c0`, `0x0050c7c4`); distortion effects, HUD per player.
+
+### The loading screen {#loading-screen}
+
+`InitLevel` shows a loading screen from step 2 to step 11 ([above](#initlevel)): every level start, the front end's
+`level100` included, has one. It is not a game mode and has no frame loop of its own: the load blocks, and the screen
+is redrawn from inside the blocking file reads. Confirmed (code) at the addresses below unless stated.
+
+| Address | Name (ours) | Role |
+| --- | --- | --- |
+| `0x001612b0` | `LoadScreen_Begin` | picks the screen object, starts it, installs the tick callback |
+| `0x00161340` | `LoadScreen_TickCallback` | calls the current object's tick (slot `+0x18`); returns 1 |
+| `0x00161378` | `LoadScreen_End` | removes the callback, ticks once, flushes the render queue (device slot `+0x18`), finishes the object (slot `+0x10`), clears `0x005e6dec` |
+| `0x001458d8` | `Loading_SetCallback(fn)` | `0x0050b728` = fn, `0x0050b72c` = 0, `0x0050c7d8` = now; calls fn once when it is set |
+| `0x00148c90` | `PS2StreamFile::Wait` | while a read is in flight, every 67 ms (`0x0050b720`): read the pads, call `0x0050b728` ([File I/O](file-io.md)) |
+| `0x00163c08` | static constructor | builds the two screen objects |
+| `0x005e6da8` | the **level** screen (vtable `0x00538900`) | start `0x00163888`, tick `0x00162b88`, finish `0x00162598`, reset `0x00162568`, bar `0x00162688` |
+| `0x005e6dc8` | the **memory-card** screen (vtable `0x00538938`) | start `0x001620a0`, tick `0x001619d0`, finish `0x001618f0`, reset `0x001618b8` |
+| `0x00163270`, `0x001635d0` | `LoadScreen_FormatTextureName`, `...Ex` | the picture names (story, Rumble) |
+| `0x00161600` | (none) | the callback a preload installs when no loading screen is up |
+| `0x005e6dec` | | the current screen object, or null |
+
+**Which screen.** `LoadScreen_Begin` takes the memory-card screen when the flag `0x0050f5b8` is set **and** the level is
+`level100`, the level screen otherwise. The flag is 1 in `.data` and `PM_Greet`'s START clears it (`0x00203f88(0)` at
+`0x00208028`, [Front end](frontend.md#pm-screens)), so the memory-card screen is the front end's load at start-up
+(inferred from that order; a cold boot shows a picture without a bar there, [below](#memory-card-screen)). It read
+1 in a level99 state (PCSX2 2.9.94), so something else sets it again (open).
+
+**Object layout**, both screens (confirmed (code)):
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x04`-`+0x0c` | up to three resource-manager instances, one per picture (`0xffff` = none) |
+| `+0x10` | picture count |
+| `+0x14` | 1 when the name search fell back to `default_ls_0` |
+| `+0x18` | start, real-time milliseconds (the clock at `0x0050b8b8`, slot `+0x30`) |
+| `+0x1c` | end, milliseconds |
+
+#### The level screen {#level-screen}
+
+**Start** (`0x00163888`):
+
+1. Set up the cameras for the whole screen (device slot `+0x28` with the screen size, 60.0, 0.05, 100,000.0 and an
+   identity matrix) and present once.
+2. **Pictures.** When the level record's number (`+0x04`) is below 101 (the story levels and `level100`): for n = 0, 1,
+   2, find the name of picture n (below), stop when it is the name picture n − 1 got, create a resource-manager
+   instance of it (`ResourceMgr_CreateInstance(10000.0, rm, crc, 1, ...)`, [GUI](gui.md)) and wait until it is
+   resident, servicing the file manager. Otherwise (a Rumble arena): one picture, named from `rumble_<g>` with `g` the
+   16-bit value at `0x0063eec2` (written by `0x001f8d80`, read by `RM_ChooseArea`'s list; the arena's game type,
+   inferred).
+3. Start = now; end = start + **23,000 ms** (number up to 100) or **30,000 ms** (above 100).
+4. Tick in a loop until 200 ms have passed (the fade in), whatever the load is doing.
+
+**Picture names** (`0x00163270`). The language suffix `L` comes from `W_GameState + 0x120`: 0 or 5 none, 1 `_sp`, 2
+`_fr`, 3 `_it`, 4 `_ge`; the `_w` forms are used when the device's 16:9 flag is on (slot `+0xd0`). The first name that
+exists wins:
+
+1. `<level>_ls_<n>_w<L>` (16:9) or `<level>_ls_<n><L>`;
+2. `<level>_ls_<n>_w` or `<level>_ls_<n>`;
+3. `<level>_ls_0_w` or `<level>_ls_0`;
+4. `default_ls_0`, and `+0x14` = 1.
+
+A name exists when the archive holds the file named by the decimal CRC-32 of the name (`"%u"`, as for the legal
+screen, [Graphics](graphics.md#first-screen)). The Rumble form (`0x001635d0`) tries steps 1 and 2 with `rumble_<g>` and
+n = 0, then takes `default_ls_0` without a check. Because step 3 repeats a name, a level with one picture gets one,
+not three.
+
+**Disc check (corroboration**, NTSC-U, names hashed against `WARRIORS.DIR`): `level99_ls_0`-`_2` exist, each with a
+`_w` twin and no language forms, so a story start shows three pictures. Three pictures exist for the story levels
+2, 3, 5, 7, 9, 11, 14, 20, 31, 34, 51, 52, 54, 55, 80-84, 86, 87, 92, 93, 95 and 99 (all with `_w` but level 7), one
+for 60-64 (with `_w`) and 105; `rumble_<g>_ls_0` for g = 1-6, 9-12, 14, 18, 19, 22-25 (some in all ten language and
+`_w` forms); and `default_ls_0`. `level100` has none, so the front end's loads after start-up show `default_ls_0`
+(inferred). Each is a texture resource of 263,664 or 263,680 bytes, the legal screen's size.
+
+**Tick** (`0x00162b88`), on the overlay camera (device slot `+0x70`):
+
+1. Begin the camera with a clear to opaque black; draw nothing more if that fails.
+2. **Picture** `i = floor((now − start) / (end − start) × count)`, at most `count − 1`: with three pictures each holds
+   a third of 23 s (7,667 ms), and the change is a cut. (Cross-fade code for the previous picture exists, but its loop
+   covers only picture `i`, so it never runs.)
+3. **Alpha** `a` = 255; `(now − start) × 1.275` during the first 200 ms; `(end − now) × 1.275` during the last 200 ms
+   before the end (255 over 200 ms; unsigned differences, so past the end it stays 255).
+4. If picture `i` is resident and `a` > 10: draw it as one batch sprite, white with alpha `a`, placed and scaled like
+   the legal screen with the same factor table ([Graphics: the first screen](graphics.md#first-screen)): centred,
+   slightly overfilling the 640 × 448 screen.
+5. Draw the **progress bar** with alpha `a` (255 while the picture is not resident).
+6. End the camera and show the raster.
+
+**Progress bar** (`0x00162688`). It is a clock, not a measure of the load: `p = (now − start) / (end − start)`, at
+most 1. One untextured quad (RwIm2D triangle strip of 4 vertices), with fog off, no culling, Z test and Z write off,
+vertex alpha on and blend `SRCALPHA` / `INVSRCALPHA`. Colour (170, 43, 43, `a`), or (223, 223, 223, `a`) for the
+levels numbered 11, 20, 82, 83 and 92. The top-left corner is the point (`x0`, `y0`, −1.0) (z from `0x0050c7e4`)
+projected through the overlay camera (`0x00198460`); the quad is `W × p` pixels wide and 8 pixels tall
+(`0x0050c7e8`). By the device's mode flags ([Graphics](graphics.md#device-object)):
+
+| Mode flags | `x0` | `y0` | `W` (pixels) |
+| --- | --- | --- | --- |
+| interlaced 4:3 (`0x01`) | 0.04 | −0.328 | 273 |
+| interlaced 16:9 (`0x05`) | 0.225 | −0.352 | 212 |
+| progressive 4:3 (`0x20`) | 0.2 | −0.286 | 179 |
+| progressive 16:9 (`0x24`) | 0.35 | −0.303 | 150 |
+| with `0x02`, 4:3 / 16:9 | 0.025 / 0.174 | −0.244 / −0.292 | 205 / 168 |
+
+With the overlay camera's view window of 0.725 × 0.5 (interlaced 4:3) the corner lands at `x = 0.5 + x0 / (2 ×
+0.725)`, `y = 0.5 − y0 / (2 × 0.5)` of the screen: **(0.528, 0.828)**, pixel (338, 371) of 640 × 448; the full bar
+reaches 0.954 of the width and is 0.018 of the height tall. Confirmed (runtime), PCSX2 2.9.94: the bar spans y
+0.828-0.845 and starts at x 0.528 of the 4:3 picture.
+
+**Text.** The tick draws no text (confirmed (code)): the mission's number, place and title ("1 Coney" / "New Blood"
+for level99) and the bar's dark backing strip are part of the picture (seen at runtime).
+
+**Finish** (`0x00162598`, from `LoadScreen_End`): end = now + 200, then tick until now ≥ end − 30, about 170 ms of fade
+out from alpha 255 to about 38, after which the next frame cuts. Because the end moved, `p` jumps to 1 and `i` to the
+last picture: a load shorter than 23 s ends with a full bar over the last picture during that fade. Then the
+instances are released and start and end set to 0.
+
+**When it is drawn.** In the start and finish loops, and from `PS2StreamFile::Wait` every 67 ms (about 15 frames a
+second) while a blocking file read is in flight; between reads (parsing, scripts, other CPU work) the screen keeps
+its last frame. **There is no minimum duration** beyond the 200 ms fade in and the fade out: the load never waits for
+the 23 s timeline, and past its end the last picture and a full bar stay. **Input**: the waits read the pads every
+67 ms but the screen does not look at them, so nothing skips it (confirmed (code) for the screen; that nothing else
+reacts is inferred). **Sound**: `AudioManager_StartLoadScreen`, right after `LoadScreen_Begin`, loads bank `load_NN`
+and starts its two sounds hard left and right ([Sound](sound.md#banks)); `0x00111428` stops them after the preload
+(step 11), before the screen ends.
+
+**At runtime** (PCSX2 2.9.94; a level99 state made to load level99 again at checkpoint 1 by writing mode 8's `+0x20` =
+1 and `+0x28` = 0, `W_GameState + 0x33a` = 1 and `+0x14c` = 3): object `0x005e6da8`, count 3, end − start = 23,000.
+Unpatched, the load took a few seconds and the intro movie followed. With the finish's `sw v0, 0x1c(s1)`
+(`0x001625d8`) patched out, so that the 23 s timeline plays in full: picture 0 with the bar at 31 % about 7 s in,
+picture 2 with the bar at 80 % about 18 s in, then the movie. Confirmed (runtime) for the timeline and the order.
+
+#### The memory-card screen {#memory-card-screen}
+
+Start (`0x001620a0`): the same camera set-up; picture 0 `memory_card_screen` (`_w` with the 16:9 flag; `_sp`, `_fr`,
+`_it`, `_ge` for languages 1-4), picture 1 `memory_card_loading` (or `_w`); end = start + 21,000 ms; tick for 200 ms.
+Tick (`0x001619d0`): picture 0 for the first 5,000 ms, then picture 1, with the same placement and 200 ms fades and no
+bar. While picture 1 shows, `0x001613f0` draws the HUD's element at `0x0060e890` (HUD `0x00600840` + `0xe050`) over it
+in (170, 43, 43) × 1.3 = (221, 56, 56), fading out over 1,100 ms and in over 1,100 ms (a 2,200 ms cycle of the
+real-time clock). Finish (`0x001618f0`): tick until now ≥ the moment of the call + 200. All twelve names exist on the
+disc (corroboration).
+
+**At runtime** (PCSX2 2.9.94, a cold boot, a screenshot every 7-9 s): after mode 6's memory-card check message the
+front end's load showed a full-screen picture without a bar, with a small red "W" mark near the lower right (about x
+0.90, y 0.80 of the screen), then the "press START" screen. Confirmed (runtime) that the start-up load has no bar;
+that the picture is `memory_card_loading` and the "W" is the HUD element is inferred (the frames between were not
+caught).
+
+#### Preloads without a loading screen {#loading-indicator}
+
+`WorldManager_Preload` installs `0x00161600` when no callback is set ([Preload](#preload), step 4). It draws nothing
+for the first 1,500 ms after it was installed (`0x0050c7d8`); after that every call clears the overlay camera to black
+and draws the same blinking HUD element as the memory-card screen. Confirmed (code); which preloads run outside
+`InitLevel` is not traced here.
 
 ### From STORY to the player in level99 {#story-into-level99}
 
@@ -369,7 +525,8 @@ What happens between choosing STORY and controlling Rembrandt, in order. The fro
 1. **Mode 1 `Enter`** ([above](#mode-1)): audio, timers, then `InitLevel` with record 1 (`level99`) and
    checkpoint 1 (`W_GameState + 0x33a`, set by `runNextMission`'s `SetCheckPoint(1)`).
 2. **Reset and load the world** (`InitLevel` steps 1-5): the systems reset, 3,200,000 bytes reserved for the intro
-   movie (record flag `0x02`, checkpoint 1), `LoadLevel("level99")` (the two worlds' layouts and textures, then
+   movie (record flag `0x02`, checkpoint 1), the [loading screen](#loading-screen) fades in (200 ms) with the first of
+   `level99`'s three pictures and its sounds start, `LoadLevel("level99")` (the two worlds' layouts and textures, then
    `level99.lev`), the AI, path and character tables reset, the `load` and `Wind_Manager` objects.
 3. **The level script** (step 6): the script system runs `global.lua` (its helpers, `CfgAmbient()`,
    `SetupLevelInventory()`), then `level99.lua`. Its main chunk adds the flags, boxes and paths
@@ -391,7 +548,8 @@ What happens between choosing STORY and controlling Rembrandt, in order. The fro
    behind Rembrandt (inferred), and `WorldManager_Preload` loads `level99_1.pak` and streams the world within the
    camera's draw distance for up to 15 s (record `+0x04` = 99, below 101). The preload services the file manager, so
    the checkpoint script requested in step 3 may arrive here (inferred; not traced).
-6. **Bank, movie, start** (steps 11-13): the sound bank `sound`; the intro movie `L99_IN`; then the start callback
+6. **Bank, movie, start** (steps 11-13): the load-screen sounds stop; the sound bank `sound`; the loading screen
+   fades out (about 170 ms, full bar, last picture); the intro movie `L99_IN`; then the start callback
    `StartAmbient`, which at checkpoint 1 runs `SuperRunScene(IntroScene)`, the in-engine intro (the scene is defined
    in `level99_combat.lua`, so that script must have run by now).
 7. **The first frame of play**: mode 1's `Update` ([A frame of play](#a-frame-of-play)). The intro scene holds the
@@ -429,8 +587,9 @@ So the worlds' textures and layout are loaded **before** the level file, and bot
 2. Reset a per-player state on every player character.
 3. **Radius**: with a camera and `value` = 0 (as `InitLevel` calls it), the radius is the camera's current draw
    distance, not the 500.0 passed in.
-4. Start the real-time timer if it was stopped; if `0x001458c8()` returns 0, call `0x001458d8` with `value`, or
-   `0x161600` when `value` is 0 (meaning not traced; set back to 0 at the end).
+4. Start the real-time timer if it was stopped; if no loading callback is installed (`0x001458c8()` returns 0),
+   install `value`, or the [preload indicator](#loading-indicator) `0x00161600` when `value` is 0 (removed again at
+   the end). Under `InitLevel` the loading screen's callback is installed, so it stays.
 5. Service the file manager; flush the render queue (device slot `+0x18`); reset both worlds' visibility.
 6. **Pack**: if `<packName>.pak` exists, load it with the resource manager (`0x00187c38(rm, name, 1)`) and pump the
    resource manager until it reports done or a file read is in flight.
@@ -684,6 +843,11 @@ with several atomics are the cars, drawn as [Cars](../references/cars.md) instea
 
 ## Open questions
 
+- **The loading screen's flag** `0x0050f5b8`: only `PM_Greet` writes it (to 0), yet it read 1 in a level99 state;
+  what sets it again?
+- **The blinking HUD element** at `0x0060e890` (memory-card screen, preload indicator): its sheet and rectangle (a red
+  "W" at runtime, inferred).
+- **`0x0063eec2`**, the number in a Rumble arena's `rumble_<g>` picture name: the game type or the arena?
 - **The Object List's models**: how the game gives an object's untextured material its dictionary's texture
   ([The Object List's models](#the-object-list)); the record's untraced fields are on
   [WAD contents](formats/wad-contents.md#object-list).

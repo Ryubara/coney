@@ -240,7 +240,8 @@ current: the device waits for stream 0, streams `<name>.msb` into sound RAM and 
 - **Front end**: `menu` (`0x0015c4b0`, `0x0015d648`); `0x00159630` loads `sound`.
 - **Load screen** (`0x00111178`, from level loading `0x0015fe90`): bank `load_NN` (NN = `+0x3fa28`, then +1 mod 7),
   or `armload` when `0x0041d110` says so (the Armies levels, inferred), and its two sounds
-  `vags/load_screen/load_NN_l` / `_r` started as 2D sounds hard left and hard right.
+  `vags/load_screen/load_NN_l` / `_r` started as 2D sounds hard left and hard right; `0x00111428` stops both after
+  the preload ([Level loading](level-loading.md#loading-screen)).
 - **Level** (`0x0015fe90`, after loading): the pending bank `+0x3fa48` if a script asked for one, else `sound`; then
   the pending name is reset to `none`. `SndLoadBank(name)` loads at once, or, while `+0x3fa58` is set, only records
   the name as pending (`0x001133d0`).

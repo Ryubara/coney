@@ -291,10 +291,11 @@ the first frame of mode 1 ([Level loading](level-loading.md#mode-1)):
    Its next `Update`
    (`0x0015c858`) sees `+0x20` ≥ 0, calls `LevelFlow_FinishFrontEnd` (because `+0x24` is 1: `Menu.onFinish`,
    `UnloadLevel(0)`), selects the level (`0x0041ce88`), sets `+0x20` = -1 and pushes **mode 1**. Confirmed (code).
-5. Mode 1's `Enter` runs `InitLevel` for `level99`, checkpoint 1: the loading screen, `global.lua` and `level99.lua`
-   (which create Rembrandt, Ash and the follow camera and ask for `level99_combat.lua`), the object and dependency
-   lists, the preload around the camera, the music, the intro movie `L99_IN` (record flag `0x02`, section 1), then the
-   start callback `StartAmbient`, which starts the in-engine intro scene. The order, step by step, is on
+5. Mode 1's `Enter` runs `InitLevel` for `level99`, checkpoint 1: the
+   [loading screen](level-loading.md#loading-screen), `global.lua` and `level99.lua` (which create Rembrandt, Ash and
+   the follow camera and ask for `level99_combat.lua`), the object and dependency lists, the preload around the
+   camera, the music, the intro movie `L99_IN` (record flag `0x02`, section 1), then the start callback
+   `StartAmbient`, which starts the in-engine intro scene. The order, step by step, is on
    [Level loading](level-loading.md#story-into-level99).
 
 **Level record 1**, read from `W_GameState + 0x14d4 + 0x84` in PCSX2 2.9.94 with the `level99` level loaded
@@ -316,8 +317,8 @@ the first frame of mode 1 ([Level loading](level-loading.md#mode-1)):
 **At runtime** (PCSX2 2.9.94, a new profile, screenshots): after the new game is chosen the screen shows a loading
 picture titled "1 Coney" / "New Blood" with a progress bar, later a letterboxed in-engine scene, and then control of
 Rembrandt with the first tutorial text. Confirmed (runtime) for that order; the movie between them was not watched
-for (the disc has `PSS/L99_IN.BIK`, corroboration). That `+0x24` and `+0x49` are the loading screen's two lines is
-inferred from the matching text.
+for (the disc has `PSS/L99_IN.BIK`, corroboration). The loading screen's "1 Coney" / "New Blood" are part of its
+pictures (`level99_ls_0`-`_2`), not drawn from the record: [Level loading](level-loading.md#loading-screen).
 
 ### From QUICK RUMBLE to an arena fight {#quick-rumble}
 
@@ -1342,8 +1343,9 @@ What the implementer still needs:
 - **PM_Difficulty's fourth item:** what the save-system query that unlocks it reports.
 - **The profile record:** its fields and how `+0xcc(slot)` (load) applies them to the game state (Coney's `Profile`
   stand-in keeps name, difficulty, brightness and subtitles).
-- **The level loading screen** ("1 Coney" / "New Blood" with a progress bar): which code draws it and when, so mode 1
-  can show it (Coney shows none).
+- **The level loading screen** (answered): `InitLevel` draws it from its own start to just before the intro movie,
+  three timed pictures and a clock-driven bar ([Level loading](level-loading.md#loading-screen)). Coney shows none
+  yet.
 - **The music at PM_Greet:** `menu` or `wonderwheel_132b` (mode 0x12 `Enter` replays `menu` when the names differ;
   [Sound](sound.md)).
 - **PM_Light's colour** (answered): the light manager's brightness, added to every ambient and directional light
