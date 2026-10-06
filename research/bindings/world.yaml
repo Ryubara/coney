@@ -611,7 +611,9 @@
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
     - {name: viaMessage, lua: boolean, desc: "False deletes the object at once; true sends it the destroy message (0x15) so it is removed through its own handling (scripts usually omit it)."}
   description: >-
-    Removes a game object. If a human is holding it, the human first lets go of it.
+    Removes a game object. If a human is holding it, the human first lets go of it. Without `viaMessage` an
+    objective marker and its column vanish at once; with it they fade out over about 1 s first
+    ([Objects: objective markers](../../research/objects.md#objective-markers)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -650,13 +652,17 @@
     - {addr: 0x00396a08, name: Obj_Show}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
-    - {name: fadeDist, lua: number, ctype: float, desc: "Value stored in the object's spawn record (+0x138); the scripts pass a fade-in distance (`FadeInDist`) or nothing."}
+    - {name: fadeDist, lua: number, ctype: float, desc: "Draw distance in metres (stored at +0x138): beyond it minus 2 m the object fades out over 2 m; 0 or nothing for none. The scripts pass a `FadeInDist` field or nothing."}
   description: >-
-    Makes a hidden game object visible again (show/hide message 0x0a with 1).
+    Makes a hidden game object visible again (show/hide message 0x0a with 1); resolving the handle spawns the object
+    first if it is not live. An objective marker (`dyn_w_mission` and the other `dyn_objective` types) fades its
+    disc and column in over about 1 s ([Objects: objective markers](../../research/objects.md#objective-markers)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    That +0x138 is a fade distance in metres is inferred from the scripts' field name.
+    The renderer's use of +0x138 is `ObjectRender_ApplyFadeDistance` (0x0017fa80): alpha × (distance − camera
+    distance) / 2 once the camera is within 2 m of the distance; an attached object uses its parent's and is not
+    drawn beyond it.
   usage: {chunks: 70, calls: 181, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11, 61, 64]}
   coney: implemented
 
@@ -667,7 +673,8 @@
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
   description: >-
-    Hides a game object without destroying it (show/hide message 0x0a with 0).
+    Hides a game object without destroying it (show/hide message 0x0a with 0). An objective marker fades out over
+    about 1 s ([Objects: objective markers](../../research/objects.md#objective-markers)).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 50, calls: 154, boot: true, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11, 61, 64]}

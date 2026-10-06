@@ -1,15 +1,16 @@
 # World objects: spawning, models, tint, glass and doors
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
-(Ghidra), and a disc check (2026-10-06) of what the scripts pass and of the Object List and the `WonderWheel_100`
-scene, reported as counts and values. No runtime claims.
+(Ghidra), a disc check (2026-10-06) of what the scripts pass and of the Object List and the `WonderWheel_100`
+scene, reported as counts and values, and, for the [objective markers](#objective-markers) only, PCSX2 2.9.94 over
+PINE in `level99` at the tutorial's first hint (2026-10-06).
 
 ## Purpose
 
 What level scripts set on the world they build and what the player breaks or opens in it: how an object a script
 spawns finds its **model**, where it stands and what moves it ([Dynamic objects](#dynamic-objects), with the front
-end's Wonder Wheel as the worked case), an object's **tint**, the **breakable glass** panes, the **doors** and the
-**breakable barriers**. The lists are
+end's Wonder Wheel as the worked case), an object's **tint**, the **objective markers** (the "W" a mission asks
+the player to walk into), the **breakable glass** panes, the **doors** and the **breakable barriers**. The lists are
 [Object tints](../references/tints.md), [Glass types](../references/glass-types.md) and [Doors](../references/doors.md);
 the classes and pools of world objects and glass panes are on [Tasks](tasks.md#classes), the crimes a pane can raise on
 [AI: crimes](ai.md#crimes), and what the player's attacks do to them on [Combat: breakables](combat.md#breakables).
@@ -42,6 +43,12 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x001897a8` | `ResourceManager_LoadNearestModel` | per frame: loads one object's model that is missing | confirmed (code) |
 | `0x003eeea0` / `0x003ef840` / `0x003ef188` | `simple_object` init / update / message | the plain prop ([`simple_object`](#simple-object)) | confirmed (code) |
 | `0x0017fd78` | `ObjectRender_Draw` | draws one object instance: lights, size cull, fade | confirmed (code) |
+| `0x0017fa80` | `ObjectRender_ApplyFadeDistance` | the alpha of an object near its `ObjShow` distance | confirmed (code) |
+| `0x00395b70` | `WorldObject_Update` | integrates, copies `+0xcc` to `+0xc8`, runs the class's update | confirmed (code) |
+| `0x003e98e8` / `0x003e9b08` / `0x003e9be0` | `dyn_objective` init / update / message | an objective marker's disc ([Objective markers](#objective-markers)) | confirmed (code) |
+| `0x003e9828` | `ObjectiveMarker_SetShown` | a marker's shown state, passed on to its column | confirmed (code) |
+| `0x003e9d60` / `0x003e9fd8` / `0x003e9ea0` | `sub_objective_column` init / update / message | the marker's column | confirmed (code) |
+| `0x003a53f0` | `Obj_SpawnChildByName` | creates an object by name at an object's pose, attached to it | confirmed (code) |
 | `0x00396bd0` | `Obj_SetColour` | `ObjColor`: packs `{r, g, b, a}` into the tint word | confirmed (code) |
 | `0x0038fab8` | `GlassTypes_Set` | `CfgSetGlassProperties`: one entry of the glass type table | confirmed (code) |
 | `0x0039c0e0` | `Glass_Spawn` | pushes the pane's arguments, creates it by type name | confirmed (code) |
@@ -127,7 +134,20 @@ A world object's tint is a colour word at `+0xc8`, copied at `+0xcc`: `0xRRGGBBA
 - The breakable doors write the word too: a broken `dyn_door_liz`, `dyn_door_dclub` or `dyn_door_stall` clears its
   alpha byte (`+0xcc` = `+0xc8` & `0xffffff00`, `0x003fa438`).
 
-How the renderer uses the word is not traced.
+**Drawing** (`ObjectRender_Draw`, `0x0017fd78`, confirmed (code); the copy also confirmed (runtime)): each
+update `WorldObject_Update` (`0x00395b70`) copies `+0xcc` into `+0xc8`, so a class that writes `+0xcc` sees it take
+effect one update later. The model instance holds the word as bytes r, g, b, a (instance `+0x24`-`+0x27`, equal to
+`+0xc8` in PCSX2), and the draw sets them as the colour of the instance's geometry before rendering it: the tint
+multiplies the model's own colours and its alpha the model's opacity. The alpha is first scaled by the size fade
+([The model](#models)), the `ObjShow` distance (below), a fade-in over the first second after the instance appears
+(instance `+0x2c`; skipped while object flags `0x800010` has a bit set) and the camera fade (×0.3 for an object
+between the camera and the player, instance `+0x34`, eased over 200 ms); **an alpha under 10 is not drawn**. While
+the camera fade is below 1 the draw turns z-writing off (RenderWare render state 8) for that object.
+
+**The `ObjShow` distance** (`+0x138`, `ObjectRender_ApplyFadeDistance` `0x0017fa80`): when it is above 0 and the
+camera is farther than the distance − 2 m, the alpha is multiplied by (distance − camera distance) / 2, fading the
+object out over its last 2 m. An attached object (flag `0x10`) uses its parent's distance and is not drawn beyond
+it. Confirmed (code).
 
 ### Glass types {#glass}
 
@@ -366,6 +386,96 @@ update `0x003ef840`, message `0x003ef188`, flags 8). Confirmed (code):
   `0x1b`, `0x1c`, `0x32` attach it to or detach it from a human; `0x20` stops its sound.
 
 That flag 4 stops the draw is inferred (it is a glass pane's hidden bit too, [Glass types](#glass)).
+
+#### Objective markers (`dyn_objective`) {#objective-markers}
+
+The **marker** a mission asks the player to walk into is two world objects: a disc with a "W" on it that turns
+about the vertical, at the top of a translucent coloured column standing on the ground. Scripts place it with
+`ObjSpawn` of a `dyn_objective` type, show it with `ObjShow` and remove it with `ObjDestroy`; the volume box the
+player walks into is a separate object ([Scripting: triggers](scripting.md#triggers)). The marker has no radar part:
+a script that wants one adds a radar objective itself ([HUD](hud.md#the-radar-on-screen)).
+
+**In `level99`** (inferred from the script's calls): `RegisterObjects` spawns four `dyn_w_mission` (the script's
+`Objects.dyn_w_mission01`-`04`), each standing in a volume box. `P1.SetupCam` sets the first hint, calls
+`ObjShow(Objects.dyn_w_mission02)` and waits for message 3 of the box `vMark01`; `P1.FirstGlow` clears that handler,
+`ObjDestroy`s marker 02, sets the next hint, waits on `vMark03` and shows marker 03; `P1.DoneCamera` destroys marker
+03. Confirmed (runtime), PCSX2 2.9.94 with the first hint on screen: marker 02 stands at (−283.27, 127.07, 0.3) in
+`vMark01`, marker 03 at (−287.32, 121.55, 0.3) in `vMark03` with alpha 0 until shown.
+
+**The disc** (`dyn_objective`, script type 45, record `0x005132ac`: init `0x003e98e8`, update `0x003e9b08`, message
+`0x003e9be0`, flags 8). Confirmed (code) unless marked:
+
+- **Init**: pops the position and rotation; flags `+0x54` = 1; `Obj_SetModel(object, 0)` (the type's own model,
+  hash at `+0xc4`); **angular velocity** (`+0x40`, set through vtable `+0x7c`) = (0, 0, π/2), which
+  `Task_Integrate` applies each update: it turns about the world z axis at **90° per second**, one turn in 4 s
+  (confirmed (runtime): 180° in 120 ticks); update interval 2 ticks (30 Hz); `+0x124` = 1, which exempts it from
+  the size cull ([The model](#models)).
+- **The column**: creates an object of type `dyn_objective_a` (`Obj_SpawnChildByName` `0x003a53f0`, the name at
+  `0x00585a70`) at the disc's position, attached to the disc, and sends it message `0x34` with a colour chosen by
+  the disc's model hash (below). Then it sets itself, and so the column, **hidden**.
+- **Shown state** (`ObjectiveMarker_SetShown` `0x003e9828`): message `0x0a` with 1 (`ObjShow`) or message `0x3c` sets
+  it shown and object flag `0x800000`; `0x0a` with 0 (`ObjHide`) sets it hidden and clears the flag. Either way the
+  disc sends the same `0x0a` to its column.
+- **Update** (every 2 ticks): the tint's alpha byte steps **8** towards 255 while shown and towards 0 while hidden
+  (written to `+0xcc`, so `+0xc8` follows an update later). A full fade takes 32 updates, **about 1.07 s**
+  (confirmed (runtime): 0 → 255 and 255 → 0 each in 64 ticks, disc and column in step). Once the disc is dying
+  (below) and its alpha is 0, the update returns 1 and `WorldObject_Update` removes it.
+- **Messages**: `0x15` (destroy by message, `ObjDestroy(object, true)`) marks it dying, sends `0x15` to the column
+  and hides both, so they fade out and go; `0x19` and `0x22` change its model (`Obj_SetModel` with a popped hash);
+  `0x20` removes the column at once.
+
+The column's colour, a word `0xRRGGBBAA` with alpha 0 (the fade supplies the alpha), by the disc's type:
+
+| Disc types | Column colour | |
+| --- | --- | --- |
+| `dyn_w_mission`, `dyn_objective_yellow`, `dyn_throwtarget` | `0xC1A04700` (193, 160, 71) | yellow-gold |
+| `dyn_w_goto`, `dyn_objective_w`, `dyn_objective_red` | `0x99121300` (153, 18, 19) | red |
+| `dyn_w_bonus`, `dyn_objective_green` | `0x5F447000` (95, 68, 112) | purple |
+| any other (`dyn_w_cinematics`, `dyn_w_mission_b`) | `0xFFFFFF00` | white |
+
+The code compares model hashes (`0x27af4fe0`, `0x39cbfb46`, `0x646520ba`; `0xa83a74da`, `0xebef30bb`, `0x34af4687`;
+`0x14dc9db8`, `0x7c280227`); the type names are those whose CRC-32 they are (disc check). The disc's own tint stays
+the spawn record's, white for every marker `level99` places, so the disc shows its model's colours.
+
+**The column** (`sub_objective_column`, script type 222, record `0x00514080`: init `0x003e9d60`, update `0x003e9fd8`,
+message `0x003e9ea0`), type `dyn_objective_a` (`TYPE_GLASS`, no collision shape, box 0.68 × 0.68 × 3.68 m,
+[Objects](../references/objects.md#obj-dyn-objective-a)). Confirmed (code) unless marked:
+
+- **Init**: pops the parent, rotation and position; flags `0x11` (attached; parent at `+0x58`); its own model (hash
+  `0x1f3b85ea`); local position zero; angular velocity (0, 0, −π/2), the disc's turn backwards, so the column keeps
+  its world orientation while the disc turns (inferred: an attached object's pose is relative to its parent's);
+  update interval 2 ticks; shown.
+- **Messages**: `0x34` the colour (`+0xcc` = the word, `+0xc8` = the word with alpha 1); `0x0a` shown or hidden;
+  `0x15` dying and hidden. Its update is the disc's fade.
+- Its model is a cylinder, white at the foot and fading out towards the top (the reference image); tinted gold it is
+  the translucent yellow column of the runtime picture.
+
+**How it looks** (confirmed (runtime), PCSX2 2.9.94, the tutorial's first hint): a translucent gold column on the
+ground, a little taller than a human, with the opaque "W" disc at its top, its face turning past the camera; the
+column is see-through and fades upwards. The disc's model (`dyn_w_mission`, hash `0x27af4fe0`) is a gold coin with a
+black "W" ([Objects](../references/objects.md#obj-dyn-w-mission)), its `CfgObj` box 0.52 × 0.52 × 2 m.
+
+**Drawing.** Both are ordinary world objects drawn by `ObjectRender_Draw` with their tint as the geometry colour
+([The tint](#tint)): no separate pass, the scene's lights selected as for any object, nothing drawn while the alpha
+is under 10. The disc is never size-culled (`+0x124` = 1). `ObjShow`'s distance fades both over its last 2 m when a
+script passes one; `level99` passes none. Confirmed (code). How the column's translucency is blended (its material
+and vertex alpha, the PS2 pipeline's blend) is not traced.
+
+**When it goes**: the script's `ObjDestroy(handle)` (no second argument) removes the disc at once (its vtable
+`+0x4c`) and the attached column with it, without a fade. Confirmed (code) for the disc; confirmed (runtime) for
+both: their handles are empty three updates later and nothing is drawn. Only `ObjHide` or a destroy by message fades
+a marker out.
+
+**Other marker kinds**, for later:
+
+- `dyn_w_goto` and `dyn_w_mission` as the Rumble race's carrots and the box glows ([Rumble](rumble.md));
+  `dyn_objective_w` (red, a larger "W") at `level99` checkpoint 2 for Vermin
+  ([Scripting](scripting.md#level99-checkpoints)).
+- `sub_objective_glow` (script type 223, init `0x003ea0b0`, update `0x003ea260`, message `0x003ea198`): a 120 × 120
+  sprite of the `lighting` sheet, rectangle 3 (a corona), alpha 255, pulled 0.32 m towards the camera every 2 ticks;
+  message `0x0a` shows or hides it. Who spawns it is not traced.
+- `dyn_throwtarget` (gold), `dyn_w_bonus` and `dyn_objective_green` (purple), `dyn_w_cinematics` (white): the same
+  class; their uses are not traced.
 
 #### What moves them: the Wonder Wheel {#wonder-wheel}
 
@@ -623,7 +733,9 @@ suppressed, as a fresh profile has neither unlockable. `ObjEnableZone` sets or c
 zone mask (zone 0 on at a level's start, the rest off); `ObjShow` and `ObjHide` resolve the handle and mark the record
 shown or hidden (`ObjShow`'s distance kept); `ObjDestroy` makes a human holding the object let go, then removes the
 record for good, by either of its paths (`src/scripting/world_bindings.h`). Nothing streams by zone or draws the
-hidden mark in play yet: Coney has no object tasks there. Disc check (NTSC-U, 2026-10-06, counts only): at the front end
+hidden mark in play yet: Coney has no object tasks there, so play mode draws no
+[objective marker](#objective-markers) (the `level99` tutorial's first hints point at nothing). Disc check (NTSC-U,
+2026-10-06, counts only): at the front end
 `level100.lua` leaves 29 Wonder Wheel records, each of a configured type, the wheel tinted `0x474542FF`.
 
 **Placed objects** (`src/world_objects/placed_objects_file.h`, from [the objects file](#objs-file)): after the level
@@ -705,7 +817,9 @@ Coney's stand-ins, where this page is silent:
   record (`+0x660`) for a door.
 - How a leaf eases to its target rotation (`+0x40`), and the type's float property 5 (half a leaf's width?).
 - Which sheet the glass sprite batch and the `glasstest` shards draw from.
-- How the renderer applies an object's tint word.
+- How the draw blends a translucent object (the column's material and vertex alpha, the PS2 blend), and where the
+  instance's colour bytes are set from `+0xc8`.
+- Who spawns `sub_objective_glow`; which levels use the purple and white marker kinds.
 - How the resource manager picks the object whose model it loads next (`+0xbd4`), and whether `level100`'s packs
   hold the Wonder Wheel's models.
 - What the first camera's vtable `+0x214` returns (the streaming-out distance).

@@ -1244,7 +1244,9 @@ ObjDestroy(object, viaMessage)
 
 **Returns** nothing.
 
-Removes a game object. If a human is holding it, the human first lets go of it.
+Removes a game object. If a human is holding it, the human first lets go of it. Without `viaMessage` an objective marker
+and its column vanish at once; with it they fade out over about 1 s first ([Objects: objective
+markers](../../research/objects.md#objective-markers)).
 
 **Notes.** The release path chooses by the object type's class byte (+0x65): 6 and 5 call different release routines
 (0x00258330, 0x0024ce40), others 0x00257f38.
@@ -1400,7 +1402,8 @@ ObjHide(object)
 
 **Returns** nothing.
 
-Hides a game object without destroying it (show/hide message 0x0a with 0).
+Hides a game object without destroying it (show/hide message 0x0a with 0). An objective marker fades out over about 1 s
+([Objects: objective markers](../../research/objects.md#objective-markers)).
 
 - **Evidence:** confirmed (code) at `0x00396b68`; detail: traced
 - **Wrapper** `0x00378050` (registered by `RegisterBindings`); **calls** `0x00396b68` `Obj_Hide`
@@ -1643,13 +1646,17 @@ ObjShow(object, fadeDist)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of the game object. |
-| 2 | `fadeDist` | number (single precision) | Value stored in the object's spawn record (+0x138); the scripts pass a fade-in distance (`FadeInDist`) or nothing. |
+| 2 | `fadeDist` | number (single precision) | Draw distance in metres (stored at +0x138): beyond it minus 2 m the object fades out over 2 m; 0 or nothing for none. The scripts pass a `FadeInDist` field or nothing. |
 
 **Returns** nothing.
 
-Makes a hidden game object visible again (show/hide message 0x0a with 1).
+Makes a hidden game object visible again (show/hide message 0x0a with 1); resolving the handle spawns the object first
+if it is not live. An objective marker (`dyn_w_mission` and the other `dyn_objective` types) fades its disc and column
+in over about 1 s ([Objects: objective markers](../../research/objects.md#objective-markers)).
 
-**Notes.** That +0x138 is a fade distance in metres is inferred from the scripts' field name.
+**Notes.** The renderer's use of +0x138 is `ObjectRender_ApplyFadeDistance` (0x0017fa80): alpha × (distance − camera
+distance) / 2 once the camera is within 2 m of the distance; an attached object uses its parent's and is not drawn
+beyond it.
 
 - **Evidence:** confirmed (code) at `0x00396a08`; detail: traced
 - **Wrapper** `0x00377fd8` (registered by `RegisterBindings`); **calls** `0x00396a08` `Obj_Show`

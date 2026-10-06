@@ -971,7 +971,8 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
 - **Play** (`src/gamemodes/gameplay_mode.h`): the scripts keep running in a level, stepped every frame after the
   level's step; `--play-level LEVEL` enters a level the same way, after the preloads and a fresh state
   (`LevelScripts`, `src/gamemodes/level_start.h`). In `level99` at checkpoint 1 the tutorial runs from the intro
-  through the two markers (`vMark01`, `vMark03`), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
+  through the two markers (`vMark01`, `vMark03`; how the original draws them:
+  [Objective markers](objects.md#objective-markers)), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
   lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), which the
   play mode calls with each hit player 1 strikes. The lessons run through the light and heavy attacks, the grab and
   its strikes, the mount and its strikes ([Combat](combat.md#mount)), the L2 let-go, the targeting lesson (L1 held
