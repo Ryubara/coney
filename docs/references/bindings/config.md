@@ -14,7 +14,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgAnnounceMessage`](#cfgannouncemessage) | - | 1 | yes | no | confirmed (code) |
 | [`CfgAttackDelay`](#cfgattackdelay) | - | 1 | yes | no | confirmed (code) |
 | [`CfgAttackFromIdle`](#cfgattackfromidle) | - | 1 | yes | no | confirmed (code) |
-| [`CfgAutoCloseMode`](#cfgautoclosemode) | - | 0 | no | no | inferred |
+| [`CfgAutoCloseMode`](#cfgautoclosemode) | - | 0 | no | no | confirmed (code) |
 | [`CfgAutoCombat`](#cfgautocombat) | - | 0 | no | no | inferred |
 | [`CfgAutoLock`](#cfgautolock) | - | 0 | no | no | inferred |
 | [`CfgAutoLockAndCombat`](#cfgautolockandcombat) | - | 1 | yes | no | confirmed (code) |
@@ -247,17 +247,18 @@ CfgAutoCloseMode(mode)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `mode` | number, truncated to an unsigned integer | 0 off; 1 or more enables automatic closing; values above 1 enable an extra case for doors with the default handler. Stored as a global. |
+| 1 | `mode` | number, truncated to an unsigned integer | 0 off; 1 (the default) on while the player holds a lock-on at a fight target (record flags 0x8 and 0x4); 2 or more also while he is in the lock-on movement state. |
 
 **Returns** nothing.
 
-Sets the auto-close mode (0x00510228) read by the door routine 0x00233c50, which closes a door the player has passed
-through when the mode is non-zero.
+Sets the close (combat) camera mode (0x00510228): while it holds, player 1's follow camera pulls in to 2.4 m, tilts to
+15 degrees and keeps his fight target 27 degrees off centre, and shakes are weaker
+([Camera](../../research/camera.md#combat-camera)).
 
-**Notes.** Storage confirmed (code) at 0x00233c40; the door reading is inferred from the reader's use of the level
-object at game state +0x228. Never called by the scripts.
+**Notes.** Read by 0x00233c50 (one player, not riding, with a fight target), used by the follow camera's update and the
+shake code; 0x0051489c + 0x228 is player 1's handle, not a level object. Never called by the scripts.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00233c40`; detail: traced
 - **Wrapper** `0x0035a188` (registered by `RegisterBindings`); **calls** `0x00233c40`
 - **Used by** no script on the disc
 - **Coney:** not implemented
@@ -933,13 +934,14 @@ CfgFollowCamera(minDist, maxDist, defaultDist, pitchDeg, fov, nearPlane, offset,
 | 5 | `fov` | number (single precision) | Field of view in degrees (65). |
 | 6 | `nearPlane` | number (single precision) | Near clip plane in metres (0.1). |
 | 7 | `offset` | table of 3 numbers (t[1]..t[3]) | Look-at offset {x, y, z} in metres from the target's feet ({0, 0, 1.4}). |
-| 8 | `slowmo` | number (single precision) | Global slow-motion factor (0.2), stored at 0x005148a0. |
+| 8 | `slowmo` | number (single precision) | Global slow-motion factor (0.2), stored at 0x005148a0: the characters' step becomes factor / 30 s while an animation's slow-motion event runs. |
 
 **Returns** nothing.
 
-Configures the player's follow camera: distance limits and default, pitch, field of view, near plane, look-at offset and
-the slow-motion factor ([Camera](../../research/camera.md#setting-up)). Usually called through global.lua's
-CameraCreateFollow and CameraNormal.
+Configures player 1's follow camera: distance limits and default, pitch (reached at once), field of view (eased over 1
+s), near plane, look-at offset and the slow-motion factor; then, with one player camera, moves the band to the minimum
+distance as CamSetFollowZoom(0) does ([Camera](../../research/camera.md#setting-up)). Usually called through
+global.lua's CameraCreateFollow and CameraNormal.
 
 - **Evidence:** confirmed (code) at `0x0011c0b8`; detail: traced
 - **Wrapper** `0x0036ab88` (registered by `RegisterBindings`); **calls** `0x0011c0b8` `Cam_ConfigureFollow`

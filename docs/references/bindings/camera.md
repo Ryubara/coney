@@ -183,7 +183,7 @@ CamEnable(feature, on, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `feature` | number, truncated to an unsigned integer | Which camera switch, 0-13 ([Camera switches](../cameras.md#switch)). 5 enables or disables the follow camera's sprint zoom (turning it off cancels a zoom in progress); 3 also re-lays out the views. |
+| 1 | `feature` | number, truncated to an unsigned integer | Which camera switch, 0-13 ([Camera switches](../cameras.md#switch)). 0 the right stick and zoom buttons, 5 the follow camera's sprint zoom (turning it off cancels a zoom in progress), 9 the power-move camera, 11 the look-behind button; 3 and 4 gate the second player's view and target (3 also re-lays out the views). |
 | 2 | `on` | boolean (nil or 0 is false) | true turns the switch on. |
 | 3 | `player` | number, truncated to an integer; default -1 | Player index for the per-player switches (0, 2, 5), or -1 (default) for every player. |
 
@@ -243,7 +243,8 @@ CameraCreateLocked(name, pos, fov, heading, pitch, roll, near, far) -> number
 
 **Returns** number: The new camera's handle, or NilHandle when it could not be made.
 
-Creates a locked camera: one at a fixed position looking in a fixed direction. The front end's black camera is one.
+Creates a locked camera: one at a fixed position looking in a fixed direction. The front end's black camera is one;
+level99's tutorial cut-aways are nine more ([Camera](../../research/camera.md#locked-cameras)).
 
 **Notes.** Argument order checked against the callee's slots: fov through slot +0x194, the three angles stored at
 +0x200, near slot +0x1a4, far slot +0x1ac.
@@ -342,8 +343,10 @@ CameraMakeActive(camera, seconds, name, forHuman, fromHuman)
 
 **Returns** nothing.
 
-Makes a camera the current camera of a player, blending from the previous one over the given time. See
-[Camera](../../research/camera.md#setting-up).
+Makes a camera the current camera of a player, blending from the previous one over the given time: a linear blend of
+position and look-at point and a slerp of the orientation from the previous view to the new camera's live view, which
+becomes current directly when the time is up. While a scene camera is current it replaces the camera the scene returns
+to instead. See [Camera](../../research/camera.md#blends).
 
 - **Evidence:** confirmed (code) at `0x0011b770`; detail: traced
 - **Wrapper** `0x003656a0` (registered by `RegisterBindings`); **calls** `0x0011b770` `Camera_MakeActiveByHandle`
@@ -362,8 +365,10 @@ CameraReset(camera)
 
 **Returns** nothing.
 
-Resets a camera to its starting state (camera vtable slot `+0x13c`); for a follow camera the other player's follow
-camera is reset too. level99 resets its follow camera after making it current.
+Resets a camera to its starting state (camera vtable slot `+0x13c`). A follow camera is placed behind its target at the
+band's nearest preset distance, its target pitch and field of view set back to the configured ones; the band is not
+moved; the other player's follow camera is reset too. level99 resets its follow camera before every return to it
+([Camera](../../research/camera.md#setting-up)).
 
 - **Evidence:** confirmed (code) at `0x0011bad8`; detail: traced
 - **Wrapper** `0x00365a10` (registered by `RegisterBindings`); **calls** `0x0011bad8` `Camera_ResetByHandle`
@@ -624,7 +629,9 @@ CamSetFollowAngle(degrees)
 
 **Returns** nothing.
 
-Sets the pitch of every player's follow camera and moves the camera to it at once.
+Sets the target pitch of every player's follow camera, clamped to its pitch limits, and turns the view to it at once; it
+lasts until the next CameraReset or CfgFollowCamera. level99's -10 clamps to the lower limit, about -4.3 degrees
+([Camera](../../research/camera.md#script-calls)).
 
 - **Evidence:** confirmed (code) at `0x0011c3b8`; detail: traced
 - **Wrapper** `0x00365bb8` (registered by `RegisterBindings`); **calls** `0x0011c3b8` `Camera_SetFollowPitch`
@@ -679,15 +686,17 @@ CamSetFollowZoom(preset, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `preset` | number, truncated to an unsigned integer | 0 close (the minimum distance), 1 the default distance, 2 far (the maximum distance); in two-player games 0 resets to the default. |
+| 1 | `preset` | number, truncated to an unsigned integer | 0 close: the band's near edge at the minimum distance (where CfgFollowCamera leaves it); 1 the default distance; 2 far: the band's far edge at the maximum. With two player cameras 0 acts as 1. Other values do nothing. |
 | 2 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (the default) for every player. |
 
 **Returns** nothing.
 
-Moves the follow camera to one of its three zoom distances (set by CfgFollowCamera).
+Moves the follow camera's distance band (0.5 m deep) to one of its three zoom distances (set by CfgFollowCamera), snaps
+the look-at point and sets the zoom step and upper pitch limit (30, 40 or 50 degrees for presets 0, 1, 2). The camera is
+not moved: the leash drags it into the new band. See [Camera](../../research/camera.md#script-calls).
 
-**Notes.** The preset meanings come from the getters it reads (+0x300 minimum, +0x304 maximum, +0x308 default);
-confirmed (code) for the reads, the player-facing names are inferred.
+**Notes.** Confirmed (runtime): level99 checkpoint 1 reads band 3.0-3.5, zoom step 4.8, limit 30; after
+CamSetFollowZoom(1) at checkpoint 2, 4.8-5.3, 6.6, 40.
 
 - **Evidence:** confirmed (code) at `0x0011c470`; detail: traced
 - **Wrapper** `0x00365bf0` (registered by `RegisterBindings`); **calls** `0x0011c470` `Camera_SetFollowZoom`
@@ -765,11 +774,13 @@ CamSetSecondary(object, range, player)
 
 **Returns** nothing.
 
-Gives a player's follow camera a secondary target to keep in view alongside the player (the tutorial points it at
-Vermin).
+Gives a player's follow camera a secondary target to keep in view alongside the player, in place of auto-follow: the
+camera yaws 35% of the excess per update (at most 270 degrees/s) whenever the target is more than a quarter of the field
+of view off centre (the tutorial points it at Vermin). A range above 0 limits it to targets within the range and in
+sight ([Camera](../../research/camera.md#heading)).
 
-**Notes.** Stores the target at follow camera +0x320 and the range at +0x3fc, and the target in the player's type-7
-camera too.
+**Notes.** Stores the target at follow camera +0x320 and the range at +0x3fc (0 for NilHandle), and the target in the
+player's mugging camera (type 7) too.
 
 - **Evidence:** confirmed (code) at `0x0011dcf0`; detail: traced
 - **Wrapper** `0x003670c0` (registered by `RegisterBindings`); **calls** `0x0011dcf0` `Camera_SetFollowSecondary`
@@ -905,7 +916,9 @@ CamTarget(mode, camera, human) -> boolean
 **Returns** boolean (1 for true, nil for false): true (1) when the list changed (always for modes 1 and 2), nil when the
 human was missing or the list (at most 4) was full.
 
-Edits the shared list of humans the cameras keep in frame (at 0x005d91a8), used for fights with several characters.
+Edits the shared list of humans the cameras follow (at 0x005d91a8): the players. A follow camera takes its targets from
+the first two entries and keeps its last target when the list is empty, so with one player removing and re-adding him
+(level99_lesson1) changes nothing ([Camera](../../research/camera.md#script-calls)).
 
 - **Evidence:** confirmed (code) at `0x0011c270`; detail: traced
 - **Wrapper** `0x00365ad8` (registered by `RegisterBindings`); **calls** `0x0011c270` `Camera_TargetList`

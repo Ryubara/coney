@@ -48,15 +48,16 @@
   calls:
     - {addr: 0x00233c40}
   args:
-    - {name: mode, lua: number, ctype: unsigned, desc: "0 off; 1 or more enables automatic closing; values above 1 enable an extra case for doors with the default handler. Stored as a global."}
+    - {name: mode, lua: number, ctype: unsigned, desc: "0 off; 1 (the default) on while the player holds a lock-on at a fight target (record flags 0x8 and 0x4); 2 or more also while he is in the lock-on movement state."}
   description: >-
-    Sets the auto-close mode (0x00510228) read by the door routine 0x00233c50, which closes a door the player has
-    passed through when the mode is non-zero.
-  evidence: inferred
-  depth: brief
+    Sets the close (combat) camera mode (0x00510228): while it holds, player 1's follow camera pulls in to 2.4 m,
+    tilts to 15 degrees and keeps his fight target 27 degrees off centre, and shakes are weaker
+    ([Camera](../../research/camera.md#combat-camera)).
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Storage confirmed (code) at 0x00233c40; the door reading is inferred from the reader's use of the level object at
-    game state +0x228. Never called by the scripts.
+    Read by 0x00233c50 (one player, not riding, with a fight target), used by the follow camera's update and the shake
+    code; 0x0051489c + 0x228 is player 1's handle, not a level object. Never called by the scripts.
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
 - name: CfgGrabCounterWithAttack
@@ -1345,11 +1346,12 @@
     - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees (65)."}
     - {name: nearPlane, lua: number, ctype: float, desc: "Near clip plane in metres (0.1)."}
     - {name: offset, lua: table, elem: number, count: 3, written_back: true, desc: "Look-at offset {x, y, z} in metres from the target's feet ({0, 0, 1.4})."}
-    - {name: slowmo, lua: number, ctype: float, desc: "Global slow-motion factor (0.2), stored at 0x005148a0."}
+    - {name: slowmo, lua: number, ctype: float, desc: "Global slow-motion factor (0.2), stored at 0x005148a0: the characters' step becomes factor / 30 s while an animation's slow-motion event runs."}
   description: >-
-    Configures the player's follow camera: distance limits and default, pitch, field of view, near plane, look-at
-    offset and the slow-motion factor ([Camera](../../research/camera.md#setting-up)). Usually called through
-    global.lua's CameraCreateFollow and CameraNormal.
+    Configures player 1's follow camera: distance limits and default, pitch (reached at once), field of view (eased
+    over 1 s), near plane, look-at offset and the slow-motion factor; then, with one player camera, moves the band to
+    the minimum distance as CamSetFollowZoom(0) does ([Camera](../../research/camera.md#setting-up)). Usually called
+    through global.lua's CameraCreateFollow and CameraNormal.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 13, calls: 28, boot: true, mission1: true, result_used: false}

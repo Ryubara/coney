@@ -10,7 +10,7 @@ holds a camera by handle; the type says which class the handle is.
 
     All fourteen classes the code makes are listed: types 10, 14 and 15 belong to no class. The types, tags and
     vtables are read from the executable; sizes and makers are from the factory `0x0011e1b0` and the getters. All
-    fourteen switches (0-13) are listed with the flag each sets and its default; switches 2, 7, 8 and 11 are read by
+    fourteen switches (0-13) are listed with the flag each sets and its default; switches 2 and 8 are read by rail-camera
     code not traced further.
 
 28 entries. Data: `research/references/cameras.yaml`.
@@ -49,11 +49,11 @@ holds a camera by handle; the type says which class the handle is.
 | <span id="cam-switch-4"></span>4 | `0x0050b1c8` | `global` | 1 | 74 | `caps.lua`, `hifi.lua`, `kinghill.lua`, `level101.lua`, `level102.lua`, `level103.lua` | With `0x0050b1c4` (set by `0x00418ac8`), a player is a camera target only while he still counts |
 | <span id="cam-switch-5"></span>5 | follow camera `+0x468` | `per player` | 1 | 2 | `level81_chase.lua`, `level81_cracker.lua` | The follow camera's [sprint zoom](../research/camera.md#sprint-zoom) |
 | <span id="cam-switch-6"></span>6 | `0x0050b1d0` | `global` | 1 | 7 | `level60.lua`, `level61.lua`, `level62.lua`, `level63.lua`, `level64.lua` | Camera shake: off, the shake offset is not added to the view (the pad still rumbles) |
-| <span id="cam-switch-7"></span>7 | `0x0050b2ac` | `global` | 1 | 1 | `level54_park.lua` | A step of the rail camera's update; not traced |
+| <span id="cam-switch-7"></span>7 | `0x0050b2ac` | `global` | 1 | 1 | `level54_park.lua` | The rail camera leads its look-at point along the target's way (`+0x35c`) |
 | <span id="cam-switch-8"></span>8 | `0x0050b2b0` | `global` | 1 | 1 | `level81_chase.lua` | Part of the rail camera's choice of targets; not traced |
-| <span id="cam-switch-9"></span>9 | `0x0050b1d4` | `global` | 1 | 3 | `level55_subway.lua`, `level99_lesson2.lua` | Lets power moves switch to the power camera (type 6) |
+| <span id="cam-switch-9"></span>9 | `0x0050b1d4` | `global` | 1 | 3 | `level55_subway.lua`, `level99_lesson2.lua` | Lets a power move's animation event `0x39` switch to the power camera (type 6) |
 | <span id="cam-switch-10"></span>10 | `0x0050b248`, `0x0050b249` | `both pads` | 1 | 1 | `level55_punkfight.lua` | Auto-follow: the follow camera swings behind the player |
-| <span id="cam-switch-11"></span>11 | `0x0050b23c` | `global` | 1 | | | An argument of the stick-and-zoom step; `Human_SetWheelchairControl` sets it too; not traced |
+| <span id="cam-switch-11"></span>11 | `0x0050b23c` | `global` | 1 | | | The look-behind button: off, the reverse-camera button never turns the view round (`Human_SetWheelchairControl` clears it) |
 | <span id="cam-switch-12"></span>12 | `0x0050b2b4` | `global` | 1 | 2 | `level82_chapter5.lua`, `level93_chapter6.lua` | Part of the rail camera's choice of targets: off, a player is a target only while he still counts |
 | <span id="cam-switch-13"></span>13 | `0x0050b1e0` | `global` | 0 | 3 | `level31_birdie.lua`, `level86_chapter4.lua`, `wchair.lua` | Keeps both two-player views shown even when a player no longer counts |
 

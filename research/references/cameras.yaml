@@ -9,7 +9,7 @@ about: |
 complete: |
   All fourteen classes the code makes are listed: types 10, 14 and 15 belong to no class. The types, tags and
   vtables are read from the executable; sizes and makers are from the factory `0x0011e1b0` and the getters. All
-  fourteen switches (0-13) are listed with the flag each sets and its default; switches 2, 7, 8 and 11 are read by
+  fourteen switches (0-13) are listed with the flag each sets and its default; switches 2 and 8 are read by rail-camera
   code not traced further.
 defaults: {source: "SLUS_212.15, camera factory 0x0011e1b0 and CamEnable 0x0011de58", evidence: confirmed-code}
 entries:
@@ -245,7 +245,7 @@ entries:
     read_by: "`0x0013e708` (rail camera)"
     calls: 1
     scripts: [level54_park.lua]
-    meaning: "A step of the rail camera's update; not traced"
+    meaning: "The rail camera leads its look-at point along the target's way (`+0x35c`)"
     evidence: inferred
   - id: switch-8
     kind: switch
@@ -267,8 +267,8 @@ entries:
     read_by: "`0x00101dd8` (power camera)"
     calls: 3
     scripts: [level55_subway.lua, level99_lesson2.lua]
-    meaning: "Lets power moves switch to the power camera (type 6)"
-    evidence: inferred
+    meaning: "Lets a power move's animation event `0x39` switch to the power camera (type 6)"
+    evidence: confirmed-code
   - id: switch-10
     kind: switch
     number: 10
@@ -285,9 +285,9 @@ entries:
     sets: "`0x0050b23c`"
     scope: global
     default: 1
-    read_by: "`0x0012ae58` (argument of `0x00129050`)"
-    meaning: "An argument of the stick-and-zoom step; `Human_SetWheelchairControl` sets it too; not traced"
-    evidence: inferred
+    read_by: "`0x0012ae58` (`0x0012b4b4`, the look-behind argument of `0x00129050`)"
+    meaning: "The look-behind button: off, the reverse-camera button never turns the view round (`Human_SetWheelchairControl` clears it)"
+    evidence: confirmed-code
   - id: switch-12
     kind: switch
     number: 12

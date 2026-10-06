@@ -27,8 +27,10 @@
     - {name: forHuman, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional human whose player gets the camera (default NilHandle: the camera's own player)."}
     - {name: fromHuman, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional human whose player's previous camera is the blend source (default: the same player)."}
   description: >-
-    Makes a camera the current camera of a player, blending from the previous one over the given time. See
-    [Camera](../../research/camera.md#setting-up).
+    Makes a camera the current camera of a player, blending from the previous one over the given time: a linear blend
+    of position and look-at point and a slerp of the orientation from the previous view to the new camera's live view,
+    which becomes current directly when the time is up. While a scene camera is current it replaces the camera the
+    scene returns to instead. See [Camera](../../research/camera.md#blends).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 193, calls: 629, boot: true, mission1: true, result_used: false}
@@ -106,8 +108,10 @@
   args:
     - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
   description: >-
-    Resets a camera to its starting state (camera vtable slot `+0x13c`); for a follow camera the other player's follow
-    camera is reset too. level99 resets its follow camera after making it current.
+    Resets a camera to its starting state (camera vtable slot `+0x13c`). A follow camera is placed behind its target
+    at the band's nearest preset distance, its target pitch and field of view set back to the configured ones; the
+    band is not moved; the other player's follow camera is reset too. level99 resets its follow camera before every
+    return to it ([Camera](../../research/camera.md#setting-up)).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 167, calls: 310, boot: true, mission1: true, result_used: false}
@@ -139,8 +143,9 @@
   results:
     - {lua: boolean, desc: "true (1) when the list changed (always for modes 1 and 2), nil when the human was missing or the list (at most 4) was full."}
   description: >-
-    Edits the shared list of humans the cameras keep in frame (at 0x005d91a8), used for fights with several
-    characters.
+    Edits the shared list of humans the cameras follow (at 0x005d91a8): the players. A follow camera takes its
+    targets from the first two entries and keeps its last target when the list is empty, so with one player removing
+    and re-adding him (level99_lesson1) changes nothing ([Camera](../../research/camera.md#script-calls)).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 42, calls: 214, boot: false, mission1: true, result_used: false}
@@ -165,7 +170,9 @@
   args:
     - {name: degrees, lua: number, ctype: float, desc: "Pitch in degrees (positive looks down on the player), clamped to the camera's pitch limits."}
   description: >-
-    Sets the pitch of every player's follow camera and moves the camera to it at once.
+    Sets the target pitch of every player's follow camera, clamped to its pitch limits, and turns the view to it at
+    once; it lasts until the next CameraReset or CfgFollowCamera. level99's -10 clamps to the lower limit, about -4.3
+    degrees ([Camera](../../research/camera.md#script-calls)).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 76, calls: 94, boot: false, mission1: true, result_used: false}
@@ -175,15 +182,17 @@
   calls:
     - {addr: 0x0011c470, name: Camera_SetFollowZoom}
   args:
-    - {name: preset, lua: number, ctype: unsigned, desc: "0 close (the minimum distance), 1 the default distance, 2 far (the maximum distance); in two-player games 0 resets to the default."}
+    - {name: preset, lua: number, ctype: unsigned, desc: "0 close: the band's near edge at the minimum distance (where CfgFollowCamera leaves it); 1 the default distance; 2 far: the band's far edge at the maximum. With two player cameras 0 acts as 1. Other values do nothing."}
     - {name: player, lua: number, ctype: int, default: -1, desc: "Player index, or -1 (the default) for every player."}
   description: >-
-    Moves the follow camera to one of its three zoom distances (set by CfgFollowCamera).
+    Moves the follow camera's distance band (0.5 m deep) to one of its three zoom distances (set by CfgFollowCamera),
+    snaps the look-at point and sets the zoom step and upper pitch limit (30, 40 or 50 degrees for presets 0, 1, 2). The
+    camera is not moved: the leash drags it into the new band. See [Camera](../../research/camera.md#script-calls).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The preset meanings come from the getters it reads (+0x300 minimum, +0x304 maximum, +0x308 default); confirmed
-    (code) for the reads, the player-facing names are inferred.
+    Confirmed (runtime): level99 checkpoint 1 reads band 3.0-3.5, zoom step 4.8, limit 30; after CamSetFollowZoom(1)
+    at checkpoint 2, 4.8-5.3, 6.6, 40.
   usage: {chunks: 13, calls: 17, boot: false, mission1: true, result_used: false}
 
 - name: CamSetFollowPos
@@ -216,7 +225,7 @@
     - {lua: number, desc: "The new camera's handle, or NilHandle when it could not be made."}
   description: >-
     Creates a locked camera: one at a fixed position looking in a fixed direction. The front end's black camera is
-    one.
+    one; level99's tutorial cut-aways are nine more ([Camera](../../research/camera.md#locked-cameras)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -492,13 +501,15 @@
     - {name: range, lua: number, ctype: float, desc: "A range value stored with it (scripts pass 0)."}
     - {name: player, lua: number, ctype: int, desc: "Player index (default 0)."}
   description: >-
-    Gives a player's follow camera a secondary target to keep in view alongside the player (the tutorial points it at
-    Vermin).
+    Gives a player's follow camera a secondary target to keep in view alongside the player, in place of auto-follow:
+    the camera yaws 35% of the excess per update (at most 270 degrees/s) whenever the target is more than a quarter of
+    the field of view off centre (the tutorial points it at Vermin). A range above 0 limits it to targets within the
+    range and in sight ([Camera](../../research/camera.md#heading)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Stores the target at follow camera +0x320 and the range at +0x3fc, and the target in the player's type-7 camera
-    too.
+    Stores the target at follow camera +0x320 and the range at +0x3fc (0 for NilHandle), and the target in the
+    player's mugging camera (type 7) too.
   usage: {chunks: 7, calls: 26, boot: false, mission1: true, result_used: false}
 
 - name: CamCanSee
@@ -521,7 +532,7 @@
   calls:
     - {addr: 0x0011de58, name: Camera_EnableFeature}
   args:
-    - {name: feature, lua: number, ctype: unsigned, desc: "Which camera switch, 0-13 ([Camera switches](../cameras.md#switch)). 5 enables or disables the follow camera's sprint zoom (turning it off cancels a zoom in progress); 3 also re-lays out the views."}
+    - {name: feature, lua: number, ctype: unsigned, desc: "Which camera switch, 0-13 ([Camera switches](../cameras.md#switch)). 0 the right stick and zoom buttons, 5 the follow camera's sprint zoom (turning it off cancels a zoom in progress), 9 the power-move camera, 11 the look-behind button; 3 and 4 gate the second player's view and target (3 also re-lays out the views)."}
     - {name: "on", lua: boolean, desc: "true turns the switch on."}
     - {name: player, lua: number, ctype: int, default: -1, desc: "Player index for the per-player switches (0, 2, 5), or -1 (default) for every player."}
   description: >-
