@@ -5,6 +5,7 @@
 #include <bit>
 #include <cmath>
 #include <format>
+#include <iterator>
 #include <limits>
 #include <utility>
 
@@ -291,6 +292,40 @@ std::optional<std::uint32_t> PathMap::nearestPolygon(float x, float y, float rea
         }
     }
     return nearest;
+}
+
+std::optional<std::uint32_t> PathMap::holeAt(float x, float y) const {
+    // The holes whose box holds the point.
+    std::vector<std::uint32_t> boxed;
+    for (std::size_t p = 0; p < m_polygons.size(); ++p) {
+        const PathPolygon& polygon = m_polygons[p];
+        if ((polygon.flags & kPathPolygonHole) != 0 && polygon.vertexCount > 0 && x >= polygon.xMin &&
+            x <= polygon.xMax && y >= polygon.yMin && y <= polygon.yMax) {
+            boxed.push_back(static_cast<std::uint32_t>(p));
+        }
+    }
+    if (boxed.size() <= 1) {
+        return boxed.empty() ? std::nullopt : std::optional(boxed.front());
+    }
+    // Several: those that take the point in (all of them when none does), then the nearest vertex average.
+    std::vector<std::uint32_t> holding;
+    std::ranges::copy_if(boxed, std::back_inserter(holding),
+                         [&](std::uint32_t p) { return inside(m_polygons[p], x, y); });
+    const std::vector<std::uint32_t>& pool = holding.empty() ? boxed : holding;
+    const auto averageDistance = [&](std::uint32_t p) {
+        const PathPolygon& polygon = m_polygons[p];
+        float sumX = 0.0F;
+        float sumY = 0.0F;
+        for (std::uint32_t k = 0; k < polygon.vertexCount; ++k) {
+            sumX += m_vertices[polygon.firstVertex + k].x;
+            sumY += m_vertices[polygon.firstVertex + k].y;
+        }
+        const float count = static_cast<float>(polygon.vertexCount);
+        const float dx = sumX / count - x;
+        const float dy = sumY / count - y;
+        return dx * dx + dy * dy;
+    };
+    return *std::ranges::min_element(pool, {}, averageDistance);
 }
 
 bool PathMap::walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask) const {

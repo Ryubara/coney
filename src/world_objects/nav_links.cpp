@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "world_objects/nav_links.h"
 
+#include <algorithm>
 #include <limits>
 #include <span>
 
@@ -18,14 +19,6 @@ NavLinks::NavLinks(world::PathMap* map) : m_map(map) {
     for (std::uint32_t n = 0; n < nodes.size(); ++n) {
         for (std::uint32_t e = 0; e < nodes[n].edgeCount; ++e) {
             m_fromNode.at(nodes[n].firstEdge + e) = n;
-        }
-    }
-    // Each node's polygon: the polygons own their nodes in order.
-    m_polygonOfNode.resize(nodes.size());
-    const std::span<const world::PathPolygon> polygons = m_map->polygons();
-    for (std::uint32_t p = 0; p < polygons.size(); ++p) {
-        for (std::uint32_t n = 0; n < polygons[p].nodeCount; ++n) {
-            m_polygonOfNode.at(polygons[p].firstNode + n) = p;
         }
     }
 }
@@ -51,14 +44,41 @@ void NavLinks::setNumberOpen(std::uint16_t number, bool open) {
     }
     const std::span<world::PathEdge> edges = m_map->mutableEdges();
     for (std::uint32_t e = 0; e < edges.size(); ++e) {
-        if (edges[e].door != number) {
-            continue;
-        }
-        edges[e].avoid = !open;
-        if (const std::optional<std::uint32_t> polygon = polygonOf(e)) {
-            setPolygonExcluded(*polygon, open);
+        if (edges[e].door == number) {
+            edges[e].avoid = !open;
         }
     }
+    // The doorway's hole, which an open door lets lines and routes cross; nothing when none is found.
+    if (const std::optional<std::uint32_t> hole = holeOf(number)) {
+        setPolygonExcluded(*hole, open);
+    }
+}
+
+std::optional<std::uint32_t> NavLinks::holeOf(std::uint16_t number) const {
+    // The number's link met first walking the links from the last, and the node it leads to.
+    const std::span<const world::PathEdge> edges = m_map->edges();
+    std::optional<std::uint32_t> link;
+    for (std::uint32_t e = static_cast<std::uint32_t>(edges.size()); e-- > 0;) {
+        if (edges[e].door == number) {
+            link = e;
+            break;
+        }
+    }
+    if (!link) {
+        return std::nullopt;
+    }
+    const std::uint32_t node = edges[*link].to;
+    // That node's last door or breakable link, and the middle of the two nodes: the middle of the doorway.
+    const std::span<const world::PathEdge> leaving = m_map->edgesOf(node);
+    const auto through = std::ranges::find_if(leaving.rbegin(), leaving.rend(), [](const world::PathEdge& edge) {
+        return (edge.flags & (link_kind::kDoor | link_kind::kBreakable)) != 0;
+    });
+    if (through == leaving.rend()) {
+        return std::nullopt;
+    }
+    const std::span<const world::PathNode> nodes = m_map->nodes();
+    const anim::Vec3 middle = anim::scale(anim::add(nodes[node].position, nodes[through->to].position), 0.5F);
+    return m_map->holeAt(middle.x, middle.y);
 }
 
 std::optional<FoundLink> NavLinks::findNearest(anim::Vec3 at, std::uint16_t kinds, float reach) const {
@@ -113,13 +133,6 @@ void NavLinks::setPolygonExcluded(std::uint32_t polygon, bool excluded) {
     }
     std::uint32_t& flags = m_map->mutablePolygons()[polygon].flags;
     flags = excluded ? (flags | world::kPathPolygonExcluded) : (flags & ~world::kPathPolygonExcluded);
-}
-
-std::optional<std::uint32_t> NavLinks::polygonOf(std::uint32_t link) const {
-    if (link >= m_fromNode.size()) {
-        return std::nullopt;
-    }
-    return m_polygonOfNode.at(m_fromNode[link]);
 }
 
 std::optional<std::uint32_t> NavLinks::polygonAt(anim::Vec3 at) const {

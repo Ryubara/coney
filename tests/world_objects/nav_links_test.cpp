@@ -3,11 +3,13 @@
 // door number's links, the polygon flag 8 that goes with an open link, and the nearest link by position.
 #include "world_objects/nav_links.h"
 
+#include <cstdint>
 #include <optional>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "support/object_fixtures.h"
+#include "support/path_fixtures.h"
 #include "world/path_map.h"
 
 using coney::world_objects::FoundLink;
@@ -26,13 +28,34 @@ TEST_CASE("a door number's links are retagged, opened and closed together", "[wo
     CHECK(paths.edges()[1].avoid);
     CHECK((paths.polygons()[0].flags & coney::world::kPathPolygonExcluded) == 0);
 
-    // Opening clears the avoid bit and sets flag 8 on each link's starting polygon.
+    // Opening clears the avoid bit and sets flag 8 on the doorway's hole only, not on the rooms the links start in.
     links.openByNumber(coney::test::kTestDoorNumber);
     CHECK_FALSE(paths.edges()[0].avoid);
     CHECK_FALSE(paths.edges()[1].avoid);
-    CHECK((paths.polygons()[0].flags & coney::world::kPathPolygonExcluded) != 0);
-    CHECK((paths.polygons()[1].flags & coney::world::kPathPolygonExcluded) != 0);
+    CHECK(links.holeOf(coney::test::kTestDoorNumber) == 3U);
+    CHECK((paths.polygons()[0].flags & coney::world::kPathPolygonExcluded) == 0);
+    CHECK((paths.polygons()[1].flags & coney::world::kPathPolygonExcluded) == 0);
     CHECK((paths.polygons()[2].flags & coney::world::kPathPolygonExcluded) == 0);
+    CHECK((paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) != 0);
+
+    links.closeByNumber(coney::test::kTestDoorNumber);
+    CHECK((paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) == 0);
+}
+
+TEST_CASE("a door with no hole at its doorway changes no polygon", "[world_objects][nav]") {
+    coney::test::PathBuilder builder;
+    const std::uint32_t left = builder.rectangle(0.0F, 4.0F, 0.0F, 4.0F);
+    const std::uint32_t right = builder.rectangle(4.0F, 8.0F, 0.0F, 4.0F);
+    builder.node(left, 2.0F, 2.0F);
+    builder.node(right, 6.0F, 2.0F);
+    builder.link(0, 1, 0x10, false, coney::test::kTestDoorNumber);
+    coney::world::PathMap paths = builder.build();
+    NavLinks links(&paths);
+    CHECK_FALSE(links.holeOf(coney::test::kTestDoorNumber).has_value());
+    links.openByNumber(coney::test::kTestDoorNumber);
+    CHECK_FALSE(paths.edges()[0].avoid);
+    CHECK((paths.polygons()[0].flags & coney::world::kPathPolygonExcluded) == 0);
+    CHECK((paths.polygons()[1].flags & coney::world::kPathPolygonExcluded) == 0);
 }
 
 TEST_CASE("the nearest link of a kind within 5 m comes with its reverse", "[world_objects][nav]") {

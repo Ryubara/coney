@@ -614,7 +614,8 @@ way ([Front end](frontend.md#coneys-implementation)).
   pair and shards drawn from the game's random numbers.
 - **Doors** (`doors.h`): the per-type set-up, leaves, triangle flags, the state machine and its timing in ticks, the
   state commands, `DoorOpen` away from the human, `DoorOpenDegree`, pickable doors, message `0x15`, the breakable
-  types' hits and the barriers. **Links** (`nav_links.h`): retag, open and close by number, nearest by position. The
+  types' hits and the barriers. **Links** (`nav_links.h`): retag, open and close by number (the door's hole found as
+  [A door's hole](#nav-links) gives, `NavLinks::holeOf()`, `world::PathMap::holeAt()`), nearest by position. The
   edge's door number is decoded into `world::PathEdge::door`.
 - **Bindings** (`repo:src/scripting/object_bindings.h`): the 22 glass, door, link and lock-pick bindings; `SpawnDoor`
   reads its type from the recorded `CfgObj` calls.
@@ -636,7 +637,8 @@ Coney's stand-ins, where this page is silent:
 - A leaf takes its target rotation on the next tick (no easing). `DoorOpen`'s "away" uses the door's turned y axis.
   `OpenDoorAnimated` and a lock pick's success open at once (`DoorOpen`), without human state 26.
 - A large pane's shards are 0.06 like a small one's; a shard's offset is a random step of 1/1000 in ±1. A link's distance
-  is to its middle; a link's polygon is its start node's. Wreck pieces and boards spawn at the door; a cabin door keeps
+  is to its middle. Of several holes whose boxes hold a doorway's middle and none of which takes it in, the
+  nearest vertex average wins. Wreck pieces and boards spawn at the door; a cabin door keeps
   its leaves once broken. A barrier's material pair sounds on every hit; game state bits 2 and 4 are not read. An
   object type no `CfgObj` names is a swinging door of 100 hitpoints.
 - A strike meets a pane or door along a ray 1 m above the feet, along the facing, as long as the attack's reach

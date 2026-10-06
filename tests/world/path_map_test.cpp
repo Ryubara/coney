@@ -151,3 +151,17 @@ TEST_CASE("the walkable-line test leaves out polygons with flag 8 or the caller'
     CHECK_FALSE(map.walkable({1.0F, 1.0F, 0.0F}, {7.0F, 1.0F, 0.0F}, 0x20));
     CHECK_FALSE(map.walkable({1.0F, 1.0F, 0.0F}, {9.0F, 1.0F, 0.0F}));
 }
+
+TEST_CASE("a point's hole is the flag-4 polygon whose box holds it, the nearest centre among several",
+          "[world][paths]") {
+    coney::test::PathBuilder builder;
+    builder.rectangle(0.0F, 20.0F, 0.0F, 20.0F);                                    // the area: no flag 4
+    builder.rectangle(4.0F, 6.0F, 4.0F, 6.0F, 0, coney::world::kPathPolygonHole);   // a small hole
+    builder.rectangle(4.0F, 10.0F, 4.0F, 10.0F, 0, coney::world::kPathPolygonHole); // a larger one around it
+    builder.rectangle(14.0F, 16.0F, 4.0F, 6.0F, 0, coney::world::kPathPolygonHole); // a hole elsewhere
+    const PathMap map = builder.build();
+    CHECK(map.holeAt(15.0F, 5.0F) == 3U);            // one box holds it
+    CHECK(map.holeAt(5.0F, 5.0F) == 1U);             // two: the small hole's centre is nearer
+    CHECK(map.holeAt(8.0F, 8.0F) == 2U);             // only the larger hole's box
+    CHECK_FALSE(map.holeAt(2.0F, 2.0F).has_value()); // in the area, in no hole
+}

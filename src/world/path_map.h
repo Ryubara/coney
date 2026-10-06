@@ -21,6 +21,9 @@ namespace coney::world {
 
 /// A polygon's flag that keeps it out of the walkable-line test whatever the caller's mask (`+0x48` bit 8).
 inline constexpr std::uint32_t kPathPolygonExcluded = 0x8;
+/// A polygon's flag marking a hole cut out of an area (`+0x48` bit 4): a doorway's hole is what opening its door
+/// flags (docs/research/objects.md#nav-links).
+inline constexpr std::uint32_t kPathPolygonHole = 0x4;
 /// The slabs a polygon's box is cut into across y, each with its own list of the edges that reach it.
 inline constexpr std::size_t kPathSlabCount = 16;
 
@@ -103,6 +106,12 @@ class PathMap {
     /// `0x0024e218`), which are not traced.
     [[nodiscard]] std::optional<std::uint32_t> nearestPolygon(float x, float y, float reach,
                                                               std::uint32_t excludeFlags = 0) const;
+
+    /// The hole at (x, y): of the polygons with flag kPathPolygonHole whose box holds the point, the one; when several,
+    /// those that take the point in, of which the one whose vertex average is nearest; nothing when none. **Coney
+    /// choice**: when several boxes hold it and none takes it in, the nearest vertex average of them all.
+    /// @orig 0x00250100 PathPolygon_FindAtPoint (unknown)
+    [[nodiscard]] std::optional<std::uint32_t> holeAt(float x, float y) const;
 
     /// The walkable-line test: whether the segment from `from` to `to` (in plan) never leaves the polygons that have
     /// neither flag 8 (kPathPolygonExcluded) nor any of `mask`. **Coney choice**: the segment is cut at every edge of

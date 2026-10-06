@@ -32,10 +32,11 @@ struct FoundLink {
 
 /// The doors' and panes' changes to the level's navigation links: retagging a door number's links, their avoid bit
 /// (the route planner adds 1,600 to an avoided link's cost, so a closed door makes a detour preferred, not mandatory)
-/// and the path polygon flag 8 that goes with an open link. A null map changes nothing and finds nothing.
+/// and the path polygon flag 8 that an open door puts on its doorway's hole. A null map changes nothing and finds
+/// nothing.
 ///
-/// **Coney's choices** where the page is open: a link's polygon is the polygon that owns the link's starting node, and
-/// a link's distance from a point is the distance to the middle of the segment between its two nodes.
+/// **Coney's choice** where the page is open: a link's distance from a point is the distance to the middle of the
+/// segment between its two nodes.
 ///
 /// Research: docs/research/objects.md#nav-links, docs/research/objects.md#door-numbers
 class NavLinks {
@@ -46,10 +47,10 @@ class NavLinks {
     /// Retags every link carrying door `number` with `kind`.
     /// @orig 0x00250c00 NavLinks_SetKindByNumber (unknown)
     void setKindByNumber(std::uint16_t number, std::uint16_t kind);
-    /// Opens door `number`'s links: clears their avoid bit and sets their polygon's flag 8.
+    /// Opens door `number`'s links: clears their avoid bit and sets flag 8 on its doorway's hole (holeOf()).
     /// @orig 0x00250c50 NavLinks_OpenByNumber (unknown)
     void openByNumber(std::uint16_t number);
-    /// Closes door `number`'s links: sets their avoid bit and clears their polygon's flag 8.
+    /// Closes door `number`'s links: sets their avoid bit and clears flag 8 on its doorway's hole.
     /// @orig 0x00250d00 NavLinks_CloseByNumber (unknown)
     void closeByNumber(std::uint16_t number);
 
@@ -65,8 +66,11 @@ class NavLinks {
     void setKind(std::uint32_t link, std::uint16_t kind);
     /// Sets or clears one polygon's flag 8 (world::kPathPolygonExcluded).
     void setPolygonExcluded(std::uint32_t polygon, bool excluded);
-    /// The polygon that owns link `link`'s starting node; nothing when no polygon does.
-    [[nodiscard]] std::optional<std::uint32_t> polygonOf(std::uint32_t link) const;
+    /// Door `number`'s doorway hole: from its last link (in link order), the node it leads to and that node's last
+    /// door or breakable link, the hole at the middle of those two nodes (world::PathMap::holeAt()); nothing when the
+    /// number has no link, the node no such link, or no hole is there.
+    /// @orig 0x002508b8 NavLink_DoorPolygon (unknown)
+    [[nodiscard]] std::optional<std::uint32_t> holeOf(std::uint16_t number) const;
     /// The polygon that takes in `at` in plan; nothing when none does.
     [[nodiscard]] std::optional<std::uint32_t> polygonAt(anim::Vec3 at) const;
 
@@ -79,14 +83,13 @@ class NavLinks {
     void convertJumpToDoor(anim::Vec3 at);
 
   private:
-    // Sets the avoid bit of every link of `number` to `avoid` and its polygon's flag 8 to the opposite.
+    // Sets the avoid bit of every link of `number` to the opposite of `open`, and its hole's flag 8 to `open`.
     void setNumberOpen(std::uint16_t number, bool open);
     // Changes the link nearest `at` of `kinds`, and its reverse, with `change`.
     template <typename Change> void changeNearest(anim::Vec3 at, std::uint16_t kinds, Change change);
 
     world::PathMap* m_map;
-    std::vector<std::uint32_t> m_fromNode;                     // each link's starting node
-    std::vector<std::optional<std::uint32_t>> m_polygonOfNode; // each node's owning polygon
+    std::vector<std::uint32_t> m_fromNode; // each link's starting node
 };
 
 } // namespace coney::world_objects

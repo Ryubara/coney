@@ -99,12 +99,14 @@ inline constexpr std::uint16_t kTestDoorNumber = 7;
 
 /// Two rooms side by side, polygons 0 ([0, 4] × [0, 4], node 0 at (2, 2)) and 1 ([4, 8] × [0, 4], node 1 at (6, 2)),
 /// linked both ways by a kind-0x10 link of door kTestDoorNumber (links 0 and 1); and a corridor, polygon 2
-/// ([0, 8] × [10, 14], nodes 2 at (2, 12) and 3 at (6, 12)), linked both ways by a kind-4 choke link (links 2 and 3).
+/// ([0, 8] × [10, 14], nodes 2 at (2, 12) and 3 at (6, 12)), linked both ways by a kind-4 choke link (links 2 and 3);
+/// and the doorway's hole, polygon 3 ([3.6, 4.4] × [1, 3], off the graph, flags 7 as the disc's holes have).
 inline world::PathMap objectPaths() {
     PathBuilder builder;
     const std::uint32_t left = builder.rectangle(0.0F, 4.0F, 0.0F, 4.0F);
     const std::uint32_t right = builder.rectangle(4.0F, 8.0F, 0.0F, 4.0F);
     const std::uint32_t corridor = builder.rectangle(0.0F, 8.0F, 10.0F, 14.0F);
+    builder.rectangle(3.6F, 4.4F, 1.0F, 3.0F, 0, 0x7);
     builder.node(left, 2.0F, 2.0F);
     builder.node(right, 6.0F, 2.0F);
     builder.node(corridor, 2.0F, 12.0F);

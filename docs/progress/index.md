@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,321 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,323 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-368 reimplemented function(s) have no size yet and add no bytes.
+370 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 85 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.5% | 382 | 1,096,672 |
+| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.5% | 384 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -726,6 +726,8 @@ at the top of the repository's `README.md`.
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x0024eef0` | `PathPolygon_Contains` | `Human` | 928 |
 | `0x0024fbf8` | `PathMap_LineWalkable` | `Human` | 1,288 |
+| `0x00250100` | `PathPolygon_FindAtPoint` | `Human` | not filled in |
+| `0x002508b8` | `NavLink_DoorPolygon` | `Human` | not filled in |
 | `0x00250960` | `NavLink_FindNearest` | `Human` | 432 |
 | `0x00250c00` | `NavLinks_SetKindByNumber` | `Human` | 80 |
 | `0x00250c50` | `NavLinks_OpenByNumber` | `Human` | 176 |

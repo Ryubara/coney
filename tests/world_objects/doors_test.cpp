@@ -129,14 +129,14 @@ TEST_CASE("OpenDoor swings, and collision goes 29 ticks later; CloseDoor brings 
     CHECK(doors.isOpen(handle));
     CHECK_FALSE(fixture.enabled(0));
     CHECK_FALSE(fixture.paths.edges()[0].avoid);
-    CHECK((fixture.paths.polygons()[0].flags & coney::world::kPathPolygonExcluded) != 0);
+    CHECK((fixture.paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) != 0);
 
     doors.command(handle, door_command::kClose, fixture.world);
     CHECK(doors.find(handle)->state == door_state::kClosing);
     CHECK(fixture.services.sounds.back() == coney::world_objects::kDefaultCloseSound);
     CHECK(fixture.enabled(0));
     CHECK(fixture.paths.edges()[0].avoid);
-    CHECK((fixture.paths.polygons()[0].flags & coney::world::kPathPolygonExcluded) == 0);
+    CHECK((fixture.paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) == 0);
     tick(doors, fixture, 2 * coney::world_objects::kDoorInterval);
     CHECK(doors.find(handle)->state == door_state::kClosed);
     CHECK(doors.find(handle)->leaves[0].rotation == doors.find(handle)->leaves[0].base);

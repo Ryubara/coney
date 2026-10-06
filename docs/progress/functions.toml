@@ -3552,6 +3552,16 @@ subsystem = "Human"
 size = 1288
 
 [[function]]
+address = 0x00250100
+name = "PathPolygon_FindAtPoint"
+subsystem = "Human"
+
+[[function]]
+address = 0x002508b8
+name = "NavLink_DoorPolygon"
+subsystem = "Human"
+
+[[function]]
 address = 0x00250960
 name = "NavLink_FindNearest"
 subsystem = "Human"
