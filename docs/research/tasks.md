@@ -155,12 +155,31 @@ back on the one CPU thread before the frame is drawn. After a pair every system 
 characters in one step (the first tick), the wheel and physics in two halves. The bus clock works like a bucket that
 real time fills and each pair empties by `0x960000` (33.3 ms). Worked example (arithmetic from the rule above, not a
 measurement): frames of 77 ms (13 fps) run 2, 2, 2, then 3 pairs as the remainder builds up (77, 87.3, 97.6, 107.9 ms
-in the bucket), on average 2.3, so the world keeps real-time speed and only the pictures are fewer. Whether
-`0x003a2ea0` caps the pairs of one frame is not traced ([Open questions](#open-questions)).
+in the bucket), on average 2.3, so the world keeps real-time speed and only the pictures are fewer.
+
+The same rule drawn out, at the PS2's normal 29.97 frames a second (each frame adds 33.37 ms to the bucket, each
+pair takes 33.33 ms out; nothing runs in parallel):
+
+```text
+frame n        bucket 33.37 ms -> one pair -> 0.03 ms left
+  tick A (60 Hz)   Humans_Update: body runs, characters move 1/30 s
+                   wheel bucket k: objects move 1/60 s
+                   physics: 1/60 s
+  tick B (60 Hz)   Humans_Update: counter odd, body skipped
+                   wheel bucket k+1: objects move 1/60 s
+                   physics: 1/60 s
+  game state, spawns, then the frame is drawn
+frame n+1      bucket 33.40 ms -> one pair -> 0.07 ms left
+...            after ~1000 frames the leftover reaches 33.33 ms: that frame runs two pairs
+```
+
+Whether `0x003a2ea0` caps the pairs of one frame is not traced ([Open questions](#open-questions)).
 
 Inferred, from the two confirmed pieces: game time in a level is real time clamped to 40 ms a frame
-([Boot: timers](boot.md#timers)), while the pairs catch up without that clamp. Below 25 fps, timers in milliseconds
-of game time (an AI's attack delay, a block's length) would therefore fall behind the movement, which counts steps.
+([Boot: timers](boot.md#timers)): each frame adds the real time it took, measured on the CPU clock, but never more
+than 40 ms, so at 25 fps or faster it is true seconds. The pairs catch up without that clamp. Below 25 fps, timers
+in milliseconds of game time (an AI's attack delay, a block's length) would therefore fall behind the movement, which
+counts steps.
 On a PS2 that rarely dropped frames this did not show; Coney derives game time from the step count, so the two
 cannot disagree ([Update and render](../guides/conventions.md#update-and-render)).
 

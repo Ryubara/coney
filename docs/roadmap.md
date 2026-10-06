@@ -235,8 +235,9 @@ current thinking, decided only when the milestone starts.
   depends on the latency, not the tick rate. A 60 Hz mode must rescale every duration counted in steps, which the
   code names as such ([Update and render](guides/conventions.md#update-and-render)).
 - **Frame rate never matters.** Steps are fixed, so a client at 13 fps simulates the same steps as one at 240 fps,
-  with fewer pictures. Offline, Coney stops catching up below 7.5 fps and skips the time lost in a hitch; online, a
-  client must instead catch up to the server.
+  with fewer pictures, so a duration counted in steps lasts as long on both. What every machine must share is the
+  tick rate, never the frame rate. Offline, Coney stops catching up below 7.5 fps and skips the time lost in a
+  hitch; online, a client must instead catch up to the server.
 - **Physics.** The 60 Hz physics step doubles the cost of re-simulating whatever it moves. If it only moves props and
   debris, they can stay out of the network game; if it moves anything that decides a fight, every machine must compute
   the same floats. What it simulates is an open question ([Tasks](research/tasks.md#open-questions)).
