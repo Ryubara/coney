@@ -133,11 +133,11 @@ struct BindingContext {
     MessageHandlers* messages = nullptr;         ///< The objects' handlers (`SetMsgHandler`); null keeps none.
     world_objects::VolumeBoxes* boxes = nullptr; ///< The level's volume boxes (`AddVolumeBox`); null keeps none.
     AnimCallbacks* animCallbacks = nullptr;      ///< The animation callbacks (`AddAnimCallback`); null keeps none.
-    scenes::SceneSystem* scenes = nullptr;       ///< The scenes the bindings play; null: Coney's stand-in.
-    camera::Cameras* cameras = nullptr;          ///< Player 1's cameras, which the camera bindings drive; null: none.
     world_objects::ObjectTypes* objectTypes = nullptr; ///< The object database (`CfgObj`); null keeps none.
     world_objects::SpawnRecords* spawnRecords =
-        nullptr; ///< The dynamic objects' spawn records (`ObjSpawn`); null keeps none.
+        nullptr;                           ///< The dynamic objects' spawn records (`ObjSpawn`); null keeps none.
+    scenes::SceneSystem* scenes = nullptr; ///< The scenes the bindings play; null: Coney's stand-in.
+    camera::Cameras* cameras = nullptr;    ///< Player 1's cameras, which the camera bindings drive; null: none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

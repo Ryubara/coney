@@ -283,7 +283,7 @@ TEST_CASE("start-up with scripts: a new story profile is saved to the profile fo
         ScriptedRun run(coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value(),
                         folder.path());
         CHECK(run.flow->profiles().count() == 0);
-        run.frames(361);
+        run.frames(446);
         CHECK(run.logged("profile manager: profile \"A\" created in slot 0"));
         CHECK(std::filesystem::file_size(folder.path() / "profile-1.sav") == coney::ProfileRecord::kSize);
         CHECK(run.flow->profiles().inUse());

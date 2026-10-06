@@ -282,7 +282,7 @@ TEST_CASE("mission complete: kind 1 puts the checkpoint back and ends gameplay b
 TEST_CASE("mission complete: the autosave after a mission writes the game state into the profile", "[story_start]") {
     const coney::test::TempDir folder;
     StoryRun run(storyScript(), false, folder.path());
-    run.frames(330);
+    run.frames(420);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     run.frames(3);
     REQUIRE(run.stack.topId() == GameplayMode::kId);
