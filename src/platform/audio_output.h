@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 
+#include "audio/game_sound.h"
 #include "audio/mixer.h"
 #include "audio/offline_device.h"
 #include "audio/pcm_sound.h"
@@ -46,6 +47,8 @@ class AudioOutput final : public debug::AudioControls {
 
     /// The game-facing sound calls.
     [[nodiscard]] audio::SoundPlayer& sounds() { return m_sounds; }
+    /// The game's sound over them: what the bindings, gameplay and the front end drive (audio/game_sound.h).
+    [[nodiscard]] audio::GameSound& game() { return m_game; }
     /// The mixer underneath.
     [[nodiscard]] audio::Mixer& mixer() { return *m_mixer; }
 
@@ -55,7 +58,7 @@ class AudioOutput final : public debug::AudioControls {
     [[nodiscard]] std::expected<void, Error> startEngine(const io::Wad& wad);
     /// Call once at the end of every frame, on the game thread, with the fixed steps the frame ran: runs the sound
     /// engine for their game time; offline, mixes one fixed step's frames (each frame of test mode is one step);
-    /// either way lets go of the sounds of voices that ended.
+    /// either way lets go of the sounds of voices that ended. The game's sound (game()) runs first.
     void endFrame(std::uint32_t steps);
     /// One line on where the sound goes, for the log at start-up.
     [[nodiscard]] std::string startLine() const;
@@ -77,6 +80,7 @@ class AudioOutput final : public debug::AudioControls {
     // The mixer first: the device that calls it must go before it does.
     std::unique_ptr<audio::Mixer> m_mixer;
     audio::SoundPlayer m_sounds;
+    audio::GameSound m_game;
     std::optional<audio::OfflineDevice> m_offline;
     std::unique_ptr<SdlAudioDevice> m_device;
     std::shared_ptr<const audio::PcmSound> m_tone;

@@ -23,7 +23,7 @@ constexpr float kStepMilliseconds = 1000.0F / 30.0F;
 
 } // namespace
 
-AudioOutput::AudioOutput() : m_mixer(std::make_unique<audio::Mixer>()), m_sounds(*m_mixer) {}
+AudioOutput::AudioOutput() : m_mixer(std::make_unique<audio::Mixer>()), m_sounds(*m_mixer), m_game(m_sounds) {}
 
 AudioOutput::~AudioOutput() {
     m_device.reset(); // no callback into the mixer after this
@@ -45,6 +45,7 @@ std::expected<std::unique_ptr<AudioOutput>, Error> AudioOutput::start(AudioSink 
 }
 
 void AudioOutput::endFrame(std::uint32_t steps) {
+    m_game.update();
     m_sounds.update(static_cast<float>(steps) * kStepMilliseconds);
     if (m_offline) {
         m_offline->pullStep();

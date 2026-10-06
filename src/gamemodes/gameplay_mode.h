@@ -96,7 +96,8 @@ class PauseMode;
 /// in its place (Coney's play mode, `src/platform/play_level_mode.h`).
 ///
 /// Coney's stand-ins (docs/research/level-loading.md#coneys-implementation):
-/// - The rest of `InitLevel` (the object list, the dependency list, the music) and of mode 1's enter (audio, the
+/// - The sound (`context`'s sound host) is told of mode 1's enter, the load screen's start (InitLevel step 3), its end
+///   (step 11) and the exit. The rest of `InitLevel` (the object list, the dependency list) and of mode 1's enter (the
 ///   level-end countdown) is not there yet: the player has control on the first frame. The start callback runs before
 ///   the level loads (runLevelScript()). The intro movie (`L99_IN`) goes to the movie player after the level loaded
 ///   (setMoviePlayer(): the movie player pushes itself over gameplay, which waits beneath it until it ends).

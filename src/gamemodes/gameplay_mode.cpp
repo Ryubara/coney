@@ -14,6 +14,7 @@
 #include "gamemodes/player_frame.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/object_bindings.h"
+#include "scripting/sound_bindings.h"
 
 namespace coney {
 
@@ -69,6 +70,10 @@ void GameplayMode::enter() {
     // The level's brains and gangs (InitLevel's AI reset), which its script's bindings drive. The calls on the humans
     // the script creates wait until the level has loaded its characters and made them.
     endLevel();
+    // Mode 1's audio set-up (docs/research/level-loading.md#mode-1, step 1).
+    if (m_context.sound != nullptr) {
+        m_context.sound->gameplayEntered();
+    }
     m_brains = std::make_unique<ai::Brains>();
     m_scripted = std::make_unique<ai::ScriptedBrains>(*m_brains, m_flags,
                                                       [this](double handle) { return m_humans.placement(handle); });
@@ -148,8 +153,16 @@ void GameplayMode::enter() {
         m_phase = Phase::FadeIn;
         return;
     }
+    // Without one, the load screen's sounds (InitLevel steps 3 and 11) go straight to the sound around the load.
     m_phase = Phase::Playing;
+    if (m_context.sound != nullptr) {
+        const LevelRecord* record = m_state.levels.at(m_state.currentLevel);
+        m_context.sound->levelLoadStarted(record != nullptr ? static_cast<int>(record->number) : 0);
+    }
     loadLevel();
+    if (m_context.sound != nullptr) {
+        m_context.sound->levelLoaded();
+    }
     startPlay();
 }
 
@@ -333,6 +346,10 @@ void GameplayMode::exit() {
     m_phase = Phase::Playing;
     if (m_level) {
         m_level->exit();
+    }
+    // Mode 1's exit stops the sounds and music; the level's emitters and lines go with it.
+    if (m_context.sound != nullptr) {
+        m_context.sound->gameplayLeft();
     }
     endLevel();
     m_humans.clear();

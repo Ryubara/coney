@@ -739,13 +739,15 @@ and [Characters](characters.md#level-starts):
 
 Coney's choices and stand-ins for mode 1:
 
-- The rest of `InitLevel` (the object and dependency lists, the music, the pending Lua call) and of mode 1's `Enter`
-  (the audio, the level-end countdown) is not done. The intro movie is asked for after the level has loaded
-  (`levelIntroMovie`, `src/gamemodes/movie_player.h`: `L<n>_IN` when the record's intro switch is set and the section
-  is below 2, so `L99_IN` for `level99` at checkpoint 1) and played over gameplay
-  ([Movies](movies.md#coneys-implementation)). Which of the twelve
-  `CfgLevelName` numbers is the intro switch is inferred (the fourth, `LevelRecord::kIntroValue`); the STORY disc
-  check sees `L99_IN` asked for once. Its flags step (`CrimeScene`, `GangCall`)
+- The sound follows steps 1, 3, 11 and the exit (the load-screen bank and sounds, deferred `SndLoadBank`, the
+  level's bank, everything stopped on the way out; [Sound](sound.md#coneys-implementation)); without the loading
+  screen (`--play-level`, the tests) the load takes one step, so its sounds stop as they start. The rest of
+  `InitLevel` (the object and dependency lists, the pending Lua call) and of mode 1's `Enter` (the level-end
+  countdown) is not done. The intro movie is asked for after the level has loaded (`levelIntroMovie`,
+  `src/gamemodes/movie_player.h`: `L<n>_IN` when the record's intro switch is set and the section is below 2, so
+  `L99_IN` for `level99` at checkpoint 1) and played over gameplay ([Movies](movies.md#coneys-implementation)). Which
+  of the twelve `CfgLevelName` numbers is the intro switch is inferred (the fourth, `LevelRecord::kIntroValue`); the
+  STORY disc check sees `L99_IN` asked for once. Its flags step (`CrimeScene`, `GangCall`)
   and its start callback are ([World flags](flags.md#coneys-implementation)); the callback runs before the level
   loads, and `preLoadFile` runs the checkpoint's script at once and then calls its callback by name. A teleport of
   player 1 by the scripts, at the start or later, moves the player. The player has control on the first frame.
@@ -761,8 +763,8 @@ Coney's choices and stand-ins for mode 1:
 (`src/gamemodes/loading_screen.h`) has the picture search (16:9, language, picture 0, `default_ls_0`; the Rumble form
 from the set-up's game type), the 23 s / 30 s timeline with its cut pictures, 200 ms fades, the clock bar (grey for
 the five levels) and the finish that moves the end; `coney --disc` gives it to the story's gameplay. The pads are
-not read behind it, and the load-screen sounds go to the sound engine (`audio::SoundEngine::startLoadScreen` after the
-fade in, `endLoadScreen` before the finish: [Sound](sound.md#banks)). Coney's stand-ins:
+not read behind it, and the load-screen sounds go to the game's sound (`audio::GameSound::levelLoadStarted` after the
+fade in, `levelLoaded` before the finish: [Sound](sound.md#banks)). Coney's stand-ins:
 
 - **The clock is game time** on the fixed 1/30 s step, and the load takes none: gameplay begins the screen, fades it in
   (6 steps), loads the whole level in the next step (the window keeps the faded-in picture, as the original keeps its

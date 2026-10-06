@@ -76,6 +76,8 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] FrontEndServices& services() { return m_services; }
     /// The script system.
     [[nodiscard]] script::ScriptSystem& scripts() { return m_scripts; }
+    /// What its bindings work on (main gives it the game's sound).
+    [[nodiscard]] script::BindingContext& context() { return m_context; }
     /// The game state (language, level table).
     [[nodiscard]] GameState& state() { return m_state; }
     /// The configuration the stub bindings recorded.

@@ -497,6 +497,20 @@ int main(int argc, char** argv) {
         return std::make_unique<coney::scenes::SceneSystem>(*sceneList, coney::scenes::wadSceneSource(*wad),
                                                             coney::scenes::SceneSystem::ScriptCall{});
     };
+    // The game's sound the scripts' bindings and gameplay drive (audio/game_sound.h): the sound output's, once it
+    // exists.
+    coney::audio::GameSound* gameSound = nullptr;
+    // Gives a script system's bindings the game's sound, and the sound that Lua state and binding context, when it
+    // exists.
+    const auto connectSound = [&gameSound](coney::script::ScriptSystem& scripts,
+                                           coney::script::BindingContext& context) {
+        if (gameSound != nullptr) {
+            context.sound = gameSound;
+            gameSound->connect(&scripts, &context);
+        }
+    };
+    // The story level `--play-level` names, made once the sound exists so its scripts' preloads configure the sound.
+    std::optional<std::string> commandLineLevel;
     // A level played on its own (`--play-level NAME`, the Levels page): gameplay (mode 1) over the level's scripts as
     // the story reaches them, its level loaded as the play mode. The scripts outlive the gameplay that runs them.
     std::unique_ptr<coney::LevelScripts> levelScripts;
@@ -508,6 +522,7 @@ int main(int argc, char** argv) {
     const auto makeLevelGameplay = [&](const std::string& name, int checkpoint, bool commandLine) {
         levelGameplay.reset();
         levelScripts = levelScriptsFor(*wad, name, checkpoint);
+        connectSound(levelScripts->scripts(), levelScripts->context());
         coney::LevelScripts& scripts = *levelScripts;
         coney::GameplayMode::LevelLoader loader =
             [&renderer, &wad, &sectorBudget, &storyDebugDraw, &playSounds, &scripts, &options, commandLine](
@@ -651,8 +666,7 @@ int main(int argc, char** argv) {
                 std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), worlds.error().message.c_str());
                 return 1;
             }
-            makeLevelGameplay(*playName, options->checkpoint.value_or(1), true);
-            modes.push(*levelGameplay);
+            commandLineLevel = *playName;
         }
     } else if (const std::optional<std::string> sandboxName = options->sandbox; sandboxName) {
         // The sandbox with the free camera: no disc needed.
@@ -824,21 +838,35 @@ int main(int argc, char** argv) {
                 }
             }
             debugServices.audio = [&audio]() -> coney::debug::AudioControls* { return audio.get(); };
+            gameSound = &audio->game();
+            gameSound->setLog(printText);
         } else {
             std::fprintf(stderr, "coney: %s; running without sound\n", started.error().message.c_str());
         }
     }
+    // The front end's banks, music and cues, and the scripts' sound bindings, go to the game's sound.
+    if (startUp && gameSound != nullptr) {
+        connectSound(startUp->scripts(), startUp->context());
+        startUp->services().attachAudio(gameSound);
+    }
+    if (commandLineLevel) {
+        makeLevelGameplay(*commandLineLevel, options->checkpoint.value_or(1), true);
+        modes.push(*levelGameplay);
+    }
     // The story's loading screen (docs/research/level-loading.md#loading-screen), after the sound output its sounds
-    // play through, so it is destroyed first. The sound engine picks the bank (load_NN, from its seeded start) and
-    // plays it; stopping them also loads the level's bank. Without the engine the screen is silent.
+    // play through, so it is destroyed first. The game's sound picks the bank (load_NN, from its seeded start, or
+    // armload for an Armies level) and plays it; stopping them also loads the level's bank. Without it the screen is
+    // silent.
     std::optional<coney::LoadingScreen> loadingScreen;
     if (startUp && wad) {
         coney::LoadScreenSounds loadSounds;
-        if (coney::audio::SoundEngine* soundEngine = audio ? audio->sounds().engine() : nullptr;
-            soundEngine != nullptr) {
-            // The Armies levels' armload is not chosen yet (who decides, 0x0041d110, is open).
-            loadSounds.start = [soundEngine] { soundEngine->startLoadScreen(false); };
-            loadSounds.stop = [soundEngine] { soundEngine->endLoadScreen(); };
+        if (gameSound != nullptr) {
+            coney::GameState& state = startUp->state();
+            loadSounds.start = [gameSound, &state] {
+                const coney::LevelRecord* record = state.levels.at(state.currentLevel);
+                gameSound->levelLoadStarted(record != nullptr ? static_cast<int>(record->number) : 0);
+            };
+            loadSounds.stop = [gameSound] { gameSound->levelLoaded(); };
         }
         const coney::io::Wad& screenWad = *wad;
         loadingScreen.emplace(
