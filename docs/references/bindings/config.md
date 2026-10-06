@@ -1446,7 +1446,7 @@ for the enum-typed fields come from the scripts' table names (PHYS, AXIS, MATERI
 - **Evidence:** confirmed (code) at `0x00390f18`; detail: traced
 - **Wrapper** `0x0036a1a0` (registered by `RegisterBindings`); **calls** `0x00390f18` `Cfg_AddObjectType`
 - **Used by** 2 of 467 script chunks (1371 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgObjectGroup {#cfgobjectgroup}
 

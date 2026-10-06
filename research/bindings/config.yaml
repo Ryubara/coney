@@ -1234,6 +1234,7 @@
     and 14 to +0x65. The getter 0x003a37b8 reads +0x58 (0), +0x5a (1), +0x62 (2), +0x64 (3), +0x65 (4) and +0x86
     (10).
   usage: {chunks: 2, calls: 1371, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgSetGlobalTimeToLive
   wrapper: 0x0036a658

@@ -91,6 +91,7 @@ add_library(coney_core STATIC
     scripting/scene_bindings.cpp
     scripting/script_bindings.cpp
     scripting/script_system.cpp
+    scripting/spawn_bindings.cpp
     scripting/trigger_bindings.cpp
     warriors/created_humans.cpp
     warriors/disk_profile_store.cpp
@@ -109,6 +110,8 @@ add_library(coney_core STATIC
     world/world_streams.cpp
     world_objects/flags.cpp
     world_objects/object_list.cpp
+    world_objects/object_types.cpp
+    world_objects/spawn_records.cpp
     world_objects/volume_boxes.cpp)
 # Characters: the animation format and player, and the character resources (docs/research/characters.md).
 target_sources(coney_core PRIVATE

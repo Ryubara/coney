@@ -16,6 +16,7 @@
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "world_objects/flags.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney::script {
 
@@ -149,18 +150,22 @@ NativeFunction makeTeleportToFlag(const BindingContext& context) {
     };
 }
 
-// `CfgSetDatabaseSizes(objectTasks, worldFlags, boxes)`: makes the level's pools. Coney has only the flags' pool; the
-// arguments are also recorded for the object tasks and boxes to come.
+// `CfgSetDatabaseSizes(objectTasks, worldFlags, boxes)`: makes the level's pools. Coney has the flags' pool and the
+// spawn records' (world_objects/spawn_records.h); the arguments are also recorded for the boxes to come.
 // @orig 0x0036bb10 CfgSetDatabaseSizes (unknown)
 // @orig 0x0041d628 Cfg_SetDatabaseSizes (unknown)
 NativeFunction makeCfgSetDatabaseSizes(const BindingContext& context) {
-    return [flags = context.flags, recorded = context.recorded](std::span<const Value> args) {
+    return [flags = context.flags, records = context.spawnRecords,
+            recorded = context.recorded](std::span<const Value> args) {
         if (recorded != nullptr) {
             recorded->add("CfgSetDatabaseSizes", args);
         }
         if (flags != nullptr) {
             // CfgSetDatabaseSizes passes the count plus 2; the pool adds 2 more (WorldFlags::kPoolExtra).
             flags->createPool(static_cast<std::size_t>(std::max(0, intArg(args, 1))));
+        }
+        if (records != nullptr) {
+            records->createPool(static_cast<std::size_t>(std::max(0, intArg(args, 0))));
         }
         return binding::none();
     };

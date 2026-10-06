@@ -20,7 +20,10 @@
 #include "scripting/level_bindings.h"
 #include "scripting/rumble_bindings.h"
 #include "scripting/scene_bindings.h"
+#include "scripting/spawn_bindings.h"
 #include "scripting/trigger_bindings.h"
+#include "world_objects/object_types.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney::script {
 
@@ -656,7 +659,7 @@ constexpr std::array kBindings{
     recording("CfgWarriorUpgrade"),
     recording("CfgWorkoutParams"),
     // World objects (config_preload3.lua: 1,279 calls).
-    recording("CfgObj"),
+    real("CfgObj"),
     // Sound configuration (config_preload.lua, config_preload2.lua, global.lua).
     recording("AddAmbientSound"),
     recording("DuplicateSoundMaterials"),
@@ -709,7 +712,7 @@ constexpr std::array kBindings{
     stub("HUDEnableClubActionText"),
     // Scenes, objects and particles: the ones that make something return a handle.
     stub("GetPTank", StubResult::Handle),
-    stub("ObjSpawn", StubResult::Handle),
+    real("ObjSpawn"),
     stub("ReleasePTank"),
 };
 
@@ -796,6 +799,14 @@ std::size_t RecordedCalls::total() const {
 void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
     CONEY_ASSERT(context.state != nullptr && context.strings != nullptr && context.host != nullptr);
     const Factory factory{&scripts, &context, std::make_shared<HandleCounter>()};
+    // A fresh state configures the object types again and spawns its level's objects anew; the last state's handles
+    // name nothing in it.
+    if (context.objectTypes != nullptr) {
+        context.objectTypes->clear();
+    }
+    if (context.spawnRecords != nullptr) {
+        context.spawnRecords->clear();
+    }
     for (const BindingInfo& info : kBindings) {
         if (info.kind == BindingKind::Stub) {
             vm.registerFunction(info.name, makeStub(info, context, factory.handles));
@@ -815,8 +826,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kGangBindings, info.name) != kGangBindings.end() ||
                      std::ranges::find(kTriggerBindings, info.name) != kTriggerBindings.end() ||
                      std::ranges::find(kAnimCallbackBindings, info.name) != kAnimCallbackBindings.end() ||
-
-                     std::ranges::find(kSceneBindings, info.name) != kSceneBindings.end());
+                     std::ranges::find(kSceneBindings, info.name) != kSceneBindings.end() ||
+                     std::ranges::find(kSpawnBindings, info.name) != kSpawnBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -841,6 +852,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addLevelBindings(vm, context, nextHandle);
     addTriggerBindings(vm, context, nextHandle);
     addCameraBindings(vm, context, nextHandle);
+    addSpawnBindings(vm, context, nextHandle);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

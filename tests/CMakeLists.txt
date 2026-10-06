@@ -83,6 +83,7 @@ add_executable(coney_tests
     scripting/scene_bindings_test.cpp
     scripting/script_bindings_test.cpp
     scripting/script_system_test.cpp
+    scripting/spawn_bindings_test.cpp
     scripting/trigger_bindings_test.cpp
     warriors/disk_profile_store_test.cpp
     warriors/level_table_test.cpp

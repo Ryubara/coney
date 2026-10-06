@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 68 implemented, 2 partial, 145 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 69 implemented, 2 partial, 144 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -128,7 +128,7 @@ leave part of its effect open; its notes say which.
 | [`ObjDestroy`](world.md#objdestroy) | World and objects | traced | confirmed (code) | not implemented |
 | [`ObjEnableZone`](world.md#objenablezone) | World and objects | traced | confirmed (code) | not implemented |
 | [`ObjShow`](world.md#objshow) | World and objects | traced | confirmed (code) | not implemented |
-| [`ObjSpawn`](world.md#objspawn) | World and objects | traced | confirmed (code) | not implemented |
+| [`ObjSpawn`](world.md#objspawn) | World and objects | traced | confirmed (code) | implemented |
 | [`RotateVolumeBox`](world.md#rotatevolumebox) | World and objects | traced | confirmed (code) | implemented |
 | [`SpawnBreakableGlass`](world.md#spawnbreakableglass) | World and objects | traced | confirmed (code) | not implemented |
 | [`SpawnDoor`](world.md#spawndoor) | World and objects | traced | confirmed (code) | not implemented |

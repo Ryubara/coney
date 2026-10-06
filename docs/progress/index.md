@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 765 functions) |
+| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 773 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-211 reimplemented function(s) have no size yet and add no bytes.
+219 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -68,9 +68,9 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 112 | 197,192 |
+| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 114 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 10 | 531,312 |
+| `TaskEngine` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 16 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
@@ -752,6 +752,7 @@ at the top of the repository's `README.md`.
 | `0x00367ed0` | `SceneLength` | `Scripting` | 120 |
 | `0x00367f48` | `SceneAddObject` | `Scripting` | 160 |
 | `0x00368240` | `SceneTerminate` | `Scripting` | 56 |
+| `0x0036a1a0` | `CfgObj` | `Scripting` | not filled in |
 | `0x0036ab88` | `CfgFollowCamera` | `Scripting` | not filled in |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
 | `0x0036b4f0` | `CfgRumbleGame` | `Scripting` | 384 |
@@ -782,6 +783,7 @@ at the top of the repository's `README.md`.
 | `0x00374a80` | `TacticClear` | `Scripting` | 56 |
 | `0x00375648` | `TacticCrowd` | `Scripting` | 128 |
 | `0x00377a10` | `TacticTrigger` | `Scripting` | 160 |
+| `0x00377cc8` | `ObjSpawn` | `Scripting` | not filled in |
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
 | `0x0037a770` | `FindFlag` | `Scripting` | 112 |
@@ -800,6 +802,12 @@ at the top of the repository's `README.md`.
 | `0x00386410` | `ScheduleFuncArg1` | `Scripting` | 64 |
 | `0x00386450` | `FlushScheduledFuncs` | `Scripting` | 56 |
 | `0x00386488` | `random` | `Scripting` | 40 |
+| `0x00390f18` | `Cfg_AddObjectType` | `TaskEngine` | not filled in |
+| `0x003913d8` | `ObjectDb_FindByName` | `TaskEngine` | not filled in |
+| `0x00396858` | `Obj_Spawn` | `TaskEngine` | not filled in |
+| `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
+| `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
+| `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |
 | `0x0039cbf0` | `SceneTask_Update` | `TaskEngine` | 1,672 |
 | `0x0039d870` | `SceneTask_Start` | `TaskEngine` | 5,104 |
 | `0x0039ec60` | `SceneTask_Abort` | `TaskEngine` | 2,032 |

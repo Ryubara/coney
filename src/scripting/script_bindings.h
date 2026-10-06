@@ -23,6 +23,8 @@ class Cameras;
 } // namespace coney::camera
 
 namespace coney::world_objects {
+class ObjectTypes;
+class SpawnRecords;
 class VolumeBoxes;
 } // namespace coney::world_objects
 namespace coney::scenes {
@@ -133,6 +135,9 @@ struct BindingContext {
     AnimCallbacks* animCallbacks = nullptr;      ///< The animation callbacks (`AddAnimCallback`); null keeps none.
     scenes::SceneSystem* scenes = nullptr;       ///< The scenes the bindings play; null: Coney's stand-in.
     camera::Cameras* cameras = nullptr;          ///< Player 1's cameras, which the camera bindings drive; null: none.
+    world_objects::ObjectTypes* objectTypes = nullptr; ///< The object database (`CfgObj`); null keeps none.
+    world_objects::SpawnRecords* spawnRecords =
+        nullptr; ///< The dynamic objects' spawn records (`ObjSpawn`); null keeps none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

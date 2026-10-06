@@ -18,6 +18,8 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
+#include "world_objects/object_types.h"
+#include "world_objects/spawn_records.h"
 #include "world_objects/volume_boxes.h"
 
 namespace coney {
@@ -114,6 +116,8 @@ class LevelScripts {
     [[nodiscard]] GameState& state() { return m_state; }
     [[nodiscard]] CreatedHumans& humans() { return m_humans; }
     [[nodiscard]] world_objects::WorldFlags& flags() { return m_flags; }
+    [[nodiscard]] world_objects::ObjectTypes& objectTypes() { return m_objectTypes; }
+    [[nodiscard]] world_objects::SpawnRecords& spawnRecords() { return m_spawnRecords; }
     [[nodiscard]] script::RecordedCalls& recorded() { return m_recorded; }
 
   private:
@@ -125,6 +129,8 @@ class LevelScripts {
     script::MessageHandlers m_messages;
     world_objects::VolumeBoxes m_boxes;
     script::AnimCallbacks m_animCallbacks;
+    world_objects::ObjectTypes m_objectTypes;
+    world_objects::SpawnRecords m_spawnRecords;
     QuietBindingHost m_host;
     gui::RumbleData m_rumbleData;
     script::BindingContext m_context;

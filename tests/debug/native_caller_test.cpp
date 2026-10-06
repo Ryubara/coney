@@ -47,7 +47,7 @@ TEST_CASE("the signature table lists all 956 bindings, once each, with their arg
 TEST_CASE("the status comes from Coney's binding table", "[debug]") {
     CHECK(coney::debug::nativeStatus("GetPlatform") == NativeStatus::Implemented);
     CHECK(coney::debug::nativeStatus("PlayMovie") == NativeStatus::Partial);
-    CHECK(coney::debug::nativeStatus("ObjSpawn") == NativeStatus::Stub);
+    CHECK(coney::debug::nativeStatus("GetPTank") == NativeStatus::Stub);
     CHECK(coney::debug::nativeStatus("GangGetLeader") == NativeStatus::Missing);
 }
 
@@ -79,7 +79,7 @@ TEST_CASE("a call goes through the VM: a real binding answers, a stub records, a
     REQUIRE(truncated->size() == 1);
     CHECK((*truncated)[0] == Value(3.0));
 
-    const auto handle = coney::debug::callNative(vm, "ObjSpawn", {});
+    const auto handle = coney::debug::callNative(vm, "GetPTank", {});
     REQUIRE(handle);
     CHECK((*handle)[0] == Value(1.0)); // a stub's first handle
 

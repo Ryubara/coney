@@ -28,6 +28,8 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "warriors/profile_store.h"
+#include "world_objects/object_types.h"
+#include "world_objects/spawn_records.h"
 #include "world_objects/volume_boxes.h"
 
 namespace coney {
@@ -97,6 +99,11 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] const CreatedHumans& humans() const { return m_humans; }
     /// The level's world flags.
     [[nodiscard]] const world_objects::WorldFlags& flags() const { return m_flags; }
+    /// The object types the scripts configured (`CfgObj`).
+    [[nodiscard]] const world_objects::ObjectTypes& objectTypes() const { return m_objectTypes; }
+    /// The dynamic objects' spawn records (`ObjSpawn`).
+    [[nodiscard]] world_objects::SpawnRecords& spawnRecords() { return m_spawnRecords; }
+    [[nodiscard]] const world_objects::SpawnRecords& spawnRecords() const { return m_spawnRecords; }
 
     void showProfileManager(std::string_view onRumble, std::string_view onStartGame) override;
     void showRumbleModeInterface(std::string_view onCancel, std::string_view onStart, double players) override;
@@ -117,6 +124,8 @@ class StartUpFlow final : public script::BindingHost {
     script::MessageHandlers m_messages;
     world_objects::VolumeBoxes m_boxes;
     script::AnimCallbacks m_animCallbacks;
+    world_objects::ObjectTypes m_objectTypes;
+    world_objects::SpawnRecords m_spawnRecords;
     gui::RumbleData m_rumbleData; // the Rumble menu's lists, which its chunks build
     FrontEndServices m_services;
     std::unique_ptr<ProfileStore> m_profiles;

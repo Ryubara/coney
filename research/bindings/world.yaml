@@ -506,6 +506,7 @@
     confirmed (code); the flag bits' meaning is inferred from how the record is filled. The power cuffs are
     additionally suppressed when 0x0041d160 on the game state is non-zero.
   usage: {chunks: 123, calls: 2875, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: ObjDestroy
   wrapper: 0x00377f18

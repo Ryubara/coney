@@ -65,8 +65,8 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
 
 LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view level, int checkpoint,
                            const std::function<void(std::string_view)>& log, const LevelScriptOptions& options)
-    : m_context{&m_state,      &m_strings, &m_host,     &m_recorded, &m_humans,       &m_flags,
-                &m_rumbleData, nullptr,    &m_messages, &m_boxes,    &m_animCallbacks},
+    : m_context{&m_state, &m_strings,  &m_host,  &m_recorded,      &m_humans,      &m_flags,       &m_rumbleData,
+                nullptr,  &m_messages, &m_boxes, &m_animCallbacks, &m_objectTypes, &m_spawnRecords},
       m_scripts(
           source,
           [this](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, m_context); },

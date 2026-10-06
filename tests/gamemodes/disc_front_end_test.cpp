@@ -130,6 +130,19 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
             CHECK(line.find(std::string("profile manager: ") + std::string(sheet)) == std::string::npos);
         }
     }
+    // level100.lua's 29 Wonder Wheel objects are spawn records, each of a type CfgObj configured
+    // (docs/research/objects.md#wonder-wheel): eight carts of each row, the wheel and four neons.
+    std::size_t wheelParts = 0;
+    for (const coney::world_objects::SpawnRecord& record : flow.spawnRecords().all()) {
+        if (record.typeName.starts_with("dyn_s_ww") || record.typeName.starts_with("dyn_s_neon")) {
+            ++wheelParts;
+            CHECK(flow.objectTypes().find(record.typeName) != nullptr);
+        }
+        if (record.typeName == "dyn_s_wwheel_a") {
+            CHECK(record.tint == 0x474542FFU);
+        }
+    }
+    CHECK(wheelParts == 29);
     run(41);
     CHECK(menus.controller().currentName() == "PM_Mode");
     CHECK(menus.controller().mode().grid().items() == 3);

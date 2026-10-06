@@ -26,8 +26,8 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
                          script::ScriptSource scripts, GameplayMode::LevelLoader loadLevel,
                          const std::optional<std::filesystem::path>& profileFolder, std::uint64_t cardCheckingMs)
     : m_stack(stack), m_log(log), m_services(log), m_profiles(makeProfileStore(profileFolder, m_state)),
-      m_context{&m_state,      &strings, this,        &m_recorded, &m_humans,       &m_flags,
-                &m_rumbleData, nullptr,  &m_messages, &m_boxes,    &m_animCallbacks},
+      m_context{&m_state, &strings,    this,     &m_recorded,      &m_humans,      &m_flags,       &m_rumbleData,
+                nullptr,  &m_messages, &m_boxes, &m_animCallbacks, &m_objectTypes, &m_spawnRecords},
       m_hasScripts(static_cast<bool>(scripts)),
       m_scripts(
           std::move(scripts),

@@ -3723,6 +3723,11 @@ subsystem = "Scripting"
 size = 56
 
 [[function]]
+address = 0x0036a1a0
+name = "CfgObj"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x0036ab88
 name = "CfgFollowCamera"
 subsystem = "Scripting"
@@ -3898,6 +3903,11 @@ subsystem = "Scripting"
 size = 160
 
 [[function]]
+address = 0x00377cc8
+name = "ObjSpawn"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00379fd0
 name = "AddFlag"
 subsystem = "Scripting"
@@ -4004,6 +4014,36 @@ address = 0x00386488
 name = "random"
 subsystem = "Scripting"
 size = 40
+
+[[function]]
+address = 0x00390f18
+name = "Cfg_AddObjectType"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003913d8
+name = "ObjectDb_FindByName"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00396858
+name = "Obj_Spawn"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00398940
+name = "ObjRecord_Add"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00398df8
+name = "ObjRecord_SetPinned"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00398fe0
+name = "ObjRecord_GetHandle"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x0039cbf0

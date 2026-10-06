@@ -1495,7 +1495,7 @@ the game state is non-zero.
 - **Evidence:** confirmed (code) at `0x00396858`; detail: traced
 - **Wrapper** `0x00377cc8` (registered by `RegisterBindings`); **calls** `0x00396858` `Obj_Spawn`
 - **Used by** 123 of 467 script chunks (2875 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjStartTrain {#objstarttrain}
 
