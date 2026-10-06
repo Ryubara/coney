@@ -3,7 +3,9 @@
 // both forms of QueueMotionBlurEffect.
 #include "scripting/effects_bindings.h"
 
+#include <array>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <initializer_list>
 #include <memory>
@@ -14,7 +16,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
+#include "effects/ground_fog.h"
 #include "effects/level_effects.h"
+#include "effects/particles.h"
 #include "gui/global_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
@@ -117,4 +121,46 @@ TEST_CASE("QueueMotionBlurEffect blends the strength, or the whole colour from a
     CHECK(h.effects.motionBlur.current().a == 150);
     h.first("QueueMotionBlurEffect", {list({10, 20, 30, 40}), Value(0.0)});
     CHECK(h.effects.motionBlur.current() == coney::effects::MotionBlur::Colour{10, 20, 30, 40});
+}
+
+TEST_CASE("Start3DFog, MaxFogParticles, StartGarbage and EndGarbage reach the level's effects", "[effects_bindings]") {
+    Harness h;
+    h.first("Start3DFog", {Value(34734080.0), list({10, 20, 30, 40}), Value(0.4), Value(0.5), Value(7.0)});
+    REQUIRE(h.effects.fog.settings().has_value());
+    const coney::effects::FogSettings& fog = *h.effects.fog.settings();
+    CHECK(fog.sprite == 34734080U);
+    CHECK(fog.colour == std::array<std::uint8_t, 4>{10, 20, 30, 40});
+    CHECK(fog.drift == 0.4F);
+    CHECK(fog.fadeSpeed == 0.5F);
+    CHECK(fog.fadeRate == 7.0F);
+    h.first("MaxFogParticles", {Value(15.0)});
+    CHECK(h.effects.fog.maxWisps() == 15);
+    h.first("StartGarbage", {Value(0.0)});
+    CHECK(h.effects.litter.kind() == 0U);
+    h.first("EndGarbage");
+    CHECK_FALSE(h.effects.litter.kind().has_value());
+}
+
+TEST_CASE("CfgSteam configures a steam vent with the colour packed r, g, b, a", "[effects_bindings]") {
+    Harness h;
+    const double vent = h.first("SpawnParticle", {str("part_steam"), list({1, 2, 3}), list({0, 0, 0, 1}), Value(0.0)})
+                            .number()
+                            .value_or(0);
+    h.first("CfgSteam", {Value(vent), list({128, 64, 32, 200}), Value(10.0), Value(50.0), Value(0.25), Value(0.125),
+                         Value(5.5), Value(1.0), Value(0.25), Value(0.0), Value(0.5), Value(1.0)});
+    const coney::effects::ParticleSystem* system = h.effects.particles.find(vent);
+    REQUIRE(system != nullptr);
+    REQUIRE(system->steam.has_value());
+    const coney::effects::SteamSettings& steam = *system->steam;
+    CHECK(steam.colour == 0x804020C8U);
+    CHECK(steam.interval == 10);
+    CHECK(steam.puffInterval == 50);
+    CHECK(steam.size == 0.25F);
+    CHECK(steam.growth == 0.125F);
+    CHECK(steam.life == 5.5F);
+    CHECK(steam.speed == 1.0F);
+    CHECK(steam.rise == 0.25F);
+    CHECK(steam.dragH == 0.0F);
+    CHECK(steam.dragV == 0.5F);
+    CHECK(steam.still);
 }

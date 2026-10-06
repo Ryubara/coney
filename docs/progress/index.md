@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (466,780 of 3,354,776 bytes, 1,454 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,461 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-374 reimplemented function(s) have no size yet and add no bytes.
+383 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -60,7 +60,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▏░░░░░░░░░░░░░` | 30.6% | 97 | 100,440 |
-| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
+| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 57 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
 | `Human` | `██▊░░░░░░░░░░░░░░░░░` | 13.9% | 458 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
@@ -70,11 +70,11 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 196 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 67 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 72 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 23 | 22,008 |
-| `Warriors` | `████▏░░░░░░░░░░░░░░░` | 20.8% | 106 | 54,264 |
+| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 106 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -428,6 +428,8 @@ at the top of the repository's `README.md`.
 | `0x0018c8c8` | `ScreenFx_BlendMotionBlur` | `Graphics` | not filled in |
 | `0x0018cc60` | `ScreenQueueEffect` | `Graphics` | 504 |
 | `0x0018ce58` | `ScreenEffects_UpdateFade` | `Graphics` | not filled in |
+| `0x0018e148` | `Fog3D_Start` | `Graphics` | not filled in |
+| `0x0018e2f0` | `Fog3D_SetMaxParticles` | `Graphics` | not filled in |
 | `0x0018e6b8` | `EnterStore` | `Graphics` | 200 |
 | `0x0018e780` | `ExitStore` | `Graphics` | 80 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
@@ -1357,11 +1359,14 @@ at the top of the repository's `README.md`.
 | `0x003975c0` | `Particle_Start` | `TaskEngine` | not filled in |
 | `0x00397610` | `Particle_End` | `TaskEngine` | not filled in |
 | `0x00397730` | `Particle_Kill` | `TaskEngine` | 80 |
+| `0x003977a8` | `Garbage_Start` | `TaskEngine` | not filled in |
+| `0x003977d0` | `Garbage_End` | `TaskEngine` | not filled in |
 | `0x00398348` | `ObjZoneMask_Set` | `TaskEngine` | 104 |
 | `0x003983b0` | `ObjZone_MarkRemoved` | `TaskEngine` | 328 |
 | `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
 | `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |
+| `0x0039be28` | `Steam_Configure` | `TaskEngine` | not filled in |
 | `0x0039bfb0` | `Particle_Spawn` | `TaskEngine` | not filled in |
 | `0x0039c0e0` | `Glass_Spawn` | `TaskEngine` | 432 |
 | `0x0039c388` | `PTank_Create` | `TaskEngine` | 72 |
@@ -1381,9 +1386,11 @@ at the top of the repository's `README.md`.
 | `0x003b2180` | `DoorFence_Hit` | `TaskEngine` | 3,520 |
 | `0x003b2f40` | `DoorFence_Init` | `TaskEngine` | 536 |
 | `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |
+| `0x003cadd8` | `Fog3D_EmitterUpdate` | `TaskEngine` | not filled in |
 | `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
 | `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |
 | `0x003e4cb8` | `SubGlass_Update` | `TaskEngine` | 984 |
+| `0x003f6b40` | `Steam_HandleMessage` | `TaskEngine` | not filled in |
 | `0x003f80f0` | `DoorSwing_SetUpType` | `TaskEngine` | 3,656 |
 | `0x003f9770` | `DoorSwing_StateCommand` | `TaskEngine` | 416 |
 | `0x003f9910` | `DoorSwing_OpenBy` | `TaskEngine` | 448 |
@@ -1502,10 +1509,10 @@ at the top of the repository's `README.md`.
 | `0x0041ddd8` | `Store_Reset` | `Warriors` | 248 |
 | `0x0041e250` | `Inventory_SetItem` | `Warriors` | 208 |
 | `0x0041e420` | `Inventory_Count` | `Warriors` | 64 |
-| `0x0041e5b0` | `Inventory_AddItem` | `Warriors` | 1,064 |
+| `0x0041e5b0` | `Inventory_AddItem` | `Warriors` | not filled in |
 | `0x0041ece8` | `Cfg_SetInventoryCallback` | `Warriors` | 40 |
 | `0x0041ed10` | `Cfg_SetHuInventoryCallback` | `Warriors` | not filled in |
-| `0x0041ed60` | `Cfg_SetMoneyCallback` | `Warriors` | 40 |
+| `0x0041ed60` | `Cfg_SetMoneyCallback` | `Warriors` | not filled in |
 | `0x0041ed88` | `InvPlayerHasItem` | `Warriors` | 48 |
 | `0x0041edb8` | `InvGiveRevive` | `Warriors` | 56 |
 | `0x0041edf0` | `InvNumberRevives` | `Warriors` | 48 |

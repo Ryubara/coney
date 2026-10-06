@@ -713,7 +713,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("SetInterrogateParam"),
     real("WCEnableAllCommands"),
     real("WCIssueCommand"),
-    // The story missions' cameras, particles and sound (story_effects_bindings.h).
+    // The story missions' cameras, particles, fog, litter and sound (story_effects_bindings.h).
     real("CamAddPoizoPoint"),
     real("CamAddPoizoPointCam"),
     real("CamSetupPoizo"),
@@ -721,9 +721,14 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CameraSetClipping"),
     real("CamGetPos"),
     real("CamSetFollowPos"),
+    real("CfgSteam"),
+    real("EndGarbage"),
     real("EndParticle"),
+    real("MaxFogParticles"),
     real("SoundEnableSystemMusic"),
     real("SoundSetMusicTrack"),
+    real("Start3DFog"),
+    real("StartGarbage"),
     real("StartParticle"),
     // The hub, level95 (hub_bindings.h, hub_world_bindings.h), and its speech line and unlockables list
     // (sound_bindings.h, player_bindings.h).

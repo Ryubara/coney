@@ -272,6 +272,15 @@ Coney (`effects::MotionBlur`, `repo:src/effects/motion_blur.h`; `platform::Motio
 and strength linearly over the time given and lays the last frame over the new one at that strength, a stand-in for
 the `+0x108` slot's drawing, which is not traced; the looks' own blur values are not applied yet.
 
+**Ground fog and litter** (`effects::GroundFog`, `effects::CameraLitter`, `repo:src/effects/ground_fog.h`): Coney has
+one view, so one fog emitter. [`Start3DFog`](../references/bindings/effects.md#start3dfog) starts it over: every 5
+frames it tops the view up to 20 wisps (`MaxFogParticles` lowers it), at most 10 at a time, within 20 m of the camera's
+target and 0.5-2 m above it, fading in over 9 / fadeSpeed frames to the colour's alpha; a wisp more than 20 m from the
+camera is dropped and one within 4 m hidden. **Coney's stand-ins**: the wisps drift horizontally in a random direction
+at drift × 1.75-2.25 tenths of a metre a second; a fade step is a frame, adding alpha × fadeRate / steps; the wisps are
+not drawn, as the sprite word's sheet (its high half) is not traced. `StartGarbage` / `EndGarbage` keep the litter's
+kind (0-3) and switch; its sprites and motion are not traced, so nothing is drawn.
+
 ## Behaviour
 
 ### Start-up {#start-up}

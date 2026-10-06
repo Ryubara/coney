@@ -244,6 +244,7 @@
     MaxFogParticles changes the 20. The three numbers' visible effect is read from `sub_fog`'s init (0x003ca658) and
     update (0x003ca9d8); units are not runtime-checked. Arguments renamed from size, speed, height.
   usage: {chunks: 17, calls: 17, boot: false, mission1: false, result_used: false, levels: [87, 34, 81, 93, 9, 51]}
+  coney: implemented
 
 - name: MaxFogParticles
   wrapper: 0x003692b0
@@ -261,6 +262,7 @@
     The send is confirmed (code) at 0x0018e2f0; the `part_fog` emitter's handling of message 0x22 (replacing the
     20-wisp top-up) is not traced.
   usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false, levels: [34, 81, 9]}
+  coney: implemented
 
 - name: End3DFog
   wrapper: 0x003692e8
@@ -450,6 +452,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false, levels: [87, 86, 52]}
+  coney: implemented
 
 - name: EndGarbage
   wrapper: 0x003782d0
@@ -460,6 +463,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 7, calls: 7, boot: true, mission1: false, result_used: false, levels: [87, 86, 52]}
+  coney: implemented
 
 - name: EnableGroundFog
   wrapper: 0x003782f0

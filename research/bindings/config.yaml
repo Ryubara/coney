@@ -1985,6 +1985,7 @@
     `part_steam_huge` and `part_steam_large` have their own handlers, not read. The wind vector's source and that the
     draw blends the size and colour over each update are inferred. Arguments renamed from n3, n4, f5-f11, flag.
   usage: {chunks: 13, calls: 36, boot: false, mission1: false, result_used: false, levels: [87, 81, 93, 51, 11, 61, 64]}
+  coney: implemented
 
 - name: CfgTagSettings
   wrapper: 0x003795c0

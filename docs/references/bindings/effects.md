@@ -239,7 +239,7 @@ Stops the blowing-litter camera effect.
 - **Wrapper** `0x003782d0` (registered by `RegisterBindings`); **calls** `0x003977d0` `Garbage_End`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EndParticle {#endparticle}
 
@@ -397,7 +397,7 @@ lowering how many wisps Start3DFog keeps alive. Call it after Start3DFog; with n
 - **Wrapper** `0x003692b0` (registered by `RegisterBindings`); **calls** `0x0018e2f0` `Fog3D_SetMaxParticles`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ParticleChangeState {#particlechangestate}
 
@@ -923,7 +923,7 @@ MaxFogParticles changes the 20. The three numbers' visible effect is read from `
 - **Wrapper** `0x00369140` (registered by `RegisterBindings`); **calls** `0x0018e148` `Fog3D_Start`, `0x003cadd8`
 - **Used by** 17 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StartFilmGrain {#startfilmgrain}
 
@@ -1000,7 +1000,7 @@ plays. Details: [Particles, Blowing litter](../../research/particles.md#garbage)
 - **Wrapper** `0x00378298` (registered by `RegisterBindings`); **calls** `0x003977a8` `Garbage_Start`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StartParticle {#startparticle}
 

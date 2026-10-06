@@ -34,6 +34,7 @@ enum class ParticleBehaviour : std::uint8_t {
     Spray,  ///< A burst of drops thrown along the system's facing and pulled down, then the system ends (blood).
     Sparks, ///< A burst of quick, bright sprites thrown along the system's facing and pulled down (sparks).
     Shard,  ///< One falling, spinning shard in the creator's colour (a glass shard, `glasstest`).
+    Steam,  ///< A steam vent: puffs as `CfgSteam` configures it, nothing before (ParticleSystems::configureSteam()).
 };
 
 /// One particle system type Coney knows.

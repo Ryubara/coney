@@ -35,6 +35,18 @@ constexpr float kSparkSpeed = 4.0F;
 constexpr float kFlashLife = 0.1F;
 constexpr float kShardLife = 1.5F;
 constexpr float kShardSpin = 8.0F;
+// Steam (docs/research/particles.md#steam): the game's frames a second; a vent is near within 30 m and 20 m (the tests
+// `0x003a5280` and `0x003a51f8`, **Coney's reading**: both of the camera, so within 20 m) and puffs every 60 frames
+// when far; the random spreads of a puff's rise, size and growth (0.8-1.2) and of each update's speed (0.75-1.15);
+// its rectangle, 42 plus 0-2.
+constexpr float kFramesPerSecond = 60.0F;
+constexpr float kSteamNear = 20.0F;
+constexpr float kSteamFarFrames = 60.0F;
+constexpr float kSteamSpreadMin = 0.8F;
+constexpr float kSteamSpread = 0.4F;
+constexpr float kPuffSpeedMin = 0.75F;
+constexpr float kPuffSpeedSpread = 0.4F;
+constexpr std::uint16_t kSmokeRect = 42;
 // Whether a system of `behaviour` ends once its sprites are gone (a burst), rather than living until it is killed.
 bool endsWhenEmpty(ParticleBehaviour behaviour) {
     switch (behaviour) {
@@ -47,6 +59,7 @@ bool endsWhenEmpty(ParticleBehaviour behaviour) {
     case ParticleBehaviour::Inert:
     case ParticleBehaviour::Glow:
     case ParticleBehaviour::Flames:
+    case ParticleBehaviour::Steam:
         return false;
     }
     return false;
@@ -195,6 +208,33 @@ Particle ParticleSystems::makeParticle(ParticleSystem& system) {
     switch (type.behaviour) {
     case ParticleBehaviour::Inert:
         break;
+    case ParticleBehaviour::Steam:
+        if (system.steam) {
+            // A `sub_smoke` puff (`0x003f61d8`): the vent's −x axis × speed with z the rise (× 0.8-1.2), its alpha 0
+            // until its first update, living round(life × 60) / puffInterval updates.
+            const SteamSettings& steam = *system.steam;
+            const anim::Vec3 back = anim::transformDirection(anim::matrixFromQuat(anim::normalise(system.rotation)),
+                                                             anim::Vec3{-1.0F, 0.0F, 0.0F});
+            Particle::SteamPuff puff;
+            puff.start = anim::Vec3{back.x * steam.speed, back.y * steam.speed,
+                                    steam.rise * (kSteamSpreadMin + (kSteamSpread * unit()))};
+            puff.dragH = steam.dragH;
+            puff.dragV = steam.dragV;
+            puff.growth = steam.growth;
+            puff.interval = static_cast<float>(steam.puffInterval) / kFramesPerSecond;
+            puff.due = puff.interval;
+            puff.life = std::max<std::uint32_t>(
+                1, static_cast<std::uint32_t>(std::round(steam.life * kFramesPerSecond)) / steam.puffInterval);
+            puff.startAlpha = static_cast<std::uint8_t>(steam.colour & 0xffU);
+            particle.colour = steam.colour & 0xffffff00U;
+            particle.fades = false;
+            particle.life = 0.0F; // it ends at its last update
+            particle.size = steam.size * (kSteamSpreadMin + (kSteamSpread * unit()));
+            particle.velocity = puff.start;
+            particle.rect = static_cast<std::uint16_t>(kSmokeRect + draw(2));
+            particle.steam = puff;
+        }
+        break;
     case ParticleBehaviour::Glow:
         particle.life = 0.0F; // lives with the system
         particle.fades = false;
@@ -253,6 +293,48 @@ bool ParticleSystems::setEmitting(double handle, bool on) {
     return true;
 }
 
+bool ParticleSystems::configureSteam(double handle, const SteamSettings& settings) {
+    const auto found = std::ranges::find(m_systems, handle, &ParticleSystem::handle);
+    if (handle == 0 || found == m_systems.end()) {
+        return false;
+    }
+    SteamSettings steam = settings;
+    steam.puffInterval = std::max<std::uint32_t>(steam.puffInterval, 1);
+    found->steam = steam;
+    return true;
+}
+
+void ParticleSystems::stepSteam(ParticleSystem& system, float seconds) {
+    if (!system.steam || !system.emitting || !m_viewer) {
+        return;
+    }
+    // A run every `interval` frames while near, every 60 while far; each run makes one puff.
+    system.emitDue -= seconds;
+    if (system.emitDue > 0.0F) {
+        return;
+    }
+    emit(system, 1);
+    const anim::Vec3 away = anim::subtract(system.position, *m_viewer);
+    const bool near = anim::dot(away, away) <= kSteamNear * kSteamNear;
+    const float frames =
+        near ? static_cast<float>(std::max<std::uint32_t>(system.steam->interval, 1)) : kSteamFarFrames;
+    system.emitDue = std::max(system.emitDue + (frames / kFramesPerSecond), 0.0F);
+}
+
+void ParticleSystems::updatePuff(Particle& puff) {
+    Particle::SteamPuff& steam = *puff.steam;
+    ++steam.age;
+    const float f = static_cast<float>(steam.age) / static_cast<float>(steam.life);
+    // The start velocity less its dragged share (the wind, `0x006f31a0`, is not traced: none), × 0.75-1.15.
+    const anim::Vec3 dragged{steam.start.x * (1.0F - (f * steam.dragH)), steam.start.y * (1.0F - (f * steam.dragH)),
+                             steam.start.z * (1.0F - (f * steam.dragV))};
+    puff.velocity = anim::scale(dragged, kPuffSpeedMin + (kPuffSpeedSpread * unit()));
+    puff.size += steam.growth * (kSteamSpreadMin + (kSteamSpread * unit()));
+    const std::uint32_t left = steam.age >= steam.life ? 0 : steam.life - steam.age;
+    const auto alpha = static_cast<std::uint32_t>(steam.startAlpha) * left / steam.life;
+    puff.colour = (puff.colour & 0xffffff00U) | (alpha & 0xffU);
+}
+
 bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
     // Follow the parent, while it is there.
     if (system.parent != 0 && m_locator) {
@@ -281,8 +363,12 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
             break;
         case ParticleBehaviour::Inert:
         case ParticleBehaviour::Flames:
+        case ParticleBehaviour::Steam:
             break;
         }
+    }
+    if (behaviour == ParticleBehaviour::Steam) {
+        stepSteam(system, seconds);
     }
     // A stream makes its sprites as its interval comes round.
     if (behaviour == ParticleBehaviour::Flames && system.emitting) {
@@ -297,6 +383,14 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
         particle.age += seconds;
         particle.velocity.z -= particle.gravity * seconds;
         particle.position = anim::add(particle.position, anim::scale(particle.velocity, seconds));
+        // A steam puff updates every puffInterval frames.
+        if (particle.steam) {
+            particle.steam->due -= seconds;
+            while (particle.steam->due <= 0.0F && particle.steam->age < particle.steam->life) {
+                updatePuff(particle);
+                particle.steam->due += particle.steam->interval;
+            }
+        }
         particle.size = std::max(0.0F, particle.size + particle.grow * seconds);
         particle.angle += particle.spin * seconds;
         if (behaviour == ParticleBehaviour::Glow) {
@@ -309,7 +403,9 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
         }
     }
     const std::size_t before = system.particles.size();
-    std::erase_if(system.particles, [](const Particle& p) { return p.life > 0.0F && p.age >= p.life; });
+    std::erase_if(system.particles, [](const Particle& p) {
+        return (p.life > 0.0F && p.age >= p.life) || (p.steam && p.steam->age >= p.steam->life);
+    });
     m_particles -= before - system.particles.size();
     system.age += seconds;
     return !(endsWhenEmpty(behaviour) && system.particles.empty());

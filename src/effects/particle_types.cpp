@@ -23,7 +23,8 @@ constexpr std::uint32_t kGlass = 0xC8E0F0B0U;
 // The types Coney knows, sorted by name (findParticleType() searches it in halves). Sheets and rectangles are the
 // research's traced sprites (docs/references/particles.md); behaviours, sizes and colours are Coney's stand-ins. Types
 // whose sprite is traced to a sheet Coney does not load yet (the unnamed flame sheets, `part_tv`), to the doubtful
-// rectangle 54, or that draw on the HUD, are left out and so make Inert systems.
+// rectangle 54, or that draw on the HUD, are left out and so make Inert systems. `part_steam` draws its `sub_smoke`
+// puffs, `part_page1` rectangles 42-44 (docs/research/particles.md#steam).
 constexpr std::array kTypes{
     ParticleType{"blo_splat", PartPage1, 5, Spray, kBlood, 0.12F},
     ParticleType{"blood_drop", PartPage1, 52, Spray, kBlood, 0.05F},
@@ -44,6 +45,7 @@ constexpr std::array kTypes{
     ParticleType{"part_firetruck_lights", Lighting, 2, Glow, kPoliceGlow, 1.2F},
     ParticleType{"part_gun_flash", Lighting, 2, Flash, kWarmGlow, 0.8F},
     ParticleType{"part_s_fire", PartFire, 0, Flames, kWhite, 0.6F},
+    ParticleType{"part_steam", PartPage1, 42, Steam, kSmoke, 0.25F},
     ParticleType{"part_torch_flame", PartFire, 0, Flames, kWhite, 0.3F},
     ParticleType{"part_torch_flame_ns", PartFire, 0, Flames, kWhite, 0.3F},
     ParticleType{"spark", PartPage1, 41, Sparks, kSpark, 0.08F},

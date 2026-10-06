@@ -27,6 +27,35 @@ struct Particle {
     std::uint32_t colour = 0xFFFFFFFFU; ///< `0xRRGGBBAA` at birth; the alpha fades to 0 over the life when `fades`.
     std::uint16_t rect = 0;             ///< The rectangle of the system's sheet it shows.
     bool fades = true;
+    /// A steam puff's own update (`sub_smoke`, docs/research/particles.md#steam); unset for every other sprite.
+    struct SteamPuff {
+        anim::Vec3 start;            ///< Its start velocity, metres a second.
+        float dragH = 0.0F;          ///< The share of the start velocity lost by the end of the life, across ...
+        float dragV = 0.0F;          ///< ... and up.
+        float growth = 0.0F;         ///< Size gained per update (× 0.8-1.2 each time).
+        float interval = 1.0F;       ///< Seconds between its updates (`puffInterval` frames).
+        float due = 0.0F;            ///< Seconds until its next update.
+        std::uint32_t age = 0;       ///< Updates done.
+        std::uint32_t life = 1;      ///< Updates it lives.
+        std::uint8_t startAlpha = 0; ///< The colour's alpha, which fades out over the life.
+    };
+    std::optional<SteamPuff> steam;
+};
+
+/// A steam vent's configuration: `CfgSteam(object, colour, interval, puffInterval, size, growth, life, speed, rise,
+/// dragH, dragV, still)` (docs/references/bindings/config.md#cfgsteam), message `0x27` to a `part_steam` emitter.
+struct SteamSettings {
+    std::uint32_t colour = 0xFFFFFFFFU; ///< `0xRRGGBBAA`; the alpha is a puff's opacity at birth, fading to 0.
+    std::uint32_t interval = 1;         ///< Frames (60 a second) between puffs while the vent is near.
+    std::uint32_t puffInterval = 1;     ///< Frames between a puff's updates; never 0.
+    float size = 0.0F;                  ///< A puff's size at birth (× 0.8-1.2 at random).
+    float growth = 0.0F;                ///< Its growth per puff update (× 0.8-1.2 at random).
+    float life = 0.0F;                  ///< Its life, seconds.
+    float speed = 0.0F;                 ///< Its speed along the vent's −x axis, metres a second.
+    float rise = 0.0F;                  ///< Its rise, metres a second (× 0.8-1.2).
+    float dragH = 0.0F;                 ///< Particle::SteamPuff::dragH.
+    float dragV = 0.0F;                 ///< Particle::SteamPuff::dragV.
+    bool still = false;                 ///< Not blown by the global vector at `0x006f31a0` (inferred: wind).
 };
 
 /// One live particle system: the original's particle task (docs/research/particles.md#task-fields), with the sprites
@@ -45,6 +74,7 @@ struct ParticleSystem {
     float age = 0.0F;                   ///< Seconds since its spawn.
     float emitDue = 0.0F;               ///< Seconds until a stream type makes its next sprite.
     bool started = false;               ///< Whether its first step (a burst's emission) has run.
+    std::optional<SteamSettings> steam; ///< A steam vent's `CfgSteam`; unset until then.
     std::vector<Particle> particles;
 };
 
@@ -110,6 +140,15 @@ class ParticleSystems {
     /// @orig 0x00397610 Particle_End (unknown)
     bool setEmitting(double handle, bool on);
 
+    /// `CfgSteam`: the steam vent `handle` names is configured (a `puffInterval` of 0 is taken as 1: the original
+    /// divides by it). False when no system has the handle; **Coney choice**: the original does not check the type,
+    /// and a system of another type keeps the settings unused.
+    /// @orig 0x0039be28 Steam_Configure (unknown)
+    /// @orig 0x003f6b40 Steam_HandleMessage (unknown)
+    bool configureSteam(double handle, const SteamSettings& settings);
+    /// Where the camera is, for the steam vents' near test (none: no vent puffs).
+    void setViewer(std::optional<anim::Vec3> viewer) { m_viewer = viewer; }
+
     /// One step of `seconds`: each system follows its parent, makes and moves its sprites, and ends when its type's
     /// behaviour says so.
     void step(float seconds);
@@ -138,8 +177,15 @@ class ParticleSystems {
 
     std::vector<ParticleSystem> m_systems;
     std::size_t m_particles = 0;
+    // A steam vent's puffs for the step: one every SteamSettings::interval frames while it is on and near, every 60
+    // frames while it is far.
+    void stepSteam(ParticleSystem& system, float seconds);
+    // One update of a steam puff (`0x003f6460`): its velocity dragged, its size grown, its alpha faded.
+    void updatePuff(Particle& puff);
+
     std::uint32_t m_random;
     Locator m_locator;
+    std::optional<anim::Vec3> m_viewer;
 };
 
 } // namespace coney::effects

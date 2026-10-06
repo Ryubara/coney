@@ -248,6 +248,15 @@ is behind them, the rest blend by alpha; a shard is an untextured quad; a shatte
 for 158 sprites. `StartParticle` and `EndParticle` switch a system's stream on and off (sprites in flight live out
 their life; each type's own answer to messages `0x12` and `0x13` is not traced), and show or hide a plain object.
 
+**Steam vents** (`part_steam`, [`CfgSteam`](../references/bindings/config.md#cfgsteam)) follow [Steam
+vents](#steam): nothing before `CfgSteam`, then while on one puff every `interval` frames (60 a second) when the camera
+is within 20 m, every 60 frames otherwise; a puff starts along the vent's −x axis at `speed` with z the `rise`
+(× 0.8-1.2), its size × 0.8-1.2, and every `puffInterval` frames for round(life × 60) / puffInterval updates its
+velocity is the start velocity less the drag's share of the life (× 0.75-1.15), its size grows by `growth`
+× 0.8-1.2 and its alpha falls linearly to 0; it draws `part_page1` rectangle 42-44. **Coney's readings**: both near
+tests are distances from the camera; the wind (`0x006f31a0`) is not traced, so no puff is blown; the particle budget's
+short-alpha rule is left out.
+
 ## Open questions
 
 - Whether the type functions were generated from the `Particle Source` / `Particle Asm Debug` chunk types (`0x19`-`0x21`,

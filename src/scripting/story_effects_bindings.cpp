@@ -16,7 +16,9 @@
 #include "camera/cameras.h"
 #include "camera/path_camera.h"
 #include "core/name_hash.h"
+#include "effects/ground_fog.h"
 #include "effects/level_effects.h"
+#include "effects/particles.h"
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
 #include "scripting/sound_bindings.h"
@@ -240,6 +242,93 @@ NativeFunction makeSoundEnableEffects(const BindingContext& context) {
     };
 }
 
+// Argument `i` as a colour table `{r, g, b, a}` (t[1]..t[4], each truncated to a byte); zeros for a missing table or
+// entry.
+std::array<std::uint8_t, 4> colourArg(std::span<const Value> args, std::size_t i) {
+    std::array<std::uint8_t, 4> colour{};
+    if (i >= args.size() || args[i].table() == nullptr) {
+        return colour;
+    }
+    const Table& table = *args[i].table();
+    for (std::size_t c = 0; c < colour.size(); ++c) {
+        const double value = table.get(Value(static_cast<double>(c + 1))).number().value_or(0.0);
+        colour.at(c) = static_cast<std::uint8_t>(static_cast<std::int64_t>(std::trunc(value)));
+    }
+    return colour;
+}
+
+// `Start3DFog(texture, colour, drift, fadeSpeed, fadeRate)`: the ground fog started over (the colour table is left as
+// it is).
+// @orig 0x0018e148 Fog3D_Start (unknown)
+NativeFunction makeStart3DFog(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->effects != nullptr) {
+            context->effects->fog.start(effects::FogSettings{.sprite = static_cast<std::uint32_t>(wholeArg(args, 0)),
+                                                             .colour = colourArg(args, 1),
+                                                             .drift = static_cast<float>(binding::number(args, 2)),
+                                                             .fadeSpeed = static_cast<float>(binding::number(args, 3)),
+                                                             .fadeRate = static_cast<float>(binding::number(args, 4))});
+        }
+        return binding::none();
+    };
+}
+
+// `MaxFogParticles(count)`: message `0x22` to the fog's emitter; nothing with no fog running. **Coney's reading**: the
+// emitter's handling (replacing the 20-wisp top-up) is inferred on the page.
+// @orig 0x0018e2f0 Fog3D_SetMaxParticles (unknown)
+NativeFunction makeMaxFogParticles(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->effects != nullptr) {
+            context->effects->fog.setMaxWisps(static_cast<std::uint32_t>(wholeArg(args, 0)));
+        }
+        return binding::none();
+    };
+}
+
+// `StartGarbage(kind)` / `EndGarbage()`: the blowing litter round the camera.
+// @orig 0x003977a8 Garbage_Start (unknown)
+// @orig 0x003977d0 Garbage_End (unknown)
+NativeFunction makeGarbage(const BindingContext& context, bool start) {
+    return [context = &context, start](std::span<const Value> args) {
+        if (context->effects != nullptr) {
+            if (start) {
+                context->effects->litter.start(static_cast<std::uint32_t>(wholeArg(args, 0)));
+            } else {
+                context->effects->litter.end();
+            }
+        }
+        return binding::none();
+    };
+}
+
+// `CfgSteam(object, colour, interval, puffInterval, size, growth, life, speed, rise, dragH, dragV, still)`: message
+// `0x27` to a steam vent (the colour table is left as it is).
+// @orig 0x0039be28 Steam_Configure (unknown)
+NativeFunction makeCfgSteam(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->effects == nullptr) {
+            return binding::none();
+        }
+        const std::array<std::uint8_t, 4> c = colourArg(args, 1);
+        const auto f = [&args](std::size_t i) { return static_cast<float>(binding::number(args, i)); };
+        static_cast<void>(context->effects->particles.configureSteam(
+            handleArg(args, 0),
+            effects::SteamSettings{.colour = (std::uint32_t{c[0]} << 24U) | (std::uint32_t{c[1]} << 16U) |
+                                             (std::uint32_t{c[2]} << 8U) | std::uint32_t{c[3]},
+                                   .interval = static_cast<std::uint32_t>(wholeArg(args, 2)),
+                                   .puffInterval = static_cast<std::uint32_t>(wholeArg(args, 3)),
+                                   .size = f(4),
+                                   .growth = f(5),
+                                   .life = f(6),
+                                   .speed = f(7),
+                                   .rise = f(8),
+                                   .dragH = f(9),
+                                   .dragV = f(10),
+                                   .still = boolArg(args, 11)}));
+        return binding::none();
+    };
+}
+
 } // namespace
 
 void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
@@ -247,6 +336,11 @@ void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::func
     vm.registerFunction("CamAddPoizoPointCam", makeCamAddPoizoPointCam(context));
     vm.registerFunction("CameraGetActive", makeCameraGetActive(context));
     vm.registerFunction("CameraSetClipping", makeCameraSetClipping(context));
+    vm.registerFunction("CfgSteam", makeCfgSteam(context));
+    vm.registerFunction("EndGarbage", makeGarbage(context, false));
+    vm.registerFunction("MaxFogParticles", makeMaxFogParticles(context));
+    vm.registerFunction("Start3DFog", makeStart3DFog(context));
+    vm.registerFunction("StartGarbage", makeGarbage(context, true));
     vm.registerFunction("CamGetPos", makeCamGetPos(context));
     vm.registerFunction("CamSetFollowPos", makeCamSetFollowPos(context));
     vm.registerFunction("CamSetupPoizo", makeCamSetupPoizo(context, std::move(nextHandle)));

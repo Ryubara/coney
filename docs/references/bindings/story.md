@@ -16,9 +16,9 @@ missions` sets each entry's `usage.levels` from the disc.
 | Level | Story | Bindings | New | New, traced | New, in Coney |
 | --- | --- | --- | --- | --- | --- |
 | [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 50 |
-| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 75 |
+| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 79 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 90 |
-| [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 2 |
+| [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 3 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 1 |
 | [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 4 |
 | [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 2 |
@@ -103,7 +103,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level87: mission 3 {#level87}
 
-261 bindings, 87 new: 87 traced, 75 implemented in Coney (249 of all 261).
+261 bindings, 87 new: 87 traced, 79 implemented in Coney (253 of all 261).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -168,9 +168,9 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`PathValid`](world.md#pathvalid) | World and objects | traced | confirmed (code) | implemented |
 | [`SetFlagPos`](world.md#setflagpos) | World and objects | traced | confirmed (code) | implemented |
 | [`TriggerSphereEnable`](world.md#triggersphereenable) | World and objects | traced | confirmed (code) | not implemented |
-| [`EndGarbage`](effects.md#endgarbage) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`Start3DFog`](effects.md#start3dfog) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`StartGarbage`](effects.md#startgarbage) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`EndGarbage`](effects.md#endgarbage) | Effects and lighting | traced | confirmed (code) | implemented |
+| [`Start3DFog`](effects.md#start3dfog) | Effects and lighting | traced | confirmed (code) | implemented |
+| [`StartGarbage`](effects.md#startgarbage) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`HUDLaunchMissionFailed`](hud.md#hudlaunchmissionfailed) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDShowWarCommand`](hud.md#hudshowwarcommand) | HUD and menus | traced | confirmed (code) | implemented |
 | [`SetupRadio`](sound.md#setupradio) | Sound and music | traced | confirmed (code) | not implemented |
@@ -189,7 +189,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`CfgCrimeResponders`](config.md#cfgcrimeresponders) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgEnableGrappleCounters`](config.md#cfgenablegrapplecounters) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgGangSizeForCombatMusic`](config.md#cfggangsizeforcombatmusic) | Configuration (Cfg) | traced | confirmed (code) | implemented |
-| [`CfgSteam`](config.md#cfgsteam) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgSteam`](config.md#cfgsteam) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgTagSettings`](config.md#cfgtagsettings) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgTagStartCallback`](config.md#cfgtagstartcallback) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgVerticalSightModifier`](config.md#cfgverticalsightmodifier) | Configuration (Cfg) | traced | confirmed (code) | implemented |
@@ -295,7 +295,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level34: mission 4 {#level34}
 
-204 bindings, 17 new: 17 traced, 2 implemented in Coney (184 of all 204).
+204 bindings, 17 new: 17 traced, 3 implemented in Coney (186 of all 204).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -310,7 +310,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`DoorOpen`](world.md#dooropen) | World and objects | traced | confirmed (code) | implemented |
 | [`ObjGetIndex`](world.md#objgetindex) | World and objects | traced | confirmed (code) | not implemented |
 | [`End3DFog`](effects.md#end3dfog) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`MaxFogParticles`](effects.md#maxfogparticles) | Effects and lighting | traced | inferred | not implemented |
+| [`MaxFogParticles`](effects.md#maxfogparticles) | Effects and lighting | traced | inferred | implemented |
 | [`ForceCrimeLevel`](level.md#forcecrimelevel) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`GetLUASaveDataBool`](level.md#getluasavedatabool) | Levels and game state | traced | confirmed (code) | implemented |
 | [`SetGeneralCarMsgHandler`](script.md#setgeneralcarmsghandler) | Script flow | traced | inferred | not implemented |
@@ -397,7 +397,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level81: mission 8 {#level81}
 
-236 bindings, 20 new: 20 traced, 5 implemented in Coney (198 of all 236).
+236 bindings, 20 new: 20 traced, 5 implemented in Coney (201 of all 236).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -424,7 +424,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level86: mission 9 {#level86}
 
-245 bindings, 17 new: 17 traced, 4 implemented in Coney (215 of all 245).
+245 bindings, 17 new: 17 traced, 4 implemented in Coney (217 of all 245).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -448,7 +448,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level93: mission 10 {#level93}
 
-295 bindings, 24 new: 24 traced, 2 implemented in Coney (245 of all 295).
+295 bindings, 24 new: 24 traced, 2 implemented in Coney (247 of all 295).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -508,7 +508,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level9: mission 13 {#level9}
 
-225 bindings, 6 new: 6 traced, 1 implemented in Coney (204 of all 225).
+225 bindings, 6 new: 6 traced, 1 implemented in Coney (206 of all 225).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -521,7 +521,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level51: mission 14 {#level51}
 
-256 bindings, 6 new: 6 traced, 1 implemented in Coney (222 of all 256).
+256 bindings, 6 new: 6 traced, 1 implemented in Coney (224 of all 256).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -534,7 +534,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level52: mission 15 {#level52}
 
-235 bindings, 4 new: 4 traced, 0 implemented in Coney (219 of all 235).
+235 bindings, 4 new: 4 traced, 0 implemented in Coney (221 of all 235).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -641,7 +641,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level11: flashback 5 {#level11}
 
-260 bindings, 7 new: 7 traced, 1 implemented in Coney (227 of all 260).
+260 bindings, 7 new: 7 traced, 1 implemented in Coney (228 of all 260).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -677,7 +677,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level61: Armies of the Night 2 {#level61}
 
-168 bindings, 0 new: 0 traced, 0 implemented in Coney (138 of all 168).
+168 bindings, 0 new: 0 traced, 0 implemented in Coney (139 of all 168).
 
 ## level62: Armies of the Night 3 {#level62}
 
@@ -693,7 +693,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level64: Armies of the Night 5 {#level64}
 
-154 bindings, 4 new: 4 traced, 0 implemented in Coney (120 of all 154).
+154 bindings, 4 new: 4 traced, 0 implemented in Coney (121 of all 154).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

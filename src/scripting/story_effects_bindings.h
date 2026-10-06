@@ -17,14 +17,29 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addStoryEffectsBindings().
-inline constexpr std::array<std::string_view, 13> kStoryEffectsBindings{
-    "CamAddPoizoPoint", "CamAddPoizoPointCam", "CameraGetActive", "CameraSetClipping",  "CamGetPos",
-    "CamSetFollowPos",  "CamSetupPoizo",       "EndParticle",     "SoundEnableEffects", "SoundEnableSystemMusic",
-    "SoundSetEffect",   "SoundSetMusicTrack",  "StartParticle"};
+inline constexpr std::array<std::string_view, 18> kStoryEffectsBindings{"CamAddPoizoPoint",
+                                                                        "CamAddPoizoPointCam",
+                                                                        "CameraGetActive",
+                                                                        "CameraSetClipping",
+                                                                        "CamGetPos",
+                                                                        "CamSetFollowPos",
+                                                                        "CamSetupPoizo",
+                                                                        "CfgSteam",
+                                                                        "EndGarbage",
+                                                                        "EndParticle",
+                                                                        "MaxFogParticles",
+                                                                        "SoundEnableEffects",
+                                                                        "SoundEnableSystemMusic",
+                                                                        "SoundSetEffect",
+                                                                        "SoundSetMusicTrack",
+                                                                        "Start3DFog",
+                                                                        "StartGarbage",
+                                                                        "StartParticle"};
 
-/// Registers kStoryEffectsBindings in `vm`: the cameras on `context.cameras`, the particles on `context.effects` (and
-/// a plain object's record on `context.spawnRecords`), the music and reverb on `context.state` and `context.sound`.
-/// Each does nothing (or answers nil) without what it acts on. `nextHandle` gives the path camera its handle.
+/// Registers kStoryEffectsBindings in `vm`: the cameras on `context.cameras`, the particles, steam vents, fog and
+/// litter on `context.effects` (and a plain object's record on `context.spawnRecords`), the music and reverb on
+/// `context.state` and `context.sound`. Each does nothing (or answers nil) without what it acts on. `nextHandle` gives
+/// the path camera its handle.
 ///
 /// Research: docs/references/bindings/story.md
 void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle);

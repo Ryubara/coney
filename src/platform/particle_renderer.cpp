@@ -29,6 +29,7 @@ bool additive(effects::ParticleBehaviour behaviour) {
         return true;
     case effects::ParticleBehaviour::Inert:
     case effects::ParticleBehaviour::Puff:
+    case effects::ParticleBehaviour::Steam:
     case effects::ParticleBehaviour::Spray:
     case effects::ParticleBehaviour::Shard:
         return false;

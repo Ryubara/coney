@@ -2723,7 +2723,7 @@ blends the size and colour over each update are inferred. Arguments renamed from
 - **Wrapper** `0x003792c0` (registered by `RegisterBindings`); **calls** `0x0039be28` `Steam_Configure`, `0x003f6720`
 - **Used by** 13 of 467 script chunks (36 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgStickDeflection {#cfgstickdeflection}
 

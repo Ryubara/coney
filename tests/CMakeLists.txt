@@ -13,6 +13,7 @@ add_executable(coney_tests
     core/ps2_float_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
+    effects/ground_fog_test.cpp
     effects/motion_blur_test.cpp
     effects/particles_test.cpp
     fileio/disc_test.cpp

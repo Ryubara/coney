@@ -160,6 +160,7 @@ add_library(coney_core STATIC
     world_objects/volume_boxes.cpp)
 # Effects: the particle systems and the motion blur (docs/research/particles.md, docs/research/graphics.md#looks).
 target_sources(coney_core PRIVATE
+    effects/ground_fog.cpp
     effects/motion_blur.cpp
     effects/particle_types.cpp
     effects/particles.cpp

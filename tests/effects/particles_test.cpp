@@ -179,3 +179,59 @@ TEST_CASE("a stream switched off makes no sprites until it is switched on again"
     }
     CHECK_FALSE(systems.find(2)->particles.empty());
 }
+
+TEST_CASE("a steam vent puffs as CfgSteam configures it, faster near the camera", "[particles]") {
+    ParticleSystems systems;
+    ParticleSystem* vent = systems.spawn("part_steam", Vec3{10, 0, 0}, {}, 0, 5);
+    REQUIRE(vent != nullptr);
+    CHECK(vent->type->behaviour == ParticleBehaviour::Steam);
+    systems.setViewer(Vec3{0, 0, 0});
+    // Before CfgSteam it makes nothing.
+    run(systems, 30);
+    CHECK(systems.particleCount() == 0);
+    coney::effects::SteamSettings steam{.colour = 0x808080FFU,
+                                        .interval = 10,
+                                        .puffInterval = 0,
+                                        .size = 0.25F,
+                                        .growth = 0.125F,
+                                        .life = 1.0F,
+                                        .speed = 2.0F,
+                                        .rise = 0.5F,
+                                        .dragH = 1.0F};
+    CHECK(systems.configureSteam(5, steam));
+    CHECK_FALSE(systems.configureSteam(6, steam));
+    const std::optional<coney::effects::SteamSettings>& configured = systems.find(5)->steam;
+    REQUIRE(configured.has_value());
+    CHECK(configured.value_or(steam).puffInterval == 1); // never 0: the original divides by it
+    // Near (within 20 m): one puff every 10 frames; each updates every 6 frames, round(1 s × 60) / 6 = 10 times,
+    // moving along the vent's -x at 2 m/s and rising.
+    steam.puffInterval = 6;
+    REQUIRE(systems.configureSteam(5, steam));
+    run(systems, 15); // half a second
+    CHECK(systems.particleCount() == 3);
+    const coney::effects::Particle& first = systems.find(5)->particles.front();
+    REQUIRE(first.steam.has_value());
+    CHECK(first.steam.value_or(coney::effects::Particle::SteamPuff{}).life == 10);
+    CHECK(first.position.x < 10.0F); // along -x
+    CHECK(first.position.z > 0.0F);  // rising
+    CHECK(first.rect >= 42);
+    CHECK(first.rect <= 44);
+    CHECK((first.colour & 0xffU) < 0xffU); // fading out over its life
+    CHECK(first.size > 0.25F * 0.8F);      // growing each update
+    // A puff ends with its last update.
+    run(systems, 30);
+    for (const coney::effects::Particle& puff : systems.find(5)->particles) {
+        CHECK(puff.steam.value_or(coney::effects::Particle::SteamPuff{}).age < 10);
+    }
+    // Far (more than 20 m): one puff a second.
+    ParticleSystems far;
+    REQUIRE(far.spawn("part_steam", Vec3{50, 0, 0}, {}, 0, 7) != nullptr);
+    far.setViewer(Vec3{0, 0, 0});
+    REQUIRE(far.configureSteam(7, steam));
+    run(far, 15);
+    CHECK(far.particleCount() == 1);
+    // Switched off it makes none.
+    REQUIRE(far.setEmitting(7, false));
+    run(far, 90);
+    CHECK(far.particleCount() == 0);
+}

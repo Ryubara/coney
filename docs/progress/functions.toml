@@ -1841,6 +1841,16 @@ name = "ScreenEffects_UpdateFade"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0018e148
+name = "Fog3D_Start"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0018e2f0
+name = "Fog3D_SetMaxParticles"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0018e6b8
 name = "EnterStore"
 subsystem = "Graphics"
@@ -7217,6 +7227,16 @@ subsystem = "TaskEngine"
 size = 80
 
 [[function]]
+address = 0x003977a8
+name = "Garbage_Start"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003977d0
+name = "Garbage_End"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x00398348
 name = "ObjZoneMask_Set"
 subsystem = "TaskEngine"
@@ -7241,6 +7261,11 @@ subsystem = "TaskEngine"
 [[function]]
 address = 0x00398fe0
 name = "ObjRecord_GetHandle"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0039be28
+name = "Steam_Configure"
 subsystem = "TaskEngine"
 
 [[function]]
@@ -7356,6 +7381,11 @@ name = "ScriptType_Find"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x003cadd8
+name = "Fog3D_EmitterUpdate"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x003e29e8
 name = "GlassScript_Init"
 subsystem = "TaskEngine"
@@ -7372,6 +7402,11 @@ address = 0x003e4cb8
 name = "SubGlass_Update"
 subsystem = "TaskEngine"
 size = 984
+
+[[function]]
+address = 0x003f6b40
+name = "Steam_HandleMessage"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x003f80f0
@@ -8034,7 +8069,6 @@ size = 64
 address = 0x0041e5b0
 name = "Inventory_AddItem"
 subsystem = "Warriors"
-size = 1064
 
 [[function]]
 address = 0x0041ece8
@@ -8051,7 +8085,6 @@ subsystem = "Warriors"
 address = 0x0041ed60
 name = "Cfg_SetMoneyCallback"
 subsystem = "Warriors"
-size = 40
 
 [[function]]
 address = 0x0041ed88

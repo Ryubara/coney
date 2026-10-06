@@ -18,9 +18,12 @@
 #include "ai/scripted_story.h"
 #include "ai/spawners.h"
 #include "animation/anim_math.h"
+#include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "characters/character_types.h"
 #include "core/game_timer.h"
+#include "effects/ground_fog.h"
+#include "effects/level_effects.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/player_frame.h"
@@ -485,7 +488,13 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
     if (m_effects) {
-        m_effects->step(static_cast<float>(frame.seconds));
+        // The camera's view this frame, for the effects that follow it (the steam vents' near test, the fog).
+        std::optional<effects::EffectsViewer> viewer;
+        if (m_cameras && m_cameras->current().kind != camera::CameraKind::None) {
+            const camera::CameraView& view = m_cameras->view();
+            viewer = effects::EffectsViewer{.position = view.position, .target = view.lookAt};
+        }
+        m_effects->step(static_cast<float>(frame.seconds), viewer);
     }
 
     // A script that teleported player 1 during the frame (the hub's door walk) moves him in the level.
