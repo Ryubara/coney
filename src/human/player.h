@@ -18,9 +18,9 @@
 #include "core/error.h"
 #include "core/pad.h"
 #include "fileio/wad.h"
+#include "human/combatant.h"
 #include "human/human.h"
 #include "human/humans.h"
-#include "human/target_human.h"
 #include "raycast/collision_mesh.h"
 
 // Player 1 in a level: the character it plays, the human the pad drives and the follow camera behind it, stepped
@@ -115,7 +115,7 @@ class Player {
     /// characters' step (humans()) with `targets` to fight, then the camera with the right stick. A human that fell
     /// out of the world is put back at the start (**Coney's choice**: the original fails the mission, which Coney has
     /// no flow for yet).
-    void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<TargetHuman* const> targets = {});
+    void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
 
     /// Puts the human at `start` on `mesh` (spawned there as at a level start) and the camera behind it, with nothing
     /// to blend from: the debug menus' teleport. Coney's own tool; the original has none.

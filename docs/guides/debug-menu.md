@@ -114,6 +114,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Player | where the player is and how it moves (plotted), freezing it, teleports to places, a typed or saved spot |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
+| AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
 | Debug draw | lines in the scene: collision near the player, the player's heading and velocity, the camera, places |
 | Display | the frame-stats line, the GUI safe area and the logical screen's edges, drawn over the game |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
@@ -138,14 +139,15 @@ play mode or sandbox viewer on top. *Sandbox layouts* lists the layouts in the s
 ([Sandbox](sandbox.md)); choosing one plays it at the start of the next frame, in place of the play mode or sandbox
 viewer on top: with Rembrandt when there is a disc for his character, else with the free camera.
 
-**Player, Camera and Spawner** act on the mode the player plays in (`--play-level`, or a sandbox from Levels), through
-`debug::PlayControls` (`src/debug/play_controls.h`), which the play mode implements; elsewhere they say there is no
-player. A teleport drops the player onto the ground below the spot and places the camera behind him again. Frozen, the
-player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera tunables, so the
-leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's does, while the
-player stands still and the scenery streams round the free camera. The Spawner adds sandbox primitives (Coney's own
-sizes) in front of the player, facing his way, and rebuilds the sandbox with its collision and lighting; a level cannot
-spawn yet.
+**Player, Camera, Spawner and AI fighters** act on the mode the player plays in (`--play-level`, or a sandbox from
+Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the play mode implements; elsewhere they say
+there is no player. A teleport drops the player onto the ground below the spot and places the camera behind him again.
+Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
+tunables, so the leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's
+does, while the player stands still and the scenery streams round the free camera. The Spawner adds sandbox primitives
+(Coney's own sizes) in front of the player, facing his way, and rebuilds the sandbox with its collision and lighting; a
+level cannot spawn yet. *AI fighters* spawns a fighter ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front
+of the player, facing him, in a sandbox or a level; *Engaging* off keeps idle fighters from taking him on.
 
 **Debug draw** switches lines the play mode draws into the scene, tested against depth: the collision triangles within
 a radius of the player as a wireframe (at most 6,000), a cross at his feet with his heading and velocity, the ground's

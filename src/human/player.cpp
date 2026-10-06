@@ -135,7 +135,7 @@ PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot&
                           .cameraTarget = anim::lerp(previous.cameraTarget, current.cameraTarget, alpha)};
 }
 
-void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<TargetHuman* const> targets) {
+void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets) {
     // The command for this sample (docs/research/combat.md#commands).
     const combat::CommandId command =
         m_matcher.update(pad.buttons(), m_tables, combat::combatTuning().historyHoldSamples);
@@ -148,7 +148,8 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
                                     .sprintHeld = pad.held(pad::kL2),
                                     .actionPressed = pad.pressed(pad::kTriangle),
                                     .command = command,
-                                    .buttons = pad.buttons()};
+                                    .buttons = pad.buttons(),
+                                    .move = std::nullopt};
     m_humans.update(mesh, targets);
     if (m_human.outOfWorld()) {
         m_human.spawn(mesh, m_start.position, m_start.headingDegrees);

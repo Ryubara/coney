@@ -33,7 +33,10 @@ inline constexpr CommandId kCircleTapped = 0x0d;    ///< Circle released within 
 inline constexpr CommandId kCircleHeld = 0x0e;      ///< Circle held for the history hold: tackle.
 inline constexpr CommandId kSquarePressed = 0x0f;   ///< Square: attacks.
 inline constexpr CommandId kCrossLongHold = 0x10;   ///< Cross released within 3 samples or held 4: the X attack.
-inline constexpr CommandId kCrossPressed = 0x12;    ///< Cross pressed: what a chain buffers.
+/// The square of a chain's later step: what an AI's attack writes for kinds 4, 5 and 7 (docs/research/ai.md); the
+/// counter test takes it as a square (docs/research/combat.md, `0x0027b988`). Which pad state gives it is not traced.
+inline constexpr CommandId kSquareChain = 0x11;
+inline constexpr CommandId kCrossPressed = 0x12; ///< Cross pressed: what a chain buffers.
 inline constexpr CommandId kSquareHeld = 0x15;
 inline constexpr CommandId kCrossHeld = 0x16;
 inline constexpr CommandId kCirclePressed = 0x1e; ///< Circle pressed: the throw or spin in a grab.

@@ -247,6 +247,54 @@ void addSpawnerPage(DebugSession& session) {
         "Objects put in front of the player, in a sandbox.");
 }
 
+void addFightersPage(DebugSession& session) {
+    auto distance = std::make_shared<double>(4.0);
+    session.model().addPage(
+        "AI fighters",
+        [&session, distance](MenuPage& page) {
+            const PlayControls* play = session.play();
+            if (play == nullptr) {
+                page.add(watchItem("No player", [] { return std::string(kNoPlayer); }));
+                return;
+            }
+            if (!play->canSpawnFighter()) {
+                page.add(watchItem("Fighters", [] { return std::string("none in this mode"); }));
+                return;
+            }
+            MenuItem ahead = numberItem(
+                "Distance ahead", [distance] { return *distance; }, [distance](double v) { *distance = v; }, 1.0, 20.0,
+                0.5, false);
+            ahead.units = "m";
+            ahead.defaultValue = 4.0;
+            page.add(std::move(ahead));
+            page.add(playAction(session, "Spawn a fighter",
+                                [&session, distance](PlayControls& p) {
+                                    const anim::Vec3 feet = spotAhead(p.playerFeet(), p.playerHeadingDegrees(),
+                                                                      static_cast<float>(*distance));
+                                    // It faces the player.
+                                    auto spawned = p.spawnFighter(feet, p.playerHeadingDegrees() + 180.0F);
+                                    session.print(spawned ? std::format("fighters: one at {}", pointText(feet))
+                                                          : "fighters: " + spawned.error().message);
+                                }))
+                .withHelp("An AI human with a sparring Warrior's brain, facing the player; it fights him when he is "
+                          "in its melee range and engaging is on.");
+            page.add(playToggle(
+                         session, "Engaging", [](const PlayControls& p) { return p.fightersEngage(); },
+                         [](PlayControls& p, bool on) { p.setFightersEngage(on); }))
+                .withHelp("An idle fighter takes the player on when he comes within its melee range (the level "
+                          "script's GoalFight stand-in).");
+            page.add(playWatch(session, "Fighters",
+                               [](const PlayControls& p) { return std::format("{}", p.fighterCount()); }));
+            page.add(playWatch(session, "State", [](const PlayControls& p) { return p.fightersState(); }));
+            page.add(playAction(session, "Clear fighters", [&session](PlayControls& p) {
+                p.clearFighters();
+                session.print("fighters: cleared");
+            }));
+            page.add(logItem("Log", [&session] { return session.log().last(3); }));
+        },
+        "AI humans that fight the player: spawn, engage, watch.");
+}
+
 void addDebugDrawPage(DebugSession& session) {
     DebugDrawOptions& draw = session.debugDraw();
     session.model().addPage(

@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 5.5%](https://img.shields.io/badge/reimplemented-5.5%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 6.0%](https://img.shields.io/badge/reimplemented-6.0%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▏░░░░░░░░░░░░░░░░░░` | 5.5% of the game's own code (184,972 of 3,342,936 bytes, 381 functions) |
+| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.0% of the game's own code (201,132 of 3,342,936 bytes, 428 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
 
@@ -56,12 +56,12 @@ at the top of the repository's `README.md`.
 | `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 3.8% | 12 | 118,632 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 7 | 32,152 |
+| `Device/ps2` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 8 | 32,152 |
 | `FileIO` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 3 | 6,480 |
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 29 | 189,024 |
 | `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
-| `Human` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 59 | 358,360 |
+| `Human` | `██░░░░░░░░░░░░░░░░░░` | 10.2% | 64 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
@@ -75,7 +75,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 67 | 1,524,752 |
+| Unattributed | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 108 | 1,524,752 |
 
 ## Research coverage
 
@@ -157,6 +157,7 @@ at the top of the repository's `README.md`.
 | `0x00146078` | `PlayerRecord_Update` | `Device/ps2` | not filled in |
 | `0x00147430` | `AddCommand` | `Device/ps2` | 528 |
 | `0x00147940` | `Commands_Match` | `Device/ps2` | 1,456 |
+| `0x00147ef0` | `PlayerRecord_SetCommand` | `Device/ps2` | 8 |
 | `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
@@ -288,6 +289,9 @@ at the top of the repository's `README.md`.
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
 | `0x00222ef0` | `Human_HealthPercent` | `Human` | 88 |
 | `0x00223068` | `Human_PowerMax` | `Human` | 288 |
+| `0x002235f8` | `Human_CounterChance` | `Human` | 48 |
+| `0x00223628` | `Human_BlockChance` | `Human` | 160 |
+| `0x00223800` | `Human_AttackDelay` | `Human` | 192 |
 | `0x00223cb0` | `Human_IsBusy` | `Human` | 136 |
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
@@ -295,6 +299,8 @@ at the top of the repository's `README.md`.
 | `0x0022f100` | `Human_KnockDown` | `Human` | 712 |
 | `0x0022f658` | `Human_Stun` | `Human` | 640 |
 | `0x0022f8d8` | `Human_EndStun` | `Human` | 264 |
+| `0x00231090` | `AttackKind_ToCommand` | `Human` | 264 |
+| `0x00231198` | `AttackKind_ChainDelay` | `Human` | 1,016 |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x0023a5f8` | `Cfg_SetTurnRate` | `Human` | not filled in |
 | `0x0023a7a0` | `Cfg_SetTurnRates` | `Human` | not filled in |
@@ -367,6 +373,47 @@ at the top of the repository's `README.md`.
 | `0x002856b8` | `Player_UpdateMugging` | `unattributed` | 3,736 |
 | `0x00286cc8` | `Player_Square` | `unattributed` | 2,664 |
 | `0x00287a18` | `Player_Cross` | `unattributed` | 1,480 |
+| `0x0028cfe0` | `Brain_SetTarget` | `unattributed` | 432 |
+| `0x0028d190` | `Brain_PushFightGoal` | `unattributed` | 344 |
+| `0x0028d2e8` | `Brain_Fight` | `unattributed` | 112 |
+| `0x0028d538` | `Brain_AddEnemy` | `unattributed` | 360 |
+| `0x0028d758` | `Brain_PushGoal` | `unattributed` | 128 |
+| `0x0028d7d8` | `Brain_PopGoal` | `unattributed` | 200 |
+| `0x0028d910` | `Brain_ClearGoals` | `unattributed` | 80 |
+| `0x0028d960` | `Brain_FindGoal` | `unattributed` | 128 |
+| `0x0028d9f0` | `Brain_AllocAction` | `unattributed` | 112 |
+| `0x0028da60` | `Brain_PopAction` | `unattributed` | 168 |
+| `0x0028db20` | `Brain_ClearActions` | `unattributed` | 104 |
+| `0x0028de48` | `Brain_HasAttackSlot` | `unattributed` | 80 |
+| `0x0028df30` | `Brain_ClaimAttackSlot` | `unattributed` | 688 |
+| `0x0028e248` | `Brain_QueueAttack` | `unattributed` | 1,216 |
+| `0x0028e708` | `Brain_PickAttack` | `unattributed` | 1,920 |
+| `0x0028f240` | `Brain_EndReactionGoal` | `unattributed` | 112 |
+| `0x0028f2b0` | `Brain_UpdateReactionGoal` | `unattributed` | 1,040 |
+| `0x0028f6c0` | `Brain_Think` | `unattributed` | 504 |
+| `0x0028f8b8` | `Brain_Update` | `unattributed` | 112 |
+| `0x0028fbb0` | `Brain_UpdateGoals` | `unattributed` | 632 |
+| `0x0028fe28` | `Brain_RunActions` | `unattributed` | 104 |
+| `0x002911f8` | `Brain_GetAttackWeight` | `unattributed` | 32 |
+| `0x00292530` | `Brain_FlushAll` | `unattributed` | 96 |
+| `0x00293b28` | `Brains_Update` | `unattributed` | 320 |
+| `0x0029ed58` | `Goal_Start` | `unattributed` | 128 |
+| `0x0029edd8` | `Goal_End` | `unattributed` | 88 |
+| `0x0029ee30` | `Goal_Resume` | `unattributed` | 112 |
+| `0x0029eea0` | `Goal_Suspend` | `unattributed` | 56 |
+| `0x0029eed8` | `Goal_Process` | `unattributed` | 168 |
+| `0x0029f098` | `Goal_TryBlock` | `unattributed` | 408 |
+| `0x002b2b90` | `Brain_StartFight` | `unattributed` | 144 |
+| `0x002b2c20` | `FightGoal_Init` | `unattributed` | 184 |
+| `0x002b3ab0` | `FightGoal_Process` | `unattributed` | 1,512 |
+| `0x002b54d8` | `BlockGoal_Init` | `unattributed` | 72 |
+| `0x002b5520` | `BlockGoal_Start` | `unattributed` | 328 |
+| `0x002b5808` | `BlockGoal_Process` | `unattributed` | 656 |
+| `0x002fa918` | `AttackAction_Init` | `unattributed` | 144 |
+| `0x002fa9a8` | `AttackAction_Start` | `unattributed` | 904 |
+| `0x002fad30` | `AttackAction_Abort` | `unattributed` | 64 |
+| `0x002fad70` | `AttackAction_Update` | `unattributed` | 320 |
+| `0x002fcf50` | `MoveToHumanAction_Init` | `unattributed` | 160 |
 | `0x00336a00` | `QuaternionSlerp` | `unattributed` | 440 |
 | `0x00336bb8` | `VectorLerp` | `unattributed` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `unattributed` | 160 |

@@ -34,8 +34,9 @@ float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot
 
 } // namespace
 
-Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed)
-    : m_ranges(ranges), m_combat(ranges, 0, seed), m_victim(combat::kPlayerPowerClass, seed),
+Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const FighterProfile& profile)
+    : m_ranges(ranges), m_player(profile.player), m_combat(ranges, 0, seed),
+      m_health(profile.health > 0 ? profile.health : kPlayerHealth), m_victim(profile.powerClass, seed),
       m_grabbedRandom(seed + 1U) {}
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
@@ -55,11 +56,11 @@ float Fighter::reachOf(int animId) const {
     return far > 0.0F ? far : kDefaultStrikeReach;
 }
 
-TargetHuman* Fighter::inFront(const FighterInput& input, float range, bool grounded) const {
-    TargetHuman* best = nullptr;
+Combatant* Fighter::inFront(const FighterInput& input, float range, bool grounded) const {
+    Combatant* best = nullptr;
     float bestDistance = range;
     const anim::Vec3 ahead = facing(input.heading);
-    for (TargetHuman* target : input.targets) {
+    for (Combatant* target : input.targets) {
         const bool fightable =
             target->state() == TargetState::Standing || (grounded && target->state() == TargetState::Grounded);
         if (!fightable) {
@@ -75,16 +76,16 @@ TargetHuman* Fighter::inFront(const FighterInput& input, float range, bool groun
     return best;
 }
 
-TargetHuman* Fighter::pickTarget(const FighterInput& input, float range) {
+Combatant* Fighter::pickTarget(const FighterInput& input, float range) {
     // The heading searched along: the stick's when it is pushed, else the facing. The stick is in the facing frame,
     // its angle positive to the right, and headings grow to the left.
     const float along =
         input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees) : input.heading;
     // The nearest standing target within `reach` (and `cone` degrees of the heading, when given).
-    const auto nearest = [&](float reach, float cone) -> TargetHuman* {
-        TargetHuman* best = nullptr;
+    const auto nearest = [&](float reach, float cone) -> Combatant* {
+        Combatant* best = nullptr;
         float bestDistance = reach;
-        for (TargetHuman* target : input.targets) {
+        for (Combatant* target : input.targets) {
             if (target->state() != TargetState::Standing || target->health().depleted() ||
                 std::fabs(target->position().z - input.position.z) > kPickHeight) {
                 continue;
@@ -101,13 +102,13 @@ TargetHuman* Fighter::pickTarget(const FighterInput& input, float range) {
     };
     // **Coney choice**: the third pass (humans × 0.7 within 135°) never finds one the second (× 0.9 at any angle)
     // missed, so it is left out.
-    if (TargetHuman* found = nearest(range * kPickConeScale, kPickConeDegrees); found != nullptr) {
+    if (Combatant* found = nearest(range * kPickConeScale, kPickConeDegrees); found != nullptr) {
         return found;
     }
     return nearest(range * kPickAnyScale, 0.0F);
 }
 
-const TargetHuman* Fighter::lockTarget() const {
+const Combatant* Fighter::lockTarget() const {
     return combat::lockedOn(combat::combatTuning(), m_target != nullptr, m_l1Held) ? m_target : nullptr;
 }
 
@@ -222,7 +223,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         return in;
     }
     // Square's target, and for circle the nearest target in its search.
-    const TargetHuman* front = inFront(input, reachOf(id::kAttackS1), true);
+    const Combatant* front = inFront(input, reachOf(id::kAttackS1), true);
     in.target = front != nullptr && front->state() == TargetState::Grounded ? combat::TargetKind::Grounded
                                                                             : combat::TargetKind::None;
     m_candidate = nullptr;
@@ -231,14 +232,16 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
             input.command == combat::command::kCircleHeld ? combat::GrabKind::Tackle : combat::GrabKind::Grab;
         const float range = m_ranges != nullptr ? combat::grabSearchRange(*m_ranges, kind, tuning.grabSearchScale)
                                                 : (kind == combat::GrabKind::Tackle ? 3.75F : 3.12F);
+        // Only a passive target can be held (Combatant::passive()); a human is not a candidate.
         std::vector<combat::TargetCandidate> candidates;
         candidates.reserve(input.targets.size());
-        for (const TargetHuman* target : input.targets) {
-            candidates.push_back(combat::TargetCandidate{target->position(), target->state() == TargetState::Standing &&
-                                                                                 !target->health().depleted()});
+        for (Combatant* target : input.targets) {
+            candidates.push_back(combat::TargetCandidate{
+                target->position(), target->passive() != nullptr && target->state() == TargetState::Standing &&
+                                        !target->health().depleted()});
         }
         const std::size_t found = combat::nearestTarget(input.position, candidates, range);
-        m_candidate = found != combat::kNoTarget ? input.targets[found] : nullptr;
+        m_candidate = found != combat::kNoTarget ? input.targets[found]->passive() : nullptr;
     }
     in.grabTargetInReach = m_candidate != nullptr;
     // The record's +0x08: the bits the clips playing hold (an attack's phases, the grab bit, the duck's).
@@ -343,6 +346,11 @@ void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
 
 void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading) {
     const auto clip = clips::one(clips::clipOf(animId));
+    // The start announces the attack to the humans around (event 0x10, `0x0021d5c0`); each one's brain decides
+    // whether its range and field of view take it in. **Coney choice**: it goes to everyone this human can fight.
+    for (Combatant* other : input.targets) {
+        other->announceAttack(input.position);
+    }
     const HeldFlags held = isMovingAttack(animId) ? clips::kMovingAttackHolds : clips::kAttackHolds;
     // Mounted on a tackled victim, the strike returns to the mount.
     if (m_combat.mode() == combat::CombatMode::Tackling) {
@@ -369,7 +377,7 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
 void Fighter::steer(int animId, const FighterInput& input, float& heading) {
     m_slideUpdates = 0;
     const float far = reachOf(animId);
-    TargetHuman* target = pickTarget(input, far);
+    Combatant* target = pickTarget(input, far);
     if (target == nullptr) {
         return;
     }
@@ -401,7 +409,7 @@ void Fighter::steer(int animId, const FighterInput& input, float& heading) {
 
 void Fighter::landHit(int animId, int damage, const FighterInput& input) {
     // The victim: the thrown one for a throw, the held one for a move in a hold, else whoever stands in reach.
-    TargetHuman* victim = nullptr;
+    Combatant* victim = nullptr;
     bool heldMove = false;
     if (m_thrown != nullptr && clips::isThrow(animId)) {
         victim = m_thrown;
@@ -417,20 +425,20 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
         return;
     }
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clips::clipOf(animId)) : nullptr;
-    // A move in a hold plays its own victim clips; a free hit picks the victim's reaction. The player's hits ignore
-    // hit armour (the attacker is a player).
+    // A move in a hold plays its own victim clips; a free hit picks the victim's reaction. A player's hits ignore
+    // hit armour.
     victim->hit(IncomingHit{.damage = damage,
                             .attackAnim = animId,
                             .code = range != nullptr ? range->kind : 0,
                             .flags = range != nullptr ? range->flags : std::uint16_t{0},
                             .attacker = input.position,
                             .react = !heldMove,
-                            .ignoresArmour = true,
+                            .ignoresArmour = m_player,
                             .attackerFlag200000 = false});
     ++m_hitsLanded;
     m_damageDealt += damage;
-    // The hit earns its rage (the target never blocks, so never the blocked award), then goes into the repeat
-    // tracker; a throw takes the bonus its grab strikes built.
+    // The hit earns its rage (**Coney choice**: never the blocked award, as a blocked hit is not reported back to the
+    // attacker), then goes into the repeat tracker; a throw takes the bonus its grab strikes built.
     combat::awardHitRage(m_combat.rage(), animId, false, combat::combatTuning(), input.nowMs, m_repeat,
                          clips::isThrow(animId));
     m_repeat.note(animId, input.nowMs);

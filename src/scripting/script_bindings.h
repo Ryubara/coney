@@ -84,7 +84,8 @@ struct BindingInfo {
 
 /// The arguments stub bindings received, by binding name, for configuration that later subsystems will need
 /// (`CfgObj`, `CfgChar`, ...): kept untyped until the research describes the arguments. Numbers and strings are kept;
-/// a table argument is kept as nil.
+/// a table argument is kept as a fresh table of its numbers at keys 1, 2, ... up to the first that is not a number (a
+/// list, such as `CfgChar`'s damage and attack tables); anything else as nil.
 class RecordedCalls {
   public:
     /// Keeps one call of `binding` with `args`.

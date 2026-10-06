@@ -128,7 +128,7 @@ Fight runFight(const Yard& yard, const char* label, const std::string& name, std
     coney::human::TargetHuman target(yard.character->anims(), coney::human::AnimSlots::player(),
                                      coney::anim::referenceRotations(), point.health, point.position,
                                      point.headingDegrees * std::numbers::pi_v<float> / 180.0F);
-    const std::array<coney::human::TargetHuman*, 1> targets{&target};
+    const std::array<coney::human::Combatant*, 1> targets{&target};
     Fight fight;
     fight.hash = 0xcbf29ce484222325ULL;
     for (std::uint64_t frame = 0; frame < frames; ++frame) {

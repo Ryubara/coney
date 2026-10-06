@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -14,6 +15,7 @@
 #include "combat/anim_ranges.h"
 #include "combat/commands.h"
 #include "human/climb.h"
+#include "human/combatant.h"
 #include "human/fighter.h"
 #include "human/human_animator.h"
 #include "human/locomotion.h"
@@ -23,7 +25,7 @@
 #include "human/victim.h"
 #include "raycast/collision_mesh.h"
 
-// A human driven through its per-player record, which a pad (the player) or later a brain writes: its locomotion,
+// A human driven through its per-player record, which a pad (the player) or a brain writes: its locomotion,
 // sprint and stamina, jump and climbs, its fighting (Fighter), its standing on and falling from the level's collision
 // mesh, and its animation, stepped at the characters' fixed 30 Hz in the original's three passes (animation, state
 // update, actions; human/humans.h runs them across every human). Platform-neutral and deterministic: no clock, no
@@ -42,12 +44,19 @@ struct HumanInput {
     bool actionPressed = false; ///< Triangle went down this update (command 10): a climb, an action or a jump.
     combat::CommandId command = combat::command::kNone; ///< This update's command (combat::CommandMatcher).
     std::uint16_t buttons = 0;                          ///< The held buttons (the block reads R1).
-    std::span<TargetHuman* const> targets;              ///< The humans that can be fought (the sandbox's targets).
+    std::span<Combatant* const> targets;                ///< The humans that can be fought.
+};
+
+/// A brain's move (brain `+0x110`, `+0x114`): the heading and speed the locomotion follows in place of the stick for a
+/// human a brain drives (docs/research/ai.md#moving).
+struct BrainMove {
+    float heading = 0.0F; ///< Radians, 0 facing +y.
+    float speed = 0.0F;   ///< m/s; 0 stands.
 };
 
 /// A human's per-player record (`0x00660f50 + i × 0x2c`, docs/research/ai.md#brain): what drives it each update. A
-/// pad writes it for the player (human::Player); a brain will write the command and the stick for an AI human, as a
-/// pad would (docs/research/tasks.md#humans-update). The human reads nothing else of its input.
+/// pad writes it for the player (human::Player); a brain writes the command and the stick for an AI human, as a pad
+/// would (docs/research/tasks.md#humans-update). The human reads nothing else of its input.
 struct PlayerRecord {
     float stickX = 0.0F;        ///< Left stick, -1 (left) to 1 (right).
     float stickY = 0.0F;        ///< Left stick, -1 (down) to 1 (up).
@@ -56,6 +65,9 @@ struct PlayerRecord {
     bool actionPressed = false; ///< Triangle pressed this update.
     combat::CommandId command = combat::command::kNone; ///< The command (`+0x20`).
     std::uint16_t buttons = 0;                          ///< The held buttons.
+    /// The brain's move, which replaces the stick while set. **Coney choice**: kept beside the record, as Coney's
+    /// locomotion reads only the record; the original keeps it in the brain.
+    std::optional<BrainMove> move;
 };
 
 /// The record part of `input`.
@@ -74,8 +86,9 @@ enum class Traversal : std::uint8_t {
 /// A short lower-case name for `traversal` ("none", "falling", "jumping", ...), for summaries and the debug menus.
 [[nodiscard]] const char* traversalName(Traversal traversal);
 
-/// The pad-driven human: position (the feet), heading, velocity, ground and air state, stamina, and its animation.
-class Human {
+/// A human: position (the feet), heading, velocity, ground and air state, stamina, its fighting and its animation,
+/// driven by its record. Another human fights it as a Combatant.
+class Human final : public Combatant {
   public:
     /// Gravity while airborne, m/s² (1.6 g), and the fastest fall, m/s.
     static constexpr float kGravity = 15.68F;
@@ -115,6 +128,11 @@ class Human {
           const combat::AnimRangeList* ranges = nullptr, std::span<const std::int16_t> classDamage = {},
           int damagePercent = 0);
 
+    /// Makes it fight as `profile` says (a player, or a human no player controls with its class's power class and
+    /// health), from now and at every spawn(); its fighting starts afresh. A human is a player until told otherwise.
+    void setFighterProfile(const FighterProfile& profile);
+    [[nodiscard]] const FighterProfile& fighterProfile() const { return m_profile; }
+
     /// Places the human at `position` (the feet, game axes) facing `headingDegrees` (0 faces +y), snapped to the
     /// ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m above; 0.01 above the hit. Stamina is full
     /// again and anything in progress (a jump, a climb) is dropped.
@@ -141,14 +159,19 @@ class Human {
     void updateState(const raycast::CollisionMesh* mesh);
     /// The third pass, the actions: stamina and the sprint, combat's dispatcher from the record's command (against
     /// `targets`), triangle's climb or jump, the lean and the animation state.
-    void updateActions(std::span<TargetHuman* const> targets, const raycast::CollisionMesh* mesh);
+    void updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
 
     /// The pose to draw now.
     [[nodiscard]] anim::Pose pose() const { return m_animator.pose(m_bindRotations); }
 
-    [[nodiscard]] anim::Vec3 position() const { return m_position; }
+    [[nodiscard]] anim::Vec3 position() const override { return m_position; }
     /// Radians, 0 facing +y, anticlockwise from above.
-    [[nodiscard]] float heading() const { return m_heading; }
+    [[nodiscard]] float heading() const override { return m_heading; }
+    /// How it lies, for an attacker: grounded while knocked down or out of health, held while in a grab, else
+    /// standing.
+    [[nodiscard]] TargetState state() const override;
+    /// Its health (record `+0x144`).
+    [[nodiscard]] const combat::Health& health() const override { return m_fighter.health(); }
     [[nodiscard]] anim::Vec3 velocity() const { return m_velocity; }
     /// The horizontal speed.
     [[nodiscard]] float speed() const;
@@ -189,13 +212,19 @@ class Human {
     /// for none.
     [[nodiscard]] const combat::AnimRangeList* ranges() const { return m_ranges; }
 
-    // Being attacked: the entry points another human (a future AI attacker) and the tests use. Each is acted on at the
-    // human's next step (docs/research/combat.md#being-hit-runtime).
+    // Being attacked: the entry points another human and the tests use. Each is acted on at the human's next step
+    // (docs/research/combat.md#being-hit-runtime).
 
     /// A hit on the human (Fighter::takeHit()): the update keeps its largest.
     void takeHit(const IncomingHit& hit) { m_fighter.takeHit(hit); }
+    /// Combatant's name for takeHit().
+    void hit(const IncomingHit& hit) override { m_fighter.takeHit(hit); }
     /// An attacker's clip warns the human of its hit (Fighter::warn()): a blocking human ducks or blocks early.
-    void warn(const AttackNotice& notice) { m_fighter.warn(notice); }
+    void warn(const AttackNotice& notice) override { m_fighter.warn(notice); }
+    /// Keeps where an attack started near it (event `0x10`) for its brain, which counts them (brain `+0x200`).
+    void announceAttack(anim::Vec3 attacker) override { m_announced.push_back(attacker); }
+    /// Where the attacks announced since the last call started, and forgets them (its brain takes them each update).
+    [[nodiscard]] std::vector<anim::Vec3> takeAttackAnnouncements() { return std::exchange(m_announced, {}); }
     /// Another human's grab catches this one (Fighter::catchInGrab()).
     void catchInGrab(const GrabCatch& grab) { m_fighter.catchInGrab(grab); }
     /// The grabber's numbers this update, while held (Fighter::updateGrabber()).
@@ -255,9 +284,14 @@ class Human {
     // combat-walk clip of the stick's angle from the facing; with the velocity `gated`, it only faces the target and
     // the clip playing goes on.
     // @orig 0x00241b90 Human_FightStanceMove (unknown)
-    void combatWalk(const TargetHuman& target, bool gated);
+    void combatWalk(const Combatant& target, bool gated);
     // Combat's update from the record: the stick turned into the facing frame, the game time, the targets.
-    void fight(std::span<TargetHuman* const> targets);
+    void fight(std::span<Combatant* const> targets);
+    // The attacker's side of a warning: an event 0x24 or 0x26 of the clip playing that this step's animation passed
+    // (since `beforeTime` of `before`, which played `beforeId`, when it is still the clip) tells the fighter's target,
+    // when it stands within twice the anim's reach.
+    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    void sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
     void updateMeters(bool sprintHeld);
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
@@ -281,8 +315,10 @@ class Human {
     HumanAnimator m_animator;
     std::unique_ptr<combat::AnimRangeList> m_ownRanges; // the list with the class's damage, when it has one
     const combat::AnimRangeList* m_ranges;
+    FighterProfile m_profile;
     Fighter m_fighter;
-    std::uint64_t m_updates = 0; // updates stepped: combat's game time
+    std::vector<anim::Vec3> m_announced; // attacks announced since the brain last looked (event 0x10)
+    std::uint64_t m_updates = 0;         // updates stepped: combat's game time
     std::array<anim::Quat, anim::kPoseBones> m_bindRotations{};
     float m_scale = 1.0F;
     anim::Vec3 m_position;
@@ -290,6 +326,7 @@ class Human {
     anim::Vec3 m_velocity; // z is the vertical speed (+0x3a0)
     StickIntent m_intent;
     float m_lastMagnitude = 0.0F;
+    std::optional<float> m_moveSpeed; // a brain's move speed this update, in place of the stick's target speed
     TurnState m_turn;
     bool m_airborne = false;
     bool m_outOfWorld = false;

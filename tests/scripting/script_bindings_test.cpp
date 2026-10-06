@@ -219,13 +219,22 @@ TEST_CASE("stubs return their defaults; recording stubs keep their arguments; st
     CHECK(secondHandle == firstHandle + 1.0);
     CHECK(h.first("SceneIsPreloaded", {Value(firstHandle)}).isNil());
     CHECK(h.call("SetLight").empty());
-    h.call("CfgObj", {str("object"), Value(2.0), Value(std::make_shared<coney::script::Table>())});
+    // A list of numbers is kept as a copy of its numbers, up to the first that is not one.
+    auto list = std::make_shared<coney::script::Table>();
+    REQUIRE(list->set(Value(1.0), Value(10.0)).has_value());
+    REQUIRE(list->set(Value(2.0), Value(30.0)).has_value());
+    REQUIRE(list->set(Value(4.0), Value(50.0)).has_value());
+    h.call("CfgObj", {str("object"), Value(2.0), Value(list)});
     REQUIRE(h.recorded.count("CfgObj") == 1);
     const std::vector<Value>& kept = h.recorded.calls("CfgObj")[0];
     REQUIRE(kept.size() == 3);
     CHECK(kept[0].string() == "object");
     CHECK(kept[1].number() == 2.0);
-    CHECK(kept[2].isNil()); // a table is not kept
+    REQUIRE(kept[2].table() != nullptr);
+    CHECK(kept[2].table() != list); // a copy, not the script's table
+    CHECK(kept[2].table()->get(Value(1.0)).number() == 10.0);
+    CHECK(kept[2].table()->get(Value(2.0)).number() == 30.0);
+    CHECK(kept[2].table()->get(Value(4.0)).isNil());
     h.call("CfgHUDMessage", {Value(0x76), str("PRESS THE START BUTTON")});
     CHECK(h.strings.get(0x76) == "PRESS THE START BUTTON");
 }

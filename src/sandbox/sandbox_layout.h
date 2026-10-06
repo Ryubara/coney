@@ -96,6 +96,17 @@ struct TargetPoint {
 /// The most targets one layout may place.
 inline constexpr std::size_t kMaxTargets = 16;
 
+/// An AI human that fights the player (ai::AiHumans): a sparring Warrior's brain, placed only by a sandbox layout; it
+/// takes the player on when he comes within its melee range.
+struct FighterPoint {
+    std::string name;
+    anim::Vec3 position;         ///< Its feet.
+    float headingDegrees = 0.0F; ///< 0 faces +y.
+};
+
+/// The most fighters one layout may place.
+inline constexpr std::size_t kMaxFighters = 8;
+
 /// A named camera viewpoint for the free camera: the camera's position and where it looks.
 struct Viewpoint {
     std::string name;
@@ -124,9 +135,10 @@ struct SandboxLayout {
     std::string title; ///< From the `title` line; empty without one.
     std::vector<TextureRef> textures;
     std::vector<Primitive> primitives;
-    std::vector<SpawnPoint> spawns;   ///< At least one: a layout without a `spawn` line gets one at the origin.
-    std::vector<TargetPoint> targets; ///< The `target` lines: humans to fight (play mode only).
-    std::vector<Viewpoint> views;     ///< At least one: without a `view` line, one behind the first spawn.
+    std::vector<SpawnPoint> spawns;     ///< At least one: a layout without a `spawn` line gets one at the origin.
+    std::vector<TargetPoint> targets;   ///< The `target` lines: humans to fight (play mode only).
+    std::vector<FighterPoint> fighters; ///< The `fighter` lines: AI humans that fight back (play mode only).
+    std::vector<Viewpoint> views;       ///< At least one: without a `view` line, one behind the first spawn.
     Lighting lighting;
     float tessellation = 1.0F; ///< Largest edge, metres, of the drawn faces (finer faces carry finer lighting).
 };

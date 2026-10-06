@@ -630,9 +630,26 @@ void RecordedCalls::add(std::string_view binding, std::span<const Value> args) {
     std::vector<Value> kept;
     kept.reserve(args.size());
     for (const Value& arg : args) {
-        // Keep plain values only: a table could hold the state alive and is not configuration data.
-        const bool plain = arg.type() == Value::Type::Number || arg.type() == Value::Type::String;
-        kept.push_back(plain ? arg : Value());
+        // Numbers and strings as they are; a table as a fresh list of its numbers at 1, 2, ... (a table of the
+        // state could hold it alive, and only such lists are configuration data: `CfgChar`'s damage and attack
+        // tables); anything else as nil.
+        if (arg.type() == Value::Type::Number || arg.type() == Value::Type::String) {
+            kept.push_back(arg);
+        } else if (const std::shared_ptr<Table>& table = arg.table(); table != nullptr) {
+            auto list = std::make_shared<Table>();
+            for (double key = 1.0;; key += 1.0) {
+                const std::optional<double> number = table->get(Value(key)).number();
+                if (!number.has_value()) {
+                    break;
+                }
+                // A number key and a number value cannot fail.
+                const bool stored = list->set(Value(key), Value(*number)).has_value();
+                CONEY_ASSERT(stored);
+            }
+            kept.emplace_back(std::move(list));
+        } else {
+            kept.emplace_back();
+        }
     }
     auto found = m_calls.find(binding);
     if (found == m_calls.end()) {

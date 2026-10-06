@@ -123,6 +123,8 @@ void PlayerCombat::startHolding() {
 }
 
 bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
+    // A block starts only on R1 held on a pad (the record's buttons): an AI's command 4 alone never starts one
+    // (docs/research/ai.md#block).
     const bool r1 = m_mode == CombatMode::Free && input.inFight && (input.buttons & pad::kR1) != 0;
     const bool keep =
         m_blocking && ((input.command == command::kL1R1 && !m_rage.full()) || input.command == command::kL1Released);

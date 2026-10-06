@@ -279,7 +279,7 @@ class Parser {
         if (keyword == "texture") {
             return texture(line, rest);
         }
-        if (keyword == "spawn" || keyword == "view" || keyword == "target") {
+        if (keyword == "spawn" || keyword == "view" || keyword == "target" || keyword == "fighter") {
             return place(line, keyword, rest);
         }
         if (keyword == "occlusion" || keyword == "shadows") {
@@ -355,8 +355,8 @@ class Parser {
         return {};
     }
 
-    // `spawn NAME at=X,Y,Z [heading=DEG]`, `target NAME at=X,Y,Z [heading=DEG] [health=N]` and
-    // `view NAME at=X,Y,Z [yaw=DEG] [pitch=DEG]`.
+    // `spawn NAME at=X,Y,Z [heading=DEG]`, `target NAME at=X,Y,Z [heading=DEG] [health=N]`,
+    // `fighter NAME at=X,Y,Z [heading=DEG]` and `view NAME at=X,Y,Z [yaw=DEG] [pitch=DEG]`.
     std::expected<void, Error> place(std::size_t line, std::string_view keyword,
                                      std::span<const std::string_view> words) {
         if (words.empty() || words.front().find('=') != std::string_view::npos) {
@@ -389,6 +389,16 @@ class Parser {
             CONEY_TAKE(health, args->whole("health", 1, 30000, 600));
             target.health = static_cast<int>(health);
             m_layout.targets.push_back(target);
+        } else if (keyword == "fighter") {
+            if (std::ranges::any_of(m_layout.fighters, [&name](const FighterPoint& f) { return f.name == name; })) {
+                return lineError(line, std::format("fighter {} given twice", name));
+            }
+            if (m_layout.fighters.size() >= kMaxFighters) {
+                return lineError(line, std::format("at most {} fighters", kMaxFighters));
+            }
+            FighterPoint fighter{.name = name, .position = at, .headingDegrees = 0.0F};
+            CONEY_TAKE(fighter.headingDegrees, args->number("heading", -360.0F, 360.0F, 0.0F));
+            m_layout.fighters.push_back(fighter);
         } else {
             if (std::ranges::any_of(m_layout.views, [&name](const Viewpoint& v) { return v.name == name; })) {
                 return lineError(line, std::format("view {} given twice", name));

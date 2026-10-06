@@ -16,6 +16,14 @@ struct PowerClass {
     int stunMs = 200;              ///< `+0x30`: a stun's length.
     int groundMs = 2750;           ///< `+0x34`: how long a knockdown keeps it down.
     int struggleDivisor = 3;       ///< Byte `+0x36`: the grab struggle's divisor.
+    // What only an AI reads (docs/research/ai.md#block, docs/research/ai.md#attack-action). The attack delay's factors
+    // are Rembrandt's as read at runtime; the three chances are **Coney choices** until the disc's are read (the
+    // configuration's `CfgPowerClass`, ai::AiConfig).
+    float blockChance = 0.5F;           ///< `+0x08`: the chance to block, times the base chance to block.
+    float hurtBlockChance = 0.25F;      ///< `+0x0c`: the same while hurt.
+    float attackDelayFactor = 3.0F;     ///< `+0x1c`: `CfgAttackDelay`'s factor.
+    float attackDelayDownFactor = 3.0F; ///< `+0x20`: the same against a downed target.
+    float counterChance = 0.1F;         ///< `+0x24`, 0-1: the chance, each update of a block, to press R1.
 };
 
 /// The player's class (64, Rembrandt in the street).
@@ -27,6 +35,11 @@ inline constexpr PowerClass kCivilianPowerClass{.powerMax = 200,
                                                 .hurtPowerFactor = 0.55F,
                                                 .stunMs = 750,
                                                 .groundMs = 2000,
-                                                .struggleDivisor = 4};
+                                                .struggleDivisor = 4,
+                                                .blockChance = 0.5F,
+                                                .hurtBlockChance = 0.25F,
+                                                .attackDelayFactor = 3.0F,
+                                                .attackDelayDownFactor = 3.0F,
+                                                .counterChance = 0.1F};
 
 } // namespace coney::combat

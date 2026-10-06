@@ -33,6 +33,9 @@ void addPlayerPage(DebugSession& session);
 void addCameraPage(DebugSession& session);
 /// The Spawner page: sandbox objects put in front of the player, and clearing them.
 void addSpawnerPage(DebugSession& session);
+/// The AI fighters page: spawn a fighter in front of the player, clear them, switch their engaging on or off, and watch
+/// them. Over PlayControls.
+void addFightersPage(DebugSession& session);
 /// The Debug draw page: the lines of DebugDrawOptions.
 void addDebugDrawPage(DebugSession& session);
 /// Fills `page` with the tunables of `category`: each as a toggle or a number with its default, then a reset. The

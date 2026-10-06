@@ -70,7 +70,7 @@ TEST_CASE("every page of a session opens and every item on it is well formed", "
     const auto root = session.model().root();
     CHECK(session.model().pageTitles() == std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console",
                                                                    "Cheats", "Levels", "Player", "Camera", "Spawner",
-                                                                   "Debug draw", "Display", "Input"});
+                                                                   "AI fighters", "Debug draw", "Display", "Input"});
     for (const MenuItem& top : root->items()) {
         checkWellFormed(top);
         const auto page = top.open();

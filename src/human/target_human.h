@@ -11,6 +11,7 @@
 #include "combat/meters.h"
 #include "combat/power_class.h"
 #include "combat/stick.h"
+#include "human/combatant.h"
 #include "human/human_animator.h"
 #include "human/victim.h"
 
@@ -23,14 +24,6 @@
 // Guide: docs/guides/sandbox.md
 
 namespace coney::human {
-
-/// How the target lies: what the player's moves can do to it.
-enum class TargetState : std::uint8_t {
-    Standing, ///< On its feet: strikes, grabs and tackles reach it.
-    Held,     ///< In the player's grab or under a tackle's intro.
-    Mounted,  ///< Tackled to the ground with the player on it.
-    Grounded, ///< On the ground after a throw or a knockdown, or knocked out at 0 health.
-};
 
 /// What drawing a target needs from one step.
 struct TargetSnapshot {
@@ -46,7 +39,7 @@ struct TargetSnapshot {
 using TargetHit = IncomingHit;
 
 /// A passive target human.
-class TargetHuman {
+class TargetHuman final : public Combatant {
   public:
     /// A target playing `anims` (which must outlive it) through `slots`, bones its clips leave out taking
     /// `defaultRotations` (the game's reference pose, anim::referenceRotations()), with `health` of `health` (at least
@@ -63,7 +56,11 @@ class TargetHuman {
     void step();
 
     /// A hit this update; the update keeps its largest (combat::PendingDamage).
-    void hit(const TargetHit& hit);
+    void hit(const TargetHit& hit) override;
+    /// A warning does nothing: the target never blocks.
+    void warn(const AttackNotice& /*notice*/) override {}
+    /// The target itself: it can be grabbed and tackled.
+    [[nodiscard]] TargetHuman* passive() override { return this; }
     /// Plays the victim's `clips`, then `loop`, in `state` (AnimState::Attack returns to the idle afterwards,
     /// AnimState::Hold keeps the loop), and takes `targetState`; a stun ends.
     void play(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, TargetState targetState);
@@ -82,10 +79,10 @@ class TargetHuman {
     /// Turns it to face `point`.
     void face(anim::Vec3 point);
 
-    [[nodiscard]] anim::Vec3 position() const { return m_position; }
-    [[nodiscard]] float heading() const { return m_heading; }
-    [[nodiscard]] const combat::Health& health() const { return m_health; }
-    [[nodiscard]] TargetState state() const { return m_state; }
+    [[nodiscard]] anim::Vec3 position() const override { return m_position; }
+    [[nodiscard]] float heading() const override { return m_heading; }
+    [[nodiscard]] const combat::Health& health() const override { return m_health; }
+    [[nodiscard]] TargetState state() const override { return m_state; }
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
     /// Its power class: the street civilian's (combat::kCivilianPowerClass).
     [[nodiscard]] const combat::PowerClass& powerClass() const { return m_victim.powerClass(); }

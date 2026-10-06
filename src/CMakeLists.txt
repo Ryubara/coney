@@ -123,6 +123,18 @@ target_sources(coney_core PRIVATE
     human/stamina.cpp
     human/target_human.cpp
     human/victim.cpp)
+# The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai.md).
+target_sources(coney_core PRIVATE
+    ai/ai_config.cpp
+    ai/ai_humans.cpp
+    ai/attack_action.cpp
+    ai/attack_kinds.cpp
+    ai/block_goal.cpp
+    ai/brain.cpp
+    ai/brains.cpp
+    ai/fight_goal.cpp
+    ai/move_to_human_action.cpp
+    ai/reaction_goals.cpp)
 # Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat.md).
 target_sources(coney_core PRIVATE
     combat/anim_ranges.cpp

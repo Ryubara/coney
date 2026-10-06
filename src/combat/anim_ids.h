@@ -11,6 +11,7 @@ inline constexpr int kNone = -1; ///< No anim.
 
 inline constexpr int kRunningAttackCharge = 0; ///< L2 + cross at a run or a sprint.
 inline constexpr int kRunningAttackDive = 1;   ///< L2 + square at a run or a sprint.
+inline constexpr int kTackleMiss = 2;          ///< `TACKLE_MISS`.
 inline constexpr int kTackleIntro = 3;         ///< The tackle's range record.
 inline constexpr int kTacklePlayerIntro = 4;   ///< A tackle starts.
 
@@ -33,6 +34,7 @@ inline constexpr int kGrabComboStrike2 = 53;
 inline constexpr int kGrabComboStrike3 = 55;
 inline constexpr int kGrabPower1Strike1 = 57; ///< The power strike.
 inline constexpr int kGrabPower2Strike1 = 63; ///< The power strike in rage.
+inline constexpr int kGrabMiss = 69;          ///< `GRAB_MISS`.
 inline constexpr int kGrabIntro = 70;         ///< The grab's range record.
 inline constexpr int kGrabPlayerIntro = 71;   ///< A grab starts.
 inline constexpr int kGrabSpinToRear = 78;    ///< The spin from a front hold to a rear one (victim 79).

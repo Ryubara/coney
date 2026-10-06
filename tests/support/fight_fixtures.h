@@ -146,7 +146,7 @@ class Fight {
     std::unique_ptr<raycast::CollisionMesh> m_mesh;
     coney::human::Human m_human;
     std::unique_ptr<coney::human::TargetHuman> m_target;
-    std::vector<coney::human::TargetHuman*> m_targets;
+    std::vector<coney::human::Combatant*> m_targets;
     combat::CommandTables m_tables = combat::CommandTables::street();
     combat::CommandMatcher m_matcher;
     std::uint16_t m_lastButtons = 0;

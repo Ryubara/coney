@@ -963,6 +963,49 @@ The state is not a quick-save slot; it is made once and named by the scenarios' 
 3. Save while the scene plays ([Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)), and put the patched
    words back before using it as a source.
 
+## Coney's implementation {#coney}
+
+Steps 3-7 of [What an implementer needs](#implementer) are in `repo:src/ai/`, each original function tagged with
+`@orig` in the code; tests in `repo:tests/ai/`.
+
+- **Brains** (`Brains`, `Brain`): a type from the class's behaviour byte, a think one step in five staggered by slot,
+  an update every step at the brains' place in the characters' step (`Humans::setBrains`), so before every
+  dispatcher. The player has a type-0 brain that only keeps his enemies, which feed `Player::setNearestEnemy`.
+- **Goals and actions**: a stack of 10 (Start, Process, End, Resume; Stop, Again, Done) and a circular queue of 8
+  (a delay, Start, Update, an Abort that can refuse); goals start or resume only on an empty queue.
+- **Fighting**: `FightGoal`, the weighted pick, `Brain_QueueAttack`'s chains timed by the chain clip's first event,
+  `AttackAction` (the command once in Start, the delay halved when the target targets the attacker or the brain is
+  type 3, then a wait on `0x5c0221f`), `MoveToHumanAction` (a heading and speed in the record's `move`, no stick).
+- **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
+  which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
+  (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the
+  counter on every update of the block time (`BlockGoal::counterRoll`: the roll, then `counterTest`, a grab's or a
+  tackle's intro on a target aiming at the human) and writes command 3 on success; extends the block while the
+  target still attacks, which stops the rolls and queues a punishing attack in the block's last second.
+- **Reactions**: grabbing, tackling, grabbed, knocked down and stunned, one update after the state.
+- **Configuration** (`aiConfigFrom`): the class's `CfgChar`, power class 40's `CfgPowerClass`, `CfgAttackDelay` and
+  `CfgBaseChanceToBlock` from the scripts' recorded calls. Without the disc the reference values stand in: power
+  class 40's AI fields (block 0.2, 0.1 hurt, delay factors 20, counter 0.08), base block chance 60, the
+  `config_preload2` delays, `Att_Normal`.
+- **Play**: `fighter` lines in sandbox layouts ([Sandbox](../guides/sandbox.md#ai-fighters)), fighters in
+  `--play-level`, and the debug menu's *AI fighters* page.
+
+**Coney choices.** A fighter is class 58 (brain type 2, 1400 health) with the sparring Warriors' runtime brain values (4
+attack slots, melee 3 / 5 m, sight 30 m, field of view 1.92 rad), drawn and animated as the player's character; sides
+stand in for gangs and an "engaging" toggle for the script's `GoalFight` (an idle fighter takes the player on within its
+far melee range). A target is in reach within 0.9 × its first attack's far range; a move runs beyond 4 m, lasts 1000 or
+2000 ms (2000 beyond twice the reach) and stops at 0.9 × the reach. The pacing timer resets only after an attack; with
+nothing else to do a fighter stands still. The target's `+0x1ec` takes the kind's unscaled `CfgAttackDelay`, whether or
+not either human is busy. Command `0x11` chains as square. A reaction goal clears the actions and the move. A block ends
+when its target is not on its feet (Coney has no state word); the counter test leaves out the face-to-face and class
+gates. Each brain's generator is seeded by its slot. A think only counts (the types' think handlers are not traced).
+
+**Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired
+moves) is not built, and neither are grabs and tackles between two humans that would call for it; the pattern read
+at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; line of sight; path
+following and steering; step 8 (scripted goals, gangs, tactics, follow slots); the attack's steer, the post-block
+pause and the run-stop.
+
 ## Open questions {#open-questions}
 
 - The per-kind time `0x00231590` that sets the target's `+0x1ec`, and the spacing bytes `+0x14a`, `+0x14b`.

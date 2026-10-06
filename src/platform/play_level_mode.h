@@ -12,6 +12,8 @@
 #include <string_view>
 #include <vector>
 
+#include "ai/ai_config.h"
+#include "ai/ai_humans.h"
 #include "animation/anim_math.h"
 #include "core/error.h"
 #include "core/interpolation.h"
@@ -47,6 +49,9 @@ struct PlayerSetup {
     /// Whether the start is snapped to the ground as `HuCreate` does; false for a start a `TeleportToFlag` gave, which
     /// does not snap (docs/research/flags.md#position).
     bool snapToGround = true;
+    /// What the AI fighters are (ai::aiConfigFrom() of the scripts' configuration calls); the research's reference
+    /// values by default.
+    ai::AiConfig ai;
 };
 
 /// What a play run has done so far: counts and the player's state, for the summary line.
@@ -68,9 +73,11 @@ struct PlayStats {
 /// scenery, where the original draws its objects (docs/guides/conventions.md#update-and-render). Game time only, so
 /// with `--frames` and `--input-script` a run is the same every time, and the simulation is the same at any frame rate.
 ///
-/// No level script, objects or other characters yet, but for a sandbox layout's `target` lines: Coney's passive targets
-/// (human::TargetHuman) to fight, stepped after the player and drawn with the player's model. The parts follow
-/// docs/research/characters.md, docs/research/combat.md and docs/research/camera.md; the mode is Coney's own glue.
+/// No level script or objects yet. Other characters are a sandbox layout's `target` lines, Coney's passive targets
+/// (human::TargetHuman) stepped after the player, and AI fighters (ai::AiHumans: a layout's `fighter` lines, or spawned
+/// from the debug menus), humans with a brain stepped in the player's characters' step; both are drawn with the
+/// player's model. The parts follow docs/research/characters.md, docs/research/combat.md, docs/research/ai.md and
+/// docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// It is also the debug menus' way into the game (debug::PlayControls, docs/guides/debug-menu.md): the Player, Camera
 /// and Spawner pages act on it between steps, and render() draws the Debug draw page's lines into the scene.
@@ -95,7 +102,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// when unset), with the character loaded from `wad`. Fails as the scenery and the character loader do.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
     createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox::SandboxWorld world,
-                    const std::optional<std::string>& spawn, std::function<void(std::string_view)> print);
+                    const std::optional<std::string>& spawn, std::function<void(std::string_view)> print,
+                    const ai::AiConfig& ai = {});
 
     ~PlayLevelMode() override;
     PlayLevelMode(const PlayLevelMode&) = delete;
@@ -116,6 +124,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const human::Player& player() const { return *m_player; }
     /// The sandbox's targets (none in a level).
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
+    /// The AI fighters.
+    [[nodiscard]] const ai::AiHumans& fighters() const { return *m_ai; }
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
@@ -144,6 +154,13 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::expected<void, Error> spawn(const sandbox::Primitive& primitive) override;
     [[nodiscard]] std::size_t spawnedCount() const override { return m_spawned.size(); }
     std::expected<void, Error> clearSpawned() override;
+    [[nodiscard]] bool canSpawnFighter() const override { return true; }
+    std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees) override;
+    [[nodiscard]] std::size_t fighterCount() const override { return m_ai->count(); }
+    void clearFighters() override;
+    [[nodiscard]] bool fightersEngage() const override { return m_ai->engaging(); }
+    void setFightersEngage(bool on) override { m_ai->setEngaging(on); }
+    [[nodiscard]] std::string fightersState() const override;
 
     /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play; no ground snap.
     void teleportPlayer(const world_objects::Placement& placement) override;
@@ -153,7 +170,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
   private:
     PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> scenery,
                   std::unique_ptr<human::PlayerCharacter> character, std::vector<TextureDictionary> dictionaries,
-                  std::function<void(std::string_view)> print, std::string model, bool snapStart);
+                  std::function<void(std::string_view)> print, std::string model, bool snapStart,
+                  const ai::AiConfig& ai);
 
     // The character and its texture from `wad`, then the mode round `scenery`: what both create functions share.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
@@ -168,6 +186,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
               std::vector<anim::Vec3>& normals) const;
     // Makes the layout's targets, dropped onto the ground, with a mesh each.
     void makeTargets(rw::Texture* texture);
+    // Spawns a fighter dropped onto the ground below `spot`, with its mesh.
+    void addFighter(anim::Vec3 spot, float headingDegrees);
     // Draws the character: its lights, the render states, the atomic.
     void drawCharacter() const;
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
@@ -204,7 +224,17 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     };
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
-    std::string m_model; // the Character List model the player is
+    std::vector<human::Combatant*> m_combatants; // the targets, as the player's step takes them
+    // The AI fighters, and a mesh each (in the fighters' order).
+    std::unique_ptr<ai::AiHumans> m_ai;
+    struct FighterMesh {
+        std::unique_ptr<CharacterMesh> mesh;
+        std::vector<anim::Vec3> positions;
+        std::vector<anim::Vec3> normals;
+    };
+    std::vector<FighterMesh> m_fighterMeshes;
+    rw::Texture* m_texture = nullptr; // the character's texture, for new meshes
+    std::string m_model;              // the Character List model the player is
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;

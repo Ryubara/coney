@@ -96,6 +96,25 @@ class PlayControls {
     [[nodiscard]] virtual std::size_t spawnedCount() const = 0;
     /// Removes every spawned object.
     virtual std::expected<void, Error> clearSpawned() = 0;
+
+    // AI fighters (ai::AiHumans): humans with a brain that fight the player. A mode without them keeps the defaults.
+
+    /// Whether AI fighters can be spawned here.
+    [[nodiscard]] virtual bool canSpawnFighter() const { return false; }
+    /// Spawns an AI fighter with its feet at `feet` (dropped onto the ground) facing `headingDegrees`. Fails with
+    /// ErrorCode::InvalidArgument where none can be spawned.
+    virtual std::expected<void, Error> spawnFighter(anim::Vec3 /*feet*/, float /*headingDegrees*/) {
+        return std::unexpected(Error{ErrorCode::InvalidArgument, "no AI fighters here"});
+    }
+    /// AI fighters in the scene.
+    [[nodiscard]] virtual std::size_t fighterCount() const { return 0; }
+    /// Removes every AI fighter.
+    virtual void clearFighters() {}
+    /// Whether an idle fighter takes the player on when he comes within its melee range (ai::AiHumans::engaging()).
+    [[nodiscard]] virtual bool fightersEngage() const { return false; }
+    virtual void setFightersEngage(bool /*on*/) {}
+    /// One line on the fighters: each one's health, top goal and front action, and the player's health.
+    [[nodiscard]] virtual std::string fightersState() const { return "-"; }
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from

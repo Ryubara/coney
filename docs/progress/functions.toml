@@ -328,6 +328,12 @@ subsystem = "Device/ps2"
 size = 1456
 
 [[function]]
+address = 0x00147ef0
+name = "PlayerRecord_SetCommand"
+subsystem = "Device/ps2"
+size = 8
+
+[[function]]
 address = 0x00148aa0
 name = "PS2StreamFileSys::Open"
 subsystem = "Device/ps2"
@@ -1102,6 +1108,24 @@ subsystem = "Human"
 size = 288
 
 [[function]]
+address = 0x002235f8
+name = "Human_CounterChance"
+subsystem = "Human"
+size = 48
+
+[[function]]
+address = 0x00223628
+name = "Human_BlockChance"
+subsystem = "Human"
+size = 160
+
+[[function]]
+address = 0x00223800
+name = "Human_AttackDelay"
+subsystem = "Human"
+size = 192
+
+[[function]]
 address = 0x00223cb0
 name = "Human_IsBusy"
 subsystem = "Human"
@@ -1141,6 +1165,18 @@ address = 0x0022f8d8
 name = "Human_EndStun"
 subsystem = "Human"
 size = 264
+
+[[function]]
+address = 0x00231090
+name = "AttackKind_ToCommand"
+subsystem = "Human"
+size = 264
+
+[[function]]
+address = 0x00231198
+name = "AttackKind_ChainDelay"
+subsystem = "Human"
+size = 1016
 
 [[function]]
 address = 0x00233d60
@@ -1509,6 +1545,252 @@ address = 0x00287a18
 name = "Player_Cross"
 subsystem = "unattributed"
 size = 1480
+
+[[function]]
+address = 0x0028cfe0
+name = "Brain_SetTarget"
+subsystem = "unattributed"
+size = 432
+
+[[function]]
+address = 0x0028d190
+name = "Brain_PushFightGoal"
+subsystem = "unattributed"
+size = 344
+
+[[function]]
+address = 0x0028d2e8
+name = "Brain_Fight"
+subsystem = "unattributed"
+size = 112
+
+[[function]]
+address = 0x0028d538
+name = "Brain_AddEnemy"
+subsystem = "unattributed"
+size = 360
+
+[[function]]
+address = 0x0028d758
+name = "Brain_PushGoal"
+subsystem = "unattributed"
+size = 128
+
+[[function]]
+address = 0x0028d7d8
+name = "Brain_PopGoal"
+subsystem = "unattributed"
+size = 200
+
+[[function]]
+address = 0x0028d910
+name = "Brain_ClearGoals"
+subsystem = "unattributed"
+size = 80
+
+[[function]]
+address = 0x0028d960
+name = "Brain_FindGoal"
+subsystem = "unattributed"
+size = 128
+
+[[function]]
+address = 0x0028d9f0
+name = "Brain_AllocAction"
+subsystem = "unattributed"
+size = 112
+
+[[function]]
+address = 0x0028da60
+name = "Brain_PopAction"
+subsystem = "unattributed"
+size = 168
+
+[[function]]
+address = 0x0028db20
+name = "Brain_ClearActions"
+subsystem = "unattributed"
+size = 104
+
+[[function]]
+address = 0x0028de48
+name = "Brain_HasAttackSlot"
+subsystem = "unattributed"
+size = 80
+
+[[function]]
+address = 0x0028df30
+name = "Brain_ClaimAttackSlot"
+subsystem = "unattributed"
+size = 688
+
+[[function]]
+address = 0x0028e248
+name = "Brain_QueueAttack"
+subsystem = "unattributed"
+size = 1216
+
+[[function]]
+address = 0x0028e708
+name = "Brain_PickAttack"
+subsystem = "unattributed"
+size = 1920
+
+[[function]]
+address = 0x0028f240
+name = "Brain_EndReactionGoal"
+subsystem = "unattributed"
+size = 112
+
+[[function]]
+address = 0x0028f2b0
+name = "Brain_UpdateReactionGoal"
+subsystem = "unattributed"
+size = 1040
+
+[[function]]
+address = 0x0028f6c0
+name = "Brain_Think"
+subsystem = "unattributed"
+size = 504
+
+[[function]]
+address = 0x0028f8b8
+name = "Brain_Update"
+subsystem = "unattributed"
+size = 112
+
+[[function]]
+address = 0x0028fbb0
+name = "Brain_UpdateGoals"
+subsystem = "unattributed"
+size = 632
+
+[[function]]
+address = 0x0028fe28
+name = "Brain_RunActions"
+subsystem = "unattributed"
+size = 104
+
+[[function]]
+address = 0x002911f8
+name = "Brain_GetAttackWeight"
+subsystem = "unattributed"
+size = 32
+
+[[function]]
+address = 0x00292530
+name = "Brain_FlushAll"
+subsystem = "unattributed"
+size = 96
+
+[[function]]
+address = 0x00293b28
+name = "Brains_Update"
+subsystem = "unattributed"
+size = 320
+
+[[function]]
+address = 0x0029ed58
+name = "Goal_Start"
+subsystem = "unattributed"
+size = 128
+
+[[function]]
+address = 0x0029edd8
+name = "Goal_End"
+subsystem = "unattributed"
+size = 88
+
+[[function]]
+address = 0x0029ee30
+name = "Goal_Resume"
+subsystem = "unattributed"
+size = 112
+
+[[function]]
+address = 0x0029eea0
+name = "Goal_Suspend"
+subsystem = "unattributed"
+size = 56
+
+[[function]]
+address = 0x0029eed8
+name = "Goal_Process"
+subsystem = "unattributed"
+size = 168
+
+[[function]]
+address = 0x0029f098
+name = "Goal_TryBlock"
+subsystem = "unattributed"
+size = 408
+
+[[function]]
+address = 0x002b2b90
+name = "Brain_StartFight"
+subsystem = "unattributed"
+size = 144
+
+[[function]]
+address = 0x002b2c20
+name = "FightGoal_Init"
+subsystem = "unattributed"
+size = 184
+
+[[function]]
+address = 0x002b3ab0
+name = "FightGoal_Process"
+subsystem = "unattributed"
+size = 1512
+
+[[function]]
+address = 0x002b54d8
+name = "BlockGoal_Init"
+subsystem = "unattributed"
+size = 72
+
+[[function]]
+address = 0x002b5520
+name = "BlockGoal_Start"
+subsystem = "unattributed"
+size = 328
+
+[[function]]
+address = 0x002b5808
+name = "BlockGoal_Process"
+subsystem = "unattributed"
+size = 656
+
+[[function]]
+address = 0x002fa918
+name = "AttackAction_Init"
+subsystem = "unattributed"
+size = 144
+
+[[function]]
+address = 0x002fa9a8
+name = "AttackAction_Start"
+subsystem = "unattributed"
+size = 904
+
+[[function]]
+address = 0x002fad30
+name = "AttackAction_Abort"
+subsystem = "unattributed"
+size = 64
+
+[[function]]
+address = 0x002fad70
+name = "AttackAction_Update"
+subsystem = "unattributed"
+size = 320
+
+[[function]]
+address = 0x002fcf50
+name = "MoveToHumanAction_Init"
+subsystem = "unattributed"
+size = 160
 
 [[function]]
 address = 0x00336a00

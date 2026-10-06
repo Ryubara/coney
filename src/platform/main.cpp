@@ -23,6 +23,7 @@
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_main.h>
 
+#include "ai/ai_config.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/frame_clock.h"
@@ -275,8 +276,9 @@ coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::str
 }
 
 // Runs level `name`'s scripts alone, as the story would reach it at `checkpoint`
-// (docs/guides/building.md#playing-a-level), and prints what they made: the start and counts only.
-coney::LevelStart scriptStartFor(const coney::io::Wad& wad, std::string_view name, int checkpoint) {
+// (docs/guides/building.md#playing-a-level), and prints what they made: the start and counts only. The run's
+// configuration calls stay in its recorded calls (the AI fighters' configuration).
+coney::LevelScriptRun scriptRunFor(const coney::io::Wad& wad, std::string_view name, int checkpoint) {
     std::vector<std::uint32_t> table;
     const coney::LevelScriptRun run = coney::runLevelScriptAlone(coney::script::wadScriptSource(wad), name, checkpoint,
                                                                  printText, levelScriptOptions(wad, name, table));
@@ -295,7 +297,26 @@ coney::LevelStart scriptStartFor(const coney::io::Wad& wad, std::string_view nam
                               "script errors, {} skipped calls\n",
                               name, checkpoint, run.humans, run.flags, run.scriptErrors, run.skippedCalls));
     }
-    return run.start;
+    return run;
+}
+
+// Player 1's setup for a level run alone: his model and snap, and the AI fighters' configuration from the run.
+coney::platform::PlayerSetup playerSetupOf(const coney::LevelScriptRun& run) {
+    coney::platform::PlayerSetup setup = playerSetupOf(run.start);
+    setup.ai = coney::ai::aiConfigFrom(run.recorded);
+    return setup;
+}
+
+// The AI fighters' configuration for a sandbox: **Coney's choice**, level99's (the combat training level whose
+// fighters the sandbox's stand in for, docs/research/ai.md#level99), from its scripts run alone and quietly.
+coney::ai::AiConfig sandboxAiConfig(const coney::io::Wad& wad) {
+    std::vector<std::uint32_t> table;
+    const coney::LevelScriptRun run = coney::runLevelScriptAlone(
+        coney::script::wadScriptSource(wad), "level99", 1, [](std::string_view /*line*/) {},
+        levelScriptOptions(wad, "level99", table));
+    coney::ai::AiConfig config = coney::ai::aiConfigFrom(run.recorded);
+    printText(std::format("fighters: level99's configuration ({} calls read)\n", config.callsRead));
+    return config;
 }
 
 } // namespace
@@ -496,14 +517,14 @@ int main(int argc, char** argv) {
             coney::fail(coney::ErrorCode::NotFound, "no level");
         if (const std::optional<std::string> layout = coney::sandboxOfPlayLevel(*playName); layout) {
             auto world = loadSandbox(*options, *layout);
-            playMode = world ? coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world),
-                                                                               options->spawn, printText)
+            playMode = world ? coney::platform::PlayLevelMode::createInSandbox(
+                                   renderer, *wad, std::move(*world), options->spawn, printText, sandboxAiConfig(*wad))
                              : std::unexpected(std::move(world.error()));
         } else {
             // The level's script says where player 1 starts at the checkpoint, as when the story reaches it.
-            const coney::LevelStart start = scriptStartFor(*wad, *playName, options->checkpoint.value_or(1));
+            const coney::LevelScriptRun run = scriptRunFor(*wad, *playName, options->checkpoint.value_or(1));
             playMode = coney::platform::PlayLevelMode::create(renderer, *wad, *playName, sectorBudget, printText,
-                                                              playerStartOf(start), playerSetupOf(start));
+                                                              playerStartOf(run.start), playerSetupOf(run));
         }
         if (!playMode) {
             std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), playMode.error().message.c_str());
@@ -538,10 +559,15 @@ int main(int argc, char** argv) {
         // Gameplay (mode 1) loads the chosen level as the play mode, with player 1 where the level script made him.
         const coney::io::Wad& gameWad = *wad;
         coney::GameplayMode::LevelLoader loadLevel =
-            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw](
+            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw, &startUp](
                 const coney::LevelStart& start) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+            // The fighters as the flow's scripts configured them.
+            coney::platform::PlayerSetup setup = playerSetupOf(start);
+            if (startUp) {
+                setup.ai = coney::ai::aiConfigFrom(startUp->recorded());
+            }
             auto mode = coney::platform::PlayLevelMode::create(renderer, gameWad, start.level, sectorBudget, printText,
-                                                               playerStartOf(start), playerSetupOf(start));
+                                                               playerStartOf(start), setup);
             if (!mode) {
                 return std::unexpected(std::move(mode.error()));
             }
@@ -677,7 +703,7 @@ int main(int argc, char** argv) {
         }
         if (wad) {
             auto mode = coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world), std::nullopt,
-                                                                        printText);
+                                                                        printText, sandboxAiConfig(*wad));
             if (!mode) {
                 debugSession.print("levels: " + mode.error().message);
                 return;
@@ -722,9 +748,9 @@ int main(int argc, char** argv) {
         }
         playLevel.reset();
         sandboxViewer.reset();
-        const coney::LevelStart start = scriptStartFor(*wad, name, 1);
+        const coney::LevelScriptRun run = scriptRunFor(*wad, name, 1);
         auto mode = coney::platform::PlayLevelMode::create(renderer, *wad, name, sectorBudget, printText,
-                                                           playerStartOf(start), playerSetupOf(start));
+                                                           playerStartOf(run.start), playerSetupOf(run));
         if (!mode) {
             debugSession.print(std::format("levels: {}: {}", name, mode.error().message));
             return;

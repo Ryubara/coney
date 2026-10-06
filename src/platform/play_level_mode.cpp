@@ -123,12 +123,15 @@ PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox::SandboxWorld world,
-                               const std::optional<std::string>& spawn, std::function<void(std::string_view)> print) {
+                               const std::optional<std::string>& spawn, std::function<void(std::string_view)> print,
+                               const ai::AiConfig& ai) {
     auto scenery = SandboxPlayScenery::create(engine, std::move(world), spawn);
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
     }
-    return createWith(engine, wad, std::move(*scenery), std::move(print));
+    PlayerSetup setup;
+    setup.ai = ai;
+    return createWith(engine, wad, std::move(*scenery), std::move(print), setup);
 }
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
@@ -170,13 +173,13 @@ PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_
                       speeds.run, speeds.sprint));
     return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, std::move(scenery), std::move(*character),
                                                             std::move(*dictionaries), std::move(print),
-                                                            std::move(model), setup.snapToGround));
+                                                            std::move(model), setup.snapToGround, setup.ai));
 }
 
 PlayLevelMode::PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> scenery,
                              std::unique_ptr<human::PlayerCharacter> character,
                              std::vector<TextureDictionary> dictionaries, std::function<void(std::string_view)> print,
-                             std::string model, bool snapStart)
+                             std::string model, bool snapStart, const ai::AiConfig& ai)
     : m_engine(engine), m_scenery(std::move(scenery)), m_character(std::move(character)),
       m_dictionaries(std::move(dictionaries)),
       // A start with no snap is spawned without the mesh; the first update's ground snap then settles the feet.
@@ -191,14 +194,26 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, std::unique_ptr<PlayScenery> 
         const std::vector<rw::Texture*> textures = m_dictionaries.front().textures();
         texture = textures.empty() ? nullptr : textures.front();
     }
+    m_texture = texture;
     m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture);
     m_lights = std::make_unique<CharacterLights>(kCharacterAmbient, kCharacterDirectional,
                                                  directionToRenderWare(m_scenery->lightDirection()));
     makeTargets(texture);
+    // The AI fighters, in the player's step, and the layout's.
+    m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, ai);
+    for (const sandbox::FighterPoint& point : m_scenery->fighters()) {
+        addFighter(point.position, point.headingDegrees);
+    }
+    if (m_ai->count() > 0) {
+        m_print(std::format("fighters: {} from the layout ({} configuration calls read)\n", m_ai->count(),
+                            m_ai->config().callsRead));
+    }
 }
 
 PlayLevelMode::~PlayLevelMode() {
     m_lights.reset();
+    m_ai.reset(); // out of the player's step before he goes
+    m_fighterMeshes.clear();
     m_targets.clear(); // their meshes too hold the texture
     m_mesh.reset();    // before the dictionaries, whose texture it holds
 }
@@ -223,11 +238,53 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
         target.positions.resize(vertices);
         target.normals.resize(vertices);
         m_targetPointers.push_back(target.human.get());
+        m_combatants.push_back(target.human.get());
         m_targets.push_back(std::move(target));
     }
     if (!m_targets.empty()) {
         m_print(std::format("targets: {} from the layout\n", m_targets.size()));
     }
+}
+
+void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees) {
+    // Dropped onto the ground below its spot, as a teleport is.
+    raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
+    if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
+        feet.z = spot.z;
+    }
+    m_ai->spawnFighter(&m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+    const std::size_t vertices = m_character->assets().model.vertices.size();
+    FighterMesh mesh;
+    mesh.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture);
+    mesh.positions.resize(vertices);
+    mesh.normals.resize(vertices);
+    m_fighterMeshes.push_back(std::move(mesh));
+}
+
+std::expected<void, Error> PlayLevelMode::spawnFighter(anim::Vec3 feet, float headingDegrees) {
+    addFighter(feet, headingDegrees);
+    return {};
+}
+
+void PlayLevelMode::clearFighters() {
+    m_ai->clear();
+    m_fighterMeshes.clear();
+}
+
+std::string PlayLevelMode::fightersState() const {
+    // The player's health, then each fighter's health, top goal and queued actions.
+    std::string line = std::format("player health {}", m_player->human().health().value());
+    const ai::Brains& brains = m_ai->brains();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        const ai::Brain& brain = brains.at(i);
+        if (brain.type() == ai::BrainType::Player) {
+            continue;
+        }
+        const ai::Goal* top = brain.reactionGoal() != nullptr ? brain.reactionGoal() : brain.topGoal();
+        line += std::format("; health {} goal {:#x} actions {}", brain.human().health().value(),
+                            top != nullptr ? static_cast<int>(top->type()) : 0, brain.actionCount());
+    }
+    return line;
 }
 
 WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot, float drawDistance) const {
@@ -307,6 +364,9 @@ void PlayLevelMode::drawCharacter() const {
     for (const Target& target : m_targets) {
         target.mesh->atomic()->render();
     }
+    for (const FighterMesh& fighter : m_fighterMeshes) {
+        fighter.mesh->atomic()->render();
+    }
 }
 
 ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
@@ -324,10 +384,11 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
 
     // The characters' update, then the cameras' (human::Player keeps that order).
     const anim::Vec3 before = m_player->human().position();
-    m_player->update(playerPad, &m_scenery->collision(), m_targetPointers);
+    m_player->update(playerPad, &m_scenery->collision(), m_combatants);
     for (Target& target : m_targets) {
         target.human->step();
     }
+    m_ai->capture();
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
     if (m_trace) {
@@ -367,6 +428,14 @@ void PlayLevelMode::render(const RenderTime& time) {
                 human::interpolate(target.human->previous(), target.human->current(), time.alpha);
             skin(pose.pose, pose.feet, pose.heading, 0.0F, target.positions, target.normals);
             target.mesh->update(target.positions, target.normals);
+        }
+        const std::vector<ai::AiHuman>& fighters = m_ai->humans();
+        for (std::size_t i = 0; i < fighters.size() && i < m_fighterMeshes.size(); ++i) {
+            const human::TargetSnapshot pose =
+                human::interpolate(fighters[i].previous, fighters[i].current, time.alpha);
+            FighterMesh& mesh = m_fighterMeshes[i];
+            skin(pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
+            mesh.mesh->update(mesh.positions, mesh.normals);
         }
     }
     // The scenery draws itself through the blended view, with the character and the debug lines among its objects.
@@ -523,8 +592,22 @@ std::string PlayLevelMode::summary() const {
     const human::Human& human = m_player->human();
     const anim::Vec3 p = human.position();
     const anim::Vec3 c = m_player->camera().position();
-    // The fight's counts, with targets to fight.
+    // The fight's counts, with fighters or targets to fight.
     std::string fight;
+    if (m_ai->count() > 0) {
+        int damage = 0;
+        int blocked = 0;
+        int reactions = 0;
+        for (const ai::AiHuman& entry : m_ai->humans()) {
+            const human::Fighter& fighter = entry.human->fighter();
+            damage += fighter.damageDealt();
+            blocked += fighter.hitsBlocked() + fighter.hitsDucked();
+            reactions += fighter.victim().reactions();
+        }
+        fight +=
+            std::format("; fighters {}: damage {} blocked {} reactions {}, player hits {} health {}", m_ai->count(),
+                        damage, blocked, reactions, human.fighter().hitsLanded(), human.health().value());
+    }
     if (!m_targets.empty()) {
         const human::Fighter& fighter = human.fighter();
         int health = 0;
@@ -537,10 +620,10 @@ std::string PlayLevelMode::summary() const {
             stuns += target.human->stuns();
             knockdowns += target.human->knockdowns();
         }
-        fight = std::format("; fight: hits {} damage {} power {} rage {}, targets {} health {} reactions {} stuns {} "
-                            "knockdowns {}",
-                            fighter.hitsLanded(), fighter.damageDealt(), fighter.combat().power().value(),
-                            fighter.combat().rage().value(), m_targets.size(), health, reactions, stuns, knockdowns);
+        fight += std::format("; fight: hits {} damage {} power {} rage {}, targets {} health {} reactions {} stuns {} "
+                             "knockdowns {}",
+                             fighter.hitsLanded(), fighter.damageDealt(), fighter.combat().power().value(),
+                             fighter.combat().rage().value(), m_targets.size(), health, reactions, stuns, knockdowns);
     }
     return std::format(
         "play: {} frames, player at ({:.2f}, {:.2f}, {:.2f}) heading {:.1f} speed {:.2f} gait {} clip {} "

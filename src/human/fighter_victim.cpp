@@ -15,8 +15,8 @@
 
 // The fighter's victim side: the player hit (a duck, a block, the health floor, the hit armour, the reaction, the stun,
 // the ground and the mash), warned by an attacker's clip, and held in another human's grab (the counter at the
-// catch, the struggle, the strike back, the escape and the reversal). Nothing in Coney attacks the player yet: these
-// are the entry points a future AI attacker and the tests use (Fighter::takeHit(), warn(), catchInGrab()).
+// catch, the struggle, the strike back, the escape and the reversal). Another human's strikes and warnings reach it
+// through Human (a Combatant); the tests use the same entry points (Fighter::takeHit(), warn(), catchInGrab()).
 // Research: docs/research/combat.md#damage, docs/research/combat.md#block, docs/research/combat.md#grabbed,
 // docs/research/combat.md#being-hit-runtime
 
@@ -32,8 +32,8 @@ constexpr float kThirdHitPower = 0.6F;
 } // namespace
 
 VictimFrame Fighter::frame(const FighterInput& input) const {
-    // The player has human flag 0x400: combo hits keep their strength on it.
-    return VictimFrame{.position = input.position, .heading = input.heading, .hurt = hurt(), .flag400 = true};
+    // A player has human flag 0x400: combo hits keep their strength on it.
+    return VictimFrame{.position = input.position, .heading = input.heading, .hurt = hurt(), .flag400 = m_player};
 }
 
 bool Fighter::helpless(const HumanAnimator& animator) const {
@@ -93,8 +93,10 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         }
         m_combat.interrupt();
     }
-    // 3. The damage, the attacker's as it is, held at the health floor.
-    const int damage = combat::flooredDamage(m_health.value(), m_health.maximum(), hit.damage, tuning.healthFloor);
+    // 3. The damage, the attacker's as it is, held at a player's health floor.
+    const int damage = m_player
+                           ? combat::flooredDamage(m_health.value(), m_health.maximum(), hit.damage, tuning.healthFloor)
+                           : hit.damage;
     m_health.apply(damage);
     ++m_hitsTaken;
     // 4. A grabber hit by a third human loses power.
@@ -119,13 +121,17 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     if (!hit.react || grabbed() || mode != combat::CombatMode::Free) {
         return;
     }
+    // With reactions off (an AI's block goal, docs/research/ai.md#block) the hit only takes health.
+    if (m_hitReactionsOff) {
+        return;
+    }
     // On the ground a strike gets the ground's reaction.
     if (m_victim.grounded()) {
         animator.playCombat(clips::one(clips::kGroundedStrikeReact), clips::kGroundedIdle, AnimState::Hold);
         return;
     }
-    // 6. The hit armour: winding up or in the chain window, the player's attack goes on with no reaction.
-    if (combat::hitArmourHolds(animator.flags(), hit.attackAnim, hit.ignoresArmour)) {
+    // 6. A player's hit armour: winding up or in the chain window, its attack goes on with no reaction.
+    if (m_player && combat::hitArmourHolds(animator.flags(), hit.attackAnim, hit.ignoresArmour)) {
         ++m_hitsArmoured;
         return;
     }
@@ -308,7 +314,7 @@ bool Fighter::duckCounter(const FighterInput& input, HumanAnimator& animator) {
         std::optional<anim::Vec3> target;
         if (std::hypot(m_duckAttacker.x - input.position.x, m_duckAttacker.y - input.position.y) <= reach) {
             target = m_duckAttacker;
-        } else if (const TargetHuman* found = pickTarget(input, reach); found != nullptr) {
+        } else if (const Combatant* found = pickTarget(input, reach); found != nullptr) {
             target = found->position();
         }
         if (target.has_value()) {

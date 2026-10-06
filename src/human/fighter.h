@@ -13,7 +13,9 @@
 #include "combat/grabbed.h"
 #include "combat/meters.h"
 #include "combat/player_combat.h"
+#include "combat/power_class.h"
 #include "combat/rage_awards.h"
+#include "human/combatant.h"
 #include "human/human_animator.h"
 #include "human/locomotion.h"
 #include "human/target_human.h"
@@ -70,19 +72,22 @@ struct FighterInput {
     combat::Stick stick;                                ///< The camera-turned stick in the facing frame.
     combat::Stick padStick;                             ///< The stick as the pad reads it (the minigames').
     Gait gait = Gait::Standing;
-    anim::Vec3 position;                   ///< The player's feet.
-    float heading = 0.0F;                  ///< The player's heading, radians.
-    std::uint64_t nowMs = 0;               ///< Game time, whole milliseconds.
-    std::span<TargetHuman* const> targets; ///< The humans that can be fought.
+    anim::Vec3 position;                 ///< The player's feet.
+    float heading = 0.0F;                ///< The player's heading, radians.
+    std::uint64_t nowMs = 0;             ///< Game time, whole milliseconds.
+    std::span<Combatant* const> targets; ///< The humans that can be fought.
 };
 
-/// What an attacker's clip tells the player before its hit (combat::warningBetween() finds it in the attacker's
-/// clip; the attacker sends it when the player is within twice the attack's reach).
-struct AttackNotice {
-    combat::AttackWarning warning = combat::AttackWarning::Duck;
-    int attackAnim = -1; ///< The attacker's anim id.
-    int code = 0;        ///< The attack's hit code (for an early block reaction).
-    anim::Vec3 attacker; ///< Where the attacker's feet are.
+/// What kind of fighter a human is: the rules that differ between a player and a human no player controls.
+struct FighterProfile {
+    /// A player (human `+0x1b0` not -1): its hits ignore the victim's hit armour; as a victim it has the human flags
+    /// `0x400` (combo hits keep their strength) and `0x20000000000` (the health floor), and its own hit armour while it
+    /// winds up. **Coney choice**: a human no player controls has none of those flags (its flags are not researched).
+    bool player = true;
+    /// Its power class (the player's, class 64, unless given).
+    combat::PowerClass powerClass = combat::kPlayerPowerClass;
+    /// Its health's maximum (record `+0x146`).
+    int health = 0;
 };
 
 /// A grab another human has caught the player in, at the end of its intro (docs/research/combat.md#grabbed).
@@ -107,9 +112,9 @@ struct GrabbedReport {
 /// The player's combat, played through its animator.
 class Fighter {
   public:
-    /// A fighter whose damage comes from `ranges` (may be null: no damage), coin flips seeded with `seed`, with the
-    /// player's power class and kPlayerHealth.
-    explicit Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed = 1);
+    /// A fighter whose damage comes from `ranges` (may be null: no damage), coin flips seeded with `seed`, of `profile`
+    /// (the player's power class and kPlayerHealth by default; a profile's health of 0 takes kPlayerHealth).
+    explicit Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed = 1, const FighterProfile& profile = {});
 
     /// One update: the hits, warnings and grab taken since the last update (the victim's side), the timers of a
     /// reaction, then a grab's alignment turns and its pair's moments (the connect, the snap at a clip's end), then
@@ -141,16 +146,19 @@ class Fighter {
     [[nodiscard]] anim::Vec3 takeSlide();
     /// The target human the search would pick for an attack of `range` metres (null for none).
     /// @orig 0x0027a6c0 Player_PickTarget (unknown)
-    [[nodiscard]] static TargetHuman* pickTarget(const FighterInput& input, float range);
+    [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range);
     /// Hits that reached a target, and the damage they did.
     [[nodiscard]] int hitsLanded() const { return m_hitsLanded; }
     [[nodiscard]] int damageDealt() const { return m_damageDealt; }
 
     /// The target kept (human `+0xc8`); null when none.
-    [[nodiscard]] const TargetHuman* target() const { return m_target; }
+    [[nodiscard]] const Combatant* target() const { return m_target; }
+    [[nodiscard]] Combatant* target() { return m_target; }
     /// The target the fight stance is locked onto (combat::lockedOn()): it has one and the lock-on settings lock; null
     /// otherwise. Locked, the human faces it every update and walks in the combat walk.
-    [[nodiscard]] const TargetHuman* lockTarget() const;
+    [[nodiscard]] const Combatant* lockTarget() const;
+    /// Whether it fights as a player (FighterProfile::player).
+    [[nodiscard]] bool player() const { return m_player; }
     /// The grabbing player's movement: with the hold standing still (no move playing) and the stick beyond
     /// CombatTuning::grabTurnStick, turns `heading` towards the stick's heading `stickHeading` + 180° (the grabber's
     /// back to the stick) by combat::grabTurnStep() and returns the pair's backward walk (m/s, world axes); zero
@@ -159,7 +167,7 @@ class Fighter {
     [[nodiscard]] anim::Vec3 moveGrab(float stickHeading, float stickMagnitude, const HumanAnimator& animator,
                                       float& heading);
 
-    // The player's victim side: the entry points another human (a future AI attacker) and the tests use.
+    // The victim side: the entry points an attacking human and the tests use.
 
     /// A hit on the player, applied at its next update (the update keeps its largest).
     void takeHit(const IncomingHit& hit) { m_victim.hit(hit); }
@@ -195,12 +203,16 @@ class Fighter {
     [[nodiscard]] int duckCounters() const { return m_duckCounters; }
     /// The repeat tracker of the player's hits.
     [[nodiscard]] const combat::RepeatTracker& repeats() const { return m_repeat; }
+    /// Whether a hit plays no reaction (human `+0xe0` bit `0x800`): the hit still takes its health, but the human's
+    /// clip goes on. The AI's block goal sets it for its first updates (docs/research/ai.md#block).
+    [[nodiscard]] bool hitReactionsOff() const { return m_hitReactionsOff; }
+    void setHitReactionsOff(bool off) { m_hitReactionsOff = off; }
 
   private:
     // --- fighter.cpp: the update, the attacks and the targets.
 
     // The nearest standing (or grounded, with `grounded`) target within `range` in front of the player.
-    [[nodiscard]] TargetHuman* inFront(const FighterInput& input, float range, bool grounded) const;
+    [[nodiscard]] Combatant* inFront(const FighterInput& input, float range, bool grounded) const;
     // The strike reach of attack `animId`.
     [[nodiscard]] float reachOf(int animId) const;
     // The dispatcher's input from the world: square's target, circle's search, the hold, and the record's +0x08.
@@ -289,12 +301,13 @@ class Fighter {
     void escapeGrab(int clip, HumanAnimator& animator);
 
     const combat::AnimRangeList* m_ranges;
+    bool m_player = true; // FighterProfile::player
     combat::PlayerCombat m_combat;
     combat::CombatOutput m_last;
     TargetHuman* m_held = nullptr;
     TargetHuman* m_thrown = nullptr;    // the victim of the throw whose hit has not landed yet
     TargetHuman* m_candidate = nullptr; // what the grab or tackle search found this update
-    TargetHuman* m_target = nullptr;    // the target kept (human +0xc8)
+    Combatant* m_target = nullptr;      // the target kept (human +0xc8)
     bool m_l1Held = false;              // L1 held this update (record +0x00 0x8)
     bool m_tacklePending = false;       // the tackle's intro plays; the victim reacts when its hit clip starts
     bool m_mugOnTarget = false;
@@ -314,7 +327,7 @@ class Fighter {
     int m_damageDealt = 0;
 
     // The victim side.
-    combat::Health m_health{kPlayerHealth};
+    combat::Health m_health;
     Victim m_victim;
     bool m_reacting = false;   // a hit's reaction (or an escape, a let-go) holds the player until it is over
     bool m_justCaught = false; // the grab caught the player this update
@@ -333,6 +346,7 @@ class Fighter {
     int m_hitsBlocked = 0;
     int m_hitsDucked = 0;
     int m_hitsArmoured = 0;
+    bool m_hitReactionsOff = false; // human +0xe0 0x800
 };
 
 } // namespace coney::human

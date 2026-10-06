@@ -5,8 +5,10 @@
 #include <cmath>
 #include <memory>
 #include <numbers>
+#include <optional>
 
 #include "animation/anim_task.h"
+#include "combat/being_hit.h"
 #include "combat/combat_tuning.h"
 #include "combat/lock_on.h"
 #include "human/body.h"
@@ -83,7 +85,8 @@ PlayerRecord recordOf(const HumanInput& input) {
                         .sprintHeld = input.sprintHeld,
                         .actionPressed = input.actionPressed,
                         .command = input.command,
-                        .buttons = input.buttons};
+                        .buttons = input.buttons,
+                        .move = std::nullopt};
 }
 
 const char* traversalName(Traversal traversal) {
@@ -110,6 +113,19 @@ Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
     : m_animator(anims, slots), m_ownRanges(classRanges(ranges, classDamage, damagePercent)),
       m_ranges(m_ownRanges != nullptr ? m_ownRanges.get() : ranges), m_fighter(m_ranges), m_scale(scale) {
     std::ranges::copy(bindRotations, m_bindRotations.begin());
+}
+
+void Human::setFighterProfile(const FighterProfile& profile) {
+    m_profile = profile;
+    m_fighter = Fighter(m_ranges, 1, m_profile);
+}
+
+TargetState Human::state() const {
+    const Victim& victim = m_fighter.victim();
+    if (m_fighter.health().depleted() || victim.grounded()) {
+        return TargetState::Grounded;
+    }
+    return m_fighter.grabbed() ? TargetState::Held : TargetState::Standing;
 }
 
 float Human::speed() const { return std::hypot(m_velocity.x, m_velocity.y); }
@@ -154,7 +170,8 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_sprinting = false;
     m_jumping = false;
     m_lean = 0.0F;
-    m_fighter = Fighter(m_ranges);
+    m_fighter = Fighter(m_ranges, 1, m_profile);
+    m_announced.clear();
     endClimb();
     if (m_animator.state() != AnimState::Idle) {
         m_animator.stopToIdle();
@@ -176,7 +193,9 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
 void Human::locomote(bool gated) {
     const Speeds& speeds = m_animator.speeds();
     const float current = speed();
-    const float target = targetSpeed(m_intent.magnitude, speeds, m_sprinting && m_stamina.value() != 0);
+    const float target = m_moveSpeed.has_value()
+                             ? *m_moveSpeed
+                             : targetSpeed(m_intent.magnitude, speeds, m_sprinting && m_stamina.value() != 0);
     const float wanted = m_intent.angle - kPi / 2.0F; // the stick's heading
     const Gait gaitNow = gaitOfSpeed(current, speeds);
     float newSpeed = approachSpeed(current, target, kStepSeconds);
@@ -397,7 +416,7 @@ void Human::holdForCombat() {
     }
 }
 
-void Human::combatWalk(const TargetHuman& target, bool gated) {
+void Human::combatWalk(const Combatant& target, bool gated) {
     // Faces the target every update.
     const anim::Vec3 to = anim::subtract(target.position(), m_position);
     if (std::hypot(to.x, to.y) > 1e-4F) {
@@ -423,7 +442,7 @@ void Human::combatWalk(const TargetHuman& target, bool gated) {
     m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
 }
 
-void Human::fight(std::span<TargetHuman* const> targets) {
+void Human::fight(std::span<Combatant* const> targets) {
     // The stick in the facing frame: x to the player's right, y ahead.
     const float relative = wrapAngle(m_intent.angle - kPi / 2.0F - m_heading);
     const combat::Stick stick{-m_intent.magnitude * std::sin(relative), m_intent.magnitude * std::cos(relative)};
@@ -595,9 +614,39 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
         return;
     }
     // The animation's step (a climb follows its clips). A climb's first clip runs during the move to the start point,
-    // as the original installs it with that move (0x0023d2b8, docs/research/characters.md#climb).
+    // as the original installs it with that move (0x0023d2b8, docs/research/characters.md#climb). The clip's warning
+    // events reach the target as they pass.
+    const anim::AnimTask* before = m_animator.tasks().top();
+    const std::uint32_t beforeId = before != nullptr ? before->animId() : 0;
+    const float beforeTime = before != nullptr ? before->time() : 0.0F;
     m_animator.advance(kStepSeconds);
     followClimb(mesh);
+    sendWarnings(before, beforeId, beforeTime);
+}
+
+void Human::sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
+    Combatant* target = m_fighter.target();
+    const anim::AnimTask* top = m_animator.tasks().top();
+    if (target == nullptr || top == nullptr || top->eventClip() == nullptr) {
+        return;
+    }
+    // From the clip's start when it began this step (or another clip took the top), else from where it was.
+    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime;
+    const auto warning = combat::warningBetween(*top->eventClip(), same ? beforeTime : -1.0F, top->time());
+    if (!warning.has_value()) {
+        return;
+    }
+    // Only a target within twice the reach of the anim playing (its Anim Range List +0x04) hears it.
+    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(top->animId()) : nullptr;
+    const float reach = range != nullptr ? range->reach : 0.0F;
+    const anim::Vec3 to = anim::subtract(target->position(), m_position);
+    if (std::hypot(to.x, to.y) > combat::kWarningReachScale * reach) {
+        return;
+    }
+    target->warn(AttackNotice{.warning = *warning,
+                              .attackAnim = static_cast<int>(top->animId()),
+                              .code = range != nullptr ? range->kind : 0,
+                              .attacker = m_position});
 }
 
 void Human::updateState(const raycast::CollisionMesh* mesh) {
@@ -605,6 +654,13 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     ++m_updates;
     m_lastMagnitude = m_intent.magnitude;
     m_intent = stickIntent(m_record.stickX, m_record.stickY, m_record.cameraForward);
+    // A brain's move replaces the stick: its heading as the stick's direction, pushed fully while it moves.
+    m_moveSpeed.reset();
+    if (m_record.move.has_value()) {
+        m_moveSpeed = std::max(0.0F, m_record.move->speed);
+        m_intent =
+            StickIntent{.angle = m_record.move->heading + kPi / 2.0F, .magnitude = *m_moveSpeed > 0.0F ? 1.0F : 0.0F};
+    }
     if (m_outOfWorld) {
         return;
     }
@@ -633,7 +689,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     } else if (const GateInput gate = gateInput(); m_fighter.holdsMovement(m_animator) || stickBusy(gate)) {
         // The stick step is skipped: combat's states, or the record's +0x08 makes the human busy.
         holdForCombat();
-    } else if (const TargetHuman* lock = m_fighter.lockTarget(); lock != nullptr) {
+    } else if (const Combatant* lock = m_fighter.lockTarget(); lock != nullptr) {
         combatWalk(*lock, stickVelocityGated(gate));
     } else {
         // Out of the lock the locomotion's clips come back.
@@ -685,7 +741,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     m_lastTurn = turn;
 }
 
-void Human::updateActions(std::span<TargetHuman* const> targets, const raycast::CollisionMesh* mesh) {
+void Human::updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
     if (m_outOfWorld) {
         return;
     }
@@ -700,10 +756,12 @@ void Human::updateActions(std::span<TargetHuman* const> targets, const raycast::
         tryActions(mesh, m_record.sprintHeld);
     }
     m_lean = leanStep(m_lean, m_lastTurn, speed(), gait());
-    m_animator.choose(AnimInputs{.speed = speed(),
-                                 .wantsMove = targetSpeed(m_intent.magnitude, speeds()) > 0.0F,
-                                 .wantsRun = m_intent.magnitude > locomotionTuning().runThreshold,
-                                 .airborne = m_airborne});
+    m_animator.choose(AnimInputs{
+        .speed = speed(),
+        .wantsMove = m_moveSpeed.has_value() ? *m_moveSpeed > 0.0F : targetSpeed(m_intent.magnitude, speeds()) > 0.0F,
+        .wantsRun = m_moveSpeed.has_value() ? *m_moveSpeed >= speeds().run
+                                            : m_intent.magnitude > locomotionTuning().runThreshold,
+        .airborne = m_airborne});
 }
 
 } // namespace coney::human

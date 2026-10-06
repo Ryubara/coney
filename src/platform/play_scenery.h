@@ -73,6 +73,8 @@ class PlayScenery {
     [[nodiscard]] virtual std::vector<debug::Place> places() const;
     /// The passive humans to fight (Coney's own sandbox targets): a sandbox layout's `target` lines; none in a level.
     [[nodiscard]] virtual std::vector<sandbox::TargetPoint> targets() const { return {}; }
+    /// The AI humans that fight the player: a sandbox layout's `fighter` lines; none in a level.
+    [[nodiscard]] virtual std::vector<sandbox::FighterPoint> fighters() const { return {}; }
     /// Whether the debug menus' Spawner can add objects (a sandbox can).
     [[nodiscard]] virtual bool canSpawn() const { return false; }
     /// Rebuilds the scenery with `extra` objects added to what it was made with (none: as made). Fails with
@@ -154,6 +156,7 @@ class SandboxPlayScenery final : public PlayScenery {
     [[nodiscard]] std::vector<debug::Place> places() const override;
     [[nodiscard]] bool canSpawn() const override { return true; }
     [[nodiscard]] std::vector<sandbox::TargetPoint> targets() const override { return m_world.layout().targets; }
+    [[nodiscard]] std::vector<sandbox::FighterPoint> fighters() const override { return m_world.layout().fighters; }
     std::expected<void, Error> setExtras(const RenderEngine& engine,
                                          const std::vector<sandbox::Primitive>& extra) override;
 

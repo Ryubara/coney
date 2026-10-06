@@ -51,7 +51,7 @@ They live in `assets/sandbox/` with the textures; that folder's README lists the
 | Name | What it has |
 | --- | --- |
 | `default` | The general movement course: a slope gallery from 10° to 60°, stair sets with rises from 10 to 40 cm, ledges from 10 cm to 3 m, platforms with gaps from 0.5 to 4 m, a room with a doorway, corridors from 0.6 to 2 m wide, a measuring strip and a person-sized capsule for scale |
-| `combat` | The fight yard: a passive target 1.5 m in front of the `start` spawn, two side by side in front of `pair`, and one with 1200 health in front of a wall at `wall`, for combos, grabs, throws, tackles and the mugging |
+| `combat` | The fight yard: a passive target 1.5 m in front of the `start` spawn, two side by side in front of `pair`, and one with 1200 health in front of a wall at `wall`, for combos, grabs, throws, tackles and the mugging; and an AI fighter 3 m beyond the `brawl` spawn |
 | `parkour` | The traversal course: fences from 0.6 to 3 m, kerbs and low walls from 0.2 to 1.65 m, climb blocks from 1 to 3.5 m, a raised run of platforms with gaps from 1 to 8 m, drop towers from 2 to 14 m with stairs up, jump-up blocks from 0.5 to 2 m, and a 120 m run-up lane with a mark every metre and a post every 5 m. The fences, walls and blocks sit on both sides of each climb threshold (0.69, 1.7, 2.5 and 2.91 m); its spawns `lane`, `fences`, `walls`, `climbs`, `gaps`, `towers` and `blocks` each start in front of one |
 
 The values from the research that the courses are built round (all from
@@ -136,6 +136,7 @@ stairs at=0,8,0 width=2.5 steps=10 rise=0.2 run=0.3
 | `tessellate` | `edge=` | The longest drawn edge; finer faces carry finer lighting |
 | `spawn NAME` | `at=x,y,z heading=` | Where the player can start (`--spawn NAME`) |
 | `target NAME` | `at=x,y,z heading= health=` | A passive human to fight in the play mode, dropped onto the ground (health 600 by default, as the street civilian the research fought; at most 16) |
+| `fighter NAME` | `at=x,y,z heading=` | An AI human that fights back in the play mode ([AI fighters](#ai-fighters); at most 8) |
 | `view NAME` | `at=x,y,z yaw= pitch=` | A camera viewpoint for the flying mode |
 
 A target is Coney's own test dummy, not part of the original game, and only a sandbox layout places one: it stands
@@ -143,6 +144,14 @@ still, takes the player's hits, plays the victim's reactions, stuns, knockdowns,
 civilian's numbers, never moves or fights back, and is drawn with Rembrandt's model. A layout without a `spawn` gets
 one named `origin` at the origin. A layout without a `view` gets one named `start`,
 6 m behind the first spawn and 3 m up.
+
+### AI fighters {#ai-fighters}
+
+A fighter is an AI human with a brain ([AI humans](../research/ai.md#coney)): one of `level99`'s sparring Warriors, with
+the configuration `level99`'s scripts give (its attack table, power class and attack delays), drawn with the player's
+model. It takes the player on once he comes within 5 m, then walks or runs to him, attacks by its class's weights and
+waits about 4 s between attacks (2 s while he targets it). It never blocks, as an AI cannot in the original. The debug
+menu's *AI fighters* page spawns more in front of the player, clears them and switches their engaging on or off.
 
 ### Shapes
 
