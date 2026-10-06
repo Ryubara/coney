@@ -26,6 +26,7 @@ add_library(coney_core STATIC
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
     gamemodes/legal_screen_mode.cpp
+    gamemodes/loading_screen.cpp
     gamemodes/level_flow_mode.cpp
     gamemodes/level_object_services.cpp
     gamemodes/level_start.cpp

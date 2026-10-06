@@ -19,15 +19,15 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 10.0%](https://img.shields.io/badge/reimplemented-10.0%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 10.2%](https://img.shields.io/badge/reimplemented-10.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██░░░░░░░░░░░░░░░░░░` | 10.0% of the game's own code (333,940 of 3,354,776 bytes, 852 functions) |
+| **Reimplemented** | `██░░░░░░░░░░░░░░░░░░` | 10.2% of the game's own code (340,940 of 3,354,776 bytes, 861 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-238 reimplemented function(s) have no size yet and add no bytes.
+237 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -53,13 +53,13 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `█████▌░░░░░░░░░░░░░░` | 27.2% | 21 | 54,616 |
-| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 25 | 57,368 |
+| `Audio` | `▍░░░░░░░░░░░░░░░░░░░` | 1.7% | 26 | 57,368 |
 | `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 34 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 21 | 62,808 |
 | `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 6 | 7,120 |
-| `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 52 | 100,440 |
+| `GameModes` | `████▉░░░░░░░░░░░░░░░` | 24.5% | 60 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.1% | 51 | 195,624 |
 | `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.4% | 122 | 497,416 |
 | `Human` | `██░░░░░░░░░░░░░░░░░░` | 9.9% | 239 | 1,096,672 |
@@ -142,7 +142,8 @@ at the top of the repository's `README.md`.
 | `0x00110018` | `SceneSound_Start` | `Audio` | not filled in |
 | `0x00110b60` | `AmbientTrack_Play` | `Audio` | not filled in |
 | `0x00110c70` | `AmbientTrack_Stop` | `Audio` | not filled in |
-| `0x00111178` | `AudioManager_StartLoadScreen` | `Audio` | not filled in |
+| `0x00111178` | `AudioManager_StartLoadScreen` | `Audio` | 688 |
+| `0x00111428` | `AudioManager_StopLoadScreen` | `Audio` | 304 |
 | `0x001119d0` | `SoundList_Find` | `Audio` | not filled in |
 | `0x00111de8` | `AudioManager_Play` | `Audio` | not filled in |
 | `0x001120c8` | `AudioManager_NewTask` | `Audio` | not filled in |
@@ -260,6 +261,14 @@ at the top of the repository's `README.md`.
 | `0x0015fe90` | `InitLevel` | `GameModes` | 2,344 |
 | `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
 | `0x00161218` | `RunPreloadScripts` | `GameModes` | 152 |
+| `0x001612b0` | `LoadScreen_Begin` | `GameModes` | 144 |
+| `0x00161378` | `LoadScreen_End` | `GameModes` | 120 |
+| `0x00162598` | `LevelLoadScreen_Finish` | `GameModes` | 240 |
+| `0x00162688` | `LevelLoadScreen_DrawBar` | `GameModes` | 1,280 |
+| `0x00162b88` | `LevelLoadScreen_Tick` | `GameModes` | 1,768 |
+| `0x00163270` | `LoadScreen_FormatTextureName` | `GameModes` | 864 |
+| `0x001635d0` | `LoadScreen_FormatTextureNameEx` | `GameModes` | 696 |
+| `0x00163888` | `LevelLoadScreen_Start` | `GameModes` | 896 |
 | `0x00164bb8` | `Gang_SetMessageHandler` | `GameModes` | 88 |
 | `0x00164c20` | `Gang_OnEvent` | `GameModes` | 1,432 |
 | `0x00165640` | `Gang_SetTactic` | `GameModes` | 56 |

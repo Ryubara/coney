@@ -221,6 +221,13 @@ subsystem = "Audio"
 address = 0x00111178
 name = "AudioManager_StartLoadScreen"
 subsystem = "Audio"
+size = 688
+
+[[function]]
+address = 0x00111428
+name = "AudioManager_StopLoadScreen"
+subsystem = "Audio"
+size = 304
 
 [[function]]
 address = 0x001119d0
@@ -867,6 +874,54 @@ address = 0x00161218
 name = "RunPreloadScripts"
 subsystem = "GameModes"
 size = 152
+
+[[function]]
+address = 0x001612b0
+name = "LoadScreen_Begin"
+subsystem = "GameModes"
+size = 144
+
+[[function]]
+address = 0x00161378
+name = "LoadScreen_End"
+subsystem = "GameModes"
+size = 120
+
+[[function]]
+address = 0x00162598
+name = "LevelLoadScreen_Finish"
+subsystem = "GameModes"
+size = 240
+
+[[function]]
+address = 0x00162688
+name = "LevelLoadScreen_DrawBar"
+subsystem = "GameModes"
+size = 1280
+
+[[function]]
+address = 0x00162b88
+name = "LevelLoadScreen_Tick"
+subsystem = "GameModes"
+size = 1768
+
+[[function]]
+address = 0x00163270
+name = "LoadScreen_FormatTextureName"
+subsystem = "GameModes"
+size = 864
+
+[[function]]
+address = 0x001635d0
+name = "LoadScreen_FormatTextureNameEx"
+subsystem = "GameModes"
+size = 696
+
+[[function]]
+address = 0x00163888
+name = "LevelLoadScreen_Start"
+subsystem = "GameModes"
+size = 896
 
 [[function]]
 address = 0x00164bb8

@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <expected>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -36,7 +37,9 @@
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
+#include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/level_start.h"
+#include "gamemodes/loading_screen.h"
 #include "gamemodes/rumble_menu_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
@@ -473,4 +476,60 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
     CHECK(flow.scripts().errors() == 0);
     std::printf("  quick rumble: %zu log lines, %zu humans created, %zu flags; %s", log.size(),
                 flow.humans().all().size(), flow.flags().all().size(), play->summary().c_str());
+}
+
+TEST_CASE("the disc's loading-screen pictures are found as the page counts them", "[disc][loading_screen]") {
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    const coney::io::Wad& theWad = *wad;
+    const auto exists = [&theWad](std::string_view name) {
+        return theWad.lookup(coney::resourceFileName(name)).has_value();
+    };
+    // Every story level number, 4:3 and 16:9: how many show three pictures, one of their own, or the default
+    // (docs/research/level-loading.md#level-screen: three for 25 levels, all with _w but level7; one for 60-64).
+    for (const bool widescreen : {false, true}) {
+        int three = 0;
+        int one = 0;
+        int fallback = 0;
+        for (int number = 1; number <= coney::kLastStoryLoadScreenLevel; ++number) {
+            const coney::LoadScreenPictures pictures = coney::loadScreenPictures(
+                std::format("level{}", number), number, 0, coney::Language::English, widescreen, exists);
+            if (pictures.fellBack) {
+                ++fallback;
+            } else if (pictures.names.size() == 3) {
+                ++three;
+            } else {
+                ++one;
+            }
+        }
+        std::printf("  loading screens (%s): %d levels with three pictures, %d with one, %d the default\n",
+                    widescreen ? "16:9" : "4:3", three, one, fallback);
+        CHECK(three == (widescreen ? 24 : 25));
+        CHECK(one == 5);
+        CHECK(fallback == 100 - three - one);
+    }
+    // The Rumble pictures by game type: 17 of 1-25 have their own.
+    int rumble = 0;
+    for (int gameType = 1; gameType <= 25; ++gameType) {
+        rumble += coney::loadScreenPictures("level102", 102, gameType, coney::Language::English, false, exists).fellBack
+                      ? 0
+                      : 1;
+    }
+    std::printf("  loading screens: %d Rumble game types with a picture\n", rumble);
+    CHECK(rumble == 17);
+
+    // level99's three pictures and the default load as sprite sheets with a texture.
+    coney::chunk::ChunkHandlerTable handlers = coney::chunk::ChunkHandlerTable::withDefaults();
+    coney::platform::addTextureDictionaryHandlers(handlers);
+    coney::platform::addSpriteSheetHandlers(handlers);
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    for (const std::string_view name : {"level99_ls_0", "level99_ls_1", "level99_ls_2", "default_ls_0"}) {
+        auto sheet = coney::platform::loadSpriteSheetResource(theWad, handlers, name, false);
+        REQUIRE(sheet.has_value());
+        CHECK_FALSE(sheet->page.rects.empty());
+        CHECK(sheet->texture != nullptr);
+    }
 }

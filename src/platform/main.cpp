@@ -25,6 +25,7 @@
 
 #include "ai/ai_config.h"
 #include "audio/object_sounds.h"
+#include "audio/sound_engine.h"
 #include "characters/character_types.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
@@ -46,6 +47,7 @@
 #include "gamemodes/idle_mode.h"
 #include "gamemodes/level_start.h"
 #include "gamemodes/load_entry_mode.h"
+#include "gamemodes/loading_screen.h"
 #include "gamemodes/rumble_menu_mode.h"
 #include "gamemodes/sheet_viewer_mode.h"
 #include "gamemodes/start_up_flow.h"
@@ -796,6 +798,25 @@ int main(int argc, char** argv) {
         } else {
             std::fprintf(stderr, "coney: %s; running without sound\n", started.error().message.c_str());
         }
+    }
+    // The story's loading screen (docs/research/level-loading.md#loading-screen), after the sound output its sounds
+    // play through, so it is destroyed first. The sound engine picks the bank (load_NN, from its seeded start) and
+    // plays it; stopping them also loads the level's bank. Without the engine the screen is silent.
+    std::optional<coney::LoadingScreen> loadingScreen;
+    if (startUp && wad) {
+        coney::LoadScreenSounds loadSounds;
+        if (coney::audio::SoundEngine* soundEngine = audio ? audio->sounds().engine() : nullptr;
+            soundEngine != nullptr) {
+            // The Armies levels' armload is not chosen yet (who decides, 0x0041d110, is open).
+            loadSounds.start = [soundEngine] { soundEngine->startLoadScreen(false); };
+            loadSounds.stop = [soundEngine] { soundEngine->endLoadScreen(); };
+        }
+        const coney::io::Wad& screenWad = *wad;
+        loadingScreen.emplace(
+            renderer, loadSheet,
+            [&screenWad](std::string_view name) { return screenWad.lookup(coney::resourceFileName(name)).has_value(); },
+            coney::LoadScreenSettings{.language = options->language}, std::move(loadSounds), printText);
+        startUp->gameplay().setLoadingScreen(&*loadingScreen);
     }
     if (startUp) {
         debugServices.scripts = [&startUp] { return &startUp->scripts(); };

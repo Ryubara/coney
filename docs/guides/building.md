@@ -246,17 +246,19 @@ OK accepts), the difficulty, the brightness (left and right) and the subtitles. 
 has no saves yet). The menus fade out and the game's own scripts take it from there (`Menu.startGame`,
 `runNextMission(1)`, the mission-complete mode, `UnlockAndLoad`), to `level99` at checkpoint 1. Its level script
 creates Rembrandt, and Coney loads the level with him where the script put him, under your control
-([Playing a level](#playing-a-level)). There is no loading screen, intro movie (it is skipped), intro scene, tutorial or
-other character yet. The log shows the way: `profile manager: PM_Create` and the other screens, `profile manager:
-profile "A" created in slot 0`, `script: Menu.startGame()`, `mission complete: kind 4`, `level flow: starting
-level99`, `gameplay: level99 checkpoint 1: player 1 Rembrandt ...`, then `movie: L99_IN skipped`. The scripted way
+([Playing a level](#playing-a-level)), after the level's loading screen (its pictures, the timed bar and the fades, for
+about 3.2 s: [Level loading](../research/level-loading.md#coneys-implementation)). There is no intro movie (it is
+skipped), intro scene, tutorial or other character yet. The log shows the way: `profile manager: PM_Create` and the
+other screens, `profile manager: profile "A" created in slot 0`, `script: Menu.startGame()`, `mission complete: kind
+4`, `level flow: starting level99`, `loading screen: level99 (3 pictures: ...)`, `gameplay: level99 checkpoint 1:
+player 1 Rembrandt ...`, then `movie: L99_IN skipped`. The scripted way
 (`tests/support/story_new_profile.txt`: a one-letter name, the defaults, the cursor moved with the left stick at 70 %):
 
 ```sh
-build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 470 --input-script tests/support/story_new_profile.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 570 --input-script tests/support/story_new_profile.txt
 ```
 
-Level99 is up by frame 460.
+The loading screen shows from about frame 452 and level99 plays from frame 548.
 
 **QUICK RUMBLE** follows the original's path too: the menu's scripts call `ShowRumbleModeInterface`, which opens the
 Rumble menu (mode 0x11) and its four screens, as a fresh boot offers them: **Game Mode** (1 ON 1 or WAR PARTY),

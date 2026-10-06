@@ -155,7 +155,8 @@ class SoundEngine {
     /// @orig 0x00111178 AudioManager_StartLoadScreen (unknown)
     void startLoadScreen(bool armies);
     /// The level has loaded: the load-screen sounds stop and the pending bank (else `sound`) loads; the pending name
-    /// goes back to `none`.
+    /// goes back to `none` (the bank load is level loading's, `0x0015fe90`, right after the stop).
+    /// @orig 0x00111428 AudioManager_StopLoadScreen (unknown)
     void endLoadScreen();
 
     // ---- Ambience and interface sounds ----

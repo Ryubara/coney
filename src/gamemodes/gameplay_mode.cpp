@@ -109,6 +109,19 @@ void GameplayMode::enter() {
     m_lighting = std::make_unique<graphics::LevelLighting>();
     m_context.lighting = m_lighting.get();
 
+    // With a loading screen the level loads once it has faded in (updateLoadingScreen()); begun by the first update,
+    // which knows the time.
+    m_screenStartMs.reset();
+    if (m_loadingScreen != nullptr) {
+        m_phase = Phase::FadeIn;
+        return;
+    }
+    m_phase = Phase::Playing;
+    loadLevel();
+    startPlay();
+}
+
+void GameplayMode::loadLevel() {
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
     const LevelStart& start = m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName));
     const HumanCreation* player = start.player ? &*start.player : nullptr;
@@ -146,7 +159,13 @@ void GameplayMode::enter() {
     }
     m_level = std::move(*level);
     m_level->enter();
+}
 
+void GameplayMode::startPlay() {
+    // A level that failed to load asks for no movie.
+    if (!m_level) {
+        return;
+    }
     // InitLevel step 12, after the preload: the intro movie (`L99_IN` for level99 at checkpoint 1).
     if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel);
         record != nullptr && m_moviePlayer != nullptr) {
@@ -156,7 +175,45 @@ void GameplayMode::enter() {
     }
 }
 
+bool GameplayMode::updateLoadingScreen(const FrameTime& frame) {
+    LoadingScreen& screen = *m_loadingScreen;
+    const std::uint64_t msPerTick = GameTimer::kTicksPerSecond / 1000;
+    const std::uint64_t nowMs = frame.gameTicks / msPerTick;
+    if (!m_screenStartMs) {
+        // LoadScreen_Begin (InitLevel step 2), at the moment the mode was entered: just before this first step.
+        m_screenStartMs = (frame.gameTicks - frame.stepTicks) / msPerTick;
+        const LevelRecord* record = m_state.levels.at(m_state.currentLevel);
+        const int number = record != nullptr ? static_cast<int>(record->number) : 0;
+        const int gameType = m_state.rumble.values.at(RumbleSetup::kGameType);
+        screen.begin(m_levelName, number, gameType, *m_screenStartMs);
+    }
+    if (m_phase == Phase::FadeIn && nowMs >= *m_screenStartMs + LoadScreenTimeline::kFadeMilliseconds) {
+        // Faded in: the load-screen sounds (step 3), then the whole load in this one step (steps 4-10).
+        screen.startSounds();
+        loadLevel();
+        m_phase = Phase::Loading;
+    }
+    if (m_phase == Phase::Loading && nowMs >= *m_screenStartMs + kLoadScreenHoldMilliseconds) {
+        // Step 11: the sounds stop, then LoadScreen_End's finish fades the screen out.
+        screen.stopSounds();
+        screen.finish(nowMs);
+        m_phase = Phase::FadeOut;
+    }
+    if (m_phase == Phase::FadeOut && screen.finished(nowMs)) {
+        // The fade out is over: the next frame cuts to the movie and then play.
+        screen.end();
+        m_phase = Phase::Playing;
+        startPlay();
+        return true;
+    }
+    return false;
+}
+
 ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
+    // Behind the loading screen nothing plays and the pads are not read.
+    if (m_phase != Phase::Playing && m_loadingScreen != nullptr && !updateLoadingScreen(frame)) {
+        return ModeResult::Stay;
+    }
     // The level's step (the characters, the cameras, the streaming), then the scripts' frame, as a frame of play
     // orders them.
     ModeResult result = ModeResult::Stay;
@@ -200,6 +257,11 @@ void GameplayMode::updateBoxes(std::uint64_t nowMs) {
 }
 
 void GameplayMode::render(const RenderTime& time) {
+    // The loading screen's tick, on game time.
+    if (m_phase != Phase::Playing && m_loadingScreen != nullptr) {
+        m_loadingScreen->render(time.gameTicks / (GameTimer::kTicksPerSecond / 1000));
+        return;
+    }
     if (m_level) {
         m_level->render(time);
         return;
@@ -224,6 +286,12 @@ void GameplayMode::renderWithOverlay(const RenderTime& time,
 }
 
 void GameplayMode::exit() {
+    // Left behind the loading screen: its sounds stop and it ends.
+    if (m_loadingScreen != nullptr && m_phase != Phase::Playing) {
+        m_loadingScreen->stopSounds();
+        m_loadingScreen->end();
+    }
+    m_phase = Phase::Playing;
     if (m_level) {
         m_level->exit();
     }

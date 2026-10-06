@@ -16,6 +16,7 @@
 #include "gamemodes/game_mode.h"
 #include "gamemodes/level_object_services.h"
 #include "gamemodes/level_start.h"
+#include "gamemodes/loading_screen.h"
 #include "gamemodes/movie_player.h"
 #include "graphics/level_lighting.h"
 #include "graphics/render_device.h"
@@ -97,6 +98,12 @@ class PauseMode;
 ///   level-end countdown) is not there yet: the player has control on the first frame. The start callback runs before
 ///   the level loads (runLevelScript()). The intro movie (`L99_IN`) goes to the movie player after the level loaded
 ///   (setMoviePlayer(); FrontEndServices skips it until Coney plays movies).
+/// - With a loading screen (setLoadingScreen(), the story flow), enter only begins it; the updates then fade it in
+///   over 200 ms of game time, load the level in one step (the window keeps the faded-in picture meanwhile, as the
+///   original keeps its last frame between reads), hold it until kLoadScreenHoldMilliseconds after its start (Coney's
+///   loads take no game time, so this stands for the PS2's load), finish it (about 170 ms of fade out), and only then
+///   ask for the intro movie and run the level's first step. The pads are not read meanwhile. Without one (`coney
+///   --play-level`, most tests), the level loads in enter and plays from the first update.
 /// - The level's brains and gangs are made before its script (the AI host of `context`), but the humans the script
 ///   creates are made, and the calls on them run, only once the level has loaded its characters (ScriptedCast).
 /// - So are player 1's cameras (`context`'s cameras), which the script's camera calls set up before the player exists
@@ -154,6 +161,22 @@ class GameplayMode final : public GameMode {
     /// Plays the glass panes' and doors' sounds through `sounds` (the audio's ObjectSounds; null: none), which must
     /// outlive the mode or be replaced first.
     void setObjectSounds(world_objects::ObjectServices* sounds) { m_objectServices.setSounds(sounds); }
+    /// Shows `screen` while each level loads (null: none, the level loads in enter); it must outlive the mode.
+    void setLoadingScreen(LoadingScreen* screen) { m_loadingScreen = screen; }
+
+    /// Coney's stand-in for how long a level's load lasts on the PS2, from the loading screen's start to its finish, in
+    /// game time: 3,000 ms (level99 took "a few seconds" at runtime, docs/research/level-loading.md#loading-screen).
+    static constexpr std::uint64_t kLoadScreenHoldMilliseconds = 3000;
+
+    /// Where a level start is: behind the loading screen, or playing.
+    enum class Phase : std::uint8_t {
+        FadeIn,  ///< The screen fades in; the level is not loaded yet.
+        Loading, ///< The level is loaded; the screen holds for the stand-in load time.
+        FadeOut, ///< The screen's finish.
+        Playing, ///< Frames of play.
+    };
+    /// The current phase (Playing without a loading screen).
+    [[nodiscard]] Phase phase() const { return m_phase; }
 
     /// `InitLevel`: the level's brains, the level script, then the level from the loader, entered (its preload).
     /// @orig 0x001582e0 Mode1::Enter (unknown)
@@ -198,6 +221,12 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] world_objects::LevelObjects& objects() { return m_objects; }
 
   private:
+    // InitLevel's script step and the level from the loader, entered (its preload).
+    void loadLevel();
+    // The end of InitLevel: the intro movie; play follows.
+    void startPlay();
+    // The loading screen's phases for one step; true once play may run in this step.
+    bool updateLoadingScreen(const FrameTime& frame);
     // Drops the level, then player 1's cameras, then the scripts' hold on its brains (no longer the AI host), then the
     // brains.
     void endLevel();
@@ -215,6 +244,9 @@ class GameplayMode final : public GameMode {
     LevelLoader m_loader;
     MoviePlayer* m_moviePlayer = nullptr; // the intro movie's player; not owned
     SceneMaker m_sceneMaker;
+    LoadingScreen* m_loadingScreen = nullptr; // shown while a level loads; not owned
+    Phase m_phase = Phase::Playing;
+    std::optional<std::uint64_t> m_screenStartMs; // the screen's start: set by the first update after enter
     std::function<void(std::string_view)> m_log;
     std::string m_levelName;
     std::optional<LevelStart> m_start;

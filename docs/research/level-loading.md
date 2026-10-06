@@ -756,6 +756,21 @@ Coney's choices and stand-ins for mode 1:
   when a teleport places it; otherwise the play mode falls back to its stand-in.
 - A level that fails to load leaves gameplay's frame black, with the error logged.
 
+**The loading screen** (2026-10-06), written from [The level screen](#level-screen): `LoadingScreen`
+(`src/gamemodes/loading_screen.h`) has the picture search (16:9, language, picture 0, `default_ls_0`; the Rumble form
+from the set-up's game type), the 23 s / 30 s timeline with its cut pictures, 200 ms fades, the clock bar (grey for
+the five levels) and the finish that moves the end; `coney --disc` gives it to the story's gameplay. The pads are
+not read behind it, and the load-screen sounds go to the sound engine (`audio::SoundEngine::startLoadScreen` after the
+fade in, `endLoadScreen` before the finish: [Sound](sound.md#banks)). Coney's stand-ins:
+
+- **The clock is game time** on the fixed 1/30 s step, and the load takes none: gameplay begins the screen, fades it in
+  (6 steps), loads the whole level in the next step (the window keeps the faded-in picture, as the original keeps its
+  last frame between reads), holds it until 3,000 ms after its start (`GameplayMode::kLoadScreenHoldMilliseconds`,
+  standing for the PS2's load), finishes it (6 steps of fade out), then asks for the intro movie and runs the level's
+  first step in the same step: 96 steps in all. `coney --play-level` and the tests without a screen load in `enter`.
+- `armload` is not chosen (who decides, `0x0041d110`, is open); without the sound engine (no disc sound data, or
+  `--no-audio`) the screen is silent. The memory-card screen (start-up) is not done.
+
 - **The worlds in `LoadLevel`'s order**: `<level>s_sec.wld` decides between two worlds (`<level>s`, `<level>d`) and one
   (`<level>`); each is constructed, its manifest read and its world stream loaded, and no part is loaded
   (`src/platform/world_set.h`). The world name is the level name (the level table does not exist yet).
@@ -841,6 +856,7 @@ with several atomics are the cars, drawn as [Cars](../references/cars.md) instea
 
 ## Open questions
 
+- **A level's load time on the PS2**, which Coney's 3,000 ms hold stands for (only level99's "a few seconds" is seen).
 - **The loading screen's flag** `0x0050f5b8`: only `PM_Greet` writes it (to 0), yet it read 1 in a level99 state;
   what sets it again?
 - **The blinking HUD element** at `0x0060e890` (memory-card screen, preload indicator): its sheet and rectangle (a red

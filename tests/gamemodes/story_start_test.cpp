@@ -30,6 +30,7 @@
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/level_start.h"
+#include "gamemodes/loading_screen.h"
 #include "gamemodes/mission_complete_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "gamemodes/start_up_flow.h"
@@ -367,4 +368,54 @@ TEST_CASE("a level's scripts run alone give player 1's start for the checkpoint 
     const coney::LevelScriptRun front = coney::runLevelScriptAlone(source, "level100", 1, {});
     CHECK_FALSE(front.start.player.has_value());
     CHECK(front.humans == 0);
+}
+
+TEST_CASE("story: behind the loading screen the level loads after the fade in and plays after the fade out",
+          "[story_start][loading_screen]") {
+    StoryRun run(storyScript(), true);
+    int soundStarts = 0;
+    int soundStops = 0;
+    coney::LoadingScreen screen(
+        run.device, {}, {}, {},
+        coney::LoadScreenSounds{.start = [&soundStarts] { ++soundStarts; }, .stop = [&soundStops] { ++soundStops; }},
+        [](std::string_view) {});
+    run.flow->gameplay().setLoadingScreen(&screen);
+    for (int i = 0; i < 900 && run.stack.topId() != GameplayMode::kId; ++i) {
+        run.frames(1);
+    }
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+
+    // The first step begins the screen (level1: no pictures, so the default) and fades it in; nothing is loaded yet.
+    run.frames(1);
+    CHECK(run.flow->gameplay().phase() == GameplayMode::Phase::FadeIn);
+    CHECK(screen.active());
+    CHECK(screen.pictures().names == std::vector<std::string>{"default_ls_0"});
+    CHECK(run.starts.empty());
+    // 200 ms in (the sixth step): the sounds start and the whole level loads in that step.
+    run.frames(5);
+    CHECK(run.flow->gameplay().phase() == GameplayMode::Phase::Loading);
+    CHECK(run.starts.size() == 1);
+    CHECK(soundStarts == 1);
+    CHECK(run.levelUpdates == 0);
+    // The stand-in load time, 3,000 ms: the sounds stop and the finish begins.
+    run.frames(84);
+    CHECK(run.flow->gameplay().phase() == GameplayMode::Phase::FadeOut);
+    CHECK(soundStops == 1);
+    CHECK(screen.timeline().end == screen.timeline().start + 3200);
+    // About 170 ms of fade out (until now >= end - 30, the sixth step), then the level's first step in that step.
+    run.frames(5);
+    CHECK(run.levelUpdates == 0);
+    CHECK(run.flow->gameplay().phase() == GameplayMode::Phase::FadeOut);
+    // The last frame of the screen: the bar near full and red, at full alpha as no picture loaded (no sheet loader).
+    REQUIRE_FALSE(run.device.draws.empty());
+    const coney::graphics::LogicalQuad& bar = run.device.draws.back().quads.front();
+    CHECK(bar.colour.r == 170);
+    CHECK(bar.colour.a == 255);
+    CHECK(bar.width > 0.9F * 273.0F);
+    run.frames(1);
+    CHECK(run.flow->gameplay().phase() == GameplayMode::Phase::Playing);
+    CHECK_FALSE(screen.active());
+    CHECK(run.levelUpdates == 1);
+    run.frames(3);
+    CHECK(run.levelUpdates == 4);
 }

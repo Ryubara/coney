@@ -26,6 +26,7 @@ add_executable(coney_tests
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
+    gamemodes/loading_screen_test.cpp
     gamemodes/pause_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
     gamemodes/movie_player_test.cpp
