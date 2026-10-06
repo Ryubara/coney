@@ -1,0 +1,25 @@
+# The strong grapple (circle + cross, command 0x23) at a civilian 1.0 m in front, facing the player, with a full power
+# meter. The hooks log Player_SpecialAttack, which start function it picks (grab, tackle or paired), each hit's scoring
+# and what the tutorial callback would be given. Research: docs/research/combat.md#strong-grapple.
+description = "slot 6: circle + cross at PoizoCiv 1.0 m ahead; the strong grapple's path, clips, damage and callback id"
+research = "docs/research/combat.md#strong-grapple"
+input = "strong_grapple.txt"
+updates = 150
+fields = ["player", "held", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "special-attack", "grab-start", "tackle-start", "paired-start", "attack-score", "tutorial-callback"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 3 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 3 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 3 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 3 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 3 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]

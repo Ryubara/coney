@@ -405,6 +405,10 @@ the combat tutorial's **"player 1 hit someone"** hook. Confirmed (code):
   the attacker's brain `+0x4` is not 0 or the two are allies (`0x00290230`), then calls the callback only when the
   attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage ([Combat](combat.md#rage)). The anim id
   is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat.md#attacks)).
+- The id is read when the **victim** applies the pending damage, not when the hit was dealt. For a hit dealt as a
+  clip ends, the attacker has already moved on: the strong grapple's damage is added at the end of 657 and applied as
+  the hold 82 starts, so the callback gets **82** (84 from the rear). Confirmed (runtime)
+  ([Strong grapple](combat.md#strong-grapple)).
 - So it fires **once per hit, every hit**, for as long as it is set; nothing in the engine clears it after a call. It is
   cleared by `HUDSetTutorialCallback(nil)` and when the HUD is released at `UnloadLevel` (`0x001607b8` →
   `0x001ae980` → `0x001cdc20`, which zeroes `+0x3a0`).

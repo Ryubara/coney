@@ -12,7 +12,7 @@ about: |
   [AI: Warrior commands](../research/ai.md#warrior-commands); the buttons: [Controls](controls.md).
 complete: |
   Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands
-  are listed. What 1, 2, 9, 11, 21, 22 and 34-44 do is not traced, nor the command menu's layout; pad
+  are listed. What 1, 2, 9, 11, 21, 22 and 37-44 do is not traced, nor the command menu's layout; pad
   commands the code tests but no script binds are not listed.
 defaults: {source: "global.lua AddCommand; EnableCommand, WCEnableCommand and WCIssueCommand in the scripts", evidence: inferred}
 entries:
@@ -291,24 +291,33 @@ entries:
     hex: 0x0022
     name: "cross + square"
     bound: ["combination press: cross + square"]
+    action: "Outside a grab, the special attack 653 (645 raging), needing and spending a quarter of the power meter; in a grab, the power strike."
     bound_in: [global.lua]
     toggled_in: [level93_chapter6.lua]
+    source: "Player_Special (0x00287730), Player_SpecialAttack (0x00263c90)"
+    evidence: confirmed-runtime
   - id: "pad:35"
     kind: "pad command"
     number: 35
     hex: 0x0023
     name: "circle + cross"
     bound: ["combination held: circle + cross"]
+    action: "Strong grapple: a grab that connects with the strike 657 (649 raging; 659 / 651 from behind), deals its damage as the hold starts and keeps the hold; no power cost. In a grab, the power strike 63."
     bound_in: [global.lua]
     toggled_in: [level80_chapter3.lua, level93_chapter6.lua]
+    source: "Player_Special (0x00287730), Player_SpecialAttack (0x00263c90), Grab_ConnectEnd (0x0026bad8)"
+    evidence: confirmed-runtime
   - id: "pad:36"
     kind: "pad command"
     number: 36
     hex: 0x0024
     name: "circle + triangle"
     bound: ["combination press: circle + triangle"]
+    action: "Sprays a tag (664) where the player may tag."
     bound_in: [global.lua]
     toggled_in: [level93_chapter6.lua]
+    source: "Player_Special (0x00287730)"
+    evidence: confirmed-code
   - id: "pad:37"
     kind: "pad command"
     number: 37

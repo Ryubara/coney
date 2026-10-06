@@ -13,7 +13,7 @@ the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
 !!! info "What is complete"
 
     Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands
-    are listed. What 1, 2, 9, 11, 21, 22 and 34-44 do is not traced, nor the command menu's layout; pad
+    are listed. What 1, 2, 9, 11, 21, 22 and 37-44 do is not traced, nor the command menu's layout; pad
     commands the code tests but no script binds are not listed.
 
 50 entries. Data: `research/references/commands.yaml`.
@@ -62,9 +62,9 @@ the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
 | <span id="cmd-pad-31"></span>31 | `0x001f` | L1 + R1 / L1 + L2 | `combination held: L1 + L2`, `combination held: L1 + R1` | Starts rage when the meter is full. | `level99_combat.lua` |
 | <span id="cmd-pad-32"></span>32 | `0x0020` | L2 + cross | `combination press: L2 + cross` | Charge. | `level80_chapter3.lua` |
 | <span id="cmd-pad-33"></span>33 | `0x0021` | L2 + square | `combination press: L2 + square` | Dive. | `level80_chapter3.lua` |
-| <span id="cmd-pad-34"></span>34 | `0x0022` | cross + square | `combination press: cross + square` | | `level93_chapter6.lua` |
-| <span id="cmd-pad-35"></span>35 | `0x0023` | circle + cross | `combination held: circle + cross` | | `level80_chapter3.lua`, `level93_chapter6.lua` |
-| <span id="cmd-pad-36"></span>36 | `0x0024` | circle + triangle | `combination press: circle + triangle` | | `level93_chapter6.lua` |
+| <span id="cmd-pad-34"></span>34 | `0x0022` | cross + square | `combination press: cross + square` | Outside a grab, the special attack 653 (645 raging), needing and spending a quarter of the power meter; in a grab, the power strike. | `level93_chapter6.lua` |
+| <span id="cmd-pad-35"></span>35 | `0x0023` | circle + cross | `combination held: circle + cross` | Strong grapple: a grab that connects with the strike 657 (649 raging; 659 / 651 from behind), deals its damage as the hold starts and keeps the hold; no power cost. In a grab, the power strike 63. | `level80_chapter3.lua`, `level93_chapter6.lua` |
+| <span id="cmd-pad-36"></span>36 | `0x0024` | circle + triangle | `combination press: circle + triangle` | Sprays a tag (664) where the player may tag. | `level93_chapter6.lua` |
 | <span id="cmd-pad-37"></span>37 | `0x0025` | d-pad down | `pressed: d-pad down` | | `level99.lua` |
 | <span id="cmd-pad-38"></span>38 | `0x0026` | d-pad up | `pressed: d-pad up` | | `level99.lua`, `level99_lesson1.lua`, `level99_lesson2.lua` |
 | <span id="cmd-pad-39"></span>39 | `0x0027` | d-pad left | `pressed: d-pad left` | | |
@@ -91,9 +91,12 @@ the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
 
 ## Sources and evidence
 
-Evidence levels used: confirmed-code, inferred.
+Evidence levels used: confirmed-code, confirmed-runtime, inferred.
 
 - AddCommand (0x00147430), matched by 0x00147940
+- Player_Special (0x00287730)
+- Player_Special (0x00287730), Player_SpecialAttack (0x00263c90)
+- Player_Special (0x00287730), Player_SpecialAttack (0x00263c90), Grab_ConnectEnd (0x0026bad8)
 - global.lua AddCommand; EnableCommand, WCEnableCommand and WCIssueCommand in the scripts
 - global.lua AddCommand; Player_UpdateActions (0x0027c120)
 - the Warrior command dispatcher (0x0041c4e0) and its lines (0x0041cc40)

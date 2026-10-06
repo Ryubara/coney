@@ -246,3 +246,51 @@ edits = [
   { address = 0x00148138, original = [0x84640048], replacement = [0x10000029] },
   { address = 0x0014813c, original = [0x8c62004c], replacement = [0x00000000] },
 ]
+
+[hook.special-attack]
+description = "Each call of Player_SpecialAttack (0x00263c90, from Player_Special for commands 0x22 and 0x23): the human and the variant (0 cross + square, 1 circle + cross)."
+research = "docs/research/combat.md#strong-grapple"
+address = 0x00263c90
+# addiu sp,sp,-0x60; sq s1,0x40(sp)
+original = [0x27bdffa0, 0x7fb10040]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human" }, { value = "a1", name = "variant" }]
+
+[hook.grab-start]
+description = "Each call of Grab_Start (0x0026c548): the caller, the grabber, the mode and the base id kept at record +0xb4."
+research = "docs/research/combat.md#strong-grapple"
+address = 0x0026c548
+# addiu sp,sp,-0xb0; sq s0,0xa0(sp)
+original = [0x27bdff50, 0x7fb000a0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "mode" }, { value = "a2", name = "base" }]
+
+[hook.tackle-start]
+description = "Each call of the tackle start (0x002707a8): the caller, the tackler, the intro id and the base id."
+research = "docs/research/combat.md#strong-grapple"
+address = 0x002707a8
+# addiu sp,sp,-0xb0; sq s0,0xa0(sp)
+original = [0x27bdff50, 0x7fb000a0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "intro" }, { value = "a2", name = "base" }]
+
+[hook.paired-start]
+description = "Each call of Attack_StartPaired (0x00262ac8): the caller, the attacker, the victim, the id, the paired flag and the state flags."
+research = "docs/research/combat.md#strong-grapple"
+address = 0x00262ac8
+# addiu sp,sp,-0xf0; sw a2,0x40(sp)
+original = [0x27bdff10, 0xafa60040]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "attacker" }, { value = "a1", name = "victim" }, { value = "a2", name = "id" }, { value = "a3", name = "paired" }, { value = "t0", name = "flags" }]
+
+[hook.attack-score]
+description = "Each call of the attack-scoring step (0x002653d8, from Human_ApplyPendingDamage for a pad-controlled attacker): the attacker, the victim and whether the hit landed (0 blocked)."
+research = "docs/research/hud.md#tutorial-callback"
+address = 0x002653d8
+# addiu sp,sp,-0x60; sq s1,0x40(sp)
+original = [0x27bdffa0, 0x7fb10040]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "attacker" }, { value = "a1", name = "victim" }, { value = "a2", name = "landed" }]
+
+[hook.tutorial-callback]
+description = "Each call of Tutorial_CallCallback (0x001ce9a8): the anim id it would pass to the HUDSetTutorialCallback function, and the name word (0 when none is set)."
+research = "docs/research/hud.md#tutorial-callback"
+address = 0x001ce9a8
+# addiu sp,sp,-0x30; sq s1,0x10(sp)
+original = [0x27bdffd0, 0x7fb10010]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "anim" }, { value = "[a0 + 0x3a0]", name = "name" }]

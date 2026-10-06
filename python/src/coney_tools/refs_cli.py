@@ -471,7 +471,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "[Combat: commands](../research/combat.md#commands); the orders:\n"
         "[AI: Warrior commands](../research/ai.md#warrior-commands); the buttons: [Controls](controls.md).",
         "complete": "Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands\n"
-        "are listed. What 1, 2, 9, 11, 21, 22 and 34-44 do is not traced, nor the command menu's layout; pad\n"
+        "are listed. What 1, 2, 9, 11, 21, 22 and 37-44 do is not traced, nor the command menu's layout; pad\n"
         "commands the code tests but no script binds are not listed.",
     },
     "script-events": {

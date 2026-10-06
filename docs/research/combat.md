@@ -72,6 +72,7 @@ No source file names this code: it lies in `Human/`, in the stretch after `cns/c
 | `0x0027fd68` | `Player_UpdateGrabbed` | the struggle in another human's grab | confirmed (code) |
 | `0x00241b90` | `Human_FightStanceMove` | movement in a fight stance; lock-on | confirmed (code), runtime |
 | `0x00287730` | `Player_Special` | cross + square, circle + cross, circle + triangle outside a grab | confirmed (code), runtime |
+| `0x00263c90` | `Player_SpecialAttack` | the special or strong grapple: target search, id by rage, variant and side, then a solo clip, a grab, a tackle or a paired move by the clip's flags ([Strong grapple](#strong-grapple)) | confirmed (code), runtime |
 | `0x002878b8` | `LockPick_JudgePress` | mini-game mode 2, lock picking ([Crimes](crimes.md#lockpick)) | confirmed (code) |
 | `0x0026c548` | `Grab_Start` | the grab's intro: 71 (or 70), then 69 and the idle; turns towards the target | confirmed (code) |
 | `0x0026c1d8` | `Grab_IntroEnd` | end of the intro clip: grab from the front or rear, or a counter | confirmed (code) |
@@ -439,8 +440,9 @@ gait 5 square falls through to the standing path (a fight stance and `S1`). Conf
 tried at runtime. With `0x00510270` set (0 here) square outside a fight stance plays 22 instead.
 
 **Specials** (`Player_Special`, `0x00287730`), confirmed (code): **cross + square** (`0x22`) outside a grab plays the
-special 653 (645 raging); **circle + cross** (`0x23`) 657 (649 raging), a paired grab-and-strike through `0x0026c548`
-or a tackle through `0x002707a8`; **circle + triangle** (`0x24`) sprays a tag (664) where the player may tag
+special 653 (645 raging); **circle + cross** (`0x23`) is the **strong grapple**, a grab whose connecting clip is
+the strike 657 (649 raging) and which ends in the hold ([Strong grapple](#strong-grapple)); **circle + triangle**
+(`0x24`) sprays a tag (664) where the player may tag
 (`0x00222818`). The id is 645 or 653 + 4 × variant + 0 / 2 by side (`0x00263c90`). A special that is not paired
 needs and spends 0.25 of the power meter. At runtime (confirmed (runtime)): cross held, square pressed 40 ms later
 played 653, power 400 → 300, the civilian lost 6 and fell (291, grounded 196, up with 199 2.0 s after the hit);
@@ -630,6 +632,68 @@ a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x
 (`0x0026c7e0`). Confirmed (code) at `0x0027f3b0` and `0x00262ac8`; confirmed (runtime): strikes 40 each, the power
 strike 236 → 135 with its 57 damage on the same update. The grab also ends when the victim drifts beyond the larger of
 reach + 0.2 m and reach × 1.2, or 0.2 m up or down.
+
+### Strong grapple {#strong-grapple}
+
+**Circle + cross** together (command `0x23`, combination held: on the update the second of the two goes down) outside
+a grab is the strong grapple: a grab that connects with a strike instead of the plain grab clip, deals its damage as
+the pair reaches the hold, and leaves the player holding the victim. Confirmed (code) at the addresses cited;
+confirmed (runtime) where marked.
+
+1. **Gates** (`Player_Special`, `0x00287730`): nothing while record `+0x08` has any of `0xaeebf7ff`, or while a
+   player holds an object of class 8 (`0x00224060`); then, command `0x23` → `Player_SpecialAttack(h, 1)`
+   (`0x00263c90`). Command `0x22` calls it with 0.
+2. **Target**: a player always searches afresh (`0x0027a4b0`) and makes the result its target (`0x00226cd0`). The
+   search takes every human within the **far range of anim id 1** (`AttackTable_GetFarRange(h, 1)`, `0x00254508`:
+   the Anim Range List's far value, or its reach × 1.25 when that is larger) and keeps those within **0.9425 rad
+   (54°)** of the stick's direction (the facing when the stick is under 0.01), at most 2.0 m above or below, of
+   another gang and not down (filter `0x00279568`); the nearest wins (`0x003868d0`), and with none the last target
+   is kept when still valid. The function passes its variant (1) where the search expects an anim id, so the range
+   is the dive's (id 1; `0x22` gets the charge's, id 0); inferred to be unintended, but it is what plays. Rembrandt's
+   id 1 has reach 2.218 m and far 3.000 m, so **3.0 m** (confirmed (runtime)).
+3. **Id**: 657 (`ANIM_SPECIAL_ATTACK2_FRONT`), or 649 (`ANIM_RAGE_ATTACK2_FRONT`) while raging (human `+0xe0`
+   `0x80000`), + 2 when the player stands on the target's side 2, its back (`0x002672d0`): 657 / 659, 649 / 651.
+4. **Path by the clip's flags** (the clip of that id in the player's set, its `+0x44`): without bit `0x1` (paired)
+   the clip plays alone (`0x00262368`) if the power meter holds at least 0.25 of its maximum. Paired, it needs a
+   target that may be grabbed (`0x00225520`: not down or dead, not in a scene, within 0.25 m in height, not in an
+   excluded state) and a clear line to it (`0x0021c0a8`), then: bit `0x40` → **`Grab_Start(h, 0, front id)`**
+   (`0x0026c548`); else bit `0x20` → a tackle `0x002707a8(h, 70, front id)`; else `Attack_StartPaired(h, target, id,
+   1, 0x400000)`. Human flags `0x80000000` and `0x100000000` skip the grab and the tackle. For Rembrandt the grab
+   path is taken (confirmed (runtime): `Grab_Start` called from `0x00263dd8` with base 657).
+5. **The grab** runs as [Posing a grab](#grab-posing) describes with 657 as the base id: the intro 71, then
+   `Grab_IntroEnd` picks front or rear, and `Grab_Connect` plays **657 on the player and 658 from the player's set on
+   the victim** (659 / 660 from the rear) where a plain grab plays 72 / 73; the hold 82 / 83 (84 / 85) follows. The
+   alignment gate is 657's far range (2.5 m) × 1.25 = 3.125 m.
+6. **Damage at the connect's end** (`Grab_ConnectEnd`, `0x0026bad8`): with the player grabbing (`0xc0`), the victim
+   grabbed (`0x30`) and the player's power above 0, the victim gets pending damage of the [damage table](#damage-table)
+   value of the player's id at that moment (657: index 17) through `0x0021d680`. The same code runs at the end of a
+   plain grab's 72, whose value is 0, so a plain grab deals nothing and scores no hit (confirmed (runtime): no
+   scoring call). Then the snap and attach, and the grab's scoring (`0x00264fa0`: 657, 659, 649 and 651 score as
+   category 1, 3).
+7. **No power cost**: the paired path neither checks nor spends power; the hold's drain of 15 per second
+   ([constants](#constants)) starts with the grab, as for any grab (confirmed (runtime): 72 of 400 was enough, and the
+   meter fell 1 every 2 updates from the press).
+
+**At runtime** (confirmed (runtime), PCSX2, a copy of slot 6: the civilian `PoizoCiv` held in place facing the player
+at 1.0-3.5 m until the intro ended, circle and cross pressed on the same update and held for 4 updates, no stick;
+scenario `strong_grapple` and hooks of [`patches.toml`](repo:research/traces/patches.toml)):
+
+| Case | Player | Victim | Damage | Tutorial callback |
+| --- | --- | --- | --- | --- |
+| front, 1.0 m | 71 for 5 updates, 657 for 34, then the hold 82 | its walk 408 (held in place), 658, then 83 | 600 → 540, on the hold's first update | **82** |
+| rear (victim facing away), 1.0 m | 71 for 5, 659 for 38, then 84 | 660, then 85 | 60 | **84** |
+| front, 2.4 and 2.9 m at the press | the same as at 1.0 m (the intro slides the player in) | | 60 | 82 |
+| front, 3.4 and 3.9 m | no grab; the cross's release played `X1` | | | |
+| plain grab (circle tapped), 1.0 m | 71, 72 for 19, 82 | 73, 83 | none | not called |
+
+The player's state word was `0x45` front (`0x85` rear) from the connect, the victim's `0x10` (`0x20`), then `0x11`
+(`0x21`) in the hold; the hold lasted until the end of the 150-update run, so the strong grapple **does not let go**:
+every [move in the grab](#grabbing) follows. 60 is Rembrandt's index-17 value after his 115 % scale.
+
+**The tutorial callback** ([HUD](hud.md#tutorial-callback)) is called once, by the victim's
+`Human_ApplyPendingDamage` on the update the hold replaces 657, so the anim id it passes is the **hold's, 82 (84 from
+the rear), not 657** (confirmed (runtime): `Tutorial_CallCallback` given `0x52` and `0x54`). `level99`'s lesson waits
+for exactly 82 or 84 ([The combat tutorial](scripting.md#level99)).
 
 ### Posing a grab {#grab-posing}
 
