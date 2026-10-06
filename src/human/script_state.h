@@ -30,6 +30,10 @@ struct ScriptState {
     /// Arrested (state `0x20000`, `HuSetArrested`): **Coney stand-in**, the arrest's clips are not researched, so an
     /// arrested human stands still and does nothing until released.
     bool arrested = false;
+    /// Knocked out (state `0x40000`, `HuSetConscious(h, false)`): not alive, and its brain off until brought round.
+    /// **Coney stand-in**: the knocked-out and get-up clips are not played, and it does not wake by itself after the
+    /// original's 14 s (whose reader is not on the page), so it lies as it is until a script wakes it.
+    bool knockedOut = false;
     /// The pad's buttons locked (per-player `+0x1e`, `HuLockPad`): its commands, sprint and actions are not taken.
     bool padLocked = false;
     /// The pad's left stick locked (per-player `+0x1f`, `HuLockPadMovement`): it reads as centred, the buttons still

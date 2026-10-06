@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 12.8%](https://img.shields.io/badge/reimplemented-12.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 12.9%](https://img.shields.io/badge/reimplemented-12.9%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,323 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (431,340 of 3,354,776 bytes, 1,326 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 85 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.5% | 384 | 1,096,672 |
+| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.6% | 386 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -74,7 +74,7 @@ at the top of the repository's `README.md`.
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% | 31 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 23 | 22,008 |
-| `Warriors` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 92 | 54,264 |
+| `Warriors` | `███▌░░░░░░░░░░░░░░░░` | 17.4% | 93 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -660,6 +660,7 @@ at the top of the repository's `README.md`.
 | `0x00237388` | `Human_SetKeepHat` | `Human` | not filled in |
 | `0x00237468` | `Human_SetNoThrowWeapon` | `Human` | 112 |
 | `0x00237700` | `Human_SetArrested` | `Human` | 120 |
+| `0x00237778` | `Human_SetConscious` | `Human` | 128 |
 | `0x002377f8` | `Human_Revive` | `Human` | 80 |
 | `0x00237848` | `Human_SetHealth` | `Human` | not filled in |
 | `0x002378a8` | `Human_SetHealthPercent` | `Human` | 176 |
@@ -705,6 +706,7 @@ at the top of the repository's `README.md`.
 | `0x0023ae90` | `Human_LockPadMovement` | `Human` | not filled in |
 | `0x0023b128` | `CNS_SetMissionInfoEnabled` | `Human` | 16 |
 | `0x0023b138` | `Human_TeleportNear` | `Human` | 1,600 |
+| `0x0023b778` | `Human_SetSlowMo` | `Human` | 192 |
 | `0x0023cf88` | `Human_TurnToOver` | `Human` | not filled in |
 | `0x0023d2b8` | `Human_MoveToOver` | `Human` | not filled in |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
@@ -1341,6 +1343,7 @@ at the top of the repository's `README.md`.
 | `0x0041b6a8` | `ReportCrime` | `Warriors` | 16 |
 | `0x0041b6e0` | `Crime_IsHappening` | `Warriors` | not filled in |
 | `0x0041b8b0` | `Crime_Report` | `Warriors` | 1,560 |
+| `0x0041c2b0` | `GameState_TurnWarriorCommands` | `Warriors` | 32 |
 | `0x0041c2d0` | `GameState_IssueWarriorCommand` | `Warriors` | not filled in |
 | `0x0041c4e0` | `GameState_DispatchWarriorCommand` | `Warriors` | not filled in |
 | `0x0041ce98` | `GameState_SetCheckPoint` | `Warriors` | 88 |

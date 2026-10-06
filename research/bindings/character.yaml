@@ -1168,6 +1168,7 @@
     after the 14 s (the reader of `+0xf0`) is not traced; inferred: it gets up by itself. The optional `+0xfc` timer
     (0x002800b8) is off because its setting 0x00510994 is -1.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [60, 61, 64]}
+  coney: implemented
 
 - name: HuSetArrested
   wrapper: 0x0035ad40
@@ -1469,6 +1470,7 @@
   notes: >-
     The step is global, not per human. Who reads `+0x3bb` is not traced.
   usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false, levels: [3]}
+  coney: implemented
 
 - name: HuIsGrabbed
   wrapper: 0x0035b578
@@ -3501,6 +3503,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: IssueWarriorCommand
   wrapper: 0x003747b8

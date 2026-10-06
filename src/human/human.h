@@ -288,7 +288,9 @@ class Human final : public Holdable {
     /// Alive and up (`HuIsAlive`): health left and not arrested. **Coney's reading** of the down states
     /// (`0x180050000`, not all researched): a knockdown that it gets up from still counts as alive.
     /// @orig 0x00235628 Human_IsAlive (unknown)
-    [[nodiscard]] bool alive() const { return !m_fighter.health().depleted() && !m_script.arrested; }
+    [[nodiscard]] bool alive() const {
+        return !m_fighter.health().depleted() && !m_script.arrested && !m_script.knockedOut;
+    }
     /// Health as a percentage of its maximum, 0-100 (`HuGetHealthPercent`).
     /// @orig 0x00237c38 Human_GetHealthPercent (unknown)
     [[nodiscard]] float healthPercent() const { return m_fighter.health().fraction() * 100.0F; }

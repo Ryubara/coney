@@ -151,17 +151,17 @@ Fight Pen's flag under the pad, the level scripts' player starts and models for 
 arenas' flag starts, the hub's chat events run for 20 seconds without a script error, and the game's random table read
 from the executable (`[story]`); a QUICK RUMBLE Brawl left to the computer's Orphan, which beats the Fury, through the
 win sequence to the result screen naming the Orphans, a WAR PARTY's hand-over, and King of the hill held by the player
-to its result screen (`[rumble]`, the set-up changed after the menus as an unlocked profile would choose it); every
-animation clip in the WAD, parsed and sampled (`[anim]`, about 7 seconds); every Character List record with its model,
-textures, character data and clips, skinned (`[characters]`); every Object List record with its model and texture
-dictionary, the models of one atomic read (`[object_list]`); Rembrandt's Anim Range List with a damage for every attack
-and the grab and tackle ranges, and Rembrandt in the sandbox's fight yard doing a combo, a grab with a strike, spins and
-a throw, a tackle and a mugging on a passive target (`[combat]`); and Rembrandt at level99's start, walked, run, turned,
-stopped and run into the scenery by scripted partial stick deflections, with his speeds and clips checked against the
-research (`[player]`), and played again through the main loop at five frame rates and with irregular frames, bit for bit
-the same as in test mode (`[frame_rate]`); and `LOGO` decoded through FFmpeg to its 115 frames and its sound, and
-`L99_IN`'s six captions found (`[movies]`). They run only when the environment variable `CONEY_DISC` names the disc, are
-reported as skipped otherwise, and print counts only:
+to its result screen, Battle royal won by ringing the other side out (`[rumble]`, the set-up changed after the menus as
+an unlocked profile would choose it); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7 seconds);
+every Character List record with its model, textures, character data and clips, skinned (`[characters]`); every Object
+List record with its model and texture dictionary, the models of one atomic read (`[object_list]`); Rembrandt's Anim
+Range List with a damage for every attack and the grab and tackle ranges, and Rembrandt in the sandbox's fight yard
+doing a combo, a grab with a strike, spins and a throw, a tackle and a mugging on a passive target (`[combat]`); and
+Rembrandt at level99's start, walked, run, turned, stopped and run into the scenery by scripted partial stick
+deflections, with his speeds and clips checked against the research (`[player]`), and played again through the main loop
+at five frame rates and with irregular frames, bit for bit the same as in test mode (`[frame_rate]`); and `LOGO` decoded
+through FFmpeg to its 115 frames and its sound, and `L99_IN`'s six captions found (`[movies]`). They run only when the
+environment variable `CONEY_DISC` names the disc, are reported as skipped otherwise, and print counts only:
 
 ```sh
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"

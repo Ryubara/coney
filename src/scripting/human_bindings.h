@@ -196,6 +196,8 @@ class HumanBindingHost {
     virtual void setCarriedItem(double /*human*/, std::string_view /*object*/) {}
     /// `HuSetMugCallback`: empty clears it.
     virtual void setMugCallback(double /*human*/, std::string_view /*callback*/) {}
+    /// `HuSetConscious`: false knocks the human out (once), true brings it round.
+    virtual void setConscious(double /*human*/, bool /*conscious*/) {}
     /// `HuEnableSoundCommands`.
     virtual void setSoundCommands(double /*human*/, bool /*on*/) {}
     /// `HuPutItemInPocket` (item 0 and count 0 for `HuRemoveItemInPocket`).

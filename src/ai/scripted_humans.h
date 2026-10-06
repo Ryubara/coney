@@ -47,6 +47,8 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// Kept with a 100 % chance (`+0x278` = 100).
     void setCarriedItem(double human, std::string_view object) override;
     void setMugCallback(double human, std::string_view callback) override;
+    /// The human's knocked-out mark (human::ScriptState::knockedOut) and its brain off, or both back.
+    void setConscious(double human, bool conscious) override;
     void setSoundCommands(double human, bool on) override;
     void setPocket(double human, int item, int count) override;
     /// Kept while both humans (or the target object) exist.

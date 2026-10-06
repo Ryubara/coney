@@ -3,17 +3,19 @@
 // Rumble matches played on the player's own disc, from boot through the menus, headless, with the game's own scripts
 // (docs/research/rumble.md): a QUICK RUMBLE Brawl the player loses ends on the result screen with the other gang's
 // win, the winner cheering and the player revived on the way; in a WAR PARTY the pad passes to a team-mate when the
-// player goes down; in King of the hill the player held on the top wins for his gang. They run only when CONEY_DISC
-// names the disc and skip otherwise; they print counts only (LEGAL.md).
+// player goes down; in King of the hill the player held on the top wins for his gang; in Battle royal the side left in
+// the ring wins. They run only when CONEY_DISC names the disc and skip otherwise; they print counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -24,6 +26,7 @@
 #include "scripting/lua_value.h"
 #include "support/disc_play_fixtures.h"
 #include "warriors/created_humans.h"
+#include "world_objects/volume_boxes.h"
 
 TEST_CASE("the disc's QUICK RUMBLE Brawl the player loses ends on the result screen with the Orphans' win",
           "[disc][rumble]") {
@@ -139,4 +142,48 @@ TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose 
     CHECK(game.flow().rumbleResult().winner().find("FURIES") != std::string::npos);
     CHECK(game.flow().scripts().errors() == 0);
     std::printf("  king of the hill: result screen at frame %llu\n", static_cast<unsigned long long>(game.frames()));
+}
+
+TEST_CASE("the disc's Battle royal kills the fighters rung out and gives the win to the side left in the ring",
+          "[disc][rumble]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // Three a side in arena 131; after the countdown the Orphans are put outside the ring box, beyond its far side.
+    coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript);
+    game.chooseRumble(3, 131, 3);
+    game.run(1000 - game.frames());
+    REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
+    const std::optional<double> ring = game.flow().scripts().vm().global("vRing").number();
+    REQUIRE(ring.has_value());
+    const coney::world_objects::VolumeBox* box = game.flow().context().boxes->find(*ring);
+    REQUIRE(box != nullptr);
+    int rungOut = 0;
+    for (const coney::HumanCreation& human : game.flow().humans().all()) {
+        if (!human.name.starts_with("P2")) {
+            continue;
+        }
+        auto point = std::make_shared<coney::script::Table>();
+        REQUIRE(point->set(coney::script::Value(1.0), coney::script::Value(box->high[0] + 4.0 + rungOut)).has_value());
+        REQUIRE(point->set(coney::script::Value(2.0), coney::script::Value(box->high[1] + 4.0)).has_value());
+        REQUIRE(
+            point->set(coney::script::Value(3.0), coney::script::Value(static_cast<double>(box->low[2]))).has_value());
+        const std::array<coney::script::Value, 2> args{coney::script::Value(human.handle),
+                                                       coney::script::Value(std::move(point))};
+        REQUIRE(game.flow().scripts().call("Teleport", args));
+        ++rungOut;
+    }
+    REQUIRE(rungOut == 3);
+
+    // OutOfRing kills each 3 s later; with nobody of theirs left the Furies win.
+    const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 1500);
+    for (const std::string& line : game.log()) {
+        UNSCOPED_INFO(line);
+    }
+    REQUIRE(ended);
+    CHECK(game.flow().rumbleResult().winner().find("FURIES") != std::string::npos);
+    CHECK(game.flow().scripts().errors() == 0);
+    std::printf("  battle royal: %d rung out, result screen at frame %llu\n", rungOut,
+                static_cast<unsigned long long>(game.frames()));
 }

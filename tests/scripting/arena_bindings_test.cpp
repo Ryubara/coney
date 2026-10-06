@@ -276,3 +276,21 @@ TEST_CASE("King of the hill's crown, reticules and split mode", "[scripting][rum
     level.call("HuForceEnableReticule", {Value(thug.handle()), Value(1.0)});
     CHECK(level.state.forceReticules);
 }
+
+TEST_CASE("Battle royal's knock-out and Warrior commands switch", "[scripting][rumble]") {
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    level.call("HuSetConscious", {Value(thug.handle()), Value(0.0)});
+    CHECK(thug.human().script().knockedOut);
+    CHECK_FALSE(thug.human().alive());
+    CHECK(thug.dead());
+    level.call("HuSetConscious", {Value(thug.handle()), Value(1.0)});
+    CHECK_FALSE(thug.human().script().knockedOut);
+    CHECK(thug.human().alive());
+    CHECK_FALSE(thug.dead());
+
+    level.call("TurnWarriorCommands", {Value(0.0)});
+    CHECK_FALSE(level.state.characters.warriorCommands[0][1]);
+    level.call("TurnWarriorCommands", {Value(2.0)});
+    CHECK(level.state.characters.warriorCommands[1][3]);
+}

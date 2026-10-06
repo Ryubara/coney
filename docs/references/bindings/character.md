@@ -2691,7 +2691,7 @@ it after the 14 s (the reader of `+0xf0`) is not traced; inferred: it gets up by
   `Human_KnockOut`, `0x00230598` `Human_WakeUp`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetDamage {#husetdamage}
 
@@ -3849,7 +3849,7 @@ again for any value outside 0-1. A player human given is marked at `+0x3bb` whil
 - **Wrapper** `0x0035b4f8` (registered by `RegisterBindings`); **calls** `0x0023b778` `Human_SetSlowMo`
 - **Used by** 2 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetSpecialCallbacks {#husetspecialcallbacks}
 
@@ -5064,7 +5064,7 @@ Same as WCEnableAllCommands(on ~= 0).
 - **Evidence:** confirmed (code) at `0x0041c2b0`; detail: brief
 - **Wrapper** `0x00374780` (registered by `RegisterBindings`); **calls** `0x0041c2b0` `GameState_TurnWarriorCommands`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## WalkingDistance {#walkingdistance}
 

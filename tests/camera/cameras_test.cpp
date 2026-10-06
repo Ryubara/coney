@@ -277,6 +277,11 @@ TEST_CASE("slow motion's events set the characters' step to the factor of 1/30 s
     slow.event(0x30, 0);                 // not a slow-motion event
     slow.event(SlowMotion::kEventOn, 5); // no such player
     CHECK_FALSE(slow.active());
+    // A script's HuSetSlowMo: a fraction of 1/30 s strictly between 0 and 1, else the normal step.
+    slow.setScripted(0.5F);
+    CHECK(slow.stepSeconds() == Approx(1.0F / 60.0F));
+    slow.setScripted(-1.0F);
+    CHECK(slow.stepSeconds() == Approx(1.0F / 30.0F));
 }
 
 TEST_CASE("CamSetupFollow and CfgFollowCamera made before the player exists apply when his camera is attached",

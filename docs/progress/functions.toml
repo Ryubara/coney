@@ -3187,6 +3187,12 @@ subsystem = "Human"
 size = 120
 
 [[function]]
+address = 0x00237778
+name = "Human_SetConscious"
+subsystem = "Human"
+size = 128
+
+[[function]]
 address = 0x002377f8
 name = "Human_Revive"
 subsystem = "Human"
@@ -3438,6 +3444,12 @@ address = 0x0023b138
 name = "Human_TeleportNear"
 subsystem = "Human"
 size = 1600
+
+[[function]]
+address = 0x0023b778
+name = "Human_SetSlowMo"
+subsystem = "Human"
+size = 192
 
 [[function]]
 address = 0x0023cf88
@@ -7081,6 +7093,12 @@ address = 0x0041b8b0
 name = "Crime_Report"
 subsystem = "Warriors"
 size = 1560
+
+[[function]]
+address = 0x0041c2b0
+name = "GameState_TurnWarriorCommands"
+subsystem = "Warriors"
+size = 32
 
 [[function]]
 address = 0x0041c2d0

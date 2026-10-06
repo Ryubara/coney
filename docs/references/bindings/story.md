@@ -20,7 +20,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 24 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 1 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 1 |
-| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 2 |
+| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 3 |
 | [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 2 |
 | [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 4 |
 | [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 3 |
@@ -38,7 +38,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level83`](#level83) | flashback 3 | 250 | 1 | 1 | 0 |
 | [`level20`](#level20) | flashback 4 | 258 | 11 | 11 | 3 |
 | [`level11`](#level11) | flashback 5 | 260 | 7 | 7 | 1 |
-| [`level60`](#level60) | Armies of the Night 1 | 150 | 15 | 15 | 0 |
+| [`level60`](#level60) | Armies of the Night 1 | 150 | 15 | 15 | 1 |
 | [`level61`](#level61) | Armies of the Night 2 | 168 | 0 | 0 | 0 |
 | [`level62`](#level62) | Armies of the Night 3 | 127 | 1 | 1 | 0 |
 | [`level63`](#level63) | Armies of the Night 4 | 150 | 0 | 0 | 0 |
@@ -345,7 +345,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 22 traced, 2 implemented in Coney (217 of all 259).
+259 bindings, 22 new: 22 traced, 3 implemented in Coney (218 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -354,7 +354,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`HuHasHat`](character.md#huhashat) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetAutoCombat`](character.md#husetautocombat) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetNoReact`](character.md#husetnoreact) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetSlowMo`](character.md#husetslowmo) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetSlowMo`](character.md#husetslowmo) | Characters | traced | confirmed (code) | implemented |
 | [`HuUseAnyAnim`](character.md#huuseanyanim) | Characters | traced | confirmed (code) | not implemented |
 | [`GoalBigLedgeThrower`](ai.md#goalbigledgethrower) | AI | traced | confirmed (code) | not implemented |
 | [`GoalDevilRun`](ai.md#goaldevilrun) | AI | traced | confirmed (code) | not implemented |
@@ -655,13 +655,13 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level60: Armies of the Night 1 {#level60}
 
-150 bindings, 15 new: 15 traced, 0 implemented in Coney (122 of all 150).
+150 bindings, 15 new: 15 traced, 1 implemented in Coney (123 of all 150).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`HuColor`](character.md#hucolor) | Characters | traced | confirmed (code) | not implemented |
 | [`HuEnableController`](character.md#huenablecontroller) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetConscious`](character.md#husetconscious) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetConscious`](character.md#husetconscious) | Characters | traced | confirmed (code) | implemented |
 | [`GangSetMoney`](gang.md#gangsetmoney) | Gangs | traced | confirmed (code) | not implemented |
 | [`CamLockRail`](camera.md#camlockrail) | Cameras | traced | confirmed (code) | not implemented |
 | [`HUDANEnableJoinMsg`](hud.md#hudanenablejoinmsg) | HUD and menus | traced | confirmed (code) | not implemented |
@@ -677,7 +677,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level61: Armies of the Night 2 {#level61}
 
-168 bindings, 0 new: 0 traced, 0 implemented in Coney (133 of all 168).
+168 bindings, 0 new: 0 traced, 0 implemented in Coney (134 of all 168).
 
 ## level62: Armies of the Night 3 {#level62}
 
@@ -693,7 +693,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level64: Armies of the Night 5 {#level64}
 
-154 bindings, 4 new: 4 traced, 0 implemented in Coney (116 of all 154).
+154 bindings, 4 new: 4 traced, 0 implemented in Coney (117 of all 154).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

@@ -31,6 +31,13 @@ class SlowMotion {
     /// @orig 0x0041ab60 SlowMotion_Off (unknown)
     void event(std::uint16_t type, int player);
 
+    /// `HuSetSlowMo(fraction)`: the step becomes `fraction` of 1/30 s for a fraction strictly between 0 and 1, else
+    /// 1/30 s again.
+    /// @orig 0x0023b778 Human_SetSlowMo (unknown)
+    void setScripted(float fraction) {
+        m_step = fraction > 0.0F && fraction < 1.0F ? fraction * kNormalStep : kNormalStep;
+    }
+
     /// The characters' step now, seconds.
     [[nodiscard]] float stepSeconds() const { return m_step; }
     /// Whether some player has it on.

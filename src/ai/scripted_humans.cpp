@@ -124,6 +124,17 @@ void ScriptedHumans::setMugCallback(double human, std::string_view callback) {
     onBrain(human, [name = std::string(callback)](Brain& brain) { brain.human().script().mugCallback = name; });
 }
 
+void ScriptedHumans::setConscious(double human, bool conscious) {
+    onBrain(human, [conscious](Brain& brain) {
+        bool& out = brain.human().script().knockedOut;
+        if (out == !conscious) {
+            return;
+        }
+        out = !conscious;
+        brain.setDead(!conscious);
+    });
+}
+
 void ScriptedHumans::setSoundCommands(double human, bool on) {
     onBrain(human, [on](Brain& brain) { brain.human().script().soundCommands = on; });
 }

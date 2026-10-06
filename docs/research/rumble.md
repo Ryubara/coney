@@ -282,9 +282,9 @@ flight may have some). Each links to its reference entry by name.
   `ShowRumbleModeInterface`.
 - **Brawl** (with the Fight Pen's flag chunk): `EndGarbage`, `SoundEnableSystemMusic`.
 - **King of the hill**: `CameraSetClipping`.
-- **Battle royal**: `CameraSetClipping`, `HuSetConscious`, `HuSetSlowMo`, `TurnWarriorCommands`.
+- **Battle royal**: `CameraSetClipping`.
 - **Survival**: `BrSetAttackWeight`, `BrSetType`, `GoalEngageEnemy`, `GoalMoveToHuman`, `HuGetCharType`,
-  `HuGetPosition`, `TacticHanginOut`, `TurnWarriorCommands`.
+  `HuGetPosition`, `TacticHanginOut`.
 - **Tag battle**: `CfgHuInventoryCallback`, `CfgTagSettings`, `GoalTag`, `HUDEnableBar`, `HUDEnableGenBar`,
   `HUDSetBarPercentage`, `HUDSetRadarZoomScale`, `HuSetMug`, `HuTag`, `TacticDefend`, `TacticMoveToFlag`.
 - **Mercy**: `GoalGrabTarget`.
@@ -298,7 +298,8 @@ flight may have some). Each links to its reference entry by name.
 A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the
 set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's
 revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. King of the hill
-plays to its result screen when the player holds the top. The other game types are not built yet.
+plays to its result screen when the player holds the top, and Battle royal when one side is rung out. The other game
+types are not built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
@@ -325,6 +326,9 @@ plays to its result screen when the player holds the top. The other game types a
   (kept: one view). In arenas 101, 129 and 130 the AI is held at the foot of the top tier (inferred: the way up
   needs the flag-`0x80` jump legs the goal's `+0xe0` bit 2 allows, [AI: route follow](ai.md#route-follow), which
   Coney's move action does not take), so only the player scores.
+- **Battle royal**: the scripts' own ring-out rules run on `TacticDomination`, `HuSetSlowMo` (the characters' step,
+  `repo:src/camera/slow_motion.h`), `HuSetConscious` (a knocked-out mark that stops the human and its brain) and
+  `TurnWarriorCommands`.
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
@@ -333,7 +337,8 @@ Coney's stand-ins, each an open question below where the page is silent: the int
 lengths; the result lines' look and the grids' rows; the melee and confront goals; the confront tactic's radii and route
 test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
 brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
-scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight.
+scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight; a knock-out without its clips
+or its wake-up after 14 s.
 
 ## Open questions {#open-questions}
 

@@ -8,6 +8,7 @@
 #include <span>
 #include <string>
 
+#include "camera/cameras.h"
 #include "human/human_flags.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
@@ -221,6 +222,34 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
                             }
                         }));
     vm.registerFunction("Teleport", makeTeleport(context));
+    // `HuSetConscious(human, conscious)`.
+    // @orig 0x00237778 Human_SetConscious (unknown)
+    vm.registerFunction("HuSetConscious", humanCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
+                            host.setConscious(handleArg(args, 0), boolArg(args, 1));
+                        }));
+    // `HuSetSlowMo(fraction, human)`: the whole game's characters' step. **Coney stand-in**: the player's byte
+    // `+0x3bb` it marks is not kept, as its reader is not on the page.
+    vm.registerFunction("HuSetSlowMo", [context = &context](std::span<const Value> args) {
+        if (context->cameras != nullptr) {
+            context->cameras->slowMotion().setScripted(static_cast<float>(binding::number(args, 0)));
+        }
+        return binding::none();
+    });
+    // `TurnWarriorCommands(on)`: every Warrior command on (non-zero) or off, as `WCEnableAllCommands`.
+    // @orig 0x0041c2b0 GameState_TurnWarriorCommands (unknown)
+    vm.registerFunction("TurnWarriorCommands", [context = &context](std::span<const Value> args) {
+        if (context->state == nullptr) {
+            return binding::none();
+        }
+        const bool on = intArg(args, 0) != 0;
+        for (auto& player : context->state->characters.warriorCommands) {
+            player.fill(on);
+        }
+        if (HumanBindingHost* host = humansOf(*context); host != nullptr) {
+            host->applyRules(context->state->characters);
+        }
+        return binding::none();
+    });
     // `GangAttachSpinningIcon(gang, icon, arg)`: -1 does nothing. **Coney stand-in**: the two icon names swapped for
     // another language's (`0x002271f0`) are not, as their names are not on the page.
     // @orig 0x0016b2c8 Gang_AttachSpinningIcon (unknown)
