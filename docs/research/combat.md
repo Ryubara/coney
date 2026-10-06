@@ -80,6 +80,9 @@ No source file names this code: it lies in `Human/`, in the stretch after `cns/c
 | `0x0026bad8` | `Grab_ConnectEnd` | end of 72 / 74: distance check, snap and attach in the hold | confirmed (code) |
 | `0x00276d98` / `0x002802a0` | `Pair_SnapAttach` / `Pair_Attach` | puts the victim at the hold's offset and ties its movement to the grabber | confirmed (code) |
 | `0x00244e78` / `0x00245310` | `Human_MoveAttached` / `Human_MoveGrabbing` | movement states of the held victim and of a grabbing player | confirmed (code) |
+| `0x0026f008` / `0x0026ef68` | `Grab_StartMountFromFront` / `Grab_MountClipEnd` | circle in the front hold: 118 / 119, then the mount | confirmed (code), runtime |
+| `0x0022bfd0` | `Pair_LinkMount` | the mount's states for both (also the tackle's and the grounded mount's) | confirmed (code) |
+| `0x0027ec20` | `Player_UpdateMounting` | strikes, power strike, back to the hold, get off, in the mount | confirmed (code), runtime |
 | `0x00277958` | `Pair_CheckPlace` | a move in the hold needs the victim within 0.3 m of the move's offset | confirmed (code) |
 | `0x0023cf88` / `0x0023d2b8` | `Human_TurnToOver` / `Human_MoveToOver` | turn to a heading, or move to a point, over a time | confirmed (code) |
 | `0x002761c8` / `0x00276008` | `Attack_SteerToTarget` / `Attack_TurnToTarget` | an attack's turn and slide onto its target up to the clip's first event, or the turn alone ([Target selection](#targets)) | confirmed (code), runtime |
@@ -235,7 +238,7 @@ civilian (confirmed (runtime)):
 | circle + stick in a grab | 147-153 `THROW_01_*` | 66 | 152 (rear), then 196 grounded |
 | the same with a wall in reach | 155 `THROW_02_FROM_GRAB_FRONT` | 264 | |
 | square at a grounded target | 193 / 194 `GROUNDED_STRIKE_01` / `02` | 34 | |
-| square on a tackled target | 212 `MOUNTING_STRIKE` | 30 | |
+| square / cross in the mount | 219 or 221 / 223 `MOUNT_COMBO_STRIKE_*` | 61 (runtime) | 220, 222 / 224 |
 | square, stick > 0.95 to a side or back | 25, 27, 29 `SNAP_*` | 31 | |
 
 The snap ids 26, 28 and 30 (the `_02` variants) use the filler clip `missing_anim_filler` and are never chosen in the
@@ -595,8 +598,8 @@ At runtime (confirmed (runtime)):
   then 83. Player state `0x45`, victim `0x10`. With nobody in reach: 71, then 69 `GRAB_MISS`, then 389.
 - **Tackle**, victim 2.6 m ahead, circle held 0.55 s: the command `0xe` came on the 7th sample (0.23 s), the player
   played 4 `TACKLE_PLAYER_INTRO` covering the distance, then 5 `TACKLE_HIT_FROM_FRONT` with the victim on 6, state
-  `0x405` / `0x801`; after 1.4 s the player sat in 210 `MOUNTING_IDLE` on the victim's 207 `MOUNTED_IDLE`. Square
-  there plays 212 (30 damage).
+  `0x405` / `0x801`; after 1.4 s the player sat in 210 `MOUNTING_IDLE` on the victim's 207 `MOUNTED_IDLE`
+  ([The mount](#mount)).
 
 ### In the grab {#grabbing}
 
@@ -610,7 +613,7 @@ At runtime (confirmed (runtime)):
 | circle + cross (`0x23`) | anim 63, with the same rear spin |
 | triangle (`0xa`) | **mug** the victim if it qualifies (`0x00225ff0`); confirmed (runtime) |
 | circle (`0x1e`, `0xd` or `0xe`) with the stick above 0.25 | **throw** ([Throws](#throws)); confirmed (runtime) |
-| circle without the stick | from the front `0x0026f008` (not traced); from the rear the spin to the front |
+| circle without the stick | from the front the **mount** ([The mount](#mount)); from the rear the spin to the front; confirmed (runtime) |
 | R1 pressed (3) or `0x19` | **spin**: front → rear 78 / 79 (`0x0026d570`), rear → front 80 / 81 (`0x0026d998`); confirmed (runtime): 78 / 79, then the rear hold 84 / 85, states `0x85` / `0x20` |
 | L2 held (5) | **lets go**: player 95, victim 94; confirmed (runtime) |
 
@@ -780,6 +783,41 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
 mounter's left**, its heading the mounter's + 180°. That is clip 210's type-8 pair event (−0.120, 0.032). The tackle
 clips' own pair events: 5 (0.021, 1.013), 7 (−0.092, 1.036), 212 (0, 1.203).
 
+### The mount {#mount}
+
+**From the front hold** (`Grab_StartMountFromFront`, `0x0026f008`), confirmed (code) and (runtime, slot 6, the
+puppet civilian 1 m ahead, stick centred):
+
+- `Player_UpdateGrabbing` calls it on circle (`0x1e`, `0xd` or `0xe`) with the stick at 0.25 or less, when the player
+  grabs from the front (state `0x40`) and human `+0xe0` lacks `0x100000000` (not traced). There is **no power check
+  and no cost**; the grab's drain of 15 per second goes on (386 → 354 over 118).
+- The **press** (`0x1e`) starts it on the same update. The tap's `0xd` and a hold's `0xe` arrive while 118 holds
+  `+0x08` `0x2000` and are dropped, so a tap and a hold of any length both mount once.
+- `Pair_LinkMount` (`0x0022bfd0`): states grabber `0x45` → `0x405`, victim `0x10` → `0x801` (`0xc0` / `0x30` cleared,
+  `0x400` / `0x800` set), movement styles `0xc` / `0xb`, the victim's brain targets the grabber. The tackle's connect
+  (`0x00270270`) and the grounded mount (`0x00271b30`) call it too.
+- Grabber 118 `GRAB_MOUNT`, victim 119 from the grabber's set (a paired type 6 task), both holding `+0x08` `0x2000`,
+  0.1 s blends. **118 lasts 65 updates (2.17 s)**; at its end `Grab_MountClipEnd` (`0x0026ef68`) puts the mounter at
+  clip 210's offset from the victim over 0.1 s (`0x00277248`), and the idles become 210 / 207 with the victim 0.10 m
+  away (0.12 m after a strike). A victim with human flag `0x20000` is got off at once (`0x00271470`).
+
+**In the mount** (`Player_UpdateMounting`, `0x0027ec20`, state `0x400`), confirmed (code); confirmed (runtime) for
+square, cross, circle and L2, **the same after a tackle or a grab**:
+
+| Input | Effect |
+| --- | --- |
+| square (`0xf`) | 219 or 221 at random (record `+0x68` + 0 or 2; victim 220 / 222), 61 damage; spends 40 (0.2, halved for a player) |
+| cross (`0x10`) | 223 (record `+0x6c`; victim 224), 61 damage; spends 40 |
+| cross held, square (`0x22`) | the power strike 225 (231 raging) through `Attack_StartPaired`; needs more than 0.25 power, otherwise gets off |
+| circle (`0x1e`, `0xd`, `0xe`) | back to the front hold: 248 / 249 (36 updates), then 82 / 83 (`0x00271808`) |
+| L2 (5) | gets off: 244 / 245, the victim rises with 199 (`0x00271098`) |
+| triangle | mug ([Mugging](#mugging)) |
+
+The mount drains power at the tackle's 15 per second ([constants](#constants)). The strikes ran 16, 19 and 28
+updates back to 210. Level 99's tutorial follows this through two callbacks: `AddAnimCallback(player, 210,
+"PlayerState")` shows the mount's prompt when 210 starts, and `HUDSetTutorialCallback("P1.BasicAttacks")`, which
+receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.BasicAttacksDone`.
+
 ### Grabbed, and breaking free {#grabbed}
 
 **When the player is grabbed** (`Player_UpdateGrabbed`, `0x0027fd68`, the grabber at human `+0xc4`), confirmed
@@ -812,8 +850,8 @@ updates of 96), 68 when 104 was still playing; the
   played 76 / 77; the grabber lost 100 and was stunned (`0x100000`, then 355, 356, 357), and the player spent 100 of
   400 power and gained 10 rage.
 - An AI grabber's own circle while holding the player (command `0x1e`, then `0xd`) took the pair to the ground: 118
-  `GRAB_MOUNT` / 119, then 210 `MOUNTING_IDLE` on the player's 207 `MOUNTED_IDLE` (confirmed (runtime); the path is
-  not traced).
+  `GRAB_MOUNT` / 119, then 210 `MOUNTING_IDLE` on the player's 207 `MOUNTED_IDLE` (confirmed (runtime);
+  [The mount](#mount)).
 
 `CfgButtonMash` plays no part here: its only reader is the theft game ([Stereo theft](#stereo-theft)).
 
@@ -1461,13 +1499,13 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
   1.5 m.
-- **Stand-in**: circle without the stick from the front hold (`0x0026f008`, not traced) takes the pair to the ground as
-  an AI grabber's circle did ([Grabbed](#grabbed)): 118 `GRAB_MOUNT` on the victim's 119, then the tackle's mount (210
-  on 207, the victim placed at 210's pair event when 210 starts), costing nothing; mounted, square strikes with 212 as
-  after a tackle. Level99's combat tutorial asks for it ("Hold circle to get on your opponent"). A grab plays one move
-  at a time; a throw lets go at once; the rear power strike's spin plays in front of the strike, whose timing starts
-  with it; the release with too little power goes straight to the idles, and the grab broken at 0 power plays the
-  let-go. A tackle also ends when the power meter is empty, and any hold when the victim has no health left.
+- **Stand-in** until [The mount](#mount) is written: circle without the stick from the front hold takes the pair to
+  the ground with 118 `GRAB_MOUNT` on the victim's 119, then the tackle's mount (210 on 207, the victim placed at 210's
+  pair event when 210 starts), costing nothing; mounted, square strikes with 212 (the original plays 219 or 221, and
+  cross 223). A grab plays one move at a time; a throw lets go at once; the rear power strike's spin plays in front of
+  the strike, whose timing starts with it; the release with too little power goes straight to the idles, and the grab
+  broken at 0 power plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim
+  has no health left.
 - The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's
   target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
   second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
@@ -1553,10 +1591,8 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **Commands `0x30`-`0x39`**: which scripts or weapons make them; `0x36`-`0x38` and the d-pad (`0x27`).
 - **Mini-game mode 2 at runtime** (answered from the code: modes 1 and 2 are uncuffing and lock picking,
   [Crimes](crimes.md#mini-game-record)).
-- **The grab's front circle** `0x0026f008` (Coney's stand-in mounts, see above): its clips, checks, cost and which
-  input it takes; and the player's moves once mounted (square, cross, the power combo: 212, or 219-223 and 225+).
-  Level99's tutorial does not move on from the mount with 212. Also the `0x00510980` table and the further grab state
-  of `0x005101f0`.
+- **The grab code's `0x00510980` table**, the further grab state of `0x005101f0`, and what makes square play 212
+  (`Player_Square` on a tackled target; never seen at runtime).
 - **Square at a sprint** at runtime, and the moving attacks' hit timing (the victim was out of reach in the tests).
 - **The mugging's angle frame** (world or camera).
 - **The fence break** in slot 10: which script reacts to the charge.
