@@ -160,7 +160,9 @@ the type id, `+0x1c` destroy, `+0x24` Start, `+0x2c` End, `+0x34` Resume, `+0x44
 | `0x1f` | GrabTarget | `0x002bb458` | |
 | `0x21` | PlayAnimation (a scene) | `0x002e4980` | pushed by `GoalAddressPerson` |
 | `0x22` | PlayDynAnimation | `0x002d2eb0` | [`GoalPlayDynAnimation`](#dyn-animation) |
+| `0x29` | JoinCinematic | `0x002e53e0` (vtable `0x005421f0`) | `GoalJoinCinematic` (`0x002e5300`); Process `0x002e5618` |
 | `0x30` | TrackHuman | `0x002df250` | [`GoalTrackHuman`](#formations) |
+| `0x36` | HoldPosition | `0x002be640` (vtable `0x00540510`) | `GoalHoldPosition` (`0x002be590`), and the tactic code at `0x00313718`; Process `0x002be818` |
 | `0x41` | a melee sub-goal | `0x002c0430` | popped by `Brain_PushFightGoal` |
 | `0x4f` | Bum | `0x002abef8` | `GoalBumLogic` |
 | `0x57` | AddressPerson | `0x002cc408` | [`GoalAddressPerson`](#address-person) |
@@ -963,6 +965,25 @@ The state is not a quick-save slot; it is made once and named by the scenarios' 
 3. Save while the scene plays ([Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)), and put the patched
    words back before using it as a source.
 
+#### The cast while the scene plays {#level99-scene-state}
+
+Confirmed (runtime), in that state (`l99-warriors-before-fight`) read both from the state file and over PINE; type ids
+read from each goal vtable's `+0x0c` function, confirmed (code) at the constructors in [Goals](#goals):
+
+- Brains 0-18 are in use. Everyone in the scene (Rembrandt, Vermin, Cleon, `Generic1`-`3`) is dead to the AI (`+0x09`
+  = 1, think the stub `0x004edd40`) with one goal, **JoinCinematic** (`0x29`), whose actions are a move (vtable
+  `0x00542f20`, `MoveAction_Init`'s) and then a turn (vtable `0x005430e0`, the one `Action_TurnToTarget` makes).
+- Ash (type 3) is suspended (`+0x0a` = 1) but not dead, holding one goal, **HoldPosition** (`0x36`).
+- `GenWarrior` and the second wave (type 4) and the two teachers have threat response 0; the sparring and fence
+  Warriors 2. The fence Warriors (gangs 5, 6, type 2) are the only brains running their own think (`0x00304608`).
+- Gangs (record order = id): 0 the player and Ash, kind 0, alert 1, enemies 1 and 2, friends 5 and 6, with a
+  **tactic of type 3** (vtable `0x005439e0`, init `0x00313490`); 1 `GenWarrior`, 2 the second wave (both kind 19,
+  enemy 0); 3 the teachers and 4 the three `CombatWarriors` (kind 19, no masks yet: `GangMakeEnemies` comes with the
+  fight); 5 and 6 the fence Warriors (kind 0, friends with 0).
+- Inferred: the type-3 tactic is set by `0x00313400(…, gang id, …)` from `0x0041c4e0`, which `Human_MakePlayer`
+  (`0x00229c40`), `Human_SetWarChief` and `Gang_OnEvent` call: the player gang's standing tactic, and the source of
+  Ash's HoldPosition (`0x00313718` pushes it).
+
 ## Coney's implementation {#coney}
 
 Steps 3-7 of [What an implementer needs](#implementer) are in `repo:src/ai/`, each original function tagged with
@@ -1018,6 +1039,7 @@ pause and the run-stop.
 - What drives the dealer's run and dirty chances, and goal `0x002b4098` (the dealer's wary goal, the crowd's timed
   goal).
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
+- What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
 - The perception struct (`+0xf8`).
 - The think handlers of types 2, 3 and 5 in detail; what goals the Warriors' think pushes for an ally.
 - Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)), and what the byte
