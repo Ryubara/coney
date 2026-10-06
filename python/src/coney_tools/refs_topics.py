@@ -462,6 +462,7 @@ HUD_COLOURS = Topic(
         F("swatch", "str", "A swatch of the colour (rendered).", "Swatch"),
         F("markup", "str", "The text the table holds (a `<COLOR>` tag, or a list of four bytes)."),
         F("hud_slot", "int", "`CfgHUDColor` slot the colour is given to, if any.", "HUD slot"),
+        F("note", "str", "What is odd about the entry, in our words.", "Note", curated=True),
     ),
     nav="HUD colours",
 )

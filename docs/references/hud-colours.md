@@ -13,22 +13,22 @@ assigns from it.
 
 ## Entries
 
-| Key | RGBA | Swatch | HUD slot |
-| --- | --- | --- | --- |
-| <span id="colour-wht"></span>`wht` | `B2B2B2FF` | <span style="display:inline-block;width:2em;height:1em;background:#B2B2B2"></span> | |
-| <span id="colour-but"></span>`but` | `FFFFFFFF` | <span style="display:inline-block;width:2em;height:1em;background:#FFFFFF"></span> | 1 |
-| <span id="colour-cash"></span>`cash` | `49B749FF` | <span style="display:inline-block;width:2em;height:1em;background:#49B749"></span> | 2 |
-| <span id="colour-warr"></span>`warr` | `861A1AFF` | <span style="display:inline-block;width:2em;height:1em;background:#861A1A"></span> | 3 |
-| <span id="colour-txt"></span>`txt` | `806400FF` | <span style="display:inline-block;width:2em;height:1em;background:#806400"></span> | 4 |
-| <span id="colour-gry"></span>`gry` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> | 5 |
-| <span id="colour-bon"></span>`bon` | `6A4183FF` | <span style="display:inline-block;width:2em;height:1em;background:#6A4183"></span> | 6 |
-| <span id="colour-blu"></span>`blu` | `2353BCFF` | <span style="display:inline-block;width:2em;height:1em;background:#2353BC"></span> | 7 |
-| <span id="colour-orng"></span>`orng` | `2353BCFF` | <span style="display:inline-block;width:2em;height:1em;background:#2353BC"></span> | 8 |
-| <span id="colour-bigmoney"></span>`bigmoney` | | | 9 |
-| <span id="colour-hudwhite"></span>`hudWhite` | `B2B2B2FF` | <span style="display:inline-block;width:2em;height:1em;background:#B2B2B2"></span> | |
-| <span id="colour-selected"></span>`selected` | | | |
-| <span id="colour-enabled"></span>`enabled` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> | |
-| <span id="colour-disabled"></span>`disabled` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> | |
+| Key | RGBA | Swatch | HUD slot | Note |
+| --- | --- | --- | --- | --- |
+| <span id="colour-wht"></span>`wht` | `B2B2B2FF` | <span style="display:inline-block;width:2em;height:1em;background:#B2B2B2"></span> | | |
+| <span id="colour-but"></span>`but` | `FFFFFFFF` | <span style="display:inline-block;width:2em;height:1em;background:#FFFFFF"></span> | 1 | |
+| <span id="colour-cash"></span>`cash` | `49B749FF` | <span style="display:inline-block;width:2em;height:1em;background:#49B749"></span> | 2 | |
+| <span id="colour-warr"></span>`warr` | `861A1AFF` | <span style="display:inline-block;width:2em;height:1em;background:#861A1A"></span> | 3 | |
+| <span id="colour-txt"></span>`txt` | `806400FF` | <span style="display:inline-block;width:2em;height:1em;background:#806400"></span> | 4 | |
+| <span id="colour-gry"></span>`gry` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> | 5 | |
+| <span id="colour-bon"></span>`bon` | `6A4183FF` | <span style="display:inline-block;width:2em;height:1em;background:#6A4183"></span> | 6 | |
+| <span id="colour-blu"></span>`blu` | `2353BCFF` | <span style="display:inline-block;width:2em;height:1em;background:#2353BC"></span> | 7 | |
+| <span id="colour-orng"></span>`orng` | `2353BCFF` | <span style="display:inline-block;width:2em;height:1em;background:#2353BC"></span> | 8 | The scripts give it the same value as `blu`, so the HUD's slot 8 is blue, not orange |
+| <span id="colour-bigmoney"></span>`bigmoney` | | | 9 | The scripts write it with a `0x` prefix; how the text code reads that is not traced, so no colour is shown |
+| <span id="colour-hudwhite"></span>`hudWhite` | `B2B2B2FF` | <span style="display:inline-block;width:2em;height:1em;background:#B2B2B2"></span> | | |
+| <span id="colour-selected"></span>`selected` | | | | |
+| <span id="colour-enabled"></span>`enabled` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> | | |
+| <span id="colour-disabled"></span>`disabled` | `505050FF` | <span style="display:inline-block;width:2em;height:1em;background:#505050"></span> | | |
 
 ## Sources and evidence
 
@@ -45,6 +45,7 @@ Evidence levels used: inferred.
 | `swatch` | str | | A swatch of the colour (rendered). |
 | `markup` | str | | The text the table holds (a `<COLOR>` tag, or a list of four bytes). |
 | `hud_slot` | int | | `CfgHUDColor` slot the colour is given to, if any. |
+| `note` | str | yes | What is odd about the entry, in our words. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
 | `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

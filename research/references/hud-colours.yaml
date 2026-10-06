@@ -53,9 +53,11 @@ entries:
     swatch: "2353BCFF"
     markup: "<COLOR 2353BCFF>"
     hud_slot: 8
+    note: "The scripts give it the same value as `blu`, so the HUD's slot 8 is blue, not orange"
   - id: bigmoney
     markup: "<COLOR 0xA5A98AFF>"
     hud_slot: 9
+    note: "The scripts write it with a `0x` prefix; how the text code reads that is not traced, so no colour is shown"
   - id: hudWhite
     rgba: B2B2B2FF
     swatch: B2B2B2FF
