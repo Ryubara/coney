@@ -59,7 +59,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalBossLizzies`](#goalbosslizzies) | - | 0 | no | no | speculative |
 | [`GoalBoxer`](#goalboxer) | - | 2 | no | no | inferred |
 | [`GoalBumLogic`](#goalbumlogic) | - | 26 | no | yes | confirmed (code) |
-| [`GoalBumLogicTrigger`](#goalbumlogictrigger) | - | 2 | no | no | inferred |
+| [`GoalBumLogicTrigger`](#goalbumlogictrigger) | - | 2 | no | no | confirmed (code) |
 | [`GoalCallGang`](#goalcallgang) | - | 1 | no | no | inferred |
 | [`GoalCallPolice`](#goalcallpolice) | - | 2 | no | no | inferred |
 | [`GoalCopperGuard`](#goalcopperguard) | - | 0 | no | no | speculative |
@@ -87,7 +87,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalLutherShooter`](#goalluthershooter) | - | 1 | no | no | inferred |
 | [`GoalManWeaponPile`](#goalmanweaponpile) | - | 3 | no | no | inferred |
 | [`GoalMark`](#goalmark) | - | 1 | no | no | inferred |
-| [`GoalMelee`](#goalmelee) | - | 1 | no | no | inferred |
+| [`GoalMelee`](#goalmelee) | - | 1 | no | no | confirmed (code) |
 | [`GoalMoveToExitFlag`](#goalmovetoexitflag) | - | 10 | no | no | confirmed (code) |
 | [`GoalMoveToFlag`](#goalmovetoflag) | - | 84 | no | yes | confirmed (code) |
 | [`GoalMoveToHuman`](#goalmovetohuman) | - | 3 | no | no | inferred |
@@ -109,7 +109,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalStationaryThrower`](#goalstationarythrower) | - | 5 | no | no | inferred |
 | [`GoalTag`](#goaltag) | - | 4 | no | no | inferred |
 | [`GoalTagEx`](#goaltagex) | - | 0 | no | no | inferred |
-| [`GoalThrowObject`](#goalthrowobject) | - | 3 | no | no | inferred |
+| [`GoalThrowObject`](#goalthrowobject) | - | 3 | no | no | confirmed (code) |
 | [`GoalTrackHuman`](#goaltrackhuman) | - | 1 | no | yes | confirmed (code) |
 | [`GoalTravelPath`](#goaltravelpath) | - | 6 | no | no | confirmed (code) |
 | [`GoalTravelPath2`](#goaltravelpath2) | - | 1 | no | no | inferred |
@@ -706,15 +706,18 @@ BrSetFOV(human, degrees)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `degrees` | number (single precision) | Field of view in degrees (converted to radians); 360 lets the human see all around it, scripts also use 45-270. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `degrees` | number (single precision) | Full width of the human's view cone in degrees, stored in radians (× 0.0174533); 360 lets it see all around it, scripts also use 45-270. No clamp. |
 
 **Returns** nothing.
 
-Sets how wide a cone a human can see in (brain `+0x12c`), which governs whether it notices the player in stealth
-sections.
+Sets how wide a cone a human can see in (brain `+0x12c`, radians). The spotting checks use it to decide whether the
+human notices the player, so a narrow cone lets the player sneak past from the side or behind in stealth sections.
 
-- **Evidence:** confirmed (code) at `0x002928d8`; detail: brief
+**Notes.** The store is confirmed at 0x002928d8; that the spotting code reads `+0x12c` as a full (not half) angle is
+inferred from the 360 value scripts use for all-round sight.
+
+- **Evidence:** confirmed (code) at `0x002928d8`; detail: traced
 - **Wrapper** `0x0035fa50` (registered by `RegisterBindings`); **calls** `0x002928d8` `Brain_SetFieldOfView`
 - **Used by** 19 of 467 script chunks (114 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -892,18 +895,22 @@ BrSetThreatResponse(human, response)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `response` | number, truncated to an integer | Threat response mode (brain `+0x21c`). 0 means the human does not respond to threats at all (shopkeepers, bartenders, scripted extras); scripts also use 2 and 3. `GoalFight` does nothing while it is 0. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `response` | number, truncated to an integer | Threat response (brain `+0x21c`, truncated to 16 bits and sign-extended): 0 means the human never fights back; any other value lets it fight. Scripts use 0, 2 and 3; no reader seen tells the non-zero values apart. |
 
 **Returns** nothing.
 
-Sets a human's threat response (brain `+0x21c`): 0 means it never fights back (`Brain_Fight` refuses), as for
-shopkeepers and scripted extras; tactics set their own (`TacticAttack` 2, `AvoidEnemies` 0).
+Sets whether a human answers threats (brain `+0x21c`). With 0 it never starts a fight: `Brain_Fight` refuses, the
+brains' threat handler (0x00291960) ignores attackers, and a melee goal gives up once its target is gone, as for
+shopkeepers and scripted extras. With a non-zero value an attacked human fights back, and a gang soldier with enemies on
+its list and no fight goal starts one (`GangBrain_Think` 0x003046e8).
 
-**Notes.** Storage at 0x00292708; the 0 case is confirmed by `Brain_Fight` (0x0028d2e8). What 1-3 change is not traced
-(many readers of brain `+0x21c`). Gang-wide: `GangSetThreatResponse`.
+**Notes.** Civilian, dealer and type-6 civilian brains (0x002fef40, `DealerBrain_Think` 0x00302cf0, 0x00303f28) reset it
+to 0 as soon as they have no fight goal (types 8 or 0x3f, `Brain_HasFightGoal` 0x00290348), so on them it lasts one
+fight; the readers checked test only zero / non-zero (values 2 and 3 may matter to an untraced reader among the ~40 that
+load `+0x21c`). Gang-wide: `GangSetThreatResponse`.
 
-- **Evidence:** confirmed (code) at `0x00292708`; detail: brief
+- **Evidence:** confirmed (code) at `0x00292708`; detail: traced
 - **Wrapper** `0x0035ef48` (registered by `RegisterBindings`); **calls** `0x00292708` `Brain_SetThreatResponse`
 - **Used by** 43 of 467 script chunks (116 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -1331,14 +1338,21 @@ GoalBumLogicTrigger(human)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of a bum running `GoalBumLogic`. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of a bum whose current goal is `GoalBumLogic`'s (type 79); otherwise nothing happens. |
 
 **Returns** nothing.
 
-Pokes a bum's ambient goal into its triggered reaction (inferred).
+Makes a bum play its reaction animation now, from the bum animations LoadBumAnims loads: a bum of type 1 or 2 plays
+dynamic animation 668 (when its two animation slots at human `+0x3e8` / `+0x410` agree), a type-0 bum plays 669 (when
+slot `+0x4b0` is loaded and it is not busy). Both blend in over 0.3 s.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003634c8` (registered by `RegisterBindings`); **calls** `0x002abe08` `Goal_BumTrigger`
+**Notes.** Types are the `bumType` of GoalBumLogic (goal `+0x31`); the same two plays (0x002ac900, 0x002ac970) run from
+the goal's own process when the player is near. Which clip 668 and 669 are (beg, puke) is inferred from the animation
+list at 0x00510ff8.
+
+- **Evidence:** confirmed (code) at `0x002abe08`, `0x002ac410`; detail: traced
+- **Wrapper** `0x003634c8` (registered by `RegisterBindings`); **calls** `0x002abe08` `Goal_BumTrigger`, `0x002ac410`
+  `BumGoal_Trigger`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -2037,14 +2051,21 @@ GoalMelee(human, target)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `target` | number, truncated to an unsigned integer; default 4294967295 | Handle of an opponent; `NilHandle` (the default) to pick one (inferred). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; nothing happens if it is not a human or is in either of the incapacitated states tested by 0x00223b70 / 0x00227dd8 (record flags 0x20000 / 0x40000). |
+| 2 | `target` | number, truncated to an unsigned integer; default 4294967295 | Handle of the opponent to fight; `NilHandle` (the default) lets the human pick whoever it finds. |
 
 **Returns** nothing.
 
-Makes a human brawl in melee, with a given opponent or with whoever is near.
+Makes a human brawl. Two goals are pushed: a FindEnemy goal (type 65, search values 90 and 30, a byte 10 from
+0x00510adb) and above it a Melee goal (type 8) with the target and a 4000 ms value; the Melee goal fights the target
+while it has one, and when it ends the FindEnemy goal looks for an enemy and starts a fight with it (`Brain_Fight`). If
+the human's gang is not yet alert (gang `+0x40` = 0) its alert state becomes 1.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Goal types read from the vtables 0x00540a50 (65) and 0x00540450 (8). Melee's process (0x002aebf8) with a
+threat response of 0 only keeps fighting a target that already holds an attack slot. The meaning of 90, 30, 10 and 4000
+(search angle, radius, timing) is not traced. No callback.
+
+- **Evidence:** confirmed (code) at `0x002add08`; detail: traced
 - **Wrapper** `0x00361150` (registered by `RegisterBindings`); **calls** `0x002add08` `Goal_Melee`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -2609,23 +2630,28 @@ As `GoalTag` with one more argument. No script calls it.
 ## GoalThrowObject {#goalthrowobject}
 
 ```lua
-GoalThrowObject(human, target, range, count, callback)
+GoalThrowObject(human, target, range, gait, callback)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the flag or human to throw at. |
-| 3 | `range` | number (single precision); default 16 | A distance in metres (default 16). |
-| 4 | `count` | number, truncated to an integer; default 2 | A number (default 2; inferred: how many throws). |
-| 5 | `callback` | string | Name of a Lua function called when done, or nil. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the thrower; it must already hold a throwable object (a molotov, a bottle, a chair). |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the flag, object or human to throw at. |
+| 3 | `range` | number (single precision); default 16 | Throwing range in metres (default 16): farther than this the human first moves toward the target until within it. |
+| 4 | `gait` | number, truncated to an integer; default 2 | Gait of that approach, as for GoalMoveToFlag (2 walk, the default; 3 jog, 4 run, 5 sprint). |
+| 5 | `callback` | string | Name of a Lua function called when the goal ends (with the thrower's handle and whether it completed), or nil. |
 
 **Returns** nothing.
 
-Makes a human throw an object (a molotov, a chair) at a target and call back the script.
+Pushes a ThrowObject goal (type 93): while the target is farther than `range` the human moves toward it; within range it
+turns to face it (if more than 15° off), then sets the target as its aim (brain `+0x128`) and queues the throw attack
+(kind 0x21). The goal ends once the human no longer carries anything, so one call is one throw.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00362b18` (registered by `RegisterBindings`); **calls** `0x002cf480` `Goal_ThrowObject`
+**Notes.** Process 0x002cf690: ends at once (and calls back) if the human holds nothing or the target handle is gone;
+waits while the human is busy (0x002286a0); the throw is re-queued every 30 updates until it happens.
+
+- **Evidence:** confirmed (code) at `0x002cf480`, `0x002cf690`; detail: traced
+- **Wrapper** `0x00362b18` (registered by `RegisterBindings`); **calls** `0x002cf480` `Goal_ThrowObject`, `0x002cf690`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

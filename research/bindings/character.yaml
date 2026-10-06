@@ -1240,15 +1240,20 @@
 - name: HuIsGrabbed
   wrapper: 0x0035b578
   calls:
-    - {addr: 0x002355e0}
+    - {addr: 0x002355e0, name: Human_IsGrabbed}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: boolean, desc: "True while someone holds the human in a grab."}
+    - {lua: boolean, desc: "true (1) while the human is held in a grab from the front or the rear or pinned by a tackle; nil otherwise, or when the handle is not a human."}
   description: >-
-    Tells whether the human is being grabbed.
+    Tells whether the human is on the receiving end of a grapple: true while any of its state flags `0x10` (grabbed
+    from the front), `0x20` (grabbed from the rear) or `0x800` (pinned by a tackle) is set
+    ([Combat: state flags](../../research/combat.md#state-flags)). The grabber itself does not count.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Tests record `+0xd4` flags with `0x002265f0(human, 0x830)`; a handle that is not a human (type flag 0x40) gives
+    nil.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [87]}
 
 - name: HuIsAlive
@@ -1477,12 +1482,16 @@
   calls:
     - {addr: 0x00237be0, name: Human_SetMaxHealth}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: health, lua: number, ctype: int, desc: "New maximum health in hit points (16-bit)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a handle that is not a human does nothing."}
+    - {name: health, lua: number, ctype: int, desc: "New maximum health in hit points, kept as a signed 16-bit value (up to 32767; the player has 900 in level 99, a civilian 600)."}
   description: >-
-    Sets the human's maximum health (+0x146 of its record) and fills its current health to the same value.
+    Sets the human's maximum health and refills it: both the maximum (record `+0x146`) and the current health
+    (`+0x144`) become `health`, so the health bar shows full. Scripts use it to make bosses and key enemies tougher.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Also heals a hurt human to full. No clamping: values above 32767 wrap negative. Health fields:
+    characters.md#the-record.
   usage: {chunks: 39, calls: 205, boot: false, mission1: false, result_used: false, levels: [87, 86, 93, 31, 14, 54, 55, 82, 92, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: HuGetHealthPercent
@@ -1975,15 +1984,18 @@
   calls:
     - {addr: 0x00239080, name: Human_SetTagColour}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the tagger."}
-    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour {r, g, b, a}; each element is multiplied by 255 before packing, so 0-1 values are expected, though the scripts pass 0-255 values. Written back unchanged."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the tagger; a handle that is not a human does nothing."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour {r, g, b, a}, each a whole number 0-255 as the scripts pass. Written back unchanged."}
   description: >-
-    Sets the colour a tagger sprays: the four elements are each multiplied by 255, packed into one colour
-    (0x0017aca8, a, b, g, r order) and stored at human `+0x640`.
+    Sets the colour of the paint a human sprays when tagging (human `+0x640`, packed bytes a, b, g, r from the low
+    byte up). Each element is multiplied by 255 twice (here and in the packer `0x0017aca8`) and the low byte of the
+    result kept; since 255 × 255 = 65025 leaves 1 modulo 256, a whole number 0-255 comes out unchanged, so the
+    scripts' 0-255 values work exactly.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Scripts pass 0-255 values, which overflow the packing; what the packing does with them is not traced.
+    0-1 fractions give near-black bytes (1.0 gives 1, 0.5 gives 0); negatives give 0. Who reads `+0x640` (the tag drawing) is not
+    traced.
   usage: {chunks: 9, calls: 16, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 93, 9]}
 
 - name: HuTagPattern
@@ -2373,10 +2385,15 @@
   args:
     - {name: "on", lua: boolean, desc: "true requests the bum animations; false (or nil) releases them."}
   description: >-
-    Requests or releases the thirteen dynamic animations the bums use (a table starting with `puke_fidget.anm` at
-    0x00510ff8), each through the same call as SetDynamicAnimation.
+    Requests or releases, as one set, the thirteen dynamic animations that bums running GoalBumLogic play (a pointer
+    table at 0x00510ff8 starting with `puke_fidget.anm`): each goes through ResourceManager_SetDynamicAnimation, as
+    with SetDynamicAnimation, so the 64-entry dynamic-animation list gains or loses those files. Level scripts call
+    it before placing bums.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Requesting fills 13 of the 64 dynamic-animation slots. Releasing also drops files another script requested
+    separately by the same name.
   usage: {chunks: 8, calls: 9, boot: false, mission1: false, result_used: false, levels: [87, 5, 51, 11]}
 
 - name: HuSetLookAtTarget
@@ -2644,15 +2661,23 @@
 - name: HuAreActionsBlocked
   wrapper: 0x003654a0
   calls:
-    - {addr: 0x002387a8}
+    - {addr: 0x002387a8, name: Human_AreActionsBlocked}
+    - {addr: 0x00228228, name: HumanRecord_AreActionsBlocked}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: boolean, desc: "True when the human is in a state that blocks its actions; nil otherwise or for an invalid handle."}
+    - {lua: boolean, desc: "true (1) when the human is busy in a state that blocks new actions; nil otherwise or when the handle is not a human."}
   description: >-
-    Tells whether the human currently cannot act (busy in a state that blocks actions).
-  evidence: inferred
-  depth: brief
+    Tells whether the human is locked into something and cannot start a new action: true when any of its state flags
+    `0x7bf9e9f7ff0` is set, which covers grabbing or being grabbed, mugging or being mugged, tackling or being
+    tackled, throwing, tagging, a mini-game (lock picking and the like), being dead and the airborne states (jump,
+    fall, landing). Fight stance, blocking and sprinting do not count.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The same mask gates the player's context actions and jumps (characters.md) and is tested by about 88 AI and
+    combat functions. Bits 0x2000, 0x4000, 0x10000-0x40000, 0x100000, 0x800000, 0x8000000, 0x10000000, 0x80000000,
+    0x100000000 and 0x10000000000-0x40000000000 are in the mask but not yet named.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: true, levels: [87, 95, 9]}
 
 - name: HuIsTagging
@@ -2842,18 +2867,23 @@
   wrapper: 0x0036cf00
   calls:
     - {addr: 0x00385f60, name: WalkingDistance}
+    - {addr: 0x0024e478, name: Nav_GetWalkingDistance}
   args:
-    - {name: from, lua: number, ctype: unsigned, desc: "Handle of the first object (a human, an object or a flag)."}
-    - {name: to, lua: number, ctype: unsigned, desc: "Handle of the second object."}
+    - {name: from, lua: number, ctype: unsigned, desc: "Handle of the first entity (a human, an object or a flag); its position is used."}
+    - {name: to, lua: number, ctype: unsigned, desc: "Handle of the second entity."}
   results:
-    - {lua: number, desc: "The walking distance in metres along the navigation paths, or -1000000000 when either handle is invalid or no route is found."}
+    - {lua: number, desc: "The walking distance in metres, or -1000000000 when either handle is invalid, either position is off the navigation mesh, or no route joins them."}
   description: >-
-    Measures how far one object would have to walk to reach another, along the path network (0x0024e478) rather than
-    in a straight line.
+    Measures how far one entity would have to walk to reach another. When a straight walk between the two
+    positions stays on the navigation mesh, the result is the straight-line 3D distance; otherwise a route is found
+    through the navigation regions and its length (start, each route point, end) is summed. Scripts compare it with
+    a range to decide, for example, whether an enemy is close enough to join in.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    The -1e9 failure value is confirmed (code) at 0x00385f60.
+    Positions come from each entity's position method (vtable `+0xac`). The straight-walk test is `0x0024fbf8`, the
+    route `0x002511c8`, its length `0x0024e608`. Two different regions where either has no links (`+0x2` = 0) fail
+    without a route search.
   usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: true, levels: [87, 95, 20]}
 
 - name: KillHumans
@@ -2940,14 +2970,21 @@
   wrapper: 0x0036e6c0
   calls:
     - {addr: 0x0040cda8, name: ResourceManager_SetCharacterModel}
+    - {addr: 0x0018ad40}
   args:
-    - {name: type, lua: number, ctype: int, desc: "Character type number, as given to HuCreate and CfgChar (for example 32 for Rembrandt)."}
+    - {name: type, lua: number, ctype: int, desc: "Character type number, as given to HuCreate and CfgChar (for example 32 for Rembrandt); its class record is at 0x00684620 + type × 0x1ac."}
     - {name: release, lua: boolean, desc: "false or nil asks for the type's model to be loaded and kept; true releases it."}
   description: >-
     Asks the resource manager to keep a character type's model loaded for the level, so humans of that type can be
-    created later without a wait; up to 32 models at once. The model comes from the type's class record (+0x112).
+    created later without a wait. The model id comes from the type's class record (`+0x112`, 16-bit) and goes into a
+    32-slot list (resource manager `+0xb4`, 8 bytes a slot); a model already listed is not added twice, and when the
+    model is already resident its reference is taken at once. Releasing clears every slot holding that model and
+    drops its reference.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    With all 32 slots in use the request is silently ignored. Adding sets the manager's `+0x1b4` (a reload-needed
+    flag, inferred). Types sharing a model share a slot, so releasing one releases them all.
   usage: {chunks: 61, calls: 294, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: TurnWarriorCommands

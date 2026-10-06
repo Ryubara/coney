@@ -39,41 +39,52 @@
 - name: CameraGetActive
   wrapper: 0x003657a0
   calls:
-    - {addr: 0x0011b838}
+    - {addr: 0x0011b838, name: Camera_GetActiveHandle}
   args:
-    - {name: player, lua: number, ctype: int, desc: "Player index (0 or 1, default 0)."}
+    - {name: player, lua: number, ctype: int, desc: "Player index (0 or 1; the wrapper's default is 0)."}
   results:
-    - {lua: number, desc: "Handle of that player's current camera, or NilHandle."}
+    - {lua: number, desc: "Handle of that player's current camera (`0x005d9150[player]`), or NilHandle when it has none."}
   description: >-
-    Returns a player's current camera.
+    Returns the handle of the camera a player currently sees through, so a script can come back to it after a cut
+    (with CameraMakeActive) or read its position.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The handle is pushed as an unsigned number (negative values get 2^32 added).
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: true, levels: [87, 86, 54]}
 
 - name: CamDelete
   wrapper: 0x00365818
   calls:
-    - {addr: 0x0011b888}
+    - {addr: 0x0011b888, name: Camera_DeleteScripted}
+    - {addr: 0x0011e440, name: Camera_Release}
   args:
-    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
+    - {name: camera, lua: number, ctype: unsigned, desc: "Handle of a fixed (type 0, CameraCreateFixed) or locked (type 1, CameraCreateLocked) camera; any other camera or handle is ignored."}
   description: >-
-    Deletes a fixed or locked camera; the shared camera kinds (follow, rail, hood and the others) are kept.
+    Deletes a camera made by CameraCreateFixed or CameraCreateLocked; the shared kinds (follow, path, blend, rail and
+    the others) are kept. If it is a player's current camera, that player is left with no current camera until a
+    script makes another active; if a blend refers to it, the reference is cleared.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    `Camera_Release` (with 0) refuses a camera that is a player's previous camera (`0x005d9148[i]`), so deleting the
+    camera just switched away from does nothing; type 16 (CameraCreateThird) is not deletable this way.
   usage: {chunks: 57, calls: 90, boot: false, mission1: false, result_used: true, levels: [87, 95, 2, 3, 5, 81, 93, 9, 51, 54, 84, 92, 11]}
 
 - name: CamGetPos
   wrapper: 0x00365850
   calls:
-    - {addr: 0x0011b920}
+    - {addr: 0x0011b920, name: Camera_GetPositionByHandle}
   args:
-    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle (from CameraGetActive or a create call)."}
   results:
-    - {lua: usertype, desc: "The camera's position as a constant M_Vector4 (x, y, z, w); a shared zero vector when the handle is not a camera."}
+    - {lua: usertype, type: const M_Vector4, desc: "The camera's world position (x, y, z, w) in metres, from its vtable position getter (`+0x21c` slot); a shared zero vector (0x005116c0) when the handle is not a camera."}
   description: >-
-    Returns a camera's world position.
+    Returns where a camera is in the world, for example to place a flag or an effect at the viewpoint.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The vector is the camera's own, not a copy: read it at once, it changes as the camera moves.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [87, 54]}
 
 - name: CameraTransform
@@ -204,14 +215,21 @@
 - name: CamSetFollowPos
   wrapper: 0x00365c60
   calls:
-    - {addr: 0x0011c638}
+    - {addr: 0x0011c638, name: Camera_SetFollowPosition}
+    - {addr: 0x00125c50}
   args:
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres for the camera. Written back unchanged."}
     - {name: player, lua: number, ctype: int, desc: "Player index (default 0)."}
   description: >-
-    Puts a player's follow camera at a world position at once (used at checkpoints).
+    Puts a player's follow camera at a world position at once, with no blend: its look-at point is snapped onto the
+    target (no easing, `0x00127d88` with 1) and the camera is placed there (vtable `+0x1bc`), with its wanted position
+    (`+0x250`) and lag copies set to the same point. Scripts use it at checkpoints and after cut-aways so play resumes
+    with the camera in a chosen spot.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Does nothing if the player has no follow camera yet (it is not created here); it does not make the follow camera
+    current. The leash rules then keep the camera where it was put until the player drags it.
   usage: {chunks: 12, calls: 17, boot: false, mission1: false, result_used: false, levels: [87, 5, 9, 51, 52, 54, 11]}
 
 - name: CameraCreateLocked
@@ -422,21 +440,28 @@
 - name: CamSetupPoizo
   wrapper: 0x00366c80
   calls:
-    - {addr: 0x0011c9e0}
+    - {addr: 0x0011c9e0, name: Camera_SetupPoizo}
+    - {addr: 0x00142368}
   args:
-    - {name: camera, lua: number, ctype: unsigned, desc: "The camera the path starts from."}
-    - {name: seconds, lua: number, ctype: float, desc: "Time of the first segment (inferred)."}
-    - {name: onEnd, lua: string, desc: "Name of the Lua function called when the path ends."}
-    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees; 0 takes the start camera's."}
-    - {name: far, lua: number, ctype: float, desc: "Far clip distance; 0 takes the start camera's."}
-    - {name: human, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional human whose player's own camera is used as the start."}
+    - {name: camera, lua: number, ctype: unsigned, desc: "The camera the path starts from: its position and orientation become point 0, and its lens is the default."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time in seconds to travel from that start view to the first point added with CamAddPoizoPoint."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called (with no arguments) when the path reaches its last point, or nil."}
+    - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees for the path; 0 takes the start camera's."}
+    - {name: far, lua: number, ctype: float, desc: "Far clip distance in metres, capped at 150; 0 takes the start camera's."}
+    - {name: human, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional player human: if `camera` is a follow, rail or hood camera of the other player, that kind of camera of this human's player is used as the start instead."}
   results:
-    - {lua: number, desc: "The path camera's handle, or NilHandle."}
+    - {lua: number, desc: "Handle of the path camera (type 3, one shared instance), or NilHandle if it could not be made."}
   description: >-
-    Starts a scripted camera path (the `Poizo` camera) from an existing camera; points are added with
-    CamAddPoizoPoint.
+    Starts a scripted camera path (the `Poizo` camera, type 3) from an existing camera's view, clearing any earlier
+    points. Add up to seven more points with CamAddPoizoPoint / CamAddPoizoPointCam, then make the returned camera
+    active (CameraMakeActive): the camera flies through the points along a Catmull-Rom curve, turning by slerp between
+    their orientations, and calls `onEnd` at the last one.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Update `PoizoCam_Update` (0x001426c0) runs only while the camera is player 0's current camera and was activated
+    (`+0x33c`); it does not return to another camera by itself (only a reversed path, CamReversePoizo, blends back to
+    the start camera). At most 8 points (`PoizoCam_AddPoint` 0x00142a58); further points overwrite the last.
   usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: true, levels: [87, 3, 14, 9, 55, 83]}
 
 - name: CamReversePoizo
@@ -456,50 +481,68 @@
 - name: CamAddPoizoPoint
   wrapper: 0x00366e18
   calls:
-    - {addr: 0x0011cbb0}
+    - {addr: 0x0011cbb0, name: Camera_AddPoizoPoint}
+    - {addr: 0x00142ac8}
+    - {addr: 0x00142a58, name: PoizoCam_AddPoint}
   args:
-    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} of the point."}
-    - {name: heading, lua: number, ctype: float, desc: "Heading in degrees."}
+    - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} of the point in metres. Written back unchanged."}
+    - {name: heading, lua: number, ctype: float, desc: "Heading (turn about the vertical) in degrees."}
     - {name: pitch, lua: number, ctype: float, desc: "Pitch in degrees."}
     - {name: roll, lua: number, ctype: float, desc: "Roll in degrees."}
-    - {name: seconds, lua: number, ctype: float, desc: "Time to reach this point."}
-    - {name: onReach, lua: string, desc: "Optional name of a Lua function called at the point."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time in seconds to travel from this point to the next one (unused on the last point); 0 or less is stored as 0."}
+    - {name: onReach, lua: string, desc: "Optional name of a Lua function called (with no arguments, once) when the camera reaches this point."}
   results:
-    - {lua: boolean, desc: "true (1) when there is a path camera."}
+    - {lua: boolean, desc: "true (1) when there is a path camera (always, once one exists), nil otherwise."}
   description: >-
-    Adds a point to the scripted camera path.
+    Appends a point to the scripted camera path started by CamSetupPoizo: a position and an orientation built from
+    heading, pitch and roll. The camera passes through it on the curve and calls `onReach` there.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The path holds 8 points including the start view; when full, each new point overwrites the last. Adding points
+    while the path plays changes it from the next update.
   usage: {chunks: 6, calls: 10, boot: false, mission1: false, result_used: false, levels: [87, 3, 14, 9, 55, 83]}
 
 - name: CamAddPoizoPointCam
   wrapper: 0x00366f90
   calls:
-    - {addr: 0x0011cc68}
+    - {addr: 0x0011cc68, name: Camera_AddPoizoPointCam}
+    - {addr: 0x00142d28}
   args:
-    - {name: camera, lua: number, ctype: unsigned, desc: "A camera whose view becomes the point."}
-    - {name: seconds, lua: number, ctype: float, desc: "Time to reach it."}
-    - {name: onReach, lua: string, desc: "Optional Lua function name called at the point."}
+    - {name: camera, lua: number, ctype: unsigned, desc: "A camera whose current position and orientation become the point."}
+    - {name: seconds, lua: number, ctype: float, desc: "Time in seconds to travel from this point to the next one (unused on the last point)."}
+    - {name: onReach, lua: string, desc: "Optional name of a Lua function called (once, no arguments) when the camera reaches this point."}
   results:
-    - {lua: boolean, desc: "true (1) when the point was added."}
+    - {lua: boolean, desc: "true (1) when the point was added; nil when there is no path camera or the handle is not a camera."}
   description: >-
-    Adds a point to the scripted camera path taken from an existing camera.
+    Appends a point to the scripted camera path taken from another camera's view (often a fixed camera placed for the
+    shot), so the path ends on or passes through that camera's framing.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The view is copied when the call is made; later moves of that camera do not change the point. Lens values are not
+    taken from it.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [87]}
 
 - name: CamLockLocked
   wrapper: 0x00367030
   calls:
-    - {addr: 0x0011bdc0}
+    - {addr: 0x0011bdc0, name: Camera_LockLocked}
+    - {addr: 0x001358d0}
   args:
-    - {name: camera, lua: number, ctype: unsigned, desc: "Handle of a locked camera."}
+    - {name: camera, lua: number, ctype: unsigned, desc: "Handle of a locked camera (CameraCreateLocked)."}
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of a human."}
-    - {name: "on", lua: boolean, desc: "true adds the human to the camera's tracked list, false removes it."}
+    - {name: "on", lua: boolean, desc: "true adds the human to the camera's list (camera `+0x20c`, once), false removes it."}
   description: >-
-    Adds or removes a human from the humans a locked camera tracks.
+    Adds a human to (or removes it from) the humans a locked camera keeps in shot. Each update of the locked camera
+    (`LockedCam_KeepHumansInView` 0x00135ca8) tests each listed human against the left and right edges of the view;
+    one that comes within 0.3 m of an edge is pushed back inside (its position is set, with a height probe), so the
+    player cannot walk out of a fixed shot.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The edge test is 0x00135960 against the camera's side planes (vtable `+0x174`); the 1.4 m offset and the exact
+    push are not traced further. Nothing happens if the camera handle is not a camera or the human handle is gone.
   usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false, levels: [87]}
 
 - name: CamSetSecondary

@@ -1364,16 +1364,19 @@ SetSpawnMax(count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `count` | number, truncated to an integer | Most ambient pedestrians and gang members the spawners may have alive at once in this level (the scripts use 3 to 70). |
+| 1 | `count` | number, truncated to an integer | Most gang members the non-police gangs' spawners may have alive at once in this level, all gangs together (16-bit; the scripts use 3 to 70). |
 
 **Returns** nothing.
 
-Sets the level's cap on spawned characters: the game state's 16-bit spawn maximum (`W_GameState + 0x434`).
+Sets the level's cap on spawned characters (`W_GameState + 0x434`). Each update a gang of any kind but police runs its
+spawners (0x00166960) only while the count of spawned humans (`+0x432`) is below this cap; police spawners use their own
+pair (`+0x324` against `+0x326`).
 
-**Notes.** Level scripts call it once while setting up; what reads the cap is not traced.
+**Notes.** Level scripts call it once while setting up. Humans placed with HuCreate are not limited by it (inferred:
+only the spawner path reads it). What counts `+0x432` up and down is not traced.
 
-- **Evidence:** confirmed (code) at `0x00299510`; detail: brief
-- **Wrapper** `0x0035b0a0` (registered by `RegisterBindings`); **calls** `0x00299510`
+- **Evidence:** confirmed (code) at `0x00299510`; detail: traced
+- **Wrapper** `0x0035b0a0` (registered by `RegisterBindings`); **calls** `0x00299510` `GameState_SetSpawnMax`
 - **Used by** 48 of 467 script chunks (48 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

@@ -247,16 +247,20 @@
   calls:
     - {addr: 0x00292708, name: Brain_SetThreatResponse}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: response, lua: number, ctype: int, desc: "Threat response mode (brain `+0x21c`). 0 means the human does not respond to threats at all (shopkeepers, bartenders, scripted extras); scripts also use 2 and 3. `GoalFight` does nothing while it is 0."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a handle that is not a human does nothing."}
+    - {name: response, lua: number, ctype: int, desc: "Threat response (brain `+0x21c`, truncated to 16 bits and sign-extended): 0 means the human never fights back; any other value lets it fight. Scripts use 0, 2 and 3; no reader seen tells the non-zero values apart."}
   description: >-
-    Sets a human's threat response (brain `+0x21c`): 0 means it never fights back (`Brain_Fight` refuses), as for
-    shopkeepers and scripted extras; tactics set their own (`TacticAttack` 2, `AvoidEnemies` 0).
+    Sets whether a human answers threats (brain `+0x21c`). With 0 it never starts a fight: `Brain_Fight` refuses,
+    the brains' threat handler (0x00291960) ignores attackers, and a melee goal gives up once its target is gone, as
+    for shopkeepers and scripted extras. With a non-zero value an attacked human fights back, and a gang soldier with
+    enemies on its list and no fight goal starts one (`GangBrain_Think` 0x003046e8).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Storage at 0x00292708; the 0 case is confirmed by `Brain_Fight` (0x0028d2e8). What 1-3 change is not traced (many
-    readers of brain `+0x21c`). Gang-wide: `GangSetThreatResponse`.
+    Civilian, dealer and type-6 civilian brains (0x002fef40, `DealerBrain_Think` 0x00302cf0, 0x00303f28) reset it to 0
+    as soon as they have no fight goal (types 8 or 0x3f, `Brain_HasFightGoal` 0x00290348), so on them it lasts one
+    fight; the readers checked test only zero / non-zero (values 2 and 3 may matter to an untraced reader among the
+    ~40 that load `+0x21c`). Gang-wide: `GangSetThreatResponse`.
   usage: {chunks: 43, calls: 116, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 81, 86, 93, 31, 9, 51, 52, 54, 92, 83, 20, 11]}
   coney: implemented
 
@@ -399,13 +403,17 @@
   calls:
     - {addr: 0x002928d8, name: Brain_SetFieldOfView}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: degrees, lua: number, ctype: float, desc: "Field of view in degrees (converted to radians); 360 lets the human see all around it, scripts also use 45-270."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; a handle that is not a human does nothing."}
+    - {name: degrees, lua: number, ctype: float, desc: "Full width of the human's view cone in degrees, stored in radians (× 0.0174533); 360 lets it see all around it, scripts also use 45-270. No clamp."}
   description: >-
-    Sets how wide a cone a human can see in (brain `+0x12c`), which governs whether it notices the player in stealth
+    Sets how wide a cone a human can see in (brain `+0x12c`, radians). The spotting checks use it to decide whether
+    the human notices the player, so a narrow cone lets the player sneak past from the side or behind in stealth
     sections.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The store is confirmed at 0x002928d8; that the spotting code reads `+0x12c` as a full (not half) angle is inferred
+    from the 360 value scripts use for all-round sight.
   usage: {chunks: 19, calls: 114, boot: false, mission1: false, result_used: false, levels: [87, 14, 52, 20, 60, 61, 62, 63, 64]}
 
 - name: BrSetMeleeRange
@@ -879,12 +887,19 @@
   calls:
     - {addr: 0x002add08, name: Goal_Melee}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: target, lua: number, ctype: unsigned, default: 4294967295, desc: "Handle of an opponent; `NilHandle` (the default) to pick one (inferred)."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; nothing happens if it is not a human or is in either of the incapacitated states tested by 0x00223b70 / 0x00227dd8 (record flags 0x20000 / 0x40000)."}
+    - {name: target, lua: number, ctype: unsigned, default: 4294967295, desc: "Handle of the opponent to fight; `NilHandle` (the default) lets the human pick whoever it finds."}
   description: >-
-    Makes a human brawl in melee, with a given opponent or with whoever is near.
-  evidence: inferred
-  depth: brief
+    Makes a human brawl. Two goals are pushed: a FindEnemy goal (type 65, search values 90 and 30, a byte 10 from
+    0x00510adb) and above it a Melee goal (type 8) with the target and a 4000 ms value; the Melee goal fights the
+    target while it has one, and when it ends the FindEnemy goal looks for an enemy and starts a fight with it
+    (`Brain_Fight`). If the human's gang is not yet alert (gang `+0x40` = 0) its alert state becomes 1.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Goal types read from the vtables 0x00540a50 (65) and 0x00540450 (8). Melee's process (0x002aebf8) with a threat
+    response of 0 only keeps fighting a target that already holds an attack slot. The meaning of 90, 30, 10 and 4000
+    (search angle, radius, timing) is not traced. No callback.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [87]}
 
 - name: GoalPlayAnimation
@@ -1283,16 +1298,22 @@
   wrapper: 0x00362b18
   calls:
     - {addr: 0x002cf480, name: Goal_ThrowObject}
+    - {addr: 0x002cf690}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the flag or human to throw at."}
-    - {name: range, lua: number, ctype: float, default: 16, desc: "A distance in metres (default 16)."}
-    - {name: count, lua: number, ctype: int, default: 2, desc: "A number (default 2; inferred: how many throws)."}
-    - {name: callback, lua: string, desc: "Name of a Lua function called when done, or nil."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the thrower; it must already hold a throwable object (a molotov, a bottle, a chair)."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the flag, object or human to throw at."}
+    - {name: range, lua: number, ctype: float, default: 16, desc: "Throwing range in metres (default 16): farther than this the human first moves toward the target until within it."}
+    - {name: gait, lua: number, ctype: int, default: 2, desc: "Gait of that approach, as for GoalMoveToFlag (2 walk, the default; 3 jog, 4 run, 5 sprint)."}
+    - {name: callback, lua: string, desc: "Name of a Lua function called when the goal ends (with the thrower's handle and whether it completed), or nil."}
   description: >-
-    Makes a human throw an object (a molotov, a chair) at a target and call back the script.
-  evidence: inferred
-  depth: brief
+    Pushes a ThrowObject goal (type 93): while the target is farther than `range` the human moves toward it; within
+    range it turns to face it (if more than 15° off), then sets the target as its aim (brain `+0x128`) and queues the
+    throw attack (kind 0x21). The goal ends once the human no longer carries anything, so one call is one throw.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Process 0x002cf690: ends at once (and calls back) if the human holds nothing or the target handle is gone; waits
+    while the human is busy (0x002286a0); the throw is re-queued every 30 updates until it happens.
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [87, 95, 34]}
 
 - name: GoalAvoidEnemies
@@ -1431,12 +1452,19 @@
   wrapper: 0x003634c8
   calls:
     - {addr: 0x002abe08, name: Goal_BumTrigger}
+    - {addr: 0x002ac410, name: BumGoal_Trigger}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a bum running `GoalBumLogic`."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a bum whose current goal is `GoalBumLogic`'s (type 79); otherwise nothing happens."}
   description: >-
-    Pokes a bum's ambient goal into its triggered reaction (inferred).
-  evidence: inferred
-  depth: brief
+    Makes a bum play its reaction animation now, from the bum animations LoadBumAnims loads: a bum of type 1 or 2
+    plays dynamic animation 668 (when its two animation slots at human `+0x3e8` / `+0x410` agree), a type-0 bum plays
+    669 (when slot `+0x4b0` is loaded and it is not busy). Both blend in over 0.3 s.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Types are the `bumType` of GoalBumLogic (goal `+0x31`); the same two plays (0x002ac900, 0x002ac970) run from the
+    goal's own process when the player is near. Which clip 668 and 669 are (beg, puke) is inferred from the animation
+    list at 0x00510ff8.
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [87, 14]}
 
 - name: GoalPlayDynAnimation

@@ -59,19 +59,25 @@ CamAddPoizoPoint(pos, heading, pitch, roll, seconds, onReach) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} of the point. |
-| 2 | `heading` | number (single precision) | Heading in degrees. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} of the point in metres. Written back unchanged. |
+| 2 | `heading` | number (single precision) | Heading (turn about the vertical) in degrees. |
 | 3 | `pitch` | number (single precision) | Pitch in degrees. |
 | 4 | `roll` | number (single precision) | Roll in degrees. |
-| 5 | `seconds` | number (single precision) | Time to reach this point. |
-| 6 | `onReach` | string | Optional name of a Lua function called at the point. |
+| 5 | `seconds` | number (single precision) | Time in seconds to travel from this point to the next one (unused on the last point); 0 or less is stored as 0. |
+| 6 | `onReach` | string | Optional name of a Lua function called (with no arguments, once) when the camera reaches this point. |
 
-**Returns** boolean (1 for true, nil for false): true (1) when there is a path camera.
+**Returns** boolean (1 for true, nil for false): true (1) when there is a path camera (always, once one exists), nil
+otherwise.
 
-Adds a point to the scripted camera path.
+Appends a point to the scripted camera path started by CamSetupPoizo: a position and an orientation built from heading,
+pitch and roll. The camera passes through it on the curve and calls `onReach` there.
 
-- **Evidence:** confirmed (code) at `0x0011cbb0`; detail: brief
-- **Wrapper** `0x00366e18` (registered by `RegisterBindings`); **calls** `0x0011cbb0`
+**Notes.** The path holds 8 points including the start view; when full, each new point overwrites the last. Adding
+points while the path plays changes it from the next update.
+
+- **Evidence:** confirmed (code) at `0x0011cbb0`, `0x00142ac8`, `0x00142a58`; detail: traced
+- **Wrapper** `0x00366e18` (registered by `RegisterBindings`); **calls** `0x0011cbb0` `Camera_AddPoizoPoint`,
+  `0x00142ac8`, `0x00142a58` `PoizoCam_AddPoint`
 - **Used by** 6 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -84,16 +90,22 @@ CamAddPoizoPointCam(camera, seconds, onReach) -> boolean
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `camera` | number, truncated to an unsigned integer | A camera whose view becomes the point. |
-| 2 | `seconds` | number (single precision) | Time to reach it. |
-| 3 | `onReach` | string | Optional Lua function name called at the point. |
+| 1 | `camera` | number, truncated to an unsigned integer | A camera whose current position and orientation become the point. |
+| 2 | `seconds` | number (single precision) | Time in seconds to travel from this point to the next one (unused on the last point). |
+| 3 | `onReach` | string | Optional name of a Lua function called (once, no arguments) when the camera reaches this point. |
 
-**Returns** boolean (1 for true, nil for false): true (1) when the point was added.
+**Returns** boolean (1 for true, nil for false): true (1) when the point was added; nil when there is no path camera or
+the handle is not a camera.
 
-Adds a point to the scripted camera path taken from an existing camera.
+Appends a point to the scripted camera path taken from another camera's view (often a fixed camera placed for the shot),
+so the path ends on or passes through that camera's framing.
 
-- **Evidence:** confirmed (code) at `0x0011cc68`; detail: brief
-- **Wrapper** `0x00366f90` (registered by `RegisterBindings`); **calls** `0x0011cc68`
+**Notes.** The view is copied when the call is made; later moves of that camera do not change the point. Lens values are
+not taken from it.
+
+- **Evidence:** confirmed (code) at `0x0011cc68`, `0x00142d28`; detail: traced
+- **Wrapper** `0x00366f90` (registered by `RegisterBindings`); **calls** `0x0011cc68` `Camera_AddPoizoPointCam`,
+  `0x00142d28`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -168,14 +180,20 @@ CamDelete(camera)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `camera` | number, truncated to an unsigned integer | Camera handle. |
+| 1 | `camera` | number, truncated to an unsigned integer | Handle of a fixed (type 0, CameraCreateFixed) or locked (type 1, CameraCreateLocked) camera; any other camera or handle is ignored. |
 
 **Returns** nothing.
 
-Deletes a fixed or locked camera; the shared camera kinds (follow, rail, hood and the others) are kept.
+Deletes a camera made by CameraCreateFixed or CameraCreateLocked; the shared kinds (follow, path, blend, rail and the
+others) are kept. If it is a player's current camera, that player is left with no current camera until a script makes
+another active; if a blend refers to it, the reference is cleared.
 
-- **Evidence:** confirmed (code) at `0x0011b888`; detail: brief
-- **Wrapper** `0x00365818` (registered by `RegisterBindings`); **calls** `0x0011b888`
+**Notes.** `Camera_Release` (with 0) refuses a camera that is a player's previous camera (`0x005d9148[i]`), so deleting
+the camera just switched away from does nothing; type 16 (CameraCreateThird) is not deletable this way.
+
+- **Evidence:** confirmed (code) at `0x0011b888`, `0x0011e440`; detail: traced
+- **Wrapper** `0x00365818` (registered by `RegisterBindings`); **calls** `0x0011b888` `Camera_DeleteScripted`,
+  `0x0011e440` `Camera_Release`
 - **Used by** 57 of 467 script chunks (90 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -328,14 +346,17 @@ CameraGetActive(player) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `player` | number, truncated to an integer | Player index (0 or 1, default 0). |
+| 1 | `player` | number, truncated to an integer | Player index (0 or 1; the wrapper's default is 0). |
 
-**Returns** number: Handle of that player's current camera, or NilHandle.
+**Returns** number: Handle of that player's current camera (`0x005d9150[player]`), or NilHandle when it has none.
 
-Returns a player's current camera.
+Returns the handle of the camera a player currently sees through, so a script can come back to it after a cut (with
+CameraMakeActive) or read its position.
 
-- **Evidence:** confirmed (code) at `0x0011b838`; detail: brief
-- **Wrapper** `0x003657a0` (registered by `RegisterBindings`); **calls** `0x0011b838`
+**Notes.** The handle is pushed as an unsigned number (negative values get 2^32 added).
+
+- **Evidence:** confirmed (code) at `0x0011b838`; detail: traced
+- **Wrapper** `0x003657a0` (registered by `RegisterBindings`); **calls** `0x0011b838` `Camera_GetActiveHandle`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -472,20 +493,22 @@ Returns the camera system's last target. No script calls it.
 ## CamGetPos {#camgetpos}
 
 ```lua
-CamGetPos(camera) -> usertype
+CamGetPos(camera) -> const M_Vector4
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `camera` | number, truncated to an unsigned integer | Camera handle. |
+| 1 | `camera` | number, truncated to an unsigned integer | Camera handle (from CameraGetActive or a create call). |
 
-**Returns** tolua object (nil for none): The camera's position as a constant M_Vector4 (x, y, z, w); a shared zero
-vector when the handle is not a camera.
+**Returns** `const M_Vector4` object (nil for none): The camera's world position (x, y, z, w) in metres, from its vtable
+position getter (`+0x21c` slot); a shared zero vector (0x005116c0) when the handle is not a camera.
 
-Returns a camera's world position.
+Returns where a camera is in the world, for example to place a flag or an effect at the viewpoint.
 
-- **Evidence:** confirmed (code) at `0x0011b920`; detail: brief
-- **Wrapper** `0x00365850` (registered by `RegisterBindings`); **calls** `0x0011b920`
+**Notes.** The vector is the camera's own, not a copy: read it at once, it changes as the camera moves.
+
+- **Evidence:** confirmed (code) at `0x0011b920`; detail: traced
+- **Wrapper** `0x00365850` (registered by `RegisterBindings`); **calls** `0x0011b920` `Camera_GetPositionByHandle`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -541,16 +564,22 @@ CamLockLocked(camera, human, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `camera` | number, truncated to an unsigned integer | Handle of a locked camera. |
+| 1 | `camera` | number, truncated to an unsigned integer | Handle of a locked camera (CameraCreateLocked). |
 | 2 | `human` | number, truncated to an unsigned integer | Handle of a human. |
-| 3 | `on` | boolean (nil or 0 is false) | true adds the human to the camera's tracked list, false removes it. |
+| 3 | `on` | boolean (nil or 0 is false) | true adds the human to the camera's list (camera `+0x20c`, once), false removes it. |
 
 **Returns** nothing.
 
-Adds or removes a human from the humans a locked camera tracks.
+Adds a human to (or removes it from) the humans a locked camera keeps in shot. Each update of the locked camera
+(`LockedCam_KeepHumansInView` 0x00135ca8) tests each listed human against the left and right edges of the view; one that
+comes within 0.3 m of an edge is pushed back inside (its position is set, with a height probe), so the player cannot
+walk out of a fixed shot.
 
-- **Evidence:** confirmed (code) at `0x0011bdc0`; detail: brief
-- **Wrapper** `0x00367030` (registered by `RegisterBindings`); **calls** `0x0011bdc0`
+**Notes.** The edge test is 0x00135960 against the camera's side planes (vtable `+0x174`); the 1.4 m offset and the
+exact push are not traced further. Nothing happens if the camera handle is not a camera or the human handle is gone.
+
+- **Evidence:** confirmed (code) at `0x0011bdc0`, `0x001358d0`; detail: traced
+- **Wrapper** `0x00367030` (registered by `RegisterBindings`); **calls** `0x0011bdc0` `Camera_LockLocked`, `0x001358d0`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -691,15 +720,22 @@ CamSetFollowPos(pos, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} in metres. |
+| 1 | `pos` | table of 3 numbers (t[1]..t[3]) | World position {x, y, z} in metres for the camera. Written back unchanged. |
 | 2 | `player` | number, truncated to an integer | Player index (default 0). |
 
 **Returns** nothing.
 
-Puts a player's follow camera at a world position at once (used at checkpoints).
+Puts a player's follow camera at a world position at once, with no blend: its look-at point is snapped onto the target
+(no easing, `0x00127d88` with 1) and the camera is placed there (vtable `+0x1bc`), with its wanted position (`+0x250`)
+and lag copies set to the same point. Scripts use it at checkpoints and after cut-aways so play resumes with the camera
+in a chosen spot.
 
-- **Evidence:** confirmed (code) at `0x0011c638`; detail: brief
-- **Wrapper** `0x00365c60` (registered by `RegisterBindings`); **calls** `0x0011c638`
+**Notes.** Does nothing if the player has no follow camera yet (it is not created here); it does not make the follow
+camera current. The leash rules then keep the camera where it was put until the player drags it.
+
+- **Evidence:** confirmed (code) at `0x0011c638`, `0x00125c50`; detail: traced
+- **Wrapper** `0x00365c60` (registered by `RegisterBindings`); **calls** `0x0011c638` `Camera_SetFollowPosition`,
+  `0x00125c50`
 - **Used by** 12 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -890,19 +926,26 @@ CamSetupPoizo(camera, seconds, onEnd, fov, far, human) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `camera` | number, truncated to an unsigned integer | The camera the path starts from. |
-| 2 | `seconds` | number (single precision) | Time of the first segment (inferred). |
-| 3 | `onEnd` | string | Name of the Lua function called when the path ends. |
-| 4 | `fov` | number (single precision) | Field of view in degrees; 0 takes the start camera's. |
-| 5 | `far` | number (single precision) | Far clip distance; 0 takes the start camera's. |
-| 6 | `human` | number, truncated to an unsigned integer; default 4294967295 | Optional human whose player's own camera is used as the start. |
+| 1 | `camera` | number, truncated to an unsigned integer | The camera the path starts from: its position and orientation become point 0, and its lens is the default. |
+| 2 | `seconds` | number (single precision) | Time in seconds to travel from that start view to the first point added with CamAddPoizoPoint. |
+| 3 | `onEnd` | string | Name of the Lua function called (with no arguments) when the path reaches its last point, or nil. |
+| 4 | `fov` | number (single precision) | Field of view in degrees for the path; 0 takes the start camera's. |
+| 5 | `far` | number (single precision) | Far clip distance in metres, capped at 150; 0 takes the start camera's. |
+| 6 | `human` | number, truncated to an unsigned integer; default 4294967295 | Optional player human: if `camera` is a follow, rail or hood camera of the other player, that kind of camera of this human's player is used as the start instead. |
 
-**Returns** number: The path camera's handle, or NilHandle.
+**Returns** number: Handle of the path camera (type 3, one shared instance), or NilHandle if it could not be made.
 
-Starts a scripted camera path (the `Poizo` camera) from an existing camera; points are added with CamAddPoizoPoint.
+Starts a scripted camera path (the `Poizo` camera, type 3) from an existing camera's view, clearing any earlier points.
+Add up to seven more points with CamAddPoizoPoint / CamAddPoizoPointCam, then make the returned camera active
+(CameraMakeActive): the camera flies through the points along a Catmull-Rom curve, turning by slerp between their
+orientations, and calls `onEnd` at the last one.
 
-- **Evidence:** confirmed (code) at `0x0011c9e0`; detail: brief
-- **Wrapper** `0x00366c80` (registered by `RegisterBindings`); **calls** `0x0011c9e0`
+**Notes.** Update `PoizoCam_Update` (0x001426c0) runs only while the camera is player 0's current camera and was
+activated (`+0x33c`); it does not return to another camera by itself (only a reversed path, CamReversePoizo, blends back
+to the start camera). At most 8 points (`PoizoCam_AddPoint` 0x00142a58); further points overwrite the last.
+
+- **Evidence:** confirmed (code) at `0x0011c9e0`, `0x00142368`; detail: traced
+- **Wrapper** `0x00366c80` (registered by `RegisterBindings`); **calls** `0x0011c9e0` `Camera_SetupPoizo`, `0x00142368`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

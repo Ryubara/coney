@@ -24,22 +24,22 @@ YAML, never these pages. CI runs `coney-tools natives render --check`, which fai
 
 | Category | Bindings | Used by scripts | Boot to menu | Mission 1 | Traced |
 | --- | --- | --- | --- | --- | --- |
-| [Characters](character.md): one human: creation, state, health, animation, commands, the player's crew | 204 | 172 | 29 | 51 | 66 |
-| [AI](ai.md): goals, actions, brains and gang tactics that drive non-player characters | 146 | 114 | 16 | 24 | 49 |
-| [Gangs](gang.md): gangs: creation, membership, spawners, relations | 57 | 53 | 18 | 14 | 23 |
-| [Cameras](camera.md): creating, switching and moving cameras | 41 | 34 | 4 | 9 | 9 |
-| [World and objects](world.md): objects, cars, doors, flags, paths, volume boxes and triggers | 80 | 69 | 12 | 19 | 28 |
-| [Effects and lighting](effects.md): particles, weather, fog, lights, shadows, gamma and screen effects | 43 | 35 | 15 | 6 | 20 |
-| [HUD and menus](hud.md): the in-game HUD, radar, objectives, messages and front-end menus | 78 | 66 | 18 | 27 | 31 |
-| [Sound and music](sound.md): sound effects, ambient emitters, music tracks and sound configuration | 51 | 45 | 20 | 8 | 24 |
+| [Characters](character.md): one human: creation, state, health, animation, commands, the player's crew | 204 | 172 | 29 | 51 | 73 |
+| [AI](ai.md): goals, actions, brains and gang tactics that drive non-player characters | 146 | 114 | 16 | 24 | 54 |
+| [Gangs](gang.md): gangs: creation, membership, spawners, relations | 57 | 53 | 18 | 14 | 26 |
+| [Cameras](camera.md): creating, switching and moving cameras | 41 | 34 | 4 | 9 | 17 |
+| [World and objects](world.md): objects, cars, doors, flags, paths, volume boxes and triggers | 80 | 69 | 12 | 19 | 32 |
+| [Effects and lighting](effects.md): particles, weather, fog, lights, shadows, gamma and screen effects | 43 | 35 | 15 | 6 | 21 |
+| [HUD and menus](hud.md): the in-game HUD, radar, objectives, messages and front-end menus | 78 | 66 | 18 | 27 | 33 |
+| [Sound and music](sound.md): sound effects, ambient emitters, music tracks and sound configuration | 51 | 45 | 20 | 8 | 26 |
 | [Scenes and movies](scene.md): in-engine cutscenes and full-motion movies | 16 | 12 | 9 | 5 | 10 |
-| [Levels and game state](level.md): level flow, checkpoints, difficulty, unlockables, stats, money and police | 90 | 75 | 38 | 26 | 45 |
+| [Levels and game state](level.md): level flow, checkpoints, difficulty, unlockables, stats, money and police | 90 | 75 | 38 | 26 | 46 |
 | [Script flow](script.md): running scripts, scheduled calls, callbacks and message handlers | 18 | 15 | 10 | 8 | 11 |
 | [Pad input](input.md): the gamepad: button handlers | 2 | 2 | 1 | 2 | 2 |
-| [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 13 | 77 |
+| [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 13 | 82 |
 | [Utilities](util.md): numbers, platform queries and generic object queries | 8 | 7 | 6 | 2 | 6 |
 | [Debug](debug.md): developer leftovers: network debugging, sample capture, detail flags | 5 | 3 | 0 | 1 | 1 |
-| **All** | **956** | **802** | **266** | **215** | **402** |
+| **All** | **956** | **802** | **266** | **215** | **440** |
 
 ## Conventions {#conventions}
 
@@ -126,9 +126,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 700 |
+| confirmed (code) | 704 |
 | confirmed (runtime) | 0 |
-| inferred | 224 |
+| inferred | 220 |
 | speculative | 32 |
-| detail: traced | 402 |
-| detail: brief | 554 |
+| detail: traced | 440 |
+| detail: brief | 516 |

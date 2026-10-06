@@ -189,19 +189,24 @@
   wrapper: 0x00369140
   calls:
     - {addr: 0x0018e148, name: Fog3D_Start}
+    - {addr: 0x003cadd8}
   args:
-    - {name: texture, lua: number, ctype: unsigned, desc: "Resource id of the fog particle texture (such as 34734080, sheet in the top 16 bits)."}
-    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Fog colour `{r, g, b, a}`, 0-255."}
-    - {name: size, lua: number, ctype: float, desc: "Number such as 0.4-4.6 (particle size or spread)."}
-    - {name: speed, lua: number, ctype: float, desc: "Number such as 0.3-1 (drift speed or density)."}
-    - {name: height, lua: number, ctype: float, desc: "Number such as 1-7 (layer height or count)."}
+    - {name: texture, lua: number, ctype: unsigned, desc: "Sprite word of the fog wisp image (such as 34734080: sheet in the top 16 bits, rectangle in the low 16)."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Wisp colour `{r, g, b, a}`, 0-255; alpha is the opacity a wisp fades in to. Written back unchanged."}
+    - {name: drift, lua: number, ctype: float, desc: "Speed each wisp drifts at (× 1.75-2.25 at random); scripts use 0.4-4.6."}
+    - {name: fadeSpeed, lua: number, ctype: float, desc: "Sets the fade-in length: 9 / fadeSpeed steps (at least 1); scripts use 0.3-1."}
+    - {name: fadeRate, lua: number, ctype: float, desc: "Whole-number multiplier on the opacity added per fade step; scripts use 1-7."}
   description: >-
-    Starts drifting volumetric fog: replaces any existing fog object of each screen-effects manager with a new
-    particle object (template at 0x00552fb8) built from the texture, colour and three numbers.
+    Starts drifting ground fog for each player's view: for both screen-effects managers it kills any fog emitter
+    (message 0x15) and creates a `part_fog` emitter (template 0x00552fb8). Every 5 frames the emitter tops its
+    viewport up to 20 live wisps (`sub_fog`, up to 10 at a time), placed at random within 20 m of the camera's target
+    and 0.5-2 m above it, each drifting and fading in to the colour's alpha.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Meanings of the three numbers are inferred from the values.
+    Wisps are dropped when their viewer is more than 20 m away or a near test fails, and hidden within 4 m.
+    MaxFogParticles changes the 20. The three numbers' visible effect is read from `sub_fog`'s init (0x003ca658) and
+    update (0x003ca9d8); units are not runtime-checked. Arguments renamed from size, speed, height.
   usage: {chunks: 17, calls: 17, boot: false, mission1: false, result_used: false, levels: [87, 34, 81, 93, 9, 51]}
 
 - name: MaxFogParticles

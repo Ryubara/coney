@@ -820,14 +820,18 @@ HUDLaunchMissionFailed(reason)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `reason` | string | The failure text shown on the mission-failed screen. |
+| 1 | `reason` | string | The failure text shown under the title on the mission-failed screen; nil shows "Unknown Reason". |
 
 **Returns** nothing.
 
 Ends the mission as failed: sets the game state's mission result (`+0x118` = 2), gives the reason to the mission-failed
-screen and pushes it (game mode 0xc).
+menu (0x001d1fb8, its vtable `+0xa4`) and pushes game mode 0xc, which saves the sound state and opens the menu (Last
+checkpoint, Restart level, Quit).
 
-- **Evidence:** confirmed (code) at `0x001d1f88`; detail: brief
+**Notes.** The screen's layout and items are on [Pause](../../research/pause.md#the-mission-failed-screen); what each
+item does there is not traced.
+
+- **Evidence:** confirmed (code) at `0x001d1f88`; detail: traced
 - **Wrapper** `0x0036f130` (registered by `RegisterBindings`); **calls** `0x001d1f88` `MissionFailed_Launch`
 - **Used by** 24 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -1473,15 +1477,22 @@ HUDShowWarCommand(on, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false); default true | true (the default when omitted) shows the Warrior-command display, false hides it. |
-| 2 | `player` | number, truncated to an unsigned integer | Player HUD index, 0 or 1 (default 0). |
+| 1 | `on` | boolean (nil or 0 is false); default true | true (the default when omitted) allows the Warrior-command display, false hides it. |
+| 2 | `player` | number, truncated to an unsigned integer | Player HUD index, 0 or 1 (default 0); not range-checked. |
 
 **Returns** nothing.
 
-Shows or hides the Warrior-command element (the squad-order display) on one player's HUD.
+Allows or forbids the Warrior-command display (the d-pad squad-order picture, HUD `+0x1ef0`) on one player's HUD: the
+flag at element `+0x155c` (1 when the HUD is built) gates both its opening (0x001a6d28) and its drawing (0x001a8590).
+Either call also closes the display's picture if it is open (0x001b9290), so false hides it at once and true only lets
+it come up again when the player next calls for commands.
 
-- **Evidence:** confirmed (code) at `0x001b4948`; detail: brief
-- **Wrapper** `0x0036e7f8` (registered by `RegisterBindings`); **calls** `0x001b4948`
+**Notes.** Used around scripted moments where squad orders must not be given; the per-command availability shown in the
+display comes from game state `+0x41e` and is not set here.
+
+- **Evidence:** confirmed (code) at `0x001b4948`, `0x001a6c38`; detail: traced
+- **Wrapper** `0x0036e7f8` (registered by `RegisterBindings`); **calls** `0x001b4948` `HUD_ShowWarCommand`, `0x001a6c38`
+  `WarCommandDisplay_SetAllowed`
 - **Used by** 9 of 467 script chunks (32 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

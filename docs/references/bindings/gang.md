@@ -1027,23 +1027,26 @@ mask). Use GangMakeFriends for both directions.
 ## GangSetHearRange {#gangsethearrange}
 
 ```lua
-GangSetHearRange(gang, second, range)
+GangSetHearRange(gang, help, range)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 or an unused slot does nothing. |
-| 2 | `second` | boolean (nil or 0 is false) | Which range to set: true sets the second range (+0x138, default 20 m), false the first (+0x134, default 50 m). |
-| 3 | `range` | number (single precision) | Range in metres; -1 restores the default (20 or 50). |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31, read as 16 bits); -1 or a gang with no members does nothing. |
+| 2 | `help` | boolean (nil or 0 is false) | Which range to set: true the range at which members hear allies calling for help (brain `+0x138`, default 20 m, as HuSetHelpHearRange), false the range at which they hear noises (brain `+0x134`, default 50 m, as HuSetHearRange). |
+| 3 | `range` | number (single precision) | Range in metres; exactly -1 restores the default (20 or 50). |
 
 **Returns** nothing.
 
-Sets how far the gang's current members can hear noises, used for stealth sections; -1 puts the default back.
+Sets one hearing range on every current member of the gang (the 16 member slots at gang `+0x48`), as HuSetHearRange or
+HuSetHelpHearRange would for each; stealth sections shrink it so guards do not hear the player. -1 puts the default
+back.
 
-**Notes.** Which of the two ranges is hearing and which is another sense is inferred from the name.
+**Notes.** Only members alive at the call change; humans the gang spawns later keep their own default (inferred: the
+gang stores no range). The readers of brain `+0x134` / `+0x138` are not traced here.
 
-- **Evidence:** confirmed (code) at `0x0016bbf0`; detail: brief
-- **Wrapper** `0x0035f7f8` (registered by `RegisterBindings`); **calls** `0x0016bbf0`
+- **Evidence:** confirmed (code) at `0x0016bbf0`; detail: traced
+- **Wrapper** `0x0035f7f8` (registered by `RegisterBindings`); **calls** `0x0016bbf0` `Gang_SetHearRange`
 - **Used by** 7 of 467 script chunks (75 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -1238,18 +1241,20 @@ GangSetRespondPercentage(gang, percent)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `percent` | number, truncated to an unsigned integer | Percentage of the members (0-100) that may be helping at once before no more are sent. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31, read as 16 bits); -1 does nothing. Not range-checked otherwise. |
+| 2 | `percent` | number, truncated to an unsigned integer | Percentage of the members (0-100, stored as one byte) that may be helping at once before no more are sent. |
 
 **Returns** nothing.
 
-Sets the gang's respond percentage (byte `+0xd7`): tactics that answer violence (`TacticHanginOut`, `TacticIdle` with
-`respond`) send free members to help only while the share of members already helping is below it, so 0 keeps the gang
-out and 100 sends everyone.
+Sets the gang's respond percentage (byte `+0xd7` of its 0xb10-byte record at 0x005e6e30): tactics that answer violence
+(`TacticHanginOut`, `TacticIdle` with `respond`) send one more free member to fight the attacker only while the share of
+members already in goal HelpRespond is below it, so 0 keeps the gang out of fights it did not start and 100 sends
+everyone.
 
 **Notes.** Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist.
+Values above 255 wrap (one byte).
 
-- **Evidence:** confirmed (code) at `0x0016a2e8`; detail: brief
+- **Evidence:** confirmed (code) at `0x0016a2e8`; detail: traced
 - **Wrapper** `0x0035f4e0` (registered by `RegisterBindings`); **calls** `0x0016a2e8` `Gang_SetRespondPercentage`
 - **Used by** 10 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -1359,19 +1364,23 @@ GangStartSpawner(gang, spawner, mode, value)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `spawner` | string | Spawner name; an unknown name does nothing. |
-| 3 | `mode` | number, truncated to an integer | New [spawner state](../spawner-states.md): 0 stops it, 1 starts it, 2-5, 7, 8, 9 and 11 the others; other values leave the state unchanged. |
-| 4 | `value` | number, truncated to an integer | Replaces the spawner's value (GangAddSpawner's 15th argument) unless -1. |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31, read as 16 bits); -1 does nothing. |
+| 2 | `spawner` | string | Name the spawner was given by GangAddSpawner; only the gang's four spawner slots that are in use are searched (exact match), and an unknown name does nothing. |
+| 3 | `mode` | number, truncated to an integer | New [spawner state](../spawner-states.md) (spawner `+0x52`): 0 stops it, 1 starts it, 2-5, 7, 8, 9 and 11 the others; 6, 10 and other values leave the state unchanged. |
+| 4 | `value` | number, truncated to an integer | The state's value (spawner `+0x68`: seconds for state 2, metres for 3, 5, 6 and 8), read as 16 bits; -1 keeps the current one (GangAddSpawner's 15th argument). |
 
 **Returns** nothing.
 
-Starts, stops or switches the state of a gang's spawner, and records the time of the change.
+Switches a gang's named spawner to a new state, optionally with a new value, and sets its next-spawn time (`+0x64`) to
+now so a spawner made ready spawns on its next update. What each state does is in [AI:
+spawners](../../research/ai.md#spawners).
 
-**Notes.** 0x00168cd0; what each state does is in [AI: spawners](../../research/ai.md#spawners).
+**Notes.** The value and next-spawn time are written even when the mode is not accepted. Spawners only run while the
+level's spawn cap allows (SetSpawnMax).
 
-- **Evidence:** confirmed (code) at `0x0016afc8`; detail: brief
-- **Wrapper** `0x00374288` (registered by `RegisterBindings`); **calls** `0x0016afc8`
+- **Evidence:** confirmed (code) at `0x0016afc8`, `0x00168cd0`, `0x00168aa0`; detail: traced
+- **Wrapper** `0x00374288` (registered by `RegisterBindings`); **calls** `0x0016afc8` `Gang_StartSpawner`, `0x00168cd0`
+  `Gang_SetSpawnerState`, `0x00168aa0` `Gang_FindSpawnerByName`
 - **Used by** 45 of 467 script chunks (229 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

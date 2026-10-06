@@ -47,7 +47,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgFollowCamera`](#cfgfollowcamera) | - | 13 | yes | yes | confirmed (code) |
 | [`CfgGang`](#cfggang) | - | 1 | yes | no | confirmed (code) |
 | [`CfgGangMusic`](#cfggangmusic) | - | 1 | yes | no | confirmed (code) |
-| [`CfgGangSizeForCombatMusic`](#cfggangsizeforcombatmusic) | - | 5 | no | no | inferred |
+| [`CfgGangSizeForCombatMusic`](#cfggangsizeforcombatmusic) | - | 5 | no | no | confirmed (code) |
 | [`CfgGearData`](#cfggeardata) | - | 1 | yes | no | confirmed (code) |
 | [`CfgGrabCounterWithAttack`](#cfggrabcounterwithattack) | - | 0 | no | no | inferred |
 | [`CfgHat`](#cfghat) | - | 1 | yes | no | confirmed (code) |
@@ -746,18 +746,21 @@ CfgCrimeResponders(crime, count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `crime` | number, truncated to an unsigned integer | [Crime type](../crime-types.md). |
-| 2 | `count` | number, truncated to an unsigned integer | Number of responders (police) sent for that crime (0-2 in the scripts). |
+| 1 | `crime` | number, truncated to an unsigned integer | [Crime type](../crime-types.md), used as a byte index. |
+| 2 | `count` | number, truncated to an unsigned integer | Number of responders (police) queued for that crime, stored as a byte (0-2 in the scripts). |
 
 **Returns** nothing.
 
-Sets how many responders a crime type draws (byte at game state + 0x294 + crime); the difficulty configs and some levels
-set it.
+Sets how many responders a crime type draws: the byte at game state `+0x294 + crime`. When that crime is reported with
+responders, this many are queued on the nearest spawner in a responding state (custom crimes, type 4, use the report's
+own count instead); see [AI: crimes](../../research/ai.md#crimes). The difficulty configs and some levels set it.
 
-**Notes.** No range check on the crime index.
+**Notes.** No range check: a crime index past 14 writes into the next game-state fields. Types 6, 7, 10, 12 and 14 never
+send responders whatever is set.
 
-- **Evidence:** confirmed (code) at `0x0041d8a0`; detail: brief
-- **Wrapper** `0x0036be50` (registered by `RegisterBindings`); **calls** `0x0041d8a0`
+- **Evidence:** confirmed (code) at `0x0041d8a0`, `0x0041b8a0`; detail: traced
+- **Wrapper** `0x0036be50` (registered by `RegisterBindings`); **calls** `0x0041d8a0` `Cfg_SetCrimeResponders`,
+  `0x0041b8a0`
 - **Used by** 10 of 467 script chunks (37 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -880,14 +883,19 @@ CfgEnableGrappleCounters(enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) allows countering grapples. |
+| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) lets every AI human counter grabs and tackles; false limits counters to the AI kinds that always may. |
 
 **Returns** nothing.
 
-Stores the grapple-counter switch (byte at game state +0x56e3).
+Sets the grapple-counter switch (byte at game state `+0x56e3`). While it is set, any AI with a counter chance above 0
+may answer a grab or tackle with a counter move; while it is 0, only a human with brain type 3 or a class whose `+0x11b`
+is 13 can ([AI](../../research/ai.md)). Strikes are never countered this way.
 
-- **Evidence:** confirmed (code) at `0x0041da60`; detail: brief
-- **Wrapper** `0x0036c1d8` (registered by `RegisterBindings`); **calls** `0x0041da60`
+**Notes.** Reader: the counter tests on ai.md (`0x00223e20`). Which humans brain type 3 and class `+0x11b` 13 are is
+open. The byte's value before any call is not traced.
+
+- **Evidence:** confirmed (code) at `0x0041da60`; detail: traced
+- **Wrapper** `0x0036c1d8` (registered by `RegisterBindings`); **calls** `0x0041da60` `Cfg_SetGrappleCounters`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -1025,16 +1033,21 @@ CfgGangSizeForCombatMusic(count)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `count` | number, truncated to an integer | Number of enemies that must be fighting before the combat music starts (levels use 1-3). |
+| 1 | `count` | number, truncated to an integer | Members the nearest rival gang must have before its being near the player's crew can start the combat state (levels use 1-3). |
 
 **Returns** nothing.
 
-Stores the enemy-count threshold for combat music (0x005148a8).
+Stores a gang-size threshold (0x005148a8) read by the game state's music-state update (`0x0041a060`): when the nearest
+rival gang to the player's gang is close (within both gangs' radii plus 30 m) and has at least `count` members, a crew
+member seeing one of them switches the state (game state `+0x40c`) to 1, inferred to be combat music. A smaller gang
+nearby leaves the music calm unless it is already fighting the crew.
 
-**Notes.** Storage confirmed (code) at 0x0041d920; meaning from the name.
+**Notes.** The only reader is `0x0041a060`. That state 1 means combat music, and that `0x00222288` is a sight test, are
+inferred; a rival gang already fighting a crew member (goal 0xc) gives state 1 without the threshold. The global's value
+before any call is not traced.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035e4f8` (registered by `RegisterBindings`); **calls** `0x0041d920`
+- **Evidence:** confirmed (code) at `0x0041d920`; detail: traced
+- **Wrapper** `0x0035e4f8` (registered by `RegisterBindings`); **calls** `0x0041d920` `Cfg_SetGangSizeForCombatMusic`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -2611,33 +2624,37 @@ per-human values are used instead while 0x005101e0 is set.
 ## CfgSteam {#cfgsteam}
 
 ```lua
-CfgSteam(object, colour, n3, n4, f5, f6, f7, f8, f9, f10, f11, flag)
+CfgSteam(object, colour, interval, puffInterval, size, growth, life, speed, rise, dragH, dragV, still)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of a particle object (from the level's Objects table). |
-| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Colour {r, g, b, a}, each 0-255. |
-| 3 | `n3` | number, truncated to an unsigned integer | Integer parameter. |
-| 4 | `n4` | number, truncated to an unsigned integer | Integer parameter. |
-| 5 | `f5` | number (single precision) | Float (start size or rate, inferred). |
-| 6 | `f6` | number (single precision) | Float. |
-| 7 | `f7` | number (single precision) | Float. |
-| 8 | `f8` | number (single precision) | Float. |
-| 9 | `f9` | number (single precision) | Float. |
-| 10 | `f10` | number (single precision) | Float. |
-| 11 | `f11` | number (single precision) | Float. |
-| 12 | `flag` | boolean (nil or 0 is false) | Boolean parameter. |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of a steam emitter (a `part_steam` particle object from the level's Objects table); no type check. |
+| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Puff colour {r, g, b, a}, each 0-255; alpha is each puff's starting opacity, which fades to 0 over its life. Written back unchanged. |
+| 3 | `interval` | number, truncated to an unsigned integer | Frames between puffs (the emitter's update interval). |
+| 4 | `puffInterval` | number, truncated to an unsigned integer | Each puff's update interval in frames; must not be 0 (it divides). |
+| 5 | `size` | number (single precision) | Puff start size (each puff takes 0.8-1.2 times it). |
+| 6 | `growth` | number (single precision) | Puff size growth per update (scaled 0.8-1.2 at random). |
+| 7 | `life` | number (single precision) | Puff lifetime in seconds (× 60 / puffInterval gives its update count). |
+| 8 | `speed` | number (single precision) | Horizontal speed along the emitter's facing. |
+| 9 | `rise` | number (single precision) | Vertical speed (z). |
+| 10 | `dragH` | number (single precision) | How much the horizontal speed falls off over the puff's life (0 none). |
+| 11 | `dragV` | number (single precision) | How much the vertical speed falls off over the puff's life. |
+| 12 | `still` | boolean (nil or 0 is false) | true stops the puffs drifting with the global vector at 0x006f31a0 (inferred: wind). |
 
 **Returns** nothing.
 
-Sends a steam/smoke configuration message (id 0x27) to a particle object: colour, two integers, two float ranges and a
-flag.
+Configures a steam vent: sends the emitter message 0x27 with the colour (packed r, g, b, a), the two intervals and two
+vectors (dragH, dragV, size, growth) and (speed, rise, life, 1). While enabled and near the camera (a 30 m and a 20 m
+test), the emitter spawns a `sub_smoke` puff every `interval` frames that moves along the emitter's facing at `speed`,
+rises at `rise`, grows, slows and fades out over `life` seconds.
 
-**Notes.** Message built with the world message helpers at 0x003a2d20-0x003a2e00; parameter meanings not traced.
+**Notes.** Traced for `part_steam` (message handler 0x003f6b40, puff 0x003f61d8 / 0x003f6460); `part_steam_huge` and
+`part_steam_large` have their own handlers, not read. Which near-camera test (0x003a5280, 0x003a51f8) is distance and
+which visibility is inferred. Arguments renamed from n3, n4, f5-f11, flag.
 
-- **Evidence:** confirmed (code) at `0x0039be28`; detail: brief
-- **Wrapper** `0x003792c0` (registered by `RegisterBindings`); **calls** `0x0039be28`
+- **Evidence:** confirmed (code) at `0x0039be28`, `0x003f6720`; detail: traced
+- **Wrapper** `0x003792c0` (registered by `RegisterBindings`); **calls** `0x0039be28` `Steam_Configure`, `0x003f6720`
 - **Used by** 13 of 467 script chunks (36 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -2735,23 +2752,29 @@ state's reset turns it on for every language but English.
 ## CfgTagSettings {#cfgtagsettings}
 
 ```lua
-CfgTagSettings(object, n2, f3, f4, f5)
+CfgTagSettings(object, sprite, start, fade, depth)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of a tag (graffiti) object. |
-| 2 | `n2` | number, truncated to an unsigned integer | Number sent as message 0x27 (a texture or tag id, inferred). |
-| 3 | `f3` | number (single precision); default 0.5 | Float sent as message 0x37 (default 0.5). |
-| 4 | `f4` | number (single precision); default 0.005 | Float sent as message 0x38 (default 0.005). |
-| 5 | `f5` | number (single precision); default 1 | Float sent as message 0x3b (default 1). |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of a tag spot (a `part_spray_tag` particle object); anything that is not a particle system is ignored. |
+| 2 | `sprite` | number, truncated to an unsigned integer | Sprite word of the finished tag's image: sheet in the top 16 bits, rectangle in the low 16 (0x50000 before any call). Message 0x27. |
+| 3 | `start` | number (single precision); default 0.5 | Where on the pattern's path the stick game starts, as a fraction (default 0.5). Message 0x37. |
+| 4 | `fade` | number (single precision); default 0.005 | Opacity change per update (every second frame) while the tag fades in or out (default 0.005). Message 0x38. |
+| 5 | `depth` | number (single precision); default 1 | Draw-order offset: the sprite batch's depth becomes 10 + depth × 0.1; a negative value gives 10 (default 1). Message 0x3b. |
 
 **Returns** nothing.
 
-Configures a graffiti tag object through four object messages (ids 0x27, 0x37, 0x38, 0x3b), if the handle is a tag.
+Configures a graffiti tag spot through four messages: the image its sprite batch draws (the batch is rebuilt), the
+fraction of the path where the tagging stick game begins, how fast the painted tag fades in when sprayed and out when
+cleared, and its draw depth. Level scripts call it for each tag spot at setup.
 
-- **Evidence:** confirmed (code) at `0x0039bc28`; detail: brief
-- **Wrapper** `0x003795c0` (registered by `RegisterBindings`); **calls** `0x0039bc28`
+**Notes.** Handler 0x003fc8d8, update 0x003fca68, init 0x003fc600. `start` is stored at the task's `+0xc0` and HuTag's
+stick game reads the tag's `+0xc8` through its handle (crimes.md#tagging); that they are the same field is inferred.
+That the batch depth orders drawing is inferred. Arguments renamed from n2, f3-f5.
+
+- **Evidence:** confirmed (code) at `0x0039bc28`, `0x003fc8d8`; detail: traced
+- **Wrapper** `0x003795c0` (registered by `RegisterBindings`); **calls** `0x0039bc28` `Tag_Configure`, `0x003fc8d8`
 - **Used by** 9 of 467 script chunks (47 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

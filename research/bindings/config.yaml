@@ -782,15 +782,20 @@
 - name: CfgGangSizeForCombatMusic
   wrapper: 0x0035e4f8
   calls:
-    - {addr: 0x0041d920}
+    - {addr: 0x0041d920, name: Cfg_SetGangSizeForCombatMusic}
   args:
-    - {name: count, lua: number, ctype: int, desc: "Number of enemies that must be fighting before the combat music starts (levels use 1-3)."}
+    - {name: count, lua: number, ctype: int, desc: "Members the nearest rival gang must have before its being near the player's crew can start the combat state (levels use 1-3)."}
   description: >-
-    Stores the enemy-count threshold for combat music (0x005148a8).
-  evidence: inferred
-  depth: brief
+    Stores a gang-size threshold (0x005148a8) read by the game state's music-state update (`0x0041a060`): when the
+    nearest rival gang to the player's gang is close (within both gangs' radii plus 30 m) and has at least `count`
+    members, a crew member seeing one of them switches the state (game state `+0x40c`) to 1, inferred to be combat
+    music. A smaller gang nearby leaves the music calm unless it is already fighting the crew.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    Storage confirmed (code) at 0x0041d920; meaning from the name.
+    The only reader is `0x0041a060`. That state 1 means combat music, and that `0x00222288` is a sight test, are
+    inferred; a rival gang already fighting a crew member (goal 0xc) gives state 1 without the threshold. The
+    global's value before any call is not traced.
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [87, 83, 20]}
 
 - name: CfgDisableMusicForScenes
@@ -1648,17 +1653,21 @@
 - name: CfgCrimeResponders
   wrapper: 0x0036be50
   calls:
-    - {addr: 0x0041d8a0}
+    - {addr: 0x0041d8a0, name: Cfg_SetCrimeResponders}
+    - {addr: 0x0041b8a0}
   args:
-    - {name: crime, lua: number, ctype: unsigned, desc: "[Crime type](../crime-types.md)."}
-    - {name: count, lua: number, ctype: unsigned, desc: "Number of responders (police) sent for that crime (0-2 in the scripts)."}
+    - {name: crime, lua: number, ctype: unsigned, desc: "[Crime type](../crime-types.md), used as a byte index."}
+    - {name: count, lua: number, ctype: unsigned, desc: "Number of responders (police) queued for that crime, stored as a byte (0-2 in the scripts)."}
   description: >-
-    Sets how many responders a crime type draws (byte at game state + 0x294 + crime); the difficulty configs and some
+    Sets how many responders a crime type draws: the byte at game state `+0x294 + crime`. When that crime is reported
+    with responders, this many are queued on the nearest spawner in a responding state (custom crimes, type 4, use
+    the report's own count instead); see [AI: crimes](../../research/ai.md#crimes). The difficulty configs and some
     levels set it.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    No range check on the crime index.
+    No range check: a crime index past 14 writes into the next game-state fields. Types 6, 7, 10, 12 and 14 never
+    send responders whatever is set.
   usage: {chunks: 10, calls: 37, boot: false, mission1: false, result_used: false, levels: [87, 95, 14, 9, 82]}
 
 - name: CfgEnableCrimeType
@@ -1801,13 +1810,18 @@
 - name: CfgEnableGrappleCounters
   wrapper: 0x0036c1d8
   calls:
-    - {addr: 0x0041da60}
+    - {addr: 0x0041da60, name: Cfg_SetGrappleCounters}
   args:
-    - {name: enabled, lua: boolean, default: true, desc: "true (the default) allows countering grapples."}
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets every AI human counter grabs and tackles; false limits counters to the AI kinds that always may."}
   description: >-
-    Stores the grapple-counter switch (byte at game state +0x56e3).
+    Sets the grapple-counter switch (byte at game state `+0x56e3`). While it is set, any AI with a counter chance
+    above 0 may answer a grab or tackle with a counter move; while it is 0, only a human with brain type 3 or a class
+    whose `+0x11b` is 13 can ([AI](../../research/ai.md)). Strikes are never countered this way.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Reader: the counter tests on ai.md (`0x00223e20`). Which humans brain type 3 and class `+0x11b` 13 are is open.
+    The byte's value before any call is not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [87]}
 
 - name: CfgPowerupPickup
@@ -1840,44 +1854,55 @@
 - name: CfgSteam
   wrapper: 0x003792c0
   calls:
-    - {addr: 0x0039be28}
+    - {addr: 0x0039be28, name: Steam_Configure}
+    - {addr: 0x003f6720}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a particle object (from the level's Objects table)."}
-    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour {r, g, b, a}, each 0-255."}
-    - {name: n3, lua: number, ctype: unsigned, desc: "Integer parameter."}
-    - {name: n4, lua: number, ctype: unsigned, desc: "Integer parameter."}
-    - {name: f5, lua: number, ctype: float, desc: "Float (start size or rate, inferred)."}
-    - {name: f6, lua: number, ctype: float, desc: "Float."}
-    - {name: f7, lua: number, ctype: float, desc: "Float."}
-    - {name: f8, lua: number, ctype: float, desc: "Float."}
-    - {name: f9, lua: number, ctype: float, desc: "Float."}
-    - {name: f10, lua: number, ctype: float, desc: "Float."}
-    - {name: f11, lua: number, ctype: float, desc: "Float."}
-    - {name: flag, lua: boolean, desc: "Boolean parameter."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a steam emitter (a `part_steam` particle object from the level's Objects table); no type check."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Puff colour {r, g, b, a}, each 0-255; alpha is each puff's starting opacity, which fades to 0 over its life. Written back unchanged."}
+    - {name: interval, lua: number, ctype: unsigned, desc: "Frames between puffs (the emitter's update interval)."}
+    - {name: puffInterval, lua: number, ctype: unsigned, desc: "Each puff's update interval in frames; must not be 0 (it divides)."}
+    - {name: size, lua: number, ctype: float, desc: "Puff start size (each puff takes 0.8-1.2 times it)."}
+    - {name: growth, lua: number, ctype: float, desc: "Puff size growth per update (scaled 0.8-1.2 at random)."}
+    - {name: life, lua: number, ctype: float, desc: "Puff lifetime in seconds (× 60 / puffInterval gives its update count)."}
+    - {name: speed, lua: number, ctype: float, desc: "Horizontal speed along the emitter's facing."}
+    - {name: rise, lua: number, ctype: float, desc: "Vertical speed (z)."}
+    - {name: dragH, lua: number, ctype: float, desc: "How much the horizontal speed falls off over the puff's life (0 none)."}
+    - {name: dragV, lua: number, ctype: float, desc: "How much the vertical speed falls off over the puff's life."}
+    - {name: still, lua: boolean, desc: "true stops the puffs drifting with the global vector at 0x006f31a0 (inferred: wind)."}
   description: >-
-    Sends a steam/smoke configuration message (id 0x27) to a particle object: colour, two integers, two float ranges
-    and a flag.
+    Configures a steam vent: sends the emitter message 0x27 with the colour (packed r, g, b, a), the two intervals
+    and two vectors (dragH, dragV, size, growth) and (speed, rise, life, 1). While enabled and near the camera
+    (a 30 m and a 20 m test), the emitter spawns a `sub_smoke` puff every `interval` frames that moves along the
+    emitter's facing at `speed`, rises at `rise`, grows, slows and fades out over `life` seconds.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Message built with the world message helpers at 0x003a2d20-0x003a2e00; parameter meanings not traced.
+    Traced for `part_steam` (message handler 0x003f6b40, puff 0x003f61d8 / 0x003f6460); `part_steam_huge` and
+    `part_steam_large` have their own handlers, not read. Which near-camera test (0x003a5280, 0x003a51f8) is
+    distance and which visibility is inferred. Arguments renamed from n3, n4, f5-f11, flag.
   usage: {chunks: 13, calls: 36, boot: false, mission1: false, result_used: false, levels: [87, 81, 93, 51, 11, 61, 64]}
 
 - name: CfgTagSettings
   wrapper: 0x003795c0
   calls:
-    - {addr: 0x0039bc28}
+    - {addr: 0x0039bc28, name: Tag_Configure}
+    - {addr: 0x003fc8d8}
   args:
-    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a tag (graffiti) object."}
-    - {name: n2, lua: number, ctype: unsigned, desc: "Number sent as message 0x27 (a texture or tag id, inferred)."}
-    - {name: f3, lua: number, ctype: float, default: 0.5, desc: "Float sent as message 0x37 (default 0.5)."}
-    - {name: f4, lua: number, ctype: float, default: 0.005, desc: "Float sent as message 0x38 (default 0.005)."}
-    - {name: f5, lua: number, ctype: float, default: 1, desc: "Float sent as message 0x3b (default 1)."}
+    - {name: object, lua: number, ctype: unsigned, desc: "Handle of a tag spot (a `part_spray_tag` particle object); anything that is not a particle system is ignored."}
+    - {name: sprite, lua: number, ctype: unsigned, desc: "Sprite word of the finished tag's image: sheet in the top 16 bits, rectangle in the low 16 (0x50000 before any call). Message 0x27."}
+    - {name: start, lua: number, ctype: float, default: 0.5, desc: "Where on the pattern's path the stick game starts, as a fraction (default 0.5). Message 0x37."}
+    - {name: fade, lua: number, ctype: float, default: 0.005, desc: "Opacity change per update (every second frame) while the tag fades in or out (default 0.005). Message 0x38."}
+    - {name: depth, lua: number, ctype: float, default: 1, desc: "Draw-order offset: the sprite batch's depth becomes 10 + depth × 0.1; a negative value gives 10 (default 1). Message 0x3b."}
   description: >-
-    Configures a graffiti tag object through four object messages (ids 0x27, 0x37, 0x38, 0x3b), if the handle is a
-    tag.
+    Configures a graffiti tag spot through four messages: the image its sprite batch draws (the batch is rebuilt),
+    the fraction of the path where the tagging stick game begins, how fast the painted tag fades in when sprayed and
+    out when cleared, and its draw depth. Level scripts call it for each tag spot at setup.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Handler 0x003fc8d8, update 0x003fca68, init 0x003fc600. `start` is stored at the task's `+0xc0` and HuTag's
+    stick game reads the tag's `+0xc8` through its handle (crimes.md#tagging); that they are the same field is
+    inferred. That the batch depth orders drawing is inferred. Arguments renamed from n2, f3-f5.
   usage: {chunks: 9, calls: 47, boot: false, mission1: false, result_used: false, levels: [87, 95, 3, 86, 9]}
 
 - name: CfgSetStatTypeMax

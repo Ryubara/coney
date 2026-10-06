@@ -43,14 +43,21 @@
 - name: HUDShowWarCommand
   wrapper: 0x0036e7f8
   calls:
-    - {addr: 0x001b4948}
+    - {addr: 0x001b4948, name: HUD_ShowWarCommand}
+    - {addr: 0x001a6c38, name: WarCommandDisplay_SetAllowed}
   args:
-    - {name: "on", lua: boolean, default: true, desc: "true (the default when omitted) shows the Warrior-command display, false hides it."}
-    - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index, 0 or 1 (default 0)."}
+    - {name: "on", lua: boolean, default: true, desc: "true (the default when omitted) allows the Warrior-command display, false hides it."}
+    - {name: player, lua: number, ctype: unsigned, desc: "Player HUD index, 0 or 1 (default 0); not range-checked."}
   description: >-
-    Shows or hides the Warrior-command element (the squad-order display) on one player's HUD.
+    Allows or forbids the Warrior-command display (the d-pad squad-order picture, HUD `+0x1ef0`) on one player's
+    HUD: the flag at element `+0x155c` (1 when the HUD is built) gates both its opening (0x001a6d28) and its drawing
+    (0x001a8590). Either call also closes the display's picture if it is open (0x001b9290), so false hides it at
+    once and true only lets it come up again when the player next calls for commands.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Used around scripted moments where squad orders must not be given; the per-command availability shown in the
+    display comes from game state `+0x41e` and is not set here.
   usage: {chunks: 9, calls: 32, boot: false, mission1: false, result_used: false, levels: [87, 3, 93]}
 
 - name: HUDSetAnnounceMsg
@@ -331,12 +338,16 @@
   calls:
     - {addr: 0x001d1f88, name: MissionFailed_Launch}
   args:
-    - {name: reason, lua: string, desc: "The failure text shown on the mission-failed screen."}
+    - {name: reason, lua: string, desc: "The failure text shown under the title on the mission-failed screen; nil shows \"Unknown Reason\"."}
   description: >-
     Ends the mission as failed: sets the game state's mission result (`+0x118` = 2), gives the reason to the
-    mission-failed screen and pushes it (game mode 0xc).
+    mission-failed menu (0x001d1fb8, its vtable `+0xa4`) and pushes game mode 0xc, which saves the sound state and
+    opens the menu (Last checkpoint, Restart level, Quit).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    The screen's layout and items are on [Pause](../../research/pause.md#the-mission-failed-screen); what each item
+    does there is not traced.
   usage: {chunks: 24, calls: 38, boot: false, mission1: false, result_used: false, levels: [87, 3, 5, 86, 93, 31, 14, 51, 54, 55, 84, 92, 83, 20, 11]}
   coney: implemented
 

@@ -16,7 +16,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | Level | Story | Bindings | New | New, traced | New, in Coney |
 | --- | --- | --- | --- | --- | --- |
 | [`level80`](#level80) | mission 2 | 178 | 50 | 15 | 4 |
-| [`level87`](#level87) | mission 3 | 261 | 87 | 49 | 9 |
+| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 9 |
 | [`level95`](#level95) | the hub | 323 | 91 | 22 | 3 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 3 | 0 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 1 | 1 |
@@ -103,31 +103,31 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level87: mission 3 {#level87}
 
-261 bindings, 87 new: 49 traced, 9 implemented in Coney (71 of all 261).
+261 bindings, 87 new: 87 traced, 9 implemented in Coney (71 of all 261).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuAreActionsBlocked`](character.md#huareactionsblocked) | Characters | brief | inferred | not implemented |
+| [`HuAreActionsBlocked`](character.md#huareactionsblocked) | Characters | traced | confirmed (code) | not implemented |
 | [`HuExitWorld`](character.md#huexitworld) | Characters | traced | confirmed (code) | not implemented |
 | [`HuGetGang`](character.md#hugetgang) | Characters | traced | confirmed (code) | not implemented |
-| [`HuIsGrabbed`](character.md#huisgrabbed) | Characters | brief | confirmed (code) | not implemented |
+| [`HuIsGrabbed`](character.md#huisgrabbed) | Characters | traced | confirmed (code) | not implemented |
 | [`HuKill`](character.md#hukill) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetLOSRange`](character.md#husetlosrange) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetMaxHealth`](character.md#husetmaxhealth) | Characters | brief | confirmed (code) | not implemented |
+| [`HuSetMaxHealth`](character.md#husetmaxhealth) | Characters | traced | confirmed (code) | not implemented |
 | [`HuTag`](character.md#hutag) | Characters | traced | confirmed (code) | not implemented |
-| [`HuTagColor`](character.md#hutagcolor) | Characters | brief | confirmed (code) | not implemented |
+| [`HuTagColor`](character.md#hutagcolor) | Characters | traced | confirmed (code) | not implemented |
 | [`HuTagPattern`](character.md#hutagpattern) | Characters | traced | confirmed (code) | not implemented |
-| [`LoadBumAnims`](character.md#loadbumanims) | Characters | brief | confirmed (code) | not implemented |
-| [`SetCharacterModel`](character.md#setcharactermodel) | Characters | brief | confirmed (code) | not implemented |
-| [`WalkingDistance`](character.md#walkingdistance) | Characters | brief | confirmed (code) | not implemented |
-| [`BrSetFOV`](ai.md#brsetfov) | AI | brief | confirmed (code) | not implemented |
+| [`LoadBumAnims`](character.md#loadbumanims) | Characters | traced | confirmed (code) | not implemented |
+| [`SetCharacterModel`](character.md#setcharactermodel) | Characters | traced | confirmed (code) | not implemented |
+| [`WalkingDistance`](character.md#walkingdistance) | Characters | traced | confirmed (code) | not implemented |
+| [`BrSetFOV`](ai.md#brsetfov) | AI | traced | confirmed (code) | not implemented |
 | [`BrSetInvestigateResponse`](ai.md#brsetinvestigateresponse) | AI | traced | confirmed (code) | not implemented |
 | [`BrSetReactToViolence`](ai.md#brsetreacttoviolence) | AI | traced | confirmed (code) | not implemented |
-| [`BrSetThreatResponse`](ai.md#brsetthreatresponse) | AI | brief | confirmed (code) | implemented |
-| [`GoalBumLogicTrigger`](ai.md#goalbumlogictrigger) | AI | brief | inferred | not implemented |
-| [`GoalMelee`](ai.md#goalmelee) | AI | brief | inferred | not implemented |
+| [`BrSetThreatResponse`](ai.md#brsetthreatresponse) | AI | traced | confirmed (code) | implemented |
+| [`GoalBumLogicTrigger`](ai.md#goalbumlogictrigger) | AI | traced | confirmed (code) | not implemented |
+| [`GoalMelee`](ai.md#goalmelee) | AI | traced | confirmed (code) | not implemented |
 | [`GoalPlayDynIdle`](ai.md#goalplaydynidle) | AI | traced | confirmed (code) | not implemented |
-| [`GoalThrowObject`](ai.md#goalthrowobject) | AI | brief | inferred | not implemented |
+| [`GoalThrowObject`](ai.md#goalthrowobject) | AI | traced | confirmed (code) | not implemented |
 | [`TacticAttack`](ai.md#tacticattack) | AI | traced | confirmed (code) | not implemented |
 | [`TacticAvoidEnemies`](ai.md#tacticavoidenemies) | AI | traced | confirmed (code) | not implemented |
 | [`TacticConfront`](ai.md#tacticconfront) | AI | traced | confirmed (code) | not implemented |
@@ -149,32 +149,32 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`GangExitWorld`](gang.md#gangexitworld) | Gangs | traced | confirmed (code) | not implemented |
 | [`GangGetHeadCount`](gang.md#ganggetheadcount) | Gangs | traced | confirmed (code) | implemented |
 | [`GangGetLeader`](gang.md#ganggetleader) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSetHearRange`](gang.md#gangsethearrange) | Gangs | brief | confirmed (code) | not implemented |
+| [`GangSetHearRange`](gang.md#gangsethearrange) | Gangs | traced | confirmed (code) | not implemented |
 | [`GangSetInvestigateResponse`](gang.md#gangsetinvestigateresponse) | Gangs | traced | confirmed (code) | not implemented |
 | [`GangSetLeader`](gang.md#gangsetleader) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSetRespondPercentage`](gang.md#gangsetrespondpercentage) | Gangs | brief | confirmed (code) | not implemented |
-| [`GangStartSpawner`](gang.md#gangstartspawner) | Gangs | brief | confirmed (code) | not implemented |
-| [`CamAddPoizoPoint`](camera.md#camaddpoizopoint) | Cameras | brief | confirmed (code) | not implemented |
-| [`CamAddPoizoPointCam`](camera.md#camaddpoizopointcam) | Cameras | brief | confirmed (code) | not implemented |
-| [`CamDelete`](camera.md#camdelete) | Cameras | brief | confirmed (code) | not implemented |
-| [`CameraGetActive`](camera.md#cameragetactive) | Cameras | brief | confirmed (code) | not implemented |
-| [`CamGetPos`](camera.md#camgetpos) | Cameras | brief | confirmed (code) | not implemented |
-| [`CamLockLocked`](camera.md#camlocklocked) | Cameras | brief | confirmed (code) | not implemented |
-| [`CamSetFollowPos`](camera.md#camsetfollowpos) | Cameras | brief | confirmed (code) | not implemented |
-| [`CamSetupPoizo`](camera.md#camsetuppoizo) | Cameras | brief | confirmed (code) | not implemented |
-| [`CarPlaceInTrunkOnDetach`](world.md#carplaceintrunkondetach) | World and objects | brief | confirmed (code) | not implemented |
-| [`EnableVolumeBox`](world.md#enablevolumebox) | World and objects | brief | confirmed (code) | not implemented |
-| [`FlagGetOwner`](world.md#flaggetowner) | World and objects | brief | confirmed (code) | not implemented |
+| [`GangSetRespondPercentage`](gang.md#gangsetrespondpercentage) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangStartSpawner`](gang.md#gangstartspawner) | Gangs | traced | confirmed (code) | not implemented |
+| [`CamAddPoizoPoint`](camera.md#camaddpoizopoint) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamAddPoizoPointCam`](camera.md#camaddpoizopointcam) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamDelete`](camera.md#camdelete) | Cameras | traced | confirmed (code) | not implemented |
+| [`CameraGetActive`](camera.md#cameragetactive) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamGetPos`](camera.md#camgetpos) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamLockLocked`](camera.md#camlocklocked) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamSetFollowPos`](camera.md#camsetfollowpos) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamSetupPoizo`](camera.md#camsetuppoizo) | Cameras | traced | confirmed (code) | not implemented |
+| [`CarPlaceInTrunkOnDetach`](world.md#carplaceintrunkondetach) | World and objects | traced | confirmed (code) | not implemented |
+| [`EnableVolumeBox`](world.md#enablevolumebox) | World and objects | traced | confirmed (code) | not implemented |
+| [`FlagGetOwner`](world.md#flaggetowner) | World and objects | traced | confirmed (code) | not implemented |
 | [`PathValid`](world.md#pathvalid) | World and objects | traced | confirmed (code) | not implemented |
-| [`SetFlagPos`](world.md#setflagpos) | World and objects | brief | confirmed (code) | not implemented |
+| [`SetFlagPos`](world.md#setflagpos) | World and objects | traced | confirmed (code) | not implemented |
 | [`TriggerSphereEnable`](world.md#triggersphereenable) | World and objects | traced | confirmed (code) | not implemented |
 | [`EndGarbage`](effects.md#endgarbage) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`Start3DFog`](effects.md#start3dfog) | Effects and lighting | brief | confirmed (code) | not implemented |
+| [`Start3DFog`](effects.md#start3dfog) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`StartGarbage`](effects.md#startgarbage) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`HUDLaunchMissionFailed`](hud.md#hudlaunchmissionfailed) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`HUDShowWarCommand`](hud.md#hudshowwarcommand) | HUD and menus | brief | confirmed (code) | not implemented |
-| [`SetupRadio`](sound.md#setupradio) | Sound and music | brief | inferred | not implemented |
-| [`SoundPlayCommand`](sound.md#soundplaycommand) | Sound and music | brief | confirmed (code) | not implemented |
+| [`HUDLaunchMissionFailed`](hud.md#hudlaunchmissionfailed) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDShowWarCommand`](hud.md#hudshowwarcommand) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`SetupRadio`](sound.md#setupradio) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SoundPlayCommand`](sound.md#soundplaycommand) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SceneIsPreloaded`](scene.md#sceneispreloaded) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`SceneStop`](scene.md#scenestop) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`SceneUnload`](scene.md#sceneunload) | Scenes and movies | traced | confirmed (code) | implemented |
@@ -182,15 +182,15 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`GetLUASaveDataFloat`](level.md#getluasavedatafloat) | Levels and game state | traced | confirmed (code) | implemented |
 | [`ProcessTag`](level.md#processtag) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`SetLUASaveDataFloat`](level.md#setluasavedatafloat) | Levels and game state | traced | confirmed (code) | implemented |
-| [`SetSpawnMax`](level.md#setspawnmax) | Levels and game state | brief | confirmed (code) | not implemented |
+| [`SetSpawnMax`](level.md#setspawnmax) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`UM_IsDataUnlocked`](level.md#um_isdataunlocked) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`doFile`](script.md#dofile) | Script flow | traced | confirmed (code) | implemented |
 | [`CfgCivilianAggression`](config.md#cfgcivilianaggression) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgCrimeResponders`](config.md#cfgcrimeresponders) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
-| [`CfgEnableGrappleCounters`](config.md#cfgenablegrapplecounters) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
-| [`CfgGangSizeForCombatMusic`](config.md#cfggangsizeforcombatmusic) | Configuration (Cfg) | brief | inferred | not implemented |
-| [`CfgSteam`](config.md#cfgsteam) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
-| [`CfgTagSettings`](config.md#cfgtagsettings) | Configuration (Cfg) | brief | confirmed (code) | not implemented |
+| [`CfgCrimeResponders`](config.md#cfgcrimeresponders) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgEnableGrappleCounters`](config.md#cfgenablegrapplecounters) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgGangSizeForCombatMusic`](config.md#cfggangsizeforcombatmusic) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgSteam`](config.md#cfgsteam) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgTagSettings`](config.md#cfgtagsettings) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgTagStartCallback`](config.md#cfgtagstartcallback) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgVerticalSightModifier`](config.md#cfgverticalsightmodifier) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`isRelease`](util.md#isrelease) | Utilities | traced | confirmed (code) | implemented |

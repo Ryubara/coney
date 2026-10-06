@@ -82,16 +82,18 @@
   calls:
     - {addr: 0x0016a2e8, name: Gang_SetRespondPercentage}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
-    - {name: percent, lua: number, ctype: unsigned, desc: "Percentage of the members (0-100) that may be helping at once before no more are sent."}
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31, read as 16 bits); -1 does nothing. Not range-checked otherwise."}
+    - {name: percent, lua: number, ctype: unsigned, desc: "Percentage of the members (0-100, stored as one byte) that may be helping at once before no more are sent."}
   description: >-
-    Sets the gang's respond percentage (byte `+0xd7`): tactics that answer violence (`TacticHanginOut`, `TacticIdle`
-    with `respond`) send free members to help only while the share of members already helping is below it, so 0 keeps
-    the gang out and 100 sends everyone.
+    Sets the gang's respond percentage (byte `+0xd7` of its 0xb10-byte record at 0x005e6e30): tactics that answer
+    violence (`TacticHanginOut`, `TacticIdle` with `respond`) send one more free member to fight the attacker only
+    while the share of members already in goal HelpRespond is below it, so 0 keeps the gang out of fights it did not
+    start and 100 sends everyone.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist.
+    Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist. Values
+    above 255 wrap (one byte).
   usage: {chunks: 10, calls: 23, boot: false, mission1: false, result_used: false, levels: [87, 14, 51, 52, 82]}
 
 - name: GangSetCustomSpotDialog
@@ -220,17 +222,20 @@
 - name: GangSetHearRange
   wrapper: 0x0035f7f8
   calls:
-    - {addr: 0x0016bbf0}
+    - {addr: 0x0016bbf0, name: Gang_SetHearRange}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
-    - {name: second, lua: boolean, desc: "Which range to set: true sets the second range (+0x138, default 20 m), false the first (+0x134, default 50 m)."}
-    - {name: range, lua: number, ctype: float, desc: "Range in metres; -1 restores the default (20 or 50)."}
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31, read as 16 bits); -1 or a gang with no members does nothing."}
+    - {name: help, lua: boolean, desc: "Which range to set: true the range at which members hear allies calling for help (brain `+0x138`, default 20 m, as HuSetHelpHearRange), false the range at which they hear noises (brain `+0x134`, default 50 m, as HuSetHearRange)."}
+    - {name: range, lua: number, ctype: float, desc: "Range in metres; exactly -1 restores the default (20 or 50)."}
   description: >-
-    Sets how far the gang's current members can hear noises, used for stealth sections; -1 puts the default back.
+    Sets one hearing range on every current member of the gang (the 16 member slots at gang `+0x48`), as
+    HuSetHearRange or HuSetHelpHearRange would for each; stealth sections shrink it so guards do not hear the player.
+    -1 puts the default back.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Which of the two ranges is hearing and which is another sense is inferred from the name.
+    Only members alive at the call change; humans the gang spawns later keep their own default (inferred: the gang
+    stores no range). The readers of brain `+0x134` / `+0x138` are not traced here.
   usage: {chunks: 7, calls: 75, boot: false, mission1: false, result_used: false, levels: [87, 93, 51, 82]}
 
 - name: GangCanFlee
@@ -790,18 +795,23 @@
 - name: GangStartSpawner
   wrapper: 0x00374288
   calls:
-    - {addr: 0x0016afc8}
+    - {addr: 0x0016afc8, name: Gang_StartSpawner}
+    - {addr: 0x00168cd0, name: Gang_SetSpawnerState}
+    - {addr: 0x00168aa0, name: Gang_FindSpawnerByName}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
-    - {name: spawner, lua: string, desc: "Spawner name; an unknown name does nothing."}
-    - {name: mode, lua: number, ctype: int, desc: "New [spawner state](../spawner-states.md): 0 stops it, 1 starts it, 2-5, 7, 8, 9 and 11 the others; other values leave the state unchanged."}
-    - {name: value, lua: number, ctype: int, desc: "Replaces the spawner's value (GangAddSpawner's 15th argument) unless -1."}
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31, read as 16 bits); -1 does nothing."}
+    - {name: spawner, lua: string, desc: "Name the spawner was given by GangAddSpawner; only the gang's four spawner slots that are in use are searched (exact match), and an unknown name does nothing."}
+    - {name: mode, lua: number, ctype: int, desc: "New [spawner state](../spawner-states.md) (spawner `+0x52`): 0 stops it, 1 starts it, 2-5, 7, 8, 9 and 11 the others; 6, 10 and other values leave the state unchanged."}
+    - {name: value, lua: number, ctype: int, desc: "The state's value (spawner `+0x68`: seconds for state 2, metres for 3, 5, 6 and 8), read as 16 bits; -1 keeps the current one (GangAddSpawner's 15th argument)."}
   description: >-
-    Starts, stops or switches the state of a gang's spawner, and records the time of the change.
+    Switches a gang's named spawner to a new state, optionally with a new value, and sets its next-spawn time
+    (`+0x64`) to now so a spawner made ready spawns on its next update. What each state does is in
+    [AI: spawners](../../research/ai.md#spawners).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    0x00168cd0; what each state does is in [AI: spawners](../../research/ai.md#spawners).
+    The value and next-spawn time are written even when the mode is not accepted. Spawners only run while the
+    level's spawn cap allows (SetSpawnMax).
   usage: {chunks: 45, calls: 229, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
 
 - name: GangSetMaxConcurrent

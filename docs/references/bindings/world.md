@@ -338,20 +338,23 @@ CarPlaceInTrunkOnDetach(car, object, itemKind)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `car` | number, truncated to an unsigned integer | Handle of the car. |
-| 2 | `object` | number, truncated to an unsigned integer | Handle of the object (a weapon such as `dyn_pipe_a`) that appears when the boot is forced open; NilHandle when `itemKind` is used instead. |
-| 3 | `itemKind` | number, truncated to an unsigned integer | When non-zero, a built-in item kind (low 8 bits) is stored instead of an object; the scripts pass 5 with NilHandle. |
+| 1 | `car` | number, truncated to an unsigned integer | Handle of the car; an invalid handle does nothing. |
+| 2 | `object` | number, truncated to an unsigned integer | Handle of the object (a weapon such as `dyn_pipe_a`) to put in the boot; ignored when `itemKind` is not 0. |
+| 3 | `itemKind` | number, truncated to an unsigned integer | When non-zero, an item kind (low 8 bits) for which a new pickup object (template 0x0057e3d8, kind at `+0x124`) is made when the boot comes off; the scripts pass 5 with NilHandle. |
 
 **Returns** nothing.
 
-Sets what a car's boot holds: with `itemKind` 0 the object is disabled (0x00398df8) and its index stored at car
-`+0x120c`; otherwise the kind's low byte goes to `+0x12e5`. Either way car `+0x12e4` marks the boot as loaded.
+Hides an item in a car's boot, released when the boot is knocked off the car (part 5 detached, 0x0038a4d8): the object
+is pinned and its handle stored (car `+0x120c`), or the item kind stored (`+0x12e5`); `+0x12e4` marks the boot loaded.
+On release the object is moved to the boot's position, or a new pickup of the kind is made there, and the mark is
+cleared.
 
-**Notes.** When the boot gives the item up (the 'on detach' of the name) is not traced; inferred: when the boot is
-forced open.
+**Notes.** A later call replaces the earlier item. The new pickup gets 15000 ms at 0x00395d20 (inferred: a lifetime).
+What kind 5 is (a pickup of the inventory list) is not traced.
 
-- **Evidence:** confirmed (code) at `0x0038e0f0`; detail: brief
-- **Wrapper** `0x003788b8` (registered by `RegisterBindings`); **calls** `0x0038e0f0` `Car_PlaceInTrunkOnDetach`
+- **Evidence:** confirmed (code) at `0x0038e0f0`, `0x0038d538`, `0x0038d528`, `0x0038d188`; detail: traced
+- **Wrapper** `0x003788b8` (registered by `RegisterBindings`); **calls** `0x0038e0f0` `Car_PlaceInTrunkOnDetach`,
+  `0x0038d538` `Car_SetTrunkObject`, `0x0038d528` `Car_SetTrunkItemKind`, `0x0038d188` `Car_ReleaseTrunkItem`
 - **Used by** 12 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 12 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -707,15 +710,21 @@ EnableVolumeBox(box, enable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `box` | number, truncated to an unsigned integer | Handle of the volume box. |
-| 2 | `enable` | boolean (nil or 0 is false) | True to enable, false to disable the box. |
+| 1 | `box` | number, truncated to an unsigned integer | Handle of the volume box (from AddVolumeBox); not checked. |
+| 2 | `enable` | boolean (nil or 0 is false) | true enables the box, false disables it. |
 
 **Returns** nothing.
 
-Enables or disables a volume box (its enable method, vtable +0x5c).
+Enables or disables a volume box through its vtable `+0x5c` (for a plain box, 0x004152e0: byte `+0x68`). A disabled box
+stops testing who is inside, so it sends no enter (3), inside (5) or leave (4) messages; disabling also empties its
+occupant list without sending leave messages, so humans still inside on re-enabling get a fresh enter message.
 
-- **Evidence:** confirmed (code) at `0x00412bf8`; detail: brief
-- **Wrapper** `0x0037af58` (registered by `RegisterBindings`); **calls** `0x00412bf8` `VolumeBox_Enable`
+**Notes.** Box behaviour: [Scripts: triggers](../../research/scripting.md#triggers). Only the plain box's slot (vtable
+0x00545df8) was read; other box kinds may differ.
+
+- **Evidence:** confirmed (code) at `0x00412bf8`, `0x004152e0`; detail: traced
+- **Wrapper** `0x0037af58` (registered by `RegisterBindings`); **calls** `0x00412bf8` `VolumeBox_Enable`, `0x004152e0`
+  `VolumeBox_SetEnabled`
 - **Used by** 43 of 467 script chunks (173 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -770,13 +779,19 @@ FlagGetOwner(flag) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `flag` | number, truncated to an unsigned integer | Handle of a flag (marker) or an object carrying flag data. |
+| 1 | `flag` | number, truncated to an unsigned integer | Handle of a flag (marker) or of an object whose type bits include a flag (`AsFlag`, 0x00417a60). |
 
-**Returns** number: Handle of the flag's current owner (the human or object using it, record +0xdc), or NilHandle.
+**Returns** number: Handle of the human using the flag now (record `+0xdc`), or NilHandle when no one is or the handle
+is not a flag.
 
-Returns who currently owns a flag, for example which human is using a phone or a chair marker.
+Returns who is using a flag now, for example which human is sitting at a chair marker, serving at a shop or tagging a
+wall. The AI goals that use a flag set the user when a human takes it and clear it when that human leaves
+(`Flag_ReleaseUser`, 0x004161b8, from MoveToUseFlag 0x002dbaa0, the shopkeeper goal and `Tag_End`).
 
-- **Evidence:** confirmed (code) at `0x00416ed0`; detail: brief
+**Notes.** The release only clears the user when it is the leaving human. The store that sets the user was not found as
+a direct write (inferred: an inlined write in the goals).
+
+- **Evidence:** confirmed (code) at `0x00416ed0`; detail: traced
 - **Wrapper** `0x00378160` (registered by `RegisterBindings`); **calls** `0x00416ed0` `Flag_GetOwner`
 - **Used by** 9 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -1765,15 +1780,19 @@ SetFlagPos(flag, pos)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `flag` | number, truncated to an unsigned integer | Handle of the flag. |
-| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | New world position `{x, y, z}`. Written back unchanged. |
+| 1 | `flag` | number, truncated to an unsigned integer | Handle of the flag; not checked (an invalid handle writes through a null pointer). |
+| 2 | `pos` | table of 3 numbers (t[1]..t[3]) | New world position `{x, y, z}` in metres. Written back unchanged. |
 
 **Returns** nothing.
 
-Moves a flag to a new position.
+Moves a flag to a new position (record `+0x10`, `w` = 1). Humans and goals that read the flag afterwards use the new
+spot; a flag that follows a parent keeps reporting the parent's position.
 
-- **Evidence:** confirmed (code) at `0x00416b68`; detail: brief
-- **Wrapper** `0x0037a150` (registered by `RegisterBindings`); **calls** `0x00416b68` `Flag_SetPosition`
+**Notes.** No type check: a handle of another object writes that object's `+0x10`. The heading is unchanged.
+
+- **Evidence:** confirmed (code) at `0x00416b68`, `0x004161d8`; detail: traced
+- **Wrapper** `0x0037a150` (registered by `RegisterBindings`); **calls** `0x00416b68` `Flag_SetPosition`, `0x004161d8`
+  `Flag_SetPositionRaw`
 - **Used by** 19 of 467 script chunks (37 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

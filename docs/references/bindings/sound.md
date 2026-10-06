@@ -25,7 +25,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SetAmbientEmitterVolumeMod`](#setambientemittervolumemod) | - | 3 | no | no | inferred |
 | [`SetAmbientTrackVolume`](#setambienttrackvolume) | - | 8 | yes | yes | confirmed (code) |
 | [`SetNumberOfMaterialSlots`](#setnumberofmaterialslots) | - | 6 | yes | no | confirmed (code) |
-| [`SetupRadio`](#setupradio) | - | 4 | no | no | inferred |
+| [`SetupRadio`](#setupradio) | - | 4 | no | no | confirmed (code) |
 | [`SndAllocateCharacterVoices`](#sndallocatecharactervoices) | - | 1 | yes | no | confirmed (code) |
 | [`SndCfgMusicInfo`](#sndcfgmusicinfo) | - | 1 | yes | no | confirmed (code) |
 | [`SndEnableMusicDuck`](#sndenablemusicduck) | - | 1 | no | no | inferred |
@@ -474,25 +474,32 @@ Changes how many alternatives a material pair picks from, and restarts its choic
 ## SetupRadio {#setupradio}
 
 ```lua
-SetupRadio(object, callback, track, callback2, checkpoint)
+SetupRadio(object, onPickUp, track, onSegment, djLine)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `object` | number, truncated to an unsigned integer | Handle of the radio (boom box) world object. |
-| 2 | `callback` | string | Name of a Lua function to call (when the radio is interacted with, inferred), or nil. |
-| 3 | `track` | number, truncated to an integer | Radio track number; 0 or less means none. |
-| 4 | `callback2` | string | Name of a second Lua function, or nil. |
-| 5 | `checkpoint` | number, truncated to an integer | When not 0, a second mode is used with this number stored (the scripts pass the checkpoint); meaning not traced. |
+| 1 | `object` | number, truncated to an unsigned integer | Handle of a radio (boom box) world object; not checked, so another handle corrupts that object's record. |
+| 2 | `onPickUp` | string | Name of a Lua function called with the player's handle when the player picks the radio up (message 0x1b); nil for none. |
+| 3 | `track` | number, truncated to an integer | Music track to start with: an index into the radio's track table (0x00512cd8, about 18 entries); 0 or less starts the radio switched off. |
+| 4 | `onSegment` | string | Name of a Lua function called (no arguments) each time the radio moves on: a DJ link starts, it retunes or the next track starts; nil for none. |
+| 5 | `djLine` | number, truncated to an integer | When not 0, an index into a table of special DJ clips (0x00512d30) played once, before `track`, when the player first comes within 5 m; the scripts pass the checkpoint, so each chapter has its own announcement. 0 for none. |
 
 **Returns** nothing.
 
-Sets up a world object as a playable radio: its callbacks and the track it plays.
+Makes a world object a working radio: it plays its music track, positioned at itself, while the player is within 40 m,
+then a random DJ link and a random next track, and so on; the volume halves while a scene plays. With `djLine` the first
+thing it plays when the player walks up is that DJ clip. The object is pinned (`ObjRecord_SetPinned`) so it is not
+recycled.
 
-**Notes.** 0x003ac4d0.
+**Notes.** Record fields (object record via vtable `+0x18c`): `+0x24` sound, `+0x28` track, `+0x2c` next track or DJ
+line, `+0x30` state (1 play, 9 off, 3 retune, 0xb pause), `+0x34` clip kind, `+0x36` DJ line armed, `+0x38` / `+0x3c`
+the callbacks. Track 0 counts as off; the random pool grows from 12 to 18 tracks with a progress flag
+(0x004241d8(0x6fe998, 0x54), not traced). What turns it on, off or retunes it (Radio_SetMode, 0x003ac600) is not traced.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00379ea0` (registered by `RegisterBindings`); **calls** `0x003ac4d0`
+- **Evidence:** confirmed (code) at `0x003ac4d0`, `0x003ad440`, `0x003ac7e8`; detail: traced
+- **Wrapper** `0x00379ea0` (registered by `RegisterBindings`); **calls** `0x003ac4d0` `Radio_Setup`, `0x003ad440`
+  `Radio_Update`, `0x003ac7e8` `Radio_HandleMessage`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -930,26 +937,31 @@ over 2 s. In level 82 one particular track is swapped for another.
 ## SoundPlayCommand {#soundplaycommand}
 
 ```lua
-SoundPlayCommand(human, command, callback, interrupt, target, flag2) -> number
+SoundPlayCommand(human, command, callback, interrupt, target, duckable) -> number
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human who speaks. |
-| 2 | `command` | number, truncated to an unsigned integer | Speech command id (0-206), the kind of line ([Speech](../speech.md)). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human who speaks; not a human returns the 'no sound' handle. |
+| 2 | `command` | number, truncated to an unsigned integer | Speech command id (1-206), the kind of line ([Speech](../speech.md)); 0 says nothing. |
 | 3 | `callback` | string | Name of a Lua function called with the speaker's handle when the line ends, or at once when no line plays; nil for none. |
 | 4 | `interrupt` | boolean (nil or 0 is false); default true | true (the default) cuts off a line the human is saying; false says nothing while one plays. |
-| 5 | `target` | number, truncated to an unsigned integer; default 4294967295 | Handle of a human the speaker looks at for the line's length plus 0.5 s (default 0xffffffff, none). |
-| 6 | `flag2` | boolean (nil or 0 is false); default true | A second flag (default true); meaning not traced. |
+| 5 | `target` | number, truncated to an unsigned integer; default 4294967295 | Handle of a human the speaker looks at for the line's length plus 0.5 s (default NilHandle, none). |
+| 6 | `duckable` | boolean (nil or 0 is false); default true | true (the default) lets the line be ducked like other sounds; false marks it non-duckable (sound task `+0xa4`), so it ducks the others while it plays. |
 
-**Returns** number: The speech sound's handle, or the 'no sound' handle when the human is not found.
+**Returns** number: The speech sound's handle, or the 'no sound' handle (0x00598690) when nothing plays.
 
-Makes a human say a line of the given speech command, picked from the human's voice set as
-[Sound](../../research/sound.md#speech) describes; nothing is said when the voice set has no line for the command or
-speech is off.
+Makes a human say a line of the given speech command, picked in turn from the human's voice set as
+[Sound](../../research/sound.md#speech) describes, positioned at the human. Nothing is said when the human cannot speak
+(`+0x199`), its voice set has no line for the command, the chance roll fails or a scene is playing.
 
-- **Evidence:** confirmed (code) at `0x001140d8`; detail: brief
-- **Wrapper** `0x00372fe0` (registered by `RegisterBindings`); **calls** `0x001140d8`
+**Notes.** The last flag is the play call's last argument (0x00111f78 stores it at task `+0xa4`; `+0xa0` cleared when
+false). The callback is not called when the human is invalid, cannot speak, or is already speaking with `interrupt`
+false.
+
+- **Evidence:** confirmed (code) at `0x001140d8`, `0x002205e0`, `0x0021e400`; detail: traced
+- **Wrapper** `0x00372fe0` (registered by `RegisterBindings`); **calls** `0x001140d8` `Sound_PlayHumanCommand`,
+  `0x002205e0` `Human_SayCommand`, `0x0021e400` `Human_PlaySpeech`
 - **Used by** 60 of 467 script chunks (97 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 9 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

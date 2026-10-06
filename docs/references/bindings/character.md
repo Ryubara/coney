@@ -22,7 +22,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GetDistanceTweenHumans`](#getdistancetweenhumans) | number | 6 | yes | no | confirmed (code) |
 | [`HuActionDialog`](#huactiondialog) | - | 7 | no | no | inferred |
 | [`HuApplyDamageModifier`](#huapplydamagemodifier) | - | 8 | no | no | inferred |
-| [`HuAreActionsBlocked`](#huareactionsblocked) | boolean | 4 | no | no | inferred |
+| [`HuAreActionsBlocked`](#huareactionsblocked) | boolean | 4 | no | no | confirmed (code) |
 | [`HuAttachGear`](#huattachgear) | - | 2 | yes | no | confirmed (code) |
 | [`HuAttachSpinningIcon`](#huattachspinningicon) | - | 18 | no | yes | confirmed (code) |
 | [`HuBlockClimb`](#hublockclimb) | - | 1 | no | no | confirmed (code) |
@@ -544,13 +544,21 @@ HuAreActionsBlocked(human) -> boolean
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** boolean (1 for true, nil for false): True when the human is in a state that blocks its actions; nil
-otherwise or for an invalid handle.
+**Returns** boolean (1 for true, nil for false): true (1) when the human is busy in a state that blocks new actions; nil
+otherwise or when the handle is not a human.
 
-Tells whether the human currently cannot act (busy in a state that blocks actions).
+Tells whether the human is locked into something and cannot start a new action: true when any of its state flags
+`0x7bf9e9f7ff0` is set, which covers grabbing or being grabbed, mugging or being mugged, tackling or being tackled,
+throwing, tagging, a mini-game (lock picking and the like), being dead and the airborne states (jump, fall, landing).
+Fight stance, blocking and sprinting do not count.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003654a0` (registered by `RegisterBindings`); **calls** `0x002387a8`
+**Notes.** The same mask gates the player's context actions and jumps (characters.md) and is tested by about 88 AI and
+combat functions. Bits 0x2000, 0x4000, 0x10000-0x40000, 0x100000, 0x800000, 0x8000000, 0x10000000, 0x80000000,
+0x100000000 and 0x10000000000-0x40000000000 are in the mask but not yet named.
+
+- **Evidence:** confirmed (code) at `0x002387a8`, `0x00228228`; detail: traced
+- **Wrapper** `0x003654a0` (registered by `RegisterBindings`); **calls** `0x002387a8` `Human_AreActionsBlocked`,
+  `0x00228228` `HumanRecord_AreActionsBlocked`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -1654,12 +1662,18 @@ HuIsGrabbed(human) -> boolean
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** boolean (1 for true, nil for false): True while someone holds the human in a grab.
+**Returns** boolean (1 for true, nil for false): true (1) while the human is held in a grab from the front or the rear
+or pinned by a tackle; nil otherwise, or when the handle is not a human.
 
-Tells whether the human is being grabbed.
+Tells whether the human is on the receiving end of a grapple: true while any of its state flags `0x10` (grabbed from the
+front), `0x20` (grabbed from the rear) or `0x800` (pinned by a tackle) is set ([Combat: state
+flags](../../research/combat.md#state-flags)). The grabber itself does not count.
 
-- **Evidence:** confirmed (code) at `0x002355e0`; detail: brief
-- **Wrapper** `0x0035b578` (registered by `RegisterBindings`); **calls** `0x002355e0`
+**Notes.** Tests record `+0xd4` flags with `0x002265f0(human, 0x830)`; a handle that is not a human (type flag 0x40)
+gives nil.
+
+- **Evidence:** confirmed (code) at `0x002355e0`; detail: traced
+- **Wrapper** `0x0035b578` (registered by `RegisterBindings`); **calls** `0x002355e0` `Human_IsGrabbed`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -3039,14 +3053,18 @@ HuSetMaxHealth(human, health)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `health` | number, truncated to an integer | New maximum health in hit points (16-bit). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human; a handle that is not a human does nothing. |
+| 2 | `health` | number, truncated to an integer | New maximum health in hit points, kept as a signed 16-bit value (up to 32767; the player has 900 in level 99, a civilian 600). |
 
 **Returns** nothing.
 
-Sets the human's maximum health (+0x146 of its record) and fills its current health to the same value.
+Sets the human's maximum health and refills it: both the maximum (record `+0x146`) and the current health (`+0x144`)
+become `health`, so the health bar shows full. Scripts use it to make bosses and key enemies tougher.
 
-- **Evidence:** confirmed (code) at `0x00237be0`; detail: brief
+**Notes.** Also heals a hurt human to full. No clamping: values above 32767 wrap negative. Health fields:
+characters.md#the-record.
+
+- **Evidence:** confirmed (code) at `0x00237be0`; detail: traced
 - **Wrapper** `0x0035bbc8` (registered by `RegisterBindings`); **calls** `0x00237be0` `Human_SetMaxHealth`
 - **Used by** 39 of 467 script chunks (205 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 16 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -4158,17 +4176,20 @@ HuTagColor(human, colour)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the tagger. |
-| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Colour {r, g, b, a}; each element is multiplied by 255 before packing, so 0-1 values are expected, though the scripts pass 0-255 values. Written back unchanged. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the tagger; a handle that is not a human does nothing. |
+| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Colour {r, g, b, a}, each a whole number 0-255 as the scripts pass. Written back unchanged. |
 
 **Returns** nothing.
 
-Sets the colour a tagger sprays: the four elements are each multiplied by 255, packed into one colour (0x0017aca8, a, b,
-g, r order) and stored at human `+0x640`.
+Sets the colour of the paint a human sprays when tagging (human `+0x640`, packed bytes a, b, g, r from the low byte up).
+Each element is multiplied by 255 twice (here and in the packer `0x0017aca8`) and the low byte of the result kept; since
+255 × 255 = 65025 leaves 1 modulo 256, a whole number 0-255 comes out unchanged, so the scripts' 0-255 values work
+exactly.
 
-**Notes.** Scripts pass 0-255 values, which overflow the packing; what the packing does with them is not traced.
+**Notes.** 0-1 fractions give near-black bytes (1.0 gives 1, 0.5 gives 0); negatives give 0. Who reads `+0x640` (the tag
+drawing) is not traced.
 
-- **Evidence:** confirmed (code) at `0x00239080`; detail: brief
+- **Evidence:** confirmed (code) at `0x00239080`; detail: traced
 - **Wrapper** `0x0035ccf0` (registered by `RegisterBindings`); **calls** `0x00239080` `Human_SetTagColour`
 - **Used by** 9 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -4437,10 +4458,15 @@ LoadBumAnims(on)
 
 **Returns** nothing.
 
-Requests or releases the thirteen dynamic animations the bums use (a table starting with `puke_fidget.anm` at
-0x00510ff8), each through the same call as SetDynamicAnimation.
+Requests or releases, as one set, the thirteen dynamic animations that bums running GoalBumLogic play (a pointer table
+at 0x00510ff8 starting with `puke_fidget.anm`): each goes through ResourceManager_SetDynamicAnimation, as with
+SetDynamicAnimation, so the 64-entry dynamic-animation list gains or loses those files. Level scripts call it before
+placing bums.
 
-- **Evidence:** confirmed (code) at `0x002abe98`; detail: brief
+**Notes.** Requesting fills 13 of the 64 dynamic-animation slots. Releasing also drops files another script requested
+separately by the same name.
+
+- **Evidence:** confirmed (code) at `0x002abe98`; detail: traced
 - **Wrapper** `0x00363500` (registered by `RegisterBindings`); **calls** `0x002abe98` `LoadBumAnims`
 - **Used by** 8 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
@@ -4472,17 +4498,22 @@ SetCharacterModel(type, release)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `type` | number, truncated to an integer | Character type number, as given to HuCreate and CfgChar (for example 32 for Rembrandt). |
+| 1 | `type` | number, truncated to an integer | Character type number, as given to HuCreate and CfgChar (for example 32 for Rembrandt); its class record is at 0x00684620 + type × 0x1ac. |
 | 2 | `release` | boolean (nil or 0 is false) | false or nil asks for the type's model to be loaded and kept; true releases it. |
 
 **Returns** nothing.
 
 Asks the resource manager to keep a character type's model loaded for the level, so humans of that type can be created
-later without a wait; up to 32 models at once. The model comes from the type's class record (+0x112).
+later without a wait. The model id comes from the type's class record (`+0x112`, 16-bit) and goes into a 32-slot list
+(resource manager `+0xb4`, 8 bytes a slot); a model already listed is not added twice, and when the model is already
+resident its reference is taken at once. Releasing clears every slot holding that model and drops its reference.
 
-- **Evidence:** confirmed (code) at `0x0040cda8`; detail: brief
+**Notes.** With all 32 slots in use the request is silently ignored. Adding sets the manager's `+0x1b4` (a reload-needed
+flag, inferred). Types sharing a model share a slot, so releasing one releases them all.
+
+- **Evidence:** confirmed (code) at `0x0040cda8`, `0x0018ad40`; detail: traced
 - **Wrapper** `0x0036e6c0` (registered by `RegisterBindings`); **calls** `0x0040cda8`
-  `ResourceManager_SetCharacterModel`
+  `ResourceManager_SetCharacterModel`, `0x0018ad40`
 - **Used by** 61 of 467 script chunks (294 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
@@ -4632,19 +4663,24 @@ WalkingDistance(from, to) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `from` | number, truncated to an unsigned integer | Handle of the first object (a human, an object or a flag). |
-| 2 | `to` | number, truncated to an unsigned integer | Handle of the second object. |
+| 1 | `from` | number, truncated to an unsigned integer | Handle of the first entity (a human, an object or a flag); its position is used. |
+| 2 | `to` | number, truncated to an unsigned integer | Handle of the second entity. |
 
-**Returns** number: The walking distance in metres along the navigation paths, or -1000000000 when either handle is
-invalid or no route is found.
+**Returns** number: The walking distance in metres, or -1000000000 when either handle is invalid, either position is off
+the navigation mesh, or no route joins them.
 
-Measures how far one object would have to walk to reach another, along the path network (0x0024e478) rather than in a
-straight line.
+Measures how far one entity would have to walk to reach another. When a straight walk between the two positions stays on
+the navigation mesh, the result is the straight-line 3D distance; otherwise a route is found through the navigation
+regions and its length (start, each route point, end) is summed. Scripts compare it with a range to decide, for example,
+whether an enemy is close enough to join in.
 
-**Notes.** The -1e9 failure value is confirmed (code) at 0x00385f60.
+**Notes.** Positions come from each entity's position method (vtable `+0xac`). The straight-walk test is `0x0024fbf8`,
+the route `0x002511c8`, its length `0x0024e608`. Two different regions where either has no links (`+0x2` = 0) fail
+without a route search.
 
-- **Evidence:** confirmed (code) at `0x00385f60`; detail: brief
-- **Wrapper** `0x0036cf00` (registered by `RegisterBindings`); **calls** `0x00385f60` `WalkingDistance`
+- **Evidence:** confirmed (code) at `0x00385f60`, `0x0024e478`; detail: traced
+- **Wrapper** `0x0036cf00` (registered by `RegisterBindings`); **calls** `0x00385f60` `WalkingDistance`, `0x0024e478`
+  `Nav_GetWalkingDistance`
 - **Used by** 5 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
