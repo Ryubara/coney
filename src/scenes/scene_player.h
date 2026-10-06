@@ -150,6 +150,8 @@ class SceneSystem {
 
     // ---- Queries ----
 
+    /// Whether `human` holds a role in a starting or playing scene.
+    [[nodiscard]] bool inScene(double human) const;
     /// Whether any scene task is starting or playing.
     [[nodiscard]] bool playing() const;
     /// Whether a playing cinematic holds the scene state (`0x0051489c + 0x410`): the scene camera governs.
@@ -175,9 +177,6 @@ class SceneSystem {
     void callLua(std::string_view function, std::span<const double> args);
     // The task playing `id`; null when none.
     [[nodiscard]] SceneTask* taskOf(std::uint32_t id) const;
-    // Whether `human` is in a starting or playing scene.
-    [[nodiscard]] bool inScene(double human) const;
-
     SceneCache m_cache;
     ScriptCall m_call;
     SceneHost* m_host = nullptr;

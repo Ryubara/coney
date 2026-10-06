@@ -464,6 +464,10 @@ void GameplayMode::enter() {
 
 void GameplayMode::loadLevel() {
     startPlayerLevel(m_state);
+    // InitLevel's HUD set-up, before the script: the level starts with the HUD hidden until something shows it.
+    if (m_context.hud != nullptr) {
+        m_context.hud->levelSetUp();
+    }
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
     const LevelStart& start =
         m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName, m_context.spawnRecords));
@@ -884,15 +888,30 @@ void GameplayMode::exit() {
 }
 
 void GameplayMode::suspend() {
+    // A mode pushed over play (the pause menu) hides the HUD under it (docs/research/hud.md#who-shows-the-hud-again).
+    // The flag 0x005e5580 that skips this is not traced, and there is no Armies of the Night level in Coney yet.
+    if (m_context.hud != nullptr) {
+        m_context.hud->hideAll();
+    }
     if (m_level) {
         m_level->suspend();
     }
 }
 
 void GameplayMode::resume() {
+    // Play resuming shows the HUD, even one a script hid, unless player 1 is in a scene. The original also needs
+    // game state +0x14c at 0 (no level change asked for); Coney leaves play at once instead of setting it.
+    if (m_context.hud != nullptr && !m_context.hud->visible() && !playerInScene()) {
+        m_context.hud->showAll();
+    }
     if (m_level) {
         m_level->resume();
     }
+}
+
+bool GameplayMode::playerInScene() const {
+    const HumanCreation* player = m_humans.player(1);
+    return player != nullptr && m_scenes && m_scenes->inScene(player->handle);
 }
 
 } // namespace coney

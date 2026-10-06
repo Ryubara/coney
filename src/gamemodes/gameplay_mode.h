@@ -233,8 +233,11 @@ class GameplayMode final : public GameMode {
     /// Ends the level, its brains and gangs, and makes a fresh Lua state (`UnloadLevel`'s script part).
     void exit() override;
 
-    /// Passed on to the loaded level.
+    /// Hides the HUD under the mode pushed over play, then passes the suspend on to the loaded level.
+    /// @orig 0x00158660 GameMode1_Suspend (unknown)
     void suspend() override;
+    /// Shows the HUD again (RestoreHud) unless player 1 is in a scene, then passes the resume on to the loaded level.
+    /// @orig 0x00158580 GameMode1_Resume (unknown)
     void resume() override;
 
     /// Whether a level loader was given: without one, every level fails to load.
@@ -284,6 +287,9 @@ class GameplayMode final : public GameMode {
     // carry a pad command, as Coney's brains write their commands straight to the record.
     // @orig 0x001480e0 Pad_CallLuaHandlerEx (unknown)
     void callPadHandler();
+    // Whether player 1 holds a role in a starting or playing scene (Human_IsInSceneState, as far as Coney tracks it).
+    // @orig 0x00227d28 Human_IsInSceneState (unknown)
+    [[nodiscard]] bool playerInScene() const;
     // Gives the hub's host (ai::ScriptedHub) what it reads beyond the brains: the configuration's categories and flee
     // percentages, the workout's tuning, the volume boxes and the flags inside them, the crimes and the crime scene.
     void wireHub();

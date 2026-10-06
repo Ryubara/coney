@@ -670,7 +670,13 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 - **`hud::Hud`** (`0x001acee0`): the panels, the hint box, the checklist and its scroll-in queue, the announcement,
   the counter panels, the arrow and the radars' state. `update` (`HUD_Update`) steps them; `render` (`HUD_Render`)
   draws in the [render order](#the-huds-frame) with [what hides what](#the-huds-frame), nothing while hidden. A mode
-  that stops stepping it (mode 0xb) draws it as it was left.
+  that stops stepping it (mode 0xb) draws it as it was left. [Showing and hiding](#showing-and-hiding) as the page
+  says: `levelSetUp` (before the level's script, so a level starts hidden), `hideAll` / `showAll` keeping each part's
+  own flags, and `update` running the letterbox's restore mark (armed by the bars, stamped on the first step they are
+  out, `RestoreHud` on the next) and the [radars across a scene](#radars-across-a-scene); under the bars nothing else
+  steps. **Coney's placement**: the restore mark is the view's (`0x0018d910`), run in `HUD_Update` from
+  `HudFrame::letterbox`. Play's suspend and resume (`GameplayMode`) hide the HUD under a mode pushed over play and
+  show it again unless player 1 holds a scene role; `0x005e5580` and game state `+0x14c` are not checked.
 - **`hud::PlayerPanel`**: the [layout](#the-player-panel-layout-0x0050fa10), the banner by type, the
   [meter](#the-rage-meter) (caps and strips of `part_page0` 54-57, one-texel inset, the full meter's pulse and sound,
   `FlashRageBar`), the [score and money](#score-and-money) counting by a sixteenth plus one with their popups,
@@ -690,7 +696,9 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 - **Sound**: the cues by the table `SoundCfgInterfaceSound` fills, and the named sounds, play through
   `audio::SoundPlayer` ([Sound](sound.md#interface-sounds)); silent without sound.
 - **In play**: the play mode steps the HUD with player 1's rage and draws it over the frame; the story shares the
-  flow's HUD with the scripts. The debug menus' HUD page sets its values ([Debug menu](../guides/debug-menu.md#pages)).
+  flow's HUD with the scripts. A disc test (`[disc][hud]`, `repo:tests/platform/disc_level99_hud_test.cpp`) plays
+  `level99` checkpoint 1 through `l99_c1` unskipped: hidden and nothing drawn under the bars, then shown, drawn and
+  the first hint up, and a pause hiding and showing it. The debug menus' HUD page sets its values ([Debug menu](../guides/debug-menu.md#pages)).
 
 **Coney's stand-ins** (marked in the code): text sizes read as the glyph height (`(0.04, 0.05)` as w × h, 0.05 as h);
 the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons
@@ -700,7 +708,8 @@ timer does not freeze yet; the prompt's text set by the game code or the debug m
 the counter panels' texts right-aligned on x 0.96; the radar disc
 `big_font` 256 sized from the measurement, a dark disc for the map, the player's icon 362 at the centre and no other
 blips drawn; the arrow turned only by half turns (no rotated sprites yet); player 1's other parts 0.09 right of player
-0's; the HUD shown at start. The hub's HUD bindings (`repo:src/scripting/hub_world_bindings.cpp`):
+0's; a HUD no level has set up (the debug pages, the tests) shown at start; no wasted/busted restore yet (Coney has
+no death camera). The hub's HUD bindings (`repo:src/scripting/hub_world_bindings.cpp`):
 `HUDEnableClubActionText` raises the prompt to y 0.125 (the other video modes' heights are not used); the action-cycle
 animation (`HUDTurnOnActionCycleAnim`) is kept per player but not drawn yet (the prompt does not swap its icon);
 `HUDShowMissionSelect` and `ShowGameStatsInterface` reach the front end, which has neither screen yet.

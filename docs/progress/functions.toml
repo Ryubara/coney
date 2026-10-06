@@ -1058,6 +1058,16 @@ subsystem = "GameModes"
 size = 424
 
 [[function]]
+address = 0x00158580
+name = "GameMode1_Resume"
+subsystem = "GameModes"
+
+[[function]]
+address = 0x00158660
+name = "GameMode1_Suspend"
+subsystem = "GameModes"
+
+[[function]]
 address = 0x00158728
 name = "Mode1::Update"
 subsystem = "GameModes"
@@ -2070,6 +2080,11 @@ address = 0x001acee0
 name = "HUD::HUD"
 subsystem = "GUI"
 size = 1704
+
+[[function]]
+address = 0x001ad588
+name = "HUD_LevelSetUp"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001af010
@@ -3211,6 +3226,11 @@ address = 0x00226510
 name = "Human_PowerFraction"
 subsystem = "Human"
 size = 192
+
+[[function]]
+address = 0x00227d28
+name = "Human_IsInSceneState"
+subsystem = "Human"
 
 [[function]]
 address = 0x00229570

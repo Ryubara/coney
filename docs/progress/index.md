@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.2% of the game's own code (477,292 of 3,354,776 bytes, 1,536 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.2% of the game's own code (477,292 of 3,354,776 bytes, 1,540 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-425 reimplemented function(s) have no size yet and add no bytes.
+429 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -61,10 +61,10 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
-| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 103 | 100,440 |
+| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.4% | 61 | 195,624 |
-| `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
-| `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.5% | 484 | 1,096,672 |
+| `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
+| `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.5% | 485 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -295,6 +295,8 @@ at the top of the repository's `README.md`.
 | `0x001553c0` | `SSMC_StartDeleteSequence` | `FileIO` | 72 |
 | `0x00155648` | `RumbleWin_Choose` | `FileIO` | 432 |
 | `0x001582e0` | `Mode1::Enter` | `GameModes` | 424 |
+| `0x00158580` | `GameMode1_Resume` | `GameModes` | not filled in |
+| `0x00158660` | `GameMode1_Suspend` | `GameModes` | not filled in |
 | `0x00158728` | `Mode1::Update` | `GameModes` | 3,392 |
 | `0x00159a58` | `Mode5::Enter` | `GameModes` | 96 |
 | `0x00159ab8` | `Mode5::Exit` | `GameModes` | 40 |
@@ -471,6 +473,7 @@ at the top of the repository's `README.md`.
 | `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
 | `0x001acee0` | `HUD::HUD` | `GUI` | 1,704 |
+| `0x001ad588` | `HUD_LevelSetUp` | `GUI` | not filled in |
 | `0x001af010` | `HUD_Update` | `GUI` | 9,776 |
 | `0x001b1688` | `HUD_Render` | `GUI` | 2,224 |
 | `0x001b1f38` | `HUD_HideAll` | `GUI` | 248 |
@@ -667,6 +670,7 @@ at the top of the repository's `README.md`.
 | `0x00223cb0` | `Human_IsBusy` | `Human` | 136 |
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
+| `0x00227d28` | `Human_IsInSceneState` | `Human` | not filled in |
 | `0x00229570` | `Human_BannerKind` | `Human` | 176 |
 | `0x0022a770` | `Gang_PickSwitchMember` | `Human` | 528 |
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |

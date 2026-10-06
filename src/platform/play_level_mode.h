@@ -234,6 +234,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
 
     /// The HUD the mode steps and draws (its own until useHud()), for the HUD page and the scripts.
     [[nodiscard]] hud::Hud* hud() override { return &m_hud->hud(); }
+    /// How many HUD sprites the newest step queued (HudLayer::spritesQueued()).
+    [[nodiscard]] std::size_t hudSprites() const { return m_hud->spritesQueued(); }
     /// Steps and draws `shared` (the game's HUD, which the scripts' bindings act on; it must outlive the mode) instead
     /// of the mode's own, with the player attached to its panel 0.
     void useHud(hud::Hud& shared);

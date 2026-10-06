@@ -53,6 +53,8 @@ class HudLayer {
     void step(const hud::HudFrame& frame);
     /// Draws the newest step's sprites through the overlay camera; changes nothing step() reads.
     void draw(graphics::RenderDevice& device);
+    /// How many sprites the newest step queued (0 while the HUD is hidden or letterboxed), for the tests and the log.
+    [[nodiscard]] std::size_t spritesQueued() const { return m_spritesQueued; }
 
   private:
     HudLayer(const io::Wad& wad, bool drawsPixels);
@@ -83,6 +85,7 @@ class HudLayer {
     std::map<std::uint32_t, BannerBatches> m_banners; // by record; empty batches for a sheet that failed
     graphics::OverlayCamera m_camera;
     graphics::OverlayPass m_pass;
+    std::size_t m_spritesQueued = 0; // spritesQueued()
 };
 
 } // namespace coney::platform

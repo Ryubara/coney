@@ -71,6 +71,7 @@ add_executable(coney_tests
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
     platform/disc_hub_test.cpp
+    platform/disc_level99_hud_test.cpp
     platform/disc_story_missions_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp

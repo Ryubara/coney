@@ -141,16 +141,19 @@ void HudLayer::step(const hud::HudFrame& frame) {
     };
     m_hud->render(canvas);
     // Every batch is queued; an empty one draws nothing.
+    m_spritesQueued = 0;
     for (graphics::SpriteBatch* batch :
          {m_flat.get(), m_radar.get(), m_bigText.get(), m_parts.get(), m_minigames.get()}) {
         if (batch != nullptr) {
             m_pass.queue(*batch);
+            m_spritesQueued += batch->sprites().size();
         }
     }
     for (auto& [record, batches] : m_banners) {
         if (batches.shadow) {
             m_pass.queue(*batches.shadow);
             m_pass.queue(*batches.banner);
+            m_spritesQueued += batches.shadow->sprites().size() + batches.banner->sprites().size();
         }
     }
 }

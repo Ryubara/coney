@@ -67,20 +67,25 @@ int Hud::attachPlayer(int slot, int type) {
     return slot;
 }
 
+void Hud::levelSetUp() {
+    m_radar.scriptOn = true;
+    hideAll();
+}
+
 void Hud::hideAll() {
     // The Armies of the Night exception (game state +0x14c) does not arise in Coney's levels yet.
     for (PlayerPanel& panel : m_panels) {
         panel.hide();
     }
-    m_radar.on = {false, false};
+    // The radars keep their "on" flags; render() draws none of them while the HUD is hidden.
     m_visible = false;
 }
 
 void Hud::showAll() {
+    // A panel shows only when attached and allowed to (PlayerPanel::show); a radar that is off stays off.
     for (PlayerPanel& panel : m_panels) {
         panel.show();
     }
-    m_radar.on = {true, true};
     m_visible = true;
 }
 
@@ -255,6 +260,30 @@ void Hud::setTextProgress(std::string_view label, std::uint32_t value, graphics:
 void Hud::update(const HudFrame& frame) {
     m_nowMs = frame.nowMs;
     m_levelNumber = frame.levelNumber;
+    // 0. The letterbox's step: a move (in or out) arms the restore, the first step with the bars out stamps it, the
+    // next shows both panels and the HUD (docs/research/hud.md#who-shows-the-hud-again).
+    m_letterbox = frame.letterbox;
+    if (frame.letterbox) {
+        m_letterboxRestore = LetterboxRestore::Armed;
+    } else if (m_letterboxRestore == LetterboxRestore::Armed) {
+        m_letterboxRestore = LetterboxRestore::Stamped;
+    } else if (m_letterboxRestore == LetterboxRestore::Stamped) {
+        m_letterboxRestore = LetterboxRestore::Idle;
+        showAll();
+    }
+    // While the bars are in or moving (or a fade runs) both radars go off; nothing else steps under the bars
+    // (docs/research/hud.md#radars-across-a-scene).
+    if (frame.screenFading || frame.letterbox) {
+        m_radar.on = {false, false};
+        m_radarsAutoOn = false;
+    } else if (m_radar.scriptOn && !m_radarsAutoOn) {
+        // Their automatic return once the bars and the fade are done, when the last radar call was "on".
+        m_radar.on = {true, true};
+        m_radarsAutoOn = true;
+    }
+    if (frame.letterbox) {
+        return;
+    }
     // 1. The player panels, with their values and pads.
     for (std::size_t i = 0; i < kPlayers; ++i) {
         PanelValues values = frame.players.at(i);
@@ -265,13 +294,7 @@ void Hud::update(const HudFrame& frame) {
         values.items = overrides.items.value_or(values.items);
         m_panels.at(i).update(values, frame.pads.at(i), frame.nowMs, m_services.sound);
     }
-    // 2. A screen fade turns both radars off. Their automatic return needs HUD +0x177ac, whose setter is not traced, so
-    // in Coney a radar comes back only by script.
-    m_letterbox = frame.letterbox;
-    if (frame.screenFading || frame.letterbox) {
-        m_radar.on = {false, false};
-    }
-    // 3. The messages, the hint box and the counter panels on their game-time clocks; an announcement ends when its
+    // 2. The messages, the hint box and the counter panels on their game-time clocks; an announcement ends when its
     // `<DISPLAYTIME>` has passed.
     m_scrollIn.update(frame.nowMs, m_services.sound);
     m_hints.update(frame.nowMs, m_services.sound);
@@ -282,7 +305,7 @@ void Hud::update(const HudFrame& frame) {
             announcement->reset();
         }
     }
-    // 4. The arrow's bob: up by 2 a frame to the top, back down by 0.5.
+    // 3. The arrow's bob: up by 2 a frame to the top, back down by 0.5.
     if (m_arrow.on) {
         if (m_arrow.rising) {
             m_arrow.step += kArrowStepUp;

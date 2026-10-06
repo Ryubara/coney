@@ -344,7 +344,7 @@ TEST_CASE("the instruction arrow bobs up by 2 a frame to 10 and back by 0.5", "[
     CHECK(hud.arrow().place.x == 0.5F);
 }
 
-TEST_CASE("radars: on and off by player, off during a screen fade, off with HideHud", "[hud]") {
+TEST_CASE("radars: on and off by player, off during a screen fade and back after it, kept by HideHud", "[hud]") {
     Hud hud = makeHud(nullptr);
     hud.radarOff(2);
     CHECK_FALSE(hud.radar().on[0]);
@@ -357,9 +357,13 @@ TEST_CASE("radars: on and off by player, off during a screen fade, off with Hide
     hud.update(fading);
     CHECK_FALSE(hud.radar().on[0]);
     hud.showAll();
-    CHECK(hud.radar().on[0]);
+    CHECK_FALSE(hud.radar().on[0]); // RestoreHud does not turn a radar on
+    HudFrame clear;
+    hud.update(clear);
+    CHECK(hud.radar().on[0]); // the automatic return, the last call being HUDTurnOnRadar
+    CHECK(hud.radar().on[1]);
     hud.hideAll();
-    CHECK_FALSE(hud.radar().on[0]);
+    CHECK(hud.radar().on[0]);
 }
 
 TEST_CASE("HideHud draws nothing; panels attach once and HidePlayerHud keeps them hidden", "[hud]") {
@@ -384,4 +388,96 @@ TEST_CASE("HideHud draws nothing; panels attach once and HidePlayerHud keeps the
     // Attached while hidden: hidden too.
     CHECK(hud.attachPlayer(1, 40) == 1);
     CHECK_FALSE(hud.panel(1).shown());
+}
+
+TEST_CASE("the letterbox going out shows the HUD a scene's HideHud hid, on the second step with the bars out",
+          "[hud]") {
+    Hud hud = makeHud(nullptr);
+    Canvas canvas;
+    REQUIRE(hud.attachPlayer(0, 32) == 0);
+    // level99: RestoreHud, the radars turned off, then SuperRunScene's HideHud; a hint queued while hidden is kept.
+    hud.showAll();
+    hud.radarOff(2);
+    hud.hideAll();
+    CHECK_FALSE(hud.panel(0).shown());
+    hud.hints().queue("hint", 1);
+    // The bars in and out: nothing steps or draws, the hint's clock does not run.
+    HudFrame frame;
+    frame.letterbox = true;
+    for (std::uint64_t ms = 0; ms <= 3000; ms += 33) {
+        frame.nowMs = ms;
+        hud.update(frame);
+    }
+    CHECK_FALSE(hud.visible());
+    CHECK(hud.hints().shownMs() == 0);
+    hud.render(canvas.canvas);
+    CHECK(canvas.flat.sprites().empty());
+    // The first step with the bars out stamps the restore; the next shows the HUD and its panel.
+    frame.letterbox = false;
+    frame.nowMs = 3033;
+    hud.update(frame);
+    CHECK_FALSE(hud.visible());
+    frame.nowMs = 3066;
+    hud.update(frame);
+    CHECK(hud.visible());
+    CHECK(hud.panel(0).shown());
+    // HUDTurnOffRadar was the last radar call: the radars stay off.
+    CHECK_FALSE(hud.radar().on[0]);
+    CHECK_FALSE(hud.radar().on[1]);
+    hud.render(canvas.canvas);
+    CHECK(hud.hints().showing().has_value());
+    CHECK(canvas.flat.sprites().size() == 1); // the hint box
+    CHECK_FALSE(canvas.text.sprites().empty());
+    // The restore happens once: a later HideHud holds.
+    hud.hideAll();
+    frame.nowMs = 3100;
+    hud.update(frame);
+    hud.update(frame);
+    CHECK_FALSE(hud.visible());
+}
+
+TEST_CASE("RestoreHud keeps each part's own flags; the radars come back by themselves after the bars when on",
+          "[hud]") {
+    Hud hud = makeHud(nullptr);
+    REQUIRE(hud.attachPlayer(0, 32) == 0);
+    // A panel HidePlayerHud forbids stays hidden through RestoreHud; a radar that is off stays off.
+    hud.hidePlayers();
+    hud.radarOff(1);
+    hud.hideAll();
+    hud.showAll();
+    CHECK(hud.visible());
+    CHECK_FALSE(hud.panel(0).shown());
+    CHECK(hud.radar().on[0]);
+    CHECK_FALSE(hud.radar().on[1]);
+    // HideHud saves nothing and leaves the radars' flags: a radar on stays on while hidden (it is not drawn).
+    hud.hideAll();
+    CHECK(hud.radar().on[0]);
+    // A letterbox turns both off; with the last radar call "on" both return once the bars are out.
+    hud.radarOn(2);
+    HudFrame frame;
+    frame.letterbox = true;
+    hud.update(frame);
+    CHECK_FALSE(hud.radar().on[0]);
+    frame.letterbox = false;
+    hud.update(frame);
+    CHECK(hud.radar().on[0]);
+    CHECK(hud.radar().on[1]);
+    // A HUDTurnOffRadar after that is kept: no automatic return until the next letterbox or fade and a HUDTurnOnRadar.
+    hud.radarOff(0);
+    hud.update(frame);
+    CHECK_FALSE(hud.radar().on[0]);
+}
+
+TEST_CASE("a level starts with the HUD hidden and the radars' automatic return on", "[hud]") {
+    Hud hud = makeHud(nullptr);
+    REQUIRE(hud.attachPlayer(0, 32) == 0);
+    hud.radarOff(2);
+    hud.levelSetUp();
+    CHECK_FALSE(hud.visible());
+    CHECK_FALSE(hud.panel(0).shown());
+    CHECK(hud.radar().scriptOn);
+    // level99's Main shows it at once.
+    hud.showAll();
+    CHECK(hud.visible());
+    CHECK(hud.panel(0).shown());
 }

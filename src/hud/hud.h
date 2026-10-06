@@ -76,10 +76,11 @@ struct RadarBlip {
     bool flashing = false;
 };
 
-/// The radars' state: on or off per player, the scripts' wish (`+0x177b0`), and the blips.
+/// The radars' state: on or off per player (each radar's `+0x04`), whether they come back on their own after a
+/// letterbox or fade (`+0x177ac`, the scripts' last radar call), and the blips.
 struct RadarState {
     std::array<bool, kPlayers> on{true, true};
-    bool scriptOn = true;
+    bool scriptOn = true; ///< `+0x177ac`: set by the level's set-up and `HUDTurnOnRadar`, cleared by `HUDTurnOffRadar`.
     std::map<double, RadarBlip> blips;
 };
 
@@ -126,8 +127,9 @@ struct ActionCycle {
 /// adds the newest step's sprites (`HUD_Render`, the overlay pass). A mode that does not update the HUD while drawing
 /// it (mission complete, mode 0xb) shows it as it was left.
 ///
-/// Coney's choices: the HUD starts shown (the original's constructor value is not on the page; `level99` calls
-/// `RestoreHud` at once); with one player only player 0's panel and radar draw.
+/// A level starts with the HUD hidden (levelSetUp()); a script's `RestoreHud`, a letterbox going out or play resuming
+/// shows it. Coney's choices: a HUD no level has set up yet (the debug pages, the tests) starts shown; with one player
+/// only player 0's panel and radar draw.
 ///
 /// Research: docs/research/hud.md
 /// @orig 0x001acee0 HUD::HUD (unknown)
@@ -155,10 +157,16 @@ class Hud {
     [[nodiscard]] PlayerPanel& panel(std::size_t player) { return m_panels.at(player); }
     [[nodiscard]] const PlayerPanel& panel(std::size_t player) const { return m_panels.at(player); }
 
-    /// `HideHud`: hides both panels and both radars, and the HUD (`+0x177a0` = 0).
+    /// The HUD's per-level set-up, before the level's script runs: the radars come back on their own again
+    /// (RadarState::scriptOn), and it ends with hideAll(), so a level starts with the HUD hidden.
+    /// @orig 0x001ad588 HUD_LevelSetUp (HUDInterface.cpp)
+    void levelSetUp();
+    /// `HideHud`: hides both panels and the HUD (`+0x177a0` = 0). Nothing is saved: each part keeps its own flags (a
+    /// radar keeps its "on" flag, and is simply not drawn while the HUD is hidden).
     /// @orig 0x001b1f38 HUD_HideAll (unknown)
     void hideAll();
-    /// `RestoreHud`: shows them again.
+    /// `RestoreHud`: shows the HUD and each part its own flags allow: a panel when attached and allowed to show
+    /// (HidePlayerHud), a radar only when it is on. Called by the scripts and by the letterbox going out.
     /// @orig 0x001b20f8 HUD_ShowAll (unknown)
     void showAll();
     /// Whether the HUD is shown (`+0x177a0`).
@@ -279,8 +287,13 @@ class Hud {
     [[nodiscard]] PanelOverrides& overrides(std::size_t player) { return m_overrides.at(player); }
     [[nodiscard]] const PanelOverrides& overrides(std::size_t player) const { return m_overrides.at(player); }
 
-    /// The HUD's step at `frame.nowMs`: the panels with their values and pads, the hint box, the messages, the
-    /// counter panels, the arrow's bob and the radars' fade rule.
+    /// The HUD's step at `frame.nowMs`. First the letterbox's own step: a letterbox move arms a restore, and the
+    /// second step with the bars out shows the HUD again (RestoreHud), so a cinematic scene's end shows it.
+    /// While the letterbox is in or moving both radars are turned off and nothing else steps; otherwise the panels
+    /// with their values and pads, the hint box, the messages, the counter panels, the arrow's bob and the radars'
+    /// rule (off during a fade, back on after it when `RadarState::scriptOn`).
+    /// **Coney's placement**: the letterbox step is the view's screen effects' (`0x0018d910`), run here from
+    /// `HudFrame::letterbox`.
     /// @orig 0x001af010 HUD_Update (HUDInterface.cpp)
     void update(const HudFrame& frame);
     /// The game time of the last step.
@@ -328,6 +341,11 @@ class Hud {
     bool m_clubActionText = false;
     std::array<ActionCycle, kPlayers> m_cycles{};
     bool m_letterbox = false;
+    // The letterbox's "restore pending" mark (screen effects +0x1f4): armed by a letterbox move, stamped as the bars
+    // reach 0, and the next step with the bars out shows the HUD.
+    enum class LetterboxRestore : std::uint8_t { Idle, Armed, Stamped };
+    LetterboxRestore m_letterboxRestore = LetterboxRestore::Idle;
+    bool m_radarsAutoOn = false; // HUD +0x177b0: the radars' automatic return has turned them on
     CounterPanels m_counters;
     InstructionArrow m_arrow;
     RadarState m_radar;
