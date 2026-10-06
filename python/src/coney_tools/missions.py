@@ -40,6 +40,8 @@ STATUSES: dict[str, tuple[str, str, str]] = {
 }
 #: Statuses that mean the code for it is written, whatever the play-test said.
 BUILT = ("pending-approval", "needs-fixes", "approved")
+#: Where a summary comes from: our research, facts read from the disc, the web (never copied, our own words) or a mix.
+SUMMARY_SOURCES = ("research", "disc", "web", "mixed")
 GROUPS: dict[str, str] = {
     "story": "Story missions",
     "hub": "The hub",
@@ -72,15 +74,23 @@ class Mission:
     level: int
     group: str
     slot: str
+    label: str
     title: str
     summary: str
+    summary_source: str
     status: str
     checkpoints: tuple[Checkpoint, ...]
+    sources: tuple[str, ...] = ()
     research: tuple[Link, ...] = ()
     issues: tuple[str, ...] = ()
     questions: tuple[str, ...] = ()
     test: str = ""
     notes: str = ""
+
+    @property
+    def heading(self) -> str:
+        """The page heading and overview link: `Mission 2: <title>`, or the label alone when the level has no title."""
+        return f"{self.label}: {self.title}" if self.title else self.label
 
     @property
     def name(self) -> str:
@@ -187,16 +197,27 @@ def _check_status(mission: Mission, problems: list[str]) -> None:
         problems.append(f"{where}: In Progress but no checkpoint has started")
 
 
-def _sections(root: Path) -> dict[int, int]:
-    """Level number -> section count from the levels list (empty when the file is missing)."""
+def _levels(root: Path) -> list[dict[str, Any]]:
+    """The levels list's entries (empty when the file is missing)."""
     path = root / LEVELS_FILE
     if not path.is_file():
-        return {}
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    return {e["number"]: e["sections"] for e in data.get("entries", []) if "number" in e and "sections" in e}
+        return []
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("entries", [])
 
 
-def _mission(entry: Any, index: int, sections: dict[int, int], problems: list[str]) -> Mission | None:
+def _sections(root: Path) -> dict[int, int]:
+    """Level number -> section count from the levels list."""
+    return {e["number"]: e["sections"] for e in _levels(root) if "number" in e and "sections" in e}
+
+
+def _titles(root: Path) -> dict[int, str]:
+    """Level number -> mission title from the levels list (`GSTRING.MISSIONNAME`, read from the disc)."""
+    return {e["number"]: e["title"] for e in _levels(root) if "number" in e and e.get("title")}
+
+
+def _mission(
+    entry: Any, index: int, sections: dict[int, int], titles: dict[int, str], problems: list[str]
+) -> Mission | None:
     """One entry, or None after noting why it is unusable."""
     if not isinstance(entry, dict) or not isinstance(entry.get("level"), int):
         problems.append(f"missions[{index}]: needs an integer `level`")
@@ -208,6 +229,14 @@ def _mission(entry: Any, index: int, sections: dict[int, int], problems: list[st
     status = entry.get("status")
     if status not in STATUSES:
         problems.append(f"{where}: `status` must be one of {', '.join(STATUSES)}")
+    source = entry.get("summary_source")
+    if source not in SUMMARY_SOURCES:
+        problems.append(f"{where}: `summary_source` must be one of {', '.join(SUMMARY_SOURCES)}")
+    sources = _strings(entry, "sources", where, problems)
+    if source in ("web", "mixed") and not sources:
+        problems.append(f"{where}: a {source} summary must list its `sources` (URLs)")
+    if titles and group != "hub" and entry["level"] not in titles:
+        problems.append(f"{where}: no title in the levels list (run `coney-tools refs extract`)")
     research = []
     for link in entry.get("research") or []:
         if isinstance(link, dict) and isinstance(link.get("title"), str) and isinstance(link.get("path"), str):
@@ -218,10 +247,13 @@ def _mission(entry: Any, index: int, sections: dict[int, int], problems: list[st
         level=entry["level"],
         group=str(group),
         slot=_text(entry, "slot", where, problems),
-        title=_text(entry, "title", where, problems),
+        label=_text(entry, "label", where, problems),
+        title=titles.get(entry["level"], ""),
         summary=_text(entry, "summary", where, problems),
+        summary_source=str(source),
         status=str(status),
         checkpoints=_checkpoints(entry, where, sections.get(entry["level"]), problems),
+        sources=sources,
         research=tuple(research),
         issues=_strings(entry, "issues", where, problems),
         questions=_strings(entry, "questions", where, problems),
@@ -230,10 +262,16 @@ def _mission(entry: Any, index: int, sections: dict[int, int], problems: list[st
     )
 
 
-def parse(text: str, sections: dict[int, int] | None = None, expected: set[int] | None = None) -> MissionList:
+def parse(
+    text: str,
+    sections: dict[int, int] | None = None,
+    expected: set[int] | None = None,
+    titles: dict[int, str] | None = None,
+) -> MissionList:
     """The list from YAML text. Raises ConfigError naming every problem found.
 
     `expected` is the set of levels that must be listed (default: level 99 and every `natives.STORY_LEVELS` level).
+    `titles` maps level numbers to their disc titles; when given, every level but the hub must have one.
     """
     try:
         data = yaml.safe_load(text)
@@ -246,7 +284,7 @@ def parse(text: str, sections: dict[int, int] | None = None, expected: set[int] 
     lifecycle = _text(data, "lifecycle", "file", problems)
     missions = []
     for index, entry in enumerate(data["missions"]):
-        mission = _mission(entry, index, sections or {}, problems)
+        mission = _mission(entry, index, sections or {}, titles or {}, problems)
         if mission is not None:
             missions.append(mission)
             if mission.status in STATUSES:
@@ -271,7 +309,7 @@ def load(root: Path) -> MissionList:
         text = path.read_bytes().decode("utf-8").replace("\r\n", "\n")
     except (OSError, UnicodeDecodeError) as error:
         raise ConfigError(f"{path}: cannot be read ({error})") from error
-    return parse(text, _sections(root))
+    return parse(text, _sections(root), titles=_titles(root))
 
 
 def coverage(masterlist: natives.Masterlist) -> dict[int, Coverage]:

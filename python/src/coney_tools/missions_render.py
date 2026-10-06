@@ -121,10 +121,24 @@ def _run(mission: Mission) -> list[str]:
     return out
 
 
+def _summary_note(mission: Mission) -> list[str]:
+    """A small note under a summary that is not (only) our own findings: it is from the web."""
+    if mission.summary_source not in ("web", "mixed"):
+        return []
+    part = "Part of this summary" if mission.summary_source == "mixed" else "This summary"
+    out = [""]
+    out += _wrap(
+        f"*{part} is paraphrased from web sources until our own walkthrough of the mission replaces it. Sources:*"
+    )
+    out += ["", *(f"- <{url}>" for url in mission.sources)]
+    return out
+
+
 def mission_page(mission: Mission, cover: Coverage) -> str:
     """One level's page."""
-    out = [GENERATED, "", f"# {mission.title}", ""]
+    out = [GENERATED, "", f"# {mission.heading} ({mission.name})", ""]
     out += _wrap(mission.summary)
+    out += _summary_note(mission)
     out += ["", *_intro_table(mission)]
     out += _checkpoints(mission)
     out += _needs(mission, cover)
@@ -163,7 +177,7 @@ def index_page(missions: MissionList, covers: dict[int, Coverage]) -> str:
         for m in members:
             cover = covers.get(m.level, NO_COVERAGE)
             out.append(
-                f"| [{_cell(m.title)}]({m.name}.md) | `{m.name}` | {label(m.status)}"
+                f"| [{_cell(m.heading)}]({m.name}.md) | `{m.name}` | {label(m.status)}"
                 f" | {m.built()} of {len(m.checkpoints)} | {m.approved()} | {_bindings_cell(cover)} |"
             )
     out += ["", "## Lifecycle {#lifecycle}", ""]

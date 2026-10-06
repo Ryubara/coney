@@ -21,50 +21,50 @@ to run it.
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [Mission 1 (level99)](level99.md) | `level99` | 🚧 In Progress | 1 of 3 | 0 | 215 of 215 |
-| [Mission 2 (level80)](level80.md) | `level80` | 🎮 Pending Gameplay Approval | 4 of 4 | 0 | 50 of 50 |
-| [Mission 3 (level87)](level87.md) | `level87` | 🎮 Pending Gameplay Approval | 5 of 5 | 0 | 87 of 87 |
-| [Mission 4 (level34)](level34.md) | `level34` | 🚧 In Progress | 0 of 5 | 0 | 3 of 17 |
-| [Mission 5 (level2)](level2.md) | `level2` | 🚧 In Progress | 0 of 4 | 0 | 1 of 19 |
-| [Mission 6 (level3)](level3.md) | `level3` | 🚧 In Progress | 0 of 5 | 0 | 4 of 22 |
-| [Mission 7 (level5)](level5.md) | `level5` | ⬜ Not Started | 0 of 4 | 0 | 2 of 16 |
-| [Mission 8 (level81)](level81.md) | `level81` | ⬜ Not Started | 0 of 5 | 0 | 5 of 20 |
-| [Mission 9 (level86)](level86.md) | `level86` | ⬜ Not Started | 0 of 4 | 0 | 4 of 17 |
-| [Mission 10 (level93)](level93.md) | `level93` | ⬜ Not Started | 0 of 6 | 0 | 2 of 24 |
-| [Mission 11 (level31)](level31.md) | `level31` | ⬜ Not Started | 0 of 6 | 0 | 2 of 9 |
-| [Mission 12 (level14)](level14.md) | `level14` | ⬜ Not Started | 0 of 3 | 0 | 1 of 6 |
-| [Mission 13 (level9)](level9.md) | `level9` | ⬜ Not Started | 0 of 3 | 0 | 1 of 6 |
-| [Mission 14 (level51)](level51.md) | `level51` | ⬜ Not Started | 0 of 7 | 0 | 1 of 6 |
-| [Mission 15 (level52)](level52.md) | `level52` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |
-| [Mission 16 (level54)](level54.md) | `level54` | ⬜ Not Started | 0 of 5 | 0 | 1 of 7 |
-| [Mission 17 (level55)](level55.md) | `level55` | ⬜ Not Started | 0 of 3 | 0 | 1 of 8 |
-| [Mission 18 (level84)](level84.md) | `level84` | ⬜ Not Started | 0 of 3 | 0 | 0 of 8 |
+| [Mission 1: New Blood](level99.md) | `level99` | 🚧 In Progress | 1 of 3 | 0 | 215 of 215 |
+| [Mission 2: Real Live Bunch](level80.md) | `level80` | 🎮 Pending Gameplay Approval | 4 of 4 | 0 | 50 of 50 |
+| [Mission 3: Payback](level87.md) | `level87` | 🎮 Pending Gameplay Approval | 5 of 5 | 0 | 87 of 87 |
+| [Mission 4: Blackout](level34.md) | `level34` | 🚧 In Progress | 0 of 5 | 0 | 3 of 17 |
+| [Mission 5: Real Heavy Rep](level2.md) | `level2` | 🚧 In Progress | 0 of 4 | 0 | 1 of 19 |
+| [Mission 6: Writer's Block](level3.md) | `level3` | 🚧 In Progress | 0 of 5 | 0 | 4 of 22 |
+| [Mission 7: Adios Amigo](level5.md) | `level5` | ⬜ Not Started | 0 of 4 | 0 | 2 of 16 |
+| [Mission 8: Encore](level81.md) | `level81` | ⬜ Not Started | 0 of 5 | 0 | 5 of 20 |
+| [Mission 9: Payin' The Cost](level86.md) | `level86` | ⬜ Not Started | 0 of 4 | 0 | 4 of 17 |
+| [Mission 10: Destroyed](level93.md) | `level93` | ⬜ Not Started | 0 of 6 | 0 | 2 of 24 |
+| [Mission 11: Boys In Blue](level31.md) | `level31` | ⬜ Not Started | 0 of 6 | 0 | 2 of 9 |
+| [Mission 12: Set Up](level14.md) | `level14` | ⬜ Not Started | 0 of 3 | 0 | 1 of 6 |
+| [Mission 13: All-City](level9.md) | `level9` | ⬜ Not Started | 0 of 3 | 0 | 1 of 6 |
+| [Mission 14: Desperate Dudes](level51.md) | `level51` | ⬜ Not Started | 0 of 7 | 0 | 1 of 6 |
+| [Mission 15: No Permits, No Parley](level52.md) | `level52` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |
+| [Mission 16: Home Run](level54.md) | `level54` | ⬜ Not Started | 0 of 5 | 0 | 1 of 7 |
+| [Mission 17: Friendly Faces](level55.md) | `level55` | ⬜ Not Started | 0 of 3 | 0 | 1 of 8 |
+| [Mission 18: Come Out To Play](level84.md) | `level84` | ⬜ Not Started | 0 of 3 | 0 | 0 of 8 |
 
 ## The hub {#hub}
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [The hub (level95)](level95.md) | `level95` | 🎮 Pending Gameplay Approval | 12 of 12 | 0 | 90 of 91 |
+| [The hub](level95.md) | `level95` | 🎮 Pending Gameplay Approval | 12 of 12 | 0 | 90 of 91 |
 
 ## Flashback missions {#flashback}
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [Flashback 1 (level82)](level82.md) | `level82` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |
-| [Flashback 2 (level92)](level92.md) | `level92` | ⬜ Not Started | 0 of 3 | 0 | 4 of 8 |
-| [Flashback 3 (level83)](level83.md) | `level83` | ⬜ Not Started | 0 of 6 | 0 | 0 of 1 |
-| [Flashback 4 (level20)](level20.md) | `level20` | ⬜ Not Started | 0 of 6 | 0 | 3 of 11 |
-| [Flashback 5 (level11)](level11.md) | `level11` | ⬜ Not Started | 0 of 6 | 0 | 1 of 7 |
+| [Flashback 1: Roots](level82.md) | `level82` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |
+| [Flashback 2: The Best](level92.md) | `level92` | ⬜ Not Started | 0 of 3 | 0 | 4 of 8 |
+| [Flashback 3: Heavy Muscle](level83.md) | `level83` | ⬜ Not Started | 0 of 6 | 0 | 0 of 1 |
+| [Flashback 4: Scout's Honor](level20.md) | `level20` | ⬜ Not Started | 0 of 6 | 0 | 3 of 11 |
+| [Flashback 5: Sharp Dressed Man](level11.md) | `level11` | ⬜ Not Started | 0 of 6 | 0 | 1 of 7 |
 
 ## Armies of the Night {#armies}
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [Armies of the Night, stage 1 (level60)](level60.md) | `level60` | ⬜ Not Started | 0 of 3 | 0 | 2 of 15 |
-| [Armies of the Night, stage 2 (level61)](level61.md) | `level61` | ⬜ Not Started | 0 of 3 | 0 | - |
-| [Armies of the Night, stage 3 (level62)](level62.md) | `level62` | ⬜ Not Started | 0 of 3 | 0 | 0 of 1 |
-| [Armies of the Night, stage 4 (level63)](level63.md) | `level63` | ⬜ Not Started | 0 of 3 | 0 | - |
-| [Armies of the Night, stage 5 (level64)](level64.md) | `level64` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |
+| [Armies of the Night: Stage 1](level60.md) | `level60` | ⬜ Not Started | 0 of 3 | 0 | 2 of 15 |
+| [Armies of the Night: Stage 2](level61.md) | `level61` | ⬜ Not Started | 0 of 3 | 0 | - |
+| [Armies of the Night: Stage 3](level62.md) | `level62` | ⬜ Not Started | 0 of 3 | 0 | 0 of 1 |
+| [Armies of the Night: Stage 4](level63.md) | `level63` | ⬜ Not Started | 0 of 3 | 0 | - |
+| [Armies of the Night: Stage 5](level64.md) | `level64` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |
 
 ## Lifecycle {#lifecycle}
 

@@ -10,8 +10,10 @@ complete: |
   so a level whose files have no recovered name shows none. Kinds are hand-written: the story order
   is `global.lua`'s `runNextMission` and the hub's `fRunMission`, the flashbacks the hub's
   `FBMission` ([Scripts](../research/scripting.md#run-next-mission)); a Rumble arena lists the modes
-  whose flag scripts were found. Where each level puts the player: [Level starts](level-starts.md).
-defaults: {source: "config_preload3.lua, levelNames", evidence: inferred}
+  whose flag scripts were found. Titles are `GSTRING.MISSIONNAME` of the English string file (confirmed (data):
+  read from the disc by `refs extract`, the title string only; the hub has none). Where each level puts the
+  player: [Level starts](level-starts.md).
+defaults: {source: "config_preload3.lua, levelNames; titles: config_strings_en.lua, GSTRING.MISSIONNAME", evidence: inferred}
 entries:
   - index: 0
     name: level100
@@ -34,6 +36,7 @@ entries:
     world: level99
     number: 99
     kind: "story mission 1 (the tutorial)"
+    title: "New Blood"
     sections: 3
     order: 1
     flag1: LT_NONE
@@ -51,6 +54,7 @@ entries:
     world: level80
     number: 80
     kind: "story mission 2"
+    title: "Real Live Bunch"
     sections: 4
     order: 2
     flag1: LT_NONE
@@ -68,6 +72,7 @@ entries:
     world: level87
     number: 87
     kind: "story mission 3"
+    title: Payback
     sections: 5
     order: 3
     flag1: LT_NONE
@@ -85,6 +90,7 @@ entries:
     world: level34
     number: 34
     kind: "story mission 4"
+    title: Blackout
     sections: 5
     order: 4
     flag1: LT_NONE
@@ -102,6 +108,7 @@ entries:
     world: level2
     number: 2
     kind: "story mission 5"
+    title: "Real Heavy Rep"
     sections: 4
     order: 5
     flag1: LT_NONE
@@ -119,6 +126,7 @@ entries:
     world: level3
     number: 3
     kind: "story mission 6"
+    title: "Writer's Block"
     sections: 5
     order: 6
     flag1: LT_NONE
@@ -136,6 +144,7 @@ entries:
     world: level5
     number: 5
     kind: "story mission 7"
+    title: "Adios Amigo"
     sections: 4
     order: 7
     flag1: LT_NONE
@@ -153,6 +162,7 @@ entries:
     world: level81
     number: 81
     kind: "story mission 8"
+    title: Encore
     sections: 5
     order: 8
     flag1: LT_NONE
@@ -170,6 +180,7 @@ entries:
     world: level86
     number: 86
     kind: "story mission 9"
+    title: "Payin' The Cost"
     sections: 4
     order: 9
     flag1: LT_NONE
@@ -187,6 +198,7 @@ entries:
     world: level93
     number: 93
     kind: "story mission 10"
+    title: Destroyed
     sections: 6
     order: 10
     flag1: LT_NONE
@@ -204,6 +216,7 @@ entries:
     world: level31
     number: 31
     kind: "story mission 11"
+    title: "Boys In Blue"
     sections: 6
     order: 11
     flag1: LT_NONE
@@ -221,6 +234,7 @@ entries:
     world: level14
     number: 14
     kind: "story mission 12"
+    title: "Set Up"
     sections: 3
     order: 12
     flag1: LT_NONE
@@ -238,6 +252,7 @@ entries:
     world: level9
     number: 9
     kind: "story mission 13"
+    title: All-City
     sections: 3
     order: 13
     flag1: LT_NONE
@@ -255,6 +270,7 @@ entries:
     world: level51
     number: 51
     kind: "story mission 14"
+    title: "Desperate Dudes"
     sections: 7
     order: 14
     flag1: LT_NONE
@@ -272,6 +288,7 @@ entries:
     world: level52
     number: 52
     kind: "story mission 15"
+    title: "No Permits, No Parley"
     sections: 4
     order: 15
     flag1: LT_NONE
@@ -289,6 +306,7 @@ entries:
     world: level54
     number: 54
     kind: "story mission 16"
+    title: "Home Run"
     sections: 5
     order: 16
     flag1: LT_NONE
@@ -306,6 +324,7 @@ entries:
     world: level55
     number: 55
     kind: "story mission 17"
+    title: "Friendly Faces"
     sections: 3
     order: 17
     flag1: LT_NONE
@@ -323,6 +342,7 @@ entries:
     world: level84
     number: 84
     kind: "story mission 18"
+    title: "Come Out To Play"
     sections: 3
     order: 18
     flag1: LT_NONE
@@ -340,6 +360,7 @@ entries:
     world: level82
     number: 82
     kind: "flashback mission 1 (from the clubhouse)"
+    title: Roots
     sections: 4
     order: 19
     flag1: LT_NONE
@@ -357,6 +378,7 @@ entries:
     world: level92
     number: 92
     kind: "flashback mission 2 (from the clubhouse)"
+    title: "The Best"
     sections: 3
     order: 20
     flag1: LT_NONE
@@ -374,6 +396,7 @@ entries:
     world: level83
     number: 83
     kind: "flashback mission 3 (from the clubhouse)"
+    title: "Heavy Muscle"
     sections: 6
     order: 21
     flag1: LT_NONE
@@ -391,6 +414,7 @@ entries:
     world: level20
     number: 20
     kind: "flashback mission 4 (from the clubhouse)"
+    title: "Scout's Honor"
     sections: 6
     order: 22
     flag1: LT_NONE
@@ -408,6 +432,7 @@ entries:
     world: level11
     number: 11
     kind: "flashback mission 5 (from the clubhouse)"
+    title: "Sharp Dressed Man"
     sections: 6
     order: 23
     flag1: LT_NONE
@@ -425,6 +450,7 @@ entries:
     world: level60
     number: 60
     kind: "Armies of the Night bonus game, stage 1"
+    title: "Stage 1"
     sections: 3
     order: 25
     flag1: LT_NONE
@@ -441,6 +467,7 @@ entries:
     world: level61
     number: 61
     kind: "Armies of the Night bonus game, stage 2"
+    title: "Stage 2"
     sections: 3
     order: 25
     flag1: LT_NONE
@@ -457,6 +484,7 @@ entries:
     world: level62
     number: 62
     kind: "Armies of the Night bonus game, stage 3"
+    title: "Stage 3"
     sections: 3
     order: 25
     flag1: LT_NONE
@@ -473,6 +501,7 @@ entries:
     world: level63
     number: 63
     kind: "Armies of the Night bonus game, stage 4"
+    title: "Stage 4"
     sections: 3
     order: 25
     flag1: LT_NONE
@@ -489,6 +518,7 @@ entries:
     world: level64
     number: 64
     kind: "Armies of the Night bonus game, stage 5"
+    title: "Stage 5"
     sections: 4
     order: 25
     flag1: LT_NONE
@@ -713,6 +743,7 @@ entries:
     world: level101
     number: 101
     kind: "Rumble arena (kinghill)"
+    title: Junkyard
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -730,6 +761,7 @@ entries:
     world: level102
     number: 102
     kind: "Rumble arena (brawl)"
+    title: "Fight Pen"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -747,6 +779,7 @@ entries:
     world: level103
     number: 103
     kind: "Rumble arena (brawl, mercy, wchair)"
+    title: "Warrior Turf"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -764,6 +797,7 @@ entries:
     world: level104
     number: 104
     kind: "Rumble arena (brawl, mercy, wchair)"
+    title: "The Rotunda"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -781,6 +815,7 @@ entries:
     world: level105
     number: 105
     kind: "Rumble arena (brawl)"
+    title: "Red Devil"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -798,6 +833,7 @@ entries:
     world: level106
     number: 106
     kind: "Rumble arena"
+    title: "The Shanties"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -815,6 +851,7 @@ entries:
     world: level107
     number: 107
     kind: "Rumble arena (brawl, caps, tagbt)"
+    title: Courtyard
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -832,6 +869,7 @@ entries:
     world: level108
     number: 108
     kind: "Rumble arena (brawl, mercy, wchair)"
+    title: "Gunhill Road"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -849,6 +887,7 @@ entries:
     world: level109
     number: 109
     kind: "Rumble arena (brawl)"
+    title: "Shaolin Temple"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -866,6 +905,7 @@ entries:
     world: level110
     number: 110
     kind: "Rumble arena (brawl)"
+    title: "Club 45"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -883,6 +923,7 @@ entries:
     world: level111
     number: 111
     kind: "Rumble arena (car, hifi, mercy)"
+    title: Bensonhurst
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -900,6 +941,7 @@ entries:
     world: level112
     number: 112
     kind: "Rumble arena (mercy, wchair)"
+    title: "Coney Drag"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -917,6 +959,7 @@ entries:
     world: level113
     number: 113
     kind: "Rumble arena (brawl)"
+    title: "Swimming Pool"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -934,6 +977,7 @@ entries:
     world: level114
     number: 114
     kind: "Rumble arena (muggr, wchair)"
+    title: Chinatown
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -951,6 +995,7 @@ entries:
     world: level115
     number: 115
     kind: "Rumble arena (brawl)"
+    title: "Subway Platform"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -968,6 +1013,7 @@ entries:
     world: level116
     number: 116
     kind: "Rumble arena (brawl)"
+    title: "The Shack"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -985,6 +1031,7 @@ entries:
     world: level117
     number: 117
     kind: "Rumble arena"
+    title: "Tenement Lobby"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1002,6 +1049,7 @@ entries:
     world: level118
     number: 118
     kind: "Rumble arena (brawl)"
+    title: "Tack's Warehouse"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1019,6 +1067,7 @@ entries:
     world: level119
     number: 119
     kind: "Rumble arena (brawl)"
+    title: "The Graveyard"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1036,6 +1085,7 @@ entries:
     world: level120
     number: 120
     kind: "Rumble arena (brawl, mercy)"
+    title: "The Bridge"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1053,6 +1103,7 @@ entries:
     world: level121
     number: 121
     kind: "Rumble arena (brawl, caps, mercy)"
+    title: "The Orphanage"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1070,6 +1121,7 @@ entries:
     world: level122
     number: 122
     kind: "Rumble arena (brawl, survival, tagbt)"
+    title: "Wrecked Apts"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1087,6 +1139,7 @@ entries:
     world: level123
     number: 123
     kind: "Rumble arena (brawl)"
+    title: "Subway Bathroom"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1104,6 +1157,7 @@ entries:
     world: level124
     number: 124
     kind: "Rumble arena (brawl)"
+    title: "Stripes and Solids"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1121,6 +1175,7 @@ entries:
     world: level125
     number: 125
     kind: "Rumble arena"
+    title: Spookarama
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1138,6 +1193,7 @@ entries:
     world: level126
     number: 126
     kind: "Rumble arena (brawl)"
+    title: "Coney Amusement"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1155,6 +1211,7 @@ entries:
     world: level127
     number: 127
     kind: "Rumble arena (brawl, survival)"
+    title: "The Park"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1172,6 +1229,7 @@ entries:
     world: level128
     number: 128
     kind: "Rumble arena (brawl, survival)"
+    title: "The Old Junkyard"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1189,6 +1247,7 @@ entries:
     world: level129
     number: 129
     kind: "Rumble arena (kinghill)"
+    title: "King o'Shanties"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1206,6 +1265,7 @@ entries:
     world: level130
     number: 130
     kind: "Rumble arena (brawl, kinghill, survival)"
+    title: "Mausoleum Hill"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1223,6 +1283,7 @@ entries:
     world: level131
     number: 131
     kind: "Rumble arena (royal)"
+    title: "Soho Rooftops"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1240,6 +1301,7 @@ entries:
     world: level132
     number: 132
     kind: "Rumble arena (royal)"
+    title: "Tenement Rooftop"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1257,6 +1319,7 @@ entries:
     world: level133
     number: 133
     kind: "Rumble arena (royal)"
+    title: "Machine Shop"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1274,6 +1337,7 @@ entries:
     world: level134
     number: 134
     kind: "Rumble arena (brawl, shoot, survival)"
+    title: Tremont
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1291,6 +1355,7 @@ entries:
     world: level135
     number: 135
     kind: "Rumble arena"
+    title: Harlem
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1308,6 +1373,7 @@ entries:
     world: level136
     number: 136
     kind: "Rumble arena (run4life)"
+    title: "Gunhill Chase"
     sections: 0
     order: 26
     flag1: LT_NONE
@@ -1325,6 +1391,7 @@ entries:
     world: level137
     number: 137
     kind: "Rumble arena (run4life)"
+    title: "Furies' Chase"
     sections: 0
     order: 26
     flag1: LT_NONE

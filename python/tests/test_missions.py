@@ -16,8 +16,10 @@ missions:
   - level: 1
     group: story
     slot: story mission 1
-    title: "Mission 1 (level1)"
+    label: "Mission 1"
     summary: Short summary.
+    summary_source: web
+    sources: ["https://example.org/page"]
     status: in-progress
     checkpoints:
       count: 3
@@ -32,8 +34,9 @@ missions:
   - level: 2
     group: hub
     slot: the hub
-    title: "The hub (level2)"
+    label: "The hub"
     summary: Another.
+    summary_source: research
     status: approved
     checkpoints: {count: 1, default: approved}
 """
@@ -61,8 +64,8 @@ def _binding(
 
 
 def _parse(text: str = TEXT, sections: dict[int, int] | None = None) -> missions.MissionList:
-    """The synthetic list, which lists only levels 1 and 2."""
-    return missions.parse(text, sections, expected={1, 2})
+    """The synthetic list, which lists only levels 1 and 2 (level 1 has a disc title, the hub none)."""
+    return missions.parse(text, sections, expected={1, 2}, titles={1: "First One"})
 
 
 def test_parse_builds_checkpoints_from_default_and_each() -> None:
@@ -82,11 +85,18 @@ def test_parse_builds_checkpoints_from_default_and_each() -> None:
         ("count: 3", "count: 4", "checkpoints.count is 4 but the levels list has 3"),
         ("group: hub", "group: other", "`group` must be one of"),
         ("level: 2", "level: 1", "listed twice"),
+        ("summary_source: web", "summary_source: guess", "`summary_source` must be one of"),
+        ('    sources: ["https://example.org/page"]\n', "", "must list its `sources`"),
     ],
 )
 def test_parse_rejects(old: str, new: str, message: str) -> None:
     with pytest.raises(ConfigError, match=message):
         _parse(TEXT.replace(old, new, 1), {1: 3, 2: 1})
+
+
+def test_parse_requires_a_disc_title_except_for_the_hub() -> None:
+    with pytest.raises(ConfigError, match="level1: no title in the levels list"):
+        missions.parse(TEXT, None, expected={1, 2}, titles={2: "Unused"})
 
 
 def test_parse_reports_a_missing_level() -> None:
@@ -126,9 +136,12 @@ def test_pages_show_status_checkpoints_and_links() -> None:
     assert "| [Gang](../references/bindings/gang.md)" not in page  # the family title is Gangs
     assert "| [Gangs](../references/bindings/gang.md) | 4 | 2 |" in page
     assert "[A page](../research/a.md#x)" in page
+    assert "# Mission 1: First One (level1)" in page
+    assert "paraphrased from web sources" in page and "- <https://example.org/page>" in page
+    assert "paraphrased" not in pages["level2.md"] and "# The hub (level2)" in pages["level2.md"]
     assert "--play-level level1 --checkpoint 1" in page and "## Known issues" in page
     index = pages["index.md"]
-    assert "| [Mission 1 (level1)](level1.md) | `level1` | \U0001f6a7 In Progress | 1 of 3 | 0 | 2 of 4 |" in index
+    assert "| [Mission 1: First One](level1.md) | `level1` | \U0001f6a7 In Progress | 1 of 3 | 0 | 2 of 4 |" in index
     assert "| ✅ Approved | 1 |" in index
     assert all(
         max(len(line) for line in text.splitlines() if not line.startswith("|")) <= 120 for text in pages.values()

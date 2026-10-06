@@ -1,9 +1,12 @@
 # Missions: the status list. The pages docs/missions/ are generated from this file by
 # `coney-tools missions render`; everything here is hand-kept. An implementer updates it in the same commit as
-# mission work (docs/guides/research-workflow.md#missions). Our own words only: no mission names, text or dialogue
-# from the game.
+# mission work (docs/guides/research-workflow.md#missions). Our own words only: no game text or dialogue. A mission's
+# title is not kept here: it is the level's `title` in research/references/levels.yaml (read from the disc). `label`
+# is the slot's name ("Mission 2"). `summary_source` is research (our findings), disc, web or mixed; a web summary
+# lists its URLs under `sources` and is replaced when a reverse-engineered walkthrough exists.
 #
-# Per mission: level, group (story|hub|flashback|armies), slot, title, summary, status, checkpoints
+# Per mission: level, group (story|hub|flashback|armies), slot, label, summary, summary_source, sources, status,
+#   checkpoints
 #   {count (= the levels list's Sections), default (status of every checkpoint not in `each`),
 #    each: {N: {status, note}}}, research [{title, path under docs/}], optional issues, questions, test, notes.
 # Statuses (missions and checkpoints): not-started, in-progress, pending-approval, needs-fixes, approved.
@@ -24,8 +27,9 @@ missions:
   - level: 99
     group: story
     slot: story mission 1
-    title: "Mission 1 (level99)"
+    label: "Mission 1"
     summary: "The first mission, a tutorial: a combat course taught lesson by lesson, a section on getting around the streets, and a finale that hands over to the second mission. Coney starts it from a new game at checkpoint 1."
+    summary_source: research
     status: in-progress
     checkpoints:
       count: 3
@@ -44,8 +48,11 @@ missions:
   - level: 80
     group: story
     slot: story mission 2
-    title: "Mission 2 (level80)"
-    summary: "The second story mission, entered after the tutorial."
+    label: "Mission 2"
+    summary: "The second story mission, entered after the tutorial. A web source says it ends with the Destroyers tagging over the Warriors' burner outside their hangout, which sets up the next mission."
+    summary_source: mixed
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Mission_3:_Payback"
     status: pending-approval
     checkpoints:
       count: 4
@@ -58,8 +65,11 @@ missions:
   - level: 87
     group: story
     slot: story mission 3
-    title: "Mission 3 (level87)"
-    summary: "The third story mission; its scripts use tagging at tag spots, radios, fog and steam effects and door-opening goals."
+    label: "Mission 3"
+    summary: "The third story mission: Rembrandt leads a warparty into East Coney Island to tag over the Destroyers' burners, in reply to the previous mission's insult. Its scripts use tagging at tag spots, radios, fog and steam effects and door-opening goals."
+    summary_source: mixed
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Mission_3:_Payback"
     status: pending-approval
     checkpoints:
       count: 5
@@ -75,8 +85,9 @@ missions:
   - level: 95
     group: hub
     slot: the hub
-    title: "The hub (level95)"
+    label: "The hub"
     summary: "The Warriors' clubhouse and the streets of Coney around it, where the story returns between missions. Its checkpoint picks the chapter and which mission the clubhouse offers next; it also starts the flashbacks and the bonus game."
+    summary_source: research
     status: pending-approval
     checkpoints:
       count: 12
@@ -89,8 +100,11 @@ missions:
   - level: 34
     group: story
     slot: story mission 4
-    title: "Mission 4 (level34)"
-    summary: "The story's mission 4, reached from the hub."
+    label: "Mission 4"
+    summary: "A blackout leaves the streets rioting. Gangs such as the Moonrunners, Panzers and Rogues are seen fighting in the streets, the Savage Huns rob a shop and run, and the Baseball Furies turn up near the end."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Missions"
     status: in-progress
     checkpoints:
       count: 5
@@ -100,8 +114,11 @@ missions:
   - level: 2
     group: story
     slot: story mission 5
-    title: "Mission 5 (level2)"
-    summary: "The story's mission 5, reached from the hub."
+    label: "Mission 5"
+    summary: "The story's mission 5, reached from the hub. The web sources found name this mission but give no objective, so its summary is still to be written from the script."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Missions"
     status: in-progress
     checkpoints:
       count: 4
@@ -111,8 +128,11 @@ missions:
   - level: 3
     group: story
     slot: story mission 6
-    title: "Mission 6 (level3)"
-    summary: "The story's mission 6, reached from the hub."
+    label: "Mission 6"
+    summary: "The story's mission 6, reached from the hub. The web sources found name this mission but give no objective, so its summary is still to be written from the script."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Missions"
     status: in-progress
     checkpoints:
       count: 5
@@ -122,8 +142,11 @@ missions:
   - level: 5
     group: story
     slot: story mission 7
-    title: "Mission 7 (level5)"
-    summary: "The story's mission 7, reached from the hub."
+    label: "Mission 7"
+    summary: "The Warriors try to collect a payment owed to them by Sanchez, a Hurricanes associate."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Adios_Amigo"
     status: not-started
     checkpoints:
       count: 4
@@ -133,8 +156,11 @@ missions:
   - level: 81
     group: story
     slot: story mission 8
-    title: "Mission 8 (level81)"
-    summary: "The story's mission 8, reached from the hub."
+    label: "Mission 8"
+    summary: "The story's mission 8, reached from the hub. The web sources found name this mission but give no objective, so its summary is still to be written from the script."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Missions"
     status: not-started
     checkpoints:
       count: 5
@@ -144,8 +170,11 @@ missions:
   - level: 86
     group: story
     slot: story mission 9
-    title: "Mission 9 (level86)"
-    summary: "The story's mission 9, reached from the hub."
+    label: "Mission 9"
+    summary: "The story's mission 9, reached from the hub. The web sources found name this mission but give no objective, so its summary is still to be written from the script."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Missions"
     status: not-started
     checkpoints:
       count: 4
@@ -155,8 +184,11 @@ missions:
   - level: 93
     group: story
     slot: story mission 10
-    title: "Mission 10 (level93)"
-    summary: "The story's mission 10, reached from the hub."
+    label: "Mission 10"
+    summary: "The story's mission 10, reached from the hub. The web sources found name this mission but give no objective, so its summary is still to be written from the script."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Missions"
     status: not-started
     checkpoints:
       count: 6
@@ -166,8 +198,11 @@ missions:
   - level: 31
     group: story
     slot: story mission 11
-    title: "Mission 11 (level31)"
-    summary: "The story's mission 11, reached from the hub."
+    label: "Mission 11"
+    summary: "Set in Pelham on the night of 30 June 1979, after the police lock the area down when one of their own is killed. Cleon sends Cochise, Vermin and Cowboy to find the scouts Fox and Snow; the Warriors end up fighting Birdie, a wheelchair-bound lieutenant of the Turnbull AC, and his gang."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/File:The_Warriors_-_Mission_11_-_Boys_in_Blue"
     status: not-started
     checkpoints:
       count: 6
@@ -177,8 +212,11 @@ missions:
   - level: 14
     group: story
     slot: story mission 12
-    title: "Mission 12 (level14)"
-    summary: "The story's mission 12, reached from the hub."
+    label: "Mission 12"
+    summary: "A story mission set after a brawl with the Hi-Hats, in which the player can steal car radios. The web sources found give little more, so its summary is still to be written from the script."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Set_Up"
     status: not-started
     checkpoints:
       count: 3
@@ -188,8 +226,11 @@ missions:
   - level: 9
     group: story
     slot: story mission 13
-    title: "Mission 13 (level9)"
-    summary: "The story's mission 13, reached from the hub."
+    label: "Mission 13"
+    summary: "Rembrandt sprays new subway trains with the gang's name to spread it across the city."
+    summary_source: web
+    sources:
+      - "https://thewarriors.fandom.com/wiki/Rembrandt"
     status: not-started
     checkpoints:
       count: 3
@@ -199,8 +240,12 @@ missions:
   - level: 51
     group: story
     slot: story mission 14
-    title: "Mission 14 (level51)"
-    summary: "The story's mission 14, reached from the hub."
+    label: "Mission 14"
+    summary: "The first of the five missions (14 to 18) that cover the events of the film. Finishing it unlocks the Riffs and a new area."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
+      - "https://www.supercheats.com/xbox/the-warriors/4934/unlockables/"
     status: not-started
     checkpoints:
       count: 7
@@ -210,8 +255,12 @@ missions:
   - level: 52
     group: story
     slot: story mission 15
-    title: "Mission 15 (level52)"
-    summary: "The story's mission 15, reached from the hub."
+    label: "Mission 15"
+    summary: "A mission of the film's night. Finishing it unlocks more soldiers of other gangs."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
+      - "https://www.supercheats.com/xbox/the-warriors/4934/unlockables/"
     status: not-started
     checkpoints:
       count: 4
@@ -221,8 +270,12 @@ missions:
   - level: 54
     group: story
     slot: story mission 16
-    title: "Mission 16 (level54)"
-    summary: "The story's mission 16, reached from the hub."
+    label: "Mission 16"
+    summary: "A mission of the film's night. Finishing it unlocks more soldiers of other gangs and the Rotunda area."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
+      - "https://www.supercheats.com/xbox/the-warriors/4934/unlockables/"
     status: not-started
     checkpoints:
       count: 5
@@ -232,8 +285,12 @@ missions:
   - level: 55
     group: story
     slot: story mission 17
-    title: "Mission 17 (level55)"
-    summary: "The story's mission 17, reached from the hub."
+    label: "Mission 17"
+    summary: "A mission of the film's night. Finishing it unlocks the Punks, the Lizzies and the subway toilets area."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
+      - "https://www.supercheats.com/xbox/the-warriors/4934/unlockables/"
     status: not-started
     checkpoints:
       count: 3
@@ -243,8 +300,11 @@ missions:
   - level: 84
     group: story
     slot: story mission 18
-    title: "Mission 18 (level84)"
-    summary: "The story's mission 18, reached from the hub."
+    label: "Mission 18"
+    summary: "The last mission, a mission of the film's night: the Warriors reach Coney Island, where the Rogues ambush them, Luther is confronted and the Riffs arrive to deal with him."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
     status: not-started
     checkpoints:
       count: 3
@@ -254,8 +314,11 @@ missions:
   - level: 82
     group: flashback
     slot: flashback 1
-    title: "Flashback 1 (level82)"
-    summary: "Flashback mission 1, started from a trophy in the hub's clubhouse."
+    label: "Flashback 1"
+    summary: "Flashback mission 1, started from a trophy in the hub's clubhouse; the five flashbacks are bonus missions that show how Warriors came to join the gang. The web sources found do not say which member this one is about."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
     status: not-started
     checkpoints:
       count: 4
@@ -265,8 +328,11 @@ missions:
   - level: 92
     group: flashback
     slot: flashback 2
-    title: "Flashback 2 (level92)"
-    summary: "Flashback mission 2, started from a trophy in the hub's clubhouse."
+    label: "Flashback 2"
+    summary: "Flashback mission 2, started from a trophy in the hub's clubhouse; the five flashbacks are bonus missions that show how Warriors came to join the gang. The web sources found do not say which member this one is about."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
     status: not-started
     checkpoints:
       count: 3
@@ -276,8 +342,11 @@ missions:
   - level: 83
     group: flashback
     slot: flashback 3
-    title: "Flashback 3 (level83)"
-    summary: "Flashback mission 3, started from a trophy in the hub's clubhouse."
+    label: "Flashback 3"
+    summary: "Flashback mission 3, started from a trophy in the hub's clubhouse; the five flashbacks are bonus missions that show how Warriors came to join the gang. The web sources found do not say which member this one is about."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
     status: not-started
     checkpoints:
       count: 6
@@ -287,8 +356,11 @@ missions:
   - level: 20
     group: flashback
     slot: flashback 4
-    title: "Flashback 4 (level20)"
-    summary: "Flashback mission 4, started from a trophy in the hub's clubhouse."
+    label: "Flashback 4"
+    summary: "Flashback mission 4, started from a trophy in the hub's clubhouse; the five flashbacks are bonus missions that show how Warriors came to join the gang. The web sources found do not say which member this one is about."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
     status: not-started
     checkpoints:
       count: 6
@@ -298,8 +370,11 @@ missions:
   - level: 11
     group: flashback
     slot: flashback 5
-    title: "Flashback 5 (level11)"
-    summary: "Flashback mission 5, started from a trophy in the hub's clubhouse."
+    label: "Flashback 5"
+    summary: "Flashback mission 5, started from a trophy in the hub's clubhouse; the five flashbacks are bonus missions that show how Warriors came to join the gang. The web sources found do not say which member this one is about."
+    summary_source: web
+    sources:
+      - "https://en.wikipedia.org/wiki/The_Warriors_(video_game)"
     status: not-started
     checkpoints:
       count: 6
@@ -309,8 +384,9 @@ missions:
   - level: 60
     group: armies
     slot: Armies of the Night 1
-    title: "Armies of the Night, stage 1 (level60)"
+    label: "Armies of the Night"
     summary: "Stage 1 of the Armies of the Night bonus game, which the hub offers once the five flashbacks are complete."
+    summary_source: research
     status: not-started
     checkpoints:
       count: 3
@@ -320,8 +396,9 @@ missions:
   - level: 61
     group: armies
     slot: Armies of the Night 2
-    title: "Armies of the Night, stage 2 (level61)"
+    label: "Armies of the Night"
     summary: "Stage 2 of the Armies of the Night bonus game, loaded by the end of stage 1."
+    summary_source: research
     status: not-started
     checkpoints:
       count: 3
@@ -331,8 +408,9 @@ missions:
   - level: 62
     group: armies
     slot: Armies of the Night 3
-    title: "Armies of the Night, stage 3 (level62)"
+    label: "Armies of the Night"
     summary: "Stage 3 of the Armies of the Night bonus game, loaded by the end of stage 2."
+    summary_source: research
     status: not-started
     checkpoints:
       count: 3
@@ -342,8 +420,9 @@ missions:
   - level: 63
     group: armies
     slot: Armies of the Night 4
-    title: "Armies of the Night, stage 4 (level63)"
+    label: "Armies of the Night"
     summary: "Stage 4 of the Armies of the Night bonus game, loaded by the end of stage 3."
+    summary_source: research
     status: not-started
     checkpoints:
       count: 3
@@ -353,8 +432,9 @@ missions:
   - level: 64
     group: armies
     slot: Armies of the Night 5
-    title: "Armies of the Night, stage 5 (level64)"
+    label: "Armies of the Night"
     summary: "Stage 5 of the Armies of the Night bonus game, loaded by the end of stage 4. Its last checkpoint returns to the hub."
+    summary_source: research
     status: not-started
     checkpoints:
       count: 4

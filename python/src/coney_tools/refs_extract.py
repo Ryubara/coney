@@ -614,10 +614,24 @@ def topic_object_groups(facts: DiscFacts, images: Path | None) -> list[dict[str,
     ]
 
 
+def _mission_titles(facts: DiscFacts) -> dict[str, str]:
+    """Level script name -> mission title, from `GSTRING.MISSIONNAME` of the English string file.
+
+    Only the title strings are read (names that identify a level, `LEGAL.md`'s reference-list exception); a level
+    whose entry is empty (the hub) has none.
+    """
+    table = facts.table("config_strings_en.lua", "GSTRING")
+    names = table.fields.get("MISSIONNAME") if table else None
+    if not isinstance(names, lua4.Table):
+        return {}
+    return {str(k): v for k, v in names.fields.items() if isinstance(v, str) and v.strip()}
+
+
 def topic_levels(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
     """Level records, from `config_preload3.lua`'s `levelNames`, with what the disc holds for each."""
     table = facts.table("config_preload3.lua", "levelNames")
     rows = table.as_list() if table else []
+    titles = _mission_titles(facts)
     files = set(facts.names.values())
     entries = []
     for index, row in enumerate(rows):
@@ -632,6 +646,7 @@ def topic_levels(facts: DiscFacts, images: Path | None) -> list[dict[str, Any]]:
                 "name": name,
                 "world": values[1] if isinstance(values[1], str) else None,
                 "number": _number(values[2]),
+                "title": titles.get(name or ""),
                 "sections": _number(values[3]),
                 "order": _number(values[4]),
                 "flag1": _global(values[5]),

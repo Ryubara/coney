@@ -223,6 +223,12 @@ LEVELS = Topic(
             "Kind",
             curated=True,
         ),
+        F(
+            "title",
+            "str",
+            "The mission title `GSTRING.MISSIONNAME` gives the level (English table; the title string only).",
+            "Title",
+        ),
         F("sections", "int", "Record `+0x08`: number of sections (packs `<name>_<k>.pak`).", "Sections"),
         F("order", "int", "Record `+0x0c`: a small number rising through the story list (meaning not traced)."),
         F("flag1", "str", "First `LT_*` value (record flag bit 0)."),
