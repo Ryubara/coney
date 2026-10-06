@@ -516,7 +516,8 @@ The route request (`0x0029a8c0`), with its state at brain `+0xe0` (`+0x04` the r
       (`0x002517b0`);
     - an edge is skipped when its flags (the low 16 bits of the D record's word) share nothing with the mask, or its
       cost reaches 65000 (`0x005105a4`); the search fails on an empty heap or at 128 nodes;
-    - **edge cost** (`0x00251890`) = distance × 16, + 200 for flag 8, + 320 for `0x80` and + 80 for 4 (these three
+    - **edge cost** (`0x00251890`) = distance × 16, + 200 for edge flag 8 (the D record's kind bit, not path flag
+      8), + 320 for `0x80` and + 80 for 4 (these three
       only when `0x0051059c` = 1 and the mask lacks `0x100`), + 1600 when the word's bit 31 is set, and + (40 × routes
       already through the node − 8), saturating at `0xffff`. The last term spreads AIs over parallel routes.
 5. `0x002511c8` retries a failed search with `mask | 0x8c`; when the route uses a `0x80` edge (under the condition
@@ -527,9 +528,20 @@ The route request (`0x0029a8c0`), with its state at brain `+0xe0` (`+0x04` the r
    reachable from the node before, and each node's use count (C `+0x1f`) is raised; freeing the route
    (`0x00251680`) lowers it.
 
-**The walkable-line test** (`0x0024fbf8`): the segment is refused when blocked (`0x00221f80`, inferred: collision),
-then walked through the polygons that have neither flag 8 nor the caller's mask, against their edges by slab
-(`0x0024e938`); it passes when it never leaves the polygons.
+The polygons come in **areas**, an outline and its holes ([Path data](level-loading.md#path-data)); the human's
+polygon and a node's polygon are an area's first path. **Path flag 8** (`u16` at polygon `+0x48`, bit 3) takes a
+polygon out of every test below, so an opened door's hole stops cutting the area. Confirmed (code) at the addresses.
+
+- **The walkable-line test** (`0x0024fbf8`): refused when blocked (`0x00221f80`, inferred: collision). It then
+  crosses the segment with the edges (by slab, `0x0024e938`) of the start area's polygons that have neither flag 8
+  nor the caller's mask, keeping the nearest crossing. None: it passes when the end point's area (`0x00250708`) is the
+  start's. Otherwise the end point needs an area, whose polygons' farthest crossing must lie within 0.02 m of the
+  first (dist² < 0.0004): the segment leaves one area where it enters the next.
+- **A node in a straight line** (`0x0024f290`, the end-node search's test): refused when blocked or when the segment
+  crosses an edge of any of the area's polygons without flag 8 or the mask (0 there).
+- **A point's area** (`0x00250708`): `0x00250760` takes the first area, by the area list (`+0x24`), whose first path
+  lacks flag 8, whose `+0x4a` equals the byte of the ground found by a ray down from 0.4 m above the point, and whose
+  box (+0.35 m) holds it; then the inside test `0x0024ea60` over its polygons, skipping flags 8 and `0x10`.
 
 `0x00251d28` is a second, Dijkstra-like search that stops at the first node beyond a distance inside a cone of
 directions, skipping bit-31 edges (inferred: for fleeing).
@@ -1375,7 +1387,7 @@ the run-stop.
 
 - The per-kind time `0x00231590` that sets the target's `+0x1ec`, and the spacing bytes `+0x14a`, `+0x14b`.
 - The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.
-- What the edge flags mean in play (4, 8, `0x10`, `0x40`, `0x80`, `0x100`), polygon `+0x02` and flag 8, and the
+- What the edge flags mean in play (4, 8, `0x10`, `0x40`, `0x80`, `0x100`), polygon `+0x02`, and the
   globals `0x0051059c`, `0x005105a0`, `0x005112b4`.
 - The edge mask a move searches with (route state `+0x14`): who sets it, and does a human that can climb ask for
   `0x10`?

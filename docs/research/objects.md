@@ -63,7 +63,9 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003fb330` / `0x003fb5a0` / `0x003fb430` | `sub_swinging_door` init / update / message | a leaf | confirmed (code) |
 | `0x003b2f40` / `0x003b3158` / `0x003b2180` | `dyn_door_fence` init / message / hit | a breakable barrier | confirmed (code) |
 | `0x00250c00` | `NavLinks_SetKindByNumber(number, kind)` | retags every navigation link carrying a number | confirmed (code) |
-| `0x00250c50` / `0x00250d00` | `NavLinks_OpenByNumber` / `NavLinks_CloseByNumber` | bit 31 of every link with a number | confirmed (code) |
+| `0x00250c50` / `0x00250d00` | `NavLinks_OpenByNumber` / `NavLinks_CloseByNumber` | bit 31 of every link with a number, path flag 8 of its door hole | confirmed (code) |
+| `0x002508b8` | `NavLink_DoorPolygon(link)` | the hole at the middle of a door link | confirmed (code) |
+| `0x00250100` | `PathPolygon_FindAtPoint(pos)` | the flag-4 hole whose box holds a point | confirmed (code) |
 | `0x00250960` | `NavLink_FindNearest(pos, kinds, &link, &back)` | the nearest link of a kind within 5 m, and its reverse | confirmed (code) |
 | `0x00417480` | `Flags_DisableNear(radius, pos, activity, 0)` | disables flags of one activity near a point | confirmed (code) |
 | `0x003a5340` / `0x003a52c8` | `Obj_RemoveBody` / `Obj_AddBody` | an object's body in the collision world (`0x00597198`) | confirmed (code); names inferred |
@@ -214,6 +216,24 @@ The level's navigation links are the path data's **D records** (edges, [Level lo
 number and whose top bit is the word's bit 31, the "avoid" bit: route planning adds 1,600 to the edge's cost
 ([AI: path planning](ai.md#path-planning)), so a closed door makes a detour preferred, not mandatory. `0x00510590` is
 the array, `0x00510594` its count. Confirmed (code) at `0x00250960`, `0x00250c00`-`0x00250d00`.
+
+**A door's hole**: opening and closing by number (`0x00250c50` / `0x00250d00`, from the door's state commands with
+the second argument 1, `0x003a4b00`) change the avoid bit of every link with the number, walking the D records from
+the last, and the path flags of one polygon, found from the first link they meet (the highest index):
+
+1. `0x002508b8`: the link's node (D `+0x00`), then that node's last link of kind `0x10` or `0x40` (searching its D
+   records from the end), and the middle of those two nodes, so the middle of the doorway;
+2. `PathPolygon_FindAtPoint` (`0x00250100`) at that point: of all polygons, only those with path flag 4 and at least
+   one vertex whose box holds the point; one such polygon is the answer, several are narrowed by the inside test
+   (`0x0024eef0`) to the one whose vertex average is nearest, none gives 0 (the original then writes through a null
+   pointer: do nothing);
+3. opening sets bit 3 (8) of that polygon's `u16` flags at `+0x48`, closing clears it.
+
+The polygon is a **hole** of an area ([Path data](level-loading.md#path-data)), never the area's outline, which
+has no flag 4. Opening it lets lines and routes cross the doorway ([AI: path planning](ai.md#path-planning)). Disc
+check (level87, door 15): links 1530 and 1537 (kind `0x10`, nodes 219 and 220, 1.4 m apart); the middle lies in the
+boxes of the street's outline (polygon 0) and of polygon 33, a clockwise 4-vertex hole of flags 7, about
+0.8 × 2.8 m, the only flag-4 candidate: polygon 33 gets flag 8.
 
 | Kind | Who sets it | How a follower takes it ([Following a route](ai.md#route-follow)) |
 | --- | --- | --- |
@@ -454,8 +474,8 @@ after the swing starts (inferred from the scheduling, [Tasks](tasks.md#wheel)).
 | --- | --- |
 | 2, 8 (`OpenDoor`) | when not pickable: reset the leaves, angle 170°, state 3, the open sound |
 | 3, 7 (`CloseDoor`) | angle 0; from state 2 only a reset to state 0, otherwise swing back with the close sound and state 0; then as 6 |
-| 6 | triangles enabled, the object's collision body back (`0x003a52c8`), the number's links get the avoid bit and their polygon loses flag 8 (`0x00250d00`) |
-| 5 (`DisableDoorCollision`) | the number's links lose the avoid bit and their polygon gets flag 8 (`0x00250c50`), triangles disabled, the collision body removed (`0x003a5340`) |
+| 6 | triangles enabled, the object's collision body back (`0x003a52c8`), the number's links get the avoid bit and its hole loses path flag 8 (`0x00250d00`, [A door's hole](#nav-links)) |
+| 5 (`DisableDoorCollision`) | the number's links lose the avoid bit and its hole gets path flag 8 (`0x00250c50`), triangles disabled, the collision body removed (`0x003a5340`) |
 | 10 / 0, 11 (`SetDoorPickable`) | pickable on / off ([Lock picking](#lock-pick)) |
 
 **Messages**, confirmed (code) at `0x003fb8d0`:
@@ -550,8 +570,8 @@ the door to the navigation links carrying it ([Navigation links](#nav-links)):
 - the breakable doors retag them kind `0x40` at spawn (`0x00250c00`): the classes `dyn_door_fence`,
   `dyn_door_bar_bani`, `dyn_door_bnstr`, `dyn_door_fence_o` and `dyn_door_parapet` (initialisers `0x003b2f40`,
   `0x003b3250`, `0x003b4128`, `0x003b57d0`, `0x003b6220`), and the swinging types `dyn_door_dclub` and `dyn_door_liz`;
-- opening (state command 5) or breaking clears their avoid bit and sets their polygon's flag 8; closing sets it and
-  clears the flag.
+- opening (state command 5) or breaking clears their avoid bit and sets path flag 8 on the door's hole; closing sets
+  it and clears the flag ([A door's hole](#nav-links)).
 
 `DisableDoorLink` / `EnableDoorLink` do the same by position for the nearest `0x10` link within 5 m and its
 reverse. Confirmed (code).
@@ -632,7 +652,7 @@ Coney's stand-ins, where this page is silent:
 
 ## Open questions
 
-- Which search mask admits `0x40` links, and what path polygon flag 8 does to the walkable-line test.
+- Which search mask admits `0x40` links.
 - What human state 26 (the animated open) plays and when it sends the door `0x0b`; what fills a player's interaction
   record (`+0x660`) for a door.
 - How a leaf eases to its target rotation (`+0x40`), and the type's float property 5 (half a leaf's width?).

@@ -219,7 +219,12 @@ records (edges) ([AI, Path planning](ai.md#path-planning)). In order:
 | Edge lists | `s16` | below; the global `0x006ca220` points at their start |
 | Tail | 4 to 18 bytes | at least 4 bytes, then padding to a multiple of 16 (below) |
 
-**A path is a polygon** (an area on the ground, inferred from the test below):
+**A path is a polygon** (an area on the ground, inferred from the test below). Consecutive paths form an **area**:
+its first path is the outline and holds the A record (the area's route nodes), the rest are **holes** cut out of it.
+Confirmed (code) for the chains at `0x0024e720` (it also adds each hole's `s16 +0x02` to the first path's) and
+`0x0024ea60`, whose inside test sums the winding over an area's paths. Disc check (level87): 618 paths in 79 areas,
+every first path with an A record and none of the 539 others; all 539 holes are clockwise, 395 of them flags 7
+(1, 2 and 4).
 
 | Offset | Meaning |
 | --- | --- |
@@ -227,9 +232,11 @@ records (edges) ([AI, Path planning](ai.md#path-planning)). In order:
 | `+0x04` | pointer to its first vertex |
 | `+0x08` / `+0x0c` | x minimum / maximum |
 | `+0x10` / `+0x14` | y minimum / maximum |
-| `+0x20` / `+0x24` | next pointers (two chains, built at load) |
+| `+0x20` | on the disc non-zero when the next path belongs to the same **area**; at load the next path of the area, or 0 |
+| `+0x24` | at load, in an area's first path: the next area's first path (the list starts at `0x00510588`) |
 | `+0x28` | 16 `s16`: the start of each **slab**'s edge list, −1 when there are none |
-| `+0x48` | flags (bit `0x10` cleared at load) |
+| `+0x48` | `u16` flags (bit `0x10` cleared at load): 4 a hole a door can open, 8 ignored by the AI's tests ([AI](ai.md#path-planning)) |
+| `+0x4a` | `u16`, matched against the ground's collision byte when a point's area is found (`0x00250760`) |
 | `+0x4c` | A record or 0 |
 
 **Inside test** (`0x0024eef0`, called from `0x00250100`): reject a point outside the box; take its **slab**, `floor((y
@@ -878,8 +885,8 @@ with several atomics are the cars, drawn as [Cars](../references/cars.md) instea
   world ([The level in a frame](#render-order)). The "shadow" model is a skyline backdrop (inferred).
 - **The level object's destructor** (`0x0040cf80`): no caller on the unload path was found; is it called through the
   vtable from elsewhere, or does the pool's destruction alone end the level's RenderWare objects?
-- **The subtitles chunk** (answered): [Movies](movies.md#caption-text). Still open: the A record's `+0x08`, and what
-  the clockwise paths and the path flags are for ([Path data](#path-data)).
+- **The subtitles chunk** (answered): [Movies](movies.md#caption-text). Still open: the A record's `+0x08`, and the path
+  flags other than 4 and 8 ([Path data](#path-data)); the clockwise paths are an area's holes.
 - **The path data's size** (answered): the header is 0x20 bytes, and the chunk ends with the paths' edge lists and a
   4- to 18-byte tail; the 79,472 bytes Coney's disc test left uncounted were the header's second 16 bytes, the lists and
   the tails ([Path data](#path-data)). Still open: whether the tail's first 4 bytes mean anything (no reader found).
