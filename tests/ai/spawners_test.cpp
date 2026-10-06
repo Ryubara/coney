@@ -6,6 +6,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <numbers>
 #include <optional>
 #include <set>
 #include <string>
@@ -16,6 +17,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/spawners.h"
+#include "support/path_fixtures.h"
+#include "world/path_map.h"
 
 namespace {
 
@@ -23,8 +26,8 @@ namespace {
 class TestWorld final : public coney::ai::SpawnerWorld {
   public:
     [[nodiscard]] std::optional<coney::anim::Vec3> playerPosition() const override { return player; }
-    [[nodiscard]] std::optional<coney::anim::Vec3> outOfSight(float metres, std::size_t turn) const override {
-        asked.emplace_back(metres, turn);
+    [[nodiscard]] std::optional<coney::anim::Vec3> outOfSight(float value, int gang) override {
+        asked.emplace_back(value, gang);
         return spot;
     }
     [[nodiscard]] bool alive(double handle) const override { return !dead.contains(handle); }
@@ -38,8 +41,8 @@ class TestWorld final : public coney::ai::SpawnerWorld {
     }
 
     std::optional<coney::anim::Vec3> player = coney::anim::Vec3{0.0F, 0.0F, 0.0F};
-    std::optional<coney::anim::Vec3> spot;
-    mutable std::vector<std::pair<float, std::size_t>> asked;
+    std::optional<coney::anim::Vec3> spot = coney::anim::Vec3{1.0F, 2.0F, 3.0F};
+    std::vector<std::pair<float, int>> asked;
     std::set<double> dead;
     std::vector<coney::ai::SpawnRequest> made;
     std::vector<std::string> callbacks;
@@ -62,6 +65,32 @@ coney::script::SpawnerCall spawnerCall(int state) {
     call.value = 15;
     return call;
 }
+
+// A square level 400 m wide with a line of route nodes along y through the camera at the origin: the player's node
+// 0 at (0, 5), ahead 1 (0, 20), 2 (0, 40), 3 (0, 60) and 4 (0, 80), behind 5 (0, -10) and 6 (0, -30). The link from
+// 3 to 4 carries the avoid bit when `avoidAhead`; `behind` false leaves out the nodes behind.
+coney::world::PathMap lineOfNodes(bool avoidAhead, bool behind = true) {
+    coney::test::PathBuilder builder;
+    const std::uint32_t square = builder.rectangle(-200.0F, 200.0F, -200.0F, 200.0F);
+    for (const float y : {5.0F, 20.0F, 40.0F, 60.0F, 80.0F}) {
+        builder.node(square, 0.0F, y);
+    }
+    if (behind) {
+        builder.node(square, 0.0F, -10.0F);
+        builder.node(square, 0.0F, -30.0F);
+        builder.link(0, 5);
+        builder.link(5, 6);
+    }
+    builder.link(0, 1);
+    builder.link(1, 2);
+    builder.link(2, 3);
+    builder.link(3, 4, 1, avoidAhead);
+    return builder.build();
+}
+
+// The camera at the origin looking along +y, 90 degrees wide.
+const coney::ai::PlacementCamera kCamera{
+    .eye = {0.0F, 0.0F, 0.0F}, .forward = {0.0F, 1.0F, 0.0F}, .halfFovRadians = std::numbers::pi_v<float> / 4.0F};
 
 } // namespace
 
@@ -173,36 +202,15 @@ TEST_CASE("an out-of-sight spawner places its humans where the world finds a spo
     REQUIRE(world.made.size() == 1);
     CHECK(world.made[0].position == std::array<float, 3>{1.0F, 2.0F, 3.0F});
     REQUIRE(world.asked.size() == 1);
-    CHECK(world.asked[0] == std::pair<float, std::size_t>{15.0F, 0});
-    // None out of sight: at the spawner.
+    CHECK(world.asked[0] == std::pair<float, int>{15.0F, 3});
+    // None out of sight: no spawn this update, and the next update tries again.
     world.spot.reset();
     spawners.update(500, world);
+    CHECK(world.made.size() == 1);
+    world.spot = coney::anim::Vec3{4.0F, 5.0F, 6.0F};
+    spawners.update(510, world);
     REQUIRE(world.made.size() == 2);
-    CHECK(world.made[1].position == std::array<float, 3>{10.0F, 0.0F, 0.0F});
-}
-
-TEST_CASE("the out-of-sight spot is an unseen one nearest the distance, the best few taken in turn", "[ai][spawners]") {
-    // The camera at the origin looking along +y, 90 degrees wide, 100 m deep; the player 5 m ahead of it.
-    const coney::ai::SightCone view{
-        .eye = {0.0F, 0.0F, 0.0F}, .forward = {0.0F, 1.0F, 0.0F}, .halfAngleRadians = 0.785398F, .range = 100.0F};
-    const coney::anim::Vec3 player{0.0F, 5.0F, 0.0F};
-    const std::vector<coney::anim::Vec3> spots{
-        {0.0F, 20.0F, 0.0F},   // seen, 15 m from the player
-        {0.0F, -10.0F, 0.0F},  // behind the camera, 15 m
-        {-16.0F, 5.0F, 0.0F},  // to the side, 16 m
-        {0.0F, -40.0F, 0.0F},  // behind, 45 m
-        {30.0F, 5.0F, 0.0F},   // to the side, 30 m
-        {0.0F, -300.0F, 0.0F}, // seen? no: behind, 305 m
-    };
-    CHECK(coney::ai::outOfSightSpot(spots, player, view, 15.0F, 0) == coney::anim::Vec3{0.0F, -10.0F, 0.0F});
-    CHECK(coney::ai::outOfSightSpot(spots, player, view, 15.0F, 1) == coney::anim::Vec3{-16.0F, 5.0F, 0.0F});
-    CHECK(coney::ai::outOfSightSpot(spots, player, view, 15.0F, 2) == coney::anim::Vec3{30.0F, 5.0F, 0.0F});
-    CHECK(coney::ai::outOfSightSpot(spots, player, view, 15.0F, 4) == coney::anim::Vec3{0.0F, -10.0F, 0.0F});
-    // Beyond the far clip is not seen either.
-    const std::vector<coney::anim::Vec3> far{{0.0F, 200.0F, 0.0F}};
-    CHECK(coney::ai::outOfSightSpot(far, player, view, 15.0F, 0) == coney::anim::Vec3{0.0F, 200.0F, 0.0F});
-    const std::vector<coney::anim::Vec3> seenOnly{{0.0F, 20.0F, 0.0F}};
-    CHECK_FALSE(coney::ai::outOfSightSpot(seenOnly, player, view, 15.0F, 0).has_value());
+    CHECK(world.made[1].position == std::array<float, 3>{4.0F, 5.0F, 6.0F});
 }
 
 TEST_CASE("a spawner whose second type is 0 makes its first type every time", "[ai][spawners]") {
@@ -220,4 +228,39 @@ TEST_CASE("a spawner whose second type is 0 makes its first type every time", "[
     for (const coney::ai::SpawnRequest& request : world.made) {
         CHECK(request.type == 5);
     }
+}
+
+TEST_CASE("the out-of-sight search heads for the goal ahead and takes the first node beyond 70 m", "[ai][spawners]") {
+    const coney::world::PathMap map = lineOfNodes(false);
+    int draws = 0;
+    const coney::ai::PlacementRandom random = [&draws] {
+        ++draws;
+        return 0.5F;
+    };
+    // Toward the goal 100 m ahead the search walks the line ahead, all seen, to node 4 at 80 m.
+    CHECK(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random) ==
+          coney::anim::Vec3{0.0F, 80.0F, 0.0F});
+    CHECK(draws == 0);
+}
+
+TEST_CASE("the out-of-sight search skips avoided links and takes a node beyond the value outside the cone",
+          "[ai][spawners]") {
+    const coney::world::PathMap map = lineOfNodes(true);
+    const coney::ai::PlacementRandom random = [] { return 0.5F; };
+    // Node 4 is cut off, so the search falls back behind: node 5 is only 10 m away, node 6 30 m and behind.
+    CHECK(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random) ==
+          coney::anim::Vec3{0.0F, -30.0F, 0.0F});
+    // A value of 40 leaves no node beyond it outside the cone.
+    CHECK_FALSE(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 40.0F, random).has_value());
+}
+
+TEST_CASE("the out-of-sight search gives up after 17 tries, 16 of them turned", "[ai][spawners]") {
+    const coney::world::PathMap map = lineOfNodes(true, false);
+    int draws = 0;
+    const coney::ai::PlacementRandom random = [&draws] {
+        ++draws;
+        return 0.25F;
+    };
+    CHECK_FALSE(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random).has_value());
+    CHECK(draws == coney::ai::kPlacementTries - 1);
 }

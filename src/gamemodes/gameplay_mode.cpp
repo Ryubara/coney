@@ -14,6 +14,9 @@
 #include <vector>
 
 #include "ai/brain.h"
+#include "ai/brains.h"
+#include "ai/gangs.h"
+#include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_hub.h"
 #include "ai/scripted_story.h"
@@ -22,6 +25,7 @@
 #include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "characters/character_types.h"
+#include "core/game_random.h"
 #include "core/game_timer.h"
 #include "effects/ground_fog.h"
 #include "effects/level_effects.h"
@@ -45,35 +49,37 @@ namespace coney {
 
 namespace {
 
-// The level as the gangs' spawners see it: player 1 and the bound humans from the scripts' hold, the level's flags
-// as the spots out of the camera's sight, and a new human made by the scripts' own `HuCreate`, so it is kept, numbered
-// and made in the world as a script's would be.
+// The level as the gangs' spawners see it: player 1 and the bound humans from the scripts' hold, the route graph and
+// player 1's camera for the spots out of sight, the gangs' turf boxes, and a new human made by the scripts' own
+// `HuCreate`, so it is kept, numbered and made in the world as a script's would be.
 class ScriptSpawnerWorld final : public ai::SpawnerWorld {
   public:
-    ScriptSpawnerWorld(ai::ScriptedBrains& scripted, script::ScriptSystem& scripts,
-                       const world_objects::WorldFlags& flags, const camera::Cameras* cameras)
-        : m_scripted(&scripted), m_scripts(&scripts), m_flags(&flags), m_cameras(cameras) {}
+    ScriptSpawnerWorld(ai::ScriptedBrains& scripted, script::ScriptSystem& scripts, const camera::Cameras* cameras,
+                       const world_objects::VolumeBoxes* boxes, GameRandom& random)
+        : m_scripted(&scripted), m_scripts(&scripts), m_cameras(cameras), m_boxes(boxes), m_random(&random) {}
 
-    [[nodiscard]] std::optional<anim::Vec3> outOfSight(float metres, std::size_t turn) const override {
+    [[nodiscard]] std::optional<anim::Vec3> outOfSight(float value, int gang) override {
         const std::optional<anim::Vec3> player = playerPosition();
-        if (!player) {
+        const ai::RoutePlanner* planner = m_scripted->owner().planner();
+        if (!player || planner == nullptr) {
             return std::nullopt;
         }
-        std::vector<anim::Vec3> spots;
-        spots.reserve(m_flags->all().size());
-        for (const world_objects::WorldFlag& flag : m_flags->all()) {
-            spots.push_back(anim::Vec3{flag.position[0], flag.position[1], flag.position[2]});
-        }
-        // No camera sees nothing.
-        ai::SightCone view;
+        // Coney choice: with no camera the player's own position is the eye, looking along +y.
+        ai::PlacementCamera camera{.eye = *player};
         if (m_cameras != nullptr) {
-            const camera::CameraView& camera = m_cameras->view();
-            view = ai::SightCone{.eye = camera.position,
-                                 .forward = anim::normalise(anim::subtract(camera.lookAt, camera.position)),
-                                 .halfAngleRadians = camera.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F,
-                                 .range = camera.farClip};
+            const camera::CameraView& view = m_cameras->view();
+            camera =
+                ai::PlacementCamera{.eye = view.position,
+                                    .forward = anim::normalise(anim::subtract(view.lookAt, view.position)),
+                                    .halfFovRadians = view.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F};
         }
-        return ai::outOfSightSpot(spots, *player, view, metres, turn);
+        // Coney choice: an angle's draw is a whole number in [0, 9999] from the game's random numbers, over 10,000.
+        const ai::PlacementRandom random = [this] { return static_cast<float>(m_random->range(0, 9999)) / 10000.0F; };
+        const std::optional<anim::Vec3> spot = ai::outOfSightNode(planner->map(), *player, camera, value, random);
+        if (!spot || !inTurf(gang, *spot)) {
+            return std::nullopt;
+        }
+        return spot;
     }
 
     [[nodiscard]] std::optional<anim::Vec3> playerPosition() const override {
@@ -119,10 +125,25 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
     }
 
   private:
+    // Whether `point` lies in one of the gang's turf boxes; a gang with no turf (or no boxes kept) takes any point.
+    // @orig 0x001652e8 Gang_IsPointInTurf (unknown)
+    [[nodiscard]] bool inTurf(int gang, anim::Vec3 point) const {
+        const ai::Gang* found = m_scripted->owner().gangs().find(gang);
+        if (found == nullptr || m_boxes == nullptr || found->turfCount() == 0) {
+            return true;
+        }
+        const std::array<float, 3> at{point.x, point.y, point.z};
+        return std::ranges::any_of(found->orders().turf, [this, &at](double handle) {
+            const world_objects::VolumeBox* box = handle != 0.0 ? m_boxes->find(handle) : nullptr;
+            return box != nullptr && world_objects::VolumeBoxes::inside(*box, at);
+        });
+    }
+
     ai::ScriptedBrains* m_scripted;
     script::ScriptSystem* m_scripts;
-    const world_objects::WorldFlags* m_flags;
     const camera::Cameras* m_cameras;
+    const world_objects::VolumeBoxes* m_boxes;
+    GameRandom* m_random;
 };
 
 } // namespace
@@ -521,7 +542,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();
         m_scripted->storyHost().update();
-        ScriptSpawnerWorld spawnerWorld(*m_scripted, m_scripts, m_flags, m_cameras.get());
+        ScriptSpawnerWorld spawnerWorld(*m_scripted, m_scripts, m_cameras.get(), m_context.boxes, m_state.random);
         m_scripted->humanHost().spawners().update(nowMs, spawnerWorld);
         m_scripted->hubHost().update(nowMs);
         stepSystemMusic(m_state.story, m_context.sound, m_state.random, m_scripted->storyHost().musicMood());

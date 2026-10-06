@@ -4,15 +4,17 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
+#include <numbers>
 #include <optional>
-#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "animation/anim_math.h"
 #include "scripting/human_bindings.h"
+#include "world/path_map.h"
 
 // The gangs' spawners: points that make gang members over time (`GangAddSpawner`, switched by `GangStartSpawner`).
 // Each update runs every spawner in use against its state: when the state says it is ready, the delay since its last
@@ -61,9 +63,10 @@ class SpawnerWorld {
 
     /// Where player 1 is; nothing when there is none.
     [[nodiscard]] virtual std::optional<anim::Vec3> playerPosition() const = 0;
-    /// A spot about `metres` from player 1 that the camera does not see, for the `turn`-th human placed there;
-    /// nothing when there is none.
-    [[nodiscard]] virtual std::optional<anim::Vec3> outOfSight(float metres, std::size_t turn) const = 0;
+    /// Where a human of gang `gang` placed out of the camera's sight with the spawner's value `value` (metres)
+    /// stands: outOfSightNode() from player 1's position and camera, then the gang's turf; nothing when there is no
+    /// such spot this update.
+    [[nodiscard]] virtual std::optional<anim::Vec3> outOfSight(float value, int gang) = 0;
     /// Whether the human with `handle` is alive (made, not deleted and not down).
     [[nodiscard]] virtual bool alive(double handle) const = 0;
     /// Makes the human and returns its handle; 0 (NilHandle) when none was made.
@@ -77,22 +80,36 @@ class SpawnerWorld {
     SpawnerWorld& operator=(SpawnerWorld&&) = default;
 };
 
-/// What the camera sees, for outOfSightSpot(): a cone from `eye` along `forward` (length 1).
-struct SightCone {
+/// The camera a placement hides from: where it is, its forward (length 1) and half its field of view.
+struct PlacementCamera {
     anim::Vec3 eye;
     anim::Vec3 forward{0.0F, 1.0F, 0.0F};
-    float halfAngleRadians = 0.0F;
-    float range = 0.0F; ///< The far clip, metres: farther is not seen.
+    float halfFovRadians = 0.0F;
 };
 
-/// How many of the best spots outOfSightSpot() hands out in turn.
-inline constexpr std::size_t kOutOfSightSpots = 4;
+/// A node farther than this from the camera is out of sight whatever its direction (`0x0050cc60`, metres).
+inline constexpr float kOutOfSightFar = 70.0F;
+/// The first try's goal is this far straight ahead of the camera (metres).
+inline constexpr float kFirstGoalAhead = 100.0F;
+/// The cone a node must lie outside is half the field of view plus this (`+0x2ac`, 10 degrees).
+inline constexpr float kConeMarginRadians = 10.0F * std::numbers::pi_v<float> / 180.0F;
+/// The searches a placement makes before it gives up for this update: the first ahead and 16 turned.
+inline constexpr int kPlacementTries = 17;
 
-/// **Coney stand-in** for the original's out-of-sight placement (`0x001673b8`, not on the page): of `spots` (the
-/// level's flags) those outside `view`, the kOutOfSightSpots whose distance from `player` is nearest `metres`, taken
-/// in turn by `turn` so that humans placed one after another do not stand on one spot. Nothing when every spot is seen.
-[[nodiscard]] std::optional<anim::Vec3> outOfSightSpot(std::span<const anim::Vec3> spots, anim::Vec3 player,
-                                                       const SightCone& view, float metres, std::size_t turn);
+/// A number in [0, 1) for the turned tries' angles.
+using PlacementRandom = std::function<float()>;
+
+/// The node of `map`'s route graph a human placed out of `camera`'s sight stands on: from the node nearest `player`,
+/// a best-first search over the graph (edges with the avoid bit skipped) toward a goal point, which takes the first
+/// node more than kOutOfSightFar from the camera, or more than `value` metres from it and outside the cone of half
+/// its field of view + kConeMarginRadians around its forward. The first goal is kFirstGoalAhead ahead of the
+/// camera; each later try turns the forward by an angle outside that cone (from `random`) and puts the goal at
+/// 2 × `value`. Nothing when no try finds one, or when the map has no nodes.
+/// @orig 0x001673b8 Gang_PlaceOutOfSight (unknown)
+/// @orig 0x00251d28 Route_SearchOutward (unknown)
+[[nodiscard]] std::optional<anim::Vec3> outOfSightNode(const world::PathMap& map, anim::Vec3 player,
+                                                       const PlacementCamera& camera, float value,
+                                                       const PlacementRandom& random);
 
 /// One spawner: what `GangAddSpawner` gave it and what it has done since.
 struct Spawner {
@@ -140,7 +157,6 @@ class Spawners {
 
     std::map<int, std::vector<Spawner>> m_spawners;
     std::uint64_t m_nowMs = 0; // the last update's time, which a state set between updates counts from
-    std::size_t m_placed = 0;  // humans placed out of sight so far, by every spawner: the turn of the next
 };
 
 } // namespace coney::ai

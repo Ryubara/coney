@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 13.9%](https://img.shields.io/badge/reimplemented-13.9%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 14.0%](https://img.shields.io/badge/reimplemented-14.0%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,496 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (468,380 of 3,354,776 bytes, 1,499 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -59,10 +59,10 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
-| `GameModes` | `██████▏░░░░░░░░░░░░░` | 30.6% | 97 | 100,440 |
+| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.3% | 99 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 60 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
-| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 13.9% | 465 | 1,096,672 |
+| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 14.0% | 466 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -342,11 +342,13 @@ at the top of the repository's `README.md`.
 | `0x001647e0` | `Gang_ClearMsgHandlers` | `GameModes` | 40 |
 | `0x00164bb8` | `Gang_SetMessageHandler` | `GameModes` | 88 |
 | `0x00164c20` | `Gang_OnEvent` | `GameModes` | 1,432 |
+| `0x001652e8` | `Gang_IsPointInTurf` | `GameModes` | 128 |
 | `0x00165640` | `Gang_SetTactic` | `GameModes` | 56 |
 | `0x00165678` | `Gang_GetLeader` | `GameModes` | not filled in |
 | `0x00166220` | `Gang_StandingCount` | `GameModes` | 232 |
 | `0x00166308` | `Gang_AddMember` | `GameModes` | 464 |
 | `0x00166ff8` | `Gang_AddSpawner` | `GameModes` | 688 |
+| `0x001673b8` | `Gang_PlaceOutOfSight` | `GameModes` | 1,584 |
 | `0x001681a0` | `Gang_UpdateSpawners` | `GameModes` | 2,304 |
 | `0x00168cd0` | `Gang_SetSpawnerState` | `GameModes` | 304 |
 | `0x00168f58` | `Gang_AreFriends` | `GameModes` | 136 |
@@ -810,6 +812,7 @@ at the top of the repository's `README.md`.
 | `0x002517b0` | `Route_Heuristic` | `Human` | 112 |
 | `0x00251890` | `Route_EdgeCost` | `Human` | 368 |
 | `0x00251a70` | `Route_AStar` | `Human` | 696 |
+| `0x00251d28` | `Route_SearchOutward` | `Human` | 992 |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
 | `0x002548f0` | `AnimRange_ApplyClassDamage` | `Human` | not filled in |

@@ -1345,6 +1345,12 @@ subsystem = "GameModes"
 size = 1432
 
 [[function]]
+address = 0x001652e8
+name = "Gang_IsPointInTurf"
+subsystem = "GameModes"
+size = 128
+
+[[function]]
 address = 0x00165640
 name = "Gang_SetTactic"
 subsystem = "GameModes"
@@ -1372,6 +1378,12 @@ address = 0x00166ff8
 name = "Gang_AddSpawner"
 subsystem = "GameModes"
 size = 688
+
+[[function]]
+address = 0x001673b8
+name = "Gang_PlaceOutOfSight"
+subsystem = "GameModes"
+size = 1584
 
 [[function]]
 address = 0x001681a0
@@ -4040,6 +4052,12 @@ address = 0x00251a70
 name = "Route_AStar"
 subsystem = "Human"
 size = 696
+
+[[function]]
+address = 0x00251d28
+name = "Route_SearchOutward"
+subsystem = "Human"
+size = 992
 
 [[function]]
 address = 0x00254078

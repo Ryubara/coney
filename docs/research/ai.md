@@ -1511,10 +1511,15 @@ human once its delay has passed, while fewer of its humans are alive than its li
 (-1 none). The human is made through the scripts' own `HuCreate` (named `<spawner><count>`, the spawner's model string
 as the fifth argument, in its gang), of the next type in turn (the index moved on first, as `0x0016d810` does), then
 the callback, when it names a function, is called with its handle, the gang's id and the spawner's name.
-**Stand-ins**: 6, 7, 8 and 10 place the human on a level flag out of the camera's view
-(its cone and far clip) whose distance from the player is nearest the value (7: nearest the player), the best four in
-turn, since `0x001673b8` is not on the page; the others at the spawner; no door opens; 7 does not send its human to the
-gang's first live member; the dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept)
+6, 8 and 10 place the human out of sight as [above](#spawner-placement): from player 1's camera
+(Coney has one player, so no second camera refuses a node), 17 best-first searches of the route graph, the node then
+checked against the gang's turf boxes; no node, no spawn this update. **Coney choices** where the page is silent: the
+start is the nearest node of the polygon under the player (else of the map); the open list is ordered by the straight
+distance to the goal and fails past 128 nodes, as the route planner's; distances and the cone are taken in 3D; the
+turned tries turn the forward about the vertical, the angle drawn evenly outside the cone from the game's random
+numbers; with no camera the player is the eye, looking along +y. **Stand-ins**: 7 is placed as 8 with a value of 0
+(`0x001679e8` is not on the page) and does not send its human to the gang's first live member; the others stand at the
+spawner; no door opens; the dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept)
 never spawn; `SetSpawnMax` is not read.
 
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move

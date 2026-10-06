@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -200,7 +201,7 @@ TEST_CASE("the disc's Survival sends spawned enemies at the player until he fall
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    // One player in arena 134, the pad left alone: the two spawners make the enemies out of his sight, 15 m off.
+    // One player in arena 134, the pad left alone: the two spawners make the enemies out of his sight, beyond 15 m.
     coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript);
     game.chooseRumble(9, 134, 1);
     game.run(1000 - game.frames());
@@ -213,6 +214,23 @@ TEST_CASE("the disc's Survival sends spawned enemies at the player until he fall
     // Both spawners, ten and six alive at most.
     CHECK(spawned() >= 10);
     CHECK(spawned() <= 16);
+    // Each stands on a route node out of the camera's sight, beyond the spawners' 15 m (one node while the camera
+    // stays put, the search being the same each time).
+    const coney::HumanCreation* player = game.flow().humans().player(1);
+    REQUIRE(player != nullptr);
+    REQUIRE(player->position.has_value());
+    const std::array<float, 3> start = player->position.value_or(std::array<float, 3>{});
+    float nearest = 1.0e9F;
+    std::set<std::array<float, 3>> spots;
+    for (const coney::HumanCreation& human : game.flow().humans().all()) {
+        if (human.name.starts_with("ENEMYspawner") && human.position) {
+            const std::array<float, 3>& at = *human.position;
+            nearest = std::min(nearest, std::hypot(at[0] - start[0], at[1] - start[1], at[2] - start[2]));
+            spots.insert(at);
+        }
+    }
+    CHECK(nearest > 15.0F);
+    std::printf("  survival: nearest spawn %.1f m from the player's start, %zu spots\n", nearest, spots.size());
 
     // They beat him: SavePlayerStats ends the match with side 1's "win" and the time he lasted.
     const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 9000);
