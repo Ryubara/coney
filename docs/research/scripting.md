@@ -651,6 +651,38 @@ These calls reach [`HuCreate`](../references/bindings/character.md#hucreate),
 mission can call; [Mission 1 coverage](../references/bindings/mission1.md) lists them all with how far each is
 researched and whether Coney implements it (`ShowHud`, for one, does nothing in this build).
 
+#### The combat tutorial's lessons {#level99-lessons}
+
+`level99_combat.lua` runs twelve sections in order from a
+table, each started by the previous one's end (directly, or scheduled 1-2.5 s later). A lesson that teaches a move
+sets `HUDSetTutorialCallback` and counts the anim ids the [callback](hud.md#tutorial-callback) passes, which is the
+attacker's id when the **victim applies the damage**, so only moves that hurt someone count. Inferred from the
+disassembly of the script (ids and counts only); the moves themselves are confirmed where linked.
+
+| # | Section | Waits for (anim ids, in order) | Move | Researched |
+| --- | --- | --- | --- | --- |
+| 1 | camera, intro | flags and scenes | | [Scenes](scenes.md) |
+| 2 | basic attacks | 12; 11; 51 or 53; 55; 219 or 221; 223 | square, cross, grab strikes, mount strikes | [Combat](combat.md#grabbing), [mount](combat.md#mount) |
+| 3 | targeting | the `PadSetHandlerEx` handler | L1 | [Input](../references/bindings/input.md#padsethandlerex) |
+| 4 | light, then heavy combos | 12, 16, then 19 or 20; 12, 15; 11, 13; 12, 16, then 17 or 18 | chains | [Attacks](combat.md#attacks) |
+| 5 | strong attacks | 653 or 655; then **82 or 84** | cross + square; circle + cross | [Specials](combat.md#run-attacks), [Strong grapple](combat.md#strong-grapple) |
+| 6 | power moves | 57; then 59 | in a front grab, cross + square, then square or cross in its window | [Power strike](combat.md#grabbing) |
+| 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave closes in) | three hits of 25, 27 or 29 | square with the stick past 0.95, more than 45° off the facing, at a target there | [Attacks](combat.md#attacks) |
+| 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat.md#throws) |
+| 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 | triangle at a bat; square, cross | [A bat in hand](combat.md#bat), pick-up [inferred](combat.md#breakables) |
+| 10 | rage | the meter set to half and locked; the full callback; L1 + R1 (every other command off); then 645 or 647; then 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat.md#rage); 65 and 233 inferred |
+| 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai.md#level99) |
+| 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
+
+Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Points an implementer needs:
+
+- **6**: from the rear hold the hit is scored with the spin's id 80, not 57, so only a front grab passes the first step.
+- **10**: the rage special is cross + square while raging (645 / 647); the last step wants the extension of the rage
+  power strike in a grab (63 → 65) or of the rage power strike in the mount (231 → 233); both use the + 2 of
+  `Player_UpdatePowerMove` (inferred for the mount). The callbacks are re-armed 3.5 s after each step.
+- **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
+  start, since a grab move applies its damage on its first update.
+
 ### Errors in a fresh state {#errors-in-a-fresh-state}
 
 Two level scripts stopped in Coney's fresh Lua state (scripts read with the disassembly; the bindings' code

@@ -73,6 +73,7 @@ No source file names this code: it lies in `Human/`, in the stretch after `cns/c
 | `0x00241b90` | `Human_FightStanceMove` | movement in a fight stance; lock-on | confirmed (code), runtime |
 | `0x00287730` | `Player_Special` | cross + square, circle + cross, circle + triangle outside a grab | confirmed (code), runtime |
 | `0x00263c90` | `Player_SpecialAttack` | the special or strong grapple: target search, id by rage, variant and side, then a solo clip, a grab, a tackle or a paired move by the clip's flags ([Strong grapple](#strong-grapple)) | confirmed (code), runtime |
+| `0x0027df38` | `Player_UpdatePowerMove` | in a power strike (state `0x1000`): square or cross in the window plays the next part, id + 2 | confirmed (code), runtime |
 | `0x002878b8` | `LockPick_JudgePress` | mini-game mode 2, lock picking ([Crimes](crimes.md#lockpick)) | confirmed (code) |
 | `0x0026c548` | `Grab_Start` | the grab's intro: 71 (or 70), then 69 and the idle; turns towards the target | confirmed (code) |
 | `0x0026c1d8` | `Grab_IntroEnd` | end of the intro clip: grab from the front or rear, or a counter | confirmed (code) |
@@ -618,7 +619,8 @@ At runtime (confirmed (runtime)):
 | square | 51 or 53 at random (victim 52 / 54), 57 damage; confirmed (runtime) |
 | cross | 55, 57 damage; confirmed (runtime) |
 | hold cross, press square (`0x22`) | the **power strike**: anim id 57 (anim 63 in rage, which also deals anim 231's damage at once); from the rear, anim 80 first spins the victim to the front; confirmed (runtime) for 57 |
-| circle + cross (`0x23`) | anim 63, with the same rear spin |
+| circle + cross (`0x23`) | anim 63, with the same rear spin, **for an AI grabber only** (human `+0x1b0` = -1); a player's grab has no `0x23` branch |
+| square or cross during the power strike's window (`0x2`) | the **extended power move**: the next part, id + 2 (57 → 59, 63 → 65), up to two extensions (`Player_UpdatePowerMove`, `0x0027df38`, record `+0xbc` < 2; 61 is a filler clip); confirmed (runtime) for 59 |
 | triangle (`0xa`) | **mug** the victim if it qualifies (`0x00225ff0`); confirmed (runtime) |
 | circle (`0x1e`, `0xd` or `0xe`) with the stick above 0.25 | **throw** ([Throws](#throws)); confirmed (runtime) |
 | circle without the stick | from the front the **mount** ([The mount](#mount)); from the rear the spin to the front; confirmed (runtime) |
@@ -632,6 +634,19 @@ a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x
 (`0x0026c7e0`). Confirmed (code) at `0x0027f3b0` and `0x00262ac8`; confirmed (runtime): strikes 40 each, the power
 strike 236 → 135 with its 57 damage on the same update. The grab also ends when the victim drifts beyond the larger of
 reach + 0.2 m and reach × 1.2, or 0.2 m up or down.
+
+**The power strike at runtime** (confirmed (runtime), slot 6 copy, the civilian grabbed with circle; cross pressed,
+square 2 updates later, both released 4 updates after; then cross taps every 8 updates; scenario as
+`strong_grapple` with other input):
+
+- From the **front hold**: 57 / 58 for 44 updates, 57 damage and 100 power on its first update. Cross presses in its
+  wind-up (`+0x08` `0x1`, 9 and 17 updates in) were dropped; the window `0x2` opened about 19 updates in, and the
+  press 25 updates in started **59 / 60** on that update, 79 damage, no further power. 59 ran 92 updates, then
+  389; a third press did nothing. Without the extension, 57 ends the grab: the victim falls (196) and gets up.
+- From the **rear hold**: the spin 80 / 81 plays first and the damage lands on the spin's first update, so the hit is
+  scored with id **80**; 57 follows without a hit of its own; the extension 59 is scored as 59. The rear path spends
+  power twice (389 → 188; `0x00263380` spends 0.25, then again for the move's damage).
+- The tutorial callback got 57 and 59 from the front, 80 and 59 from the rear.
 
 ### Strong grapple {#strong-grapple}
 
@@ -693,7 +708,7 @@ every [move in the grab](#grabbing) follows. 60 is Rembrandt's index-17 value af
 **The tutorial callback** ([HUD](hud.md#tutorial-callback)) is called once, by the victim's
 `Human_ApplyPendingDamage` on the update the hold replaces 657, so the anim id it passes is the **hold's, 82 (84 from
 the rear), not 657** (confirmed (runtime): `Tutorial_CallCallback` given `0x52` and `0x54`). `level99`'s lesson waits
-for exactly 82 or 84 ([The combat tutorial](scripting.md#level99)).
+for exactly 82 or 84 ([The combat tutorial](scripting.md#level99-lessons)).
 
 ### Posing a grab {#grab-posing}
 
@@ -940,6 +955,22 @@ escapee took 20. A third human hitting a grabber costs it 0.6 of its power (`0x0
 throw gives the `THROW_02` set (155 front, 264 damage). A throw costs the power fraction 0.25 (**100 of 400**). The
 victim plays 152 and lands in 196 `GROUNDED_IDLE`, where square plays the grounded strikes. Confirmed (code), and
 confirmed (runtime) for 147, 151, 155 and the damage.
+
+### A bat in hand {#bat}
+
+**At runtime** (confirmed (runtime), slot 6 copy, `Human_PlaceItemInHand(player, "dyn_bat_tuff")` (`0x00238540`)
+called on the game's thread, the civilian 1.3 m ahead):
+
+| Input | Player | Victim | Damage | Tutorial callback |
+| --- | --- | --- | --- | --- |
+| square | 34 `BAT_COMBO_S1` | 294, then down (198 / 196) | 64 | 34 |
+| cross (on its release) | 36 `BAT_COMBO_X1` | 292, then down | 64 | 36 |
+| square or cross at a grounded victim | 37 `BAT_COMBO_GROUNDED_STRIKE_01` | | none here (the victim was getting up) | |
+
+So every standing bat hit knocks the victim down, and the next one must wait for it to stand. Which code maps square
+and cross to the bat's ids is not traced (the cross path `0x002880d8` serves weapon types 4-6 only). Picking a bat up
+from the ground goes through the triangle pick-up search ([Breakables](#breakables)); that a weapon gets message 0
+there as a `TYPE_SPECIAL` item does is inferred.
 
 ### Mugging {#mugging}
 
@@ -1214,6 +1245,13 @@ about 2.1 s, human `+0xe0` flag `0x80000`. Confirmed (runtime). **While raging**
 - The player's grabs cannot be struggled out of or escaped (`0x002258f0`, `0x00225830` test the grabber's rage).
 - Every hit causes a reaction (hit armour does not apply), the power strike is 63, the specials 645 / 649, the
   rumble one step stronger, and no rage is gained.
+
+**The rage callbacks** (`CfgRageHandlers`, confirmed (code)): `Human_AddRage` calls the **full** function
+(`0x00236ec8`) with `(human, true)` the first time the meter reaches its maximum (a per-player latch at its
+`0x00222b18` record `+0x58`); starting rage (`0x00236d28`) calls the **enter** function with `(human, flag)` and
+ending it (`0x00236fb8`) the **exit** function the same way, the flag being whether the count at
+`*(0x0051489c) + 0x268` is below 1. `HuSetLockedRage` (bit `0x100000`) does not stop `Human_AddRage`, so a locked
+meter still fills from hits (inferred: the lock holds only the decay).
 
 The command handled
 at `0x0027bbd0` uses a flash (665 `SPECIAL_FLASH`, inventory slot 1) when health is below its maximum, or fills rage
@@ -1726,3 +1764,10 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   push apart on `XX2` (0.25 m/s against Coney's 0.81); Coney's sandbox target stands still and has no body contact.
 - **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are
   the fields the alignment writes (human `+0x2e0`-`+0x332`, victim `+0xa0` / `+0xb0`).
+- **The bat**: which code maps square and cross to 34 / 36 with a bat in hand, and whether a bat on the ground
+  gets message 0 from the pick-up search ([A bat in hand](#bat)).
+- **Rage extensions at runtime**: 63 → 65 in a grab and 231 → 233 in the mount, which `level99`'s rage lesson
+  waits for (inferred from `Player_UpdatePowerMove`); L1 + R1 did not start rage in a slot 6 copy with the meter
+  written full, so what else the start needs is open.
+- **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
+  ([Strong grapple](#strong-grapple)).
