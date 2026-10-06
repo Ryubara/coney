@@ -22,7 +22,7 @@ struct SpawnRecord {
     std::uint32_t tint = 0xFFFFFFFFU;          ///< `+0x14`: the tint word `0xRRGGBBAA`; white is no tint.
     std::uint32_t zone = 0;                    ///< `+0x20`'s top bits: the object zone, 0 for none.
     std::uint32_t flags = 0;                   ///< `ObjSpawn`'s flags (bits 1 and 64 go to `+0x24`).
-    std::string flagName;                      ///< `+0x18`: the flag (marker) it is linked to; empty for none.
+    std::string flagName{};                    ///< `+0x18`: the flag (marker) it is linked to; empty for none.
     bool live = false;                         ///< `+0x24` bit `0x20000`: its object exists.
     bool pinned = false;                       ///< `+0x24` bit `0x10000`: never stored (a scene holds it).
     bool removed = false;                      ///< `+0x24` bit `0x40000`: gone for good, never spawned again.

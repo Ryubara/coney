@@ -26,9 +26,9 @@ struct HumanCreation {
     double handle = 0;           ///< The handle the binding returned.
     /// The character model the type is drawn as (characters::modelNameFor(): `warr_cl` for Cleon); empty when the
     /// type has no `CfgChar` record.
-    std::string model;
+    std::string model{};
     /// Where the last `TeleportToFlag` put the human, with no ground snap; nothing while it stands where it was made.
-    std::optional<world_objects::Placement> teleported;
+    std::optional<world_objects::Placement> teleported{};
     std::uint32_t teleports = 0; ///< Teleports so far: a change tells a running level to move the human.
 };
 

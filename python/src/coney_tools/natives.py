@@ -448,7 +448,7 @@ def load(root: Path) -> Masterlist:
 
 # The kinds of Coney's binding table, and the `coney` status each one means.
 _KIND_STATUS = {"real": "implemented", "routed": "partial", "stub": "not implemented", "recording": "not implemented"}
-_TABLE_START = re.compile(r"^constexpr std::array kBindings\{$", re.M)
+_TABLE_START = re.compile(r"^constexpr auto kBindings = std::to_array<BindingInfo>\(\{$", re.M)
 _TABLE_ENTRY = re.compile(r"^\s*(real|routed|stub|recording)\(\"([A-Za-z_][A-Za-z_0-9]*)\"")
 
 
@@ -461,11 +461,11 @@ def parse_coney_table(text: str, source: str = CONEY_TABLE.as_posix()) -> dict[s
     """
     start = _TABLE_START.search(text)
     if not start:
-        raise ConfigError(f"{source}: no `constexpr std::array kBindings{{` table")
+        raise ConfigError(f"{source}: no `constexpr auto kBindings = std::to_array<BindingInfo>({{` table")
     result: dict[str, str] = {}
     for line in text[start.end() :].splitlines()[1:]:
         stripped = line.strip()
-        if stripped == "};":
+        if stripped == "});":
             return result
         if not stripped or stripped.startswith("//"):
             continue

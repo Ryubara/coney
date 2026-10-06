@@ -163,9 +163,15 @@ ffmpeg_write("${gen}/libavformat/muxer_list.c" "static const FFOutputFormat * co
 ffmpeg_write("${gen}/libavformat/protocol_list.c" "static const URLProtocol * const url_protocols[] = {\n    NULL };\n")
 
 add_library(ffmpeg_bink STATIC ${ffmpeg_sources})
-# The generated headers first, so `config.h` and `libavutil/avconfig.h` are found there; then the sources, which
-# include each other as "libavutil/x.h" from the top.
-target_include_directories(ffmpeg_bink SYSTEM PUBLIC "${gen}" "${src}")
+# The generated headers first, so `config.h` and `libavutil/avconfig.h` are found there; then the libraries'
+# headers, which include each other as "libavutil/x.h" from the top. Users see a copy of just those headers: the
+# source tree's top holds a VERSION file that a case-insensitive file system (macOS) finds for C++'s `<version>`.
+set(headers "${CMAKE_CURRENT_BINARY_DIR}/include")
+foreach(lib libavutil libavcodec libavformat)
+    file(COPY "${src}/${lib}" DESTINATION "${headers}" FILES_MATCHING PATTERN "*.h")
+endforeach()
+target_include_directories(ffmpeg_bink SYSTEM PUBLIC "${gen}" "${headers}")
+target_include_directories(ffmpeg_bink PRIVATE "${src}")
 target_compile_definitions(ffmpeg_bink PRIVATE HAVE_AV_CONFIG_H)
 set_target_properties(ffmpeg_bink PROPERTIES C_STANDARD 17 C_STANDARD_REQUIRED ON C_EXTENSIONS OFF)
 if(MSVC)

@@ -13,7 +13,6 @@ namespace coney {
 namespace {
 
 // The record's offsets (docs/research/save.md#record), named once so the writer and the reader agree.
-constexpr std::size_t kVersionAt = 0x000;
 constexpr std::size_t kNameAt = 0x004;
 constexpr std::size_t kHardcoreAt = 0x00c;
 constexpr std::size_t kHeaderSize = 0x010;

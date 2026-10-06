@@ -496,7 +496,9 @@ constexpr BindingInfo recording(std::string_view name) {
 // The binding table, by name. Real and routed bindings have a maker above (or are string bindings); a stub returns its
 // StubResult, and a recording stub also keeps its arguments. `coney-tools natives coney` reads this table (one
 // `kind("Name"...)` entry per line) to set the Coney status in research/bindings/; run it after changing the table.
-constexpr std::array kBindings{
+// std::to_array, not `std::array kBindings{`: deducing the type of hundreds of entries needs a fold expression deeper
+// than Clang's nesting limit.
+constexpr auto kBindings = std::to_array<BindingInfo>({
     // The script system and the game state.
     real("doFile"),
     real("preLoadFile"),
@@ -1001,7 +1003,7 @@ constexpr std::array kBindings{
     stub("GetPTank", StubResult::Handle),
     real("ObjSpawn"),
     stub("ReleasePTank"),
-};
+});
 
 // A stub's function: keeps the arguments when it records, then returns its default.
 NativeFunction makeStub(const BindingInfo& info, const BindingContext& context,

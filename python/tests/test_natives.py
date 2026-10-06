@@ -245,7 +245,7 @@ def test_load_checks_the_file_category(tmp_path: Path) -> None:
 
 TABLE = """\
 // The binding table.
-constexpr std::array kBindings{
+constexpr auto kBindings = std::to_array<BindingInfo>({
     // The script system.
     real("GetLevelId"),
     routed("PlayMovie"),
@@ -253,7 +253,7 @@ constexpr std::array kBindings{
     stub("CameraReset"),
     stub("ObjSpawn", StubResult::Handle),
     recording("CfgChar"),
-};
+});
 """
 
 
@@ -274,7 +274,7 @@ def test_parse_coney_table_maps_kinds_to_statuses() -> None:
         "int x;\n",  # no table
         TABLE.replace('    recording("CfgChar"),\n', '    BindingInfo{"CfgChar"},\n'),  # a line of another shape
         TABLE.replace('stub("CameraReset")', 'real("GetLevelId")'),  # a name twice
-        TABLE.replace("};\n", ""),  # no end
+        TABLE.replace("});\n", ""),  # no end
     ],
 )
 def test_parse_coney_table_refuses_what_it_cannot_read(text: str) -> None:
