@@ -11,6 +11,7 @@
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/pause_mode.h"
+#include "gamemodes/player_frame.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/object_bindings.h"
 
@@ -122,6 +123,7 @@ void GameplayMode::enter() {
 }
 
 void GameplayMode::loadLevel() {
+    startPlayerLevel(m_state);
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
     const LevelStart& start = m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName));
     const HumanCreation* player = start.player ? &*start.player : nullptr;
@@ -226,6 +228,7 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_scripted->runAnimCallbacks();
     }
     updateBoxes(nowMs);
+    runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs);
     m_scripts.update(nowMs, frame.seconds);
 
     // A script that teleported player 1 during the frame (the hub's door walk) moves him in the level.

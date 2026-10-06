@@ -79,6 +79,7 @@
     The code is confirmed (code) at `0x0018e6b8`; that the two controllers are the players' screen tint is inferred
     from the 0.25 s colour blend and their being indexed per player.
   usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: ExitStore
   wrapper: 0x00368530
@@ -92,6 +93,7 @@
   notes: >-
     Code confirmed at `0x0018e780`; the screen-tint reading is inferred, as for EnterStore.
   usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GetRumbleModeData
   wrapper: 0x0036b9f0
@@ -476,6 +478,7 @@
     Each frame of play the time moves toward the target; on reaching it the watch stops and the callback is called
     with no arguments (0x004233f8, scripting.md#stopwatch). Confirmed (code).
   usage: {chunks: 32, calls: 39, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: W_GetStopWatchTime
   wrapper: 0x00370e28
@@ -488,6 +491,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: W_StartStopWatch
   wrapper: 0x00370e68
@@ -504,6 +508,7 @@
     The update steps the watch only while +0x14 is non-zero and clears it on reaching the target
     (0x004233f8, scripting.md#stopwatch).
   usage: {chunks: 37, calls: 78, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: W_ShowStopWatch
   wrapper: 0x00370e98
@@ -605,6 +610,7 @@
   notes: >-
     The store is confirmed (code); its effect on the police is inferred from the name.
   usage: {chunks: 9, calls: 12, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: ForceCrimeLevel
   wrapper: 0x0037a630
@@ -649,6 +655,7 @@
     Inventory: two players of 23 item slots (0-22) at `W_GameState + 0x480`; a player number other than 1 or 2 returns
     0.
   usage: {chunks: 9, calls: 18, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: InvPlayerHasItem
   wrapper: 0x0037b090
@@ -664,6 +671,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: InvSetSpraycanCharges
   wrapper: 0x0037b108
@@ -678,6 +686,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 10, calls: 19, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: InvGiveRevive
   wrapper: 0x0037b178
@@ -692,6 +701,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 12, calls: 43, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: InvNumberRevives
   wrapper: 0x0037b1e8
@@ -706,6 +716,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: InvGiveSkeletonKey
   wrapper: 0x0037b268
@@ -719,6 +730,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 4, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: InvNumberSkeletonKeys
   wrapper: 0x0037b2d8
@@ -733,6 +745,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: InvGetMoney
   wrapper: 0x0037b358
@@ -747,6 +760,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 12, calls: 48, boot: false, mission1: true, result_used: true}
+  coney: implemented
 
 - name: InvSetMoney
   wrapper: 0x0037b3b0
@@ -761,6 +775,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 7, calls: 16, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: AddMoneyToBank
   wrapper: 0x0037b420
@@ -792,6 +807,7 @@
   notes: >-
     The money-changed callback is a name kept at inventory `+0x1034`; it receives the 0-based player index.
   usage: {chunks: 3, calls: 7, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: TakeMoney
   wrapper: 0x0037b4c8
@@ -805,6 +821,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 5, calls: 17, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: InvNumberOf
   wrapper: 0x0037b538
@@ -820,6 +837,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 7, calls: 32, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: InvGiveItem
   wrapper: 0x0037b5d8
@@ -835,6 +853,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 6, calls: 46, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GameIsOver
   wrapper: 0x0037b670
@@ -1068,6 +1087,7 @@
   notes: >-
     Group meanings are not traced; nothing happens if the handle is not a human.
   usage: {chunks: 4, calls: 7, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: StatGetRank
   wrapper: 0x0037ca20
@@ -1113,6 +1133,7 @@
   notes: >-
     Computed by `0x00422998`; the formula is not traced.
   usage: {chunks: 6, calls: 12, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: StatGetPreviousHiScore
   wrapper: 0x0037cb98
@@ -1137,6 +1158,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: StatResetPlayer
   wrapper: 0x0037cc30
@@ -1149,6 +1171,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: StatGetHighScore
   wrapper: 0x0037cc68
@@ -1176,6 +1199,7 @@
   notes: >-
     What `0x00423b88` frees is not traced in detail.
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: UM_SetNumUnlockables
   wrapper: 0x0037cd00
@@ -1188,6 +1212,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: UM_SetUnlockable
   wrapper: 0x0037cd38
@@ -1211,6 +1236,7 @@
     Records are found by index through 0x00423cf0; an index past the table is ignored (the store returns false). The
     record fields are matched by the other UM_ bindings.
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: UM_GetUnlockables
   wrapper: 0x0037ce78
@@ -1254,6 +1280,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 28, calls: 71, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: UM_IsUnlocked
   wrapper: 0x0037d0f0
@@ -1284,6 +1311,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 22, calls: 83, boot: true, mission1: false, result_used: true}
+  coney: implemented
 
 - name: UM_IsLevelComplete
   wrapper: 0x0037d1c0
@@ -1315,6 +1343,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 2, calls: 16, boot: true, mission1: false, result_used: true}
+  coney: implemented
 
 - name: UM_IsDataDirty
   wrapper: 0x0037d280
@@ -1331,6 +1360,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 2, calls: 9, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: UM_GetRecordData
   wrapper: 0x0037d318
@@ -1346,6 +1376,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: UM_UnlockAll
   wrapper: 0x0037d3c0

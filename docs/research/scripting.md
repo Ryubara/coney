@@ -200,6 +200,9 @@ it is clamped there, the watch stops, and the callback is found by name (slot `+
 with no arguments. While counting down within the warning window, a beep (sound `0x0058b9f0`) plays at most once a
 second. Confirmed (code) at `0x004233f8`. The HUD's display of it (`W_ShowStopWatch`) belongs to the HUD.
 
+Coney (`src/warriors/stop_watch.h`, stepped by `src/gamemodes/player_frame.h` before the scripts' frame): the rate is
+1 and the warning beep is reported but plays no sound yet.
+
 ### Message handlers {#message-handlers}
 
 Game objects (humans, flags, boxes, doors, props) talk to scripts through **messages**: a record whose `+0x20` is

@@ -34,7 +34,7 @@ Lua.
 - **Evidence:** confirmed (code) at `0x00145698`; detail: traced
 - **Wrapper** `0x0036d878` (registered by `RegisterBindings`); **calls** `0x00145698`
 - **Used by** 16 of 467 script chunks (135 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## PadSetHandlerEx {#padsethandlerex}
 
@@ -57,4 +57,4 @@ names.
 - **Evidence:** confirmed (code) at `0x00148210`; detail: traced
 - **Wrapper** `0x0036d908` (registered by `RegisterBindings`); **calls** `0x00148210`
 - **Used by** 4 of 467 script chunks (12 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented

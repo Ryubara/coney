@@ -94,6 +94,33 @@ player, which AI Warriors led by a player use. What each event counts is in
 anim id that lands, unblocked, on a human not down; crimes by victim (civilian, bum or dealer; cop; gang member);
 harmony by Warriors cuffed or down (every 2 s, the number still cuffed or down, from `0x00166f54`).
 
+## Coney's implementation
+
+Written from this page, [Scripts](scripting.md#stopwatch), [AI: crimes](ai.md#crimes) and the binding pages
+(2026-10-06). `GameState::player` (`src/warriors/player_state.h`) holds:
+
+- **The inventory** (`src/warriors/inventory.h`): two players × 23 slots; `CfgInventoryItem` configures both players'
+  slots; `GiveMoney`, `TakeMoney`, `InvSetMoney`, `InvGiveItem`, `InvGiveRevive`, `InvGiveSkeletonKey` and
+  `InvSetSpraycanCharges` change counts, clamped at 0; revives at 3, or 4 once the upgrade (6, 7) is unlocked.
+  `InvSetMoney` bumps a per-player counter the HUD can watch; the first positive spray-paint amount raises the hint
+  flag. Mission complete (mode 0xb) banks each player's money into the profile.
+- **The statistics** (`src/warriors/player_stats.h`): the six points tables, the maxima, per-player counters, the
+  category points, scores and percentages above. `StatAdd`, `StatGetScore` and `StatResetPlayer` take a player's
+  human (from the humans the scripts made); other handles do nothing.
+- **The unlockables' records** (`src/warriors/unlock_records.h`): `UM_SetNumUnlockables`, `UM_SetUnlockable`,
+  `UM_Reset`, `UM_Unlock`, `UM_IsLevelComplete`, `UM_IsDataUnlocked`, `UM_IsTypeDirty`, `UM_IsDataDirty` and
+  `UM_GetRecordData` over the profile's locked and new bits (`SavedProgress`), so a save carries story progress.
+- **The checkpoint copy**: `SetCheckPoint` copies the inventories and statistics; `restoreCheckpoint()` puts them back
+  for a restart.
+
+Coney's choices, where the page is silent:
+
+- Items other than revives have no upper limit (the table at `0x0058b300` is not described).
+- `StatGetScore` is the five scoring categories' points less harmony's, not below 0 (`0x00422998` is not traced).
+- An event index past its table is ignored; `StatGetTotal` is not registered.
+- The pickup callback (`CfgInventoryCallback`) and the money callback are kept, but Coney has no pickups to call the
+  first, and no binding named here sets the second.
+
 ## Open questions
 
 - What category 13 is, which the mission event 0/1 requires of the gang member knocked out.
@@ -101,3 +128,6 @@ harmony by Warriors cuffed or down (every 2 s, the number still cuffed or down, 
 - What a hat's byte `+0x10b` (1 or 2) separates in style events 2/1 and 2/2.
 - How `global.lua`'s `SetupMissionPoints` turns a level's mission and bonus values into maxima.
 - Whether scripts other than the four found set events 1/0-1/2 and 2/4.
+- The item limits at `0x0058b300`, and what each item's duration (`+0x28`) does.
+- The score formula of `0x00422998`, and which category `StatGetTotal`'s statistic id picks.
+- Which binding sets the money-changed callback (inventory `+0x1034`), and what the pickup callback is called with.

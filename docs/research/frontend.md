@@ -1048,8 +1048,10 @@ Coney's choices for the pads, where the original does something else or the page
   quarter of the travel. SDL's face buttons are positional (south is cross on any gamepad). The first gamepad plays
   on port 1, the second on port 2; the keyboard always plays on port 1, which is therefore always connected in a
   windowed run. A headless run without a script has no input source: every record stays disconnected.
-- Left out for now: the camera-turned left stick (`+0x00`, in game only), the Lua pad handlers (`PadSetHandler`, a stub
-  binding for now), vibration, the owning player (`+0x42`) and the sample time (`+0x48`).
+- The Lua pad handlers (`src/core/pad_handlers.h`; `PadSetHandler` maps player 0 to port 1's record, any other to
+  port 2's) are called during play only (`src/gamemodes/player_frame.h`), not on the front end.
+- Left out for now: the camera-turned left stick (`+0x00`, in game only), vibration, the owning player (`+0x42`) and
+  the sample time (`+0x48`).
 
 **Mode 6, the memory-card check** (`src/gamemodes/memory_card_mode.h`, `MemoryCardMode`): `setBootCheck` is
 `0x0015a270(1)`; `exit` is the original's (`0x0015c2c0`): the boot flag becomes 2 and, because the mode below is the

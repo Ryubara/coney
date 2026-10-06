@@ -277,7 +277,7 @@ inferred from the 0.25 s colour blend and their being indexed per player.
 - **Evidence:** confirmed (code) at `0x0018e6b8`; detail: traced
 - **Wrapper** `0x00368480` (registered by `RegisterBindings`); **calls** `0x0018e6b8`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ExitStore {#exitstore}
 
@@ -297,7 +297,7 @@ a 0.25 s blend, undoing `EnterStore`.
 - **Evidence:** confirmed (code) at `0x0018e780`; detail: traced
 - **Wrapper** `0x00368530` (registered by `RegisterBindings`); **calls** `0x0018e780`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ForceCrimeLevel {#forcecrimelevel}
 
@@ -643,7 +643,7 @@ index, amount) when one is set.
 - **Evidence:** confirmed (code) at `0x0041ef00`; detail: traced
 - **Wrapper** `0x0037b458` (registered by `RegisterBindings`); **calls** `0x0041ef00`
 - **Used by** 3 of 467 script chunks (7 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGetMoney {#invgetmoney}
 
@@ -662,7 +662,7 @@ Returns how much money a player carries.
 - **Evidence:** confirmed (code) at `0x0041ee88`; detail: traced
 - **Wrapper** `0x0037b358` (registered by `RegisterBindings`); **calls** `0x0041ee88`
 - **Used by** 12 of 467 script chunks (48 references); boot to menu: no; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGetSpraycanCharges {#invgetspraycancharges}
 
@@ -684,7 +684,7 @@ returns 0.
 - **Evidence:** confirmed (code) at `0x0041f000`; detail: traced
 - **Wrapper** `0x0037b038` (registered by `RegisterBindings`); **calls** `0x0041f000`
 - **Used by** 9 of 467 script chunks (18 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGiveItem {#invgiveitem}
 
@@ -706,7 +706,7 @@ bindings.
 - **Evidence:** confirmed (code) at `0x0041ef98`; detail: traced
 - **Wrapper** `0x0037b5d8` (registered by `RegisterBindings`); **calls** `0x0041ef98`
 - **Used by** 6 of 467 script chunks (46 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGiveRevive {#invgiverevive}
 
@@ -727,7 +727,7 @@ the cap is 4. Runs the inventory's item-added Lua callbacks when they are set.
 - **Evidence:** confirmed (code) at `0x0041edb8`; detail: traced
 - **Wrapper** `0x0037b178` (registered by `RegisterBindings`); **calls** `0x0041edb8`
 - **Used by** 12 of 467 script chunks (43 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvGiveSkeletonKey {#invgiveskeletonkey}
 
@@ -747,7 +747,7 @@ Adds handcuff (skeleton) keys, item 6, to a player's inventory, clamped to the i
 - **Evidence:** confirmed (code) at `0x0041ee20`; detail: traced
 - **Wrapper** `0x0037b268` (registered by `RegisterBindings`); **calls** `0x0041ee20`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvNumberOf {#invnumberof}
 
@@ -767,7 +767,7 @@ Returns a player's count of any inventory item.
 - **Evidence:** confirmed (code) at `0x0041efd0`; detail: traced
 - **Wrapper** `0x0037b538` (registered by `RegisterBindings`); **calls** `0x0041efd0`
 - **Used by** 7 of 467 script chunks (32 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvNumberRevives {#invnumberrevives}
 
@@ -786,7 +786,7 @@ Returns a player's revive count.
 - **Evidence:** confirmed (code) at `0x0041edf0`; detail: traced
 - **Wrapper** `0x0037b1e8` (registered by `RegisterBindings`); **calls** `0x0041edf0`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvNumberSkeletonKeys {#invnumberskeletonkeys}
 
@@ -805,7 +805,7 @@ Returns a player's handcuff-key count.
 - **Evidence:** confirmed (code) at `0x0041ee58`; detail: traced
 - **Wrapper** `0x0037b2d8` (registered by `RegisterBindings`); **calls** `0x0041ee58`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvPlayerHasItem {#invplayerhasitem}
 
@@ -825,7 +825,7 @@ Tests whether a player holds an inventory item.
 - **Evidence:** confirmed (code) at `0x0041ed88`; detail: brief
 - **Wrapper** `0x0037b090` (registered by `RegisterBindings`); **calls** `0x0041ed88`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvSetMoney {#invsetmoney}
 
@@ -846,7 +846,7 @@ HUD's money-change display).
 - **Evidence:** confirmed (code) at `0x0041eeb8`; detail: traced
 - **Wrapper** `0x0037b3b0` (registered by `RegisterBindings`); **calls** `0x0041eeb8`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## InvSetSpraycanCharges {#invsetspraycancharges}
 
@@ -867,7 +867,7 @@ first time sets a game-state flag that later triggers a one-off HUD hint.
 - **Evidence:** confirmed (code) at `0x0041f030`; detail: traced
 - **Wrapper** `0x0037b108` (registered by `RegisterBindings`); **calls** `0x0041f030`
 - **Used by** 10 of 467 script chunks (19 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## IsDongleValid {#isdonglevalid}
 
@@ -1039,7 +1039,7 @@ Turns crime reporting on or off (`W_GameState + 0x288`). `level99.lua` turns it 
 - **Evidence:** confirmed (code) at `0x0041b6a8`; detail: traced
 - **Wrapper** `0x0037a600` (registered by `RegisterBindings`); **calls** `0x0041b6a8`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ResetStore {#resetstore}
 
@@ -1484,7 +1484,7 @@ Adds to one of a player's statistics (the stats object at `0x006fe490`), for the
 - **Evidence:** confirmed (code) at `0x004224d8`; detail: traced
 - **Wrapper** `0x0037c960` (registered by `RegisterBindings`); **calls** `0x004224d8`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StatGetHighScore {#statgethighscore}
 
@@ -1562,7 +1562,7 @@ Returns a player's score from the stats object; `global.lua` reads it for the en
 - **Evidence:** confirmed (code) at `0x00422630`; detail: traced
 - **Wrapper** `0x0037cb20` (registered by `RegisterBindings`); **calls** `0x00422630`
 - **Used by** 6 of 467 script chunks (12 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StatGetTotal {#statgettotal}
 
@@ -1599,7 +1599,7 @@ Clears all statistics (stats object `0x006fe490`). The hub calls it.
 - **Evidence:** confirmed (code) at `0x004226f8`; detail: brief
 - **Wrapper** `0x0037cc10` (registered by `RegisterBindings`); **calls** `0x004226f8`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StatResetPlayer {#statresetplayer}
 
@@ -1618,7 +1618,7 @@ Clears one player's statistics.
 - **Evidence:** confirmed (code) at `0x00422718`; detail: traced
 - **Wrapper** `0x0037cc30` (registered by `RegisterBindings`); **calls** `0x00422718`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TakeMoney {#takemoney}
 
@@ -1638,7 +1638,7 @@ Takes money from a player (GiveMoney with the amount negated); the total never g
 - **Evidence:** confirmed (code) at `0x0041ef60`; detail: brief
 - **Wrapper** `0x0037b4c8` (registered by `RegisterBindings`); **calls** `0x0041ef60`
 - **Used by** 5 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_GetRecordData {#um_getrecorddata}
 
@@ -1658,7 +1658,7 @@ Reads one field of an unlockable record.
 - **Evidence:** confirmed (code) at `0x004238e8`; detail: brief
 - **Wrapper** `0x0037d318` (registered by `RegisterBindings`); **calls** `0x004238e8`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_GetUnlockables {#um_getunlockables}
 
@@ -1720,7 +1720,7 @@ Asks whether one unlockable (by type and data id) is newly unlocked, optionally 
 - **Evidence:** confirmed (code) at `0x004239b0`; detail: brief
 - **Wrapper** `0x0037d280` (registered by `RegisterBindings`); **calls** `0x004239b0`
 - **Used by** 2 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_IsDataUnlocked {#um_isdataunlocked}
 
@@ -1742,7 +1742,7 @@ available.
 - **Evidence:** confirmed (code) at `0x00423868`; detail: traced
 - **Wrapper** `0x0037d140` (registered by `RegisterBindings`); **calls** `0x00423868`
 - **Used by** 22 of 467 script chunks (83 references); boot to menu: yes; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_IsLevelComplete {#um_islevelcomplete}
 
@@ -1783,7 +1783,7 @@ Asks whether anything of a type was unlocked since last asked, optionally cleari
 - **Evidence:** confirmed (code) at `0x00423988`; detail: traced
 - **Wrapper** `0x0037d210` (registered by `RegisterBindings`); **calls** `0x00423988`
 - **Used by** 2 of 467 script chunks (16 references); boot to menu: yes; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_IsUnlocked {#um_isunlocked}
 
@@ -1822,7 +1822,7 @@ Resets the unlockables manager (`0x006fe998`), dropping its records. `global.lua
 - **Evidence:** confirmed (code) at `0x004236d0`; detail: traced
 - **Wrapper** `0x0037cce0` (registered by `RegisterBindings`); **calls** `0x004236d0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_SetNumUnlockables {#um_setnumunlockables}
 
@@ -1841,7 +1841,7 @@ Sets how many unlockable records the manager will hold; ignored once the records
 - **Evidence:** confirmed (code) at `0x004236f0`; detail: traced
 - **Wrapper** `0x0037cd00` (registered by `RegisterBindings`); **calls** `0x004236f0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_SetUnlockable {#um_setunlockable}
 
@@ -1871,7 +1871,7 @@ The record fields are matched by the other UM_ bindings.
 - **Evidence:** confirmed (code) at `0x00423718`; detail: traced
 - **Wrapper** `0x0037cd38` (registered by `RegisterBindings`); **calls** `0x00423718`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_Unlock {#um_unlock}
 
@@ -1894,7 +1894,7 @@ highlight them. `global.lua` uses it when a level is completed. Both bit sets ar
 - **Evidence:** confirmed (code) at `0x004237e8`; detail: traced
 - **Wrapper** `0x0037d050` (registered by `RegisterBindings`); **calls** `0x004237e8`
 - **Used by** 28 of 467 script chunks (71 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_UnlockAll {#um_unlockall}
 
@@ -1931,7 +1931,7 @@ Returns the stopwatch's remaining (or elapsed) time.
 - **Evidence:** confirmed (code) at `0x00423638`; detail: brief
 - **Wrapper** `0x00370e28` (registered by `RegisterBindings`); **calls** `0x00423638`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## W_SetStopWatch {#w_setstopwatch}
 
@@ -1957,7 +1957,7 @@ called with no arguments (0x004233f8, scripting.md#stopwatch). Confirmed (code).
 - **Evidence:** confirmed (code) at `0x004235f0`; detail: traced
 - **Wrapper** `0x00370d98` (registered by `RegisterBindings`); **calls** `0x004235f0`
 - **Used by** 32 of 467 script chunks (39 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## W_ShowStopWatch {#w_showstopwatch}
 
@@ -2004,4 +2004,4 @@ scripting.md#stopwatch).
 - **Evidence:** confirmed (code) at `0x00423648`; detail: traced
 - **Wrapper** `0x00370e68` (registered by `RegisterBindings`); **calls** `0x00423648`
 - **Used by** 37 of 467 script chunks (78 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented

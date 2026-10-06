@@ -9,6 +9,7 @@
 #include "core/game_random.h"
 #include "core/language.h"
 #include "warriors/level_table.h"
+#include "warriors/player_state.h"
 #include "warriors/profile_record.h"
 #include "warriors/unlockables.h"
 
@@ -81,6 +82,9 @@ struct GameState {
     RumbleSetup rumble;            ///< The Rumble menu's set-up.
     /// The unlockables manager (`0x006fe998`) as the Rumble menu asks it: a fresh profile's until Coney has saves.
     Unlockables unlockables = Unlockables::freshProfile();
+    /// The inventories, statistics, unlockables' records, stopwatch, crime fields and Lua pad handlers the bindings act
+    /// on (docs/research/player-state.md).
+    PlayerState player;
 };
 
 } // namespace coney

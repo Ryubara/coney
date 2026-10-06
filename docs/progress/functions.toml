@@ -553,6 +553,12 @@ name = "Pads_Update"
 subsystem = "Device/ps2"
 
 [[function]]
+address = 0x00145698
+name = "Pad_SetLuaHandler"
+subsystem = "Device/ps2"
+size = 232
+
+[[function]]
 address = 0x00145a10
 name = "GameTimer::Update"
 subsystem = "Device/ps2"
@@ -580,6 +586,12 @@ address = 0x00147ef0
 name = "PlayerRecord_SetCommand"
 subsystem = "Device/ps2"
 size = 8
+
+[[function]]
+address = 0x00148210
+name = "Pad_SetLuaHandlerEx"
+subsystem = "Device/ps2"
+size = 32
 
 [[function]]
 address = 0x00148aa0
@@ -960,6 +972,12 @@ subsystem = "GameModes"
 size = 136
 
 [[function]]
+address = 0x001698f0
+name = "Gang_UpdateWanted"
+subsystem = "GameModes"
+size = 304
+
+[[function]]
 address = 0x0016a220
 name = "Gang_Suspend"
 subsystem = "GameModes"
@@ -1257,6 +1275,18 @@ size = 504
 address = 0x0018ce58
 name = "ScreenEffects_UpdateFade"
 subsystem = "Graphics"
+
+[[function]]
+address = 0x0018e6b8
+name = "EnterStore"
+subsystem = "Graphics"
+size = 200
+
+[[function]]
+address = 0x0018e780
+name = "ExitStore"
+subsystem = "Graphics"
+size = 80
 
 [[function]]
 address = 0x001906e8
@@ -2164,6 +2194,12 @@ address = 0x00233d60
 name = "Human_Create"
 subsystem = "Human"
 size = 400
+
+[[function]]
+address = 0x00236508
+name = "Cfg_SetStereoTheftHandler"
+subsystem = "Human"
+size = 64
 
 [[function]]
 address = 0x0023a5f8
@@ -4834,6 +4870,24 @@ subsystem = "Warriors"
 size = 40
 
 [[function]]
+address = 0x0041b6a8
+name = "ReportCrime"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x0041b8b0
+name = "Crime_Report"
+subsystem = "Warriors"
+size = 1560
+
+[[function]]
+address = 0x0041ce98
+name = "GameState_SetCheckPoint"
+subsystem = "Warriors"
+size = 88
+
+[[function]]
 address = 0x0041d110
 name = "Level_IsArmies"
 subsystem = "Warriors"
@@ -4885,10 +4939,118 @@ subsystem = "Warriors"
 size = 16
 
 [[function]]
+address = 0x0041da08
+name = "Cfg_SetMultiplayerJoin"
+subsystem = "Warriors"
+size = 40
+
+[[function]]
+address = 0x0041e250
+name = "Inventory_SetItem"
+subsystem = "Warriors"
+size = 208
+
+[[function]]
+address = 0x0041e420
+name = "Inventory_Count"
+subsystem = "Warriors"
+size = 64
+
+[[function]]
+address = 0x0041ece8
+name = "Cfg_SetInventoryCallback"
+subsystem = "Warriors"
+size = 40
+
+[[function]]
+address = 0x0041ed88
+name = "InvPlayerHasItem"
+subsystem = "Warriors"
+size = 48
+
+[[function]]
+address = 0x0041edb8
+name = "InvGiveRevive"
+subsystem = "Warriors"
+size = 56
+
+[[function]]
+address = 0x0041edf0
+name = "InvNumberRevives"
+subsystem = "Warriors"
+size = 48
+
+[[function]]
+address = 0x0041ee20
+name = "InvGiveSkeletonKey"
+subsystem = "Warriors"
+size = 56
+
+[[function]]
+address = 0x0041ee58
+name = "InvNumberSkeletonKeys"
+subsystem = "Warriors"
+size = 48
+
+[[function]]
+address = 0x0041ee88
+name = "InvGetMoney"
+subsystem = "Warriors"
+size = 48
+
+[[function]]
+address = 0x0041eeb8
+name = "InvSetMoney"
+subsystem = "Warriors"
+size = 72
+
+[[function]]
+address = 0x0041ef00
+name = "GiveMoney"
+subsystem = "Warriors"
+size = 56
+
+[[function]]
+address = 0x0041ef60
+name = "TakeMoney"
+subsystem = "Warriors"
+size = 56
+
+[[function]]
+address = 0x0041ef98
+name = "InvGiveItem"
+subsystem = "Warriors"
+size = 56
+
+[[function]]
+address = 0x0041efd0
+name = "InvNumberOf"
+subsystem = "Warriors"
+size = 48
+
+[[function]]
+address = 0x0041f000
+name = "InvGetSpraycanCharges"
+subsystem = "Warriors"
+size = 48
+
+[[function]]
+address = 0x0041f030
+name = "InvSetSpraycanCharges"
+subsystem = "Warriors"
+size = 64
+
+[[function]]
 address = 0x0041f118
 name = "W_GameState_SetLevelRecord"
 subsystem = "Warriors"
 size = 384
+
+[[function]]
+address = 0x004211d8
+name = "Stats_CategoryPoints"
+subsystem = "Warriors"
+size = 168
 
 [[function]]
 address = 0x00421638
@@ -4933,10 +5095,130 @@ subsystem = "Warriors"
 size = 144
 
 [[function]]
+address = 0x00422430
+name = "Cfg_SetStatValue"
+subsystem = "Warriors"
+size = 168
+
+[[function]]
+address = 0x004224d8
+name = "StatAdd"
+subsystem = "Warriors"
+size = 280
+
+[[function]]
+address = 0x00422630
+name = "StatGetScore"
+subsystem = "Warriors"
+size = 64
+
+[[function]]
+address = 0x004226f8
+name = "StatReset"
+subsystem = "Warriors"
+size = 32
+
+[[function]]
+address = 0x00422718
+name = "StatResetPlayer"
+subsystem = "Warriors"
+size = 64
+
+[[function]]
+address = 0x00422a90
+name = "Stats_CategoryScore"
+subsystem = "Warriors"
+size = 88
+
+[[function]]
+address = 0x00422b00
+name = "Stats_CategoryPercent"
+subsystem = "Warriors"
+size = 216
+
+[[function]]
+address = 0x004233a8
+name = "StopWatch_Start"
+subsystem = "Warriors"
+size = 80
+
+[[function]]
+address = 0x004233f8
+name = "StopWatch_Update"
+subsystem = "Warriors"
+size = 432
+
+[[function]]
+address = 0x004235f0
+name = "W_SetStopWatch"
+subsystem = "Warriors"
+size = 72
+
+[[function]]
+address = 0x00423638
+name = "W_GetStopWatchTime"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
+address = 0x004236d0
+name = "UM_Reset"
+subsystem = "Warriors"
+size = 32
+
+[[function]]
+address = 0x004236f0
+name = "UM_SetNumUnlockables"
+subsystem = "Warriors"
+size = 40
+
+[[function]]
+address = 0x00423718
+name = "Unlocks_SetRecord"
+subsystem = "Warriors"
+size = 80
+
+[[function]]
+address = 0x004237e8
+name = "UM_Unlock"
+subsystem = "Warriors"
+size = 64
+
+[[function]]
+address = 0x00423868
+name = "UM_IsDataUnlocked"
+subsystem = "Warriors"
+size = 64
+
+[[function]]
 address = 0x004238a8
 name = "UM_IsLevelComplete"
 subsystem = "Warriors"
 size = 64
+
+[[function]]
+address = 0x004238e8
+name = "UM_GetRecordData"
+subsystem = "Warriors"
+size = 160
+
+[[function]]
+address = 0x00423988
+name = "UM_IsTypeDirty"
+subsystem = "Warriors"
+size = 40
+
+[[function]]
+address = 0x004239b0
+name = "UM_IsDataDirty"
+subsystem = "Warriors"
+size = 48
+
+[[function]]
+address = 0x00424130
+name = "Unlocks_IsDataUnlocked"
+subsystem = "Warriors"
+size = 168
 
 [[function]]
 address = 0x0042a938

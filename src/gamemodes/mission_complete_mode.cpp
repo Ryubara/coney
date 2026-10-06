@@ -58,6 +58,13 @@ ModeResult MissionCompleteMode::update(GameModeStack& stack, const FrameTime& fr
     default:
         break;
     }
+    // Both players' mission money goes to the bank (`0x0041e398`), which the autosave then keeps.
+    for (int player = 0; player < Inventory::kPlayers; ++player) {
+        const int money = m_state.player.inventory.count(player, item::kMoney);
+        if (money > 0) {
+            m_state.saved.addToBank(static_cast<std::uint32_t>(money));
+        }
+    }
     // The autosave the original asks for after the pop (Autosave_Request).
     if (m_profiles != nullptr && !m_profiles->save()) {
         m_log("mission complete: the autosave failed\n");

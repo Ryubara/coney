@@ -22,11 +22,12 @@ class LevelFlowMode;
 /// update runs one frame of the world and, once a kind is set, leaves and acts on the kind: 1 puts the checkpoint back
 /// to 1, 2 chooses the current level again, 3 the next record; and when the mode below is gameplay (mode 1), that goes
 /// too, so the level flow starts the chosen level. Kind 4, the story start's, is none of these.
-/// After the pop it asks for the autosave (`Autosave_Request`, docs/research/save.md#mode-6): the profile store's
+/// After the pop it banks both players' money (inventory item 2, into SavedProgress::bankedMoney) and asks for the
+/// autosave (`Autosave_Request`, docs/research/save.md#mode-6): the profile store's
 /// save(), which writes only while saving is enabled.
 ///
 /// Coney's stand-ins (docs/research/frontend.md#coneys-implementation):
-/// - There is no mission-complete screen and no inventories: the money the original banks here has nothing to act on.
+/// - There is no mission-complete screen.
 /// - There are no humans to put into a still state, and no world: the frame is black.
 /// - The kind is stored on every launch, whether or not the mode was already on top.
 ///

@@ -353,6 +353,7 @@
   notes: >-
     'Stero' is the binding's own spelling. When the callback fires is inferred from the name and the scripts.
   usage: {chunks: 6, calls: 11, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgBreathingSound
   wrapper: 0x0035a7c0
@@ -958,6 +959,7 @@
   notes: >-
     What 0x0041a460 resets is not traced.
   usage: {chunks: 52, calls: 69, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgWarriorCommand
   wrapper: 0x0035e848
@@ -1702,6 +1704,7 @@
   notes: >-
     Slot entries are 0x2c bytes from +0x04. That the duration is how long a power-up lasts is inferred.
   usage: {chunks: 2, calls: 18, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgInventoryCallback
   wrapper: 0x0036c038
@@ -1714,6 +1717,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 9, calls: 12, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgHuInventoryCallback
   wrapper: 0x0036c068
@@ -1896,6 +1900,7 @@
     Stored in the order mission, bonus, style, combat, crime, harmony. Category names come from global.lua's points
     matrix fields.
   usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgSetStatValue
   wrapper: 0x0037c8c0
@@ -1914,6 +1919,7 @@
     Tables: 0 at 0x005971b8, 1 at 0x005971c0, 2 at 0x00715510, 3 at 0x00715500, 4 at 0x00715818, 5 at 0x00715830. No
     index check.
   usage: {chunks: 2, calls: 46, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: CfgChar
   registered_by: ScriptSystem

@@ -88,6 +88,7 @@ add_executable(coney_tests
     scripting/camera_bindings_test.cpp
     scripting/level_bindings_test.cpp
     scripting/lighting_bindings_test.cpp
+    scripting/player_bindings_test.cpp
     scripting/lua_chunk_test.cpp
     scripting/lua_libraries_test.cpp
     scripting/lua_vm_test.cpp
@@ -99,6 +100,7 @@ add_executable(coney_tests
     scripting/trigger_bindings_test.cpp
     warriors/disk_profile_store_test.cpp
     warriors/level_table_test.cpp
+    warriors/player_state_test.cpp
     warriors/profile_record_test.cpp
     world/debug_camera_test.cpp
     world/level_object_test.cpp

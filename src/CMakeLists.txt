@@ -14,6 +14,7 @@ add_library(coney_core STATIC
     core/parse_number.cpp
     core/options.cpp
     core/pad.cpp
+    core/pad_handlers.cpp
     core/pads.cpp
     fileio/disc.cpp
     fileio/executable.cpp
@@ -36,6 +37,7 @@ add_library(coney_core STATIC
     gamemodes/mission_failed_mode.cpp
     gamemodes/movie_player.cpp
     gamemodes/pause_mode.cpp
+    gamemodes/player_frame.cpp
     gamemodes/profile_manager_mode.cpp
     gamemodes/rumble_menu_mode.cpp
     gamemodes/sheet_viewer_mode.cpp
@@ -100,6 +102,7 @@ add_library(coney_core STATIC
     scripting/lua_vm.cpp
     scripting/message_handlers.cpp
     scripting/object_bindings.cpp
+    scripting/player_bindings.cpp
     scripting/rumble_bindings.cpp
     scripting/scene_bindings.cpp
     scripting/script_bindings.cpp
@@ -107,10 +110,15 @@ add_library(coney_core STATIC
     scripting/spawn_bindings.cpp
     scripting/trigger_bindings.cpp
     warriors/created_humans.cpp
+    warriors/crime_reports.cpp
     warriors/disk_profile_store.cpp
+    warriors/inventory.cpp
     warriors/level_table.cpp
+    warriors/player_stats.cpp
     warriors/profile_record.cpp
     warriors/profile_store.cpp
+    warriors/stop_watch.cpp
+    warriors/unlock_records.cpp
     warriors/unlockables.cpp
     world/debug_camera.cpp
     world/level_object.cpp

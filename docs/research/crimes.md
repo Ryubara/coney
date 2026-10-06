@@ -304,6 +304,16 @@ difficulty of the player's `CfgWarriorClass` byte `+0x0a` less 1; the pick takes
 turning each step, cross judging and any button but cross, L1, R2, the d-pad and SELECT abandoning. Not yet: the
 lock-pick animations (689, 690), the hint and the HUD dial.
 
+**Crime reports** (`repo:src/warriors/crime_reports.h`, `CrimeReports` in `GameState::player`), written
+from [AI: crimes](ai.md#crimes) and [Wanted](#wanted) (2026-10-06): `report()` follows steps 1-6 there, reaching gangs,
+spawners, stores, statistics, the script callback and the HUD through a `CrimeServices` interface the play mode
+implements as those systems arrive; `update()` clears a gang's wanted state 10 s after its last report (held while
+forced). `ReportCrime` switches reporting. `EnterStore` / `ExitStore` keep the store colour and preset
+(`StoreTint`) for a renderer, and `CfgSetSteroTheftHandler` keeps its callback's name.
+
+Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
+the assault statistic is scored once per victim through the service.
+
 ## Open questions
 
 - Which objects register context records of kinds 1, 4 and 5, and with what second value.
@@ -311,3 +321,5 @@ lock-pick animations (689, 690), the hint and the HUD dial.
 - Who sets gang `+0x5f0`, the second wanted timer.
 - The prompt widgets' base position and text style.
 - The lock-picking dial's rate at runtime (one step per drawn frame is inferred).
+- The responder spawn kind of a break-in (type 1) and of a custom crime (type 4).
+- Coney has no colour controllers (`0x005fdeb8`), so `EnterStore`'s tint is kept but not drawn.

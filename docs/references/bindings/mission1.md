@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 76 implemented, 2 partial, 137 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 102 implemented, 2 partial, 111 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -179,32 +179,32 @@ leave part of its effect open; its notes say which.
 | [`ScenePlayCinematic`](scene.md#sceneplaycinematic) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`ScenePlayFixedScene`](scene.md#sceneplayfixedscene) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`ScenePreload`](scene.md#scenepreload) | Scenes and movies | traced | confirmed (code) | implemented |
-| [`EnterStore`](level.md#enterstore) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`ExitStore`](level.md#exitstore) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`EnterStore`](level.md#enterstore) | Levels and game state | traced | confirmed (code) | implemented |
+| [`ExitStore`](level.md#exitstore) | Levels and game state | traced | confirmed (code) | implemented |
 | [`GetCheckPoint`](level.md#getcheckpoint) | Levels and game state | traced | confirmed (code) | implemented |
 | [`GetDifficulty`](level.md#getdifficulty) | Levels and game state | traced | confirmed (code) | implemented |
 | [`GetLanguage`](level.md#getlanguage) | Levels and game state | traced | confirmed (code) | implemented |
-| [`GiveMoney`](level.md#givemoney) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvGetMoney`](level.md#invgetmoney) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvGetSpraycanCharges`](level.md#invgetspraycancharges) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvGiveItem`](level.md#invgiveitem) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvGiveRevive`](level.md#invgiverevive) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvGiveSkeletonKey`](level.md#invgiveskeletonkey) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvNumberOf`](level.md#invnumberof) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvNumberRevives`](level.md#invnumberrevives) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvNumberSkeletonKeys`](level.md#invnumberskeletonkeys) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvSetMoney`](level.md#invsetmoney) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`InvSetSpraycanCharges`](level.md#invsetspraycancharges) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`GiveMoney`](level.md#givemoney) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvGetMoney`](level.md#invgetmoney) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvGetSpraycanCharges`](level.md#invgetspraycancharges) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvGiveItem`](level.md#invgiveitem) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvGiveRevive`](level.md#invgiverevive) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvGiveSkeletonKey`](level.md#invgiveskeletonkey) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvNumberOf`](level.md#invnumberof) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvNumberRevives`](level.md#invnumberrevives) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvNumberSkeletonKeys`](level.md#invnumberskeletonkeys) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvSetMoney`](level.md#invsetmoney) | Levels and game state | traced | confirmed (code) | implemented |
+| [`InvSetSpraycanCharges`](level.md#invsetspraycancharges) | Levels and game state | traced | confirmed (code) | implemented |
 | [`MenuLoadLevel`](level.md#menuloadlevel) | Levels and game state | traced | confirmed (code) | implemented |
-| [`ReportCrime`](level.md#reportcrime) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`ReportCrime`](level.md#reportcrime) | Levels and game state | traced | confirmed (code) | implemented |
 | [`SetCheckPoint`](level.md#setcheckpoint) | Levels and game state | traced | confirmed (code) | implemented |
-| [`StatAdd`](level.md#statadd) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`StatGetScore`](level.md#statgetscore) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`StatResetPlayer`](level.md#statresetplayer) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`StatAdd`](level.md#statadd) | Levels and game state | traced | confirmed (code) | implemented |
+| [`StatGetScore`](level.md#statgetscore) | Levels and game state | traced | confirmed (code) | implemented |
+| [`StatResetPlayer`](level.md#statresetplayer) | Levels and game state | traced | confirmed (code) | implemented |
 | [`UM_IsLevelComplete`](level.md#um_islevelcomplete) | Levels and game state | traced | confirmed (code) | implemented |
-| [`UM_Unlock`](level.md#um_unlock) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`W_SetStopWatch`](level.md#w_setstopwatch) | Levels and game state | traced | confirmed (code) | not implemented |
-| [`W_StartStopWatch`](level.md#w_startstopwatch) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`UM_Unlock`](level.md#um_unlock) | Levels and game state | traced | confirmed (code) | implemented |
+| [`W_SetStopWatch`](level.md#w_setstopwatch) | Levels and game state | traced | confirmed (code) | implemented |
+| [`W_StartStopWatch`](level.md#w_startstopwatch) | Levels and game state | traced | confirmed (code) | implemented |
 | [`FlushScheduledFuncs`](script.md#flushscheduledfuncs) | Script flow | traced | confirmed (code) | implemented |
 | [`gc`](script.md#gc) | Script flow | traced | confirmed (code) | implemented |
 | [`preLoadFile`](script.md#preloadfile) | Script flow | traced | confirmed (code) | implemented |
@@ -213,19 +213,19 @@ leave part of its effect open; its notes say which.
 | [`SetMsgHandler`](script.md#setmsghandler) | Script flow | traced | confirmed (code) | implemented |
 | [`SetMsgHandlerEx`](script.md#setmsghandlerex) | Script flow | traced | confirmed (code) | implemented |
 | [`SetStartGameCallback`](script.md#setstartgamecallback) | Script flow | traced | confirmed (code) | implemented |
-| [`PadSetHandler`](input.md#padsethandler) | Pad input | traced | confirmed (code) | not implemented |
-| [`PadSetHandlerEx`](input.md#padsethandlerex) | Pad input | traced | confirmed (code) | not implemented |
+| [`PadSetHandler`](input.md#padsethandler) | Pad input | traced | confirmed (code) | implemented |
+| [`PadSetHandlerEx`](input.md#padsethandlerex) | Pad input | traced | confirmed (code) | implemented |
 | [`CfgFollowCamera`](config.md#cfgfollowcamera) | Configuration (Cfg) | traced | confirmed (code) | implemented |
-| [`CfgInventoryCallback`](config.md#cfginventorycallback) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgMultiplayerJoin`](config.md#cfgmultiplayerjoin) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgInventoryCallback`](config.md#cfginventorycallback) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgMultiplayerJoin`](config.md#cfgmultiplayerjoin) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgPlayerMugging`](config.md#cfgplayermugging) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgRageHandlers`](config.md#cfgragehandlers) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgSetDatabaseSizes`](config.md#cfgsetdatabasesizes) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSetDefaultFollowSlotSet`](config.md#cfgsetdefaultfollowslotset) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgSetEnemySpotting`](config.md#cfgsetenemyspotting) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgSetGlobalTimeToLive`](config.md#cfgsetglobaltimetolive) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgSetStatValue`](config.md#cfgsetstatvalue) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgSetSteroTheftHandler`](config.md#cfgsetsterothefthandler) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgSetStatValue`](config.md#cfgsetstatvalue) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgSetSteroTheftHandler`](config.md#cfgsetsterothefthandler) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSetWarriorSpotting`](config.md#cfgsetwarriorspotting) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgSubtitles`](config.md#cfgsubtitles) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`random`](util.md#random) | Utilities | traced | confirmed (code) | implemented |

@@ -1207,7 +1207,7 @@ Stores the inventory pickup callback name (inventory +0xfd4). The tutorial uses 
 - **Evidence:** confirmed (code) at `0x0041ece8`; detail: traced
 - **Wrapper** `0x0036c038` (registered by `RegisterBindings`); **calls** `0x0041ece8` `Cfg_SetInventoryCallback`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgInventoryItem {#cfginventoryitem}
 
@@ -1233,7 +1233,7 @@ count, pickup sound and duration.
 - **Evidence:** confirmed (code) at `0x0041eca0`; detail: traced
 - **Wrapper** `0x0036bf58` (registered by `RegisterBindings`); **calls** `0x0041eca0` `Cfg_SetInventoryItem`
 - **Used by** 2 of 467 script chunks (18 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgJumpIsAction {#cfgjumpisaction}
 
@@ -1398,7 +1398,7 @@ to reset the join state. The tutorial and most missions switch it per section.
 - **Evidence:** confirmed (code) at `0x0041da08`; detail: traced
 - **Wrapper** `0x0035e818` (registered by `RegisterBindings`); **calls** `0x0041da08` `Cfg_SetMultiplayerJoin`
 - **Used by** 52 of 467 script chunks (69 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgObj {#cfgobj}
 
@@ -2334,7 +2334,7 @@ points matrix fields.
 - **Evidence:** confirmed (code) at `0x004223e8`; detail: traced
 - **Wrapper** `0x0037c7a8` (registered by `RegisterBindings`); **calls** `0x004223e8` `Cfg_SetStatTypeMax`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetStatValue {#cfgsetstatvalue}
 
@@ -2359,7 +2359,7 @@ No index check.
 - **Evidence:** confirmed (code) at `0x00422430`; detail: traced
 - **Wrapper** `0x0037c8c0` (registered by `RegisterBindings`); **calls** `0x00422430` `Cfg_SetStatValue`
 - **Used by** 2 of 467 script chunks (46 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetSteroTheftHandler {#cfgsetsterothefthandler}
 
@@ -2381,7 +2381,7 @@ stored at 0x0051027c. The tutorial (level99_lesson1) uses it to count the stolen
 - **Evidence:** confirmed (code) at `0x00236508`; detail: traced
 - **Wrapper** `0x0035a790` (registered by `RegisterBindings`); **calls** `0x00236508` `Cfg_SetStereoTheftHandler`
 - **Used by** 6 of 467 script chunks (11 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetTargetingPoints {#cfgsettargetingpoints}
 

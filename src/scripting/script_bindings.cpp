@@ -22,6 +22,7 @@
 #include "scripting/level_bindings.h"
 #include "scripting/lighting_bindings.h"
 #include "scripting/object_bindings.h"
+#include "scripting/player_bindings.h"
 #include "scripting/rumble_bindings.h"
 #include "scripting/scene_bindings.h"
 #include "scripting/spawn_bindings.h"
@@ -113,19 +114,15 @@ NativeFunction makeGetCheckPoint(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value>) { return binding::number(state->checkPoint); };
 }
 
-// `SetCheckPoint(n)`: sets the section GetCheckPoint reads (the setter's address is not on the page).
+// `SetCheckPoint(n)`: sets the section GetCheckPoint reads and takes the checkpoint copy of the inventories and the
+// statistics a restart puts back.
+// @orig 0x0041ce98 GameState_SetCheckPoint (unknown)
 NativeFunction makeSetCheckPoint(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value> args) {
         state->checkPoint = binding::number(args, 0);
+        state->player.saveCheckpoint();
         return binding::none();
     };
-}
-
-// `UM_IsLevelComplete(n)`: whether the unlockables manager has level n done. Coney has no saves, so no manager: false,
-// as the original answers without one.
-// @orig 0x004238a8 UM_IsLevelComplete (unknown)
-NativeFunction makeIsLevelComplete(const Factory& /*factory*/) {
-    return [](std::span<const Value>) { return binding::boolean(false); };
 }
 
 // `ToInt(x)`: x truncated towards zero.
@@ -482,7 +479,6 @@ constexpr std::array kMakers{
     Maker{"SoundPlayMusicTrack", makePlayMusic},
     Maker{"SoundStopMusicTrack", makeStopMusic},
     Maker{"ToInt", makeToInt},
-    Maker{"UM_IsLevelComplete", makeIsLevelComplete},
     Maker{"doFile", makeDoFile},
     Maker{"gc", makeGc},
     Maker{"isRelease", makeIsRelease},
@@ -530,7 +526,6 @@ constexpr std::array kBindings{
     real("GetProfileDifficulty"),
     real("GetCheckPoint"),
     real("SetCheckPoint"),
-    real("UM_IsLevelComplete"),
     real("ToInt"),
     // Configuration with a typed home.
     real("CfgLevelName"),
@@ -560,6 +555,48 @@ constexpr std::array kBindings{
     real("SetStartGameCallback"),
     real("GetRumbleModeData"),
     real("GetRumbleModeGangName"),
+    // The players' inventory, statistics, unlockables, stopwatch, crime reporting and pad handlers
+    // (player_bindings.h).
+    real("CfgInventoryCallback"),
+    real("CfgInventoryItem"),
+    real("CfgMultiplayerJoin"),
+    real("CfgSetStatTypeMax"),
+    real("CfgSetStatValue"),
+    real("CfgSetSteroTheftHandler"),
+    real("EnterStore"),
+    real("ExitStore"),
+    real("GiveMoney"),
+    real("InvGetMoney"),
+    real("InvGetSpraycanCharges"),
+    real("InvGiveItem"),
+    real("InvGiveRevive"),
+    real("InvGiveSkeletonKey"),
+    real("InvNumberOf"),
+    real("InvNumberRevives"),
+    real("InvNumberSkeletonKeys"),
+    real("InvPlayerHasItem"),
+    real("InvSetMoney"),
+    real("InvSetSpraycanCharges"),
+    real("PadSetHandler"),
+    real("PadSetHandlerEx"),
+    real("ReportCrime"),
+    real("StatAdd"),
+    real("StatGetScore"),
+    real("StatReset"),
+    real("StatResetPlayer"),
+    real("TakeMoney"),
+    real("UM_GetRecordData"),
+    real("UM_IsDataDirty"),
+    real("UM_IsDataUnlocked"),
+    real("UM_IsLevelComplete"),
+    real("UM_IsTypeDirty"),
+    real("UM_Reset"),
+    real("UM_SetNumUnlockables"),
+    real("UM_SetUnlockable"),
+    real("UM_Unlock"),
+    real("W_GetStopWatchTime"),
+    real("W_SetStopWatch"),
+    real("W_StartStopWatch"),
     // The objects' message handlers and the volume boxes that send them (trigger_bindings.h).
     real("AddVolumeBox"),
     real("RotateVolumeBox"),
@@ -693,7 +730,6 @@ constexpr std::array kBindings{
     recording("CfgGearData"),
     recording("CfgHat"),
     recording("CfgHUDColor"),
-    recording("CfgInventoryItem"),
     recording("CfgJumpIsAction"),
     recording("CfgPickupIsAction"),
     recording("CfgPickupIsGrab"),
@@ -710,8 +746,6 @@ constexpr std::array kBindings{
     recording("CfgSetDefaultFollowSlotSet"),
     recording("CfgSetGlobalTimeToLive"),
     recording("CfgSetMeleeRange"),
-    recording("CfgSetStatTypeMax"),
-    recording("CfgSetStatValue"),
     recording("CfgSetTargetingPoints"),
     recording("CfgSetTargetingPointsEx"),
     recording("CfgSetTurnRates"),
@@ -739,22 +773,15 @@ constexpr std::array kBindings{
     recording("SoundCfgInterfaceSound"),
     // Unlockables and commands (global.lua).
     recording("AddCommand"),
-    recording("UM_SetNumUnlockables"),
-    recording("UM_SetUnlockable"),
     // Sound and music state.
     stub("SndLoadMatrix"),
     stub("SndSetListener"),
     stub("SoundEnableEffects"),
     stub("SoundSetEffect"),
     stub("SoundSetMusicVolume"),
-    // The inventory: Coney has none yet, so a new game's empty one.
-    stub("InvNumberOf", StubResult::Zero),
     // Unlockables and saves: Coney has none.
     stub("ResetCommands"),
     stub("SetLUASaveDataBool"),
-    stub("UM_IsTypeDirty", StubResult::False),
-    stub("UM_Reset"),
-    stub("UM_Unlock"),
     // Game rules and callbacks.
     stub("SetCheatCallback"),
     stub("SetCopGuardArrestedRange"),
@@ -899,7 +926,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kSceneBindings, info.name) != kSceneBindings.end() ||
                      std::ranges::find(kSpawnBindings, info.name) != kSpawnBindings.end() ||
                      std::ranges::find(kObjectBindings, info.name) != kObjectBindings.end() ||
-                     std::ranges::find(kLightingBindings, info.name) != kLightingBindings.end());
+                     std::ranges::find(kLightingBindings, info.name) != kLightingBindings.end() ||
+                     std::ranges::find(kPlayerBindings, info.name) != kPlayerBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -907,6 +935,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addGangBindings(vm, context);
     addAnimCallbackBindings(vm, context);
     addLightingBindings(vm, context);
+    addPlayerBindings(scripts, vm, context);
     // With no scene system at the call (a test, the menus, a mode that plays no scenes), the stand-in keeps the
     // scripts' scene flow moving.
     addSceneBindings(vm, context,

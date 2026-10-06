@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 10.2%](https://img.shields.io/badge/reimplemented-10.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 10.3%](https://img.shields.io/badge/reimplemented-10.3%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██░░░░░░░░░░░░░░░░░░` | 10.2% of the game's own code (340,940 of 3,354,776 bytes, 861 functions) |
+| **Reimplemented** | `██▏░░░░░░░░░░░░░░░░░` | 10.3% of the game's own code (346,948 of 3,354,776 bytes, 908 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -57,12 +57,12 @@ at the top of the repository's `README.md`.
 | `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 34 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 21 | 62,808 |
+| `Device/ps2` | `█▎░░░░░░░░░░░░░░░░░░` | 6.2% | 23 | 62,808 |
 | `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 6 | 7,120 |
-| `GameModes` | `████▉░░░░░░░░░░░░░░░` | 24.5% | 60 | 100,440 |
-| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.1% | 51 | 195,624 |
+| `GameModes` | `█████░░░░░░░░░░░░░░░` | 24.8% | 61 | 100,440 |
+| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 53 | 195,624 |
 | `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.4% | 122 | 497,416 |
-| `Human` | `██░░░░░░░░░░░░░░░░░░` | 9.9% | 239 | 1,096,672 |
+| `Human` | `██░░░░░░░░░░░░░░░░░░` | 9.9% | 240 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -74,7 +74,7 @@ at the top of the repository's `README.md`.
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% | 25 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
-| `Warriors` | `█▎░░░░░░░░░░░░░░░░░░` | 6.2% | 24 | 54,264 |
+| `Warriors` | `███▏░░░░░░░░░░░░░░░░` | 15.6% | 65 | 54,264 |
 | `Movie` | `██████▊░░░░░░░░░░░░░` | 33.9% | 1 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -205,11 +205,13 @@ at the top of the repository's `README.md`.
 | `0x00144bf0` | `Pad_PressedMask` | `Device/ps2` | not filled in |
 | `0x00144fb0` | `Pad_Update` | `Device/ps2` | not filled in |
 | `0x001454a8` | `Pads_Update` | `Device/ps2` | not filled in |
+| `0x00145698` | `Pad_SetLuaHandler` | `Device/ps2` | 232 |
 | `0x00145a10` | `GameTimer::Update` | `Device/ps2` | 952 |
 | `0x00146078` | `PlayerRecord_Update` | `Device/ps2` | not filled in |
 | `0x00147430` | `AddCommand` | `Device/ps2` | 528 |
 | `0x00147940` | `Commands_Match` | `Device/ps2` | 1,456 |
 | `0x00147ef0` | `PlayerRecord_SetCommand` | `Device/ps2` | 8 |
+| `0x00148210` | `Pad_SetLuaHandlerEx` | `Device/ps2` | 32 |
 | `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
 | `0x00149160` | `DVDWadIndex::DVDWadIndex` | `Device/ps2` | 232 |
@@ -275,6 +277,7 @@ at the top of the repository's `README.md`.
 | `0x00166220` | `Gang_StandingCount` | `GameModes` | 232 |
 | `0x00166308` | `Gang_AddMember` | `GameModes` | 464 |
 | `0x00168f58` | `Gang_AreFriends` | `GameModes` | 136 |
+| `0x001698f0` | `Gang_UpdateWanted` | `GameModes` | 304 |
 | `0x0016a220` | `Gang_Suspend` | `GameModes` | 64 |
 | `0x0016aa98` | `Gang_SetBrainsDead` | `GameModes` | 160 |
 | `0x0016acf0` | `GangMakeEnemies` | `GameModes` | 144 |
@@ -326,6 +329,8 @@ at the top of the repository's `README.md`.
 | `0x00185d20` | `ResourceMgr_RenderOverlay` | `Graphics` | 840 |
 | `0x0018cc60` | `ScreenQueueEffect` | `Graphics` | 504 |
 | `0x0018ce58` | `ScreenEffects_UpdateFade` | `Graphics` | not filled in |
+| `0x0018e6b8` | `EnterStore` | `Graphics` | 200 |
+| `0x0018e780` | `ExitStore` | `Graphics` | 80 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 | `0x00192688` | `AtomicPlugin_StreamRead` | `Graphics` | not filled in |
@@ -484,6 +489,7 @@ at the top of the repository's `README.md`.
 | `0x00231090` | `AttackKind_ToCommand` | `Human` | 264 |
 | `0x00231198` | `AttackKind_ChainDelay` | `Human` | 1,016 |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
+| `0x00236508` | `Cfg_SetStereoTheftHandler` | `Human` | 64 |
 | `0x0023a5f8` | `Cfg_SetTurnRate` | `Human` | not filled in |
 | `0x0023a7a0` | `Cfg_SetTurnRates` | `Human` | not filled in |
 | `0x0023a9b8` | `AnimCallback_Clear` | `Human` | 64 |
@@ -946,6 +952,9 @@ at the top of the repository's `README.md`.
 | `0x0041abe8` | `GetCheckPoint` | `Warriors` | 16 |
 | `0x0041acd8` | `GameState_SetLuaSaveFloat` | `Warriors` | 40 |
 | `0x0041ad00` | `GameState_GetLuaSaveFloat` | `Warriors` | 40 |
+| `0x0041b6a8` | `ReportCrime` | `Warriors` | 16 |
+| `0x0041b8b0` | `Crime_Report` | `Warriors` | 1,560 |
+| `0x0041ce98` | `GameState_SetCheckPoint` | `Warriors` | 88 |
 | `0x0041d110` | `Level_IsArmies` | `Warriors` | not filled in |
 | `0x0041d160` | `Level_IsRumble` | `Warriors` | not filled in |
 | `0x0041d1b0` | `Level_OffersHangout` | `Warriors` | not filled in |
@@ -955,7 +964,25 @@ at the top of the repository's `README.md`.
 | `0x0041d7f0` | `GetLanguage` | `Warriors` | 16 |
 | `0x0041d800` | `GetDifficulty` | `Warriors` | 16 |
 | `0x0041d820` | `GetProfileDifficulty` | `Warriors` | 16 |
+| `0x0041da08` | `Cfg_SetMultiplayerJoin` | `Warriors` | 40 |
+| `0x0041e250` | `Inventory_SetItem` | `Warriors` | 208 |
+| `0x0041e420` | `Inventory_Count` | `Warriors` | 64 |
+| `0x0041ece8` | `Cfg_SetInventoryCallback` | `Warriors` | 40 |
+| `0x0041ed88` | `InvPlayerHasItem` | `Warriors` | 48 |
+| `0x0041edb8` | `InvGiveRevive` | `Warriors` | 56 |
+| `0x0041edf0` | `InvNumberRevives` | `Warriors` | 48 |
+| `0x0041ee20` | `InvGiveSkeletonKey` | `Warriors` | 56 |
+| `0x0041ee58` | `InvNumberSkeletonKeys` | `Warriors` | 48 |
+| `0x0041ee88` | `InvGetMoney` | `Warriors` | 48 |
+| `0x0041eeb8` | `InvSetMoney` | `Warriors` | 72 |
+| `0x0041ef00` | `GiveMoney` | `Warriors` | 56 |
+| `0x0041ef60` | `TakeMoney` | `Warriors` | 56 |
+| `0x0041ef98` | `InvGiveItem` | `Warriors` | 56 |
+| `0x0041efd0` | `InvNumberOf` | `Warriors` | 48 |
+| `0x0041f000` | `InvGetSpraycanCharges` | `Warriors` | 48 |
+| `0x0041f030` | `InvSetSpraycanCharges` | `Warriors` | 64 |
 | `0x0041f118` | `W_GameState_SetLevelRecord` | `Warriors` | 384 |
+| `0x004211d8` | `Stats_CategoryPoints` | `Warriors` | 168 |
 | `0x00421638` | `ProfileHeader_Write` | `Warriors` | 208 |
 | `0x00421708` | `Profile_Write` | `Warriors` | 712 |
 | `0x004219d0` | `ProfileHeader_Read` | `Warriors` | 256 |
@@ -963,7 +990,27 @@ at the top of the repository's `README.md`.
 | `0x00421d98` | `SaveSystem_WriteCurrent` | `Warriors` | 56 |
 | `0x00421e68` | `Profile_Create` | `Warriors` | 304 |
 | `0x00421f98` | `Profile_Delete` | `Warriors` | 144 |
+| `0x00422430` | `Cfg_SetStatValue` | `Warriors` | 168 |
+| `0x004224d8` | `StatAdd` | `Warriors` | 280 |
+| `0x00422630` | `StatGetScore` | `Warriors` | 64 |
+| `0x004226f8` | `StatReset` | `Warriors` | 32 |
+| `0x00422718` | `StatResetPlayer` | `Warriors` | 64 |
+| `0x00422a90` | `Stats_CategoryScore` | `Warriors` | 88 |
+| `0x00422b00` | `Stats_CategoryPercent` | `Warriors` | 216 |
+| `0x004233a8` | `StopWatch_Start` | `Warriors` | 80 |
+| `0x004233f8` | `StopWatch_Update` | `Warriors` | 432 |
+| `0x004235f0` | `W_SetStopWatch` | `Warriors` | 72 |
+| `0x00423638` | `W_GetStopWatchTime` | `Warriors` | 16 |
+| `0x004236d0` | `UM_Reset` | `Warriors` | 32 |
+| `0x004236f0` | `UM_SetNumUnlockables` | `Warriors` | 40 |
+| `0x00423718` | `Unlocks_SetRecord` | `Warriors` | 80 |
+| `0x004237e8` | `UM_Unlock` | `Warriors` | 64 |
+| `0x00423868` | `UM_IsDataUnlocked` | `Warriors` | 64 |
 | `0x004238a8` | `UM_IsLevelComplete` | `Warriors` | 64 |
+| `0x004238e8` | `UM_GetRecordData` | `Warriors` | 160 |
+| `0x00423988` | `UM_IsTypeDirty` | `Warriors` | 40 |
+| `0x004239b0` | `UM_IsDataDirty` | `Warriors` | 48 |
+| `0x00424130` | `Unlocks_IsDataUnlocked` | `Warriors` | 168 |
 | `0x0042a938` | `Movie_Play` | `Movie` | 1,768 |
 <!-- progress:end -->
 
