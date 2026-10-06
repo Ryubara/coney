@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,461 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,466 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-383 reimplemented function(s) have no size yet and add no bytes.
+388 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -54,7 +54,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
 | `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 59 | 57,368 |
-| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 51 | 165,680 |
+| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 55 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
@@ -68,7 +68,7 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 196 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 197 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 72 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -193,6 +193,7 @@ at the top of the repository's `README.md`.
 | `0x0011b920` | `Camera_GetPositionByHandle` | `Camera` | not filled in |
 | `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | not filled in |
 | `0x0011bb98` | `Camera_SetClipping` | `Camera` | not filled in |
+| `0x0011bdc0` | `Camera_LockLocked` | `Camera` | not filled in |
 | `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | not filled in |
 | `0x0011c0b8` | `CfgFollowCamera` | `Camera` | not filled in |
 | `0x0011c270` | `Camera_TargetList` | `Camera` | not filled in |
@@ -233,6 +234,9 @@ at the top of the repository's `README.md`.
 | `0x0012e9a8` | `Cam_Follow_FrameEnemy` | `Camera` | not filled in |
 | `0x00130990` | `Cam_Follow_Collide` | `Camera` | not filled in |
 | `0x00135680` | `Cam_Locked_Update` | `Camera` | not filled in |
+| `0x001358d0` | `LockedCam_SetKeptInView` | `Camera` | not filled in |
+| `0x00135960` | `LockedCam_PushInsideSides` | `Camera` | not filled in |
+| `0x00135ca8` | `LockedCam_KeepHumansInView` | `Camera` | not filled in |
 | `0x001426c0` | `PoizoCam_Update` | `Camera` | not filled in |
 | `0x00142a58` | `PoizoCam_AddPoint` | `Camera` | not filled in |
 | `0x00143078` | `Cam_Blend_Start` | `Camera` | not filled in |
@@ -1195,6 +1199,7 @@ at the top of the repository's `README.md`.
 | `0x00365bf0` | `CamSetFollowZoom` | `Scripting` | not filled in |
 | `0x00365d38` | `CameraCreateLocked` | `Scripting` | not filled in |
 | `0x00366360` | `CameraCreateWin` | `Scripting` | 440 |
+| `0x00367030` | `CamLockLocked` | `Scripting` | not filled in |
 | `0x003670c0` | `CamSetSecondary` | `Scripting` | not filled in |
 | `0x003671e0` | `CamEnable` | `Scripting` | not filled in |
 | `0x00367270` | `CamSetSplitMode` | `Scripting` | 56 |

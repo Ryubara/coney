@@ -651,6 +651,7 @@
     snap) that update even when inside. A forward plane 1 m ahead is computed at the start but never used. Nothing
     happens if the camera handle is not a camera or the human handle is gone. All confirmed (code) unless marked.
   usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false, levels: [87]}
+  coney: implemented
 
 - name: CamSetSecondary
   wrapper: 0x003670c0

@@ -98,6 +98,15 @@ class Cameras {
     void createLocked(double handle, const LockedCamera& camera);
     /// The locked camera with `handle`, or null.
     [[nodiscard]] const LockedCamera* locked(double handle) const;
+    /// `CamLockLocked(camera, human, on)`: `on` adds the human to the locked camera's kept-in-view list (once), off
+    /// removes it. Nothing for a handle that names no locked camera.
+    /// @orig 0x0011bdc0 Camera_LockLocked (unknown)
+    /// @orig 0x001358d0 LockedCam_SetKeptInView (unknown)
+    void lockLocked(double camera, double human, bool on);
+    /// Moves a human's feet to a point, keeping its heading; the kept-in-view push uses it.
+    using Mover = std::function<void(double handle, anim::Vec3 feet)>;
+    /// Sets how the manager moves humans (null: the push moves no one).
+    void setMover(Mover mover) { m_move = std::move(mover); }
     /// `CamDelete(camera)`: forgets the locked camera with `handle`; the shared kinds (follow, win) are kept. When it
     /// is current the follow camera is made current at once (**Coney choice**: what the original shows then is not
     /// traced).
@@ -248,6 +257,8 @@ class Cameras {
     void setCurrent(CameraRef ref);
     // Starts a blend from the view shown now to `ref`, or cuts when there is nothing to blend from.
     void switchTo(CameraRef ref, float seconds);
+    // The current locked camera's update of its listed humans (keepInView()), with the level's `mesh`.
+    void keepHumansInView(const raycast::CollisionMesh* mesh);
 
     FollowCamera* m_follow = nullptr;
     std::optional<double> m_followHandle;
@@ -274,6 +285,8 @@ class Cameras {
     std::uint32_t m_splitMode = 0;
     std::uint32_t m_reverseButton = 0;
     Locator m_locate;
+    Mover m_move;
+    std::map<double, anim::Vec3> m_keptBefore; // each kept-in-view human's feet at the last update
     CameraShake m_shake;
     SlowMotion m_slowMotion;
     // The last update's target and mesh, for the scene end's settling update.

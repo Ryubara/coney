@@ -509,6 +509,11 @@ name = "Camera_SetClipping"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0011bdc0
+name = "Camera_LockLocked"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0011bfa8
 name = "Camera_SetupFollow"
 subsystem = "Camera"
@@ -718,6 +723,21 @@ subsystem = "Camera"
 [[function]]
 address = 0x00135680
 name = "Cam_Locked_Update"
+subsystem = "Camera"
+
+[[function]]
+address = 0x001358d0
+name = "LockedCam_SetKeptInView"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00135960
+name = "LockedCam_PushInsideSides"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00135ca8
+name = "LockedCam_KeepHumansInView"
 subsystem = "Camera"
 
 [[function]]
@@ -6272,6 +6292,11 @@ address = 0x00366360
 name = "CameraCreateWin"
 subsystem = "Scripting"
 size = 440
+
+[[function]]
+address = 0x00367030
+name = "CamLockLocked"
+subsystem = "Scripting"
 
 [[function]]
 address = 0x003670c0

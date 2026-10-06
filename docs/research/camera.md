@@ -764,7 +764,13 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
 - **blends** ([Blends](#blends)): `CameraBlend` lerps the position and look-at point and slerps the orientation from
   the view shown when it began to the destination's live view, linear in time, the far clip never growing; at the end
   the destination becomes current directly, which runs the follow camera's activation (`FollowCamera::activate()`).
-  A **locked camera** looks along its angles at a point 3 m ahead, its far clip at most 150;
+  A **locked camera** looks along its angles at a point 3 m ahead, its far clip at most 150. While it is current it
+  keeps the humans `CamLockLocked` lists inside its sides (`camera::keepInView()`, `repo:src/camera/locked_camera.h`):
+  the head point 1.4 m up is pushed to 0.3 m inside the left side, or else the right, the move's part along the side
+  clipped by the world 0.3 m short of a wall, the feet snapped to the ground, and after one push every later listed
+  human is placed again, as the original's flag carries over. **Coney's readings**: the sides are the planes at half
+  the horizontal field of view either side (left first); the move is from the human's feet at the last update; an
+  airborne human is not landed (no fall damage);
 - the **path camera** ([Path cameras](#path-cameras), `repo:src/camera/path_camera.h`): `CamSetupPoizo` starts it
   from a camera's view, `CamAddPoizoPoint` / `CamAddPoizoPointCam` append up to 8 points, and while it is current it
   flies the Catmull-Rom curve (each end point's neighbour standing in for the missing one), slerping the

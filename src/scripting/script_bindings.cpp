@@ -642,6 +642,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CfgFollowCamera"),
     real("CameraCreateLocked"),
     real("CameraMakeActive"),
+    real("CamLockLocked"),
     real("CameraReset"),
     real("CamSetFollowZoom"),
     real("CamAssignRevCamButton"),

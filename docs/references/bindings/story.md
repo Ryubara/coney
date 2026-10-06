@@ -16,7 +16,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | Level | Story | Bindings | New | New, traced | New, in Coney |
 | --- | --- | --- | --- | --- | --- |
 | [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 50 |
-| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 79 |
+| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 80 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 90 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 3 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 1 |
@@ -103,7 +103,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level87: mission 3 {#level87}
 
-261 bindings, 87 new: 87 traced, 79 implemented in Coney (253 of all 261).
+261 bindings, 87 new: 87 traced, 80 implemented in Coney (254 of all 261).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -159,7 +159,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`CamDelete`](camera.md#camdelete) | Cameras | traced | confirmed (code) | implemented |
 | [`CameraGetActive`](camera.md#cameragetactive) | Cameras | traced | confirmed (code) | implemented |
 | [`CamGetPos`](camera.md#camgetpos) | Cameras | traced | confirmed (code) | implemented |
-| [`CamLockLocked`](camera.md#camlocklocked) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamLockLocked`](camera.md#camlocklocked) | Cameras | traced | confirmed (code) | implemented |
 | [`CamSetFollowPos`](camera.md#camsetfollowpos) | Cameras | traced | confirmed (code) | implemented |
 | [`CamSetupPoizo`](camera.md#camsetuppoizo) | Cameras | traced | confirmed (code) | implemented |
 | [`CarPlaceInTrunkOnDetach`](world.md#carplaceintrunkondetach) | World and objects | traced | confirmed (code) | not implemented |

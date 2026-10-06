@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "ai/brain.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_hub.h"
 #include "ai/scripted_story.h"
@@ -288,6 +289,12 @@ void GameplayMode::enter() {
             const std::array<float, 3>& p = placement->position;
             return std::pair{anim::Vec3{p[0], p[1], p[2]}, placement->headingDegrees};
         });
+    // A locked camera's kept-in-view push moves a human the scripts made, keeping his heading.
+    m_cameras->setMover([scripted = m_scripted.get()](double handle, anim::Vec3 feet) {
+        if (ai::Brain* brain = scripted->brain(handle); brain != nullptr) {
+            brain->human().place(feet, brain->human().heading());
+        }
+    });
     m_context.cameras = m_cameras.get();
     // The level script spawns the level's panes and doors into gameplay's objects, typed by what the boot scripts'
     // `CfgSetGlassProperties` calls recorded.

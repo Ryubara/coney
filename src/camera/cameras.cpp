@@ -110,6 +110,50 @@ const LockedCamera* Cameras::locked(double handle) const {
     return found == m_locked.end() ? nullptr : &found->second;
 }
 
+void Cameras::lockLocked(double camera, double human, bool on) {
+    const auto found = m_locked.find(camera);
+    if (found == m_locked.end()) {
+        return;
+    }
+    std::vector<double>& list = found->second.keptInView;
+    const auto listed = std::ranges::find(list, human);
+    if (on && listed == list.end()) {
+        list.push_back(human);
+    } else if (!on && listed != list.end()) {
+        list.erase(listed);
+    }
+}
+
+void Cameras::keepHumansInView(const raycast::CollisionMesh* mesh) {
+    if (m_current.kind != CameraKind::Locked || !m_locate) {
+        return;
+    }
+    const auto found = m_locked.find(m_current.handle);
+    if (found == m_locked.end()) {
+        return;
+    }
+    const CameraView view = found->second.view();
+    // The pushed flag carries over from one human to the next, as the original's does.
+    bool pushed = false;
+    for (const double human : found->second.keptInView) {
+        const std::optional<anim::Vec3> feet = m_locate(human);
+        if (!feet) {
+            continue;
+        }
+        const auto before = m_keptBefore.find(human);
+        const anim::Vec3 from = before != m_keptBefore.end() ? before->second : *feet;
+        anim::Vec3 now = *feet;
+        if (const std::optional<anim::Vec3> placed = keepInView(view, *feet, from, mesh, pushed)) {
+            pushed = true;
+            now = *placed;
+            if (m_move) {
+                m_move(human, now);
+            }
+        }
+        m_keptBefore.insert_or_assign(human, now);
+    }
+}
+
 std::optional<CameraRef> Cameras::find(double handle) const {
     if (m_followHandle && *m_followHandle == handle) {
         return CameraRef{.kind = CameraKind::Follow, .handle = 0.0};
@@ -408,6 +452,8 @@ void Cameras::update(const FollowTarget& target, std::uint8_t rawRightX, std::ui
     if (m_path && m_current.kind == CameraKind::Path) {
         m_path->update(seconds, m_fired);
     }
+    // A current locked camera keeps its listed humans inside the frame's sides.
+    keepHumansInView(mesh);
     // The blend toward the destination's live view; at the end the destination becomes current directly.
     CameraView view = viewOf(m_current);
     if (m_blend) {

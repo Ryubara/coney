@@ -642,7 +642,7 @@ start but never used. Nothing happens if the camera handle is not a camera or th
 - **Wrapper** `0x00367030` (registered by `RegisterBindings`); **calls** `0x0011bdc0` `Camera_LockLocked`, `0x001358d0`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamLockRail {#camlockrail}
 

@@ -100,6 +100,17 @@ NativeFunction makeCameraCreateLocked(const BindingContext& context, std::functi
     };
 }
 
+// `CamLockLocked(camera, human, on)`: the human added to or removed from the locked camera's kept-in-view list.
+// @orig 0x00367030 CamLockLocked (unknown)
+NativeFunction makeCamLockLocked(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->cameras != nullptr) {
+            context->cameras->lockLocked(handleArg(args, 0), handleArg(args, 1), boolArg(args, 2));
+        }
+        return binding::none();
+    };
+}
+
 // `CameraMakeActive(camera, seconds, name, forHuman, fromHuman)`: Coney has player 1's cameras only, so the two
 // humans are not read.
 // @orig 0x003656a0 CameraMakeActive (unknown)
@@ -190,6 +201,7 @@ void addCameraBindings(LuaVm& vm, const BindingContext& context, std::function<d
     vm.registerFunction("CameraCreateLocked", makeCameraCreateLocked(context, nextHandle));
     vm.registerFunction("CameraMakeActive", makeCameraMakeActive(context));
     vm.registerFunction("CameraReset", makeCameraReset(context));
+    vm.registerFunction("CamLockLocked", makeCamLockLocked(context));
     vm.registerFunction("CamSetFollowAngle", makeCamSetFollowAngle(context));
     vm.registerFunction("CamSetFollowZoom", makeCamSetFollowZoom(context));
     vm.registerFunction("CamSetSplitMode", makeCamSetSplitMode(context));

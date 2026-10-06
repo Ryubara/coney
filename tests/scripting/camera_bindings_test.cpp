@@ -195,3 +195,16 @@ TEST_CASE("cameras given after the state was made are the ones the bindings driv
     h.call("CamSetFollowZoom", {Value(2.0)});
     CHECK(h.follow.bandNear() == Approx(4.8F));
 }
+
+TEST_CASE("CamLockLocked lists a human on a locked camera and takes him off again", "[camera_bindings]") {
+    Harness h;
+    const double cut = h.call("CameraCreateLocked", {str("introCam"), triple(10, 20, 3), Value(50.0), Value(90.0)})
+                           .number()
+                           .value_or(0.0);
+    h.call("CamLockLocked", {Value(cut), Value(12.0), Value(1.0)});
+    h.call("CamLockLocked", {Value(cut + 100.0), Value(13.0), Value(1.0)}); // not a camera: nothing
+    REQUIRE(h.cameras.locked(cut) != nullptr);
+    CHECK(h.cameras.locked(cut)->keptInView == std::vector<double>{12.0});
+    h.call("CamLockLocked", {Value(cut), Value(12.0), Value()});
+    CHECK(h.cameras.locked(cut)->keptInView.empty());
+}

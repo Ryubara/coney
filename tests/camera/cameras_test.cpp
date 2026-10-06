@@ -5,11 +5,14 @@
 // stack, the switches, the target list, the shake and its rumble, and slow motion.
 #include "camera/cameras.h"
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <numbers>
 #include <optional>
+#include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -325,4 +328,46 @@ TEST_CASE("the active camera's handle and a camera's place are found by handle",
     const Vec3 spot{kFeet.x + 2.0F, kFeet.y - 3.0F, kFeet.z + 2.0F};
     rig.cameras.setFollowPosition(spot);
     CHECK(near(rig.follow.position(), spot));
+}
+
+TEST_CASE("CamLockLocked lists a human once; the current locked camera pushes him back inside its sides", "[camera]") {
+    Rig rig;
+    // Two humans 10 m in front of the camera (which faces -x, so its right is +y): one inside, one beyond the right
+    // side (half the 50 degree view is 4.7 m across there).
+    std::map<double, Vec3> humans{{1.0, Vec3{40.0F, 40.0F, 0.0F}}, {2.0, Vec3{40.0F, 46.0F, 0.0F}}};
+    std::vector<double> moved;
+    rig.cameras.setLocator([&humans](double handle) -> std::optional<Vec3> {
+        const auto found = humans.find(handle);
+        return found == humans.end() ? std::nullopt : std::optional<Vec3>(found->second);
+    });
+    rig.cameras.setMover([&humans, &moved](double handle, Vec3 feet) {
+        humans[handle] = feet;
+        moved.push_back(handle);
+    });
+    rig.cameras.lockLocked(kLockedHandle, 2.0, true);
+    rig.cameras.lockLocked(kLockedHandle, 2.0, true);
+    rig.cameras.lockLocked(kLockedHandle, 1.0, true);
+    rig.cameras.lockLocked(99.0, 1.0, true); // not a camera: nothing
+    REQUIRE(rig.cameras.locked(kLockedHandle) != nullptr);
+    CHECK(rig.cameras.locked(kLockedHandle)->keptInView == std::vector<double>{2.0, 1.0});
+    // Not current: nobody moves.
+    rig.step();
+    CHECK(moved.empty());
+    rig.cameras.makeActive(kLockedHandle, 0.0F);
+    rig.step();
+    // Human 2 is pushed to 0.3 m inside the right side, at head height; human 1, after him, is placed again too (the
+    // pushed flag carries over) but where he was.
+    REQUIRE(moved == std::vector<double>{2.0, 1.0});
+    const std::array<coney::camera::ViewSide, 2> sides = coney::camera::viewSides(cutAway().view());
+    const Vec3 head = coney::anim::add(humans[2.0], Vec3{0.0F, 0.0F, coney::camera::KeepInViewRules::kHeadHeight});
+    CHECK(coney::anim::dot(head, sides[1].normal) - sides[1].w == Approx(0.3F).margin(1e-3));
+    CHECK(humans[2.0].y < 46.0F);
+    CHECK(near(humans[1.0], Vec3{40.0F, 40.0F, 0.0F}));
+    // Both inside now: the next update moves no one.
+    moved.clear();
+    rig.step();
+    CHECK(moved.empty());
+    // Off removes him.
+    rig.cameras.lockLocked(kLockedHandle, 2.0, false);
+    CHECK(rig.cameras.locked(kLockedHandle)->keptInView == std::vector<double>{1.0});
 }
